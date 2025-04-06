@@ -1455,7 +1455,7 @@ mod tests {
                 assert_eq!(new_stmt_text, "select * from users");
             }
 
-            _ => panic!("Did not yield a modified statement."),
+            _ => assert!(false, "Did not yield a modified statement."),
         }
 
         assert_document_integrity(&doc);
