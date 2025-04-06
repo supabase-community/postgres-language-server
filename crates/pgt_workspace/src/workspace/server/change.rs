@@ -1412,7 +1412,7 @@ mod tests {
                 assert_eq!(old_stmt_text, "select * from");
             }
 
-            _ => panic!("Did not yield a modified statement."),
+            _ => assert!(false, "Did not yield a modified statement."),
         }
 
         assert_document_integrity(&doc);
