@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      # ? what's this?! required for executing the node script?
       id-token: write
     steps:
       - uses: actions/checkout@v4
