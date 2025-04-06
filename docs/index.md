@@ -58,11 +58,15 @@ npm add --save-dev --save-exact @postgrestools/postgrestools
 
 ### VSCode
 
-The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). Its published from [this repo](https://github.com/supabase-community/postgrestools-vscode).
+The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgrestools-vscode).
 
 ### Neovim
 
 You will have to install `nvim-lspconfig`, and follow the [instructions](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp).
+
+### Zed
+
+The language server is available as an Extension. It's published from [this repo](https://github.com/LoamStudios/zed-postgres-language-server).
 
 ### GitHub Actions
 

@@ -196,7 +196,9 @@ impl Document {
             next_index,
             full_affected_range: TextRange::new(
                 first_affected_stmt_start,
-                last_affected_stmt_end.min(content_size),
+                last_affected_stmt_end
+                    .min(content_size)
+                    .max(first_affected_stmt_start),
             ),
         }
     }

@@ -11,6 +11,7 @@ Install: [instructions](https://pgtools.dev/#installation)
 - [CLI releases](https://github.com/supabase-community/postgres-language-server/releases)
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools)
 - [Neovim](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp)
+- [Zed](https://github.com/LoamStudios/zed-postgres-language-server)
 
 ## Overview
 LSP Demo             |  CLI Demo
