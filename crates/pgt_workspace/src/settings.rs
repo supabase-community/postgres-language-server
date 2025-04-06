@@ -449,9 +449,9 @@ mod tests {
     #[test]
     fn should_identify_allowed_statement_executions() {
         let partial_config = PartialDatabaseConfiguration {
-            allow_statement_executions_against: Some(StringSet::from_iter(
-                vec![String::from("localhost/*")].into_iter(),
-            )),
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "localhost/*",
+            )])),
             host: Some("localhost".into()),
             database: Some("test-db".into()),
             ..Default::default()
@@ -459,15 +459,15 @@ mod tests {
 
         let config = DatabaseSettings::from(partial_config);
 
-        assert_eq!(config.allow_statement_executions, true)
+        assert!(config.allow_statement_executions)
     }
 
     #[test]
     fn should_identify_not_allowed_statement_executions() {
         let partial_config = PartialDatabaseConfiguration {
-            allow_statement_executions_against: Some(StringSet::from_iter(
-                vec![String::from("localhost/*")].into_iter(),
-            )),
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "localhost/*",
+            )])),
             host: Some("production".into()),
             database: Some("test-db".into()),
             ..Default::default()
@@ -475,6 +475,6 @@ mod tests {
 
         let config = DatabaseSettings::from(partial_config);
 
-        assert_eq!(config.allow_statement_executions, false)
+        assert!(!config.allow_statement_executions)
     }
 }
