@@ -281,6 +281,24 @@ impl TextRange {
         })
     }
 
+    /// Expand the range's end by the given offset.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use pgt_text_size::*;
+    /// assert_eq!(
+    ///     TextRange::new(2.into(), 4.into()).checked_expand_end(16.into()).unwrap(),
+    ///     TextRange::new(2.into(), 20.into()),
+    /// );
+    /// ```
+    #[inline]
+    pub fn checked_expand_end(self, offset: TextSize) -> Option<TextRange> {
+        Some(TextRange {
+            start: self.start,
+            end: self.end.checked_add(offset)?,
+        })
+    }
     /// Subtract an offset from this range.
     ///
     /// Note that this is not appropriate for changing where a `TextRange` is

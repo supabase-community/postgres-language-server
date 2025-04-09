@@ -541,61 +541,57 @@ impl Workspace for WorkspaceServer {
             .ok_or(WorkspaceError::not_found())?;
 
         let count = doc.statement_count();
+        // no arms no cookies
+        if count == 0 {
+            return Ok(CompletionsResult::default());
+        }
 
-        let maybe_statement = if count == 0 {
-            None
-        } else if count == 1 {
+        /*
+         * We allow an offset of two for the statement:
+         *
+         * select * from | <-- we want to suggest items for the next token.
+         *
+         * However, if the current statement is terminated by a semicolon, we don't apply any
+         * offset.
+         *
+         * select * from users; | <-- no autocompletions here.
+         */
+        let matches_expanding_range =
+            |stmt_id: StatementId, range: &TextRange, position: TextSize| {
+                let measuring_range = if doc.is_terminated_by_semicolon(stmt_id).unwrap() {
+                    *range
+                } else {
+                    range.checked_expand_end(2.into()).unwrap_or(*range)
+                };
+                measuring_range.contains(position)
+            };
+
+        let maybe_statement = if count == 1 {
             let (stmt, range, txt) = doc.iter_statements_with_text_and_range().next().unwrap();
-            let expanded_range = TextRange::new(
-                range.start(),
-                range
-                    .end()
-                    .checked_add(TextSize::new(2))
-                    .unwrap_or(range.end()),
-            );
-            if expanded_range.contains(params.position) {
+            if matches_expanding_range(stmt.id, range, params.position) {
                 Some((stmt, range, txt))
             } else {
                 None
             }
         } else {
+            /*
+             * If we have multiple statements, we want to make sure that we do not overlap
+             * with the next one.
+             *
+             * select 1 |select 1;
+             */
             let mut stmts = doc.iter_statements_with_text_and_range().tuple_windows();
-            stmts.find(|((_, rcurrent, _), (_, rnext, _))| {
-            /*
-             * We allow an offset of two for the statement:
-             *
-             * (| is the user's cursor.)
-             *
-             * select * from | <-- we want to suggest items for the next token.
-             *
-             */
-            let expanded_range = TextRange::new(
-                rcurrent.start(),
-                rcurrent
-                    .end()
-                    .checked_add(TextSize::new(2))
-                    .unwrap_or(rcurrent.end()),
-            );
-            let is_within_range = expanded_range.contains(params.position);
-
-            /*
-             * However, we do not allow this if the there the offset overlaps
-             * with an adjacent statement:
-             *
-             * select 1; |select 1;
-             */
-            let overlaps_next = !rnext.contains(params.position);
-
-
-            tracing::warn!("Current range {:?}, next range {:?}, position: {:?}, contains range: {}, overlaps :{}", rcurrent, rnext, params.position, is_within_range, overlaps_next);
-
-            is_within_range && !overlaps_next
-
-        }).map(|(t1,_t2)| t1)
+            stmts
+                .find(|((current_stmt, rcurrent, _), (_, rnext, _))| {
+                    let overlaps_next = rnext.contains(params.position);
+                    matches_expanding_range(current_stmt.id, &rcurrent, params.position)
+                        && !overlaps_next
+                })
+                .map(|t| t.0)
         };
 
         let (statement, stmt_range, text) = match maybe_statement {
-            Some(tuple) => tuple,
+            Some(it) => it,
             None => {
                 tracing::debug!("No matching statement found for completion.");
                 return Ok(CompletionsResult::default());

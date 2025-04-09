@@ -117,6 +117,16 @@ impl Document {
                 stmt.to_owned()
             })
     }
+
+    pub fn is_terminated_by_semicolon(&self, stmt_id: StatementId) -> Option<bool> {
+        self.positions
+            .iter()
+            .find(|pos| pos.0 == stmt_id)
+            .map(|(_, range)| {
+                let final_char = self.content.chars().nth(range.end().into());
+                final_char == Some(';')
+            })
+    }
 }
 
 pub(crate) struct IdGenerator {
