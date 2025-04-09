@@ -50,27 +50,11 @@ impl TryFrom<String> for ClauseType {
 
 pub(crate) struct CompletionContext<'a> {
     pub node_under_cursor: Option<tree_sitter::Node<'a>>,
-    pub previous_node: Option<tree_sitter::Node<'a>>,
 
     pub tree: Option<&'a tree_sitter::Tree>,
     pub text: &'a str,
     pub schema_cache: &'a SchemaCache,
     pub position: usize,
-
-    /// If the cursor of the user is offset to the right of the statement,
-    /// we'll have to move it back to the last node, otherwise, tree-sitter will break.
-    /// However, knowing that the user is typing on the "next" node lets us prioritize different completion results.
-    /// We consider an offset of up to two characters as valid.
-    ///
-    /// Example:
-    ///
-    /// ```
-    /// select * from {}
-    /// ```
-    ///
-    /// We'll adjust the cursor position so it lies on the "from" token – but we're looking
-    /// for table completions.
-    pub cursor_offset_from_end: bool,
 
     pub schema_name: Option<String>,
     pub wrapping_clause_type: Option<ClauseType>,
@@ -81,14 +65,12 @@ pub(crate) struct CompletionContext<'a> {
 }
 
 impl<'a> CompletionContext<'a> {
-    pub fn new(params: &'a CompletionParams) -> Self {
+    pub fn new(params: &'a CompletionParams, usable_tree: Option<&'a tree_sitter::Tree>) -> Self {
         let mut ctx = Self {
-            tree: params.tree,
+            tree: usable_tree,
             text: &params.text,
             schema_cache: params.schema,
             position: usize::from(params.position),
-            cursor_offset_from_end: false,
-            previous_node: None,
             node_under_cursor: None,
             schema_name: None,
             wrapping_clause_type: None,
@@ -97,7 +79,10 @@ impl<'a> CompletionContext<'a> {
             mentioned_relations: HashMap::new(),
         };
 
+        tracing::warn!("gathering tree context");
         ctx.gather_tree_context();
+
+        tracing::warn!("gathering info from ts query");
         ctx.gather_info_from_ts_queries();
 
         ctx
@@ -164,13 +149,9 @@ impl<'a> CompletionContext<'a> {
          * `select * from use           {}` becomes `select * from use{}`.
          */
         let current_node = cursor.node();
-        let position_cache = self.position.clone();
         while cursor.goto_first_child_for_byte(self.position).is_none() && self.position > 0 {
             self.position -= 1;
         }
-
-        let cursor_offset = position_cache - self.position;
-        self.cursor_offset_from_end = cursor_offset > 0 && cursor_offset <= 2;
 
         self.gather_context_from_node(cursor, current_node);
     }
@@ -223,23 +204,11 @@ impl<'a> CompletionContext<'a> {
 
         // We have arrived at the leaf node
         if current_node.child_count() == 0 {
-            if self.cursor_offset_from_end {
+            if self.get_ts_node_content(current_node).unwrap() == "REPLACED_TOKEN" {
                 self.node_under_cursor = None;
-                self.previous_node = Some(current_node);
             } else {
-                // for the previous node, either select the previous sibling,
-                // or collect the parent's previous sibling's last child.
-                let previous = match current_node.prev_sibling() {
-                    Some(n) => Some(n),
-                    None => {
-                        let sib_of_parent = parent_node.prev_sibling();
-                        sib_of_parent.and_then(|p| p.children(&mut cursor).last())
-                    }
-                };
                 self.node_under_cursor = Some(current_node);
-                self.previous_node = previous;
             }
-
             return;
         }
 
@@ -305,7 +274,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(&params, Some(&tree));
 
             assert_eq!(ctx.wrapping_clause_type, expected_clause.try_into().ok());
         }
@@ -337,7 +306,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(&params, Some(&tree));
 
             assert_eq!(ctx.schema_name, expected_schema.map(|f| f.to_string()));
         }
@@ -371,7 +340,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(&params, Some(&tree));
 
             assert_eq!(ctx.is_invocation, is_invocation);
         }
@@ -396,7 +365,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(&params, Some(&tree));
 
             let node = ctx.node_under_cursor.unwrap();
 
@@ -424,7 +393,7 @@ mod tests {
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = CompletionContext::new(&params, Some(&tree));
 
         let node = ctx.node_under_cursor.unwrap();
 
@@ -450,7 +419,7 @@ mod tests {
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = CompletionContext::new(&params, Some(&tree));
 
         let node = ctx.node_under_cursor.unwrap();
 
@@ -475,7 +444,7 @@ mod tests {
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = CompletionContext::new(&params, Some(&tree));
 
         let node = ctx.node_under_cursor.unwrap();
 

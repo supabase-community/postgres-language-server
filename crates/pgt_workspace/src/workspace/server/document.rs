@@ -104,6 +104,10 @@ impl Document {
         })
     }
 
+    pub fn statement_count(&self) -> usize {
+        self.positions.len()
+    }
+
     pub fn get_txt(&self, stmt_id: StatementId) -> Option<String> {
         self.positions
             .iter()

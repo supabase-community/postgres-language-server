@@ -1843,6 +1843,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2361,7 +2370,7 @@ dependencies = [
  "cc",
  "fs_extra",
  "glob",
- "itertools",
+ "itertools 0.10.5",
  "prost",
  "prost-build",
  "serde",
@@ -2759,6 +2768,7 @@ dependencies = [
  "futures",
  "globset",
  "ignore",
+ "itertools 0.14.0",
  "pgt_analyse",
  "pgt_analyser",
  "pgt_completions",
@@ -2999,7 +3009,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck",
- "itertools",
+ "itertools 0.10.5",
  "log",
  "multimap",
  "once_cell",
@@ -3019,7 +3029,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.90",

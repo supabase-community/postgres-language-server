@@ -8,6 +8,7 @@ use db_connection::DbConnection;
 pub(crate) use document::StatementId;
 use document::{Document, Statement};
 use futures::{StreamExt, stream};
+use itertools::Itertools;
 use pg_query::PgQueryStore;
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
@@ -528,7 +529,10 @@ impl Workspace for WorkspaceServer {
     ) -> Result<CompletionsResult, WorkspaceError> {
         let pool = match self.connection.read().unwrap().get_pool() {
             Some(pool) => pool,
-            None => return Ok(CompletionsResult::default()),
+            None => {
+                tracing::debug!("No connection to database. Skipping completions.");
+                return Ok(CompletionsResult::default());
+            }
         };
 
         let doc = self
@@ -536,18 +540,67 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let (statement, stmt_range, text) =
-            match doc.iter_statements_with_text_and_range().find(|(_, r, _)| {
-                let expanded_range = TextRange::new(
-                    r.start(),
-                    r.end().checked_add(TextSize::new(2)).unwrap_or(r.end()),
-                );
+        let count = doc.statement_count();
 
-                expanded_range.contains(params.position)
-            }) {
-                Some(s) => s,
-                None => return Ok(CompletionsResult::default()),
-            };
+        let maybe_statement = if count == 0 {
+            None
+        } else if count == 1 {
+            let (stmt, range, txt) = doc.iter_statements_with_text_and_range().next().unwrap();
+            let expanded_range = TextRange::new(
+                range.start(),
+                range
+                    .end()
+                    .checked_add(TextSize::new(2))
+                    .unwrap_or(range.end()),
+            );
+            if expanded_range.contains(params.position) {
+                Some((stmt, range, txt))
+            } else {
+                None
+            }
+        } else {
+            let mut stmts = doc.iter_statements_with_text_and_range().tuple_windows();
+            stmts.find(|((_, rcurrent, _), (_, rnext, _))| {
+            /*
+             * We allow an offset of two for the statement:
+             *
+             * (| is the user's cursor.)
+             *
+             * select * from | <-- we want to suggest items for the next token.
+             *
+             */
+            let expanded_range = TextRange::new(
+                rcurrent.start(),
+                rcurrent
+                    .end()
+                    .checked_add(TextSize::new(2))
+                    .unwrap_or(rcurrent.end()),
+            );
+            let is_within_range = expanded_range.contains(params.position);
+
+            /*
+             * However, we do not allow this if the there the offset overlaps
+             * with an adjacent statement:
+             *
+             * select 1; |select 1;
+             */
+            let overlaps_next = !rnext.contains(params.position);
+
+
+            tracing::warn!("Current range {:?}, next range {:?}, position: {:?}, contains range: {}, overlaps :{}", rcurrent, rnext, params.position, is_within_range, overlaps_next);
+
+            is_within_range && !overlaps_next
+
+        }).map(|(t1,_t2)| t1)
+        };
+
+        let (statement, stmt_range, text) = match maybe_statement {
+            Some(tuple) => tuple,
+            None => {
+                tracing::debug!("No matching statement found for completion.");
+                return Ok(CompletionsResult::default());
+            }
+        };
 
         // `offset` is the position in the document,
         // but we need the position within the *statement*.
