@@ -30,3 +30,48 @@ pub fn parse(sql: &str) -> Result<NodeEnum> {
             .ok_or_else(|| Error::Parse("Unable to find root node".to_string()))
     })?
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sql_1() {
+        let input = "CREATE FUNCTION add(integer, integer) RETURNS integer
+    AS 'select $1 + $2;'
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;";
+        println!("{:#?}", parse(input).unwrap());
+        // print after 42
+        println!("{:#?}", &input[42..]);
+    }
+
+    #[test]
+    fn test_sql_2() {
+        let input = "CREATE FUNCTION add() RETURNS integer
+    AS $sql$select 1 + 2;$sql$
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;";
+        println!("{:#?}", parse(input).unwrap());
+        // print after 58
+        println!("{:#?}", &input[58..]);
+    }
+
+    #[test]
+    fn test_plpsql() {
+        let input = "CREATE FUNCTION add(integer, integer) RETURNS integer
+    AS $s$
+begin
+    return $1 + $2;
+end
+$s$
+    LANGUAGE plpgsql
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;";
+        println!("{:#?}", parse(input).unwrap());
+        // print after 58
+        println!("{:#?}", &input[58..]);
+    }
+}
