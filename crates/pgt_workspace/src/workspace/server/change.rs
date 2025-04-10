@@ -3,7 +3,7 @@ use std::ops::{Add, Sub};
 
 use crate::workspace::{ChangeFileParams, ChangeParams};
 
-use super::{Document, Statement, StatementId, document, statement_identifier::StatementId};
+use super::{Document, document, statement_identifier::StatementId};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum StatementChange {
@@ -32,7 +32,7 @@ pub struct ModifiedStatement {
 
 impl StatementChange {
     #[allow(dead_code)]
-    pub fn statement(&self) -> &Statement {
+    pub fn statement(&self) -> &StatementId {
         match self {
             StatementChange::Added(stmt) => &stmt.stmt,
             StatementChange::Deleted(stmt) => stmt,
@@ -259,16 +259,16 @@ impl Document {
             if new_ranges.len() == 1 {
                 let affected_idx = affected_indices[0];
                 let new_range = new_ranges[0].add(affected_range.start());
-                let (old_id, old_range) = self.positions[affected_idx];
+                let (old_id, old_range) = self.positions[affected_idx].clone();
 
                 // move all statements after the afffected range
                 self.move_ranges(old_range.end(), change.diff_size(), change.is_addition());
 
                 let new_id = self.id_generator.next();
-                self.positions[affected_idx] = (new_id, new_range);
+                self.positions[affected_idx] = (new_id.clone(), new_range);
 
                 changed.push(StatementChange::Modified(ModifiedStatement {
-                    old_stmt: old_id,
+                    old_stmt: old_id.clone(),
                     old_stmt_text: self.content[old_range].to_string(),
 
                     new_stmt: new_id,
@@ -305,15 +305,19 @@ impl Document {
 
         // delete and add new ones
         if let Some(next_index) = next_index {
-            changed.push(StatementChange::Deleted(self.positions[next_index].0));
+            changed.push(StatementChange::Deleted(
+                self.positions[next_index].0.clone(),
+            ));
             self.positions.remove(next_index);
         }
         for idx in affected_indices.iter().rev() {
-            changed.push(StatementChange::Deleted(self.positions[*idx].0));
+            changed.push(StatementChange::Deleted(self.positions[*idx].0.clone()));
             self.positions.remove(*idx);
         }
         if let Some(prev_index) = prev_index {
-            changed.push(StatementChange::Deleted(self.positions[prev_index].0));
+            changed.push(StatementChange::Deleted(
+                self.positions[prev_index].0.clone(),
+            ));
             self.positions.remove(prev_index);
         }
 

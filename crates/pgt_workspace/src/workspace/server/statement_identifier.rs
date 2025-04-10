@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 pub type RootId = usize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -36,6 +38,17 @@ impl StatementId {
         match self {
             StatementId::Root(id) => StatementId::Child(*id),
             StatementId::Child(_) => panic!("Cannot create child from a child statement id"),
+        }
+    }
+}
+
+impl Deref for StatementId {
+    type Target = RootId;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            StatementId::Root(id) => id,
+            StatementId::Child(id) => id,
         }
     }
 }

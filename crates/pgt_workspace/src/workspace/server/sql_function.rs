@@ -3,7 +3,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use pgt_text_size::TextRange;
 
-use super::StatementId;
+use super::statement_identifier::StatementId;
 
 pub struct SQLFunctionBody {
     pub range: TextRange,
@@ -26,15 +26,15 @@ impl SQLFunctionBodyStore {
         content: &str,
     ) -> Option<Arc<SQLFunctionBody>> {
         // First check if we already have this statement cached
-        if let Some(entry) = self.db.get(statement) {
-            return entry;
+        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
+            return existing;
         }
 
         // If not cached, try to extract it from the AST
         let fn_body = get_sql_fn(ast, content).map(Arc::new);
 
         // Cache the result and return it
-        self.db.insert(*statement, fn_body.clone());
+        self.db.insert(statement.clone(), fn_body.clone());
         fn_body
     }
 
