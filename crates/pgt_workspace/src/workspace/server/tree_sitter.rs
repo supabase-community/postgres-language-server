@@ -23,8 +23,16 @@ impl TreeSitterStore {
         }
     }
 
-    pub fn get_parse(&self, statement: &StatementId) -> Option<Arc<tree_sitter::Tree>> {
-        self.db.get(statement).map(|x| x.clone())
+    pub fn load_parse(&self, statement: &StatementId, content: &str) -> Arc<tree_sitter::Tree> {
+        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
+            return existing;
+        }
+
+        let mut parser = self.parser.lock().expect("Failed to lock parser");
+        let tree = Arc::new(parser.parse(content, None).unwrap());
+        self.db.insert(statement.clone(), tree.clone());
+
+        tree
     }
 
     pub fn add_statement(&self, statement: &StatementId, content: &str) {

@@ -13,7 +13,7 @@ pub struct TypecheckParams<'a> {
     pub conn: &'a PgPool,
     pub sql: &'a str,
     pub ast: &'a pgt_query_ext::NodeEnum,
-    pub tree: Option<&'a tree_sitter::Tree>,
+    pub tree: &'a tree_sitter::Tree,
 }
 
 #[derive(Debug, Clone)]

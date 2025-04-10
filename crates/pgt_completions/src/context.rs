@@ -50,7 +50,7 @@ impl TryFrom<String> for ClauseType {
 
 pub(crate) struct CompletionContext<'a> {
     pub ts_node: Option<tree_sitter::Node<'a>>,
-    pub tree: Option<&'a tree_sitter::Tree>,
+    pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub schema_cache: &'a SchemaCache,
     pub position: usize,
@@ -85,10 +85,7 @@ impl<'a> CompletionContext<'a> {
     }
 
     fn gather_info_from_ts_queries(&mut self) {
-        let tree = match self.tree.as_ref() {
-            None => return,
-            Some(t) => t,
-        };
+        let tree = self.tree;
 
         let stmt_range = self.wrapping_statement_range.as_ref();
         let sql = self.text;
@@ -126,11 +123,7 @@ impl<'a> CompletionContext<'a> {
     }
 
     fn gather_tree_context(&mut self) {
-        if self.tree.is_none() {
-            return;
-        }
-
-        let mut cursor = self.tree.as_ref().unwrap().root_node().walk();
+        let mut cursor = self.tree.root_node().walk();
 
         /*
          * The head node of any treesitter tree is always the "PROGRAM" node.
@@ -262,7 +255,7 @@ mod tests {
             let params = crate::CompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
@@ -294,7 +287,7 @@ mod tests {
             let params = crate::CompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
@@ -328,7 +321,7 @@ mod tests {
             let params = crate::CompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
@@ -353,7 +346,7 @@ mod tests {
             let params = crate::CompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
@@ -381,7 +374,7 @@ mod tests {
         let params = crate::CompletionParams {
             position: (position as u32).into(),
             text,
-            tree: Some(&tree),
+            tree: &tree,
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
@@ -407,7 +400,7 @@ mod tests {
         let params = crate::CompletionParams {
             position: (position as u32).into(),
             text,
-            tree: Some(&tree),
+            tree: &tree,
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
@@ -432,7 +425,7 @@ mod tests {
         let params = crate::CompletionParams {
             position: (position as u32).into(),
             text,
-            tree: Some(&tree),
+            tree: &tree,
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 

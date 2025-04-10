@@ -1,30 +1,25 @@
-use std::{
-    fs,
-    panic::RefUnwindSafe,
-    path::Path,
-    sync::{Arc, Mutex, RwLock},
-};
+use std::{fs, panic::RefUnwindSafe, path::Path, sync::RwLock};
 
 use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
-use change::StatementChange;
 use dashmap::DashMap;
 use db_connection::DbConnection;
-pub(crate) use document::StatementId;
-use document::{Document, Statement};
+use document::Document;
 use futures::{StreamExt, stream};
-use pg_query::PgQueryStore;
+use parser::{
+    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
+    GetCompletionsMapper, Parser, SyncDiagnosticsMapper,
+};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
-use pgt_diagnostics::{Diagnostic, DiagnosticExt, Severity, serde::Diagnostic as SDiagnostic};
+use pgt_diagnostics::{
+    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
+};
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::TypecheckParams;
 use schema_cache_manager::SchemaCacheManager;
-use sql_function::SQLFunctionBodyStore;
 use sqlx::Executor;
 use tracing::info;
-use tree_sitter::TreeSitterStore;
-use tree_sitter_parser::TreeSitterParserStore;
 
 use crate::{
     WorkspaceError,
@@ -65,13 +60,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    /// Stores the document (text content + version number) associated with a URL
-    documents: DashMap<PgTPath, Document>,
-
-    tree_sitter: TreeSitterStore,
-    pg_query: PgQueryStore,
-    sql_functions: SQLFunctionBodyStore,
-    ts_parser: TreeSitterParserStore,
+    parsers: DashMap<PgTPath, Parser>,
 
     connection: RwLock<DbConnection>,
 }
@@ -93,13 +82,9 @@ impl WorkspaceServer {
     pub(crate) fn new() -> Self {
         Self {
             settings: RwLock::default(),
-            documents: DashMap::default(),
-            tree_sitter: TreeSitterStore::new(),
-            pg_query: PgQueryStore::new(),
+            parsers: DashMap::default(),
             schema_cache: SchemaCacheManager::default(),
             connection: RwLock::default(),
-            sql_functions: SQLFunctionBodyStore::new(),
-            ts_parser: TreeSitterParserStore::new(),
         }
     }
 
@@ -195,39 +180,18 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        let doc = Document::new(params.path.clone(), params.content, params.version);
-
-        let doc_parser = self.ts_parser.get_parser(params.path.clone());
-        let mut parser = doc_parser.lock().expect("Error locking parser");
-        doc.iter_statements_with_text().for_each(|(stmt, content)| {
-            self.tree_sitter.add_statement(&mut parser, &stmt, content);
-            self.pg_query.add_statement(&stmt, content);
-            if let Some(ast) = self.pg_query.get_ast(&stmt) {
-                self.sql_functions
-                    .add_statement(&mut parser, &ast, &stmt, content);
-            }
-        });
-        drop(parser);
-
-        self.documents.insert(params.path, doc);
+        self.parsers
+            .entry(params.path.clone())
+            .or_insert_with(|| Parser::new(params.path.clone(), params.content, params.version));
 
         Ok(())
     }
 
     /// Remove a file from the workspace
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        let (_, doc) = self
-            .documents
+        self.parsers
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
-
-        for stmt in doc.iter_statements() {
-            self.tree_sitter.remove_statement(&stmt);
-            self.pg_query.remove_statement(&stmt);
-            self.sql_functions.remove_statement(&stmt);
-        }
-
-        self.ts_parser.remove_parser(&params.path);
 
         Ok(())
     }
@@ -238,69 +202,16 @@ impl Workspace for WorkspaceServer {
         version = params.version
     ), err)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut doc = self
-            .documents
+        let mut parser = self
+            .parsers
             .entry(params.path.clone())
-            .or_insert(Document::new(
+            .or_insert(Parser::new(
                 params.path.clone(),
                 "".to_string(),
                 params.version,
             ));
 
-        let doc_parser = self.ts_parser.get_parser(params.path.clone());
-        let mut parser = doc_parser.lock().expect("Error locking parser");
-        for c in &doc.apply_file_change(&params) {
-            match c {
-                StatementChange::Added(added) => {
-                    tracing::debug!(
-                        "Adding statement: id:{:?}, path:{:?}, text:{:?}",
-                        added.stmt.id,
-                        added.stmt.path.as_os_str().to_str(),
-                        added.text
-                    );
-                    self.tree_sitter
-                        .add_statement(&mut parser, &added.stmt, &added.text);
-                    self.pg_query.add_statement(&added.stmt, &added.text);
-                    if let Some(ast) = self.pg_query.get_ast(&added.stmt) {
-                        self.sql_functions.add_statement(
-                            &mut parser,
-                            &ast,
-                            &added.stmt,
-                            &added.text,
-                        );
-                    }
-                }
-                StatementChange::Deleted(s) => {
-                    tracing::debug!(
-                        "Deleting statement: id:{:?}, path:{:?}",
-                        s.id,
-                        s.path.as_os_str()
-                    );
-                    self.tree_sitter.remove_statement(s);
-                    self.pg_query.remove_statement(s);
-                    self.sql_functions.remove_statement(s);
-                }
-                StatementChange::Modified(s) => {
-                    tracing::debug!(
-                        "Modifying statement with id {:?} (new id {:?}) in {:?}. Range {:?}, Changed from '{:?}' to '{:?}', changed text: {:?}",
-                        s.old_stmt.id,
-                        s.new_stmt.id,
-                        s.old_stmt.path.as_os_str().to_str(),
-                        s.change_range,
-                        s.old_stmt_text,
-                        s.new_stmt_text,
-                        s.change_text
-                    );
-
-                    self.tree_sitter.modify_statement(&mut parser, s);
-                    self.pg_query.modify_statement(s);
-                    if let Some(ast) = self.pg_query.get_ast(&s.new_stmt) {
-                        self.sql_functions.modify_statement(&mut parser, &ast, s);
-                    }
-                }
-            }
-        }
-        drop(parser);
+        parser.apply_change(params);
 
         Ok(())
     }
@@ -311,10 +222,10 @@ impl Workspace for WorkspaceServer {
 
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
         let document = self
-            .documents
+            .parsers
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
-        Ok(document.content.clone())
+        Ok(document.get_document_content().to_string())
     }
 
     fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {
@@ -325,16 +236,10 @@ impl Workspace for WorkspaceServer {
         &self,
         params: code_actions::CodeActionsParams,
     ) -> Result<code_actions::CodeActionsResult, WorkspaceError> {
-        let doc = self
-            .documents
+        let parser = self
+            .parsers
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
-
-        let eligible_statements = doc
-            .iter_statements_with_text_and_range()
-            .filter(|(_, range, _)| range.contains(params.cursor_position));
-
-        let mut actions: Vec<code_actions::CodeAction> = vec![];
 
         let settings = self
             .settings
@@ -347,20 +252,26 @@ impl Workspace for WorkspaceServer {
             Some("Statement execution not allowed against database.".into())
         };
 
-        for (stmt, _, txt) in eligible_statements {
-            let title = format!(
-                "Execute Statement: {}...",
-                txt.chars().take(50).collect::<String>()
-            );
+        let actions = parser
+            .iter_with_filter(
+                DefaultMapper,
+                CursorPositionFilter::new(params.cursor_position),
+            )
+            .map(|(stmt, _, txt)| {
+                let title = format!(
+                    "Execute Statement: {}...",
+                    txt.chars().take(50).collect::<String>()
+                );
 
-            actions.push(CodeAction {
-                title,
-                kind: CodeActionKind::Command(CommandAction {
-                    category: CommandActionCategory::ExecuteStatement(stmt.id),
-                }),
-                disabled_reason: disabled_reason.clone(),
-            });
-        }
+                CodeAction {
+                    title,
+                    kind: CodeActionKind::Command(CommandAction {
+                        category: CommandActionCategory::ExecuteStatement(stmt),
+                    }),
+                    disabled_reason: disabled_reason.clone(),
+                }
+            })
+            .collect();
 
         Ok(CodeActionsResult { actions })
     }
@@ -369,31 +280,25 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
-        let doc = self
-            .documents
+        let parser = self
+            .parsers
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        if self
-            .pg_query
-            .get_ast(&Statement {
-                path: params.path,
-                id: params.statement_id,
-            })
-            .is_none()
-        {
+        let stmt = parser.find(params.statement_id, ExecuteStatementMapper);
+
+        if stmt.is_none() {
             return Ok(ExecuteStatementResult {
-                message: "Statement is invalid.".into(),
+                message: "Statement was not found in document.".into(),
             });
         };
 
-        let sql: String = match doc.get_txt(params.statement_id) {
-            Some(txt) => txt,
-            None => {
-                return Ok(ExecuteStatementResult {
-                    message: "Statement was not found in document.".into(),
-                });
-            }
+        let (id, range, content, ast) = stmt.unwrap();
+
+        if ast.is_none() {
+            return Ok(ExecuteStatementResult {
+                message: "Statement is invalid.".into(),
+            });
         };
 
         let conn = self.connection.read().unwrap();
@@ -406,7 +311,7 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let result = run_async(async move { pool.execute(sqlx::query(&sql)).await })??;
+        let result = run_async(async move { pool.execute(sqlx::query(&content)).await })??;
 
         Ok(ExecuteStatementResult {
             message: format!(
@@ -420,13 +325,6 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
-        // get all statements form the requested document and pull diagnostics out of every
-        // source
-        let doc = self
-            .documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
-
         let settings = self.settings();
 
         // create analyser for this run
@@ -450,7 +348,14 @@ impl Workspace for WorkspaceServer {
             filter,
         });
 
-        let mut diagnostics: Vec<SDiagnostic> = doc.diagnostics().to_vec();
+        let parser = self
+            .parsers
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
+
+        // TODO: run this in parallel with rayon based on rayon.count()
 
         if let Some(pool) = self
             .connection
@@ -458,44 +363,20 @@ impl Workspace for WorkspaceServer {
             .expect("DbConnection RwLock panicked")
             .get_pool()
         {
-            let typecheck_params: Vec<_> = doc
-                .iter_statements_with_text_and_range()
-                .flat_map(|(stmt, range, text)| {
-                    let ast = self.pg_query.get_ast(&stmt);
-                    let tree = self.tree_sitter.get_parse_tree(&stmt);
-
-                    let mut res = vec![(text.to_string(), ast, tree, *range)];
-
-                    if let Some(fn_body) = self.sql_functions.get_function_body(&stmt) {
-                        // fn_body range is within the statement -> adjust it to be relative to the
-                        // document instead (as the other ranges)
-                        let fn_range = fn_body.range + range.start();
-                        res.push((
-                            fn_body.body.clone(),
-                            fn_body.ast.clone().map(Arc::new),
-                            Some(Arc::new(fn_body.cst.clone())),
-                            fn_range,
-                        ));
-                    }
-
-                    res
-                })
-                .collect();
-
-            // run diagnostics for each statement in parallel if its mostly i/o work
             let path_clone = params.path.clone();
+            let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             let async_results = run_async(async move {
-                stream::iter(typecheck_params)
-                    .map(|(text, ast, tree, range)| {
+                stream::iter(input)
+                    .map(|(_id, range, content, ast, cst)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
                         async move {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
                                     conn: &pool,
-                                    sql: &text,
+                                    sql: &content,
                                     ast: &ast,
-                                    tree: tree.as_deref(),
+                                    tree: &cst,
                                 })
                                 .await
                                 .map(|d| {
@@ -519,66 +400,49 @@ impl Workspace for WorkspaceServer {
             }
         }
 
-        diagnostics.extend(doc.iter_statements_with_range().flat_map(|(stmt, r)| {
-            let mut stmt_diagnostics = self.pg_query.get_diagnostics(&stmt);
+        diagnostics.extend(parser.iter(SyncDiagnosticsMapper).flat_map(
+            |(_id, range, ast, diag)| {
+                let mut errors: Vec<Error> = vec![];
 
-            let ast = self.pg_query.get_ast(&stmt);
-
-            if let Some(ast) = ast {
-                stmt_diagnostics.extend(
-                    analyser
-                        .run(AnalyserContext { root: &ast })
-                        .into_iter()
-                        .map(SDiagnostic::new)
-                        .collect::<Vec<_>>(),
-                );
-            }
-
-            if let Some(fn_body) = self.sql_functions.get_function_body(&stmt) {
-                if let Some(fn_diag) = &fn_body.syntax_diagnostics {
-                    stmt_diagnostics.push(SDiagnostic::new(
-                        fn_diag
-                            .clone()
-                            .with_file_path(params.path.as_path().display().to_string())
-                            .with_file_span(fn_body.range + r.start()),
-                    ));
+                if let Some(diag) = diag {
+                    errors.push(diag.into());
                 }
 
-                if let Some(ast) = &fn_body.ast {
-                    stmt_diagnostics.extend(
+                if let Some(ast) = ast {
+                    errors.extend(
                         analyser
-                            .run(AnalyserContext { root: ast })
+                            .run(AnalyserContext { root: &ast })
                             .into_iter()
-                            .map(SDiagnostic::new)
-                            .collect::<Vec<_>>(),
+                            .map(Error::from)
+                            .collect::<Vec<pgt_diagnostics::Error>>(),
                     );
                 }
-            }
 
-            stmt_diagnostics
-                .into_iter()
-                .map(|d| {
-                    let severity = d
-                        .category()
-                        .filter(|category| category.name().starts_with("lint/"))
-                        .map_or_else(
-                            || d.severity(),
-                            |category| {
-                                settings
-                                    .as_ref()
-                                    .get_severity_from_rule_code(category)
-                                    .unwrap_or(Severity::Warning)
-                            },
-                        );
+                errors
+                    .into_iter()
+                    .map(|d| {
+                        let severity = d
+                            .category()
+                            .filter(|category| category.name().starts_with("lint/"))
+                            .map_or_else(
+                                || d.severity(),
+                                |category| {
+                                    settings
+                                        .as_ref()
+                                        .get_severity_from_rule_code(category)
+                                        .unwrap_or(Severity::Warning)
+                                },
+                            );
 
-                    SDiagnostic::new(
-                        d.with_file_path(params.path.as_path().display().to_string())
-                            .with_file_span(r)
-                            .with_severity(severity),
-                    )
-                })
-                .collect::<Vec<_>>()
-        }));
+                        SDiagnostic::new(
+                            d.with_file_path(params.path.as_path().display().to_string())
+                                .with_file_span(range)
+                                .with_severity(severity),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            },
+        ));
 
         let errors = diagnostics
             .iter()
@@ -601,60 +465,35 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
+        let parser = self
+            .parsers
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
         let pool = match self.connection.read().unwrap().get_pool() {
             Some(pool) => pool,
             None => return Ok(CompletionsResult::default()),
         };
 
-        let doc = self
-            .documents
-            .get(&params.path)
-            .ok_or(WorkspaceError::not_found())?;
-
-        let (statement, stmt_range, text) = match doc
-            .iter_statements_with_text_and_range()
-            .find(|(_, r, _)| r.contains(params.position))
-        {
-            Some(s) => s,
-            None => return Ok(CompletionsResult::default()),
-        };
-
-        // `offset` is the position in the document,
-        // but we need the position within the *statement*.
-        let position = params.position - stmt_range.start();
-
-        let tree = self.tree_sitter.get_parse_tree(&statement);
-
-        tracing::debug!(
-            "Found the statement. We're looking for position {:?}. Statement Range {:?} to {:?}. Statement: {:?}",
-            position,
-            stmt_range.start(),
-            stmt_range.end(),
-            text
-        );
-
         let schema_cache = self.schema_cache.load(pool)?;
 
-        let mut items = pgt_completions::complete(pgt_completions::CompletionParams {
-            position,
-            schema: schema_cache.as_ref(),
-            tree: tree.as_deref(),
-            text: text.to_string(),
-        });
-
-        if let Some(f) = self.sql_functions.get_function_body(&statement) {
-            let fn_text = f.body.clone();
-            let fn_range = f.range + stmt_range.start();
-
-            items.extend(pgt_completions::complete(
-                pgt_completions::CompletionParams {
-                    position: position - fn_range.start(),
+        let items = parser
+            .iter_with_filter(
+                GetCompletionsMapper,
+                CursorPositionFilter::new(params.position),
+            )
+            .flat_map(|(_id, range, content, cst)| {
+                // `offset` is the position in the document,
+                // but we need the position within the *statement*.
+                let position = params.position - range.start();
+                pgt_completions::complete(pgt_completions::CompletionParams {
+                    position,
                     schema: schema_cache.as_ref(),
-                    tree: Some(&f.cst),
-                    text: fn_text,
-                },
-            ));
-        }
+                    tree: &cst,
+                    text: content.to_string(),
+                })
+            })
+            .collect();
 
         Ok(CompletionsResult { items })
     }

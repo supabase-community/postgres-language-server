@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
+use pgt_diagnostics::serde::Diagnostic as SDiagnostic;
 use pgt_fs::PgTPath;
-use pgt_text_size::TextRange;
+use pgt_query_ext::diagnostics::SyntaxDiagnostic;
+use pgt_text_size::{TextRange, TextSize};
 
 use crate::workspace::ChangeFileParams;
 
 use super::{
-    StatementId,
     change::StatementChange,
     document::{Document, StatementIterator},
     pg_query::PgQueryStore,
     sql_function::SQLFunctionBodyStore,
+    statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
 
@@ -86,6 +88,21 @@ impl Parser {
         }
     }
 
+    pub fn get_document_content(&self) -> &str {
+        &self.doc.content
+    }
+
+    pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
+        &self.doc.diagnostics
+    }
+
+    pub fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
+    where
+        M: StatementMapper<'a>,
+    {
+        self.iter_with_filter(mapper, IdFilter::new(id)).next()
+    }
+
     pub fn iter<'a, M>(&'a self, mapper: M) -> ParseIterator<'a, M, DefaultFilter>
     where
         M: StatementMapper<'a>,
@@ -100,6 +117,10 @@ impl Parser {
     {
         ParseIterator::new(self, mapper, filter)
     }
+
+    pub fn count<'a>(&'a self) -> usize {
+        self.iter(DefaultMapper).count()
+    }
 }
 
 pub trait StatementMapper<'a> {
@@ -109,13 +130,13 @@ pub trait StatementMapper<'a> {
         &self,
         parser: &'a Parser,
         id: StatementId,
-        range: &TextRange,
-        content: &str,
+        range: &'a TextRange,
+        content: &'a str,
     ) -> Self::Output;
 }
 
 pub trait StatementFilter<'a> {
-    fn apply(&self, range: &TextRange) -> bool;
+    fn apply(&self, id: StatementId, range: &TextRange) -> bool;
 }
 
 pub struct ParseIterator<'a, M, F> {
@@ -148,7 +169,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // First check if we have any pending sub-statements to process
         if let Some((id, range, content)) = self.pending_sub_statements.pop() {
-            if self.filter.apply(&range) {
+            if self.filter.apply(id, &range) {
                 return Some(self.mapper.map(self.parser, id, &range, &content));
             }
             // If the sub-statement doesn't pass the filter, continue to the next item
@@ -178,7 +199,7 @@ where
             }
 
             // Return the current statement if it passes the filter
-            if self.filter.apply(&range) {
+            if self.filter.apply(root_id, &range) {
                 return Some(self.mapper.map(self.parser, root_id, &range, content));
             }
 
@@ -190,25 +211,155 @@ where
     }
 }
 
-struct WithAst;
-impl<'a> StatementMapper<'a> for WithAst {
-    type Output = (StatementId, TextRange, Option<Arc<pgt_query_ext::NodeEnum>>);
+pub struct DefaultMapper;
+impl<'a> StatementMapper<'a> for DefaultMapper {
+    type Output = (StatementId, &'a TextRange, &'a str);
+
+    fn map(
+        &self,
+        _parser: &'a Parser,
+        id: StatementId,
+        range: &'a TextRange,
+        content: &'a str,
+    ) -> Self::Output {
+        (id, range, content)
+    }
+}
+
+pub struct ExecuteStatementMapper;
+impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
+    type Output = (
+        StatementId,
+        &'a TextRange,
+        &'a str,
+        Option<pgt_query_ext::NodeEnum>,
+    );
 
     fn map(
         &self,
         parser: &'a Parser,
         id: StatementId,
-        range: &TextRange,
-        _content: &str,
+        range: &'a TextRange,
+        content: &'a str,
     ) -> Self::Output {
-        let ast = parser.ast_db.get_ast(&id);
-        (id, *range, ast)
+        let ast_result = parser.ast_db.load_parse(&id, content);
+        let ast_option = match &*ast_result {
+            Ok(node) => Some(node.clone()),
+            Err(_) => None,
+        };
+
+        (id, range, content, ast_option)
     }
 }
 
-struct DefaultFilter;
+pub struct AsyncDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
+    type Output = (
+        StatementId,
+        TextRange,
+        String,
+        Option<pgt_query_ext::NodeEnum>,
+        Arc<tree_sitter::Tree>,
+    );
+
+    fn map(
+        &self,
+        parser: &'a Parser,
+        id: StatementId,
+        range: &'a TextRange,
+        content: &'a str,
+    ) -> Self::Output {
+        let ast_result = parser.ast_db.load_parse(&id, content);
+
+        let ast_option = match &*ast_result {
+            Ok(node) => Some(node.clone()),
+            Err(_) => None,
+        };
+
+        let cst_result = parser.cst_db.load_parse(&id, content);
+
+        (id, *range, content.to_string(), ast_option, cst_result)
+    }
+}
+
+pub struct SyncDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
+    type Output = (
+        StatementId,
+        &'a TextRange,
+        Option<pgt_query_ext::NodeEnum>,
+        Option<SyntaxDiagnostic>,
+    );
+
+    fn map(
+        &self,
+        parser: &'a Parser,
+        id: StatementId,
+        range: &'a TextRange,
+        content: &'a str,
+    ) -> Self::Output {
+        let ast_result = parser.ast_db.load_parse(&id, content);
+
+        let (ast_option, diagnostics) = match &*ast_result {
+            Ok(node) => (Some(node.clone()), None),
+            Err(diag) => (None, Some(diag.clone())),
+        };
+
+        (id, range, ast_option, diagnostics)
+    }
+}
+
+pub struct GetCompletionsMapper;
+impl<'a> StatementMapper<'a> for GetCompletionsMapper {
+    type Output = (StatementId, &'a TextRange, &'a str, Arc<tree_sitter::Tree>);
+
+    fn map(
+        &self,
+        parser: &'a Parser,
+        id: StatementId,
+        range: &'a TextRange,
+        content: &'a str,
+    ) -> Self::Output {
+        let cst_result = parser.cst_db.load_parse(&id, content);
+        (id, range, content, cst_result)
+    }
+}
+
+pub struct DefaultFilter;
 impl<'a> StatementFilter<'a> for DefaultFilter {
-    fn apply(&self, _range: &TextRange) -> bool {
+    fn apply(&self, _id: StatementId, _range: &TextRange) -> bool {
         true
+    }
+}
+
+pub struct CursorPositionFilter {
+    pos: TextSize,
+}
+
+impl CursorPositionFilter {
+    pub fn new(pos: TextSize) -> Self {
+        Self { pos }
+    }
+}
+
+impl<'a> StatementFilter<'a> for CursorPositionFilter {
+    fn apply(&self, _id: StatementId, range: &TextRange) -> bool {
+        range.contains(self.pos)
+    }
+}
+
+pub struct IdFilter {
+    id: StatementId,
+}
+
+impl IdFilter {
+    pub fn new(id: StatementId) -> Self {
+        Self { id }
+    }
+}
+
+impl<'a> StatementFilter<'a> for IdFilter {
+    fn apply(&self, id: StatementId, _range: &TextRange) -> bool {
+        id == self.id
     }
 }
