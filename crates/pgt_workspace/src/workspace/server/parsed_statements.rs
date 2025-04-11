@@ -138,7 +138,7 @@ pub trait StatementMapper<'a> {
 }
 
 pub trait StatementFilter<'a> {
-    fn apply(&self, id: &StatementId, range: &TextRange) -> bool;
+    fn predicate(&self, id: &StatementId, range: &TextRange) -> bool;
 }
 
 pub struct ParseIterator<'a, M, F> {
@@ -171,7 +171,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // First check if we have any pending sub-statements to process
         if let Some((id, range, content)) = self.pending_sub_statements.pop() {
-            if self.filter.apply(&id, &range) {
+            if self.filter.predicate(&id, &range) {
                 return Some(self.mapper.map(self.parser, id, range, &content));
             }
             // If the sub-statement doesn't pass the filter, continue to the next item
@@ -207,7 +207,7 @@ where
             }
 
             // Return the current statement if it passes the filter
-            if self.filter.apply(&root_id, &range) {
+            if self.filter.predicate(&root_id, &range) {
                 return Some(self.mapper.map(self.parser, root_id, range, content));
             }
 
@@ -336,7 +336,7 @@ impl<'a> StatementMapper<'a> for GetCompletionsMapper {
 
 pub struct NoFilter;
 impl<'a> StatementFilter<'a> for NoFilter {
-    fn apply(&self, _id: &StatementId, _range: &TextRange) -> bool {
+    fn predicate(&self, _id: &StatementId, _range: &TextRange) -> bool {
         true
     }
 }
@@ -352,7 +352,7 @@ impl CursorPositionFilter {
 }
 
 impl<'a> StatementFilter<'a> for CursorPositionFilter {
-    fn apply(&self, _id: &StatementId, range: &TextRange) -> bool {
+    fn predicate(&self, _id: &StatementId, range: &TextRange) -> bool {
         range.contains(self.pos)
     }
 }
@@ -368,7 +368,7 @@ impl IdFilter {
 }
 
 impl<'a> StatementFilter<'a> for IdFilter {
-    fn apply(&self, id: &StatementId, _range: &TextRange) -> bool {
+    fn predicate(&self, id: &StatementId, _range: &TextRange) -> bool {
         *id == self.id
     }
 }
