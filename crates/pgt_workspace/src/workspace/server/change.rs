@@ -140,6 +140,8 @@ impl Document {
         let mut start = change_range.start();
         let mut end = change_range.end().min(content_size);
 
+        let is_trim = change_range.start() >= content_size;
+
         let mut affected_indices = Vec::new();
         let mut prev_index = None;
         let mut next_index = None;
@@ -157,23 +159,20 @@ impl Document {
             }
         }
 
-        let start_incl = prev_index
+        let first_affected_stmt_start = prev_index
             .map(|i| self.positions[i].1.start())
             .unwrap_or(start);
-        let end_incl = next_index
+
+        let mut last_affected_stmt_end = next_index
             .map(|i| self.positions[i].1.end())
             .unwrap_or_else(|| end);
 
-        let end_incl = if is_addition {
-            end_incl.add(diff_size)
-        } else {
-            end_incl.sub(diff_size)
-        };
-
-        let end = if is_addition {
-            end.add(diff_size)
-        } else {
-            end.sub(diff_size)
+        if is_addition {
+            end = end.add(diff_size);
+            last_affected_stmt_end = last_affected_stmt_end.add(diff_size);
+        } else if !is_trim {
+            end = end.sub(diff_size);
+            last_affected_stmt_end = last_affected_stmt_end.sub(diff_size)
         };
 
         Affected {
@@ -185,8 +184,10 @@ impl Document {
             prev_index,
             next_index,
             full_affected_range: TextRange::new(
-                start_incl,
-                end_incl.min(content_size).max(start_incl),
+                first_affected_stmt_start,
+                last_affected_stmt_end
+                    .min(content_size)
+                    .max(first_affected_stmt_start),
             ),
         }
     }
@@ -221,6 +222,7 @@ impl Document {
         let mut changed: Vec<StatementChange> = Vec::with_capacity(self.positions.len());
 
         let change_range = change.range.unwrap();
+        let previous_content = self.content.clone();
         let new_content = change.apply_to_text(&self.content);
 
         // we first need to determine the affected range and all affected statements, as well as
@@ -261,7 +263,7 @@ impl Document {
                 let new_range = new_ranges[0].add(affected_range.start());
                 let (old_id, old_range) = self.positions[affected_idx].clone();
 
-                // move all statements after the afffected range
+                // move all statements after the affected range
                 self.move_ranges(old_range.end(), change.diff_size(), change.is_addition());
 
                 let new_id = self.id_generator.next();
@@ -269,7 +271,7 @@ impl Document {
 
                 changed.push(StatementChange::Modified(ModifiedStatement {
                     old_stmt: old_id.clone(),
-                    old_stmt_text: self.content[old_range].to_string(),
+                    old_stmt_text: previous_content[old_range].to_string(),
 
                     new_stmt: new_id,
                     new_stmt_text: changed_content[new_ranges[0]].to_string(),
@@ -1284,5 +1286,140 @@ mod tests {
         );
 
         assert_document_integrity(&d);
+    }
+
+    #[test]
+    fn remove_trailing_whitespace() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new(path.clone(), "select * from ".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![ChangeParams {
+                text: "".to_string(),
+                range: Some(TextRange::new(13.into(), 14.into())),
+            }],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "select * from");
+
+        assert_eq!(changed.len(), 1);
+
+        match &changed[0] {
+            StatementChange::Modified(stmt) => {
+                let ModifiedStatement {
+                    change_range,
+                    change_text,
+                    new_stmt_text,
+                    old_stmt_text,
+                    ..
+                } = stmt;
+
+                assert_eq!(change_range, &TextRange::new(13.into(), 14.into()));
+                assert_eq!(change_text, "");
+                assert_eq!(new_stmt_text, "select * from");
+
+                // the whitespace was not considered
+                // to be a part of the statement
+                assert_eq!(old_stmt_text, "select * from");
+            }
+
+            _ => assert!(false, "Did not yield a modified statement."),
+        }
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn remove_trailing_whitespace_and_last_char() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new(path.clone(), "select * from ".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![ChangeParams {
+                text: "".to_string(),
+                range: Some(TextRange::new(12.into(), 14.into())),
+            }],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "select * fro");
+
+        assert_eq!(changed.len(), 1);
+
+        match &changed[0] {
+            StatementChange::Modified(stmt) => {
+                let ModifiedStatement {
+                    change_range,
+                    change_text,
+                    new_stmt_text,
+                    old_stmt_text,
+                    ..
+                } = stmt;
+
+                assert_eq!(change_range, &TextRange::new(12.into(), 14.into()));
+                assert_eq!(change_text, "");
+                assert_eq!(new_stmt_text, "select * fro");
+
+                // the whitespace was not considered
+                // to be a part of the statement
+                assert_eq!(old_stmt_text, "select * from");
+            }
+
+            _ => assert!(false, "Did not yield a modified statement."),
+        }
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn remove_inbetween_whitespace() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new(path.clone(), "select *   from users".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![ChangeParams {
+                text: "".to_string(),
+                range: Some(TextRange::new(9.into(), 11.into())),
+            }],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "select * from users");
+
+        assert_eq!(changed.len(), 1);
+
+        match &changed[0] {
+            StatementChange::Modified(stmt) => {
+                let ModifiedStatement {
+                    change_range,
+                    change_text,
+                    new_stmt_text,
+                    old_stmt_text,
+                    ..
+                } = stmt;
+
+                assert_eq!(change_range, &TextRange::new(9.into(), 11.into()));
+                assert_eq!(change_text, "");
+                assert_eq!(old_stmt_text, "select *   from users");
+                assert_eq!(new_stmt_text, "select * from users");
+            }
+
+            _ => assert!(false, "Did not yield a modified statement."),
+        }
+
+        assert_document_integrity(&doc);
     }
 }
