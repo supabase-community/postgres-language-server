@@ -51,13 +51,19 @@ impl IdGenerator {
 }
 
 impl StatementId {
-    pub fn as_child(&self) -> Option<StatementId> {
+    /// Use this to get the matching `StatementId::Child` for
+    /// a `StatementId::Root`.
+    /// If the `StatementId` was already a `Child`, this will return `None`.
+    /// It is not guaranteed that the `Root` actually has a `Child` statement in the workspace.
+    pub fn get_child_id(&self) -> Option<StatementId> {
         match self {
             StatementId::Root(id) => Some(StatementId::Child(*id)),
             StatementId::Child(_) => None,
         }
     }
 
+    /// Use this if you need to create a matching `StatementId::Child` for `Root`.
+    /// You cannot create a `Child` of a `Child`.
     pub fn create_child(&self) -> StatementId {
         match self {
             StatementId::Root(id) => StatementId::Child(*id),

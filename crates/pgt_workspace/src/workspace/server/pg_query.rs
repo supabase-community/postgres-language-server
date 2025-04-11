@@ -31,7 +31,7 @@ impl PgQueryStore {
     pub fn clear_statement(&self, id: &StatementId) {
         self.db.remove(id);
 
-        if let Some(child_id) = id.as_child() {
+        if let Some(child_id) = id.get_child_id() {
             self.db.remove(&child_id);
         }
     }
