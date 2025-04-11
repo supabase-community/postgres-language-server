@@ -62,7 +62,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    parsed_documents: DashMap<PgTPath, ParsedStatements>,
+    parsed_stmts_by_path: DashMap<PgTPath, ParsedStatements>,
 
     connection: RwLock<DbConnection>,
 }
@@ -84,7 +84,7 @@ impl WorkspaceServer {
     pub(crate) fn new() -> Self {
         Self {
             settings: RwLock::default(),
-            parsed_documents: DashMap::default(),
+            parsed_stmts_by_path: DashMap::default(),
             schema_cache: SchemaCacheManager::default(),
             connection: RwLock::default(),
         }
@@ -182,7 +182,7 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_documents
+        self.parsed_stmts_by_path
             .entry(params.path.clone())
             .or_insert_with(|| {
                 ParsedStatements::new(params.path.clone(), params.content, params.version)
@@ -193,7 +193,7 @@ impl Workspace for WorkspaceServer {
 
     /// Remove a file from the workspace
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_documents
+        self.parsed_stmts_by_path
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
 
@@ -206,14 +206,14 @@ impl Workspace for WorkspaceServer {
         version = params.version
     ), err)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut parser =
-            self.parsed_documents
-                .entry(params.path.clone())
-                .or_insert(ParsedStatements::new(
-                    params.path.clone(),
-                    "".to_string(),
-                    params.version,
-                ));
+        let mut parser = self
+            .parsed_stmts_by_path
+            .entry(params.path.clone())
+            .or_insert(ParsedStatements::new(
+                params.path.clone(),
+                "".to_string(),
+                params.version,
+            ));
 
         parser.apply_change(params);
 
@@ -226,7 +226,7 @@ impl Workspace for WorkspaceServer {
 
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
         let document = self
-            .parsed_documents
+            .parsed_stmts_by_path
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
         Ok(document.get_document_content().to_string())
@@ -241,7 +241,7 @@ impl Workspace for WorkspaceServer {
         params: code_actions::CodeActionsParams,
     ) -> Result<code_actions::CodeActionsResult, WorkspaceError> {
         let parser = self
-            .parsed_documents
+            .parsed_stmts_by_path
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -285,7 +285,7 @@ impl Workspace for WorkspaceServer {
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
         let parser = self
-            .parsed_documents
+            .parsed_stmts_by_path
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -353,7 +353,7 @@ impl Workspace for WorkspaceServer {
         });
 
         let parser = self
-            .parsed_documents
+            .parsed_stmts_by_path
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -470,7 +470,7 @@ impl Workspace for WorkspaceServer {
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
         let parser = self
-            .parsed_documents
+            .parsed_stmts_by_path
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
