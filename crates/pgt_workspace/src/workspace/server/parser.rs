@@ -184,12 +184,17 @@ where
         if let Some((root_id, range, content)) = next_statement {
             // If we should include sub-statements and this statement has an AST
             let content_owned = content.to_string();
-            if let Ok(ast) = self.parser.ast_db.load_parse(&root_id, &content_owned).as_ref() {
+            if let Ok(ast) = self
+                .parser
+                .ast_db
+                .load_parse(&root_id, &content_owned)
+                .as_ref()
+            {
                 // Check if this is a SQL function definition with a body
-                if let Some(sub_statement) = self
-                    .parser
-                    .sql_fn_db
-                    .get_function_body(&root_id, &ast, &content_owned)
+                if let Some(sub_statement) =
+                    self.parser
+                        .sql_fn_db
+                        .get_function_body(&root_id, &ast, &content_owned)
                 {
                     // Add sub-statements to our pending queue
                     self.pending_sub_statements.push((

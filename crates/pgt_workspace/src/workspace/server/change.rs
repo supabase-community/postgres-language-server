@@ -871,14 +871,8 @@ mod tests {
 
         assert_eq!(changed.len(), 4);
 
-        assert_eq!(
-            changed[0],
-            StatementChange::Deleted(StatementId::Root(1))
-        );
-        assert_eq!(
-            changed[1],
-            StatementChange::Deleted(StatementId::Root(0))
-        );
+        assert_eq!(changed[0], StatementChange::Deleted(StatementId::Root(1)));
+        assert_eq!(changed[1], StatementChange::Deleted(StatementId::Root(0)));
         assert_eq!(
             changed[2],
             StatementChange::Added(AddedStatement {
