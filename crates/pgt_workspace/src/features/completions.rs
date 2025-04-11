@@ -80,3 +80,117 @@ pub(crate) fn get_statement_for_completions<'a>(
             .map(|t| t.0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use itertools::Itertools;
+    use pgt_fs::PgTPath;
+    use pgt_text_size::TextSize;
+
+    use crate::workspace::Document;
+
+    use super::get_statement_for_completions;
+
+    static CURSOR_POSITION: &str = "€";
+
+    fn get_doc_and_pos(sql: &str) -> (Document, TextSize) {
+        let pos = sql
+            .find(CURSOR_POSITION)
+            .expect("Please add cursor position to test sql");
+
+        let pos: u32 = pos.try_into().unwrap();
+
+        (
+            Document::new(
+                PgTPath::new("test.sql"),
+                sql.replace(CURSOR_POSITION, "").into(),
+                5,
+            ),
+            TextSize::new(pos),
+        )
+    }
+
+    #[test]
+    fn finds_matching_statement() {
+        let sql = format!(
+            r#"
+            select * from users;
+
+            update {}users set email = 'myemail@com';
+
+            select 1;
+        "#,
+            CURSOR_POSITION
+        );
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        let (_, _, text) =
+            get_statement_for_completions(&doc, position).expect("Expected Statement");
+
+        assert_eq!(text, "update users set email = 'myemail@com';")
+    }
+
+    #[test]
+    fn does_not_break_when_no_statements_exist() {
+        let sql = format!("{}", CURSOR_POSITION);
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        assert_eq!(get_statement_for_completions(&doc, position), None);
+    }
+
+    #[test]
+    fn does_not_return_overlapping_statements_if_too_close() {
+        let sql = format!("select * from {}select 1;", CURSOR_POSITION);
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        // make sure these are parsed as two
+        assert_eq!(doc.iter_statements().try_len().unwrap(), 2);
+
+        assert_eq!(get_statement_for_completions(&doc, position), None);
+    }
+
+    #[test]
+    fn is_fine_with_spaces() {
+        let sql = format!("select * from     {}     ;", CURSOR_POSITION);
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        let (_, _, text) =
+            get_statement_for_completions(&doc, position).expect("Expected Statement");
+
+        assert_eq!(text, "select * from          ;")
+    }
+
+    #[test]
+    fn considers_offset() {
+        let sql = format!("select * from {}", CURSOR_POSITION);
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        let (_, _, text) =
+            get_statement_for_completions(&doc, position).expect("Expected Statement");
+
+        assert_eq!(text, "select * from")
+    }
+
+    #[test]
+    fn does_not_consider_too_far_offset() {
+        let sql = format!("select * from  {}", CURSOR_POSITION);
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        assert_eq!(get_statement_for_completions(&doc, position), None);
+    }
+
+    #[test]
+    fn does_not_consider_offset_if_statement_terminated_by_semi() {
+        let sql = format!("select * from users;{}", CURSOR_POSITION);
+
+        let (doc, position) = get_doc_and_pos(sql.as_str());
+
+        assert_eq!(get_statement_for_completions(&doc, position), None);
+    }
+}

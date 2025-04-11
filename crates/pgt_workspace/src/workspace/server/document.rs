@@ -123,7 +123,8 @@ impl Document {
             .iter()
             .find(|pos| pos.0 == stmt_id)
             .map(|(_, range)| {
-                let final_char = self.content.chars().nth(range.end().into());
+                let length: usize = range.end().into();
+                let final_char = self.content.chars().nth(length - 1);
                 final_char == Some(';')
             })
     }
