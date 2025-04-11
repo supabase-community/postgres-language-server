@@ -182,7 +182,7 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_stmts_by_path
+        self.parsed_documents
             .entry(params.path.clone())
             .or_insert_with(|| {
                 ParsedDocument::new(params.path.clone(), params.content, params.version)
@@ -206,14 +206,14 @@ impl Workspace for WorkspaceServer {
         version = params.version
     ), err)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut parser = self
-            .parsed_stmts_by_path
-            .entry(params.path.clone())
-            .or_insert(ParsedDocument::new(
-                params.path.clone(),
-                "".to_string(),
-                params.version,
-            ));
+        let mut parser =
+            self.parsed_documents
+                .entry(params.path.clone())
+                .or_insert(ParsedDocument::new(
+                    params.path.clone(),
+                    "".to_string(),
+                    params.version,
+                ));
 
         parser.apply_change(params);
 
@@ -470,7 +470,7 @@ impl Workspace for WorkspaceServer {
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
         let parser = self
-            .parsed_stmts_by_path
+            .parsed_documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
