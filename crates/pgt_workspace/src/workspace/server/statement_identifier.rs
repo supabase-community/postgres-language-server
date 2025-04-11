@@ -5,6 +5,22 @@ pub type RootId = usize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+/// `StatementId` can represent IDs for nested statements.
+///
+/// For example, an SQL function really consist of two statements; the function creation
+/// and the body:
+///
+/// ```sql
+/// create or replace function get_product_name(product_id INT) -- the root statement
+/// returns varchar as $$
+///   select * from … -- the child statement
+/// $$ LANGUAGE plpgsql;
+/// ```
+///
+/// For now, we only support SQL functions – no complex, nested statements.
+///
+/// An SQL function only ever has ONE child, that's why the inner `RootId` of a `Root`
+/// is the same as the one of its `Child`.
 pub enum StatementId {
     Root(RootId),
     // StatementId is the same as the root id since we can only have a single sql function body per Root
