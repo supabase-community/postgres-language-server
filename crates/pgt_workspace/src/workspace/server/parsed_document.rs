@@ -16,7 +16,7 @@ use super::{
     tree_sitter::TreeSitterStore,
 };
 
-pub struct ParsedStatements {
+pub struct ParsedDocument {
     #[allow(dead_code)]
     path: PgTPath,
 
@@ -26,8 +26,8 @@ pub struct ParsedStatements {
     sql_fn_db: SQLFunctionBodyStore,
 }
 
-impl ParsedStatements {
-    pub fn new(path: PgTPath, content: String, version: i32) -> ParsedStatements {
+impl ParsedDocument {
+    pub fn new(path: PgTPath, content: String, version: i32) -> ParsedDocument {
         let doc = Document::new(content, version);
 
         let cst_db = TreeSitterStore::new();
@@ -38,7 +38,7 @@ impl ParsedStatements {
             cst_db.add_statement(&stmt, content);
         });
 
-        ParsedStatements {
+        ParsedDocument {
             path,
             doc,
             ast_db,
@@ -130,7 +130,7 @@ pub trait StatementMapper<'a> {
 
     fn map(
         &self,
-        parser: &'a ParsedStatements,
+        parser: &'a ParsedDocument,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -142,7 +142,7 @@ pub trait StatementFilter<'a> {
 }
 
 pub struct ParseIterator<'a, M, F> {
-    parser: &'a ParsedStatements,
+    parser: &'a ParsedDocument,
     statements: StatementIterator<'a>,
     mapper: M,
     filter: F,
@@ -150,7 +150,7 @@ pub struct ParseIterator<'a, M, F> {
 }
 
 impl<'a, M, F> ParseIterator<'a, M, F> {
-    pub fn new(parser: &'a ParsedStatements, mapper: M, filter: F) -> Self {
+    pub fn new(parser: &'a ParsedDocument, mapper: M, filter: F) -> Self {
         Self {
             parser,
             statements: parser.doc.iter(),
@@ -225,7 +225,7 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
 
     fn map(
         &self,
-        _parser: &'a ParsedStatements,
+        _parser: &'a ParsedDocument,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -245,7 +245,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
 
     fn map(
         &self,
-        parser: &'a ParsedStatements,
+        parser: &'a ParsedDocument,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -272,7 +272,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
 
     fn map(
         &self,
-        parser: &'a ParsedStatements,
+        parser: &'a ParsedDocument,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -302,7 +302,7 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
 
     fn map(
         &self,
-        parser: &'a ParsedStatements,
+        parser: &'a ParsedDocument,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -324,7 +324,7 @@ impl<'a> StatementMapper<'a> for GetCompletionsMapper {
 
     fn map(
         &self,
-        parser: &'a ParsedStatements,
+        parser: &'a ParsedDocument,
         id: StatementId,
         range: TextRange,
         content: &str,
