@@ -16,7 +16,7 @@ use super::{
     tree_sitter::TreeSitterStore,
 };
 
-pub struct Parser {
+pub struct ParsedStatements {
     #[allow(dead_code)]
     path: PgTPath,
 
@@ -26,8 +26,8 @@ pub struct Parser {
     sql_fn_db: SQLFunctionBodyStore,
 }
 
-impl Parser {
-    pub fn new(path: PgTPath, content: String, version: i32) -> Parser {
+impl ParsedStatements {
+    pub fn new(path: PgTPath, content: String, version: i32) -> ParsedStatements {
         let doc = Document::new(content, version);
 
         let cst_db = TreeSitterStore::new();
@@ -38,7 +38,7 @@ impl Parser {
             cst_db.add_statement(&stmt, content);
         });
 
-        Parser {
+        ParsedStatements {
             path,
             doc,
             ast_db,
@@ -104,11 +104,11 @@ impl Parser {
         self.iter_with_filter(mapper, IdFilter::new(id)).next()
     }
 
-    pub fn iter<'a, M>(&'a self, mapper: M) -> ParseIterator<'a, M, DefaultFilter>
+    pub fn iter<'a, M>(&'a self, mapper: M) -> ParseIterator<'a, M, NoFilter>
     where
         M: StatementMapper<'a>,
     {
-        self.iter_with_filter(mapper, DefaultFilter)
+        self.iter_with_filter(mapper, NoFilter)
     }
 
     pub fn iter_with_filter<'a, M, F>(&'a self, mapper: M, filter: F) -> ParseIterator<'a, M, F>
@@ -130,7 +130,7 @@ pub trait StatementMapper<'a> {
 
     fn map(
         &self,
-        parser: &'a Parser,
+        parser: &'a ParsedStatements,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -142,7 +142,7 @@ pub trait StatementFilter<'a> {
 }
 
 pub struct ParseIterator<'a, M, F> {
-    parser: &'a Parser,
+    parser: &'a ParsedStatements,
     statements: StatementIterator<'a>,
     mapper: M,
     filter: F,
@@ -150,7 +150,7 @@ pub struct ParseIterator<'a, M, F> {
 }
 
 impl<'a, M, F> ParseIterator<'a, M, F> {
-    pub fn new(parser: &'a Parser, mapper: M, filter: F) -> Self {
+    pub fn new(parser: &'a ParsedStatements, mapper: M, filter: F) -> Self {
         Self {
             parser,
             statements: parser.doc.iter(),
@@ -225,7 +225,7 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
 
     fn map(
         &self,
-        _parser: &'a Parser,
+        _parser: &'a ParsedStatements,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -245,7 +245,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
 
     fn map(
         &self,
-        parser: &'a Parser,
+        parser: &'a ParsedStatements,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -272,7 +272,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
 
     fn map(
         &self,
-        parser: &'a Parser,
+        parser: &'a ParsedStatements,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -302,7 +302,7 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
 
     fn map(
         &self,
-        parser: &'a Parser,
+        parser: &'a ParsedStatements,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -324,7 +324,7 @@ impl<'a> StatementMapper<'a> for GetCompletionsMapper {
 
     fn map(
         &self,
-        parser: &'a Parser,
+        parser: &'a ParsedStatements,
         id: StatementId,
         range: TextRange,
         content: &str,
@@ -334,8 +334,8 @@ impl<'a> StatementMapper<'a> for GetCompletionsMapper {
     }
 }
 
-pub struct DefaultFilter;
-impl<'a> StatementFilter<'a> for DefaultFilter {
+pub struct NoFilter;
+impl<'a> StatementFilter<'a> for NoFilter {
     fn apply(&self, _id: &StatementId, _range: &TextRange) -> bool {
         true
     }

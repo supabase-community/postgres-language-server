@@ -6,9 +6,9 @@ use dashmap::DashMap;
 use db_connection::DbConnection;
 use document::Document;
 use futures::{StreamExt, stream};
-use parser::{
+use parsed_statements::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
-    GetCompletionsMapper, Parser, SyncDiagnosticsMapper,
+    GetCompletionsMapper, ParsedStatements, SyncDiagnosticsMapper,
 };
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
@@ -48,7 +48,7 @@ mod change;
 mod db_connection;
 mod document;
 mod migration;
-mod parser;
+mod parsed_statements;
 mod pg_query;
 mod schema_cache_manager;
 mod sql_function;
@@ -62,7 +62,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    parsers: DashMap<PgTPath, Parser>,
+    parsers: DashMap<PgTPath, ParsedStatements>,
 
     connection: RwLock<DbConnection>,
 }
@@ -182,9 +182,9 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.parsers
-            .entry(params.path.clone())
-            .or_insert_with(|| Parser::new(params.path.clone(), params.content, params.version));
+        self.parsers.entry(params.path.clone()).or_insert_with(|| {
+            ParsedStatements::new(params.path.clone(), params.content, params.version)
+        });
 
         Ok(())
     }
@@ -207,7 +207,7 @@ impl Workspace for WorkspaceServer {
         let mut parser = self
             .parsers
             .entry(params.path.clone())
-            .or_insert(Parser::new(
+            .or_insert(ParsedStatements::new(
                 params.path.clone(),
                 "".to_string(),
                 params.version,
