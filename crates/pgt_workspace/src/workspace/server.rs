@@ -40,6 +40,8 @@ use super::{
     Workspace,
 };
 
+pub use statement_identifier::StatementId;
+
 mod analyser;
 mod async_helper;
 mod change;
@@ -293,7 +295,7 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let (id, range, content, ast) = stmt.unwrap();
+        let (_id, _range, content, ast) = stmt.unwrap();
 
         if ast.is_none() {
             return Ok(ExecuteStatementResult {
@@ -490,7 +492,7 @@ impl Workspace for WorkspaceServer {
                     position,
                     schema: schema_cache.as_ref(),
                     tree: &cst,
-                    text: content.to_string(),
+                    text: content,
                 })
             })
             .collect();

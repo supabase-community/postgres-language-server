@@ -34,10 +34,6 @@ impl Document {
         }
     }
 
-    pub fn diagnostics(&self) -> &[SDiagnostic] {
-        &self.diagnostics
-    }
-
     /// Returns true if there is at least one fatal error in the diagnostics
     ///
     /// A fatal error is a scan error that prevents the document from being used
@@ -85,12 +81,6 @@ pub(crate) fn split_with_diagnostics(
                 .collect(),
         ),
     }
-}
-
-pub trait StatementMapper<'a> {
-    type Output;
-
-    fn map(&self, doc: &'a Document, id: &'a StatementId, range: &'a TextRange) -> Self::Output;
 }
 
 pub struct StatementIterator<'a> {

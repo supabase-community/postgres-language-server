@@ -17,6 +17,7 @@ use super::{
 };
 
 pub struct Parser {
+    #[allow(dead_code)]
     path: PgTPath,
 
     doc: Document,
@@ -118,6 +119,7 @@ impl Parser {
         ParseIterator::new(self, mapper, filter)
     }
 
+    #[allow(dead_code)]
     pub fn count<'a>(&'a self) -> usize {
         self.iter(DefaultMapper).count()
     }
@@ -131,7 +133,7 @@ pub trait StatementMapper<'a> {
         parser: &'a Parser,
         id: StatementId,
         range: TextRange,
-        content: &'a str,
+        content: &str,
     ) -> Self::Output;
 }
 
@@ -144,7 +146,7 @@ pub struct ParseIterator<'a, M, F> {
     statements: StatementIterator<'a>,
     mapper: M,
     filter: F,
-    pending_sub_statements: Vec<(StatementId, TextRange, &'a str)>,
+    pending_sub_statements: Vec<(StatementId, TextRange, String)>,
 }
 
 impl<'a, M, F> ParseIterator<'a, M, F> {
@@ -181,19 +183,20 @@ where
 
         if let Some((root_id, range, content)) = next_statement {
             // If we should include sub-statements and this statement has an AST
-            if let Ok(ast) = self.parser.ast_db.load_parse(&root_id, &content).as_ref() {
+            let content_owned = content.to_string();
+            if let Ok(ast) = self.parser.ast_db.load_parse(&root_id, &content_owned).as_ref() {
                 // Check if this is a SQL function definition with a body
                 if let Some(sub_statement) = self
                     .parser
                     .sql_fn_db
-                    .get_function_body(&root_id, &ast, content)
+                    .get_function_body(&root_id, &ast, &content_owned)
                 {
                     // Add sub-statements to our pending queue
                     self.pending_sub_statements.push((
                         root_id.create_child(),
                         // adjust range to document
                         sub_statement.range + range.start(),
-                        &sub_statement.body,
+                        sub_statement.body.clone(),
                     ));
                 }
             }
@@ -213,16 +216,16 @@ where
 
 pub struct DefaultMapper;
 impl<'a> StatementMapper<'a> for DefaultMapper {
-    type Output = (StatementId, TextRange, &'a str);
+    type Output = (StatementId, TextRange, String);
 
     fn map(
         &self,
         _parser: &'a Parser,
         id: StatementId,
         range: TextRange,
-        content: &'a str,
+        content: &str,
     ) -> Self::Output {
-        (id, range, content)
+        (id, range, content.to_string())
     }
 }
 
@@ -231,7 +234,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     type Output = (
         StatementId,
         TextRange,
-        &'a str,
+        String,
         Option<pgt_query_ext::NodeEnum>,
     );
 
@@ -240,7 +243,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
         parser: &'a Parser,
         id: StatementId,
         range: TextRange,
-        content: &'a str,
+        content: &str,
     ) -> Self::Output {
         let ast_result = parser.ast_db.load_parse(&id, content);
         let ast_option = match &*ast_result {
@@ -248,7 +251,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
             Err(_) => None,
         };
 
-        (id, range, content, ast_option)
+        (id, range, content.to_string(), ast_option)
     }
 }
 
@@ -267,18 +270,19 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
         parser: &'a Parser,
         id: StatementId,
         range: TextRange,
-        content: &'a str,
+        content: &str,
     ) -> Self::Output {
-        let ast_result = parser.ast_db.load_parse(&id, content);
+        let content_owned = content.to_string();
+        let ast_result = parser.ast_db.load_parse(&id, &content_owned);
 
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
         };
 
-        let cst_result = parser.cst_db.load_parse(&id, content);
+        let cst_result = parser.cst_db.load_parse(&id, &content_owned);
 
-        (id, range, content.to_string(), ast_option, cst_result)
+        (id, range, content_owned, ast_option, cst_result)
     }
 }
 
@@ -296,7 +300,7 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
         parser: &'a Parser,
         id: StatementId,
         range: TextRange,
-        content: &'a str,
+        content: &str,
     ) -> Self::Output {
         let ast_result = parser.ast_db.load_parse(&id, content);
 
@@ -311,17 +315,17 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
 
 pub struct GetCompletionsMapper;
 impl<'a> StatementMapper<'a> for GetCompletionsMapper {
-    type Output = (StatementId, TextRange, &'a str, Arc<tree_sitter::Tree>);
+    type Output = (StatementId, TextRange, String, Arc<tree_sitter::Tree>);
 
     fn map(
         &self,
         parser: &'a Parser,
         id: StatementId,
         range: TextRange,
-        content: &'a str,
+        content: &str,
     ) -> Self::Output {
         let cst_result = parser.cst_db.load_parse(&id, content);
-        (id, range, content, cst_result)
+        (id, range, content.to_string(), cst_result)
     }
 }
 

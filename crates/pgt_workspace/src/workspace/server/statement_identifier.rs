@@ -1,12 +1,20 @@
 use std::ops::Deref;
+use serde::{Deserialize, Serialize};
 
 pub type RootId = usize;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum StatementId {
     Root(RootId),
     // StatementId is the same as the root id since we can only have a single sql function body per Root
     Child(RootId),
+}
+
+impl Default for StatementId {
+    fn default() -> Self {
+        StatementId::Root(0)
+    }
 }
 
 /// Helper struct to generate unique statement ids

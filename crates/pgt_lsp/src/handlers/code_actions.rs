@@ -43,7 +43,7 @@ pub fn get_actions(
                                 title: title.clone(),
                                 command: command_id,
                                 arguments: Some(vec![
-                                    serde_json::Value::Number(stmt_id.into()),
+                                    serde_json::to_value(&stmt_id).unwrap(),
                                     serde_json::to_value(&url).unwrap(),
                                 ]),
                             }
@@ -81,7 +81,7 @@ pub async fn execute_command(
 
     match command.as_str() {
         "pgt.executeStatement" => {
-            let id: usize = serde_json::from_value(params.arguments[0].clone())?;
+            let statement_id = serde_json::from_value::<pgt_workspace::workspace::StatementId>(params.arguments[0].clone())?;
             let doc_url: lsp_types::Url = serde_json::from_value(params.arguments[1].clone())?;
 
             let path = session.file_path(&doc_url)?;
@@ -89,7 +89,7 @@ pub async fn execute_command(
             let result = session
                 .workspace
                 .execute_statement(ExecuteStatementParams {
-                    statement_id: id,
+                    statement_id,
                     path,
                 })?;
 

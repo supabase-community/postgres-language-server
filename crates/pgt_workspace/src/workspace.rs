@@ -21,7 +21,7 @@ use crate::{
 mod client;
 mod server;
 
-pub(crate) use server::StatementId;
+pub use server::StatementId;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]

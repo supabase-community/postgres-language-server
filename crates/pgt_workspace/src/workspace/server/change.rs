@@ -808,11 +808,11 @@ mod tests {
         assert_eq!(changed.len(), 4);
         assert!(matches!(
             changed[0],
-            StatementChange::Deleted(Statement { id: 1, .. })
+            StatementChange::Deleted(StatementId::Root(1))
         ));
         assert!(matches!(
             changed[1],
-            StatementChange::Deleted(Statement { id: 0, .. })
+            StatementChange::Deleted(StatementId::Root(0))
         ));
         assert!(
             matches!(&changed[2], StatementChange::Added(AddedStatement { stmt: _, text }) if text == "select id,test from users;")
@@ -873,35 +873,23 @@ mod tests {
 
         assert_eq!(
             changed[0],
-            StatementChange::Deleted(Statement {
-                path: path.clone(),
-                id: 1
-            })
+            StatementChange::Deleted(StatementId::Root(1))
         );
         assert_eq!(
             changed[1],
-            StatementChange::Deleted(Statement {
-                path: path.clone(),
-                id: 0
-            })
+            StatementChange::Deleted(StatementId::Root(0))
         );
         assert_eq!(
             changed[2],
             StatementChange::Added(AddedStatement {
-                stmt: Statement {
-                    path: path.clone(),
-                    id: 2
-                },
+                stmt: StatementId::Root(2),
                 text: "select id,test from users".to_string()
             })
         );
         assert_eq!(
             changed[3],
             StatementChange::Added(AddedStatement {
-                stmt: Statement {
-                    path: path.clone(),
-                    id: 3
-                },
+                stmt: StatementId::Root(3),
                 text: "select 1;".to_string()
             })
         );
@@ -1132,7 +1120,7 @@ mod tests {
         assert_eq!(changed.len(), 3);
         assert!(matches!(
             changed[0],
-            StatementChange::Deleted(Statement { id: 0, .. })
+            StatementChange::Deleted(StatementId::Root(0))
         ));
         assert!(matches!(
             changed[1],
@@ -1162,11 +1150,11 @@ mod tests {
         assert_eq!(changed_2.len(), 3);
         assert!(matches!(
             changed_2[0],
-            StatementChange::Deleted(Statement { .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
         assert!(matches!(
             changed_2[1],
-            StatementChange::Deleted(Statement { .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
         assert!(matches!(
             changed_2[2],
@@ -1282,7 +1270,7 @@ mod tests {
 
         assert!(matches!(
             changes[0],
-            StatementChange::Deleted(Statement { .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
 
         assert!(matches!(
