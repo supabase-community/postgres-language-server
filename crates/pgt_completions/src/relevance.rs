@@ -57,10 +57,7 @@ impl CompletionRelevance<'_> {
         let name = match self.data {
             CompletionRelevanceData::Function(f) => f.name.as_str(),
             CompletionRelevanceData::Table(t) => t.name.as_str(),
-            CompletionRelevanceData::Column(c) => {
-                //
-                c.name.as_str()
-            }
+            CompletionRelevanceData::Column(c) => c.name.as_str(),
         };
 
         if name.starts_with(content) {

@@ -85,10 +85,7 @@ impl<'a> CompletionContext<'a> {
             mentioned_relations: HashMap::new(),
         };
 
-        tracing::warn!("gathering tree context");
         ctx.gather_tree_context();
-
-        tracing::warn!("gathering info from ts query");
         ctx.gather_info_from_ts_queries();
 
         ctx
