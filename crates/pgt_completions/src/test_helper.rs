@@ -15,10 +15,7 @@ impl From<&str> for InputQuery {
     fn from(value: &str) -> Self {
         let position = value
             .find(CURSOR_POS)
-            .map(|p| p.saturating_add(1))
             .expect("Insert Cursor Position into your Query.");
-
-        println!("{}", position);
 
         InputQuery {
             sql: value.replace(CURSOR_POS, ""),
@@ -74,5 +71,45 @@ pub(crate) fn get_test_params<'a>(
         schema: schema_cache,
         tree: Some(tree),
         text,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_helper::CURSOR_POS;
+
+    use super::InputQuery;
+
+    #[test]
+    fn input_query_should_extract_correct_position() {
+        struct TestCase {
+            query: String,
+            expected_pos: usize,
+            expected_sql_len: usize,
+        }
+
+        let cases = vec![
+            TestCase {
+                query: format!("select * from{}", CURSOR_POS),
+                expected_pos: 13,
+                expected_sql_len: 13,
+            },
+            TestCase {
+                query: format!("{}select * from", CURSOR_POS),
+                expected_pos: 0,
+                expected_sql_len: 13,
+            },
+            TestCase {
+                query: format!("select {} from", CURSOR_POS),
+                expected_pos: 7,
+                expected_sql_len: 12,
+            },
+        ];
+
+        for case in cases {
+            let query = InputQuery::from(case.query.as_str());
+            assert_eq!(query.position, case.expected_pos);
+            assert_eq!(query.sql.len(), case.expected_sql_len);
+        }
     }
 }

@@ -25,6 +25,7 @@ where
 
         if cursor_inbetween_nodes(tree, params.position)
             || cursor_prepared_to_write_token_after_last_node(tree, params.position)
+            || cursor_before_semicolon(tree, params.position)
         {
             Ok(SanitizedCompletionParams::with_adjusted_sql(params))
         } else {
@@ -134,7 +135,7 @@ fn cursor_prepared_to_write_token_after_last_node(
     cursor_pos == tree.root_node().end_byte() + 1
 }
 
-fn cursor_before_or_on_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
+fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
     let mut cursor = tree.walk();
     let mut leaf_node = tree.root_node();
 
@@ -183,7 +184,7 @@ mod tests {
     use pgt_text_size::TextSize;
 
     use crate::sanitization::{
-        cursor_before_or_on_semicolon, cursor_inbetween_nodes,
+        cursor_before_semicolon, cursor_inbetween_nodes,
         cursor_prepared_to_write_token_after_last_node,
     };
 
@@ -262,23 +263,23 @@ mod tests {
         let mut tree = parser.parse(input.to_string(), None).unwrap();
 
         // select * from     ;| <-- it's after the statement
-        assert!(!cursor_before_or_on_semicolon(&mut tree, TextSize::new(19)));
+        assert!(!cursor_before_semicolon(&mut tree, TextSize::new(19)));
 
         // select * from|    ; <-- still touches the from
-        assert!(!cursor_before_or_on_semicolon(&mut tree, TextSize::new(13)));
+        assert!(!cursor_before_semicolon(&mut tree, TextSize::new(13)));
 
         // not okay to be ON the semi.
         // select * from     |;
-        assert!(!cursor_before_or_on_semicolon(&mut tree, TextSize::new(18)));
+        assert!(!cursor_before_semicolon(&mut tree, TextSize::new(18)));
 
         // anything is fine here
         // select * from |   ;
         // select * from  |  ;
         // select * from   | ;
         // select * from    |;
-        assert!(cursor_before_or_on_semicolon(&mut tree, TextSize::new(14)));
-        assert!(cursor_before_or_on_semicolon(&mut tree, TextSize::new(15)));
-        assert!(cursor_before_or_on_semicolon(&mut tree, TextSize::new(16)));
-        assert!(cursor_before_or_on_semicolon(&mut tree, TextSize::new(17)));
+        assert!(cursor_before_semicolon(&mut tree, TextSize::new(14)));
+        assert!(cursor_before_semicolon(&mut tree, TextSize::new(15)));
+        assert!(cursor_before_semicolon(&mut tree, TextSize::new(16)));
+        assert!(cursor_before_semicolon(&mut tree, TextSize::new(17)));
     }
 }
