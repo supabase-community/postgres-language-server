@@ -120,7 +120,7 @@ impl Parser {
     }
 
     #[allow(dead_code)]
-    pub fn count<'a>(&'a self) -> usize {
+    pub fn count(&self) -> usize {
         self.iter(DefaultMapper).count()
     }
 }
@@ -194,7 +194,7 @@ where
                 if let Some(sub_statement) =
                     self.parser
                         .sql_fn_db
-                        .get_function_body(&root_id, &ast, &content_owned)
+                        .get_function_body(&root_id, ast, &content_owned)
                 {
                     // Add sub-statements to our pending queue
                     self.pending_sub_statements.push((

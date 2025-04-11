@@ -102,10 +102,10 @@ impl<'a> Iterator for StatementIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.positions.next().map(|(id, range)| {
-            let range = range.clone();
+            let range = *range;
             let doc = self.document;
             let id = id.clone();
-            (id, range, &doc.content[range.clone()])
+            (id, range, &doc.content[range])
         })
     }
 }
