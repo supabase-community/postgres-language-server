@@ -11,6 +11,11 @@ pub(crate) struct SanitizedCompletionParams<'a> {
     pub tree: Cow<'a, tree_sitter::Tree>,
 }
 
+pub fn benchmark_sanitization(params: CompletionParams) -> String {
+    let params: SanitizedCompletionParams = params.try_into().unwrap();
+    params.text
+}
+
 impl<'larger, 'smaller> TryFrom<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
 where
     'larger: 'smaller,

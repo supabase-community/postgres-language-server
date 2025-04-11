@@ -31,6 +31,7 @@ sqlx.workspace = true
 tokio = { version = "1.41.1", features = ["full"] }
 
 [dev-dependencies]
+criterion                = "0.5.1"
 pgt_test_utils.workspace = true
 
 [lib]
@@ -38,3 +39,7 @@ doctest = false
 
 [features]
 schema = ["dep:schemars"]
+
+[[bench]]
+harness = false
+name    = "sanitization"
