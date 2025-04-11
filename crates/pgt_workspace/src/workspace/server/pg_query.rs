@@ -14,7 +14,7 @@ impl PgQueryStore {
         PgQueryStore { db: DashMap::new() }
     }
 
-    pub fn load_parse(
+    pub fn get_or_cache_ast(
         &self,
         statement: &StatementId,
         content: &str,

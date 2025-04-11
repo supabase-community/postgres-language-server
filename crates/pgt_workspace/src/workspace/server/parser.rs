@@ -187,7 +187,7 @@ where
             if let Ok(ast) = self
                 .parser
                 .ast_db
-                .load_parse(&root_id, &content_owned)
+                .get_or_cache_ast(&root_id, &content_owned)
                 .as_ref()
             {
                 // Check if this is a SQL function definition with a body
@@ -250,7 +250,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
         range: TextRange,
         content: &str,
     ) -> Self::Output {
-        let ast_result = parser.ast_db.load_parse(&id, content);
+        let ast_result = parser.ast_db.get_or_cache_ast(&id, content);
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
             Err(_) => None,
@@ -278,7 +278,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
         content: &str,
     ) -> Self::Output {
         let content_owned = content.to_string();
-        let ast_result = parser.ast_db.load_parse(&id, &content_owned);
+        let ast_result = parser.ast_db.get_or_cache_ast(&id, &content_owned);
 
         let ast_option = match &*ast_result {
             Ok(node) => Some(node.clone()),
@@ -307,7 +307,7 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
         range: TextRange,
         content: &str,
     ) -> Self::Output {
-        let ast_result = parser.ast_db.load_parse(&id, content);
+        let ast_result = parser.ast_db.get_or_cache_ast(&id, content);
 
         let (ast_option, diagnostics) = match &*ast_result {
             Ok(node) => (Some(node.clone()), None),
