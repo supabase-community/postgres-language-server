@@ -1292,7 +1292,7 @@ mod tests {
     fn remove_trailing_whitespace() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "select * from ".to_string(), 0);
+        let mut doc = Document::new("select * from ".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
@@ -1338,7 +1338,7 @@ mod tests {
     fn remove_trailing_whitespace_and_last_char() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "select * from ".to_string(), 0);
+        let mut doc = Document::new("select * from ".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
@@ -1384,7 +1384,7 @@ mod tests {
     fn remove_inbetween_whitespace() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "select *   from users".to_string(), 0);
+        let mut doc = Document::new("select *   from users".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
