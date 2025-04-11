@@ -15,8 +15,10 @@ impl From<&str> for InputQuery {
     fn from(value: &str) -> Self {
         let position = value
             .find(CURSOR_POS)
-            .map(|p| p.saturating_sub(1))
+            .map(|p| p.saturating_add(1))
             .expect("Insert Cursor Position into your Query.");
+
+        println!("{}", position);
 
         InputQuery {
             sql: value.replace(CURSOR_POS, ""),

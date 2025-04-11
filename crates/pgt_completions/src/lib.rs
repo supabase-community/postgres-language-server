@@ -4,6 +4,7 @@ mod context;
 mod item;
 mod providers;
 mod relevance;
+mod sanitization;
 
 #[cfg(test)]
 mod test_helper;

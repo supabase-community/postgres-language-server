@@ -1,4 +1,4 @@
-use crate::context::{ClauseType, CompletionContext};
+use crate::context::{ClauseType, CompletionContext, NodeText};
 
 #[derive(Debug)]
 pub(crate) enum CompletionRelevanceData<'a> {
@@ -47,7 +47,10 @@ impl CompletionRelevance<'_> {
         };
 
         let content = match ctx.get_ts_node_content(node) {
-            Some(c) => c,
+            Some(c) => match c {
+                NodeText::Original(s) => s,
+                NodeText::Replaced => return,
+            },
             None => return,
         };
 

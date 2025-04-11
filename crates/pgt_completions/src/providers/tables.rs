@@ -81,6 +81,7 @@ mod tests {
         for (query, expected_label) in test_cases {
             let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
             let params = get_test_params(&tree, &cache, query.as_str().into());
+            println!("{}, {}", &params.text, &params.position);
             let items = complete(params);
 
             assert!(!items.is_empty());

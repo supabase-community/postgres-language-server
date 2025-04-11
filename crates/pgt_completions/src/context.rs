@@ -6,7 +6,7 @@ use pgt_treesitter_queries::{
     queries::{self, QueryResult},
 };
 
-use crate::CompletionParams;
+use crate::sanitization::SanitizedCompletionParams;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClauseType {
@@ -15,6 +15,12 @@ pub enum ClauseType {
     From,
     Update,
     Delete,
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub(crate) enum NodeText<'a> {
+    Replaced,
+    Original(&'a str),
 }
 
 impl TryFrom<&str> for ClauseType {
@@ -51,7 +57,7 @@ impl TryFrom<String> for ClauseType {
 pub(crate) struct CompletionContext<'a> {
     pub node_under_cursor: Option<tree_sitter::Node<'a>>,
 
-    pub tree: Option<&'a tree_sitter::Tree>,
+    pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub schema_cache: &'a SchemaCache,
     pub position: usize,
@@ -65,9 +71,9 @@ pub(crate) struct CompletionContext<'a> {
 }
 
 impl<'a> CompletionContext<'a> {
-    pub fn new(params: &'a CompletionParams, usable_tree: Option<&'a tree_sitter::Tree>) -> Self {
+    pub fn new(params: &'a SanitizedCompletionParams) -> Self {
         let mut ctx = Self {
-            tree: usable_tree,
+            tree: params.tree.as_ref(),
             text: &params.text,
             schema_cache: params.schema,
             position: usize::from(params.position),
@@ -89,15 +95,10 @@ impl<'a> CompletionContext<'a> {
     }
 
     fn gather_info_from_ts_queries(&mut self) {
-        let tree = match self.tree.as_ref() {
-            None => return,
-            Some(t) => t,
-        };
-
         let stmt_range = self.wrapping_statement_range.as_ref();
         let sql = self.text;
 
-        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+        let mut executor = TreeSitterQueriesExecutor::new(self.tree.root_node(), sql);
 
         executor.add_query_results::<queries::RelationMatch>();
 
@@ -124,17 +125,19 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    pub fn get_ts_node_content(&self, ts_node: tree_sitter::Node<'a>) -> Option<&'a str> {
+    pub fn get_ts_node_content(&self, ts_node: tree_sitter::Node<'a>) -> Option<NodeText<'a>> {
         let source = self.text;
-        ts_node.utf8_text(source.as_bytes()).ok()
+        ts_node.utf8_text(source.as_bytes()).ok().map(|txt| {
+            if SanitizedCompletionParams::is_sanitized_token(txt) {
+                NodeText::Replaced
+            } else {
+                NodeText::Original(txt)
+            }
+        })
     }
 
     fn gather_tree_context(&mut self) {
-        if self.tree.is_none() {
-            return;
-        }
-
-        let mut cursor = self.tree.as_ref().unwrap().root_node().walk();
+        let mut cursor = self.tree.root_node().walk();
 
         /*
          * The head node of any treesitter tree is always the "PROGRAM" node.
@@ -181,11 +184,16 @@ impl<'a> CompletionContext<'a> {
 
         match current_node.kind() {
             "object_reference" => {
-                let txt = self.get_ts_node_content(current_node);
-                if let Some(txt) = txt {
-                    let parts: Vec<&str> = txt.split('.').collect();
-                    if parts.len() == 2 {
-                        self.schema_name = Some(parts[0].to_string());
+                let content = self.get_ts_node_content(current_node);
+                if let Some(node_txt) = content {
+                    match node_txt {
+                        NodeText::Original(txt) => {
+                            let parts: Vec<&str> = txt.split('.').collect();
+                            if parts.len() == 2 {
+                                self.schema_name = Some(parts[0].to_string());
+                            }
+                        }
+                        NodeText::Replaced => {}
                     }
                 }
             }
@@ -204,7 +212,10 @@ impl<'a> CompletionContext<'a> {
 
         // We have arrived at the leaf node
         if current_node.child_count() == 0 {
-            if self.get_ts_node_content(current_node).unwrap() == "REPLACED_TOKEN" {
+            if matches!(
+                self.get_ts_node_content(current_node).unwrap(),
+                NodeText::Replaced
+            ) {
                 self.node_under_cursor = None;
             } else {
                 self.node_under_cursor = Some(current_node);
@@ -220,7 +231,8 @@ impl<'a> CompletionContext<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        context::{ClauseType, CompletionContext},
+        context::{ClauseType, CompletionContext, NodeText},
+        sanitization::SanitizedCompletionParams,
         test_helper::{CURSOR_POS, get_text_and_position},
     };
 
@@ -267,14 +279,14 @@ mod tests {
 
             let tree = get_tree(text.as_str());
 
-            let params = crate::CompletionParams {
+            let params = SanitizedCompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: std::borrow::Cow::Owned(tree),
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params, Some(&tree));
+            let ctx = CompletionContext::new(&params);
 
             assert_eq!(ctx.wrapping_clause_type, expected_clause.try_into().ok());
         }
@@ -299,14 +311,14 @@ mod tests {
             let (position, text) = get_text_and_position(query.as_str().into());
 
             let tree = get_tree(text.as_str());
-            let params = crate::CompletionParams {
+            let params = SanitizedCompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: std::borrow::Cow::Owned(tree),
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params, Some(&tree));
+            let ctx = CompletionContext::new(&params);
 
             assert_eq!(ctx.schema_name, expected_schema.map(|f| f.to_string()));
         }
@@ -333,14 +345,14 @@ mod tests {
             let (position, text) = get_text_and_position(query.as_str().into());
 
             let tree = get_tree(text.as_str());
-            let params = crate::CompletionParams {
+            let params = SanitizedCompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: std::borrow::Cow::Owned(tree),
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params, Some(&tree));
+            let ctx = CompletionContext::new(&params);
 
             assert_eq!(ctx.is_invocation, is_invocation);
         }
@@ -358,18 +370,21 @@ mod tests {
 
             let tree = get_tree(text.as_str());
 
-            let params = crate::CompletionParams {
+            let params = SanitizedCompletionParams {
                 position: (position as u32).into(),
                 text,
-                tree: Some(&tree),
+                tree: std::borrow::Cow::Owned(tree),
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params, Some(&tree));
+            let ctx = CompletionContext::new(&params);
 
             let node = ctx.node_under_cursor.unwrap();
 
-            assert_eq!(ctx.get_ts_node_content(node), Some("select"));
+            assert_eq!(
+                ctx.get_ts_node_content(node),
+                Some(NodeText::Original("select"))
+            );
 
             assert_eq!(
                 ctx.wrapping_clause_type,
@@ -386,18 +401,21 @@ mod tests {
 
         let tree = get_tree(text.as_str());
 
-        let params = crate::CompletionParams {
+        let params = SanitizedCompletionParams {
             position: (position as u32).into(),
             text,
-            tree: Some(&tree),
+            tree: std::borrow::Cow::Owned(tree),
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params, Some(&tree));
+        let ctx = CompletionContext::new(&params);
 
         let node = ctx.node_under_cursor.unwrap();
 
-        assert_eq!(ctx.get_ts_node_content(node), Some("from"));
+        assert_eq!(
+            ctx.get_ts_node_content(node),
+            Some(NodeText::Original("from"))
+        );
         assert_eq!(
             ctx.wrapping_clause_type,
             Some(crate::context::ClauseType::From)
@@ -412,18 +430,18 @@ mod tests {
 
         let tree = get_tree(text.as_str());
 
-        let params = crate::CompletionParams {
+        let params = SanitizedCompletionParams {
             position: (position as u32).into(),
             text,
-            tree: Some(&tree),
+            tree: std::borrow::Cow::Owned(tree),
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params, Some(&tree));
+        let ctx = CompletionContext::new(&params);
 
         let node = ctx.node_under_cursor.unwrap();
 
-        assert_eq!(ctx.get_ts_node_content(node), Some(""));
+        assert_eq!(ctx.get_ts_node_content(node), Some(NodeText::Original("")));
         assert_eq!(ctx.wrapping_clause_type, None);
     }
 
@@ -437,18 +455,21 @@ mod tests {
 
         let tree = get_tree(text.as_str());
 
-        let params = crate::CompletionParams {
+        let params = SanitizedCompletionParams {
             position: (position as u32).into(),
             text,
-            tree: Some(&tree),
+            tree: std::borrow::Cow::Owned(tree),
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params, Some(&tree));
+        let ctx = CompletionContext::new(&params);
 
         let node = ctx.node_under_cursor.unwrap();
 
-        assert_eq!(ctx.get_ts_node_content(node), Some("fro"));
+        assert_eq!(
+            ctx.get_ts_node_content(node),
+            Some(NodeText::Original("fro"))
+        );
         assert_eq!(ctx.wrapping_clause_type, Some(ClauseType::Select));
     }
 }
