@@ -23,7 +23,11 @@ impl TreeSitterStore {
         }
     }
 
-    pub fn load_parse(&self, statement: &StatementId, content: &str) -> Arc<tree_sitter::Tree> {
+    pub fn get_or_cache_tree(
+        &self,
+        statement: &StatementId,
+        content: &str,
+    ) -> Arc<tree_sitter::Tree> {
         if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
             return existing;
         }

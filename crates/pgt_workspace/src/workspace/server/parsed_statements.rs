@@ -285,7 +285,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
             Err(_) => None,
         };
 
-        let cst_result = parser.cst_db.load_parse(&id, &content_owned);
+        let cst_result = parser.cst_db.get_or_cache_tree(&id, &content_owned);
 
         (id, range, content_owned, ast_option, cst_result)
     }
@@ -329,7 +329,7 @@ impl<'a> StatementMapper<'a> for GetCompletionsMapper {
         range: TextRange,
         content: &str,
     ) -> Self::Output {
-        let cst_result = parser.cst_db.load_parse(&id, content);
+        let cst_result = parser.cst_db.get_or_cache_tree(&id, content);
         (id, range, content.to_string(), cst_result)
     }
 }
