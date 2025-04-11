@@ -1,7 +1,7 @@
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, Severity, serde::Diagnostic as SDiagnostic};
 use pgt_text_size::{TextRange, TextSize};
 
-use super::statement_identifier::{IdGenerator, StatementId};
+use super::statement_identifier::{StatementId, StatementIdGenerator};
 
 type StatementPos = (StatementId, TextRange);
 
@@ -13,12 +13,12 @@ pub(crate) struct Document {
     /// List of statements sorted by range.start()
     pub(super) positions: Vec<StatementPos>,
 
-    pub(super) id_generator: IdGenerator,
+    pub(super) id_generator: StatementIdGenerator,
 }
 
 impl Document {
     pub(crate) fn new(content: String, version: i32) -> Self {
-        let mut id_generator = IdGenerator::new();
+        let mut id_generator = StatementIdGenerator::new();
 
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
 

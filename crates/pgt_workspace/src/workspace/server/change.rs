@@ -402,11 +402,16 @@ fn get_affected(content: &str, range: TextRange) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
     use super::*;
     use pgt_diagnostics::Diagnostic;
     use pgt_text_size::TextRange;
 
-    use crate::workspace::{ChangeFileParams, ChangeParams};
+    use crate::workspace::{
+        ChangeFileParams, ChangeParams,
+        server::statement_identifier::{RootId, StatementIdGenerator, root_id},
+    };
 
     use pgt_fs::PgTPath;
 
@@ -806,14 +811,13 @@ mod tests {
         let changed = d.apply_file_change(&change);
 
         assert_eq!(changed.len(), 4);
-        assert!(matches!(
-            changed[0],
-            StatementChange::Deleted(StatementId::Root(1))
-        ));
+        assert!(matches!(changed[0], StatementChange::Deleted(_)));
+        assert_eq!(changed[0].statement().raw(), 1);
         assert!(matches!(
             changed[1],
-            StatementChange::Deleted(StatementId::Root(0))
+            StatementChange::Deleted(StatementId::Root(_))
         ));
+        assert_eq!(changed[1].statement().raw(), 0);
         assert!(
             matches!(&changed[2], StatementChange::Added(AddedStatement { stmt: _, text }) if text == "select id,test from users;")
         );
@@ -871,19 +875,27 @@ mod tests {
 
         assert_eq!(changed.len(), 4);
 
-        assert_eq!(changed[0], StatementChange::Deleted(StatementId::Root(1)));
-        assert_eq!(changed[1], StatementChange::Deleted(StatementId::Root(0)));
+        assert!(matches!(
+            changed[0],
+            StatementChange::Deleted(StatementId::Root(_))
+        ));
+        assert_eq!(changed[0].statement().raw(), 1);
+        assert!(matches!(
+            changed[1],
+            StatementChange::Deleted(StatementId::Root(_))
+        ));
+        assert_eq!(changed[1].statement().raw(), 0);
         assert_eq!(
             changed[2],
             StatementChange::Added(AddedStatement {
-                stmt: StatementId::Root(2),
+                stmt: StatementId::Root(root_id(2)),
                 text: "select id,test from users".to_string()
             })
         );
         assert_eq!(
             changed[3],
             StatementChange::Added(AddedStatement {
-                stmt: StatementId::Root(3),
+                stmt: StatementId::Root(root_id(3)),
                 text: "select 1;".to_string()
             })
         );
@@ -1110,12 +1122,8 @@ mod tests {
             doc.content,
             "- Add new schema named \"private\"\nCREATE SCHEMA \"private\";"
         );
-
         assert_eq!(changed.len(), 3);
-        assert!(matches!(
-            changed[0],
-            StatementChange::Deleted(StatementId::Root(0))
-        ));
+        assert!(matches!(&changed[0], StatementChange::Deleted(_)));
         assert!(matches!(
             changed[1],
             StatementChange::Added(AddedStatement { .. })

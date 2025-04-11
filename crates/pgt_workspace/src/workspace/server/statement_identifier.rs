@@ -1,7 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
-pub type RootId = usize;
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct RootId {
+    inner: usize,
+}
+
+#[cfg(test)]
+pub fn root_id(inner: usize) -> RootId {
+    RootId { inner }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -29,16 +38,25 @@ pub enum StatementId {
 
 impl Default for StatementId {
     fn default() -> Self {
-        StatementId::Root(0)
+        StatementId::Root(RootId { inner: 0 })
+    }
+}
+
+impl StatementId {
+    pub fn raw(&self) -> usize {
+        match self {
+            StatementId::Root(s) => s.inner,
+            StatementId::Child(s) => s.inner,
+        }
     }
 }
 
 /// Helper struct to generate unique statement ids
-pub struct IdGenerator {
-    next_id: RootId,
+pub struct StatementIdGenerator {
+    next_id: usize,
 }
 
-impl IdGenerator {
+impl StatementIdGenerator {
     pub fn new() -> Self {
         Self { next_id: 0 }
     }
@@ -46,7 +64,7 @@ impl IdGenerator {
     pub fn next(&mut self) -> StatementId {
         let id = self.next_id;
         self.next_id += 1;
-        StatementId::Root(id)
+        StatementId::Root(RootId { inner: id })
     }
 }
 
@@ -57,7 +75,7 @@ impl StatementId {
     /// It is not guaranteed that the `Root` actually has a `Child` statement in the workspace.
     pub fn get_child_id(&self) -> Option<StatementId> {
         match self {
-            StatementId::Root(id) => Some(StatementId::Child(*id)),
+            StatementId::Root(id) => Some(StatementId::Child(RootId { inner: id.inner })),
             StatementId::Child(_) => None,
         }
     }
@@ -66,19 +84,8 @@ impl StatementId {
     /// You cannot create a `Child` of a `Child`.
     pub fn create_child(&self) -> StatementId {
         match self {
-            StatementId::Root(id) => StatementId::Child(*id),
+            StatementId::Root(id) => StatementId::Child(RootId { inner: id.inner }),
             StatementId::Child(_) => panic!("Cannot create child from a child statement id"),
-        }
-    }
-}
-
-impl Deref for StatementId {
-    type Target = RootId;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            StatementId::Root(id) => id,
-            StatementId::Child(id) => id,
         }
     }
 }
