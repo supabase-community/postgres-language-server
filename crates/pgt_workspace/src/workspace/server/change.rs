@@ -402,16 +402,12 @@ fn get_affected(content: &str, range: TextRange) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
 
     use super::*;
     use pgt_diagnostics::Diagnostic;
     use pgt_text_size::TextRange;
 
-    use crate::workspace::{
-        ChangeFileParams, ChangeParams,
-        server::statement_identifier::{RootId, StatementIdGenerator, root_id},
-    };
+    use crate::workspace::{ChangeFileParams, ChangeParams, server::statement_identifier::root_id};
 
     use pgt_fs::PgTPath;
 

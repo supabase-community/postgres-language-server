@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
