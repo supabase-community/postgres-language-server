@@ -43,7 +43,7 @@ impl Parser {
         let eof_token = Token::eof(usize::from(
             tokens
                 .last()
-                .map(|t| t.span.start())
+                .map(|t| t.span.end())
                 .unwrap_or(TextSize::from(0)),
         ));
 
@@ -52,8 +52,6 @@ impl Parser {
         while is_irrelevant_token(tokens.get(current_pos).unwrap_or(&eof_token)) {
             current_pos += 1;
         }
-
-        println!("We are starting at {}", current_pos);
 
         Self {
             stmt_ranges: Vec::new(),
@@ -81,7 +79,6 @@ impl Parser {
         }
     }
 
-    /// Start statement
     pub fn start_stmt(&mut self) {
         assert!(
             self.current_stmt_start.is_none(),
@@ -91,7 +88,6 @@ impl Parser {
         self.current_stmt_start = Some(self.current_pos);
     }
 
-    /// Close statement
     pub fn close_stmt(&mut self) {
         assert!(
             matches!(self.current_stmt_start, Some(_)),
@@ -105,7 +101,6 @@ impl Parser {
             "Must close the statement on a token that's later than the start token."
         );
 
-        // find last relevant token before current position
         let (end_token_pos, _) = self.find_last_relevant().unwrap();
 
         self.stmt_ranges.push((start_token_pos, end_token_pos));
@@ -113,8 +108,15 @@ impl Parser {
         self.current_stmt_start = None;
     }
 
+    fn current(&self) -> &Token {
+        match self.tokens.get(self.current_pos) {
+            Some(token) => token,
+            None => &self.eof_token,
+        }
+    }
+
     fn advance(&mut self) -> &Token {
-        // can't reuse `find_next_relevant` because of Mr. Borrow Checker
+        // can't reuse any `find_next_relevant` logic because of Mr. Borrow Checker
         let (pos, token) = self
             .tokens
             .iter()
@@ -127,42 +129,28 @@ impl Parser {
         token
     }
 
-    fn current(&self) -> &Token {
-        match self.tokens.get(self.current_pos) {
-            Some(token) => token,
-            None => &self.eof_token,
-        }
-    }
-
     fn look_ahead(&self) -> Option<&Token> {
-        self.find_next_relevant().map(|t| t.1)
+        self.tokens
+            .iter()
+            .skip(self.current_pos + 1)
+            .find(|t| is_relevant(t))
     }
 
     fn look_back(&self) -> Option<&Token> {
         self.find_last_relevant().map(|it| it.1)
     }
 
-    /// Returns `true` when it advanced, `false` if it didn't
-    pub fn advance_if_kind(&mut self, kind: SyntaxKind) -> bool {
-        if self.current().kind == kind {
-            self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
     /// Will advance if the `kind` matches the current token.
     /// Otherwise, will add a diagnostic to the internal `errors`.
     pub fn expect(&mut self, kind: SyntaxKind) {
-        if self.advance_if_kind(kind) {
-            return;
+        if self.current().kind == kind {
+            self.advance();
+        } else {
+            self.errors.push(SplitDiagnostic::new(
+                format!("Expected {:#?}", kind),
+                self.current().span,
+            ));
         }
-
-        self.errors.push(SplitDiagnostic::new(
-            format!("Expected {:#?}", kind),
-            self.current().span,
-        ));
     }
 
     fn find_last_relevant(&self) -> Option<(usize, &Token)> {
@@ -171,14 +159,6 @@ impl Parser {
             .enumerate()
             .take(self.current_pos)
             .rfind(|(_, t)| is_relevant(t))
-    }
-
-    fn find_next_relevant(&self) -> Option<(usize, &Token)> {
-        self.tokens
-            .iter()
-            .enumerate()
-            .skip(self.current_pos + 1)
-            .find(|(_, t)| is_relevant(t))
     }
 }
 
