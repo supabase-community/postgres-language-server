@@ -147,6 +147,7 @@ impl Parser {
     }
 
     /// Look ahead to the next relevant token
+    /// Returns `None` if we are already at the last relevant token
     fn look_ahead(&self) -> Option<&Token> {
         // we need to look ahead to the next relevant token
         let mut look_ahead_pos = self.next_pos + 1;
@@ -161,6 +162,7 @@ impl Parser {
         }
     }
 
+    /// Returns `None` if there are no previous relevant tokens
     fn look_back(&self) -> Option<&Token> {
         // we need to look back to the last relevant token
         let mut look_back_pos = self.next_pos - 1;
