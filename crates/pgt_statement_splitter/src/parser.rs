@@ -28,9 +28,9 @@ pub struct Parser {
     current_pos: usize,
 }
 
-/// Result of Building
+///
 #[derive(Debug)]
-pub struct Parse {
+pub struct ParserResult {
     /// The ranges of the parsed statements
     pub ranges: Vec<TextRange>,
     /// The syntax errors accumulated during parsing
@@ -62,8 +62,8 @@ impl Parser {
         }
     }
 
-    pub fn finish(self) -> Parse {
-        Parse {
+    pub fn finish(self) -> ParserResult {
+        ParserResult {
             ranges: self
                 .stmt_ranges
                 .iter()

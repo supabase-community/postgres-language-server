@@ -4,10 +4,10 @@
 pub mod diagnostics;
 mod parser;
 
-use parser::{Parse, Parser, source};
+use parser::{Parser, ParserResult, source};
 use pgt_lexer::diagnostics::ScanError;
 
-pub fn split(sql: &str) -> Result<Parse, Vec<ScanError>> {
+pub fn split(sql: &str) -> Result<ParserResult, Vec<ScanError>> {
     let tokens = pgt_lexer::lex(sql)?;
 
     let mut parser = Parser::new(tokens);
@@ -28,7 +28,7 @@ mod tests {
 
     struct Tester {
         input: String,
-        parse: Parse,
+        parse: ParserResult,
     }
 
     impl From<&str> for Tester {
