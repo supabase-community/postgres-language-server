@@ -145,6 +145,12 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::Also,
                         // for create rule
                         SyntaxKind::Instead,
+                        // for UNION
+                        SyntaxKind::Union,
+                        // for UNION ALL
+                        SyntaxKind::All,
+                        // for UNION ... EXCEPT
+                        SyntaxKind::Except,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())

@@ -134,6 +134,7 @@ impl Parser {
             .find(|t| is_relevant(t))
     }
 
+    /// Returns `None` if there are no previous relevant tokens
     fn look_back(&self) -> Option<&Token> {
         self.find_last_relevant().map(|it| it.1)
     }
