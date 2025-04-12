@@ -108,7 +108,8 @@ impl Parser {
             .tokens
             .iter()
             .enumerate()
-            .rfind(|(i, t)| is_relevant(t) && i < &self.current_pos)
+            .take(self.current_pos)
+            .rfind(|(_, t)| is_relevant(t))
             .unwrap();
 
         self.stmt_ranges.push((start_token_pos, end_token_pos));
