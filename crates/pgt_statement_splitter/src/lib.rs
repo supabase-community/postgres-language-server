@@ -143,6 +143,11 @@ mod tests {
     }
 
     #[test]
+    fn c_style_comments() {
+        Tester::from("/* this is a test */\nselect 1").expect_statements(vec!["select 1"]);
+    }
+
+    #[test]
     fn with_check() {
         Tester::from("create policy employee_insert on journey_execution for insert to authenticated with check ((select private.organisation_id()) = organisation_id);")
             .expect_statements(vec!["create policy employee_insert on journey_execution for insert to authenticated with check ((select private.organisation_id()) = organisation_id);"]);

@@ -22,8 +22,8 @@ pub enum TokenType {
 impl From<&ScanToken> for TokenType {
     fn from(token: &ScanToken) -> TokenType {
         match token.token {
-            // SqlComment
-            275 => TokenType::Whitespace,
+            // SqlComment | CComment
+            275 | 276 => TokenType::Whitespace,
             _ => match token.keyword_kind() {
                 KeywordKind::NoKeyword => TokenType::NoKeyword,
                 KeywordKind::UnreservedKeyword => TokenType::UnreservedKeyword,
@@ -59,6 +59,7 @@ pub static WHITESPACE_TOKENS: &[SyntaxKind] = &[
     SyntaxKind::Tab,
     SyntaxKind::Newline,
     SyntaxKind::SqlComment,
+    SyntaxKind::CComment,
 ];
 
 static PATTERN_LEXER: LazyLock<Regex> = LazyLock::new(|| {
