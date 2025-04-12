@@ -28,7 +28,6 @@ pub struct Parser {
     current_pos: usize,
 }
 
-///
 #[derive(Debug)]
 pub struct ParserResult {
     /// The ranges of the parsed statements
@@ -89,7 +88,7 @@ impl Parser {
 
     pub fn close_stmt(&mut self) {
         assert!(
-            matches!(self.current_stmt_start, Some(_)),
+            self.current_stmt_start.is_some(),
             "Must start statement before closing it."
         );
 
