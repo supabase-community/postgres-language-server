@@ -158,21 +158,11 @@ impl Parser {
     }
 
     fn look_back(&self) -> Option<&Token> {
-        // we need to look back to the last relevant token
-        let mut look_back_pos = self.current_pos - 1;
-        loop {
-            let token = self.tokens.get(look_back_pos);
-
-            if look_back_pos == 0 || token.is_none() {
-                return None;
-            }
-
-            if is_relevant(token.unwrap()) {
-                return token;
-            }
-
-            look_back_pos -= 1;
-        }
+        self.tokens
+            .iter()
+            .take(self.current_pos)
+            .rev()
+            .find(|t| is_relevant(t))
     }
 
     /// Returns `true` when it advanced, `false` if it didn't
