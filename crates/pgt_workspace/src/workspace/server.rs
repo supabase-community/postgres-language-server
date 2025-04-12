@@ -43,6 +43,7 @@ use super::{
 pub use statement_identifier::StatementId;
 
 mod analyser;
+mod annotation;
 mod async_helper;
 mod change;
 mod db_connection;

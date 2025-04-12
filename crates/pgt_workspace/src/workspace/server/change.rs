@@ -409,7 +409,7 @@ mod tests {
     use pgt_diagnostics::Diagnostic;
     use pgt_text_size::TextRange;
 
-    use crate::workspace::{ChangeFileParams, ChangeParams, server::statement_identifier::root_id};
+    use crate::workspace::{ChangeFileParams, ChangeParams};
 
     use pgt_fs::PgTPath;
 
@@ -886,14 +886,14 @@ mod tests {
         assert_eq!(
             changed[2],
             StatementChange::Added(AddedStatement {
-                stmt: StatementId::Root(root_id(2)),
+                stmt: StatementId::Root(2.into()),
                 text: "select id,test from users".to_string()
             })
         );
         assert_eq!(
             changed[3],
             StatementChange::Added(AddedStatement {
-                stmt: StatementId::Root(root_id(3)),
+                stmt: StatementId::Root(3.into()),
                 text: "select 1;".to_string()
             })
         );

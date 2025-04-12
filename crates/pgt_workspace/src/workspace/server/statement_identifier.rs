@@ -6,9 +6,16 @@ pub struct RootId {
     inner: usize,
 }
 
-#[cfg(test)]
-pub fn root_id(inner: usize) -> RootId {
-    RootId { inner }
+impl From<RootId> for usize {
+    fn from(val: RootId) -> Self {
+        val.inner
+    }
+}
+
+impl From<usize> for RootId {
+    fn from(inner: usize) -> Self {
+        RootId { inner }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

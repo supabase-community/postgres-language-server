@@ -2765,6 +2765,7 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_fs",
+ "pgt_lexer",
  "pgt_query_ext",
  "pgt_schema_cache",
  "pgt_statement_splitter",
