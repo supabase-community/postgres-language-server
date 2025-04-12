@@ -47,7 +47,6 @@ impl AnnotationStore {
         annotations
     }
 
-    #[allow(unused)]
     pub fn clear_statement(&self, id: &StatementId) {
         self.db.remove(id);
 

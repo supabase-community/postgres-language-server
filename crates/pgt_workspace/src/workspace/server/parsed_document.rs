@@ -73,6 +73,7 @@ impl ParsedDocument {
                     self.cst_db.remove_statement(s);
                     self.ast_db.clear_statement(s);
                     self.sql_fn_db.clear_statement(s);
+                    self.annotation_db.clear_statement(s);
                 }
                 StatementChange::Modified(s) => {
                     tracing::debug!(
@@ -88,6 +89,7 @@ impl ParsedDocument {
                     self.cst_db.modify_statement(s);
                     self.ast_db.clear_statement(&s.old_stmt);
                     self.sql_fn_db.clear_statement(&s.old_stmt);
+                    self.annotation_db.clear_statement(&s.old_stmt);
                 }
             }
         }
