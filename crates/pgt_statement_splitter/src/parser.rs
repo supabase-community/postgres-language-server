@@ -106,13 +106,7 @@ impl Parser {
         );
 
         // find last relevant token before current position
-        let (end_token_pos, _) = self
-            .tokens
-            .iter()
-            .enumerate()
-            .take(self.current_pos)
-            .rfind(|(_, t)| is_relevant(t))
-            .unwrap();
+        let (end_token_pos, _) = self.find_last_relevant().unwrap();
 
         self.stmt_ranges.push((start_token_pos, end_token_pos));
 
@@ -120,6 +114,7 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
+        // can't reuse `find_next_relevant` because of Mr. Borrow Checker
         let (pos, token) = self
             .tokens
             .iter()
@@ -139,19 +134,12 @@ impl Parser {
         }
     }
 
-    /// Look ahead to the next relevant token
     fn look_ahead(&self) -> Option<&Token> {
-        self.tokens
-            .iter()
-            .skip(self.current_pos + 1)
-            .find(|t| is_relevant(t))
+        self.find_next_relevant().map(|t| t.1)
     }
 
     fn look_back(&self) -> Option<&Token> {
-        self.tokens
-            .iter()
-            .take(self.current_pos)
-            .rfind(|t| is_relevant(t))
+        self.find_last_relevant().map(|it| it.1)
     }
 
     /// Returns `true` when it advanced, `false` if it didn't
@@ -175,6 +163,22 @@ impl Parser {
             format!("Expected {:#?}", kind),
             self.current().span,
         ));
+    }
+
+    fn find_last_relevant(&self) -> Option<(usize, &Token)> {
+        self.tokens
+            .iter()
+            .enumerate()
+            .take(self.current_pos)
+            .rfind(|(_, t)| is_relevant(t))
+    }
+
+    fn find_next_relevant(&self) -> Option<(usize, &Token)> {
+        self.tokens
+            .iter()
+            .enumerate()
+            .skip(self.current_pos + 1)
+            .find(|(_, t)| is_relevant(t))
     }
 }
 
