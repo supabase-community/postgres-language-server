@@ -196,6 +196,7 @@ mod tests {
         );
         "#;
         let tokens = pgt_lexer::lex(sql).unwrap();
+        let total_num_tokens = tokens.len();
 
         let mut parser = Parser::new(tokens);
 
@@ -223,5 +224,8 @@ mod tests {
             assert_eq!(parser.current_pos, pos);
             parser.advance();
         }
+
+        assert_eq!(parser.current().kind, SyntaxKind::Eof);
+        assert_eq!(parser.current_pos, total_num_tokens);
     }
 }
