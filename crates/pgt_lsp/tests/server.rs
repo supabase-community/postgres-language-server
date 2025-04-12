@@ -1248,7 +1248,6 @@ async fn test_issue_327() -> Result<()> {
 
     server.load_configuration().await?;
 
-    // Initial document content - a complex SQL file with multiple statements
     let initial_content = r#"/* https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac#create-a-table-to-track-user-roles-and-permissions */
 -----------------------------
 /* User Permission Levels */
