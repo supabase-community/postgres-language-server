@@ -53,6 +53,8 @@ impl Parser {
             current_pos += 1;
         }
 
+        println!("We are starting at {}", current_pos);
+
         Self {
             stmt_ranges: Vec::new(),
             eof_token,
@@ -118,21 +120,16 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        let mut first_relevant_token = None;
-        loop {
-            let token = self.tokens.get(self.current_pos).unwrap_or(&self.eof_token);
+        let (pos, token) = self
+            .tokens
+            .iter()
+            .enumerate()
+            .skip(self.current_pos + 1)
+            .find(|(_, t)| is_relevant(t))
+            .unwrap_or((self.tokens.len(), &self.eof_token));
 
-            // we need to continue with next_pos until the next relevant token after we already
-            // found the first one
-            if is_relevant(token) {
-                if let Some(t) = first_relevant_token {
-                    return t;
-                }
-                first_relevant_token = Some(token);
-            }
-
-            self.current_pos += 1;
-        }
+        self.current_pos = pos;
+        token
     }
 
     fn current(&self) -> &Token {
@@ -197,4 +194,50 @@ fn is_irrelevant_token(t: &Token) -> bool {
 
 fn is_relevant(t: &Token) -> bool {
     !is_irrelevant_token(t)
+}
+
+#[cfg(test)]
+mod tests {
+    use pgt_lexer::SyntaxKind;
+
+    use crate::parser::Parser;
+
+    #[test]
+    fn advance_works_as_expected() {
+        let sql = r#"
+        create table users (
+            id serial primary key,
+            name text,
+            email text
+        );
+        "#;
+        let tokens = pgt_lexer::lex(sql).unwrap();
+
+        let mut parser = Parser::new(tokens);
+
+        let expected = vec![
+            (SyntaxKind::Create, 2),
+            (SyntaxKind::Table, 4),
+            (SyntaxKind::Ident, 6),
+            (SyntaxKind::Ascii40, 8),
+            (SyntaxKind::Ident, 11),
+            (SyntaxKind::Ident, 13),
+            (SyntaxKind::Primary, 15),
+            (SyntaxKind::Key, 17),
+            (SyntaxKind::Ascii44, 18),
+            (SyntaxKind::NameP, 21),
+            (SyntaxKind::TextP, 23),
+            (SyntaxKind::Ascii44, 24),
+            (SyntaxKind::Ident, 27),
+            (SyntaxKind::TextP, 29),
+            (SyntaxKind::Ascii41, 32),
+            (SyntaxKind::Ascii59, 33),
+        ];
+
+        for (kind, pos) in expected {
+            assert_eq!(parser.current().kind, kind);
+            assert_eq!(parser.current_pos, pos);
+            parser.advance();
+        }
+    }
 }
