@@ -13,7 +13,7 @@ use crate::diagnostics::SplitDiagnostic;
 /// Main parser that exposes the `cstree` api, and collects errors and statements
 /// It is modelled after a Pratt Parser. For a gentle introduction to Pratt Parsing, see https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
 pub struct Parser {
-    // Ranges are defined by the indices of the start/end tokens
+    /// The statement ranges are defined by the indices of the start/end tokens
     stmt_ranges: Vec<(usize, usize)>,
 
     /// The syntax errors accumulated during parsing
