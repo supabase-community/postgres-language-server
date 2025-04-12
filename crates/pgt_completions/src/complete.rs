@@ -23,13 +23,7 @@ pub struct CompletionParams<'a> {
     position = params.position.to_string()
 ))]
 pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
-    let sanitized_params = match SanitizedCompletionParams::try_from(params) {
-        Ok(p) => p,
-        Err(err) => {
-            tracing::warn!("Not possible to get completions: {}", err);
-            return vec![];
-        }
-    };
+    let sanitized_params = SanitizedCompletionParams::from(params);
 
     let ctx = CompletionContext::new(&sanitized_params);
 

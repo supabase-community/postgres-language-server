@@ -16,20 +16,18 @@ pub fn benchmark_sanitization(params: CompletionParams) -> String {
     params.text
 }
 
-impl<'larger, 'smaller> TryFrom<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
+impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
 where
     'larger: 'smaller,
 {
-    type Error = String;
-
-    fn try_from(params: CompletionParams<'larger>) -> Result<Self, Self::Error> {
+    fn from(params: CompletionParams<'larger>) -> Self {
         if cursor_inbetween_nodes(params.tree, params.position)
             || cursor_prepared_to_write_token_after_last_node(params.tree, params.position)
             || cursor_before_semicolon(params.tree, params.position)
         {
-            Ok(SanitizedCompletionParams::with_adjusted_sql(params))
+            SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
-            Ok(SanitizedCompletionParams::unadjusted(params))
+            SanitizedCompletionParams::unadjusted(params)
         }
     }
 }
