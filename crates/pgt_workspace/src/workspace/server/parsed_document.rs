@@ -25,7 +25,7 @@ pub struct ParsedDocument {
     ast_db: PgQueryStore,
     cst_db: TreeSitterStore,
     sql_fn_db: SQLFunctionBodyStore,
-    annoation_db: AnnotationStore,
+    annotation_db: AnnotationStore,
 }
 
 impl ParsedDocument {
