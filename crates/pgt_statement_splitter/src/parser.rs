@@ -47,7 +47,7 @@ impl Parser {
                 .unwrap_or(TextSize::from(0)),
         ));
 
-        // next_pos should be the initialised with the first valid token already
+        // Place `current_pos` on the first relevant token
         let mut current_pos = 0;
         while is_irrelevant_token(tokens.get(current_pos).unwrap_or(&eof_token)) {
             current_pos += 1;
