@@ -1112,3 +1112,384 @@ async fn test_issue_303() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_issue_328() -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    let test_db = get_new_test_db().await;
+
+    let setup = r#"
+            create table public.users (
+                id serial primary key,
+                name varchar(255) not null
+            );
+        "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    server
+        .open_document("-- Create the company table\nCREATE TABLE company (\n id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n name VARCHAR(255) NOT NULL,\n email VARCHAR(255) UNIQUE NOT NULL\n);\n\n-- Create the business table\nCREATE TABLE business (\n id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n name VARCHAR(255) NOT NULL,\n email VARCHAR(255) UNIQUE NOT NULL,\n company_id UUID REFERENCES company(id) NOT NULL,\n INDEX (company_id)\n);")
+        .await?;
+
+    let notification = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(msg)) => {
+                    if msg
+                        .diagnostics
+                        .iter()
+                        .any(|d| d.message.contains("column \"unknown\" does not exist"))
+                    {
+                        return true;
+                    }
+                }
+                _ => continue,
+            }
+        }
+    })
+    .await
+    .is_ok();
+
+    assert!(notification, "expected diagnostics for unknown column");
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_issue_327() -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    let test_db = get_new_test_db().await;
+
+    let setup = r#"
+            create table public.users (
+                id serial primary key,
+                name varchar(255) not null
+            );
+        "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    // Initial document content - a complex SQL file with multiple statements
+    let initial_content = r#"/* https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac#create-a-table-to-track-user-roles-and-permissions */
+-----------------------------
+/* User Permission Levels */
+---------------------------
+CREATE TYPE public.user_permission_level
+	AS ENUM('admin', 'manager', 'member');
+
+
+CREATE SCHEMA private;
+
+sadjhkyjcxv sd 23
+
+
+CREATE TABLE private.user_permission_levels (
+	user_id UUID PRIMARY KEY,
+	permission_level user_permission_level NOT NULL,
+
+	CONSTRAINT "user_permission_levels_user_id_fkey"
+		FOREIGN KEY (user_id)
+		REFERENCES auth.users (id)
+		ON UPDATE CASCADE
+		ON DELETE CASCADE
+);
+
+
+COMMENT ON TABLE private.user_permission_levels
+	IS 'Permission levels for each user.';
+
+
+/*
+ALTER TABLE private.user_permission_levels ENABLE ROW LEVEL SECURITY; */
+/*
+GRANT ALL ON TABLE private.user_permission_levels TO supabase_auth_admin; */
+/* CREATE POLICY "Allow auth admin to read user permission levels" ON private.user_permission_levels FOR
+SELECT
+TO supabase_auth_admin USING (TRUE); */
+/*  */
+-------------------------------
+/* Custom Access Token Hook */
+/* Executed while building JWT for user access token */
+/* Must be enabled in Supabase Dashboard (for managed) or in config.toml (for local dev) */
+------------------------------------------------------------------------------------------"#;
+
+    server
+        .open_named_document(initial_content, url!("document.sql"))
+        .await?;
+
+    server
+        .change_document(
+            21,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 9,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 10,
+                        character: 17,
+                    },
+                }),
+                range_length: Some(19),
+                text: "".to_string(),
+            }],
+        )
+        .await?;
+
+    server
+        .change_document(
+            22,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 8,
+                        character: 22,
+                    },
+                    end: Position {
+                        line: 9,
+                        character: 0,
+                    },
+                }),
+                range_length: Some(2),
+                text: "".to_string(),
+            }],
+        )
+        .await?;
+
+    server
+        .change_document(
+            50,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                }),
+                range_length: Some(0),
+                text: "-".to_string(),
+            }],
+        )
+        .await?;
+
+    server
+        .change_document(
+            51,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 1,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 1,
+                    },
+                }),
+                range_length: Some(0),
+                text: "-".to_string(),
+            }],
+        )
+        .await?;
+
+    server
+        .change_document(
+            52,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 2,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 2,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    server
+        .change_document(
+            57,
+            vec![
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 33,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 33,
+                            character: 0,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "-".to_string(),
+                },
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 32,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 32,
+                            character: 0,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "-".to_string(),
+                },
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 31,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 31,
+                            character: 0,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "-".to_string(),
+                },
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 30,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 30,
+                            character: 0,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "-".to_string(),
+                },
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 29,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 29,
+                            character: 0,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "-".to_string(),
+                },
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 28,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 28,
+                            character: 0,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "-".to_string(),
+                },
+            ],
+        )
+        .await?;
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
