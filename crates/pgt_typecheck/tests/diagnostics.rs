@@ -21,14 +21,14 @@ async fn test(name: &str, query: &str, setup: &str) {
         .expect("Error loading sql language");
 
     let root = pgt_query_ext::parse(query).unwrap();
-    let tree = parser.parse(query, None);
+    let tree = parser.parse(query, None).unwrap();
 
     let conn = &test_db;
     let result = check_sql(TypecheckParams {
         conn,
         sql: query,
         ast: &root,
-        tree: tree.as_ref(),
+        tree: &tree,
     })
     .await;
 

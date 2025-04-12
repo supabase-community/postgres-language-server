@@ -1,9 +1,10 @@
-use itertools::Itertools;
+use std::sync::Arc;
+
 use pgt_completions::CompletionItem;
 use pgt_fs::PgTPath;
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::workspace::{Document, Statement, StatementId};
+use crate::workspace::{GetCompletionsFilter, GetCompletionsMapper, ParsedDocument, StatementId};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -29,71 +30,56 @@ impl IntoIterator for CompletionsResult {
 }
 
 pub(crate) fn get_statement_for_completions<'a>(
-    doc: &'a Document,
+    doc: &'a ParsedDocument,
     position: TextSize,
-) -> Option<(Statement, &'a TextRange, &'a str)> {
-    let count = doc.statement_count();
+) -> Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> {
+    let count = doc.count();
     // no arms no cookies
     if count == 0 {
         return None;
     }
 
-    /*
-     * We allow an offset of two for the statement:
-     *
-     * select * from | <-- we want to suggest items for the next token.
-     *
-     * However, if the current statement is terminated by a semicolon, we don't apply any
-     * offset.
-     *
-     * select * from users; | <-- no autocompletions here.
-     */
-    let matches_expanding_range = |stmt_id: StatementId, range: &TextRange, position: TextSize| {
-        let measuring_range = if doc.is_terminated_by_semicolon(stmt_id).unwrap() {
-            *range
-        } else {
-            range.checked_expand_end(2.into()).unwrap_or(*range)
-        };
-        measuring_range.contains(position)
-    };
+    let mut eligible_statements = doc.iter_with_filter(
+        GetCompletionsMapper,
+        GetCompletionsFilter {
+            cursor_position: position,
+        },
+    );
 
     if count == 1 {
-        let (stmt, range, txt) = doc.iter_statements_with_text_and_range().next().unwrap();
-        if matches_expanding_range(stmt.id, range, position) {
-            Some((stmt, range, txt))
-        } else {
-            None
-        }
+        eligible_statements.next()
     } else {
-        /*
-         * If we have multiple statements, we want to make sure that we do not overlap
-         * with the next one.
-         *
-         * select 1 |select 1;
-         */
-        let mut stmts = doc.iter_statements_with_text_and_range().tuple_windows();
-        stmts
-            .find(|((current_stmt, rcurrent, _), (_, rnext, _))| {
-                let overlaps_next = rnext.contains(position);
-                matches_expanding_range(current_stmt.id, rcurrent, position) && !overlaps_next
-            })
-            .map(|t| t.0)
+        let mut prev_stmt = None;
+
+        for current_stmt in eligible_statements {
+            /*
+             * If we have multiple statements, we want to make sure that we do not overlap
+             * with the next one.
+             *
+             * select 1 |select 1;
+             */
+            if prev_stmt.is_some_and(|_| current_stmt.1.contains(position)) {
+                return None;
+            }
+            prev_stmt = Some(current_stmt)
+        }
+
+        prev_stmt
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
     use pgt_fs::PgTPath;
     use pgt_text_size::TextSize;
 
-    use crate::workspace::Document;
+    use crate::workspace::ParsedDocument;
 
     use super::get_statement_for_completions;
 
     static CURSOR_POSITION: &str = "€";
 
-    fn get_doc_and_pos(sql: &str) -> (Document, TextSize) {
+    fn get_doc_and_pos(sql: &str) -> (ParsedDocument, TextSize) {
         let pos = sql
             .find(CURSOR_POSITION)
             .expect("Please add cursor position to test sql");
@@ -101,7 +87,7 @@ mod tests {
         let pos: u32 = pos.try_into().unwrap();
 
         (
-            Document::new(
+            ParsedDocument::new(
                 PgTPath::new("test.sql"),
                 sql.replace(CURSOR_POSITION, "").into(),
                 5,
@@ -125,7 +111,7 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text) =
+        let (_, _, text, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
         assert_eq!(text, "update users set email = 'myemail@com';")
@@ -137,7 +123,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        assert_eq!(get_statement_for_completions(&doc, position), None);
+        assert!(matches!(
+            get_statement_for_completions(&doc, position),
+            None
+        ));
     }
 
     #[test]
@@ -147,9 +136,12 @@ mod tests {
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
         // make sure these are parsed as two
-        assert_eq!(doc.iter_statements().try_len().unwrap(), 2);
+        assert_eq!(doc.count(), 2);
 
-        assert_eq!(get_statement_for_completions(&doc, position), None);
+        assert!(matches!(
+            get_statement_for_completions(&doc, position),
+            None
+        ));
     }
 
     #[test]
@@ -158,7 +150,7 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text) =
+        let (_, _, text, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
         assert_eq!(text, "select * from          ;")
@@ -170,7 +162,7 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text) =
+        let (_, _, text, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
         assert_eq!(text, "select * from")
@@ -182,7 +174,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        assert_eq!(get_statement_for_completions(&doc, position), None);
+        assert!(matches!(
+            get_statement_for_completions(&doc, position),
+            None
+        ));
     }
 
     #[test]
@@ -191,6 +186,9 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        assert_eq!(get_statement_for_completions(&doc, position), None);
+        assert!(matches!(
+            get_statement_for_completions(&doc, position),
+            None
+        ));
     }
 }

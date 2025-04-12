@@ -102,10 +102,10 @@ jobs:
           version: latest
       - name: Run Lints
         run: |
+          cargo sqlx prepare --check --workspace
           cargo clippy
           cargo run -p rules_check
           biome lint
-          cargo sqlx prepare --check --workspace
 
   test:
     name: Test
@@ -113,9 +113,9 @@ jobs:
     strategy:
       matrix:
         include:
-          # reactive once we upgrade to the latest version of pg_query that is windows-compatible
-          - os: windows-latest
-          - os: ubuntu-latest
+          # use the same images we use for compiling
+          - os: windows-2022
+          - os: ubuntu-22.04
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -138,8 +138,10 @@ jobs:
         run: cargo test --workspace
 
   test-js-bindings:
-    name: Test JS Bindings
-    runs-on: ubuntu-latest
+    name:
+      Test JS Bindings
+      # use the same image we use for compiling
+    runs-on: ubuntu-22.04
     services:
       postgres:
         image: postgres:latest
@@ -173,7 +175,7 @@ jobs:
 
   codegen:
     name: Check Codegen
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     services:
       postgres:
         image: postgres:latest

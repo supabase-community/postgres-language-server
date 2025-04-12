@@ -2883,7 +2883,6 @@ dependencies = [
  "futures",
  "globset",
  "ignore",
- "itertools 0.14.0",
  "pgt_analyse",
  "pgt_analyser",
  "pgt_completions",

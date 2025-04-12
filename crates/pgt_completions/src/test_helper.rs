@@ -69,7 +69,7 @@ pub(crate) fn get_test_params<'a>(
     CompletionParams {
         position: (position as u32).into(),
         schema: schema_cache,
-        tree: Some(tree),
+        tree,
         text,
     }
 }

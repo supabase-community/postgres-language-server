@@ -21,7 +21,8 @@ use crate::{
 mod client;
 mod server;
 
-pub(crate) use server::document::{Document, Statement, StatementId};
+pub use server::StatementId;
+pub(crate) use server::parsed_document::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]

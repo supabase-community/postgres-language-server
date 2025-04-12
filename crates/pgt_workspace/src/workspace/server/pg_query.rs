@@ -1,52 +1,38 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use pgt_diagnostics::serde::Diagnostic as SDiagnostic;
 use pgt_query_ext::diagnostics::*;
 
-use super::{change::ModifiedStatement, document::Statement};
+use super::statement_identifier::StatementId;
 
 pub struct PgQueryStore {
-    ast_db: DashMap<Statement, Arc<pgt_query_ext::NodeEnum>>,
-    diagnostics: DashMap<Statement, SyntaxDiagnostic>,
+    db: DashMap<StatementId, Arc<Result<pgt_query_ext::NodeEnum, SyntaxDiagnostic>>>,
 }
 
 impl PgQueryStore {
     pub fn new() -> PgQueryStore {
-        PgQueryStore {
-            ast_db: DashMap::new(),
-            diagnostics: DashMap::new(),
+        PgQueryStore { db: DashMap::new() }
+    }
+
+    pub fn get_or_cache_ast(
+        &self,
+        statement: &StatementId,
+        content: &str,
+    ) -> Arc<Result<pgt_query_ext::NodeEnum, SyntaxDiagnostic>> {
+        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
+            return existing;
         }
+
+        let r = Arc::new(pgt_query_ext::parse(content).map_err(SyntaxDiagnostic::from));
+        self.db.insert(statement.clone(), r.clone());
+        r
     }
 
-    pub fn get_ast(&self, statement: &Statement) -> Option<Arc<pgt_query_ext::NodeEnum>> {
-        self.ast_db.get(statement).map(|x| x.clone())
-    }
+    pub fn clear_statement(&self, id: &StatementId) {
+        self.db.remove(id);
 
-    pub fn add_statement(&self, statement: &Statement, content: &str) {
-        let r = pgt_query_ext::parse(content);
-        if let Ok(ast) = r {
-            self.ast_db.insert(statement.clone(), Arc::new(ast));
-        } else {
-            tracing::info!("invalid statement, adding diagnostics.");
-            self.diagnostics
-                .insert(statement.clone(), SyntaxDiagnostic::from(r.unwrap_err()));
+        if let Some(child_id) = id.get_child_id() {
+            self.db.remove(&child_id);
         }
-    }
-
-    pub fn remove_statement(&self, statement: &Statement) {
-        self.ast_db.remove(statement);
-        self.diagnostics.remove(statement);
-    }
-
-    pub fn modify_statement(&self, change: &ModifiedStatement) {
-        self.remove_statement(&change.old_stmt);
-        self.add_statement(&change.new_stmt, &change.new_stmt_text);
-    }
-
-    pub fn get_diagnostics(&self, stmt: &Statement) -> Vec<pgt_diagnostics::serde::Diagnostic> {
-        self.diagnostics
-            .get(stmt)
-            .map_or_else(Vec::new, |err| vec![SDiagnostic::new(err.value().clone())])
     }
 }

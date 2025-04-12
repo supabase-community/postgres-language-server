@@ -23,14 +23,9 @@ where
     type Error = String;
 
     fn try_from(params: CompletionParams<'larger>) -> Result<Self, Self::Error> {
-        let tree = match &params.tree {
-            Some(tree) => tree,
-            None => return Err("Tree required for autocompletions.".to_string()),
-        };
-
-        if cursor_inbetween_nodes(tree, params.position)
-            || cursor_prepared_to_write_token_after_last_node(tree, params.position)
-            || cursor_before_semicolon(tree, params.position)
+        if cursor_inbetween_nodes(params.tree, params.position)
+            || cursor_prepared_to_write_token_after_last_node(params.tree, params.position)
+            || cursor_before_semicolon(params.tree, params.position)
         {
             Ok(SanitizedCompletionParams::with_adjusted_sql(params))
         } else {
@@ -75,7 +70,7 @@ where
             position: params.position,
             text: params.text.clone(),
             schema: params.schema,
-            tree: Cow::Borrowed(params.tree.unwrap()),
+            tree: Cow::Borrowed(params.tree),
         }
     }
 

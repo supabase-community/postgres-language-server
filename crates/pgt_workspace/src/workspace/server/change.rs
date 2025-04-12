@@ -3,27 +3,27 @@ use std::ops::{Add, Sub};
 
 use crate::workspace::{ChangeFileParams, ChangeParams};
 
-use super::{Document, Statement, document};
+use super::{Document, document, statement_identifier::StatementId};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum StatementChange {
     Added(AddedStatement),
-    Deleted(Statement),
+    Deleted(StatementId),
     Modified(ModifiedStatement),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct AddedStatement {
-    pub stmt: Statement,
+    pub stmt: StatementId,
     pub text: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ModifiedStatement {
-    pub old_stmt: Statement,
+    pub old_stmt: StatementId,
     pub old_stmt_text: String,
 
-    pub new_stmt: Statement,
+    pub new_stmt: StatementId,
     pub new_stmt_text: String,
 
     pub change_range: TextRange,
@@ -32,7 +32,7 @@ pub struct ModifiedStatement {
 
 impl StatementChange {
     #[allow(dead_code)]
-    pub fn statement(&self) -> &Statement {
+    pub fn statement(&self) -> &StatementId {
         match self {
             StatementChange::Added(stmt) => &stmt.stmt,
             StatementChange::Deleted(stmt) => stmt,
@@ -78,12 +78,7 @@ impl Document {
     fn drain_positions(&mut self) -> Vec<StatementChange> {
         self.positions
             .drain(..)
-            .map(|(id, _)| {
-                StatementChange::Deleted(Statement {
-                    id,
-                    path: self.path.clone(),
-                })
-            })
+            .map(|(id, _)| StatementChange::Deleted(id))
             .collect()
     }
 
@@ -109,28 +104,22 @@ impl Document {
         changes.extend(ranges.into_iter().map(|range| {
             let id = self.id_generator.next();
             let text = self.content[range].to_string();
-            self.positions.push((id, range));
+            self.positions.push((id.clone(), range));
 
-            StatementChange::Added(AddedStatement {
-                stmt: Statement {
-                    path: self.path.clone(),
-                    id,
-                },
-                text,
-            })
+            StatementChange::Added(AddedStatement { stmt: id, text })
         }));
 
         changes
     }
 
-    fn insert_statement(&mut self, range: TextRange) -> usize {
+    fn insert_statement(&mut self, range: TextRange) -> StatementId {
         let pos = self
             .positions
             .binary_search_by(|(_, r)| r.start().cmp(&range.start()))
             .unwrap_err();
 
         let new_id = self.id_generator.next();
-        self.positions.insert(pos, (new_id, range));
+        self.positions.insert(pos, (new_id.clone(), range));
 
         new_id
     }
@@ -272,25 +261,19 @@ impl Document {
             if new_ranges.len() == 1 {
                 let affected_idx = affected_indices[0];
                 let new_range = new_ranges[0].add(affected_range.start());
-                let (old_id, old_range) = self.positions[affected_idx];
+                let (old_id, old_range) = self.positions[affected_idx].clone();
 
                 // move all statements after the affected range
                 self.move_ranges(old_range.end(), change.diff_size(), change.is_addition());
 
                 let new_id = self.id_generator.next();
-                self.positions[affected_idx] = (new_id, new_range);
+                self.positions[affected_idx] = (new_id.clone(), new_range);
 
                 changed.push(StatementChange::Modified(ModifiedStatement {
-                    old_stmt: Statement {
-                        id: old_id,
-                        path: self.path.clone(),
-                    },
+                    old_stmt: old_id.clone(),
                     old_stmt_text: previous_content[old_range].to_string(),
 
-                    new_stmt: Statement {
-                        id: new_id,
-                        path: self.path.clone(),
-                    },
+                    new_stmt: new_id,
                     new_stmt_text: changed_content[new_ranges[0]].to_string(),
                     // change must be relative to the statement
                     change_text: change.text.clone(),
@@ -324,24 +307,19 @@ impl Document {
 
         // delete and add new ones
         if let Some(next_index) = next_index {
-            changed.push(StatementChange::Deleted(Statement {
-                id: self.positions[next_index].0,
-                path: self.path.clone(),
-            }));
+            changed.push(StatementChange::Deleted(
+                self.positions[next_index].0.clone(),
+            ));
             self.positions.remove(next_index);
         }
         for idx in affected_indices.iter().rev() {
-            changed.push(StatementChange::Deleted(Statement {
-                id: self.positions[*idx].0,
-                path: self.path.clone(),
-            }));
+            changed.push(StatementChange::Deleted(self.positions[*idx].0.clone()));
             self.positions.remove(*idx);
         }
         if let Some(prev_index) = prev_index {
-            changed.push(StatementChange::Deleted(Statement {
-                id: self.positions[prev_index].0,
-                path: self.path.clone(),
-            }));
+            changed.push(StatementChange::Deleted(
+                self.positions[prev_index].0.clone(),
+            ));
             self.positions.remove(prev_index);
         }
 
@@ -349,10 +327,7 @@ impl Document {
             let actual_range = range.add(full_affected_range.start());
             let new_id = self.insert_statement(actual_range);
             changed.push(StatementChange::Added(AddedStatement {
-                stmt: Statement {
-                    id: new_id,
-                    path: self.path.clone(),
-                },
+                stmt: new_id,
                 text: new_content[actual_range].to_string(),
             }));
         });
@@ -429,11 +404,12 @@ fn get_affected(content: &str, range: TextRange) -> &str {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use pgt_diagnostics::Diagnostic;
     use pgt_text_size::TextRange;
 
-    use crate::workspace::{ChangeFileParams, ChangeParams};
+    use crate::workspace::{ChangeFileParams, ChangeParams, server::statement_identifier::root_id};
 
     use pgt_fs::PgTPath;
 
@@ -466,7 +442,7 @@ mod tests {
     fn open_doc_with_scan_error() {
         let input = "select id from users;\n\n\n\nselect 1443ddwwd33djwdkjw13331333333333;";
 
-        let d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 0);
         assert!(d.has_fatal_error());
@@ -477,7 +453,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from users;\n\n\n\nselect 1;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 2);
         assert!(!d.has_fatal_error());
@@ -515,7 +491,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from users;\n\n\n\nselect 1;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 2);
         assert!(!d.has_fatal_error());
@@ -553,7 +529,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select 1d;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 0);
         assert!(d.has_fatal_error());
@@ -587,7 +563,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select 1d;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 0);
         assert!(d.has_fatal_error());
@@ -620,7 +596,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from users;\n\n\n\nselect * from contacts;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 2);
 
@@ -658,7 +634,7 @@ mod tests {
     fn within_statements_2() {
         let path = PgTPath::new("test.sql");
         let input = "alter table deal alter column value drop not null;\n";
-        let mut d = Document::new(path.clone(), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 1);
 
@@ -735,7 +711,7 @@ mod tests {
     fn julians_sample() {
         let path = PgTPath::new("test.sql");
         let input = "select\n  *\nfrom\n  test;\n\nselect\n\nalter table test\n\ndrop column id;";
-        let mut d = Document::new(path.clone(), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 4);
 
@@ -817,7 +793,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from users;\nselect * from contacts;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 2);
 
@@ -833,14 +809,13 @@ mod tests {
         let changed = d.apply_file_change(&change);
 
         assert_eq!(changed.len(), 4);
-        assert!(matches!(
-            changed[0],
-            StatementChange::Deleted(Statement { id: 1, .. })
-        ));
+        assert!(matches!(changed[0], StatementChange::Deleted(_)));
+        assert_eq!(changed[0].statement().raw(), 1);
         assert!(matches!(
             changed[1],
-            StatementChange::Deleted(Statement { id: 0, .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
+        assert_eq!(changed[1].statement().raw(), 0);
         assert!(
             matches!(&changed[2], StatementChange::Added(AddedStatement { stmt: _, text }) if text == "select id,test from users;")
         );
@@ -856,7 +831,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 1);
 
@@ -881,7 +856,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from users;\nselect * from contacts;";
 
-        let mut d = Document::new(PgTPath::new("test.sql"), input.to_string(), 0);
+        let mut d = Document::new(input.to_string(), 0);
 
         assert_eq!(d.positions.len(), 2);
 
@@ -898,37 +873,27 @@ mod tests {
 
         assert_eq!(changed.len(), 4);
 
-        assert_eq!(
+        assert!(matches!(
             changed[0],
-            StatementChange::Deleted(Statement {
-                path: path.clone(),
-                id: 1
-            })
-        );
-        assert_eq!(
+            StatementChange::Deleted(StatementId::Root(_))
+        ));
+        assert_eq!(changed[0].statement().raw(), 1);
+        assert!(matches!(
             changed[1],
-            StatementChange::Deleted(Statement {
-                path: path.clone(),
-                id: 0
-            })
-        );
+            StatementChange::Deleted(StatementId::Root(_))
+        ));
+        assert_eq!(changed[1].statement().raw(), 0);
         assert_eq!(
             changed[2],
             StatementChange::Added(AddedStatement {
-                stmt: Statement {
-                    path: path.clone(),
-                    id: 2
-                },
+                stmt: StatementId::Root(root_id(2)),
                 text: "select id,test from users".to_string()
             })
         );
         assert_eq!(
             changed[3],
             StatementChange::Added(AddedStatement {
-                stmt: Statement {
-                    path: path.clone(),
-                    id: 3
-                },
+                stmt: StatementId::Root(root_id(3)),
                 text: "select 1;".to_string()
             })
         );
@@ -943,7 +908,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "\n";
 
-        let mut d = Document::new(path.clone(), input.to_string(), 1);
+        let mut d = Document::new(input.to_string(), 1);
 
         assert_eq!(d.positions.len(), 0);
 
@@ -983,7 +948,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from\nselect * from contacts;";
 
-        let mut d = Document::new(path.clone(), input.to_string(), 1);
+        let mut d = Document::new(input.to_string(), 1);
 
         assert_eq!(d.positions.len(), 2);
 
@@ -1014,7 +979,7 @@ mod tests {
     fn apply_changes_replacement() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "".to_string(), 0);
+        let mut doc = Document::new("".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
@@ -1136,7 +1101,6 @@ mod tests {
         let path = PgTPath::new("test.sql");
 
         let mut doc = Document::new(
-            path.clone(),
             "-- Add new schema named \"private\"\nCREATE SCHEMA \"private\";".to_string(),
             0,
         );
@@ -1156,12 +1120,8 @@ mod tests {
             doc.content,
             "- Add new schema named \"private\"\nCREATE SCHEMA \"private\";"
         );
-
         assert_eq!(changed.len(), 3);
-        assert!(matches!(
-            changed[0],
-            StatementChange::Deleted(Statement { id: 0, .. })
-        ));
+        assert!(matches!(&changed[0], StatementChange::Deleted(_)));
         assert!(matches!(
             changed[1],
             StatementChange::Added(AddedStatement { .. })
@@ -1190,11 +1150,11 @@ mod tests {
         assert_eq!(changed_2.len(), 3);
         assert!(matches!(
             changed_2[0],
-            StatementChange::Deleted(Statement { .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
         assert!(matches!(
             changed_2[1],
-            StatementChange::Deleted(Statement { .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
         assert!(matches!(
             changed_2[2],
@@ -1209,12 +1169,12 @@ mod tests {
         let input = "select id  from users;\nselect * from contacts;";
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), input.to_string(), 0);
+        let mut doc = Document::new(input.to_string(), 0);
 
         assert_eq!(doc.positions.len(), 2);
 
-        let stmt_1_range = doc.positions[0];
-        let stmt_2_range = doc.positions[1];
+        let stmt_1_range = doc.positions[0].clone();
+        let stmt_2_range = doc.positions[1].clone();
 
         let update_text = ",test";
 
@@ -1261,7 +1221,7 @@ mod tests {
         let path = PgTPath::new("test.sql");
         let input = "select id from contacts;\n\nselect * from contacts;";
 
-        let mut d = Document::new(path.clone(), input.to_string(), 1);
+        let mut d = Document::new(input.to_string(), 1);
 
         assert_eq!(d.positions.len(), 2);
 
@@ -1310,7 +1270,7 @@ mod tests {
 
         assert!(matches!(
             changes[0],
-            StatementChange::Deleted(Statement { .. })
+            StatementChange::Deleted(StatementId::Root(_))
         ));
 
         assert!(matches!(
@@ -1332,7 +1292,7 @@ mod tests {
     fn remove_trailing_whitespace() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "select * from ".to_string(), 0);
+        let mut doc = Document::new("select * from ".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
@@ -1378,7 +1338,7 @@ mod tests {
     fn remove_trailing_whitespace_and_last_char() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "select * from ".to_string(), 0);
+        let mut doc = Document::new("select * from ".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
@@ -1424,7 +1384,7 @@ mod tests {
     fn remove_inbetween_whitespace() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new(path.clone(), "select *   from users".to_string(), 0);
+        let mut doc = Document::new("select *   from users".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),

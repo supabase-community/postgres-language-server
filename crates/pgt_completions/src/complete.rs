@@ -15,7 +15,7 @@ pub struct CompletionParams<'a> {
     pub position: TextSize,
     pub schema: &'a pgt_schema_cache::SchemaCache,
     pub text: String,
-    pub tree: Option<&'a tree_sitter::Tree>,
+    pub tree: &'a tree_sitter::Tree,
 }
 
 #[tracing::instrument(level = "debug", skip_all, fields(

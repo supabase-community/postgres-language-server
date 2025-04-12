@@ -1,14 +1,13 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 use dashmap::DashMap;
 use tree_sitter::InputEdit;
 
-use super::{change::ModifiedStatement, document::Statement};
+use super::{change::ModifiedStatement, statement_identifier::StatementId};
 
 pub struct TreeSitterStore {
-    db: DashMap<Statement, Arc<tree_sitter::Tree>>,
-
-    parser: RwLock<tree_sitter::Parser>,
+    db: DashMap<StatementId, Arc<tree_sitter::Tree>>,
+    parser: Mutex<tree_sitter::Parser>,
 }
 
 impl TreeSitterStore {
@@ -20,24 +19,38 @@ impl TreeSitterStore {
 
         TreeSitterStore {
             db: DashMap::new(),
-            parser: RwLock::new(parser),
+            parser: Mutex::new(parser),
         }
     }
 
-    pub fn get_parse_tree(&self, statement: &Statement) -> Option<Arc<tree_sitter::Tree>> {
-        self.db.get(statement).map(|x| x.clone())
+    pub fn get_or_cache_tree(
+        &self,
+        statement: &StatementId,
+        content: &str,
+    ) -> Arc<tree_sitter::Tree> {
+        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
+            return existing;
+        }
+
+        let mut parser = self.parser.lock().expect("Failed to lock parser");
+        let tree = Arc::new(parser.parse(content, None).unwrap());
+        self.db.insert(statement.clone(), tree.clone());
+
+        tree
     }
 
-    pub fn add_statement(&self, statement: &Statement, content: &str) {
-        let mut guard = self.parser.write().expect("Error reading parser");
-        // todo handle error
-        let tree = guard.parse(content, None).unwrap();
-        drop(guard);
+    pub fn add_statement(&self, statement: &StatementId, content: &str) {
+        let mut parser = self.parser.lock().expect("Failed to lock parser");
+        let tree = parser.parse(content, None).unwrap();
         self.db.insert(statement.clone(), Arc::new(tree));
     }
 
-    pub fn remove_statement(&self, statement: &Statement) {
-        self.db.remove(statement);
+    pub fn remove_statement(&self, id: &StatementId) {
+        self.db.remove(id);
+
+        if let Some(child_id) = id.get_child_id() {
+            self.db.remove(&child_id);
+        }
     }
 
     pub fn modify_statement(&self, change: &ModifiedStatement) {
@@ -61,18 +74,17 @@ impl TreeSitterStore {
 
         tree.edit(&edit);
 
-        let mut guard = self.parser.write().expect("Error reading parser");
+        let mut parser = self.parser.lock().expect("Failed to lock parser");
         // todo handle error
         self.db.insert(
             change.new_stmt.clone(),
-            Arc::new(guard.parse(&change.new_stmt_text, Some(&tree)).unwrap()),
+            Arc::new(parser.parse(&change.new_stmt_text, Some(&tree)).unwrap()),
         );
-        drop(guard);
     }
 }
 
 // Converts character positions and replacement text into a tree-sitter InputEdit
-fn edit_from_change(
+pub(crate) fn edit_from_change(
     text: &str,
     start_char: usize,
     end_char: usize,
