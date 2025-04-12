@@ -21,8 +21,7 @@ pub struct Parser {
     /// The start of the current statement, if any
     current_stmt_start: Option<usize>,
 
-    /// The tokens to parse
-    pub tokens: Vec<Token>,
+    tokens: Vec<Token>,
 
     eof_token: Token,
 
@@ -32,7 +31,7 @@ pub struct Parser {
 /// Result of Building
 #[derive(Debug)]
 pub struct Parse {
-    /// The ranges of the errors
+    /// The ranges of the parsed statements
     pub ranges: Vec<TextRange>,
     /// The syntax errors accumulated during parsing
     pub errors: Vec<SplitDiagnostic>,
