@@ -164,6 +164,8 @@ impl Parser {
         }
     }
 
+    /// Will advance if the `kind` matches the current token.
+    /// Otherwise, will add a diagnostic to the internal `errors`.
     pub fn expect(&mut self, kind: SyntaxKind) {
         if self.advance_if_kind(kind) {
             return;
