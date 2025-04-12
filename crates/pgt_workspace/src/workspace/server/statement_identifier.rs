@@ -6,12 +6,14 @@ pub struct RootId {
     inner: usize,
 }
 
+#[cfg(test)]
 impl From<RootId> for usize {
     fn from(val: RootId) -> Self {
         val.inner
     }
 }
 
+#[cfg(test)]
 impl From<usize> for RootId {
     fn from(inner: usize) -> Self {
         RootId { inner }
