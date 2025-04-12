@@ -13,7 +13,7 @@ pub(crate) fn cte(p: &mut Parser) {
         p.expect(SyntaxKind::As);
         parenthesis(p);
 
-        if !p.eat(SyntaxKind::Ascii44) {
+        if !p.advance_if_kind(SyntaxKind::Ascii44) {
             break;
         }
     }

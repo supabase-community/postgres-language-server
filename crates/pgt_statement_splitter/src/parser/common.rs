@@ -9,7 +9,7 @@ use super::{
 
 pub fn source(p: &mut Parser) {
     loop {
-        match p.peek() {
+        match p.current() {
             Token {
                 kind: SyntaxKind::Eof,
                 ..
@@ -33,7 +33,7 @@ pub fn source(p: &mut Parser) {
 
 pub(crate) fn statement(p: &mut Parser) {
     p.start_stmt();
-    match p.peek().kind {
+    match p.current().kind {
         SyntaxKind::With => {
             cte(p);
         }
@@ -68,7 +68,7 @@ pub(crate) fn parenthesis(p: &mut Parser) {
     let mut depth = 1;
 
     loop {
-        match p.peek().kind {
+        match p.current().kind {
             SyntaxKind::Ascii40 => {
                 p.advance();
                 depth += 1;
@@ -91,7 +91,7 @@ pub(crate) fn case(p: &mut Parser) {
     p.expect(SyntaxKind::Case);
 
     loop {
-        match p.peek().kind {
+        match p.current().kind {
             SyntaxKind::EndP => {
                 p.advance();
                 break;
@@ -105,7 +105,7 @@ pub(crate) fn case(p: &mut Parser) {
 
 pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
     loop {
-        match p.peek() {
+        match p.current() {
             Token {
                 kind: SyntaxKind::Ascii59,
                 ..

@@ -13,18 +13,20 @@ use crate::diagnostics::SplitDiagnostic;
 /// Main parser that exposes the `cstree` api, and collects errors and statements
 /// It is modelled after a Pratt Parser. For a gentle introduction to Pratt Parsing, see https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
 pub struct Parser {
-    /// The ranges of the statements
-    ranges: Vec<(usize, usize)>,
+    stmt_ranges: Vec<(usize, usize)>,
+
     /// The syntax errors accumulated during parsing
     errors: Vec<SplitDiagnostic>,
+
     /// The start of the current statement, if any
     current_stmt_start: Option<usize>,
+
     /// The tokens to parse
     pub tokens: Vec<Token>,
 
     eof_token: Token,
 
-    next_pos: usize,
+    current_pos: usize,
 }
 
 /// Result of Building
@@ -46,35 +48,29 @@ impl Parser {
         ));
 
         // next_pos should be the initialised with the first valid token already
-        let mut next_pos = 0;
-        loop {
-            let token = tokens.get(next_pos).unwrap_or(&eof_token);
-
-            if is_irrelevant_token(token) {
-                next_pos += 1;
-            } else {
-                break;
-            }
+        let mut current_pos = 0;
+        while is_irrelevant_token(tokens.get(current_pos).unwrap_or(&eof_token)) {
+            current_pos += 1;
         }
 
         Self {
-            ranges: Vec::new(),
+            stmt_ranges: Vec::new(),
             eof_token,
             errors: Vec::new(),
             current_stmt_start: None,
             tokens,
-            next_pos,
+            current_pos,
         }
     }
 
     pub fn finish(self) -> Parse {
         Parse {
             ranges: self
-                .ranges
+                .stmt_ranges
                 .iter()
-                .map(|(start, end)| {
-                    let from = self.tokens.get(*start);
-                    let to = self.tokens.get(*end).unwrap_or(&self.eof_token);
+                .map(|(start_token_pos, end_token_pos)| {
+                    let from = self.tokens.get(*start_token_pos);
+                    let to = self.tokens.get(*end_token_pos).unwrap_or(&self.eof_token);
 
                     TextRange::new(from.unwrap().span.start(), to.span.end())
                 })
@@ -90,15 +86,25 @@ impl Parser {
             "cannot start statement within statement at {:?}",
             self.tokens.get(self.current_stmt_start.unwrap())
         );
-        self.current_stmt_start = Some(self.next_pos);
+        self.current_stmt_start = Some(self.current_pos);
     }
 
     /// Close statement
     pub fn close_stmt(&mut self) {
-        assert!(self.next_pos > 0);
+        assert!(
+            matches!(self.current_stmt_start, Some(_)),
+            "Must start statement before closing it."
+        );
+
+        let start_token_pos = self.current_stmt_start.unwrap();
+
+        assert!(
+            self.current_pos > start_token_pos,
+            "Must close the statement on a token that's later than the start token."
+        );
 
         // go back the positions until we find the first relevant token
-        let mut end_token_pos = self.next_pos - 1;
+        let mut end_token_pos = self.current_pos - 1;
         loop {
             let token = self.tokens.get(end_token_pos);
 
@@ -106,17 +112,14 @@ impl Parser {
                 break;
             }
 
-            if !is_irrelevant_token(token.unwrap()) {
+            if is_relevant(token.unwrap()) {
                 break;
             }
 
             end_token_pos -= 1;
         }
 
-        self.ranges.push((
-            self.current_stmt_start.expect("Expected active statement"),
-            end_token_pos,
-        ));
+        self.stmt_ranges.push((start_token_pos, end_token_pos));
 
         self.current_stmt_start = None;
     }
@@ -124,23 +127,23 @@ impl Parser {
     fn advance(&mut self) -> &Token {
         let mut first_relevant_token = None;
         loop {
-            let token = self.tokens.get(self.next_pos).unwrap_or(&self.eof_token);
+            let token = self.tokens.get(self.current_pos).unwrap_or(&self.eof_token);
 
             // we need to continue with next_pos until the next relevant token after we already
             // found the first one
-            if !is_irrelevant_token(token) {
+            if is_relevant(token) {
                 if let Some(t) = first_relevant_token {
                     return t;
                 }
                 first_relevant_token = Some(token);
             }
 
-            self.next_pos += 1;
+            self.current_pos += 1;
         }
     }
 
-    fn peek(&self) -> &Token {
-        match self.tokens.get(self.next_pos) {
+    fn current(&self) -> &Token {
+        match self.tokens.get(self.current_pos) {
             Some(token) => token,
             None => &self.eof_token,
         }
@@ -148,22 +151,15 @@ impl Parser {
 
     /// Look ahead to the next relevant token
     fn look_ahead(&self) -> Option<&Token> {
-        // we need to look ahead to the next relevant token
-        let mut look_ahead_pos = self.next_pos + 1;
-        loop {
-            let token = self.tokens.get(look_ahead_pos)?;
-
-            if !is_irrelevant_token(token) {
-                return Some(token);
-            }
-
-            look_ahead_pos += 1;
-        }
+        self.tokens
+            .iter()
+            .skip(self.current_pos + 1)
+            .find(|t| is_relevant(t))
     }
 
     fn look_back(&self) -> Option<&Token> {
         // we need to look back to the last relevant token
-        let mut look_back_pos = self.next_pos - 1;
+        let mut look_back_pos = self.current_pos - 1;
         loop {
             let token = self.tokens.get(look_back_pos);
 
@@ -171,7 +167,7 @@ impl Parser {
                 return None;
             }
 
-            if !is_irrelevant_token(token.unwrap()) {
+            if is_relevant(token.unwrap()) {
                 return token;
             }
 
@@ -179,10 +175,9 @@ impl Parser {
         }
     }
 
-    /// checks if the current token is of `kind` and advances if true
-    /// returns true if the current token is of `kind`
-    pub fn eat(&mut self, kind: SyntaxKind) -> bool {
-        if self.peek().kind == kind {
+    /// Returns `true` when it advanced, `false` if it didn't
+    pub fn advance_if_kind(&mut self, kind: SyntaxKind) -> bool {
+        if self.current().kind == kind {
             self.advance();
             true
         } else {
@@ -191,13 +186,13 @@ impl Parser {
     }
 
     pub fn expect(&mut self, kind: SyntaxKind) {
-        if self.eat(kind) {
+        if self.advance_if_kind(kind) {
             return;
         }
 
         self.errors.push(SplitDiagnostic::new(
             format!("Expected {:#?}", kind),
-            self.peek().span,
+            self.current().span,
         ));
     }
 }
@@ -216,4 +211,8 @@ fn is_irrelevant_token(t: &Token) -> bool {
 fn is_irrelevant_token(t: &Token) -> bool {
     WHITESPACE_TOKENS.contains(&t.kind)
         && (t.kind != SyntaxKind::Newline || t.text.chars().count() == 1)
+}
+
+fn is_relevant(t: &Token) -> bool {
+    !is_irrelevant_token(t)
 }
