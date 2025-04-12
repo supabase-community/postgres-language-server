@@ -103,21 +103,13 @@ impl Parser {
             "Must close the statement on a token that's later than the start token."
         );
 
-        // go back the positions until we find the first relevant token
-        let mut end_token_pos = self.current_pos - 1;
-        loop {
-            let token = self.tokens.get(end_token_pos);
-
-            if end_token_pos == 0 || token.is_none() {
-                break;
-            }
-
-            if is_relevant(token.unwrap()) {
-                break;
-            }
-
-            end_token_pos -= 1;
-        }
+        // find last relevant token before current position
+        let (end_token_pos, _) = self
+            .tokens
+            .iter()
+            .enumerate()
+            .rfind(|(i, t)| is_relevant(t) && i < &self.current_pos)
+            .unwrap();
 
         self.stmt_ranges.push((start_token_pos, end_token_pos));
 
@@ -161,8 +153,7 @@ impl Parser {
         self.tokens
             .iter()
             .take(self.current_pos)
-            .rev()
-            .find(|t| is_relevant(t))
+            .rfind(|t| is_relevant(t))
     }
 
     /// Returns `true` when it advanced, `false` if it didn't
