@@ -137,6 +137,18 @@ impl Document {
         diff_size: TextSize,
         is_addition: bool,
     ) -> Affected {
+        // special case: no previous statements -> always full range
+        if self.positions.is_empty() {
+            let full_range = TextRange::new(0.into(), content_size);
+            return Affected {
+                affected_range: full_range,
+                affected_indices: Vec::new(),
+                prev_index: None,
+                next_index: None,
+                full_affected_range: full_range,
+            };
+        }
+
         let mut start = change_range.start();
         let mut end = change_range.end().min(content_size);
 
@@ -1419,6 +1431,104 @@ mod tests {
 
             _ => assert!(false, "Did not yield a modified statement."),
         }
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn test_comments_only() {
+        let path = PgTPath::new("test.sql");
+        let initial_content = "-- atlas:import async_trigger/setup.sql\n-- atlas:import public/setup.sql\n-- atlas:import private/setup.sql\n-- atlas:import api/setup.sql\n-- atlas:import async_trigger/index.sql\n-- atlas:import public/enums/index.sql\n-- atlas:import public/types/index.sql\n-- atlas:import private/enums/index.sql\n-- atlas:import private/functions/index.sql\n-- atlas:import public/tables/index.sql\n-- atlas:import public/index.sql\n-- atlas:import private/index.sql\n-- atlas:import api/index.sql\n\n\n\n";
+
+        // Create a new document
+        let mut doc = Document::new(initial_content.to_string(), 0);
+
+        // First change: Delete some text at line 2, character 24-29
+        let change1 = ChangeFileParams {
+            path: path.clone(),
+            version: 3,
+            changes: vec![ChangeParams {
+                text: "".to_string(),
+                range: Some(TextRange::new(
+                    // Calculate the correct position based on the content
+                    // Line 2, character 24
+                    98.into(),
+                    // Line 2, character 29
+                    103.into(),
+                )),
+            }],
+        };
+
+        let _changes1 = doc.apply_file_change(&change1);
+
+        // Second change: Add 't' at line 2, character 24
+        let change2 = ChangeFileParams {
+            path: path.clone(),
+            version: 4,
+            changes: vec![ChangeParams {
+                text: "t".to_string(),
+                range: Some(TextRange::new(98.into(), 98.into())),
+            }],
+        };
+
+        let _changes2 = doc.apply_file_change(&change2);
+
+        assert_eq!(
+            doc.positions.len(),
+            0,
+            "Document should have no statement after adding 't'"
+        );
+
+        // Third change: Add 'e' at line 2, character 25
+        let change3 = ChangeFileParams {
+            path: path.clone(),
+            version: 5,
+            changes: vec![ChangeParams {
+                text: "e".to_string(),
+                range: Some(TextRange::new(99.into(), 99.into())),
+            }],
+        };
+
+        let _changes3 = doc.apply_file_change(&change3);
+        assert_eq!(
+            doc.positions.len(),
+            0,
+            "Document should still have no statement"
+        );
+
+        // Fourth change: Add 's' at line 2, character 26
+        let change4 = ChangeFileParams {
+            path: path.clone(),
+            version: 6,
+            changes: vec![ChangeParams {
+                text: "s".to_string(),
+                range: Some(TextRange::new(100.into(), 100.into())),
+            }],
+        };
+
+        let _changes4 = doc.apply_file_change(&change4);
+        assert_eq!(
+            doc.positions.len(),
+            0,
+            "Document should still have no statement"
+        );
+
+        // Fifth change: Add 't' at line 2, character 27
+        let change5 = ChangeFileParams {
+            path: path.clone(),
+            version: 7,
+            changes: vec![ChangeParams {
+                text: "t".to_string(),
+                range: Some(TextRange::new(101.into(), 101.into())),
+            }],
+        };
+
+        let _changes5 = doc.apply_file_change(&change5);
+        assert_eq!(
+            doc.positions.len(),
+            0,
+            "Document should still have no statement"
+        );
 
         assert_document_integrity(&doc);
     }
