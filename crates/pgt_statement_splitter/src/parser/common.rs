@@ -28,7 +28,6 @@ pub fn source(p: &mut Parser) {
                 kind: SyntaxKind::Ascii92,
                 ..
             } => {
-                println!("current {:?}", p.current());
                 plpgsql_command(p);
             }
             _ => {
