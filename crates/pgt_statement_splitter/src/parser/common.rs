@@ -1,4 +1,4 @@
-use pgt_lexer::{SyntaxKind, Token, TokenType};
+use pgt_lexer::{SyntaxKind, Token, TokenType, WHITESPACE_TOKENS};
 
 use super::{
     Parser,
@@ -23,6 +23,13 @@ pub fn source(p: &mut Parser) {
                 ..
             } => {
                 p.advance();
+            }
+            Token {
+                kind: SyntaxKind::Ascii92,
+                ..
+            } => {
+                println!("current {:?}", p.current());
+                plpgsql_command(p);
             }
             _ => {
                 statement(p);
@@ -87,6 +94,24 @@ pub(crate) fn parenthesis(p: &mut Parser) {
     }
 }
 
+pub(crate) fn plpgsql_command(p: &mut Parser) {
+    p.expect(SyntaxKind::Ascii92);
+
+    loop {
+        match p.current().kind {
+            SyntaxKind::Newline => {
+                p.advance();
+                break;
+            }
+            _ => {
+                // advance the parser to the next token without ignoring irrelevant tokens
+                // we would skip a newline with `advance()`
+                p.current_pos += 1;
+            }
+        }
+    }
+}
+
 pub(crate) fn case(p: &mut Parser) {
     p.expect(SyntaxKind::Case);
 
@@ -124,6 +149,36 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                 ..
             } => {
                 case(p);
+            }
+            Token {
+                kind: SyntaxKind::Ascii92,
+                ..
+            } => {
+                // pgsql commands e.g.
+                //
+                // ```
+                // \if test
+                // ```
+                //
+                // we wait for "\" and check if the previous token is a newline
+
+                // newline is a whitespace, but we do not want to ignore it here
+                let irrelevant = WHITESPACE_TOKENS
+                    .iter()
+                    .filter(|t| **t != SyntaxKind::Newline)
+                    .collect::<Vec<_>>();
+
+                // go back from the current position without ignoring irrelevant tokens
+                if p.tokens
+                    .iter()
+                    .take(p.current_pos)
+                    .rev()
+                    .find(|t| !irrelevant.contains(&&t.kind))
+                    .is_some_and(|t| t.kind == SyntaxKind::Newline)
+                {
+                    break;
+                }
+                p.advance();
             }
             Token {
                 kind: SyntaxKind::Ascii40,

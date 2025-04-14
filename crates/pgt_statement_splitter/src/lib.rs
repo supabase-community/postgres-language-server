@@ -137,6 +137,24 @@ mod tests {
     }
 
     #[test]
+    fn command_between_not_starting() {
+        Tester::from("select 1\n      \\com test\nselect 2")
+            .expect_statements(vec!["select 1", "select 2"]);
+    }
+
+    #[test]
+    fn command_between() {
+        Tester::from("select 1\n\\com test\nselect 2")
+            .expect_statements(vec!["select 1", "select 2"]);
+    }
+
+    #[test]
+    fn command_standalone() {
+        Tester::from("select 1\n\n\\com test\n\nselect 2")
+            .expect_statements(vec!["select 1", "select 2"]);
+    }
+
+    #[test]
     fn insert_with_select() {
         Tester::from("\ninsert into tbl (id) select 1\n\nselect 3")
             .expect_statements(vec!["insert into tbl (id) select 1", "select 3"]);

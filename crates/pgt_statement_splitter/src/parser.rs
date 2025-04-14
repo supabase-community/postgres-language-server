@@ -113,6 +113,9 @@ impl Parser {
         }
     }
 
+    /// Advances the parser to the next relevant token and returns it.
+    ///
+    /// NOTE: This will skip irrelevant tokens.
     fn advance(&mut self) -> &Token {
         // can't reuse any `find_next_relevant` logic because of Mr. Borrow Checker
         let (pos, token) = self
