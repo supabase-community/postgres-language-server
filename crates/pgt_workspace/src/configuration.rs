@@ -175,6 +175,7 @@ pub fn create_config(
     if fs.open_with_options(node_schema_path, options).is_ok() {
         configuration.schema = node_schema_path.to_str().map(String::from);
     } else if VERSION == "0.0.0" {
+    // VERSION is 0.0.0 if it has not been explicitly set (e.g local dev, as fallback) 
         configuration.schema = Some("https://pgtools.dev/schemas/latest/schema.json".to_string());
     } else {
         configuration.schema = Some(format!("https://pgtools.dev/schemas/{VERSION}/schema.json"));
