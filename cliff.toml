@@ -8,14 +8,14 @@
 [changelog]
 # template for the changelog header
 header = """
-# Changelog\n
-All notable changes to this project will be documented in this file.\n
+# Postgres Language Server\n
+A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.\n
 """
 # template for the changelog body
 # https://keats.github.io/tera/docs/#introduction
 body = """
 {% if version %}\
-    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+    ## {{ version | trim_start_matches(pat="v") }}
 {% else %}\
     ## [unreleased]
 {% endif %}\

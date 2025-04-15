@@ -126,7 +126,7 @@ jobs:
         id: create_changelog
         with:
           config: cliff.toml
-          args: --bump
+          args: --bump --latest
         env:
           GITHUB_REPO: ${{ github.repository }}
 
