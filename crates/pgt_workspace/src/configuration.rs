@@ -170,12 +170,14 @@ pub fn create_config(
     })?;
 
     // we now check if postgrestools is installed inside `node_modules` and if so, we use the schema from there
-    let schema_path = Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
+    let node_schema_path = Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
     let options = OpenOptions::default().read(true);
-    if fs.open_with_options(schema_path, options).is_ok() {
-        configuration.schema = schema_path.to_str().map(String::from);
-    } else {
+    if fs.open_with_options(node_schema_path, options).is_ok() {
+        configuration.schema = node_schema_path.to_str().map(String::from);
+    } else if VERSION == "0.0.0" {
         configuration.schema = Some("https://pgtools.dev/schemas/latest/schema.json".to_string());
+    } else {
+        configuration.schema = Some(format!("https://pgtools.dev/schemas/{VERSION}/schema.json"));
     }
 
     let contents = serde_json::to_string_pretty(&configuration)
