@@ -132,7 +132,7 @@ impl LanguageServer for LSPServer {
             ConfigName::pgt_jsonc()
         );
 
-        futures::join!(self.session.load_workspace_settings());
+        futures::join!(self.session.load_workspace_settings(None));
 
         let msg = format!("Server initialized with PID: {}", std::process::id());
         self.session
@@ -152,8 +152,10 @@ impl LanguageServer for LSPServer {
     }
 
     #[tracing::instrument(level = "info", skip_all)]
-    async fn did_change_configuration(&self, _params: DidChangeConfigurationParams) {
-        self.session.load_workspace_settings().await;
+    async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
+        self.session
+            .load_workspace_settings(serde_json::from_value(params.settings).ok())
+            .await;
         self.setup_capabilities().await;
         self.session.update_all_diagnostics().await;
     }
@@ -174,7 +176,7 @@ impl LanguageServer for LSPServer {
                             if ConfigName::file_names()
                                 .contains(&&*watched_file.display().to_string())
                             {
-                                self.session.load_workspace_settings().await;
+                                self.session.load_workspace_settings(None).await;
                                 self.setup_capabilities().await;
                                 // self.session.update_all_diagnostics().await;
                                 // for now we are only interested to the configuration file,

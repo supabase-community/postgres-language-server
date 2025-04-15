@@ -6,7 +6,7 @@ use anyhow::Result;
 use futures::StreamExt;
 use futures::stream::FuturesUnordered;
 use pgt_analyse::RuleCategoriesBuilder;
-use pgt_configuration::ConfigurationPathHint;
+use pgt_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgt_diagnostics::{DiagnosticExt, Error};
 use pgt_fs::{FileSystem, PgTPath};
 use pgt_workspace::Workspace;
@@ -386,11 +386,11 @@ impl Session {
     /// This function attempts to read the `postgrestools.jsonc` configuration file from
     /// the root URI and update the workspace settings accordingly
     #[tracing::instrument(level = "trace", skip(self))]
-    pub(crate) async fn load_workspace_settings(&self) {
+    pub(crate) async fn load_workspace_settings(&self, params: Option<PartialConfiguration>) {
         // Providing a custom configuration path will not allow to support workspaces
         if let Some(config_path) = &self.config_path {
             let base_path = ConfigurationPathHint::FromUser(config_path.clone());
-            let status = self.load_pgt_configuration_file(base_path).await;
+            let status = self.load_pgt_configuration_file(base_path, params).await;
             self.set_configuration_status(status);
         } else if let Some(folders) = self.get_workspace_folders() {
             info!("Detected workspace folder.");
@@ -401,9 +401,10 @@ impl Session {
                 match base_path {
                     Ok(base_path) => {
                         let status = self
-                            .load_pgt_configuration_file(ConfigurationPathHint::FromWorkspace(
-                                base_path,
-                            ))
+                            .load_pgt_configuration_file(
+                                ConfigurationPathHint::FromWorkspace(base_path),
+                                params.clone(),
+                            )
                             .await;
                         self.set_configuration_status(status);
                     }
@@ -420,7 +421,7 @@ impl Session {
                 None => ConfigurationPathHint::default(),
                 Some(path) => ConfigurationPathHint::FromLsp(path),
             };
-            let status = self.load_pgt_configuration_file(base_path).await;
+            let status = self.load_pgt_configuration_file(base_path, params).await;
             self.set_configuration_status(status);
         }
     }
@@ -428,6 +429,7 @@ impl Session {
     async fn load_pgt_configuration_file(
         &self,
         base_path: ConfigurationPathHint,
+        extra_config: Option<PartialConfiguration>,
     ) -> ConfigurationStatus {
         match load_configuration(&self.fs, base_path.clone()) {
             Ok(loaded_configuration) => {
@@ -446,7 +448,10 @@ impl Session {
                     Ok((vcs_base_path, gitignore_matches)) => {
                         let result = self.workspace.update_settings(UpdateSettingsParams {
                             workspace_directory: self.fs.working_directory(),
-                            configuration: fs_configuration,
+                            configuration: match extra_config {
+                                Some(config) => fs_configuration.clone().merge(config),
+                                None => fs_configuration,
+                            },
                             vcs_base_path,
                             gitignore_matches,
                             skip_db: false,
