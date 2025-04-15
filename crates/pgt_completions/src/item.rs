@@ -7,6 +7,7 @@ pub enum CompletionItemKind {
     Table,
     Function,
     Column,
+    Schema,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

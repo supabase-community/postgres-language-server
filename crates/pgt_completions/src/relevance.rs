@@ -5,6 +5,7 @@ pub(crate) enum CompletionRelevanceData<'a> {
     Table(&'a pgt_schema_cache::Table),
     Function(&'a pgt_schema_cache::Function),
     Column(&'a pgt_schema_cache::Column),
+    Schema(&'a pgt_schema_cache::Schema),
 }
 
 impl CompletionRelevanceData<'_> {
@@ -58,6 +59,7 @@ impl CompletionRelevance<'_> {
             CompletionRelevanceData::Function(f) => f.name.as_str(),
             CompletionRelevanceData::Table(t) => t.name.as_str(),
             CompletionRelevanceData::Column(c) => c.name.as_str(),
+            CompletionRelevanceData::Schema(s) => s.name.as_str(),
         };
 
         if name.starts_with(content) {
@@ -97,6 +99,10 @@ impl CompletionRelevance<'_> {
                 ClauseType::Where => 10,
                 _ => -15,
             },
+            CompletionRelevanceData::Schema(_) => match clause_type {
+                ClauseType::From => 15,
+                _ => -50,
+            },
         }
     }
 
@@ -129,6 +135,7 @@ impl CompletionRelevance<'_> {
             CompletionRelevanceData::Function(f) => f.schema.as_str(),
             CompletionRelevanceData::Table(t) => t.schema.as_str(),
             CompletionRelevanceData::Column(c) => c.schema_name.as_str(),
+            CompletionRelevanceData::Schema(s) => s.name.as_str(),
         }
     }
 
@@ -168,11 +175,7 @@ impl CompletionRelevance<'_> {
     }
 
     fn check_is_user_defined(&mut self) {
-        let schema = match self.data {
-            CompletionRelevanceData::Column(c) => &c.schema_name,
-            CompletionRelevanceData::Function(f) => &f.schema,
-            CompletionRelevanceData::Table(t) => &t.schema,
-        };
+        let schema = self.get_schema_name().to_string();
 
         let system_schemas = ["pg_catalog", "information_schema", "pg_toast"];
 

@@ -27,7 +27,7 @@ fn to_params<'a>(
         position: TextSize::new(pos),
         schema: &cache,
         text,
-        tree: Some(tree),
+        tree: tree,
     }
 }
 

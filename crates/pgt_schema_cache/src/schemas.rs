@@ -4,9 +4,9 @@ use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema {
-    id: i64,
-    name: String,
-    owner: String,
+    pub id: i64,
+    pub name: String,
+    pub owner: String,
 }
 
 impl SchemaCacheItem for Schema {

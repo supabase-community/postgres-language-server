@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_cursor_after_nodes() {
-        let input = "select * from";
+        let input = "select * from ";
 
         let mut parser = tree_sitter::Parser::new();
         parser
