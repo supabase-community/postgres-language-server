@@ -25,7 +25,7 @@ pub fn complete_schemas(ctx: &CompletionContext, builder: &mut CompletionBuilder
 mod tests {
 
     use crate::{
-        CompletionItem, CompletionItemKind, complete,
+        CompletionItemKind, complete,
         test_helper::{CURSOR_POS, get_test_deps, get_test_params},
     };
 
@@ -35,6 +35,13 @@ mod tests {
             create schema private;
             create schema auth;
             create schema internal;
+
+            -- add a table to compete against schemas
+            create table users (
+                id serial primary key,
+                name text,
+                password text
+            );
         "#;
 
         let query = format!("select * from {}", CURSOR_POS);
@@ -45,24 +52,18 @@ mod tests {
 
         assert!(!items.is_empty());
 
-        for item in items.iter().take(10) {
-            println!(
-                r#""{}", score: {}, kind: {:?}"#,
-                item.label, item.score, item.kind
-            );
-        }
-
         assert_eq!(
             items
                 .into_iter()
-                .take(4)
-                .map(|i| i.label)
-                .collect::<Vec<String>>(),
+                .take(5)
+                .map(|i| (i.label, i.kind))
+                .collect::<Vec<(String, CompletionItemKind)>>(),
             vec![
-                "public".to_string(), // public always preferred
-                "auth".to_string(),
-                "internal".to_string(),
-                "private".to_string()
+                ("public".to_string(), CompletionItemKind::Schema),
+                ("auth".to_string(), CompletionItemKind::Schema),
+                ("internal".to_string(), CompletionItemKind::Schema),
+                ("private".to_string(), CompletionItemKind::Schema),
+                ("users".to_string(), CompletionItemKind::Table),
             ]
         );
     }

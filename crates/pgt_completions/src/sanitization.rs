@@ -42,12 +42,28 @@ where
         let cursor_pos: usize = params.position.into();
         let mut sql = String::new();
 
-        for (idx, c) in params.text.chars().enumerate() {
-            if idx == cursor_pos {
-                sql.push_str(SANITIZED_TOKEN);
-                sql.push(' ');
+        let mut sql_iter = params.text.chars();
+
+        for idx in 0..cursor_pos + 1 {
+            match sql_iter.next() {
+                Some(c) => {
+                    if idx == cursor_pos {
+                        sql.push_str(SANITIZED_TOKEN);
+                        sql.push(' ');
+                    }
+                    sql.push(c);
+                }
+                None => {
+                    // the cursor is outside the statement,
+                    // we want to push spaces until we arrive at the cursor position.
+                    // we'll then add the SANITIZED_TOKEN
+                    if idx == cursor_pos {
+                        sql.push_str(SANITIZED_TOKEN);
+                    } else {
+                        sql.push(' ');
+                    }
+                }
             }
-            sql.push(c);
         }
 
         let mut parser = tree_sitter::Parser::new();
@@ -213,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_cursor_after_nodes() {
-        let input = "select * from ";
+        let input = "select * from";
 
         let mut parser = tree_sitter::Parser::new();
         parser

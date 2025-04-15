@@ -100,7 +100,7 @@ impl CompletionRelevance<'_> {
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match clause_type {
-                ClauseType::From => 15,
+                ClauseType::From => 10,
                 _ => -50,
             },
         }

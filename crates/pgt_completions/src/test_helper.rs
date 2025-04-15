@@ -18,7 +18,7 @@ impl From<&str> for InputQuery {
             .expect("Insert Cursor Position into your Query.");
 
         InputQuery {
-            sql: value.replace(CURSOR_POS, ""),
+            sql: value.replace(CURSOR_POS, "").trim().to_string(),
             position,
         }
     }
