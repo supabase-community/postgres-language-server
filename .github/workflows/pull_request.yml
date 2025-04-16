@@ -100,6 +100,7 @@ jobs:
         uses: biomejs/setup-biome@v2
         with:
           version: latest
+
       - name: Run Lints
         run: |
           cargo sqlx prepare --check --workspace
@@ -109,13 +110,10 @@ jobs:
 
       - name: Check for changes
         run: |
-          echo $(git status)
-          clean=$(git status | grep "nothing to commit (working directory clean)")
-          if [ -z "$clean" ]; then
-              echo There are uncommitted changes.
-              exit 1
-          else
-              echo Branch is clean.
+          if [[ $(git status --porcelain) ]]; then
+            git status
+            git diff
+            exit 1
           fi
 
   test:
