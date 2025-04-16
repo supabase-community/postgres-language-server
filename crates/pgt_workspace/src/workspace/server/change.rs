@@ -461,6 +461,72 @@ mod tests {
     }
 
     #[test]
+    fn typing_comments() {
+        let path = PgTPath::new("test.sql");
+        let input = "select id from users;\n";
+
+        let mut d = Document::new(input.to_string(), 0);
+
+        let change1 = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![ChangeParams {
+                text: "-".to_string(),
+                range: Some(TextRange::new(22.into(), 23.into())),
+            }],
+        };
+
+        let _changed1 = d.apply_file_change(&change1);
+
+        assert_eq!(d.content, "select id from users;\n-");
+        assert_eq!(d.positions.len(), 2);
+
+        let change2 = ChangeFileParams {
+            path: path.clone(),
+            version: 2,
+            changes: vec![ChangeParams {
+                text: "-".to_string(),
+                range: Some(TextRange::new(23.into(), 24.into())),
+            }],
+        };
+
+        let _changed2 = d.apply_file_change(&change2);
+
+        assert_eq!(d.content, "select id from users;\n--");
+        assert_eq!(d.positions.len(), 1);
+
+        let change3 = ChangeFileParams {
+            path: path.clone(),
+            version: 3,
+            changes: vec![ChangeParams {
+                text: " ".to_string(),
+                range: Some(TextRange::new(24.into(), 25.into())),
+            }],
+        };
+
+        let _changed3 = d.apply_file_change(&change3);
+
+        assert_eq!(d.content, "select id from users;\n-- ");
+        assert_eq!(d.positions.len(), 1);
+
+        let change4 = ChangeFileParams {
+            path: path.clone(),
+            version: 3,
+            changes: vec![ChangeParams {
+                text: "t".to_string(),
+                range: Some(TextRange::new(25.into(), 26.into())),
+            }],
+        };
+
+        let _changed4 = d.apply_file_change(&change4);
+
+        assert_eq!(d.content, "select id from users;\n-- t");
+        assert_eq!(d.positions.len(), 1);
+
+        assert_document_integrity(&d);
+    }
+
+    #[test]
     fn change_into_scan_error_within_statement() {
         let path = PgTPath::new("test.sql");
         let input = "select id from users;\n\n\n\nselect 1;";
