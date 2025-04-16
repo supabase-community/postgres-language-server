@@ -108,7 +108,14 @@ jobs:
           biome lint --write
 
       - name: Check for changes
-        run: git status | grep -q "nothing to commit (working directory clean)" && echo "Branch is clean." || (echo "There are uncommitted changes." && exit 1)
+        run: |
+          clean=$(git status | grep "nothing to commit (working directory clean)")
+          if [ -z "$clean" ]; then
+              echo There are uncommitted changes.
+              exit 1
+          else
+              echo Branch is clean.
+          fi
 
   test:
     name: Test
