@@ -29,8 +29,8 @@ impl IntoIterator for CompletionsResult {
     }
 }
 
-pub(crate) fn get_statement_for_completions<'a>(
-    doc: &'a ParsedDocument,
+pub(crate) fn get_statement_for_completions(
+    doc: &ParsedDocument,
     position: TextSize,
 ) -> Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> {
     let count = doc.count();
@@ -89,7 +89,7 @@ mod tests {
         (
             ParsedDocument::new(
                 PgTPath::new("test.sql"),
-                sql.replace(CURSOR_POSITION, "").into(),
+                sql.replace(CURSOR_POSITION, ""),
                 5,
             ),
             TextSize::new(pos),
@@ -119,14 +119,11 @@ mod tests {
 
     #[test]
     fn does_not_break_when_no_statements_exist() {
-        let sql = format!("{}", CURSOR_POSITION);
+        let sql = CURSOR_POSITION.to_string();
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        assert!(matches!(
-            get_statement_for_completions(&doc, position),
-            None
-        ));
+        assert!(get_statement_for_completions(&doc, position).is_none());
     }
 
     #[test]
@@ -138,10 +135,7 @@ mod tests {
         // make sure these are parsed as two
         assert_eq!(doc.count(), 2);
 
-        assert!(matches!(
-            get_statement_for_completions(&doc, position),
-            None
-        ));
+        assert!(get_statement_for_completions(&doc, position).is_none());
     }
 
     #[test]
@@ -174,10 +168,7 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        assert!(matches!(
-            get_statement_for_completions(&doc, position),
-            None
-        ));
+        assert!(get_statement_for_completions(&doc, position).is_none());
     }
 
     #[test]
@@ -186,9 +177,6 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        assert!(matches!(
-            get_statement_for_completions(&doc, position),
-            None
-        ));
+        assert!(get_statement_for_completions(&doc, position).is_none());
     }
 }

@@ -12,7 +12,7 @@ pub(crate) struct SanitizedCompletionParams<'a> {
 }
 
 pub fn benchmark_sanitization(params: CompletionParams) -> String {
-    let params: SanitizedCompletionParams = params.try_into().unwrap();
+    let params: SanitizedCompletionParams = params.into();
     params.text
 }
 
@@ -212,7 +212,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let mut tree = parser.parse(input.to_string(), None).unwrap();
+        let mut tree = parser.parse(input, None).unwrap();
 
         // select | from users; <-- just right, one space after select token, one space before from
         assert!(cursor_inbetween_nodes(&mut tree, TextSize::new(7)));
@@ -236,7 +236,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let mut tree = parser.parse(input.to_string(), None).unwrap();
+        let mut tree = parser.parse(input, None).unwrap();
 
         // select * from| <-- still on previous token
         assert!(!cursor_prepared_to_write_token_after_last_node(
@@ -274,7 +274,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let mut tree = parser.parse(input.to_string(), None).unwrap();
+        let mut tree = parser.parse(input, None).unwrap();
 
         // select * from     ;| <-- it's after the statement
         assert!(!cursor_before_semicolon(&mut tree, TextSize::new(19)));

@@ -7,7 +7,7 @@ pub fn complete_schemas(ctx: &CompletionContext, builder: &mut CompletionBuilder
     let available_schemas = &ctx.schema_cache.schemas;
 
     for schema in available_schemas {
-        let relevance = CompletionRelevanceData::Schema(&schema);
+        let relevance = CompletionRelevanceData::Schema(schema);
 
         let item = CompletionItem {
             label: schema.name.clone(),
