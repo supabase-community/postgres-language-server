@@ -404,3 +404,27 @@ impl<'a> StatementFilter<'a> for IdFilter {
         *id == self.id
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use pgt_fs::PgTPath;
+
+    #[test]
+    fn sql_function_body() {
+        let input = "CREATE FUNCTION add(integer, integer) RETURNS integer
+    AS 'select $1 + $2;'
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;";
+
+        let path = PgTPath::new("test.sql");
+
+        let d = ParsedDocument::new(path, input.to_string(), 0);
+
+        let stmts = d.iter(DefaultMapper).collect::<Vec<_>>();
+
+        assert_eq!(stmts.len(), 2);
+    }
+}
