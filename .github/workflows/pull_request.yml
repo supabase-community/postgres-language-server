@@ -103,9 +103,13 @@ jobs:
       - name: Run Lints
         run: |
           cargo sqlx prepare --check --workspace
-          cargo clippy
+          cargo clippy --fix
           cargo run -p rules_check
-          biome lint
+          biome lint --write
+
+      - name: Check for changes
+        id: git-check
+        run: git diff-index --quiet HEAD --
 
   test:
     name: Test
