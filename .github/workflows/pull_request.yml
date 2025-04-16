@@ -109,7 +109,7 @@ jobs:
 
       - name: Check for changes
         id: git-check
-        run: git diff-index --quiet HEAD --
+        run: git diff-index HEAD --
 
   test:
     name: Test
