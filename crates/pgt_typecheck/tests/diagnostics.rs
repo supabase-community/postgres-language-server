@@ -37,7 +37,7 @@ async fn test(name: &str, query: &str, setup: &str) {
 
     Formatter::new(&mut writer)
         .write_markup(markup! {
-            {PrintDiagnostic::simple(&result.unwrap())}
+            {PrintDiagnostic::simple(&result.unwrap().unwrap())}
         })
         .unwrap();
 

@@ -3,10 +3,9 @@ mod diagnostics;
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
 use pgt_text_size::TextRange;
-use sqlx::Executor;
-use sqlx::PgPool;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
+use sqlx::{Executor, PgPool};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
@@ -29,7 +28,9 @@ pub struct TypeError {
     pub constraint: Option<String>,
 }
 
-pub async fn check_sql(params: TypecheckParams<'_>) -> Option<TypecheckDiagnostic> {
+pub async fn check_sql(
+    params: TypecheckParams<'_>,
+) -> Result<Option<TypecheckDiagnostic>, sqlx::Error> {
     // Check if the AST is not a supported statement type
     if !matches!(
         params.ast,
@@ -39,13 +40,10 @@ pub async fn check_sql(params: TypecheckParams<'_>) -> Option<TypecheckDiagnosti
             | pgt_query_ext::NodeEnum::DeleteStmt(_)
             | pgt_query_ext::NodeEnum::CommonTableExpr(_)
     ) {
-        return None;
+        return Ok(None);
     }
 
-    let mut conn = match params.conn.acquire().await {
-        Ok(c) => c,
-        Err(_) => return None,
-    };
+    let mut conn = params.conn.acquire().await?;
 
     // Postgres caches prepared statements within the current DB session (connection).
     // This can cause issues if the underlying table schema changes while statements
@@ -53,14 +51,14 @@ pub async fn check_sql(params: TypecheckParams<'_>) -> Option<TypecheckDiagnosti
     // each typecheck operation.
     conn.close_on_drop();
 
-    let res = conn.prepare(params.sql).await;
+    let res = params.conn.prepare(params.sql).await;
 
     match res {
-        Ok(_) => None,
+        Ok(_) => Ok(None),
         Err(sqlx::Error::Database(err)) => {
             let pg_err = err.downcast_ref::<PgDatabaseError>();
-            Some(create_type_error(pg_err, params.tree))
+            Ok(Some(create_type_error(pg_err, params.tree)))
         }
-        Err(_) => None,
+        Err(err) => Err(err),
     }
 }
