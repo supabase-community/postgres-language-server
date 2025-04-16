@@ -108,8 +108,7 @@ jobs:
           biome lint --write
 
       - name: Check for changes
-        id: git-check
-        run: git diff-index HEAD --
+        run: git status | grep -q "nothing to commit (working directory clean)" && echo "Branch is clean." || (echo "There are uncommitted changes." && exit 1)
 
   test:
     name: Test
