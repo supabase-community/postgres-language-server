@@ -51,7 +51,7 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let res = params.conn.prepare(params.sql).await;
+    let res = conn.prepare(params.sql).await;
 
     match res {
         Ok(_) => Ok(None),
