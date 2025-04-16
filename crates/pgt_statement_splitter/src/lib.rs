@@ -106,6 +106,14 @@ mod tests {
     }
 
     #[test]
+    fn grant() {
+        Tester::from("GRANT SELECT ON TABLE \"public\".\"my_table\" TO \"my_role\";")
+            .expect_statements(vec![
+                "GRANT SELECT ON TABLE \"public\".\"my_table\" TO \"my_role\";",
+            ]);
+    }
+
+    #[test]
     fn double_newlines() {
         Tester::from("select 1 from contact\n\nselect 1\n\nselect 3").expect_statements(vec![
             "select 1 from contact",
