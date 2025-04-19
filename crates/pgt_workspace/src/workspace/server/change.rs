@@ -137,18 +137,6 @@ impl Document {
         diff_size: TextSize,
         is_addition: bool,
     ) -> Affected {
-        // special case: no previous statements -> always full range
-        if self.positions.is_empty() {
-            let full_range = TextRange::new(0.into(), content_size);
-            return Affected {
-                affected_range: full_range,
-                affected_indices: Vec::new(),
-                prev_index: None,
-                next_index: None,
-                full_affected_range: full_range,
-            };
-        }
-
         let mut start = change_range.start();
         let mut end = change_range.end().min(content_size);
 
@@ -169,6 +157,16 @@ impl Document {
                 next_index = Some(index);
                 break;
             }
+        }
+
+        if affected_indices.is_empty() && prev_index.is_none() {
+            // if there is no prev_index and no intersection -> use 0
+            start = 0.into();
+        }
+
+        if affected_indices.is_empty() && next_index.is_none() {
+            // if there is no next_index and no intersection -> use content_size
+            end = content_size;
         }
 
         let first_affected_stmt_start = prev_index
@@ -458,6 +456,72 @@ mod tests {
 
         assert_eq!(d.positions.len(), 0);
         assert!(d.has_fatal_error());
+    }
+
+    #[test]
+    fn comments_at_begin() {
+        let path = PgTPath::new("test.sql");
+        let input = "\nselect id from users;\n";
+
+        let mut d = Document::new(input.to_string(), 0);
+
+        let change1 = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![ChangeParams {
+                text: "-".to_string(),
+                range: Some(TextRange::new(0.into(), 0.into())),
+            }],
+        };
+
+        let _changed1 = d.apply_file_change(&change1);
+
+        assert_eq!(d.content, "-\nselect id from users;\n");
+        assert_eq!(d.positions.len(), 2);
+
+        let change2 = ChangeFileParams {
+            path: path.clone(),
+            version: 2,
+            changes: vec![ChangeParams {
+                text: "-".to_string(),
+                range: Some(TextRange::new(1.into(), 1.into())),
+            }],
+        };
+
+        let _changed2 = d.apply_file_change(&change2);
+
+        assert_eq!(d.content, "--\nselect id from users;\n");
+        assert_eq!(d.positions.len(), 1);
+
+        let change3 = ChangeFileParams {
+            path: path.clone(),
+            version: 3,
+            changes: vec![ChangeParams {
+                text: " ".to_string(),
+                range: Some(TextRange::new(2.into(), 2.into())),
+            }],
+        };
+
+        let _changed3 = d.apply_file_change(&change3);
+
+        assert_eq!(d.content, "-- \nselect id from users;\n");
+        assert_eq!(d.positions.len(), 1);
+
+        let change4 = ChangeFileParams {
+            path: path.clone(),
+            version: 3,
+            changes: vec![ChangeParams {
+                text: "t".to_string(),
+                range: Some(TextRange::new(3.into(), 3.into())),
+            }],
+        };
+
+        let _changed4 = d.apply_file_change(&change4);
+
+        assert_eq!(d.content, "-- t\nselect id from users;\n");
+        assert_eq!(d.positions.len(), 1);
+
+        assert_document_integrity(&d);
     }
 
     #[test]
