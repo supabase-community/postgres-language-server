@@ -426,5 +426,6 @@ mod tests {
         let stmts = d.iter(DefaultMapper).collect::<Vec<_>>();
 
         assert_eq!(stmts.len(), 2);
+        assert_eq!(stmts[1].2, "select $1 + $2;");
     }
 }
