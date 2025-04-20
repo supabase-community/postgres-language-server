@@ -29,8 +29,8 @@ impl IntoIterator for CompletionsResult {
     }
 }
 
-pub(crate) fn get_statement_for_completions<'a>(
-    doc: &'a ParsedDocument,
+pub(crate) fn get_statement_for_completions(
+    doc: &ParsedDocument,
     position: TextSize,
 ) -> Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> {
     let count = doc.count();
