@@ -80,7 +80,22 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
-        if let CompletionRelevanceData::Schema(_) = self.data {
+        let name = ctx.schema_name.as_ref().unwrap();
+
+        let does_not_match = match self.data {
+            CompletionRelevanceData::Table(table) => &table.schema != name,
+            CompletionRelevanceData::Function(foo) => &foo.schema != name,
+            CompletionRelevanceData::Column(_) => {
+                // columns belong to tables, not schemas
+                true
+            }
+            CompletionRelevanceData::Schema(_) => {
+                // we should never allow schema suggestions if there already was one.
+                true
+            }
+        };
+
+        if does_not_match {
             return None;
         }
 
