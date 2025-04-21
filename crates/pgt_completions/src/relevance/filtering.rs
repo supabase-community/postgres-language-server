@@ -85,7 +85,7 @@ impl CompletionFilter<'_> {
 
         let does_not_match = match self.data {
             CompletionRelevanceData::Table(table) => &table.schema != name,
-            CompletionRelevanceData::Function(foo) => &foo.schema != name,
+            CompletionRelevanceData::Function(f) => &f.schema != name,
             CompletionRelevanceData::Column(_) => {
                 // columns belong to tables, not schemas
                 true

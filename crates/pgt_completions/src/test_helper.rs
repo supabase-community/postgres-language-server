@@ -12,13 +12,6 @@ pub struct InputQuery {
     position: usize,
 }
 
-impl InputQuery {
-    pub fn with_sanitized_whitespace(sql: &str) -> Self {
-        let strs: Vec<&str> = sql.split_whitespace().collect();
-        strs.join(" ").as_str().into()
-    }
-}
-
 impl From<&str> for InputQuery {
     fn from(value: &str) -> Self {
         let position = value
