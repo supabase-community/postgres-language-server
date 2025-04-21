@@ -61,6 +61,7 @@ impl<'a> CompletionBuilder<'a> {
                     kind: item.kind,
                     label: item.label,
                     preselected,
+                    sort_text: item.score.get_score().to_string(),
                 }
             })
             .collect()

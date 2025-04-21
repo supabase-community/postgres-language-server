@@ -6,9 +6,17 @@ use crate::CompletionParams;
 
 pub static CURSOR_POS: char = '€';
 
+#[derive(Clone)]
 pub struct InputQuery {
     sql: String,
     position: usize,
+}
+
+impl InputQuery {
+    pub fn with_sanitized_whitespace(sql: &str) -> Self {
+        let strs: Vec<&str> = sql.split_whitespace().collect();
+        strs.join(" ").as_str().into()
+    }
 }
 
 impl From<&str> for InputQuery {
@@ -42,6 +50,31 @@ pub(crate) async fn get_test_deps(
         .expect("Failed to execute setup query");
 
     let schema_cache = SchemaCache::load(&test_db)
+        .await
+        .expect("Failed to load Schema Cache");
+
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(tree_sitter_sql::language())
+        .expect("Error loading sql language");
+
+    let tree = parser.parse(input.to_string(), None).unwrap();
+
+    (tree, schema_cache)
+}
+
+/// Careful: This will connect against the passed database.
+/// Use this only to debug issues. Do not commit to version control.
+#[allow(dead_code)]
+pub(crate) async fn test_against_connection_string(
+    conn_str: &str,
+    input: InputQuery,
+) -> (tree_sitter::Tree, pgt_schema_cache::SchemaCache) {
+    let pool = sqlx::PgPool::connect(conn_str)
+        .await
+        .expect("Unable to connect to database.");
+
+    let schema_cache = SchemaCache::load(&pool)
         .await
         .expect("Failed to load Schema Cache");
 
