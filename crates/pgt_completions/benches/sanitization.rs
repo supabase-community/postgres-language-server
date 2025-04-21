@@ -13,7 +13,7 @@ fn sql_and_pos(sql: &str) -> (String, usize) {
 fn get_tree(sql: &str) -> tree_sitter::Tree {
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(tree_sitter_sql::language()).unwrap();
-    parser.parse(sql.to_string(), None).unwrap()
+    parser.parse(sql, None).unwrap()
 }
 
 fn to_params<'a>(
@@ -25,9 +25,9 @@ fn to_params<'a>(
     let pos: u32 = pos.try_into().unwrap();
     CompletionParams {
         position: TextSize::new(pos),
-        schema: &cache,
+        schema: cache,
         text,
-        tree: tree,
+        tree,
     }
 }
 

@@ -5,6 +5,7 @@ use pgt_text_size::TextRange;
 
 use super::statement_identifier::StatementId;
 
+#[derive(Debug, Clone)]
 pub struct SQLFunctionBody {
     pub range: TextRange,
     pub body: String,
@@ -97,6 +98,16 @@ fn find_option_value(
                         .find_map(|arg| {
                             if let pgt_query_ext::NodeEnum::String(s) = arg {
                                 Some(s.sval.clone())
+                            } else if let pgt_query_ext::NodeEnum::List(l) = arg {
+                                l.items.iter().find_map(|item_wrapper| {
+                                    if let Some(pgt_query_ext::NodeEnum::String(s)) =
+                                        item_wrapper.node.as_ref()
+                                    {
+                                        Some(s.sval.clone())
+                                    } else {
+                                        None
+                                    }
+                                })
                             } else {
                                 None
                             }

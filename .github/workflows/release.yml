@@ -113,7 +113,7 @@ jobs:
 
   create_changelog_and_release:
     runs-on: ubuntu-latest
-    needs: build_and_test # make sure that tests & build work correctly
+    needs: [extract_version, build_and_test] # make sure that tests & build work correctly
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -126,9 +126,13 @@ jobs:
         id: create_changelog
         with:
           config: cliff.toml
-          args: --bump --latest
+          args: --bump --unreleased
         env:
           GITHUB_REPO: ${{ github.repository }}
+
+      - name: Ensure tag matches
+        if: ${{ steps.create_changelog.outputs.version }} != ${{ needs.extract_version.outputs.version }}
+        run: exit 1
 
       - name: 👇 Download Artifacts
         uses: actions/download-artifact@v4

@@ -360,8 +360,6 @@ impl Workspace for WorkspaceServer {
 
         let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
 
-        // TODO: run this in parallel with rayon based on rayon.count()
-
         if let Some(pool) = self
             .connection
             .read()
@@ -385,13 +383,15 @@ impl Workspace for WorkspaceServer {
                                 })
                                 .await
                                 .map(|d| {
-                                    let r = d.location().span.map(|span| span + range.start());
+                                    d.map(|d| {
+                                        let r = d.location().span.map(|span| span + range.start());
 
-                                    d.with_file_path(path.as_path().display().to_string())
-                                        .with_file_span(r.unwrap_or(range))
+                                        d.with_file_path(path.as_path().display().to_string())
+                                            .with_file_span(r.unwrap_or(range))
+                                    })
                                 })
                             } else {
-                                None
+                                Ok(None)
                             }
                         }
                     })
@@ -400,8 +400,11 @@ impl Workspace for WorkspaceServer {
                     .await
             })?;
 
-            for result in async_results.into_iter().flatten() {
-                diagnostics.push(SDiagnostic::new(result));
+            for result in async_results.into_iter() {
+                let result = result?;
+                if let Some(diag) = result {
+                    diagnostics.push(SDiagnostic::new(diag));
+                }
             }
         }
 

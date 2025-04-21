@@ -100,12 +100,21 @@ jobs:
         uses: biomejs/setup-biome@v2
         with:
           version: latest
+
       - name: Run Lints
         run: |
           cargo sqlx prepare --check --workspace
-          cargo clippy
+          cargo clippy --fix
           cargo run -p rules_check
-          biome lint
+          biome lint --write
+
+      - name: Check for changes
+        run: |
+          if [[ $(git status --porcelain) ]]; then
+            git status
+            git diff
+            exit 1
+          fi
 
   test:
     name: Test
