@@ -32,9 +32,10 @@ pub fn get_completions(
             label: i.label,
             label_details: Some(CompletionItemLabelDetails {
                 description: Some(i.description),
-                detail: None,
+                detail: Some(format!(" {}", i.kind)),
             }),
             preselect: Some(i.preselected),
+            sort_text: Some(i.sort_text),
             kind: Some(to_lsp_types_completion_item_kind(i.kind)),
             ..CompletionItem::default()
         })
