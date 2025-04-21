@@ -208,8 +208,7 @@ mod tests {
         let has_column_in_first_four = |col: &'static str| {
             first_four
                 .iter()
-                .find(|compl_item| compl_item.label.as_str() == col)
-                .is_some()
+                .any(|compl_item| compl_item.label.as_str() == col)
         };
 
         assert!(
