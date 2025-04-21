@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cmp::max};
+use std::borrow::Cow;
 
 use pgt_text_size::TextSize;
 
@@ -24,7 +24,6 @@ where
         if cursor_inbetween_nodes(params.tree, params.position)
             || cursor_prepared_to_write_token_after_last_node(params.tree, params.position)
             || cursor_before_semicolon(params.tree, params.position)
-            || cursor_on_a_dot(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -45,13 +44,12 @@ where
 
         let mut sql_iter = params.text.chars();
 
-        let max = max(cursor_pos + 1, params.text.len());
-
-        for idx in 0..max {
+        for idx in 0..cursor_pos + 1 {
             match sql_iter.next() {
                 Some(c) => {
                     if idx == cursor_pos {
                         sql.push_str(SANITIZED_TOKEN);
+                        sql.push(' ');
                     }
                     sql.push(c);
                 }
@@ -151,11 +149,6 @@ fn cursor_prepared_to_write_token_after_last_node(
     cursor_pos == tree.root_node().end_byte() + 1
 }
 
-fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
-    let position: usize = position.into();
-    sql.chars().nth(position - 1).is_some_and(|c| c == '.')
-}
-
 fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
     let mut cursor = tree.walk();
     let mut leaf_node = tree.root_node();
@@ -205,7 +198,7 @@ mod tests {
     use pgt_text_size::TextSize;
 
     use crate::sanitization::{
-        cursor_before_semicolon, cursor_inbetween_nodes, cursor_on_a_dot,
+        cursor_before_semicolon, cursor_inbetween_nodes,
         cursor_prepared_to_write_token_after_last_node,
     };
 
@@ -268,20 +261,6 @@ mod tests {
             &mut tree,
             TextSize::new(14)
         ));
-    }
-
-    #[test]
-    fn on_a_dot() {
-        let input = "select * from private.";
-
-        // select * from private.| <-- on a dot
-        assert!(cursor_on_a_dot(&input, TextSize::new(22)));
-
-        // select * from private|. <-- before the dot
-        assert!(!cursor_on_a_dot(&input, TextSize::new(21)));
-
-        // select * from private. | <-- too far off the dot
-        assert!(!cursor_on_a_dot(&input, TextSize::new(23)));
     }
 
     #[test]
