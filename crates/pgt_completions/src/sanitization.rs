@@ -275,13 +275,13 @@ mod tests {
         let input = "select * from private.";
 
         // select * from private.| <-- on a dot
-        assert!(cursor_on_a_dot(&input, TextSize::new(22)));
+        assert!(cursor_on_a_dot(input, TextSize::new(22)));
 
         // select * from private|. <-- before the dot
-        assert!(!cursor_on_a_dot(&input, TextSize::new(21)));
+        assert!(!cursor_on_a_dot(input, TextSize::new(21)));
 
         // select * from private. | <-- too far off the dot
-        assert!(!cursor_on_a_dot(&input, TextSize::new(23)));
+        assert!(!cursor_on_a_dot(input, TextSize::new(23)));
     }
 
     #[test]
