@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, cmp::max};
 
 use pgt_text_size::TextSize;
 
@@ -24,6 +24,7 @@ where
         if cursor_inbetween_nodes(params.tree, params.position)
             || cursor_prepared_to_write_token_after_last_node(params.tree, params.position)
             || cursor_before_semicolon(params.tree, params.position)
+            || cursor_on_a_dot(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -44,12 +45,13 @@ where
 
         let mut sql_iter = params.text.chars();
 
-        for idx in 0..cursor_pos + 1 {
+        let max = max(cursor_pos + 1, params.text.len());
+
+        for idx in 0..max {
             match sql_iter.next() {
                 Some(c) => {
                     if idx == cursor_pos {
                         sql.push_str(SANITIZED_TOKEN);
-                        sql.push(' ');
                     }
                     sql.push(c);
                 }
@@ -149,6 +151,11 @@ fn cursor_prepared_to_write_token_after_last_node(
     cursor_pos == tree.root_node().end_byte() + 1
 }
 
+fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
+    let position: usize = position.into();
+    sql.chars().nth(position - 1).is_some_and(|c| c == '.')
+}
+
 fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
     let mut cursor = tree.walk();
     let mut leaf_node = tree.root_node();
@@ -198,7 +205,7 @@ mod tests {
     use pgt_text_size::TextSize;
 
     use crate::sanitization::{
-        cursor_before_semicolon, cursor_inbetween_nodes,
+        cursor_before_semicolon, cursor_inbetween_nodes, cursor_on_a_dot,
         cursor_prepared_to_write_token_after_last_node,
     };
 
@@ -212,7 +219,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let mut tree = parser.parse(input, None).unwrap();
+        let mut tree = parser.parse(input.to_string(), None).unwrap();
 
         // select | from users; <-- just right, one space after select token, one space before from
         assert!(cursor_inbetween_nodes(&mut tree, TextSize::new(7)));
@@ -236,7 +243,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let mut tree = parser.parse(input, None).unwrap();
+        let mut tree = parser.parse(input.to_string(), None).unwrap();
 
         // select * from| <-- still on previous token
         assert!(!cursor_prepared_to_write_token_after_last_node(
@@ -264,6 +271,20 @@ mod tests {
     }
 
     #[test]
+    fn on_a_dot() {
+        let input = "select * from private.";
+
+        // select * from private.| <-- on a dot
+        assert!(cursor_on_a_dot(&input, TextSize::new(22)));
+
+        // select * from private|. <-- before the dot
+        assert!(!cursor_on_a_dot(&input, TextSize::new(21)));
+
+        // select * from private. | <-- too far off the dot
+        assert!(!cursor_on_a_dot(&input, TextSize::new(23)));
+    }
+
+    #[test]
     fn test_cursor_before_semicolon() {
         // Idx "13" is the exlusive end of `select * from` (first space after from)
         // Idx "18" is right where the semi is
@@ -274,7 +295,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let mut tree = parser.parse(input, None).unwrap();
+        let mut tree = parser.parse(input.to_string(), None).unwrap();
 
         // select * from     ;| <-- it's after the statement
         assert!(!cursor_before_semicolon(&mut tree, TextSize::new(19)));
