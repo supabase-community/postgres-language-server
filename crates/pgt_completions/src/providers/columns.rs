@@ -327,29 +327,4 @@ mod tests {
             );
         }
     }
-
-    #[tokio::test]
-    async fn uses_the_cols_against_supabase_db() {
-        {
-            let conn_str = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
-
-            let input_query = InputQuery::with_sanitized_whitespace(
-                format!(r#"select {} from auth.users"#, CURSOR_POS).as_str(),
-            );
-
-            let (tree, cache) = test_against_connection_string(conn_str, input_query.clone()).await;
-
-            let params = get_test_params(&tree, &cache, input_query);
-            let results = complete(params);
-
-            println!("{:?}", results);
-
-            assert!(
-                results
-                    .into_iter()
-                    .map(|item| item.description)
-                    .all(|desc| desc == "Table: auth.users")
-            );
-        }
-    }
 }

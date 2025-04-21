@@ -30,6 +30,7 @@ impl CompletionFilter<'_> {
             || current_node_kind == "="
             || current_node_kind == ","
             || current_node_kind == "literal"
+            || current_node_kind == "ERROR"
         {
             return None;
         }
