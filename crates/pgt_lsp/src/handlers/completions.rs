@@ -41,10 +41,6 @@ pub fn get_completions(
         })
         .collect();
 
-    for item in &items {
-        tracing::info!("{}, {}", item.label, item.sort_text.as_ref().unwrap());
-    }
-
     Ok(lsp_types::CompletionResponse::Array(items))
 }
 
