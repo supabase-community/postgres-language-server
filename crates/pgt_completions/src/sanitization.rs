@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, cmp::max};
 
 use pgt_text_size::TextSize;
 
@@ -45,12 +45,13 @@ where
 
         let mut sql_iter = params.text.chars();
 
-        for idx in 0..cursor_pos + 1 {
+        let max = max(cursor_pos + 1, params.text.len());
+
+        for idx in 0..max {
             match sql_iter.next() {
                 Some(c) => {
                     if idx == cursor_pos {
                         sql.push_str(SANITIZED_TOKEN);
-                        sql.push(' ');
                     }
                     sql.push(c);
                 }

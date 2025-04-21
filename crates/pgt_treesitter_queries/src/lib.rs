@@ -185,4 +185,31 @@ on sq1.id = pt.id;
         assert_eq!(results[0].get_schema(sql), Some("private".into()));
         assert_eq!(results[0].get_table(sql), "something");
     }
+
+    #[test]
+    fn picks_it_up_without_schemas() {
+        let sql = r#"select * from users"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        // trust me bro
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<RelationMatch>();
+
+        let results: Vec<&RelationMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        println!("{:?}", results);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].get_schema(sql), None);
+        assert_eq!(results[0].get_table(sql), "users");
+    }
 }
