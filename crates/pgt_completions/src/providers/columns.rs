@@ -27,9 +27,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
 mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
-        test_helper::{
-            CURSOR_POS, InputQuery, get_test_deps, get_test_params, test_against_connection_string,
-        },
+        test_helper::{CURSOR_POS, InputQuery, get_test_deps, get_test_params},
     };
 
     struct TestCase {
