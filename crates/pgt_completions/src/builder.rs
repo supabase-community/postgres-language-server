@@ -1,84 +1,47 @@
-use crate::{
-    CompletionItemKind,
-    context::CompletionContext,
-    item::CompletionItem,
-    relevance::{filtering::CompletionFilter, scoring::CompletionScore},
-};
+use crate::item::CompletionItem;
 
-pub(crate) struct PossibleCompletionItem<'a> {
-    pub label: String,
-    pub description: String,
-    pub kind: CompletionItemKind,
-    pub score: CompletionScore<'a>,
-    pub filter: CompletionFilter<'a>,
+pub(crate) struct CompletionBuilder {
+    items: Vec<CompletionItem>,
 }
 
-pub(crate) struct CompletionBuilder<'a> {
-    items: Vec<PossibleCompletionItem<'a>>,
-    ctx: &'a CompletionContext<'a>,
-}
-
-impl<'a> CompletionBuilder<'a> {
-    pub fn new(ctx: &'a CompletionContext) -> Self {
-        CompletionBuilder { items: vec![], ctx }
+impl CompletionBuilder {
+    pub fn new() -> Self {
+        CompletionBuilder { items: vec![] }
     }
 
-    pub fn add_item(&mut self, item: PossibleCompletionItem<'a>) {
+    pub fn add_item(&mut self, item: CompletionItem) {
         self.items.push(item);
     }
 
-    pub fn finish(self) -> Vec<CompletionItem> {
-        let mut items: Vec<PossibleCompletionItem> = self
-            .items
-            .into_iter()
-            .filter(|i| i.filter.is_relevant(self.ctx).is_some())
-            .collect();
+    pub fn finish(mut self) -> Vec<CompletionItem> {
+        self.items
+            .sort_by(|a, b| b.score.cmp(&a.score).then_with(|| a.label.cmp(&b.label)));
 
-        for item in items.iter_mut() {
-            item.score.calc_score(self.ctx);
-        }
+        self.items.dedup_by(|a, b| a.label == b.label);
+        self.items.truncate(crate::LIMIT);
 
-        items.sort_by(|a, b| {
-            b.score
-                .get_score()
-                .cmp(&a.score.get_score())
-                .then_with(|| a.label.cmp(&b.label))
-        });
+        let should_preselect_first_item = self.should_preselect_first_item();
 
-        items.dedup_by(|a, b| a.label == b.label);
-        items.truncate(crate::LIMIT);
-
-        let should_preselect_first_item = should_preselect_first_item(&items);
-
-        // a length of 481 should have a max_padding of 3
-        let max_padding = items.len().to_string().len();
-
-        items
+        self.items
             .into_iter()
             .enumerate()
-            .map(|(idx, item)| {
-                let preselected = idx == 0 && should_preselect_first_item;
-
-                CompletionItem {
-                    description: item.description,
-                    kind: item.kind,
-                    label: item.label,
-                    preselected,
-                    score: item.score.get_score(),
-                    sort_text: format!("{:0>padding$}", idx, padding = max_padding),
+            .map(|(idx, mut item)| {
+                if idx == 0 {
+                    item.preselected = should_preselect_first_item;
                 }
+                item
             })
             .collect()
     }
-}
 
-fn should_preselect_first_item(items: &Vec<PossibleCompletionItem>) -> bool {
-    let mut items_iter = items.iter();
-    let first = items_iter.next();
-    let second = items_iter.next();
+    fn should_preselect_first_item(&mut self) -> bool {
+        let mut items_iter = self.items.iter();
+        let first = items_iter.next();
+        let second = items_iter.next();
 
-    first.is_some_and(|f| match second {
-        Some(s) => (f.score.get_score() - s.score.get_score()) > 10,
-        None => true,
-    })
+        first.is_some_and(|f| match second {
+            Some(s) => (f.score - s.score) > 10,
+            None => true,
+        })
+    }
 }

@@ -1,21 +1,19 @@
 use crate::{
-    builder::{CompletionBuilder, PossibleCompletionItem},
+    builder::CompletionBuilder,
     context::CompletionContext,
-    item::CompletionItemKind,
-    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
+    item::{CompletionItem, CompletionItemKind},
+    relevance::CompletionRelevanceData,
 };
 
-pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_tables(ctx: &CompletionContext, builder: &mut CompletionBuilder) {
     let available_tables = &ctx.schema_cache.tables;
 
     for table in available_tables {
-        let relevance = CompletionRelevanceData::Table(table);
-
-        let item = PossibleCompletionItem {
+        let item = CompletionItem {
             label: table.name.clone(),
-            score: CompletionScore::from(relevance.clone()),
-            filter: CompletionFilter::from(relevance),
+            score: CompletionRelevanceData::Table(table).get_score(ctx),
             description: format!("Schema: {}", table.schema),
+            preselected: false,
             kind: CompletionItemKind::Table,
         };
 

@@ -1,21 +1,17 @@
 use crate::{
-    CompletionItemKind,
-    builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
-    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
+    CompletionItem, CompletionItemKind, builder::CompletionBuilder, context::CompletionContext,
+    relevance::CompletionRelevanceData,
 };
 
-pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_functions(ctx: &CompletionContext, builder: &mut CompletionBuilder) {
     let available_functions = &ctx.schema_cache.functions;
 
     for func in available_functions {
-        let relevance = CompletionRelevanceData::Function(func);
-
-        let item = PossibleCompletionItem {
+        let item = CompletionItem {
             label: func.name.clone(),
-            score: CompletionScore::from(relevance.clone()),
-            filter: CompletionFilter::from(relevance),
+            score: CompletionRelevanceData::Function(func).get_score(ctx),
             description: format!("Schema: {}", func.schema),
+            preselected: false,
             kind: CompletionItemKind::Function,
         };
 
