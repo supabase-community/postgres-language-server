@@ -65,7 +65,6 @@ impl<'a> CompletionBuilder<'a> {
                     label: item.label,
                     preselected,
                     score: item.score.get_score(),
-                    sort_text: format!("{:0>padding$}", idx, padding = max_padding),
                 }
             })
             .collect()

@@ -31,5 +31,4 @@ pub struct CompletionItem {
     pub preselected: bool,
     pub kind: CompletionItemKind,
     pub score: i32,
-    pub sort_text: String,
 }
