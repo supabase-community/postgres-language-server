@@ -27,9 +27,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
 mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
-        test_helper::{
-            CURSOR_POS, InputQuery, get_test_deps, get_test_params, test_against_connection_string,
-        },
+        test_helper::{CURSOR_POS, InputQuery, get_test_deps, get_test_params},
     };
 
     struct TestCase {
@@ -261,5 +259,70 @@ mod tests {
                 .into_iter()
                 .any(|item| item.kind == CompletionItemKind::Column)
         );
+    }
+
+    #[tokio::test]
+    async fn prefers_columns_of_mentioned_tables() {
+        let setup = r#"
+        create schema private;
+
+        create table private.users (
+            id1 serial primary key,
+            name1 text,
+            address1 text,
+            email1 text
+        );
+
+        create table public.users (
+            id2 serial primary key,
+            name2 text,
+            address2 text,
+            email2 text
+        );
+    "#;
+
+        {
+            let test_case = TestCase {
+                message: "",
+                query: format!(r#"select {} from users"#, CURSOR_POS),
+                label: "suggests from table",
+                description: "",
+            };
+
+            let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+            let params = get_test_params(&tree, &cache, test_case.get_input_query());
+            let results = complete(params);
+
+            assert_eq!(
+                results
+                    .into_iter()
+                    .take(4)
+                    .map(|item| item.label)
+                    .collect::<Vec<String>>(),
+                vec!["address2", "email2", "id2", "name2"]
+            );
+        }
+
+        {
+            let test_case = TestCase {
+                message: "",
+                query: format!(r#"select {} from private.users"#, CURSOR_POS),
+                label: "suggests from table",
+                description: "",
+            };
+
+            let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+            let params = get_test_params(&tree, &cache, test_case.get_input_query());
+            let results = complete(params);
+
+            assert_eq!(
+                results
+                    .into_iter()
+                    .take(4)
+                    .map(|item| item.label)
+                    .collect::<Vec<String>>(),
+                vec!["address1", "email1", "id1", "name1"]
+            );
+        }
     }
 }
