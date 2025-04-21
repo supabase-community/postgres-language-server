@@ -1,17 +1,21 @@
 use crate::{
-    CompletionItem, CompletionItemKind, builder::CompletionBuilder, context::CompletionContext,
-    relevance::CompletionRelevanceData,
+    CompletionItemKind,
+    builder::{CompletionBuilder, PossibleCompletionItem},
+    context::CompletionContext,
+    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-pub fn complete_columns(ctx: &CompletionContext, builder: &mut CompletionBuilder) {
+pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
 
     for col in available_columns {
-        let item = CompletionItem {
+        let relevance = CompletionRelevanceData::Column(col);
+
+        let item = PossibleCompletionItem {
             label: col.name.clone(),
-            score: CompletionRelevanceData::Column(col).get_score(ctx),
+            score: CompletionScore::from(relevance.clone()),
+            filter: CompletionFilter::from(relevance),
             description: format!("Table: {}.{}", col.schema_name, col.table_name),
-            preselected: false,
             kind: CompletionItemKind::Column,
         };
 
@@ -22,7 +26,7 @@ pub fn complete_columns(ctx: &CompletionContext, builder: &mut CompletionBuilder
 #[cfg(test)]
 mod tests {
     use crate::{
-        CompletionItem, complete,
+        CompletionItem, CompletionItemKind, complete,
         test_helper::{CURSOR_POS, InputQuery, get_test_deps, get_test_params},
     };
 
@@ -222,6 +226,37 @@ mod tests {
         assert!(
             has_column_in_first_four("email"),
             "`email` not present in first four completion items."
+        );
+    }
+
+    #[tokio::test]
+    async fn ignores_cols_in_from_clause() {
+        let setup = r#"
+        create schema private;
+
+        create table private.users (
+            id serial primary key,
+            name text,
+            address text,
+            email text
+        );
+    "#;
+
+        let test_case = TestCase {
+            message: "suggests user created tables first",
+            query: format!(r#"select * from private.{}"#, CURSOR_POS),
+            label: "",
+            description: "",
+        };
+
+        let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+        let params = get_test_params(&tree, &cache, test_case.get_input_query());
+        let results = complete(params);
+
+        assert!(
+            !results
+                .into_iter()
+                .any(|item| item.kind == CompletionItemKind::Column)
         );
     }
 

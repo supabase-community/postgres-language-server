@@ -27,7 +27,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
 
     let ctx = CompletionContext::new(&sanitized_params);
 
-    let mut builder = CompletionBuilder::new();
+    let mut builder = CompletionBuilder::new(&ctx);
 
     complete_tables(&ctx, &mut builder);
     complete_functions(&ctx, &mut builder);
