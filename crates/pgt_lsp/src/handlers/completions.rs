@@ -32,7 +32,7 @@ pub fn get_completions(
             label: i.label,
             label_details: Some(CompletionItemLabelDetails {
                 description: Some(i.description),
-                detail: Some(i.kind.to_string()),
+                detail: Some(format!(" {}", i.kind.to_string())),
             }),
             preselect: Some(i.preselected),
             kind: Some(to_lsp_types_completion_item_kind(i.kind)),
@@ -40,6 +40,10 @@ pub fn get_completions(
             ..CompletionItem::default()
         })
         .collect();
+
+    for item in &items {
+        tracing::info!("{}, {}", item.label, item.sort_text.as_ref().unwrap());
+    }
 
     Ok(lsp_types::CompletionResponse::Array(items))
 }

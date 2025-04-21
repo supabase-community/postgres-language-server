@@ -50,6 +50,9 @@ impl<'a> CompletionBuilder<'a> {
 
         let should_preselect_first_item = should_preselect_first_item(&items);
 
+        // a length of 481 should have a max_padding of 3
+        let max_padding = items.len().to_string().len();
+
         items
             .into_iter()
             .enumerate()
@@ -61,7 +64,8 @@ impl<'a> CompletionBuilder<'a> {
                     kind: item.kind,
                     label: item.label,
                     preselected,
-                    sort_text: item.score.get_score().to_string(),
+                    score: item.score.get_score(),
+                    sort_text: format!("{:0>padding$}", idx, padding = max_padding),
                 }
             })
             .collect()
