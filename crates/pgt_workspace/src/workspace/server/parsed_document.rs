@@ -12,7 +12,7 @@ use super::{
     change::StatementChange,
     document::{Document, StatementIterator},
     pg_query::PgQueryStore,
-    sql_function::SQLFunctionBodyStore,
+    sql_function::{SQLFunctionBodyStore, SQLFunctionSignature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
@@ -274,6 +274,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
         String,
         Option<pgt_query_ext::NodeEnum>,
         Arc<tree_sitter::Tree>,
+        Option<Arc<SQLFunctionSignature>>,
     );
 
     fn map(
@@ -293,7 +294,26 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
 
         let cst_result = parser.cst_db.get_or_cache_tree(&id, &content_owned);
 
-        (id, range, content_owned, ast_option, cst_result)
+        let sql_fn_sig = id
+            .parent()
+            .and_then(|root| {
+                let c = parser.doc.statement_content(&root)?;
+                Some((root, c))
+            })
+            .and_then(|(root, c)| {
+                let ast_option = parser
+                    .ast_db
+                    .get_or_cache_ast(&root, c)
+                    .as_ref()
+                    .clone()
+                    .ok();
+
+                let ast_option = ast_option.as_ref()?;
+
+                parser.sql_fn_db.get_function_signature(&root, ast_option)
+            });
+
+        (id, range, content_owned, ast_option, cst_result, sql_fn_sig)
     }
 }
 
@@ -413,7 +433,7 @@ mod tests {
 
     #[test]
     fn sql_function_body() {
-        let input = "CREATE FUNCTION add(integer, integer) RETURNS integer
+        let input = "CREATE FUNCTION add(test0 integer, test1 integer) RETURNS integer
     AS 'select $1 + $2;'
     LANGUAGE SQL
     IMMUTABLE
