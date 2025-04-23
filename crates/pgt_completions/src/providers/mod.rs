@@ -1,5 +1,6 @@
 mod columns;
 mod functions;
+mod helper;
 mod schemas;
 mod tables;
 

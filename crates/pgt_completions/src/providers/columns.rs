@@ -17,6 +17,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
             filter: CompletionFilter::from(relevance),
             description: format!("Table: {}.{}", col.schema_name, col.table_name),
             kind: CompletionItemKind::Column,
+            completion_text: None,
         };
 
         builder.add_item(item);

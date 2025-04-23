@@ -5,6 +5,8 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
+use super::helper::get_completion_text_with_schema;
+
 pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
     let available_functions = &ctx.schema_cache.functions;
 
@@ -17,6 +19,7 @@ pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut Completi
             filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", func.schema),
             kind: CompletionItemKind::Function,
+            completion_text: get_completion_text_with_schema(ctx, &func.name, &func.schema),
         };
 
         builder.add_item(item);

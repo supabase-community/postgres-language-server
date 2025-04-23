@@ -16,6 +16,7 @@ pub fn complete_schemas<'a>(ctx: &'a CompletionContext, builder: &mut Completion
             kind: crate::CompletionItemKind::Schema,
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
+            completion_text: None,
         };
 
         builder.add_item(item);

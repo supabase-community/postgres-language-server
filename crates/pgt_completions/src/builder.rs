@@ -1,5 +1,5 @@
 use crate::{
-    CompletionItemKind,
+    CompletionItemKind, CompletionText,
     context::CompletionContext,
     item::CompletionItem,
     relevance::{filtering::CompletionFilter, scoring::CompletionScore},
@@ -11,6 +11,7 @@ pub(crate) struct PossibleCompletionItem<'a> {
     pub kind: CompletionItemKind,
     pub score: CompletionScore<'a>,
     pub filter: CompletionFilter<'a>,
+    pub completion_text: Option<CompletionText>,
 }
 
 pub(crate) struct CompletionBuilder<'a> {
@@ -72,6 +73,7 @@ impl<'a> CompletionBuilder<'a> {
 
                     // wonderous Rust syntax ftw
                     sort_text: format!("{:0>padding$}", idx, padding = max_padding),
+                    completion_text: item.completion_text,
                 }
             })
             .collect()

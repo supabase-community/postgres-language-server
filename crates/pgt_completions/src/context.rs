@@ -209,14 +209,7 @@ impl<'a> CompletionContext<'a> {
 
         // We have arrived at the leaf node
         if current_node.child_count() == 0 {
-            if matches!(
-                self.get_ts_node_content(current_node).unwrap(),
-                NodeText::Replaced
-            ) {
-                self.node_under_cursor = None;
-            } else {
-                self.node_under_cursor = Some(current_node);
-            }
+            self.node_under_cursor = Some(current_node);
             return;
         }
 
