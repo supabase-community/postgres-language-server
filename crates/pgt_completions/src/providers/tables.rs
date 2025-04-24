@@ -31,7 +31,10 @@ mod tests {
 
     use crate::{
         CompletionItem, CompletionItemKind, complete,
-        test_helper::{CURSOR_POS, get_test_deps, get_test_params},
+        test_helper::{
+            CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
+            get_test_deps, get_test_params,
+        },
     };
 
     #[tokio::test]
@@ -177,5 +180,97 @@ mod tests {
 
         assert_eq!(label, "coos");
         assert_eq!(kind, CompletionItemKind::Table);
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_in_update() {
+        let setup = r#"
+          create table coos (
+            id serial primary key,
+            name text
+          );
+        "#;
+
+        assert_complete_results(
+            format!("update {}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "public".into(),
+                CompletionItemKind::Schema,
+            )],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("update public.{}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "coos".into(),
+                CompletionItemKind::Table,
+            )],
+            setup,
+        )
+        .await;
+
+        assert_no_complete_results(format!("update public.coos {}", CURSOR_POS).as_str(), setup)
+            .await;
+
+        assert_complete_results(
+            format!("update coos set {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("update coos set name = 'cool' where {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_in_delete() {
+        let setup = r#"
+          create table coos (
+            id serial primary key,
+            name text
+          );
+        "#;
+
+        assert_no_complete_results(format!("delete {}", CURSOR_POS).as_str(), setup).await;
+
+        assert_complete_results(
+            format!("delete from {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("delete from public.{}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::Label("coos".into())],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("delete from public.coos where {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            setup,
+        )
+        .await;
     }
 }

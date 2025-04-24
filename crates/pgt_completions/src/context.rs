@@ -30,7 +30,7 @@ impl TryFrom<&str> for ClauseType {
         match value {
             "select" => Ok(Self::Select),
             "where" => Ok(Self::Where),
-            "from" | "keyword_from" => Ok(Self::From),
+            "from" => Ok(Self::From),
             "update" => Ok(Self::Update),
             "delete" => Ok(Self::Delete),
             _ => {
@@ -49,8 +49,52 @@ impl TryFrom<&str> for ClauseType {
 
 impl TryFrom<String> for ClauseType {
     type Error = String;
-    fn try_from(value: String) -> Result<ClauseType, Self::Error> {
-        ClauseType::try_from(value.as_str())
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_str())
+    }
+}
+
+/// We can map a few nodes, such as the "update" node, to actual SQL clauses.
+/// That gives us a lot of insight for completions.
+/// Other nodes, such as the "relation" node, gives us less but still
+/// relevant information.
+/// `WrappingNode` maps to such nodes.
+///
+/// Note: This is not the direct parent of the `node_under_cursor`, but the closest
+/// *relevant* parent.
+#[derive(Debug, PartialEq, Eq)]
+pub enum WrappingNode {
+    Relation,
+    BinaryExpression,
+    Assignment,
+}
+
+impl TryFrom<&str> for WrappingNode {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "relation" => Ok(Self::Relation),
+            "assignment" => Ok(Self::Assignment),
+            "binary_expression" => Ok(Self::BinaryExpression),
+            _ => {
+                let message = format!("Unimplemented Relation: {}", value);
+
+                // Err on tests, so we notice that we're lacking an implementation immediately.
+                if cfg!(test) {
+                    panic!("{}", message);
+                }
+
+                Err(message)
+            }
+        }
+    }
+}
+
+impl TryFrom<String> for WrappingNode {
+    type Error = String;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_str())
     }
 }
 
@@ -64,6 +108,9 @@ pub(crate) struct CompletionContext<'a> {
 
     pub schema_name: Option<String>,
     pub wrapping_clause_type: Option<ClauseType>,
+
+    pub wrapping_node_kind: Option<WrappingNode>,
+
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
@@ -80,6 +127,7 @@ impl<'a> CompletionContext<'a> {
             node_under_cursor: None,
             schema_name: None,
             wrapping_clause_type: None,
+            wrapping_node_kind: None,
             wrapping_statement_range: None,
             is_invocation: false,
             mentioned_relations: HashMap::new(),
@@ -163,15 +211,18 @@ impl<'a> CompletionContext<'a> {
     ) {
         let current_node = cursor.node();
 
+        let parent_node_kind = parent_node.kind();
+        let current_node_kind = current_node.kind();
+
         // prevent infinite recursion – this can happen if we only have a PROGRAM node
-        if current_node.kind() == parent_node.kind() {
+        if current_node_kind == parent_node_kind {
             self.node_under_cursor = Some(current_node);
             return;
         }
 
-        match parent_node.kind() {
+        match parent_node_kind {
             "statement" | "subquery" => {
-                self.wrapping_clause_type = current_node.kind().try_into().ok();
+                self.wrapping_clause_type = current_node_kind.try_into().ok();
                 self.wrapping_statement_range = Some(parent_node.range());
             }
             "invocation" => self.is_invocation = true,
@@ -179,7 +230,7 @@ impl<'a> CompletionContext<'a> {
             _ => {}
         }
 
-        match current_node.kind() {
+        match current_node_kind {
             "object_reference" => {
                 let content = self.get_ts_node_content(current_node);
                 if let Some(node_txt) = content {
@@ -195,13 +246,12 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            // in Treesitter, the Where clause is nested inside other clauses
-            "where" => {
-                self.wrapping_clause_type = "where".try_into().ok();
+            "where" | "update" | "select" | "delete" | "from" => {
+                self.wrapping_clause_type = current_node_kind.try_into().ok();
             }
 
-            "keyword_from" => {
-                self.wrapping_clause_type = "keyword_from".try_into().ok();
+            "relation" | "binary_expression" | "assignment" => {
+                self.wrapping_node_kind = current_node_kind.try_into().ok();
             }
 
             _ => {}
@@ -405,10 +455,6 @@ mod tests {
         assert_eq!(
             ctx.get_ts_node_content(node),
             Some(NodeText::Original("from"))
-        );
-        assert_eq!(
-            ctx.wrapping_clause_type,
-            Some(crate::context::ClauseType::From)
         );
     }
 

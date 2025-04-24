@@ -1,4 +1,4 @@
-use crate::context::{ClauseType, CompletionContext, NodeText};
+use crate::context::{ClauseType, CompletionContext, NodeText, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -28,6 +28,7 @@ impl CompletionScore<'_> {
         self.check_matches_query_input(ctx);
         self.check_is_invocation(ctx);
         self.check_matching_clause_type(ctx);
+        self.check_matching_wrapping_node(ctx);
         self.check_relations_in_stmt(ctx);
     }
 
@@ -91,6 +92,36 @@ impl CompletionScore<'_> {
             },
             CompletionRelevanceData::Schema(_) => match clause_type {
                 ClauseType::From => 10,
+                _ => -50,
+            },
+        }
+    }
+
+    fn check_matching_wrapping_node(&mut self, ctx: &CompletionContext) {
+        let wrapping_node = match ctx.wrapping_node_kind.as_ref() {
+            None => return,
+            Some(wn) => wn,
+        };
+
+        let has_schema = ctx.schema_name.is_some();
+
+        self.score += match self.data {
+            CompletionRelevanceData::Table(_) => match wrapping_node {
+                WrappingNode::Relation => 15,
+                WrappingNode::BinaryExpression => 5,
+                _ => -50,
+            },
+            CompletionRelevanceData::Function(_) => match wrapping_node {
+                WrappingNode::Relation => 10,
+                _ => -50,
+            },
+            CompletionRelevanceData::Column(_) => match wrapping_node {
+                WrappingNode::BinaryExpression => 15,
+                WrappingNode::Assignment => 15,
+                _ => -15,
+            },
+            CompletionRelevanceData::Schema(_) => match wrapping_node {
+                WrappingNode::Relation if !has_schema => 5,
                 _ => -50,
             },
         }

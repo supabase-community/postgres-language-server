@@ -2,7 +2,7 @@ use pgt_schema_cache::SchemaCache;
 use pgt_test_utils::test_database::get_new_test_db;
 use sqlx::Executor;
 
-use crate::CompletionParams;
+use crate::{CompletionItem, CompletionItemKind, CompletionParams, complete};
 
 pub static CURSOR_POS: char = '€';
 
@@ -138,4 +138,49 @@ mod tests {
             assert_eq!(query.sql.len(), case.expected_sql_len);
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum CompletionAssertion {
+    Label(String),
+    LabelAndKind(String, CompletionItemKind),
+}
+
+impl CompletionAssertion {
+    fn assert_eq(self, item: CompletionItem) {
+        match self {
+            CompletionAssertion::Label(label) => {
+                assert_eq!(item.label, label);
+            }
+            CompletionAssertion::LabelAndKind(label, kind) => {
+                assert_eq!(item.label, label);
+                assert_eq!(item.kind, kind);
+            }
+        }
+    }
+}
+
+pub(crate) async fn assert_complete_results(
+    query: &str,
+    assertions: Vec<CompletionAssertion>,
+    setup: &str,
+) {
+    let (tree, cache) = get_test_deps(setup, query.into()).await;
+    let params = get_test_params(&tree, &cache, query.into());
+    let items = complete(params);
+
+    assertions
+        .into_iter()
+        .zip(items.into_iter())
+        .for_each(|(assertion, result)| {
+            assertion.assert_eq(result);
+        });
+}
+
+pub(crate) async fn assert_no_complete_results(query: &str, setup: &str) {
+    let (tree, cache) = get_test_deps(setup, query.into()).await;
+    let params = get_test_params(&tree, &cache, query.into());
+    let items = complete(params);
+
+    assert_eq!(items.len(), 0)
 }
