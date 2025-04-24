@@ -181,6 +181,15 @@ impl<'a> CompletionContext<'a> {
         })
     }
 
+    pub fn get_node_under_cursor_content(&self) -> Option<String> {
+        self.node_under_cursor
+            .and_then(|n| self.get_ts_node_content(n))
+            .and_then(|txt| match txt {
+                NodeText::Replaced => None,
+                NodeText::Original(c) => Some(c.to_string()),
+            })
+    }
+
     fn gather_tree_context(&mut self) {
         let mut cursor = self.tree.root_node().walk();
 

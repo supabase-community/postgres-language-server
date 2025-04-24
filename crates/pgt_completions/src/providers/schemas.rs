@@ -27,8 +27,8 @@ pub fn complete_schemas<'a>(ctx: &'a CompletionContext, builder: &mut Completion
 mod tests {
 
     use crate::{
-        CompletionItemKind, complete,
-        test_helper::{CURSOR_POS, get_test_deps, get_test_params},
+        CompletionItemKind,
+        test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results},
     };
 
     #[tokio::test]
@@ -46,27 +46,59 @@ mod tests {
             );
         "#;
 
-        let query = format!("select * from {}", CURSOR_POS);
-
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
-        let params = get_test_params(&tree, &cache, query.as_str().into());
-        let items = complete(params);
-
-        assert!(!items.is_empty());
-
-        assert_eq!(
-            items
-                .into_iter()
-                .take(5)
-                .map(|i| (i.label, i.kind))
-                .collect::<Vec<(String, CompletionItemKind)>>(),
+        assert_complete_results(
+            format!("select * from {}", CURSOR_POS).as_str(),
             vec![
-                ("public".to_string(), CompletionItemKind::Schema),
-                ("auth".to_string(), CompletionItemKind::Schema),
-                ("internal".to_string(), CompletionItemKind::Schema),
-                ("private".to_string(), CompletionItemKind::Schema),
-                ("users".to_string(), CompletionItemKind::Table),
-            ]
-        );
+                CompletionAssertion::LabelAndKind("public".to_string(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".to_string(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind(
+                    "internal".to_string(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "private".to_string(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "information_schema".to_string(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "pg_catalog".to_string(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "pg_toast".to_string(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_and_schemas_with_matching_keys() {
+        let setup = r#"
+            create schema ultimate;
+
+            -- add a table to compete against schemas
+            create table users (
+                id serial primary key,
+                name text,
+                password text
+            );
+        "#;
+
+        assert_complete_results(
+            format!("select * from u{}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("ultimate".into(), CompletionItemKind::Schema),
+            ],
+            setup,
+        )
+        .await;
     }
 }
