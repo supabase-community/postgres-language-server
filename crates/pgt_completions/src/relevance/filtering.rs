@@ -35,7 +35,7 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        // No autocompetions if there are two identifiers without a separator.
+        // No autocompletions if there are two identifiers without a separator.
         if ctx.node_under_cursor.is_some_and(|n| {
             n.prev_sibling().is_some_and(|p| {
                 (p.kind() == "identifier" || p.kind() == "object_reference")
