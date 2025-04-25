@@ -10,7 +10,7 @@ homepage     = "https://supabase.com/"
 keywords     = ["linter", "typechecker", "postgres", "language-server"]
 license      = "MIT"
 repository   = "https://github.com/supabase-community/postgres-language-server"
-rust-version = "1.85.0"
+rust-version = "1.86.0"
 
 [workspace.dependencies]
 # supporting crates unrelated to postgres

@@ -46,7 +46,7 @@ jobs:
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
         with:
-          version: latest
+          version: "1.9.4"
       - name: Run format
         run: |
           cargo fmt --all --check
@@ -96,17 +96,22 @@ jobs:
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install
+
+      - name: Setup Just
+        uses: extractions/setup-just@v3
+
+      - name: Echo Tool Versions
+        run: |
+          just lint-ci-versions
 
       - name: Run Lints
         run: |
-          cargo sqlx prepare --check --workspace
-          cargo clippy --fix
-          cargo run -p rules_check
-          biome lint --write
+          just lint-ci
 
       - name: Check for changes
         run: |

@@ -10,16 +10,15 @@ alias rg := reset-git
 # Installs the tools needed to develop
 install-tools:
 	cargo install cargo-binstall
-	cargo binstall cargo-insta taplo-cli
+	cargo binstall cargo-insta taplo-cli sqlx-cli
 	cargo binstall --git "https://github.com/astral-sh/uv" uv
 	bun install
 
 # Upgrades the tools needed to develop
 upgrade-tools:
 	cargo install cargo-binstall --force
-	cargo binstall cargo-insta taplo-cli --force
+	cargo binstall cargo-insta taplo-cli sqlx-cli --force
 	cargo binstall --git "https://github.com/astral-sh/uv" uv --force
-	bun install
 
 # Generates code generated files for the linter
 gen-lint:
@@ -68,6 +67,20 @@ lint:
   bun biome lint
 
 lint-fix:
+  cargo clippy --fix
+  cargo run -p rules_check
+  bun biome lint --write
+
+lint-ci-versions:
+  rustc --version
+  rustup --version
+  cargo --version
+  cargo sqlx --version
+  cargo clippy --version
+  echo "Biome $(bun biome --version)"
+
+lint-ci:
+  cargo sqlx prepare --check --workspace
   cargo clippy --fix
   cargo run -p rules_check
   bun biome lint --write
