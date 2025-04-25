@@ -33,8 +33,10 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
+
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
+
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -43,15 +45,23 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install
+
+      - name: Setup Just
+        uses: extractions/setup-just@v3
+
+      - name: Echo Tool Versions
+        run: |
+          just format-ci-versions
+
       - name: Run format
         run: |
-          cargo fmt --all --check
-          taplo format --check
-          biome format
+          just format-ci
 
   actionlint:
     name: Lint GitHub Actions
@@ -96,17 +106,22 @@ jobs:
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install
+
+      - name: Setup Just
+        uses: extractions/setup-just@v3
+
+      - name: Echo Tool Versions
+        run: |
+          just lint-ci-versions
 
       - name: Run Lints
         run: |
-          cargo sqlx prepare --check --workspace
-          cargo clippy --fix
-          cargo run -p rules_check
-          biome lint --write
+          just lint-ci
 
       - name: Check for changes
         run: |
