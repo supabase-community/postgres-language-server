@@ -99,7 +99,16 @@ jobs:
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
         with:
-          version: latest
+          version: "1.9.4"
+
+      - name: Echo tool versions
+        run: |
+          rustc --version
+          rustup --version
+          cargo --version
+          cargo sqlx --version
+          cargo clippy --version
+          biome --version
 
       - name: Run Lints
         run: |
