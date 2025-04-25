@@ -168,12 +168,10 @@ impl Workspace for WorkspaceServer {
 
         tracing::info!("Updated settings in workspace");
 
-        if !params.skip_db {
-            self.connection
-                .write()
-                .unwrap()
-                .set_conn_settings(&self.settings().as_ref().db);
-        }
+        self.connection
+            .write()
+            .unwrap()
+            .set_conn_settings(&self.settings().as_ref().db);
 
         tracing::info!("Updated Db connection settings");
 

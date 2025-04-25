@@ -110,8 +110,9 @@ impl PartialConfiguration {
                 username: Some("postgres".to_string()),
                 password: Some("postgres".to_string()),
                 database: Some("postgres".to_string()),
-                conn_timeout_secs: Some(10),
                 allow_statement_executions_against: Default::default(),
+                conn_timeout_secs: Some(10),
+                skip_db: Some(true),
             }),
         }
     }

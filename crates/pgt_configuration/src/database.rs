@@ -35,11 +35,15 @@ pub struct DatabaseConfiguration {
     /// The connection timeout in seconds.
     #[partial(bpaf(long("conn_timeout_secs"), fallback(Some(10)), debug_fallback))]
     pub conn_timeout_secs: u16,
+
+    #[partial(bpaf(long("skip-db"), switch, fallback(Some(false)),))]
+    pub skip_db: bool,
 }
 
 impl Default for DatabaseConfiguration {
     fn default() -> Self {
         Self {
+            skip_db: true,
             host: "127.0.0.1".to_string(),
             port: 5432,
             username: "postgres".to_string(),
