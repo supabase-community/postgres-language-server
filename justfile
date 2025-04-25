@@ -77,6 +77,8 @@ serve-docs:
     uv run mkdocs serve
 
 # When you finished coding, run this command. Note that you should have already committed your changes.
+# If you haven't run `sqlx prepare` at least once, you need to run `docker compose up`
+# to lint the queries.
 ready:
   git diff --exit-code --quiet
   cargo run -p xtask_codegen -- configuration

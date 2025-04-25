@@ -100,7 +100,7 @@
           ]
         },
         "host": {
-          "description": "The host of the database.",
+          "description": "The host of the database. Required if you want database-related features. All else falls back to sensible defaults.",
           "type": [
             "string",
             "null"
