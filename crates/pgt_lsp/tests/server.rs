@@ -773,14 +773,15 @@ async fn test_execute_statement() -> Result<()> {
         .to_string();
     let host = test_db.connect_options().get_host().to_string();
 
-    let conf = PartialConfiguration {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
         db: Some(PartialDatabaseConfiguration {
             database: Some(database),
             host: Some(host),
             ..Default::default()
         }),
         ..Default::default()
-    };
+    });
 
     fs.insert(
         url!("postgrestools.jsonc").to_file_path().unwrap(),

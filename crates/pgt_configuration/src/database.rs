@@ -47,7 +47,7 @@ pub struct DatabaseConfiguration {
 impl Default for DatabaseConfiguration {
     fn default() -> Self {
         Self {
-            disable_connection: true,
+            disable_connection: false,
             host: "127.0.0.1".to_string(),
             port: 5432,
             username: "postgres".to_string(),
