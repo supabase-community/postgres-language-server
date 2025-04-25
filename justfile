@@ -77,7 +77,7 @@ lint-ci-versions:
   cargo --version
   cargo sqlx --version
   cargo clippy --version
-  echo "Biome $(biome --version)"
+  echo "Biome $(bun biome --version)"
 
 lint-ci:
   cargo sqlx prepare --check --workspace
