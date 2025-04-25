@@ -81,7 +81,6 @@ pub enum TraversalMode {
         // It's [None] if the `check` command is called without `--apply` or `--apply-suggested`
         // arguments.
         // fix_file_mode: Option<FixFileMode>,
-
         /// An optional tuple.
         /// 1. The virtual path to the file
         /// 2. The content of the file

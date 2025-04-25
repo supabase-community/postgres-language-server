@@ -4,4 +4,4 @@
 profile = "default"
 # For some reason, rustfmt is not included in the default profile. Add it here.
 components = ["rustfmt"]
-channel = "1.85.0"
+channel = "nightly"
