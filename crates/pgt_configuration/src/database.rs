@@ -38,6 +38,7 @@ pub struct DatabaseConfiguration {
     #[partial(bpaf(long("conn_timeout_secs"), fallback(Some(10)), debug_fallback))]
     pub conn_timeout_secs: u16,
 
+    /// Actively disable all database-related features.
     #[partial(bpaf(long("disable-db"), switch, fallback(Some(false)),))]
     pub disable_connection: bool,
 }
