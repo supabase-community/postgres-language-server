@@ -69,8 +69,7 @@ impl<'a> Iterator for QueryResultIter<'a> {
 mod tests {
 
     use crate::{
-        TreeSitterQueriesExecutor,
-        queries::{ParameterMatch, RelationMatch},
+        queries::{Field, ParameterMatch, RelationMatch}, TreeSitterQueriesExecutor
     };
 
     #[test]
@@ -211,18 +210,18 @@ on sq1.id = pt.id;
 
         assert_eq!(results[0].get_root(sql), None);
         assert_eq!(results[0].get_path(sql), None);
-        assert_eq!(results[0].get_field(sql), "v_test");
+        assert_eq!(results[0].get_field(sql), Field::Text("v_test".to_string()));
 
         assert_eq!(results[1].get_root(sql), Some("fn_name".into()));
         assert_eq!(results[1].get_path(sql), Some("custom_type".into()));
-        assert_eq!(results[1].get_field(sql), "v_test2");
+        assert_eq!(results[1].get_field(sql), Field::Text("v_test2".to_string()));
 
         assert_eq!(results[2].get_root(sql), None);
         assert_eq!(results[2].get_path(sql), None);
-        assert_eq!(results[2].get_field(sql), "$3");
+        assert_eq!(results[2].get_field(sql), Field::Parameter(3));
 
         assert_eq!(results[3].get_root(sql), None);
         assert_eq!(results[3].get_path(sql), Some("custom_type".into()));
-        assert_eq!(results[3].get_field(sql), "v_test3");
+        assert_eq!(results[3].get_field(sql), Field::Text("v_test3".to_string()));
     }
 }

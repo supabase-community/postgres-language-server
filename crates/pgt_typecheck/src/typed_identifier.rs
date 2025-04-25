@@ -1,30 +1,17 @@
+use pgt_treesitter_queries::{
+    queries::{Field, ParameterMatch},
+    TreeSitterQueriesExecutor,
+};
+
 #[derive(Debug)]
 pub struct TypedIdentifier {
-    pub schema: Option<String>,
-    pub relation: Option<String>,
+    pub root: Option<String>,
+    pub field: Option<String>,
     pub name: String,
-    pub type_: (Option<String>, String),
+    pub type_: Identifier,
 }
 
-impl TypedIdentifier {
-    pub fn new(
-        schema: Option<String>,
-        relation: Option<String>,
-        name: String,
-        type_: (Option<String>, String),
-    ) -> Self {
-        TypedIdentifier {
-            schema,
-            relation,
-            name,
-            type_,
-        }
-    }
-
-    pub fn default_value(&self, schema_cache: &pgt_schema_cache::SchemaCache) -> String {
-        "NULL".to_string()
-    }
-}
+type Identifier = (Option<String>, String);
 
 /// Applies the identifiers to the SQL string by replacing them with their default values.
 pub fn apply_identifiers<'a>(
@@ -37,6 +24,35 @@ pub fn apply_identifiers<'a>(
     println!("Applying identifiers to SQL: {}", sql);
     println!("Identifiers: {:?}", identifiers);
     println!("CST: {:#?}", cst);
+
+    let mut executor = TreeSitterQueriesExecutor::new(cst.root_node(), sql);
+
+    executor.add_query_results::<ParameterMatch>();
+
+    // we need the range and type of each field
+
+    let results: Vec<(std::ops::Range<usize>, &Identifier)> = executor
+        .get_iter(None)
+        .filter_map(|q| {
+            let m: &ParameterMatch = q.try_into().ok()?;
+
+            let ident = match m.get_field(sql) {
+                Field::Parameter(idx) => identifiers.get(idx)?,
+                Field::Text(field) => {
+                    let r = m.get_root(sql);
+                    let p = m.get_path(sql);
+
+                    identifiers.iter().find(|i| {
+                        // TODO: this is not correct, we need to check if the identifier is a prefix of the field
+
+                    })?
+                }
+            };
+
+            Some((m.get_byte_range(), &ident.type_))
+        })
+        // TODO resolve composite types or table types to plain types
+        .collect();
 
     sql
 }

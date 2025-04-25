@@ -17,6 +17,7 @@ pgt_diagnostics.workspace  = true
 pgt_query_ext.workspace    = true
 pgt_schema_cache.workspace = true
 pgt_text_size.workspace    = true
+pgt_treesitter_queries.workspace = true
 sqlx.workspace             = true
 tokio.workspace            = true
 tree-sitter.workspace      = true

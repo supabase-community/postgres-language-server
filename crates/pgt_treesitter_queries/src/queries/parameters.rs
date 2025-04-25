@@ -26,6 +26,12 @@ pub struct ParameterMatch<'a> {
     pub(crate) field: tree_sitter::Node<'a>,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Field {
+    Text(String),
+    Parameter(usize),
+}
+
 impl ParameterMatch<'_> {
     pub fn get_root(&self, sql: &str) -> Option<String> {
         let str = self
@@ -47,11 +53,30 @@ impl ParameterMatch<'_> {
         Some(str.to_string())
     }
 
-    pub fn get_field(&self, sql: &str) -> String {
-        self.field
+    pub fn get_field(&self, sql: &str) -> Field {
+        let text = self
+            .field
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get table from RelationMatch")
-            .to_string()
+            .expect("Failed to get field from RelationMatch");
+
+        if let Some(stripped) = text.strip_prefix('$') {
+            return Field::Parameter(
+                stripped
+                    .parse::<usize>()
+                    .expect("Failed to parse parameter"),
+            );
+        }
+
+        Field::Text(text.to_string())
+    }
+
+    pub fn get_range(&self) -> tree_sitter::Range {
+        self.field.range()
+    }
+
+    pub fn get_byte_range(&self) -> std::ops::Range<usize> {
+        let range = self.field.range();
+        range.start_byte..range.end_byte
     }
 }
 
