@@ -86,6 +86,13 @@ mod tests {
     }
 
     #[test]
+    fn ts_with_timezone() {
+        Tester::from("alter table foo add column bar timestamp with time zone;").expect_statements(
+            vec!["alter table foo add column bar timestamp with time zone;"],
+        );
+    }
+
+    #[test]
     fn failing_lexer() {
         let input = "select 1443ddwwd33djwdkjw13331333333333";
         let res = split(input).unwrap_err();

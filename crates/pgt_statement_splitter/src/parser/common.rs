@@ -249,6 +249,8 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::Ordinality,
                         // WITH CHECK should not start a new statement
                         SyntaxKind::Check,
+                        // TIMESTAMP WITH TIME ZONE should not start a new statement
+                        SyntaxKind::Time,
                     ]
                     .iter()
                     .all(|x| Some(x) != next.as_ref())
