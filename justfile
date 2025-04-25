@@ -40,6 +40,16 @@ format:
 	taplo format
 	bun biome format --write
 
+format-ci:
+	cargo fmt --all --check
+	taplo format --check
+	bun biome format
+
+format-ci-versions:
+	cargo --version
+	taplo --version
+	echo "Biome $(bun biome --version)"
+
 [unix]
 _touch file:
   touch {{file}}
