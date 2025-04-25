@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use pgt_schema_cache::SchemaCache;
 use pgt_test_utils::test_database::get_new_test_db;
 use sqlx::Executor;
@@ -25,9 +27,9 @@ impl From<&str> for InputQuery {
     }
 }
 
-impl ToString for InputQuery {
-    fn to_string(&self) -> String {
-        self.sql.clone()
+impl Display for InputQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.sql)
     }
 }
 
