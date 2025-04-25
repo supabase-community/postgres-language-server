@@ -83,7 +83,7 @@ lint-ci:
   cargo sqlx prepare --check --workspace
   cargo clippy --fix
   cargo run -p rules_check
-  biome lint --write
+  bun biome lint --write
 
 serve-docs:
     uv sync

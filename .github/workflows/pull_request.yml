@@ -96,10 +96,11 @@ jobs:
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: "1.9.4"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install
 
       - name: Setup Just
         uses: extractions/setup-just@v3
