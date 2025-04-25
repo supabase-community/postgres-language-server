@@ -3,11 +3,12 @@ mod typed_identifier;
 
 use diagnostics::create_type_error;
 pub use diagnostics::TypecheckDiagnostic;
+pub use typed_identifier::TypedIdentifier;
 use pgt_text_size::TextRange;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
-use typed_identifier::{apply_identifiers, TypedIdentifier};
+use typed_identifier::apply_identifiers;
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
@@ -16,7 +17,6 @@ pub struct TypecheckParams<'a> {
     pub ast: &'a pgt_query_ext::NodeEnum,
     pub tree: &'a tree_sitter::Tree,
     pub schema_cache: &'a pgt_schema_cache::SchemaCache,
-    pub cst: &'a tree_sitter::Node<'a>,
     pub identifiers: Vec<TypedIdentifier>,
 }
 
@@ -59,7 +59,7 @@ pub async fn check_sql(
     let prepared = apply_identifiers(
         params.identifiers,
         params.schema_cache,
-        params.cst,
+        params.tree,
         params.sql,
     );
 

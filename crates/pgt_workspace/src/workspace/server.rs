@@ -5,7 +5,7 @@ use async_helper::run_async;
 use dashmap::DashMap;
 use db_connection::DbConnection;
 use document::Document;
-use futures::{StreamExt, stream};
+use futures::{stream, StreamExt};
 use parsed_document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
     ParsedDocument, SyncDiagnosticsMapper,
@@ -13,26 +13,26 @@ use parsed_document::{
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
-    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
+    serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt, Error, Severity,
 };
 use pgt_fs::{ConfigName, PgTPath};
-use pgt_typecheck::TypecheckParams;
+use pgt_typecheck::{TypecheckParams, TypedIdentifier};
 use schema_cache_manager::SchemaCacheManager;
 use sqlx::Executor;
 use tracing::info;
 
 use crate::{
-    WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
-        completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
+        completions::{get_statement_for_completions, CompletionsResult, GetCompletionsParams},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{Settings, SettingsHandle, SettingsHandleMut},
+    WorkspaceError,
 };
 
 use super::{
@@ -370,7 +370,7 @@ impl Workspace for WorkspaceServer {
             let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             let async_results = run_async(async move {
                 stream::iter(input)
-                    .map(|(_id, range, content, ast, cst)| {
+                    .map(|(_id, range, content, ast, cst, sign)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
                         async move {
@@ -380,6 +380,8 @@ impl Workspace for WorkspaceServer {
                                     sql: &content,
                                     ast: &ast,
                                     tree: &cst,
+                                    schema_cache: &self.schema_cache,
+                                    identifiers: sign.map(|s| TypedIdentifier {}).unwrap_or_default(),
                                 })
                                 .await
                                 .map(|d| {
