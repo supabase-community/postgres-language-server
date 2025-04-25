@@ -1,10 +1,13 @@
+mod parameters;
 mod relations;
 
+pub use parameters::*;
 pub use relations::*;
 
 #[derive(Debug)]
 pub enum QueryResult<'a> {
     Relation(RelationMatch<'a>),
+    Parameter(ParameterMatch<'a>),
 }
 
 impl QueryResult<'_> {
@@ -17,6 +20,16 @@ impl QueryResult<'_> {
                 };
 
                 let end = rm.table.end_position();
+
+                start >= range.start_point && end <= range.end_point
+            }
+            Self::Parameter(pm) => {
+                let start = match pm.root {
+                    Some(s) => s.start_position(),
+                    None => pm.path.as_ref().unwrap().start_position(),
+                };
+
+                let end = pm.field.end_position();
 
                 start >= range.start_point && end <= range.end_point
             }

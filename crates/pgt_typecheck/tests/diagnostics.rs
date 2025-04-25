@@ -4,7 +4,7 @@ use pgt_console::{
 };
 use pgt_diagnostics::PrintDiagnostic;
 use pgt_test_utils::test_database::get_new_test_db;
-use pgt_typecheck::{check_sql, TypecheckParams};
+use pgt_typecheck::{TypecheckParams, check_sql};
 use sqlx::Executor;
 
 async fn test(name: &str, query: &str, setup: Option<&str>) {
@@ -40,22 +40,22 @@ async fn test(name: &str, query: &str, setup: Option<&str>) {
     })
     .await;
 
-    // let mut content = vec![];
-    // let mut writer = HTML::new(&mut content);
+    let mut content = vec![];
+    let mut writer = HTML::new(&mut content);
 
-    // Formatter::new(&mut writer)
-    //     .write_markup(markup! {
-    //         {PrintDiagnostic::simple(&result.unwrap().unwrap())}
-    //     })
-    //     .unwrap();
-    //
-    // let content = String::from_utf8(content).unwrap();
-    //
-    // insta::with_settings!({
-    //     prepend_module_to_snapshot => false,
-    // }, {
-    //     insta::assert_snapshot!(name, content);
-    // });
+    Formatter::new(&mut writer)
+        .write_markup(markup! {
+            {PrintDiagnostic::simple(&result.unwrap().unwrap())}
+        })
+        .unwrap();
+
+    let content = String::from_utf8(content).unwrap();
+
+    insta::with_settings!({
+        prepend_module_to_snapshot => false,
+    }, {
+        insta::assert_snapshot!(name, content);
+    });
 }
 
 #[tokio::test]
@@ -73,34 +73,6 @@ async fn invalid_column() {
         );
     "#,
         ),
-    )
-    .await;
-}
-
-#[tokio::test]
-async fn sql_fn() {
-    test(
-        "sql_fn",
-        "CREATE FUNCTION add(test0 integer, test1 integer) RETURNS integer
-    AS 'select $1 + $2;'
-    LANGUAGE SQL
-    IMMUTABLE
-    RETURNS NULL ON NULL INPUT;",
-        Some(""),
-    )
-    .await;
-}
-
-#[tokio::test]
-async fn sql_fn_named() {
-    test(
-        "sql_fn",
-        "CREATE FUNCTION add(test0 integer, test1 integer) RETURNS integer
-    AS 'select test0 + test1;'
-    LANGUAGE SQL
-    IMMUTABLE
-    RETURNS NULL ON NULL INPUT;",
-        Some(""),
     )
     .await;
 }

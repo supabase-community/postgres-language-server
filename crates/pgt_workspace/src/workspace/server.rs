@@ -5,7 +5,7 @@ use async_helper::run_async;
 use dashmap::DashMap;
 use db_connection::DbConnection;
 use document::Document;
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use parsed_document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
     ParsedDocument, SyncDiagnosticsMapper,
@@ -13,7 +13,7 @@ use parsed_document::{
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
-    serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt, Error, Severity,
+    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{TypecheckParams, TypedIdentifier};
@@ -22,17 +22,17 @@ use sqlx::Executor;
 use tracing::info;
 
 use crate::{
+    WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
-        completions::{get_statement_for_completions, CompletionsResult, GetCompletionsParams},
+        completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{Settings, SettingsHandle, SettingsHandleMut},
-    WorkspaceError,
 };
 
 use super::{
@@ -360,55 +360,57 @@ impl Workspace for WorkspaceServer {
 
         let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
 
-        if let Some(pool) = self
-            .connection
-            .read()
-            .expect("DbConnection RwLock panicked")
-            .get_pool()
-        {
-            let path_clone = params.path.clone();
-            let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
-            let async_results = run_async(async move {
-                stream::iter(input)
-                    .map(|(_id, range, content, ast, cst, sign)| {
-                        let pool = pool.clone();
-                        let path = path_clone.clone();
-                        async move {
-                            if let Some(ast) = ast {
-                                pgt_typecheck::check_sql(TypecheckParams {
-                                    conn: &pool,
-                                    sql: &content,
-                                    ast: &ast,
-                                    tree: &cst,
-                                    schema_cache: &self.schema_cache,
-                                    identifiers: sign.map(|s| TypedIdentifier {}).unwrap_or_default(),
-                                })
-                                .await
-                                .map(|d| {
-                                    d.map(|d| {
-                                        let r = d.location().span.map(|span| span + range.start());
-
-                                        d.with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(r.unwrap_or(range))
-                                    })
-                                })
-                            } else {
-                                Ok(None)
-                            }
-                        }
-                    })
-                    .buffer_unordered(10)
-                    .collect::<Vec<_>>()
-                    .await
-            })?;
-
-            for result in async_results.into_iter() {
-                let result = result?;
-                if let Some(diag) = result {
-                    diagnostics.push(SDiagnostic::new(diag));
-                }
-            }
-        }
+        // if let Some(pool) = self
+        //     .connection
+        //     .read()
+        //     .expect("DbConnection RwLock panicked")
+        //     .get_pool()
+        // {
+        //     let path_clone = params.path.clone();
+        //     let schema_cache = self.schema_cache.load(pool)?;
+        //     let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+        //     let async_results = run_async(async move {
+        //         stream::iter(input)
+        //             .map(|(_id, range, content, ast, cst, sign)| {
+        //                 let pool = pool.clone();
+        //                 let path = path_clone.clone();
+        //                 async move {
+        //                     if let Some(ast) = ast {
+        //                         // pgt_typecheck::check_sql(TypecheckParams {
+        //                         //     conn: &pool,
+        //                         //     sql: &content,
+        //                         //     ast: &ast,
+        //                         //     tree: &cst,
+        //                         //     schema_cache,
+        //                         //     identifiers: vec![],
+        //                         // })
+        //                         // .await
+        //                         // .map(|d| {
+        //                         //     d.map(|d| {
+        //                         //         let r = d.location().span.map(|span| span + range.start());
+        //                         //
+        //                         //         d.with_file_path(path.as_path().display().to_string())
+        //                         //             .with_file_span(r.unwrap_or(range))
+        //                         //     })
+        //                         // })
+        //                         Ok(None)
+        //                     } else {
+        //                         Ok(None)
+        //                     }
+        //                 }
+        //             })
+        //             .buffer_unordered(10)
+        //             .collect::<Vec<_>>()
+        //             .await
+        //     })?;
+        //
+        //     for result in async_results.into_iter() {
+        //         let result = result?;
+        //         if let Some(diag) = result {
+        //             diagnostics.push(SDiagnostic::new(diag));
+        //         }
+        //     }
+        // }
 
         diagnostics.extend(parser.iter(SyncDiagnosticsMapper).flat_map(
             |(_id, range, ast, diag)| {

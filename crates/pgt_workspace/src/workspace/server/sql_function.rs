@@ -1,9 +1,4 @@
-use std::sync::Arc;
-
-use dashmap::DashMap;
 use pgt_text_size::TextRange;
-
-use super::statement_identifier::StatementId;
 
 #[derive(Debug, Clone)]
 pub struct SQLFunctionArgs {
@@ -23,73 +18,12 @@ pub struct SQLFunctionBody {
     pub body: String,
 }
 
-pub struct SQLFunctionBodyStore {
-    db: DashMap<StatementId, Option<Arc<SQLFunctionBody>>>,
-    sig_db: DashMap<StatementId, Option<Arc<SQLFunctionSignature>>>,
-}
-
-impl SQLFunctionBodyStore {
-    pub fn new() -> SQLFunctionBodyStore {
-        SQLFunctionBodyStore {
-            db: DashMap::new(),
-            sig_db: DashMap::new(),
-        }
-    }
-
-    pub fn get_function_signature(
-        &self,
-        statement: &StatementId,
-        ast: &pgt_query_ext::NodeEnum,
-    ) -> Option<Arc<SQLFunctionSignature>> {
-        // First check if we already have this statement cached
-        if let Some(existing) = self.sig_db.get(statement).map(|x| x.clone()) {
-            return existing;
-        }
-
-        // If not cached, try to extract it from the AST
-        let fn_sig = get_sql_fn_signature(ast).map(Arc::new);
-
-        // Cache the result and return it
-        self.sig_db.insert(statement.clone(), fn_sig.clone());
-        fn_sig
-    }
-
-    pub fn get_function_body(
-        &self,
-        statement: &StatementId,
-        ast: &pgt_query_ext::NodeEnum,
-        content: &str,
-    ) -> Option<Arc<SQLFunctionBody>> {
-        // First check if we already have this statement cached
-        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
-            return existing;
-        }
-
-        // If not cached, try to extract it from the AST
-        let fn_body = get_sql_fn(ast, content).map(Arc::new);
-
-        // Cache the result and return it
-        self.db.insert(statement.clone(), fn_body.clone());
-        fn_body
-    }
-
-    pub fn clear_statement(&self, id: &StatementId) {
-        self.db.remove(id);
-
-        if let Some(child_id) = id.get_child_id() {
-            self.db.remove(&child_id);
-        }
-    }
-}
-
-/// Extracts SQL function signature from a CreateFunctionStmt node.
-fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunctionSignature> {
+/// Extracts the function signature from a SQL function definition
+pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunctionSignature> {
     let create_fn = match ast {
         pgt_query_ext::NodeEnum::CreateFunctionStmt(cf) => cf,
         _ => return None,
     };
-
-    println!("create_fn: {:?}", create_fn);
 
     // Extract language from function options
     let language = find_option_value(create_fn, "language")?;
@@ -124,15 +58,12 @@ fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunctionSign
     })
 }
 
-/// Extracts SQL function body and its text range from a CreateFunctionStmt node.
-/// Returns None if the function is not an SQL function or if the body can't be found.
-fn get_sql_fn(ast: &pgt_query_ext::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
+/// Extracts the SQL body from a function definition
+pub fn get_sql_fn_body(ast: &pgt_query_ext::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
     let create_fn = match ast {
         pgt_query_ext::NodeEnum::CreateFunctionStmt(cf) => cf,
         _ => return None,
     };
-
-    println!("create_fn: {:?}", create_fn);
 
     // Extract language from function options
     let language = find_option_value(create_fn, "language")?;
@@ -212,5 +143,27 @@ fn parse_name(nodes: &Vec<pgt_query_ext::protobuf::Node>) -> Option<(Option<Stri
         [Some(schema), Some(name)] => Some((Some(schema.clone()), name.clone())),
         [Some(name)] => Some((None, name.clone())),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use pgt_fs::PgTPath;
+
+    #[test]
+    fn sql_function_signature() {
+        let input = "CREATE FUNCTION add(test0 integer, test1 integer) RETURNS integer
+    AS 'select $1 + $2;'
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;";
+
+        let ast = pgt_query_ext::parse(input).unwrap();
+
+        let sig = get_sql_fn_signature(&ast);
+
+        println!("Function signature: {:?}", sig);
     }
 }

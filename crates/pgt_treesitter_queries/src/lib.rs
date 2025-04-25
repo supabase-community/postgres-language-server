@@ -68,7 +68,10 @@ impl<'a> Iterator for QueryResultIter<'a> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{TreeSitterQueriesExecutor, queries::RelationMatch};
+    use crate::{
+        TreeSitterQueriesExecutor,
+        queries::{ParameterMatch, RelationMatch},
+    };
 
     #[test]
     fn finds_all_relations_and_ignores_functions() {
@@ -137,11 +140,11 @@ where
 select
   *
 from (
-    select * 
+    select *
     from (
       select *
       from private.something
-    ) as sq2 
+    ) as sq2
     join private.tableau pt1
     on sq2.id = pt1.id
   ) as sq1
@@ -184,5 +187,42 @@ on sq1.id = pt.id;
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].get_schema(sql), Some("private".into()));
         assert_eq!(results[0].get_table(sql), "something");
+    }
+
+    #[test]
+    fn extracts_parameters() {
+        let sql = r#"select v_test + fn_name.custom_type.v_test2 + $3 + custom_type.v_test3;"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<ParameterMatch>();
+
+        let results: Vec<&ParameterMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results.len(), 4);
+
+        assert_eq!(results[0].get_root(sql), None);
+        assert_eq!(results[0].get_path(sql), None);
+        assert_eq!(results[0].get_field(sql), "v_test");
+
+        assert_eq!(results[1].get_root(sql), Some("fn_name".into()));
+        assert_eq!(results[1].get_path(sql), Some("custom_type".into()));
+        assert_eq!(results[1].get_field(sql), "v_test2");
+
+        assert_eq!(results[2].get_root(sql), None);
+        assert_eq!(results[2].get_path(sql), None);
+        assert_eq!(results[2].get_field(sql), "$3");
+
+        assert_eq!(results[3].get_root(sql), None);
+        assert_eq!(results[3].get_path(sql), Some("custom_type".into()));
+        assert_eq!(results[3].get_field(sql), "v_test3");
     }
 }

@@ -1,13 +1,13 @@
 mod diagnostics;
 mod typed_identifier;
 
-use diagnostics::create_type_error;
 pub use diagnostics::TypecheckDiagnostic;
-pub use typed_identifier::TypedIdentifier;
+use diagnostics::create_type_error;
 use pgt_text_size::TextRange;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
+pub use typed_identifier::TypedIdentifier;
 use typed_identifier::apply_identifiers;
 
 #[derive(Debug)]

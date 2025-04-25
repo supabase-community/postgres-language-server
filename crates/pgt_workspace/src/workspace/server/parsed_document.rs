@@ -12,7 +12,7 @@ use super::{
     change::StatementChange,
     document::{Document, StatementIterator},
     pg_query::PgQueryStore,
-    sql_function::{SQLFunctionBodyStore, SQLFunctionSignature},
+    sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
@@ -24,7 +24,6 @@ pub struct ParsedDocument {
     doc: Document,
     ast_db: PgQueryStore,
     cst_db: TreeSitterStore,
-    sql_fn_db: SQLFunctionBodyStore,
     annotation_db: AnnotationStore,
 }
 
@@ -34,7 +33,6 @@ impl ParsedDocument {
 
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
-        let sql_fn_db = SQLFunctionBodyStore::new();
         let annotation_db = AnnotationStore::new();
 
         doc.iter().for_each(|(stmt, _, content)| {
@@ -46,7 +44,6 @@ impl ParsedDocument {
             doc,
             ast_db,
             cst_db,
-            sql_fn_db,
             annotation_db,
         }
     }
@@ -72,7 +69,6 @@ impl ParsedDocument {
                     tracing::debug!("Deleting statement: id {:?}", s,);
                     self.cst_db.remove_statement(s);
                     self.ast_db.clear_statement(s);
-                    self.sql_fn_db.clear_statement(s);
                     self.annotation_db.clear_statement(s);
                 }
                 StatementChange::Modified(s) => {
@@ -88,7 +84,6 @@ impl ParsedDocument {
 
                     self.cst_db.modify_statement(s);
                     self.ast_db.clear_statement(&s.old_stmt);
-                    self.sql_fn_db.clear_statement(&s.old_stmt);
                     self.annotation_db.clear_statement(&s.old_stmt);
                 }
             }
@@ -197,11 +192,7 @@ where
                 .as_ref()
             {
                 // Check if this is a SQL function definition with a body
-                if let Some(sub_statement) =
-                    self.parser
-                        .sql_fn_db
-                        .get_function_body(&root_id, ast, &content_owned)
-                {
+                if let Some(sub_statement) = get_sql_fn_body(ast, &content_owned) {
                     // Add sub-statements to our pending queue
                     self.pending_sub_statements.push((
                         root_id.create_child(),
@@ -274,7 +265,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
         String,
         Option<pgt_query_ext::NodeEnum>,
         Arc<tree_sitter::Tree>,
-        Option<Arc<SQLFunctionSignature>>,
+        Option<SQLFunctionSignature>,
     );
 
     fn map(
@@ -310,7 +301,7 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
 
                 let ast_option = ast_option.as_ref()?;
 
-                parser.sql_fn_db.get_function_signature(&root, ast_option)
+                get_sql_fn_signature(ast_option)
             });
 
         (id, range, content_owned, ast_option, cst_result, sql_fn_sig)
