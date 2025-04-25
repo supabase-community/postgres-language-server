@@ -71,6 +71,20 @@ lint-fix:
   cargo run -p rules_check
   bun biome lint --write
 
+lint-ci-versions:
+  rustc --version
+  rustup --version
+  cargo --version
+  cargo sqlx --version
+  cargo clippy --version
+  echo "Biome $(biome --version)"
+
+lint-ci:
+  cargo sqlx prepare --check --workspace
+  cargo clippy --fix
+  cargo run -p rules_check
+  biome lint --write
+
 serve-docs:
     uv sync
     uv run mkdocs serve

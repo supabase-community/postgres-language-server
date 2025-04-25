@@ -101,21 +101,16 @@ jobs:
         with:
           version: "1.9.4"
 
-      - name: Echo tool versions
+      - name: Setup Just
+        uses: extractions/setup-just@v3
+
+      - name: Echo Tool Versions
         run: |
-          rustc --version
-          rustup --version
-          cargo --version
-          cargo sqlx --version
-          cargo clippy --version
-          echo "Biome $(biome --version)"
+          just lint-ci-versions
 
       - name: Run Lints
         run: |
-          cargo sqlx prepare --check --workspace
-          cargo clippy --fix
-          cargo run -p rules_check
-          biome lint --write
+          just lint-ci
 
       - name: Check for changes
         run: |
