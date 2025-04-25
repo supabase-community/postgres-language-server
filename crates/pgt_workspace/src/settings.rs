@@ -299,11 +299,10 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
 
         // "host" is the minimum required setting for database features
         // to be enabled.
-        let enable_connection = value.host.as_ref().is_some_and(|_| {
-            !value.disable_connection.expect(
-                "Developer Error: --disable-db should never be `None` since it's of type `bpaf(switch)`.",
-            )
-        });
+        let enable_connection = value
+            .host
+            .as_ref()
+            .is_some_and(|_| value.disable_connection.is_none_or(|disabled| !disabled));
 
         let database = value.database.unwrap_or(d.database);
         let host = value.host.unwrap_or(d.host);
