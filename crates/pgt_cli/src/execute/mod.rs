@@ -76,10 +76,10 @@ pub enum TraversalMode {
     Dummy,
     /// This mode is enabled when running the command `check`
     Check {
-        /// The type of fixes that should be applied when analyzing a file.
-        ///
-        /// It's [None] if the `check` command is called without `--apply` or `--apply-suggested`
-        /// arguments.
+        // The type of fixes that should be applied when analyzing a file.
+        //
+        // It's [None] if the `check` command is called without `--apply` or `--apply-suggested`
+        // arguments.
         // fix_file_mode: Option<FixFileMode>,
 
         /// An optional tuple.

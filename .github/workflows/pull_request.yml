@@ -108,7 +108,7 @@ jobs:
           cargo --version
           cargo sqlx --version
           cargo clippy --version
-          biome --version
+          echo "Biome $(biome --version)"
 
       - name: Run Lints
         run: |
