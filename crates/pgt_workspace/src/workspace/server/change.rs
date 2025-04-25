@@ -1470,7 +1470,7 @@ mod tests {
                 assert_eq!(old_stmt_text, "select * from");
             }
 
-            _ => assert!(false, "Did not yield a modified statement."),
+            _ => unreachable!("Did not yield a modified statement."),
         }
 
         assert_document_integrity(&doc);
@@ -1516,7 +1516,7 @@ mod tests {
                 assert_eq!(old_stmt_text, "select * from");
             }
 
-            _ => assert!(false, "Did not yield a modified statement."),
+            _ => unreachable!("Did not yield a modified statement."),
         }
 
         assert_document_integrity(&doc);
@@ -1559,7 +1559,7 @@ mod tests {
                 assert_eq!(new_stmt_text, "select * from users");
             }
 
-            _ => assert!(false, "Did not yield a modified statement."),
+            _ => unreachable!("Did not yield a modified statement."),
         }
 
         assert_document_integrity(&doc);
