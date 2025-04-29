@@ -20,62 +20,23 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
 
 #[derive(Debug)]
 pub struct ParameterMatch<'a> {
-    pub(crate) root: Option<tree_sitter::Node<'a>>,
-    pub(crate) path: Option<tree_sitter::Node<'a>>,
-
-    pub(crate) field: tree_sitter::Node<'a>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Field {
-    Text(String),
-    Parameter(usize),
+    pub(crate) node: tree_sitter::Node<'a>,
 }
 
 impl ParameterMatch<'_> {
-    pub fn get_root(&self, sql: &str) -> Option<String> {
-        let str = self
-            .root
-            .as_ref()?
+    pub fn get_path(&self, sql: &str) -> String {
+        self.node
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get schema from RelationMatch");
-
-        Some(str.to_string())
-    }
-
-    pub fn get_path(&self, sql: &str) -> Option<String> {
-        let str = self
-            .path
-            .as_ref()?
-            .utf8_text(sql.as_bytes())
-            .expect("Failed to get table from RelationMatch");
-
-        Some(str.to_string())
-    }
-
-    pub fn get_field(&self, sql: &str) -> Field {
-        let text = self
-            .field
-            .utf8_text(sql.as_bytes())
-            .expect("Failed to get field from RelationMatch");
-
-        if let Some(stripped) = text.strip_prefix('$') {
-            return Field::Parameter(
-                stripped
-                    .parse::<usize>()
-                    .expect("Failed to parse parameter"),
-            );
-        }
-
-        Field::Text(text.to_string())
+            .expect("Failed to get path from ParameterMatch")
+            .to_string()
     }
 
     pub fn get_range(&self) -> tree_sitter::Range {
-        self.field.range()
+        self.node.range()
     }
 
     pub fn get_byte_range(&self) -> std::ops::Range<usize> {
-        let range = self.field.range();
+        let range = self.node.range();
         range.start_byte..range.end_byte
     }
 }
@@ -112,37 +73,9 @@ impl<'a> Query<'a> for ParameterMatch<'a> {
                     return None;
                 }
 
-                let field = captures[0].node;
-                let text = match field.utf8_text(stmt.as_bytes()) {
-                    Ok(t) => t,
-                    Err(_) => return None,
-                };
-                let parts: Vec<&str> = text.split('.').collect();
-
-                let param_match = match parts.len() {
-                    // Simple field: field_name
-                    1 => ParameterMatch {
-                        root: None,
-                        path: None,
-                        field,
-                    },
-                    // Table qualified: table.field_name
-                    2 => ParameterMatch {
-                        root: None,
-                        path: field.named_child(0),
-                        field: field.named_child(1)?,
-                    },
-                    // Fully qualified: schema.table.field_name
-                    3 => ParameterMatch {
-                        root: field.named_child(0).and_then(|n| n.named_child(0)),
-                        path: field.named_child(0).and_then(|n| n.named_child(1)),
-                        field: field.named_child(1)?,
-                    },
-                    // Unexpected number of parts
-                    _ => return None,
-                };
-
-                Some(QueryResult::Parameter(param_match))
+                Some(QueryResult::Parameter(ParameterMatch {
+                    node: captures[0].node,
+                }))
             })
             .collect()
     }

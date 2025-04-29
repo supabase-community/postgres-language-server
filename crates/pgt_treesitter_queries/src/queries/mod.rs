@@ -24,14 +24,10 @@ impl QueryResult<'_> {
                 start >= range.start_point && end <= range.end_point
             }
             Self::Parameter(pm) => {
-                let start = match pm.root {
-                    Some(s) => s.start_position(),
-                    None => pm.path.as_ref().unwrap().start_position(),
-                };
+                let node_range = pm.node.range();
 
-                let end = pm.field.end_position();
-
-                start >= range.start_point && end <= range.end_point
+                node_range.start_point >= range.start_point
+                    && node_range.end_point <= range.end_point
             }
         }
     }
