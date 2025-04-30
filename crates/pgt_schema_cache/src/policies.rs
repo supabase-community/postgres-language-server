@@ -47,7 +47,7 @@ impl From<PolicyQueried> for Policy {
             schema_name: value.schema_name,
             is_permissive: value.is_permissive == "PERMISSIVE",
             command: PolicyCommand::from(value.command),
-            role_names: value.role_names.unwrap_or(vec![]),
+            role_names: value.role_names.unwrap_or_default(),
             security_qualification: value.security_qualification,
             with_check: value.with_check,
         }
@@ -187,7 +187,7 @@ mod tests {
             .unwrap();
         assert_eq!(public_policy.table_name, "users");
         assert_eq!(public_policy.schema_name, "public");
-        assert_eq!(public_policy.is_permissive, true);
+        assert!(public_policy.is_permissive);
         assert_eq!(public_policy.command, PolicyCommand::Select);
         assert_eq!(public_policy.role_names, vec!["public"]);
         assert_eq!(public_policy.security_qualification, Some("true".into()));
@@ -200,7 +200,7 @@ mod tests {
             .unwrap();
         assert_eq!(admin_policy.table_name, "users");
         assert_eq!(admin_policy.schema_name, "public");
-        assert_eq!(admin_policy.is_permissive, true);
+        assert!(admin_policy.is_permissive);
         assert_eq!(admin_policy.command, PolicyCommand::All);
         assert_eq!(admin_policy.role_names, vec!["admin"]);
         assert_eq!(admin_policy.security_qualification, None);
@@ -213,7 +213,7 @@ mod tests {
             .unwrap();
         assert_eq!(owner_policy.table_name, "properties");
         assert_eq!(owner_policy.schema_name, "real_estate");
-        assert_eq!(owner_policy.is_permissive, true);
+        assert!(owner_policy.is_permissive);
         assert_eq!(owner_policy.command, PolicyCommand::Update);
         assert_eq!(owner_policy.role_names, vec!["owner"]);
         assert_eq!(
