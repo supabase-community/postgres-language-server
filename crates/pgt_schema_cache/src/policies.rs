@@ -106,11 +106,24 @@ mod tests {
                 name varchar(255) not null
             );
 
+            -- multiple policies to test various commands
             create policy public_policy
                 on public.users
                 for select
                 to public
                 using (true);
+
+            create policy public_policy_del
+                on public.users
+                for delete
+                to public
+                using (true);
+
+            create policy public_policy_ins
+                on public.users
+                for insert
+                to public
+                with check (true);
 
             create policy admin_policy
                 on public.users
@@ -157,7 +170,7 @@ mod tests {
             .filter(|p| p.schema_name == "public")
             .count();
 
-        assert_eq!(public_policies, 2);
+        assert_eq!(public_policies, 4);
 
         let real_estate_policies = cache
             .policies
