@@ -333,4 +333,21 @@ values ('insert', new.id, now());",
             "select 3",
         ]);
     }
+
+    #[test]
+    fn commas_and_newlines() {
+        Tester::from(
+            "
+        select
+            email,
+
+
+        from
+            auth.users;
+        ",
+        )
+        .expect_statements(vec![
+            "select\n            email,\n\n\n        from\n            auth.users;",
+        ]);
+    }
 }

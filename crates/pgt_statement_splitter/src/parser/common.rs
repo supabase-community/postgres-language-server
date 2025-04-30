@@ -138,10 +138,20 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                 break;
             }
             Token {
-                kind: SyntaxKind::Newline | SyntaxKind::Eof,
+                kind: SyntaxKind::Eof,
                 ..
             } => {
                 break;
+            }
+            Token {
+                kind: SyntaxKind::Newline,
+                ..
+            } => {
+                if p.look_back().is_some_and(|t| t.kind == SyntaxKind::Ascii44) {
+                    p.advance();
+                } else {
+                    break;
+                }
             }
             Token {
                 kind: SyntaxKind::Case,

@@ -86,7 +86,7 @@ fn should_preselect_first_item(items: &Vec<PossibleCompletionItem>) -> bool {
     let second = items_iter.next();
 
     first.is_some_and(|f| match second {
-        Some(s) => (f.score.get_score() - s.score.get_score()) > 10,
+        Some(s) => (f.score.get_score() - s.score.get_score()) > 15,
         None => true,
-    })
+    }) && items.len() >= 10
 }
