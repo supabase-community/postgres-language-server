@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select \n  schemaname as \"schema_name!\", \n  tablename as \"table_name!\", \n  policyname as \"name!\", \n  permissive as \"is_permissive!\", \n  roles as \"role_names!\", \n  cmd as \"command!\", \n  qual as \"security_qualification\", \n  with_check\nfrom \n pg_catalog.pg_policies;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "schema_name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 1,
+        "name": "table_name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_permissive!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "role_names!",
+        "type_info": "NameArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "command!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "security_qualification",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "with_check",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "47bbad9dc2cec0231ef726790a9b0a5d9c628c6a2704f5523fb9ee45414350c7"
+}
