@@ -68,7 +68,77 @@ impl<'a> Iterator for QueryResultIter<'a> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{TreeSitterQueriesExecutor, queries::RelationMatch};
+    use crate::{
+        TreeSitterQueriesExecutor,
+        queries::{RelationMatch, TableAliasMatch},
+    };
+
+    #[test]
+    fn finds_all_table_aliases() {
+        let sql = r#"
+select
+  *
+from
+  (
+    select
+      something
+    from
+      public.cool_table pu
+      join private.cool_tableau pr on pu.id = pr.id
+    where
+      x = '123'
+    union
+    select
+      something_else
+    from
+      another_table puat
+      inner join private.another_tableau prat on puat.id = prat.id
+    union
+    select
+      x,
+      y
+    from
+      public.get_something_cool ()
+  ) as cool
+   join users u on u.id = cool.something
+where
+  col = 17;
+"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<TableAliasMatch>();
+
+        let results: Vec<&TableAliasMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results[0].get_schema(sql), Some("public".into()));
+        assert_eq!(results[0].get_table(sql), "cool_table");
+        assert_eq!(results[0].get_alias(sql), "pu");
+
+        assert_eq!(results[1].get_schema(sql), Some("private".into()));
+        assert_eq!(results[1].get_table(sql), "cool_tableau");
+        assert_eq!(results[1].get_alias(sql), "pr");
+
+        assert_eq!(results[2].get_schema(sql), None);
+        assert_eq!(results[2].get_table(sql), "another_table");
+        assert_eq!(results[2].get_alias(sql), "puat");
+
+        assert_eq!(results[3].get_schema(sql), Some("private".into()));
+        assert_eq!(results[3].get_table(sql), "another_tableau");
+        assert_eq!(results[3].get_alias(sql), "prat");
+
+        assert_eq!(results[4].get_schema(sql), None);
+        assert_eq!(results[4].get_table(sql), "users");
+        assert_eq!(results[4].get_alias(sql), "u");
+    }
 
     #[test]
     fn finds_all_relations_and_ignores_functions() {
