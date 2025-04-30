@@ -115,6 +115,8 @@ pub(crate) struct CompletionContext<'a> {
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
+
+    pub mentioned_table_aliases: HashMap<String, String>,
 }
 
 impl<'a> CompletionContext<'a> {
@@ -131,6 +133,7 @@ impl<'a> CompletionContext<'a> {
             wrapping_statement_range: None,
             is_invocation: false,
             mentioned_relations: HashMap::new(),
+            mentioned_table_aliases: HashMap::new(),
         };
 
         ctx.gather_tree_context();
@@ -146,6 +149,7 @@ impl<'a> CompletionContext<'a> {
         let mut executor = TreeSitterQueriesExecutor::new(self.tree.root_node(), sql);
 
         executor.add_query_results::<queries::RelationMatch>();
+        executor.add_query_results::<queries::TableAliasMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -165,6 +169,13 @@ impl<'a> CompletionContext<'a> {
                             self.mentioned_relations.insert(schema_name, new);
                         }
                     };
+                }
+
+                QueryResult::TableAliases(table_alias_match) => {
+                    self.mentioned_table_aliases.insert(
+                        table_alias_match.get_alias(sql),
+                        table_alias_match.get_table(sql),
+                    );
                 }
             };
         }
