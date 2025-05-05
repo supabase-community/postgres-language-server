@@ -66,7 +66,8 @@ static PATTERN_LEXER: LazyLock<Regex> = LazyLock::new(|| {
     #[cfg(windows)]
     {
         // On Windows, treat \r\n as a single newline token
-        Regex::new(r"(?P<whitespace> +)|(?P<newline>(\r\n|\n)+)|(?P<tab>\t+)").unwrap()
+        // and treat \r as a whitespace token
+        Regex::new(r"(?P<whitespace> (+|\r))|(?P<newline>(\r\n|\n)+)|(?P<tab>\t+)").unwrap()
     }
     #[cfg(not(windows))]
     {
@@ -207,6 +208,15 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
+    fn test_carriage_return() {
+        let input = "select\r\n\r1";
+        let tokens = lex(input).unwrap();
+        assert_eq!(tokens[1].kind, SyntaxKind::Newline);
+        assert_eq!(tokens[2].kind, SyntaxKind::Whitespace);
+    }
+
+    #[test]
     fn test_newline_tokens() {
         let input = "select\n1";
         let tokens = lex(input).unwrap();
@@ -217,7 +227,7 @@ mod tests {
     fn test_consecutive_newlines() {
         // Test with multiple consecutive newlines
         #[cfg(windows)]
-        let input = "select\r\n\r\n1";
+        let input = "select\r\n\r\n\r1";
         #[cfg(not(windows))]
         let input = "select\n\n1";
 
@@ -226,6 +236,7 @@ mod tests {
         // Check that we have exactly one newline token between "select" and "1"
         assert_eq!(tokens[0].kind, SyntaxKind::Select);
         assert_eq!(tokens[1].kind, SyntaxKind::Newline);
+        assert_eq!(tokens[1].kind, SyntaxKind::Whitespace);
         assert_eq!(tokens[2].kind, SyntaxKind::Iconst);
     }
 
