@@ -202,7 +202,7 @@ pub(crate) async fn assert_complete_results(
     let (not_existing, existing): (Vec<CompletionAssertion>, Vec<CompletionAssertion>) =
         assertions.into_iter().partition(|a| match a {
             CompletionAssertion::LabelNotExists(_) | CompletionAssertion::KindNotExists(_) => true,
-            _ => false,
+            CompletionAssertion::Label(_) | CompletionAssertion::LabelAndKind(_, _) => false,
         });
 
     assert!(
