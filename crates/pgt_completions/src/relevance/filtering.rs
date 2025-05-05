@@ -1,4 +1,4 @@
-use crate::context::{ClauseType, CompletionContext};
+use crate::context::{ClauseType, CompletionContext, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -50,6 +50,7 @@ impl CompletionFilter<'_> {
 
     fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
         let clause = ctx.wrapping_clause_type.as_ref();
+        let wrapping_node = ctx.wrapping_node_kind.as_ref();
 
         match self.data {
             CompletionRelevanceData::Table(_) => {
@@ -62,8 +63,18 @@ impl CompletionFilter<'_> {
             }
             CompletionRelevanceData::Column(_) => {
                 let in_from_clause = clause.is_some_and(|c| c == &ClauseType::From);
-
                 if in_from_clause {
+                    return None;
+                }
+
+                // We can complete columns in JOIN cluases, but only if we are in the
+                // "ON u.id = posts.user_id" part.
+                let in_join_clause = clause.is_some_and(|c| c == &ClauseType::Join);
+
+                let in_comparison_clause =
+                    wrapping_node.is_some_and(|n| n == &WrappingNode::BinaryExpression);
+
+                if in_join_clause && !in_comparison_clause {
                     return None;
                 }
             }

@@ -64,11 +64,17 @@ impl CompletionScore<'_> {
         let has_mentioned_tables = !ctx.mentioned_relations.is_empty();
         let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
 
+        let is_binary_exp = ctx
+            .wrapping_node_kind
+            .as_ref()
+            .is_some_and(|wn| wn == &WrappingNode::BinaryExpression);
+
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
-                ClauseType::From => 5,
                 ClauseType::Update => 10,
                 ClauseType::Delete => 10,
+                ClauseType::From => 5,
+                ClauseType::Join if !is_binary_exp => 5,
                 _ => -50,
             },
             CompletionRelevanceData::Function(_) => match clause_type {
@@ -77,14 +83,19 @@ impl CompletionScore<'_> {
                 ClauseType::From => 0,
                 _ => -50,
             },
-            CompletionRelevanceData::Column(_) => match clause_type {
+            CompletionRelevanceData::Column(col) => match clause_type {
                 ClauseType::Select if has_mentioned_tables => 10,
                 ClauseType::Select if !has_mentioned_tables => 0,
                 ClauseType::Where => 10,
+                ClauseType::Join if is_binary_exp => {
+                    // Users will probably join on primary keys
+                    if col.is_primary_key { 20 } else { 10 }
+                }
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match clause_type {
                 ClauseType::From if !has_mentioned_schema => 15,
+                ClauseType::Join if !has_mentioned_schema => 15,
                 ClauseType::Update if !has_mentioned_schema => 15,
                 ClauseType::Delete if !has_mentioned_schema => 15,
                 _ => -50,
@@ -199,7 +210,7 @@ impl CompletionScore<'_> {
         let system_schemas = ["pg_catalog", "information_schema", "pg_toast"];
 
         if system_schemas.contains(&schema.as_str()) {
-            self.score -= 10;
+            self.score -= 20;
         }
 
         // "public" is the default postgres schema where users

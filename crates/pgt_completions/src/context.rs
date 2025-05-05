@@ -13,6 +13,7 @@ pub enum ClauseType {
     Select,
     Where,
     From,
+    Join,
     Update,
     Delete,
 }
@@ -33,6 +34,7 @@ impl TryFrom<&str> for ClauseType {
             "from" => Ok(Self::From),
             "update" => Ok(Self::Update),
             "delete" => Ok(Self::Delete),
+            "join" => Ok(Self::Join),
             _ => {
                 let message = format!("Unimplemented ClauseType: {}", value);
 
@@ -132,6 +134,9 @@ pub(crate) struct CompletionContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
+    /// Some incomplete statements can't be correctly parsed by TreeSitter.
+    pub is_in_error_node: bool,
+
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
 
     pub mentioned_table_aliases: HashMap<String, String>,
@@ -152,10 +157,17 @@ impl<'a> CompletionContext<'a> {
             is_invocation: false,
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
+            is_in_error_node: false,
         };
+
+        println!("text: {}", ctx.text);
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+
+        println!("sql: {}", ctx.text);
+        println!("wrapping_clause_type: {:?}", ctx.wrapping_clause_type);
+        println!("wrappping_node_kind: {:?}", ctx.wrapping_node_kind);
 
         ctx
     }
@@ -264,12 +276,51 @@ impl<'a> CompletionContext<'a> {
                 self.wrapping_statement_range = Some(parent_node.range());
             }
             "invocation" => self.is_invocation = true,
-
             _ => {}
         }
 
+        // try to gather context from the siblings if we're within an error node.
+        if self.is_in_error_node {
+            let mut next_sibling = current_node.next_named_sibling();
+            while let Some(n) = next_sibling {
+                if n.kind().starts_with("keyword_") {
+                    if let Some(txt) = self.get_ts_node_content(n).and_then(|txt| match txt {
+                        NodeText::Original(txt) => Some(txt),
+                        NodeText::Replaced => None,
+                    }) {
+                        match txt {
+                            "where" | "update" | "select" | "delete" | "from" | "join" => {
+                                self.wrapping_clause_type = txt.try_into().ok();
+                                break;
+                            }
+                            _ => {}
+                        }
+                    };
+                }
+                next_sibling = n.next_named_sibling();
+            }
+            let mut prev_sibling = current_node.prev_named_sibling();
+            while let Some(n) = prev_sibling {
+                if n.kind().starts_with("keyword_") {
+                    if let Some(txt) = self.get_ts_node_content(n).and_then(|txt| match txt {
+                        NodeText::Original(txt) => Some(txt),
+                        NodeText::Replaced => None,
+                    }) {
+                        match txt {
+                            "where" | "update" | "select" | "delete" | "from" | "join" => {
+                                self.wrapping_clause_type = txt.try_into().ok();
+                                break;
+                            }
+                            _ => {}
+                        }
+                    };
+                }
+                prev_sibling = n.prev_named_sibling();
+            }
+        }
+
         match current_node_kind {
-            "object_reference" => {
+            "object_reference" | "field" => {
                 let content = self.get_ts_node_content(current_node);
                 if let Some(node_txt) = content {
                     match node_txt {
@@ -284,12 +335,16 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            "where" | "update" | "select" | "delete" | "from" => {
+            "where" | "update" | "select" | "delete" | "from" | "join" => {
                 self.wrapping_clause_type = current_node_kind.try_into().ok();
             }
 
             "relation" | "binary_expression" | "assignment" => {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
+            }
+
+            "ERROR" => {
+                self.is_in_error_node = true;
             }
 
             _ => {}
