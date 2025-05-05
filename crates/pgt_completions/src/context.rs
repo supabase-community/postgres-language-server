@@ -13,6 +13,7 @@ pub enum ClauseType {
     Select,
     Where,
     From,
+    Join,
     Update,
     Delete,
 }
@@ -33,6 +34,7 @@ impl TryFrom<&str> for ClauseType {
             "from" => Ok(Self::From),
             "update" => Ok(Self::Update),
             "delete" => Ok(Self::Delete),
+            "join" => Ok(Self::Join),
             _ => {
                 let message = format!("Unimplemented ClauseType: {}", value);
 
@@ -106,13 +108,34 @@ pub(crate) struct CompletionContext<'a> {
     pub schema_cache: &'a SchemaCache,
     pub position: usize,
 
-    pub schema_name: Option<String>,
+    /// If the cursor is on a node that uses dot notation
+    /// to specify an alias or schema, this will hold the schema's or
+    /// alias's name.
+    ///
+    /// Here, `auth` is a schema name:
+    /// ```sql
+    /// select * from auth.users;
+    /// ```
+    ///
+    /// Here, `u` is an alias name:
+    /// ```sql
+    /// select
+    ///     *
+    /// from
+    ///     auth.users u
+    ///     left join identities i
+    ///     on u.id = i.user_id;
+    /// ```
+    pub schema_or_alias_name: Option<String>,
     pub wrapping_clause_type: Option<ClauseType>,
 
     pub wrapping_node_kind: Option<WrappingNode>,
 
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
+
+    /// Some incomplete statements can't be correctly parsed by TreeSitter.
+    pub is_in_error_node: bool,
 
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
 
@@ -127,13 +150,14 @@ impl<'a> CompletionContext<'a> {
             schema_cache: params.schema,
             position: usize::from(params.position),
             node_under_cursor: None,
-            schema_name: None,
+            schema_or_alias_name: None,
             wrapping_clause_type: None,
             wrapping_node_kind: None,
             wrapping_statement_range: None,
             is_invocation: false,
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
+            is_in_error_node: false,
         };
 
         ctx.gather_tree_context();
@@ -246,19 +270,58 @@ impl<'a> CompletionContext<'a> {
                 self.wrapping_statement_range = Some(parent_node.range());
             }
             "invocation" => self.is_invocation = true,
-
             _ => {}
         }
 
+        // try to gather context from the siblings if we're within an error node.
+        if self.is_in_error_node {
+            let mut next_sibling = current_node.next_named_sibling();
+            while let Some(n) = next_sibling {
+                if n.kind().starts_with("keyword_") {
+                    if let Some(txt) = self.get_ts_node_content(n).and_then(|txt| match txt {
+                        NodeText::Original(txt) => Some(txt),
+                        NodeText::Replaced => None,
+                    }) {
+                        match txt {
+                            "where" | "update" | "select" | "delete" | "from" | "join" => {
+                                self.wrapping_clause_type = txt.try_into().ok();
+                                break;
+                            }
+                            _ => {}
+                        }
+                    };
+                }
+                next_sibling = n.next_named_sibling();
+            }
+            let mut prev_sibling = current_node.prev_named_sibling();
+            while let Some(n) = prev_sibling {
+                if n.kind().starts_with("keyword_") {
+                    if let Some(txt) = self.get_ts_node_content(n).and_then(|txt| match txt {
+                        NodeText::Original(txt) => Some(txt),
+                        NodeText::Replaced => None,
+                    }) {
+                        match txt {
+                            "where" | "update" | "select" | "delete" | "from" | "join" => {
+                                self.wrapping_clause_type = txt.try_into().ok();
+                                break;
+                            }
+                            _ => {}
+                        }
+                    };
+                }
+                prev_sibling = n.prev_named_sibling();
+            }
+        }
+
         match current_node_kind {
-            "object_reference" => {
+            "object_reference" | "field" => {
                 let content = self.get_ts_node_content(current_node);
                 if let Some(node_txt) = content {
                     match node_txt {
                         NodeText::Original(txt) => {
                             let parts: Vec<&str> = txt.split('.').collect();
                             if parts.len() == 2 {
-                                self.schema_name = Some(parts[0].to_string());
+                                self.schema_or_alias_name = Some(parts[0].to_string());
                             }
                         }
                         NodeText::Replaced => {}
@@ -266,12 +329,16 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            "where" | "update" | "select" | "delete" | "from" => {
+            "where" | "update" | "select" | "delete" | "from" | "join" => {
                 self.wrapping_clause_type = current_node_kind.try_into().ok();
             }
 
             "relation" | "binary_expression" | "assignment" => {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
+            }
+
+            "ERROR" => {
+                self.is_in_error_node = true;
             }
 
             _ => {}
@@ -380,7 +447,10 @@ mod tests {
 
             let ctx = CompletionContext::new(&params);
 
-            assert_eq!(ctx.schema_name, expected_schema.map(|f| f.to_string()));
+            assert_eq!(
+                ctx.schema_or_alias_name,
+                expected_schema.map(|f| f.to_string())
+            );
         }
     }
 

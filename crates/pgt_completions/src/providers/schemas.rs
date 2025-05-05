@@ -59,6 +59,8 @@ mod tests {
                     "private".to_string(),
                     CompletionItemKind::Schema,
                 ),
+                // users table still preferred over system schemas
+                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind(
                     "information_schema".to_string(),
                     CompletionItemKind::Schema,
@@ -71,7 +73,6 @@ mod tests {
                     "pg_toast".to_string(),
                     CompletionItemKind::Schema,
                 ),
-                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
             ],
             setup,
         )

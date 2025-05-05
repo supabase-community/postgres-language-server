@@ -1,4 +1,4 @@
-use crate::context::{ClauseType, CompletionContext};
+use crate::context::{ClauseType, CompletionContext, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -18,7 +18,7 @@ impl CompletionFilter<'_> {
         self.completable_context(ctx)?;
         self.check_clause(ctx)?;
         self.check_invocation(ctx)?;
-        self.check_mentioned_schema(ctx)?;
+        self.check_mentioned_schema_or_alias(ctx)?;
 
         Some(())
     }
@@ -50,6 +50,7 @@ impl CompletionFilter<'_> {
 
     fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
         let clause = ctx.wrapping_clause_type.as_ref();
+        let wrapping_node = ctx.wrapping_node_kind.as_ref();
 
         match self.data {
             CompletionRelevanceData::Table(_) => {
@@ -62,8 +63,18 @@ impl CompletionFilter<'_> {
             }
             CompletionRelevanceData::Column(_) => {
                 let in_from_clause = clause.is_some_and(|c| c == &ClauseType::From);
-
                 if in_from_clause {
+                    return None;
+                }
+
+                // We can complete columns in JOIN cluases, but only if we are in the
+                // "ON u.id = posts.user_id" part.
+                let in_join_clause = clause.is_some_and(|c| c == &ClauseType::Join);
+
+                let in_comparison_clause =
+                    wrapping_node.is_some_and(|n| n == &WrappingNode::BinaryExpression);
+
+                if in_join_clause && !in_comparison_clause {
                     return None;
                 }
             }
@@ -86,27 +97,28 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_mentioned_schema(&self, ctx: &CompletionContext) -> Option<()> {
-        if ctx.schema_name.is_none() {
+    fn check_mentioned_schema_or_alias(&self, ctx: &CompletionContext) -> Option<()> {
+        if ctx.schema_or_alias_name.is_none() {
             return Some(());
         }
 
-        let name = ctx.schema_name.as_ref().unwrap();
+        let schema_or_alias = ctx.schema_or_alias_name.as_ref().unwrap();
 
-        let does_not_match = match self.data {
-            CompletionRelevanceData::Table(table) => &table.schema != name,
-            CompletionRelevanceData::Function(f) => &f.schema != name,
-            CompletionRelevanceData::Column(_) => {
-                // columns belong to tables, not schemas
-                true
-            }
+        let matches = match self.data {
+            CompletionRelevanceData::Table(table) => &table.schema == schema_or_alias,
+            CompletionRelevanceData::Function(f) => &f.schema == schema_or_alias,
+            CompletionRelevanceData::Column(col) => ctx
+                .mentioned_table_aliases
+                .get(schema_or_alias)
+                .is_some_and(|t| t == &col.table_name),
+
             CompletionRelevanceData::Schema(_) => {
                 // we should never allow schema suggestions if there already was one.
-                true
+                false
             }
         };
 
-        if does_not_match {
+        if !matches {
             return None;
         }
 

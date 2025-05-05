@@ -146,17 +146,45 @@ mod tests {
 pub(crate) enum CompletionAssertion {
     Label(String),
     LabelAndKind(String, CompletionItemKind),
+    LabelNotExists(String),
+    KindNotExists(CompletionItemKind),
 }
 
 impl CompletionAssertion {
-    fn assert_eq(self, item: CompletionItem) {
+    fn assert(&self, item: &CompletionItem) {
         match self {
             CompletionAssertion::Label(label) => {
-                assert_eq!(item.label, label);
+                assert_eq!(
+                    &item.label, label,
+                    "Expected label to be {}, but got {}",
+                    label, &item.label
+                );
             }
             CompletionAssertion::LabelAndKind(label, kind) => {
-                assert_eq!(item.label, label);
-                assert_eq!(item.kind, kind);
+                assert_eq!(
+                    &item.label, label,
+                    "Expected label to be {}, but got {}",
+                    label, &item.label
+                );
+                assert_eq!(
+                    &item.kind, kind,
+                    "Expected kind to be {:?}, but got {:?}",
+                    kind, &item.kind
+                );
+            }
+            CompletionAssertion::LabelNotExists(label) => {
+                assert_ne!(
+                    &item.label, label,
+                    "Expected label {} not to exist, but found it",
+                    label
+                );
+            }
+            CompletionAssertion::KindNotExists(kind) => {
+                assert_ne!(
+                    &item.kind, kind,
+                    "Expected kind {:?} not to exist, but found it",
+                    kind
+                );
             }
         }
     }
@@ -171,11 +199,30 @@ pub(crate) async fn assert_complete_results(
     let params = get_test_params(&tree, &cache, query.into());
     let items = complete(params);
 
-    assertions
+    let (not_existing, existing): (Vec<CompletionAssertion>, Vec<CompletionAssertion>) =
+        assertions.into_iter().partition(|a| match a {
+            CompletionAssertion::LabelNotExists(_) | CompletionAssertion::KindNotExists(_) => true,
+            CompletionAssertion::Label(_) | CompletionAssertion::LabelAndKind(_, _) => false,
+        });
+
+    assert!(
+        items.len() >= existing.len(),
+        "Not enough items returned. Expected at least {} items, but got {}",
+        existing.len(),
+        items.len()
+    );
+
+    for item in &items {
+        for assertion in &not_existing {
+            assertion.assert(item);
+        }
+    }
+
+    existing
         .into_iter()
         .zip(items.into_iter())
         .for_each(|(assertion, result)| {
-            assertion.assert_eq(result);
+            assertion.assert(&result);
         });
 }
 
