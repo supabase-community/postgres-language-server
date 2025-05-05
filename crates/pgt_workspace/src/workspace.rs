@@ -4,7 +4,7 @@ pub use self::client::{TransportRequest, WorkspaceClient, WorkspaceTransport};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
-use pgt_text_size::TextRange;
+use pgt_text_size::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -57,6 +57,15 @@ pub struct ChangeParams {
 impl ChangeParams {
     pub fn overwrite(text: String) -> Self {
         Self { range: None, text }
+    }
+
+    pub fn push_back(&self, by: TextSize) -> Self {
+        Self {
+            range: self
+                .range
+                .map(|r| TextRange::new(r.start() + by, r.end() + by)),
+            text: self.text.clone(),
+        }
     }
 }
 

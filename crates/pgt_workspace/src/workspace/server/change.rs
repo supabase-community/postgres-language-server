@@ -58,16 +58,27 @@ struct Affected {
 impl Document {
     /// Applies a file change to the document and returns the affected statements
     pub fn apply_file_change(&mut self, change: &ChangeFileParams) -> Vec<StatementChange> {
+        tracing::debug!("apply_file_change: {:?}", change);
         // cleanup all diagnostics with every change because we cannot guarantee that they are still valid
         // this is because we know their ranges only by finding slices within the content which is
         // very much not guaranteed to result in correct ranges
         self.diagnostics.clear();
 
-        let changes = change
-            .changes
-            .iter()
-            .flat_map(|c| self.apply_change(c))
-            .collect();
+        let mut changes = Vec::new();
+
+        let mut push_back: TextSize = 0.into();
+
+        for change in &change.changes {
+            let change = if push_back > 0.into() {
+                &change.push_back(push_back)
+            } else {
+                change
+            };
+
+            changes.extend(self.apply_change(change));
+
+            push_back += change.diff_size();
+        }
 
         self.version = change.version;
 
@@ -1518,6 +1529,38 @@ mod tests {
 
             _ => unreachable!("Did not yield a modified statement."),
         }
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn multiple_changes_at_once() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![
+                ChangeParams {
+                    range: Some(TextRange::new(31.into(), 38.into())),
+                    text: "omni_channel_message".to_string(),
+                },
+                ChangeParams {
+                    range: Some(TextRange::new(60.into(), 67.into())),
+                    text: "omni_channel_message".to_string(),
+                },
+            ],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "\n\n\n\nALTER TABLE ONLY \"public\".\"omni_channel_message\"\n    ADD CONSTRAINT \"omni_channel_message_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n");
+
+        assert_eq!(changed.len(), 2);
 
         assert_document_integrity(&doc);
     }
