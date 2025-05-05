@@ -123,12 +123,12 @@ mod tests {
         "#;
 
         let test_cases = vec![
-            // (format!("select * from u{}", CURSOR_POS), "user_y"), // user_y is preferred alphanumerically
+            (format!("select * from u{}", CURSOR_POS), "user_y"), // user_y is preferred alphanumerically
             (format!("select * from private.u{}", CURSOR_POS), "user_z"),
-            // (
-            //     format!("select * from customer_support.u{}", CURSOR_POS),
-            //     "user_y",
-            // ),
+            (
+                format!("select * from customer_support.u{}", CURSOR_POS),
+                "user_y",
+            ),
         ];
 
         for (query, expected_label) in test_cases {

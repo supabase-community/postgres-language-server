@@ -160,14 +160,8 @@ impl<'a> CompletionContext<'a> {
             is_in_error_node: false,
         };
 
-        println!("text: {}", ctx.text);
-
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
-
-        println!("sql: {}", ctx.text);
-        println!("wrapping_clause_type: {:?}", ctx.wrapping_clause_type);
-        println!("wrappping_node_kind: {:?}", ctx.wrapping_node_kind);
 
         ctx
     }
