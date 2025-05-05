@@ -229,7 +229,7 @@ mod tests {
         #[cfg(windows)]
         let input = "select\r\n\r\n\r1";
         #[cfg(not(windows))]
-        let input = "select\n\n 1";
+        let input = "select\n\n1";
 
         let tokens = lex(input).unwrap();
 
