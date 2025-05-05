@@ -236,8 +236,8 @@ mod tests {
         // Check that we have exactly one newline token between "select" and "1"
         assert_eq!(tokens[0].kind, SyntaxKind::Select);
         assert_eq!(tokens[1].kind, SyntaxKind::Newline);
-        assert_eq!(tokens[1].kind, SyntaxKind::Whitespace);
-        assert_eq!(tokens[2].kind, SyntaxKind::Iconst);
+        assert_eq!(tokens[2].kind, SyntaxKind::Whitespace);
+        assert_eq!(tokens[3].kind, SyntaxKind::Iconst);
     }
 
     #[test]
