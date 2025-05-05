@@ -67,7 +67,7 @@ static PATTERN_LEXER: LazyLock<Regex> = LazyLock::new(|| {
     {
         // On Windows, treat \r\n as a single newline token
         // and treat \r as a whitespace token
-        Regex::new(r"(?P<whitespace> (+|\r))|(?P<newline>(\r\n|\n)+)|(?P<tab>\t+)").unwrap()
+        Regex::new(r"(?P<whitespace> ( |\r)+)|(?P<newline>(\r\n|\n)+)|(?P<tab>\t+)").unwrap()
     }
     #[cfg(not(windows))]
     {
