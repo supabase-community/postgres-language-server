@@ -106,7 +106,25 @@ pub(crate) struct CompletionContext<'a> {
     pub schema_cache: &'a SchemaCache,
     pub position: usize,
 
-    pub schema_name: Option<String>,
+    /// If the cursor is on a node that uses dot notation
+    /// to specify an alias or schema, this will hold the schema's or
+    /// alias's name.
+    ///
+    /// Here, `auth` is a schema name:
+    /// ```sql
+    /// select * from auth.users;
+    /// ```
+    ///
+    /// Here, `u` is an alias name:
+    /// ```sql
+    /// select
+    ///     *
+    /// from
+    ///     auth.users u
+    ///     left join identities i
+    ///     on u.id = i.user_id;
+    /// ```
+    pub schema_or_alias_name: Option<String>,
     pub wrapping_clause_type: Option<ClauseType>,
 
     pub wrapping_node_kind: Option<WrappingNode>,
@@ -127,7 +145,7 @@ impl<'a> CompletionContext<'a> {
             schema_cache: params.schema,
             position: usize::from(params.position),
             node_under_cursor: None,
-            schema_name: None,
+            schema_or_alias_name: None,
             wrapping_clause_type: None,
             wrapping_node_kind: None,
             wrapping_statement_range: None,
@@ -258,7 +276,7 @@ impl<'a> CompletionContext<'a> {
                         NodeText::Original(txt) => {
                             let parts: Vec<&str> = txt.split('.').collect();
                             if parts.len() == 2 {
-                                self.schema_name = Some(parts[0].to_string());
+                                self.schema_or_alias_name = Some(parts[0].to_string());
                             }
                         }
                         NodeText::Replaced => {}
@@ -380,7 +398,10 @@ mod tests {
 
             let ctx = CompletionContext::new(&params);
 
-            assert_eq!(ctx.schema_name, expected_schema.map(|f| f.to_string()));
+            assert_eq!(
+                ctx.schema_or_alias_name,
+                expected_schema.map(|f| f.to_string())
+            );
         }
     }
 

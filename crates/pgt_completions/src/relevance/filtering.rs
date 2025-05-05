@@ -87,11 +87,38 @@ impl CompletionFilter<'_> {
     }
 
     fn check_mentioned_schema(&self, ctx: &CompletionContext) -> Option<()> {
-        if ctx.schema_name.is_none() {
+        if ctx.schema_or_alias_name.is_none() {
             return Some(());
         }
 
-        let name = ctx.schema_name.as_ref().unwrap();
+        let name = ctx.schema_or_alias_name.as_ref().unwrap();
+
+        let does_not_match = match self.data {
+            CompletionRelevanceData::Table(table) => &table.schema != name,
+            CompletionRelevanceData::Function(f) => &f.schema != name,
+            CompletionRelevanceData::Column(_) => {
+                // columns belong to tables, not schemas
+                true
+            }
+            CompletionRelevanceData::Schema(_) => {
+                // we should never allow schema suggestions if there already was one.
+                true
+            }
+        };
+
+        if does_not_match {
+            return None;
+        }
+
+        Some(())
+    }
+
+    fn check_mentioned_alias(&self, ctx: &CompletionContext) -> Option<()> {
+        if ctx.schema_or_alias_name.is_none() {
+            return Some(());
+        }
+
+        let name = ctx.schema_or_alias_name.as_ref().unwrap();
 
         let does_not_match = match self.data {
             CompletionRelevanceData::Table(table) => &table.schema != name,

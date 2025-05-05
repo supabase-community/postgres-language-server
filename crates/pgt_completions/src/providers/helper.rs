@@ -7,7 +7,7 @@ pub(crate) fn get_completion_text_with_schema(
     item_name: &str,
     item_schema_name: &str,
 ) -> Option<CompletionText> {
-    if item_schema_name == "public" || ctx.schema_name.is_some() {
+    if item_schema_name == "public" || ctx.schema_or_alias_name.is_some() {
         None
     } else {
         let node = ctx.node_under_cursor.unwrap();

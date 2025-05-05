@@ -62,7 +62,7 @@ impl CompletionScore<'_> {
         };
 
         let has_mentioned_tables = !ctx.mentioned_relations.is_empty();
-        let has_mentioned_schema = ctx.schema_name.is_some();
+        let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
@@ -98,7 +98,7 @@ impl CompletionScore<'_> {
             Some(wn) => wn,
         };
 
-        let has_mentioned_schema = ctx.schema_name.is_some();
+        let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
         let has_node_text = ctx.get_node_under_cursor_content().is_some();
 
         self.score += match self.data {
@@ -135,7 +135,7 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &CompletionContext) {
-        let schema_name = match ctx.schema_name.as_ref() {
+        let schema_name = match ctx.schema_or_alias_name.as_ref() {
             None => return,
             Some(n) => n,
         };
