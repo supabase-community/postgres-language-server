@@ -236,6 +236,8 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::For,
                         // e.g. on insert or delete
                         SyntaxKind::Or,
+                        // e.g. INSTEAD OF INSERT
+                        SyntaxKind::Of,
                         // for create rule
                         SyntaxKind::On,
                         // for create rule

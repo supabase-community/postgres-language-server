@@ -181,6 +181,22 @@ mod tests {
     }
 
     #[test]
+    fn trigger_instead_of() {
+        Tester::from(
+            "CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();",
+        )
+        .expect_statements(vec![
+            "CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();",
+        ]);
+    }
+
+    #[test]
     fn with_check() {
         Tester::from("create policy employee_insert on journey_execution for insert to authenticated with check ((select private.organisation_id()) = organisation_id);")
             .expect_statements(vec!["create policy employee_insert on journey_execution for insert to authenticated with check ((select private.organisation_id()) = organisation_id);"]);
