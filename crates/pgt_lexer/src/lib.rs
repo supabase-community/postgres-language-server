@@ -67,7 +67,7 @@ static PATTERN_LEXER: LazyLock<Regex> = LazyLock::new(|| {
     {
         // On Windows, treat \r\n as a single newline token
         // and treat \r as a whitespace token
-        Regex::new(r"(?P<whitespace> ( |\r)+)|(?P<newline>(\r\n|\n)+)|(?P<tab>\t+)").unwrap()
+        Regex::new(r"(?P<whitespace>  +)|(?P<newline>(\r\n|\n|\r)+)|(?P<tab>\t+)").unwrap()
     }
     #[cfg(not(windows))]
     {
@@ -236,8 +236,7 @@ mod tests {
         // Check that we have exactly one newline token between "select" and "1"
         assert_eq!(tokens[0].kind, SyntaxKind::Select);
         assert_eq!(tokens[1].kind, SyntaxKind::Newline);
-        assert_eq!(tokens[2].kind, SyntaxKind::Whitespace);
-        assert_eq!(tokens[3].kind, SyntaxKind::Iconst);
+        assert_eq!(tokens[2].kind, SyntaxKind::Iconst);
     }
 
     #[test]
