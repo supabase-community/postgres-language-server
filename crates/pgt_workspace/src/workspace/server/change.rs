@@ -63,11 +63,33 @@ impl Document {
         // very much not guaranteed to result in correct ranges
         self.diagnostics.clear();
 
-        let changes = change
-            .changes
-            .iter()
-            .flat_map(|c| self.apply_change(c))
-            .collect();
+        // when we recieive more than one change, we need to push back the changes based on the
+        // total range of the previous ones. This is because the ranges are always related to the original state.
+        let mut changes = Vec::new();
+
+        let mut offset: i64 = 0;
+
+        for change in &change.changes {
+            let adjusted_change = if offset != 0 && change.range.is_some() {
+                &ChangeParams {
+                    text: change.text.clone(),
+                    range: change.range.map(|range| {
+                        let start = u32::from(range.start());
+                        let end = u32::from(range.end());
+                        TextRange::new(
+                            TextSize::from((start as i64 + offset).try_into().unwrap_or(0)),
+                            TextSize::from((end as i64 + offset).try_into().unwrap_or(0)),
+                        )
+                    }),
+                }
+            } else {
+                change
+            };
+
+            changes.extend(self.apply_change(adjusted_change));
+
+            offset += change.change_size();
+        }
 
         self.version = change.version;
 
@@ -356,6 +378,18 @@ impl Document {
 }
 
 impl ChangeParams {
+    /// For lack of a better name, this returns the change in size of the text compared to the range
+    pub fn change_size(&self) -> i64 {
+        match self.range {
+            Some(range) => {
+                let range_length: usize = range.len().into();
+                let text_length = self.text.chars().count();
+                text_length as i64 - range_length as i64
+            }
+            None => i64::try_from(self.text.chars().count()).unwrap(),
+        }
+    }
+
     pub fn diff_size(&self) -> TextSize {
         match self.range {
             Some(range) => {
@@ -1518,6 +1552,70 @@ mod tests {
 
             _ => unreachable!("Did not yield a modified statement."),
         }
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn multiple_deletions_at_once() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![
+                ChangeParams {
+                    range: Some(TextRange::new(31.into(), 38.into())),
+                    text: "te".to_string(),
+                },
+                ChangeParams {
+                    range: Some(TextRange::new(60.into(), 67.into())),
+                    text: "te".to_string(),
+                },
+            ],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "\n\n\n\nALTER TABLE ONLY \"public\".\"te\"\n    ADD CONSTRAINT \"te_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n");
+
+        assert_eq!(changed.len(), 2);
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn multiple_additions_at_once() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![
+                ChangeParams {
+                    range: Some(TextRange::new(31.into(), 38.into())),
+                    text: "omni_channel_message".to_string(),
+                },
+                ChangeParams {
+                    range: Some(TextRange::new(60.into(), 67.into())),
+                    text: "omni_channel_message".to_string(),
+                },
+            ],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "\n\n\n\nALTER TABLE ONLY \"public\".\"omni_channel_message\"\n    ADD CONSTRAINT \"omni_channel_message_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n");
+
+        assert_eq!(changed.len(), 2);
 
         assert_document_integrity(&doc);
     }
