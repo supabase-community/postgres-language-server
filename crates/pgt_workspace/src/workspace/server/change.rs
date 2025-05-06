@@ -1,9 +1,5 @@
-use biome_deserialize::Text;
 use pgt_text_size::{TextLen, TextRange, TextSize};
-use std::{
-    i64,
-    ops::{Add, Sub},
-};
+use std::ops::{Add, Sub};
 
 use crate::workspace::{ChangeFileParams, ChangeParams};
 
