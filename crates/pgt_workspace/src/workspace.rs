@@ -46,7 +46,7 @@ pub struct ChangeFileParams {
     pub changes: Vec<ChangeParams>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ChangeParams {
     /// The range of the file that changed. If `None`, the whole file changed.
