@@ -431,4 +431,57 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn completes_in_join_on_clause() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        assert_complete_results(
+            format!(
+                "select u.id, auth.posts.content from auth.users u join auth.posts on u.{}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                "select u.id, p.content from auth.users u join auth.posts p on p.user_id = u.{}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
+            ],
+            setup,
+        )
+        .await;
+    }
 }
