@@ -4,7 +4,7 @@ pub use self::client::{TransportRequest, WorkspaceClient, WorkspaceTransport};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
-use pgt_text_size::{TextRange, TextSize};
+use pgt_text_size::TextRange;
 use serde::{Deserialize, Serialize};
 
 use crate::{
