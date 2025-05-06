@@ -341,7 +341,7 @@ impl<'a> CompletionContext<'a> {
         node: tree_sitter::Node<'a>,
         cursor: &mut tree_sitter::TreeCursor<'a>,
     ) -> Option<WrappingClause<'a>> {
-        return match node.kind() {
+        match node.kind() {
             "where" => Some(WrappingClause::Where),
             "update" => Some(WrappingClause::Update),
             "select" => Some(WrappingClause::Select),
@@ -361,7 +361,7 @@ impl<'a> CompletionContext<'a> {
                 Some(WrappingClause::Join { on_node })
             }
             _ => None,
-        };
+        }
     }
 }
 
