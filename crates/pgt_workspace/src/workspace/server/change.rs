@@ -1,5 +1,9 @@
+use biome_deserialize::Text;
 use pgt_text_size::{TextLen, TextRange, TextSize};
-use std::ops::{Add, Sub};
+use std::{
+    i64,
+    ops::{Add, Sub},
+};
 
 use crate::workspace::{ChangeFileParams, ChangeParams};
 
@@ -58,26 +62,37 @@ struct Affected {
 impl Document {
     /// Applies a file change to the document and returns the affected statements
     pub fn apply_file_change(&mut self, change: &ChangeFileParams) -> Vec<StatementChange> {
-        tracing::debug!("apply_file_change: {:?}", change);
         // cleanup all diagnostics with every change because we cannot guarantee that they are still valid
         // this is because we know their ranges only by finding slices within the content which is
         // very much not guaranteed to result in correct ranges
         self.diagnostics.clear();
 
+        // when we recieive more than one change, we need to push back the changes based on the
+        // total range of the previous ones. This is because the ranges are always related to the original state.
         let mut changes = Vec::new();
 
-        let mut push_back: TextSize = 0.into();
+        let mut offset: i64 = 0;
 
         for change in &change.changes {
-            let change = if push_back > 0.into() {
-                &change.push_back(push_back)
+            let adjusted_change = if offset != 0 && change.range.is_some() {
+                &ChangeParams {
+                    text: change.text.clone(),
+                    range: change.range.map(|range| {
+                        let start = u32::from(range.start());
+                        let end = u32::from(range.end());
+                        TextRange::new(
+                            TextSize::from((start as i64 + offset).try_into().unwrap_or(0)),
+                            TextSize::from((end as i64 + offset).try_into().unwrap_or(0)),
+                        )
+                    }),
+                }
             } else {
                 change
             };
 
-            changes.extend(self.apply_change(change));
+            changes.extend(self.apply_change(adjusted_change));
 
-            push_back += change.diff_size();
+            offset += change.change_size();
         }
 
         self.version = change.version;
@@ -367,6 +382,18 @@ impl Document {
 }
 
 impl ChangeParams {
+    /// For lack of a better name, this returns the change in size of the text compared to the range
+    pub fn change_size(&self) -> i64 {
+        match self.range {
+            Some(range) => {
+                let range_length: usize = range.len().into();
+                let text_length = self.text.chars().count();
+                text_length as i64 - range_length as i64
+            }
+            None => i64::try_from(self.text.chars().count()).unwrap(),
+        }
+    }
+
     pub fn diff_size(&self) -> TextSize {
         match self.range {
             Some(range) => {
@@ -1534,7 +1561,39 @@ mod tests {
     }
 
     #[test]
-    fn multiple_changes_at_once() {
+    fn multiple_deletions_at_once() {
+        let path = PgTPath::new("test.sql");
+
+        let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n".to_string(), 0);
+
+        let change = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![
+                ChangeParams {
+                    range: Some(TextRange::new(31.into(), 38.into())),
+                    text: "te".to_string(),
+                },
+                ChangeParams {
+                    range: Some(TextRange::new(60.into(), 67.into())),
+                    text: "te".to_string(),
+                },
+            ],
+        };
+
+        let changed = doc.apply_file_change(&change);
+
+        assert_eq!(doc.content, "\n\n\n\nALTER TABLE ONLY \"public\".\"te\"\n    ADD CONSTRAINT \"te_organisation_id_fkey\" FOREIGN
+KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n");
+
+        assert_eq!(changed.len(), 2);
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn multiple_additions_at_once() {
         let path = PgTPath::new("test.sql");
 
         let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN

@@ -46,7 +46,7 @@ pub struct ChangeFileParams {
     pub changes: Vec<ChangeParams>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ChangeParams {
     /// The range of the file that changed. If `None`, the whole file changed.
@@ -57,15 +57,6 @@ pub struct ChangeParams {
 impl ChangeParams {
     pub fn overwrite(text: String) -> Self {
         Self { range: None, text }
-    }
-
-    pub fn push_back(&self, by: TextSize) -> Self {
-        Self {
-            range: self
-                .range
-                .map(|r| TextRange::new(r.start() + by, r.end() + by)),
-            text: self.text.clone(),
-        }
     }
 }
 
