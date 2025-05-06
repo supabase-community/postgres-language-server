@@ -1,4 +1,4 @@
-use crate::context::{ClauseType, CompletionContext, WrappingNode};
+use crate::context::{CompletionContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -64,40 +64,47 @@ impl CompletionScore<'_> {
         let has_mentioned_tables = !ctx.mentioned_relations.is_empty();
         let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
 
-        let is_binary_exp = ctx
-            .wrapping_node_kind
-            .as_ref()
-            .is_some_and(|wn| wn == &WrappingNode::BinaryExpression);
-
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
-                ClauseType::Update => 10,
-                ClauseType::Delete => 10,
-                ClauseType::From => 5,
-                ClauseType::Join if !is_binary_exp => 5,
+                WrappingClause::Update => 10,
+                WrappingClause::Delete => 10,
+                WrappingClause::From => 5,
+                WrappingClause::Join { on_node }
+                    if on_node.is_none_or(|on| {
+                        ctx.node_under_cursor
+                            .is_none_or(|n| n.end_byte() < on.start_byte())
+                    }) =>
+                {
+                    5
+                }
                 _ => -50,
             },
             CompletionRelevanceData::Function(_) => match clause_type {
-                ClauseType::Select if !has_mentioned_tables => 15,
-                ClauseType::Select if has_mentioned_tables => 0,
-                ClauseType::From => 0,
+                WrappingClause::Select if !has_mentioned_tables => 15,
+                WrappingClause::Select if has_mentioned_tables => 0,
+                WrappingClause::From => 0,
                 _ => -50,
             },
             CompletionRelevanceData::Column(col) => match clause_type {
-                ClauseType::Select if has_mentioned_tables => 10,
-                ClauseType::Select if !has_mentioned_tables => 0,
-                ClauseType::Where => 10,
-                ClauseType::Join if is_binary_exp => {
+                WrappingClause::Select if has_mentioned_tables => 10,
+                WrappingClause::Select if !has_mentioned_tables => 0,
+                WrappingClause::Where => 10,
+                WrappingClause::Join { on_node }
+                    if on_node.is_some_and(|on| {
+                        ctx.node_under_cursor
+                            .is_some_and(|n| n.start_byte() > on.end_byte())
+                    }) =>
+                {
                     // Users will probably join on primary keys
                     if col.is_primary_key { 20 } else { 10 }
                 }
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match clause_type {
-                ClauseType::From if !has_mentioned_schema => 15,
-                ClauseType::Join if !has_mentioned_schema => 15,
-                ClauseType::Update if !has_mentioned_schema => 15,
-                ClauseType::Delete if !has_mentioned_schema => 15,
+                WrappingClause::From if !has_mentioned_schema => 15,
+                WrappingClause::Join { .. } if !has_mentioned_schema => 15,
+                WrappingClause::Update if !has_mentioned_schema => 15,
+                WrappingClause::Delete if !has_mentioned_schema => 15,
                 _ => -50,
             },
         }

@@ -9,11 +9,13 @@ use pgt_treesitter_queries::{
 use crate::sanitization::SanitizedCompletionParams;
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ClauseType {
+pub enum WrappingClause<'a> {
     Select,
     Where,
     From,
-    Join,
+    Join {
+        on_node: Option<tree_sitter::Node<'a>>,
+    },
     Update,
     Delete,
 }
@@ -22,38 +24,6 @@ pub enum ClauseType {
 pub(crate) enum NodeText<'a> {
     Replaced,
     Original(&'a str),
-}
-
-impl TryFrom<&str> for ClauseType {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "select" => Ok(Self::Select),
-            "where" => Ok(Self::Where),
-            "from" => Ok(Self::From),
-            "update" => Ok(Self::Update),
-            "delete" => Ok(Self::Delete),
-            "join" => Ok(Self::Join),
-            _ => {
-                let message = format!("Unimplemented ClauseType: {}", value);
-
-                // Err on tests, so we notice that we're lacking an implementation immediately.
-                if cfg!(test) {
-                    panic!("{}", message);
-                }
-
-                Err(message)
-            }
-        }
-    }
-}
-
-impl TryFrom<String> for ClauseType {
-    type Error = String;
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_str())
-    }
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -127,7 +97,7 @@ pub(crate) struct CompletionContext<'a> {
     ///     on u.id = i.user_id;
     /// ```
     pub schema_or_alias_name: Option<String>,
-    pub wrapping_clause_type: Option<ClauseType>,
+    pub wrapping_clause_type: Option<WrappingClause<'a>>,
 
     pub wrapping_node_kind: Option<WrappingNode>,
 
@@ -266,7 +236,9 @@ impl<'a> CompletionContext<'a> {
 
         match parent_node_kind {
             "statement" | "subquery" => {
-                self.wrapping_clause_type = current_node_kind.try_into().ok();
+                self.wrapping_clause_type =
+                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
+
                 self.wrapping_statement_range = Some(parent_node.range());
             }
             "invocation" => self.is_invocation = true,
@@ -277,39 +249,21 @@ impl<'a> CompletionContext<'a> {
         if self.is_in_error_node {
             let mut next_sibling = current_node.next_named_sibling();
             while let Some(n) = next_sibling {
-                if n.kind().starts_with("keyword_") {
-                    if let Some(txt) = self.get_ts_node_content(n).and_then(|txt| match txt {
-                        NodeText::Original(txt) => Some(txt),
-                        NodeText::Replaced => None,
-                    }) {
-                        match txt {
-                            "where" | "update" | "select" | "delete" | "from" | "join" => {
-                                self.wrapping_clause_type = txt.try_into().ok();
-                                break;
-                            }
-                            _ => {}
-                        }
-                    };
+                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
+                    self.wrapping_clause_type = Some(clause_type);
+                    break;
+                } else {
+                    next_sibling = n.next_named_sibling();
                 }
-                next_sibling = n.next_named_sibling();
             }
             let mut prev_sibling = current_node.prev_named_sibling();
             while let Some(n) = prev_sibling {
-                if n.kind().starts_with("keyword_") {
-                    if let Some(txt) = self.get_ts_node_content(n).and_then(|txt| match txt {
-                        NodeText::Original(txt) => Some(txt),
-                        NodeText::Replaced => None,
-                    }) {
-                        match txt {
-                            "where" | "update" | "select" | "delete" | "from" | "join" => {
-                                self.wrapping_clause_type = txt.try_into().ok();
-                                break;
-                            }
-                            _ => {}
-                        }
-                    };
+                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
+                    self.wrapping_clause_type = Some(clause_type);
+                    break;
+                } else {
+                    prev_sibling = n.prev_named_sibling();
                 }
-                prev_sibling = n.prev_named_sibling();
             }
         }
 
@@ -330,7 +284,8 @@ impl<'a> CompletionContext<'a> {
             }
 
             "where" | "update" | "select" | "delete" | "from" | "join" => {
-                self.wrapping_clause_type = current_node_kind.try_into().ok();
+                self.wrapping_clause_type =
+                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
 
             "relation" | "binary_expression" | "assignment" => {
@@ -353,12 +308,67 @@ impl<'a> CompletionContext<'a> {
         cursor.goto_first_child_for_byte(self.position);
         self.gather_context_from_node(cursor, current_node);
     }
+
+    fn get_wrapping_clause_from_keyword_node(
+        &self,
+        node: tree_sitter::Node<'a>,
+    ) -> Option<WrappingClause<'a>> {
+        if node.kind().starts_with("keyword_") {
+            if let Some(txt) = self.get_ts_node_content(node).and_then(|txt| match txt {
+                NodeText::Original(txt) => Some(txt),
+                NodeText::Replaced => None,
+            }) {
+                match txt {
+                    "where" => return Some(WrappingClause::Where),
+                    "update" => return Some(WrappingClause::Update),
+                    "select" => return Some(WrappingClause::Select),
+                    "delete" => return Some(WrappingClause::Delete),
+                    "from" => return Some(WrappingClause::From),
+                    "join" => {
+                        // TODO: not sure if we can infer it here.
+                        return Some(WrappingClause::Join { on_node: None });
+                    }
+                    _ => {}
+                }
+            };
+        }
+
+        None
+    }
+
+    fn get_wrapping_clause_from_current_node(
+        &self,
+        node: tree_sitter::Node<'a>,
+        cursor: &mut tree_sitter::TreeCursor<'a>,
+    ) -> Option<WrappingClause<'a>> {
+        match node.kind() {
+            "where" => Some(WrappingClause::Where),
+            "update" => Some(WrappingClause::Update),
+            "select" => Some(WrappingClause::Select),
+            "delete" => Some(WrappingClause::Delete),
+            "from" => Some(WrappingClause::From),
+            "join" => {
+                // sadly, we need to manually iterate over the children –
+                // `node.child_by_field_id(..)` does not work as expected
+                let mut on_node = None;
+                for child in node.children(cursor) {
+                    // 28 is the id for "keyword_on"
+                    if child.kind_id() == 28 {
+                        on_node = Some(child);
+                    }
+                }
+                cursor.goto_parent();
+                Some(WrappingClause::Join { on_node })
+            }
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        context::{ClauseType, CompletionContext, NodeText},
+        context::{CompletionContext, NodeText, WrappingClause},
         sanitization::SanitizedCompletionParams,
         test_helper::{CURSOR_POS, get_text_and_position},
     };
@@ -375,29 +385,41 @@ mod tests {
     #[test]
     fn identifies_clauses() {
         let test_cases = vec![
-            (format!("Select {}* from users;", CURSOR_POS), "select"),
-            (format!("Select * from u{};", CURSOR_POS), "from"),
+            (
+                format!("Select {}* from users;", CURSOR_POS),
+                WrappingClause::Select,
+            ),
+            (
+                format!("Select * from u{};", CURSOR_POS),
+                WrappingClause::From,
+            ),
             (
                 format!("Select {}* from users where n = 1;", CURSOR_POS),
-                "select",
+                WrappingClause::Select,
             ),
             (
                 format!("Select * from users where {}n = 1;", CURSOR_POS),
-                "where",
+                WrappingClause::Where,
             ),
             (
                 format!("update users set u{} = 1 where n = 2;", CURSOR_POS),
-                "update",
+                WrappingClause::Update,
             ),
             (
                 format!("update users set u = 1 where n{} = 2;", CURSOR_POS),
-                "where",
+                WrappingClause::Where,
             ),
-            (format!("delete{} from users;", CURSOR_POS), "delete"),
-            (format!("delete from {}users;", CURSOR_POS), "from"),
+            (
+                format!("delete{} from users;", CURSOR_POS),
+                WrappingClause::Delete,
+            ),
+            (
+                format!("delete from {}users;", CURSOR_POS),
+                WrappingClause::From,
+            ),
             (
                 format!("select name, age, location from public.u{}sers", CURSOR_POS),
-                "from",
+                WrappingClause::From,
             ),
         ];
 
@@ -415,7 +437,7 @@ mod tests {
 
             let ctx = CompletionContext::new(&params);
 
-            assert_eq!(ctx.wrapping_clause_type, expected_clause.try_into().ok());
+            assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
         }
     }
 
@@ -518,7 +540,7 @@ mod tests {
 
             assert_eq!(
                 ctx.wrapping_clause_type,
-                Some(crate::context::ClauseType::Select)
+                Some(crate::context::WrappingClause::Select)
             );
         }
     }
@@ -596,6 +618,6 @@ mod tests {
             ctx.get_ts_node_content(node),
             Some(NodeText::Original("fro"))
         );
-        assert_eq!(ctx.wrapping_clause_type, Some(ClauseType::Select));
+        assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
     }
 }

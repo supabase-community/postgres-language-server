@@ -1,4 +1,4 @@
-use crate::context::{ClauseType, CompletionContext, WrappingNode};
+use crate::context::{CompletionContext, WrappingClause};
 
 use super::CompletionRelevanceData;
 
@@ -50,31 +50,36 @@ impl CompletionFilter<'_> {
 
     fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
         let clause = ctx.wrapping_clause_type.as_ref();
-        let wrapping_node = ctx.wrapping_node_kind.as_ref();
 
         match self.data {
             CompletionRelevanceData::Table(_) => {
-                let in_select_clause = clause.is_some_and(|c| c == &ClauseType::Select);
-                let in_where_clause = clause.is_some_and(|c| c == &ClauseType::Where);
+                let in_select_clause = clause.is_some_and(|c| c == &WrappingClause::Select);
+                let in_where_clause = clause.is_some_and(|c| c == &WrappingClause::Where);
 
                 if in_select_clause || in_where_clause {
                     return None;
                 };
             }
             CompletionRelevanceData::Column(_) => {
-                let in_from_clause = clause.is_some_and(|c| c == &ClauseType::From);
+                let in_from_clause = clause.is_some_and(|c| c == &WrappingClause::From);
                 if in_from_clause {
                     return None;
                 }
 
-                // We can complete columns in JOIN cluases, but only if we are in the
-                // "ON u.id = posts.user_id" part.
-                let in_join_clause = clause.is_some_and(|c| c == &ClauseType::Join);
+                // We can complete columns in JOIN cluases, but only if we are after the
+                // ON node in the "ON u.id = posts.user_id" part.
+                let in_join_clause_before_on_node = clause.is_some_and(|c| match c {
+                    // we are in a JOIN, but definitely not after an ON
+                    WrappingClause::Join { on_node: None } => true,
 
-                let in_comparison_clause =
-                    wrapping_node.is_some_and(|n| n == &WrappingNode::BinaryExpression);
+                    WrappingClause::Join { on_node: Some(on) } => ctx
+                        .node_under_cursor
+                        .is_some_and(|n| n.end_byte() < on.start_byte()),
 
-                if in_join_clause && !in_comparison_clause {
+                    _ => false,
+                });
+
+                if in_join_clause_before_on_node {
                     return None;
                 }
             }
