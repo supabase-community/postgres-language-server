@@ -1,9 +1,11 @@
 use crate::{
     CompletionItemKind,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
+    context::{CompletionContext, WrappingClause},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
+
+use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
 
 pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
@@ -11,7 +13,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);
 
-        let item = PossibleCompletionItem {
+        let mut item = PossibleCompletionItem {
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
@@ -19,6 +21,14 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
             kind: CompletionItemKind::Column,
             completion_text: None,
         };
+
+        // autocomplete with the alias in a join clause if we find one
+        if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Join { .. })) {
+            item.completion_text = find_matching_alias_for_table(ctx, col.table_name.as_str())
+                .and_then(|alias| {
+                    get_completion_text_with_schema_or_alias(ctx, col.name.as_str(), alias.as_str())
+                });
+        }
 
         builder.add_item(item);
     }
