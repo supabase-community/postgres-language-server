@@ -282,7 +282,7 @@ on sq1.id = pt.id;
 
         assert_eq!(results[0].get_path(sql), "v_test");
 
-        assert_eq!(results[1].get_path(sql), "fn_name.custom_type._test2");
+        assert_eq!(results[1].get_path(sql), "fn_name.custom_type.v_test2");
 
         assert_eq!(results[2].get_path(sql), "$3");
 
