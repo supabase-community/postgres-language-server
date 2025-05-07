@@ -241,7 +241,7 @@ mod tests {
         let identifiers = vec![
             super::TypedIdentifier {
                 path: "fn_name".to_string(),
-                name: "v_test".to_string(),
+                name: Some("v_test".to_string()),
                 type_: super::IdentifierType {
                     schema: None,
                     name: "int4".to_string(),
@@ -250,7 +250,7 @@ mod tests {
             },
             super::TypedIdentifier {
                 path: "fn_name".to_string(),
-                name: "custom_type".to_string(),
+                name: Some("custom_type".to_string()),
                 type_: super::IdentifierType {
                     schema: Some("public".to_string()),
                     name: "custom_type".to_string(),
@@ -259,7 +259,7 @@ mod tests {
             },
             super::TypedIdentifier {
                 path: "fn_name".to_string(),
-                name: "another".to_string(),
+                name: Some("another".to_string()),
                 type_: super::IdentifierType {
                     schema: None,
                     name: "numeric".to_string(),
@@ -268,7 +268,7 @@ mod tests {
             },
             super::TypedIdentifier {
                 path: "fn_name".to_string(),
-                name: "custom_type".to_string(),
+                name: Some("custom_type".to_string()),
                 type_: super::IdentifierType {
                     schema: Some("public".to_string()),
                     name: "custom_type".to_string(),
@@ -277,7 +277,7 @@ mod tests {
             },
             super::TypedIdentifier {
                 path: "fn_name".to_string(),
-                name: "v_test2".to_string(),
+                name: Some("v_test2".to_string()),
                 type_: super::IdentifierType {
                     schema: None,
                     name: "int4".to_string(),
@@ -286,7 +286,7 @@ mod tests {
             },
             super::TypedIdentifier {
                 path: "fn_name".to_string(),
-                name: "enum_type".to_string(),
+                name: Some("enum_type".to_string()),
                 type_: super::IdentifierType {
                     schema: Some("public".to_string()),
                     name: "enum_type".to_string(),
