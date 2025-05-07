@@ -1,4 +1,5 @@
 mod diagnostics;
+mod typed_identifier;
 
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
@@ -6,6 +7,8 @@ use pgt_text_size::TextRange;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
+use typed_identifier::apply_identifiers;
+pub use typed_identifier::{IdentifierType, TypedIdentifier};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
@@ -13,6 +16,8 @@ pub struct TypecheckParams<'a> {
     pub sql: &'a str,
     pub ast: &'a pgt_query_ext::NodeEnum,
     pub tree: &'a tree_sitter::Tree,
+    pub schema_cache: &'a pgt_schema_cache::SchemaCache,
+    pub identifiers: Vec<TypedIdentifier>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,13 +56,24 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let res = conn.prepare(params.sql).await;
+    let (prepared, positions_valid) = apply_identifiers(
+        params.identifiers,
+        params.schema_cache,
+        params.tree,
+        params.sql,
+    );
+
+    let res = conn.prepare(&prepared).await;
 
     match res {
         Ok(_) => Ok(None),
         Err(sqlx::Error::Database(err)) => {
             let pg_err = err.downcast_ref::<PgDatabaseError>();
-            Ok(Some(create_type_error(pg_err, params.tree)))
+            Ok(Some(create_type_error(
+                pg_err,
+                params.tree,
+                positions_valid,
+            )))
         }
         Err(err) => Err(err),
     }

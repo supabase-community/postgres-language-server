@@ -6,13 +6,13 @@ use crate::schema_cache::SchemaCacheItem;
 
 #[derive(Debug, Clone, Default)]
 pub struct TypeAttributes {
-    attrs: Vec<PostgresTypeAttribute>,
+    pub attrs: Vec<PostgresTypeAttribute>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct PostgresTypeAttribute {
-    name: String,
-    type_id: i64,
+    pub name: String,
+    pub type_id: i64,
 }
 
 impl From<Option<JsonValue>> for TypeAttributes {

@@ -57,6 +57,21 @@ impl StatementId {
             StatementId::Child(s) => s.inner,
         }
     }
+
+    pub fn is_root(&self) -> bool {
+        matches!(self, StatementId::Root(_))
+    }
+
+    pub fn is_child(&self) -> bool {
+        matches!(self, StatementId::Child(_))
+    }
+
+    pub fn parent(&self) -> Option<StatementId> {
+        match self {
+            StatementId::Root(_) => None,
+            StatementId::Child(id) => Some(StatementId::Root(id.clone())),
+        }
+    }
 }
 
 /// Helper struct to generate unique statement ids

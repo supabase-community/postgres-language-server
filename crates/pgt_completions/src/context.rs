@@ -171,7 +171,9 @@ impl<'a> CompletionContext<'a> {
                         table_alias_match.get_table(sql),
                     );
                 }
-            };
+
+                _ => {}
+            }
         }
     }
 
