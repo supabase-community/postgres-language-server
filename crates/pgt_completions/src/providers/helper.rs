@@ -17,9 +17,9 @@ pub(crate) fn find_matching_alias_for_table(
 pub(crate) fn get_completion_text_with_schema_or_alias(
     ctx: &CompletionContext,
     item_name: &str,
-    item_schema_name: &str,
+    schema_or_alias_name: &str,
 ) -> Option<CompletionText> {
-    if item_schema_name == "public" || ctx.schema_or_alias_name.is_some() {
+    if schema_or_alias_name == "public" || ctx.schema_or_alias_name.is_some() {
         None
     } else {
         let node = ctx.node_under_cursor.unwrap();
@@ -30,7 +30,7 @@ pub(crate) fn get_completion_text_with_schema_or_alias(
         );
 
         Some(CompletionText {
-            text: format!("{}.{}", item_schema_name, item_name),
+            text: format!("{}.{}", schema_or_alias_name, item_name),
             range,
         })
     }
