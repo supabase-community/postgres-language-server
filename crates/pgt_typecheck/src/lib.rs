@@ -7,8 +7,8 @@ use pgt_text_size::TextRange;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
-pub use typed_identifier::TypedIdentifier;
 use typed_identifier::apply_identifiers;
+pub use typed_identifier::{IdentifierType, TypedIdentifier};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
@@ -56,20 +56,24 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let prepared = apply_identifiers(
+    let (prepared, positions_valid) = apply_identifiers(
         params.identifiers,
         params.schema_cache,
         params.tree,
         params.sql,
     );
 
-    let res = conn.prepare(prepared).await;
+    let res = conn.prepare(&prepared).await;
 
     match res {
         Ok(_) => Ok(None),
         Err(sqlx::Error::Database(err)) => {
             let pg_err = err.downcast_ref::<PgDatabaseError>();
-            Ok(Some(create_type_error(pg_err, params.tree)))
+            Ok(Some(create_type_error(
+                pg_err,
+                params.tree,
+                positions_valid,
+            )))
         }
         Err(err) => Err(err),
     }

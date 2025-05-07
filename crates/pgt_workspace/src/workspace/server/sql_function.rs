@@ -1,9 +1,16 @@
 use pgt_text_size::TextRange;
 
 #[derive(Debug, Clone)]
+pub struct ArgType {
+    pub schema: Option<String>,
+    pub name: String,
+    pub is_array: bool,
+}
+
+#[derive(Debug, Clone)]
 pub struct SQLFunctionArgs {
     pub name: Option<String>,
-    pub type_: (Option<String>, String),
+    pub type_: ArgType,
 }
 
 #[derive(Debug, Clone)]
@@ -45,7 +52,15 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
 
             fn_args.push(SQLFunctionArgs {
                 name: arg_name,
-                type_: type_name,
+                type_: ArgType {
+                    schema: type_name.0,
+                    name: type_name.1,
+                    is_array: node
+                        .arg_type
+                        .as_ref()
+                        .map(|t| !t.array_bounds.is_empty())
+                        .unwrap_or(false),
+                },
             });
         } else {
             return None;
@@ -130,7 +145,7 @@ fn find_option_value(
         })
 }
 
-fn parse_name(nodes: &Vec<pgt_query_ext::protobuf::Node>) -> Option<(Option<String>, String)> {
+fn parse_name(nodes: &[pgt_query_ext::protobuf::Node]) -> Option<(Option<String>, String)> {
     let names = nodes
         .iter()
         .map(|n| match &n.node {
@@ -150,8 +165,6 @@ fn parse_name(nodes: &Vec<pgt_query_ext::protobuf::Node>) -> Option<(Option<Stri
 mod tests {
     use super::*;
 
-    use pgt_fs::PgTPath;
-
     #[test]
     fn sql_function_signature() {
         let input = "CREATE FUNCTION add(test0 integer, test1 integer) RETURNS integer
@@ -164,6 +177,45 @@ mod tests {
 
         let sig = get_sql_fn_signature(&ast);
 
-        println!("Function signature: {:?}", sig);
+        assert!(sig.is_some());
+
+        let sig = sig.unwrap();
+
+        let arg1 = sig.args.first().unwrap();
+
+        assert_eq!(arg1.name, Some("test0".to_string()));
+        assert_eq!(arg1.type_.name, "int4");
+
+        let arg2 = sig.args.get(1).unwrap();
+        assert_eq!(arg2.name, Some("test1".to_string()));
+        assert_eq!(arg2.type_.name, "int4");
+    }
+
+    #[test]
+    fn array_type() {
+        let input = "CREATE FUNCTION add(test0 integer[], test1 integer) RETURNS integer
+    AS 'select $1 + $2;'
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;";
+
+        let ast = pgt_query_ext::parse(input).unwrap();
+
+        let sig = get_sql_fn_signature(&ast);
+
+        assert!(sig.is_some());
+
+        let sig = sig.unwrap();
+
+        assert!(
+            sig.args
+                .iter()
+                .find(|arg| arg.type_.is_array)
+                .map(|arg| {
+                    assert_eq!(arg.type_.name, "int4");
+                    assert!(arg.type_.is_array);
+                })
+                .is_some()
+        );
     }
 }

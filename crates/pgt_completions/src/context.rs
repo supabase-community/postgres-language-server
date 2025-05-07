@@ -100,25 +100,23 @@ impl<'a> CompletionContext<'a> {
         executor.add_query_results::<queries::RelationMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
-            match relation_match {
-                QueryResult::Relation(r) => {
-                    let schema_name = r.get_schema(sql);
-                    let table_name = r.get_table(sql);
+            if let QueryResult::Relation(r) = relation_match {
+                let schema_name = r.get_schema(sql);
+                let table_name = r.get_table(sql);
 
-                    let current = self.mentioned_relations.get_mut(&schema_name);
+                let current = self.mentioned_relations.get_mut(&schema_name);
 
-                    match current {
-                        Some(c) => {
-                            c.insert(table_name);
-                        }
-                        None => {
-                            let mut new = HashSet::new();
-                            new.insert(table_name);
-                            self.mentioned_relations.insert(schema_name, new);
-                        }
-                    };
-                }
-            };
+                match current {
+                    Some(c) => {
+                        c.insert(table_name);
+                    }
+                    None => {
+                        let mut new = HashSet::new();
+                        new.insert(table_name);
+                        self.mentioned_relations.insert(schema_name, new);
+                    }
+                };
+            }
         }
     }
 
