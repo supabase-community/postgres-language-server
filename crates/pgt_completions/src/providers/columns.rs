@@ -5,7 +5,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema};
+use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
 
 pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
@@ -26,7 +26,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
         if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Join { .. })) {
             item.completion_text = find_matching_alias_for_table(ctx, col.table_name.as_str())
                 .and_then(|alias| {
-                    get_completion_text_with_schema(ctx, col.name.as_str(), alias.as_str())
+                    get_completion_text_with_schema_or_alias(ctx, col.name.as_str(), alias.as_str())
                 });
         }
 

@@ -14,7 +14,7 @@ pub(crate) fn find_matching_alias_for_table(
     None
 }
 
-pub(crate) fn get_completion_text_with_schema(
+pub(crate) fn get_completion_text_with_schema_or_alias(
     ctx: &CompletionContext,
     item_name: &str,
     item_schema_name: &str,

@@ -5,7 +5,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::get_completion_text_with_schema;
+use super::helper::get_completion_text_with_schema_or_alias;
 
 pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
     let available_tables = &ctx.schema_cache.tables;
@@ -19,7 +19,11 @@ pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionB
             filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", table.schema),
             kind: CompletionItemKind::Table,
-            completion_text: get_completion_text_with_schema(ctx, &table.name, &table.schema),
+            completion_text: get_completion_text_with_schema_or_alias(
+                ctx,
+                &table.name,
+                &table.schema,
+            ),
         };
 
         builder.add_item(item);
