@@ -48,8 +48,8 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
         if let Some(pgt_query_ext::NodeEnum::FunctionParameter(node)) = &arg.node {
             let arg_name = (!node.name.is_empty()).then_some(node.name.clone());
 
-            let type_name = parse_name(&node.arg_type.as_ref().unwrap().names)?;
-
+            let arg_type = node.arg_type.as_ref()?;
+            let type_name = parse_name(&arg_type.names)?;
             fn_args.push(SQLFunctionArgs {
                 name: arg_name,
                 type_: ArgType {
