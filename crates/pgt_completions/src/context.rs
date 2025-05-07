@@ -9,10 +9,13 @@ use pgt_treesitter_queries::{
 use crate::sanitization::SanitizedCompletionParams;
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ClauseType {
+pub enum WrappingClause<'a> {
     Select,
     Where,
     From,
+    Join {
+        on_node: Option<tree_sitter::Node<'a>>,
+    },
     Update,
     Delete,
 }
@@ -23,18 +26,31 @@ pub(crate) enum NodeText<'a> {
     Original(&'a str),
 }
 
-impl TryFrom<&str> for ClauseType {
+/// We can map a few nodes, such as the "update" node, to actual SQL clauses.
+/// That gives us a lot of insight for completions.
+/// Other nodes, such as the "relation" node, gives us less but still
+/// relevant information.
+/// `WrappingNode` maps to such nodes.
+///
+/// Note: This is not the direct parent of the `node_under_cursor`, but the closest
+/// *relevant* parent.
+#[derive(Debug, PartialEq, Eq)]
+pub enum WrappingNode {
+    Relation,
+    BinaryExpression,
+    Assignment,
+}
+
+impl TryFrom<&str> for WrappingNode {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "select" => Ok(Self::Select),
-            "where" => Ok(Self::Where),
-            "from" | "keyword_from" => Ok(Self::From),
-            "update" => Ok(Self::Update),
-            "delete" => Ok(Self::Delete),
+            "relation" => Ok(Self::Relation),
+            "assignment" => Ok(Self::Assignment),
+            "binary_expression" => Ok(Self::BinaryExpression),
             _ => {
-                let message = format!("Unimplemented ClauseType: {}", value);
+                let message = format!("Unimplemented Relation: {}", value);
 
                 // Err on tests, so we notice that we're lacking an implementation immediately.
                 if cfg!(test) {
@@ -47,10 +63,10 @@ impl TryFrom<&str> for ClauseType {
     }
 }
 
-impl TryFrom<String> for ClauseType {
+impl TryFrom<String> for WrappingNode {
     type Error = String;
-    fn try_from(value: String) -> Result<ClauseType, Self::Error> {
-        ClauseType::try_from(value.as_str())
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_str())
     }
 }
 
@@ -62,12 +78,38 @@ pub(crate) struct CompletionContext<'a> {
     pub schema_cache: &'a SchemaCache,
     pub position: usize,
 
-    pub schema_name: Option<String>,
-    pub wrapping_clause_type: Option<ClauseType>,
+    /// If the cursor is on a node that uses dot notation
+    /// to specify an alias or schema, this will hold the schema's or
+    /// alias's name.
+    ///
+    /// Here, `auth` is a schema name:
+    /// ```sql
+    /// select * from auth.users;
+    /// ```
+    ///
+    /// Here, `u` is an alias name:
+    /// ```sql
+    /// select
+    ///     *
+    /// from
+    ///     auth.users u
+    ///     left join identities i
+    ///     on u.id = i.user_id;
+    /// ```
+    pub schema_or_alias_name: Option<String>,
+    pub wrapping_clause_type: Option<WrappingClause<'a>>,
+
+    pub wrapping_node_kind: Option<WrappingNode>,
+
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
+    /// Some incomplete statements can't be correctly parsed by TreeSitter.
+    pub is_in_error_node: bool,
+
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
+
+    pub mentioned_table_aliases: HashMap<String, String>,
 }
 
 impl<'a> CompletionContext<'a> {
@@ -78,11 +120,14 @@ impl<'a> CompletionContext<'a> {
             schema_cache: params.schema,
             position: usize::from(params.position),
             node_under_cursor: None,
-            schema_name: None,
+            schema_or_alias_name: None,
             wrapping_clause_type: None,
+            wrapping_node_kind: None,
             wrapping_statement_range: None,
             is_invocation: false,
             mentioned_relations: HashMap::new(),
+            mentioned_table_aliases: HashMap::new(),
+            is_in_error_node: false,
         };
 
         ctx.gather_tree_context();
@@ -98,24 +143,36 @@ impl<'a> CompletionContext<'a> {
         let mut executor = TreeSitterQueriesExecutor::new(self.tree.root_node(), sql);
 
         executor.add_query_results::<queries::RelationMatch>();
+        executor.add_query_results::<queries::TableAliasMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
-            if let QueryResult::Relation(r) = relation_match {
-                let schema_name = r.get_schema(sql);
-                let table_name = r.get_table(sql);
+            match relation_match {
+                QueryResult::Relation(r) => {
+                    let schema_name = r.get_schema(sql);
+                    let table_name = r.get_table(sql);
 
-                let current = self.mentioned_relations.get_mut(&schema_name);
+                    let current = self.mentioned_relations.get_mut(&schema_name);
 
-                match current {
-                    Some(c) => {
-                        c.insert(table_name);
-                    }
-                    None => {
-                        let mut new = HashSet::new();
-                        new.insert(table_name);
-                        self.mentioned_relations.insert(schema_name, new);
-                    }
-                };
+                    match current {
+                        Some(c) => {
+                            c.insert(table_name);
+                        }
+                        None => {
+                            let mut new = HashSet::new();
+                            new.insert(table_name);
+                            self.mentioned_relations.insert(schema_name, new);
+                        }
+                    };
+                }
+
+                QueryResult::TableAliases(table_alias_match) => {
+                    self.mentioned_table_aliases.insert(
+                        table_alias_match.get_alias(sql),
+                        table_alias_match.get_table(sql),
+                    );
+                }
+
+                _ => {}
             }
         }
     }
@@ -129,6 +186,15 @@ impl<'a> CompletionContext<'a> {
                 NodeText::Original(txt)
             }
         })
+    }
+
+    pub fn get_node_under_cursor_content(&self) -> Option<String> {
+        self.node_under_cursor
+            .and_then(|n| self.get_ts_node_content(n))
+            .and_then(|txt| match txt {
+                NodeText::Replaced => None,
+                NodeText::Original(c) => Some(c.to_string()),
+            })
     }
 
     fn gather_tree_context(&mut self) {
@@ -161,31 +227,57 @@ impl<'a> CompletionContext<'a> {
     ) {
         let current_node = cursor.node();
 
+        let parent_node_kind = parent_node.kind();
+        let current_node_kind = current_node.kind();
+
         // prevent infinite recursion – this can happen if we only have a PROGRAM node
-        if current_node.kind() == parent_node.kind() {
+        if current_node_kind == parent_node_kind {
             self.node_under_cursor = Some(current_node);
             return;
         }
 
-        match parent_node.kind() {
+        match parent_node_kind {
             "statement" | "subquery" => {
-                self.wrapping_clause_type = current_node.kind().try_into().ok();
+                self.wrapping_clause_type =
+                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
+
                 self.wrapping_statement_range = Some(parent_node.range());
             }
             "invocation" => self.is_invocation = true,
-
             _ => {}
         }
 
-        match current_node.kind() {
-            "object_reference" => {
+        // try to gather context from the siblings if we're within an error node.
+        if self.is_in_error_node {
+            let mut next_sibling = current_node.next_named_sibling();
+            while let Some(n) = next_sibling {
+                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
+                    self.wrapping_clause_type = Some(clause_type);
+                    break;
+                } else {
+                    next_sibling = n.next_named_sibling();
+                }
+            }
+            let mut prev_sibling = current_node.prev_named_sibling();
+            while let Some(n) = prev_sibling {
+                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
+                    self.wrapping_clause_type = Some(clause_type);
+                    break;
+                } else {
+                    prev_sibling = n.prev_named_sibling();
+                }
+            }
+        }
+
+        match current_node_kind {
+            "object_reference" | "field" => {
                 let content = self.get_ts_node_content(current_node);
                 if let Some(node_txt) = content {
                     match node_txt {
                         NodeText::Original(txt) => {
                             let parts: Vec<&str> = txt.split('.').collect();
                             if parts.len() == 2 {
-                                self.schema_name = Some(parts[0].to_string());
+                                self.schema_or_alias_name = Some(parts[0].to_string());
                             }
                         }
                         NodeText::Replaced => {}
@@ -193,13 +285,17 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            // in Treesitter, the Where clause is nested inside other clauses
-            "where" => {
-                self.wrapping_clause_type = "where".try_into().ok();
+            "where" | "update" | "select" | "delete" | "from" | "join" => {
+                self.wrapping_clause_type =
+                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
 
-            "keyword_from" => {
-                self.wrapping_clause_type = "keyword_from".try_into().ok();
+            "relation" | "binary_expression" | "assignment" => {
+                self.wrapping_node_kind = current_node_kind.try_into().ok();
+            }
+
+            "ERROR" => {
+                self.is_in_error_node = true;
             }
 
             _ => {}
@@ -207,26 +303,74 @@ impl<'a> CompletionContext<'a> {
 
         // We have arrived at the leaf node
         if current_node.child_count() == 0 {
-            if matches!(
-                self.get_ts_node_content(current_node).unwrap(),
-                NodeText::Replaced
-            ) {
-                self.node_under_cursor = None;
-            } else {
-                self.node_under_cursor = Some(current_node);
-            }
+            self.node_under_cursor = Some(current_node);
             return;
         }
 
         cursor.goto_first_child_for_byte(self.position);
         self.gather_context_from_node(cursor, current_node);
     }
+
+    fn get_wrapping_clause_from_keyword_node(
+        &self,
+        node: tree_sitter::Node<'a>,
+    ) -> Option<WrappingClause<'a>> {
+        if node.kind().starts_with("keyword_") {
+            if let Some(txt) = self.get_ts_node_content(node).and_then(|txt| match txt {
+                NodeText::Original(txt) => Some(txt),
+                NodeText::Replaced => None,
+            }) {
+                match txt {
+                    "where" => return Some(WrappingClause::Where),
+                    "update" => return Some(WrappingClause::Update),
+                    "select" => return Some(WrappingClause::Select),
+                    "delete" => return Some(WrappingClause::Delete),
+                    "from" => return Some(WrappingClause::From),
+                    "join" => {
+                        // TODO: not sure if we can infer it here.
+                        return Some(WrappingClause::Join { on_node: None });
+                    }
+                    _ => {}
+                }
+            };
+        }
+
+        None
+    }
+
+    fn get_wrapping_clause_from_current_node(
+        &self,
+        node: tree_sitter::Node<'a>,
+        cursor: &mut tree_sitter::TreeCursor<'a>,
+    ) -> Option<WrappingClause<'a>> {
+        match node.kind() {
+            "where" => Some(WrappingClause::Where),
+            "update" => Some(WrappingClause::Update),
+            "select" => Some(WrappingClause::Select),
+            "delete" => Some(WrappingClause::Delete),
+            "from" => Some(WrappingClause::From),
+            "join" => {
+                // sadly, we need to manually iterate over the children –
+                // `node.child_by_field_id(..)` does not work as expected
+                let mut on_node = None;
+                for child in node.children(cursor) {
+                    // 28 is the id for "keyword_on"
+                    if child.kind_id() == 28 {
+                        on_node = Some(child);
+                    }
+                }
+                cursor.goto_parent();
+                Some(WrappingClause::Join { on_node })
+            }
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        context::{ClauseType, CompletionContext, NodeText},
+        context::{CompletionContext, NodeText, WrappingClause},
         sanitization::SanitizedCompletionParams,
         test_helper::{CURSOR_POS, get_text_and_position},
     };
@@ -243,29 +387,41 @@ mod tests {
     #[test]
     fn identifies_clauses() {
         let test_cases = vec![
-            (format!("Select {}* from users;", CURSOR_POS), "select"),
-            (format!("Select * from u{};", CURSOR_POS), "from"),
+            (
+                format!("Select {}* from users;", CURSOR_POS),
+                WrappingClause::Select,
+            ),
+            (
+                format!("Select * from u{};", CURSOR_POS),
+                WrappingClause::From,
+            ),
             (
                 format!("Select {}* from users where n = 1;", CURSOR_POS),
-                "select",
+                WrappingClause::Select,
             ),
             (
                 format!("Select * from users where {}n = 1;", CURSOR_POS),
-                "where",
+                WrappingClause::Where,
             ),
             (
                 format!("update users set u{} = 1 where n = 2;", CURSOR_POS),
-                "update",
+                WrappingClause::Update,
             ),
             (
                 format!("update users set u = 1 where n{} = 2;", CURSOR_POS),
-                "where",
+                WrappingClause::Where,
             ),
-            (format!("delete{} from users;", CURSOR_POS), "delete"),
-            (format!("delete from {}users;", CURSOR_POS), "from"),
+            (
+                format!("delete{} from users;", CURSOR_POS),
+                WrappingClause::Delete,
+            ),
+            (
+                format!("delete from {}users;", CURSOR_POS),
+                WrappingClause::From,
+            ),
             (
                 format!("select name, age, location from public.u{}sers", CURSOR_POS),
-                "from",
+                WrappingClause::From,
             ),
         ];
 
@@ -283,7 +439,7 @@ mod tests {
 
             let ctx = CompletionContext::new(&params);
 
-            assert_eq!(ctx.wrapping_clause_type, expected_clause.try_into().ok());
+            assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
         }
     }
 
@@ -315,7 +471,10 @@ mod tests {
 
             let ctx = CompletionContext::new(&params);
 
-            assert_eq!(ctx.schema_name, expected_schema.map(|f| f.to_string()));
+            assert_eq!(
+                ctx.schema_or_alias_name,
+                expected_schema.map(|f| f.to_string())
+            );
         }
     }
 
@@ -383,7 +542,7 @@ mod tests {
 
             assert_eq!(
                 ctx.wrapping_clause_type,
-                Some(crate::context::ClauseType::Select)
+                Some(crate::context::WrappingClause::Select)
             );
         }
     }
@@ -410,10 +569,6 @@ mod tests {
         assert_eq!(
             ctx.get_ts_node_content(node),
             Some(NodeText::Original("from"))
-        );
-        assert_eq!(
-            ctx.wrapping_clause_type,
-            Some(crate::context::ClauseType::From)
         );
     }
 
@@ -465,6 +620,6 @@ mod tests {
             ctx.get_ts_node_content(node),
             Some(NodeText::Original("fro"))
         );
-        assert_eq!(ctx.wrapping_clause_type, Some(ClauseType::Select));
+        assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
     }
 }

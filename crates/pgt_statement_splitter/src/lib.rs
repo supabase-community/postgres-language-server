@@ -86,6 +86,13 @@ mod tests {
     }
 
     #[test]
+    fn ts_with_timezone() {
+        Tester::from("alter table foo add column bar timestamp with time zone;").expect_statements(
+            vec!["alter table foo add column bar timestamp with time zone;"],
+        );
+    }
+
+    #[test]
     fn failing_lexer() {
         let input = "select 1443ddwwd33djwdkjw13331333333333";
         let res = split(input).unwrap_err();
@@ -171,6 +178,22 @@ mod tests {
     #[test]
     fn c_style_comments() {
         Tester::from("/* this is a test */\nselect 1").expect_statements(vec!["select 1"]);
+    }
+
+    #[test]
+    fn trigger_instead_of() {
+        Tester::from(
+            "CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();",
+        )
+        .expect_statements(vec![
+            "CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();",
+        ]);
     }
 
     #[test]
@@ -324,6 +347,23 @@ values ('insert', new.id, now());",
             "random stuff",
             "select 1",
             "select 3",
+        ]);
+    }
+
+    #[test]
+    fn commas_and_newlines() {
+        Tester::from(
+            "
+        select
+            email,
+
+
+        from
+            auth.users;
+        ",
+        )
+        .expect_statements(vec![
+            "select\n            email,\n\n\n        from\n            auth.users;",
         ]);
     }
 }

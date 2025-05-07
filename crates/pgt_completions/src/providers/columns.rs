@@ -1,18 +1,23 @@
 use crate::{
-    CompletionItem, CompletionItemKind, builder::CompletionBuilder, context::CompletionContext,
-    relevance::CompletionRelevanceData,
+    CompletionItemKind,
+    builder::{CompletionBuilder, PossibleCompletionItem},
+    context::CompletionContext,
+    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-pub fn complete_columns(ctx: &CompletionContext, builder: &mut CompletionBuilder) {
+pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
 
     for col in available_columns {
-        let item = CompletionItem {
+        let relevance = CompletionRelevanceData::Column(col);
+
+        let item = PossibleCompletionItem {
             label: col.name.clone(),
-            score: CompletionRelevanceData::Column(col).get_score(ctx),
+            score: CompletionScore::from(relevance.clone()),
+            filter: CompletionFilter::from(relevance),
             description: format!("Table: {}.{}", col.schema_name, col.table_name),
-            preselected: false,
             kind: CompletionItemKind::Column,
+            completion_text: None,
         };
 
         builder.add_item(item);
@@ -22,8 +27,11 @@ pub fn complete_columns(ctx: &CompletionContext, builder: &mut CompletionBuilder
 #[cfg(test)]
 mod tests {
     use crate::{
-        CompletionItem, complete,
-        test_helper::{CURSOR_POS, InputQuery, get_test_deps, get_test_params},
+        CompletionItem, CompletionItemKind, complete,
+        test_helper::{
+            CURSOR_POS, CompletionAssertion, InputQuery, assert_complete_results, get_test_deps,
+            get_test_params,
+        },
     };
 
     struct TestCase {
@@ -163,9 +171,9 @@ mod tests {
             ("name", "Table: public.users"),
             ("narrator", "Table: public.audio_books"),
             ("narrator_id", "Table: private.audio_books"),
+            ("id", "Table: public.audio_books"),
             ("name", "Schema: pg_catalog"),
             ("nameconcatoid", "Schema: pg_catalog"),
-            ("nameeq", "Schema: pg_catalog"),
         ]
         .into_iter()
         .map(|(label, schema)| LabelAndDesc {
@@ -223,5 +231,257 @@ mod tests {
             has_column_in_first_four("email"),
             "`email` not present in first four completion items."
         );
+    }
+
+    #[tokio::test]
+    async fn ignores_cols_in_from_clause() {
+        let setup = r#"
+        create schema private;
+
+        create table private.users (
+            id serial primary key,
+            name text,
+            address text,
+            email text
+        );
+    "#;
+
+        let test_case = TestCase {
+            message: "suggests user created tables first",
+            query: format!(r#"select * from private.{}"#, CURSOR_POS),
+            label: "",
+            description: "",
+        };
+
+        let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+        let params = get_test_params(&tree, &cache, test_case.get_input_query());
+        let results = complete(params);
+
+        assert!(
+            !results
+                .into_iter()
+                .any(|item| item.kind == CompletionItemKind::Column)
+        );
+    }
+
+    #[tokio::test]
+    async fn prefers_columns_of_mentioned_tables() {
+        let setup = r#"
+        create schema private;
+
+        create table private.users (
+            id1 serial primary key,
+            name1 text,
+            address1 text,
+            email1 text
+        );
+
+        create table public.users (
+            id2 serial primary key,
+            name2 text,
+            address2 text,
+            email2 text
+        );
+    "#;
+
+        {
+            let test_case = TestCase {
+                message: "",
+                query: format!(r#"select {} from users"#, CURSOR_POS),
+                label: "suggests from table",
+                description: "",
+            };
+
+            let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+            let params = get_test_params(&tree, &cache, test_case.get_input_query());
+            let results = complete(params);
+
+            assert_eq!(
+                results
+                    .into_iter()
+                    .take(4)
+                    .map(|item| item.label)
+                    .collect::<Vec<String>>(),
+                vec!["address2", "email2", "id2", "name2"]
+            );
+        }
+
+        {
+            let test_case = TestCase {
+                message: "",
+                query: format!(r#"select {} from private.users"#, CURSOR_POS),
+                label: "suggests from table",
+                description: "",
+            };
+
+            let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+            let params = get_test_params(&tree, &cache, test_case.get_input_query());
+            let results = complete(params);
+
+            assert_eq!(
+                results
+                    .into_iter()
+                    .take(4)
+                    .map(|item| item.label)
+                    .collect::<Vec<String>>(),
+                vec!["address1", "email1", "id1", "name1"]
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn filters_out_by_aliases() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        // test in SELECT clause
+        assert_complete_results(
+            format!(
+                "select u.id, p.{} from auth.users u join auth.posts p on u.id = p.user_id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelNotExists("uid".to_string()),
+                CompletionAssertion::LabelNotExists("name".to_string()),
+                CompletionAssertion::LabelNotExists("email".to_string()),
+                CompletionAssertion::Label("content".to_string()),
+                CompletionAssertion::Label("created_at".to_string()),
+                CompletionAssertion::Label("pid".to_string()),
+                CompletionAssertion::Label("title".to_string()),
+                CompletionAssertion::Label("user_id".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // test in JOIN clause
+        assert_complete_results(
+            format!(
+                "select u.id, p.content from auth.users u join auth.posts p on u.id = p.{};",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelNotExists("uid".to_string()),
+                CompletionAssertion::LabelNotExists("name".to_string()),
+                CompletionAssertion::LabelNotExists("email".to_string()),
+                // primary keys are preferred
+                CompletionAssertion::Label("pid".to_string()),
+                CompletionAssertion::Label("content".to_string()),
+                CompletionAssertion::Label("created_at".to_string()),
+                CompletionAssertion::Label("title".to_string()),
+                CompletionAssertion::Label("user_id".to_string()),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn does_not_complete_cols_in_join_clauses() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        /*
+         * We are not in the "ON" part of the JOIN clause, so we should not complete columns.
+         */
+        assert_complete_results(
+            format!(
+                "select u.id, p.content from auth.users u join auth.{}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("posts".to_string(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn completes_in_join_on_clause() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        assert_complete_results(
+            format!(
+                "select u.id, auth.posts.content from auth.users u join auth.posts on u.{}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                "select u.id, p.content from auth.users u join auth.posts p on p.user_id = u.{}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
+            ],
+            setup,
+        )
+        .await;
     }
 }

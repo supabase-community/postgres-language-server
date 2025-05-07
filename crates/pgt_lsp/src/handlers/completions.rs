@@ -1,15 +1,22 @@
-use crate::{adapters::get_cursor_position, session::Session};
+use crate::{
+    adapters::{self, get_cursor_position},
+    diagnostics::LspError,
+    session::Session,
+};
 use anyhow::Result;
 use pgt_workspace::{WorkspaceError, features::completions::GetCompletionsParams};
-use tower_lsp::lsp_types::{self, CompletionItem, CompletionItemLabelDetails};
+use tower_lsp::lsp_types::{self, CompletionItem, CompletionItemLabelDetails, TextEdit};
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_completions(
     session: &Session,
     params: lsp_types::CompletionParams,
-) -> Result<lsp_types::CompletionResponse> {
+) -> Result<lsp_types::CompletionResponse, LspError> {
     let url = params.text_document_position.text_document.uri;
     let path = session.file_path(&url)?;
+
+    let doc = session.document(&url)?;
+    let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
 
     let completion_result = match session.workspace.get_completions(GetCompletionsParams {
         path,
@@ -32,9 +39,16 @@ pub fn get_completions(
             label: i.label,
             label_details: Some(CompletionItemLabelDetails {
                 description: Some(i.description),
-                detail: None,
+                detail: Some(format!(" {}", i.kind)),
             }),
             preselect: Some(i.preselected),
+            sort_text: Some(i.sort_text),
+            text_edit: i.completion_text.map(|c| {
+                lsp_types::CompletionTextEdit::Edit(TextEdit {
+                    new_text: c.text,
+                    range: adapters::to_lsp::range(&doc.line_index, c.range, encoding).unwrap(),
+                })
+            }),
             kind: Some(to_lsp_types_completion_item_kind(i.kind)),
             ..CompletionItem::default()
         })

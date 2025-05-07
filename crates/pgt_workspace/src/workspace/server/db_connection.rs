@@ -16,6 +16,11 @@ impl DbConnection {
     }
 
     pub(crate) fn set_conn_settings(&mut self, settings: &DatabaseSettings) {
+        if !settings.enable_connection {
+            tracing::info!("Database connection disabled.");
+            return;
+        }
+
         let config = PgConnectOptions::new()
             .host(&settings.host)
             .port(settings.port)

@@ -73,7 +73,6 @@ pub struct UpdateSettingsParams {
     pub vcs_base_path: Option<PathBuf>,
     pub gitignore_matches: Vec<String>,
     pub workspace_directory: Option<PathBuf>,
-    pub skip_db: bool,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

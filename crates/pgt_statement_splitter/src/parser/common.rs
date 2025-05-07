@@ -138,10 +138,20 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                 break;
             }
             Token {
-                kind: SyntaxKind::Newline | SyntaxKind::Eof,
+                kind: SyntaxKind::Eof,
                 ..
             } => {
                 break;
+            }
+            Token {
+                kind: SyntaxKind::Newline,
+                ..
+            } => {
+                if p.look_back().is_some_and(|t| t.kind == SyntaxKind::Ascii44) {
+                    p.advance();
+                } else {
+                    break;
+                }
             }
             Token {
                 kind: SyntaxKind::Case,
@@ -226,6 +236,8 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::For,
                         // e.g. on insert or delete
                         SyntaxKind::Or,
+                        // e.g. INSTEAD OF INSERT
+                        SyntaxKind::Of,
                         // for create rule
                         SyntaxKind::On,
                         // for create rule
@@ -249,6 +261,8 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::Ordinality,
                         // WITH CHECK should not start a new statement
                         SyntaxKind::Check,
+                        // TIMESTAMP WITH TIME ZONE should not start a new statement
+                        SyntaxKind::Time,
                     ]
                     .iter()
                     .all(|x| Some(x) != next.as_ref())

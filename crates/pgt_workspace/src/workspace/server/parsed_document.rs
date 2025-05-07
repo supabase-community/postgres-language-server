@@ -364,7 +364,7 @@ impl<'a> StatementMapper<'a> for GetCompletionsMapper {
 pub struct GetCompletionsFilter {
     pub cursor_position: TextSize,
 }
-impl<'a> StatementFilter<'a> for GetCompletionsFilter {
+impl StatementFilter<'_> for GetCompletionsFilter {
     fn predicate(&self, _id: &StatementId, range: &TextRange, content: &str) -> bool {
         let is_terminated_by_semi = content.chars().last().is_some_and(|c| c == ';');
 
@@ -378,7 +378,7 @@ impl<'a> StatementFilter<'a> for GetCompletionsFilter {
 }
 
 pub struct NoFilter;
-impl<'a> StatementFilter<'a> for NoFilter {
+impl StatementFilter<'_> for NoFilter {
     fn predicate(&self, _id: &StatementId, _range: &TextRange, _content: &str) -> bool {
         true
     }
@@ -394,7 +394,7 @@ impl CursorPositionFilter {
     }
 }
 
-impl<'a> StatementFilter<'a> for CursorPositionFilter {
+impl StatementFilter<'_> for CursorPositionFilter {
     fn predicate(&self, _id: &StatementId, range: &TextRange, _content: &str) -> bool {
         range.contains(self.pos)
     }
@@ -410,7 +410,7 @@ impl IdFilter {
     }
 }
 
-impl<'a> StatementFilter<'a> for IdFilter {
+impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, id: &StatementId, _range: &TextRange, _content: &str) -> bool {
         *id == self.id
     }

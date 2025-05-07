@@ -307,7 +307,6 @@ pub(crate) trait CommandRunner: Sized {
             configuration,
             vcs_base_path,
             gitignore_matches,
-            skip_db: cli_options.skip_db,
         })?;
 
         let execution = self.get_execution(cli_options, console, workspace)?;

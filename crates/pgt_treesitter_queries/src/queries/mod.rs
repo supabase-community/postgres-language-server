@@ -1,19 +1,22 @@
 mod parameters;
 mod relations;
+mod table_aliases;
 
 pub use parameters::*;
 pub use relations::*;
+pub use table_aliases::*;
 
 #[derive(Debug)]
 pub enum QueryResult<'a> {
     Relation(RelationMatch<'a>),
     Parameter(ParameterMatch<'a>),
+    TableAliases(TableAliasMatch<'a>),
 }
 
 impl QueryResult<'_> {
     pub fn within_range(&self, range: &tree_sitter::Range) -> bool {
         match self {
-            Self::Relation(rm) => {
+            QueryResult::Relation(rm) => {
                 let start = match rm.schema {
                     Some(s) => s.start_position(),
                     None => rm.table.start_position(),
@@ -28,6 +31,11 @@ impl QueryResult<'_> {
 
                 node_range.start_point >= range.start_point
                     && node_range.end_point <= range.end_point
+            }
+            QueryResult::TableAliases(m) => {
+                let start = m.table.start_position();
+                let end = m.alias.end_position();
+                start >= range.start_point && end <= range.end_point
             }
         }
     }

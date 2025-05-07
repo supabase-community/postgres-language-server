@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct DatabaseConfiguration {
     /// The host of the database.
+    /// Required if you want database-related features.
+    /// All else falls back to sensible defaults.
     #[partial(bpaf(long("host")))]
     pub host: String,
 
@@ -35,11 +37,17 @@ pub struct DatabaseConfiguration {
     /// The connection timeout in seconds.
     #[partial(bpaf(long("conn_timeout_secs"), fallback(Some(10)), debug_fallback))]
     pub conn_timeout_secs: u16,
+
+    /// Actively disable all database-related features.
+    #[partial(bpaf(long("disable-db"), switch, fallback(Some(false))))]
+    #[partial(cfg_attr(feature = "schema", schemars(skip)))]
+    pub disable_connection: bool,
 }
 
 impl Default for DatabaseConfiguration {
     fn default() -> Self {
         Self {
+            disable_connection: false,
             host: "127.0.0.1".to_string(),
             port: 5432,
             username: "postgres".to_string(),

@@ -1,20 +1,25 @@
 use crate::{
-    builder::CompletionBuilder,
+    builder::{CompletionBuilder, PossibleCompletionItem},
     context::CompletionContext,
-    item::{CompletionItem, CompletionItemKind},
-    relevance::CompletionRelevanceData,
+    item::CompletionItemKind,
+    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-pub fn complete_tables(ctx: &CompletionContext, builder: &mut CompletionBuilder) {
+use super::helper::get_completion_text_with_schema;
+
+pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
     let available_tables = &ctx.schema_cache.tables;
 
     for table in available_tables {
-        let item = CompletionItem {
+        let relevance = CompletionRelevanceData::Table(table);
+
+        let item = PossibleCompletionItem {
             label: table.name.clone(),
-            score: CompletionRelevanceData::Table(table).get_score(ctx),
+            score: CompletionScore::from(relevance.clone()),
+            filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", table.schema),
-            preselected: false,
             kind: CompletionItemKind::Table,
+            completion_text: get_completion_text_with_schema(ctx, &table.name, &table.schema),
         };
 
         builder.add_item(item);
@@ -26,7 +31,10 @@ mod tests {
 
     use crate::{
         CompletionItem, CompletionItemKind, complete,
-        test_helper::{CURSOR_POS, get_test_deps, get_test_params},
+        test_helper::{
+            CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
+            get_test_deps, get_test_params,
+        },
     };
 
     #[tokio::test]
@@ -172,5 +180,130 @@ mod tests {
 
         assert_eq!(label, "coos");
         assert_eq!(kind, CompletionItemKind::Table);
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_in_update() {
+        let setup = r#"
+          create table coos (
+            id serial primary key,
+            name text
+          );
+        "#;
+
+        assert_complete_results(
+            format!("update {}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "public".into(),
+                CompletionItemKind::Schema,
+            )],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("update public.{}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "coos".into(),
+                CompletionItemKind::Table,
+            )],
+            setup,
+        )
+        .await;
+
+        assert_no_complete_results(format!("update public.coos {}", CURSOR_POS).as_str(), setup)
+            .await;
+
+        assert_complete_results(
+            format!("update coos set {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("update coos set name = 'cool' where {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_in_delete() {
+        let setup = r#"
+          create table coos (
+            id serial primary key,
+            name text
+          );
+        "#;
+
+        assert_no_complete_results(format!("delete {}", CURSOR_POS).as_str(), setup).await;
+
+        assert_complete_results(
+            format!("delete from {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("delete from public.{}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::Label("coos".into())],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("delete from public.coos where {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_in_join() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        assert_complete_results(
+            format!("select * from auth.users u join {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
     }
 }

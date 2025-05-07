@@ -268,6 +268,7 @@ impl Default for LinterSettings {
 /// Database settings for the entire workspace
 #[derive(Debug)]
 pub struct DatabaseSettings {
+    pub enable_connection: bool,
     pub host: String,
     pub port: u16,
     pub username: String,
@@ -280,6 +281,7 @@ pub struct DatabaseSettings {
 impl Default for DatabaseSettings {
     fn default() -> Self {
         Self {
+            enable_connection: false,
             host: "127.0.0.1".to_string(),
             port: 5432,
             username: "postgres".to_string(),
@@ -294,6 +296,13 @@ impl Default for DatabaseSettings {
 impl From<PartialDatabaseConfiguration> for DatabaseSettings {
     fn from(value: PartialDatabaseConfiguration) -> Self {
         let d = DatabaseSettings::default();
+
+        // "host" is the minimum required setting for database features
+        // to be enabled.
+        let enable_connection = value
+            .host
+            .as_ref()
+            .is_some_and(|_| value.disable_connection.is_none_or(|disabled| !disabled));
 
         let database = value.database.unwrap_or(d.database);
         let host = value.host.unwrap_or(d.host);
@@ -312,6 +321,8 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             .unwrap_or(false);
 
         Self {
+            enable_connection,
+
             port: value.port.unwrap_or(d.port),
             username: value.username.unwrap_or(d.username),
             password: value.password.unwrap_or(d.password),

@@ -4,6 +4,7 @@
 
 mod columns;
 mod functions;
+mod policies;
 mod schema_cache;
 mod schemas;
 mod tables;

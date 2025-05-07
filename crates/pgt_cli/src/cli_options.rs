@@ -18,10 +18,6 @@ pub struct CliOptions {
     #[bpaf(long("use-server"), switch, fallback(false))]
     pub use_server: bool,
 
-    /// Skip connecting to the database and only run checks that don't require a database connection.
-    #[bpaf(long("skip-db"), switch, fallback(false))]
-    pub skip_db: bool,
-
     /// Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
     #[bpaf(long("verbose"), switch, fallback(false))]
     pub verbose: bool,

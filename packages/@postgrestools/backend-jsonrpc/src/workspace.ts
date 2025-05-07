@@ -179,21 +179,36 @@ export interface GetCompletionsParams {
 	 */
 	position: TextSize;
 }
-export interface CompletionResult {
+export interface CompletionsResult {
 	items: CompletionItem[];
 }
 export interface CompletionItem {
+	completion_text?: CompletionText;
 	description: string;
 	kind: CompletionItemKind;
 	label: string;
 	preselected: boolean;
-	score: number;
+	/**
+	 * String used for sorting by LSP clients.
+	 */
+	sort_text: string;
 }
-export type CompletionItemKind = "table" | "function" | "column";
+/**
+	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
+
+label: "users", description: "Schema: auth", completion_text: "auth.users". 
+	 */
+export interface CompletionText {
+	/**
+	 * A `range` is required because some editors replace the current token, others naively insert the text. Having a range where start == end makes it an insertion.
+	 */
+	range: TextRange;
+	text: string;
+}
+export type CompletionItemKind = "table" | "function" | "column" | "schema";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
-	skip_db: boolean;
 	vcs_base_path?: string;
 	workspace_directory?: string;
 }
@@ -240,7 +255,7 @@ export interface PartialDatabaseConfiguration {
 	 */
 	database?: string;
 	/**
-	 * The host of the database.
+	 * The host of the database. Required if you want database-related features. All else falls back to sensible defaults.
 	 */
 	host?: string;
 	/**
@@ -414,7 +429,7 @@ export interface Workspace {
 	pullDiagnostics(
 		params: PullDiagnosticsParams,
 	): Promise<PullDiagnosticsResult>;
-	getCompletions(params: GetCompletionsParams): Promise<CompletionResult>;
+	getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
 	updateSettings(params: UpdateSettingsParams): Promise<void>;
 	openFile(params: OpenFileParams): Promise<void>;
 	changeFile(params: ChangeFileParams): Promise<void>;

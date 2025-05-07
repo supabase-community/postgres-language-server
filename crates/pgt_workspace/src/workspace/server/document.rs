@@ -50,7 +50,7 @@ impl Document {
             .any(|d| d.severity() == Severity::Fatal)
     }
 
-    pub fn iter<'a>(&'a self) -> StatementIterator<'a> {
+    pub fn iter(&self) -> StatementIterator<'_> {
         StatementIterator::new(self)
     }
 }
