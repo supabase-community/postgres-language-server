@@ -19,7 +19,11 @@ pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut Completi
             filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", func.schema),
             kind: CompletionItemKind::Function,
-            completion_text: get_completion_text_with_schema_or_alias(ctx, &func.name, &func.schema),
+            completion_text: get_completion_text_with_schema_or_alias(
+                ctx,
+                &func.name,
+                &func.schema,
+            ),
         };
 
         builder.add_item(item);
