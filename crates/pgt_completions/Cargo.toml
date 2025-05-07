@@ -17,6 +17,7 @@ async-std = "1.12.0"
 pgt_text_size.workspace = true
 
 
+fuzzy-matcher                    = "0.3.7"
 pgt_schema_cache.workspace       = true
 pgt_treesitter_queries.workspace = true
 schemars                         = { workspace = true, optional = true }

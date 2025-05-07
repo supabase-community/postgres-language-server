@@ -1,3 +1,5 @@
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+
 use crate::context::{CompletionContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
@@ -45,14 +47,21 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
         };
 
-        if name.starts_with(content.as_str()) {
-            let len: i32 = content
-                .len()
+        let fz_matcher = SkimMatcherV2::default();
+
+        if let Some(score) = fz_matcher.fuzzy_match(name, content.as_str()) {
+            let scorei32: i32 = score
                 .try_into()
                 .expect("The length of the input exceeds i32 capacity");
 
-            self.score += len * 10;
-        };
+            // the scoring value isn't linear.
+            // here are a couple of samples:
+            // - item: bytea_string_agg_transfn, input: n, score: 15
+            // - item: numeric_uplus, input: n, score: 31
+            // - item: settings, input: sett, score: 91
+            // - item: user_settings, input: sett, score: 82
+            self.score += scorei32 / 2;
+        }
     }
 
     fn check_matching_clause_type(&mut self, ctx: &CompletionContext) {
