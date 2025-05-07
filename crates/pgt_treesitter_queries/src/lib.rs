@@ -70,11 +70,7 @@ mod tests {
 
     use crate::{
         TreeSitterQueriesExecutor,
-        queries::{Field, ParameterMatch, RelationMatch},
-    };
-    use crate::{
-        TreeSitterQueriesExecutor,
-        queries::{RelationMatch, TableAliasMatch},
+        queries::{ParameterMatch, RelationMatch, TableAliasMatch},
     };
 
     #[test]
