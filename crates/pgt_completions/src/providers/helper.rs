@@ -2,6 +2,18 @@ use pgt_text_size::{TextRange, TextSize};
 
 use crate::{CompletionText, context::CompletionContext};
 
+pub(crate) fn find_matching_alias_for_table(
+    ctx: &CompletionContext,
+    table_name: &str,
+) -> Option<String> {
+    for (alias, table) in ctx.mentioned_table_aliases.iter() {
+        if table == table_name {
+            return Some(alias.to_string());
+        }
+    }
+    None
+}
+
 pub(crate) fn get_completion_text_with_schema(
     ctx: &CompletionContext,
     item_name: &str,
