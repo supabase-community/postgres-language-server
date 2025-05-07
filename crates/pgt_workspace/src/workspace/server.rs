@@ -167,6 +167,7 @@ impl Workspace for WorkspaceServer {
         )?;
 
         tracing::info!("Updated settings in workspace");
+        tracing::debug!("Updated settings are {:#?}", self.settings());
 
         self.connection
             .write()
