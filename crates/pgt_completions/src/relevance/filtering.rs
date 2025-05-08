@@ -130,6 +130,9 @@ impl CompletionFilter<'_> {
                 // we should never allow schema suggestions if there already was one.
                 false
             }
+
+            // no aliases and schemas for policies
+            CompletionRelevanceData::Policy(_) => false,
         };
 
         if !matches {

@@ -45,6 +45,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Table(t) => t.name.as_str(),
             CompletionRelevanceData::Column(c) => c.name.as_str(),
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
+            CompletionRelevanceData::Policy(p) => p.name.as_str(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
@@ -116,6 +117,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Delete if !has_mentioned_schema => 15,
                 _ => -50,
             },
+            CompletionRelevanceData::Policy(_) => 0,
         }
     }
 
@@ -149,6 +151,7 @@ impl CompletionScore<'_> {
                 WrappingNode::Relation if !has_mentioned_schema && has_node_text => 0,
                 _ => -50,
             },
+            CompletionRelevanceData::Policy(_) => 0,
         }
     }
 
@@ -182,6 +185,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Table(t) => t.schema.as_str(),
             CompletionRelevanceData::Column(c) => c.schema_name.as_str(),
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
+            CompletionRelevanceData::Policy(p) => p.name.as_str(),
         }
     }
 
@@ -189,6 +193,7 @@ impl CompletionScore<'_> {
         match self.data {
             CompletionRelevanceData::Column(c) => Some(c.table_name.as_str()),
             CompletionRelevanceData::Table(t) => Some(t.name.as_str()),
+            CompletionRelevanceData::Policy(p) => Some(p.table_name.as_str()),
             _ => None,
         }
     }

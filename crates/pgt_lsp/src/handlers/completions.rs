@@ -65,5 +65,6 @@ fn to_lsp_types_completion_item_kind(
         pgt_completions::CompletionItemKind::Table => lsp_types::CompletionItemKind::CLASS,
         pgt_completions::CompletionItemKind::Column => lsp_types::CompletionItemKind::FIELD,
         pgt_completions::CompletionItemKind::Schema => lsp_types::CompletionItemKind::CLASS,
+        pgt_completions::CompletionItemKind::Policy => lsp_types::CompletionItemKind::VALUE,
     }
 }
