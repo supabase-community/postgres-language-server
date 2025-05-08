@@ -22,7 +22,7 @@ pub(crate) fn get_completion_text_with_schema_or_alias(
     if schema_or_alias_name == "public" || ctx.schema_or_alias_name.is_some() {
         None
     } else {
-        let node = ctx.node_under_cursor.unwrap();
+        let node = ctx.node_under_cursor.as_ref().unwrap();
 
         let range = TextRange::new(
             TextSize::try_from(node.start_byte()).unwrap(),

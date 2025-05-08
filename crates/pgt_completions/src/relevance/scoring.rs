@@ -82,6 +82,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { on_node }
                     if on_node.is_none_or(|on| {
                         ctx.node_under_cursor
+                            .as_ref()
                             .is_none_or(|n| n.end_byte() < on.start_byte())
                     }) =>
                 {
@@ -102,6 +103,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { on_node }
                     if on_node.is_some_and(|on| {
                         ctx.node_under_cursor
+                            .as_ref()
                             .is_some_and(|n| n.start_byte() > on.end_byte())
                     }) =>
                 {

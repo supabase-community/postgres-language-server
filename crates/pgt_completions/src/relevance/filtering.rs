@@ -1,4 +1,4 @@
-use crate::context::{CompletionContext, WrappingClause};
+use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause};
 
 use super::CompletionRelevanceData;
 
@@ -24,7 +24,11 @@ impl CompletionFilter<'_> {
     }
 
     fn completable_context(&self, ctx: &CompletionContext) -> Option<()> {
-        let current_node_kind = ctx.node_under_cursor.map(|n| n.kind()).unwrap_or("");
+        let current_node_kind = ctx
+            .node_under_cursor
+            .as_ref()
+            .map(|n| n.kind())
+            .unwrap_or("");
 
         if current_node_kind.starts_with("keyword_")
             || current_node_kind == "="
@@ -36,20 +40,23 @@ impl CompletionFilter<'_> {
         }
 
         // No autocompletions if there are two identifiers without a separator.
-        if ctx.node_under_cursor.is_some_and(|n| {
-            n.prev_sibling().is_some_and(|p| {
+        if ctx.node_under_cursor.as_ref().is_some_and(|n| match n {
+            NodeUnderCursor::TsNode(node) => node.prev_sibling().is_some_and(|p| {
                 (p.kind() == "identifier" || p.kind() == "object_reference")
                     && n.kind() == "identifier"
-            })
+            }),
+            NodeUnderCursor::CustomNode { .. } => false,
         }) {
             return None;
         }
 
         // no completions if we're right after an asterisk:
         // `select * {}`
-        if ctx.node_under_cursor.is_some_and(|n| {
-            n.prev_sibling()
-                .is_some_and(|p| (p.kind() == "all_fields") && n.kind() == "identifier")
+        if ctx.node_under_cursor.as_ref().is_some_and(|n| match n {
+            NodeUnderCursor::TsNode(node) => node
+                .prev_sibling()
+                .is_some_and(|p| (p.kind() == "all_fields") && n.kind() == "identifier"),
+            NodeUnderCursor::CustomNode { .. } => false,
         }) {
             return None;
         }
@@ -83,6 +90,7 @@ impl CompletionFilter<'_> {
 
                     WrappingClause::Join { on_node: Some(on) } => ctx
                         .node_under_cursor
+                        .as_ref()
                         .is_some_and(|n| n.end_byte() < on.start_byte()),
 
                     _ => false,
