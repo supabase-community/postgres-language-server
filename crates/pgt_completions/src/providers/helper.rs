@@ -14,6 +14,25 @@ pub(crate) fn find_matching_alias_for_table(
     None
 }
 
+pub(crate) fn get_range_to_replace(ctx: &CompletionContext) -> TextRange {
+    let start = ctx
+        .node_under_cursor
+        .as_ref()
+        .map(|n| n.start_byte())
+        .unwrap_or(0);
+
+    let end = ctx
+        .get_node_under_cursor_content()
+        .unwrap_or("".into())
+        .len()
+        + start;
+
+    TextRange::new(
+        TextSize::new(start.try_into().unwrap()),
+        end.try_into().unwrap(),
+    )
+}
+
 pub(crate) fn get_completion_text_with_schema_or_alias(
     ctx: &CompletionContext,
     item_name: &str,
@@ -22,12 +41,7 @@ pub(crate) fn get_completion_text_with_schema_or_alias(
     if schema_or_alias_name == "public" || ctx.schema_or_alias_name.is_some() {
         None
     } else {
-        let node = ctx.node_under_cursor.as_ref().unwrap();
-
-        let range = TextRange::new(
-            TextSize::try_from(node.start_byte()).unwrap(),
-            TextSize::try_from(node.end_byte()).unwrap(),
-        );
+        let range = get_range_to_replace(ctx);
 
         Some(CompletionText {
             text: format!("{}.{}", schema_or_alias_name, item_name),

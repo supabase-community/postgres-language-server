@@ -8,7 +8,9 @@ use pgt_treesitter_queries::{
 };
 
 use crate::{
-    NodeText, context::policy_parser::PolicyParser, sanitization::SanitizedCompletionParams,
+    NodeText,
+    context::policy_parser::{PolicyParser, PolicyStmtKind},
+    sanitization::SanitizedCompletionParams,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -40,6 +42,7 @@ pub enum WrappingNode {
     Assignment,
 }
 
+#[derive(Debug)]
 pub(crate) enum NodeUnderCursor<'a> {
     TsNode(tree_sitter::Node<'a>),
     CustomNode {
@@ -62,6 +65,13 @@ impl<'a> NodeUnderCursor<'a> {
             NodeUnderCursor::TsNode(node) => node.end_byte(),
             NodeUnderCursor::CustomNode { range, .. } => range.end().into(),
         }
+    }
+
+    pub fn range(&self) -> TextRange {
+        let start: u32 = self.start_byte().try_into().unwrap();
+        let end: u32 = self.end_byte().try_into().unwrap();
+
+        TextRange::new(start.into(), end.into())
     }
 
     pub fn kind(&self) -> &str {
@@ -182,6 +192,10 @@ impl<'a> CompletionContext<'a> {
                 kind: policy_context.node_kind.clone(),
             });
 
+            if policy_context.node_kind == "policy_table" {
+                ctx.schema_or_alias_name = policy_context.schema_name.clone();
+            }
+
             if policy_context.table_name.is_some() {
                 let mut new = HashSet::new();
                 new.insert(policy_context.table_name.unwrap());
@@ -190,7 +204,9 @@ impl<'a> CompletionContext<'a> {
             }
 
             ctx.wrapping_clause_type = match policy_context.node_kind.as_str() {
-                "policy_name" => Some(WrappingClause::PolicyName),
+                "policy_name" if policy_context.statement_kind != PolicyStmtKind::Create => {
+                    Some(WrappingClause::PolicyName)
+                }
                 "policy_role" => Some(WrappingClause::ToRole),
                 "policy_table" => Some(WrappingClause::From),
                 _ => None,
@@ -200,19 +216,11 @@ impl<'a> CompletionContext<'a> {
             ctx.gather_info_from_ts_queries();
         }
 
-        tracing::warn!("sql: {}", ctx.text);
-        tracing::warn!("position: {}", ctx.position);
-        tracing::warn!(
-            "node range: {} - {}",
-            ctx.node_under_cursor
-                .as_ref()
-                .map(|n| n.start_byte())
-                .unwrap_or(0),
-            ctx.node_under_cursor
-                .as_ref()
-                .map(|n| n.end_byte())
-                .unwrap_or(0)
-        );
+        tracing::warn!("SQL: {}", ctx.text);
+        tracing::warn!("Position: {}", ctx.position);
+        tracing::warn!("Node: {:#?}", ctx.node_under_cursor);
+        tracing::warn!("Relations: {:#?}", ctx.mentioned_relations);
+        tracing::warn!("Clause: {:#?}", ctx.wrapping_clause_type);
 
         ctx
     }

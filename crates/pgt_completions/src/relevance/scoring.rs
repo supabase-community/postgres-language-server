@@ -119,7 +119,10 @@ impl CompletionScore<'_> {
                 WrappingClause::Delete if !has_mentioned_schema => 15,
                 _ => -50,
             },
-            CompletionRelevanceData::Policy(_) => 0,
+            CompletionRelevanceData::Policy(_) => match clause_type {
+                WrappingClause::PolicyName => 25,
+                _ => -50,
+            },
         }
     }
 
@@ -187,7 +190,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Table(t) => t.schema.as_str(),
             CompletionRelevanceData::Column(c) => c.schema_name.as_str(),
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
-            CompletionRelevanceData::Policy(p) => p.name.as_str(),
+            CompletionRelevanceData::Policy(p) => p.schema_name.as_str(),
         }
     }
 

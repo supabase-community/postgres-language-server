@@ -67,18 +67,19 @@ impl CompletionFilter<'_> {
     fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
         let clause = ctx.wrapping_clause_type.as_ref();
 
+        let in_clause = |compare: WrappingClause| clause.is_some_and(|c| c == &compare);
+
         match self.data {
             CompletionRelevanceData::Table(_) => {
-                let in_select_clause = clause.is_some_and(|c| c == &WrappingClause::Select);
-                let in_where_clause = clause.is_some_and(|c| c == &WrappingClause::Where);
-
-                if in_select_clause || in_where_clause {
+                if in_clause(WrappingClause::Select)
+                    || in_clause(WrappingClause::Where)
+                    || in_clause(WrappingClause::PolicyName)
+                {
                     return None;
                 };
             }
             CompletionRelevanceData::Column(_) => {
-                let in_from_clause = clause.is_some_and(|c| c == &WrappingClause::From);
-                if in_from_clause {
+                if in_clause(WrappingClause::From) || in_clause(WrappingClause::PolicyName) {
                     return None;
                 }
 
@@ -100,7 +101,16 @@ impl CompletionFilter<'_> {
                     return None;
                 }
             }
-            _ => {}
+            CompletionRelevanceData::Policy(_) => {
+                if clause.is_none_or(|c| c != &WrappingClause::PolicyName) {
+                    return None;
+                }
+            }
+            _ => {
+                if in_clause(WrappingClause::PolicyName) {
+                    return None;
+                }
+            }
         }
 
         Some(())
@@ -140,7 +150,7 @@ impl CompletionFilter<'_> {
             }
 
             // no aliases and schemas for policies
-            CompletionRelevanceData::Policy(_) => false,
+            CompletionRelevanceData::Policy(p) => p.schema_name == p.schema_name,
         };
 
         if !matches {
