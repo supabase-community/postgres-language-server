@@ -172,14 +172,28 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        if params.text.to_lowercase().starts_with("create policy")
-            || params.text.to_lowercase().starts_with("alter policy")
-            || params.text.to_lowercase().starts_with("drop policy")
-        {
-        } else {
-            ctx.gather_tree_context();
-            ctx.gather_info_from_ts_queries();
-        }
+        // if params.text.to_lowercase().starts_with("create policy")
+        //     || params.text.to_lowercase().starts_with("alter policy")
+        //     || params.text.to_lowercase().starts_with("drop policy")
+        // {
+        // } else {
+        ctx.gather_tree_context();
+        ctx.gather_info_from_ts_queries();
+        // }
+
+        tracing::warn!("sql: {}", ctx.text);
+        tracing::warn!("position: {}", ctx.position);
+        tracing::warn!(
+            "node range: {} - {}",
+            ctx.node_under_cursor
+                .as_ref()
+                .map(|n| n.start_byte())
+                .unwrap_or(0),
+            ctx.node_under_cursor
+                .as_ref()
+                .map(|n| n.end_byte())
+                .unwrap_or(0)
+        );
 
         ctx
     }
@@ -419,259 +433,281 @@ impl<'a> CompletionContext<'a> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         context::{CompletionContext, NodeText, WrappingClause},
-//         sanitization::SanitizedCompletionParams,
-//         test_helper::{CURSOR_POS, get_text_and_position},
-//     };
+#[cfg(test)]
+mod tests {
+    use crate::{
+        context::{CompletionContext, NodeText, WrappingClause},
+        sanitization::SanitizedCompletionParams,
+        test_helper::{CURSOR_POS, get_text_and_position},
+    };
 
-//     fn get_tree(input: &str) -> tree_sitter::Tree {
-//         let mut parser = tree_sitter::Parser::new();
-//         parser
-//             .set_language(tree_sitter_sql::language())
-//             .expect("Couldn't set language");
+    use super::NodeUnderCursor;
 
-//         parser.parse(input, None).expect("Unable to parse tree")
-//     }
+    fn get_tree(input: &str) -> tree_sitter::Tree {
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(tree_sitter_sql::language())
+            .expect("Couldn't set language");
 
-//     #[test]
-//     fn identifies_clauses() {
-//         let test_cases = vec![
-//             (
-//                 format!("Select {}* from users;", CURSOR_POS),
-//                 WrappingClause::Select,
-//             ),
-//             (
-//                 format!("Select * from u{};", CURSOR_POS),
-//                 WrappingClause::From,
-//             ),
-//             (
-//                 format!("Select {}* from users where n = 1;", CURSOR_POS),
-//                 WrappingClause::Select,
-//             ),
-//             (
-//                 format!("Select * from users where {}n = 1;", CURSOR_POS),
-//                 WrappingClause::Where,
-//             ),
-//             (
-//                 format!("update users set u{} = 1 where n = 2;", CURSOR_POS),
-//                 WrappingClause::Update,
-//             ),
-//             (
-//                 format!("update users set u = 1 where n{} = 2;", CURSOR_POS),
-//                 WrappingClause::Where,
-//             ),
-//             (
-//                 format!("delete{} from users;", CURSOR_POS),
-//                 WrappingClause::Delete,
-//             ),
-//             (
-//                 format!("delete from {}users;", CURSOR_POS),
-//                 WrappingClause::From,
-//             ),
-//             (
-//                 format!("select name, age, location from public.u{}sers", CURSOR_POS),
-//                 WrappingClause::From,
-//             ),
-//         ];
+        parser.parse(input, None).expect("Unable to parse tree")
+    }
 
-//         for (query, expected_clause) in test_cases {
-//             let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn identifies_clauses() {
+        let test_cases = vec![
+            (
+                format!("Select {}* from users;", CURSOR_POS),
+                WrappingClause::Select,
+            ),
+            (
+                format!("Select * from u{};", CURSOR_POS),
+                WrappingClause::From,
+            ),
+            (
+                format!("Select {}* from users where n = 1;", CURSOR_POS),
+                WrappingClause::Select,
+            ),
+            (
+                format!("Select * from users where {}n = 1;", CURSOR_POS),
+                WrappingClause::Where,
+            ),
+            (
+                format!("update users set u{} = 1 where n = 2;", CURSOR_POS),
+                WrappingClause::Update,
+            ),
+            (
+                format!("update users set u = 1 where n{} = 2;", CURSOR_POS),
+                WrappingClause::Where,
+            ),
+            (
+                format!("delete{} from users;", CURSOR_POS),
+                WrappingClause::Delete,
+            ),
+            (
+                format!("delete from {}users;", CURSOR_POS),
+                WrappingClause::From,
+            ),
+            (
+                format!("select name, age, location from public.u{}sers", CURSOR_POS),
+                WrappingClause::From,
+            ),
+        ];
 
-//             let tree = get_tree(text.as_str());
+        for (query, expected_clause) in test_cases {
+            let (position, text) = get_text_and_position(query.as_str().into());
 
-//             let params = SanitizedCompletionParams {
-//                 position: (position as u32).into(),
-//                 text,
-//                 tree: std::borrow::Cow::Owned(tree),
-//                 schema: &pgt_schema_cache::SchemaCache::default(),
-//             };
+            let tree = get_tree(text.as_str());
 
-//             let ctx = CompletionContext::new(&params);
+            let params = SanitizedCompletionParams {
+                position: (position as u32).into(),
+                text,
+                tree: std::borrow::Cow::Owned(tree),
+                schema: &pgt_schema_cache::SchemaCache::default(),
+            };
 
-//             assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
-//         }
-//     }
+            let ctx = CompletionContext::new(&params);
 
-//     #[test]
-//     fn identifies_schema() {
-//         let test_cases = vec![
-//             (
-//                 format!("Select * from private.u{}", CURSOR_POS),
-//                 Some("private"),
-//             ),
-//             (
-//                 format!("Select * from private.u{}sers()", CURSOR_POS),
-//                 Some("private"),
-//             ),
-//             (format!("Select * from u{}sers", CURSOR_POS), None),
-//             (format!("Select * from u{}sers()", CURSOR_POS), None),
-//         ];
+            assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
+        }
+    }
 
-//         for (query, expected_schema) in test_cases {
-//             let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn identifies_schema() {
+        let test_cases = vec![
+            (
+                format!("Select * from private.u{}", CURSOR_POS),
+                Some("private"),
+            ),
+            (
+                format!("Select * from private.u{}sers()", CURSOR_POS),
+                Some("private"),
+            ),
+            (format!("Select * from u{}sers", CURSOR_POS), None),
+            (format!("Select * from u{}sers()", CURSOR_POS), None),
+        ];
 
-//             let tree = get_tree(text.as_str());
-//             let params = SanitizedCompletionParams {
-//                 position: (position as u32).into(),
-//                 text,
-//                 tree: std::borrow::Cow::Owned(tree),
-//                 schema: &pgt_schema_cache::SchemaCache::default(),
-//             };
+        for (query, expected_schema) in test_cases {
+            let (position, text) = get_text_and_position(query.as_str().into());
 
-//             let ctx = CompletionContext::new(&params);
+            let tree = get_tree(text.as_str());
+            let params = SanitizedCompletionParams {
+                position: (position as u32).into(),
+                text,
+                tree: std::borrow::Cow::Owned(tree),
+                schema: &pgt_schema_cache::SchemaCache::default(),
+            };
 
-//             assert_eq!(
-//                 ctx.schema_or_alias_name,
-//                 expected_schema.map(|f| f.to_string())
-//             );
-//         }
-//     }
+            let ctx = CompletionContext::new(&params);
 
-//     #[test]
-//     fn identifies_invocation() {
-//         let test_cases = vec![
-//             (format!("Select * from u{}sers", CURSOR_POS), false),
-//             (format!("Select * from u{}sers()", CURSOR_POS), true),
-//             (format!("Select cool{};", CURSOR_POS), false),
-//             (format!("Select cool{}();", CURSOR_POS), true),
-//             (
-//                 format!("Select upp{}ercase as title from users;", CURSOR_POS),
-//                 false,
-//             ),
-//             (
-//                 format!("Select upp{}ercase(name) as title from users;", CURSOR_POS),
-//                 true,
-//             ),
-//         ];
+            assert_eq!(
+                ctx.schema_or_alias_name,
+                expected_schema.map(|f| f.to_string())
+            );
+        }
+    }
 
-//         for (query, is_invocation) in test_cases {
-//             let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn identifies_invocation() {
+        let test_cases = vec![
+            (format!("Select * from u{}sers", CURSOR_POS), false),
+            (format!("Select * from u{}sers()", CURSOR_POS), true),
+            (format!("Select cool{};", CURSOR_POS), false),
+            (format!("Select cool{}();", CURSOR_POS), true),
+            (
+                format!("Select upp{}ercase as title from users;", CURSOR_POS),
+                false,
+            ),
+            (
+                format!("Select upp{}ercase(name) as title from users;", CURSOR_POS),
+                true,
+            ),
+        ];
 
-//             let tree = get_tree(text.as_str());
-//             let params = SanitizedCompletionParams {
-//                 position: (position as u32).into(),
-//                 text,
-//                 tree: std::borrow::Cow::Owned(tree),
-//                 schema: &pgt_schema_cache::SchemaCache::default(),
-//             };
+        for (query, is_invocation) in test_cases {
+            let (position, text) = get_text_and_position(query.as_str().into());
 
-//             let ctx = CompletionContext::new(&params);
+            let tree = get_tree(text.as_str());
+            let params = SanitizedCompletionParams {
+                position: (position as u32).into(),
+                text,
+                tree: std::borrow::Cow::Owned(tree),
+                schema: &pgt_schema_cache::SchemaCache::default(),
+            };
 
-//             assert_eq!(ctx.is_invocation, is_invocation);
-//         }
-//     }
+            let ctx = CompletionContext::new(&params);
 
-//     #[test]
-//     fn does_not_fail_on_leading_whitespace() {
-//         let cases = vec![
-//             format!("{}      select * from", CURSOR_POS),
-//             format!(" {}      select * from", CURSOR_POS),
-//         ];
+            assert_eq!(ctx.is_invocation, is_invocation);
+        }
+    }
 
-//         for query in cases {
-//             let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn does_not_fail_on_leading_whitespace() {
+        let cases = vec![
+            format!("{}      select * from", CURSOR_POS),
+            format!(" {}      select * from", CURSOR_POS),
+        ];
 
-//             let tree = get_tree(text.as_str());
+        for query in cases {
+            let (position, text) = get_text_and_position(query.as_str().into());
 
-//             let params = SanitizedCompletionParams {
-//                 position: (position as u32).into(),
-//                 text,
-//                 tree: std::borrow::Cow::Owned(tree),
-//                 schema: &pgt_schema_cache::SchemaCache::default(),
-//             };
+            let tree = get_tree(text.as_str());
 
-//             let ctx = CompletionContext::new(&params);
+            let params = SanitizedCompletionParams {
+                position: (position as u32).into(),
+                text,
+                tree: std::borrow::Cow::Owned(tree),
+                schema: &pgt_schema_cache::SchemaCache::default(),
+            };
 
-//             let node = ctx.node_under_cursor.unwrap();
+            let ctx = CompletionContext::new(&params);
 
-//             assert_eq!(
-//                 ctx.get_ts_node_content(node),
-//                 Some(NodeText::Original("select"))
-//             );
+            let node = ctx.node_under_cursor.as_ref().unwrap();
 
-//             assert_eq!(
-//                 ctx.wrapping_clause_type,
-//                 Some(crate::context::WrappingClause::Select)
-//             );
-//         }
-//     }
+            match node {
+                NodeUnderCursor::TsNode(node) => {
+                    assert_eq!(
+                        ctx.get_ts_node_content(node),
+                        Some(NodeText::Original("select"))
+                    );
 
-//     #[test]
-//     fn does_not_fail_on_trailing_whitespace() {
-//         let query = format!("select * from   {}", CURSOR_POS);
+                    assert_eq!(
+                        ctx.wrapping_clause_type,
+                        Some(crate::context::WrappingClause::Select)
+                    );
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
 
-//         let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn does_not_fail_on_trailing_whitespace() {
+        let query = format!("select * from   {}", CURSOR_POS);
 
-//         let tree = get_tree(text.as_str());
+        let (position, text) = get_text_and_position(query.as_str().into());
 
-//         let params = SanitizedCompletionParams {
-//             position: (position as u32).into(),
-//             text,
-//             tree: std::borrow::Cow::Owned(tree),
-//             schema: &pgt_schema_cache::SchemaCache::default(),
-//         };
+        let tree = get_tree(text.as_str());
 
-//         let ctx = CompletionContext::new(&params);
+        let params = SanitizedCompletionParams {
+            position: (position as u32).into(),
+            text,
+            tree: std::borrow::Cow::Owned(tree),
+            schema: &pgt_schema_cache::SchemaCache::default(),
+        };
 
-//         let node = ctx.node_under_cursor.unwrap();
+        let ctx = CompletionContext::new(&params);
 
-//         assert_eq!(
-//             ctx.get_ts_node_content(node),
-//             Some(NodeText::Original("from"))
-//         );
-//     }
+        let node = ctx.node_under_cursor.as_ref().unwrap();
 
-//     #[test]
-//     fn does_not_fail_with_empty_statements() {
-//         let query = format!("{}", CURSOR_POS);
+        match node {
+            NodeUnderCursor::TsNode(node) => {
+                assert_eq!(
+                    ctx.get_ts_node_content(&node),
+                    Some(NodeText::Original("from"))
+                );
+            }
+            _ => unreachable!(),
+        }
+    }
 
-//         let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn does_not_fail_with_empty_statements() {
+        let query = format!("{}", CURSOR_POS);
 
-//         let tree = get_tree(text.as_str());
+        let (position, text) = get_text_and_position(query.as_str().into());
 
-//         let params = SanitizedCompletionParams {
-//             position: (position as u32).into(),
-//             text,
-//             tree: std::borrow::Cow::Owned(tree),
-//             schema: &pgt_schema_cache::SchemaCache::default(),
-//         };
+        let tree = get_tree(text.as_str());
 
-//         let ctx = CompletionContext::new(&params);
+        let params = SanitizedCompletionParams {
+            position: (position as u32).into(),
+            text,
+            tree: std::borrow::Cow::Owned(tree),
+            schema: &pgt_schema_cache::SchemaCache::default(),
+        };
 
-//         let node = ctx.node_under_cursor.unwrap();
+        let ctx = CompletionContext::new(&params);
 
-//         assert_eq!(ctx.get_ts_node_content(&node), Some(NodeText::Original("")));
-//         assert_eq!(ctx.wrapping_clause_type, None);
-//     }
+        let node = ctx.node_under_cursor.as_ref().unwrap();
 
-//     #[test]
-//     fn does_not_fail_on_incomplete_keywords() {
-//         //  Instead of autocompleting "FROM", we'll assume that the user
-//         // is selecting a certain column name, such as `frozen_account`.
-//         let query = format!("select * fro{}", CURSOR_POS);
+        match node {
+            NodeUnderCursor::TsNode(node) => {
+                assert_eq!(ctx.get_ts_node_content(&node), Some(NodeText::Original("")));
+                assert_eq!(ctx.wrapping_clause_type, None);
+            }
+            _ => unreachable!(),
+        }
+    }
 
-//         let (position, text) = get_text_and_position(query.as_str().into());
+    #[test]
+    fn does_not_fail_on_incomplete_keywords() {
+        //  Instead of autocompleting "FROM", we'll assume that the user
+        // is selecting a certain column name, such as `frozen_account`.
+        let query = format!("select * fro{}", CURSOR_POS);
 
-//         let tree = get_tree(text.as_str());
+        let (position, text) = get_text_and_position(query.as_str().into());
 
-//         let params = SanitizedCompletionParams {
-//             position: (position as u32).into(),
-//             text,
-//             tree: std::borrow::Cow::Owned(tree),
-//             schema: &pgt_schema_cache::SchemaCache::default(),
-//         };
+        let tree = get_tree(text.as_str());
 
-//         let ctx = CompletionContext::new(&params);
+        let params = SanitizedCompletionParams {
+            position: (position as u32).into(),
+            text,
+            tree: std::borrow::Cow::Owned(tree),
+            schema: &pgt_schema_cache::SchemaCache::default(),
+        };
 
-//         let node = ctx.node_under_cursor.unwrap();
+        let ctx = CompletionContext::new(&params);
 
-//         assert_eq!(
-//             ctx.get_ts_node_content(node),
-//             Some(NodeText::Original("fro"))
-//         );
-//         assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
-//     }
-// }
+        let node = ctx.node_under_cursor.as_ref().unwrap();
+
+        match node {
+            NodeUnderCursor::TsNode(node) => {
+                assert_eq!(
+                    ctx.get_ts_node_content(&node),
+                    Some(NodeText::Original("fro"))
+                );
+                assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
+            }
+            _ => unreachable!(),
+        }
+    }
+}
