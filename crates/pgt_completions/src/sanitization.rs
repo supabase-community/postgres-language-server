@@ -4,6 +4,8 @@ use pgt_text_size::TextSize;
 
 use crate::CompletionParams;
 
+static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
+
 pub(crate) struct SanitizedCompletionParams<'a> {
     pub position: TextSize,
     pub text: String,
@@ -14,6 +16,28 @@ pub(crate) struct SanitizedCompletionParams<'a> {
 pub fn benchmark_sanitization(params: CompletionParams) -> String {
     let params: SanitizedCompletionParams = params.into();
     params.text
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub(crate) enum NodeText {
+    Replaced,
+    Original(String),
+}
+
+impl From<&str> for NodeText {
+    fn from(value: &str) -> Self {
+        if value == SANITIZED_TOKEN {
+            NodeText::Replaced
+        } else {
+            NodeText::Original(value.into())
+        }
+    }
+}
+
+impl From<String> for NodeText {
+    fn from(value: String) -> Self {
+        NodeText::from(value.as_str())
+    }
 }
 
 impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
@@ -32,8 +56,6 @@ where
         }
     }
 }
-
-static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
 
 impl<'larger, 'smaller> SanitizedCompletionParams<'smaller>
 where

@@ -7,7 +7,9 @@ use pgt_treesitter_queries::{
     queries::{self, QueryResult},
 };
 
-use crate::sanitization::SanitizedCompletionParams;
+use crate::{
+    NodeText, context::policy_parser::PolicyParser, sanitization::SanitizedCompletionParams,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum WrappingClause<'a> {
@@ -19,12 +21,8 @@ pub enum WrappingClause<'a> {
     },
     Update,
     Delete,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub(crate) enum NodeText<'a> {
-    Replaced,
-    Original(&'a str),
+    PolicyName,
+    ToRole,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -45,7 +43,7 @@ pub enum WrappingNode {
 pub(crate) enum NodeUnderCursor<'a> {
     TsNode(tree_sitter::Node<'a>),
     CustomNode {
-        text: NodeText<'a>,
+        text: NodeText,
         range: TextRange,
         kind: String,
     },
@@ -172,14 +170,35 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        // if params.text.to_lowercase().starts_with("create policy")
-        //     || params.text.to_lowercase().starts_with("alter policy")
-        //     || params.text.to_lowercase().starts_with("drop policy")
-        // {
-        // } else {
-        ctx.gather_tree_context();
-        ctx.gather_info_from_ts_queries();
-        // }
+        if params.text.to_lowercase().starts_with("create policy")
+            || params.text.to_lowercase().starts_with("alter policy")
+            || params.text.to_lowercase().starts_with("drop policy")
+        {
+            let policy_context = PolicyParser::get_context(&ctx.text, ctx.position);
+
+            ctx.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+                text: policy_context.node_text.into(),
+                range: policy_context.node_range,
+                kind: policy_context.node_kind.clone(),
+            });
+
+            if policy_context.table_name.is_some() {
+                let mut new = HashSet::new();
+                new.insert(policy_context.table_name.unwrap());
+                ctx.mentioned_relations
+                    .insert(policy_context.schema_name, new);
+            }
+
+            ctx.wrapping_clause_type = match policy_context.node_kind.as_str() {
+                "policy_name" => Some(WrappingClause::PolicyName),
+                "policy_role" => Some(WrappingClause::ToRole),
+                "policy_table" => Some(WrappingClause::From),
+                _ => None,
+            };
+        } else {
+            ctx.gather_tree_context();
+            ctx.gather_info_from_ts_queries();
+        }
 
         tracing::warn!("sql: {}", ctx.text);
         tracing::warn!("position: {}", ctx.position);
@@ -237,13 +256,13 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<NodeText<'a>> {
+    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<NodeText> {
         let source = self.text;
         ts_node.utf8_text(source.as_bytes()).ok().map(|txt| {
             if SanitizedCompletionParams::is_sanitized_token(txt) {
                 NodeText::Replaced
             } else {
-                NodeText::Original(txt)
+                NodeText::Original(txt.into())
             }
         })
     }
@@ -386,7 +405,7 @@ impl<'a> CompletionContext<'a> {
                 NodeText::Original(txt) => Some(txt),
                 NodeText::Replaced => None,
             }) {
-                match txt {
+                match txt.as_str() {
                     "where" => return Some(WrappingClause::Where),
                     "update" => return Some(WrappingClause::Update),
                     "select" => return Some(WrappingClause::Select),
@@ -436,7 +455,8 @@ impl<'a> CompletionContext<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        context::{CompletionContext, NodeText, WrappingClause},
+        NodeText,
+        context::{CompletionContext, WrappingClause},
         sanitization::SanitizedCompletionParams,
         test_helper::{CURSOR_POS, get_text_and_position},
     };
@@ -607,7 +627,7 @@ mod tests {
                 NodeUnderCursor::TsNode(node) => {
                     assert_eq!(
                         ctx.get_ts_node_content(node),
-                        Some(NodeText::Original("select"))
+                        Some(NodeText::Original("select".into()))
                     );
 
                     assert_eq!(
@@ -643,7 +663,7 @@ mod tests {
             NodeUnderCursor::TsNode(node) => {
                 assert_eq!(
                     ctx.get_ts_node_content(&node),
-                    Some(NodeText::Original("from"))
+                    Some(NodeText::Original("from".into()))
                 );
             }
             _ => unreachable!(),
@@ -671,7 +691,10 @@ mod tests {
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(ctx.get_ts_node_content(&node), Some(NodeText::Original("")));
+                assert_eq!(
+                    ctx.get_ts_node_content(&node),
+                    Some(NodeText::Original("".into()))
+                );
                 assert_eq!(ctx.wrapping_clause_type, None);
             }
             _ => unreachable!(),
@@ -703,7 +726,7 @@ mod tests {
             NodeUnderCursor::TsNode(node) => {
                 assert_eq!(
                     ctx.get_ts_node_content(&node),
-                    Some(NodeText::Original("fro"))
+                    Some(NodeText::Original("fro".into()))
                 );
                 assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
             }

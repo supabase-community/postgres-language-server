@@ -1,9 +1,9 @@
-use std::{env::current_exe, iter::Peekable};
+use std::iter::Peekable;
 
 use pgt_text_size::{TextRange, TextSize};
 
 #[derive(Default, Debug, PartialEq, Eq)]
-pub enum PolicyStmtKind {
+pub(crate) enum PolicyStmtKind {
     #[default]
     Create,
 
@@ -90,17 +90,17 @@ fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
-pub struct PolicyContext {
-    policy_name: Option<String>,
-    table_name: Option<String>,
-    schema_name: Option<String>,
-    statement_kind: PolicyStmtKind,
-    node_text: String,
-    node_range: TextRange,
-    node_kind: String,
+pub(crate) struct PolicyContext {
+    pub policy_name: Option<String>,
+    pub table_name: Option<String>,
+    pub schema_name: Option<String>,
+    pub statement_kind: PolicyStmtKind,
+    pub node_text: String,
+    pub node_range: TextRange,
+    pub node_kind: String,
 }
 
-pub struct PolicyParser {
+pub(crate) struct PolicyParser {
     tokens: Peekable<std::vec::IntoIter<WordWithIndex>>,
     previous_token: Option<WordWithIndex>,
     current_token: Option<WordWithIndex>,
@@ -110,6 +110,13 @@ pub struct PolicyParser {
 
 impl PolicyParser {
     pub(crate) fn get_context(sql: &str, cursor_position: usize) -> PolicyContext {
+        assert!(
+            sql.starts_with("create policy")
+                || sql.starts_with("drop policy")
+                || sql.starts_with("alter policy"),
+            "PolicyParser should only be used for policy statements. Developer error!"
+        );
+
         match sql_to_words(sql) {
             Ok(tokens) => {
                 let parser = PolicyParser {
