@@ -173,45 +173,44 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        if params.text.to_lowercase().starts_with("create policy")
-            || params.text.to_lowercase().starts_with("alter policy")
-            || params.text.to_lowercase().starts_with("drop policy")
-        {
-            let policy_context = PolicyParser::get_context(&ctx.text, ctx.position);
-
-            ctx.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-                text: policy_context.node_text.into(),
-                range: policy_context.node_range,
-                kind: policy_context.node_kind.clone(),
-            });
-
-            if policy_context.node_kind == "policy_table" {
-                ctx.schema_or_alias_name = policy_context.schema_name.clone();
-            }
-
-            if policy_context.table_name.is_some() {
-                let mut new = HashSet::new();
-                new.insert(policy_context.table_name.unwrap());
-                ctx.mentioned_relations
-                    .insert(policy_context.schema_name, new);
-            }
-
-            ctx.wrapping_clause_type = match policy_context.node_kind.as_str() {
-                "policy_name" if policy_context.statement_kind != PolicyStmtKind::Create => {
-                    Some(WrappingClause::PolicyName)
-                }
-                "policy_role" => Some(WrappingClause::ToRoleAssignment),
-                "policy_table" => Some(WrappingClause::From),
-                _ => None,
-            };
+        if PolicyParser::looks_like_policy_stmt(&params.text) {
+            ctx.gather_policy_context();
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
         }
 
-        tracing::warn!("{:#?}", ctx.get_node_under_cursor_content());
-
         ctx
+    }
+
+    fn gather_policy_context(&mut self) {
+        let policy_context = PolicyParser::get_context(&self.text, self.position);
+
+        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+            text: policy_context.node_text.into(),
+            range: policy_context.node_range,
+            kind: policy_context.node_kind.clone(),
+        });
+
+        if policy_context.node_kind == "policy_table" {
+            self.schema_or_alias_name = policy_context.schema_name.clone();
+        }
+
+        if policy_context.table_name.is_some() {
+            let mut new = HashSet::new();
+            new.insert(policy_context.table_name.unwrap());
+            self.mentioned_relations
+                .insert(policy_context.schema_name, new);
+        }
+
+        self.wrapping_clause_type = match policy_context.node_kind.as_str() {
+            "policy_name" if policy_context.statement_kind != PolicyStmtKind::Create => {
+                Some(WrappingClause::PolicyName)
+            }
+            "policy_role" => Some(WrappingClause::ToRoleAssignment),
+            "policy_table" => Some(WrappingClause::From),
+            _ => None,
+        };
     }
 
     fn gather_info_from_ts_queries(&mut self) {

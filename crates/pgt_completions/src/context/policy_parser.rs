@@ -117,12 +117,17 @@ pub(crate) struct PolicyParser {
 }
 
 impl PolicyParser {
+    pub(crate) fn looks_like_policy_stmt(sql: &str) -> bool {
+        let lowercased = sql.to_ascii_lowercase();
+        let trimmed = lowercased.trim();
+        trimmed.starts_with("create policy")
+            || trimmed.starts_with("drop policy")
+            || trimmed.starts_with("alter policy")
+    }
+
     pub(crate) fn get_context(sql: &str, cursor_position: usize) -> PolicyContext {
-        let trimmed = sql.trim();
         assert!(
-            trimmed.starts_with("create policy")
-                || trimmed.starts_with("drop policy")
-                || trimmed.starts_with("alter policy"),
+            Self::looks_like_policy_stmt(sql),
             "PolicyParser should only be used for policy statements. Developer error!"
         );
 
