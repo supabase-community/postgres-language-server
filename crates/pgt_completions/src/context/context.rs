@@ -24,7 +24,7 @@ pub enum WrappingClause<'a> {
     Update,
     Delete,
     PolicyName,
-    ToRole,
+    ToRoleAssignment,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -200,7 +200,7 @@ impl<'a> CompletionContext<'a> {
                 "policy_name" if policy_context.statement_kind != PolicyStmtKind::Create => {
                     Some(WrappingClause::PolicyName)
                 }
-                "policy_role" => Some(WrappingClause::ToRole),
+                "policy_role" => Some(WrappingClause::ToRoleAssignment),
                 "policy_table" => Some(WrappingClause::From),
                 _ => None,
             };
