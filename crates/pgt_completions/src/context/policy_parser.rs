@@ -19,7 +19,7 @@ struct WordWithIndex {
 }
 
 impl WordWithIndex {
-    fn under_cursor(&self, cursor_pos: usize) -> bool {
+    fn is_under_cursor(&self, cursor_pos: usize) -> bool {
         self.start <= cursor_pos && self.end > cursor_pos
     }
 
@@ -30,54 +30,58 @@ impl WordWithIndex {
     }
 }
 
+/// Note: A policy name within quotation marks will be considered a single word.
 fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
     let mut words = vec![];
 
-    let mut start: Option<usize> = None;
+    let mut start_of_word: Option<usize> = None;
     let mut current_word = String::new();
     let mut in_quotation_marks = false;
 
-    for (pos, c) in sql.char_indices() {
-        if (c.is_ascii_whitespace() || c == ';')
+    for (current_position, current_char) in sql.char_indices() {
+        if (current_char.is_ascii_whitespace() || current_char == ';')
             && !current_word.is_empty()
-            && start.is_some()
+            && start_of_word.is_some()
             && !in_quotation_marks
         {
             words.push(WordWithIndex {
                 word: current_word,
-                start: start.unwrap(),
-                end: pos,
+                start: start_of_word.unwrap(),
+                end: current_position,
             });
+
             current_word = String::new();
-            start = None;
-        } else if (c.is_ascii_whitespace() || c == ';') && current_word.is_empty() {
+            start_of_word = None;
+        } else if (current_char.is_ascii_whitespace() || current_char == ';')
+            && current_word.is_empty()
+        {
             // do nothing
-        } else if c == '"' && start.is_none() {
+        } else if current_char == '"' && start_of_word.is_none() {
             in_quotation_marks = true;
-            start = Some(pos);
-            current_word.push(c);
-        } else if c == '"' && start.is_some() {
-            current_word.push(c);
+            current_word.push(current_char);
+            start_of_word = Some(current_position);
+        } else if current_char == '"' && start_of_word.is_some() {
+            current_word.push(current_char);
             words.push(WordWithIndex {
                 word: current_word,
-                start: start.unwrap(),
-                end: pos + 1,
+                start: start_of_word.unwrap(),
+                end: current_position + 1,
             });
             in_quotation_marks = false;
-            start = None;
+            start_of_word = None;
             current_word = String::new()
-        } else if start.is_some() {
-            current_word.push(c)
+        } else if start_of_word.is_some() {
+            current_word.push(current_char)
         } else {
-            start = Some(pos);
-            current_word.push(c);
+            start_of_word = Some(current_position);
+            current_word.push(current_char);
         }
     }
 
-    if !current_word.is_empty() && start.is_some() {
+    if !current_word.is_empty() && start_of_word.is_some() {
         words.push(WordWithIndex {
             word: current_word,
-            start: start.unwrap(),
+            start: start_of_word.unwrap(),
             end: sql.len(),
         });
     }
@@ -100,6 +104,10 @@ pub(crate) struct PolicyContext {
     pub node_kind: String,
 }
 
+/// Simple parser that'll turn a policy-related statement into a context object required for
+/// completions.
+/// The parser will only work if the (trimmed) sql starts with `create policy`, `drop policy`, or `alter policy`.
+/// It can only parse policy statements.
 pub(crate) struct PolicyParser {
     tokens: Peekable<std::vec::IntoIter<WordWithIndex>>,
     previous_token: Option<WordWithIndex>,
@@ -136,7 +144,7 @@ impl PolicyParser {
 
     fn parse(mut self) -> PolicyContext {
         while let Some(token) = self.advance() {
-            if token.under_cursor(self.cursor_position) {
+            if token.is_under_cursor(self.cursor_position) {
                 self.handle_token_under_cursor(token);
             } else {
                 self.handle_token(token);
@@ -161,9 +169,8 @@ impl PolicyParser {
             }
             "on" => {
                 if token.word.contains('.') {
-                    let mut parts = token.word.split('.');
+                    let (schema_name, table_name) = self.schema_and_table_name(&token);
 
-                    let schema_name: String = parts.next().unwrap().into();
                     let schema_name_len = schema_name.len();
                     self.context.schema_name = Some(schema_name);
 
@@ -176,8 +183,16 @@ impl PolicyParser {
                         .expect("Text too long");
 
                     self.context.node_range = range_without_schema;
-                    self.context.node_text = parts.next().unwrap().into();
                     self.context.node_kind = "policy_table".into();
+
+                    self.context.node_text = match table_name {
+                        Some(node_text) => node_text,
+
+                        // In practice, this should never happen.
+                        // The completion sanitization will add a word after a `.` if nothing follows it;
+                        // the token_text will then look like `schema.REPLACED_TOKEN`.
+                        None => String::new(),
+                    };
                 } else {
                     self.context.node_range = token.get_range();
                     self.context.node_text = token.word;
@@ -209,7 +224,7 @@ impl PolicyParser {
             }
             "on" => self.table_with_schema(),
 
-            // skip the "to" so we don't parse it as the TO rolename
+            // skip the "to" so we don't parse it as the TO rolename when it's under the cursor
             "rename" if self.next_matches("to") => {
                 self.advance();
             }
@@ -231,6 +246,7 @@ impl PolicyParser {
     }
 
     fn advance(&mut self) -> Option<WordWithIndex> {
+        // we can't peek back n an iterator, so we'll have to keep track manually.
         self.previous_token = self.current_token.take();
         self.current_token = self.tokens.next();
         self.current_token.clone()
@@ -238,10 +254,10 @@ impl PolicyParser {
 
     fn table_with_schema(&mut self) {
         self.advance().map(|token| {
-            if token.under_cursor(self.cursor_position) {
+            if token.is_under_cursor(self.cursor_position) {
                 self.handle_token_under_cursor(token);
             } else if token.word.contains('.') {
-                let (schema, maybe_table) = self.schema_and_table_name(token);
+                let (schema, maybe_table) = self.schema_and_table_name(&token);
                 self.context.schema_name = Some(schema);
                 self.context.table_name = maybe_table;
             } else {
@@ -250,7 +266,7 @@ impl PolicyParser {
         });
     }
 
-    fn schema_and_table_name(&self, token: WordWithIndex) -> (String, Option<String>) {
+    fn schema_and_table_name(&self, token: &WordWithIndex) -> (String, Option<String>) {
         let mut parts = token.word.split('.');
 
         (
