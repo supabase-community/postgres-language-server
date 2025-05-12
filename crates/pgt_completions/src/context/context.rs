@@ -67,13 +67,6 @@ impl<'a> NodeUnderCursor<'a> {
         }
     }
 
-    pub fn range(&self) -> TextRange {
-        let start: u32 = self.start_byte().try_into().unwrap();
-        let end: u32 = self.end_byte().try_into().unwrap();
-
-        TextRange::new(start.into(), end.into())
-    }
-
     pub fn kind(&self) -> &str {
         match self {
             NodeUnderCursor::TsNode(node) => node.kind(),
@@ -215,12 +208,6 @@ impl<'a> CompletionContext<'a> {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
         }
-
-        tracing::warn!("SQL: {}", ctx.text);
-        tracing::warn!("Position: {}", ctx.position);
-        tracing::warn!("Node: {:#?}", ctx.node_under_cursor);
-        tracing::warn!("Relations: {:#?}", ctx.mentioned_relations);
-        tracing::warn!("Clause: {:#?}", ctx.wrapping_clause_type);
 
         ctx
     }

@@ -481,6 +481,7 @@ impl Workspace for WorkspaceServer {
             Some(pool) => pool,
             None => {
                 tracing::debug!("No connection to database. Skipping completions.");
+                tracing::warn!("No connection to database.");
                 return Ok(CompletionsResult::default());
             }
         };
@@ -488,8 +489,12 @@ impl Workspace for WorkspaceServer {
         let schema_cache = self.schema_cache.load(pool)?;
 
         match get_statement_for_completions(&parsed_doc, params.position) {
-            None => Ok(CompletionsResult::default()),
+            None => {
+                tracing::warn!("No statement found.");
+                Ok(CompletionsResult::default())
+            }
             Some((_id, range, content, cst)) => {
+                tracing::warn!("found matching statement, content: {}", content);
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {

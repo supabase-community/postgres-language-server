@@ -110,10 +110,11 @@ pub(crate) struct PolicyParser {
 
 impl PolicyParser {
     pub(crate) fn get_context(sql: &str, cursor_position: usize) -> PolicyContext {
+        let trimmed = sql.trim();
         assert!(
-            sql.starts_with("create policy")
-                || sql.starts_with("drop policy")
-                || sql.starts_with("alter policy"),
+            trimmed.starts_with("create policy")
+                || trimmed.starts_with("drop policy")
+                || trimmed.starts_with("alter policy"),
             "PolicyParser should only be used for policy statements. Developer error!"
         );
 

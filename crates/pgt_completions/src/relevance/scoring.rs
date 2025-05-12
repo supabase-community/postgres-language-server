@@ -36,21 +36,23 @@ impl CompletionScore<'_> {
 
     fn check_matches_query_input(&mut self, ctx: &CompletionContext) {
         let content = match ctx.get_node_under_cursor_content() {
-            Some(c) => c,
+            Some(c) => c.replace('"', ""),
             None => return,
         };
 
         let name = match self.data {
-            CompletionRelevanceData::Function(f) => f.name.as_str(),
-            CompletionRelevanceData::Table(t) => t.name.as_str(),
-            CompletionRelevanceData::Column(c) => c.name.as_str(),
-            CompletionRelevanceData::Schema(s) => s.name.as_str(),
-            CompletionRelevanceData::Policy(p) => p.name.as_str(),
+            CompletionRelevanceData::Function(f) => f.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Table(t) => t.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Column(c) => c.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
 
-        if let Some(score) = fz_matcher.fuzzy_match(name, content.as_str()) {
+        if let Some(score) =
+            fz_matcher.fuzzy_match(name.as_str(), content.to_ascii_lowercase().as_str())
+        {
             let scorei32: i32 = score
                 .try_into()
                 .expect("The length of the input exceeds i32 capacity");
