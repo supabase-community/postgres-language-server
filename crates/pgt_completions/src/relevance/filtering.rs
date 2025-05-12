@@ -71,8 +71,9 @@ impl CompletionFilter<'_> {
 
         match self.data {
             CompletionRelevanceData::Table(_) => {
-                if in_clause(WrappingClause::Select) || in_clause(WrappingClause::Where)
-                // || in_clause(WrappingClause::PolicyName)
+                if in_clause(WrappingClause::Select)
+                    || in_clause(WrappingClause::Where)
+                    || in_clause(WrappingClause::PolicyName)
                 {
                     return None;
                 };
@@ -106,9 +107,9 @@ impl CompletionFilter<'_> {
                 }
             }
             _ => {
-                // if in_clause(WrappingClause::PolicyName) {
-                //     return None;
-                // }
+                if in_clause(WrappingClause::PolicyName) {
+                    return None;
+                }
             }
         }
 

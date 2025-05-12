@@ -17,6 +17,28 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
         .is_some_and(|c| c.starts_with('"') && c.ends_with('"') && c != "\"\"");
 
     for pol in available_policies {
+        let completion_text = if surrounded_by_quotes {
+            // If we're within quotes, we want to change the content
+            // *within* the quotes.
+            // If we attempt to replace outside the quotes, the VSCode
+            // client won't show the suggestions.
+            let range = get_range_to_replace(ctx);
+            Some(CompletionText {
+                text: pol.name.clone(),
+                range: TextRange::new(
+                    range.start() + TextSize::new(1),
+                    range.end() - TextSize::new(1),
+                ),
+            })
+        } else {
+            // If we aren't within quotes, we want to complete the
+            // full policy including quotation marks.
+            Some(CompletionText {
+                text: format!("\"{}\"", pol.name),
+                range: get_range_to_replace(ctx),
+            })
+        };
+
         let relevance = CompletionRelevanceData::Policy(pol);
 
         let item = PossibleCompletionItem {
@@ -25,23 +47,7 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
             filter: CompletionFilter::from(relevance),
             description: format!("{}", pol.table_name),
             kind: CompletionItemKind::Policy,
-            completion_text: if !surrounded_by_quotes {
-                Some(CompletionText {
-                    text: format!("\"{}\"", pol.name),
-                    range: get_range_to_replace(ctx),
-                })
-            } else {
-                let range = get_range_to_replace(ctx);
-                Some(CompletionText {
-                    text: pol.name.clone(),
-
-                    // trim the quotes.
-                    range: TextRange::new(
-                        range.start() + TextSize::new(1),
-                        range.end() - TextSize::new(1),
-                    ),
-                })
-            },
+            completion_text,
         };
 
         builder.add_item(item);
@@ -50,13 +56,7 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        complete,
-        test_helper::{
-            CURSOR_POS, CompletionAssertion, assert_complete_results, get_test_params,
-            test_against_connection_string,
-        },
-    };
+    use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
 
     #[tokio::test]
     async fn completes_within_quotation_marks() {
@@ -99,20 +99,5 @@ mod tests {
             setup,
         )
         .await;
-    }
-
-    #[tokio::test]
-    async fn sb_test() {
-        let input = format!("alter policy \"u{}\" on public.fcm_tokens;", CURSOR_POS);
-
-        let (tree, cache) = test_against_connection_string(
-            "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-            input.as_str().into(),
-        )
-        .await;
-
-        let result = complete(get_test_params(&tree, &cache, input.as_str().into()));
-
-        println!("{:#?}", result);
     }
 }
