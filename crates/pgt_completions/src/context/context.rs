@@ -209,6 +209,8 @@ impl<'a> CompletionContext<'a> {
             ctx.gather_info_from_ts_queries();
         }
 
+        tracing::warn!("{:#?}", ctx.get_node_under_cursor_content());
+
         ctx
     }
 

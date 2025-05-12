@@ -54,8 +54,6 @@ pub fn get_completions(
         })
         .collect();
 
-    tracing::warn!("{:#?}", items);
-
     Ok(lsp_types::CompletionResponse::Array(items))
 }
 

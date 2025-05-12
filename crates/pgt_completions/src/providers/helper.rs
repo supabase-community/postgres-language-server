@@ -1,6 +1,6 @@
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::{CompletionText, context::CompletionContext};
+use crate::{CompletionText, context::CompletionContext, remove_sanitized_token};
 
 pub(crate) fn find_matching_alias_for_table(
     ctx: &CompletionContext,
@@ -15,22 +15,18 @@ pub(crate) fn find_matching_alias_for_table(
 }
 
 pub(crate) fn get_range_to_replace(ctx: &CompletionContext) -> TextRange {
-    let start = ctx
-        .node_under_cursor
-        .as_ref()
-        .map(|n| n.start_byte())
-        .unwrap_or(0);
+    match ctx.node_under_cursor.as_ref() {
+        Some(node) => {
+            let content = ctx.get_node_under_cursor_content().unwrap_or("".into());
+            let length = remove_sanitized_token(content.as_str()).len();
 
-    let end = ctx
-        .get_node_under_cursor_content()
-        .unwrap_or("".into())
-        .len()
-        + start;
+            let start = node.start_byte();
+            let end = start + length;
 
-    TextRange::new(
-        TextSize::new(start.try_into().unwrap()),
-        end.try_into().unwrap(),
-    )
+            TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
+        }
+        None => TextRange::empty(TextSize::new(0)),
+    }
 }
 
 pub(crate) fn get_completion_text_with_schema_or_alias(

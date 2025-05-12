@@ -18,6 +18,10 @@ pub fn benchmark_sanitization(params: CompletionParams) -> String {
     params.text
 }
 
+pub(crate) fn remove_sanitized_token(it: &str) -> String {
+    it.replace(SANITIZED_TOKEN, "")
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub(crate) enum NodeText {
     Replaced,
@@ -157,6 +161,7 @@ fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
 }
 
 fn cursor_between_double_quotes(sql: &str, position: TextSize) -> bool {
+    return false;
     let position: usize = position.into();
     let mut chars = sql.chars();
     chars.nth(position - 1).is_some_and(|c| c == '"') && chars.next().is_some_and(|c| c == '"')

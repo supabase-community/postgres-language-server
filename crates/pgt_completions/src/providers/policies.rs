@@ -1,3 +1,5 @@
+use pgt_text_size::{TextRange, TextSize};
+
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
@@ -10,9 +12,9 @@ use super::helper::get_range_to_replace;
 pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_policies = &ctx.schema_cache.policies;
 
-    let has_quotes = ctx
+    let surrounded_by_quotes = ctx
         .get_node_under_cursor_content()
-        .is_some_and(|c| c.starts_with('"') && c.ends_with('"'));
+        .is_some_and(|c| c.starts_with('"') && c.ends_with('"') && c != "\"\"");
 
     for pol in available_policies {
         let relevance = CompletionRelevanceData::Policy(pol);
@@ -23,13 +25,22 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
             filter: CompletionFilter::from(relevance),
             description: format!("{}", pol.table_name),
             kind: CompletionItemKind::Policy,
-            completion_text: if !has_quotes {
+            completion_text: if !surrounded_by_quotes {
                 Some(CompletionText {
                     text: format!("\"{}\"", pol.name),
                     range: get_range_to_replace(ctx),
                 })
             } else {
-                None
+                let range = get_range_to_replace(ctx);
+                Some(CompletionText {
+                    text: pol.name.clone(),
+
+                    // trim the quotes.
+                    range: TextRange::new(
+                        range.start() + TextSize::new(1),
+                        range.end() - TextSize::new(1),
+                    ),
+                })
             },
         };
 
