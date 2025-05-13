@@ -146,7 +146,7 @@ impl CompletionFilter<'_> {
 
             // we should never allow schema suggestions if there already was one.
             CompletionRelevanceData::Schema(_) => false,
-            // no aliases and schemas for policies
+            // no policy comletion if user typed a schema node first.
             CompletionRelevanceData::Policy(_) => false,
         };
 
