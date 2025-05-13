@@ -144,13 +144,10 @@ impl CompletionFilter<'_> {
                 .get(schema_or_alias)
                 .is_some_and(|t| t == &col.table_name),
 
-            CompletionRelevanceData::Schema(_) => {
-                // we should never allow schema suggestions if there already was one.
-                false
-            }
-
+            // we should never allow schema suggestions if there already was one.
+            CompletionRelevanceData::Schema(_) => false,
             // no aliases and schemas for policies
-            CompletionRelevanceData::Policy(p) => &p.schema_name == schema_or_alias,
+            CompletionRelevanceData::Policy(_) => false,
         };
 
         if !matches {
