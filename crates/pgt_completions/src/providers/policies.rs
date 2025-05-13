@@ -45,7 +45,7 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
             label: pol.name.chars().take(35).collect::<String>(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: format!("{}", pol.table_name),
+            description: pol.table_name.to_string(),
             kind: CompletionItemKind::Policy,
             completion_text,
         };

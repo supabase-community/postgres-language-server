@@ -52,7 +52,7 @@ pub(crate) enum NodeUnderCursor<'a> {
     },
 }
 
-impl<'a> NodeUnderCursor<'a> {
+impl NodeUnderCursor<'_> {
     pub fn start_byte(&self) -> usize {
         match self {
             NodeUnderCursor::TsNode(node) => node.start_byte(),
@@ -184,7 +184,7 @@ impl<'a> CompletionContext<'a> {
     }
 
     fn gather_policy_context(&mut self) {
-        let policy_context = PolicyParser::get_context(&self.text, self.position);
+        let policy_context = PolicyParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
             text: policy_context.node_text.into(),
@@ -658,7 +658,7 @@ mod tests {
         match node {
             NodeUnderCursor::TsNode(node) => {
                 assert_eq!(
-                    ctx.get_ts_node_content(&node),
+                    ctx.get_ts_node_content(node),
                     Some(NodeText::Original("from".into()))
                 );
             }
@@ -688,7 +688,7 @@ mod tests {
         match node {
             NodeUnderCursor::TsNode(node) => {
                 assert_eq!(
-                    ctx.get_ts_node_content(&node),
+                    ctx.get_ts_node_content(node),
                     Some(NodeText::Original("".into()))
                 );
                 assert_eq!(ctx.wrapping_clause_type, None);
@@ -721,7 +721,7 @@ mod tests {
         match node {
             NodeUnderCursor::TsNode(node) => {
                 assert_eq!(
-                    ctx.get_ts_node_content(&node),
+                    ctx.get_ts_node_content(node),
                     Some(NodeText::Original("fro".into()))
                 );
                 assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));

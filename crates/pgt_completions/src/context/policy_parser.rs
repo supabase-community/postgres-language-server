@@ -302,10 +302,10 @@ mod tests {
             }
         }
 
-        return (
+        (
             pos.expect("Please add cursor position!"),
             query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
-        );
+        )
     }
 
     #[test]
