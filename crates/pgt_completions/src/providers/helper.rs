@@ -1,6 +1,6 @@
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::{CompletionText, context::CompletionContext};
+use crate::{CompletionText, context::CompletionContext, remove_sanitized_token};
 
 pub(crate) fn find_matching_alias_for_table(
     ctx: &CompletionContext,
@@ -14,6 +14,21 @@ pub(crate) fn find_matching_alias_for_table(
     None
 }
 
+pub(crate) fn get_range_to_replace(ctx: &CompletionContext) -> TextRange {
+    match ctx.node_under_cursor.as_ref() {
+        Some(node) => {
+            let content = ctx.get_node_under_cursor_content().unwrap_or("".into());
+            let length = remove_sanitized_token(content.as_str()).len();
+
+            let start = node.start_byte();
+            let end = start + length;
+
+            TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
+        }
+        None => TextRange::empty(TextSize::new(0)),
+    }
+}
+
 pub(crate) fn get_completion_text_with_schema_or_alias(
     ctx: &CompletionContext,
     item_name: &str,
@@ -22,12 +37,7 @@ pub(crate) fn get_completion_text_with_schema_or_alias(
     if schema_or_alias_name == "public" || ctx.schema_or_alias_name.is_some() {
         None
     } else {
-        let node = ctx.node_under_cursor.unwrap();
-
-        let range = TextRange::new(
-            TextSize::try_from(node.start_byte()).unwrap(),
-            TextSize::try_from(node.end_byte()).unwrap(),
-        );
+        let range = get_range_to_replace(ctx);
 
         Some(CompletionText {
             text: format!("{}.{}", schema_or_alias_name, item_name),

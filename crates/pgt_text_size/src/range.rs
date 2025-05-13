@@ -299,6 +299,39 @@ impl TextRange {
             end: self.end.checked_add(offset)?,
         })
     }
+
+    /// Expand the range's start by the given offset.
+    /// The start will never exceed the range's end.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use pgt_text_size::*;
+    /// assert_eq!(
+    ///     TextRange::new(2.into(), 12.into()).checked_expand_start(4.into()).unwrap(),
+    ///     TextRange::new(6.into(), 12.into()),
+    /// );
+    ///
+    /// assert_eq!(
+    ///     TextRange::new(2.into(), 12.into()).checked_expand_start(12.into()).unwrap(),
+    ///     TextRange::new(12.into(), 12.into()),
+    /// );
+    /// ```
+    #[inline]
+    pub fn checked_expand_start(self, offset: TextSize) -> Option<TextRange> {
+        let new_start = self.start.checked_add(offset)?;
+        let end = self.end;
+
+        if new_start > end {
+            Some(TextRange { start: end, end })
+        } else {
+            Some(TextRange {
+                start: new_start,
+                end,
+            })
+        }
+    }
+
     /// Subtract an offset from this range.
     ///
     /// Note that this is not appropriate for changing where a `TextRange` is

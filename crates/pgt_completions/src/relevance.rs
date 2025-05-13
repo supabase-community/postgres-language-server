@@ -7,4 +7,5 @@ pub(crate) enum CompletionRelevanceData<'a> {
     Function(&'a pgt_schema_cache::Function),
     Column(&'a pgt_schema_cache::Column),
     Schema(&'a pgt_schema_cache::Schema),
+    Policy(&'a pgt_schema_cache::Policy),
 }
