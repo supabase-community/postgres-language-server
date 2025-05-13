@@ -78,12 +78,14 @@ fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
         }
     }
 
-    if !current_word.is_empty() && start_of_word.is_some() {
-        words.push(WordWithIndex {
-            word: current_word,
-            start: start_of_word.unwrap(),
-            end: sql.len(),
-        });
+    if let Some(start_of_word) = start_of_word {
+        if !current_word.is_empty() {
+            words.push(WordWithIndex {
+                word: current_word,
+                start: start_of_word,
+                end: sql.len(),
+            });
+        }
     }
 
     if in_quotation_marks {
@@ -190,14 +192,10 @@ impl PolicyParser {
                     self.context.node_range = range_without_schema;
                     self.context.node_kind = "policy_table".into();
 
-                    self.context.node_text = match table_name {
-                        Some(node_text) => node_text,
-
-                        // In practice, this should never happen.
-                        // The completion sanitization will add a word after a `.` if nothing follows it;
-                        // the token_text will then look like `schema.REPLACED_TOKEN`.
-                        None => String::new(),
-                    };
+                    // In practice, we should always have a table name.
+                    // The completion sanitization will add a word after a `.` if nothing follows it;
+                    // the token_text will then look like `schema.REPLACED_TOKEN`.
+                    self.context.node_text = table_name.unwrap_or_default();
                 } else {
                     self.context.node_range = token.get_range();
                     self.context.node_text = token.word;
@@ -258,7 +256,7 @@ impl PolicyParser {
     }
 
     fn table_with_schema(&mut self) {
-        self.advance().map(|token| {
+        if let Some(token) = self.advance() {
             if token.is_under_cursor(self.cursor_position) {
                 self.handle_token_under_cursor(token);
             } else if token.word.contains('.') {
@@ -268,7 +266,7 @@ impl PolicyParser {
             } else {
                 self.context.table_name = Some(token.word);
             }
-        });
+        };
     }
 
     fn schema_and_table_name(&self, token: &WordWithIndex) -> (String, Option<String>) {

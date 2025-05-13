@@ -150,7 +150,7 @@ impl CompletionFilter<'_> {
             }
 
             // no aliases and schemas for policies
-            CompletionRelevanceData::Policy(p) => p.schema_name == p.schema_name,
+            CompletionRelevanceData::Policy(p) => &p.schema_name == schema_or_alias,
         };
 
         if !matches {
