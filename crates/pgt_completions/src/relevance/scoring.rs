@@ -238,15 +238,6 @@ impl CompletionScore<'_> {
     }
 
     fn check_columns_in_stmt(&mut self, ctx: &CompletionContext) {
-        // we only want to consider mentioned columns in a select statement.
-        if ctx
-            .wrapping_clause_type
-            .as_ref()
-            .is_none_or(|ct| ct != &WrappingClause::Select)
-        {
-            return;
-        }
-
         match self.data {
             CompletionRelevanceData::Column(column) => {
                 /*
@@ -266,14 +257,16 @@ impl CompletionScore<'_> {
                  */
                 if ctx
                     .mentioned_columns
-                    .iter()
-                    .any(|mentioned| match mentioned.alias.as_ref() {
-                        Some(als) => {
-                            let aliased_table = ctx.mentioned_table_aliases.get(als.as_str());
-                            column.name == mentioned.column
-                                && aliased_table.is_none_or(|t| t == &column.table_name)
-                        }
-                        None => mentioned.column == column.name,
+                    .get(&ctx.wrapping_clause_type)
+                    .is_some_and(|set| {
+                        set.iter().any(|mentioned| match mentioned.alias.as_ref() {
+                            Some(als) => {
+                                let aliased_table = ctx.mentioned_table_aliases.get(als.as_str());
+                                column.name == mentioned.column
+                                    && aliased_table.is_none_or(|t| t == &column.table_name)
+                            }
+                            None => mentioned.column == column.name,
+                        })
                     })
                 {
                     self.score -= 10;

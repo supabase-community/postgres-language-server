@@ -21,12 +21,12 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
 });
 
 #[derive(Debug)]
-pub struct ColumnMatch<'a> {
+pub struct SelectColumnMatch<'a> {
     pub(crate) alias: Option<tree_sitter::Node<'a>>,
     pub(crate) column: tree_sitter::Node<'a>,
 }
 
-impl ColumnMatch<'_> {
+impl SelectColumnMatch<'_> {
     pub fn get_alias(&self, sql: &str) -> Option<String> {
         let str = self
             .alias
@@ -45,12 +45,12 @@ impl ColumnMatch<'_> {
     }
 }
 
-impl<'a> TryFrom<&'a QueryResult<'a>> for &'a ColumnMatch<'a> {
+impl<'a> TryFrom<&'a QueryResult<'a>> for &'a SelectColumnMatch<'a> {
     type Error = String;
 
     fn try_from(q: &'a QueryResult<'a>) -> Result<Self, Self::Error> {
         match q {
-            QueryResult::Column(c) => Ok(c),
+            QueryResult::SelectClauseColumns(c) => Ok(c),
 
             #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
@@ -58,11 +58,11 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a ColumnMatch<'a> {
     }
 }
 
-impl<'a> QueryTryFrom<'a> for ColumnMatch<'a> {
-    type Ref = &'a ColumnMatch<'a>;
+impl<'a> QueryTryFrom<'a> for SelectColumnMatch<'a> {
+    type Ref = &'a SelectColumnMatch<'a>;
 }
 
-impl<'a> Query<'a> for ColumnMatch<'a> {
+impl<'a> Query<'a> for SelectColumnMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<crate::QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
@@ -73,7 +73,7 @@ impl<'a> Query<'a> for ColumnMatch<'a> {
         for m in matches {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
-                to_return.push(QueryResult::Column(ColumnMatch {
+                to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
                     alias: None,
                     column: capture,
                 }));
@@ -83,7 +83,7 @@ impl<'a> Query<'a> for ColumnMatch<'a> {
                 let alias = m.captures[0].node;
                 let column = m.captures[1].node;
 
-                to_return.push(QueryResult::Column(ColumnMatch {
+                to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
                     alias: Some(alias),
                     column,
                 }));
@@ -98,7 +98,7 @@ impl<'a> Query<'a> for ColumnMatch<'a> {
 mod tests {
     use crate::TreeSitterQueriesExecutor;
 
-    use super::ColumnMatch;
+    use super::SelectColumnMatch;
 
     #[test]
     fn finds_all_columns() {
@@ -111,9 +111,9 @@ mod tests {
 
         let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
 
-        executor.add_query_results::<ColumnMatch>();
+        executor.add_query_results::<SelectColumnMatch>();
 
-        let results: Vec<&ColumnMatch> = executor
+        let results: Vec<&SelectColumnMatch> = executor
             .get_iter(None)
             .filter_map(|q| q.try_into().ok())
             .collect();
@@ -150,9 +150,9 @@ from
 
         let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
 
-        executor.add_query_results::<ColumnMatch>();
+        executor.add_query_results::<SelectColumnMatch>();
 
-        let results: Vec<&ColumnMatch> = executor
+        let results: Vec<&SelectColumnMatch> = executor
             .get_iter(None)
             .filter_map(|q| q.try_into().ok())
             .collect();
