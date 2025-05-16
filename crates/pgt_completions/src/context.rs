@@ -26,6 +26,12 @@ pub(crate) enum NodeText<'a> {
     Original(&'a str),
 }
 
+#[derive(PartialEq, Eq, Hash, Debug)]
+pub(crate) struct MentionedColumn {
+    pub(crate) column: String,
+    pub(crate) alias: Option<String>,
+}
+
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
 /// That gives us a lot of insight for completions.
 /// Other nodes, such as the "relation" node, gives us less but still
@@ -108,8 +114,8 @@ pub(crate) struct CompletionContext<'a> {
     pub is_in_error_node: bool,
 
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
-
     pub mentioned_table_aliases: HashMap<String, String>,
+    pub mentioned_columns: HashSet<MentionedColumn>,
 }
 
 impl<'a> CompletionContext<'a> {
@@ -127,6 +133,7 @@ impl<'a> CompletionContext<'a> {
             is_invocation: false,
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
+            mentioned_columns: HashSet::new(),
             is_in_error_node: false,
         };
 
@@ -144,6 +151,7 @@ impl<'a> CompletionContext<'a> {
 
         executor.add_query_results::<queries::RelationMatch>();
         executor.add_query_results::<queries::TableAliasMatch>();
+        executor.add_query_results::<queries::ColumnMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -170,8 +178,12 @@ impl<'a> CompletionContext<'a> {
                         table_alias_match.get_table(sql),
                     );
                 }
-
-                QueryResult::Column(_) => todo!(),
+                QueryResult::Column(c) => {
+                    self.mentioned_columns.insert(MentionedColumn {
+                        column: c.get_column(sql),
+                        alias: c.get_alias(sql),
+                    });
+                }
             };
         }
     }
