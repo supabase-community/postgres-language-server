@@ -32,6 +32,7 @@ impl CompletionScore<'_> {
         self.check_matching_clause_type(ctx);
         self.check_matching_wrapping_node(ctx);
         self.check_relations_in_stmt(ctx);
+        self.check_columns_in_stmt(ctx);
     }
 
     fn check_matches_query_input(&mut self, ctx: &CompletionContext) {
@@ -233,6 +234,42 @@ impl CompletionScore<'_> {
         // create objects. Prefer it by a slight bit.
         if schema.as_str() == "public" {
             self.score += 2;
+        }
+    }
+
+    fn check_columns_in_stmt(&mut self, ctx: &CompletionContext) {
+        if let CompletionRelevanceData::Column(column) = self.data {
+            /*
+             * Columns can be mentioned in one of two ways:
+             *
+             * 1) With an alias: `select u.id`.
+             * If the currently investigated suggestion item is "id" of the "users" table,
+             * we want to check
+             * a) whether the name of the column matches.
+             * b) whether we know which table is aliased by "u" (if we don't, we ignore the alias).
+             * c) whether the aliased table matches the currently investigated suggestion item's table.
+             *
+             * 2) Without an alias: `select id`.
+             * In that case, we only check whether the mentioned column fits our currently investigated
+             * suggestion item's name.
+             *
+             */
+            if ctx
+                .mentioned_columns
+                .get(&ctx.wrapping_clause_type)
+                .is_some_and(|set| {
+                    set.iter().any(|mentioned| match mentioned.alias.as_ref() {
+                        Some(als) => {
+                            let aliased_table = ctx.mentioned_table_aliases.get(als.as_str());
+                            column.name == mentioned.column
+                                && aliased_table.is_none_or(|t| t == &column.table_name)
+                        }
+                        None => mentioned.column == column.name,
+                    })
+                })
+            {
+                self.score -= 10;
+            }
         }
     }
 }

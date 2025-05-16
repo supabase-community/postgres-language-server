@@ -8,7 +8,7 @@ use pgt_treesitter_queries::{
 
 use crate::sanitization::SanitizedCompletionParams;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum WrappingClause<'a> {
     Select,
     Where,
@@ -24,6 +24,12 @@ pub enum WrappingClause<'a> {
 pub(crate) enum NodeText<'a> {
     Replaced,
     Original(&'a str),
+}
+
+#[derive(PartialEq, Eq, Hash, Debug)]
+pub(crate) struct MentionedColumn {
+    pub(crate) column: String,
+    pub(crate) alias: Option<String>,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -108,8 +114,8 @@ pub(crate) struct CompletionContext<'a> {
     pub is_in_error_node: bool,
 
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
-
     pub mentioned_table_aliases: HashMap<String, String>,
+    pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 }
 
 impl<'a> CompletionContext<'a> {
@@ -127,6 +133,7 @@ impl<'a> CompletionContext<'a> {
             is_invocation: false,
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
+            mentioned_columns: HashMap::new(),
             is_in_error_node: false,
         };
 
@@ -144,6 +151,7 @@ impl<'a> CompletionContext<'a> {
 
         executor.add_query_results::<queries::RelationMatch>();
         executor.add_query_results::<queries::TableAliasMatch>();
+        executor.add_query_results::<queries::SelectColumnMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -151,25 +159,37 @@ impl<'a> CompletionContext<'a> {
                     let schema_name = r.get_schema(sql);
                     let table_name = r.get_table(sql);
 
-                    let current = self.mentioned_relations.get_mut(&schema_name);
-
-                    match current {
-                        Some(c) => {
-                            c.insert(table_name);
-                        }
-                        None => {
-                            let mut new = HashSet::new();
-                            new.insert(table_name);
-                            self.mentioned_relations.insert(schema_name, new);
-                        }
-                    };
+                    if let Some(c) = self.mentioned_relations.get_mut(&schema_name) {
+                        c.insert(table_name);
+                    } else {
+                        let mut new = HashSet::new();
+                        new.insert(table_name);
+                        self.mentioned_relations.insert(schema_name, new);
+                    }
                 }
-
                 QueryResult::TableAliases(table_alias_match) => {
                     self.mentioned_table_aliases.insert(
                         table_alias_match.get_alias(sql),
                         table_alias_match.get_table(sql),
                     );
+                }
+                QueryResult::SelectClauseColumns(c) => {
+                    let mentioned = MentionedColumn {
+                        column: c.get_column(sql),
+                        alias: c.get_alias(sql),
+                    };
+
+                    if let Some(cols) = self
+                        .mentioned_columns
+                        .get_mut(&Some(WrappingClause::Select))
+                    {
+                        cols.insert(mentioned);
+                    } else {
+                        let mut new = HashSet::new();
+                        new.insert(mentioned);
+                        self.mentioned_columns
+                            .insert(Some(WrappingClause::Select), new);
+                    }
                 }
             };
         }

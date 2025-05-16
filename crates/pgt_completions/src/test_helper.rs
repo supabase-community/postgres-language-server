@@ -146,6 +146,7 @@ mod tests {
 pub(crate) enum CompletionAssertion {
     Label(String),
     LabelAndKind(String, CompletionItemKind),
+    LabelAndDesc(String, String),
     LabelNotExists(String),
     KindNotExists(CompletionItemKind),
 }
@@ -186,6 +187,18 @@ impl CompletionAssertion {
                     kind
                 );
             }
+            CompletionAssertion::LabelAndDesc(label, desc) => {
+                assert_eq!(
+                    &item.label, label,
+                    "Expected label to be {}, but got {}",
+                    label, &item.label
+                );
+                assert_eq!(
+                    &item.description, desc,
+                    "Expected desc to be {}, but got {}",
+                    desc, &item.description
+                );
+            }
         }
     }
 }
@@ -202,7 +215,9 @@ pub(crate) async fn assert_complete_results(
     let (not_existing, existing): (Vec<CompletionAssertion>, Vec<CompletionAssertion>) =
         assertions.into_iter().partition(|a| match a {
             CompletionAssertion::LabelNotExists(_) | CompletionAssertion::KindNotExists(_) => true,
-            CompletionAssertion::Label(_) | CompletionAssertion::LabelAndKind(_, _) => false,
+            CompletionAssertion::Label(_)
+            | CompletionAssertion::LabelAndKind(_, _)
+            | CompletionAssertion::LabelAndDesc(_, _) => false,
         });
 
     assert!(

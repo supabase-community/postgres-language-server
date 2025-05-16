@@ -484,4 +484,93 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn prefers_not_mentioned_columns() {
+        let setup = r#"
+            create schema auth;
+
+            create table public.one (
+                id serial primary key,
+                a text,
+                b text,
+                z text
+            );
+
+            create table public.two (
+                id serial primary key,
+                c text,
+                d text,
+                e text
+            );
+        "#;
+
+        assert_complete_results(
+            format!(
+                "select {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("a".to_string()),
+                CompletionAssertion::Label("b".to_string()),
+                CompletionAssertion::Label("c".to_string()),
+                CompletionAssertion::Label("d".to_string()),
+                CompletionAssertion::Label("e".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // "a" is already mentioned, so it jumps down
+        assert_complete_results(
+            format!(
+                "select a, {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("b".to_string()),
+                CompletionAssertion::Label("c".to_string()),
+                CompletionAssertion::Label("d".to_string()),
+                CompletionAssertion::Label("e".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+                CompletionAssertion::Label("a".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // "id" of table one is mentioned, but table two isn't –
+        // its priority stays up
+        assert_complete_results(
+            format!(
+                "select o.id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndDesc(
+                    "id".to_string(),
+                    "Table: public.two".to_string(),
+                ),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // "id" is ambiguous, so both "id" columns are lowered in priority
+        assert_complete_results(
+            format!(
+                "select id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![CompletionAssertion::Label("z".to_string())],
+            setup,
+        )
+        .await;
+    }
 }
