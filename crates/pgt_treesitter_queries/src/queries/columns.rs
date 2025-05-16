@@ -1,0 +1,172 @@
+use std::sync::LazyLock;
+
+use crate::{Query, QueryResult};
+
+use super::QueryTryFrom;
+
+static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+    static QUERY_STR: &str = r#"
+    (select_expression
+        (term
+            (field
+                (object_reference)? @alias
+                "."?
+                (identifier) @column
+            )
+        )
+        ","?
+    )
+"#;
+    tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
+});
+
+#[derive(Debug)]
+pub struct ColumnMatch<'a> {
+    pub(crate) alias: Option<tree_sitter::Node<'a>>,
+    pub(crate) column: tree_sitter::Node<'a>,
+}
+
+impl ColumnMatch<'_> {
+    pub fn get_alias(&self, sql: &str) -> Option<String> {
+        let str = self
+            .alias
+            .as_ref()?
+            .utf8_text(sql.as_bytes())
+            .expect("Failed to get alias from ColumnMatch");
+
+        Some(str.to_string())
+    }
+
+    pub fn get_column(&self, sql: &str) -> String {
+        self.column
+            .utf8_text(sql.as_bytes())
+            .expect("Failed to get column from ColumnMatch")
+            .to_string()
+    }
+}
+
+impl<'a> TryFrom<&'a QueryResult<'a>> for &'a ColumnMatch<'a> {
+    type Error = String;
+
+    fn try_from(q: &'a QueryResult<'a>) -> Result<Self, Self::Error> {
+        match q {
+            QueryResult::Column(c) => Ok(c),
+
+            #[allow(unreachable_patterns)]
+            _ => Err("Invalid QueryResult type".into()),
+        }
+    }
+}
+
+impl<'a> QueryTryFrom<'a> for ColumnMatch<'a> {
+    type Ref = &'a ColumnMatch<'a>;
+}
+
+impl<'a> Query<'a> for ColumnMatch<'a> {
+    fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<crate::QueryResult<'a>> {
+        let mut cursor = tree_sitter::QueryCursor::new();
+
+        let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
+
+        let mut to_return = vec![];
+
+        for m in matches {
+            if m.captures.len() == 1 {
+                let capture = m.captures[0].node;
+                to_return.push(QueryResult::Column(ColumnMatch {
+                    alias: None,
+                    column: capture,
+                }));
+            }
+
+            if m.captures.len() == 2 {
+                let alias = m.captures[0].node;
+                let column = m.captures[1].node;
+
+                to_return.push(QueryResult::Column(ColumnMatch {
+                    alias: Some(alias),
+                    column,
+                }));
+            }
+        }
+
+        to_return
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::TreeSitterQueriesExecutor;
+
+    use super::ColumnMatch;
+
+    #[test]
+    fn finds_all_columns() {
+        let sql = r#"select aud, id, email from auth.users;"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<ColumnMatch>();
+
+        let results: Vec<&ColumnMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results[0].get_alias(sql), None);
+        assert_eq!(results[0].get_column(sql), "aud");
+
+        assert_eq!(results[1].get_alias(sql), None);
+        assert_eq!(results[1].get_column(sql), "id");
+
+        assert_eq!(results[2].get_alias(sql), None);
+        assert_eq!(results[2].get_column(sql), "email");
+    }
+
+    #[test]
+    fn finds_columns_with_aliases() {
+        let sql = r#"
+select 
+    u.id,
+    u.email,
+    cs.user_settings,
+    cs.client_id
+from 
+    auth.users u
+    join public.client_settings cs
+    on u.id = cs.user_id;
+
+"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<ColumnMatch>();
+
+        let results: Vec<&ColumnMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results[0].get_alias(sql), Some("u".into()));
+        assert_eq!(results[0].get_column(sql), "id");
+
+        assert_eq!(results[1].get_alias(sql), Some("u".into()));
+        assert_eq!(results[1].get_column(sql), "email");
+
+        assert_eq!(results[2].get_alias(sql), Some("cs".into()));
+        assert_eq!(results[2].get_column(sql), "user_settings");
+
+        assert_eq!(results[3].get_alias(sql), Some("cs".into()));
+        assert_eq!(results[3].get_column(sql), "client_id");
+    }
+}

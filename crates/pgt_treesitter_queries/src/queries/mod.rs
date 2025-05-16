@@ -1,6 +1,8 @@
+mod columns;
 mod relations;
 mod table_aliases;
 
+pub use columns::*;
 pub use relations::*;
 pub use table_aliases::*;
 
@@ -8,6 +10,7 @@ pub use table_aliases::*;
 pub enum QueryResult<'a> {
     Relation(RelationMatch<'a>),
     TableAliases(TableAliasMatch<'a>),
+    Column(ColumnMatch<'a>),
 }
 
 impl QueryResult<'_> {
@@ -26,6 +29,16 @@ impl QueryResult<'_> {
             QueryResult::TableAliases(m) => {
                 let start = m.table.start_position();
                 let end = m.alias.end_position();
+                start >= range.start_point && end <= range.end_point
+            }
+            Self::Column(cm) => {
+                let start = match cm.alias {
+                    Some(n) => n.start_position(),
+                    None => cm.column.start_position(),
+                };
+
+                let end = cm.column.end_position();
+
                 start >= range.start_point && end <= range.end_point
             }
         }

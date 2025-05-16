@@ -164,13 +164,14 @@ impl<'a> CompletionContext<'a> {
                         }
                     };
                 }
-
                 QueryResult::TableAliases(table_alias_match) => {
                     self.mentioned_table_aliases.insert(
                         table_alias_match.get_alias(sql),
                         table_alias_match.get_table(sql),
                     );
                 }
+
+                QueryResult::Column(_) => todo!(),
             };
         }
     }
