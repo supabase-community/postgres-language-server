@@ -59,13 +59,21 @@ impl TryFrom<i16> for TriggerTiming {
     fn try_from(value: i16) -> Result<Self, ()> {
         TriggerTiming::iter()
             .find(|variant| {
-                #[rustfmt::skip]
-                    let mask = match variant {
-                        TriggerTiming::Instead   => 0b0100_0000,
-                        TriggerTiming::Before    => 0b0000_0010,
-                        TriggerTiming::After     => 0b0000_0000, // before/after share same bit
-                    };
-                mask & value == mask
+                match variant {
+                    TriggerTiming::Instead => {
+                        let mask = 0b0100_0000;
+                        mask & value == mask
+                    }
+                    TriggerTiming::Before => {
+                        let mask = 0b0000_0010;
+                        mask & value == mask
+                    }
+                    TriggerTiming::After => {
+                        let mask = 0b1011_1101;
+                        // timing is "AFTER" if neither INSTEAD nor BEFORE bit are set.
+                        mask | value == mask
+                    }
+                }
             })
             .ok_or(())
     }
@@ -84,6 +92,7 @@ pub struct Trigger {
     name: String,
     table_name: String,
     schema_name: String,
+    proc_name: String,
     affected: TriggerAffected,
     timing: TriggerTiming,
     events: Vec<TriggerEvent>,
@@ -94,6 +103,7 @@ impl From<TriggerQueried> for Trigger {
         Self {
             name: value.name,
             table_name: value.table_name,
+            proc_name: value.proc_name,
             schema_name: value.schema_name,
             affected: value.details_bitmask.into(),
             timing: value.details_bitmask.try_into().unwrap(),
@@ -148,7 +158,7 @@ mod tests {
                     execute function public.log_user_insert();
     
                 create trigger trg_users_update
-                    after update on public.users
+                    after update or insert on public.users
                     for each statement
                     execute function public.log_user_insert();
     
@@ -178,24 +188,113 @@ mod tests {
             .iter()
             .find(|t| t.name == "trg_users_insert")
             .unwrap();
+        assert_eq!(insert_trigger.schema_name, "public");
+        assert_eq!(insert_trigger.table_name, "users");
         assert_eq!(insert_trigger.timing, TriggerTiming::Before);
         assert_eq!(insert_trigger.affected, TriggerAffected::Row);
         assert!(insert_trigger.events.contains(&TriggerEvent::Insert));
+        assert_eq!(insert_trigger.proc_name, "log_user_insert");
 
         let update_trigger = triggers
             .iter()
             .find(|t| t.name == "trg_users_update")
             .unwrap();
+        assert_eq!(insert_trigger.schema_name, "public");
+        assert_eq!(insert_trigger.table_name, "users");
         assert_eq!(update_trigger.timing, TriggerTiming::After);
         assert_eq!(update_trigger.affected, TriggerAffected::Statement);
         assert!(update_trigger.events.contains(&TriggerEvent::Update));
+        assert!(update_trigger.events.contains(&TriggerEvent::Insert));
+        assert_eq!(update_trigger.proc_name, "log_user_insert");
 
         let delete_trigger = triggers
             .iter()
             .find(|t| t.name == "trg_users_delete")
             .unwrap();
+        assert_eq!(insert_trigger.schema_name, "public");
+        assert_eq!(insert_trigger.table_name, "users");
         assert_eq!(delete_trigger.timing, TriggerTiming::Before);
         assert_eq!(delete_trigger.affected, TriggerAffected::Row);
         assert!(delete_trigger.events.contains(&TriggerEvent::Delete));
+        assert_eq!(delete_trigger.proc_name, "log_user_insert");
+    }
+
+    #[tokio::test]
+    async fn loads_instead_and_truncate_triggers() {
+        let test_db = get_new_test_db().await;
+
+        let setup = r#"
+        create table public.docs (
+            id serial primary key,
+            content text
+        );
+
+        create view public.docs_view as
+        select * from public.docs;
+
+        create or replace function public.docs_instead_of_update()
+        returns trigger as $$
+        begin
+            -- dummy body
+            return new;
+        end;
+        $$ language plpgsql;
+
+        create trigger trg_docs_instead_update
+            instead of update on public.docs_view
+            for each row
+            execute function public.docs_instead_of_update();
+
+        create or replace function public.docs_truncate()
+        returns trigger as $$
+        begin
+            -- dummy body
+            return null;
+        end;
+        $$ language plpgsql;
+
+        create trigger trg_docs_truncate
+            after truncate on public.docs
+            for each statement
+            execute function public.docs_truncate();
+    "#;
+
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to setup test database");
+
+        let cache = SchemaCache::load(&test_db)
+            .await
+            .expect("Failed to load Schema Cache");
+
+        let triggers: Vec<_> = cache
+            .triggers
+            .iter()
+            .filter(|t| t.table_name == "docs" || t.table_name == "docs_view")
+            .collect();
+        assert_eq!(triggers.len(), 2);
+
+        let instead_trigger = triggers
+            .iter()
+            .find(|t| t.name == "trg_docs_instead_update")
+            .unwrap();
+        assert_eq!(instead_trigger.schema_name, "public");
+        assert_eq!(instead_trigger.table_name, "docs_view");
+        assert_eq!(instead_trigger.timing, TriggerTiming::Instead);
+        assert_eq!(instead_trigger.affected, TriggerAffected::Row);
+        assert!(instead_trigger.events.contains(&TriggerEvent::Update));
+        assert_eq!(instead_trigger.proc_name, "docs_instead_of_update");
+
+        let truncate_trigger = triggers
+            .iter()
+            .find(|t| t.name == "trg_docs_truncate")
+            .unwrap();
+        assert_eq!(truncate_trigger.schema_name, "public");
+        assert_eq!(truncate_trigger.table_name, "docs");
+        assert_eq!(truncate_trigger.timing, TriggerTiming::After);
+        assert_eq!(truncate_trigger.affected, TriggerAffected::Statement);
+        assert!(truncate_trigger.events.contains(&TriggerEvent::Truncate));
+        assert_eq!(truncate_trigger.proc_name, "docs_truncate");
     }
 }
