@@ -37,7 +37,7 @@ impl From<char> for ColumnClassKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Column {
     pub name: String,
 

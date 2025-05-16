@@ -1,5 +1,6 @@
 use sqlx::postgres::PgPool;
 
+use crate::Trigger;
 use crate::columns::Column;
 use crate::functions::Function;
 use crate::policies::Policy;
@@ -8,7 +9,7 @@ use crate::tables::Table;
 use crate::types::PostgresType;
 use crate::versions::Version;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct SchemaCache {
     pub schemas: Vec<Schema>,
     pub tables: Vec<Table>,
@@ -17,11 +18,12 @@ pub struct SchemaCache {
     pub versions: Vec<Version>,
     pub columns: Vec<Column>,
     pub policies: Vec<Policy>,
+    pub triggers: Vec<Trigger>,
 }
 
 impl SchemaCache {
     pub async fn load(pool: &PgPool) -> Result<SchemaCache, sqlx::Error> {
-        let (schemas, tables, functions, types, versions, columns, policies) = futures_util::try_join!(
+        let (schemas, tables, functions, types, versions, columns, policies, triggers) = futures_util::try_join!(
             Schema::load(pool),
             Table::load(pool),
             Function::load(pool),
@@ -29,6 +31,7 @@ impl SchemaCache {
             Version::load(pool),
             Column::load(pool),
             Policy::load(pool),
+            Trigger::load(pool),
         )?;
 
         Ok(SchemaCache {
@@ -39,6 +42,7 @@ impl SchemaCache {
             versions,
             columns,
             policies,
+            triggers,
         })
     }
 

@@ -2,7 +2,7 @@ use sqlx::PgPool;
 
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct Schema {
     pub id: i64,
     pub name: String,

@@ -23,7 +23,7 @@ impl From<String> for ReplicaIdentity {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Table {
     pub id: i64,
     pub schema: String,

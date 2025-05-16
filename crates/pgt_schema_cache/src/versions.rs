@@ -2,7 +2,7 @@ use sqlx::PgPool;
 
 use crate::schema_cache::SchemaCacheItem;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct Version {
     pub version: Option<String>,
     pub version_num: Option<i64>,
