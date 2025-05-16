@@ -238,41 +238,38 @@ impl CompletionScore<'_> {
     }
 
     fn check_columns_in_stmt(&mut self, ctx: &CompletionContext) {
-        match self.data {
-            CompletionRelevanceData::Column(column) => {
-                /*
-                 * Columns can be mentioned in one of two ways:
-                 *
-                 * 1) With an alias: `select u.id`.
-                 * If the currently investigated suggestion item is "id" of the "users" table,
-                 * we want to check
-                 * a) whether the name of the column matches.
-                 * b) whether we know which table is aliased by "u" (if we don't, we ignore the alias).
-                 * c) whether the aliased table matches the currently investigated suggestion item's table.
-                 *
-                 * 2) Without an alias: `select id`.
-                 * In that case, we only check whether the mentioned column fits our currently investigated
-                 * suggestion item's name.
-                 *
-                 */
-                if ctx
-                    .mentioned_columns
-                    .get(&ctx.wrapping_clause_type)
-                    .is_some_and(|set| {
-                        set.iter().any(|mentioned| match mentioned.alias.as_ref() {
-                            Some(als) => {
-                                let aliased_table = ctx.mentioned_table_aliases.get(als.as_str());
-                                column.name == mentioned.column
-                                    && aliased_table.is_none_or(|t| t == &column.table_name)
-                            }
-                            None => mentioned.column == column.name,
-                        })
+        if let CompletionRelevanceData::Column(column) = self.data {
+            /*
+             * Columns can be mentioned in one of two ways:
+             *
+             * 1) With an alias: `select u.id`.
+             * If the currently investigated suggestion item is "id" of the "users" table,
+             * we want to check
+             * a) whether the name of the column matches.
+             * b) whether we know which table is aliased by "u" (if we don't, we ignore the alias).
+             * c) whether the aliased table matches the currently investigated suggestion item's table.
+             *
+             * 2) Without an alias: `select id`.
+             * In that case, we only check whether the mentioned column fits our currently investigated
+             * suggestion item's name.
+             *
+             */
+            if ctx
+                .mentioned_columns
+                .get(&ctx.wrapping_clause_type)
+                .is_some_and(|set| {
+                    set.iter().any(|mentioned| match mentioned.alias.as_ref() {
+                        Some(als) => {
+                            let aliased_table = ctx.mentioned_table_aliases.get(als.as_str());
+                            column.name == mentioned.column
+                                && aliased_table.is_none_or(|t| t == &column.table_name)
+                        }
+                        None => mentioned.column == column.name,
                     })
-                {
-                    self.score -= 10;
-                }
+                })
+            {
+                self.score -= 10;
             }
-            _ => {}
         }
     }
 }
