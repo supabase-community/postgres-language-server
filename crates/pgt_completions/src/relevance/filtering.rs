@@ -24,6 +24,13 @@ impl CompletionFilter<'_> {
     }
 
     fn completable_context(&self, ctx: &CompletionContext) -> Option<()> {
+        if ctx.wrapping_node_kind.is_none()
+            && ctx.wrapping_clause_type.is_none()
+            && ctx.is_in_error_node
+        {
+            return None;
+        }
+
         let current_node_kind = ctx.node_under_cursor.map(|n| n.kind()).unwrap_or("");
 
         if current_node_kind.starts_with("keyword_")
@@ -58,44 +65,53 @@ impl CompletionFilter<'_> {
     }
 
     fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
-        let clause = ctx.wrapping_clause_type.as_ref();
+        ctx.wrapping_clause_type
+            .as_ref()
+            .map(|clause| {
+                match self.data {
+                    CompletionRelevanceData::Table(_) => match clause {
+                        WrappingClause::Select
+                        | WrappingClause::Where
+                        | WrappingClause::ColumnDefinitions => false,
+                        _ => true,
+                    },
+                    CompletionRelevanceData::Column(_) => {
+                        match clause {
+                            WrappingClause::From | WrappingClause::ColumnDefinitions => false,
 
-        match self.data {
-            CompletionRelevanceData::Table(_) => {
-                let in_select_clause = clause.is_some_and(|c| c == &WrappingClause::Select);
-                let in_where_clause = clause.is_some_and(|c| c == &WrappingClause::Where);
+                            // We can complete columns in JOIN cluases, but only if we are after the
+                            // ON node in the "ON u.id = posts.user_id" part.
+                            WrappingClause::Join { on_node: Some(on) } => ctx
+                                .node_under_cursor
+                                .is_some_and(|cn| cn.start_byte() >= on.end_byte()),
 
-                if in_select_clause || in_where_clause {
-                    return None;
-                };
-            }
-            CompletionRelevanceData::Column(_) => {
-                let in_from_clause = clause.is_some_and(|c| c == &WrappingClause::From);
-                if in_from_clause {
-                    return None;
+                            // we are in a JOIN, but definitely not after an ON
+                            WrappingClause::Join { on_node: None } => false,
+
+                            _ => true,
+                        }
+                    }
+                    CompletionRelevanceData::Function(_) => match clause {
+                        WrappingClause::From
+                        | WrappingClause::Select
+                        | WrappingClause::Where
+                        | WrappingClause::Join { .. } => true,
+
+                        _ => false,
+                    },
+                    CompletionRelevanceData::Schema(_) => match clause {
+                        WrappingClause::Select
+                        | WrappingClause::Where
+                        | WrappingClause::From
+                        | WrappingClause::Join { .. }
+                        | WrappingClause::Update
+                        | WrappingClause::Delete => true,
+
+                        WrappingClause::ColumnDefinitions => false,
+                    },
                 }
-
-                // We can complete columns in JOIN cluases, but only if we are after the
-                // ON node in the "ON u.id = posts.user_id" part.
-                let in_join_clause_before_on_node = clause.is_some_and(|c| match c {
-                    // we are in a JOIN, but definitely not after an ON
-                    WrappingClause::Join { on_node: None } => true,
-
-                    WrappingClause::Join { on_node: Some(on) } => ctx
-                        .node_under_cursor
-                        .is_some_and(|n| n.end_byte() < on.start_byte()),
-
-                    _ => false,
-                });
-
-                if in_join_clause_before_on_node {
-                    return None;
-                }
-            }
-            _ => {}
-        }
-
-        Some(())
+            })
+            .and_then(|is_ok| if is_ok { Some(()) } else { None })
     }
 
     fn check_invocation(&self, ctx: &CompletionContext) -> Option<()> {
@@ -169,5 +185,16 @@ mod tests {
             setup,
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn completion_after_create_table() {
+        assert_no_complete_results(format!("create table {}", CURSOR_POS).as_str(), "").await;
+    }
+
+    #[tokio::test]
+    async fn completion_in_column_definitions() {
+        let query = format!(r#"create table instruments ( {} )"#, CURSOR_POS);
+        assert_no_complete_results(query.as_str(), "").await;
     }
 }

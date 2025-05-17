@@ -18,6 +18,7 @@ pub enum WrappingClause<'a> {
     },
     Update,
     Delete,
+    ColumnDefinitions,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -76,6 +77,7 @@ impl TryFrom<String> for WrappingNode {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct CompletionContext<'a> {
     pub node_under_cursor: Option<tree_sitter::Node<'a>>,
 
@@ -139,6 +141,13 @@ impl<'a> CompletionContext<'a> {
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+
+        if cfg!(test) {
+            println!("{:#?}", ctx.wrapping_clause_type);
+            println!("{:#?}", ctx.wrapping_node_kind);
+            println!("{:#?}", ctx.is_in_error_node);
+            println!("{:#?}", ctx.text);
+        }
 
         ctx
     }
@@ -303,7 +312,7 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            "where" | "update" | "select" | "delete" | "from" | "join" => {
+            "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -367,6 +376,7 @@ impl<'a> CompletionContext<'a> {
             "select" => Some(WrappingClause::Select),
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
+            "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "join" => {
                 // sadly, we need to manually iterate over the children –
                 // `node.child_by_field_id(..)` does not work as expected

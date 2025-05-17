@@ -244,6 +244,8 @@ pub(crate) async fn assert_complete_results(
 pub(crate) async fn assert_no_complete_results(query: &str, setup: &str) {
     let (tree, cache) = get_test_deps(setup, query.into()).await;
     let params = get_test_params(&tree, &cache, query.into());
+    println!("{:#?}", params.position);
+    println!("{:#?}", params.text);
     let items = complete(params);
 
     assert_eq!(items.len(), 0)
