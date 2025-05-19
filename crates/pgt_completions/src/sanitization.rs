@@ -25,6 +25,7 @@ where
             || cursor_prepared_to_write_token_after_last_node(params.tree, params.position)
             || cursor_before_semicolon(params.tree, params.position)
             || cursor_on_a_dot(&params.text, params.position)
+            || cursor_between_parentheses(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -200,13 +201,19 @@ fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool
         .unwrap_or(false)
 }
 
+fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
+    let position: usize = position.into();
+    let mut chars = sql.chars();
+    chars.nth(position - 1).is_some_and(|c| c == '(') && chars.next().is_some_and(|c| c == ')')
+}
+
 #[cfg(test)]
 mod tests {
     use pgt_text_size::TextSize;
 
     use crate::sanitization::{
-        cursor_before_semicolon, cursor_inbetween_nodes, cursor_on_a_dot,
-        cursor_prepared_to_write_token_after_last_node,
+        cursor_before_semicolon, cursor_between_parentheses, cursor_inbetween_nodes,
+        cursor_on_a_dot, cursor_prepared_to_write_token_after_last_node,
     };
 
     #[test]
@@ -316,5 +323,19 @@ mod tests {
         assert!(cursor_before_semicolon(&tree, TextSize::new(15)));
         assert!(cursor_before_semicolon(&tree, TextSize::new(16)));
         assert!(cursor_before_semicolon(&tree, TextSize::new(17)));
+    }
+
+    #[test]
+    fn between_parentheses() {
+        let input = "insert into instruments ()";
+
+        // insert into (|) <- right in the parentheses
+        assert!(cursor_between_parentheses(input, TextSize::new(25)));
+
+        // insert into ()| <- too late
+        assert!(!cursor_between_parentheses(input, TextSize::new(26)));
+
+        // insert into |() <- too early
+        assert!(!cursor_between_parentheses(input, TextSize::new(24)));
     }
 }

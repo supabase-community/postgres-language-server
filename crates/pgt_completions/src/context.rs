@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    cmp,
+    collections::{HashMap, HashSet},
+};
 
 use pgt_schema_cache::SchemaCache;
 use pgt_treesitter_queries::{
@@ -8,7 +11,7 @@ use pgt_treesitter_queries::{
 
 use crate::sanitization::SanitizedCompletionParams;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum WrappingClause<'a> {
     Select,
     Where,
@@ -19,6 +22,7 @@ pub enum WrappingClause<'a> {
     Update,
     Delete,
     ColumnDefinitions,
+    Insert,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -46,6 +50,7 @@ pub enum WrappingNode {
     Relation,
     BinaryExpression,
     Assignment,
+    List,
 }
 
 impl TryFrom<&str> for WrappingNode {
@@ -56,6 +61,7 @@ impl TryFrom<&str> for WrappingNode {
             "relation" => Ok(Self::Relation),
             "assignment" => Ok(Self::Assignment),
             "binary_expression" => Ok(Self::BinaryExpression),
+            "list" => Ok(Self::List),
             _ => {
                 let message = format!("Unimplemented Relation: {}", value);
 
@@ -141,13 +147,6 @@ impl<'a> CompletionContext<'a> {
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
-
-        if cfg!(test) {
-            println!("{:#?}", ctx.wrapping_clause_type);
-            println!("{:#?}", ctx.wrapping_node_kind);
-            println!("{:#?}", ctx.is_in_error_node);
-            println!("{:#?}", ctx.text);
-        }
 
         ctx
     }
@@ -240,9 +239,19 @@ impl<'a> CompletionContext<'a> {
          * `select * from use           {}` becomes `select * from use{}`.
          */
         let current_node = cursor.node();
-        while cursor.goto_first_child_for_byte(self.position).is_none() && self.position > 0 {
-            self.position -= 1;
+
+        let mut chars = self.text.chars();
+
+        if chars
+            .nth(self.position)
+            .is_some_and(|c| !c.is_ascii_whitespace())
+        {
+            self.position = cmp::min(self.position + 1, self.text.len());
+        } else {
+            self.position = cmp::min(self.position, self.text.len());
         }
+
+        cursor.goto_first_child_for_byte(self.position);
 
         self.gather_context_from_node(cursor, current_node);
     }
@@ -276,23 +285,11 @@ impl<'a> CompletionContext<'a> {
 
         // try to gather context from the siblings if we're within an error node.
         if self.is_in_error_node {
-            let mut next_sibling = current_node.next_named_sibling();
-            while let Some(n) = next_sibling {
-                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
-                    self.wrapping_clause_type = Some(clause_type);
-                    break;
-                } else {
-                    next_sibling = n.next_named_sibling();
-                }
+            if let Some(clause_type) = self.get_wrapping_clause_from_siblings(current_node) {
+                self.wrapping_clause_type = Some(clause_type);
             }
-            let mut prev_sibling = current_node.prev_named_sibling();
-            while let Some(n) = prev_sibling {
-                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
-                    self.wrapping_clause_type = Some(clause_type);
-                    break;
-                } else {
-                    prev_sibling = n.prev_named_sibling();
-                }
+            if let Some(wrapping_node) = self.get_wrapping_node_from_siblings(current_node) {
+                self.wrapping_node_kind = Some(wrapping_node)
             }
         }
 
@@ -317,7 +314,7 @@ impl<'a> CompletionContext<'a> {
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
 
-            "relation" | "binary_expression" | "assignment" => {
+            "relation" | "binary_expression" | "assignment" | "list" => {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
             }
 
@@ -338,31 +335,89 @@ impl<'a> CompletionContext<'a> {
         self.gather_context_from_node(cursor, current_node);
     }
 
-    fn get_wrapping_clause_from_keyword_node(
+    fn get_first_sibling(&self, node: tree_sitter::Node<'a>) -> tree_sitter::Node<'a> {
+        let mut first_sibling = node;
+        while let Some(n) = first_sibling.prev_sibling() {
+            first_sibling = n;
+        }
+        first_sibling
+    }
+
+    fn get_wrapping_node_from_siblings(&self, node: tree_sitter::Node<'a>) -> Option<WrappingNode> {
+        self.wrapping_clause_type
+            .as_ref()
+            .and_then(|clause| match clause {
+                WrappingClause::Insert => {
+                    if node.prev_sibling().is_some_and(|n| n.kind() == "(")
+                        || node.next_sibling().is_some_and(|n| n.kind() == ")")
+                    {
+                        Some(WrappingNode::List)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+    }
+
+    fn get_wrapping_clause_from_siblings(
         &self,
         node: tree_sitter::Node<'a>,
     ) -> Option<WrappingClause<'a>> {
-        if node.kind().starts_with("keyword_") {
-            if let Some(txt) = self.get_ts_node_content(node).and_then(|txt| match txt {
-                NodeText::Original(txt) => Some(txt),
-                NodeText::Replaced => None,
-            }) {
-                match txt {
-                    "where" => return Some(WrappingClause::Where),
-                    "update" => return Some(WrappingClause::Update),
-                    "select" => return Some(WrappingClause::Select),
-                    "delete" => return Some(WrappingClause::Delete),
-                    "from" => return Some(WrappingClause::From),
-                    "join" => {
-                        // TODO: not sure if we can infer it here.
-                        return Some(WrappingClause::Join { on_node: None });
-                    }
-                    _ => {}
-                }
-            };
-        }
+        let clause_combinations: Vec<(WrappingClause, &[&'static str])> = vec![
+            (WrappingClause::Where, &["where"]),
+            (WrappingClause::Update, &["update"]),
+            (WrappingClause::Select, &["select"]),
+            (WrappingClause::Delete, &["delete"]),
+            (WrappingClause::Insert, &["insert", "into"]),
+            (WrappingClause::From, &["from"]),
+            (WrappingClause::Join { on_node: None }, &["join"]),
+        ];
 
-        None
+        let first_sibling = self.get_first_sibling(node);
+
+        /*
+         * For each clause, we'll iterate from first_sibling to the next ones,
+         * either until the end or until we land on the node under the cursor.
+         * We'll score the `WrappingClause` by how many tokens it matches in order.
+         */
+        let mut clauses_with_score: Vec<(WrappingClause, usize)> = clause_combinations
+            .into_iter()
+            .map(|(clause, tokens)| {
+                let mut idx = 0;
+
+                let mut sibling = Some(first_sibling);
+                while let Some(sib) = sibling {
+                    if sib.end_byte() >= node.end_byte() || idx >= tokens.len() {
+                        break;
+                    }
+
+                    if let Some(sibling_content) =
+                        self.get_ts_node_content(sib).and_then(|txt| match txt {
+                            NodeText::Original(txt) => Some(txt),
+                            NodeText::Replaced => None,
+                        })
+                    {
+                        if sibling_content == tokens[idx] {
+                            idx += 1;
+                        }
+                    } else {
+                        break;
+                    }
+
+                    sibling = sib.next_sibling();
+                }
+
+                (clause, idx)
+            })
+            .collect();
+
+        clauses_with_score.sort_by(|(_, score_a), (_, score_b)| score_b.cmp(score_a));
+        clauses_with_score
+            .iter()
+            .filter(|(_, score)| *score > 0)
+            .next()
+            .map(|c| c.0.clone())
     }
 
     fn get_wrapping_clause_from_current_node(
@@ -377,6 +432,7 @@ impl<'a> CompletionContext<'a> {
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
+            "insert" => Some(WrappingClause::Insert),
             "join" => {
                 // sadly, we need to manually iterate over the children –
                 // `node.child_by_field_id(..)` does not work as expected

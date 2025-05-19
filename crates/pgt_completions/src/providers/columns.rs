@@ -573,4 +573,24 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn suggests_columns_in_insert_clause() {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null
+            );
+        "#;
+
+        assert_complete_results(
+            format!("insert into instruments ({})", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+            ],
+            setup,
+        )
+        .await;
+    }
 }

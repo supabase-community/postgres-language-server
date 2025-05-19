@@ -1,4 +1,4 @@
-use crate::context::{CompletionContext, WrappingClause};
+use crate::context::{CompletionContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -73,6 +73,17 @@ impl CompletionFilter<'_> {
                         WrappingClause::Select
                         | WrappingClause::Where
                         | WrappingClause::ColumnDefinitions => false,
+
+                        WrappingClause::Insert => {
+                            ctx.wrapping_node_kind
+                                .as_ref()
+                                .is_some_and(|n| n != &WrappingNode::List)
+                                && ctx.node_under_cursor.is_some_and(|n| {
+                                    n.prev_sibling()
+                                        .is_some_and(|sib| sib.kind() == "keyword_into")
+                                })
+                        }
+
                         _ => true,
                     },
                     CompletionRelevanceData::Column(_) => {
@@ -87,6 +98,11 @@ impl CompletionFilter<'_> {
 
                             // we are in a JOIN, but definitely not after an ON
                             WrappingClause::Join { on_node: None } => false,
+
+                            WrappingClause::Insert => ctx
+                                .wrapping_node_kind
+                                .as_ref()
+                                .is_some_and(|n| n == &WrappingNode::List),
 
                             _ => true,
                         }
@@ -106,6 +122,16 @@ impl CompletionFilter<'_> {
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
+
+                        WrappingClause::Insert => {
+                            ctx.wrapping_node_kind
+                                .as_ref()
+                                .is_some_and(|n| n != &WrappingNode::List)
+                                && ctx.node_under_cursor.is_some_and(|n| {
+                                    n.prev_sibling()
+                                        .is_some_and(|sib| sib.kind() == "keyword_into")
+                                })
+                        }
 
                         WrappingClause::ColumnDefinitions => false,
                     },
