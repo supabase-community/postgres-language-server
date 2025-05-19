@@ -1,9 +1,11 @@
 use crate::{
     CompletionItemKind,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
+    context::{CompletionContext, WrappingClause},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
+
+use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
 
 pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
@@ -11,7 +13,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);
 
-        let item = PossibleCompletionItem {
+        let mut item = PossibleCompletionItem {
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
@@ -19,6 +21,14 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
             kind: CompletionItemKind::Column,
             completion_text: None,
         };
+
+        // autocomplete with the alias in a join clause if we find one
+        if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Join { .. })) {
+            item.completion_text = find_matching_alias_for_table(ctx, col.table_name.as_str())
+                .and_then(|alias| {
+                    get_completion_text_with_schema_or_alias(ctx, col.name.as_str(), alias.as_str())
+                });
+        }
 
         builder.add_item(item);
     }
@@ -273,60 +283,50 @@ mod tests {
             id1 serial primary key,
             name1 text,
             address1 text,
-            email1 text
+            email1 text,
+            user_settings jsonb
         );
 
         create table public.users (
             id2 serial primary key,
             name2 text,
             address2 text,
-            email2 text
+            email2 text,
+            settings jsonb
         );
     "#;
 
-        {
-            let test_case = TestCase {
-                message: "",
-                query: format!(r#"select {} from users"#, CURSOR_POS),
-                label: "suggests from table",
-                description: "",
-            };
+        assert_complete_results(
+            format!(r#"select {} from users"#, CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("address2".into()),
+                CompletionAssertion::Label("email2".into()),
+                CompletionAssertion::Label("id2".into()),
+                CompletionAssertion::Label("name2".into()),
+            ],
+            setup,
+        )
+        .await;
 
-            let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
-            let params = get_test_params(&tree, &cache, test_case.get_input_query());
-            let results = complete(params);
+        assert_complete_results(
+            format!(r#"select {} from private.users"#, CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("address1".into()),
+                CompletionAssertion::Label("email1".into()),
+                CompletionAssertion::Label("id1".into()),
+                CompletionAssertion::Label("name1".into()),
+            ],
+            setup,
+        )
+        .await;
 
-            assert_eq!(
-                results
-                    .into_iter()
-                    .take(4)
-                    .map(|item| item.label)
-                    .collect::<Vec<String>>(),
-                vec!["address2", "email2", "id2", "name2"]
-            );
-        }
-
-        {
-            let test_case = TestCase {
-                message: "",
-                query: format!(r#"select {} from private.users"#, CURSOR_POS),
-                label: "suggests from table",
-                description: "",
-            };
-
-            let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
-            let params = get_test_params(&tree, &cache, test_case.get_input_query());
-            let results = complete(params);
-
-            assert_eq!(
-                results
-                    .into_iter()
-                    .take(4)
-                    .map(|item| item.label)
-                    .collect::<Vec<String>>(),
-                vec!["address1", "email1", "id1", "name1"]
-            );
-        }
+        // asserts fuzzy finding for "settings"
+        assert_complete_results(
+            format!(r#"select sett{} from private.users"#, CURSOR_POS).as_str(),
+            vec![CompletionAssertion::Label("user_settings".into())],
+            setup,
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -480,6 +480,95 @@ mod tests {
                 CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
                 CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
             ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn prefers_not_mentioned_columns() {
+        let setup = r#"
+            create schema auth;
+
+            create table public.one (
+                id serial primary key,
+                a text,
+                b text,
+                z text
+            );
+
+            create table public.two (
+                id serial primary key,
+                c text,
+                d text,
+                e text
+            );
+        "#;
+
+        assert_complete_results(
+            format!(
+                "select {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("a".to_string()),
+                CompletionAssertion::Label("b".to_string()),
+                CompletionAssertion::Label("c".to_string()),
+                CompletionAssertion::Label("d".to_string()),
+                CompletionAssertion::Label("e".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // "a" is already mentioned, so it jumps down
+        assert_complete_results(
+            format!(
+                "select a, {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("b".to_string()),
+                CompletionAssertion::Label("c".to_string()),
+                CompletionAssertion::Label("d".to_string()),
+                CompletionAssertion::Label("e".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+                CompletionAssertion::Label("a".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // "id" of table one is mentioned, but table two isn't –
+        // its priority stays up
+        assert_complete_results(
+            format!(
+                "select o.id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndDesc(
+                    "id".to_string(),
+                    "Table: public.two".to_string(),
+                ),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        // "id" is ambiguous, so both "id" columns are lowered in priority
+        assert_complete_results(
+            format!(
+                "select id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![CompletionAssertion::Label("z".to_string())],
             setup,
         )
         .await;

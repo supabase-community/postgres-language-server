@@ -45,6 +45,15 @@ impl CompletionFilter<'_> {
             return None;
         }
 
+        // no completions if we're right after an asterisk:
+        // `select * {}`
+        if ctx.node_under_cursor.is_some_and(|n| {
+            n.prev_sibling()
+                .is_some_and(|p| (p.kind() == "all_fields") && n.kind() == "identifier")
+        }) {
+            return None;
+        }
+
         Some(())
     }
 
@@ -128,5 +137,37 @@ impl CompletionFilter<'_> {
         }
 
         Some(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_helper::{
+        CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
+    };
+
+    #[tokio::test]
+    async fn completion_after_asterisk() {
+        let setup = r#"
+            create table users (
+                id serial primary key,
+                email text,
+                address text
+            );
+        "#;
+
+        assert_no_complete_results(format!("select * {}", CURSOR_POS).as_str(), setup).await;
+
+        // if there s a COMMA after the asterisk, we're good
+        assert_complete_results(
+            format!("select *, {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("address".into()),
+                CompletionAssertion::Label("email".into()),
+                CompletionAssertion::Label("id".into()),
+            ],
+            setup,
+        )
+        .await;
     }
 }
