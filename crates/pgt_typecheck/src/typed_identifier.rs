@@ -334,6 +334,8 @@ mod tests {
         assert!(valid_pos);
         assert_eq!(
             sql_out,
+            // the numeric parameters are filled with 0;
+            // all values of the enums are longer than `NULL`, so we use `NULL` instead
             "select 0      + 0                           + 0  + 0                   + 0               + NULL     "
         );
     }

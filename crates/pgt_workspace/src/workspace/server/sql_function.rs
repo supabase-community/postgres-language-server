@@ -8,15 +8,16 @@ pub struct ArgType {
 }
 
 #[derive(Debug, Clone)]
-pub struct SQLFunctionArgs {
+pub struct SQLFunctionArg {
     pub name: Option<String>,
     pub type_: ArgType,
 }
 
 #[derive(Debug, Clone)]
 pub struct SQLFunctionSignature {
-    pub name: (Option<String>, String),
-    pub args: Vec<SQLFunctionArgs>,
+    pub schema: Option<String>,
+    pub name: String,
+    pub args: Vec<SQLFunctionArg>,
 }
 
 #[derive(Debug, Clone)]
@@ -50,7 +51,7 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
 
             let arg_type = node.arg_type.as_ref()?;
             let type_name = parse_name(&arg_type.names)?;
-            fn_args.push(SQLFunctionArgs {
+            fn_args.push(SQLFunctionArg {
                 name: arg_name,
                 type_: ArgType {
                     schema: type_name.0,
@@ -68,7 +69,8 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
     }
 
     Some(SQLFunctionSignature {
-        name: fn_name,
+        schema: fn_name.0,
+        name: fn_name.1,
         args: fn_args,
     })
 }

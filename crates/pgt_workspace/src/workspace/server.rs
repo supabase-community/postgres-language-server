@@ -393,7 +393,7 @@ impl Workspace for WorkspaceServer {
                                             s.args
                                                 .iter()
                                                 .map(|a| TypedIdentifier {
-                                                    path: s.name.1.clone(),
+                                                    path: s.name.clone(),
                                                     name: a.name.clone(),
                                                     type_: IdentifierType {
                                                         schema: a.type_.schema.clone(),
