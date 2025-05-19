@@ -36,7 +36,7 @@ impl From<Option<JsonValue>> for Enums {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct PostgresType {
     pub id: i64,
     pub name: String,
