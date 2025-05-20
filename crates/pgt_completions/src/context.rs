@@ -244,7 +244,7 @@ impl<'a> CompletionContext<'a> {
 
         if chars
             .nth(self.position)
-            .is_some_and(|c| !c.is_ascii_whitespace())
+            .is_some_and(|c| !c.is_ascii_whitespace() && c != ';')
         {
             self.position = cmp::min(self.position + 1, self.text.len());
         } else {
