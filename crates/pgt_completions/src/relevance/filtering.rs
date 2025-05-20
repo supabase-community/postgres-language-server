@@ -24,10 +24,7 @@ impl CompletionFilter<'_> {
     }
 
     fn completable_context(&self, ctx: &CompletionContext) -> Option<()> {
-        if ctx.wrapping_node_kind.is_none()
-            && ctx.wrapping_clause_type.is_none()
-            && ctx.is_in_error_node
-        {
+        if ctx.wrapping_node_kind.is_none() && ctx.wrapping_clause_type.is_none() {
             return None;
         }
 
@@ -78,17 +75,24 @@ impl CompletionFilter<'_> {
                             ctx.wrapping_node_kind
                                 .as_ref()
                                 .is_some_and(|n| n != &WrappingNode::List)
-                                && ctx.node_under_cursor.is_some_and(|n| {
-                                    n.prev_sibling()
-                                        .is_some_and(|sib| sib.kind() == "keyword_into")
-                                })
+                                && ctx.before_cursor_matches_kind(&["keyword_into"])
                         }
+
+                        WrappingClause::DropTable | WrappingClause::AlterTable => ctx
+                            .before_cursor_matches_kind(&[
+                                "keyword_exists",
+                                "keyword_only",
+                                "keyword_table",
+                            ]),
 
                         _ => true,
                     },
                     CompletionRelevanceData::Column(_) => {
                         match clause {
-                            WrappingClause::From | WrappingClause::ColumnDefinitions => false,
+                            WrappingClause::From
+                            | WrappingClause::ColumnDefinitions
+                            | WrappingClause::AlterTable
+                            | WrappingClause::DropTable => false,
 
                             // We can complete columns in JOIN cluases, but only if we are after the
                             // ON node in the "ON u.id = posts.user_id" part.
@@ -123,14 +127,18 @@ impl CompletionFilter<'_> {
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
 
+                        WrappingClause::DropTable | WrappingClause::AlterTable => ctx
+                            .before_cursor_matches_kind(&[
+                                "keyword_exists",
+                                "keyword_only",
+                                "keyword_table",
+                            ]),
+
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
                                 .as_ref()
                                 .is_some_and(|n| n != &WrappingNode::List)
-                                && ctx.node_under_cursor.is_some_and(|n| {
-                                    n.prev_sibling()
-                                        .is_some_and(|sib| sib.kind() == "keyword_into")
-                                })
+                                && ctx.before_cursor_matches_kind(&["keyword_into"])
                         }
 
                         WrappingClause::ColumnDefinitions => false,

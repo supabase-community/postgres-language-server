@@ -23,6 +23,8 @@ pub enum WrappingClause<'a> {
     Delete,
     ColumnDefinitions,
     Insert,
+    AlterTable,
+    DropTable,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -118,9 +120,6 @@ pub(crate) struct CompletionContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
-    /// Some incomplete statements can't be correctly parsed by TreeSitter.
-    pub is_in_error_node: bool,
-
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     pub mentioned_table_aliases: HashMap<String, String>,
     pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
@@ -142,11 +141,18 @@ impl<'a> CompletionContext<'a> {
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
-            is_in_error_node: false,
         };
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+
+        // if cfg!(test) {
+        //     println!("{:?}", ctx.position);
+        //     println!("{:?}", ctx.text);
+        //     println!("{:?}", ctx.wrapping_clause_type);
+        //     println!("{:?}", ctx.wrapping_node_kind);
+        //     println!("{:?}", ctx.before_cursor_matches_kind(&["keyword_table"]));
+        // }
 
         ctx
     }
@@ -284,7 +290,7 @@ impl<'a> CompletionContext<'a> {
         }
 
         // try to gather context from the siblings if we're within an error node.
-        if self.is_in_error_node {
+        if parent_node_kind == "ERROR" {
             if let Some(clause_type) = self.get_wrapping_clause_from_siblings(current_node) {
                 self.wrapping_clause_type = Some(clause_type);
             }
@@ -309,17 +315,14 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions" => {
+            "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
+            | "drop_table" | "alter_table" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
 
             "relation" | "binary_expression" | "assignment" | "list" => {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
-            }
-
-            "ERROR" => {
-                self.is_in_error_node = true;
             }
 
             _ => {}
@@ -372,6 +375,16 @@ impl<'a> CompletionContext<'a> {
             (WrappingClause::Insert, &["insert", "into"]),
             (WrappingClause::From, &["from"]),
             (WrappingClause::Join { on_node: None }, &["join"]),
+            (WrappingClause::AlterTable, &["alter", "table"]),
+            (
+                WrappingClause::AlterTable,
+                &["alter", "table", "if", "exists"],
+            ),
+            (WrappingClause::DropTable, &["drop", "table"]),
+            (
+                WrappingClause::DropTable,
+                &["drop", "table", "if", "exists"],
+            ),
         ];
 
         let first_sibling = self.get_first_sibling(node);
@@ -431,6 +444,8 @@ impl<'a> CompletionContext<'a> {
             "select" => Some(WrappingClause::Select),
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
+            "drop_table" => Some(WrappingClause::DropTable),
+            "alter_table" => Some(WrappingClause::AlterTable),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "insert" => Some(WrappingClause::Insert),
             "join" => {
@@ -448,6 +463,18 @@ impl<'a> CompletionContext<'a> {
             }
             _ => None,
         }
+    }
+
+    pub(crate) fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
+        self.node_under_cursor.is_some_and(|mut node| {
+            // move up to the parent until we're at top OR we have a prev sibling
+            while node.prev_sibling().is_none() && node.parent().is_some() {
+                node = node.parent().unwrap();
+            }
+
+            node.prev_sibling()
+                .is_some_and(|sib| kinds.contains(&sib.kind()))
+        })
     }
 }
 
