@@ -58,7 +58,7 @@ impl From<Option<JsonValue>> for FunctionArgs {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Function {
     /// The Id (`oid`).
     pub id: i64,

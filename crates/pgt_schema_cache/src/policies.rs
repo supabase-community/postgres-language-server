@@ -54,7 +54,7 @@ impl From<PolicyQueried> for Policy {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Policy {
     pub name: String,
     pub table_name: String,
