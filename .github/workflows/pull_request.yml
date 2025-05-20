@@ -220,8 +220,11 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
+          components: rustfmt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: echo toolchain
+        run: rustup show
       - name: Run the analyser codegen
         run: cargo run -p xtask_codegen -- analyser
       - name: Run the configuration codegen
