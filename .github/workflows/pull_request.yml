@@ -184,6 +184,8 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
       - name: Build main binary
         run: cargo build -p pgt_cli --release
       - name: Setup Bun
@@ -220,9 +222,10 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-          components: rustfmt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Ensure RustFMT on nightly toolchain
+        run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain
         run: rustup show
       - name: Run the analyser codegen
