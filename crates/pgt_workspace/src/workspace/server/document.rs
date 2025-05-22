@@ -34,6 +34,13 @@ impl Document {
         }
     }
 
+    pub fn statement_content(&self, id: &StatementId) -> Option<&str> {
+        self.positions
+            .iter()
+            .find(|(statement_id, _)| statement_id == id)
+            .map(|(_, range)| &self.content[*range])
+    }
+
     /// Returns true if there is at least one fatal error in the diagnostics
     ///
     /// A fatal error is a scan error that prevents the document from being used

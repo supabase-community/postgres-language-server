@@ -2876,6 +2876,7 @@ dependencies = [
  "pgt_schema_cache",
  "pgt_test_utils",
  "pgt_text_size",
+ "pgt_treesitter_queries",
  "sqlx",
  "tokio",
  "tree-sitter",

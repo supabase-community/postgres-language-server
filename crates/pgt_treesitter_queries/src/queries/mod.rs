@@ -1,7 +1,9 @@
+mod parameters;
 mod relations;
 mod select_columns;
 mod table_aliases;
 
+pub use parameters::*;
 pub use relations::*;
 pub use select_columns::*;
 pub use table_aliases::*;
@@ -9,6 +11,7 @@ pub use table_aliases::*;
 #[derive(Debug)]
 pub enum QueryResult<'a> {
     Relation(RelationMatch<'a>),
+    Parameter(ParameterMatch<'a>),
     TableAliases(TableAliasMatch<'a>),
     SelectClauseColumns(SelectColumnMatch<'a>),
 }
@@ -25,6 +28,12 @@ impl QueryResult<'_> {
                 let end = rm.table.end_position();
 
                 start >= range.start_point && end <= range.end_point
+            }
+            Self::Parameter(pm) => {
+                let node_range = pm.node.range();
+
+                node_range.start_point >= range.start_point
+                    && node_range.end_point <= range.end_point
             }
             QueryResult::TableAliases(m) => {
                 let start = m.table.start_position();
