@@ -560,7 +560,8 @@ impl<'a> CompletionContext<'a> {
                         current = current.parent().unwrap();
                     }
 
-                    node.prev_sibling()
+                    current
+                        .prev_sibling()
                         .is_some_and(|sib| kinds.contains(&sib.kind()))
                 }
 
