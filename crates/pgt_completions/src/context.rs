@@ -191,6 +191,7 @@ impl<'a> CompletionContext<'a> {
                             .insert(Some(WrappingClause::Select), new);
                     }
                 }
+                _ => {}
             };
         }
     }
