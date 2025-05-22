@@ -159,6 +159,27 @@ mod tests {
     }
 
     #[test]
+    fn with_tabs() {
+        let line_index = LineIndex::new(
+            r#"
+select
+    email,
+    id
+from auth.users u 
+join public.client_identities c on u.id = c.user_id;
+"#
+            .trim(),
+        );
+
+        // on `i` of `id` in the select
+        // 22 because of:
+        // selectemail,i = 13
+        // 8 spaces, 2 newlines = 23 characters
+        // it's zero indexed => index 22
+        check_conversion!(line_index: Position { line: 2, character: 4 } => TextSize::from(22));
+    }
+
+    #[test]
     fn unicode() {
         let line_index = LineIndex::new("'Jan 1, 2018 – Jan 1, 2019'");
 

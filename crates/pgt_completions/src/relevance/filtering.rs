@@ -1,4 +1,4 @@
-use crate::context::{CompletionContext, WrappingClause, WrappingNode};
+use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -28,7 +28,11 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        let current_node_kind = ctx.node_under_cursor.map(|n| n.kind()).unwrap_or("");
+        let current_node_kind = ctx
+            .node_under_cursor
+            .as_ref()
+            .map(|n| n.kind())
+            .unwrap_or("");
 
         if current_node_kind.starts_with("keyword_")
             || current_node_kind == "="
@@ -40,20 +44,23 @@ impl CompletionFilter<'_> {
         }
 
         // No autocompletions if there are two identifiers without a separator.
-        if ctx.node_under_cursor.is_some_and(|n| {
-            n.prev_sibling().is_some_and(|p| {
+        if ctx.node_under_cursor.as_ref().is_some_and(|n| match n {
+            NodeUnderCursor::TsNode(node) => node.prev_sibling().is_some_and(|p| {
                 (p.kind() == "identifier" || p.kind() == "object_reference")
                     && n.kind() == "identifier"
-            })
+            }),
+            NodeUnderCursor::CustomNode { .. } => false,
         }) {
             return None;
         }
 
         // no completions if we're right after an asterisk:
         // `select * {}`
-        if ctx.node_under_cursor.is_some_and(|n| {
-            n.prev_sibling()
-                .is_some_and(|p| (p.kind() == "all_fields") && n.kind() == "identifier")
+        if ctx.node_under_cursor.as_ref().is_some_and(|n| match n {
+            NodeUnderCursor::TsNode(node) => node
+                .prev_sibling()
+                .is_some_and(|p| (p.kind() == "all_fields") && n.kind() == "identifier"),
+            NodeUnderCursor::CustomNode { .. } => false,
         }) {
             return None;
         }
@@ -87,6 +94,7 @@ impl CompletionFilter<'_> {
 
                         _ => true,
                     },
+
                     CompletionRelevanceData::Column(_) => {
                         match clause {
                             WrappingClause::From
@@ -98,6 +106,7 @@ impl CompletionFilter<'_> {
                             // ON node in the "ON u.id = posts.user_id" part.
                             WrappingClause::Join { on_node: Some(on) } => ctx
                                 .node_under_cursor
+                                .as_ref()
                                 .is_some_and(|cn| cn.start_byte() >= on.end_byte()),
 
                             // we are in a JOIN, but definitely not after an ON
@@ -111,6 +120,7 @@ impl CompletionFilter<'_> {
                             _ => true,
                         }
                     }
+
                     CompletionRelevanceData::Function(_) => match clause {
                         WrappingClause::From
                         | WrappingClause::Select
@@ -119,6 +129,7 @@ impl CompletionFilter<'_> {
 
                         _ => false,
                     },
+
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
                         | WrappingClause::Where
@@ -141,7 +152,12 @@ impl CompletionFilter<'_> {
                                 && ctx.before_cursor_matches_kind(&["keyword_into"])
                         }
 
-                        WrappingClause::ColumnDefinitions => false,
+                        _ => false,
+                    },
+
+                    CompletionRelevanceData::Policy(_) => match clause {
+                        WrappingClause::PolicyName => true,
+                        _ => false,
                     },
                 }
             })
@@ -176,10 +192,10 @@ impl CompletionFilter<'_> {
                 .get(schema_or_alias)
                 .is_some_and(|t| t == &col.table_name),
 
-            CompletionRelevanceData::Schema(_) => {
-                // we should never allow schema suggestions if there already was one.
-                false
-            }
+            // we should never allow schema suggestions if there already was one.
+            CompletionRelevanceData::Schema(_) => false,
+            // no policy comletion if user typed a schema node first.
+            CompletionRelevanceData::Policy(_) => false,
         };
 
         if !matches {
