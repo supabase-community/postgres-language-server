@@ -1,4 +1,4 @@
-use std::sync::{RwLock, RwLockReadGuard};
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use pgt_schema_cache::SchemaCache;
 use sqlx::PgPool;
@@ -21,6 +21,10 @@ impl<'a> SchemaCacheHandle<'a> {
     pub(crate) fn wrap(inner: RwLockReadGuard<'a, SchemaCacheManagerInner>) -> Self {
         Self { inner }
     }
+
+    pub fn get_arc(&self) -> Arc<SchemaCache> {
+        Arc::clone(&self.inner.cache)
+    }
 }
 
 impl AsRef<SchemaCache> for SchemaCacheHandle<'_> {
@@ -31,7 +35,7 @@ impl AsRef<SchemaCache> for SchemaCacheHandle<'_> {
 
 #[derive(Default)]
 pub(crate) struct SchemaCacheManagerInner {
-    cache: SchemaCache,
+    cache: Arc<SchemaCache>,
     conn_str: String,
 }
 
@@ -62,7 +66,7 @@ impl SchemaCacheManager {
 
             // Double-check that we still need to refresh (another thread might have done it)
             if new_conn_str != inner.conn_str {
-                inner.cache = refreshed;
+                inner.cache = Arc::new(refreshed);
                 inner.conn_str = new_conn_str;
                 tracing::info!("Refreshed connection.");
             }

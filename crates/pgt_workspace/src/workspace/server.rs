@@ -372,7 +372,7 @@ impl Workspace for WorkspaceServer {
         {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let schema_cache_arc = Arc::new(schema_cache.as_ref().clone());
+            let schema_cache_arc = schema_cache.get_arc();
             let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
