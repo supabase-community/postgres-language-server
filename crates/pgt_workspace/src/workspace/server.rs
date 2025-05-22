@@ -514,8 +514,11 @@ impl Workspace for WorkspaceServer {
         let schema_cache = self.schema_cache.load(pool)?;
 
         match get_statement_for_completions(&parsed_doc, params.position) {
-            None => Ok(CompletionsResult::default()),
-            Some((_id, range, content, cst)) => {
+            None => {
+                tracing::debug!("No statement found.");
+                Ok(CompletionsResult::default())
+            }
+            Some((id, range, content, cst)) => {
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {
@@ -524,6 +527,12 @@ impl Workspace for WorkspaceServer {
                     tree: &cst,
                     text: content,
                 });
+
+                tracing::debug!(
+                    "Found {} completion items for statement with id {}",
+                    items.len(),
+                    id.raw()
+                );
 
                 Ok(CompletionsResult { items })
             }

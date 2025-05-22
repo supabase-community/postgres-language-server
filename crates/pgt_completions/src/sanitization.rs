@@ -4,6 +4,8 @@ use pgt_text_size::TextSize;
 
 use crate::CompletionParams;
 
+static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
+
 pub(crate) struct SanitizedCompletionParams<'a> {
     pub position: TextSize,
     pub text: String,
@@ -16,13 +18,39 @@ pub fn benchmark_sanitization(params: CompletionParams) -> String {
     params.text
 }
 
+pub(crate) fn remove_sanitized_token(it: &str) -> String {
+    it.replace(SANITIZED_TOKEN, "")
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub(crate) enum NodeText {
+    Replaced,
+    Original(String),
+}
+
+impl From<&str> for NodeText {
+    fn from(value: &str) -> Self {
+        if value == SANITIZED_TOKEN {
+            NodeText::Replaced
+        } else {
+            NodeText::Original(value.into())
+        }
+    }
+}
+
+impl From<String> for NodeText {
+    fn from(value: String) -> Self {
+        NodeText::from(value.as_str())
+    }
+}
+
 impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
 where
     'larger: 'smaller,
 {
     fn from(params: CompletionParams<'larger>) -> Self {
-        if cursor_inbetween_nodes(params.tree, params.position)
-            || cursor_prepared_to_write_token_after_last_node(params.tree, params.position)
+        if cursor_inbetween_nodes(&params.text, params.position)
+            || cursor_prepared_to_write_token_after_last_node(&params.text, params.position)
             || cursor_before_semicolon(params.tree, params.position)
             || cursor_on_a_dot(&params.text, params.position)
         {
@@ -32,8 +60,6 @@ where
         }
     }
 }
-
-static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
 
 impl<'larger, 'smaller> SanitizedCompletionParams<'smaller>
 where
@@ -102,37 +128,17 @@ where
 /// select |from users; -- cursor "touches" from node. returns false.
 /// select | from users; -- cursor is between select and from nodes. returns true.
 /// ```
-fn cursor_inbetween_nodes(tree: &tree_sitter::Tree, position: TextSize) -> bool {
-    let mut cursor = tree.walk();
-    let mut leaf_node = tree.root_node();
+fn cursor_inbetween_nodes(sql: &str, position: TextSize) -> bool {
+    let position: usize = position.into();
+    let mut chars = sql.chars();
 
-    let byte = position.into();
+    let previous_whitespace = chars
+        .nth(position - 1)
+        .is_some_and(|c| c.is_ascii_whitespace());
 
-    // if the cursor escapes the root node, it can't be between nodes.
-    if byte < leaf_node.start_byte() || byte >= leaf_node.end_byte() {
-        return false;
-    }
+    let current_whitespace = chars.next().is_some_and(|c| c.is_ascii_whitespace());
 
-    /*
-     * Get closer and closer to the leaf node, until
-     *  a) there is no more child *for the node* or
-     *  b) there is no more child *under the cursor*.
-     */
-    loop {
-        let child_idx = cursor.goto_first_child_for_byte(position.into());
-        if child_idx.is_none() {
-            break;
-        }
-        leaf_node = cursor.node();
-    }
-
-    let cursor_on_leafnode = byte >= leaf_node.start_byte() && leaf_node.end_byte() >= byte;
-
-    /*
-     * The cursor is inbetween nodes if it is not within the range
-     * of a leaf node.
-     */
-    !cursor_on_leafnode
+    previous_whitespace && current_whitespace
 }
 
 /// Checks if the cursor is positioned after the last node,
@@ -143,12 +149,9 @@ fn cursor_inbetween_nodes(tree: &tree_sitter::Tree, position: TextSize) -> bool 
 /// select * from|    -- user still needs to type a space
 /// select * from  |  -- too far off.
 /// ```
-fn cursor_prepared_to_write_token_after_last_node(
-    tree: &tree_sitter::Tree,
-    position: TextSize,
-) -> bool {
+fn cursor_prepared_to_write_token_after_last_node(sql: &str, position: TextSize) -> bool {
     let cursor_pos: usize = position.into();
-    cursor_pos == tree.root_node().end_byte() + 1
+    cursor_pos == sql.len() + 1
 }
 
 fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
@@ -214,58 +217,44 @@ mod tests {
         // note: two spaces between select and from.
         let input = "select  from users;";
 
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(tree_sitter_sql::language())
-            .expect("Error loading sql language");
-
-        let tree = parser.parse(input, None).unwrap();
-
         // select | from users; <-- just right, one space after select token, one space before from
-        assert!(cursor_inbetween_nodes(&tree, TextSize::new(7)));
+        assert!(cursor_inbetween_nodes(input, TextSize::new(7)));
 
         // select|  from users; <-- still on select token
-        assert!(!cursor_inbetween_nodes(&tree, TextSize::new(6)));
+        assert!(!cursor_inbetween_nodes(input, TextSize::new(6)));
 
         // select  |from users; <-- already on from token
-        assert!(!cursor_inbetween_nodes(&tree, TextSize::new(8)));
+        assert!(!cursor_inbetween_nodes(input, TextSize::new(8)));
 
         // select from users;|
-        assert!(!cursor_inbetween_nodes(&tree, TextSize::new(19)));
+        assert!(!cursor_inbetween_nodes(input, TextSize::new(19)));
     }
 
     #[test]
     fn test_cursor_after_nodes() {
         let input = "select * from";
 
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(tree_sitter_sql::language())
-            .expect("Error loading sql language");
-
-        let tree = parser.parse(input, None).unwrap();
-
         // select * from| <-- still on previous token
         assert!(!cursor_prepared_to_write_token_after_last_node(
-            &tree,
+            input,
             TextSize::new(13)
         ));
 
         // select * from  | <-- too far off, two spaces afterward
         assert!(!cursor_prepared_to_write_token_after_last_node(
-            &tree,
+            input,
             TextSize::new(15)
         ));
 
         // select * |from  <-- it's within
         assert!(!cursor_prepared_to_write_token_after_last_node(
-            &tree,
+            input,
             TextSize::new(9)
         ));
 
         // select * from | <-- just right
         assert!(cursor_prepared_to_write_token_after_last_node(
-            &tree,
+            input,
             TextSize::new(14)
         ));
     }

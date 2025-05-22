@@ -37,20 +37,23 @@ impl CompletionScore<'_> {
 
     fn check_matches_query_input(&mut self, ctx: &CompletionContext) {
         let content = match ctx.get_node_under_cursor_content() {
-            Some(c) => c,
+            Some(c) => c.replace('"', ""),
             None => return,
         };
 
         let name = match self.data {
-            CompletionRelevanceData::Function(f) => f.name.as_str(),
-            CompletionRelevanceData::Table(t) => t.name.as_str(),
-            CompletionRelevanceData::Column(c) => c.name.as_str(),
-            CompletionRelevanceData::Schema(s) => s.name.as_str(),
+            CompletionRelevanceData::Function(f) => f.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Table(t) => t.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Column(c) => c.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
 
-        if let Some(score) = fz_matcher.fuzzy_match(name, content.as_str()) {
+        if let Some(score) =
+            fz_matcher.fuzzy_match(name.as_str(), content.to_ascii_lowercase().as_str())
+        {
             let scorei32: i32 = score
                 .try_into()
                 .expect("The length of the input exceeds i32 capacity");
@@ -82,6 +85,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { on_node }
                     if on_node.is_none_or(|on| {
                         ctx.node_under_cursor
+                            .as_ref()
                             .is_none_or(|n| n.end_byte() < on.start_byte())
                     }) =>
                 {
@@ -102,6 +106,7 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { on_node }
                     if on_node.is_some_and(|on| {
                         ctx.node_under_cursor
+                            .as_ref()
                             .is_some_and(|n| n.start_byte() > on.end_byte())
                     }) =>
                 {
@@ -115,6 +120,10 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { .. } if !has_mentioned_schema => 15,
                 WrappingClause::Update if !has_mentioned_schema => 15,
                 WrappingClause::Delete if !has_mentioned_schema => 15,
+                _ => -50,
+            },
+            CompletionRelevanceData::Policy(_) => match clause_type {
+                WrappingClause::PolicyName => 25,
                 _ => -50,
             },
         }
@@ -150,6 +159,7 @@ impl CompletionScore<'_> {
                 WrappingNode::Relation if !has_mentioned_schema && has_node_text => 0,
                 _ => -50,
             },
+            CompletionRelevanceData::Policy(_) => 0,
         }
     }
 
@@ -183,6 +193,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Table(t) => t.schema.as_str(),
             CompletionRelevanceData::Column(c) => c.schema_name.as_str(),
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
+            CompletionRelevanceData::Policy(p) => p.schema_name.as_str(),
         }
     }
 
@@ -190,6 +201,7 @@ impl CompletionScore<'_> {
         match self.data {
             CompletionRelevanceData::Column(c) => Some(c.table_name.as_str()),
             CompletionRelevanceData::Table(t) => Some(t.name.as_str()),
+            CompletionRelevanceData::Policy(p) => Some(p.table_name.as_str()),
             _ => None,
         }
     }

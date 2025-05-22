@@ -1,12 +1,19 @@
+mod policy_parser;
+
 use std::collections::{HashMap, HashSet};
 
 use pgt_schema_cache::SchemaCache;
+use pgt_text_size::TextRange;
 use pgt_treesitter_queries::{
     TreeSitterQueriesExecutor,
     queries::{self, QueryResult},
 };
 
-use crate::sanitization::SanitizedCompletionParams;
+use crate::{
+    NodeText,
+    context::policy_parser::{PolicyParser, PolicyStmtKind},
+    sanitization::SanitizedCompletionParams,
+};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum WrappingClause<'a> {
@@ -18,12 +25,8 @@ pub enum WrappingClause<'a> {
     },
     Update,
     Delete,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub(crate) enum NodeText<'a> {
-    Replaced,
-    Original(&'a str),
+    PolicyName,
+    ToRoleAssignment,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -45,6 +48,45 @@ pub enum WrappingNode {
     Relation,
     BinaryExpression,
     Assignment,
+}
+
+#[derive(Debug)]
+pub(crate) enum NodeUnderCursor<'a> {
+    TsNode(tree_sitter::Node<'a>),
+    CustomNode {
+        text: NodeText,
+        range: TextRange,
+        kind: String,
+    },
+}
+
+impl NodeUnderCursor<'_> {
+    pub fn start_byte(&self) -> usize {
+        match self {
+            NodeUnderCursor::TsNode(node) => node.start_byte(),
+            NodeUnderCursor::CustomNode { range, .. } => range.start().into(),
+        }
+    }
+
+    pub fn end_byte(&self) -> usize {
+        match self {
+            NodeUnderCursor::TsNode(node) => node.end_byte(),
+            NodeUnderCursor::CustomNode { range, .. } => range.end().into(),
+        }
+    }
+
+    pub fn kind(&self) -> &str {
+        match self {
+            NodeUnderCursor::TsNode(node) => node.kind(),
+            NodeUnderCursor::CustomNode { kind, .. } => kind.as_str(),
+        }
+    }
+}
+
+impl<'a> From<tree_sitter::Node<'a>> for NodeUnderCursor<'a> {
+    fn from(node: tree_sitter::Node<'a>) -> Self {
+        NodeUnderCursor::TsNode(node)
+    }
 }
 
 impl TryFrom<&str> for WrappingNode {
@@ -77,7 +119,7 @@ impl TryFrom<String> for WrappingNode {
 }
 
 pub(crate) struct CompletionContext<'a> {
-    pub node_under_cursor: Option<tree_sitter::Node<'a>>,
+    pub node_under_cursor: Option<NodeUnderCursor<'a>>,
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
@@ -137,10 +179,47 @@ impl<'a> CompletionContext<'a> {
             is_in_error_node: false,
         };
 
-        ctx.gather_tree_context();
-        ctx.gather_info_from_ts_queries();
+        // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
+        // so the tree_sitter_sql language does not support it.
+        // We infer the context manually.
+        if PolicyParser::looks_like_policy_stmt(&params.text) {
+            ctx.gather_policy_context();
+        } else {
+            ctx.gather_tree_context();
+            ctx.gather_info_from_ts_queries();
+        }
 
         ctx
+    }
+
+    fn gather_policy_context(&mut self) {
+        let policy_context = PolicyParser::get_context(self.text, self.position);
+
+        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+            text: policy_context.node_text.into(),
+            range: policy_context.node_range,
+            kind: policy_context.node_kind.clone(),
+        });
+
+        if policy_context.node_kind == "policy_table" {
+            self.schema_or_alias_name = policy_context.schema_name.clone();
+        }
+
+        if policy_context.table_name.is_some() {
+            let mut new = HashSet::new();
+            new.insert(policy_context.table_name.unwrap());
+            self.mentioned_relations
+                .insert(policy_context.schema_name, new);
+        }
+
+        self.wrapping_clause_type = match policy_context.node_kind.as_str() {
+            "policy_name" if policy_context.statement_kind != PolicyStmtKind::Create => {
+                Some(WrappingClause::PolicyName)
+            }
+            "policy_role" => Some(WrappingClause::ToRoleAssignment),
+            "policy_table" => Some(WrappingClause::From),
+            _ => None,
+        };
     }
 
     fn gather_info_from_ts_queries(&mut self) {
@@ -196,24 +275,30 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    pub fn get_ts_node_content(&self, ts_node: tree_sitter::Node<'a>) -> Option<NodeText<'a>> {
+    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<NodeText> {
         let source = self.text;
         ts_node.utf8_text(source.as_bytes()).ok().map(|txt| {
             if SanitizedCompletionParams::is_sanitized_token(txt) {
                 NodeText::Replaced
             } else {
-                NodeText::Original(txt)
+                NodeText::Original(txt.into())
             }
         })
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
-        self.node_under_cursor
-            .and_then(|n| self.get_ts_node_content(n))
-            .and_then(|txt| match txt {
+        match self.node_under_cursor.as_ref()? {
+            NodeUnderCursor::TsNode(node) => {
+                self.get_ts_node_content(node).and_then(|nt| match nt {
+                    NodeText::Replaced => None,
+                    NodeText::Original(c) => Some(c.to_string()),
+                })
+            }
+            NodeUnderCursor::CustomNode { text, .. } => match text {
                 NodeText::Replaced => None,
                 NodeText::Original(c) => Some(c.to_string()),
-            })
+            },
+        }
     }
 
     fn gather_tree_context(&mut self) {
@@ -251,7 +336,7 @@ impl<'a> CompletionContext<'a> {
 
         // prevent infinite recursion – this can happen if we only have a PROGRAM node
         if current_node_kind == parent_node_kind {
-            self.node_under_cursor = Some(current_node);
+            self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
 
@@ -290,7 +375,7 @@ impl<'a> CompletionContext<'a> {
 
         match current_node_kind {
             "object_reference" | "field" => {
-                let content = self.get_ts_node_content(current_node);
+                let content = self.get_ts_node_content(&current_node);
                 if let Some(node_txt) = content {
                     match node_txt {
                         NodeText::Original(txt) => {
@@ -322,7 +407,7 @@ impl<'a> CompletionContext<'a> {
 
         // We have arrived at the leaf node
         if current_node.child_count() == 0 {
-            self.node_under_cursor = Some(current_node);
+            self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
 
@@ -335,11 +420,11 @@ impl<'a> CompletionContext<'a> {
         node: tree_sitter::Node<'a>,
     ) -> Option<WrappingClause<'a>> {
         if node.kind().starts_with("keyword_") {
-            if let Some(txt) = self.get_ts_node_content(node).and_then(|txt| match txt {
+            if let Some(txt) = self.get_ts_node_content(&node).and_then(|txt| match txt {
                 NodeText::Original(txt) => Some(txt),
                 NodeText::Replaced => None,
             }) {
-                match txt {
+                match txt.as_str() {
                     "where" => return Some(WrappingClause::Where),
                     "update" => return Some(WrappingClause::Update),
                     "select" => return Some(WrappingClause::Select),
@@ -389,10 +474,13 @@ impl<'a> CompletionContext<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        context::{CompletionContext, NodeText, WrappingClause},
+        NodeText,
+        context::{CompletionContext, WrappingClause},
         sanitization::SanitizedCompletionParams,
         test_helper::{CURSOR_POS, get_text_and_position},
     };
+
+    use super::NodeUnderCursor;
 
     fn get_tree(input: &str) -> tree_sitter::Tree {
         let mut parser = tree_sitter::Parser::new();
@@ -552,17 +640,22 @@ mod tests {
 
             let ctx = CompletionContext::new(&params);
 
-            let node = ctx.node_under_cursor.unwrap();
+            let node = ctx.node_under_cursor.as_ref().unwrap();
 
-            assert_eq!(
-                ctx.get_ts_node_content(node),
-                Some(NodeText::Original("select"))
-            );
+            match node {
+                NodeUnderCursor::TsNode(node) => {
+                    assert_eq!(
+                        ctx.get_ts_node_content(node),
+                        Some(NodeText::Original("select".into()))
+                    );
 
-            assert_eq!(
-                ctx.wrapping_clause_type,
-                Some(crate::context::WrappingClause::Select)
-            );
+                    assert_eq!(
+                        ctx.wrapping_clause_type,
+                        Some(crate::context::WrappingClause::Select)
+                    );
+                }
+                _ => unreachable!(),
+            }
         }
     }
 
@@ -583,12 +676,17 @@ mod tests {
 
         let ctx = CompletionContext::new(&params);
 
-        let node = ctx.node_under_cursor.unwrap();
+        let node = ctx.node_under_cursor.as_ref().unwrap();
 
-        assert_eq!(
-            ctx.get_ts_node_content(node),
-            Some(NodeText::Original("from"))
-        );
+        match node {
+            NodeUnderCursor::TsNode(node) => {
+                assert_eq!(
+                    ctx.get_ts_node_content(node),
+                    Some(NodeText::Original("from".into()))
+                );
+            }
+            _ => unreachable!(),
+        }
     }
 
     #[test]
@@ -608,10 +706,18 @@ mod tests {
 
         let ctx = CompletionContext::new(&params);
 
-        let node = ctx.node_under_cursor.unwrap();
+        let node = ctx.node_under_cursor.as_ref().unwrap();
 
-        assert_eq!(ctx.get_ts_node_content(node), Some(NodeText::Original("")));
-        assert_eq!(ctx.wrapping_clause_type, None);
+        match node {
+            NodeUnderCursor::TsNode(node) => {
+                assert_eq!(
+                    ctx.get_ts_node_content(node),
+                    Some(NodeText::Original("".into()))
+                );
+                assert_eq!(ctx.wrapping_clause_type, None);
+            }
+            _ => unreachable!(),
+        }
     }
 
     #[test]
@@ -633,12 +739,17 @@ mod tests {
 
         let ctx = CompletionContext::new(&params);
 
-        let node = ctx.node_under_cursor.unwrap();
+        let node = ctx.node_under_cursor.as_ref().unwrap();
 
-        assert_eq!(
-            ctx.get_ts_node_content(node),
-            Some(NodeText::Original("fro"))
-        );
-        assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
+        match node {
+            NodeUnderCursor::TsNode(node) => {
+                assert_eq!(
+                    ctx.get_ts_node_content(node),
+                    Some(NodeText::Original("fro".into()))
+                );
+                assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
+            }
+            _ => unreachable!(),
+        }
     }
 }
