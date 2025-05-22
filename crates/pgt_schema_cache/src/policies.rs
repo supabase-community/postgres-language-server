@@ -56,14 +56,14 @@ impl From<PolicyQueried> for Policy {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Policy {
-    name: String,
-    table_name: String,
-    schema_name: String,
-    is_permissive: bool,
-    command: PolicyCommand,
-    role_names: Vec<String>,
-    security_qualification: Option<String>,
-    with_check: Option<String>,
+    pub name: String,
+    pub table_name: String,
+    pub schema_name: String,
+    pub is_permissive: bool,
+    pub command: PolicyCommand,
+    pub role_names: Vec<String>,
+    pub security_qualification: Option<String>,
+    pub with_check: Option<String>,
 }
 
 impl SchemaCacheItem for Policy {
