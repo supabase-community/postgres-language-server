@@ -52,10 +52,10 @@ from
   and atts.attnum = ix.attnum
   left join pg_catalog.pg_attrdef def on atts.attrelid = def.adrelid
   and atts.attnum = def.adnum
-  left join pg_catalog.pg_type tps on tps.oid = atts.atttypid
+  left join pg_catalog.pg_type tps on atts.atttypid = tps.oid
 where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
-  atts.attnum >= 0
+  atts.attnum >= 0 and atts.atttypid is not null and tps.oid is not null
 order by
   schema_name desc,
   table_name,
