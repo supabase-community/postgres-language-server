@@ -1,5 +1,3 @@
-use core::num;
-
 use pgt_schema_cache::Function;
 
 use crate::{
