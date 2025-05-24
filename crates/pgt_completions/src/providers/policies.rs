@@ -25,6 +25,7 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
             let range = get_range_to_replace(ctx);
             Some(CompletionText {
                 text: pol.name.clone(),
+                is_snippet: false,
                 range: TextRange::new(
                     range.start() + TextSize::new(1),
                     range.end() - TextSize::new(1),
@@ -34,6 +35,7 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
             // If we aren't within quotes, we want to complete the
             // full policy including quotation marks.
             Some(CompletionText {
+                is_snippet: false,
                 text: format!("\"{}\"", pol.name),
                 range: get_range_to_replace(ctx),
             })

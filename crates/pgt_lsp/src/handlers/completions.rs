@@ -5,7 +5,9 @@ use crate::{
 };
 use anyhow::Result;
 use pgt_workspace::{WorkspaceError, features::completions::GetCompletionsParams};
-use tower_lsp::lsp_types::{self, CompletionItem, CompletionItemLabelDetails, TextEdit};
+use tower_lsp::lsp_types::{
+    self, CompletionItem, CompletionItemLabelDetails, InsertTextFormat, TextEdit,
+};
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub fn get_completions(
@@ -46,6 +48,11 @@ pub fn get_completions(
             }),
             preselect: Some(i.preselected),
             sort_text: Some(i.sort_text),
+            insert_text_format: if i.completion_text.as_ref().is_some_and(|c| c.is_snippet) {
+                Some(InsertTextFormat::SNIPPET)
+            } else {
+                Some(InsertTextFormat::PLAIN_TEXT)
+            },
             text_edit: i.completion_text.map(|c| {
                 lsp_types::CompletionTextEdit::Edit(TextEdit {
                     new_text: c.text,
