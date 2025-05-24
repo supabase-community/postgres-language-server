@@ -15,6 +15,7 @@ pub struct SQLFunctionArg {
 
 #[derive(Debug, Clone)]
 pub struct SQLFunctionSignature {
+    #[allow(dead_code)]
     pub schema: Option<String>,
     pub name: String,
     pub args: Vec<SQLFunctionArg>,
