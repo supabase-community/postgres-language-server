@@ -34,7 +34,9 @@ pub(crate) fn get_completion_text_with_schema_or_alias(
     item_name: &str,
     schema_or_alias_name: &str,
 ) -> Option<CompletionText> {
-    if schema_or_alias_name == "public" || ctx.schema_or_alias_name.is_some() {
+    let is_already_prefixed_with_schema_name = ctx.schema_or_alias_name.is_some();
+
+    if schema_or_alias_name == "public" || is_already_prefixed_with_schema_name {
         None
     } else {
         let range = get_range_to_replace(ctx);
@@ -42,6 +44,7 @@ pub(crate) fn get_completion_text_with_schema_or_alias(
         Some(CompletionText {
             text: format!("{}.{}", schema_or_alias_name, item_name),
             range,
+            is_snippet: false,
         })
     }
 }
