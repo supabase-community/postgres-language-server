@@ -48,6 +48,7 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
             description: pol.table_name.to_string(),
             kind: CompletionItemKind::Policy,
             completion_text,
+            detail: None,
         };
 
         builder.add_item(item);

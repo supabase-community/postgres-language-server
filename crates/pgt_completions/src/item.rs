@@ -52,6 +52,7 @@ pub struct CompletionItem {
     pub kind: CompletionItemKind,
     /// String used for sorting by LSP clients.
     pub sort_text: String,
+    pub detail: Option<String>,
 
     pub completion_text: Option<CompletionText>,
 }

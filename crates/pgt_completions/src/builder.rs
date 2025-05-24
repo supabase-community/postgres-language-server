@@ -12,6 +12,7 @@ pub(crate) struct PossibleCompletionItem<'a> {
     pub score: CompletionScore<'a>,
     pub filter: CompletionFilter<'a>,
     pub completion_text: Option<CompletionText>,
+    pub detail: Option<String>,
 }
 
 pub(crate) struct CompletionBuilder<'a> {
@@ -70,6 +71,7 @@ impl<'a> CompletionBuilder<'a> {
                     kind: item.kind,
                     label: item.label,
                     preselected,
+                    detail: item.detail,
 
                     // wonderous Rust syntax ftw
                     sort_text: format!("{:0>padding$}", idx, padding = max_padding),

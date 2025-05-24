@@ -35,6 +35,7 @@ select
   ts.class_kind :: char as "class_kind!",
   ts.schema_name,
   atts.atttypid :: int8 as "type_id!",
+  tps.typname as "type_name",
   not atts.attnotnull as "is_nullable!",
   nullif(
     information_schema._pg_char_max_length (atts.atttypid, atts.atttypmod),
@@ -51,6 +52,7 @@ from
   and atts.attnum = ix.attnum
   left join pg_catalog.pg_attrdef def on atts.attrelid = def.adrelid
   and atts.attnum = def.adnum
+  left join pg_catalog.pg_type tps on tps.oid = atts.atttypid
 where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
   atts.attnum >= 0
