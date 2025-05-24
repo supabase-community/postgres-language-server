@@ -7,18 +7,24 @@ use pgt_test_utils::test_database::get_new_test_db;
 use pgt_typecheck::{TypecheckParams, check_sql};
 use sqlx::Executor;
 
-async fn test(name: &str, query: &str, setup: &str) {
+async fn test(name: &str, query: &str, setup: Option<&str>) {
     let test_db = get_new_test_db().await;
 
-    test_db
-        .execute(setup)
-        .await
-        .expect("Failed to setup test database");
+    if let Some(setup) = setup {
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to setup test database");
+    }
 
     let mut parser = tree_sitter::Parser::new();
     parser
         .set_language(tree_sitter_sql::language())
         .expect("Error loading sql language");
+
+    let schema_cache = pgt_schema_cache::SchemaCache::load(&test_db)
+        .await
+        .expect("Failed to load Schema Cache");
 
     let root = pgt_query_ext::parse(query).unwrap();
     let tree = parser.parse(query, None).unwrap();
@@ -29,6 +35,8 @@ async fn test(name: &str, query: &str, setup: &str) {
         sql: query,
         ast: &root,
         tree: &tree,
+        schema_cache: &schema_cache,
+        identifiers: vec![],
     })
     .await;
 
@@ -55,7 +63,8 @@ async fn invalid_column() {
     test(
         "invalid_column",
         "select id, unknown from contacts;",
-        r#"
+        Some(
+            r#"
         create table public.contacts (
             id serial primary key,
             name varchar(255) not null,
@@ -63,6 +72,7 @@ async fn invalid_column() {
             middle_name varchar(255)
         );
     "#,
+        ),
     )
     .await;
 }

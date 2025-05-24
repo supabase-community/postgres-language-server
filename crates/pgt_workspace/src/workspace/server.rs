@@ -1,4 +1,9 @@
-use std::{fs, panic::RefUnwindSafe, path::Path, sync::RwLock};
+use std::{
+    fs,
+    panic::RefUnwindSafe,
+    path::Path,
+    sync::{Arc, RwLock},
+};
 
 use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
@@ -16,7 +21,7 @@ use pgt_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgt_fs::{ConfigName, PgTPath};
-use pgt_typecheck::TypecheckParams;
+use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use schema_cache_manager::SchemaCacheManager;
 use sqlx::Executor;
 use tracing::info;
@@ -366,12 +371,16 @@ impl Workspace for WorkspaceServer {
             .get_pool()
         {
             let path_clone = params.path.clone();
+            let schema_cache = self.schema_cache.load(pool.clone())?;
+            let schema_cache_arc = schema_cache.get_arc();
             let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+            // sorry for the ugly code :(
             let async_results = run_async(async move {
                 stream::iter(input)
-                    .map(|(_id, range, content, ast, cst)| {
+                    .map(|(_id, range, content, ast, cst, sign)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
+                        let schema_cache = Arc::clone(&schema_cache_arc);
                         async move {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
@@ -379,6 +388,23 @@ impl Workspace for WorkspaceServer {
                                     sql: &content,
                                     ast: &ast,
                                     tree: &cst,
+                                    schema_cache: schema_cache.as_ref(),
+                                    identifiers: sign
+                                        .map(|s| {
+                                            s.args
+                                                .iter()
+                                                .map(|a| TypedIdentifier {
+                                                    path: s.name.clone(),
+                                                    name: a.name.clone(),
+                                                    type_: IdentifierType {
+                                                        schema: a.type_.schema.clone(),
+                                                        name: a.type_.name.clone(),
+                                                        is_array: a.type_.is_array,
+                                                    },
+                                                })
+                                                .collect::<Vec<_>>()
+                                        })
+                                        .unwrap_or_default(),
                                 })
                                 .await
                                 .map(|d| {

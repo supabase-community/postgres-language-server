@@ -285,6 +285,7 @@ impl<'a> CompletionContext<'a> {
                         })
                         .or_insert(HashSet::from([mentioned]));
                 }
+                _ => {}
             };
         }
     }

@@ -19,3 +19,4 @@ pub use schema_cache::SchemaCache;
 pub use schemas::Schema;
 pub use tables::{ReplicaIdentity, Table};
 pub use triggers::{Trigger, TriggerAffected, TriggerEvent};
+pub use types::{PostgresType, PostgresTypeAttribute};
