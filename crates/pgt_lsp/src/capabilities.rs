@@ -37,7 +37,7 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
             // The request is used to get more information about a simple CompletionItem.
             resolve_provider: None,
 
-            trigger_characters: Some(vec![".".to_owned(), " ".to_owned()]),
+            trigger_characters: Some(vec![".".to_owned(), " ".to_owned(), "(".to_owned()]),
 
             // No character will lead to automatically inserting the selected completion-item
             all_commit_characters: None,

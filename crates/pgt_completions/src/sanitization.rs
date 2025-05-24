@@ -206,8 +206,64 @@ fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool
 
 fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
+
+    let mut level = 0;
+    let mut tracking_open_idx = None;
+
+    let mut matching_open_idx = None;
+    let mut matching_close_idx = None;
+
+    for (idx, char) in sql.chars().enumerate() {
+        if char == '(' {
+            tracking_open_idx = Some(idx);
+            level += 1;
+        }
+
+        if char == ')' {
+            level -= 1;
+
+            if tracking_open_idx.is_some_and(|it| it < position) && idx >= position {
+                matching_open_idx = tracking_open_idx;
+                matching_close_idx = Some(idx)
+            }
+        }
+    }
+
+    // invalid statement
+    if level != 0 {
+        return false;
+    }
+
+    // early check: '(|)'
+    // however, we want to check this after the level nesting.
     let mut chars = sql.chars();
-    chars.nth(position - 1).is_some_and(|c| c == '(') && chars.next().is_some_and(|c| c == ')')
+    if chars.nth(position - 1).is_some_and(|c| c == '(') && chars.next().is_some_and(|c| c == ')') {
+        return true;
+    }
+
+    // not *within* parentheses
+    if matching_open_idx.is_none() || matching_close_idx.is_none() {
+        return false;
+    }
+
+    // use string indexing, because we can't `.rev()` after `.take()`
+    let before = sql[..position]
+        .to_string()
+        .chars()
+        .rev()
+        .find(|c| !c.is_whitespace())
+        .unwrap_or_default();
+
+    let after = sql
+        .chars()
+        .skip(position)
+        .find(|c| !c.is_whitespace())
+        .unwrap_or_default();
+
+    let before_matches = before == ',' || before == '(';
+    let after_matches = after == ',' || after == ')';
+
+    before_matches && after_matches
 }
 
 #[cfg(test)]
@@ -326,5 +382,42 @@ mod tests {
 
         // insert into |() <- too early
         assert!(!cursor_between_parentheses(input, TextSize::new(24)));
+
+        let input = "insert into instruments (name, id, )";
+
+        // insert into instruments (name, id, |) <-- we should sanitize the next column
+        assert!(cursor_between_parentheses(input, TextSize::new(35)));
+
+        // insert into instruments (name, id|, ) <-- we are still on the previous token.
+        assert!(!cursor_between_parentheses(input, TextSize::new(33)));
+
+        let input = "insert into instruments (name, , id)";
+
+        // insert into instruments (name, |, id) <-- we can sanitize!
+        assert!(cursor_between_parentheses(input, TextSize::new(31)));
+
+        // insert into instruments (name, ,| id) <-- we are already on the next token
+        assert!(!cursor_between_parentheses(input, TextSize::new(32)));
+
+        let input = "insert into instruments (, name, id)";
+
+        // insert into instruments (|, name, id) <-- we can sanitize!
+        assert!(cursor_between_parentheses(input, TextSize::new(25)));
+
+        // insert into instruments (,| name, id) <-- already on next token
+        assert!(!cursor_between_parentheses(input, TextSize::new(26)));
+
+        // bails on invalidly nested statements
+        assert!(!cursor_between_parentheses(
+            "insert into (instruments ()",
+            TextSize::new(26)
+        ));
+
+        // can find its position in nested statements
+        // "insert into instruments (name) values (a_function(name, |))",
+        assert!(cursor_between_parentheses(
+            "insert into instruments (name) values (a_function(name, ))",
+            TextSize::new(56)
+        ));
     }
 }

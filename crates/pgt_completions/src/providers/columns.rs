@@ -579,16 +579,44 @@ mod tests {
         let setup = r#"
             create table instruments (
                 id bigint primary key generated always as identity,
-                name text not null
+                name text not null,
+                z text
+            );
+
+            create table others (
+                id serial primary key,
+                a text,
+                b text
             );
         "#;
+
+        // We should prefer the instrument columns, even though they
+        // are lower in the alphabet
 
         assert_complete_results(
             format!("insert into instruments ({})", CURSOR_POS).as_str(),
             vec![
                 CompletionAssertion::Label("id".to_string()),
                 CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("z".to_string()),
             ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("insert into instruments (id, {})", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("insert into instruments (id, {}, name)", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::Label("z".to_string())],
             setup,
         )
         .await;
