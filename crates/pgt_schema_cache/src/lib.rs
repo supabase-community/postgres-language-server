@@ -5,6 +5,7 @@
 mod columns;
 mod functions;
 mod policies;
+mod roles;
 mod schema_cache;
 mod schemas;
 mod tables;
@@ -15,6 +16,7 @@ mod versions;
 pub use columns::*;
 pub use functions::{Behavior, Function, FunctionArg, FunctionArgs};
 pub use policies::{Policy, PolicyCommand};
+pub use roles::*;
 pub use schema_cache::SchemaCache;
 pub use schemas::Schema;
 pub use tables::{ReplicaIdentity, Table};
