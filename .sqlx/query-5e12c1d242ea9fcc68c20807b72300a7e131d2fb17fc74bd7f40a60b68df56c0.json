@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select \n  rolname as \"name!\", \n  rolsuper as \"is_super_user!\", \n  rolcreatedb as \"can_create_db!\", \n  rolcanlogin  as \"can_login!\",\n  rolbypassrls as \"can_bypass_rls!\"\nfrom pg_catalog.pg_roles;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_super_user!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "can_create_db!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "can_login!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "can_bypass_rls!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5e12c1d242ea9fcc68c20807b72300a7e131d2fb17fc74bd7f40a60b68df56c0"
+}
