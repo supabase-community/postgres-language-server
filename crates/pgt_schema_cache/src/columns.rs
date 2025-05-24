@@ -48,6 +48,7 @@ pub struct Column {
 
     pub schema_name: String,
     pub type_id: i64,
+    pub type_name: String,
     pub is_nullable: bool,
 
     pub is_primary_key: bool,

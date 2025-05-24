@@ -19,6 +19,7 @@ pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionB
             filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", table.schema),
             kind: CompletionItemKind::Table,
+            detail: None,
             completion_text: get_completion_text_with_schema_or_alias(
                 ctx,
                 &table.name,

@@ -22,6 +22,7 @@ pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut Completi
             filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", func.schema),
             kind: CompletionItemKind::Function,
+            detail: None,
             completion_text: Some(get_completion_text(ctx, func)),
         };
 

@@ -41,7 +41,10 @@ pub fn get_completions(
             label: i.label,
             label_details: Some(CompletionItemLabelDetails {
                 description: Some(i.description),
-                detail: Some(format!(" {}", i.kind)),
+                detail: i
+                    .detail
+                    .map(|s| format!(" {}", s))
+                    .or(Some(format!(" {}", i.kind))),
             }),
             preselect: Some(i.preselected),
             sort_text: Some(i.sort_text),

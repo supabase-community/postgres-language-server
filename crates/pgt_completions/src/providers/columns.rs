@@ -20,6 +20,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
             description: format!("Table: {}.{}", col.schema_name, col.table_name),
             kind: CompletionItemKind::Column,
             completion_text: None,
+            detail: Some(col.type_name.to_string()),
         };
 
         // autocomplete with the alias in a join clause if we find one
