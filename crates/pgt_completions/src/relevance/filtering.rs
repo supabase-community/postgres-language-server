@@ -123,14 +123,13 @@ impl CompletionFilter<'_> {
                         }
                     }
 
-                    CompletionRelevanceData::Function(_) => match clause {
+                    CompletionRelevanceData::Function(_) => matches!(
+                        clause,
                         WrappingClause::From
-                        | WrappingClause::Select
-                        | WrappingClause::Where
-                        | WrappingClause::Join { .. } => true,
-
-                        _ => false,
-                    },
+                            | WrappingClause::Select
+                            | WrappingClause::Where
+                            | WrappingClause::Join { .. }
+                    ),
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
@@ -157,10 +156,9 @@ impl CompletionFilter<'_> {
                         _ => false,
                     },
 
-                    CompletionRelevanceData::Policy(_) => match clause {
-                        WrappingClause::PolicyName => true,
-                        _ => false,
-                    },
+                    CompletionRelevanceData::Policy(_) => {
+                        matches!(clause, WrappingClause::PolicyName)
+                    }
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })

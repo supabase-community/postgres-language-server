@@ -549,9 +549,7 @@ impl<'a> CompletionContext<'a> {
 
         clauses_with_score.sort_by(|(_, score_a), (_, score_b)| score_b.cmp(score_a));
         clauses_with_score
-            .iter()
-            .filter(|(_, score)| *score > 0)
-            .next()
+            .iter().find(|(_, score)| *score > 0)
             .map(|c| c.0.clone())
     }
 
@@ -559,50 +557,47 @@ impl<'a> CompletionContext<'a> {
         let mut first_sibling = self.get_first_sibling(node);
 
         if let Some(clause) = self.wrapping_clause_type.as_ref() {
-            match clause {
-                WrappingClause::Insert => {
-                    while let Some(sib) = first_sibling.next_sibling() {
-                        match sib.kind() {
-                            "object_reference" => {
-                                if let Some(NodeText::Original(txt)) =
-                                    self.get_ts_node_content(&sib)
-                                {
-                                    let mut iter = txt.split('.').rev();
-                                    let table = iter.next().unwrap().to_string();
-                                    let schema = iter.next().map(|s| s.to_string());
-                                    self.mentioned_relations
-                                        .entry(schema)
-                                        .and_modify(|s| {
-                                            s.insert(table.clone());
-                                        })
-                                        .or_insert(HashSet::from([table]));
-                                }
+            if clause == &WrappingClause::Insert {
+                while let Some(sib) = first_sibling.next_sibling() {
+                    match sib.kind() {
+                        "object_reference" => {
+                            if let Some(NodeText::Original(txt)) =
+                                self.get_ts_node_content(&sib)
+                            {
+                                let mut iter = txt.split('.').rev();
+                                let table = iter.next().unwrap().to_string();
+                                let schema = iter.next().map(|s| s.to_string());
+                                self.mentioned_relations
+                                    .entry(schema)
+                                    .and_modify(|s| {
+                                        s.insert(table.clone());
+                                    })
+                                    .or_insert(HashSet::from([table]));
                             }
-                            "column" => {
-                                if let Some(NodeText::Original(txt)) =
-                                    self.get_ts_node_content(&sib)
-                                {
-                                    let entry = MentionedColumn {
-                                        column: txt,
-                                        alias: None,
-                                    };
+                        }
+                        "column" => {
+                            if let Some(NodeText::Original(txt)) =
+                                self.get_ts_node_content(&sib)
+                            {
+                                let entry = MentionedColumn {
+                                    column: txt,
+                                    alias: None,
+                                };
 
-                                    self.mentioned_columns
-                                        .entry(Some(WrappingClause::Insert))
-                                        .and_modify(|s| {
-                                            s.insert(entry.clone());
-                                        })
-                                        .or_insert(HashSet::from([entry]));
-                                }
+                                self.mentioned_columns
+                                    .entry(Some(WrappingClause::Insert))
+                                    .and_modify(|s| {
+                                        s.insert(entry.clone());
+                                    })
+                                    .or_insert(HashSet::from([entry]));
                             }
-
-                            _ => {}
                         }
 
-                        first_sibling = sib;
+                        _ => {}
                     }
+
+                    first_sibling = sib;
                 }
-                _ => {}
             }
         }
     }
@@ -654,7 +649,7 @@ impl<'a> CompletionContext<'a> {
         self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
             match under_cursor {
                 NodeUnderCursor::TsNode(node) => {
-                    let mut current = node.clone();
+                    let mut current = *node;
 
                     // move up to the parent until we're at top OR we have a prev sibling
                     while current.prev_sibling().is_none() && current.parent().is_some() {
