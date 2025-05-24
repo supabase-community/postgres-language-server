@@ -36,6 +36,8 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
 
 #[cfg(test)]
 mod tests {
+    use std::vec;
+
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
@@ -639,6 +641,45 @@ mod tests {
         // no completions in the values list!
         assert_no_complete_results(
             format!("insert into instruments (id, name) values ({})", CURSOR_POS).as_str(),
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn suggests_columns_in_where_clause() {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null,
+                z text, 
+                created_at timestamp with time zone default now()
+            );
+        "#;
+
+        assert_complete_results(
+            format!("select name from instruments where {} ", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::Label("created_at".into()),
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+                CompletionAssertion::Label("z".into()),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                "select name from instruments where z = 'something' and created_at > {}",
+                CURSOR_POS
+            )
+            .as_str(),
+            // simply do not complete columns + schemas; functions etc. are ok
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Column),
+                CompletionAssertion::KindNotExists(CompletionItemKind::Schema),
+            ],
             setup,
         )
         .await;

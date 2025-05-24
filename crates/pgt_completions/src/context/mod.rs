@@ -359,8 +359,9 @@ impl<'a> CompletionContext<'a> {
         let parent_node_kind = parent_node.kind();
         let current_node_kind = current_node.kind();
 
-        // prevent infinite recursion – this can happen if we only have a PROGRAM node
-        if current_node_kind == parent_node_kind {
+        // prevent infinite recursion – this can happen with ERROR nodes
+        if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
+        {
             self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
