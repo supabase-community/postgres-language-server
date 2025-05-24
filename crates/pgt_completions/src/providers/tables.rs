@@ -379,4 +379,28 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn suggests_tables_in_insert_into() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+        "#;
+
+        assert_complete_results(
+            format!("insert into {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+    }
 }

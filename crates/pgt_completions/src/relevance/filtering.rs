@@ -81,7 +81,7 @@ impl CompletionFilter<'_> {
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
                                 .as_ref()
-                                .is_some_and(|n| n != &WrappingNode::List)
+                                .is_none_or(|n| n != &WrappingNode::List)
                                 && ctx.before_cursor_matches_kind(&["keyword_into"])
                         }
 
@@ -148,7 +148,7 @@ impl CompletionFilter<'_> {
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
                                 .as_ref()
-                                .is_some_and(|n| n != &WrappingNode::List)
+                                .is_none_or(|n| n != &WrappingNode::List)
                                 && ctx.before_cursor_matches_kind(&["keyword_into"])
                         }
 
