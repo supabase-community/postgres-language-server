@@ -1,6 +1,8 @@
+use std::{
+    cmp,
+    collections::{HashMap, HashSet},
+};
 mod policy_parser;
-
-use std::collections::{HashMap, HashSet};
 
 use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextRange;
@@ -15,7 +17,7 @@ use crate::{
     sanitization::SanitizedCompletionParams,
 };
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum WrappingClause<'a> {
     Select,
     Where,
@@ -25,11 +27,15 @@ pub enum WrappingClause<'a> {
     },
     Update,
     Delete,
+    ColumnDefinitions,
+    Insert,
+    AlterTable,
+    DropTable,
     PolicyName,
     ToRoleAssignment,
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub(crate) struct MentionedColumn {
     pub(crate) column: String,
     pub(crate) alias: Option<String>,
@@ -48,6 +54,7 @@ pub enum WrappingNode {
     Relation,
     BinaryExpression,
     Assignment,
+    List,
 }
 
 #[derive(Debug)]
@@ -97,6 +104,7 @@ impl TryFrom<&str> for WrappingNode {
             "relation" => Ok(Self::Relation),
             "assignment" => Ok(Self::Assignment),
             "binary_expression" => Ok(Self::BinaryExpression),
+            "list" => Ok(Self::List),
             _ => {
                 let message = format!("Unimplemented Relation: {}", value);
 
@@ -118,6 +126,7 @@ impl TryFrom<String> for WrappingNode {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct CompletionContext<'a> {
     pub node_under_cursor: Option<NodeUnderCursor<'a>>,
 
@@ -152,9 +161,6 @@ pub(crate) struct CompletionContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
-    /// Some incomplete statements can't be correctly parsed by TreeSitter.
-    pub is_in_error_node: bool,
-
     pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     pub mentioned_table_aliases: HashMap<String, String>,
     pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
@@ -176,7 +182,6 @@ impl<'a> CompletionContext<'a> {
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
-            is_in_error_node: false,
         };
 
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
@@ -231,6 +236,8 @@ impl<'a> CompletionContext<'a> {
         executor.add_query_results::<queries::RelationMatch>();
         executor.add_query_results::<queries::TableAliasMatch>();
         executor.add_query_results::<queries::SelectColumnMatch>();
+        executor.add_query_results::<queries::InsertColumnMatch>();
+        executor.add_query_results::<queries::WhereColumnMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -238,37 +245,61 @@ impl<'a> CompletionContext<'a> {
                     let schema_name = r.get_schema(sql);
                     let table_name = r.get_table(sql);
 
-                    if let Some(c) = self.mentioned_relations.get_mut(&schema_name) {
-                        c.insert(table_name);
-                    } else {
-                        let mut new = HashSet::new();
-                        new.insert(table_name);
-                        self.mentioned_relations.insert(schema_name, new);
-                    }
+                    self.mentioned_relations
+                        .entry(schema_name)
+                        .and_modify(|s| {
+                            s.insert(table_name.clone());
+                        })
+                        .or_insert(HashSet::from([table_name]));
                 }
+
                 QueryResult::TableAliases(table_alias_match) => {
                     self.mentioned_table_aliases.insert(
                         table_alias_match.get_alias(sql),
                         table_alias_match.get_table(sql),
                     );
                 }
+
                 QueryResult::SelectClauseColumns(c) => {
                     let mentioned = MentionedColumn {
                         column: c.get_column(sql),
                         alias: c.get_alias(sql),
                     };
 
-                    if let Some(cols) = self
-                        .mentioned_columns
-                        .get_mut(&Some(WrappingClause::Select))
-                    {
-                        cols.insert(mentioned);
-                    } else {
-                        let mut new = HashSet::new();
-                        new.insert(mentioned);
-                        self.mentioned_columns
-                            .insert(Some(WrappingClause::Select), new);
-                    }
+                    self.mentioned_columns
+                        .entry(Some(WrappingClause::Select))
+                        .and_modify(|s| {
+                            s.insert(mentioned.clone());
+                        })
+                        .or_insert(HashSet::from([mentioned]));
+                }
+
+                QueryResult::WhereClauseColumns(c) => {
+                    let mentioned = MentionedColumn {
+                        column: c.get_column(sql),
+                        alias: c.get_alias(sql),
+                    };
+
+                    self.mentioned_columns
+                        .entry(Some(WrappingClause::Where))
+                        .and_modify(|s| {
+                            s.insert(mentioned.clone());
+                        })
+                        .or_insert(HashSet::from([mentioned]));
+                }
+
+                QueryResult::InsertClauseColumns(c) => {
+                    let mentioned = MentionedColumn {
+                        column: c.get_column(sql),
+                        alias: None,
+                    };
+
+                    self.mentioned_columns
+                        .entry(Some(WrappingClause::Insert))
+                        .and_modify(|s| {
+                            s.insert(mentioned.clone());
+                        })
+                        .or_insert(HashSet::from([mentioned]));
                 }
                 _ => {}
             };
@@ -317,9 +348,19 @@ impl<'a> CompletionContext<'a> {
          * `select * from use           {}` becomes `select * from use{}`.
          */
         let current_node = cursor.node();
-        while cursor.goto_first_child_for_byte(self.position).is_none() && self.position > 0 {
-            self.position -= 1;
+
+        let mut chars = self.text.chars();
+
+        if chars
+            .nth(self.position)
+            .is_some_and(|c| !c.is_ascii_whitespace() && !&[';', ')'].contains(&c))
+        {
+            self.position = cmp::min(self.position + 1, self.text.len());
+        } else {
+            self.position = cmp::min(self.position, self.text.len());
         }
+
+        cursor.goto_first_child_for_byte(self.position);
 
         self.gather_context_from_node(cursor, current_node);
     }
@@ -334,8 +375,9 @@ impl<'a> CompletionContext<'a> {
         let parent_node_kind = parent_node.kind();
         let current_node_kind = current_node.kind();
 
-        // prevent infinite recursion – this can happen if we only have a PROGRAM node
-        if current_node_kind == parent_node_kind {
+        // prevent infinite recursion – this can happen with ERROR nodes
+        if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
+        {
             self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
@@ -352,25 +394,17 @@ impl<'a> CompletionContext<'a> {
         }
 
         // try to gather context from the siblings if we're within an error node.
-        if self.is_in_error_node {
-            let mut next_sibling = current_node.next_named_sibling();
-            while let Some(n) = next_sibling {
-                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
-                    self.wrapping_clause_type = Some(clause_type);
-                    break;
-                } else {
-                    next_sibling = n.next_named_sibling();
-                }
+        if parent_node_kind == "ERROR" {
+            if let Some(clause_type) = self.get_wrapping_clause_from_error_node_child(current_node)
+            {
+                self.wrapping_clause_type = Some(clause_type);
             }
-            let mut prev_sibling = current_node.prev_named_sibling();
-            while let Some(n) = prev_sibling {
-                if let Some(clause_type) = self.get_wrapping_clause_from_keyword_node(n) {
-                    self.wrapping_clause_type = Some(clause_type);
-                    break;
-                } else {
-                    prev_sibling = n.prev_named_sibling();
-                }
+            if let Some(wrapping_node) = self.get_wrapping_node_from_error_node_child(current_node)
+            {
+                self.wrapping_node_kind = Some(wrapping_node)
             }
+
+            self.get_info_from_error_node_child(current_node);
         }
 
         match current_node_kind {
@@ -389,7 +423,8 @@ impl<'a> CompletionContext<'a> {
                 }
             }
 
-            "where" | "update" | "select" | "delete" | "from" | "join" => {
+            "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
+            | "drop_table" | "alter_table" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -398,8 +433,13 @@ impl<'a> CompletionContext<'a> {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
             }
 
-            "ERROR" => {
-                self.is_in_error_node = true;
+            "list" => {
+                if current_node
+                    .prev_sibling()
+                    .is_none_or(|n| n.kind() != "keyword_values")
+                {
+                    self.wrapping_node_kind = current_node_kind.try_into().ok();
+                }
             }
 
             _ => {}
@@ -415,31 +455,165 @@ impl<'a> CompletionContext<'a> {
         self.gather_context_from_node(cursor, current_node);
     }
 
-    fn get_wrapping_clause_from_keyword_node(
+    fn get_first_sibling(&self, node: tree_sitter::Node<'a>) -> tree_sitter::Node<'a> {
+        let mut first_sibling = node;
+        while let Some(n) = first_sibling.prev_sibling() {
+            first_sibling = n;
+        }
+        first_sibling
+    }
+
+    fn get_wrapping_node_from_error_node_child(
+        &self,
+        node: tree_sitter::Node<'a>,
+    ) -> Option<WrappingNode> {
+        self.wrapping_clause_type
+            .as_ref()
+            .and_then(|clause| match clause {
+                WrappingClause::Insert => {
+                    let mut first_sib = self.get_first_sibling(node);
+
+                    let mut after_opening_bracket = false;
+                    let mut before_closing_bracket = false;
+
+                    while let Some(next_sib) = first_sib.next_sibling() {
+                        if next_sib.kind() == "("
+                            && next_sib.end_position() <= node.start_position()
+                        {
+                            after_opening_bracket = true;
+                        }
+
+                        if next_sib.kind() == ")"
+                            && next_sib.start_position() >= node.end_position()
+                        {
+                            before_closing_bracket = true;
+                        }
+
+                        first_sib = next_sib;
+                    }
+
+                    if after_opening_bracket && before_closing_bracket {
+                        Some(WrappingNode::List)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+    }
+
+    fn get_wrapping_clause_from_error_node_child(
         &self,
         node: tree_sitter::Node<'a>,
     ) -> Option<WrappingClause<'a>> {
-        if node.kind().starts_with("keyword_") {
-            if let Some(txt) = self.get_ts_node_content(&node).and_then(|txt| match txt {
-                NodeText::Original(txt) => Some(txt),
-                NodeText::Replaced => None,
-            }) {
-                match txt.as_str() {
-                    "where" => return Some(WrappingClause::Where),
-                    "update" => return Some(WrappingClause::Update),
-                    "select" => return Some(WrappingClause::Select),
-                    "delete" => return Some(WrappingClause::Delete),
-                    "from" => return Some(WrappingClause::From),
-                    "join" => {
-                        // TODO: not sure if we can infer it here.
-                        return Some(WrappingClause::Join { on_node: None });
-                    }
-                    _ => {}
-                }
-            };
-        }
+        let clause_combinations: Vec<(WrappingClause, &[&'static str])> = vec![
+            (WrappingClause::Where, &["where"]),
+            (WrappingClause::Update, &["update"]),
+            (WrappingClause::Select, &["select"]),
+            (WrappingClause::Delete, &["delete"]),
+            (WrappingClause::Insert, &["insert", "into"]),
+            (WrappingClause::From, &["from"]),
+            (WrappingClause::Join { on_node: None }, &["join"]),
+            (WrappingClause::AlterTable, &["alter", "table"]),
+            (
+                WrappingClause::AlterTable,
+                &["alter", "table", "if", "exists"],
+            ),
+            (WrappingClause::DropTable, &["drop", "table"]),
+            (
+                WrappingClause::DropTable,
+                &["drop", "table", "if", "exists"],
+            ),
+        ];
 
-        None
+        let first_sibling = self.get_first_sibling(node);
+
+        /*
+         * For each clause, we'll iterate from first_sibling to the next ones,
+         * either until the end or until we land on the node under the cursor.
+         * We'll score the `WrappingClause` by how many tokens it matches in order.
+         */
+        let mut clauses_with_score: Vec<(WrappingClause, usize)> = clause_combinations
+            .into_iter()
+            .map(|(clause, tokens)| {
+                let mut idx = 0;
+
+                let mut sibling = Some(first_sibling);
+                while let Some(sib) = sibling {
+                    if sib.end_byte() >= node.end_byte() || idx >= tokens.len() {
+                        break;
+                    }
+
+                    if let Some(sibling_content) =
+                        self.get_ts_node_content(&sib).and_then(|txt| match txt {
+                            NodeText::Original(txt) => Some(txt),
+                            NodeText::Replaced => None,
+                        })
+                    {
+                        if sibling_content == tokens[idx] {
+                            idx += 1;
+                        }
+                    } else {
+                        break;
+                    }
+
+                    sibling = sib.next_sibling();
+                }
+
+                (clause, idx)
+            })
+            .collect();
+
+        clauses_with_score.sort_by(|(_, score_a), (_, score_b)| score_b.cmp(score_a));
+        clauses_with_score
+            .iter()
+            .find(|(_, score)| *score > 0)
+            .map(|c| c.0.clone())
+    }
+
+    fn get_info_from_error_node_child(&mut self, node: tree_sitter::Node<'a>) {
+        let mut first_sibling = self.get_first_sibling(node);
+
+        if let Some(clause) = self.wrapping_clause_type.as_ref() {
+            if clause == &WrappingClause::Insert {
+                while let Some(sib) = first_sibling.next_sibling() {
+                    match sib.kind() {
+                        "object_reference" => {
+                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
+                                let mut iter = txt.split('.').rev();
+                                let table = iter.next().unwrap().to_string();
+                                let schema = iter.next().map(|s| s.to_string());
+                                self.mentioned_relations
+                                    .entry(schema)
+                                    .and_modify(|s| {
+                                        s.insert(table.clone());
+                                    })
+                                    .or_insert(HashSet::from([table]));
+                            }
+                        }
+                        "column" => {
+                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
+                                let entry = MentionedColumn {
+                                    column: txt,
+                                    alias: None,
+                                };
+
+                                self.mentioned_columns
+                                    .entry(Some(WrappingClause::Insert))
+                                    .and_modify(|s| {
+                                        s.insert(entry.clone());
+                                    })
+                                    .or_insert(HashSet::from([entry]));
+                            }
+                        }
+
+                        _ => {}
+                    }
+
+                    first_sibling = sib;
+                }
+            }
+        }
     }
 
     fn get_wrapping_clause_from_current_node(
@@ -453,6 +627,10 @@ impl<'a> CompletionContext<'a> {
             "select" => Some(WrappingClause::Select),
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
+            "drop_table" => Some(WrappingClause::DropTable),
+            "alter_table" => Some(WrappingClause::AlterTable),
+            "column_definitions" => Some(WrappingClause::ColumnDefinitions),
+            "insert" => Some(WrappingClause::Insert),
             "join" => {
                 // sadly, we need to manually iterate over the children –
                 // `node.child_by_field_id(..)` does not work as expected
@@ -468,6 +646,38 @@ impl<'a> CompletionContext<'a> {
             }
             _ => None,
         }
+    }
+
+    pub(crate) fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => node
+                    .parent()
+                    .is_some_and(|parent| kinds.contains(&parent.kind())),
+
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
+    pub(crate) fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
+        self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
+            match under_cursor {
+                NodeUnderCursor::TsNode(node) => {
+                    let mut current = *node;
+
+                    // move up to the parent until we're at top OR we have a prev sibling
+                    while current.prev_sibling().is_none() && current.parent().is_some() {
+                        current = current.parent().unwrap();
+                    }
+
+                    current
+                        .prev_sibling()
+                        .is_some_and(|sib| kinds.contains(&sib.kind()))
+                }
+
+                NodeUnderCursor::CustomNode { .. } => false,
+            }
+        })
     }
 }
 

@@ -311,4 +311,123 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn suggests_tables_in_alter_and_drop_statements() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        assert_complete_results(
+            format!("alter table {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("alter table if exists {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("drop table {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("drop table if exists {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn suggests_tables_in_insert_into() {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+        "#;
+
+        assert_complete_results(
+            format!("insert into {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("insert into auth.{}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "users".into(),
+                CompletionItemKind::Table,
+            )],
+            setup,
+        )
+        .await;
+
+        // works with complete statement.
+        assert_complete_results(
+            format!(
+                "insert into {} (name, email) values ('jules', 'a@b.com');",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
+    }
 }

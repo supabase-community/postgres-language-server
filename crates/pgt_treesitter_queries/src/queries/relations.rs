@@ -14,6 +14,14 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
             (identifier)? @table
         )+
     )
+    (insert
+        (object_reference
+            .
+            (identifier) @schema_or_table
+            "."?
+            (identifier)? @table
+        )+
+    )
 "#;
     tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
 });
@@ -89,5 +97,103 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         }
 
         to_return
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RelationMatch;
+    use crate::TreeSitterQueriesExecutor;
+
+    #[test]
+    fn finds_table_without_schema() {
+        let sql = r#"select * from users;"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<RelationMatch>();
+
+        let results: Vec<&RelationMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].get_schema(sql), None);
+        assert_eq!(results[0].get_table(sql), "users");
+    }
+
+    #[test]
+    fn finds_table_with_schema() {
+        let sql = r#"select * from public.users;"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<RelationMatch>();
+
+        let results: Vec<&RelationMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].get_schema(sql), Some("public".to_string()));
+        assert_eq!(results[0].get_table(sql), "users");
+    }
+
+    #[test]
+    fn finds_insert_into_with_schema_and_table() {
+        let sql = r#"insert into auth.accounts (id, email) values (1, 'a@b.com');"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<RelationMatch>();
+
+        let results: Vec<&RelationMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].get_schema(sql), Some("auth".to_string()));
+        assert_eq!(results[0].get_table(sql), "accounts");
+    }
+
+    #[test]
+    fn finds_insert_into_without_schema() {
+        let sql = r#"insert into users (id, email) values (1, 'a@b.com');"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<RelationMatch>();
+
+        let results: Vec<&RelationMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].get_schema(sql), None);
+        assert_eq!(results[0].get_table(sql), "users");
     }
 }

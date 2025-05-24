@@ -1,4 +1,4 @@
-use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause};
+use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -24,6 +24,10 @@ impl CompletionFilter<'_> {
     }
 
     fn completable_context(&self, ctx: &CompletionContext) -> Option<()> {
+        if ctx.wrapping_node_kind.is_none() && ctx.wrapping_clause_type.is_none() {
+            return None;
+        }
+
         let current_node_kind = ctx
             .node_under_cursor
             .as_ref()
@@ -65,55 +69,109 @@ impl CompletionFilter<'_> {
     }
 
     fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
-        let clause = ctx.wrapping_clause_type.as_ref();
+        ctx.wrapping_clause_type
+            .as_ref()
+            .map(|clause| {
+                match self.data {
+                    CompletionRelevanceData::Table(_) => match clause {
+                        WrappingClause::Select
+                        | WrappingClause::Where
+                        | WrappingClause::ColumnDefinitions => false,
 
-        let in_clause = |compare: WrappingClause| clause.is_some_and(|c| c == &compare);
+                        WrappingClause::Insert => {
+                            ctx.wrapping_node_kind
+                                .as_ref()
+                                .is_none_or(|n| n != &WrappingNode::List)
+                                && (ctx.before_cursor_matches_kind(&["keyword_into"])
+                                    || (ctx.before_cursor_matches_kind(&["."])
+                                        && ctx.parent_matches_one_of_kind(&["object_reference"])))
+                        }
 
-        match self.data {
-            CompletionRelevanceData::Table(_) => {
-                if in_clause(WrappingClause::Select)
-                    || in_clause(WrappingClause::Where)
-                    || in_clause(WrappingClause::PolicyName)
-                {
-                    return None;
-                };
-            }
-            CompletionRelevanceData::Column(_) => {
-                if in_clause(WrappingClause::From) || in_clause(WrappingClause::PolicyName) {
-                    return None;
+                        WrappingClause::DropTable | WrappingClause::AlterTable => ctx
+                            .before_cursor_matches_kind(&[
+                                "keyword_exists",
+                                "keyword_only",
+                                "keyword_table",
+                            ]),
+
+                        _ => true,
+                    },
+
+                    CompletionRelevanceData::Column(_) => {
+                        match clause {
+                            WrappingClause::From
+                            | WrappingClause::ColumnDefinitions
+                            | WrappingClause::AlterTable
+                            | WrappingClause::DropTable => false,
+
+                            // We can complete columns in JOIN cluases, but only if we are after the
+                            // ON node in the "ON u.id = posts.user_id" part.
+                            WrappingClause::Join { on_node: Some(on) } => ctx
+                                .node_under_cursor
+                                .as_ref()
+                                .is_some_and(|cn| cn.start_byte() >= on.end_byte()),
+
+                            // we are in a JOIN, but definitely not after an ON
+                            WrappingClause::Join { on_node: None } => false,
+
+                            WrappingClause::Insert => ctx
+                                .wrapping_node_kind
+                                .as_ref()
+                                .is_some_and(|n| n == &WrappingNode::List),
+
+                            // only autocomplete left side of binary expression
+                            WrappingClause::Where => {
+                                ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
+                                    || (ctx.before_cursor_matches_kind(&["."])
+                                        && ctx.parent_matches_one_of_kind(&["field"]))
+                            }
+
+                            _ => true,
+                        }
+                    }
+
+                    CompletionRelevanceData::Function(_) => matches!(
+                        clause,
+                        WrappingClause::From
+                            | WrappingClause::Select
+                            | WrappingClause::Where
+                            | WrappingClause::Join { .. }
+                    ),
+
+                    CompletionRelevanceData::Schema(_) => match clause {
+                        WrappingClause::Select
+                        | WrappingClause::From
+                        | WrappingClause::Join { .. }
+                        | WrappingClause::Update
+                        | WrappingClause::Delete => true,
+
+                        WrappingClause::Where => {
+                            ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
+                        }
+
+                        WrappingClause::DropTable | WrappingClause::AlterTable => ctx
+                            .before_cursor_matches_kind(&[
+                                "keyword_exists",
+                                "keyword_only",
+                                "keyword_table",
+                            ]),
+
+                        WrappingClause::Insert => {
+                            ctx.wrapping_node_kind
+                                .as_ref()
+                                .is_none_or(|n| n != &WrappingNode::List)
+                                && ctx.before_cursor_matches_kind(&["keyword_into"])
+                        }
+
+                        _ => false,
+                    },
+
+                    CompletionRelevanceData::Policy(_) => {
+                        matches!(clause, WrappingClause::PolicyName)
+                    }
                 }
-
-                // We can complete columns in JOIN cluases, but only if we are after the
-                // ON node in the "ON u.id = posts.user_id" part.
-                let in_join_clause_before_on_node = clause.is_some_and(|c| match c {
-                    // we are in a JOIN, but definitely not after an ON
-                    WrappingClause::Join { on_node: None } => true,
-
-                    WrappingClause::Join { on_node: Some(on) } => ctx
-                        .node_under_cursor
-                        .as_ref()
-                        .is_some_and(|n| n.end_byte() < on.start_byte()),
-
-                    _ => false,
-                });
-
-                if in_join_clause_before_on_node {
-                    return None;
-                }
-            }
-            CompletionRelevanceData::Policy(_) => {
-                if clause.is_none_or(|c| c != &WrappingClause::PolicyName) {
-                    return None;
-                }
-            }
-            _ => {
-                if in_clause(WrappingClause::PolicyName) {
-                    return None;
-                }
-            }
-        }
-
-        Some(())
+            })
+            .and_then(|is_ok| if is_ok { Some(()) } else { None })
     }
 
     fn check_invocation(&self, ctx: &CompletionContext) -> Option<()> {
@@ -187,5 +245,16 @@ mod tests {
             setup,
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn completion_after_create_table() {
+        assert_no_complete_results(format!("create table {}", CURSOR_POS).as_str(), "").await;
+    }
+
+    #[tokio::test]
+    async fn completion_in_column_definitions() {
+        let query = format!(r#"create table instruments ( {} )"#, CURSOR_POS);
+        assert_no_complete_results(query.as_str(), "").await;
     }
 }
