@@ -23,7 +23,12 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
         };
 
         // autocomplete with the alias in a join clause if we find one
-        if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Join { .. })) {
+        if matches!(
+            ctx.wrapping_clause_type,
+            Some(WrappingClause::Join { .. })
+                | Some(WrappingClause::Where)
+                | Some(WrappingClause::Select)
+        ) {
             item.completion_text = find_matching_alias_for_table(ctx, col.table_name.as_str())
                 .and_then(|alias| {
                     get_completion_text_with_schema_or_alias(ctx, col.name.as_str(), alias.as_str())
@@ -655,6 +660,12 @@ mod tests {
                 z text, 
                 created_at timestamp with time zone default now()
             );
+
+            create table others (
+                a text,
+                b text,
+                c text
+            );
         "#;
 
         assert_complete_results(
@@ -679,6 +690,38 @@ mod tests {
             vec![
                 CompletionAssertion::KindNotExists(CompletionItemKind::Column),
                 CompletionAssertion::KindNotExists(CompletionItemKind::Schema),
+            ],
+            setup,
+        )
+        .await;
+
+        // prefers not mentioned columns
+        assert_complete_results(
+            format!(
+                "select name from instruments where id = 'something' and {}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("created_at".into()),
+                CompletionAssertion::Label("name".into()),
+                CompletionAssertion::Label("z".into()),
+            ],
+            setup,
+        )
+        .await;
+
+        // // uses aliases
+        assert_complete_results(
+            format!(
+                "select name from instruments i join others o on i.z = o.a where i.{}",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("created_at".into()),
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
             ],
             setup,
         )
