@@ -119,6 +119,13 @@ impl CompletionFilter<'_> {
                                 .as_ref()
                                 .is_some_and(|n| n == &WrappingNode::List),
 
+                            // only autocomplete left side of binary expression
+                            WrappingClause::Where => {
+                                ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
+                                    || (ctx.before_cursor_matches_kind(&["."])
+                                        && ctx.parent_matches_one_of_kind(&["field"]))
+                            }
+
                             _ => true,
                         }
                     }
@@ -133,11 +140,14 @@ impl CompletionFilter<'_> {
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
-                        | WrappingClause::Where
                         | WrappingClause::From
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
+
+                        WrappingClause::Where => {
+                            ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
+                        }
 
                         WrappingClause::DropTable | WrappingClause::AlterTable => ctx
                             .before_cursor_matches_kind(&[

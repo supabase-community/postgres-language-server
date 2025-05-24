@@ -3,12 +3,14 @@ mod parameters;
 mod relations;
 mod select_columns;
 mod table_aliases;
+mod where_columns;
 
 pub use insert_columns::*;
 pub use parameters::*;
 pub use relations::*;
 pub use select_columns::*;
 pub use table_aliases::*;
+pub use where_columns::*;
 
 #[derive(Debug)]
 pub enum QueryResult<'a> {
@@ -17,6 +19,7 @@ pub enum QueryResult<'a> {
     TableAliases(TableAliasMatch<'a>),
     SelectClauseColumns(SelectColumnMatch<'a>),
     InsertClauseColumns(InsertColumnMatch<'a>),
+    WhereClauseColumns(WhereColumnMatch<'a>),
 }
 
 impl QueryResult<'_> {
@@ -44,6 +47,16 @@ impl QueryResult<'_> {
                 start >= range.start_point && end <= range.end_point
             }
             Self::SelectClauseColumns(cm) => {
+                let start = match cm.alias {
+                    Some(n) => n.start_position(),
+                    None => cm.column.start_position(),
+                };
+
+                let end = cm.column.end_position();
+
+                start >= range.start_point && end <= range.end_point
+            }
+            Self::WhereClauseColumns(cm) => {
                 let start = match cm.alias {
                     Some(n) => n.start_position(),
                     None => cm.column.start_position(),

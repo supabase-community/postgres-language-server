@@ -193,11 +193,6 @@ fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool
         return false;
     }
 
-    // not okay to be on the semi.
-    if byte == leaf_node.start_byte() {
-        return false;
-    }
-
     leaf_node
         .prev_named_sibling()
         .map(|n| n.end_byte() < byte)
@@ -355,19 +350,17 @@ mod tests {
         // select * from|    ; <-- still touches the from
         assert!(!cursor_before_semicolon(&tree, TextSize::new(13)));
 
-        // not okay to be ON the semi.
-        // select * from     |;
-        assert!(!cursor_before_semicolon(&tree, TextSize::new(18)));
-
         // anything is fine here
-        // select * from |   ;
-        // select * from  |  ;
-        // select * from   | ;
-        // select * from    |;
+        // select * from |    ;
+        // select * from  |   ;
+        // select * from   |  ;
+        // select * from    | ;
+        // select * from     |;
         assert!(cursor_before_semicolon(&tree, TextSize::new(14)));
         assert!(cursor_before_semicolon(&tree, TextSize::new(15)));
         assert!(cursor_before_semicolon(&tree, TextSize::new(16)));
         assert!(cursor_before_semicolon(&tree, TextSize::new(17)));
+        assert!(cursor_before_semicolon(&tree, TextSize::new(18)));
     }
 
     #[test]

@@ -237,6 +237,7 @@ impl<'a> CompletionContext<'a> {
         executor.add_query_results::<queries::TableAliasMatch>();
         executor.add_query_results::<queries::SelectColumnMatch>();
         executor.add_query_results::<queries::InsertColumnMatch>();
+        executor.add_query_results::<queries::WhereColumnMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -251,6 +252,7 @@ impl<'a> CompletionContext<'a> {
                         })
                         .or_insert(HashSet::from([table_name]));
                 }
+
                 QueryResult::TableAliases(table_alias_match) => {
                     self.mentioned_table_aliases.insert(
                         table_alias_match.get_alias(sql),
@@ -266,6 +268,20 @@ impl<'a> CompletionContext<'a> {
 
                     self.mentioned_columns
                         .entry(Some(WrappingClause::Select))
+                        .and_modify(|s| {
+                            s.insert(mentioned.clone());
+                        })
+                        .or_insert(HashSet::from([mentioned]));
+                }
+
+                QueryResult::WhereClauseColumns(c) => {
+                    let mentioned = MentionedColumn {
+                        column: c.get_column(sql),
+                        alias: c.get_alias(sql),
+                    };
+
+                    self.mentioned_columns
+                        .entry(Some(WrappingClause::Where))
                         .and_modify(|s| {
                             s.insert(mentioned.clone());
                         })
@@ -359,8 +375,9 @@ impl<'a> CompletionContext<'a> {
         let parent_node_kind = parent_node.kind();
         let current_node_kind = current_node.kind();
 
-        // prevent infinite recursion – this can happen if we only have a PROGRAM node
-        if current_node_kind == parent_node_kind {
+        // prevent infinite recursion – this can happen with ERROR nodes
+        if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
+        {
             self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
