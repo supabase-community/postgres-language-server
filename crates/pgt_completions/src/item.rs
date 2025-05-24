@@ -41,6 +41,8 @@ pub struct CompletionText {
     /// others naively insert the text.
     /// Having a range where start == end makes it an insertion.
     pub range: TextRange,
+
+    pub is_snippet: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

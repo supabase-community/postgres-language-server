@@ -1,7 +1,10 @@
+use pgt_schema_cache::Function;
+
 use crate::{
-    CompletionItemKind,
+    CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
     context::CompletionContext,
+    providers::helper::get_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -19,14 +22,43 @@ pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut Completi
             filter: CompletionFilter::from(relevance),
             description: format!("Schema: {}", func.schema),
             kind: CompletionItemKind::Function,
-            completion_text: get_completion_text_with_schema_or_alias(
-                ctx,
-                &func.name,
-                &func.schema,
-            ),
+            completion_text: Some(get_completion_text(ctx, func)),
         };
 
         builder.add_item(item);
+    }
+}
+
+fn get_completion_text(ctx: &CompletionContext, func: &Function) -> CompletionText {
+    let range = get_range_to_replace(ctx);
+    let mut text = get_completion_text_with_schema_or_alias(ctx, &func.name, &func.schema)
+        .map(|ct| ct.text)
+        .unwrap_or(func.name.to_string());
+
+    if ctx.is_invocation {
+        CompletionText {
+            text,
+            range,
+            is_snippet: false,
+        }
+    } else {
+        text.push('(');
+
+        let num_args = func.args.args.len();
+        for (idx, arg) in func.args.args.iter().enumerate() {
+            text.push_str(format!(r#"${{{}:{}}}"#, idx + 1, arg.name).as_str());
+            if idx < num_args - 1 {
+                text.push_str(", ");
+            }
+        }
+
+        text.push(')');
+
+        CompletionText {
+            text,
+            range,
+            is_snippet: num_args > 0,
+        }
     }
 }
 
