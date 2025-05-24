@@ -82,7 +82,9 @@ impl CompletionFilter<'_> {
                             ctx.wrapping_node_kind
                                 .as_ref()
                                 .is_none_or(|n| n != &WrappingNode::List)
-                                && ctx.before_cursor_matches_kind(&["keyword_into"])
+                                && (ctx.before_cursor_matches_kind(&["keyword_into"])
+                                    || (ctx.before_cursor_matches_kind(&["."])
+                                        && ctx.parent_matches_one_of_kind(&["object_reference"])))
                         }
 
                         WrappingClause::DropTable | WrappingClause::AlterTable => ctx

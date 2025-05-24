@@ -621,6 +621,21 @@ mod tests {
         )
         .await;
 
+        // works with completed statement
+        assert_complete_results(
+            format!(
+                "insert into instruments (name, {}) values ('my_bass');",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            setup,
+        )
+        .await;
+
         // no completions in the values list!
         assert_no_complete_results(
             format!("insert into instruments (id, name) values ({})", CURSOR_POS).as_str(),

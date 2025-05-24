@@ -236,6 +236,7 @@ impl<'a> CompletionContext<'a> {
         executor.add_query_results::<queries::RelationMatch>();
         executor.add_query_results::<queries::TableAliasMatch>();
         executor.add_query_results::<queries::SelectColumnMatch>();
+        executor.add_query_results::<queries::InsertColumnMatch>();
 
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
@@ -243,13 +244,12 @@ impl<'a> CompletionContext<'a> {
                     let schema_name = r.get_schema(sql);
                     let table_name = r.get_table(sql);
 
-                    if let Some(c) = self.mentioned_relations.get_mut(&schema_name) {
-                        c.insert(table_name);
-                    } else {
-                        let mut new = HashSet::new();
-                        new.insert(table_name);
-                        self.mentioned_relations.insert(schema_name, new);
-                    }
+                    self.mentioned_relations
+                        .entry(schema_name)
+                        .and_modify(|s| {
+                            s.insert(table_name.clone());
+                        })
+                        .or_insert(HashSet::from([table_name]));
                 }
                 QueryResult::TableAliases(table_alias_match) => {
                     self.mentioned_table_aliases.insert(
@@ -257,23 +257,33 @@ impl<'a> CompletionContext<'a> {
                         table_alias_match.get_table(sql),
                     );
                 }
+
                 QueryResult::SelectClauseColumns(c) => {
                     let mentioned = MentionedColumn {
                         column: c.get_column(sql),
                         alias: c.get_alias(sql),
                     };
 
-                    if let Some(cols) = self
-                        .mentioned_columns
-                        .get_mut(&Some(WrappingClause::Select))
-                    {
-                        cols.insert(mentioned);
-                    } else {
-                        let mut new = HashSet::new();
-                        new.insert(mentioned);
-                        self.mentioned_columns
-                            .insert(Some(WrappingClause::Select), new);
-                    }
+                    self.mentioned_columns
+                        .entry(Some(WrappingClause::Select))
+                        .and_modify(|s| {
+                            s.insert(mentioned.clone());
+                        })
+                        .or_insert(HashSet::from([mentioned]));
+                }
+
+                QueryResult::InsertClauseColumns(c) => {
+                    let mentioned = MentionedColumn {
+                        column: c.get_column(sql),
+                        alias: None,
+                    };
+
+                    self.mentioned_columns
+                        .entry(Some(WrappingClause::Insert))
+                        .and_modify(|s| {
+                            s.insert(mentioned.clone());
+                        })
+                        .or_insert(HashSet::from([mentioned]));
                 }
             };
         }
@@ -628,6 +638,17 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
+    pub(crate) fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => node
+                    .parent()
+                    .is_some_and(|parent| kinds.contains(&parent.kind())),
+
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
     pub(crate) fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
             match under_cursor {

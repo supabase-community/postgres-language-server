@@ -402,5 +402,31 @@ mod tests {
             setup,
         )
         .await;
+
+        assert_complete_results(
+            format!("insert into auth.{}", CURSOR_POS).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "users".into(),
+                CompletionItemKind::Table,
+            )],
+            setup,
+        )
+        .await;
+
+        // works with complete statement.
+        assert_complete_results(
+            format!(
+                "insert into {} (name, email) values ('jules', 'a@b.com');",
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            setup,
+        )
+        .await;
     }
 }

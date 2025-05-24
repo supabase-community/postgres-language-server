@@ -1,7 +1,9 @@
+mod insert_columns;
 mod relations;
 mod select_columns;
 mod table_aliases;
 
+pub use insert_columns::*;
 pub use relations::*;
 pub use select_columns::*;
 pub use table_aliases::*;
@@ -11,6 +13,7 @@ pub enum QueryResult<'a> {
     Relation(RelationMatch<'a>),
     TableAliases(TableAliasMatch<'a>),
     SelectClauseColumns(SelectColumnMatch<'a>),
+    InsertClauseColumns(InsertColumnMatch<'a>),
 }
 
 impl QueryResult<'_> {
@@ -39,6 +42,11 @@ impl QueryResult<'_> {
 
                 let end = cm.column.end_position();
 
+                start >= range.start_point && end <= range.end_point
+            }
+            Self::InsertClauseColumns(cm) => {
+                let start = cm.column.start_position();
+                let end = cm.column.end_position();
                 start >= range.start_point && end <= range.end_point
             }
         }
