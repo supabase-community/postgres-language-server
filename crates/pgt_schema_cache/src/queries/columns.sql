@@ -55,7 +55,7 @@ from
   left join pg_catalog.pg_type tps on tps.oid = atts.atttypid
 where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
-  atts.attnum >= 0
+  atts.attnum >= 0 and atts.atttypid != null
 order by
   schema_name desc,
   table_name,
