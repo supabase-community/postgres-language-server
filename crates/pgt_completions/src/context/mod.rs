@@ -367,10 +367,12 @@ impl<'a> CompletionContext<'a> {
 
         // try to gather context from the siblings if we're within an error node.
         if parent_node_kind == "ERROR" {
-            if let Some(clause_type) = self.get_wrapping_clause_from_siblings(current_node) {
+            if let Some(clause_type) = self.get_wrapping_clause_from_error_node_child(current_node)
+            {
                 self.wrapping_clause_type = Some(clause_type);
             }
-            if let Some(wrapping_node) = self.get_wrapping_node_from_siblings(current_node) {
+            if let Some(wrapping_node) = self.get_wrapping_node_from_error_node_child(current_node)
+            {
                 self.wrapping_node_kind = Some(wrapping_node)
             }
 
@@ -399,8 +401,17 @@ impl<'a> CompletionContext<'a> {
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
 
-            "relation" | "binary_expression" | "assignment" | "list" => {
+            "relation" | "binary_expression" | "assignment" => {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
+            }
+
+            "list" => {
+                if current_node
+                    .prev_sibling()
+                    .is_none_or(|n| n.kind() != "keyword_values")
+                {
+                    self.wrapping_node_kind = current_node_kind.try_into().ok();
+                }
             }
 
             _ => {}
@@ -424,7 +435,10 @@ impl<'a> CompletionContext<'a> {
         first_sibling
     }
 
-    fn get_wrapping_node_from_siblings(&self, node: tree_sitter::Node<'a>) -> Option<WrappingNode> {
+    fn get_wrapping_node_from_error_node_child(
+        &self,
+        node: tree_sitter::Node<'a>,
+    ) -> Option<WrappingNode> {
         self.wrapping_clause_type
             .as_ref()
             .and_then(|clause| match clause {
@@ -460,7 +474,7 @@ impl<'a> CompletionContext<'a> {
             })
     }
 
-    fn get_wrapping_clause_from_siblings(
+    fn get_wrapping_clause_from_error_node_child(
         &self,
         node: tree_sitter::Node<'a>,
     ) -> Option<WrappingClause<'a>> {

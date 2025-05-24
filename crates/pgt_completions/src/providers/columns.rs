@@ -39,8 +39,8 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CURSOR_POS, CompletionAssertion, InputQuery, assert_complete_results, get_test_deps,
-            get_test_params,
+            CURSOR_POS, CompletionAssertion, InputQuery, assert_complete_results,
+            assert_no_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -617,6 +617,13 @@ mod tests {
         assert_complete_results(
             format!("insert into instruments (id, {}, name)", CURSOR_POS).as_str(),
             vec![CompletionAssertion::Label("z".to_string())],
+            setup,
+        )
+        .await;
+
+        // no completions in the values list!
+        assert_no_complete_results(
+            format!("insert into instruments (id, name) values ({})", CURSOR_POS).as_str(),
             setup,
         )
         .await;
