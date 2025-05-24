@@ -549,7 +549,8 @@ impl<'a> CompletionContext<'a> {
 
         clauses_with_score.sort_by(|(_, score_a), (_, score_b)| score_b.cmp(score_a));
         clauses_with_score
-            .iter().find(|(_, score)| *score > 0)
+            .iter()
+            .find(|(_, score)| *score > 0)
             .map(|c| c.0.clone())
     }
 
@@ -561,9 +562,7 @@ impl<'a> CompletionContext<'a> {
                 while let Some(sib) = first_sibling.next_sibling() {
                     match sib.kind() {
                         "object_reference" => {
-                            if let Some(NodeText::Original(txt)) =
-                                self.get_ts_node_content(&sib)
-                            {
+                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
                                 let mut iter = txt.split('.').rev();
                                 let table = iter.next().unwrap().to_string();
                                 let schema = iter.next().map(|s| s.to_string());
@@ -576,9 +575,7 @@ impl<'a> CompletionContext<'a> {
                             }
                         }
                         "column" => {
-                            if let Some(NodeText::Original(txt)) =
-                                self.get_ts_node_content(&sib)
-                            {
+                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
                                 let entry = MentionedColumn {
                                     column: txt,
                                     alias: None,
