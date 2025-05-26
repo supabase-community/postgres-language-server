@@ -1,14 +1,17 @@
 use std::{
+    ffi::OsStr,
     io::ErrorKind,
     ops::Deref,
     path::{Path, PathBuf},
 };
 
+use biome_deserialize::Merge;
 use pgt_analyse::AnalyserRules;
 use pgt_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
-    VERSION, push_to_analyser_rules,
+    VERSION, diagnostics::CantLoadExtendFile, push_to_analyser_rules,
 };
+use pgt_console::markup;
 use pgt_fs::{AutoSearchResult, ConfigName, FileSystem, OpenOptions};
 
 use crate::{DynRef, WorkspaceError, settings::Settings};
@@ -263,6 +266,176 @@ pub fn strip_jsonc_comments(jsonc_input: &str) -> String {
     }
 
     json_output
+}
+
+pub trait PartialConfigurationExt {
+    fn apply_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        file_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<(), WorkspaceError>;
+
+    fn deserialize_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        relative_resolution_base_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<Vec<PartialConfiguration>, WorkspaceError>;
+
+    fn retrieve_gitignore_matches(
+        &self,
+        file_system: &DynRef<'_, dyn FileSystem>,
+        vcs_base_path: Option<&Path>,
+    ) -> Result<(Option<PathBuf>, Vec<String>), WorkspaceError>;
+}
+
+impl PartialConfigurationExt for PartialConfiguration {
+    /// Mutates the configuration so that any fields that have not been configured explicitly are
+    /// filled in with their values from configs listed in the `extends` field.
+    ///
+    /// The `extends` configs are applied from left to right.
+    ///
+    /// If a configuration can't be resolved from the file system, the operation will fail.
+    fn apply_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        file_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<(), WorkspaceError> {
+        let configurations = self.deserialize_extends(
+            fs,
+            file_path.parent().expect("file path should have a parent"),
+            external_resolution_base_path,
+        )?;
+
+        let extended_configuration = configurations.into_iter().reduce(
+            |mut previous_configuration, current_configuration| {
+                previous_configuration.merge_with(current_configuration);
+                previous_configuration
+            },
+        );
+        if let Some(mut extended_configuration) = extended_configuration {
+            // We swap them to avoid having to clone `self.configuration` to merge it.
+            std::mem::swap(self, &mut extended_configuration);
+            self.merge_with(extended_configuration)
+        }
+
+        Ok(())
+    }
+
+    /// It attempts to deserialize all the configuration files that were specified in the `extends` property
+    fn deserialize_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        relative_resolution_base_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<Vec<PartialConfiguration>, WorkspaceError> {
+        let Some(extends) = &self.extends else {
+            return Ok(Vec::new());
+        };
+
+        let mut deserialized_configurations = vec![];
+        for extend_entry in extends.iter() {
+            let extend_entry_as_path = Path::new(extend_entry);
+
+            let extend_configuration_file_path = if extend_entry_as_path.starts_with(".")
+                || matches!(
+                    extend_entry_as_path
+                        .extension()
+                        .map(OsStr::as_encoded_bytes),
+                    Some(b"json" | b"jsonc")
+                ) {
+                relative_resolution_base_path.join(extend_entry)
+            } else {
+                fs.resolve_configuration(extend_entry.as_str(), external_resolution_base_path)
+                    .map_err(|error| {
+                        ConfigurationDiagnostic::cant_resolve(
+                            external_resolution_base_path.display().to_string(),
+                            error,
+                        )
+                    })?
+                    .into_path_buf()
+            };
+
+            let mut file = fs
+                .open_with_options(
+                    extend_configuration_file_path.as_path(),
+                    OpenOptions::default().read(true),
+                )
+                .map_err(|err| {
+                    CantLoadExtendFile::new(
+                        extend_configuration_file_path.display().to_string(),
+                        err.to_string(),
+                    )
+                    .with_verbose_advice(markup! {
+                        "Biome tried to load the configuration file \""<Emphasis>{
+                            extend_configuration_file_path.display().to_string()
+                        }</Emphasis>"\" in \"extends\" using \""<Emphasis>{
+                            external_resolution_base_path.display().to_string()
+                        }</Emphasis>"\" as the base path."
+                    })
+                })?;
+
+            let mut content = String::new();
+            file.read_to_string(&mut content).map_err(|err| {
+                CantLoadExtendFile::new(extend_configuration_file_path.display().to_string(), err.to_string()).with_verbose_advice(
+                    markup!{
+                        "It's possible that the file was created with a different user/group. Make sure you have the rights to read the file."
+                    }
+                )
+
+            })?;
+
+            let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
+                .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+            deserialized_configurations.push(deserialized)
+        }
+        Ok(deserialized_configurations)
+    }
+
+    /// This function checks if the VCS integration is enabled, and if so, it will attempts to resolve the
+    /// VCS root directory and the `.gitignore` file.
+    ///
+    /// ## Returns
+    ///
+    /// A tuple with VCS root folder and the contents of the `.gitignore` file
+    fn retrieve_gitignore_matches(
+        &self,
+        file_system: &DynRef<'_, dyn FileSystem>,
+        vcs_base_path: Option<&Path>,
+    ) -> Result<(Option<PathBuf>, Vec<String>), WorkspaceError> {
+        let Some(vcs) = &self.vcs else {
+            return Ok((None, vec![]));
+        };
+        if vcs.is_enabled() {
+            let vcs_base_path = match (vcs_base_path, &vcs.root) {
+                (Some(vcs_base_path), Some(root)) => vcs_base_path.join(root),
+                (None, Some(root)) => PathBuf::from(root),
+                (Some(vcs_base_path), None) => PathBuf::from(vcs_base_path),
+                (None, None) => return Err(WorkspaceError::vcs_disabled()),
+            };
+            if let Some(client_kind) = &vcs.client_kind {
+                if !vcs.ignore_file_disabled() {
+                    let result = file_system
+                        .auto_search(&vcs_base_path, &[client_kind.ignore_file()], false)
+                        .map_err(WorkspaceError::from)?;
+
+                    if let Some(result) = result {
+                        return Ok((
+                            result.file_path.parent().map(PathBuf::from),
+                            result
+                                .content
+                                .lines()
+                                .map(String::from)
+                                .collect::<Vec<String>>(),
+                        ));
+                    }
+                }
+            }
+        }
+        Ok((None, vec![]))
+    }
 }
 
 #[cfg(test)]

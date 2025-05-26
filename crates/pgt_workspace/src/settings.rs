@@ -8,6 +8,7 @@ use std::{
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
+use tracing::trace;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pgt_configuration::{
@@ -17,9 +18,132 @@ use pgt_configuration::{
     files::FilesConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
 };
-use pgt_fs::FileSystem;
+use pgt_fs::{FileSystem, PgTPath};
 
-use crate::{DynRef, WorkspaceError, matcher::Matcher};
+use crate::{
+    DynRef, WorkspaceError,
+    matcher::Matcher,
+    workspace::{ProjectKey, WorkspaceData},
+};
+
+#[derive(Debug, Default)]
+/// The information tracked for each project
+pub struct ProjectData {
+    /// The root path of the project. This path should be **absolute**.
+    path: PgTPath,
+    /// The settings of the project, usually inferred from the configuration file e.g. `biome.json`.
+    settings: Settings,
+}
+
+#[derive(Debug, Default)]
+/// Type that manages different projects inside the workspace.
+pub struct WorkspaceSettings {
+    /// The data of the projects
+    data: WorkspaceData<ProjectData>,
+    /// The ID of the current project.
+    current_project: ProjectKey,
+}
+
+impl WorkspaceSettings {
+    pub fn get_current_project_key(&self) -> ProjectKey {
+        self.current_project
+    }
+
+    pub fn get_current_project_data_mut(&mut self) -> &mut ProjectData {
+        self.data
+            .get_mut(self.current_project)
+            .expect("You must have at least one workspace.")
+    }
+
+    /// Retrieves the settings of the current workspace folder
+    pub fn get_current_settings(&self) -> Option<&Settings> {
+        trace!("Current key {:?}", self.current_project);
+        let data = self.data.get(self.current_project);
+        if let Some(data) = data {
+            Some(&data.settings)
+        } else {
+            None
+        }
+    }
+
+    /// Retrieves a mutable reference of the settings of the current project
+    pub fn get_current_settings_mut(&mut self) -> &mut Settings {
+        &mut self
+            .data
+            .get_mut(self.current_project)
+            .expect("You must have at least one workspace.")
+            .settings
+    }
+
+    /// Register the current project using its unique key
+    pub fn register_current_project(&mut self, key: ProjectKey) {
+        self.current_project = key;
+    }
+
+    /// Insert a new project using its folder. Use [WorkspaceSettings::get_current_settings_mut] to retrieve
+    /// a mutable reference to its [Settings] and manipulate them.
+    pub fn insert_project(&mut self, workspace_path: impl Into<PathBuf>) -> ProjectKey {
+        let path = PgTPath::new(workspace_path.into());
+        trace!("Insert workspace folder: {:?}", path);
+        self.data.insert(ProjectData {
+            path,
+            settings: Settings::default(),
+        })
+    }
+
+    /// Remove a project using its folder.
+    pub fn remove_project(&mut self, workspace_path: &Path) {
+        let keys_to_remove = {
+            let mut data = vec![];
+            let iter = self.data.iter();
+
+            for (key, path_to_settings) in iter {
+                if path_to_settings.path.as_path() == workspace_path {
+                    data.push(key)
+                }
+            }
+
+            data
+        };
+
+        for key in keys_to_remove {
+            self.data.remove(key)
+        }
+    }
+
+    /// Checks if the current path belongs to a registered project.
+    ///
+    /// If there's a match, and the match **isn't** the current project, it returns the new key.
+    pub fn path_belongs_to_current_workspace(&self, path: &PgTPath) -> Option<ProjectKey> {
+        if self.data.is_empty() {
+            return None;
+        }
+        trace!("Current key: {:?}", self.current_project);
+        let iter = self.data.iter();
+        for (key, path_to_settings) in iter {
+            trace!(
+                "Workspace path {:?}, file path {:?}",
+                path_to_settings.path, path
+            );
+            trace!("Iter key: {:?}", key);
+            if key == self.current_project {
+                continue;
+            }
+            if path.strip_prefix(path_to_settings.path.as_path()).is_ok() {
+                trace!("Update workspace to {:?}", key);
+                return Some(key);
+            }
+        }
+        None
+    }
+
+    /// Checks if the current path belongs to a registered project.
+    ///
+    /// If there's a match, and the match **isn't** the current project, the function will mark the match as the current project.
+    pub fn set_current_project(&mut self, new_key: ProjectKey) {
+        self.current_project = new_key;
+    }
+}
 
 /// Global settings for the entire workspace
 #[derive(Debug, Default)]
@@ -394,59 +518,6 @@ impl Default for FilesSettings {
             included_files: Matcher::empty(),
             git_ignore: None,
         }
-    }
-}
-
-pub trait PartialConfigurationExt {
-    fn retrieve_gitignore_matches(
-        &self,
-        file_system: &DynRef<'_, dyn FileSystem>,
-        vcs_base_path: Option<&Path>,
-    ) -> Result<(Option<PathBuf>, Vec<String>), WorkspaceError>;
-}
-
-impl PartialConfigurationExt for PartialConfiguration {
-    /// This function checks if the VCS integration is enabled, and if so, it will attempts to resolve the
-    /// VCS root directory and the `.gitignore` file.
-    ///
-    /// ## Returns
-    ///
-    /// A tuple with VCS root folder and the contents of the `.gitignore` file
-    fn retrieve_gitignore_matches(
-        &self,
-        file_system: &DynRef<'_, dyn FileSystem>,
-        vcs_base_path: Option<&Path>,
-    ) -> Result<(Option<PathBuf>, Vec<String>), WorkspaceError> {
-        let Some(vcs) = &self.vcs else {
-            return Ok((None, vec![]));
-        };
-        if vcs.is_enabled() {
-            let vcs_base_path = match (vcs_base_path, &vcs.root) {
-                (Some(vcs_base_path), Some(root)) => vcs_base_path.join(root),
-                (None, Some(root)) => PathBuf::from(root),
-                (Some(vcs_base_path), None) => PathBuf::from(vcs_base_path),
-                (None, None) => return Err(WorkspaceError::vcs_disabled()),
-            };
-            if let Some(client_kind) = &vcs.client_kind {
-                if !vcs.ignore_file_disabled() {
-                    let result = file_system
-                        .auto_search(&vcs_base_path, &[client_kind.ignore_file()], false)
-                        .map_err(WorkspaceError::from)?;
-
-                    if let Some(result) = result {
-                        return Ok((
-                            result.file_path.parent().map(PathBuf::from),
-                            result
-                                .content
-                                .lines()
-                                .map(String::from)
-                                .collect::<Vec<String>>(),
-                        ));
-                    }
-                }
-            }
-        }
-        Ok((None, vec![]))
     }
 }
 

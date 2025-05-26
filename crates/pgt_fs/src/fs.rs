@@ -1,6 +1,7 @@
 use crate::{PathInterner, PgTPath};
 pub use memory::{ErrorEntry, MemoryFileSystem};
 pub use os::OsFileSystem;
+use oxc_resolver::{Resolution, ResolveError};
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, Visit, console};
 use pgt_diagnostics::{Error, Severity};
 use serde::{Deserialize, Serialize};
@@ -164,6 +165,12 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>>;
 
     fn get_staged_files(&self) -> io::Result<Vec<String>>;
+
+    fn resolve_configuration(
+        &self,
+        specifier: &str,
+        path: &Path,
+    ) -> Result<Resolution, ResolveError>;
 }
 
 /// Result of the auto search
@@ -354,6 +361,14 @@ where
 
     fn get_staged_files(&self) -> io::Result<Vec<String>> {
         T::get_staged_files(self)
+    }
+
+    fn resolve_configuration(
+        &self,
+        specifier: &str,
+        path: &Path,
+    ) -> Result<Resolution, ResolveError> {
+        T::resolve_configuration(self, specifier, path)
     }
 }
 

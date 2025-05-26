@@ -6,6 +6,7 @@ use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
 use serde::{Deserialize, Serialize};
+use slotmap::{DenseSlotMap, new_key_type};
 
 use crate::{
     WorkspaceError,
@@ -220,5 +221,67 @@ impl<W: Workspace + ?Sized> Drop for FileGuard<'_, W> {
             // this case it's generally better to silently matcher the error
             // than panic (especially in a drop handler)
             .ok();
+    }
+}
+
+new_key_type! {
+    pub struct ProjectKey;
+}
+
+#[derive(Debug, Default)]
+pub struct WorkspaceData<V> {
+    /// [DenseSlotMap] is the slowest type in insertion/removal, but the fastest in iteration
+    ///
+    /// Users wouldn't change workspace folders very often,
+    paths: DenseSlotMap<ProjectKey, V>,
+}
+
+impl<V> WorkspaceData<V> {
+    /// Inserts an item
+    pub fn insert(&mut self, item: V) -> ProjectKey {
+        self.paths.insert(item)
+    }
+
+    /// Removes an item
+    pub fn remove(&mut self, key: ProjectKey) {
+        self.paths.remove(key);
+    }
+
+    /// Get a reference of the value
+    pub fn get(&self, key: ProjectKey) -> Option<&V> {
+        self.paths.get(key)
+    }
+
+    /// Get a mutable reference of the value
+    pub fn get_mut(&mut self, key: ProjectKey) -> Option<&mut V> {
+        self.paths.get_mut(key)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty()
+    }
+
+    pub fn iter(&self) -> WorkspaceDataIterator<'_, V> {
+        WorkspaceDataIterator::new(self)
+    }
+}
+
+pub struct WorkspaceDataIterator<'a, V> {
+    iterator: slotmap::dense::Iter<'a, ProjectKey, V>,
+}
+
+impl<'a, V> WorkspaceDataIterator<'a, V> {
+    fn new(data: &'a WorkspaceData<V>) -> Self {
+        Self {
+            iterator: data.paths.iter(),
+        }
+    }
+}
+
+impl<'a, V> Iterator for WorkspaceDataIterator<'a, V> {
+    type Item = (ProjectKey, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iterator.next()
     }
 }

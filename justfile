@@ -132,6 +132,12 @@ merge-main:
     git fetch origin main:main
     git merge main
 
+quick-create branch commit:
+    git checkout -b {{branch}}
+    git add -A
+    git commit -m "{{commit}}"
+    git push
+    gh pr create --fill
 
 # Make sure to set your PGT_LOG_PATH in your shell profile.
 # You can use the PGT_LOG_LEVEL to set your log level.
