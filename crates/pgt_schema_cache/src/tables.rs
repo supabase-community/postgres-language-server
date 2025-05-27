@@ -47,13 +47,7 @@ impl From<char> for TableKind {
 impl From<i8> for TableKind {
     fn from(s: i8) -> Self {
         let c = char::from(u8::try_from(s).unwrap());
-        match c {
-            'r' => Self::Ordinary,
-            'p' => Self::Partitioned,
-            'v' => Self::View,
-            'm' => Self::MaterializedView,
-            _ => panic!("Invalid table kind"),
-        }
+        c.into()
     }
 }
 
