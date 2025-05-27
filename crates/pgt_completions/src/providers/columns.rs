@@ -92,7 +92,7 @@ mod tests {
                 message: "correctly prefers the columns of present tables",
                 query: format!(r#"select na{} from public.audio_books;"#, CURSOR_POS),
                 label: "narrator",
-                description: "Table: public.audio_books",
+                description: "public.audio_books",
             },
             TestCase {
                 message: "correctly handles nested queries",
@@ -110,13 +110,13 @@ mod tests {
                     CURSOR_POS
                 ),
                 label: "narrator_id",
-                description: "Table: private.audio_books",
+                description: "private.audio_books",
             },
             TestCase {
                 message: "works without a schema",
                 query: format!(r#"select na{} from users;"#, CURSOR_POS),
                 label: "name",
-                description: "Table: public.users",
+                description: "public.users",
             },
         ];
 
@@ -186,10 +186,10 @@ mod tests {
             .collect();
 
         let expected = vec![
-            ("name", "Table: public.users"),
-            ("narrator", "Table: public.audio_books"),
-            ("narrator_id", "Table: private.audio_books"),
-            ("id", "Table: public.audio_books"),
+            ("name", "public.users"),
+            ("narrator", "public.audio_books"),
+            ("narrator_id", "private.audio_books"),
+            ("id", "public.audio_books"),
             ("name", "Schema: pg_catalog"),
             ("nameconcatoid", "Schema: pg_catalog"),
         ]
@@ -559,10 +559,7 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndDesc(
-                    "id".to_string(),
-                    "Table: public.two".to_string(),
-                ),
+                CompletionAssertion::LabelAndDesc("id".to_string(), "public.two".to_string()),
                 CompletionAssertion::Label("z".to_string()),
             ],
             setup,
