@@ -47,6 +47,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Column(c) => c.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
@@ -126,6 +127,8 @@ impl CompletionScore<'_> {
                 WrappingClause::PolicyName => 25,
                 _ => -50,
             },
+
+            CompletionRelevanceData::Role(_) => 0,
         }
     }
 
@@ -160,6 +163,7 @@ impl CompletionScore<'_> {
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => 0,
+            CompletionRelevanceData::Role(_) => 0,
         }
     }
 
@@ -178,7 +182,10 @@ impl CompletionScore<'_> {
             Some(n) => n,
         };
 
-        let data_schema = self.get_schema_name();
+        let data_schema = match self.get_schema_name() {
+            Some(s) => s,
+            None => return,
+        };
 
         if schema_name == data_schema {
             self.score += 25;
@@ -187,13 +194,14 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn get_schema_name(&self) -> &str {
+    fn get_schema_name(&self) -> Option<&str> {
         match self.data {
-            CompletionRelevanceData::Function(f) => f.schema.as_str(),
-            CompletionRelevanceData::Table(t) => t.schema.as_str(),
-            CompletionRelevanceData::Column(c) => c.schema_name.as_str(),
-            CompletionRelevanceData::Schema(s) => s.name.as_str(),
-            CompletionRelevanceData::Policy(p) => p.schema_name.as_str(),
+            CompletionRelevanceData::Function(f) => Some(f.schema.as_str()),
+            CompletionRelevanceData::Table(t) => Some(t.schema.as_str()),
+            CompletionRelevanceData::Column(c) => Some(c.schema_name.as_str()),
+            CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
+            CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
+            CompletionRelevanceData::Role(p) => None,
         }
     }
 
@@ -212,7 +220,10 @@ impl CompletionScore<'_> {
             _ => {}
         }
 
-        let schema = self.get_schema_name().to_string();
+        let schema = match self.get_schema_name() {
+            Some(s) => s.to_string(),
+            None => return,
+        };
         let table_name = match self.get_table_name() {
             Some(t) => t,
             None => return,
@@ -234,7 +245,10 @@ impl CompletionScore<'_> {
     }
 
     fn check_is_user_defined(&mut self) {
-        let schema = self.get_schema_name().to_string();
+        let schema = match self.get_schema_name() {
+            Some(s) => s.to_string(),
+            None => return,
+        };
 
         let system_schemas = ["pg_catalog", "information_schema", "pg_toast"];
 

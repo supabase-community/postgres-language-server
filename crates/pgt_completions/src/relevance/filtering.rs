@@ -169,6 +169,8 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Policy(_) => {
                         matches!(clause, WrappingClause::PolicyName)
                     }
+
+                    CompletionRelevanceData::Role(_) => false,
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
@@ -204,8 +206,8 @@ impl CompletionFilter<'_> {
 
             // we should never allow schema suggestions if there already was one.
             CompletionRelevanceData::Schema(_) => false,
-            // no policy comletion if user typed a schema node first.
-            CompletionRelevanceData::Policy(_) => false,
+            // no policy or row completion if user typed a schema node first.
+            CompletionRelevanceData::Policy(_) | CompletionRelevanceData::Role(_) => false,
         };
 
         if !matches {
