@@ -27,8 +27,6 @@ mod tests {
 
     #[tokio::test]
     async fn loads_roles() {
-        let test_db = get_new_test_db().await;
-
         let setup = r#"
             do $$
             begin
@@ -52,6 +50,8 @@ mod tests {
                 end if;
             end $$;
         "#;
+
+        let test_db = get_new_test_db().await;
 
         test_db
             .execute(setup)

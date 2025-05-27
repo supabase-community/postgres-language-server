@@ -170,7 +170,9 @@ impl CompletionFilter<'_> {
                         matches!(clause, WrappingClause::PolicyName)
                     }
 
-                    CompletionRelevanceData::Role(_) => false,
+                    CompletionRelevanceData::Role(_) => {
+                        matches!(clause, WrappingClause::DropRole | WrappingClause::AlterRole)
+                    }
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
