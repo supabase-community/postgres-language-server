@@ -23,6 +23,40 @@ impl From<String> for ReplicaIdentity {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum TableKind {
+    #[default]
+    Ordinary,
+    View,
+    MaterializedView,
+    Partitioned,
+}
+
+impl From<char> for TableKind {
+    fn from(s: char) -> Self {
+        match s {
+            'r' => Self::Ordinary,
+            'p' => Self::Partitioned,
+            'v' => Self::View,
+            'm' => Self::MaterializedView,
+            _ => panic!("Invalid table kind"),
+        }
+    }
+}
+
+impl From<i8> for TableKind {
+    fn from(s: i8) -> Self {
+        let c = char::from(u8::try_from(s).unwrap());
+        match c {
+            'r' => Self::Ordinary,
+            'p' => Self::Partitioned,
+            'v' => Self::View,
+            'm' => Self::MaterializedView,
+            _ => panic!("Invalid table kind"),
+        }
+    }
+}
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Table {
     pub id: i64,
@@ -31,6 +65,7 @@ pub struct Table {
     pub rls_enabled: bool,
     pub rls_forced: bool,
     pub replica_identity: ReplicaIdentity,
+    pub table_kind: TableKind,
     pub bytes: i64,
     pub size: String,
     pub live_rows_estimate: i64,
@@ -45,5 +80,78 @@ impl SchemaCacheItem for Table {
         sqlx::query_file_as!(Table, "src/queries/tables.sql")
             .fetch_all(pool)
             .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{SchemaCache, tables::TableKind};
+    use pgt_test_utils::test_database::get_new_test_db;
+    use sqlx::Executor;
+
+    #[tokio::test]
+    async fn includes_views_in_query() {
+        let test_db = get_new_test_db().await;
+
+        let setup = r#"
+            create table public.base_table (
+                id serial primary key,
+                value text
+            );
+
+            create view public.my_view as
+            select * from public.base_table;
+        "#;
+
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to setup test database");
+
+        let cache = SchemaCache::load(&test_db)
+            .await
+            .expect("Failed to load Schema Cache");
+
+        let view = cache
+            .tables
+            .iter()
+            .find(|t| t.name == "my_view")
+            .expect("View not found");
+
+        assert_eq!(view.table_kind, TableKind::View);
+        assert_eq!(view.schema, "public");
+    }
+
+    #[tokio::test]
+    async fn includes_materialized_views_in_query() {
+        let test_db = get_new_test_db().await;
+
+        let setup = r#"
+            create table public.base_table (
+                id serial primary key,
+                value text
+            );
+
+            create materialized view public.my_mat_view as
+            select * from public.base_table;
+        "#;
+
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to setup test database");
+
+        let cache = SchemaCache::load(&test_db)
+            .await
+            .expect("Failed to load Schema Cache");
+
+        let mat_view = cache
+            .tables
+            .iter()
+            .find(|t| t.name == "my_mat_view")
+            .expect("Materialized view not found");
+
+        assert_eq!(mat_view.table_kind, TableKind::MaterializedView);
+        assert_eq!(mat_view.schema, "public");
     }
 }

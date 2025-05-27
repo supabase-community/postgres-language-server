@@ -17,7 +17,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: format!("Table: {}.{}", col.schema_name, col.table_name),
+            description: format!("{}.{}", col.schema_name, col.table_name),
             kind: CompletionItemKind::Column,
             completion_text: None,
             detail: col.type_name.as_ref().map(|t| t.to_string()),

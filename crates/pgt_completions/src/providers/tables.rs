@@ -13,13 +13,21 @@ pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionB
     for table in available_tables {
         let relevance = CompletionRelevanceData::Table(table);
 
+        let detail: Option<String> = match table.table_kind {
+            pgt_schema_cache::TableKind::Ordinary | pgt_schema_cache::TableKind::Partitioned => {
+                None
+            }
+            pgt_schema_cache::TableKind::View => Some("View".into()),
+            pgt_schema_cache::TableKind::MaterializedView => Some("MView".into()),
+        };
+
         let item = PossibleCompletionItem {
             label: table.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: format!("Schema: {}", table.schema),
+            description: format!("{}", table.schema),
             kind: CompletionItemKind::Table,
-            detail: None,
+            detail,
             completion_text: get_completion_text_with_schema_or_alias(
                 ctx,
                 &table.name,
