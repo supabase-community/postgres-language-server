@@ -25,7 +25,7 @@ pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionB
             label: table.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: format!("{}", table.schema),
+            description: table.schema.to_string(),
             kind: CompletionItemKind::Table,
             detail,
             completion_text: get_completion_text_with_schema_or_alias(
