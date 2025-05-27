@@ -1,6 +1,6 @@
 use crate::workspace::ServerInfo;
 use crate::{TransportError, Workspace, WorkspaceError};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::{
     panic::RefUnwindSafe,
@@ -101,6 +101,20 @@ where
         params: crate::features::code_actions::ExecuteStatementParams,
     ) -> Result<crate::features::code_actions::ExecuteStatementResult, WorkspaceError> {
         self.request("pgt/execute_statement", params)
+    }
+
+    fn register_project_folder(
+        &self,
+        params: RegisterProjectFolderParams,
+    ) -> Result<ProjectKey, WorkspaceError> {
+        self.request("pgt/register_project_folder", params)
+    }
+
+    fn unregister_project_folder(
+        &self,
+        params: UnregisterProjectFolderParams,
+    ) -> Result<(), WorkspaceError> {
+        self.request("pgt/unregister_project_folder", params)
     }
 
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {

@@ -12,18 +12,18 @@ use tracing::trace;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pgt_configuration::{
-    ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration,
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration,
 };
-use pgt_fs::{FileSystem, PgTPath};
+use pgt_fs::PgTPath;
 
 use crate::{
-    DynRef, WorkspaceError,
     matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
+    WorkspaceError,
 };
 
 #[derive(Debug, Default)]
@@ -47,6 +47,16 @@ pub struct WorkspaceSettings {
 impl WorkspaceSettings {
     pub fn get_current_project_key(&self) -> ProjectKey {
         self.current_project
+    }
+
+    pub fn get_current_project_path(&self) -> Option<&PgTPath> {
+        trace!("Current key {:?}", self.current_project);
+        let data = self.data.get(self.current_project);
+        if let Some(data) = data {
+            Some(&data.path)
+        } else {
+            None
+        }
     }
 
     pub fn get_current_project_data_mut(&mut self) -> &mut ProjectData {
@@ -123,7 +133,8 @@ impl WorkspaceSettings {
         for (key, path_to_settings) in iter {
             trace!(
                 "Workspace path {:?}, file path {:?}",
-                path_to_settings.path, path
+                path_to_settings.path,
+                path
             );
             trace!("Iter key: {:?}", key);
             if key == self.current_project {
@@ -142,6 +153,51 @@ impl WorkspaceSettings {
     /// If there's a match, and the match **isn't** the current project, the function will mark the match as the current project.
     pub fn set_current_project(&mut self, new_key: ProjectKey) {
         self.current_project = new_key;
+    }
+}
+
+#[derive(Debug)]
+pub struct WorkspaceSettingsHandle<'a> {
+    inner: RwLockReadGuard<'a, WorkspaceSettings>,
+}
+
+impl<'a> WorkspaceSettingsHandle<'a> {
+    pub(crate) fn new(settings: &'a RwLock<WorkspaceSettings>) -> Self {
+        Self {
+            inner: settings.read().unwrap(),
+        }
+    }
+
+    pub(crate) fn settings(&self) -> Option<&Settings> {
+        self.inner.get_current_settings()
+    }
+
+    pub(crate) fn path(&self) -> Option<&PgTPath> {
+        self.inner.get_current_project_path()
+    }
+}
+
+impl<'a> AsRef<WorkspaceSettings> for WorkspaceSettingsHandle<'a> {
+    fn as_ref(&self) -> &WorkspaceSettings {
+        &self.inner
+    }
+}
+
+pub struct WorkspaceSettingsHandleMut<'a> {
+    inner: RwLockWriteGuard<'a, WorkspaceSettings>,
+}
+
+impl<'a> WorkspaceSettingsHandleMut<'a> {
+    pub(crate) fn new(settings: &'a RwLock<WorkspaceSettings>) -> Self {
+        Self {
+            inner: settings.write().unwrap(),
+        }
+    }
+}
+
+impl<'a> AsMut<WorkspaceSettings> for WorkspaceSettingsHandleMut<'a> {
+    fn as_mut(&mut self) -> &mut WorkspaceSettings {
+        &mut self.inner
     }
 }
 

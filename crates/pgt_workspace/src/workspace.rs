@@ -6,10 +6,9 @@ use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
 use serde::{Deserialize, Serialize};
-use slotmap::{DenseSlotMap, new_key_type};
+use slotmap::{new_key_type, DenseSlotMap};
 
 use crate::{
-    WorkspaceError,
     features::{
         code_actions::{
             CodeActionsParams, CodeActionsResult, ExecuteStatementParams, ExecuteStatementResult,
@@ -17,13 +16,14 @@ use crate::{
         completions::{CompletionsResult, GetCompletionsParams},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
+    WorkspaceError,
 };
 
 mod client;
 mod server;
 
-pub use server::StatementId;
 pub(crate) use server::parsed_document::*;
+pub use server::StatementId;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -93,6 +93,21 @@ pub struct ServerInfo {
     pub version: Option<String>,
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterProjectFolderParams {
+    pub path: Option<PathBuf>,
+    pub set_as_current_workspace: bool,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct UnregisterProjectFolderParams {
+    pub path: PgTPath,
+}
+
 pub trait Workspace: Send + Sync + RefUnwindSafe {
     /// Retrieves the list of diagnostics associated to a file
     fn pull_diagnostics(
@@ -110,6 +125,18 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError>;
+
+    /// Register a possible workspace project folder. Returns the key of said project. Use this key when you want to switch to different projects.
+    fn register_project_folder(
+        &self,
+        params: RegisterProjectFolderParams,
+    ) -> Result<ProjectKey, WorkspaceError>;
+
+    /// Unregister a workspace project folder. The settings that belong to that project are deleted.
+    fn unregister_project_folder(
+        &self,
+        params: UnregisterProjectFolderParams,
+    ) -> Result<(), WorkspaceError>;
 
     /// Update the global settings for this workspace
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError>;
