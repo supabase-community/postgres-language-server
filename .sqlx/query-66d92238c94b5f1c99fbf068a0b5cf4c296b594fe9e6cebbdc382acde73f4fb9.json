@@ -1,0 +1,86 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select\n  c.oid :: int8 as \"id!\",\n  nc.nspname as schema,\n  c.relname as name,\n  c.relkind as table_kind,\n  c.relrowsecurity as rls_enabled,\n  c.relforcerowsecurity as rls_forced,\n  case\n    when c.relreplident = 'd' then 'DEFAULT'\n    when c.relreplident = 'i' then 'INDEX'\n    when c.relreplident = 'f' then 'FULL'\n    else 'NOTHING'\n  end as \"replica_identity!\",\n  pg_total_relation_size(format('%I.%I', nc.nspname, c.relname)) :: int8 as \"bytes!\",\n  pg_size_pretty(\n    pg_total_relation_size(format('%I.%I', nc.nspname, c.relname))\n  ) as \"size!\",\n  pg_stat_get_live_tuples(c.oid) as \"live_rows_estimate!\",\n  pg_stat_get_dead_tuples(c.oid) as \"dead_rows_estimate!\",\n  obj_description(c.oid) as comment\nfrom\n  pg_namespace nc\n  join pg_class c on nc.oid = c.relnamespace\nwhere\n  c.relkind in ('r', 'p', 'v', 'm')\n  and not pg_is_other_temp_schema(nc.oid)\n  and (\n    pg_has_role(c.relowner, 'USAGE')\n    or has_table_privilege(\n      c.oid,\n      'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'\n    )\n    or has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')\n  )\ngroup by\n  c.oid,\n  c.relname,\n  c.relrowsecurity,\n  c.relforcerowsecurity,\n  c.relreplident,\n  nc.nspname;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "schema",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "table_kind",
+        "type_info": "Char"
+      },
+      {
+        "ordinal": 4,
+        "name": "rls_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "rls_forced",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "replica_identity!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "bytes!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "size!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "live_rows_estimate!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "dead_rows_estimate!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "comment",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "66d92238c94b5f1c99fbf068a0b5cf4c296b594fe9e6cebbdc382acde73f4fb9"
+}

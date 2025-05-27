@@ -2,6 +2,7 @@ select
   c.oid :: int8 as "id!",
   nc.nspname as schema,
   c.relname as name,
+  c.relkind as table_kind,
   c.relrowsecurity as rls_enabled,
   c.relforcerowsecurity as rls_forced,
   case
@@ -21,7 +22,7 @@ from
   pg_namespace nc
   join pg_class c on nc.oid = c.relnamespace
 where
-  c.relkind in ('r', 'p')
+  c.relkind in ('r', 'p', 'v', 'm')
   and not pg_is_other_temp_schema(nc.oid)
   and (
     pg_has_role(c.relowner, 'USAGE')
