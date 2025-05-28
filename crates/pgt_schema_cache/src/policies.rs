@@ -80,26 +80,29 @@ impl SchemaCacheItem for Policy {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
+    use pgt_test_utils::test_database::{RoleWithArgs, get_new_test_db};
 
     use crate::{SchemaCache, policies::PolicyCommand};
 
     #[tokio::test]
     async fn loads_policies() {
-        let test_db = get_new_test_db().await;
+        let mut test_db = get_new_test_db().await;
+
+        test_db
+            .setup_roles(vec![
+                RoleWithArgs {
+                    role: "admin".into(),
+                    args: vec![],
+                },
+                RoleWithArgs {
+                    role: "owner".into(),
+                    args: vec![],
+                },
+            ])
+            .await
+            .expect("Unable to setup admin roles");
 
         let setup = r#"
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'admin'
-                ) then
-                    create role admin;
-                end if;
-            end $$;
-
-
             create table public.users (
                 id serial primary key,
                 name varchar(255) not null
@@ -129,16 +132,6 @@ mod tests {
                 for all
                 to admin
                 with check (true);
-
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'owner'
-                ) then
-                    create role owner;
-                end if;
-            end $$;
 
             create schema real_estate;
 

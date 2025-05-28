@@ -22,41 +22,34 @@ impl SchemaCacheItem for Role {
 #[cfg(test)]
 mod tests {
     use crate::SchemaCache;
-    use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
+    use pgt_test_utils::test_database::{RoleWithArgs, get_new_test_db};
 
     #[tokio::test]
     async fn loads_roles() {
-        let test_db = get_new_test_db().await;
-
-        let setup = r#"
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test_super'
-                ) then
-                    create role test_super superuser createdb login bypassrls;
-                end if;
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test_nologin'
-                ) then
-                    create role test_nologin;
-                end if;
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test_login'
-                ) then
-                    create role test_login login;
-                end if;
-            end $$;
-        "#;
+        let mut test_db = get_new_test_db().await;
 
         test_db
-            .execute(setup)
+            .setup_roles(vec![
+                RoleWithArgs {
+                    role: "test_super".into(),
+                    args: vec![
+                        "superuser".into(),
+                        "createdb".into(),
+                        "login".into(),
+                        "bypassrls".into(),
+                    ],
+                },
+                RoleWithArgs {
+                    role: "test_nologin".into(),
+                    args: vec![],
+                },
+                RoleWithArgs {
+                    role: "test_login".into(),
+                    args: vec!["login".into()],
+                },
+            ])
             .await
-            .expect("Failed to setup test database");
+            .expect("Unable to set up roles.");
 
         let cache = SchemaCache::load(&test_db)
             .await

@@ -14,8 +14,8 @@ pub struct TestDb {
 
 #[derive(Debug)]
 pub struct RoleWithArgs {
-    role: String,
-    args: Vec<String>,
+    pub role: String,
+    pub args: Vec<String>,
 }
 
 impl TestDb {
@@ -60,9 +60,7 @@ impl TestDb {
             role_statements.join("\n")
         );
 
-        println!("{}", query);
-
-        self.execute(&query).await
+        self.pool.execute(query.as_str()).await
     }
 
     pub fn get_roles(&self) -> &[String] {
