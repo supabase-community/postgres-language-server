@@ -12,6 +12,13 @@ use uuid::Uuid;
 
 static DB_ROLES: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
+fn add_roles(roles: Vec<String>) {
+    let mut set = DB_ROLES.lock().unwrap();
+    for role in roles {
+        set.insert(role);
+    }
+}
+
 #[derive(Debug)]
 pub struct TestDb {
     pool: PgPool,
@@ -35,13 +42,8 @@ impl TestDb {
         &mut self,
         roles: Vec<RoleWithArgs>,
     ) -> Result<PgQueryResult, sqlx::Error> {
-        {
-            let roles: Vec<String> = roles.iter().map(|r| &r.role).cloned().collect();
-            let mut set = DB_ROLES.lock().unwrap();
-            for role in roles {
-                set.insert(role);
-            }
-        }
+        let role_names: Vec<String> = roles.iter().map(|r| &r.role).cloned().collect();
+        add_roles(role_names);
 
         let role_statements: Vec<String> = roles
             .into_iter()
@@ -84,7 +86,24 @@ impl TestDb {
             }
         }
 
+        roles.sort();
+
         roles
+    }
+
+    async fn init_roles(&self) {
+        let results = sqlx::query!("select rolname from pg_catalog.pg_roles;")
+            .fetch_all(&self.pool)
+            .await
+            .unwrap();
+
+        let roles: Vec<String> = results
+            .iter()
+            .filter_map(|r| r.rolname.as_ref())
+            .cloned()
+            .collect();
+
+        add_roles(roles);
     }
 }
 
@@ -134,5 +153,9 @@ pub async fn get_new_test_db() -> TestDb {
         .await
         .expect("Could not connect to test database");
 
-    TestDb { pool }
+    let db = TestDb { pool };
+
+    db.init_roles().await;
+
+    db
 }
