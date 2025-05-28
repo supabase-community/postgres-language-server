@@ -1,4 +1,8 @@
-use std::ops::Deref;
+use std::{
+    collections::HashSet,
+    ops::Deref,
+    sync::{LazyLock, Mutex},
+};
 
 use sqlx::{
     Executor, PgPool,
@@ -6,10 +10,11 @@ use sqlx::{
 };
 use uuid::Uuid;
 
+static DB_ROLES: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+
 #[derive(Debug)]
 pub struct TestDb {
     pool: PgPool,
-    roles: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -30,7 +35,13 @@ impl TestDb {
         &mut self,
         roles: Vec<RoleWithArgs>,
     ) -> Result<PgQueryResult, sqlx::Error> {
-        self.roles = roles.iter().map(|r| &r.role).cloned().collect();
+        {
+            let roles: Vec<String> = roles.iter().map(|r| &r.role).cloned().collect();
+            let mut set = DB_ROLES.lock().unwrap();
+            for role in roles {
+                set.insert(role);
+            }
+        }
 
         let role_statements: Vec<String> = roles
             .into_iter()
@@ -63,8 +74,17 @@ impl TestDb {
         self.pool.execute(query.as_str()).await
     }
 
-    pub fn get_roles(&self) -> &[String] {
-        &self.roles
+    pub fn get_roles(&self) -> Vec<String> {
+        let mut roles = vec![];
+
+        {
+            let set = DB_ROLES.lock().unwrap();
+            for role in set.iter() {
+                roles.push(role.clone());
+            }
+        }
+
+        roles
     }
 }
 
@@ -114,8 +134,5 @@ pub async fn get_new_test_db() -> TestDb {
         .await
         .expect("Could not connect to test database");
 
-    TestDb {
-        pool,
-        roles: vec![],
-    }
+    TestDb { pool }
 }
