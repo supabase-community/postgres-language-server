@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     ops::Deref,
-    sync::{LazyLock, Mutex},
+    sync::{LazyLock, Mutex, MutexGuard},
 };
 
 use sqlx::{
@@ -76,19 +76,8 @@ impl TestDb {
         self.pool.execute(query.as_str()).await
     }
 
-    pub fn get_roles(&self) -> Vec<String> {
-        let mut roles = vec![];
-
-        {
-            let set = DB_ROLES.lock().unwrap();
-            for role in set.iter() {
-                roles.push(role.clone());
-            }
-        }
-
-        roles.sort();
-
-        roles
+    pub fn get_roles(&self) -> MutexGuard<'_, HashSet<String>> {
+        DB_ROLES.lock().unwrap()
     }
 
     async fn init_roles(&self) {
