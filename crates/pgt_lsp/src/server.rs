@@ -446,6 +446,8 @@ impl ServerFactory {
         workspace_method!(builder, close_file);
         workspace_method!(builder, pull_diagnostics);
         workspace_method!(builder, get_completions);
+        workspace_method!(builder, register_project_folder);
+        workspace_method!(builder, unregister_project_folder);
 
         let (service, socket) = builder.finish();
         ServerConnection { socket, service }

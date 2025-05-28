@@ -1213,7 +1213,7 @@ async fn multiple_projects() -> Result<()> {
     });
     fs.insert(
         url!("test_two/postgrestools.jsonc").to_file_path().unwrap(),
-        serde_json::to_string_pretty(&conf_with_db).unwrap(),
+        serde_json::to_string_pretty(&conf_without_db).unwrap(),
     );
 
     let (service, client) = factory
@@ -1235,7 +1235,7 @@ async fn multiple_projects() -> Result<()> {
 
     server
         .open_named_document(
-            "alter table appointment alter column end_time drop not null;\n",
+            "select  from public.users;\n",
             url!("test_one/document.sql"),
             "sql",
         )
@@ -1249,11 +1249,11 @@ async fn multiple_projects() -> Result<()> {
                 range: Some(Range {
                     start: Position {
                         line: 0,
-                        character: 24,
+                        character: 7,
                     },
                     end: Position {
                         line: 0,
-                        character: 24,
+                        character: 7,
                     },
                 }),
                 range_length: Some(0),
@@ -1273,15 +1273,16 @@ async fn multiple_projects() -> Result<()> {
                 },
                 position: Position {
                     line: 0,
-                    character: 25,
+                    character: 8,
                 },
             },
         })
-        .await?;
+        .await?
+        .unwrap();
 
     server
         .open_named_document(
-            "alter table appointment alter column end_time drop not null;\n",
+            "select  from public.users;\n",
             url!("test_two/document.sql"),
             "sql",
         )
@@ -1295,11 +1296,11 @@ async fn multiple_projects() -> Result<()> {
                 range: Some(Range {
                     start: Position {
                         line: 0,
-                        character: 24,
+                        character: 7,
                     },
                     end: Position {
                         line: 0,
-                        character: 24,
+                        character: 7,
                     },
                 }),
                 range_length: Some(0),
@@ -1319,15 +1320,23 @@ async fn multiple_projects() -> Result<()> {
                 },
                 position: Position {
                     line: 0,
-                    character: 25,
+                    character: 8,
                 },
             },
         })
-        .await?;
+        .await?
+        .unwrap();
+    println!("{:?}", res_ws_two);
 
     // only the first one has a db connection and should return completion items
-    assert!(res_ws_one.is_some());
-    assert!(res_ws_two.is_none());
+    assert!(!match res_ws_one {
+        CompletionResponse::Array(a) => a.is_empty(),
+        CompletionResponse::List(l) => l.items.is_empty(),
+    });
+    assert!(match res_ws_two {
+        CompletionResponse::Array(a) => a.is_empty(),
+        CompletionResponse::List(l) => l.items.is_empty(),
+    });
 
     server.shutdown().await?;
     reader.abort();
