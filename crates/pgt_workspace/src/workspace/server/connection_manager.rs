@@ -1,31 +1,11 @@
 use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
-use sqlx::{pool::PoolOptions, postgres::PgConnectOptions, PgPool, Postgres};
+use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
 use crate::settings::DatabaseSettings;
 
-/// A unique identifier for database connection settings
-#[derive(Clone, PartialEq, Eq, Hash)]
-struct ConnectionKey {
-    host: String,
-    port: u16,
-    username: String,
-    password: String,
-    database: String,
-}
-
-impl From<&DatabaseSettings> for ConnectionKey {
-    fn from(settings: &DatabaseSettings) -> Self {
-        Self {
-            host: settings.host.clone(),
-            port: settings.port,
-            username: settings.username.clone(),
-            password: settings.password.clone(),
-            database: settings.database.clone(),
-        }
-    }
-}
+use super::connection_key::ConnectionKey;
 
 /// Cached connection pool with last access time
 struct CachedPool {
@@ -49,6 +29,7 @@ impl ConnectionManager {
     /// Get a connection pool for the given database settings.
     /// If a pool already exists for these settings, it will be returned.
     /// If not, a new pool will be created if connections are enabled.
+    /// Will also clean up idle connections that haven't been accessed for a while.
     pub(crate) fn get_pool(&self, settings: &DatabaseSettings) -> Option<PgPool> {
         let key = ConnectionKey::from(settings);
 
@@ -84,8 +65,8 @@ impl ConnectionManager {
         let cached_pool = CachedPool {
             pool: pool.clone(),
             last_accessed: Instant::now(),
-            // TODO: add this to the db settings, for now default to one minute
-            idle_timeout: Duration::from_secs(60),
+            // TODO: add this to the db settings, for now default to five minutes
+            idle_timeout: Duration::from_secs(60 * 5),
         };
 
         self.pools.insert(key, cached_pool);

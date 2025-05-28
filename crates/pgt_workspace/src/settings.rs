@@ -12,18 +12,18 @@ use tracing::trace;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pgt_configuration::{
+    ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration,
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
-    ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration,
 };
 use pgt_fs::PgTPath;
 
 use crate::{
+    WorkspaceError,
     matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
-    WorkspaceError,
 };
 
 #[derive(Debug, Default)]
@@ -133,8 +133,7 @@ impl WorkspaceSettings {
         for (key, path_to_settings) in iter {
             trace!(
                 "Workspace path {:?}, file path {:?}",
-                path_to_settings.path,
-                path
+                path_to_settings.path, path
             );
             trace!("Iter key: {:?}", key);
             if key == self.current_project {

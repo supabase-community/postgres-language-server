@@ -1,13 +1,16 @@
 use crate::workspace::ServerInfo;
 use crate::{TransportError, Workspace, WorkspaceError};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::json;
 use std::{
     panic::RefUnwindSafe,
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use super::{CloseFileParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams};
+use super::{
+    CloseFileParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
+    RegisterProjectFolderParams, UnregisterProjectFolderParams,
+};
 
 pub struct WorkspaceClient<T> {
     transport: T,

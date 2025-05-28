@@ -6,9 +6,10 @@ use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, DenseSlotMap};
+use slotmap::{DenseSlotMap, new_key_type};
 
 use crate::{
+    WorkspaceError,
     features::{
         code_actions::{
             CodeActionsParams, CodeActionsResult, ExecuteStatementParams, ExecuteStatementResult,
@@ -16,14 +17,13 @@ use crate::{
         completions::{CompletionsResult, GetCompletionsParams},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
-    WorkspaceError,
 };
 
 mod client;
 mod server;
 
-pub(crate) use server::parsed_document::*;
 pub use server::StatementId;
+pub(crate) use server::parsed_document::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]

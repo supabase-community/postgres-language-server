@@ -10,7 +10,7 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use dashmap::DashMap;
 use document::Document;
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use parsed_document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
     ParsedDocument, SyncDiagnosticsMapper,
@@ -18,7 +18,7 @@ use parsed_document::{
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
-    serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt, Error, Severity,
+    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
@@ -27,20 +27,17 @@ use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
 
 use crate::{
+    WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
-        completions::{get_statement_for_completions, CompletionsResult, GetCompletionsParams},
+        completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
-    settings::{
-        Settings, SettingsHandle, SettingsHandleMut, WorkspaceSettings, WorkspaceSettingsHandle,
-        WorkspaceSettingsHandleMut,
-    },
-    WorkspaceError,
+    settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
 };
 
 use super::{
@@ -55,6 +52,7 @@ mod analyser;
 mod annotation;
 mod async_helper;
 mod change;
+mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
 mod migration;
@@ -444,7 +442,6 @@ impl Workspace for WorkspaceServer {
         if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let schema_cache_arc = schema_cache.get_arc();
             let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
@@ -452,7 +449,7 @@ impl Workspace for WorkspaceServer {
                     .map(|(_id, range, content, ast, cst, sign)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
-                        let schema_cache = Arc::clone(&schema_cache_arc);
+                        let schema_cache = Arc::clone(&schema_cache);
                         async move {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
