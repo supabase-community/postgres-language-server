@@ -1,6 +1,8 @@
 use crate::capabilities::server_capabilities;
 use crate::handlers;
-use crate::session::{CapabilitySet, CapabilityStatus, Session, SessionHandle, SessionKey};
+use crate::session::{
+    CapabilitySet, CapabilityStatus, ClientInformation, Session, SessionHandle, SessionKey,
+};
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
