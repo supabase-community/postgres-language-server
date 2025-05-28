@@ -5,6 +5,7 @@ use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
 use pgt_fs::{ConfigName, FileSystem, OsFileSystem};
+use pgt_workspace::workspace::{RegisterProjectFolderParams, UnregisterProjectFolderParams};
 use pgt_workspace::{DynRef, Workspace, workspace};
 use rustc_hash::FxHashMap;
 use serde_json::json;
@@ -107,6 +108,10 @@ impl LanguageServer for LSPServer {
 
         self.session.initialize(
             params.capabilities,
+            params.client_info.map(|client_info| ClientInformation {
+                name: client_info.name,
+                version: client_info.version,
+            }),
             params.root_uri,
             params.workspace_folders,
         );
@@ -215,6 +220,47 @@ impl LanguageServer for LSPServer {
         handlers::text_document::did_close(&self.session, params)
             .await
             .ok();
+    }
+
+    async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
+        for removed in &params.event.removed {
+            if let Ok(project_path) = self.session.file_path(&removed.uri) {
+                let result = self
+                    .session
+                    .workspace
+                    .unregister_project_folder(UnregisterProjectFolderParams { path: project_path })
+                    .map_err(into_lsp_error);
+
+                if let Err(err) = result {
+                    error!("Failed to remove project from the workspace: {}", err);
+                    self.session
+                        .client
+                        .log_message(MessageType::ERROR, err)
+                        .await;
+                }
+            }
+        }
+
+        for added in &params.event.added {
+            if let Ok(project_path) = self.session.file_path(&added.uri) {
+                let result = self
+                    .session
+                    .workspace
+                    .register_project_folder(RegisterProjectFolderParams {
+                        path: Some(project_path.to_path_buf()),
+                        set_as_current_workspace: true,
+                    })
+                    .map_err(into_lsp_error);
+
+                if let Err(err) = result {
+                    error!("Failed to add project to the workspace: {}", err);
+                    self.session
+                        .client
+                        .log_message(MessageType::ERROR, err)
+                        .await;
+                }
+            }
+        }
     }
 
     #[tracing::instrument(level = "trace", skip_all)]

@@ -11,7 +11,7 @@ use pgt_console::Console;
 use pgt_fs::FileSystem;
 use pgt_workspace::PartialConfigurationExt;
 use pgt_workspace::configuration::{LoadedConfiguration, load_configuration};
-use pgt_workspace::workspace::UpdateSettingsParams;
+use pgt_workspace::workspace::{RegisterProjectFolderParams, UpdateSettingsParams};
 use pgt_workspace::{DynRef, Workspace, WorkspaceError};
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -301,6 +301,10 @@ pub(crate) trait CommandRunner: Sized {
         let (vcs_base_path, gitignore_matches) =
             configuration.retrieve_gitignore_matches(fs, vcs_base_path.as_deref())?;
         let paths = self.get_files_to_process(fs, &configuration)?;
+        workspace.register_project_folder(RegisterProjectFolderParams {
+            path: fs.working_directory(),
+            set_as_current_workspace: true,
+        })?;
 
         workspace.update_settings(UpdateSettingsParams {
             workspace_directory: fs.working_directory(),

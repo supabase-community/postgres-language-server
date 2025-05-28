@@ -269,6 +269,10 @@ impl Workspace for WorkspaceServer {
                 ParsedDocument::new(params.path.clone(), params.content, params.version)
             });
 
+        if let Some(project_key) = self.path_belongs_to_current_workspace(&params.path) {
+            self.set_current_project(project_key);
+        }
+
         Ok(())
     }
 
