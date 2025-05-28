@@ -185,6 +185,7 @@ export interface CompletionsResult {
 export interface CompletionItem {
 	completion_text?: CompletionText;
 	description: string;
+	detail?: string;
 	kind: CompletionItemKind;
 	label: string;
 	preselected: boolean;
@@ -199,13 +200,19 @@ export interface CompletionItem {
 label: "users", description: "Schema: auth", completion_text: "auth.users". 
 	 */
 export interface CompletionText {
+	is_snippet: boolean;
 	/**
 	 * A `range` is required because some editors replace the current token, others naively insert the text. Having a range where start == end makes it an insertion.
 	 */
 	range: TextRange;
 	text: string;
 }
-export type CompletionItemKind = "table" | "function" | "column" | "schema";
+export type CompletionItemKind =
+	| "table"
+	| "function"
+	| "column"
+	| "schema"
+	| "policy";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
@@ -224,6 +231,10 @@ export interface PartialConfiguration {
 	 * The configuration of the database connection
 	 */
 	db?: PartialDatabaseConfiguration;
+	/**
+	 * A list of paths to other JSON files, used to extends the current configuration.
+	 */
+	extends?: StringSet;
 	/**
 	 * The configuration of the filesystem
 	 */
@@ -271,6 +282,7 @@ export interface PartialDatabaseConfiguration {
 	 */
 	username?: string;
 }
+export type StringSet = string[];
 /**
  * The configuration of the filesystem
  */
@@ -346,7 +358,6 @@ If we can't find the configuration, it will attempt to use the current working d
 	 */
 	useIgnoreFile?: boolean;
 }
-export type StringSet = string[];
 export interface Rules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
