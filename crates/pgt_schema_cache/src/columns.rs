@@ -83,7 +83,6 @@ impl SchemaCacheItem for Column {
 #[cfg(test)]
 mod tests {
     use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
 
     use crate::{SchemaCache, columns::ColumnClassKind};
 

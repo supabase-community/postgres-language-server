@@ -1,9 +1,85 @@
-use sqlx::{Executor, PgPool, postgres::PgConnectOptions};
+use std::ops::Deref;
+
+use sqlx::{
+    Executor, PgPool,
+    postgres::{PgConnectOptions, PgQueryResult},
+};
 use uuid::Uuid;
+
+#[derive(Debug)]
+pub struct TestDb {
+    pool: PgPool,
+    roles: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct RoleWithArgs {
+    role: String,
+    args: Vec<String>,
+}
+
+impl TestDb {
+    pub async fn execute(&self, sql: &str) -> Result<PgQueryResult, sqlx::Error> {
+        if sql.to_ascii_lowercase().contains("create role") {
+            panic!("Please setup roles via the `setup_roles` method.")
+        }
+        self.pool.execute(sql).await
+    }
+
+    pub async fn setup_roles(
+        &mut self,
+        roles: Vec<RoleWithArgs>,
+    ) -> Result<PgQueryResult, sqlx::Error> {
+        self.roles = roles.iter().map(|r| &r.role).cloned().collect();
+
+        let role_statements: Vec<String> = roles
+            .into_iter()
+            .map(|r| {
+                format!(
+                    r#"
+                if not exists (
+                    select from pg_catalog.pg_roles
+                    where rolname = '{0}'
+                ) then 
+                    create role {0} {1};
+                end if;
+            "#,
+                    r.role,
+                    r.args.join(" ")
+                )
+            })
+            .collect();
+
+        let query = format!(
+            r#"
+            do $$
+            begin
+                {}
+            end $$;
+        "#,
+            role_statements.join("\n")
+        );
+
+        println!("{}", query);
+
+        self.execute(&query).await
+    }
+
+    pub fn get_roles(&self) -> &[String] {
+        &self.roles
+    }
+}
+
+impl Deref for TestDb {
+    type Target = PgPool;
+    fn deref(&self) -> &Self::Target {
+        &self.pool
+    }
+}
 
 // TODO: Work with proper config objects instead of a connection_string.
 // With the current implementation, we can't parse the password from the connection string.
-pub async fn get_new_test_db() -> PgPool {
+pub async fn get_new_test_db() -> TestDb {
     dotenv::dotenv().expect("Unable to load .env file for tests");
 
     let connection_string = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
@@ -36,7 +112,12 @@ pub async fn get_new_test_db() -> PgPool {
         .await
         .expect("Failed to create test database.");
 
-    sqlx::PgPool::connect_with(options_without_db_name.database(&database_name))
+    let pool = sqlx::PgPool::connect_with(options_without_db_name.database(&database_name))
         .await
-        .expect("Could not connect to test database")
+        .expect("Could not connect to test database");
+
+    TestDb {
+        pool,
+        roles: vec![],
+    }
 }
