@@ -358,6 +358,6 @@ impl Diagnostic for FileTooLarge {
 
 impl From<CantLoadExtendFile> for WorkspaceError {
     fn from(value: CantLoadExtendFile) -> Self {
-        WorkspaceError::Configuration(ConfigurationDiagnostic::CantLoadExtendFile(value).into())
+        WorkspaceError::Configuration(ConfigurationDiagnostic::CantLoadExtendFile(value))
     }
 }

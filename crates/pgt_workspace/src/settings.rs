@@ -176,7 +176,7 @@ impl<'a> WorkspaceSettingsHandle<'a> {
     }
 }
 
-impl<'a> AsRef<WorkspaceSettings> for WorkspaceSettingsHandle<'a> {
+impl AsRef<WorkspaceSettings> for WorkspaceSettingsHandle<'_> {
     fn as_ref(&self) -> &WorkspaceSettings {
         &self.inner
     }
@@ -194,7 +194,7 @@ impl<'a> WorkspaceSettingsHandleMut<'a> {
     }
 }
 
-impl<'a> AsMut<WorkspaceSettings> for WorkspaceSettingsHandleMut<'a> {
+impl AsMut<WorkspaceSettings> for WorkspaceSettingsHandleMut<'_> {
     fn as_mut(&mut self) -> &mut WorkspaceSettings {
         &mut self.inner
     }
