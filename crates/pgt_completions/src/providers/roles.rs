@@ -27,7 +27,7 @@ pub fn complete_roles<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionB
 
 #[cfg(test)]
 mod tests {
-    use sqlx::PgPool;
+    use sqlx::{Executor, PgPool};
 
     use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
 
@@ -81,9 +81,45 @@ mod tests {
         .await;
     }
 
-    async fn works_in_set_statement() {
-        // set role ROLE;
-        // set session authorization ROLE;
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn works_in_set_statement(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        assert_complete_results(
+            format!("set role {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("set session authorization {}", CURSOR_POS).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
     }
 
     async fn works_in_policies() {}

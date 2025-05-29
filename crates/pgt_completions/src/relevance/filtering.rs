@@ -76,7 +76,8 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Table(_) => match clause {
                         WrappingClause::Select
                         | WrappingClause::Where
-                        | WrappingClause::ColumnDefinitions => false,
+                        | WrappingClause::ColumnDefinitions
+                        | WrappingClause::SetStatement => false,
 
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
@@ -101,6 +102,7 @@ impl CompletionFilter<'_> {
                         match clause {
                             WrappingClause::From
                             | WrappingClause::ColumnDefinitions
+                            | WrappingClause::SetStatement
                             | WrappingClause::AlterTable
                             | WrappingClause::DropTable => false,
 
@@ -170,9 +172,12 @@ impl CompletionFilter<'_> {
                         matches!(clause, WrappingClause::PolicyName)
                     }
 
-                    CompletionRelevanceData::Role(_) => {
-                        matches!(clause, WrappingClause::DropRole | WrappingClause::AlterRole)
-                    }
+                    CompletionRelevanceData::Role(_) => match clause {
+                        WrappingClause::DropRole | WrappingClause::AlterRole => true,
+                        WrappingClause::SetStatement => ctx
+                            .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+                        _ => false,
+                    },
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
