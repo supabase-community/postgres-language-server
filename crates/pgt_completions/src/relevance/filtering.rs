@@ -76,7 +76,8 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Table(_) => match clause {
                         WrappingClause::Select
                         | WrappingClause::Where
-                        | WrappingClause::ColumnDefinitions => false,
+                        | WrappingClause::ColumnDefinitions
+                        | WrappingClause::SetStatement => false,
 
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
@@ -101,6 +102,7 @@ impl CompletionFilter<'_> {
                         match clause {
                             WrappingClause::From
                             | WrappingClause::ColumnDefinitions
+                            | WrappingClause::SetStatement
                             | WrappingClause::AlterTable
                             | WrappingClause::DropTable => false,
 
@@ -169,6 +171,13 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Policy(_) => {
                         matches!(clause, WrappingClause::PolicyName)
                     }
+
+                    CompletionRelevanceData::Role(_) => match clause {
+                        WrappingClause::DropRole | WrappingClause::AlterRole => true,
+                        WrappingClause::SetStatement => ctx
+                            .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+                        _ => false,
+                    },
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
@@ -204,8 +213,8 @@ impl CompletionFilter<'_> {
 
             // we should never allow schema suggestions if there already was one.
             CompletionRelevanceData::Schema(_) => false,
-            // no policy comletion if user typed a schema node first.
-            CompletionRelevanceData::Policy(_) => false,
+            // no policy or row completion if user typed a schema node first.
+            CompletionRelevanceData::Policy(_) | CompletionRelevanceData::Role(_) => false,
         };
 
         if !matches {
@@ -218,12 +227,14 @@ impl CompletionFilter<'_> {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::{Executor, PgPool};
+
     use crate::test_helper::{
         CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
     };
 
-    #[tokio::test]
-    async fn completion_after_asterisk() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completion_after_asterisk(pool: PgPool) {
         let setup = r#"
             create table users (
                 id serial primary key,
@@ -232,7 +243,9 @@ mod tests {
             );
         "#;
 
-        assert_no_complete_results(format!("select * {}", CURSOR_POS).as_str(), setup).await;
+        pool.execute(setup).await.unwrap();
+
+        assert_no_complete_results(format!("select * {}", CURSOR_POS).as_str(), None, &pool).await;
 
         // if there s a COMMA after the asterisk, we're good
         assert_complete_results(
@@ -242,19 +255,21 @@ mod tests {
                 CompletionAssertion::Label("email".into()),
                 CompletionAssertion::Label("id".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn completion_after_create_table() {
-        assert_no_complete_results(format!("create table {}", CURSOR_POS).as_str(), "").await;
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completion_after_create_table(pool: PgPool) {
+        assert_no_complete_results(format!("create table {}", CURSOR_POS).as_str(), None, &pool)
+            .await;
     }
 
-    #[tokio::test]
-    async fn completion_in_column_definitions() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completion_in_column_definitions(pool: PgPool) {
         let query = format!(r#"create table instruments ( {} )"#, CURSOR_POS);
-        assert_no_complete_results(query.as_str(), "").await;
+        assert_no_complete_results(query.as_str(), None, &pool).await;
     }
 }

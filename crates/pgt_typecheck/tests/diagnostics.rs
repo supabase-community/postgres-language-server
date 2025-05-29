@@ -3,13 +3,10 @@ use pgt_console::{
     markup,
 };
 use pgt_diagnostics::PrintDiagnostic;
-use pgt_test_utils::test_database::get_new_test_db;
 use pgt_typecheck::{TypecheckParams, check_sql};
-use sqlx::Executor;
+use sqlx::{Executor, PgPool};
 
-async fn test(name: &str, query: &str, setup: Option<&str>) {
-    let test_db = get_new_test_db().await;
-
+async fn test(name: &str, query: &str, setup: Option<&str>, test_db: &PgPool) {
     if let Some(setup) = setup {
         test_db
             .execute(setup)
@@ -22,7 +19,7 @@ async fn test(name: &str, query: &str, setup: Option<&str>) {
         .set_language(tree_sitter_sql::language())
         .expect("Error loading sql language");
 
-    let schema_cache = pgt_schema_cache::SchemaCache::load(&test_db)
+    let schema_cache = pgt_schema_cache::SchemaCache::load(test_db)
         .await
         .expect("Failed to load Schema Cache");
 
@@ -58,8 +55,8 @@ async fn test(name: &str, query: &str, setup: Option<&str>) {
     });
 }
 
-#[tokio::test]
-async fn invalid_column() {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn invalid_column(pool: PgPool) {
     test(
         "invalid_column",
         "select id, unknown from contacts;",
@@ -73,6 +70,7 @@ async fn invalid_column() {
         );
     "#,
         ),
+        &pool,
     )
     .await;
 }

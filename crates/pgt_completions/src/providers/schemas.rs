@@ -27,13 +27,15 @@ pub fn complete_schemas<'a>(ctx: &'a CompletionContext, builder: &mut Completion
 #[cfg(test)]
 mod tests {
 
+    use sqlx::PgPool;
+
     use crate::{
         CompletionItemKind,
         test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results},
     };
 
-    #[tokio::test]
-    async fn autocompletes_schemas() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn autocompletes_schemas(pool: PgPool) {
         let setup = r#"
             create schema private;
             create schema auth;
@@ -75,13 +77,14 @@ mod tests {
                     CompletionItemKind::Schema,
                 ),
             ],
-            setup,
+            Some(setup),
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_tables_and_schemas_with_matching_keys() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_tables_and_schemas_with_matching_keys(pool: PgPool) {
         let setup = r#"
             create schema ultimate;
 
@@ -99,7 +102,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("ultimate".into(), CompletionItemKind::Schema),
             ],
-            setup,
+            Some(setup),
+            &pool,
         )
         .await;
     }

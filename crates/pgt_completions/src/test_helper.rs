@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
 use pgt_schema_cache::SchemaCache;
-use pgt_test_utils::test_database::get_new_test_db;
-use sqlx::Executor;
+use sqlx::{Executor, PgPool};
 
 use crate::{CompletionItem, CompletionItemKind, CompletionParams, complete};
 
@@ -34,17 +33,18 @@ impl Display for InputQuery {
 }
 
 pub(crate) async fn get_test_deps(
-    setup: &str,
+    setup: Option<&str>,
     input: InputQuery,
+    test_db: &PgPool,
 ) -> (tree_sitter::Tree, pgt_schema_cache::SchemaCache) {
-    let test_db = get_new_test_db().await;
+    if let Some(setup) = setup {
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to execute setup query");
+    }
 
-    test_db
-        .execute(setup)
-        .await
-        .expect("Failed to execute setup query");
-
-    let schema_cache = SchemaCache::load(&test_db)
+    let schema_cache = SchemaCache::load(test_db)
         .await
         .expect("Failed to load Schema Cache");
 
@@ -206,9 +206,10 @@ impl CompletionAssertion {
 pub(crate) async fn assert_complete_results(
     query: &str,
     assertions: Vec<CompletionAssertion>,
-    setup: &str,
+    setup: Option<&str>,
+    pool: &PgPool,
 ) {
-    let (tree, cache) = get_test_deps(setup, query.into()).await;
+    let (tree, cache) = get_test_deps(setup, query.into(), pool).await;
     let params = get_test_params(&tree, &cache, query.into());
     let items = complete(params);
 
@@ -241,8 +242,8 @@ pub(crate) async fn assert_complete_results(
         });
 }
 
-pub(crate) async fn assert_no_complete_results(query: &str, setup: &str) {
-    let (tree, cache) = get_test_deps(setup, query.into()).await;
+pub(crate) async fn assert_no_complete_results(query: &str, setup: Option<&str>, pool: &PgPool) {
+    let (tree, cache) = get_test_deps(setup, query.into(), pool).await;
     let params = get_test_params(&tree, &cache, query.into());
     let items = complete(params);
 

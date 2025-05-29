@@ -79,14 +79,12 @@ impl SchemaCacheItem for Table {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::{Executor, PgPool};
+
     use crate::{SchemaCache, tables::TableKind};
-    use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
 
-    #[tokio::test]
-    async fn includes_views_in_query() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn includes_views_in_query(test_db: PgPool) {
         let setup = r#"
             create table public.base_table (
                 id serial primary key,
@@ -116,10 +114,8 @@ mod tests {
         assert_eq!(view.schema, "public");
     }
 
-    #[tokio::test]
-    async fn includes_materialized_views_in_query() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn includes_materialized_views_in_query(test_db: PgPool) {
         let setup = r#"
             create table public.base_table (
                 id serial primary key,

@@ -5,7 +5,8 @@ use crate::{
     context::CompletionContext,
     item::CompletionItem,
     providers::{
-        complete_columns, complete_functions, complete_policies, complete_schemas, complete_tables,
+        complete_columns, complete_functions, complete_policies, complete_roles, complete_schemas,
+        complete_tables,
     },
     sanitization::SanitizedCompletionParams,
 };
@@ -36,6 +37,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
     complete_columns(&ctx, &mut builder);
     complete_schemas(&ctx, &mut builder);
     complete_policies(&ctx, &mut builder);
+    complete_roles(&ctx, &mut builder);
 
     builder.finish()
 }

@@ -33,6 +33,9 @@ pub enum WrappingClause<'a> {
     DropTable,
     PolicyName,
     ToRoleAssignment,
+    SetStatement,
+    AlterRole,
+    DropRole,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -424,7 +427,7 @@ impl<'a> CompletionContext<'a> {
             }
 
             "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
-            | "drop_table" | "alter_table" => {
+            | "drop_table" | "alter_table" | "alter_role" | "drop_role" | "set_statement" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -628,7 +631,10 @@ impl<'a> CompletionContext<'a> {
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
+            "alter_role" => Some(WrappingClause::AlterRole),
+            "drop_role" => Some(WrappingClause::DropRole),
             "alter_table" => Some(WrappingClause::AlterTable),
+            "set_statement" => Some(WrappingClause::SetStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "insert" => Some(WrappingClause::Insert),
             "join" => {

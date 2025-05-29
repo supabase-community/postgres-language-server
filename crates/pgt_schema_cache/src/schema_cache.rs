@@ -93,14 +93,12 @@ pub trait SchemaCacheItem {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
+    use sqlx::PgPool;
 
     use crate::SchemaCache;
 
-    #[tokio::test]
-    async fn it_loads() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn it_loads(test_db: PgPool) {
         SchemaCache::load(&test_db)
             .await
             .expect("Couldnt' load Schema Cache");
