@@ -126,17 +126,16 @@ impl SchemaCacheItem for Trigger {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
+
+    use sqlx::{Executor, PgPool};
 
     use crate::{
         SchemaCache,
         triggers::{TriggerAffected, TriggerEvent, TriggerTiming},
     };
 
-    #[tokio::test]
-    async fn loads_triggers() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_triggers(test_db: PgPool) {
         let setup = r#"
                 create table public.users (
                     id serial primary key,
@@ -218,10 +217,8 @@ mod tests {
         assert_eq!(delete_trigger.proc_name, "log_user_insert");
     }
 
-    #[tokio::test]
-    async fn loads_instead_and_truncate_triggers() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_instead_and_truncate_triggers(test_db: PgPool) {
         let setup = r#"
         create table public.docs (
             id serial primary key,

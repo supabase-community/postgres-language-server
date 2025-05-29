@@ -80,28 +80,13 @@ impl SchemaCacheItem for Policy {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::{RoleWithArgs, get_new_test_db};
+
+    use sqlx::{Executor, PgPool};
 
     use crate::{SchemaCache, policies::PolicyCommand};
 
-    #[tokio::test]
-    async fn loads_policies() {
-        let mut test_db = get_new_test_db().await;
-
-        test_db
-            .setup_roles(vec![
-                RoleWithArgs {
-                    role: "admin".into(),
-                    args: vec![],
-                },
-                RoleWithArgs {
-                    role: "owner".into(),
-                    args: vec![],
-                },
-            ])
-            .await
-            .expect("Unable to setup admin roles");
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_policies(test_db: PgPool) {
         let setup = r#"
             create table public.users (
                 id serial primary key,

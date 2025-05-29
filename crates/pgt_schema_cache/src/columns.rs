@@ -126,7 +126,7 @@ mod tests {
         let public_schema_columns = cache
             .columns
             .iter()
-            .filter(|c| c.schema_name.as_str() == "public")
+            .filter(|c| c.schema_name.as_str() == "public" && !c.table_name.contains("migrations"))
             .count();
 
         assert_eq!(public_schema_columns, 4);

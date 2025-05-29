@@ -3,12 +3,10 @@ use pgt_console::{
     markup,
 };
 use pgt_diagnostics::PrintDiagnostic;
-use pgt_test_utils::test_database::get_new_test_db;
 use pgt_typecheck::{TypecheckParams, check_sql};
+use sqlx::{Executor, PgPool};
 
-async fn test(name: &str, query: &str, setup: Option<&str>) {
-    let test_db = get_new_test_db().await;
-
+async fn test(name: &str, query: &str, setup: Option<&str>, test_db: &PgPool) {
     if let Some(setup) = setup {
         test_db
             .execute(setup)
@@ -57,8 +55,8 @@ async fn test(name: &str, query: &str, setup: Option<&str>) {
     });
 }
 
-#[tokio::test]
-async fn invalid_column() {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn invalid_column(pool: PgPool) {
     test(
         "invalid_column",
         "select id, unknown from contacts;",
@@ -72,6 +70,7 @@ async fn invalid_column() {
         );
     "#,
         ),
+        &pool,
     )
     .await;
 }
