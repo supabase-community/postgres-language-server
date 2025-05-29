@@ -21,43 +21,12 @@ impl SchemaCacheItem for Role {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::PgPool;
+
     use crate::SchemaCache;
-    use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
 
-    #[tokio::test]
-    async fn loads_roles() {
-        let setup = r#"
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test_super'
-                ) then
-                    create role test_super superuser createdb login bypassrls;
-                end if;
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test_nologin'
-                ) then
-                    create role test_nologin;
-                end if;
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test_login'
-                ) then
-                    create role test_login login;
-                end if;
-            end $$;
-        "#;
-
-        let test_db = get_new_test_db().await;
-
-        test_db
-            .execute(setup)
-            .await
-            .expect("Failed to setup test database");
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_roles(test_db: PgPool) {
         let cache = SchemaCache::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");

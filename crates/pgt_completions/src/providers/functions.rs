@@ -65,13 +65,15 @@ fn get_completion_text(ctx: &CompletionContext, func: &Function) -> CompletionTe
 
 #[cfg(test)]
 mod tests {
+    use sqlx::PgPool;
+
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{CURSOR_POS, get_test_deps, get_test_params},
     };
 
-    #[tokio::test]
-    async fn completes_fn() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_fn(pool: PgPool) {
         let setup = r#"
           create or replace function cool()
           returns trigger
@@ -86,7 +88,7 @@ mod tests {
 
         let query = format!("select coo{}", CURSOR_POS);
 
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         let results = complete(params);
 
@@ -98,8 +100,8 @@ mod tests {
         assert_eq!(label, "cool");
     }
 
-    #[tokio::test]
-    async fn prefers_fn_if_invocation() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn prefers_fn_if_invocation(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -119,7 +121,7 @@ mod tests {
 
         let query = format!(r#"select * from coo{}()"#, CURSOR_POS);
 
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         let results = complete(params);
 
@@ -132,8 +134,8 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Function);
     }
 
-    #[tokio::test]
-    async fn prefers_fn_in_select_clause() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn prefers_fn_in_select_clause(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -153,7 +155,7 @@ mod tests {
 
         let query = format!(r#"select coo{}"#, CURSOR_POS);
 
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         let results = complete(params);
 
@@ -166,8 +168,8 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Function);
     }
 
-    #[tokio::test]
-    async fn prefers_function_in_from_clause_if_invocation() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn prefers_function_in_from_clause_if_invocation(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -187,7 +189,7 @@ mod tests {
 
         let query = format!(r#"select * from coo{}()"#, CURSOR_POS);
 
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         let results = complete(params);
 

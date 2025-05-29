@@ -17,7 +17,7 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: format!("Table: {}.{}", col.schema_name, col.table_name),
+            description: format!("{}.{}", col.schema_name, col.table_name),
             kind: CompletionItemKind::Column,
             completion_text: None,
             detail: col.type_name.as_ref().map(|t| t.to_string()),
@@ -44,6 +44,8 @@ pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut Completio
 mod tests {
     use std::vec;
 
+    use sqlx::{Executor, PgPool};
+
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
@@ -66,8 +68,8 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn completes_columns() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_columns(pool: PgPool) {
         let setup = r#"
             create schema private;
 
@@ -87,12 +89,14 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         let queries: Vec<TestCase> = vec![
             TestCase {
                 message: "correctly prefers the columns of present tables",
                 query: format!(r#"select na{} from public.audio_books;"#, CURSOR_POS),
                 label: "narrator",
-                description: "Table: public.audio_books",
+                description: "public.audio_books",
             },
             TestCase {
                 message: "correctly handles nested queries",
@@ -110,18 +114,18 @@ mod tests {
                     CURSOR_POS
                 ),
                 label: "narrator_id",
-                description: "Table: private.audio_books",
+                description: "private.audio_books",
             },
             TestCase {
                 message: "works without a schema",
                 query: format!(r#"select na{} from users;"#, CURSOR_POS),
                 label: "name",
-                description: "Table: public.users",
+                description: "public.users",
             },
         ];
 
         for q in queries {
-            let (tree, cache) = get_test_deps(setup, q.get_input_query()).await;
+            let (tree, cache) = get_test_deps(None, q.get_input_query(), &pool).await;
             let params = get_test_params(&tree, &cache, q.get_input_query());
             let results = complete(params);
 
@@ -137,8 +141,8 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn shows_multiple_columns_if_no_relation_specified() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn shows_multiple_columns_if_no_relation_specified(pool: PgPool) {
         let setup = r#"
             create schema private;
 
@@ -158,6 +162,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         let case = TestCase {
             query: format!(r#"select n{};"#, CURSOR_POS),
             description: "",
@@ -165,11 +171,11 @@ mod tests {
             message: "",
         };
 
-        let (tree, cache) = get_test_deps(setup, case.get_input_query()).await;
+        let (tree, cache) = get_test_deps(None, case.get_input_query(), &pool).await;
         let params = get_test_params(&tree, &cache, case.get_input_query());
         let mut items = complete(params);
 
-        let _ = items.split_off(6);
+        let _ = items.split_off(4);
 
         #[derive(Eq, PartialEq, Debug)]
         struct LabelAndDesc {
@@ -186,12 +192,10 @@ mod tests {
             .collect();
 
         let expected = vec![
-            ("name", "Table: public.users"),
-            ("narrator", "Table: public.audio_books"),
-            ("narrator_id", "Table: private.audio_books"),
-            ("id", "Table: public.audio_books"),
-            ("name", "Schema: pg_catalog"),
-            ("nameconcatoid", "Schema: pg_catalog"),
+            ("name", "public.users"),
+            ("narrator", "public.audio_books"),
+            ("narrator_id", "private.audio_books"),
+            ("id", "public.audio_books"),
         ]
         .into_iter()
         .map(|(label, schema)| LabelAndDesc {
@@ -203,8 +207,8 @@ mod tests {
         assert_eq!(labels, expected);
     }
 
-    #[tokio::test]
-    async fn suggests_relevant_columns_without_letters() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_relevant_columns_without_letters(pool: PgPool) {
         let setup = r#"
             create table users (
                 id serial primary key,
@@ -221,7 +225,7 @@ mod tests {
             description: "",
         };
 
-        let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+        let (tree, cache) = get_test_deps(Some(setup), test_case.get_input_query(), &pool).await;
         let params = get_test_params(&tree, &cache, test_case.get_input_query());
         let results = complete(params);
 
@@ -251,8 +255,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn ignores_cols_in_from_clause() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn ignores_cols_in_from_clause(pool: PgPool) {
         let setup = r#"
         create schema private;
 
@@ -271,7 +275,7 @@ mod tests {
             description: "",
         };
 
-        let (tree, cache) = get_test_deps(setup, test_case.get_input_query()).await;
+        let (tree, cache) = get_test_deps(Some(setup), test_case.get_input_query(), &pool).await;
         let params = get_test_params(&tree, &cache, test_case.get_input_query());
         let results = complete(params);
 
@@ -282,8 +286,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn prefers_columns_of_mentioned_tables() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn prefers_columns_of_mentioned_tables(pool: PgPool) {
         let setup = r#"
         create schema private;
 
@@ -304,6 +308,8 @@ mod tests {
         );
     "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!(r#"select {} from users"#, CURSOR_POS).as_str(),
             vec![
@@ -312,7 +318,8 @@ mod tests {
                 CompletionAssertion::Label("id2".into()),
                 CompletionAssertion::Label("name2".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -324,7 +331,8 @@ mod tests {
                 CompletionAssertion::Label("id1".into()),
                 CompletionAssertion::Label("name1".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -332,13 +340,14 @@ mod tests {
         assert_complete_results(
             format!(r#"select sett{} from private.users"#, CURSOR_POS).as_str(),
             vec![CompletionAssertion::Label("user_settings".into())],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn filters_out_by_aliases() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn filters_out_by_aliases(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -357,6 +366,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         // test in SELECT clause
         assert_complete_results(
             format!(
@@ -374,7 +385,8 @@ mod tests {
                 CompletionAssertion::Label("title".to_string()),
                 CompletionAssertion::Label("user_id".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -396,13 +408,14 @@ mod tests {
                 CompletionAssertion::Label("title".to_string()),
                 CompletionAssertion::Label("user_id".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn does_not_complete_cols_in_join_clauses() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn does_not_complete_cols_in_join_clauses(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -435,13 +448,14 @@ mod tests {
                 CompletionAssertion::LabelAndKind("posts".to_string(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
             ],
-            setup,
+            Some(setup),
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn completes_in_join_on_clause() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_in_join_on_clause(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -460,6 +474,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!(
                 "select u.id, auth.posts.content from auth.users u join auth.posts on u.{}",
@@ -472,7 +488,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
                 CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -488,13 +505,14 @@ mod tests {
                 CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
                 CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn prefers_not_mentioned_columns() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn prefers_not_mentioned_columns(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -513,6 +531,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!(
                 "select {} from public.one o join public.two on o.id = t.id;",
@@ -526,7 +546,8 @@ mod tests {
                 CompletionAssertion::Label("d".to_string()),
                 CompletionAssertion::Label("e".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -546,7 +567,8 @@ mod tests {
                 CompletionAssertion::Label("z".to_string()),
                 CompletionAssertion::Label("a".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -559,13 +581,11 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndDesc(
-                    "id".to_string(),
-                    "Table: public.two".to_string(),
-                ),
+                CompletionAssertion::LabelAndDesc("id".to_string(), "public.two".to_string()),
                 CompletionAssertion::Label("z".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -577,13 +597,14 @@ mod tests {
             )
             .as_str(),
             vec![CompletionAssertion::Label("z".to_string())],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_columns_in_insert_clause() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_columns_in_insert_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
                 id bigint primary key generated always as identity,
@@ -598,6 +619,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         // We should prefer the instrument columns, even though they
         // are lower in the alphabet
 
@@ -608,7 +631,8 @@ mod tests {
                 CompletionAssertion::Label("name".to_string()),
                 CompletionAssertion::Label("z".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -618,14 +642,16 @@ mod tests {
                 CompletionAssertion::Label("name".to_string()),
                 CompletionAssertion::Label("z".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
         assert_complete_results(
             format!("insert into instruments (id, {}, name)", CURSOR_POS).as_str(),
             vec![CompletionAssertion::Label("z".to_string())],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -640,20 +666,22 @@ mod tests {
                 CompletionAssertion::Label("id".to_string()),
                 CompletionAssertion::Label("z".to_string()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
         // no completions in the values list!
         assert_no_complete_results(
             format!("insert into instruments (id, name) values ({})", CURSOR_POS).as_str(),
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_columns_in_where_clause() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_columns_in_where_clause(pool: PgPool) {
         let setup = r#"
             create table instruments (
                 id bigint primary key generated always as identity,
@@ -669,6 +697,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!("select name from instruments where {} ", CURSOR_POS).as_str(),
             vec![
@@ -677,7 +707,8 @@ mod tests {
                 CompletionAssertion::Label("name".into()),
                 CompletionAssertion::Label("z".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -692,7 +723,8 @@ mod tests {
                 CompletionAssertion::KindNotExists(CompletionItemKind::Column),
                 CompletionAssertion::KindNotExists(CompletionItemKind::Schema),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -708,7 +740,8 @@ mod tests {
                 CompletionAssertion::Label("name".into()),
                 CompletionAssertion::Label("z".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -724,7 +757,8 @@ mod tests {
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }

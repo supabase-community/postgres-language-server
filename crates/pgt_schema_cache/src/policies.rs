@@ -80,27 +80,14 @@ impl SchemaCacheItem for Policy {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
+
+    use sqlx::{Executor, PgPool};
 
     use crate::{SchemaCache, policies::PolicyCommand};
 
-    #[tokio::test]
-    async fn loads_policies() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_policies(test_db: PgPool) {
         let setup = r#"
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'admin'
-                ) then
-                    create role admin;
-                end if;
-            end $$;
-
-
             create table public.users (
                 id serial primary key,
                 name varchar(255) not null
@@ -130,16 +117,6 @@ mod tests {
                 for all
                 to admin
                 with check (true);
-
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'owner'
-                ) then
-                    create role owner;
-                end if;
-            end $$;
 
             create schema real_estate;
 
