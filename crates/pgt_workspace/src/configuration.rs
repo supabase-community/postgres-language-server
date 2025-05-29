@@ -449,16 +449,27 @@ impl PartialConfigurationExt for PartialConfiguration {
 /// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
 fn normalize_path(path: &Path) -> PathBuf {
     let mut components = Vec::new();
+    let mut has_root_or_prefix = false;
+
     for component in path.components() {
         match component {
             std::path::Component::ParentDir => {
-                if !components.is_empty() {
+                if !components.is_empty()
+                    && !matches!(components.last(), Some(c) if matches!(Path::new(c).components().next(),
+                                                Some(std::path::Component::Prefix(_))))
+                {
                     components.pop();
                 }
             }
             std::path::Component::Normal(c) => components.push(c),
             std::path::Component::CurDir => {}
-            c @ std::path::Component::RootDir | c @ std::path::Component::Prefix(_) => {
+            c @ std::path::Component::RootDir => {
+                has_root_or_prefix = true;
+                components.clear();
+                components.push(c.as_os_str());
+            }
+            c @ std::path::Component::Prefix(_) => {
+                has_root_or_prefix = true;
                 components.clear();
                 components.push(c.as_os_str());
             }
@@ -466,7 +477,16 @@ fn normalize_path(path: &Path) -> PathBuf {
     }
 
     if components.is_empty() {
-        PathBuf::from("/")
+        if has_root_or_prefix {
+            // On Windows, this would be something like "C:\" or "\"
+            path.ancestors()
+                .last()
+                .unwrap_or(Path::new(""))
+                .to_path_buf()
+        } else {
+            // Return current directory as a relative path
+            PathBuf::from(".")
+        }
     } else {
         let mut result = PathBuf::new();
         for component in components {
