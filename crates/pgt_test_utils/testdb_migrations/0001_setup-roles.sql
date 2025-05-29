@@ -1,5 +1,6 @@
 do $$
 begin
+
 if not exists (
   select from pg_catalog.pg_roles
   where rolname = 'admin'
@@ -20,4 +21,6 @@ if not exists (
 ) then
   create role test_nologin;
 end if;
-end;
+
+end
+$$;

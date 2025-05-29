@@ -27,19 +27,11 @@ pub fn complete_roles<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionB
 
 #[cfg(test)]
 mod tests {
+    use sqlx::PgPool;
+
     use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
 
     const SETUP: &'static str = r#"
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'test'
-                ) then
-                    create role test;
-                end if;
-            end $$;
-
             create table users (
               id serial primary key,
               email varchar,
@@ -47,28 +39,44 @@ mod tests {
             );
         "#;
 
-    #[tokio::test]
-    async fn works_in_drop_role() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn works_in_drop_role(pool: PgPool) {
         assert_complete_results(
             format!("drop role {}", CURSOR_POS).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "test".into(),
-                crate::CompletionItemKind::Role,
-            )],
-            SETUP,
+            vec![
+                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            Some(SETUP),
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn works_in_alter_role() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn works_in_alter_role(pool: PgPool) {
         assert_complete_results(
             format!("alter role {}", CURSOR_POS).as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "test".into(),
-                crate::CompletionItemKind::Role,
-            )],
-            SETUP,
+            vec![
+                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            Some(SETUP),
+            &pool,
         )
         .await;
     }

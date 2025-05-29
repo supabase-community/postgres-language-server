@@ -208,7 +208,7 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn get_schema_name(&self) -> &str {
+    fn get_schema_name(&self) -> Option<&str> {
         match self.data {
             CompletionRelevanceData::Function(f) => Some(f.schema.as_str()),
             CompletionRelevanceData::Table(t) => Some(t.schema.as_str()),
@@ -283,7 +283,7 @@ impl CompletionScore<'_> {
             return;
         }
 
-        let schema = match self.get_schema_name() {
+        let schema_name = match self.get_schema_name() {
             Some(s) => s.to_string(),
             None => return,
         };
