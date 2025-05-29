@@ -141,6 +141,7 @@ quick-create branch commit:
     gh pr create --fill
 
 quick-modify:
+    just format
     git add -A
     git commit -m "progress"
     git push
