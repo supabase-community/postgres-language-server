@@ -31,6 +31,33 @@ pub struct LoadedConfiguration {
 }
 
 impl LoadedConfiguration {
+    fn try_from_payload(
+        value: Option<ConfigurationPayload>,
+        fs: &DynRef<'_, dyn FileSystem>,
+    ) -> Result<Self, WorkspaceError> {
+        let Some(value) = value else {
+            return Ok(LoadedConfiguration::default());
+        };
+
+        let ConfigurationPayload {
+            external_resolution_base_path,
+            configuration_file_path,
+            deserialized: mut partial_configuration,
+        } = value;
+
+        partial_configuration.apply_extends(
+            fs,
+            &configuration_file_path,
+            &external_resolution_base_path,
+        )?;
+
+        Ok(Self {
+            configuration: partial_configuration,
+            directory_path: configuration_file_path.parent().map(PathBuf::from),
+            file_path: Some(configuration_file_path),
+        })
+    }
+
     /// Return the path of the **directory** where the configuration is
     pub fn directory_path(&self) -> Option<&Path> {
         self.directory_path.as_deref()
@@ -42,33 +69,13 @@ impl LoadedConfiguration {
     }
 }
 
-impl From<Option<ConfigurationPayload>> for LoadedConfiguration {
-    fn from(value: Option<ConfigurationPayload>) -> Self {
-        let Some(value) = value else {
-            return LoadedConfiguration::default();
-        };
-
-        let ConfigurationPayload {
-            configuration_file_path,
-            deserialized: partial_configuration,
-            ..
-        } = value;
-
-        LoadedConfiguration {
-            configuration: partial_configuration,
-            directory_path: configuration_file_path.parent().map(PathBuf::from),
-            file_path: Some(configuration_file_path),
-        }
-    }
-}
-
 /// Load the partial configuration for this session of the CLI.
 pub fn load_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     config_path: ConfigurationPathHint,
 ) -> Result<LoadedConfiguration, WorkspaceError> {
     let config = load_config(fs, config_path)?;
-    Ok(LoadedConfiguration::from(config))
+    LoadedConfiguration::try_from_payload(config, fs)
 }
 
 /// - [Result]: if an error occurred while loading the configuration file.
@@ -123,7 +130,7 @@ fn load_config(
         ConfigurationPathHint::None => file_system.working_directory().unwrap_or_default(),
     };
 
-    // We first search for `postgrestools.jsonc`
+    // We first search for `postgrestools.jsonc` files
     if let Some(auto_search_result) = file_system.auto_search(
         &configuration_directory,
         ConfigName::file_names().as_slice(),
@@ -344,9 +351,10 @@ impl PartialConfigurationExt for PartialConfiguration {
                     extend_entry_as_path
                         .extension()
                         .map(OsStr::as_encoded_bytes),
-                    Some(b"json" | b"jsonc")
+                    Some(b"jsonc")
                 ) {
-                relative_resolution_base_path.join(extend_entry)
+                // Normalize the path to handle relative segments like "../"
+                normalize_path(&relative_resolution_base_path.join(extend_entry))
             } else {
                 fs.resolve_configuration(extend_entry.as_str(), external_resolution_base_path)
                     .map_err(|error| {
@@ -369,7 +377,7 @@ impl PartialConfigurationExt for PartialConfiguration {
                         err.to_string(),
                     )
                     .with_verbose_advice(markup! {
-                        "Biome tried to load the configuration file \""<Emphasis>{
+                        "Postgres Tools tried to load the configuration file \""<Emphasis>{
                             extend_configuration_file_path.display().to_string()
                         }</Emphasis>"\" in \"extends\" using \""<Emphasis>{
                             external_resolution_base_path.display().to_string()
@@ -435,6 +443,36 @@ impl PartialConfigurationExt for PartialConfiguration {
             }
         }
         Ok((None, vec![]))
+    }
+}
+
+/// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
+fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = Vec::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                if !components.is_empty() {
+                    components.pop();
+                }
+            }
+            std::path::Component::Normal(c) => components.push(c),
+            std::path::Component::CurDir => {}
+            c @ std::path::Component::RootDir | c @ std::path::Component::Prefix(_) => {
+                components.clear();
+                components.push(c.as_os_str());
+            }
+        }
+    }
+
+    if components.is_empty() {
+        PathBuf::from("/")
+    } else {
+        let mut result = PathBuf::new();
+        for component in components {
+            result.push(component);
+        }
+        result
     }
 }
 
