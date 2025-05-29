@@ -125,10 +125,10 @@ mod tests {
                 owner_id int not null
             );
 
-            create policy owner_policy
+            create policy test_nologin_policy
                 on real_estate.properties
                 for update
-                to owner
+                to test_nologin
                 using (owner_id = current_user::int);
         "#;
 
@@ -186,13 +186,13 @@ mod tests {
         let owner_policy = cache
             .policies
             .iter()
-            .find(|p| p.name == "owner_policy")
+            .find(|p| p.name == "test_nologin_policy")
             .unwrap();
         assert_eq!(owner_policy.table_name, "properties");
         assert_eq!(owner_policy.schema_name, "real_estate");
         assert!(owner_policy.is_permissive);
         assert_eq!(owner_policy.command, PolicyCommand::Update);
-        assert_eq!(owner_policy.role_names, vec!["owner"]);
+        assert_eq!(owner_policy.role_names, vec!["test_nologin"]);
         assert_eq!(
             owner_policy.security_qualification,
             Some("(owner_id = (CURRENT_USER)::integer)".into())
