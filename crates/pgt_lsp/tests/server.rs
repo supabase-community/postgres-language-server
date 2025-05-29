@@ -19,7 +19,6 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use serde_json::{from_value, to_value};
-use sqlx::Executor;
 use std::any::type_name;
 use std::fmt::Display;
 use std::time::Duration;

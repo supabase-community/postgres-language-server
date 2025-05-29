@@ -232,7 +232,6 @@ fn resolve_type<'a>(
 #[cfg(test)]
 mod tests {
     use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
 
     #[tokio::test]
     async fn test_apply_identifiers() {

@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use pgt_schema_cache::SchemaCache;
 use pgt_test_utils::test_database::get_new_test_db;
-use sqlx::Executor;
 
 use crate::{CompletionItem, CompletionItemKind, CompletionParams, complete};
 

@@ -5,7 +5,6 @@ use pgt_console::{
 use pgt_diagnostics::PrintDiagnostic;
 use pgt_test_utils::test_database::get_new_test_db;
 use pgt_typecheck::{TypecheckParams, check_sql};
-use sqlx::Executor;
 
 async fn test(name: &str, query: &str, setup: Option<&str>) {
     let test_db = get_new_test_db().await;

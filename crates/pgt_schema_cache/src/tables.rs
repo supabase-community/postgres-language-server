@@ -81,7 +81,6 @@ impl SchemaCacheItem for Table {
 mod tests {
     use crate::{SchemaCache, tables::TableKind};
     use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
 
     #[tokio::test]
     async fn includes_views_in_query() {
