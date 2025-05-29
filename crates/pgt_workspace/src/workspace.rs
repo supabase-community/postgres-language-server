@@ -5,6 +5,8 @@ use pgt_analyse::RuleCategories;
 use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
+#[cfg(feature = "schema")]
+use schemars::{JsonSchema, SchemaGenerator, schema::Schema};
 use serde::{Deserialize, Serialize};
 use slotmap::{DenseSlotMap, new_key_type};
 
@@ -253,6 +255,17 @@ impl<W: Workspace + ?Sized> Drop for FileGuard<'_, W> {
 
 new_key_type! {
     pub struct ProjectKey;
+}
+
+#[cfg(feature = "schema")]
+impl JsonSchema for ProjectKey {
+    fn schema_name() -> String {
+        "ProjectKey".to_string()
+    }
+
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        <String>::json_schema(generator)
+    }
 }
 
 #[derive(Debug, Default)]
