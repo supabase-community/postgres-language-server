@@ -10,7 +10,7 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use dashmap::DashMap;
 use document::Document;
-use futures::{StreamExt, stream};
+use futures::{stream, StreamExt};
 use parsed_document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
     ParsedDocument, SyncDiagnosticsMapper,
@@ -18,7 +18,7 @@ use parsed_document::{
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
-    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
+    serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt, Error, Severity,
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
@@ -27,17 +27,17 @@ use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
 
 use crate::{
-    WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
-        completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
+        completions::{get_statement_for_completions, CompletionsResult, GetCompletionsParams},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
+    WorkspaceError,
 };
 
 use super::{
