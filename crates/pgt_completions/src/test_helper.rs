@@ -44,7 +44,7 @@ pub(crate) async fn get_test_deps(
             .expect("Failed to execute setup query");
     }
 
-    let schema_cache = SchemaCache::load(&test_db)
+    let schema_cache = SchemaCache::load(test_db)
         .await
         .expect("Failed to load Schema Cache");
 
