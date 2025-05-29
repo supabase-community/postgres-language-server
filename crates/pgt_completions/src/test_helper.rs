@@ -33,14 +33,16 @@ impl Display for InputQuery {
 }
 
 pub(crate) async fn get_test_deps(
-    setup: &str,
+    setup: Option<&str>,
     input: InputQuery,
     test_db: &PgPool,
 ) -> (tree_sitter::Tree, pgt_schema_cache::SchemaCache) {
-    test_db
-        .execute(setup)
-        .await
-        .expect("Failed to execute setup query");
+    if let Some(setup) = setup {
+        test_db
+            .execute(setup)
+            .await
+            .expect("Failed to execute setup query");
+    }
 
     let schema_cache = SchemaCache::load(&test_db)
         .await
@@ -204,7 +206,7 @@ impl CompletionAssertion {
 pub(crate) async fn assert_complete_results(
     query: &str,
     assertions: Vec<CompletionAssertion>,
-    setup: &str,
+    setup: Option<&str>,
     pool: &PgPool,
 ) {
     let (tree, cache) = get_test_deps(setup, query.into(), pool).await;
@@ -240,7 +242,7 @@ pub(crate) async fn assert_complete_results(
         });
 }
 
-pub(crate) async fn assert_no_complete_results(query: &str, setup: &str, pool: &PgPool) {
+pub(crate) async fn assert_no_complete_results(query: &str, setup: Option<&str>, pool: &PgPool) {
     let (tree, cache) = get_test_deps(setup, query.into(), pool).await;
     let params = get_test_params(&tree, &cache, query.into());
     let items = complete(params);

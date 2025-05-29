@@ -82,14 +82,12 @@ impl SchemaCacheItem for Column {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
+    use sqlx::{Executor, PgPool};
 
     use crate::{SchemaCache, columns::ColumnClassKind};
 
-    #[tokio::test]
-    async fn loads_columns() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_columns(test_db: PgPool) {
         let setup = r#"
             create table public.users (
                 id serial primary key,

@@ -187,6 +187,16 @@ impl CompletionScore<'_> {
         }
     }
 
+    fn get_item_name(&self) -> &str {
+        match self.data {
+            CompletionRelevanceData::Table(t) => t.name.as_str(),
+            CompletionRelevanceData::Function(f) => f.name.as_str(),
+            CompletionRelevanceData::Column(c) => c.name.as_str(),
+            CompletionRelevanceData::Schema(s) => s.name.as_str(),
+            CompletionRelevanceData::Policy(p) => p.name.as_str(),
+        }
+    }
+
     fn get_schema_name(&self) -> &str {
         match self.data {
             CompletionRelevanceData::Function(f) => f.schema.as_str(),
@@ -234,18 +244,29 @@ impl CompletionScore<'_> {
     }
 
     fn check_is_user_defined(&mut self) {
-        let schema = self.get_schema_name().to_string();
+        let schema_name = self.get_schema_name().to_string();
 
         let system_schemas = ["pg_catalog", "information_schema", "pg_toast"];
 
-        if system_schemas.contains(&schema.as_str()) {
+        if system_schemas.contains(&schema_name.as_str()) {
             self.score -= 20;
         }
 
         // "public" is the default postgres schema where users
         // create objects. Prefer it by a slight bit.
-        if schema.as_str() == "public" {
+        if schema_name.as_str() == "public" {
             self.score += 2;
+        }
+
+        let item_name = self.get_item_name().to_string();
+        let table_name = self.get_table_name();
+
+        // migrations shouldn't pop up on top
+        if item_name.contains("migrations")
+            || table_name.is_some_and(|t| t.contains("migrations"))
+            || schema_name.contains("migrations")
+        {
+            self.score -= 15;
         }
     }
 

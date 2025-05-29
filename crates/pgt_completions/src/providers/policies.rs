@@ -59,10 +59,12 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
 
 #[cfg(test)]
 mod tests {
+    use sqlx::{Executor, PgPool};
+
     use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
 
-    #[tokio::test]
-    async fn completes_within_quotation_marks() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_within_quotation_marks(pool: PgPool) {
         let setup = r#"
             create schema private;
 
@@ -84,13 +86,16 @@ mod tests {
                 with check (true);
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!("alter policy \"{}\" on private.users;", CURSOR_POS).as_str(),
             vec![
                 CompletionAssertion::Label("read for public users disallowed".into()),
                 CompletionAssertion::Label("write for public users allowed".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -99,7 +104,8 @@ mod tests {
             vec![CompletionAssertion::Label(
                 "write for public users allowed".into(),
             )],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }

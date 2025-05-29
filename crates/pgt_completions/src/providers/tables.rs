@@ -42,6 +42,8 @@ pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionB
 #[cfg(test)]
 mod tests {
 
+    use sqlx::{Executor, PgPool};
+
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
@@ -50,8 +52,8 @@ mod tests {
         },
     };
 
-    #[tokio::test]
-    async fn autocompletes_simple_table() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn autocompletes_simple_table(pool: PgPool) {
         let setup = r#"
             create table users (
                 id serial primary key,
@@ -62,7 +64,7 @@ mod tests {
 
         let query = format!("select * from u{}", CURSOR_POS);
 
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         let items = complete(params);
 
@@ -77,8 +79,8 @@ mod tests {
         )
     }
 
-    #[tokio::test]
-    async fn autocompletes_table_alphanumerically() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn autocompletes_table_alphanumerically(pool: PgPool) {
         let setup = r#"
             create table addresses (
                 id serial primary key
@@ -93,6 +95,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         let test_cases = vec![
             (format!("select * from u{}", CURSOR_POS), "users"),
             (format!("select * from e{}", CURSOR_POS), "emails"),
@@ -100,7 +104,7 @@ mod tests {
         ];
 
         for (query, expected_label) in test_cases {
-            let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+            let (tree, cache) = get_test_deps(None, query.as_str().into(), &pool).await;
             let params = get_test_params(&tree, &cache, query.as_str().into());
             let items = complete(params);
 
@@ -116,8 +120,8 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn autocompletes_table_with_schema() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn autocompletes_table_with_schema(pool: PgPool) {
         let setup = r#"
             create schema customer_support;
             create schema private;
@@ -135,6 +139,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         let test_cases = vec![
             (format!("select * from u{}", CURSOR_POS), "user_y"), // user_y is preferred alphanumerically
             (format!("select * from private.u{}", CURSOR_POS), "user_z"),
@@ -145,7 +151,7 @@ mod tests {
         ];
 
         for (query, expected_label) in test_cases {
-            let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+            let (tree, cache) = get_test_deps(None, query.as_str().into(), &pool).await;
             let params = get_test_params(&tree, &cache, query.as_str().into());
             let items = complete(params);
 
@@ -161,8 +167,8 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn prefers_table_in_from_clause() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn prefers_table_in_from_clause(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -182,7 +188,7 @@ mod tests {
 
         let query = format!(r#"select * from coo{}"#, CURSOR_POS);
 
-        let (tree, cache) = get_test_deps(setup, query.as_str().into()).await;
+        let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
         let items = complete(params);
 
@@ -195,8 +201,8 @@ mod tests {
         assert_eq!(kind, CompletionItemKind::Table);
     }
 
-    #[tokio::test]
-    async fn suggests_tables_in_update() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_update(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -204,13 +210,16 @@ mod tests {
           );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!("update {}", CURSOR_POS).as_str(),
             vec![CompletionAssertion::LabelAndKind(
                 "public".into(),
                 CompletionItemKind::Schema,
             )],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -220,12 +229,17 @@ mod tests {
                 "coos".into(),
                 CompletionItemKind::Table,
             )],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
-        assert_no_complete_results(format!("update public.coos {}", CURSOR_POS).as_str(), setup)
-            .await;
+        assert_no_complete_results(
+            format!("update public.coos {}", CURSOR_POS).as_str(),
+            None,
+            &pool,
+        )
+        .await;
 
         assert_complete_results(
             format!("update coos set {}", CURSOR_POS).as_str(),
@@ -233,7 +247,8 @@ mod tests {
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -243,13 +258,14 @@ mod tests {
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_tables_in_delete() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_delete(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -257,7 +273,9 @@ mod tests {
           );
         "#;
 
-        assert_no_complete_results(format!("delete {}", CURSOR_POS).as_str(), setup).await;
+        pool.execute(setup).await.unwrap();
+
+        assert_no_complete_results(format!("delete {}", CURSOR_POS).as_str(), None, &pool).await;
 
         assert_complete_results(
             format!("delete from {}", CURSOR_POS).as_str(),
@@ -265,14 +283,16 @@ mod tests {
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
         assert_complete_results(
             format!("delete from public.{}", CURSOR_POS).as_str(),
             vec![CompletionAssertion::Label("coos".into())],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -282,13 +302,14 @@ mod tests {
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_tables_in_join() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_join(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -315,13 +336,14 @@ mod tests {
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            Some(setup),
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_tables_in_alter_and_drop_statements() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_alter_and_drop_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -340,6 +362,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!("alter table {}", CURSOR_POS).as_str(),
             vec![
@@ -348,7 +372,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -360,7 +385,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -372,7 +398,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -384,13 +411,14 @@ mod tests {
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
 
-    #[tokio::test]
-    async fn suggests_tables_in_insert_into() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_insert_into(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -401,6 +429,8 @@ mod tests {
             );
         "#;
 
+        pool.execute(setup).await.unwrap();
+
         assert_complete_results(
             format!("insert into {}", CURSOR_POS).as_str(),
             vec![
@@ -408,7 +438,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -418,7 +449,8 @@ mod tests {
                 "users".into(),
                 CompletionItemKind::Table,
             )],
-            setup,
+            None,
+            &pool,
         )
         .await;
 
@@ -434,7 +466,8 @@ mod tests {
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
-            setup,
+            None,
+            &pool,
         )
         .await;
     }
