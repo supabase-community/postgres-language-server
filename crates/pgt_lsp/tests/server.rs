@@ -1373,7 +1373,10 @@ async fn extends_config() -> Result<()> {
     // test_one extends the shared config but sets our test db
     let mut conf_with_db = PartialConfiguration::init();
     conf_with_db.merge_with(PartialConfiguration {
-        extends: Some(StringSet::from_iter(["../postgrestools.jsonc".to_string()])),
+        extends: Some(StringSet::from_iter([Path::new("..")
+            .join("postgrestools.jsonc")
+            .to_string_lossy()
+            .to_string()])),
         db: Some(PartialDatabaseConfiguration {
             database: Some(
                 test_db
