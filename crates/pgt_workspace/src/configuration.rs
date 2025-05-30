@@ -478,7 +478,7 @@ fn normalize_path(path: &Path) -> PathBuf {
 
     for component in path.components() {
         match component {
-            std::path::Component::Prefix(prefix) => {
+            std::path::Component::Prefix(_prefix) => {
                 prefix_component = Some(component);
                 components.clear();
             }
