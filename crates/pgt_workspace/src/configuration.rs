@@ -110,6 +110,10 @@ fn load_config(
     // we'll load it directly
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path {
         if file_system.path_is_file(config_file_path) {
+            tracing::info!(
+                "Loading configuration file from user path: {}",
+                config_file_path.display()
+            );
             let content = strip_jsonc_comments(&file_system.read_file_from_path(config_file_path)?);
 
             let deserialized = serde_json::from_str::<PartialConfiguration>(&content)

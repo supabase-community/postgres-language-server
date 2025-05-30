@@ -147,6 +147,7 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     /// - If the file cannot be opened, possibly due to incorrect path or permission issues.
     /// - If the file is opened but its content cannot be read, potentially due to the file being damaged.
     fn read_file_from_path(&self, file_path: &PathBuf) -> Result<String, FileSystemDiagnostic> {
+        tracing::info!("Reading file from path: {:?}", file_path);
         match self.open_with_options(file_path, OpenOptions::default().read(true)) {
             Ok(mut file) => {
                 let mut content = String::new();

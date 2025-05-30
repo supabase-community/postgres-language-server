@@ -134,6 +134,8 @@ impl FileSystem for MemoryFileSystem {
             ));
         }
 
+        tracing::info!("open_with_options: path {:?}, options: {:?}", path, options);
+
         let mut inner = if options.create || options.create_new {
             // Acquire write access to the files map if the file may need to be created
             let mut files = self.files.0.write();
