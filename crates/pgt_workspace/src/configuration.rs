@@ -130,6 +130,12 @@ fn load_config(
         ConfigurationPathHint::None => file_system.working_directory().unwrap_or_default(),
     };
 
+    // REMOVE
+    tracing::info!(
+        "Searching for configuration files in {}",
+        configuration_directory.display()
+    );
+
     // We first search for `postgrestools.jsonc` files
     if let Some(auto_search_result) = file_system.auto_search(
         &configuration_directory,

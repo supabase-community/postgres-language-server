@@ -1365,6 +1365,11 @@ async fn extends_config() -> Result<()> {
         .await
         .expect("Failed to setup test database");
 
+    tracing::info!(
+        "writing to {:?}",
+        url!("postgrestools.jsonc").to_file_path().unwrap(),
+    );
+
     // shared config with default db connection
     let conf_with_db = PartialConfiguration::init();
     fs.insert(
@@ -1372,13 +1377,16 @@ async fn extends_config() -> Result<()> {
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
+    let relative_path = if cfg!(windows) {
+        "..\\postgrestools.jsonc"
+    } else {
+        "../postgrestools.jsonc"
+    };
+
     // test_one extends the shared config but sets our test db
     let mut conf_with_db = PartialConfiguration::init();
     conf_with_db.merge_with(PartialConfiguration {
-        extends: Some(StringSet::from_iter([Path::new("..")
-            .join("postgrestools.jsonc")
-            .to_string_lossy()
-            .to_string()])),
+        extends: Some(StringSet::from_iter([relative_path.to_string()])),
         db: Some(PartialDatabaseConfiguration {
             database: Some(
                 test_db
@@ -1391,6 +1399,7 @@ async fn extends_config() -> Result<()> {
         }),
         ..Default::default()
     });
+
     fs.insert(
         url!("test_one/postgrestools.jsonc").to_file_path().unwrap(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
@@ -1399,10 +1408,7 @@ async fn extends_config() -> Result<()> {
     // test_two extends it but keeps the default one
     let mut conf_without_db = PartialConfiguration::init();
     conf_without_db.merge_with(PartialConfiguration {
-        extends: Some(StringSet::from_iter([Path::new("..")
-            .join("postgrestools.jsonc")
-            .to_string_lossy()
-            .to_string()])),
+        extends: Some(StringSet::from_iter([relative_path.to_string()])),
         ..Default::default()
     });
     fs.insert(
