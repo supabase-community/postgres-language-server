@@ -25,6 +25,7 @@ use std::any::type_name;
 use std::fmt::Display;
 use std::path::Path;
 use std::time::Duration;
+use test_log::test;
 use tower::timeout::Timeout;
 use tower::{Service, ServiceExt};
 use tower_lsp::LspService;
@@ -1345,7 +1346,8 @@ async fn multiple_projects() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+// #[tokio::test]
+#[test(tokio::test)]
 async fn extends_config() -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
