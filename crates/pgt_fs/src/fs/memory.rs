@@ -162,6 +162,7 @@ impl FileSystem for MemoryFileSystem {
             }
         } else {
             let files = self.files.0.read();
+            tracing::info!("files: {:?}", files);
             let entry = files.get(path).ok_or_else(|| {
                 io::Error::new(
                     io::ErrorKind::NotFound,

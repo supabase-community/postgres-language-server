@@ -103,6 +103,9 @@ fn load_config(
             .map_or(PathBuf::new(), |working_directory| working_directory),
     };
 
+    // REMOVE
+    tracing::info!("Searching for configuration files in {:?}", base_path);
+
     // If the configuration path hint is from user and is a file path,
     // we'll load it directly
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path {
