@@ -157,6 +157,7 @@ fn load_config(
             external_resolution_base_path,
         }))
     } else {
+        tracing::info!("auto search returned none");
         Ok(None)
     }
 }
