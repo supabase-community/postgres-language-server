@@ -86,9 +86,20 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
         loop {
             let mut errors: Vec<FileSystemDiagnostic> = vec![];
 
+            tracing::info!(
+                "Searching for files {:?} in directory {:?}",
+                file_names,
+                curret_search_dir.display()
+            );
+
             // Iterate all possible file names
             for file_name in file_names {
                 let file_path = curret_search_dir.join(file_name);
+                println!(
+                    "Checking for file: {:?} in directory: {:?}",
+                    file_path,
+                    curret_search_dir.display()
+                );
                 match self.read_file_from_path(&file_path) {
                     Ok(content) => {
                         if is_searching_in_parent_dir {
