@@ -175,6 +175,9 @@ impl FileSystem for MemoryFileSystem {
             entry.lock_arc()
         };
 
+        // REMOVE
+        tracing::info!("inner");
+
         if options.truncate {
             // Clear the buffer if the file was open with `truncate`
             inner.clear();

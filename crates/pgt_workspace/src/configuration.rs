@@ -35,6 +35,8 @@ impl LoadedConfiguration {
         value: Option<ConfigurationPayload>,
         fs: &DynRef<'_, dyn FileSystem>,
     ) -> Result<Self, WorkspaceError> {
+        // REMOVE
+        tracing::info!("try from payload");
         let Some(value) = value else {
             return Ok(LoadedConfiguration::default());
         };
@@ -150,6 +152,8 @@ fn load_config(
         should_error,
     )? {
         let AutoSearchResult { content, file_path } = auto_search_result;
+        // REMOVE
+        tracing::info!("Found configuration file: {}", file_path.display());
 
         let deserialized =
             serde_json::from_str::<PartialConfiguration>(&strip_jsonc_comments(&content))
@@ -379,6 +383,12 @@ impl PartialConfigurationExt for PartialConfiguration {
                     })?
                     .into_path_buf()
             };
+
+            // REMOVE
+            tracing::info!(
+                "Resolving extend configuration file: {}",
+                extend_configuration_file_path.display()
+            );
 
             let mut file = fs
                 .open_with_options(
