@@ -473,56 +473,101 @@ impl PartialConfigurationExt for PartialConfiguration {
 /// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
 fn normalize_path(path: &Path) -> PathBuf {
     let mut components = Vec::new();
-    let mut has_root_or_prefix = false;
+    let mut prefix_component = None;
+    let mut is_absolute = false;
 
     for component in path.components() {
         match component {
+            std::path::Component::Prefix(prefix) => {
+                prefix_component = Some(component);
+                components.clear();
+            }
+            std::path::Component::RootDir => {
+                is_absolute = true;
+                components.clear();
+            }
             std::path::Component::ParentDir => {
-                if !components.is_empty()
-                    && !matches!(components.last(), Some(c) if matches!(Path::new(c).components().next(),
-                                                Some(std::path::Component::Prefix(_))))
-                {
+                if !components.is_empty() {
                     components.pop();
+                } else if !is_absolute && prefix_component.is_none() {
+                    // Only keep parent dir if we're not absolute and have no prefix
+                    components.push(component.as_os_str());
                 }
             }
-            std::path::Component::Normal(c) => components.push(c),
-            std::path::Component::CurDir => {}
-            c @ std::path::Component::RootDir => {
-                has_root_or_prefix = true;
-                components.clear();
-                components.push(c.as_os_str());
+            std::path::Component::Normal(c) => {
+                components.push(c);
             }
-            c @ std::path::Component::Prefix(_) => {
-                has_root_or_prefix = true;
-                components.clear();
-                components.push(c.as_os_str());
+            std::path::Component::CurDir => {
+                // Skip current directory components
             }
         }
     }
 
-    if components.is_empty() {
-        if has_root_or_prefix {
-            // On Windows, this would be something like "C:\" or "\"
-            path.ancestors()
+    let mut result = PathBuf::new();
+
+    // Add prefix component (like C: on Windows)
+    if let Some(prefix) = prefix_component {
+        result.push(prefix.as_os_str());
+    }
+
+    // Add root directory if path is absolute
+    if is_absolute {
+        result.push(std::path::Component::RootDir.as_os_str());
+    }
+
+    // Add normalized components
+    for component in components {
+        result.push(component);
+    }
+
+    // Handle edge cases
+    if result.as_os_str().is_empty() {
+        if prefix_component.is_some() || is_absolute {
+            // This shouldn't happen with proper input, but fallback to original path's root
+            return path
+                .ancestors()
                 .last()
                 .unwrap_or(Path::new(""))
-                .to_path_buf()
+                .to_path_buf();
         } else {
-            // Return current directory as a relative path
-            PathBuf::from(".")
+            return PathBuf::from(".");
         }
-    } else {
-        let mut result = PathBuf::new();
-        for component in components {
-            result.push(component);
-        }
-        result
     }
+
+    result
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_normalize_path_windows_drive() {
+        if cfg!(windows) {
+            let path = Path::new(r"z:\workspace\test_one\..\postgrestools.jsonc");
+            let normalized = normalize_path(path);
+            assert_eq!(
+                normalized,
+                PathBuf::from(r"z:\workspace\postgrestools.jsonc")
+            );
+        }
+    }
+
+    #[test]
+    fn test_normalize_path_relative() {
+        let path = Path::new("workspace/test_one/../postgrestools.jsonc");
+        let normalized = normalize_path(path);
+        assert_eq!(normalized, PathBuf::from("workspace/postgrestools.jsonc"));
+    }
+
+    #[test]
+    fn test_normalize_path_multiple_parent_dirs() {
+        if cfg!(windows) {
+            let path = Path::new(r"c:\a\b\c\..\..\d");
+            let normalized = normalize_path(path);
+            assert_eq!(normalized, PathBuf::from(r"c:\a\d"));
+        }
+    }
 
     #[test]
     fn test_strip_jsonc_comments_line_comments() {
