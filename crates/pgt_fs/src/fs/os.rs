@@ -5,9 +5,11 @@ use crate::{
     FileSystem, PgTPath,
     fs::{TraversalContext, TraversalScope},
 };
+use oxc_resolver::{Resolution, ResolveError, ResolveOptions, Resolver};
 use pgt_diagnostics::{DiagnosticExt, Error, Severity, adapters::IoError};
 use rayon::{Scope, scope};
 use std::fs::{DirEntry, FileType};
+use std::panic::AssertUnwindSafe;
 use std::process::Command;
 use std::{
     env, fs,
@@ -21,12 +23,18 @@ const MAX_SYMLINK_DEPTH: u8 = 3;
 /// Implementation of [FileSystem] that directly calls through to the underlying OS
 pub struct OsFileSystem {
     pub working_directory: Option<PathBuf>,
+    pub configuration_resolver: AssertUnwindSafe<Resolver>,
 }
 
 impl OsFileSystem {
     pub fn new(working_directory: PathBuf) -> Self {
         Self {
             working_directory: Some(working_directory),
+            configuration_resolver: AssertUnwindSafe(Resolver::new(ResolveOptions {
+                condition_names: vec!["node".to_string(), "import".to_string()],
+                extensions: vec![".json".to_string(), ".jsonc".to_string()],
+                ..ResolveOptions::default()
+            })),
         }
     }
 }
@@ -35,6 +43,11 @@ impl Default for OsFileSystem {
     fn default() -> Self {
         Self {
             working_directory: env::current_dir().ok(),
+            configuration_resolver: AssertUnwindSafe(Resolver::new(ResolveOptions {
+                condition_names: vec!["node".to_string(), "import".to_string()],
+                extensions: vec![".json".to_string(), ".jsonc".to_string()],
+                ..ResolveOptions::default()
+            })),
         }
     }
 }
@@ -115,6 +128,14 @@ impl FileSystem for OsFileSystem {
             .lines()
             .map(|l| l.to_string())
             .collect())
+    }
+
+    fn resolve_configuration(
+        &self,
+        specifier: &str,
+        path: &Path,
+    ) -> Result<Resolution, ResolveError> {
+        self.configuration_resolver.resolve(path, specifier)
     }
 }
 
@@ -387,8 +408,6 @@ fn follow_symlink(
     path: &Path,
     ctx: &dyn TraversalContext,
 ) -> Result<(PathBuf, FileType), SymlinkExpansionError> {
-    tracing::info!("Translating symlink: {path:?}");
-
     let target_path = fs::read_link(path).map_err(|err| {
         ctx.push_diagnostic(IoError::from(err).with_file_path(path.to_string_lossy().to_string()));
         SymlinkExpansionError

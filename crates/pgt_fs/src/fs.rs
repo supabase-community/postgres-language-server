@@ -1,6 +1,7 @@
 use crate::{PathInterner, PgTPath};
 pub use memory::{ErrorEntry, MemoryFileSystem};
 pub use os::OsFileSystem;
+use oxc_resolver::{Resolution, ResolveError};
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, Visit, console};
 use pgt_diagnostics::{Error, Severity};
 use serde::{Deserialize, Serialize};
@@ -88,6 +89,11 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
             // Iterate all possible file names
             for file_name in file_names {
                 let file_path = curret_search_dir.join(file_name);
+                println!(
+                    "Checking for file: {:?} in directory: {:?}",
+                    file_path,
+                    curret_search_dir.display()
+                );
                 match self.read_file_from_path(&file_path) {
                     Ok(content) => {
                         if is_searching_in_parent_dir {
@@ -164,6 +170,12 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     fn get_changed_files(&self, base: &str) -> io::Result<Vec<String>>;
 
     fn get_staged_files(&self) -> io::Result<Vec<String>>;
+
+    fn resolve_configuration(
+        &self,
+        specifier: &str,
+        path: &Path,
+    ) -> Result<Resolution, ResolveError>;
 }
 
 /// Result of the auto search
@@ -354,6 +366,14 @@ where
 
     fn get_staged_files(&self) -> io::Result<Vec<String>> {
         T::get_staged_files(self)
+    }
+
+    fn resolve_configuration(
+        &self,
+        specifier: &str,
+        path: &Path,
+    ) -> Result<Resolution, ResolveError> {
+        T::resolve_configuration(self, specifier, path)
     }
 }
 

@@ -19,6 +19,11 @@ export type FileKind = FileKind2[];
  * The priority of the file
  */
 export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
+export interface RegisterProjectFolderParams {
+	path?: string;
+	setAsCurrentWorkspace: boolean;
+}
+export type ProjectKey = string;
 export interface GetFileContentParams {
 	path: PgTPath;
 }
@@ -92,7 +97,7 @@ export type DiagnosticTags = DiagnosticTag[];
 /**
 	* Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
-See the [Visitor] trait for additional documentation on all the supported advice types. 
+See the [Visitor] trait for additional documentation on all the supported advice types.
 	 */
 export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
@@ -185,6 +190,7 @@ export interface CompletionsResult {
 export interface CompletionItem {
 	completion_text?: CompletionText;
 	description: string;
+	detail?: string;
 	kind: CompletionItemKind;
 	label: string;
 	preselected: boolean;
@@ -196,16 +202,22 @@ export interface CompletionItem {
 /**
 	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
 
-label: "users", description: "Schema: auth", completion_text: "auth.users". 
+label: "users", description: "Schema: auth", completion_text: "auth.users".
 	 */
 export interface CompletionText {
+	is_snippet: boolean;
 	/**
 	 * A `range` is required because some editors replace the current token, others naively insert the text. Having a range where start == end makes it an insertion.
 	 */
 	range: TextRange;
 	text: string;
 }
-export type CompletionItemKind = "table" | "function" | "column" | "schema";
+export type CompletionItemKind =
+	| "table"
+	| "function"
+	| "column"
+	| "schema"
+	| "policy";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
@@ -224,6 +236,10 @@ export interface PartialConfiguration {
 	 * The configuration of the database connection
 	 */
 	db?: PartialDatabaseConfiguration;
+	/**
+	 * A list of paths to other JSON files, used to extends the current configuration.
+	 */
+	extends?: StringSet;
 	/**
 	 * The configuration of the filesystem
 	 */
@@ -271,6 +287,7 @@ export interface PartialDatabaseConfiguration {
 	 */
 	username?: string;
 }
+export type StringSet = string[];
 /**
  * The configuration of the filesystem
  */
@@ -338,7 +355,7 @@ export interface PartialVcsConfiguration {
 	/**
 	* The folder where we should check for VCS files. By default, we will use the same folder where `postgrestools.jsonc` was found.
 
-If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
 	 */
 	root?: string;
 	/**
@@ -346,7 +363,6 @@ If we can't find the configuration, it will attempt to use the current working d
 	 */
 	useIgnoreFile?: boolean;
 }
-export type StringSet = string[];
 export interface Rules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
@@ -425,6 +441,9 @@ export interface CloseFileParams {
 export type Configuration = PartialConfiguration;
 export interface Workspace {
 	isPathIgnored(params: IsPathIgnoredParams): Promise<boolean>;
+	registerProjectFolder(
+		params: RegisterProjectFolderParams,
+	): Promise<ProjectKey>;
 	getFileContent(params: GetFileContentParams): Promise<string>;
 	pullDiagnostics(
 		params: PullDiagnosticsParams,
@@ -440,6 +459,9 @@ export function createWorkspace(transport: Transport): Workspace {
 	return {
 		isPathIgnored(params) {
 			return transport.request("pgt/is_path_ignored", params);
+		},
+		registerProjectFolder(params) {
+			return transport.request("pgt/register_project_folder", params);
 		},
 		getFileContent(params) {
 			return transport.request("pgt/get_file_content", params);

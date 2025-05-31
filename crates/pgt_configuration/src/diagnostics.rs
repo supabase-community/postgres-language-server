@@ -1,5 +1,7 @@
 use pgt_console::fmt::Display;
 use pgt_console::{MarkupBuf, markup};
+use pgt_diagnostics::adapters::ResolveError;
+
 use pgt_diagnostics::{Advices, Diagnostic, Error, LogCategory, MessageAndDescription, Visit};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
@@ -21,6 +23,12 @@ pub enum ConfigurationDiagnostic {
 
     /// Thrown when the pattern inside the `ignore` field errors
     InvalidIgnorePattern(InvalidIgnorePattern),
+
+    /// Thrown when there's something wrong with the files specified inside `"extends"`
+    CantLoadExtendFile(CantLoadExtendFile),
+
+    /// Thrown when a configuration file can't be resolved from `node_modules`
+    CantResolve(CantResolve),
 }
 
 impl ConfigurationDiagnostic {
@@ -70,6 +78,18 @@ impl ConfigurationDiagnostic {
     pub fn invalid_configuration(message: impl Display) -> Self {
         Self::InvalidConfiguration(InvalidConfiguration {
             message: MessageAndDescription::from(markup! {{message}}.to_owned()),
+        })
+    }
+
+    pub fn cant_resolve(path: impl Display, source: oxc_resolver::ResolveError) -> Self {
+        Self::CantResolve(CantResolve {
+            message: MessageAndDescription::from(
+                markup! {
+                   "Failed to resolve the configuration from "{{path}}
+                }
+                .to_owned(),
+            ),
+            source: Some(Error::from(ResolveError::from(source))),
         })
     }
 }
@@ -167,4 +187,37 @@ pub struct CantResolve {
     #[serde(skip)]
     #[source]
     source: Option<Error>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Diagnostic)]
+#[diagnostic(
+	category = "configuration",
+	severity = Error,
+)]
+pub struct CantLoadExtendFile {
+    #[location(resource)]
+    file_path: String,
+    #[message]
+    #[description]
+    message: MessageAndDescription,
+
+    #[verbose_advice]
+    verbose_advice: ConfigurationAdvices,
+}
+
+impl CantLoadExtendFile {
+    pub fn new(file_path: impl Into<String>, message: impl Display) -> Self {
+        Self {
+            file_path: file_path.into(),
+            message: MessageAndDescription::from(markup! {{message}}.to_owned()),
+            verbose_advice: ConfigurationAdvices::default(),
+        }
+    }
+
+    pub fn with_verbose_advice(mut self, messsage: impl Display) -> Self {
+        self.verbose_advice
+            .messages
+            .push(markup! {{messsage}}.to_owned());
+        self
+    }
 }

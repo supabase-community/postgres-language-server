@@ -15,6 +15,7 @@ version              = "0.0.0"
 crossbeam       = { workspace = true }
 directories     = "5.0.1"
 enumflags2      = { workspace = true }
+oxc_resolver    = { workspace = true }
 parking_lot     = { version = "0.12.3", features = ["arc_lock"] }
 pgt_diagnostics = { workspace = true }
 rayon           = { workspace = true }

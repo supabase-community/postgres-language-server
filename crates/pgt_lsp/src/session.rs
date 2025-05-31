@@ -10,11 +10,11 @@ use pgt_analyse::RuleCategoriesBuilder;
 use pgt_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgt_diagnostics::{DiagnosticExt, Error};
 use pgt_fs::{FileSystem, PgTPath};
+use pgt_workspace::PartialConfigurationExt;
 use pgt_workspace::Workspace;
 use pgt_workspace::configuration::{LoadedConfiguration, load_configuration};
 use pgt_workspace::features;
-use pgt_workspace::settings::PartialConfigurationExt;
-use pgt_workspace::workspace::UpdateSettingsParams;
+use pgt_workspace::workspace::{RegisterProjectFolderParams, UpdateSettingsParams};
 use pgt_workspace::{DynRef, WorkspaceError};
 use rustc_hash::FxHashMap;
 use serde_json::Value;
@@ -30,6 +30,14 @@ use tower_lsp::lsp_types::{self, ClientCapabilities};
 use tower_lsp::lsp_types::{MessageType, Registration};
 use tower_lsp::lsp_types::{Unregistration, WorkspaceFolder};
 use tracing::{error, info};
+
+pub(crate) struct ClientInformation {
+    /// The name of the client
+    pub(crate) name: String,
+
+    /// The version of the client
+    pub(crate) version: Option<String>,
+}
 
 /// Key, uniquely identifying a LSP session.
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
@@ -68,6 +76,7 @@ pub(crate) struct Session {
 struct InitializeParams {
     /// The capabilities provided by the client as part of [`lsp_types::InitializeParams`]
     client_capabilities: lsp_types::ClientCapabilities,
+    client_information: Option<ClientInformation>,
     root_uri: Option<Url>,
     #[allow(unused)]
     workspace_folders: Option<Vec<WorkspaceFolder>>,
@@ -164,11 +173,13 @@ impl Session {
     pub(crate) fn initialize(
         &self,
         client_capabilities: lsp_types::ClientCapabilities,
+        client_information: Option<ClientInformation>,
         root_uri: Option<Url>,
         workspace_folders: Option<Vec<WorkspaceFolder>>,
     ) {
         let result = self.initialize_params.set(InitializeParams {
             client_capabilities,
+            client_information,
             root_uri,
             workspace_folders,
         });
@@ -446,6 +457,8 @@ impl Session {
                 info!("Configuration loaded successfully from disk.");
                 info!("Update workspace settings.");
 
+                let fs = &self.fs;
+
                 if let Some(ws_configuration) = extra_config {
                     fs_configuration.merge_with(ws_configuration);
                 }
@@ -455,6 +468,31 @@ impl Session {
 
                 match result {
                     Ok((vcs_base_path, gitignore_matches)) => {
+                        let register_result =
+                            if let ConfigurationPathHint::FromWorkspace(path) = &base_path {
+                                // We don't need the key
+                                self.workspace
+                                    .register_project_folder(RegisterProjectFolderParams {
+                                        path: Some(path.clone()),
+                                        // This is naive, but we don't know if the user has a file already open or not, so we register every project as the current one.
+                                        // The correct one is actually set when the LSP calls `textDocument/didOpen`
+                                        set_as_current_workspace: true,
+                                    })
+                                    .err()
+                            } else {
+                                self.workspace
+                                    .register_project_folder(RegisterProjectFolderParams {
+                                        path: fs.working_directory(),
+                                        set_as_current_workspace: true,
+                                    })
+                                    .err()
+                            };
+                        if let Some(error) = register_result {
+                            error!("Failed to register the project folder: {}", error);
+                            self.client.log_message(MessageType::ERROR, &error).await;
+                            return ConfigurationStatus::Error;
+                        }
+
                         let result = self.workspace.update_settings(UpdateSettingsParams {
                             workspace_directory: self.fs.working_directory(),
                             configuration: fs_configuration,

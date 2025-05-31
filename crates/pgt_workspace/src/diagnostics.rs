@@ -1,4 +1,5 @@
 use pgt_configuration::ConfigurationDiagnostic;
+use pgt_configuration::diagnostics::CantLoadExtendFile;
 use pgt_console::fmt::Bytes;
 use pgt_console::markup;
 use pgt_diagnostics::{
@@ -352,5 +353,11 @@ impl Diagnostic for FileTooLarge {
             Bytes(self.size),
             Bytes(self.limit)
         )
+    }
+}
+
+impl From<CantLoadExtendFile> for WorkspaceError {
+    fn from(value: CantLoadExtendFile) -> Self {
+        WorkspaceError::Configuration(ConfigurationDiagnostic::CantLoadExtendFile(value))
     }
 }

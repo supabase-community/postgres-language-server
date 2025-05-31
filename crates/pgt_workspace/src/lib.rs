@@ -14,6 +14,7 @@ pub mod workspace;
 #[cfg(feature = "schema")]
 pub mod workspace_types;
 
+pub use crate::configuration::PartialConfigurationExt;
 pub use crate::diagnostics::{TransportError, WorkspaceError};
 pub use crate::workspace::Workspace;
 

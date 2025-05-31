@@ -22,6 +22,17 @@
         }
       ]
     },
+    "extends": {
+      "description": "A list of paths to other JSON files, used to extends the current configuration.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StringSet"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "files": {
       "description": "The configuration of the filesystem",
       "anyOf": [
