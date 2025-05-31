@@ -1,15 +1,15 @@
 do $$
 begin
 
-if (select count(*) from pg_catalog.pg_roles where rolname in ('admin', 'test_login','test_nologin')) != 3 then 
+if (select count(*) from pg_catalog.pg_roles where rolname in ('owner', 'test_login','test_nologin')) != 3 then 
 
   perform pg_advisory_lock(12345);
 
   if not exists (
     select from pg_catalog.pg_roles
-    where rolname = 'admin'
+    where rolname = 'owner'
   ) then
-    create role admin superuser createdb login bypassrls;
+    create role owner superuser createdb login bypassrls;
   end if;
 
   if not exists (
