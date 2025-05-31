@@ -33,7 +33,7 @@ mod tests {
 
         let roles = &cache.roles;
 
-        let super_role = roles.iter().find(|r| r.name == "test_super").unwrap();
+        let super_role = roles.iter().find(|r| r.name == "admin").unwrap();
         assert!(super_role.is_super_user);
         assert!(super_role.can_create_db);
         assert!(super_role.can_login);

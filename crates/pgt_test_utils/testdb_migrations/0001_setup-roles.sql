@@ -1,30 +1,35 @@
 do $$
 begin
 
-select pg_advisory_lock(12345);
+if (select count(*) from pg_catalog.pg_roles where rolname in ('admin', 'test_login','test_nologin')) != 3 then 
 
-if not exists (
-  select from pg_catalog.pg_roles
-  where rolname = 'admin'
-) then
-  create role admin superuser createdb login bypassrls;
+  perform pg_advisory_lock(12345);
+
+  if not exists (
+    select from pg_catalog.pg_roles
+    where rolname = 'admin'
+  ) then
+    create role admin superuser createdb login bypassrls;
+  end if;
+
+  if not exists (
+    select from pg_catalog.pg_roles
+    where rolname = 'test_login'
+  ) then
+    create role test_login login;
+  end if;
+
+  if not exists (
+    select from pg_catalog.pg_roles
+    where rolname = 'test_nologin'
+  ) then
+    create role test_nologin;
+  end if;
+
+  perform pg_advisory_unlock(12345);
+
 end if;
 
-if not exists (
-  select from pg_catalog.pg_roles
-  where rolname = 'test_login'
-) then
-  create role test_login login;
-end if;
-
-if not exists (
-  select from pg_catalog.pg_roles
-  where rolname = 'test_nologin'
-) then
-  create role test_nologin;
-end if;
-
-select pg_advisory_unlock(12345);
 
 end 
 $$;
