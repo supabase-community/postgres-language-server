@@ -103,17 +103,10 @@ fn load_config(
             .map_or(PathBuf::new(), |working_directory| working_directory),
     };
 
-    // REMOVE
-    tracing::info!("Searching for configuration files in {:?}", base_path);
-
     // If the configuration path hint is from user and is a file path,
     // we'll load it directly
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path {
         if file_system.path_is_file(config_file_path) {
-            tracing::info!(
-                "Loading configuration file from user path: {}",
-                config_file_path.display()
-            );
             let content = strip_jsonc_comments(&file_system.read_file_from_path(config_file_path)?);
 
             let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
@@ -137,12 +130,6 @@ fn load_config(
         ConfigurationPathHint::None => file_system.working_directory().unwrap_or_default(),
     };
 
-    // REMOVE
-    tracing::info!(
-        "Searching for configuration files in {}",
-        configuration_directory.display()
-    );
-
     // We first search for `postgrestools.jsonc` files
     if let Some(auto_search_result) = file_system.auto_search(
         &configuration_directory,
@@ -150,8 +137,6 @@ fn load_config(
         should_error,
     )? {
         let AutoSearchResult { content, file_path } = auto_search_result;
-        // REMOVE
-        tracing::info!("Found configuration file: {}", file_path.display());
 
         let deserialized =
             serde_json::from_str::<PartialConfiguration>(&strip_jsonc_comments(&content))
@@ -163,7 +148,6 @@ fn load_config(
             external_resolution_base_path,
         }))
     } else {
-        tracing::info!("auto search returned none");
         Ok(None)
     }
 }
@@ -381,12 +365,6 @@ impl PartialConfigurationExt for PartialConfiguration {
                     })?
                     .into_path_buf()
             };
-
-            // REMOVE
-            tracing::info!(
-                "Resolving extend configuration file: {}",
-                extend_configuration_file_path.display()
-            );
 
             let mut file = fs
                 .open_with_options(
