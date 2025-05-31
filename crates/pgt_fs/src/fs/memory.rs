@@ -134,8 +134,6 @@ impl FileSystem for MemoryFileSystem {
             ));
         }
 
-        tracing::info!("open_with_options: path {:?}, options: {:?}", path, options);
-
         let mut inner = if options.create || options.create_new {
             // Acquire write access to the files map if the file may need to be created
             let mut files = self.files.0.write();
@@ -164,7 +162,6 @@ impl FileSystem for MemoryFileSystem {
             }
         } else {
             let files = self.files.0.read();
-            tracing::info!("files: {:?} path {:?}", files.keys(), path);
             let entry = files.get(path).ok_or_else(|| {
                 io::Error::new(
                     io::ErrorKind::NotFound,
@@ -174,9 +171,6 @@ impl FileSystem for MemoryFileSystem {
 
             entry.lock_arc()
         };
-
-        // REMOVE
-        tracing::info!("inner");
 
         if options.truncate {
             // Clear the buffer if the file was open with `truncate`

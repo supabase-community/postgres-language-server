@@ -14,6 +14,12 @@ pub struct SchemaCacheManager {
 }
 
 impl SchemaCacheManager {
+    pub fn new() -> Self {
+        Self {
+            schemas: DashMap::new(),
+        }
+    }
+
     pub fn load(&self, pool: PgPool) -> Result<Arc<SchemaCache>, WorkspaceError> {
         let key: ConnectionKey = (&pool).into();
 

@@ -408,8 +408,6 @@ fn follow_symlink(
     path: &Path,
     ctx: &dyn TraversalContext,
 ) -> Result<(PathBuf, FileType), SymlinkExpansionError> {
-    tracing::info!("Translating symlink: {path:?}");
-
     let target_path = fs::read_link(path).map_err(|err| {
         ctx.push_diagnostic(IoError::from(err).with_file_path(path.to_string_lossy().to_string()));
         SymlinkExpansionError

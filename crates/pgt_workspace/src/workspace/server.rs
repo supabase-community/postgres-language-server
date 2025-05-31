@@ -94,8 +94,8 @@ impl WorkspaceServer {
         Self {
             settings: RwLock::default(),
             parsed_documents: DashMap::default(),
-            schema_cache: SchemaCacheManager::default(),
-            connection: ConnectionManager::default(),
+            schema_cache: SchemaCacheManager::new(),
+            connection: ConnectionManager::new(),
         }
     }
 
@@ -244,7 +244,6 @@ impl Workspace for WorkspaceServer {
     /// by another thread having previously panicked while holding the lock
     #[tracing::instrument(level = "trace", skip(self), err)]
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError> {
-        tracing::info!("Updating settings in workspace");
         let mut workspace = self.workspaces_mut();
 
         workspace

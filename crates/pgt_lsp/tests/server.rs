@@ -1346,8 +1346,7 @@ async fn multiple_projects() -> Result<()> {
     Ok(())
 }
 
-// #[tokio::test]
-#[test(tokio::test)]
+#[tokio::test]
 async fn extends_config() -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
@@ -1364,11 +1363,6 @@ async fn extends_config() -> Result<()> {
         .execute(setup)
         .await
         .expect("Failed to setup test database");
-
-    tracing::info!(
-        "writing to {:?}",
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
-    );
 
     // shared config with default db connection
     let conf_with_db = PartialConfiguration::init();

@@ -35,8 +35,6 @@ impl LoadedConfiguration {
         value: Option<ConfigurationPayload>,
         fs: &DynRef<'_, dyn FileSystem>,
     ) -> Result<Self, WorkspaceError> {
-        // REMOVE
-        tracing::info!("try from payload");
         let Some(value) = value else {
             return Ok(LoadedConfiguration::default());
         };
