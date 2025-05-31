@@ -80,27 +80,14 @@ impl SchemaCacheItem for Policy {
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
+
+    use sqlx::{Executor, PgPool};
 
     use crate::{SchemaCache, policies::PolicyCommand};
 
-    #[tokio::test]
-    async fn loads_policies() {
-        let test_db = get_new_test_db().await;
-
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_policies(test_db: PgPool) {
         let setup = r#"
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'admin'
-                ) then
-                    create role admin;
-                end if;
-            end $$;
-
-
             create table public.users (
                 id serial primary key,
                 name varchar(255) not null
@@ -125,21 +112,11 @@ mod tests {
                 to public
                 with check (true);
 
-            create policy admin_policy
+            create policy owner_policy
                 on public.users
                 for all
-                to admin
+                to owner
                 with check (true);
-
-            do $$
-            begin
-                if not exists (
-                    select from pg_catalog.pg_roles
-                    where rolname = 'owner'
-                ) then
-                    create role owner;
-                end if;
-            end $$;
 
             create schema real_estate;
 
@@ -148,10 +125,10 @@ mod tests {
                 owner_id int not null
             );
 
-            create policy owner_policy
+            create policy test_nologin_policy
                 on real_estate.properties
                 for update
-                to owner
+                to test_nologin
                 using (owner_id = current_user::int);
         "#;
 
@@ -193,29 +170,29 @@ mod tests {
         assert_eq!(public_policy.security_qualification, Some("true".into()));
         assert_eq!(public_policy.with_check, None);
 
-        let admin_policy = cache
-            .policies
-            .iter()
-            .find(|p| p.name == "admin_policy")
-            .unwrap();
-        assert_eq!(admin_policy.table_name, "users");
-        assert_eq!(admin_policy.schema_name, "public");
-        assert!(admin_policy.is_permissive);
-        assert_eq!(admin_policy.command, PolicyCommand::All);
-        assert_eq!(admin_policy.role_names, vec!["admin"]);
-        assert_eq!(admin_policy.security_qualification, None);
-        assert_eq!(admin_policy.with_check, Some("true".into()));
-
         let owner_policy = cache
             .policies
             .iter()
             .find(|p| p.name == "owner_policy")
             .unwrap();
+        assert_eq!(owner_policy.table_name, "users");
+        assert_eq!(owner_policy.schema_name, "public");
+        assert!(owner_policy.is_permissive);
+        assert_eq!(owner_policy.command, PolicyCommand::All);
+        assert_eq!(owner_policy.role_names, vec!["owner"]);
+        assert_eq!(owner_policy.security_qualification, None);
+        assert_eq!(owner_policy.with_check, Some("true".into()));
+
+        let owner_policy = cache
+            .policies
+            .iter()
+            .find(|p| p.name == "test_nologin_policy")
+            .unwrap();
         assert_eq!(owner_policy.table_name, "properties");
         assert_eq!(owner_policy.schema_name, "real_estate");
         assert!(owner_policy.is_permissive);
         assert_eq!(owner_policy.command, PolicyCommand::Update);
-        assert_eq!(owner_policy.role_names, vec!["owner"]);
+        assert_eq!(owner_policy.role_names, vec!["test_nologin"]);
         assert_eq!(
             owner_policy.security_qualification,
             Some("(owner_id = (CURRENT_USER)::integer)".into())
