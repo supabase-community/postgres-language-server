@@ -1,6 +1,8 @@
 do $$
 begin
 
+select pg_advisory_lock(12345);
+
 if not exists (
   select from pg_catalog.pg_roles
   where rolname = 'admin'
@@ -21,6 +23,8 @@ if not exists (
 ) then
   create role test_nologin;
 end if;
+
+select pg_advisory_unlock(12345);
 
 end 
 $$;
