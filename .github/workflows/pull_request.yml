@@ -149,8 +149,8 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
-        # with:
-        # cache-base: main
+        with:
+          cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
