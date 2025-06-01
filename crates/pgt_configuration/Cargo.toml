@@ -16,6 +16,7 @@ biome_deserialize        = { workspace = true, features = ["schema"] }
 biome_deserialize_macros = { workspace = true }
 bpaf                     = { workspace = true }
 indexmap                 = { workspace = true }
+oxc_resolver             = { workspace = true }
 pgt_analyse              = { workspace = true }
 pgt_analyser             = { workspace = true }
 pgt_console              = { workspace = true }

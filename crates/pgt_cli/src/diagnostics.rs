@@ -455,7 +455,7 @@ mod test {
     fn termination_diagnostic_size() {
         assert_eq!(
             std::mem::size_of::<CliDiagnostic>(),
-            80,
+            96,
             "you successfully decreased the size of the diagnostic!"
         )
     }

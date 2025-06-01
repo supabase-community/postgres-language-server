@@ -6,6 +6,7 @@ alias r := ready
 alias l := lint
 alias t := test
 alias rg := reset-git
+alias qm := quick-modify
 
 # Installs the tools needed to develop
 install-tools:
@@ -132,6 +133,18 @@ merge-main:
     git fetch origin main:main
     git merge main
 
+quick-create branch commit:
+    git checkout -b {{branch}}
+    git add -A
+    git commit -m "{{commit}}"
+    git push
+    gh pr create --fill
+
+quick-modify:
+    just format
+    git add -A
+    git commit -m "progress"
+    git push
 
 # Make sure to set your PGT_LOG_PATH in your shell profile.
 # You can use the PGT_LOG_LEVEL to set your log level.

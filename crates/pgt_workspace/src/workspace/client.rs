@@ -7,7 +7,10 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use super::{CloseFileParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams};
+use super::{
+    CloseFileParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
+    RegisterProjectFolderParams, UnregisterProjectFolderParams,
+};
 
 pub struct WorkspaceClient<T> {
     transport: T,
@@ -101,6 +104,20 @@ where
         params: crate::features::code_actions::ExecuteStatementParams,
     ) -> Result<crate::features::code_actions::ExecuteStatementResult, WorkspaceError> {
         self.request("pgt/execute_statement", params)
+    }
+
+    fn register_project_folder(
+        &self,
+        params: RegisterProjectFolderParams,
+    ) -> Result<ProjectKey, WorkspaceError> {
+        self.request("pgt/register_project_folder", params)
+    }
+
+    fn unregister_project_folder(
+        &self,
+        params: UnregisterProjectFolderParams,
+    ) -> Result<(), WorkspaceError> {
+        self.request("pgt/unregister_project_folder", params)
     }
 
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {

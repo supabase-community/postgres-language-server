@@ -22,6 +22,7 @@ pub use analyser::{
     RulePlainConfiguration, RuleSelector, RuleWithFixOptions, RuleWithOptions, Rules,
     partial_linter_configuration,
 };
+use biome_deserialize::StringSet;
 use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
 use database::{
@@ -49,6 +50,10 @@ pub struct Configuration {
     #[partial(serde(rename = "$schema"))]
     #[partial(bpaf(hide))]
     pub schema: String,
+
+    /// A list of paths to other JSON files, used to extends the current configuration.
+    #[partial(bpaf(hide))]
+    pub extends: StringSet,
 
     /// The configuration of the VCS integration
     #[partial(type, bpaf(external(partial_vcs_configuration), optional, hide_usage))]
@@ -85,6 +90,7 @@ impl PartialConfiguration {
     pub fn init() -> Self {
         Self {
             schema: Some(format!("https://pgtools.dev/schemas/{VERSION}/schema.json")),
+            extends: Some(StringSet::default()),
             files: Some(PartialFilesConfiguration {
                 ignore: Some(Default::default()),
                 ..Default::default()

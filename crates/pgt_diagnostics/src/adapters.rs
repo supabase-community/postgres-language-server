@@ -134,3 +134,28 @@ impl Diagnostic for SerdeJsonError {
         fmt.write_markup(markup!({ AsConsoleDisplay(&self.error) }))
     }
 }
+
+#[derive(Debug)]
+pub struct ResolveError {
+    error: oxc_resolver::ResolveError,
+}
+
+impl From<oxc_resolver::ResolveError> for ResolveError {
+    fn from(error: oxc_resolver::ResolveError) -> Self {
+        Self { error }
+    }
+}
+
+impl Diagnostic for ResolveError {
+    fn category(&self) -> Option<&'static Category> {
+        Some(category!("internalError/io"))
+    }
+
+    fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(fmt, "{}", self.error)
+    }
+
+    fn message(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
+        fmt.write_markup(markup!({ AsConsoleDisplay(&self.error) }))
+    }
+}
