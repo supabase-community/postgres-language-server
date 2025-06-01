@@ -51,18 +51,16 @@ impl WorkspaceSettings {
 
     pub fn get_current_project_path(&self) -> Option<&PgTPath> {
         trace!("Current key {:?}", self.current_project);
-        let data = self.data.get(self.current_project);
-        if let Some(data) = data {
-            Some(&data.path)
-        } else {
-            None
-        }
+        self.data
+            .get(self.current_project)
+            .as_ref()
+            .map(|d| &d.path)
     }
 
     pub fn get_current_project_data_mut(&mut self) -> &mut ProjectData {
         self.data
             .get_mut(self.current_project)
-            .expect("You must have at least one workspace.")
+            .expect("Current project not configured")
     }
 
     /// Retrieves the settings of the current workspace folder

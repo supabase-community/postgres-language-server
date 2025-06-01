@@ -68,7 +68,6 @@ pub(super) struct WorkspaceServer {
     settings: RwLock<WorkspaceSettings>,
 
     /// Stores the schema cache for this workspace
-    /// TODO: store this per connection
     schema_cache: SchemaCacheManager,
 
     parsed_documents: DashMap<PgTPath, ParsedDocument>,
@@ -133,7 +132,7 @@ impl WorkspaceServer {
         workspace_mut.set_current_project(project_key);
     }
 
-    /// Checks whether, if the current path belongs to the current project.
+    /// Checks whether the current path belongs to the current project.
     ///
     /// If there's a match, and the match **isn't** the current project, it returns the new key.
     fn path_belongs_to_current_workspace(&self, path: &PgTPath) -> Option<ProjectKey> {
@@ -213,6 +212,10 @@ impl Workspace for WorkspaceServer {
 
         let is_new_path = match (current_project_path.as_deref(), params.path.as_ref()) {
             (Some(current_project_path), Some(params_path)) => current_project_path != params_path,
+            (Some(_), None) => {
+                // If the current project is set, but no path is provided, we assume it's a new project
+                true
+            }
             _ => true,
         };
 
@@ -410,9 +413,19 @@ impl Workspace for WorkspaceServer {
         params: PullDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         let settings = self.workspaces();
-        // TODO: not sure how we should handle this
-        // maybe fallback to default settings? or return an error?
-        let settings = settings.settings().expect("Settings should be initialized");
+
+        let settings = match settings.settings() {
+            Some(settings) => settings,
+            None => {
+                // return an empty result if no settings are available
+                // we might want to return an error here in the future
+                return Ok(PullDiagnosticsResult {
+                    diagnostics: Vec::new(),
+                    errors: 0,
+                    skipped_diagnostics: 0,
+                });
+            }
+        };
 
         // create analyser for this run
         // first, collect enabled and disabled rules from the workspace settings

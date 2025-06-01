@@ -234,6 +234,7 @@ impl FileSystem for MemoryFileSystem {
         _specifier: &str,
         _path: &Path,
     ) -> Result<Resolution, ResolveError> {
+        // not needed for the memory file system
         todo!()
     }
 }

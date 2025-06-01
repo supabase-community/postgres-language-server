@@ -27,10 +27,21 @@ impl SchemaCacheManager {
             return Ok(Arc::clone(&*cache));
         }
 
-        let schema_cache = Arc::new(run_async(async move { SchemaCache::load(&pool).await })??);
+        let schema_cache = self
+            .schemas
+            .entry(key)
+            .or_try_insert_with::<WorkspaceError>(|| {
+                // This closure will only be called once per key if multiple threads
+                // try to access the same key simultaneously
+                let pool_clone = pool.clone();
+                let schema_cache =
+                    Arc::new(run_async(
+                        async move { SchemaCache::load(&pool_clone).await },
+                    )??);
 
-        self.schemas.insert(key, Arc::clone(&schema_cache));
+                Ok(schema_cache)
+            })?;
 
-        Ok(schema_cache)
+        Ok(Arc::clone(&schema_cache))
     }
 }
