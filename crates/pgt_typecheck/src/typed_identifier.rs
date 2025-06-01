@@ -231,11 +231,10 @@ fn resolve_type<'a>(
 
 #[cfg(test)]
 mod tests {
-    use pgt_test_utils::test_database::get_new_test_db;
-    use sqlx::Executor;
+    use sqlx::{Executor, PgPool};
 
-    #[tokio::test]
-    async fn test_apply_identifiers() {
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_apply_identifiers(test_db: PgPool) {
         let input = "select v_test + fn_name.custom_type.v_test2 + $3 + custom_type.v_test3 + fn_name.v_test2 + enum_type";
 
         let identifiers = vec![
@@ -294,8 +293,6 @@ mod tests {
                 },
             },
         ];
-
-        let test_db = get_new_test_db().await;
 
         let setup = r#"
             CREATE TYPE "public"."custom_type" AS (

@@ -14,13 +14,13 @@ use pgt_configuration::database::PartialDatabaseConfiguration;
 use pgt_fs::MemoryFileSystem;
 use pgt_lsp::LSPServer;
 use pgt_lsp::ServerFactory;
-use pgt_test_utils::test_database::get_new_test_db;
 use pgt_workspace::DynRef;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use serde_json::{from_value, to_value};
 use sqlx::Executor;
+use sqlx::PgPool;
 use std::any::type_name;
 use std::fmt::Display;
 use std::time::Duration;
@@ -395,11 +395,10 @@ async fn basic_lifecycle() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_database_connection() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_database_connection(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.users (
@@ -507,11 +506,10 @@ async fn server_shutdown() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_completions() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_completions(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.users (
@@ -608,11 +606,10 @@ async fn test_completions() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_issue_271() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_issue_271(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.users (
@@ -810,11 +807,10 @@ async fn test_issue_271() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_execute_statement() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let database = test_db
         .connect_options()
@@ -949,11 +945,10 @@ async fn test_execute_statement() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_issue_281() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_issue_281(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.users (
@@ -1033,11 +1028,10 @@ async fn test_issue_281() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_issue_303() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_issue_303(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.users (
