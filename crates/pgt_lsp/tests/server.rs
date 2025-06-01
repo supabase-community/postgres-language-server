@@ -1158,11 +1158,10 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn multiple_projects() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn multiple_projects(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.users (
@@ -1338,11 +1337,10 @@ async fn multiple_projects() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn extends_config() -> Result<()> {
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn extends_config(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
-    let test_db = get_new_test_db().await;
 
     let setup = r#"
             create table public.extends_config_test (
