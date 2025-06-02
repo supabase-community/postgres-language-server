@@ -2599,6 +2599,7 @@ dependencies = [
  "biome_deserialize_macros 0.6.0",
  "bpaf",
  "indexmap 2.7.0",
+ "oxc_resolver",
  "pgt_analyse",
  "pgt_analyser",
  "pgt_console",
@@ -2631,6 +2632,7 @@ dependencies = [
  "backtrace",
  "bpaf",
  "enumflags2",
+ "oxc_resolver",
  "pgt_console",
  "pgt_diagnostics_categories",
  "pgt_diagnostics_macros",
@@ -2676,6 +2678,7 @@ dependencies = [
  "crossbeam",
  "directories",
  "enumflags2",
+ "oxc_resolver",
  "parking_lot",
  "pgt_diagnostics",
  "rayon",
@@ -2912,6 +2915,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "slotmap",
  "sqlx",
  "strum",
  "tempfile",
@@ -3699,6 +3703,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f92a496fb766b417c996b9c5e57daf2f7ad3b0bebe1ccfca4856390e3d3bb67"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "slotmap"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbff4acf519f630b3a3ddcfaea6c06b42174d9a44bc70c620e9ed1649d58b82a"
+dependencies = [
+ "serde",
+ "version_check",
 ]
 
 [[package]]

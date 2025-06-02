@@ -3,6 +3,7 @@ use anyhow::Error;
 use anyhow::Result;
 use anyhow::bail;
 use biome_deserialize::Merge;
+use biome_deserialize::StringSet;
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
@@ -40,6 +41,7 @@ use tower_lsp::lsp_types::Position;
 use tower_lsp::lsp_types::Range;
 use tower_lsp::lsp_types::TextDocumentPositionParams;
 use tower_lsp::lsp_types::WorkDoneProgressParams;
+use tower_lsp::lsp_types::WorkspaceFolder;
 use tower_lsp::lsp_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, InitializeResult, InitializedParams,
@@ -164,6 +166,42 @@ impl Server {
         Ok(())
     }
 
+    /// It creates two workspaces, one at folder `test_one` and the other in `test_two`.
+    ///
+    /// Hence, the two roots will be `/workspace/test_one` and `/workspace/test_two`
+    #[allow(deprecated)]
+    async fn initialize_workspaces(&mut self) -> Result<()> {
+        let _res: InitializeResult = self
+            .request(
+                "initialize",
+                "_init",
+                InitializeParams {
+                    process_id: None,
+                    root_path: None,
+                    root_uri: Some(url!("/")),
+                    initialization_options: None,
+                    capabilities: ClientCapabilities::default(),
+                    trace: None,
+                    workspace_folders: Some(vec![
+                        WorkspaceFolder {
+                            name: "test_one".to_string(),
+                            uri: url!("test_one"),
+                        },
+                        WorkspaceFolder {
+                            name: "test_two".to_string(),
+                            uri: url!("test_two"),
+                        },
+                    ]),
+                    client_info: None,
+                    locale: None,
+                },
+            )
+            .await?
+            .context("initialize returned None")?;
+
+        Ok(())
+    }
+
     /// Basic implementation of the `initialized` notification for tests
     async fn initialized(&mut self) -> Result<()> {
         self.notify("initialized", InitializedParams {}).await
@@ -204,13 +242,18 @@ impl Server {
     }
 
     /// Opens a document with given contents and given name. The name must contain the extension too
-    async fn open_named_document(&mut self, text: impl Display, document_name: Url) -> Result<()> {
+    async fn open_named_document(
+        &mut self,
+        text: impl Display,
+        document_name: Url,
+        language: impl Display,
+    ) -> Result<()> {
         self.notify(
             "textDocument/didOpen",
             DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
                     uri: document_name,
-                    language_id: String::from("sql"),
+                    language_id: language.to_string(),
                     version: 0,
                     text: text.to_string(),
                 },
@@ -230,22 +273,29 @@ impl Server {
         .await
     }
 
-    async fn change_document(
+    async fn change_named_document(
         &mut self,
+        uri: Url,
         version: i32,
         content_changes: Vec<TextDocumentContentChangeEvent>,
     ) -> Result<()> {
         self.notify(
             "textDocument/didChange",
             DidChangeTextDocumentParams {
-                text_document: VersionedTextDocumentIdentifier {
-                    uri: url!("document.sql"),
-                    version,
-                },
+                text_document: VersionedTextDocumentIdentifier { uri, version },
                 content_changes,
             },
         )
         .await
+    }
+
+    async fn change_document(
+        &mut self,
+        version: i32,
+        content_changes: Vec<TextDocumentContentChangeEvent>,
+    ) -> Result<()> {
+        self.change_named_document(url!("document.sql"), version, content_changes)
+            .await
     }
 
     #[allow(unused)]
@@ -831,7 +881,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     let doc_url = url!("test.sql");
 
     server
-        .open_named_document(doc_content.to_string(), doc_url.clone())
+        .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
         .await?;
 
     let code_actions_response = server
@@ -1101,6 +1151,391 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
             }],
         )
         .await?;
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn multiple_projects(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let setup = r#"
+            create table public.users (
+                id serial primary key,
+                name varchar(255) not null
+            );
+        "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    // Setup configurations
+    // - test_one with db connection
+    let mut conf_with_db = PartialConfiguration::init();
+    conf_with_db.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("test_one/postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf_with_db).unwrap(),
+    );
+
+    // -- test_two without db connection
+    let mut conf_without_db = PartialConfiguration::init();
+    conf_without_db.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("test_two/postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf_without_db).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize_workspaces().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    // do the same change in both workspaces and request completions in both workspaces
+
+    server
+        .open_named_document(
+            "select  from public.users;\n",
+            url!("test_one/document.sql"),
+            "sql",
+        )
+        .await?;
+
+    server
+        .change_named_document(
+            url!("test_one/document.sql"),
+            3,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    let res_ws_one = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("test_one/document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 8,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    server
+        .open_named_document(
+            "select  from public.users;\n",
+            url!("test_two/document.sql"),
+            "sql",
+        )
+        .await?;
+
+    server
+        .change_named_document(
+            url!("test_two/document.sql"),
+            3,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    let res_ws_two = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("test_two/document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 8,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    // only the first one has a db connection and should return completion items
+    assert!(!match res_ws_one {
+        CompletionResponse::Array(a) => a.is_empty(),
+        CompletionResponse::List(l) => l.items.is_empty(),
+    });
+    assert!(match res_ws_two {
+        CompletionResponse::Array(a) => a.is_empty(),
+        CompletionResponse::List(l) => l.items.is_empty(),
+    });
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn extends_config(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let setup = r#"
+            create table public.extends_config_test (
+                id serial primary key,
+                name varchar(255) not null
+            );
+        "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    // shared config with default db connection
+    let conf_with_db = PartialConfiguration::init();
+    fs.insert(
+        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf_with_db).unwrap(),
+    );
+
+    let relative_path = if cfg!(windows) {
+        "..\\postgrestools.jsonc"
+    } else {
+        "../postgrestools.jsonc"
+    };
+
+    // test_one extends the shared config but sets our test db
+    let mut conf_with_db = PartialConfiguration::init();
+    conf_with_db.merge_with(PartialConfiguration {
+        extends: Some(StringSet::from_iter([relative_path.to_string()])),
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    fs.insert(
+        url!("test_one/postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf_with_db).unwrap(),
+    );
+
+    // test_two extends it but keeps the default one
+    let mut conf_without_db = PartialConfiguration::init();
+    conf_without_db.merge_with(PartialConfiguration {
+        extends: Some(StringSet::from_iter([relative_path.to_string()])),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("test_two/postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf_without_db).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize_workspaces().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    server
+        .open_named_document(
+            "select  from public.extends_config_test;\n",
+            url!("test_one/document.sql"),
+            "sql",
+        )
+        .await?;
+
+    server
+        .change_named_document(
+            url!("test_one/document.sql"),
+            3,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    let res_ws_one = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("test_one/document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 8,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    server
+        .open_named_document(
+            "select  from public.users;\n",
+            url!("test_two/document.sql"),
+            "sql",
+        )
+        .await?;
+
+    server
+        .change_named_document(
+            url!("test_two/document.sql"),
+            3,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 7,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    let res_ws_two = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("test_two/document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 8,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    let items_one = match res_ws_one {
+        CompletionResponse::Array(ref a) => a,
+        CompletionResponse::List(ref l) => &l.items,
+    };
+
+    // test one should have our test db connection and should return the completion items for the `extends_config_test` table
+    assert!(items_one.iter().any(|item| {
+        item.label_details.clone().is_some_and(|details| {
+            details
+                .description
+                .is_some_and(|desc| desc.contains("public.extends_config_test"))
+        })
+    }));
+
+    let items_two = match res_ws_two {
+        CompletionResponse::Array(ref a) => a,
+        CompletionResponse::List(ref l) => &l.items,
+    };
+
+    // test two should not have a db connection and should not return the completion items for the `extends_config_test` table
+    assert!(!items_two.iter().any(|item| {
+        item.label_details.clone().is_some_and(|details| {
+            details
+                .description
+                .is_some_and(|desc| desc.contains("public.extends_config_test"))
+        })
+    }));
 
     server.shutdown().await?;
     reader.abort();

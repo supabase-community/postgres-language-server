@@ -157,7 +157,10 @@ jobs:
       # running containers via `services` only works on linux
       # https://github.com/actions/runner/issues/1866
       - name: Setup postgres
+        id: postgres
         uses: ikalnytskyi/action-setup-postgres@v7
+      - name: Print Roles
+        run: psql ${{ steps.postgres.outputs.connection-uri }} -c "select rolname from pg_roles;"
       - name: Run tests
         run: cargo test --workspace
 

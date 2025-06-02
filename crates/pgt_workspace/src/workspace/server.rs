@@ -1,14 +1,14 @@
 use std::{
     fs,
     panic::RefUnwindSafe,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
 
 use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
+use connection_manager::ConnectionManager;
 use dashmap::DashMap;
-use db_connection::DbConnection;
 use document::Document;
 use futures::{StreamExt, stream};
 use parsed_document::{
@@ -23,8 +23,8 @@ use pgt_diagnostics::{
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use schema_cache_manager::SchemaCacheManager;
-use sqlx::Executor;
-use tracing::info;
+use sqlx::{Executor, PgPool};
+use tracing::{debug, info};
 
 use crate::{
     WorkspaceError,
@@ -37,11 +37,12 @@ use crate::{
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
-    settings::{Settings, SettingsHandle, SettingsHandleMut},
+    settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
 };
 
 use super::{
-    GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ServerInfo, UpdateSettingsParams,
+    GetFileContentParams, IsPathIgnoredParams, OpenFileParams, ProjectKey,
+    RegisterProjectFolderParams, ServerInfo, UnregisterProjectFolderParams, UpdateSettingsParams,
     Workspace,
 };
 
@@ -51,7 +52,8 @@ mod analyser;
 mod annotation;
 mod async_helper;
 mod change;
-mod db_connection;
+mod connection_key;
+mod connection_manager;
 pub(crate) mod document;
 mod migration;
 pub(crate) mod parsed_document;
@@ -63,14 +65,14 @@ mod tree_sitter;
 
 pub(super) struct WorkspaceServer {
     /// global settings object for this workspace
-    settings: RwLock<Settings>,
+    settings: RwLock<WorkspaceSettings>,
 
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
     parsed_documents: DashMap<PgTPath, ParsedDocument>,
 
-    connection: RwLock<DbConnection>,
+    connection: ConnectionManager,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -91,23 +93,60 @@ impl WorkspaceServer {
         Self {
             settings: RwLock::default(),
             parsed_documents: DashMap::default(),
-            schema_cache: SchemaCacheManager::default(),
-            connection: RwLock::default(),
+            schema_cache: SchemaCacheManager::new(),
+            connection: ConnectionManager::new(),
         }
     }
 
     /// Provides a reference to the current settings
-    fn settings(&self) -> SettingsHandle {
-        SettingsHandle::new(&self.settings)
+    fn workspaces(&self) -> WorkspaceSettingsHandle {
+        WorkspaceSettingsHandle::new(&self.settings)
     }
 
-    fn settings_mut(&self) -> SettingsHandleMut {
-        SettingsHandleMut::new(&self.settings)
+    fn workspaces_mut(&self) -> WorkspaceSettingsHandleMut {
+        WorkspaceSettingsHandleMut::new(&self.settings)
+    }
+
+    fn get_current_connection(&self) -> Option<PgPool> {
+        let settings = self.workspaces();
+        let settings = settings.settings()?;
+        self.connection.get_pool(&settings.db)
+    }
+
+    /// Register a new project in the current workspace
+    fn register_project(&self, path: PathBuf) -> ProjectKey {
+        let mut workspace = self.workspaces_mut();
+        let workspace_mut = workspace.as_mut();
+        workspace_mut.insert_project(path.clone())
+    }
+
+    /// Retrieves the current project path
+    fn get_current_project_path(&self) -> Option<PgTPath> {
+        self.workspaces().path().cloned()
+    }
+
+    /// Sets the current project of the current workspace
+    fn set_current_project(&self, project_key: ProjectKey) {
+        let mut workspace = self.workspaces_mut();
+        let workspace_mut = workspace.as_mut();
+        workspace_mut.set_current_project(project_key);
+    }
+
+    /// Checks whether the current path belongs to the current project.
+    ///
+    /// If there's a match, and the match **isn't** the current project, it returns the new key.
+    fn path_belongs_to_current_workspace(&self, path: &PgTPath) -> Option<ProjectKey> {
+        let workspaces = self.workspaces();
+        workspaces.as_ref().path_belongs_to_current_workspace(path)
     }
 
     fn is_ignored_by_migration_config(&self, path: &Path) -> bool {
-        let set = self.settings();
-        set.as_ref()
+        let settings = self.workspaces();
+        let settings = settings.settings();
+        let Some(settings) = settings else {
+            return false;
+        };
+        settings
             .migrations
             .as_ref()
             .and_then(|migration_settings| {
@@ -131,8 +170,12 @@ impl WorkspaceServer {
 
     /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`
     fn is_ignored_by_top_level_config(&self, path: &Path) -> bool {
-        let set = self.settings();
-        let settings = set.as_ref();
+        let settings = self.workspaces();
+        let settings = settings.settings();
+        let Some(settings) = settings else {
+            return false;
+        };
+
         let is_included = settings.files.included_files.is_empty()
             || is_dir(path)
             || settings.files.included_files.matches_path(path);
@@ -155,6 +198,48 @@ impl WorkspaceServer {
 }
 
 impl Workspace for WorkspaceServer {
+    fn register_project_folder(
+        &self,
+        params: RegisterProjectFolderParams,
+    ) -> Result<ProjectKey, WorkspaceError> {
+        let current_project_path = self.get_current_project_path();
+        debug!(
+            "Compare the current project with the new one {:?} {:?} {:?}",
+            current_project_path,
+            params.path.as_ref(),
+            current_project_path.as_deref() != params.path.as_ref()
+        );
+
+        let is_new_path = match (current_project_path.as_deref(), params.path.as_ref()) {
+            (Some(current_project_path), Some(params_path)) => current_project_path != params_path,
+            (Some(_), None) => {
+                // If the current project is set, but no path is provided, we assume it's a new project
+                true
+            }
+            _ => true,
+        };
+
+        if is_new_path {
+            let path = params.path.unwrap_or_default();
+            let key = self.register_project(path.clone());
+            if params.set_as_current_workspace {
+                self.set_current_project(key);
+            }
+            Ok(key)
+        } else {
+            Ok(self.workspaces().as_ref().get_current_project_key())
+        }
+    }
+
+    fn unregister_project_folder(
+        &self,
+        params: UnregisterProjectFolderParams,
+    ) -> Result<(), WorkspaceError> {
+        let mut workspace = self.workspaces_mut();
+        workspace.as_mut().remove_project(params.path.as_path());
+        Ok(())
+    }
+
     /// Update the global settings for this workspace
     ///
     /// ## Panics
@@ -162,24 +247,17 @@ impl Workspace for WorkspaceServer {
     /// by another thread having previously panicked while holding the lock
     #[tracing::instrument(level = "trace", skip(self), err)]
     fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError> {
-        tracing::info!("Updating settings in workspace");
+        let mut workspace = self.workspaces_mut();
 
-        self.settings_mut().as_mut().merge_with_configuration(
-            params.configuration,
-            params.workspace_directory,
-            params.vcs_base_path,
-            params.gitignore_matches.as_slice(),
-        )?;
-
-        tracing::info!("Updated settings in workspace");
-        tracing::debug!("Updated settings are {:#?}", self.settings());
-
-        self.connection
-            .write()
-            .unwrap()
-            .set_conn_settings(&self.settings().as_ref().db);
-
-        tracing::info!("Updated Db connection settings");
+        workspace
+            .as_mut()
+            .get_current_settings_mut()
+            .merge_with_configuration(
+                params.configuration,
+                params.workspace_directory,
+                params.vcs_base_path,
+                params.gitignore_matches.as_slice(),
+            )?;
 
         Ok(())
     }
@@ -192,6 +270,10 @@ impl Workspace for WorkspaceServer {
             .or_insert_with(|| {
                 ParsedDocument::new(params.path.clone(), params.content, params.version)
             });
+
+        if let Some(project_key) = self.path_belongs_to_current_workspace(&params.path) {
+            self.set_current_project(project_key);
+        }
 
         Ok(())
     }
@@ -250,15 +332,13 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let settings = self
-            .settings
-            .read()
-            .expect("Unable to read settings for Code Actions");
+        let settings = self.workspaces();
+        let settings = settings.settings();
 
-        let disabled_reason: Option<String> = if settings.db.allow_statement_executions {
-            None
-        } else {
-            Some("Statement execution not allowed against database.".into())
+        let disabled_reason = match settings {
+            Some(settings) if settings.db.allow_statement_executions => None,
+            Some(_) => Some("Statement execution is disabled in the settings.".into()),
+            None => Some("Statement execution not allowed against database.".into()),
         };
 
         let actions = parser
@@ -310,15 +390,13 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let conn = self.connection.read().unwrap();
-        let pool = match conn.get_pool() {
-            Some(p) => p,
-            None => {
-                return Ok(ExecuteStatementResult {
-                    message: "Not connected to database.".into(),
-                });
-            }
-        };
+        let pool = self.get_current_connection();
+        if pool.is_none() {
+            return Ok(ExecuteStatementResult {
+                message: "No database connection available.".into(),
+            });
+        }
+        let pool = pool.unwrap();
 
         let result = run_async(async move { pool.execute(sqlx::query(&content)).await })??;
 
@@ -334,16 +412,29 @@ impl Workspace for WorkspaceServer {
         &self,
         params: PullDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
-        let settings = self.settings();
+        let settings = self.workspaces();
+
+        let settings = match settings.settings() {
+            Some(settings) => settings,
+            None => {
+                // return an empty result if no settings are available
+                // we might want to return an error here in the future
+                return Ok(PullDiagnosticsResult {
+                    diagnostics: Vec::new(),
+                    errors: 0,
+                    skipped_diagnostics: 0,
+                });
+            }
+        };
 
         // create analyser for this run
         // first, collect enabled and disabled rules from the workspace settings
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings.as_ref())
+        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
             .with_linter_rules(&params.only, &params.skip)
             .finish();
         // then, build a map that contains all options
         let options = AnalyserOptions {
-            rules: to_analyser_rules(settings.as_ref()),
+            rules: to_analyser_rules(settings),
         };
         // next, build the analysis filter which will be used to match rules
         let filter = AnalysisFilter {
@@ -364,15 +455,9 @@ impl Workspace for WorkspaceServer {
 
         let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
 
-        if let Some(pool) = self
-            .connection
-            .read()
-            .expect("DbConnection RwLock panicked")
-            .get_pool()
-        {
+        if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let schema_cache_arc = schema_cache.get_arc();
             let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
@@ -380,7 +465,7 @@ impl Workspace for WorkspaceServer {
                     .map(|(_id, range, content, ast, cst, sign)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
-                        let schema_cache = Arc::clone(&schema_cache_arc);
+                        let schema_cache = Arc::clone(&schema_cache);
                         async move {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
@@ -461,7 +546,6 @@ impl Workspace for WorkspaceServer {
                                 || d.severity(),
                                 |category| {
                                     settings
-                                        .as_ref()
                                         .get_severity_from_rule_code(category)
                                         .unwrap_or(Severity::Warning)
                                 },
@@ -503,13 +587,12 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let pool = match self.connection.read().unwrap().get_pool() {
-            Some(pool) => pool,
-            None => {
-                tracing::debug!("No connection to database. Skipping completions.");
-                return Ok(CompletionsResult::default());
-            }
-        };
+        let pool = self.get_current_connection();
+        if pool.is_none() {
+            tracing::debug!("No database connection available. Skipping completions.");
+            return Ok(CompletionsResult::default());
+        }
+        let pool = pool.unwrap();
 
         let schema_cache = self.schema_cache.load(pool)?;
 

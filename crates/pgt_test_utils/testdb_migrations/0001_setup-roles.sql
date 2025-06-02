@@ -1,26 +1,32 @@
 do $$
 begin
 
-if not exists (
-  select from pg_catalog.pg_roles
-  where rolname = 'admin'
-) then
-  create role admin superuser createdb login bypassrls;
-end if;
+begin
+  create role owner superuser createdb login bypassrls;
+exception 
+  when duplicate_object then
+   null;
+  when unique_violation then
+    null;
+end;
 
-if not exists (
-  select from pg_catalog.pg_roles
-  where rolname = 'test_login'
-) then
+begin
   create role test_login login;
-end if;
+exception 
+  when duplicate_object then
+    null;
+  when unique_violation then
+    null;
+end;
 
-if not exists (
-  select from pg_catalog.pg_roles
-  where rolname = 'test_nologin'
-) then
+begin
   create role test_nologin;
-end if;
+exception 
+  when duplicate_object then
+    null;
+  when unique_violation then
+    null;
+end;
 
-end
+end 
 $$;

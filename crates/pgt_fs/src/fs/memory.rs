@@ -1,3 +1,4 @@
+use oxc_resolver::{Resolution, ResolveError};
 use rustc_hash::FxHashMap;
 use std::collections::hash_map::{Entry, IntoIter};
 use std::io;
@@ -226,6 +227,15 @@ impl FileSystem for MemoryFileSystem {
         let cb = cb_guard.take().unwrap();
 
         Ok(cb())
+    }
+
+    fn resolve_configuration(
+        &self,
+        _specifier: &str,
+        _path: &Path,
+    ) -> Result<Resolution, ResolveError> {
+        // not needed for the memory file system
+        todo!()
     }
 }
 

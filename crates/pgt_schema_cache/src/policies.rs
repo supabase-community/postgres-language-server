@@ -112,10 +112,10 @@ mod tests {
                 to public
                 with check (true);
 
-            create policy admin_policy
+            create policy owner_policy
                 on public.users
                 for all
-                to admin
+                to owner
                 with check (true);
 
             create schema real_estate;
@@ -170,18 +170,18 @@ mod tests {
         assert_eq!(public_policy.security_qualification, Some("true".into()));
         assert_eq!(public_policy.with_check, None);
 
-        let admin_policy = cache
+        let owner_policy = cache
             .policies
             .iter()
-            .find(|p| p.name == "admin_policy")
+            .find(|p| p.name == "test_nologin_policy")
             .unwrap();
-        assert_eq!(admin_policy.table_name, "users");
-        assert_eq!(admin_policy.schema_name, "public");
-        assert!(admin_policy.is_permissive);
-        assert_eq!(admin_policy.command, PolicyCommand::All);
-        assert_eq!(admin_policy.role_names, vec!["admin"]);
-        assert_eq!(admin_policy.security_qualification, None);
-        assert_eq!(admin_policy.with_check, Some("true".into()));
+        assert_eq!(owner_policy.table_name, "users");
+        assert_eq!(owner_policy.schema_name, "public");
+        assert!(owner_policy.is_permissive);
+        assert_eq!(owner_policy.command, PolicyCommand::All);
+        assert_eq!(owner_policy.role_names, vec!["owner"]);
+        assert_eq!(owner_policy.security_qualification, None);
+        assert_eq!(owner_policy.with_check, Some("true".into()));
 
         let owner_policy = cache
             .policies

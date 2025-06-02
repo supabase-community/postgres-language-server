@@ -1,14 +1,17 @@
 use std::{
+    ffi::OsStr,
     io::ErrorKind,
     ops::Deref,
     path::{Path, PathBuf},
 };
 
+use biome_deserialize::Merge;
 use pgt_analyse::AnalyserRules;
 use pgt_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
-    VERSION, push_to_analyser_rules,
+    VERSION, diagnostics::CantLoadExtendFile, push_to_analyser_rules,
 };
+use pgt_console::markup;
 use pgt_fs::{AutoSearchResult, ConfigName, FileSystem, OpenOptions};
 
 use crate::{DynRef, WorkspaceError, settings::Settings};
@@ -28,6 +31,33 @@ pub struct LoadedConfiguration {
 }
 
 impl LoadedConfiguration {
+    fn try_from_payload(
+        value: Option<ConfigurationPayload>,
+        fs: &DynRef<'_, dyn FileSystem>,
+    ) -> Result<Self, WorkspaceError> {
+        let Some(value) = value else {
+            return Ok(LoadedConfiguration::default());
+        };
+
+        let ConfigurationPayload {
+            external_resolution_base_path,
+            configuration_file_path,
+            deserialized: mut partial_configuration,
+        } = value;
+
+        partial_configuration.apply_extends(
+            fs,
+            &configuration_file_path,
+            &external_resolution_base_path,
+        )?;
+
+        Ok(Self {
+            configuration: partial_configuration,
+            directory_path: configuration_file_path.parent().map(PathBuf::from),
+            file_path: Some(configuration_file_path),
+        })
+    }
+
     /// Return the path of the **directory** where the configuration is
     pub fn directory_path(&self) -> Option<&Path> {
         self.directory_path.as_deref()
@@ -39,33 +69,13 @@ impl LoadedConfiguration {
     }
 }
 
-impl From<Option<ConfigurationPayload>> for LoadedConfiguration {
-    fn from(value: Option<ConfigurationPayload>) -> Self {
-        let Some(value) = value else {
-            return LoadedConfiguration::default();
-        };
-
-        let ConfigurationPayload {
-            configuration_file_path,
-            deserialized: partial_configuration,
-            ..
-        } = value;
-
-        LoadedConfiguration {
-            configuration: partial_configuration,
-            directory_path: configuration_file_path.parent().map(PathBuf::from),
-            file_path: Some(configuration_file_path),
-        }
-    }
-}
-
 /// Load the partial configuration for this session of the CLI.
 pub fn load_configuration(
     fs: &DynRef<'_, dyn FileSystem>,
     config_path: ConfigurationPathHint,
 ) -> Result<LoadedConfiguration, WorkspaceError> {
     let config = load_config(fs, config_path)?;
-    Ok(LoadedConfiguration::from(config))
+    LoadedConfiguration::try_from_payload(config, fs)
 }
 
 /// - [Result]: if an error occurred while loading the configuration file.
@@ -120,7 +130,7 @@ fn load_config(
         ConfigurationPathHint::None => file_system.working_directory().unwrap_or_default(),
     };
 
-    // We first search for `postgrestools.jsonc`
+    // We first search for `postgrestools.jsonc` files
     if let Some(auto_search_result) = file_system.auto_search(
         &configuration_directory,
         ConfigName::file_names().as_slice(),
@@ -265,9 +275,275 @@ pub fn strip_jsonc_comments(jsonc_input: &str) -> String {
     json_output
 }
 
+pub trait PartialConfigurationExt {
+    fn apply_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        file_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<(), WorkspaceError>;
+
+    fn deserialize_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        relative_resolution_base_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<Vec<PartialConfiguration>, WorkspaceError>;
+
+    fn retrieve_gitignore_matches(
+        &self,
+        file_system: &DynRef<'_, dyn FileSystem>,
+        vcs_base_path: Option<&Path>,
+    ) -> Result<(Option<PathBuf>, Vec<String>), WorkspaceError>;
+}
+
+impl PartialConfigurationExt for PartialConfiguration {
+    /// Mutates the configuration so that any fields that have not been configured explicitly are
+    /// filled in with their values from configs listed in the `extends` field.
+    ///
+    /// The `extends` configs are applied from left to right.
+    ///
+    /// If a configuration can't be resolved from the file system, the operation will fail.
+    fn apply_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        file_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<(), WorkspaceError> {
+        let configurations = self.deserialize_extends(
+            fs,
+            file_path.parent().expect("file path should have a parent"),
+            external_resolution_base_path,
+        )?;
+
+        let extended_configuration = configurations.into_iter().reduce(
+            |mut previous_configuration, current_configuration| {
+                previous_configuration.merge_with(current_configuration);
+                previous_configuration
+            },
+        );
+        if let Some(mut extended_configuration) = extended_configuration {
+            // We swap them to avoid having to clone `self.configuration` to merge it.
+            std::mem::swap(self, &mut extended_configuration);
+            self.merge_with(extended_configuration)
+        }
+
+        Ok(())
+    }
+
+    /// It attempts to deserialize all the configuration files that were specified in the `extends` property
+    fn deserialize_extends(
+        &mut self,
+        fs: &DynRef<'_, dyn FileSystem>,
+        relative_resolution_base_path: &Path,
+        external_resolution_base_path: &Path,
+    ) -> Result<Vec<PartialConfiguration>, WorkspaceError> {
+        let Some(extends) = &self.extends else {
+            return Ok(Vec::new());
+        };
+
+        let mut deserialized_configurations = vec![];
+        for extend_entry in extends.iter() {
+            let extend_entry_as_path = Path::new(extend_entry);
+
+            let extend_configuration_file_path = if extend_entry_as_path.starts_with(".")
+                || matches!(
+                    extend_entry_as_path
+                        .extension()
+                        .map(OsStr::as_encoded_bytes),
+                    Some(b"jsonc")
+                ) {
+                // Normalize the path to handle relative segments like "../"
+                normalize_path(&relative_resolution_base_path.join(extend_entry))
+            } else {
+                fs.resolve_configuration(extend_entry.as_str(), external_resolution_base_path)
+                    .map_err(|error| {
+                        ConfigurationDiagnostic::cant_resolve(
+                            external_resolution_base_path.display().to_string(),
+                            error,
+                        )
+                    })?
+                    .into_path_buf()
+            };
+
+            let mut file = fs
+                .open_with_options(
+                    extend_configuration_file_path.as_path(),
+                    OpenOptions::default().read(true),
+                )
+                .map_err(|err| {
+                    CantLoadExtendFile::new(
+                        extend_configuration_file_path.display().to_string(),
+                        err.to_string(),
+                    )
+                    .with_verbose_advice(markup! {
+                        "Postgres Tools tried to load the configuration file \""<Emphasis>{
+                            extend_configuration_file_path.display().to_string()
+                        }</Emphasis>"\" in \"extends\" using \""<Emphasis>{
+                            external_resolution_base_path.display().to_string()
+                        }</Emphasis>"\" as the base path."
+                    })
+                })?;
+
+            let mut content = String::new();
+            file.read_to_string(&mut content).map_err(|err| {
+                CantLoadExtendFile::new(extend_configuration_file_path.display().to_string(), err.to_string()).with_verbose_advice(
+                    markup!{
+                        "It's possible that the file was created with a different user/group. Make sure you have the rights to read the file."
+                    }
+                )
+
+            })?;
+
+            let deserialized = serde_json::from_str::<PartialConfiguration>(&content)
+                .map_err(ConfigurationDiagnostic::new_deserialization_error)?;
+            deserialized_configurations.push(deserialized)
+        }
+        Ok(deserialized_configurations)
+    }
+
+    /// This function checks if the VCS integration is enabled, and if so, it will attempts to resolve the
+    /// VCS root directory and the `.gitignore` file.
+    ///
+    /// ## Returns
+    ///
+    /// A tuple with VCS root folder and the contents of the `.gitignore` file
+    fn retrieve_gitignore_matches(
+        &self,
+        file_system: &DynRef<'_, dyn FileSystem>,
+        vcs_base_path: Option<&Path>,
+    ) -> Result<(Option<PathBuf>, Vec<String>), WorkspaceError> {
+        let Some(vcs) = &self.vcs else {
+            return Ok((None, vec![]));
+        };
+        if vcs.is_enabled() {
+            let vcs_base_path = match (vcs_base_path, &vcs.root) {
+                (Some(vcs_base_path), Some(root)) => vcs_base_path.join(root),
+                (None, Some(root)) => PathBuf::from(root),
+                (Some(vcs_base_path), None) => PathBuf::from(vcs_base_path),
+                (None, None) => return Err(WorkspaceError::vcs_disabled()),
+            };
+            if let Some(client_kind) = &vcs.client_kind {
+                if !vcs.ignore_file_disabled() {
+                    let result = file_system
+                        .auto_search(&vcs_base_path, &[client_kind.ignore_file()], false)
+                        .map_err(WorkspaceError::from)?;
+
+                    if let Some(result) = result {
+                        return Ok((
+                            result.file_path.parent().map(PathBuf::from),
+                            result
+                                .content
+                                .lines()
+                                .map(String::from)
+                                .collect::<Vec<String>>(),
+                        ));
+                    }
+                }
+            }
+        }
+        Ok((None, vec![]))
+    }
+}
+
+/// Normalizes a path, resolving '..' and '.' segments without requiring the path to exist
+fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = Vec::new();
+    let mut prefix_component = None;
+    let mut is_absolute = false;
+
+    for component in path.components() {
+        match component {
+            std::path::Component::Prefix(_prefix) => {
+                prefix_component = Some(component);
+                components.clear();
+            }
+            std::path::Component::RootDir => {
+                is_absolute = true;
+                components.clear();
+            }
+            std::path::Component::ParentDir => {
+                if !components.is_empty() {
+                    components.pop();
+                } else if !is_absolute && prefix_component.is_none() {
+                    // Only keep parent dir if we're not absolute and have no prefix
+                    components.push(component.as_os_str());
+                }
+            }
+            std::path::Component::Normal(c) => {
+                components.push(c);
+            }
+            std::path::Component::CurDir => {
+                // Skip current directory components
+            }
+        }
+    }
+
+    let mut result = PathBuf::new();
+
+    // Add prefix component (like C: on Windows)
+    if let Some(prefix) = prefix_component {
+        result.push(prefix.as_os_str());
+    }
+
+    // Add root directory if path is absolute
+    if is_absolute {
+        result.push(std::path::Component::RootDir.as_os_str());
+    }
+
+    // Add normalized components
+    for component in components {
+        result.push(component);
+    }
+
+    // Handle edge cases
+    if result.as_os_str().is_empty() {
+        if prefix_component.is_some() || is_absolute {
+            // This shouldn't happen with proper input, but fallback to original path's root
+            return path
+                .ancestors()
+                .last()
+                .unwrap_or(Path::new(""))
+                .to_path_buf();
+        } else {
+            return PathBuf::from(".");
+        }
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_normalize_path_windows_drive() {
+        if cfg!(windows) {
+            let path = Path::new(r"z:\workspace\test_one\..\postgrestools.jsonc");
+            let normalized = normalize_path(path);
+            assert_eq!(
+                normalized,
+                PathBuf::from(r"z:\workspace\postgrestools.jsonc")
+            );
+        }
+    }
+
+    #[test]
+    fn test_normalize_path_relative() {
+        let path = Path::new("workspace/test_one/../postgrestools.jsonc");
+        let normalized = normalize_path(path);
+        assert_eq!(normalized, PathBuf::from("workspace/postgrestools.jsonc"));
+    }
+
+    #[test]
+    fn test_normalize_path_multiple_parent_dirs() {
+        if cfg!(windows) {
+            let path = Path::new(r"c:\a\b\c\..\..\d");
+            let normalized = normalize_path(path);
+            assert_eq!(normalized, PathBuf::from(r"c:\a\d"));
+        }
+    }
 
     #[test]
     fn test_strip_jsonc_comments_line_comments() {
