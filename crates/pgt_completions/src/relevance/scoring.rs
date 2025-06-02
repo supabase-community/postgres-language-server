@@ -208,17 +208,6 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn get_schema_name(&self) -> &str {
-        match self.data {
-            CompletionRelevanceData::Table(t) => t.name.as_str(),
-            CompletionRelevanceData::Function(f) => f.name.as_str(),
-            CompletionRelevanceData::Column(c) => c.name.as_str(),
-            CompletionRelevanceData::Schema(s) => s.name.as_str(),
-            CompletionRelevanceData::Policy(p) => p.name.as_str(),
-            CompletionRelevanceData::Role(r) => r.name.as_str(),
-        }
-    }
-
     fn get_schema_name(&self) -> Option<&str> {
         match self.data {
             CompletionRelevanceData::Function(f) => Some(f.schema.as_str()),
