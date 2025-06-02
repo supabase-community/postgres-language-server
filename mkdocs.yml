@@ -25,6 +25,7 @@ nav:
 
 plugins:
   - gh-admonitions
+  - mike
 
 markdown_extensions:
   - admonition
