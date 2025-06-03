@@ -2,6 +2,8 @@ use std::{
     cmp,
     collections::{HashMap, HashSet},
 };
+mod grant_parser;
+mod parser_helper;
 mod policy_parser;
 
 use pgt_schema_cache::SchemaCache;
@@ -13,7 +15,10 @@ use pgt_treesitter_queries::{
 
 use crate::{
     NodeText,
-    context::policy_parser::{PolicyParser, PolicyStmtKind},
+    context::{
+        grant_parser::GrantParser,
+        policy_parser::{PolicyParser, PolicyStmtKind},
+    },
     sanitization::SanitizedCompletionParams,
 };
 
@@ -36,6 +41,7 @@ pub enum WrappingClause<'a> {
     SetStatement,
     AlterRole,
     DropRole,
+    Grant,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -192,12 +198,46 @@ impl<'a> CompletionContext<'a> {
         // We infer the context manually.
         if PolicyParser::looks_like_policy_stmt(&params.text) {
             ctx.gather_policy_context();
+        } else if GrantParser::looks_like_grant_stmt(&params.text) {
+            ctx.gather_grant_context();
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
         }
 
+        println!("{:#?}", ctx.text);
+        println!("{:#?}", ctx.wrapping_clause_type);
+        println!("{:#?}", ctx.node_under_cursor);
+
         ctx
+    }
+
+    fn gather_grant_context(&mut self) {
+        let grant_context = GrantParser::get_context(self.text, self.position);
+
+        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+            text: grant_context.node_text.into(),
+            range: grant_context.node_range,
+            kind: grant_context.node_kind.clone(),
+        });
+
+        if grant_context.node_kind == "grant_table" {
+            self.schema_or_alias_name = grant_context.schema_name.clone();
+        }
+
+        if grant_context.table_name.is_some() {
+            let mut new = HashSet::new();
+            new.insert(grant_context.table_name.unwrap());
+            self.mentioned_relations
+                .insert(grant_context.schema_name, new);
+        }
+
+        self.wrapping_clause_type = match grant_context.node_kind.as_str() {
+            "keyword_grant" => Some(WrappingClause::Grant),
+            "grant_role" => Some(WrappingClause::ToRoleAssignment),
+            "grant_table" => Some(WrappingClause::From),
+            _ => None,
+        };
     }
 
     fn gather_policy_context(&mut self) {

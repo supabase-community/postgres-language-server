@@ -2,6 +2,8 @@ use std::iter::Peekable;
 
 use pgt_text_size::{TextRange, TextSize};
 
+use crate::context::parser_helper::{WordWithIndex, sql_to_words};
+
 #[derive(Default, Debug, PartialEq, Eq)]
 pub(crate) enum PolicyStmtKind {
     #[default]
@@ -9,90 +11,6 @@ pub(crate) enum PolicyStmtKind {
 
     Alter,
     Drop,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct WordWithIndex {
-    word: String,
-    start: usize,
-    end: usize,
-}
-
-impl WordWithIndex {
-    fn is_under_cursor(&self, cursor_pos: usize) -> bool {
-        self.start <= cursor_pos && self.end > cursor_pos
-    }
-
-    fn get_range(&self) -> TextRange {
-        let start: u32 = self.start.try_into().expect("Text too long");
-        let end: u32 = self.end.try_into().expect("Text too long");
-        TextRange::new(TextSize::from(start), TextSize::from(end))
-    }
-}
-
-/// Note: A policy name within quotation marks will be considered a single word.
-fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
-    let mut words = vec![];
-
-    let mut start_of_word: Option<usize> = None;
-    let mut current_word = String::new();
-    let mut in_quotation_marks = false;
-
-    for (current_position, current_char) in sql.char_indices() {
-        if (current_char.is_ascii_whitespace() || current_char == ';')
-            && !current_word.is_empty()
-            && start_of_word.is_some()
-            && !in_quotation_marks
-        {
-            words.push(WordWithIndex {
-                word: current_word,
-                start: start_of_word.unwrap(),
-                end: current_position,
-            });
-
-            current_word = String::new();
-            start_of_word = None;
-        } else if (current_char.is_ascii_whitespace() || current_char == ';')
-            && current_word.is_empty()
-        {
-            // do nothing
-        } else if current_char == '"' && start_of_word.is_none() {
-            in_quotation_marks = true;
-            current_word.push(current_char);
-            start_of_word = Some(current_position);
-        } else if current_char == '"' && start_of_word.is_some() {
-            current_word.push(current_char);
-            words.push(WordWithIndex {
-                word: current_word,
-                start: start_of_word.unwrap(),
-                end: current_position + 1,
-            });
-            in_quotation_marks = false;
-            start_of_word = None;
-            current_word = String::new()
-        } else if start_of_word.is_some() {
-            current_word.push(current_char)
-        } else {
-            start_of_word = Some(current_position);
-            current_word.push(current_char);
-        }
-    }
-
-    if let Some(start_of_word) = start_of_word {
-        if !current_word.is_empty() {
-            words.push(WordWithIndex {
-                word: current_word,
-                start: start_of_word,
-                end: sql.len(),
-            });
-        }
-    }
-
-    if in_quotation_marks {
-        Err("String was not closed properly.".into())
-    } else {
-        Ok(words)
-    }
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -168,14 +86,18 @@ impl PolicyParser {
 
         let previous = self.previous_token.take().unwrap();
 
-        match previous.word.to_ascii_lowercase().as_str() {
+        match previous
+            .get_word_without_quotes()
+            .to_ascii_lowercase()
+            .as_str()
+        {
             "policy" => {
                 self.context.node_range = token.get_range();
                 self.context.node_kind = "policy_name".into();
-                self.context.node_text = token.word;
+                self.context.node_text = token.get_word();
             }
             "on" => {
-                if token.word.contains('.') {
+                if token.get_word_without_quotes().contains('.') {
                     let (schema_name, table_name) = self.schema_and_table_name(&token);
 
                     let schema_name_len = schema_name.len();
@@ -198,24 +120,28 @@ impl PolicyParser {
                     self.context.node_text = table_name.unwrap_or_default();
                 } else {
                     self.context.node_range = token.get_range();
-                    self.context.node_text = token.word;
+                    self.context.node_text = token.get_word();
                     self.context.node_kind = "policy_table".into();
                 }
             }
             "to" => {
                 self.context.node_range = token.get_range();
                 self.context.node_kind = "policy_role".into();
-                self.context.node_text = token.word;
+                self.context.node_text = token.get_word();
             }
             _ => {
                 self.context.node_range = token.get_range();
-                self.context.node_text = token.word;
+                self.context.node_text = token.get_word();
             }
         }
     }
 
     fn handle_token(&mut self, token: WordWithIndex) {
-        match token.word.to_ascii_lowercase().as_str() {
+        match token
+            .get_word_without_quotes()
+            .to_ascii_lowercase()
+            .as_str()
+        {
             "create" if self.next_matches("policy") => {
                 self.context.statement_kind = PolicyStmtKind::Create;
             }
@@ -234,18 +160,22 @@ impl PolicyParser {
 
             _ => {
                 if self.prev_matches("policy") {
-                    self.context.policy_name = Some(token.word);
+                    self.context.policy_name = Some(token.get_word());
                 }
             }
         }
     }
 
     fn next_matches(&mut self, it: &str) -> bool {
-        self.tokens.peek().is_some_and(|c| c.word.as_str() == it)
+        self.tokens
+            .peek()
+            .is_some_and(|c| c.get_word_without_quotes().as_str() == it)
     }
 
     fn prev_matches(&self, it: &str) -> bool {
-        self.previous_token.as_ref().is_some_and(|t| t.word == it)
+        self.previous_token
+            .as_ref()
+            .is_some_and(|t| t.get_word_without_quotes() == it)
     }
 
     fn advance(&mut self) -> Option<WordWithIndex> {
@@ -259,18 +189,19 @@ impl PolicyParser {
         if let Some(token) = self.advance() {
             if token.is_under_cursor(self.cursor_position) {
                 self.handle_token_under_cursor(token);
-            } else if token.word.contains('.') {
+            } else if token.get_word_without_quotes().contains('.') {
                 let (schema, maybe_table) = self.schema_and_table_name(&token);
                 self.context.schema_name = Some(schema);
                 self.context.table_name = maybe_table;
             } else {
-                self.context.table_name = Some(token.word);
+                self.context.table_name = Some(token.get_word());
             }
         };
     }
 
     fn schema_and_table_name(&self, token: &WordWithIndex) -> (String, Option<String>) {
-        let mut parts = token.word.split('.');
+        let word = token.get_word_without_quotes();
+        let mut parts = word.split('.');
 
         (
             parts.next().unwrap().into(),
@@ -284,11 +215,11 @@ mod tests {
     use pgt_text_size::{TextRange, TextSize};
 
     use crate::{
-        context::policy_parser::{PolicyContext, PolicyStmtKind, WordWithIndex},
+        context::policy_parser::{PolicyContext, PolicyStmtKind},
         test_helper::CURSOR_POS,
     };
 
-    use super::{PolicyParser, sql_to_words};
+    use super::PolicyParser;
 
     fn with_pos(query: String) -> (usize, String) {
         let mut pos: Option<usize> = None;
@@ -508,6 +439,8 @@ mod tests {
             CURSOR_POS
         ));
 
+        println!("{}", query);
+
         let context = PolicyParser::get_context(query.as_str(), pos);
 
         assert_eq!(
@@ -584,34 +517,5 @@ mod tests {
         let context = PolicyParser::get_context(query.as_str(), pos);
 
         assert_eq!(context, PolicyContext::default());
-    }
-
-    fn to_word(word: &str, start: usize, end: usize) -> WordWithIndex {
-        WordWithIndex {
-            word: word.into(),
-            start,
-            end,
-        }
-    }
-
-    #[test]
-    fn determines_positions_correctly() {
-        let query = "\ncreate policy \"my cool pol\"\n\ton auth.users\n\tas permissive\n\tfor select\n\t\tto   public\n\t\tusing (true);".to_string();
-
-        let words = sql_to_words(query.as_str()).unwrap();
-
-        assert_eq!(words[0], to_word("create", 1, 7));
-        assert_eq!(words[1], to_word("policy", 8, 14));
-        assert_eq!(words[2], to_word("\"my cool pol\"", 15, 28));
-        assert_eq!(words[3], to_word("on", 30, 32));
-        assert_eq!(words[4], to_word("auth.users", 33, 43));
-        assert_eq!(words[5], to_word("as", 45, 47));
-        assert_eq!(words[6], to_word("permissive", 48, 58));
-        assert_eq!(words[7], to_word("for", 60, 63));
-        assert_eq!(words[8], to_word("select", 64, 70));
-        assert_eq!(words[9], to_word("to", 73, 75));
-        assert_eq!(words[10], to_word("public", 78, 84));
-        assert_eq!(words[11], to_word("using", 87, 92));
-        assert_eq!(words[12], to_word("(true)", 93, 99));
     }
 }

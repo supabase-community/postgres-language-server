@@ -214,45 +214,6 @@ pub struct Settings {
     pub migrations: Option<MigrationSettings>,
 }
 
-#[derive(Debug)]
-pub struct SettingsHandleMut<'a> {
-    inner: RwLockWriteGuard<'a, Settings>,
-}
-
-/// Handle object holding a temporary lock on the settings
-#[derive(Debug)]
-pub struct SettingsHandle<'a> {
-    inner: RwLockReadGuard<'a, Settings>,
-}
-
-impl<'a> SettingsHandle<'a> {
-    pub(crate) fn new(settings: &'a RwLock<Settings>) -> Self {
-        Self {
-            inner: settings.read().unwrap(),
-        }
-    }
-}
-
-impl AsRef<Settings> for SettingsHandle<'_> {
-    fn as_ref(&self) -> &Settings {
-        &self.inner
-    }
-}
-
-impl<'a> SettingsHandleMut<'a> {
-    pub(crate) fn new(settings: &'a RwLock<Settings>) -> Self {
-        Self {
-            inner: settings.write().unwrap(),
-        }
-    }
-}
-
-impl AsMut<Settings> for SettingsHandleMut<'_> {
-    fn as_mut(&mut self) -> &mut Settings {
-        &mut self.inner
-    }
-}
-
 impl Settings {
     /// The [PartialConfiguration] is merged into the workspace
     #[tracing::instrument(level = "trace", skip(self), err)]

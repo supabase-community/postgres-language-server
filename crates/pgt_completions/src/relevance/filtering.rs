@@ -77,6 +77,7 @@ impl CompletionFilter<'_> {
                         WrappingClause::Select
                         | WrappingClause::Where
                         | WrappingClause::ColumnDefinitions
+                        | WrappingClause::ToRoleAssignment
                         | WrappingClause::SetStatement => false,
 
                         WrappingClause::Insert => {
@@ -104,6 +105,7 @@ impl CompletionFilter<'_> {
                             | WrappingClause::ColumnDefinitions
                             | WrappingClause::SetStatement
                             | WrappingClause::AlterTable
+                            | WrappingClause::ToRoleAssignment
                             | WrappingClause::DropTable => false,
 
                             // We can complete columns in JOIN cluases, but only if we are after the
@@ -173,9 +175,18 @@ impl CompletionFilter<'_> {
                     }
 
                     CompletionRelevanceData::Role(_) => match clause {
-                        WrappingClause::DropRole | WrappingClause::AlterRole => true,
+                        WrappingClause::DropRole
+                        | WrappingClause::AlterRole
+                        | WrappingClause::ToRoleAssignment => true,
+
+                        WrappingClause::Grant => ctx
+                            .node_under_cursor
+                            .as_ref()
+                            .is_some_and(|n| n.kind() == "keyword_grant"),
+
                         WrappingClause::SetStatement => ctx
                             .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+
                         _ => false,
                     },
                 }

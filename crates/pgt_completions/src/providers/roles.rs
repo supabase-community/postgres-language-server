@@ -44,7 +44,7 @@ mod tests {
         assert_complete_results(
             format!("drop role {}", CURSOR_POS).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
                     "test_login".into(),
                     crate::CompletionItemKind::Role,
@@ -65,7 +65,7 @@ mod tests {
         assert_complete_results(
             format!("alter role {}", CURSOR_POS).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
                     "test_login".into(),
                     crate::CompletionItemKind::Role,
@@ -88,7 +88,7 @@ mod tests {
         assert_complete_results(
             format!("set role {}", CURSOR_POS).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
                     "test_login".into(),
                     crate::CompletionItemKind::Role,
@@ -106,7 +106,7 @@ mod tests {
         assert_complete_results(
             format!("set session authorization {}", CURSOR_POS).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("admin".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
                     "test_login".into(),
                     crate::CompletionItemKind::Role,
@@ -122,11 +122,131 @@ mod tests {
         .await;
     }
 
-    async fn works_in_policies() {}
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn works_in_policies(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
 
-    async fn works_in_grant_statements() {
-        // grant select on my_table to ROLE;
-        // grant ROLE to OTHER_ROLE with admin option;
+        assert_complete_results(
+            format!(
+                r#"create policy "my cool policy" on public.users
+            as restrictive 
+            for all
+            to {}
+            using (true);"#,
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"create policy "my cool policy" on public.users
+            for select
+            to {}"#,
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn works_in_grant_statements(pool: PgPool) {
+        // assert_complete_results(
+        //     format!(
+        //         r#"grant select
+        //             on table public.users
+        //             to {}"#,
+        //         CURSOR_POS
+        //     )
+        //     .as_str(),
+        //     vec![
+        //         // recognizing already mentioned roles is not supported for now
+        //         CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+        //         CompletionAssertion::LabelAndKind(
+        //             "test_login".into(),
+        //             crate::CompletionItemKind::Role,
+        //         ),
+        //         CompletionAssertion::LabelAndKind(
+        //             "test_nologin".into(),
+        //             crate::CompletionItemKind::Role,
+        //         ),
+        //     ],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
+
+        // assert_complete_results(
+        //     format!(
+        //         r#"grant select
+        //             on table public.users
+        //             to owner, {}"#,
+        //         CURSOR_POS
+        //     )
+        //     .as_str(),
+        //     vec![
+        //         // recognizing already mentioned roles is not supported for now
+        //         CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+        //         CompletionAssertion::LabelAndKind(
+        //             "test_login".into(),
+        //             crate::CompletionItemKind::Role,
+        //         ),
+        //         CompletionAssertion::LabelAndKind(
+        //             "test_nologin".into(),
+        //             crate::CompletionItemKind::Role,
+        //         ),
+        //     ],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
+
+        assert_complete_results(
+            format!(r#"grant {} to owner"#, CURSOR_POS).as_str(),
+            vec![
+                // recognizing already mentioned roles is not supported for now
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
     }
 
     async fn works_in_revoke_statements() {
