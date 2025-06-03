@@ -2,9 +2,10 @@ use std::{
     cmp,
     collections::{HashMap, HashSet},
 };
+mod base_parser;
 mod grant_parser;
-mod parser_helper;
 mod policy_parser;
+mod revoke_parser;
 
 use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextRange;
@@ -16,6 +17,7 @@ use pgt_treesitter_queries::{
 use crate::{
     NodeText,
     context::{
+        base_parser::CompletionStatementParser,
         grant_parser::GrantParser,
         policy_parser::{PolicyParser, PolicyStmtKind},
     },
@@ -195,18 +197,14 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        if PolicyParser::looks_like_policy_stmt(&params.text) {
+        if PolicyParser::looks_like_matching_stmt(&params.text) {
             ctx.gather_policy_context();
-        } else if GrantParser::looks_like_grant_stmt(&params.text) {
+        } else if GrantParser::looks_like_matching_stmt(&params.text) {
             ctx.gather_grant_context();
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
         }
-
-        println!("{:#?}", ctx.text);
-        println!("{:#?}", ctx.wrapping_clause_type);
-        println!("{:#?}", ctx.node_under_cursor);
 
         ctx
     }

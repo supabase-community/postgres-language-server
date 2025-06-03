@@ -1,8 +1,8 @@
-use std::iter::Peekable;
-
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::context::parser_helper::{WordWithIndex, sql_to_words};
+use crate::context::base_parser::{
+    CompletionStatementParser, TokenNavigator, WordWithIndex, schema_and_table_name, sql_to_words,
+};
 
 #[derive(Default, Debug, PartialEq, Eq)]
 pub(crate) enum PolicyStmtKind {
@@ -29,15 +29,16 @@ pub(crate) struct PolicyContext {
 /// The parser will only work if the (trimmed) sql starts with `create policy`, `drop policy`, or `alter policy`.
 /// It can only parse policy statements.
 pub(crate) struct PolicyParser {
-    tokens: Peekable<std::vec::IntoIter<WordWithIndex>>,
-    previous_token: Option<WordWithIndex>,
-    current_token: Option<WordWithIndex>,
+    navigator: TokenNavigator,
     context: PolicyContext,
     cursor_position: usize,
 }
 
-impl PolicyParser {
-    pub(crate) fn looks_like_policy_stmt(sql: &str) -> bool {
+impl CompletionStatementParser for PolicyParser {
+    type Context = PolicyContext;
+    const NAME: &'static str = "PolicyParser";
+
+    fn looks_like_matching_stmt(sql: &str) -> bool {
         let lowercased = sql.to_ascii_lowercase();
         let trimmed = lowercased.trim();
         trimmed.starts_with("create policy")
@@ -45,30 +46,8 @@ impl PolicyParser {
             || trimmed.starts_with("alter policy")
     }
 
-    pub(crate) fn get_context(sql: &str, cursor_position: usize) -> PolicyContext {
-        assert!(
-            Self::looks_like_policy_stmt(sql),
-            "PolicyParser should only be used for policy statements. Developer error!"
-        );
-
-        match sql_to_words(sql) {
-            Ok(tokens) => {
-                let parser = PolicyParser {
-                    tokens: tokens.into_iter().peekable(),
-                    context: PolicyContext::default(),
-                    previous_token: None,
-                    current_token: None,
-                    cursor_position,
-                };
-
-                parser.parse()
-            }
-            Err(_) => PolicyContext::default(),
-        }
-    }
-
-    fn parse(mut self) -> PolicyContext {
-        while let Some(token) = self.advance() {
+    fn parse(mut self) -> Self::Context {
+        while let Some(token) = self.navigator.advance() {
             if token.is_under_cursor(self.cursor_position) {
                 self.handle_token_under_cursor(token);
             } else {
@@ -79,12 +58,22 @@ impl PolicyParser {
         self.context
     }
 
+    fn make_parser(tokens: Vec<WordWithIndex>, cursor_position: usize) -> Self {
+        Self {
+            navigator: tokens.into(),
+            context: PolicyContext::default(),
+            cursor_position,
+        }
+    }
+}
+
+impl PolicyParser {
     fn handle_token_under_cursor(&mut self, token: WordWithIndex) {
-        if self.previous_token.is_none() {
+        if self.navigator.previous_token.is_none() {
             return;
         }
 
-        let previous = self.previous_token.take().unwrap();
+        let previous = self.navigator.previous_token.take().unwrap();
 
         match previous
             .get_word_without_quotes()
@@ -98,7 +87,7 @@ impl PolicyParser {
             }
             "on" => {
                 if token.get_word_without_quotes().contains('.') {
-                    let (schema_name, table_name) = self.schema_and_table_name(&token);
+                    let (schema_name, table_name) = schema_and_table_name(&token);
 
                     let schema_name_len = schema_name.len();
                     self.context.schema_name = Some(schema_name);
@@ -142,71 +131,42 @@ impl PolicyParser {
             .to_ascii_lowercase()
             .as_str()
         {
-            "create" if self.next_matches("policy") => {
+            "create" if self.navigator.next_matches(&["policy"]) => {
                 self.context.statement_kind = PolicyStmtKind::Create;
             }
-            "alter" if self.next_matches("policy") => {
+            "alter" if self.navigator.next_matches(&["policy"]) => {
                 self.context.statement_kind = PolicyStmtKind::Alter;
             }
-            "drop" if self.next_matches("policy") => {
+            "drop" if self.navigator.next_matches(&["policy"]) => {
                 self.context.statement_kind = PolicyStmtKind::Drop;
             }
             "on" => self.table_with_schema(),
 
             // skip the "to" so we don't parse it as the TO rolename when it's under the cursor
-            "rename" if self.next_matches("to") => {
-                self.advance();
+            "rename" if self.navigator.next_matches(&["to"]) => {
+                self.navigator.advance();
             }
 
             _ => {
-                if self.prev_matches("policy") {
+                if self.navigator.prev_matches("policy") {
                     self.context.policy_name = Some(token.get_word());
                 }
             }
         }
     }
 
-    fn next_matches(&mut self, it: &str) -> bool {
-        self.tokens
-            .peek()
-            .is_some_and(|c| c.get_word_without_quotes().as_str() == it)
-    }
-
-    fn prev_matches(&self, it: &str) -> bool {
-        self.previous_token
-            .as_ref()
-            .is_some_and(|t| t.get_word_without_quotes() == it)
-    }
-
-    fn advance(&mut self) -> Option<WordWithIndex> {
-        // we can't peek back n an iterator, so we'll have to keep track manually.
-        self.previous_token = self.current_token.take();
-        self.current_token = self.tokens.next();
-        self.current_token.clone()
-    }
-
     fn table_with_schema(&mut self) {
-        if let Some(token) = self.advance() {
+        if let Some(token) = self.navigator.advance() {
             if token.is_under_cursor(self.cursor_position) {
                 self.handle_token_under_cursor(token);
             } else if token.get_word_without_quotes().contains('.') {
-                let (schema, maybe_table) = self.schema_and_table_name(&token);
+                let (schema, maybe_table) = schema_and_table_name(&token);
                 self.context.schema_name = Some(schema);
                 self.context.table_name = maybe_table;
             } else {
                 self.context.table_name = Some(token.get_word());
             }
         };
-    }
-
-    fn schema_and_table_name(&self, token: &WordWithIndex) -> (String, Option<String>) {
-        let word = token.get_word_without_quotes();
-        let mut parts = word.split('.');
-
-        (
-            parts.next().unwrap().into(),
-            parts.next().map(|tb| tb.into()),
-        )
     }
 }
 
@@ -215,6 +175,7 @@ mod tests {
     use pgt_text_size::{TextRange, TextSize};
 
     use crate::{
+        context::base_parser::CompletionStatementParser,
         context::policy_parser::{PolicyContext, PolicyStmtKind},
         test_helper::CURSOR_POS,
     };

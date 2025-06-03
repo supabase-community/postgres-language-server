@@ -1,4 +1,78 @@
+use std::iter::Peekable;
+
 use pgt_text_size::{TextRange, TextSize};
+
+pub(crate) struct TokenNavigator {
+    tokens: Peekable<std::vec::IntoIter<WordWithIndex>>,
+    pub previous_token: Option<WordWithIndex>,
+    pub current_token: Option<WordWithIndex>,
+}
+
+impl TokenNavigator {
+    pub(crate) fn next_matches(&mut self, options: &[&str]) -> bool {
+        self.tokens
+            .peek()
+            .is_some_and(|c| options.contains(&c.get_word_without_quotes().as_str()))
+    }
+
+    pub(crate) fn prev_matches(&self, it: &str) -> bool {
+        self.previous_token
+            .as_ref()
+            .is_some_and(|t| t.get_word_without_quotes() == it)
+    }
+
+    pub(crate) fn advance(&mut self) -> Option<WordWithIndex> {
+        // we can't peek back n an iterator, so we'll have to keep track manually.
+        self.previous_token = self.current_token.take();
+        self.current_token = self.tokens.next();
+        self.current_token.clone()
+    }
+}
+
+impl From<Vec<WordWithIndex>> for TokenNavigator {
+    fn from(tokens: Vec<WordWithIndex>) -> Self {
+        TokenNavigator {
+            tokens: tokens.into_iter().peekable(),
+            previous_token: None,
+            current_token: None,
+        }
+    }
+}
+
+pub(crate) trait CompletionStatementParser: Sized {
+    type Context: Default;
+    const NAME: &'static str;
+
+    fn looks_like_matching_stmt(sql: &str) -> bool;
+    fn parse(self) -> Self::Context;
+    fn make_parser(tokens: Vec<WordWithIndex>, cursor_position: usize) -> Self;
+
+    fn get_context(sql: &str, cursor_position: usize) -> Self::Context {
+        assert!(
+            Self::looks_like_matching_stmt(sql),
+            "Using {} for a wrong statement! Developer Error!",
+            Self::NAME
+        );
+
+        match sql_to_words(sql) {
+            Ok(tokens) => {
+                let parser = Self::make_parser(tokens, cursor_position);
+                parser.parse()
+            }
+            Err(_) => Self::Context::default(),
+        }
+    }
+}
+
+pub(crate) fn schema_and_table_name(token: &WordWithIndex) -> (String, Option<String>) {
+    let word = token.get_word_without_quotes();
+    let mut parts = word.split('.');
+
+    (
+        parts.next().unwrap().into(),
+        parts.next().map(|tb| tb.into()),
+    )
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct WordWithIndex {
@@ -29,13 +103,14 @@ impl WordWithIndex {
 
 /// Note: A policy name within quotation marks will be considered a single word.
 pub(crate) fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
+    let lowercased = sql.to_ascii_lowercase();
     let mut words = vec![];
 
     let mut start_of_word: Option<usize> = None;
     let mut current_word = String::new();
     let mut in_quotation_marks = false;
 
-    for (current_position, current_char) in sql.char_indices() {
+    for (current_position, current_char) in lowercased.char_indices() {
         if (current_char.is_ascii_whitespace() || current_char == ';')
             && !current_word.is_empty()
             && start_of_word.is_some()
@@ -87,7 +162,7 @@ pub(crate) fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::context::parser_helper::{WordWithIndex, sql_to_words};
+    use crate::context::base_parser::{WordWithIndex, sql_to_words};
 
     #[test]
     fn determines_positions_correctly() {
