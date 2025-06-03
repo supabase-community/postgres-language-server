@@ -86,7 +86,7 @@ impl GrantParser {
         {
             "grant" => {
                 self.context.node_range = token.get_range();
-                self.context.node_kind = "keyword_grant".into();
+                self.context.node_kind = "grant_role".into();
                 self.context.node_text = token.get_word();
             }
             "on" if !matches!(current.as_ref().map(|c| c.as_str()), Some("table")) => {
@@ -239,7 +239,7 @@ mod tests {
                 schema_name: None,
                 node_text: "REPLACED_TOKEN".into(),
                 node_range: TextRange::new(TextSize::new(19), TextSize::new(33)),
-                node_kind: "keyword_grant".into(),
+                node_kind: "grant_role".into(),
             }
         );
     }

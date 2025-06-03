@@ -179,11 +179,6 @@ impl CompletionFilter<'_> {
                         | WrappingClause::AlterRole
                         | WrappingClause::ToRoleAssignment => true,
 
-                        WrappingClause::Grant => ctx
-                            .node_under_cursor
-                            .as_ref()
-                            .is_some_and(|n| n.kind() == "keyword_grant"),
-
                         WrappingClause::SetStatement => ctx
                             .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
 

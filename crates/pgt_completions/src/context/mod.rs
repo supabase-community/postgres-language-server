@@ -41,7 +41,6 @@ pub enum WrappingClause<'a> {
     SetStatement,
     AlterRole,
     DropRole,
-    Grant,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -233,7 +232,6 @@ impl<'a> CompletionContext<'a> {
         }
 
         self.wrapping_clause_type = match grant_context.node_kind.as_str() {
-            "keyword_grant" => Some(WrappingClause::Grant),
             "grant_role" => Some(WrappingClause::ToRoleAssignment),
             "grant_table" => Some(WrappingClause::From),
             _ => None,

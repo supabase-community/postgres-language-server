@@ -179,55 +179,55 @@ mod tests {
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn works_in_grant_statements(pool: PgPool) {
-        // assert_complete_results(
-        //     format!(
-        //         r#"grant select
-        //             on table public.users
-        //             to {}"#,
-        //         CURSOR_POS
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         // recognizing already mentioned roles is not supported for now
-        //         CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-        //         CompletionAssertion::LabelAndKind(
-        //             "test_login".into(),
-        //             crate::CompletionItemKind::Role,
-        //         ),
-        //         CompletionAssertion::LabelAndKind(
-        //             "test_nologin".into(),
-        //             crate::CompletionItemKind::Role,
-        //         ),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                r#"grant select
+                    on table public.users
+                    to {}"#,
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                // recognizing already mentioned roles is not supported for now
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
-        // assert_complete_results(
-        //     format!(
-        //         r#"grant select
-        //             on table public.users
-        //             to owner, {}"#,
-        //         CURSOR_POS
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         // recognizing already mentioned roles is not supported for now
-        //         CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-        //         CompletionAssertion::LabelAndKind(
-        //             "test_login".into(),
-        //             crate::CompletionItemKind::Role,
-        //         ),
-        //         CompletionAssertion::LabelAndKind(
-        //             "test_nologin".into(),
-        //             crate::CompletionItemKind::Role,
-        //         ),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                r#"grant select
+                    on table public.users
+                    to owner, {}"#,
+                CURSOR_POS
+            )
+            .as_str(),
+            vec![
+                // recognizing already mentioned roles is not supported for now
+                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+                CompletionAssertion::LabelAndKind(
+                    "test_login".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "test_nologin".into(),
+                    crate::CompletionItemKind::Role,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
         assert_complete_results(
             format!(r#"grant {} to owner"#, CURSOR_POS).as_str(),
