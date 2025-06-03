@@ -173,7 +173,7 @@ mod tests {
         let owner_policy = cache
             .policies
             .iter()
-            .find(|p| p.name == "test_nologin_policy")
+            .find(|p| p.name == "owner_policy")
             .unwrap();
         assert_eq!(owner_policy.table_name, "users");
         assert_eq!(owner_policy.schema_name, "public");
