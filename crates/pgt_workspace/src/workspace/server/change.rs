@@ -63,6 +63,9 @@ impl Document {
         // very much not guaranteed to result in correct ranges
         self.diagnostics.clear();
 
+        tracing::debug!("Changing from {:?}", self.content);
+        tracing::debug!("Applying changes {:?}", &change.changes);
+
         // when we recieive more than one change, we need to push back the changes based on the
         // total range of the previous ones. This is because the ranges are always related to the original state.
         let mut changes = Vec::new();
@@ -92,6 +95,9 @@ impl Document {
         }
 
         self.version = change.version;
+
+        tracing::debug!("Applied changes {:?}", changes);
+        tracing::debug!("Changed to {:?}", self.content);
 
         changes
     }
@@ -1659,6 +1665,40 @@ KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDA
 
             _ => unreachable!("Did not yield a modified statement."),
         }
+
+        assert_document_integrity(&doc);
+    }
+
+    #[test]
+    fn test_content_out_of_sync() {
+        let path = PgTPath::new("test.sql");
+        let initial_content = "select 1, 2, 2232231313393319 from unknown_users;\n";
+
+        let mut doc = Document::new(initial_content.to_string(), 0);
+
+        let change1 = ChangeFileParams {
+            path: path.clone(),
+            version: 1,
+            changes: vec![
+                ChangeParams {
+                    range: Some(TextRange::new(29.into(), 29.into())),
+                    text: "3".to_string(),
+                },
+                ChangeParams {
+                    range: Some(TextRange::new(30.into(), 30.into())),
+                    text: "1".to_string(),
+                },
+            ],
+        };
+
+        let changes = doc.apply_file_change(&change1);
+
+        println!("changes: {:#?}", changes);
+
+        assert_eq!(
+            doc.content,
+            "select 1, 2, 22322313133933193 from unknown_users;\n"
+        );
 
         assert_document_integrity(&doc);
     }

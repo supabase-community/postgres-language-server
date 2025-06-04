@@ -1,22 +1,22 @@
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
+use anyhow::bail;
 use biome_deserialize::Merge;
 use biome_deserialize::StringSet;
-use futures::channel::mpsc::{channel, Sender};
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
 use futures::StreamExt;
-use pgt_configuration::database::PartialDatabaseConfiguration;
+use futures::channel::mpsc::{Sender, channel};
 use pgt_configuration::PartialConfiguration;
+use pgt_configuration::database::PartialDatabaseConfiguration;
 use pgt_fs::MemoryFileSystem;
 use pgt_lsp::LSPServer;
 use pgt_lsp::ServerFactory;
 use pgt_workspace::DynRef;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use serde_json::{from_value, to_value};
 use sqlx::Executor;
@@ -26,6 +26,7 @@ use std::fmt::Display;
 use std::time::Duration;
 use tower::timeout::Timeout;
 use tower::{Service, ServiceExt};
+use tower_lsp::LspService;
 use tower_lsp::jsonrpc;
 use tower_lsp::jsonrpc::Response;
 use tower_lsp::lsp_types as lsp;
@@ -47,7 +48,6 @@ use tower_lsp::lsp_types::{
     PublishDiagnosticsParams, TextDocumentContentChangeEvent, TextDocumentIdentifier,
     TextDocumentItem, Url, VersionedTextDocumentIdentifier,
 };
-use tower_lsp::LspService;
 use tower_lsp::{jsonrpc::Request, lsp_types::InitializeParams};
 
 /// Statically build an [Url] instance that points to the file at `$path`
