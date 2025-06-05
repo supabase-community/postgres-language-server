@@ -1,9 +1,14 @@
 name: Build and Deploy Documentation
 
 on:
+  push:
+    branches:
+      - main
+    # paths:
+    #   - "docs/**"
+    #   - "mkdocs.yml"
   release:
-    types: [released]
-  workflow_dispatch:
+    types: [published]
 
 permissions:
   contents: write
@@ -13,17 +18,15 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-            enable-cache: true
+          enable-cache: true
 
       - name: Set up Python
         run: uv python install
@@ -31,7 +34,20 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - run: uv run mkdocs gh-deploy --force
+      - name: Configure Git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Build Docs Website
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            uv run mike deploy --push --update-aliases ${{ github.event.release.tag_name }} latest
+            uv run mike set-default --push ${{ github.event.release.tag_name }}
+          else
+            uv run mike deploy --push main
+            uv run mike set-default --push main
+          fi
 
   deploy:
     needs: build
@@ -44,12 +60,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: gh-pages
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
