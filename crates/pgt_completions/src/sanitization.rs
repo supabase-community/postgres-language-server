@@ -6,6 +6,7 @@ use crate::CompletionParams;
 
 static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
 
+#[derive(Debug)]
 pub(crate) struct SanitizedCompletionParams<'a> {
     pub position: TextSize,
     pub text: String,
@@ -48,7 +49,8 @@ impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionP
 where
     'larger: 'smaller,
 {
-    fn from(params: CompletionParams<'larger>) -> Self {
+    fn from(mut params: CompletionParams<'larger>) -> Self {
+        params.text = params.text.to_ascii_lowercase();
         if cursor_inbetween_nodes(&params.text, params.position)
             || cursor_prepared_to_write_token_after_last_node(&params.text, params.position)
             || cursor_before_semicolon(params.tree, params.position)

@@ -400,8 +400,6 @@ mod tests {
             CURSOR_POS
         ));
 
-        println!("{}", query);
-
         let context = PolicyParser::get_context(query.as_str(), pos);
 
         assert_eq!(
