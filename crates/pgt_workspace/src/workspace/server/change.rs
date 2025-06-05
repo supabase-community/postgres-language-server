@@ -63,11 +63,10 @@ impl Document {
         // very much not guaranteed to result in correct ranges
         self.diagnostics.clear();
 
-        tracing::debug!("Changing from {:?}", self.content);
-        tracing::debug!("Applying changes {:?}", &change.changes);
-
         // when we recieive more than one change, we need to push back the changes based on the
         // total range of the previous ones. This is because the ranges are always related to the original state.
+        // BUT: only for the statement range changes, not for the text changes
+        // this is why we pass both varaints to apply_change
         let mut changes = Vec::new();
 
         let mut offset: i64 = 0;
@@ -89,15 +88,12 @@ impl Document {
                 change
             };
 
-            changes.extend(self.apply_change(adjusted_change));
+            changes.extend(self.apply_change(adjusted_change, change));
 
-            offset += change.change_size();
+            offset += adjusted_change.change_size();
         }
 
         self.version = change.version;
-
-        tracing::debug!("Applied changes {:?}", changes);
-        tracing::debug!("Changed to {:?}", self.content);
 
         changes
     }
@@ -246,9 +242,17 @@ impl Document {
     }
 
     /// Applies a single change to the document and returns the affected statements
-    fn apply_change(&mut self, change: &ChangeParams) -> Vec<StatementChange> {
+    ///
+    /// * `change`: The range-adjusted change to use for statement changes
+    /// * `original_change`: The original change to use for text changes (yes, this is a bit confusing, and we might want to refactor this entire thing at some point.)
+    fn apply_change(
+        &mut self,
+        change: &ChangeParams,
+        original_change: &ChangeParams,
+    ) -> Vec<StatementChange> {
         // if range is none, we have a full change
         if change.range.is_none() {
+            // doesnt matter what change since range is null
             return self.apply_full_change(change);
         }
 
@@ -261,7 +265,7 @@ impl Document {
 
         let change_range = change.range.unwrap();
         let previous_content = self.content.clone();
-        let new_content = change.apply_to_text(&self.content);
+        let new_content = original_change.apply_to_text(&self.content);
 
         // we first need to determine the affected range and all affected statements, as well as
         // the index of the prev and the next statement, if any. The full affected range is the
@@ -1691,13 +1695,11 @@ KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDA
             ],
         };
 
-        let changes = doc.apply_file_change(&change1);
-
-        println!("changes: {:#?}", changes);
+        let _changes = doc.apply_file_change(&change1);
 
         assert_eq!(
             doc.content,
-            "select 1, 2, 22322313133933193 from unknown_users;\n"
+            "select 1, 2, 223223131339331931 from unknown_users;\n"
         );
 
         assert_document_integrity(&doc);
