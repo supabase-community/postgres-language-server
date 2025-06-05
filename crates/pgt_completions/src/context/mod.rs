@@ -580,44 +580,77 @@ impl<'a> CompletionContext<'a> {
         let mut first_sibling = self.get_first_sibling(node);
 
         if let Some(clause) = self.wrapping_clause_type.as_ref() {
-            if clause == &WrappingClause::Insert {
-                while let Some(sib) = first_sibling.next_sibling() {
-                    match sib.kind() {
-                        "object_reference" => {
-                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
-                                let mut iter = txt.split('.').rev();
-                                let table = iter.next().unwrap().to_string();
-                                let schema = iter.next().map(|s| s.to_string());
-                                self.mentioned_relations
-                                    .entry(schema)
-                                    .and_modify(|s| {
-                                        s.insert(table.clone());
-                                    })
-                                    .or_insert(HashSet::from([table]));
+            match clause {
+                &WrappingClause::Insert => {
+                    while let Some(sib) = first_sibling.next_sibling() {
+                        match sib.kind() {
+                            "object_reference" => {
+                                if let Some(NodeText::Original(txt)) =
+                                    self.get_ts_node_content(&sib)
+                                {
+                                    let mut iter = txt.split('.').rev();
+                                    let table = iter.next().unwrap().to_string();
+                                    let schema = iter.next().map(|s| s.to_string());
+                                    self.mentioned_relations
+                                        .entry(schema)
+                                        .and_modify(|s| {
+                                            s.insert(table.clone());
+                                        })
+                                        .or_insert(HashSet::from([table]));
+                                }
                             }
+
+                            "column" => {
+                                if let Some(NodeText::Original(txt)) =
+                                    self.get_ts_node_content(&sib)
+                                {
+                                    let entry = MentionedColumn {
+                                        column: txt,
+                                        alias: None,
+                                    };
+
+                                    self.mentioned_columns
+                                        .entry(Some(WrappingClause::Insert))
+                                        .and_modify(|s| {
+                                            s.insert(entry.clone());
+                                        })
+                                        .or_insert(HashSet::from([entry]));
+                                }
+                            }
+
+                            _ => {}
                         }
 
-                        "column" => {
-                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
-                                let entry = MentionedColumn {
-                                    column: txt,
-                                    alias: None,
-                                };
-
-                                self.mentioned_columns
-                                    .entry(Some(WrappingClause::Insert))
-                                    .and_modify(|s| {
-                                        s.insert(entry.clone());
-                                    })
-                                    .or_insert(HashSet::from([entry]));
-                            }
-                        }
-
-                        _ => {}
+                        first_sibling = sib;
                     }
-
-                    first_sibling = sib;
                 }
+
+                &WrappingClause::AlterColumn => {
+                    while let Some(sib) = first_sibling.next_sibling() {
+                        match sib.kind() {
+                            "object_reference" => {
+                                if let Some(NodeText::Original(txt)) =
+                                    self.get_ts_node_content(&sib)
+                                {
+                                    let mut iter = txt.split('.').rev();
+                                    let table = iter.next().unwrap().to_string();
+                                    let schema = iter.next().map(|s| s.to_string());
+                                    self.mentioned_relations
+                                        .entry(schema)
+                                        .and_modify(|s| {
+                                            s.insert(table.clone());
+                                        })
+                                        .or_insert(HashSet::from([table]));
+                                }
+                            }
+                            _ => {}
+                        }
+
+                        first_sibling = sib;
+                    }
+                }
+
+                _ => {}
             }
         }
     }

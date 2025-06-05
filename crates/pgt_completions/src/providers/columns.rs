@@ -772,6 +772,12 @@ mod tests {
                 z text, 
                 created_at timestamp with time zone default now()
             );
+
+            create table others (
+                a text,
+                b text,
+                c text
+            );
         "#;
 
         pool.execute(setup).await.unwrap();
@@ -787,11 +793,11 @@ mod tests {
                 CURSOR_POS
             ),
             format!("alter table instruments alter {} set default", CURSOR_POS),
-            format!("alter table instruments alter column {}", CURSOR_POS),
+            format!("alter table public.instruments alter column {}", CURSOR_POS),
             format!("alter table instruments alter {}", CURSOR_POS),
             format!("alter table instruments rename {} to new_col", CURSOR_POS),
             format!(
-                "alter table instruments rename column {} to new_col",
+                "alter table public.instruments rename column {} to new_col",
                 CURSOR_POS
             ),
         ];
