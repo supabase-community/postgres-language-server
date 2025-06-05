@@ -1,7 +1,7 @@
 use pgt_text_size::{TextRange, TextSize};
 
 use crate::context::base_parser::{
-    CompletionStatementParser, TokenNavigator, WordWithIndex, schema_and_table_name, sql_to_words,
+    CompletionStatementParser, TokenNavigator, WordWithIndex, schema_and_table_name,
 };
 
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -148,7 +148,7 @@ impl PolicyParser {
             }
 
             _ => {
-                if self.navigator.prev_matches("policy") {
+                if self.navigator.prev_matches(&["policy"]) {
                     self.context.policy_name = Some(token.get_word());
                 }
             }

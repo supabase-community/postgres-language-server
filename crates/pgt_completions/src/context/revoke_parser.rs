@@ -21,6 +21,8 @@ pub(crate) struct RevokeParser {
     navigator: TokenNavigator,
     context: RevokeContext,
     cursor_position: usize,
+    in_roles_list: bool,
+    is_revoking_role: bool,
 }
 
 impl CompletionStatementParser for RevokeParser {
@@ -50,6 +52,8 @@ impl CompletionStatementParser for RevokeParser {
             navigator: tokens.into(),
             context: RevokeContext::default(),
             cursor_position,
+            in_roles_list: false,
+            is_revoking_role: false,
         }
     }
 }
@@ -72,11 +76,6 @@ impl RevokeParser {
             .to_ascii_lowercase()
             .as_str()
         {
-            "grant" => {
-                self.context.node_range = token.get_range();
-                self.context.node_kind = "grant_role".into();
-                self.context.node_text = token.get_word();
-            }
             "on" if !matches!(current.as_ref().map(|c| c.as_str()), Some("table")) => {
                 self.handle_table(&token)
             }
@@ -85,13 +84,23 @@ impl RevokeParser {
                 self.handle_table(&token);
             }
 
-            "to" => {
+            "from" | "revoke" => {
                 self.context.node_range = token.get_range();
-                self.context.node_kind = "grant_role".into();
+                self.context.node_kind = "revoke_role".into();
                 self.context.node_text = token.get_word();
             }
 
-            _ => {
+            "for" if self.is_revoking_role => {
+                self.context.node_range = token.get_range();
+                self.context.node_kind = "revoke_role".into();
+                self.context.node_text = token.get_word();
+            }
+
+            t => {
+                if self.in_roles_list && t.ends_with(',') {
+                    self.context.node_kind = "grant_role".into();
+                }
+
                 self.context.node_range = token.get_range();
                 self.context.node_text = token.get_word();
             }
@@ -114,7 +123,7 @@ impl RevokeParser {
                 .expect("Text too long");
 
             self.context.node_range = range_without_schema;
-            self.context.node_kind = "grant_table".into();
+            self.context.node_kind = "revoke_table".into();
 
             // In practice, we should always have a table name.
             // The completion sanitization will add a word after a `.` if nothing follows it;
@@ -123,15 +132,31 @@ impl RevokeParser {
         } else {
             self.context.node_range = token.get_range();
             self.context.node_text = token.get_word();
-            self.context.node_kind = "grant_table".into();
+            self.context.node_kind = "revoke_table".into();
         }
     }
 
     fn handle_token(&mut self, token: WordWithIndex) {
         match token.get_word_without_quotes().as_str() {
             "on" if !self.navigator.next_matches(&["table"]) => self.table_with_schema(),
+
+            // This is the only case where there is no "GRANT" before the option:
+            // REVOKE [ { ADMIN | INHERIT | SET } OPTION FOR ] role_name
+            "option" if !self.navigator.prev_matches(&["grant"]) => {
+                self.is_revoking_role = true;
+            }
+
             "table" => self.table_with_schema(),
-            _ => {}
+
+            "from" => {
+                self.in_roles_list = true;
+            }
+
+            t => {
+                if self.in_roles_list && !t.ends_with(',') {
+                    self.in_roles_list = false;
+                }
+            }
         }
     }
 
@@ -147,239 +172,5 @@ impl RevokeParser {
                 self.context.table_name = Some(token.get_word());
             }
         };
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use pgt_text_size::{TextRange, TextSize};
-
-    use crate::{
-        context::base_parser::CompletionStatementParser,
-        context::grant_parser::{GrantContext, GrantParser},
-        test_helper::CURSOR_POS,
-    };
-
-    fn with_pos(query: String) -> (usize, String) {
-        let mut pos: Option<usize> = None;
-
-        for (p, c) in query.char_indices() {
-            if c == CURSOR_POS {
-                pos = Some(p);
-                break;
-            }
-        }
-
-        (
-            pos.expect("Please add cursor position!"),
-            query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
-        )
-    }
-
-    #[test]
-    fn infers_grant_keyword() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant {}
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: None,
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(19), TextSize::new(33)),
-                node_kind: "grant_role".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_table_name() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on {} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: None,
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(29), TextSize::new(43)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_table_name_with_keyword() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on table {} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: None,
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(35), TextSize::new(49)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_schema_and_table_name() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on public.{} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(36), TextSize::new(50)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_schema_and_table_name_with_keyword() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on table public.{} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(42), TextSize::new(56)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_role_name() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on public.users to {} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: Some("users".into()),
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(45), TextSize::new(59)),
-                node_kind: "grant_role".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn determines_table_name_after_schema() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on public.{} to test_role
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(36), TextSize::new(50)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_quoted_schema_and_table() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on "MySchema"."MyTable" to {}
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: Some("MyTable".into()),
-                schema_name: Some("MySchema".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(53), TextSize::new(67)),
-                node_kind: "grant_role".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_multiple_roles() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on public.users to alice, {}
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: Some("users".into()),
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(52), TextSize::new(66)),
-                node_kind: "grant_role".into(),
-            }
-        );
     }
 }

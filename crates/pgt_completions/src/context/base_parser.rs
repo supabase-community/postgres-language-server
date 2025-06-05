@@ -15,10 +15,10 @@ impl TokenNavigator {
             .is_some_and(|c| options.contains(&c.get_word_without_quotes().as_str()))
     }
 
-    pub(crate) fn prev_matches(&self, it: &str) -> bool {
+    pub(crate) fn prev_matches(&self, options: &[&str]) -> bool {
         self.previous_token
             .as_ref()
-            .is_some_and(|t| t.get_word_without_quotes() == it)
+            .is_some_and(|t| options.contains(&t.get_word_without_quotes().as_str()))
     }
 
     pub(crate) fn advance(&mut self) -> Option<WordWithIndex> {
@@ -103,14 +103,13 @@ impl WordWithIndex {
 
 /// Note: A policy name within quotation marks will be considered a single word.
 pub(crate) fn sql_to_words(sql: &str) -> Result<Vec<WordWithIndex>, String> {
-    let lowercased = sql.to_ascii_lowercase();
     let mut words = vec![];
 
     let mut start_of_word: Option<usize> = None;
     let mut current_word = String::new();
     let mut in_quotation_marks = false;
 
-    for (current_position, current_char) in lowercased.char_indices() {
+    for (current_position, current_char) in sql.char_indices() {
         if (current_char.is_ascii_whitespace() || current_char == ';')
             && !current_word.is_empty()
             && start_of_word.is_some()

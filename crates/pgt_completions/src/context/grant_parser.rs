@@ -91,8 +91,8 @@ impl GrantParser {
                 self.context.node_kind = "grant_role".into();
                 self.context.node_text = token.get_word();
             }
-            p => {
-                if self.in_roles_list && p.ends_with(',') {
+            t => {
+                if self.in_roles_list && t.ends_with(',') {
                     self.context.node_kind = "grant_role".into();
                 }
 

@@ -20,6 +20,7 @@ use crate::{
         base_parser::CompletionStatementParser,
         grant_parser::GrantParser,
         policy_parser::{PolicyParser, PolicyStmtKind},
+        revoke_parser::RevokeParser,
     },
     sanitization::SanitizedCompletionParams,
 };
@@ -201,6 +202,8 @@ impl<'a> CompletionContext<'a> {
             ctx.gather_policy_context();
         } else if GrantParser::looks_like_matching_stmt(&params.text) {
             ctx.gather_grant_context();
+        } else if RevokeParser::looks_like_matching_stmt(&params.text) {
+            todo!()
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
