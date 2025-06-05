@@ -79,7 +79,7 @@ impl GrantParser {
                 self.context.node_kind = "grant_role".into();
                 self.context.node_text = token.get_word();
             }
-            "on" if !matches!(current.as_ref().map(|c| c.as_str()), Some("table")) => {
+            "on" if !matches!(current.as_deref(), Some("table")) => {
                 self.handle_table(&token)
             }
 

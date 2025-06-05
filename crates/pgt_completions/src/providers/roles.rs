@@ -31,7 +31,7 @@ mod tests {
 
     use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
 
-    const SETUP: &'static str = r#"
+    const SETUP: &str = r#"
             create table users (
               id serial primary key,
               email varchar,
