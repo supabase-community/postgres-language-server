@@ -76,9 +76,7 @@ impl RevokeParser {
             .to_ascii_lowercase()
             .as_str()
         {
-            "on" if !matches!(current.as_deref(), Some("table")) => {
-                self.handle_table(&token)
-            }
+            "on" if !matches!(current.as_deref(), Some("table")) => self.handle_table(&token),
 
             "table" => {
                 self.handle_table(&token);
