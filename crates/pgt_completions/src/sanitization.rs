@@ -277,7 +277,6 @@ mod tests {
 
     #[test]
     fn should_lowercase_everything_except_replaced_token() {
-        // note: two spaces between select and from.
         let input = "SELECT  FROM users WHERE ts = NOW();";
 
         let position = TextSize::new(7);
