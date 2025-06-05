@@ -27,7 +27,7 @@ pub(crate) struct RevokeParser {
 
 impl CompletionStatementParser for RevokeParser {
     type Context = RevokeContext;
-    const NAME: &'static str = "GrantParser";
+    const NAME: &'static str = "RevokeParser";
 
     fn looks_like_matching_stmt(sql: &str) -> bool {
         let lowercased = sql.to_ascii_lowercase();
@@ -98,7 +98,7 @@ impl RevokeParser {
 
             t => {
                 if self.in_roles_list && t.ends_with(',') {
-                    self.context.node_kind = "grant_role".into();
+                    self.context.node_kind = "revoke_role".into();
                 }
 
                 self.context.node_range = token.get_range();

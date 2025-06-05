@@ -179,6 +179,8 @@ mod tests {
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn works_in_grant_statements(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
         assert_complete_results(
             format!(
                 r#"grant select
@@ -249,9 +251,41 @@ mod tests {
         .await;
     }
 
-    async fn works_in_revoke_statements() {
-        // revoke select on my_table from ROLE;
-        // revoke ROLE from OTHER_ROLE;
-        // revoke admin option for ROLE from OTHER_ROLE;
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn works_in_revoke_statements(pool: PgPool) {
+        pool.execute(SETUP).await.unwrap();
+
+        let queries = vec![
+            format!("revoke {} from owner", CURSOR_POS),
+            format!("revoke admin option for {} from owner", CURSOR_POS),
+            format!("revoke owner from {}", CURSOR_POS),
+            format!("revoke all on schema public from {} granted by", CURSOR_POS),
+            format!("revoke all on schema public from owner, {}", CURSOR_POS),
+            format!("revoke all on table userse from owner, {}", CURSOR_POS),
+        ];
+
+        for query in queries {
+            assert_complete_results(
+                query.as_str(),
+                vec![
+                    // recognizing already mentioned roles is not supported for now
+                    CompletionAssertion::LabelAndKind(
+                        "owner".into(),
+                        crate::CompletionItemKind::Role,
+                    ),
+                    CompletionAssertion::LabelAndKind(
+                        "test_login".into(),
+                        crate::CompletionItemKind::Role,
+                    ),
+                    CompletionAssertion::LabelAndKind(
+                        "test_nologin".into(),
+                        crate::CompletionItemKind::Role,
+                    ),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
     }
 }

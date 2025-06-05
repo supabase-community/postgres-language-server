@@ -203,13 +203,40 @@ impl<'a> CompletionContext<'a> {
         } else if GrantParser::looks_like_matching_stmt(&params.text) {
             ctx.gather_grant_context();
         } else if RevokeParser::looks_like_matching_stmt(&params.text) {
-            todo!()
+            ctx.gather_revoke_context();
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
         }
 
         ctx
+    }
+
+    fn gather_revoke_context(&mut self) {
+        let revoke_context = RevokeParser::get_context(self.text, self.position);
+
+        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+            text: revoke_context.node_text.into(),
+            range: revoke_context.node_range,
+            kind: revoke_context.node_kind.clone(),
+        });
+
+        if revoke_context.node_kind == "revoke_table" {
+            self.schema_or_alias_name = revoke_context.schema_name.clone();
+        }
+
+        if revoke_context.table_name.is_some() {
+            let mut new = HashSet::new();
+            new.insert(revoke_context.table_name.unwrap());
+            self.mentioned_relations
+                .insert(revoke_context.schema_name, new);
+        }
+
+        self.wrapping_clause_type = match revoke_context.node_kind.as_str() {
+            "revoke_role" => Some(WrappingClause::ToRoleAssignment),
+            "revoke_table" => Some(WrappingClause::From),
+            _ => None,
+        };
     }
 
     fn gather_grant_context(&mut self) {
