@@ -1,4 +1,4 @@
-use pgt_configuration::{PartialConfiguration, VERSION};
+use pgt_configuration::PartialConfiguration;
 use schemars::{
     schema::{RootSchema, Schema, SchemaObject},
     schema_for,
@@ -10,25 +10,10 @@ use std::{fs, path::Path};
 ///
 /// * `docs_dir`: Path to the docs directory.
 pub fn generate_schema(docs_dir: &Path) -> anyhow::Result<()> {
-    let schemas_dir = docs_dir.join("schemas");
-    let latest_schema_dir = schemas_dir.join("latest");
-    let latest_schema_path = latest_schema_dir.join("schema.json");
-
-    let version_schema_dir = schemas_dir.join(VERSION);
-    let version_schema_path = version_schema_dir.join("schema.json");
-
-    if !latest_schema_dir.exists() {
-        fs::create_dir_all(&latest_schema_dir)?;
-    }
-
-    if !version_schema_dir.exists() {
-        fs::create_dir_all(&version_schema_dir)?;
-    }
-
+    let schema_path = docs_dir.join("schema.json");
     let schema_content = get_configuration_schema_content()?;
 
-    fs::write(latest_schema_path, &schema_content)?;
-    fs::write(version_schema_path, &schema_content)?;
+    fs::write(schema_path, &schema_content)?;
 
     Ok(())
 }
