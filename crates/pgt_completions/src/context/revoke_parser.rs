@@ -174,3 +174,168 @@ impl RevokeParser {
         };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use pgt_text_size::{TextRange, TextSize};
+
+    use crate::{
+        context::base_parser::CompletionStatementParser,
+        context::revoke_parser::{RevokeContext, RevokeParser},
+        test_helper::CURSOR_POS,
+    };
+
+    fn with_pos(query: String) -> (usize, String) {
+        let mut pos: Option<usize> = None;
+
+        for (p, c) in query.char_indices() {
+            if c == CURSOR_POS {
+                pos = Some(p);
+                break;
+            }
+        }
+
+        (
+            pos.expect("Please add cursor position!"),
+            query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
+        )
+    }
+
+    #[test]
+    fn infers_revoke_keyword() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke {}
+        "#,
+            CURSOR_POS
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: None,
+                schema_name: None,
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(20), TextSize::new(34)),
+                node_kind: "revoke_role".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn infers_table_name() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke select on {} 
+        "#,
+            CURSOR_POS
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: None,
+                schema_name: None,
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(30), TextSize::new(44)),
+                node_kind: "revoke_table".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn infers_schema_and_table_name() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke select on public.{} 
+        "#,
+            CURSOR_POS
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: None,
+                schema_name: Some("public".into()),
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(37), TextSize::new(51)),
+                node_kind: "revoke_table".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn infers_role_name() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke select on public.users from {} 
+        "#,
+            CURSOR_POS
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: Some("users".into()),
+                schema_name: Some("public".into()),
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(48), TextSize::new(62)),
+                node_kind: "revoke_role".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn infers_multiple_roles() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke select on public.users from alice, {}
+        "#,
+            CURSOR_POS
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: Some("users".into()),
+                schema_name: Some("public".into()),
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(55), TextSize::new(69)),
+                node_kind: "revoke_role".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn infers_quoted_schema_and_table() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke select on "MySchema"."MyTable" from {}
+        "#,
+            CURSOR_POS
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: Some("MyTable".into()),
+                schema_name: Some("MySchema".into()),
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(56), TextSize::new(70)),
+                node_kind: "revoke_role".into(),
+            }
+        );
+    }
+}
