@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    # paths:
+    #   - "docs/**"
+    #   - "mkdocs.yml"
   release:
     types: [published]
 
@@ -40,6 +43,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             uv run mike deploy --push --update-aliases ${{ github.event.release.tag_name }} latest
+            uv run mike set-default --push latest
           else
             uv run mike deploy --push main
           fi
