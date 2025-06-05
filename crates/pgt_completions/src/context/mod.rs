@@ -31,6 +31,8 @@ pub enum WrappingClause<'a> {
     Insert,
     AlterTable,
     DropTable,
+    DropColumn,
+    AlterColumn,
     PolicyName,
     ToRoleAssignment,
 }
@@ -192,6 +194,11 @@ impl<'a> CompletionContext<'a> {
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
+        }
+
+        if cfg!(test) {
+            println!("{:#?}", ctx.text);
+            println!("{:#?}", ctx.wrapping_clause_type);
         }
 
         ctx
@@ -424,7 +431,7 @@ impl<'a> CompletionContext<'a> {
             }
 
             "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
-            | "drop_table" | "alter_table" => {
+            | "drop_table" | "alter_table" | "drop_column" | "alter_column" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -628,6 +635,8 @@ impl<'a> CompletionContext<'a> {
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
+            "drop_column" => Some(WrappingClause::DropColumn),
+            "alter_column" => Some(WrappingClause::AlterColumn),
             "alter_table" => Some(WrappingClause::AlterTable),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "insert" => Some(WrappingClause::Insert),

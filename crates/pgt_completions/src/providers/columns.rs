@@ -762,4 +762,52 @@ mod tests {
         )
         .await;
     }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_columns_in_alter_table_and_drop_table(pool: PgPool) {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null,
+                z text, 
+                created_at timestamp with time zone default now()
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        let queries = vec![
+            // format!("alter table instruments drop column {}", CURSOR_POS),
+            // format!(
+            //     "alter table instruments drop column if exists {}",
+            //     CURSOR_POS
+            // ),
+            format!(
+                "alter table instruments alter column {} set default",
+                CURSOR_POS
+            ),
+            // format!("alter table instruments alter {} set default", CURSOR_POS),
+            // format!("alter table instruments alter column {}", CURSOR_POS),
+            // format!("alter table instruments rename {} to new_col", CURSOR_POS),
+            // format!(
+            //     "alter table instruments rename column {} to new_col",
+            //     CURSOR_POS
+            // ),
+        ];
+
+        for query in queries {
+            assert_complete_results(
+                query.as_str(),
+                vec![
+                    CompletionAssertion::Label("created_at".into()),
+                    CompletionAssertion::Label("id".into()),
+                    CompletionAssertion::Label("name".into()),
+                    CompletionAssertion::Label("z".into()),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+    }
 }
