@@ -777,22 +777,23 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let queries = vec![
-            // format!("alter table instruments drop column {}", CURSOR_POS),
-            // format!(
-            //     "alter table instruments drop column if exists {}",
-            //     CURSOR_POS
-            // ),
+            format!("alter table instruments drop column {}", CURSOR_POS),
+            format!(
+                "alter table instruments drop column if exists {}",
+                CURSOR_POS
+            ),
             format!(
                 "alter table instruments alter column {} set default",
                 CURSOR_POS
             ),
-            // format!("alter table instruments alter {} set default", CURSOR_POS),
-            // format!("alter table instruments alter column {}", CURSOR_POS),
-            // format!("alter table instruments rename {} to new_col", CURSOR_POS),
-            // format!(
-            //     "alter table instruments rename column {} to new_col",
-            //     CURSOR_POS
-            // ),
+            format!("alter table instruments alter {} set default", CURSOR_POS),
+            format!("alter table instruments alter column {}", CURSOR_POS),
+            format!("alter table instruments alter {}", CURSOR_POS),
+            format!("alter table instruments rename {} to new_col", CURSOR_POS),
+            format!(
+                "alter table instruments rename column {} to new_col",
+                CURSOR_POS
+            ),
         ];
 
         for query in queries {

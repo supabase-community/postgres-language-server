@@ -33,6 +33,7 @@ pub enum WrappingClause<'a> {
     DropTable,
     DropColumn,
     AlterColumn,
+    RenameColumn,
     PolicyName,
     ToRoleAssignment,
 }
@@ -194,11 +195,6 @@ impl<'a> CompletionContext<'a> {
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
-        }
-
-        if cfg!(test) {
-            println!("{:#?}", ctx.text);
-            println!("{:#?}", ctx.wrapping_clause_type);
         }
 
         ctx
@@ -431,7 +427,7 @@ impl<'a> CompletionContext<'a> {
             }
 
             "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
-            | "drop_table" | "alter_table" | "drop_column" | "alter_column" => {
+            | "drop_table" | "alter_table" | "drop_column" | "alter_column" | "rename_column" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -522,6 +518,8 @@ impl<'a> CompletionContext<'a> {
             (WrappingClause::From, &["from"]),
             (WrappingClause::Join { on_node: None }, &["join"]),
             (WrappingClause::AlterTable, &["alter", "table"]),
+            (WrappingClause::AlterColumn, &["alter", "table", "alter"]),
+            (WrappingClause::RenameColumn, &["alter", "table", "rename"]),
             (
                 WrappingClause::AlterTable,
                 &["alter", "table", "if", "exists"],
@@ -598,6 +596,7 @@ impl<'a> CompletionContext<'a> {
                                     .or_insert(HashSet::from([table]));
                             }
                         }
+
                         "column" => {
                             if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
                                 let entry = MentionedColumn {
@@ -637,6 +636,7 @@ impl<'a> CompletionContext<'a> {
             "drop_table" => Some(WrappingClause::DropTable),
             "drop_column" => Some(WrappingClause::DropColumn),
             "alter_column" => Some(WrappingClause::AlterColumn),
+            "rename_column" => Some(WrappingClause::RenameColumn),
             "alter_table" => Some(WrappingClause::AlterTable),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "insert" => Some(WrappingClause::Insert),

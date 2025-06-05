@@ -106,8 +106,14 @@ impl CompletionFilter<'_> {
                             WrappingClause::Select
                             | WrappingClause::Update
                             | WrappingClause::Delete
-                            | WrappingClause::DropColumn
-                            | WrappingClause::AlterColumn => true,
+                            | WrappingClause::DropColumn => true,
+
+                            WrappingClause::RenameColumn => ctx
+                                .before_cursor_matches_kind(&["keyword_rename", "keyword_column"]),
+
+                            WrappingClause::AlterColumn => {
+                                ctx.before_cursor_matches_kind(&["keyword_alter", "keyword_column"])
+                            }
 
                             // We can complete columns in JOIN cluases, but only if we are after the
                             // ON node in the "ON u.id = posts.user_id" part.
