@@ -261,7 +261,7 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
         .unwrap_or_default();
 
     // (.. and |)
-    let after_and_keyword = &sql[cmp::max(0, position - 4)..position] == "and " && after == ')';
+    let after_and_keyword = &sql[position.saturating_sub(4)..position] == "and " && after == ')';
     let after_eq_sign = before == '=' && after == ')';
 
     let head_of_list = before == '(' && after == ',';
@@ -465,6 +465,13 @@ mod tests {
             // create policy my_pol on users using (id = 1 and |),
             "create policy my_pol on users using (id = 1 and )",
             TextSize::new(48)
+        ));
+
+        // does not break if sql is really short
+        assert!(!cursor_between_parentheses(
+            // create policy my_pol on users using (id = 1 and |),
+            "(a)",
+            TextSize::new(2)
         ));
     }
 }
