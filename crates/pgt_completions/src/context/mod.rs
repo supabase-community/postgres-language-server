@@ -87,8 +87,6 @@ pub(crate) enum NodeUnderCursor<'a> {
         text: NodeText,
         range: TextRange,
         kind: String,
-        previous_node_text: Option<String>,
-        previous_node_range: Option<TextRange>,
         previous_node_kind: Option<String>,
     },
 }
@@ -235,8 +233,6 @@ impl<'a> CompletionContext<'a> {
             range: revoke_context.node_range,
             kind: revoke_context.node_kind.clone(),
             previous_node_kind: None,
-            previous_node_range: None,
-            previous_node_text: None,
         });
 
         if revoke_context.node_kind == "revoke_table" {
@@ -265,8 +261,6 @@ impl<'a> CompletionContext<'a> {
             range: grant_context.node_range,
             kind: grant_context.node_kind.clone(),
             previous_node_kind: None,
-            previous_node_range: None,
-            previous_node_text: None,
         });
 
         if grant_context.node_kind == "grant_table" {
@@ -295,8 +289,6 @@ impl<'a> CompletionContext<'a> {
             range: policy_context.node_range,
             kind: policy_context.node_kind.clone(),
             previous_node_kind: Some(policy_context.previous_node_kind),
-            previous_node_range: Some(policy_context.previous_node_range),
-            previous_node_text: Some(policy_context.previous_node_text),
         });
 
         if policy_context.node_kind == "policy_table" {

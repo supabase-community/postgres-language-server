@@ -14,7 +14,7 @@ mod types;
 mod versions;
 
 pub use columns::*;
-pub use functions::{Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
+pub use functions::{Behavior, Function, FunctionArg, FunctionArgs};
 pub use policies::{Policy, PolicyCommand};
 pub use roles::*;
 pub use schema_cache::SchemaCache;

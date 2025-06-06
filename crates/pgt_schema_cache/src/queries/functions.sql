@@ -10,7 +10,6 @@ with functions as (
     prolang,
     pronamespace,
     proconfig,
-    prokind, 
     -- proargmodes is null when all arg modes are IN
     coalesce(
       p.proargmodes,
@@ -27,22 +26,22 @@ with functions as (
         array [cardinality(coalesce(p.proallargtypes, p.proargtypes))]
       )
     ) as arg_names,
-
     -- proallargtypes is null when all arg modes are IN
     coalesce(p.proallargtypes, p.proargtypes) as arg_types,
     array_cat(
       array_fill(false, array [pronargs - pronargdefaults]),
-      array_fill(true, array [pronargdefaults]),
-    )
+      array_fill(true, array [pronargdefaults])
+    ) as arg_has_defaults
   from
     pg_proc as p
+  where
+    p.prokind = 'f'
 )
 select
   f.oid :: int8 as "id!",
   n.nspname as "schema!",
   f.proname as "name!",
   l.lanname as "language!",
-  f.prokind as "kind!",
   case
     when l.lanname = 'internal' then null
     else f.prosrc
@@ -54,8 +53,8 @@ select
   coalesce(f_args.args, '[]') as args,
   nullif(pg_get_function_arguments(f.oid), '') as argument_types,
   nullif(pg_get_function_identity_arguments(f.oid), '') as identity_argument_types,
-  f.prorettype :: int8 as return_type_id,
-  pg_get_function_result(f.oid) as return_type,
+  f.prorettype :: int8 as "return_type_id!",
+  pg_get_function_result(f.oid) as "return_type!",
   nullif(rt.typrelid :: int8, 0) as return_type_relation_id,
   f.proretset as is_set_returning_function,
   case
@@ -107,13 +106,12 @@ from
       (
         select
           oid,
-          arg_modes[i] as mode,
-          arg_names[i] as name,
-          arg_types[i] :: int8 as type_id,
-          arg_has_defaults[i]::bool as has_default
+          unnest(arg_modes) as mode,
+          unnest(arg_names) as name,
+          unnest(arg_types) :: int8 as type_id,
+          unnest(arg_has_defaults) as has_default
         from
-          functions,
-          pg_catalog.generate_subscripts(arg_names, 1) as s(i)
+          functions
       ) as t1,
       lateral (
         select
@@ -125,7 +123,6 @@ from
             else 'table'
           end as mode
       ) as t2
-    where oid is not null
     group by
       t1.oid
   ) f_args on f_args.oid = f.oid;
