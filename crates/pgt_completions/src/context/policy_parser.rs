@@ -22,6 +22,7 @@ pub(crate) struct PolicyContext {
     pub node_text: String,
     pub node_range: TextRange,
     pub node_kind: String,
+    pub in_check_or_using_clause: bool,
 }
 
 /// Simple parser that'll turn a policy-related statement into a context object required for
@@ -32,6 +33,7 @@ pub(crate) struct PolicyParser {
     navigator: TokenNavigator,
     context: PolicyContext,
     cursor_position: usize,
+    in_check_or_using_clause: bool,
 }
 
 impl CompletionStatementParser for PolicyParser {
@@ -63,6 +65,7 @@ impl CompletionStatementParser for PolicyParser {
             navigator: tokens.into(),
             context: PolicyContext::default(),
             cursor_position,
+            in_check_or_using_clause: false,
         }
     }
 }
@@ -72,6 +75,8 @@ impl PolicyParser {
         if self.navigator.previous_token.is_none() {
             return;
         }
+
+        self.context.in_check_or_using_clause = self.in_check_or_using_clause;
 
         let previous = self.navigator.previous_token.take().unwrap();
 
@@ -141,6 +146,13 @@ impl PolicyParser {
                 self.context.statement_kind = PolicyStmtKind::Drop;
             }
             "on" => self.table_with_schema(),
+
+            "(" if self.navigator.prev_matches(&["using", "check"]) => {
+                self.in_check_or_using_clause = true;
+            }
+            ")" => {
+                self.in_check_or_using_clause = false;
+            }
 
             // skip the "to" so we don't parse it as the TO rolename when it's under the cursor
             "rename" if self.navigator.next_matches(&["to"]) => {
@@ -218,7 +230,8 @@ mod tests {
                 statement_kind: PolicyStmtKind::Create,
                 node_text: "REPLACED_TOKEN".into(),
                 node_range: TextRange::new(TextSize::new(25), TextSize::new(39)),
-                node_kind: "policy_name".into()
+                node_kind: "policy_name".into(),
+                in_check_or_using_clause: false
             }
         );
 
@@ -241,6 +254,7 @@ mod tests {
                 node_text: "REPLACED_TOKEN".into(),
                 node_kind: "".into(),
                 node_range: TextRange::new(TextSize::new(42), TextSize::new(56)),
+                in_check_or_using_clause: false
             }
         );
 
@@ -263,6 +277,7 @@ mod tests {
                 node_text: "REPLACED_TOKEN".into(),
                 node_kind: "policy_table".into(),
                 node_range: TextRange::new(TextSize::new(45), TextSize::new(59)),
+                in_check_or_using_clause: false
             }
         );
 
@@ -285,6 +300,7 @@ mod tests {
                 node_text: "REPLACED_TOKEN".into(),
                 node_kind: "policy_table".into(),
                 node_range: TextRange::new(TextSize::new(50), TextSize::new(64)),
+                in_check_or_using_clause: false
             }
         );
 
@@ -308,6 +324,7 @@ mod tests {
                 node_text: "REPLACED_TOKEN".into(),
                 node_kind: "".into(),
                 node_range: TextRange::new(TextSize::new(72), TextSize::new(86)),
+                in_check_or_using_clause: false
             }
         );
 
@@ -332,6 +349,7 @@ mod tests {
                 node_text: "REPLACED_TOKEN".into(),
                 node_kind: "".into(),
                 node_range: TextRange::new(TextSize::new(95), TextSize::new(109)),
+                in_check_or_using_clause: false
             }
         );
 
@@ -356,6 +374,7 @@ mod tests {
                 node_text: "REPLACED_TOKEN".into(),
                 node_kind: "policy_role".into(),
                 node_range: TextRange::new(TextSize::new(98), TextSize::new(112)),
+                in_check_or_using_clause: false
             }
         );
     }
@@ -383,7 +402,8 @@ mod tests {
                 statement_kind: PolicyStmtKind::Create,
                 node_text: "REPLACED_TOKEN".into(),
                 node_range: TextRange::new(TextSize::new(57), TextSize::new(71)),
-                node_kind: "policy_table".into()
+                node_kind: "policy_table".into(),
+                in_check_or_using_clause: false
             }
         )
     }
@@ -411,7 +431,8 @@ mod tests {
                 statement_kind: PolicyStmtKind::Create,
                 node_text: "REPLACED_TOKEN".into(),
                 node_range: TextRange::new(TextSize::new(62), TextSize::new(76)),
-                node_kind: "policy_table".into()
+                node_kind: "policy_table".into(),
+                in_check_or_using_clause: false
             }
         )
     }
@@ -436,7 +457,8 @@ mod tests {
                 statement_kind: PolicyStmtKind::Drop,
                 node_text: "REPLACED_TOKEN".into(),
                 node_range: TextRange::new(TextSize::new(23), TextSize::new(37)),
-                node_kind: "policy_name".into()
+                node_kind: "policy_name".into(),
+                in_check_or_using_clause: false
             }
         );
 
@@ -459,7 +481,8 @@ mod tests {
                 statement_kind: PolicyStmtKind::Drop,
                 node_text: "\"REPLACED_TOKEN\"".into(),
                 node_range: TextRange::new(TextSize::new(23), TextSize::new(39)),
-                node_kind: "policy_name".into()
+                node_kind: "policy_name".into(),
+                in_check_or_using_clause: false
             }
         );
     }
@@ -476,5 +499,92 @@ mod tests {
         let context = PolicyParser::get_context(query.as_str(), pos);
 
         assert_eq!(context, PolicyContext::default());
+    }
+
+    #[test]
+    fn correctly_determines_we_are_inside_checks() {
+        {
+            let (pos, query) = with_pos(format!(
+                r#"
+          create policy "my cool policy"
+            on auth.users
+            to all 
+            using (id = {})
+        "#,
+                CURSOR_POS
+            ));
+
+            let context = PolicyParser::get_context(query.as_str(), pos);
+
+            assert_eq!(
+                context,
+                PolicyContext {
+                    policy_name: Some(r#""my cool policy""#.into()),
+                    table_name: Some("users".into()),
+                    schema_name: Some("auth".into()),
+                    statement_kind: PolicyStmtKind::Create,
+                    node_text: "REPLACED_TOKEN".into(),
+                    node_range: TextRange::new(TextSize::new(112), TextSize::new(127)),
+                    node_kind: "".into(),
+                    in_check_or_using_clause: true
+                }
+            );
+        }
+
+        // {
+        //     let (pos, query) = with_pos(format!(
+        //         r#"
+        //   create policy "my cool policy"
+        //     on auth.users
+        //     to all
+        //     using ({}
+        // "#,
+        //         CURSOR_POS
+        //     ));
+
+        //     let context = PolicyParser::get_context(query.as_str(), pos);
+
+        //     assert_eq!(
+        //         context,
+        //         PolicyContext {
+        //             policy_name: Some(r#""my cool policy""#.into()),
+        //             table_name: None,
+        //             schema_name: None,
+        //             statement_kind: PolicyStmtKind::Create,
+        //             node_text: "REPLACED_TOKEN".into(),
+        //             node_range: TextRange::new(TextSize::new(57), TextSize::new(71)),
+        //             node_kind: "policy_table".into(),
+        //             in_check_or_using_clause: true
+        //         }
+        //     )
+        // }
+
+        // {
+        //     let (pos, query) = with_pos(format!(
+        //         r#"
+        //   create policy "my cool policy"
+        //     on auth.users
+        //     to all
+        //     with check ({}
+        // "#,
+        //         CURSOR_POS
+        //     ));
+
+        //     let context = PolicyParser::get_context(query.as_str(), pos);
+
+        //     assert_eq!(
+        //         context,
+        //         PolicyContext {
+        //             policy_name: Some(r#""my cool policy""#.into()),
+        //             table_name: None,
+        //             schema_name: None,
+        //             statement_kind: PolicyStmtKind::Create,
+        //             node_text: "REPLACED_TOKEN".into(),
+        //             node_range: TextRange::new(TextSize::new(57), TextSize::new(71)),
+        //             node_kind: "policy_table".into(),
+        //             in_check_or_using_clause: true
+        //         }
+        //     )
+        // }
     }
 }

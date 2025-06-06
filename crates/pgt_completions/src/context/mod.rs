@@ -47,6 +47,15 @@ pub enum WrappingClause<'a> {
     SetStatement,
     AlterRole,
     DropRole,
+
+    /// `PolicyCheck` refers to either the `WITH CHECK` or the `USING` clause
+    /// in a policy statement.
+    /// ```sql
+    /// CREATE POLICY "my pol" ON PUBLIC.USERS
+    /// FOR SELECT
+    /// USING (...) -- this one!
+    /// ```
+    PolicyCheck,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -295,7 +304,13 @@ impl<'a> CompletionContext<'a> {
             }
             "policy_role" => Some(WrappingClause::ToRoleAssignment),
             "policy_table" => Some(WrappingClause::From),
-            _ => None,
+            _ => {
+                if policy_context.in_check_or_using_clause {
+                    Some(WrappingClause::PolicyCheck)
+                } else {
+                    None
+                }
+            }
         };
     }
 
