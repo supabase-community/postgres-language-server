@@ -137,7 +137,6 @@ impl CompletionFilter<'_> {
                                         && ctx.parent_matches_one_of_kind(&["field"]))
                             }
 
-                            // only autocomplete left side of binary expression
                             WrappingClause::PolicyCheck => {
                                 ctx.before_cursor_matches_kind(&["keyword_and", "("])
                             }
