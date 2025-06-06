@@ -524,67 +524,67 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(112), TextSize::new(127)),
+                    node_range: TextRange::new(TextSize::new(112), TextSize::new(126)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true
                 }
             );
         }
 
-        // {
-        //     let (pos, query) = with_pos(format!(
-        //         r#"
-        //   create policy "my cool policy"
-        //     on auth.users
-        //     to all
-        //     using ({}
-        // "#,
-        //         CURSOR_POS
-        //     ));
+        {
+            let (pos, query) = with_pos(format!(
+                r#"
+          create policy "my cool policy"
+            on auth.users
+            to all
+            using ({}
+        "#,
+                CURSOR_POS
+            ));
 
-        //     let context = PolicyParser::get_context(query.as_str(), pos);
+            let context = PolicyParser::get_context(query.as_str(), pos);
 
-        //     assert_eq!(
-        //         context,
-        //         PolicyContext {
-        //             policy_name: Some(r#""my cool policy""#.into()),
-        //             table_name: None,
-        //             schema_name: None,
-        //             statement_kind: PolicyStmtKind::Create,
-        //             node_text: "REPLACED_TOKEN".into(),
-        //             node_range: TextRange::new(TextSize::new(57), TextSize::new(71)),
-        //             node_kind: "policy_table".into(),
-        //             in_check_or_using_clause: true
-        //         }
-        //     )
-        // }
+            assert_eq!(
+                context,
+                PolicyContext {
+                    policy_name: Some(r#""my cool policy""#.into()),
+                    table_name: Some("users".into()),
+                    schema_name: Some("auth".into()),
+                    statement_kind: PolicyStmtKind::Create,
+                    node_text: "REPLACED_TOKEN".into(),
+                    node_range: TextRange::new(TextSize::new(106), TextSize::new(120)),
+                    node_kind: "".into(),
+                    in_check_or_using_clause: true
+                }
+            )
+        }
 
-        // {
-        //     let (pos, query) = with_pos(format!(
-        //         r#"
-        //   create policy "my cool policy"
-        //     on auth.users
-        //     to all
-        //     with check ({}
-        // "#,
-        //         CURSOR_POS
-        //     ));
+        {
+            let (pos, query) = with_pos(format!(
+                r#"
+          create policy "my cool policy"
+            on auth.users
+            to all
+            with check ({}
+        "#,
+                CURSOR_POS
+            ));
 
-        //     let context = PolicyParser::get_context(query.as_str(), pos);
+            let context = PolicyParser::get_context(query.as_str(), pos);
 
-        //     assert_eq!(
-        //         context,
-        //         PolicyContext {
-        //             policy_name: Some(r#""my cool policy""#.into()),
-        //             table_name: None,
-        //             schema_name: None,
-        //             statement_kind: PolicyStmtKind::Create,
-        //             node_text: "REPLACED_TOKEN".into(),
-        //             node_range: TextRange::new(TextSize::new(57), TextSize::new(71)),
-        //             node_kind: "policy_table".into(),
-        //             in_check_or_using_clause: true
-        //         }
-        //     )
-        // }
+            assert_eq!(
+                context,
+                PolicyContext {
+                    policy_name: Some(r#""my cool policy""#.into()),
+                    table_name: Some("users".into()),
+                    schema_name: Some("auth".into()),
+                    statement_kind: PolicyStmtKind::Create,
+                    node_text: "REPLACED_TOKEN".into(),
+                    node_range: TextRange::new(TextSize::new(111), TextSize::new(125)),
+                    node_kind: "".into(),
+                    in_check_or_using_clause: true
+                }
+            )
+        }
     }
 }

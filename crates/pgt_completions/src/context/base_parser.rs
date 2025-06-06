@@ -1,7 +1,5 @@
-use std::iter::Peekable;
-
-use async_std::task::current;
 use pgt_text_size::{TextRange, TextSize};
+use std::iter::Peekable;
 
 pub(crate) struct TokenNavigator {
     tokens: Peekable<std::vec::IntoIter<WordWithIndex>>,
