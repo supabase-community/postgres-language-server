@@ -39,6 +39,9 @@ pub enum WrappingClause<'a> {
     Insert,
     AlterTable,
     DropTable,
+    DropColumn,
+    AlterColumn,
+    RenameColumn,
     PolicyName,
     ToRoleAssignment,
     SetStatement,
@@ -493,7 +496,8 @@ impl<'a> CompletionContext<'a> {
             }
 
             "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
-            | "drop_table" | "alter_table" | "alter_role" | "drop_role" | "set_statement" => {
+            | "alter_role" | "drop_role" | "set_statement" | "drop_table" | "alter_table"
+            | "drop_column" | "alter_column" | "rename_column" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -584,6 +588,8 @@ impl<'a> CompletionContext<'a> {
             (WrappingClause::From, &["from"]),
             (WrappingClause::Join { on_node: None }, &["join"]),
             (WrappingClause::AlterTable, &["alter", "table"]),
+            (WrappingClause::AlterColumn, &["alter", "table", "alter"]),
+            (WrappingClause::RenameColumn, &["alter", "table", "rename"]),
             (
                 WrappingClause::AlterTable,
                 &["alter", "table", "if", "exists"],
@@ -644,10 +650,54 @@ impl<'a> CompletionContext<'a> {
         let mut first_sibling = self.get_first_sibling(node);
 
         if let Some(clause) = self.wrapping_clause_type.as_ref() {
-            if clause == &WrappingClause::Insert {
-                while let Some(sib) = first_sibling.next_sibling() {
-                    match sib.kind() {
-                        "object_reference" => {
+            match *clause {
+                WrappingClause::Insert => {
+                    while let Some(sib) = first_sibling.next_sibling() {
+                        match sib.kind() {
+                            "object_reference" => {
+                                if let Some(NodeText::Original(txt)) =
+                                    self.get_ts_node_content(&sib)
+                                {
+                                    let mut iter = txt.split('.').rev();
+                                    let table = iter.next().unwrap().to_string();
+                                    let schema = iter.next().map(|s| s.to_string());
+                                    self.mentioned_relations
+                                        .entry(schema)
+                                        .and_modify(|s| {
+                                            s.insert(table.clone());
+                                        })
+                                        .or_insert(HashSet::from([table]));
+                                }
+                            }
+
+                            "column" => {
+                                if let Some(NodeText::Original(txt)) =
+                                    self.get_ts_node_content(&sib)
+                                {
+                                    let entry = MentionedColumn {
+                                        column: txt,
+                                        alias: None,
+                                    };
+
+                                    self.mentioned_columns
+                                        .entry(Some(WrappingClause::Insert))
+                                        .and_modify(|s| {
+                                            s.insert(entry.clone());
+                                        })
+                                        .or_insert(HashSet::from([entry]));
+                                }
+                            }
+
+                            _ => {}
+                        }
+
+                        first_sibling = sib;
+                    }
+                }
+
+                WrappingClause::AlterColumn => {
+                    while let Some(sib) = first_sibling.next_sibling() {
+                        if sib.kind() == "object_reference" {
                             if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
                                 let mut iter = txt.split('.').rev();
                                 let table = iter.next().unwrap().to_string();
@@ -660,27 +710,12 @@ impl<'a> CompletionContext<'a> {
                                     .or_insert(HashSet::from([table]));
                             }
                         }
-                        "column" => {
-                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
-                                let entry = MentionedColumn {
-                                    column: txt,
-                                    alias: None,
-                                };
 
-                                self.mentioned_columns
-                                    .entry(Some(WrappingClause::Insert))
-                                    .and_modify(|s| {
-                                        s.insert(entry.clone());
-                                    })
-                                    .or_insert(HashSet::from([entry]));
-                            }
-                        }
-
-                        _ => {}
+                        first_sibling = sib;
                     }
-
-                    first_sibling = sib;
                 }
+
+                _ => {}
             }
         }
     }
@@ -699,6 +734,9 @@ impl<'a> CompletionContext<'a> {
             "drop_table" => Some(WrappingClause::DropTable),
             "alter_role" => Some(WrappingClause::AlterRole),
             "drop_role" => Some(WrappingClause::DropRole),
+            "drop_column" => Some(WrappingClause::DropColumn),
+            "alter_column" => Some(WrappingClause::AlterColumn),
+            "rename_column" => Some(WrappingClause::RenameColumn),
             "alter_table" => Some(WrappingClause::AlterTable),
             "set_statement" => Some(WrappingClause::SetStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
