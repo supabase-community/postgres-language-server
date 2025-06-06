@@ -1,4 +1,7 @@
-use std::{borrow::Cow, cmp::max};
+use std::{
+    borrow::Cow,
+    cmp::{self, max},
+};
 
 use pgt_text_size::TextSize;
 
@@ -257,10 +260,13 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
         .find(|c| !c.is_whitespace())
         .unwrap_or_default();
 
+    // (.. and |)
+    let after_and_keyword = &sql[cmp::max(0, position - 4)..position] == "and " && after == ')';
+
     let before_matches = before == ',' || before == '(';
     let after_matches = after == ',' || after == ')';
 
-    before_matches && after_matches
+    (before_matches && after_matches) || after_and_keyword
 }
 
 #[cfg(test)]
@@ -443,6 +449,13 @@ mod tests {
         assert!(cursor_between_parentheses(
             "insert into instruments (name) values (a_function(name, ))",
             TextSize::new(56)
+        ));
+
+        // will sanitize after and
+        assert!(cursor_between_parentheses(
+            // create policy my_pol on users using (id = 1 and |),
+            "create policy my_pol on users using (id = 1 and )",
+            TextSize::new(48)
         ));
     }
 }

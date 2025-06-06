@@ -87,6 +87,9 @@ pub(crate) enum NodeUnderCursor<'a> {
         text: NodeText,
         range: TextRange,
         kind: String,
+        previous_node_text: Option<String>,
+        previous_node_range: Option<TextRange>,
+        previous_node_kind: Option<String>,
     },
 }
 
@@ -221,6 +224,12 @@ impl<'a> CompletionContext<'a> {
             ctx.gather_info_from_ts_queries();
         }
 
+        if cfg!(test) {
+            println!("{:#?}", ctx.text);
+            println!("{:#?}", ctx.wrapping_clause_type);
+            println!("{:#?}", ctx.node_under_cursor);
+        }
+
         ctx
     }
 
@@ -231,6 +240,9 @@ impl<'a> CompletionContext<'a> {
             text: revoke_context.node_text.into(),
             range: revoke_context.node_range,
             kind: revoke_context.node_kind.clone(),
+            previous_node_kind: None,
+            previous_node_range: None,
+            previous_node_text: None,
         });
 
         if revoke_context.node_kind == "revoke_table" {
@@ -258,6 +270,9 @@ impl<'a> CompletionContext<'a> {
             text: grant_context.node_text.into(),
             range: grant_context.node_range,
             kind: grant_context.node_kind.clone(),
+            previous_node_kind: None,
+            previous_node_range: None,
+            previous_node_text: None,
         });
 
         if grant_context.node_kind == "grant_table" {
@@ -285,6 +300,9 @@ impl<'a> CompletionContext<'a> {
             text: policy_context.node_text.into(),
             range: policy_context.node_range,
             kind: policy_context.node_kind.clone(),
+            previous_node_kind: Some(policy_context.previous_node_kind),
+            previous_node_range: Some(policy_context.previous_node_range),
+            previous_node_text: Some(policy_context.previous_node_text),
         });
 
         if policy_context.node_kind == "policy_table" {
@@ -800,7 +818,11 @@ impl<'a> CompletionContext<'a> {
                         .is_some_and(|sib| kinds.contains(&sib.kind()))
                 }
 
-                NodeUnderCursor::CustomNode { .. } => false,
+                NodeUnderCursor::CustomNode {
+                    previous_node_kind, ..
+                } => previous_node_kind
+                    .as_ref()
+                    .is_some_and(|k| kinds.contains(&k.as_str())),
             }
         })
     }

@@ -817,4 +817,38 @@ mod tests {
             .await;
         }
     }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn suggests_columns_policy_using_clause(pool: PgPool) {
+        let setup = r#"
+            create table instruments (
+                id bigint primary key generated always as identity,
+                name text not null,
+                z text, 
+                created_at timestamp with time zone default now()
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        let queries = vec![format!(
+            r#"create policy "my_pol" on public.instruments for all using (id = 1 and name = {})"#,
+            CURSOR_POS
+        )];
+
+        for query in queries {
+            assert_complete_results(
+                query.as_str(),
+                vec![
+                    CompletionAssertion::Label("created_at".into()),
+                    CompletionAssertion::Label("id".into()),
+                    CompletionAssertion::Label("name".into()),
+                    CompletionAssertion::Label("z".into()),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+    }
 }
