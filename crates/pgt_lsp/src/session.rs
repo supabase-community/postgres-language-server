@@ -32,9 +32,11 @@ use tower_lsp::lsp_types::{Unregistration, WorkspaceFolder};
 use tracing::{error, info};
 
 pub(crate) struct ClientInformation {
+    #[allow(dead_code)]
     /// The name of the client
     pub(crate) name: String,
 
+    #[allow(dead_code)]
     /// The version of the client
     pub(crate) version: Option<String>,
 }
@@ -76,6 +78,7 @@ pub(crate) struct Session {
 struct InitializeParams {
     /// The capabilities provided by the client as part of [`lsp_types::InitializeParams`]
     client_capabilities: lsp_types::ClientCapabilities,
+    #[allow(dead_code)]
     client_information: Option<ClientInformation>,
     root_uri: Option<Url>,
     #[allow(unused)]
