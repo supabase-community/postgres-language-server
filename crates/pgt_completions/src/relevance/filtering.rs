@@ -137,17 +137,24 @@ impl CompletionFilter<'_> {
                                         && ctx.parent_matches_one_of_kind(&["field"]))
                             }
 
+                            WrappingClause::PolicyCheck => {
+                                ctx.before_cursor_matches_kind(&["keyword_and", "("])
+                            }
+
                             _ => false,
                         }
                     }
 
-                    CompletionRelevanceData::Function(_) => matches!(
-                        clause,
+                    CompletionRelevanceData::Function(_) => match clause {
                         WrappingClause::From
-                            | WrappingClause::Select
-                            | WrappingClause::Where
-                            | WrappingClause::Join { .. }
-                    ),
+                        | WrappingClause::Select
+                        | WrappingClause::Where
+                        | WrappingClause::Join { .. } => true,
+
+                        WrappingClause::PolicyCheck => ctx.before_cursor_matches_kind(&["="]),
+
+                        _ => false,
+                    },
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
