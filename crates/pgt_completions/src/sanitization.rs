@@ -265,12 +265,42 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use pgt_schema_cache::SchemaCache;
     use pgt_text_size::TextSize;
 
-    use crate::sanitization::{
-        cursor_before_semicolon, cursor_between_parentheses, cursor_inbetween_nodes,
-        cursor_on_a_dot, cursor_prepared_to_write_token_after_last_node,
+    use crate::{
+        CompletionParams, SanitizedCompletionParams,
+        sanitization::{
+            cursor_before_semicolon, cursor_between_parentheses, cursor_inbetween_nodes,
+            cursor_on_a_dot, cursor_prepared_to_write_token_after_last_node,
+        },
     };
+
+    #[test]
+    fn should_lowercase_everything_except_replaced_token() {
+        let input = "SELECT  FROM users WHERE ts = NOW();";
+
+        let position = TextSize::new(7);
+        let cache = SchemaCache::default();
+
+        let mut ts = tree_sitter::Parser::new();
+        ts.set_language(tree_sitter_sql::language()).unwrap();
+        let tree = ts.parse(input, None).unwrap();
+
+        let params = CompletionParams {
+            position,
+            schema: &cache,
+            text: input.into(),
+            tree: &tree,
+        };
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            "select REPLACED_TOKEN from users where ts = now();"
+        );
+    }
 
     #[test]
     fn test_cursor_inbetween_nodes() {
