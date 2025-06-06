@@ -137,6 +137,9 @@ impl PolicyParser {
                 self.context.node_range = token.get_range();
                 self.context.node_text = token.get_word();
 
+                self.context.previous_node_range = previous.get_range();
+                self.context.previous_node_text = previous.get_word();
+
                 match other {
                     "(" | "=" => self.context.previous_node_kind = other.into(),
                     "and" => self.context.previous_node_kind = "keyword_and".into(),
@@ -278,9 +281,9 @@ mod tests {
                 node_kind: "".into(),
                 node_range: TextRange::new(TextSize::new(42), TextSize::new(56)),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "".into(),
+                previous_node_range: TextRange::new(25.into(), 41.into()),
+                previous_node_text: "\"my cool policy\"".into(),
             }
         );
 
@@ -304,9 +307,9 @@ mod tests {
                 node_kind: "policy_table".into(),
                 node_range: TextRange::new(TextSize::new(45), TextSize::new(59)),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "keyword_on".into(),
+                previous_node_range: TextRange::new(42.into(), 44.into()),
+                previous_node_text: "on".into(),
             }
         );
 
@@ -330,9 +333,9 @@ mod tests {
                 node_kind: "policy_table".into(),
                 node_range: TextRange::new(TextSize::new(50), TextSize::new(64)),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "keyword_on".into(),
+                previous_node_range: TextRange::new(42.into(), 44.into()),
+                previous_node_text: "on".into(),
             }
         );
 
@@ -357,9 +360,9 @@ mod tests {
                 node_kind: "".into(),
                 node_range: TextRange::new(TextSize::new(72), TextSize::new(86)),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "".into(),
+                previous_node_range: TextRange::new(69.into(), 71.into()),
+                previous_node_text: "as".into(),
             }
         );
 
@@ -385,9 +388,9 @@ mod tests {
                 node_kind: "".into(),
                 node_range: TextRange::new(TextSize::new(95), TextSize::new(109)),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "".into(),
+                previous_node_range: TextRange::new(72.into(), 82.into()),
+                previous_node_text: "permissive".into(),
             }
         );
 
@@ -413,9 +416,9 @@ mod tests {
                 node_kind: "policy_role".into(),
                 node_range: TextRange::new(TextSize::new(98), TextSize::new(112)),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "keyword_to".into(),
+                previous_node_range: TextRange::new(95.into(), 97.into()),
+                previous_node_text: "to".into(),
             }
         );
     }
@@ -445,9 +448,9 @@ mod tests {
                 node_range: TextRange::new(TextSize::new(57), TextSize::new(71)),
                 node_kind: "policy_table".into(),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "keyword_on".into(),
+                previous_node_range: TextRange::new(54.into(), 56.into()),
+                previous_node_text: "on".into(),
             }
         )
     }
@@ -477,9 +480,9 @@ mod tests {
                 node_range: TextRange::new(TextSize::new(62), TextSize::new(76)),
                 node_kind: "policy_table".into(),
                 in_check_or_using_clause: false,
-                previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_kind: "keyword_on".into(),
+                previous_node_range: TextRange::new(54.into(), 56.into()),
+                previous_node_text: "on".into(),
             }
         )
     }
@@ -507,8 +510,8 @@ mod tests {
                 node_kind: "policy_name".into(),
                 in_check_or_using_clause: false,
                 previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_range: TextRange::new(16.into(), 22.into()),
+                previous_node_text: "policy".into(),
             }
         );
 
@@ -534,8 +537,8 @@ mod tests {
                 node_kind: "policy_name".into(),
                 in_check_or_using_clause: false,
                 previous_node_kind: "keyword_policy".into(),
-                previous_node_range: TextRange::new(0.into(), 0.into()),
-                previous_node_text: "".into(),
+                previous_node_range: TextRange::new(16.into(), 22.into()),
+                previous_node_text: "policy".into(),
             }
         );
     }
@@ -580,9 +583,9 @@ mod tests {
                     node_range: TextRange::new(TextSize::new(112), TextSize::new(126)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
-                    previous_node_kind: "keyword_policy".into(),
-                    previous_node_range: TextRange::new(0.into(), 0.into()),
-                    previous_node_text: "".into(),
+                    previous_node_kind: "=".into(),
+                    previous_node_range: TextRange::new(110.into(), 111.into()),
+                    previous_node_text: "=".into(),
                 }
             );
         }
@@ -611,9 +614,9 @@ mod tests {
                     node_range: TextRange::new(TextSize::new(106), TextSize::new(120)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
-                    previous_node_kind: "keyword_policy".into(),
-                    previous_node_range: TextRange::new(0.into(), 0.into()),
-                    previous_node_text: "".into(),
+                    previous_node_kind: "(".into(),
+                    previous_node_range: TextRange::new(105.into(), 106.into()),
+                    previous_node_text: "(".into(),
                 }
             )
         }
@@ -642,9 +645,9 @@ mod tests {
                     node_range: TextRange::new(TextSize::new(111), TextSize::new(125)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
-                    previous_node_kind: "keyword_policy".into(),
-                    previous_node_range: TextRange::new(0.into(), 0.into()),
-                    previous_node_text: "".into(),
+                    previous_node_kind: "(".into(),
+                    previous_node_range: TextRange::new(110.into(), 111.into()),
+                    previous_node_text: "(".into(),
                 }
             )
         }

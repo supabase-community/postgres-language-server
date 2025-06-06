@@ -265,7 +265,7 @@ mod tests {
         assert_complete_results(
             query.as_str(),
             vec![
-                // aggregate functions are not permitted in policy checks.
+                // TODO: add procedures, load aggregates but skip them
                 CompletionAssertion::LabelNotExists("string_concat".into()),
                 CompletionAssertion::LabelAndKind(
                     "my_cool_foo".into(),
