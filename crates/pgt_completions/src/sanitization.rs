@@ -262,11 +262,13 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
 
     // (.. and |)
     let after_and_keyword = &sql[cmp::max(0, position - 4)..position] == "and " && after == ')';
+    let after_eq_sign = before == '=' && after == ')';
 
-    let before_matches = before == ',' || before == '(';
-    let after_matches = after == ',' || after == ')';
+    let head_of_list = before == '(' && after == ',';
+    let end_of_list = before == ',' && after == ')';
+    let between_list_items = before == ',' && after == ',';
 
-    (before_matches && after_matches) || after_and_keyword
+    head_of_list || end_of_list || between_list_items || after_and_keyword || after_eq_sign
 }
 
 #[cfg(test)]
@@ -449,6 +451,13 @@ mod tests {
         assert!(cursor_between_parentheses(
             "insert into instruments (name) values (a_function(name, ))",
             TextSize::new(56)
+        ));
+
+        // will sanitize after =
+        assert!(cursor_between_parentheses(
+            // create policy my_pol on users using (id = |),
+            "create policy my_pol on users using (id = )",
+            TextSize::new(42)
         ));
 
         // will sanitize after and

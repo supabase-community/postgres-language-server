@@ -65,11 +65,14 @@ fn get_completion_text(ctx: &CompletionContext, func: &Function) -> CompletionTe
 
 #[cfg(test)]
 mod tests {
-    use sqlx::PgPool;
+    use sqlx::{Executor, PgPool};
 
     use crate::{
         CompletionItem, CompletionItemKind, complete,
-        test_helper::{CURSOR_POS, get_test_deps, get_test_params},
+        test_helper::{
+            CURSOR_POS, CompletionAssertion, assert_complete_results, get_test_deps,
+            get_test_params,
+        },
     };
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
@@ -200,5 +203,82 @@ mod tests {
 
         assert_eq!(label, "cool");
         assert_eq!(kind, CompletionItemKind::Function);
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn only_allows_functions_in_policy_checks(pool: PgPool) {
+        let setup = r#"
+          create table coos (
+            id serial primary key,
+            name text
+          );
+
+          create or replace function my_cool_foo()
+          returns trigger
+          language plpgsql
+          security invoker
+          as $$
+          begin
+            raise exception 'dont matter';
+          end;
+          $$;
+
+          create or replace procedure my_cool_proc()
+          language plpgsql
+          security invoker
+          as $$
+          begin
+            raise exception 'dont matter';
+          end;
+          $$;
+
+          create or replace function string_concat_state(
+            state text, 
+            value text, 
+          separator text)
+          returns text
+          language plpgsql
+          as $$
+          begin
+              if state is null then
+                  return value;
+              else
+                  return state || separator || value;
+              end if;
+          end;
+          $$;
+
+          create aggregate string_concat(text, text) (
+            sfunc = string_concat_state,
+            stype = text,
+            initcond = ''
+          );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        let query = format!(
+            r#"create policy "my_pol" on public.instruments for insert with check (id = {})"#,
+            CURSOR_POS
+        );
+
+        assert_complete_results(
+            query.as_str(),
+            vec![
+                // aggregate functions are not permitted in policy checks.
+                CompletionAssertion::LabelNotExists("string_concat".into()),
+                CompletionAssertion::LabelAndKind(
+                    "my_cool_foo".into(),
+                    CompletionItemKind::Function,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "string_concat_state".into(),
+                    CompletionItemKind::Function,
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
     }
 }

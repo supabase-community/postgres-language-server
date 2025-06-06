@@ -831,12 +831,26 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        let queries = vec![format!(
-            r#"create policy "my_pol" on public.instruments for all using (id = 1 and name = {})"#,
-            CURSOR_POS
-        )];
+        let col_queries = vec![
+            format!(
+                r#"create policy "my_pol" on public.instruments for select using ({})"#,
+                CURSOR_POS
+            ),
+            format!(
+                r#"create policy "my_pol" on public.instruments for insert with check ({})"#,
+                CURSOR_POS
+            ),
+            format!(
+                r#"create policy "my_pol" on public.instruments for update using (id = 1 and {})"#,
+                CURSOR_POS
+            ),
+            format!(
+                r#"create policy "my_pol" on public.instruments for insert with check (id = 1 and {})"#,
+                CURSOR_POS
+            ),
+        ];
 
-        for query in queries {
+        for query in col_queries {
             assert_complete_results(
                 query.as_str(),
                 vec![

@@ -224,12 +224,6 @@ impl<'a> CompletionContext<'a> {
             ctx.gather_info_from_ts_queries();
         }
 
-        if cfg!(test) {
-            println!("{:#?}", ctx.text);
-            println!("{:#?}", ctx.wrapping_clause_type);
-            println!("{:#?}", ctx.node_under_cursor);
-        }
-
         ctx
     }
 
