@@ -74,9 +74,13 @@ impl CompletionFilter<'_> {
             .map(|clause| {
                 match self.data {
                     CompletionRelevanceData::Table(_) => match clause {
-                        WrappingClause::Select
-                        | WrappingClause::Where
-                        | WrappingClause::ColumnDefinitions => false,
+                        WrappingClause::From | WrappingClause::Update => true,
+
+                        WrappingClause::Join { on_node: None } => true,
+                        WrappingClause::Join { on_node: Some(on) } => ctx
+                            .node_under_cursor
+                            .as_ref()
+                            .is_some_and(|cn| cn.start_byte() < on.end_byte()),
 
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
@@ -94,15 +98,22 @@ impl CompletionFilter<'_> {
                                 "keyword_table",
                             ]),
 
-                        _ => true,
+                        _ => false,
                     },
 
                     CompletionRelevanceData::Column(_) => {
                         match clause {
-                            WrappingClause::From
-                            | WrappingClause::ColumnDefinitions
-                            | WrappingClause::AlterTable
-                            | WrappingClause::DropTable => false,
+                            WrappingClause::Select
+                            | WrappingClause::Update
+                            | WrappingClause::Delete
+                            | WrappingClause::DropColumn => true,
+
+                            WrappingClause::RenameColumn => ctx
+                                .before_cursor_matches_kind(&["keyword_rename", "keyword_column"]),
+
+                            WrappingClause::AlterColumn => {
+                                ctx.before_cursor_matches_kind(&["keyword_alter", "keyword_column"])
+                            }
 
                             // We can complete columns in JOIN cluases, but only if we are after the
                             // ON node in the "ON u.id = posts.user_id" part.
@@ -126,7 +137,7 @@ impl CompletionFilter<'_> {
                                         && ctx.parent_matches_one_of_kind(&["field"]))
                             }
 
-                            _ => true,
+                            _ => false,
                         }
                     }
 
