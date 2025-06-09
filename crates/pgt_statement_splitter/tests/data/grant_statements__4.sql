@@ -1,6 +1,6 @@
-grant create on schema public.name;
+GRANT CREATE ON SCHEMA public.name;
 
-grant select, insert on public.users to anon with grant option granted by owner;
+GRANT SELECT, INSERT ON public.users TO anon WITH GRANT OPTION GRANTED BY Owner;
 
 GRANT read_access, write_access TO user_role
   WITH INHERIT TRUE
