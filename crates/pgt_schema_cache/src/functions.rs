@@ -17,7 +17,7 @@ impl From<char> for ProcKind {
     fn from(value: char) -> Self {
         match value {
             'f' => Self::Function,
-            'p' => Self::Function,
+            'p' => Self::Procedure,
             'w' => Self::Window,
             'a' => Self::Aggregate,
             _ => unreachable!(),
@@ -203,56 +203,63 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
+        let results = sqlx::query_file!("src/queries/functions.sql")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+
+        println!("{:#?}", results);
+
         let cache = SchemaCache::load(&pool).await.unwrap();
 
-        // // Check the number of functions, procedures, and aggregates
-        // assert_eq!(cache.functions.len(), 4);
+        // Find and check the function
+        let foo_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "my_cool_foo")
+            .unwrap();
+        assert_eq!(foo_fn.schema, "public");
+        assert_eq!(foo_fn.kind, ProcKind::Function);
+        assert_eq!(foo_fn.language, "plpgsql");
+        assert_eq!(foo_fn.return_type.as_deref(), Some("trigger"));
+        assert_eq!(foo_fn.security_definer, false);
+        assert_eq!(foo_fn.behavior, Behavior::Volatile);
 
-        // // Find and check the function
-        // let foo_fn = cache
-        //     .functions
-        //     .iter()
-        //     .find(|f| f.name == "my_cool_foo")
-        //     .unwrap();
-        // assert_eq!(foo_fn.schema, "public");
-        // assert_eq!(foo_fn.kind, ProcKind::Function);
-        // assert_eq!(foo_fn.language, "plpgsql");
-        // assert_eq!(foo_fn.return_type.as_deref(), Some("trigger"));
-        // assert_eq!(foo_fn.security_definer, false);
-        // assert_eq!(foo_fn.behavior, Behavior::Volatile);
+        // Find and check the procedure
+        let proc_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "my_cool_proc")
+            .unwrap();
 
-        // // Find and check the procedure
-        // let proc_fn = cache
-        //     .functions
-        //     .iter()
-        //     .find(|f| f.name == "my_cool_proc")
-        //     .unwrap();
-        // assert_eq!(proc_fn.kind, ProcKind::Procedure);
-        // assert_eq!(proc_fn.language, "plpgsql");
-        // assert_eq!(proc_fn.security_definer, false);
+        println!("{:?}", proc_fn);
+        assert_eq!(proc_fn.kind, ProcKind::Procedure);
+        assert_eq!(proc_fn.language, "plpgsql");
+        assert_eq!(proc_fn.security_definer, false);
 
-        // // Find and check the aggregate
-        // let agg_fn = cache
-        //     .functions
-        //     .iter()
-        //     .find(|f| f.name == "string_concat")
-        //     .unwrap();
-        // assert_eq!(agg_fn.kind, ProcKind::Aggregate);
-        // assert_eq!(agg_fn.language, "internal"); // Aggregates are often "internal"
-        // // The return type should be text
-        // assert_eq!(agg_fn.return_type.as_deref(), Some("text"));
+        // Find and check the aggregate
+        let agg_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "string_concat")
+            .unwrap();
+        assert_eq!(agg_fn.kind, ProcKind::Aggregate);
+        assert_eq!(agg_fn.language, "internal"); // Aggregates are often "internal"
+        // The return type should be text
+        assert_eq!(agg_fn.return_type.as_deref(), Some("text"));
 
-        // // Find and check the state function for the aggregate
-        // let state_fn = cache
-        //     .functions
-        //     .iter()
-        //     .find(|f| f.name == "string_concat_state")
-        //     .unwrap();
-        // assert_eq!(state_fn.kind, ProcKind::Function);
-        // assert_eq!(state_fn.language, "plpgsql");
-        // assert_eq!(state_fn.return_type.as_deref(), Some("text"));
-        // assert_eq!(state_fn.args.args.len(), 3);
-        // let arg_names: Vec<_> = state_fn.args.args.iter().map(|a| a.name.as_str()).collect();
-        // assert_eq!(arg_names, &["state", "value", "separator"]);
+        // Find and check the state function for the aggregate
+        let state_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "string_concat_state")
+            .unwrap();
+
+        assert_eq!(state_fn.kind, ProcKind::Function);
+        assert_eq!(state_fn.language, "plpgsql");
+        assert_eq!(state_fn.return_type.as_deref(), Some("text"));
+        assert_eq!(state_fn.args.args.len(), 3);
+        let arg_names: Vec<_> = state_fn.args.args.iter().map(|a| a.name.as_str()).collect();
+        assert_eq!(arg_names, &["state", "value", "separator"]);
     }
 }

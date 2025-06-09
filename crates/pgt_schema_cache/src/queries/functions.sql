@@ -28,7 +28,7 @@ with functions as (
       )
     ) as arg_names,
     -- proallargtypes is null when all arg modes are IN
-    coalesce(p.proallargtypes, p.proargtypes) as arg_types,
+    coalesce(p.proallargtypes, string_to_array(proargtypes::text, ' ')::int[]) as arg_types,
     array_cat(
       array_fill(false, array [pronargs - pronargdefaults]),
       array_fill(true, array [pronargdefaults])
@@ -106,12 +106,13 @@ from
       (
         select
           oid,
-          unnest(arg_modes) as mode,
-          unnest(arg_names) as name,
-          unnest(arg_types) :: int8 as type_id,
-          unnest(arg_has_defaults) as has_default
+          arg_modes[i] as mode,
+          arg_names[i] as name,
+          arg_types[i] :: int8 as type_id,
+          arg_has_defaults[i] as has_default
         from
-          functions
+          functions,
+          pg_catalog.generate_subscripts(arg_names, 1) as i
       ) as t1,
       lateral (
         select
