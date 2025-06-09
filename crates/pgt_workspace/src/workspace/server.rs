@@ -596,16 +596,12 @@ impl Workspace for WorkspaceServer {
 
         let schema_cache = self.schema_cache.load(pool)?;
 
-        tracing::warn!("stmts in doc: {:?}", parsed_doc.iter(DefaultMapper).count());
-
         match get_statement_for_completions(&parsed_doc, params.position) {
             None => {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
             Some((id, range, content, cst)) => {
-                tracing::error!("Found statement with id {:?}: {:#?}", id, content);
-
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {
