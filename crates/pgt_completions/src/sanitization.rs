@@ -469,7 +469,6 @@ mod tests {
 
         // does not break if sql is really short
         assert!(!cursor_between_parentheses(
-            // create policy my_pol on users using (id = 1 and |),
             "(a)",
             TextSize::new(2)
         ));
