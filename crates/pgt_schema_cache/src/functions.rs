@@ -215,7 +215,7 @@ mod tests {
         assert_eq!(foo_fn.kind, ProcKind::Function);
         assert_eq!(foo_fn.language, "plpgsql");
         assert_eq!(foo_fn.return_type.as_deref(), Some("trigger"));
-        assert_eq!(foo_fn.security_definer, false);
+        assert!(!foo_fn.security_definer);
         assert_eq!(foo_fn.behavior, Behavior::Volatile);
 
         // Find and check the procedure
@@ -228,7 +228,7 @@ mod tests {
         println!("{:?}", proc_fn);
         assert_eq!(proc_fn.kind, ProcKind::Procedure);
         assert_eq!(proc_fn.language, "plpgsql");
-        assert_eq!(proc_fn.security_definer, false);
+        assert!(!proc_fn.security_definer);
 
         // Find and check the aggregate
         let agg_fn = cache
