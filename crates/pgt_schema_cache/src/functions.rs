@@ -67,7 +67,7 @@ pub struct FunctionArg {
     pub name: String,
 
     /// Refers to the argument type's ID in the `pg_type` table.
-    pub type_id: Option<i64>,
+    pub type_id: i64,
 
     pub has_default: Option<bool>,
 }
