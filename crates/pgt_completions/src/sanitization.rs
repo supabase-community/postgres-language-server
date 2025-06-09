@@ -1,7 +1,4 @@
-use std::{
-    borrow::Cow,
-    cmp::{max},
-};
+use std::{borrow::Cow, cmp::max};
 
 use pgt_text_size::TextSize;
 
@@ -468,9 +465,6 @@ mod tests {
         ));
 
         // does not break if sql is really short
-        assert!(!cursor_between_parentheses(
-            "(a)",
-            TextSize::new(2)
-        ));
+        assert!(!cursor_between_parentheses("(a)", TextSize::new(2)));
     }
 }
