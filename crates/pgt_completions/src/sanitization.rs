@@ -1,6 +1,6 @@
 use std::{
     borrow::Cow,
-    cmp::{self, max},
+    cmp::{max},
 };
 
 use pgt_text_size::TextSize;
