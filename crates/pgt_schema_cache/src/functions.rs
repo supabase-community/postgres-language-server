@@ -149,7 +149,7 @@ impl SchemaCacheItem for Function {
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::SchemaCache;
+    use crate::{Behavior, SchemaCache, functions::ProcKind};
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn loads(pool: PgPool) {
@@ -202,13 +202,6 @@ mod tests {
         "#;
 
         pool.execute(setup).await.unwrap();
-
-        let results = sqlx::query_file!("src/queries/functions.sql")
-            .fetch_all(&pool)
-            .await
-            .unwrap();
-
-        println!("{:#?}", results);
 
         let cache = SchemaCache::load(&pool).await.unwrap();
 
