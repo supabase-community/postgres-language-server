@@ -6,6 +6,7 @@ use crate::CompletionParams;
 
 static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
 
+#[derive(Debug)]
 pub(crate) struct SanitizedCompletionParams<'a> {
     pub position: TextSize,
     pub text: String,

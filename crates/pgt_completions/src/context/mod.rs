@@ -2,7 +2,10 @@ use std::{
     cmp,
     collections::{HashMap, HashSet},
 };
+mod base_parser;
+mod grant_parser;
 mod policy_parser;
+mod revoke_parser;
 
 use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextRange;
@@ -13,7 +16,12 @@ use pgt_treesitter_queries::{
 
 use crate::{
     NodeText,
-    context::policy_parser::{PolicyParser, PolicyStmtKind},
+    context::{
+        base_parser::CompletionStatementParser,
+        grant_parser::GrantParser,
+        policy_parser::{PolicyParser, PolicyStmtKind},
+        revoke_parser::RevokeParser,
+    },
     sanitization::SanitizedCompletionParams,
 };
 
@@ -36,6 +44,9 @@ pub enum WrappingClause<'a> {
     RenameColumn,
     PolicyName,
     ToRoleAssignment,
+    SetStatement,
+    AlterRole,
+    DropRole,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -190,14 +201,72 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        if PolicyParser::looks_like_policy_stmt(&params.text) {
+        if PolicyParser::looks_like_matching_stmt(&params.text) {
             ctx.gather_policy_context();
+        } else if GrantParser::looks_like_matching_stmt(&params.text) {
+            ctx.gather_grant_context();
+        } else if RevokeParser::looks_like_matching_stmt(&params.text) {
+            ctx.gather_revoke_context();
         } else {
             ctx.gather_tree_context();
             ctx.gather_info_from_ts_queries();
         }
 
         ctx
+    }
+
+    fn gather_revoke_context(&mut self) {
+        let revoke_context = RevokeParser::get_context(self.text, self.position);
+
+        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+            text: revoke_context.node_text.into(),
+            range: revoke_context.node_range,
+            kind: revoke_context.node_kind.clone(),
+        });
+
+        if revoke_context.node_kind == "revoke_table" {
+            self.schema_or_alias_name = revoke_context.schema_name.clone();
+        }
+
+        if revoke_context.table_name.is_some() {
+            let mut new = HashSet::new();
+            new.insert(revoke_context.table_name.unwrap());
+            self.mentioned_relations
+                .insert(revoke_context.schema_name, new);
+        }
+
+        self.wrapping_clause_type = match revoke_context.node_kind.as_str() {
+            "revoke_role" => Some(WrappingClause::ToRoleAssignment),
+            "revoke_table" => Some(WrappingClause::From),
+            _ => None,
+        };
+    }
+
+    fn gather_grant_context(&mut self) {
+        let grant_context = GrantParser::get_context(self.text, self.position);
+
+        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
+            text: grant_context.node_text.into(),
+            range: grant_context.node_range,
+            kind: grant_context.node_kind.clone(),
+        });
+
+        if grant_context.node_kind == "grant_table" {
+            self.schema_or_alias_name = grant_context.schema_name.clone();
+        }
+
+        if grant_context.table_name.is_some() {
+            let mut new = HashSet::new();
+            new.insert(grant_context.table_name.unwrap());
+            self.mentioned_relations
+                .insert(grant_context.schema_name, new);
+        }
+
+        self.wrapping_clause_type = match grant_context.node_kind.as_str() {
+            "grant_role" => Some(WrappingClause::ToRoleAssignment),
+            "grant_table" => Some(WrappingClause::From),
+            _ => None,
+        };
     }
 
     fn gather_policy_context(&mut self) {
@@ -427,7 +496,8 @@ impl<'a> CompletionContext<'a> {
             }
 
             "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
-            | "drop_table" | "alter_table" | "drop_column" | "alter_column" | "rename_column" => {
+            | "alter_role" | "drop_role" | "set_statement" | "drop_table" | "alter_table"
+            | "drop_column" | "alter_column" | "rename_column" => {
                 self.wrapping_clause_type =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
             }
@@ -662,10 +732,13 @@ impl<'a> CompletionContext<'a> {
             "delete" => Some(WrappingClause::Delete),
             "from" => Some(WrappingClause::From),
             "drop_table" => Some(WrappingClause::DropTable),
+            "alter_role" => Some(WrappingClause::AlterRole),
+            "drop_role" => Some(WrappingClause::DropRole),
             "drop_column" => Some(WrappingClause::DropColumn),
             "alter_column" => Some(WrappingClause::AlterColumn),
             "rename_column" => Some(WrappingClause::RenameColumn),
             "alter_table" => Some(WrappingClause::AlterTable),
+            "set_statement" => Some(WrappingClause::SetStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "insert" => Some(WrappingClause::Insert),
             "join" => {
