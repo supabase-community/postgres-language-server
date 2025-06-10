@@ -49,7 +49,7 @@ pub(crate) fn get_statement_for_completions(
     if count == 1 {
         eligible_statements.next()
     } else {
-        let mut prev_stmt = None;
+        let mut prev_stmt: Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> = None;
 
         for current_stmt in eligible_statements {
             /*
@@ -57,10 +57,16 @@ pub(crate) fn get_statement_for_completions(
              * with the next one.
              *
              * select 1 |select 1;
+             *
+             * This is however ok if the current statement is a child of the previous one,
+             * such as in CREATE FUNCTION bodies.
              */
-            if prev_stmt.is_some_and(|_| current_stmt.1.contains(position)) {
+            if prev_stmt.is_some_and(|prev| {
+                current_stmt.1.contains(position) && !current_stmt.0.is_child_of(&prev.0)
+            }) {
                 return None;
             }
+
             prev_stmt = Some(current_stmt)
         }
 
@@ -160,6 +166,30 @@ mod tests {
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
         assert_eq!(text, "select * from")
+    }
+
+    #[test]
+    fn identifies_nested_stmts() {
+        let sql = format!(
+            r#"
+            create or replace function one()
+            returns integer
+            language sql
+            as $$
+                select {} from cool;
+            $$;
+        "#,
+            CURSOR_POSITION
+        );
+
+        let sql = sql.trim();
+
+        let (doc, position) = get_doc_and_pos(sql);
+
+        let (_, _, text, _) =
+            get_statement_for_completions(&doc, position).expect("Expected Statement");
+
+        assert_eq!(text.trim(), "select  from cool;")
     }
 
     #[test]
