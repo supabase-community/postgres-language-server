@@ -217,6 +217,7 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::Except,
                         // for grant
                         SyntaxKind::Grant,
+                        SyntaxKind::Ascii44,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
@@ -246,6 +247,7 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::Instead,
                         // for grant
                         SyntaxKind::Grant,
+                        SyntaxKind::Ascii44,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
@@ -263,12 +265,32 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         SyntaxKind::Check,
                         // TIMESTAMP WITH TIME ZONE should not start a new statement
                         SyntaxKind::Time,
+                        SyntaxKind::Grant,
+                        SyntaxKind::Admin,
+                        SyntaxKind::Inherit,
+                        SyntaxKind::Set,
                     ]
                     .iter()
                     .all(|x| Some(x) != next.as_ref())
                     {
                         break;
                     }
+                    p.advance();
+                }
+
+                Some(SyntaxKind::Create) => {
+                    let prev = p.look_back().map(|t| t.kind);
+                    if [
+                        // for grant
+                        SyntaxKind::Grant,
+                        SyntaxKind::Ascii44,
+                    ]
+                    .iter()
+                    .all(|x| Some(x) != prev.as_ref())
+                    {
+                        break;
+                    }
+
                     p.advance();
                 }
                 Some(_) => {
