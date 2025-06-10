@@ -12,6 +12,7 @@ pub enum CompletionItemKind {
     Column,
     Schema,
     Policy,
+    Role,
 }
 
 impl Display for CompletionItemKind {
@@ -22,6 +23,7 @@ impl Display for CompletionItemKind {
             CompletionItemKind::Column => "Column",
             CompletionItemKind::Schema => "Schema",
             CompletionItemKind::Policy => "Policy",
+            CompletionItemKind::Role => "Role",
         };
 
         write!(f, "{txt}")
