@@ -225,7 +225,6 @@ mod tests {
             .find(|f| f.name == "my_cool_proc")
             .unwrap();
 
-        println!("{:?}", proc_fn);
         assert_eq!(proc_fn.kind, ProcKind::Procedure);
         assert_eq!(proc_fn.language, "plpgsql");
         assert!(!proc_fn.security_definer);
