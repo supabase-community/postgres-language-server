@@ -4,6 +4,33 @@ use sqlx::types::JsonValue;
 
 use crate::schema_cache::SchemaCacheItem;
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub enum ProcKind {
+    #[default]
+    Function,
+    Aggregate,
+    Window,
+    Procedure,
+}
+
+impl From<char> for ProcKind {
+    fn from(value: char) -> Self {
+        match value {
+            'f' => Self::Function,
+            'p' => Self::Procedure,
+            'w' => Self::Window,
+            'a' => Self::Aggregate,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl From<i8> for ProcKind {
+    fn from(value: i8) -> Self {
+        char::from(u8::try_from(value).unwrap()).into()
+    }
+}
+
 /// `Behavior` describes the characteristics of the function. Is it deterministic? Does it changed due to side effects, and if so, when?
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum Behavior {
@@ -72,6 +99,8 @@ pub struct Function {
     /// e.g. `plpgsql/sql` or `internal`.
     pub language: String,
 
+    pub kind: ProcKind,
+
     /// The body of the function – the `declare [..] begin [..] end [..]` block.` Not set for internal functions.
     pub body: Option<String>,
 
@@ -88,10 +117,10 @@ pub struct Function {
     pub identity_argument_types: Option<String>,
 
     /// An ID identifying the return type. For example, `2275` refers to `cstring`. 2278 refers to `void`.
-    pub return_type_id: i64,
+    pub return_type_id: Option<i64>,
 
     /// The return type, for example "text", "trigger", or "void".
-    pub return_type: String,
+    pub return_type: Option<String>,
 
     /// If the return type is a composite type, this will point the matching entry's `oid` column in the `pg_class` table. `None` if the function does not return a composite type.
     pub return_type_relation_id: Option<i64>,
@@ -113,5 +142,116 @@ impl SchemaCacheItem for Function {
         sqlx::query_file_as!(Function, "src/queries/functions.sql")
             .fetch_all(pool)
             .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::{Executor, PgPool};
+
+    use crate::{Behavior, SchemaCache, functions::ProcKind};
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads(pool: PgPool) {
+        let setup = r#"
+          create table coos (
+            id serial primary key,
+            name text
+          );
+
+          create or replace function my_cool_foo()
+          returns trigger
+          language plpgsql
+          security invoker
+          as $$
+          begin
+            raise exception 'dont matter';
+          end;
+          $$;
+
+          create or replace procedure my_cool_proc()
+          language plpgsql
+          security invoker
+          as $$
+          begin
+            raise exception 'dont matter';
+          end;
+          $$;
+
+          create or replace function string_concat_state(
+            state text, 
+            value text, 
+            separator text)
+          returns text
+          language plpgsql
+          as $$
+          begin
+              if state is null then
+                  return value;
+              else
+                  return state || separator || value;
+              end if;
+          end;
+          $$;
+
+          create aggregate string_concat(text, text) (
+            sfunc = string_concat_state,
+            stype = text,
+            initcond = ''
+          );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        let cache = SchemaCache::load(&pool).await.unwrap();
+
+        // Find and check the function
+        let foo_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "my_cool_foo")
+            .unwrap();
+        assert_eq!(foo_fn.schema, "public");
+        assert_eq!(foo_fn.kind, ProcKind::Function);
+        assert_eq!(foo_fn.language, "plpgsql");
+        assert_eq!(foo_fn.return_type.as_deref(), Some("trigger"));
+        assert!(!foo_fn.security_definer);
+        assert_eq!(foo_fn.behavior, Behavior::Volatile);
+
+        // Find and check the procedure
+        let proc_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "my_cool_proc")
+            .unwrap();
+
+        assert_eq!(proc_fn.kind, ProcKind::Procedure);
+        assert_eq!(proc_fn.language, "plpgsql");
+        assert!(!proc_fn.security_definer);
+
+        // Find and check the aggregate
+        let agg_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "string_concat")
+            .unwrap();
+        assert_eq!(agg_fn.kind, ProcKind::Aggregate);
+        assert_eq!(agg_fn.language, "internal"); // Aggregates are often "internal"
+        // The return type should be text
+        assert_eq!(agg_fn.return_type.as_deref(), Some("text"));
+
+        // Find and check the state function for the aggregate
+        let state_fn = cache
+            .functions
+            .iter()
+            .find(|f| f.name == "string_concat_state")
+            .unwrap();
+
+        assert_eq!(state_fn.kind, ProcKind::Function);
+        assert_eq!(state_fn.language, "plpgsql");
+        assert_eq!(state_fn.return_type.as_deref(), Some("text"));
+        assert_eq!(state_fn.args.args.len(), 3);
+        let arg_names: Vec<_> = state_fn.args.args.iter().map(|a| a.name.as_str()).collect();
+        assert_eq!(arg_names, &["state", "value", "separator"]);
     }
 }
