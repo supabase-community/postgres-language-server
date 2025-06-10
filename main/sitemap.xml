@@ -2,46 +2,46 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://pgtools.dev/main/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/checking_migrations/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/cli_reference/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/env_variables/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/rule_sources/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/rules/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/troubleshooting/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/rules/adding-required-field/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/rules/ban-drop-column/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/rules/ban-drop-not-null/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
     <url>
          <loc>https://pgtools.dev/main/rules/ban-drop-table/</loc>
-         <lastmod>2025-06-06</lastmod>
+         <lastmod>2025-06-10</lastmod>
     </url>
 </urlset>
