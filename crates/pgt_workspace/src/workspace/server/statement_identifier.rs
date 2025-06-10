@@ -66,6 +66,17 @@ impl StatementId {
         matches!(self, StatementId::Child(_))
     }
 
+    pub fn is_child_of(&self, maybe_parent: &StatementId) -> bool {
+        match self {
+            StatementId::Root(_) => false,
+            StatementId::Child(child_root) => match maybe_parent {
+                StatementId::Root(parent_rood) => child_root == parent_rood,
+                // TODO: can we have multiple nested statements?
+                StatementId::Child(_) => false,
+            },
+        }
+    }
+
     pub fn parent(&self) -> Option<StatementId> {
         match self {
             StatementId::Root(_) => None,
