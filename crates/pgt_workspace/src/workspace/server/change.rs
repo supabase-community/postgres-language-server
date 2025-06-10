@@ -1570,28 +1570,29 @@ mod tests {
     fn multiple_deletions_at_once() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN
-KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n".to_string(), 0);
+        let mut doc = Document::new("ALTER TABLE ONLY public.omni_channel_message ADD CONSTRAINT omni_channel_message_organisation_id_fkey FOREIGN KEY (organisation_id) REFERENCES public.organisation(id) ON UPDATE RESTRICT ON DELETE CASCADE;".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
             version: 1,
             changes: vec![
                 ChangeParams {
-                    range: Some(TextRange::new(31.into(), 38.into())),
-                    text: "te".to_string(),
+                    range: Some(TextRange::new(60.into(), 80.into())),
+                    text: "sendout".to_string(),
                 },
                 ChangeParams {
-                    range: Some(TextRange::new(60.into(), 67.into())),
-                    text: "te".to_string(),
+                    range: Some(TextRange::new(24.into(), 44.into())),
+                    text: "sendout".to_string(),
                 },
             ],
         };
 
         let changed = doc.apply_file_change(&change);
 
-        assert_eq!(doc.content, "\n\n\n\nALTER TABLE ONLY \"public\".\"te\"\n    ADD CONSTRAINT \"te_organisation_id_fkey\" FOREIGN
-KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n");
+        assert_eq!(
+            doc.content,
+            "ALTER TABLE ONLY public.sendout ADD CONSTRAINT sendout_organisation_id_fkey FOREIGN KEY (organisation_id) REFERENCES public.organisation(id) ON UPDATE RESTRICT ON DELETE CASCADE;"
+        );
 
         assert_eq!(changed.len(), 2);
 
@@ -1602,19 +1603,18 @@ KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDA
     fn multiple_additions_at_once() {
         let path = PgTPath::new("test.sql");
 
-        let mut doc = Document::new("\n\n\n\nALTER TABLE ONLY \"public\".\"sendout\"\n    ADD CONSTRAINT \"sendout_organisation_id_fkey\" FOREIGN
-KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n".to_string(), 0);
+        let mut doc = Document::new("ALTER TABLE ONLY public.sendout ADD CONSTRAINT sendout_organisation_id_fkey FOREIGN KEY (organisation_id) REFERENCES public.organisation(id) ON UPDATE RESTRICT ON DELETE CASCADE;".to_string(), 0);
 
         let change = ChangeFileParams {
             path: path.clone(),
             version: 1,
             changes: vec![
                 ChangeParams {
-                    range: Some(TextRange::new(31.into(), 38.into())),
+                    range: Some(TextRange::new(47.into(), 54.into())),
                     text: "omni_channel_message".to_string(),
                 },
                 ChangeParams {
-                    range: Some(TextRange::new(60.into(), 67.into())),
+                    range: Some(TextRange::new(24.into(), 31.into())),
                     text: "omni_channel_message".to_string(),
                 },
             ],
@@ -1622,8 +1622,10 @@ KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDA
 
         let changed = doc.apply_file_change(&change);
 
-        assert_eq!(doc.content, "\n\n\n\nALTER TABLE ONLY \"public\".\"omni_channel_message\"\n    ADD CONSTRAINT \"omni_channel_message_organisation_id_fkey\" FOREIGN
-KEY (\"organisation_id\") REFERENCES \"public\".\"organisation\"(\"id\") ON UPDATE RESTRICT ON DELETE CASCADE;\n");
+        assert_eq!(
+            doc.content,
+            "ALTER TABLE ONLY public.omni_channel_message ADD CONSTRAINT omni_channel_message_organisation_id_fkey FOREIGN KEY (organisation_id) REFERENCES public.organisation(id) ON UPDATE RESTRICT ON DELETE CASCADE;"
+        );
 
         assert_eq!(changed.len(), 2);
 
