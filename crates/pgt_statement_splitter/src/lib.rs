@@ -45,8 +45,9 @@ mod tests {
             assert_eq!(
                 self.parse.ranges.len(),
                 expected.len(),
-                "Expected {} statements, got {}: {:?}",
+                "Expected {} statements for input {}, got {}: {:?}",
                 expected.len(),
+                self.input,
                 self.parse.ranges.len(),
                 self.parse
                     .ranges
@@ -114,10 +115,24 @@ mod tests {
 
     #[test]
     fn grant() {
-        Tester::from("GRANT SELECT ON TABLE \"public\".\"my_table\" TO \"my_role\";")
-            .expect_statements(vec![
-                "GRANT SELECT ON TABLE \"public\".\"my_table\" TO \"my_role\";",
-            ]);
+        let stmts = vec![
+            "GRANT SELECT ON TABLE \"public\".\"my_table\" TO \"my_role\";",
+            "GRANT UPDATE ON TABLE \"public\".\"my_table\" TO \"my_role\";",
+            "GRANT DELETE ON TABLE \"public\".\"my_table\" TO \"my_role\";",
+            "GRANT INSERT ON TABLE \"public\".\"my_table\" TO \"my_role\";",
+            "GRANT CREATE ON SCHEMA \"public\" TO \"my_role\";",
+            "GRANT ALL PRIVILEGES ON DATABASE \"my_database\" TO \"my_role\";",
+            "GRANT USAGE ON SCHEMA \"public\" TO \"my_role\";",
+            "GRANT EXECUTE ON FUNCTION \"public\".\"my_function\"() TO \"my_role\";",
+            "GRANT REFERENCES ON TABLE \"public\".\"my_table\" TO \"my_role\";",
+            "GRANT SELECT, UPDATE ON ALL TABLES IN SCHEMA \"public\" TO \"my_role\";",
+            "GRANT SELECT, INSERT ON public.users TO anon WITH GRANT OPION GRANTED BY owner;",
+            "GRANT owner, admin to anon WITH ADMIN;",
+        ];
+
+        for stmt in stmts {
+            Tester::from(stmt).expect_statements(vec![stmt]);
+        }
     }
 
     #[test]
