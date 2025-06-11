@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "with functions as (\n  select\n    oid,\n    proname,\n    prosrc,\n    prorettype,\n    proretset,\n    provolatile,\n    prosecdef,\n    prolang,\n    pronamespace,\n    proconfig,\n    prokind,\n    -- proargmodes is null when all arg modes are IN\n    coalesce(\n      p.proargmodes,\n      array_fill(\n        'i' :: text,\n        array [cardinality(coalesce(p.proallargtypes, p.proargtypes))]\n      )\n    ) as arg_modes,\n    -- proargnames is null when all args are unnamed\n    coalesce(\n      p.proargnames,\n      array_fill(\n        '' :: text,\n        array [cardinality(coalesce(p.proallargtypes, p.proargtypes))]\n      )\n    ) as arg_names,\n    -- proallargtypes is null when all arg modes are IN\n    coalesce(p.proallargtypes, string_to_array(proargtypes::text, ' ')::int[]) as arg_types,\n    array_cat(\n      array_fill(false, array [pronargs - pronargdefaults]),\n      array_fill(true, array [pronargdefaults])\n    ) as arg_has_defaults\n  from\n    pg_proc as p\n)\nselect\n  f.oid :: int8 as \"id!\",\n  n.nspname as \"schema!\",\n  f.proname as \"name!\",\n  l.lanname as \"language!\",\n  f.prokind as \"kind!\",\n  case\n    when l.lanname = 'internal' then null\n    else f.prosrc\n  end as body,\n  case\n    when l.lanname = 'internal' then null\n    else pg_get_functiondef(f.oid)\n  end as definition,\n  coalesce(f_args.args, '[]') as args,\n  nullif(pg_get_function_arguments(f.oid), '') as argument_types,\n  nullif(pg_get_function_identity_arguments(f.oid), '') as identity_argument_types,\n  f.prorettype :: int8 as return_type_id,\n  pg_get_function_result(f.oid) as return_type,\n  nullif(rt.typrelid :: int8, 0) as return_type_relation_id,\n  f.proretset as \"is_set_returning_function!\",\n  case\n    when f.provolatile = 'i' then 'IMMUTABLE'\n    when f.provolatile = 's' then 'STABLE'\n    when f.provolatile = 'v' then 'VOLATILE'\n  end as behavior,\n  f.prosecdef as \"security_definer!\"\nfrom\n  functions f\n  left join pg_namespace n on f.pronamespace = n.oid\n  left join pg_language l on f.prolang = l.oid\n  left join pg_type rt on rt.oid = f.prorettype\n  left join (\n    select\n      oid,\n      jsonb_object_agg(param, value) filter (\n        where\n          param is not null\n      ) as config_params\n    from\n      (\n        select\n          oid,\n          (string_to_array(unnest(proconfig), '=')) [1] as param,\n          (string_to_array(unnest(proconfig), '=')) [2] as value\n        from\n          functions\n      ) as t\n    group by\n      oid\n  ) f_config on f_config.oid = f.oid\n  left join (\n    select\n      oid,\n      jsonb_agg(\n        jsonb_build_object(\n          'mode',\n          t2.mode,\n          'name',\n          name,\n          'type_id',\n          type_id,\n          'has_default',\n          has_default\n        )\n      ) as args\n    from\n      (\n        select\n          oid,\n          arg_modes[i] as mode,\n          arg_names[i] as name,\n          arg_types[i] :: int8 as type_id,\n          arg_has_defaults[i] as has_default\n        from\n          functions,\n          pg_catalog.generate_subscripts(arg_names, 1) as i\n      ) as t1,\n      lateral (\n        select\n          case\n            when t1.mode = 'i' then 'in'\n            when t1.mode = 'o' then 'out'\n            when t1.mode = 'b' then 'inout'\n            when t1.mode = 'v' then 'variadic'\n            else 'table'\n          end as mode\n      ) as t2\n    group by\n      t1.oid\n  ) f_args on f_args.oid = f.oid;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "language!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 4,
+        "name": "kind!",
+        "type_info": "Char"
+      },
+      {
+        "ordinal": 5,
+        "name": "body",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "definition",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "args",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "argument_types",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "identity_argument_types",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "return_type_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "return_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "return_type_relation_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 13,
+        "name": "is_set_returning_function!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "behavior",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "security_definer!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      true,
+      true,
+      true,
+      true,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      true,
+      null,
+      true
+    ]
+  },
+  "hash": "4ea19fee016f1daeafdc466647d117910b19f540f19393b76aa6434e9d1d8502"
+}
