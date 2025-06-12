@@ -1,3 +1,5 @@
+use pgt_schema_cache::ProcKind;
+
 use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
@@ -145,13 +147,16 @@ impl CompletionFilter<'_> {
                         }
                     }
 
-                    CompletionRelevanceData::Function(_) => match clause {
+                    CompletionRelevanceData::Function(f) => match clause {
                         WrappingClause::From
                         | WrappingClause::Select
                         | WrappingClause::Where
                         | WrappingClause::Join { .. } => true,
 
-                        WrappingClause::PolicyCheck => ctx.before_cursor_matches_kind(&["="]),
+                        WrappingClause::PolicyCheck => {
+                            ctx.before_cursor_matches_kind(&["="])
+                                && matches!(f.kind, ProcKind::Function | ProcKind::Procedure)
+                        }
 
                         _ => false,
                     },
