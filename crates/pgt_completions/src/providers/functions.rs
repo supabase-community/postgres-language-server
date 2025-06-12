@@ -206,7 +206,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
-    async fn only_allows_functions_in_policy_checks(pool: PgPool) {
+    async fn only_allows_functions_and_procedures_in_policy_checks(pool: PgPool) {
         let setup = r#"
           create table coos (
             id serial primary key,
@@ -268,6 +268,10 @@ mod tests {
                 CompletionAssertion::LabelNotExists("string_concat".into()),
                 CompletionAssertion::LabelAndKind(
                     "my_cool_foo".into(),
+                    CompletionItemKind::Function,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "my_cool_proc".into(),
                     CompletionItemKind::Function,
                 ),
                 CompletionAssertion::LabelAndKind(
