@@ -47,6 +47,15 @@ pub enum WrappingClause<'a> {
     SetStatement,
     AlterRole,
     DropRole,
+
+    /// `PolicyCheck` refers to either the `WITH CHECK` or the `USING` clause
+    /// in a policy statement.
+    /// ```sql
+    /// CREATE POLICY "my pol" ON PUBLIC.USERS
+    /// FOR SELECT
+    /// USING (...) -- this one!
+    /// ```
+    PolicyCheck,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -78,6 +87,7 @@ pub(crate) enum NodeUnderCursor<'a> {
         text: NodeText,
         range: TextRange,
         kind: String,
+        previous_node_kind: Option<String>,
     },
 }
 
@@ -222,6 +232,7 @@ impl<'a> CompletionContext<'a> {
             text: revoke_context.node_text.into(),
             range: revoke_context.node_range,
             kind: revoke_context.node_kind.clone(),
+            previous_node_kind: None,
         });
 
         if revoke_context.node_kind == "revoke_table" {
@@ -249,6 +260,7 @@ impl<'a> CompletionContext<'a> {
             text: grant_context.node_text.into(),
             range: grant_context.node_range,
             kind: grant_context.node_kind.clone(),
+            previous_node_kind: None,
         });
 
         if grant_context.node_kind == "grant_table" {
@@ -276,6 +288,7 @@ impl<'a> CompletionContext<'a> {
             text: policy_context.node_text.into(),
             range: policy_context.node_range,
             kind: policy_context.node_kind.clone(),
+            previous_node_kind: Some(policy_context.previous_node_kind),
         });
 
         if policy_context.node_kind == "policy_table" {
@@ -295,7 +308,13 @@ impl<'a> CompletionContext<'a> {
             }
             "policy_role" => Some(WrappingClause::ToRoleAssignment),
             "policy_table" => Some(WrappingClause::From),
-            _ => None,
+            _ => {
+                if policy_context.in_check_or_using_clause {
+                    Some(WrappingClause::PolicyCheck)
+                } else {
+                    None
+                }
+            }
         };
     }
 
@@ -785,7 +804,11 @@ impl<'a> CompletionContext<'a> {
                         .is_some_and(|sib| kinds.contains(&sib.kind()))
                 }
 
-                NodeUnderCursor::CustomNode { .. } => false,
+                NodeUnderCursor::CustomNode {
+                    previous_node_kind, ..
+                } => previous_node_kind
+                    .as_ref()
+                    .is_some_and(|k| kinds.contains(&k.as_str())),
             }
         })
     }

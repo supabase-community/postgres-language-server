@@ -257,10 +257,15 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
         .find(|c| !c.is_whitespace())
         .unwrap_or_default();
 
-    let before_matches = before == ',' || before == '(';
-    let after_matches = after == ',' || after == ')';
+    // (.. and |)
+    let after_and_keyword = &sql[position.saturating_sub(4)..position] == "and " && after == ')';
+    let after_eq_sign = before == '=' && after == ')';
 
-    before_matches && after_matches
+    let head_of_list = before == '(' && after == ',';
+    let end_of_list = before == ',' && after == ')';
+    let between_list_items = before == ',' && after == ',';
+
+    head_of_list || end_of_list || between_list_items || after_and_keyword || after_eq_sign
 }
 
 #[cfg(test)]
@@ -444,5 +449,22 @@ mod tests {
             "insert into instruments (name) values (a_function(name, ))",
             TextSize::new(56)
         ));
+
+        // will sanitize after =
+        assert!(cursor_between_parentheses(
+            // create policy my_pol on users using (id = |),
+            "create policy my_pol on users using (id = )",
+            TextSize::new(42)
+        ));
+
+        // will sanitize after and
+        assert!(cursor_between_parentheses(
+            // create policy my_pol on users using (id = 1 and |),
+            "create policy my_pol on users using (id = 1 and )",
+            TextSize::new(48)
+        ));
+
+        // does not break if sql is really short
+        assert!(!cursor_between_parentheses("(a)", TextSize::new(2)));
     }
 }
