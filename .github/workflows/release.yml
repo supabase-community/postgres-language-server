@@ -152,7 +152,7 @@ jobs:
           tag_name: ${{ steps.create_changelog.outputs.version }}
           files: |
             postgrestools_*
-            docs/schemas/schema.json
+            docs/schema.json
           fail_on_unmatched_files: true
           draft: true
 
