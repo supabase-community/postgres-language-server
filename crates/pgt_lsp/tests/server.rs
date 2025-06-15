@@ -2,7 +2,6 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use anyhow::bail;
-use biome_deserialize::IsEmpty;
 use biome_deserialize::Merge;
 use biome_deserialize::StringSet;
 use futures::Sink;
@@ -25,7 +24,6 @@ use sqlx::PgPool;
 use std::any::type_name;
 use std::fmt::Display;
 use std::time::Duration;
-use test_log;
 use tower::timeout::Timeout;
 use tower::{Service, ServiceExt};
 use tower_lsp::LspService;
@@ -1545,8 +1543,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-// #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
-#[test_log::test(sqlx::test(migrator = "pgt_test_utils::MIGRATIONS"))]
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
