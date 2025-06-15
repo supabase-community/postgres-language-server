@@ -1705,9 +1705,6 @@ ALTER TABLE ONLY "public"."journey_node_contact_list"
         assert_document_integrity(&doc);
     }
 
-    // [ChangeParams { range: Some(31..39), text: "journey_node" }, ChangeParams { range: Some(74..82), text: "journ
-    // ey_node" }] }
-
     #[test]
     fn test_comments_only() {
         let path = PgTPath::new("test.sql");
