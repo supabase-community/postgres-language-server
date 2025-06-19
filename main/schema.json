@@ -349,6 +349,17 @@
             }
           ]
         },
+        "banDropDatabase": {
+          "description": "Dropping a database may break existing clients (and everything else, really).",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banDropNotNull": {
           "description": "Dropping a NOT NULL constraint may break existing clients.",
           "anyOf": [
@@ -362,6 +373,17 @@
         },
         "banDropTable": {
           "description": "Dropping a table may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banTruncateCascade": {
+          "description": "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

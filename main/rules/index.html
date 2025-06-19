@@ -114,6 +114,11 @@
 <td>✅</td>
 </tr>
 <tr>
+<td><a href="/rules/ban-drop-database">banDropDatabase</a></td>
+<td>Dropping a database may break existing clients (and everything else, really).</td>
+<td></td>
+</tr>
+<tr>
 <td><a href="/rules/ban-drop-not-null">banDropNotNull</a></td>
 <td>Dropping a NOT NULL constraint may break existing clients.</td>
 <td>✅</td>
@@ -122,6 +127,11 @@
 <td><a href="/rules/ban-drop-table">banDropTable</a></td>
 <td>Dropping a table may break existing clients.</td>
 <td>✅</td>
+</tr>
+<tr>
+<td><a href="/rules/ban-truncate-cascade">banTruncateCascade</a></td>
+<td>Using <code>TRUNCATE</code>'s <code>CASCADE</code> option will truncate any tables that are also foreign-keyed to the specified tables.</td>
+<td></td>
 </tr>
 </tbody>
 </table>

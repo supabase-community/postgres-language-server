@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pgtools.dev/main/rules/ban-drop-table/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pgtools.dev/main/rules/ban-truncate-cascade/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>banDropTable - Postgres Language Server</title>
+    <title>banTruncateCascade - Postgres Language Server</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
@@ -13,9 +13,9 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "banDropTable";
-        var mkdocs_page_input_path = "rules/ban-drop-table.md";
-        var mkdocs_page_url = "/main/rules/ban-drop-table/";
+        var mkdocs_page_name = "banTruncateCascade";
+        var mkdocs_page_input_path = "rules/ban-truncate-cascade.md";
+        var mkdocs_page_url = "/main/rules/ban-truncate-cascade/";
       </script>
     
     <!--[if lt IE 9]>
@@ -72,9 +72,9 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">banDropTable</li>
+      <li class="breadcrumb-item active">banTruncateCascade</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/rules/ban-drop-table.md">Edit on supabase-community/postgres-language-server</a>
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/rules/ban-truncate-cascade.md">Edit on supabase-community/postgres-language-server</a>
     </li>
   </ul>
   <hr/>
@@ -82,39 +82,27 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="bandroptable">banDropTable</h1>
-<p><strong>Diagnostic Category: <code>lint/safety/banDropTable</code></strong></p>
+                <h1 id="bantruncatecascade">banTruncateCascade</h1>
+<p><strong>Diagnostic Category: <code>lint/safety/banTruncateCascade</code></strong></p>
 <p><strong>Since</strong>: <code>vnext</code></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This rule is recommended. A diagnostic error will appear when linting your code.</p>
-</div>
 <p><strong>Sources</strong>: 
-- Inspired from: <a href="https://squawkhq.com/docs/ban-drop-table" target="_blank"><code>squawk/ban-drop-table</code></a></p>
+- Inspired from: <a href="https://squawkhq.com/docs/ban-truncate-cascade" target="_blank"><code>squawk/ban-truncate-cascade</code></a></p>
 <h2 id="description">Description</h2>
-<p>Dropping a table may break existing clients.</p>
-<p>Update your application code to no longer read or write the table.</p>
-<p>Once the table is no longer needed, you can delete it by running the command "DROP TABLE mytable;".</p>
-<p>This command will permanently remove the table from the database and all its contents.
-Be sure to back up the table before deleting it, just in case you need to restore it in the future.</p>
-<h2 id="examples">Examples</h2>
-<pre><code class="language-sql">drop table some_table;
-</code></pre>
-<pre><code class="language-sh">code-block.sql lint/safety/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  ! Dropping a table may break existing clients.
-
-  i Update your application code to no longer read or write the table, and only then delete the table. Be sure to create a backup.
-
-
-</code></pre>
+<p>Using <code>TRUNCATE</code>'s <code>CASCADE</code> option will truncate any tables that are also foreign-keyed to the specified tables.</p>
+<p>So if you had tables with foreign-keys like:</p>
+<p><code>a &lt;- b &lt;- c</code></p>
+<p>and ran:</p>
+<p><code>truncate a cascade;</code></p>
+<p>You'd end up with a, b, &amp; c all being truncated!</p>
+<p>Instead, you can manually specify the tables you want.</p>
+<p><code>truncate a, b;</code></p>
 <h2 id="how-to-configure">How to configure</h2>
 <pre><code class="language-json">
 {
   &quot;linter&quot;: {
     &quot;rules&quot;: {
       &quot;safety&quot;: {
-        &quot;banDropTable&quot;: &quot;error&quot;
+        &quot;banTruncateCascade&quot;: &quot;error&quot;
       }
     }
   }
