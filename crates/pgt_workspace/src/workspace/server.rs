@@ -427,34 +427,20 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        // create analyser for this run
-        // first, collect enabled and disabled rules from the workspace settings
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(&params.only, &params.skip)
-            .finish();
-        // then, build a map that contains all options
-        let options = AnalyserOptions {
-            rules: to_analyser_rules(settings),
-        };
-        // next, build the analysis filter which will be used to match rules
-        let filter = AnalysisFilter {
-            categories: params.categories,
-            enabled_rules: Some(enabled_rules.as_slice()),
-            disabled_rules: &disabled_rules,
-        };
-        // finally, create the analyser that will be used during this run
-        let analyser = Analyser::new(AnalyserConfig {
-            options: &options,
-            filter,
-        });
-
         let parser = self
             .parsed_documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
+        /*
+         * The statements in the document might already have associated diagnostics,
+         * e.g. if they contain syntax errors that surfaced while parsing/splitting the statements
+         */
         let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
 
+        /*
+         * Type-checking against database connection
+         */
         if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
@@ -517,6 +503,29 @@ impl Workspace for WorkspaceServer {
                 }
             }
         }
+
+        /*
+         * Below, we'll apply our static linting rules against the statements,
+         * considering the user's settings
+         */
+        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
+            .with_linter_rules(&params.only, &params.skip)
+            .finish();
+
+        let options = AnalyserOptions {
+            rules: to_analyser_rules(settings),
+        };
+
+        let filter = AnalysisFilter {
+            categories: params.categories,
+            enabled_rules: Some(enabled_rules.as_slice()),
+            disabled_rules: &disabled_rules,
+        };
+
+        let analyser = Analyser::new(AnalyserConfig {
+            options: &options,
+            filter,
+        });
 
         diagnostics.extend(parser.iter(SyncDiagnosticsMapper).flat_map(
             |(_id, range, ast, diag)| {

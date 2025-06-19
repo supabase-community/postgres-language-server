@@ -1,5 +1,6 @@
 use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
 use pgt_console::markup;
+use pgt_diagnostics::Severity;
 
 declare_lint_rule! {
     /// Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
@@ -17,6 +18,7 @@ declare_lint_rule! {
     pub AddingRequiredField {
         version: "next",
         name: "addingRequiredField",
+        severity: Severity::Error,
         recommended: false,
         sources: &[RuleSource::Squawk("adding-required-field")],
     }

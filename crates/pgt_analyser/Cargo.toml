@@ -15,6 +15,7 @@ version              = "0.0.0"
 pgt_analyse   = { workspace = true }
 pgt_console   = { workspace = true }
 pgt_query_ext = { workspace = true }
+pgt_diagnostics = { workspace = true }
 serde         = { workspace = true }
 
 [dev-dependencies]

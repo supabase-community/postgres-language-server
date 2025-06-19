@@ -24,6 +24,7 @@ macro_rules! declare_lint_rule {
     ( $( #[doc = $doc:literal] )+ $vis:vis $id:ident {
         version: $version:literal,
         name: $name:tt,
+        severity: $severity:expr_2021,
         $( $key:ident: $value:expr_2021, )*
     } ) => {
 
@@ -32,6 +33,7 @@ macro_rules! declare_lint_rule {
             $vis $id {
                 version: $version,
                 name: $name,
+                severity: $severity,
                 $( $key: $value, )*
             }
         );
@@ -53,6 +55,7 @@ macro_rules! declare_rule {
         ( $( #[doc = $doc:literal] )+ $vis:vis $id:ident {
         version: $version:literal,
         name: $name:tt,
+        severity: $severity:expr_2021,
         $( $key:ident: $value:expr_2021, )*
     } ) => {
         $( #[doc = $doc] )*
@@ -61,7 +64,7 @@ macro_rules! declare_rule {
         impl $crate::RuleMeta for $id {
             type Group = super::Group;
             const METADATA: $crate::RuleMetadata =
-                $crate::RuleMetadata::new($version, $name, concat!( $( $doc, "\n", )* )) $( .$key($value) )*;
+                $crate::RuleMetadata::new($version, $name, concat!( $( $doc, "\n", )* ), $severity) $( .$key($value) )*;
         }
     }
 }

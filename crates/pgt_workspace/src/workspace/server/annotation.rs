@@ -22,10 +22,10 @@ impl AnnotationStore {
     #[allow(unused)]
     pub fn get_annotations(
         &self,
-        statement: &StatementId,
+        statement_id: &StatementId,
         content: &str,
     ) -> Option<Arc<StatementAnnotations>> {
-        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
+        if let Some(existing) = self.db.get(statement_id).map(|x| x.clone()) {
             return existing;
         }
 
@@ -43,7 +43,7 @@ impl AnnotationStore {
             })
         });
 
-        self.db.insert(statement.clone(), None);
+        self.db.insert(statement_id.clone(), None);
         annotations
     }
 

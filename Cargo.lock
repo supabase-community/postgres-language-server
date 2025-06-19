@@ -5128,6 +5128,7 @@ dependencies = [
  "bpaf",
  "pgt_analyse",
  "pgt_analyser",
+ "pgt_diagnostics",
  "pgt_workspace",
  "proc-macro2",
  "pulldown-cmark",
