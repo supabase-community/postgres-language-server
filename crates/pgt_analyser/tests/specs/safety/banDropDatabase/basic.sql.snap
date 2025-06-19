@@ -7,3 +7,10 @@ expression: snapshot
 -- expect_only_lint/safety/banDropDatabase
 drop database all_users;
 ```
+
+# Diagnostics
+lint/safety/banDropDatabase ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a database may break existing clients.
+  
+  i You probably don't want to drop your database.
