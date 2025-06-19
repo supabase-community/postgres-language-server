@@ -1,2 +1,2 @@
 -- expect_only_lint/safety/banTruncateCascade
--- select 1;
+truncate a cascade;
