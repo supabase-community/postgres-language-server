@@ -407,7 +407,7 @@ export interface Safety {
 	 */
 	banDropTable?: RuleConfiguration_for_Null;
 	/**
-	 * Succinct description of the rule.
+	 * Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.
 	 */
 	banTruncateCascade?: RuleConfiguration_for_Null;
 	/**

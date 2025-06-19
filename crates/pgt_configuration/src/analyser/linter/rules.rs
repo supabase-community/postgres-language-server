@@ -149,7 +149,7 @@ pub struct Safety {
     #[doc = "Dropping a table may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_table: Option<RuleConfiguration<pgt_analyser::options::BanDropTable>>,
-    #[doc = "Succinct description of the rule."]
+    #[doc = "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_truncate_cascade: Option<RuleConfiguration<pgt_analyser::options::BanTruncateCascade>>,
 }
@@ -289,7 +289,7 @@ impl Safety {
             "banDropDatabase" => Severity::Warning,
             "banDropNotNull" => Severity::Warning,
             "banDropTable" => Severity::Warning,
-            "banTruncateCascade" => Severity::Warning,
+            "banTruncateCascade" => Severity::Error,
             _ => unreachable!(),
         }
     }
