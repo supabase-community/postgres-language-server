@@ -31,8 +31,8 @@ gen-lint:
   just format
 
 # Creates a new lint rule in the given path, with the given name. Name has to be camel case. Group should be lowercase.
-new-lintrule group rulename:
-  cargo run -p xtask_codegen -- new-lintrule --category=lint --name={{rulename}} --group={{group}}
+new-lintrule group rulename severity="error":
+  cargo run -p xtask_codegen -- new-lintrule --category=lint --name={{rulename}} --group={{group}} --severity={{severity}}
   just gen-lint
 
 # Format Rust, JS and TOML files
