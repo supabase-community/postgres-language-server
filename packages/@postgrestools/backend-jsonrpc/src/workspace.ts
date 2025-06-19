@@ -68,6 +68,7 @@ export type Category =
 	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
+	| "lint/safety/banTruncateCascade"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -394,7 +395,7 @@ export interface Safety {
 	 */
 	banDropColumn?: RuleConfiguration_for_Null;
 	/**
-	 * Succinct description of the rule.
+	 * Dropping a database may break existing clients (and everything else, really).
 	 */
 	banDropDatabase?: RuleConfiguration_for_Null;
 	/**
@@ -405,6 +406,10 @@ export interface Safety {
 	 * Dropping a table may break existing clients.
 	 */
 	banDropTable?: RuleConfiguration_for_Null;
+	/**
+	 * Succinct description of the rule.
+	 */
+	banTruncateCascade?: RuleConfiguration_for_Null;
 	/**
 	 * It enables the recommended rules for this group
 	 */

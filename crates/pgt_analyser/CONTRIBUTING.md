@@ -57,7 +57,7 @@ Let's say we want to create a new **lint** rule called `useMyRuleName`, follow t
    just new-lintrule safety useMyRuleName (<severity>)
    ```
 
-   Where severity is optional but can be "hint", "info", "warn", or "error" (default).
+   Where severity is optional but can be "info", "warn", or "error" (default).
 
    The script will generate a bunch of files inside the `pgt_analyser` crate.
    Among the other files, you'll find a file called `use_my_new_rule_name.rs` inside the `pgt_analyser/lib/src/lint/safety` folder. You'll implement your rule in this file.
