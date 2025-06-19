@@ -54,8 +54,10 @@ Let's say we want to create a new **lint** rule called `useMyRuleName`, follow t
 1. Run the command
 
    ```shell
-   just new-lintrule safety useMyRuleName
+   just new-lintrule safety useMyRuleName (<severity>)
    ```
+
+   Where severity is optional but can be "hint", "information", "warning", "error" (default) or "fatal".
 
    The script will generate a bunch of files inside the `pgt_analyser` crate.
    Among the other files, you'll find a file called `use_my_new_rule_name.rs` inside the `pgt_analyser/lib/src/lint/safety` folder. You'll implement your rule in this file.
@@ -187,6 +189,7 @@ declare_lint_rule! {
     pub(crate) ExampleRule {
         version: "next",
         name: "myRuleName",
+        severity: Severity::Error,
         recommended: false,
     }
 }
@@ -206,6 +209,7 @@ declare_lint_rule! {
     pub(crate) ExampleRule {
         version: "next",
         name: "myRuleName",
+        severity: Severity::Error,
         recommended: false,
         sources: &[RuleSource::Squawk("ban-drop-column")],
     }
@@ -228,6 +232,7 @@ declare_lint_rule! {
     pub(crate) ExampleRule {
         version: "next",
         name: "myRuleName",
+        severity: Severity::Error,
         recommended: false,
     }
 }
@@ -280,6 +285,7 @@ declare_lint_rule! {
         version: "next",
         name: "banDropColumn",
         recommended: true,
+        severity: Severity::Error,
         sources: &[RuleSource::Squawk("ban-drop-column")],
     }
 }
@@ -351,6 +357,7 @@ declare_lint_rule! {
         version: "next",
         name: "banDropColumn",
         recommended: true,
+        severity: Severity::Error,
         deprecated: true,
         sources: &[RuleSource::Squawk("ban-drop-column")],
     }
