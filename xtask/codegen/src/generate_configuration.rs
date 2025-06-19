@@ -735,7 +735,7 @@ fn generate_group_struct(
                     }
                 }
 
-                pub(crate) fn severity(&self, rule_name: &str) -> Severity {
+                pub(crate) fn severity(rule_name: &str) -> Severity {
                     match rule_name {
                         #( #get_severity_lines ),*,
                         _ => unreachable!()

@@ -65,10 +65,9 @@ impl Rules {
     }
     #[doc = r" Given a category coming from [Diagnostic](pgt_diagnostics::Diagnostic), this function returns"]
     #[doc = r" the [Severity](pgt_diagnostics::Severity) associated to the rule, if the configuration changed it."]
-    #[doc = r" If the severity is off or not set, then the function returns the default severity of the rule:"]
-    #[doc = r" [Severity::Error] for recommended rules and [Severity::Warning] for other rules."]
-    #[doc = r""]
-    #[doc = r" If not, the function returns [None]."]
+    #[doc = r" If the severity is off or not set, then the function returns the default severity of the rule,"]
+    #[doc = r" which is configured at the rule definition."]
+    #[doc = r" The function can return `None` if the rule is not properly configured."]
     pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
         let mut split_code = category.name().split('/');
         let _lint = split_code.next();
@@ -82,16 +81,7 @@ impl Rules {
                 .as_ref()
                 .and_then(|group| group.get_rule_configuration(rule_name))
                 .filter(|(level, _)| !matches!(level, RulePlainConfiguration::Off))
-                .map_or_else(
-                    || {
-                        if Safety::is_recommended_rule(rule_name) {
-                            Severity::Error
-                        } else {
-                            Severity::Warning
-                        }
-                    },
-                    |(level, _)| level.into(),
-                ),
+                .map_or_else(|| Safety::severity(rule_name), |(level, _)| level.into()),
         };
         Some(severity)
     }
@@ -266,6 +256,15 @@ impl Safety {
             || self.is_recommended_unset() && self.is_all_unset() && parent_is_recommended
         {
             enabled_rules.extend(Self::recommended_rules_as_filters());
+        }
+    }
+    pub(crate) fn severity(&self, rule_name: &str) -> Severity {
+        match rule_name {
+            "addingRequiredField" => Severity::Error,
+            "banDropColumn" => Severity::Warning,
+            "banDropNotNull" => Severity::Warning,
+            "banDropTable" => Severity::Warning,
+            _ => unreachable!(),
         }
     }
     pub(crate) fn get_rule_configuration(
