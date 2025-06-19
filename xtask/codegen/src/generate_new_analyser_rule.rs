@@ -33,6 +33,7 @@ fn generate_rule_template(
     context::RuleContext, {macro_name}, Rule, RuleDiagnostic
 }};
 use pgt_console::markup;
+use pgt::diagnostics::Severity;
 
 {macro_name}! {{
     /// Succinct description of the rule.
@@ -58,6 +59,7 @@ use pgt_console::markup;
     pub {rule_name_upper_camel} {{
         version: "next",
         name: "{rule_name_lower_camel}",
+        severity: Severity::Error,
         recommended: false,
     }}
 }}

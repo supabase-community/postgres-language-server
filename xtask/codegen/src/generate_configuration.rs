@@ -450,7 +450,6 @@ fn generate_group_struct(
     rules: &BTreeMap<&'static str, RuleMetadata>,
     kind: RuleCategory,
 ) -> TokenStream {
-    let mut lines_recommended_rule = Vec::new();
     let mut lines_recommended_rule_as_filter = Vec::new();
     let mut lines_all_rule_as_filter = Vec::new();
     let mut lines_rule = Vec::new();
@@ -519,10 +518,6 @@ fn generate_group_struct(
         if metadata.recommended {
             lines_recommended_rule_as_filter.push(quote! {
                 RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
-            });
-
-            lines_recommended_rule.push(quote! {
-                #rule
             });
         }
         lines_all_rule_as_filter.push(quote! {
@@ -658,10 +653,6 @@ fn generate_group_struct(
                     #( #lines_rule ),*
                 ];
 
-                const RECOMMENDED_RULES: &'static [&'static str] = &[
-                    #( #lines_recommended_rule ),*
-                ];
-
                 const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
                     #( #lines_recommended_rule_as_filter ),*
                 ];
@@ -703,11 +694,6 @@ fn generate_group_struct(
                 /// Checks if, given a rule name, matches one of the rules contained in this category
                 pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
                     Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
-                }
-
-                /// Checks if, given a rule name, it is marked as recommended
-                pub(crate) fn is_recommended_rule(rule_name: &str) -> bool {
-                     Self::RECOMMENDED_RULES.contains(&rule_name)
                 }
 
                 pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {

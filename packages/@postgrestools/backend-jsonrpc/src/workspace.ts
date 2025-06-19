@@ -217,7 +217,8 @@ export type CompletionItemKind =
 	| "function"
 	| "column"
 	| "schema"
-	| "policy";
+	| "policy"
+	| "role";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
