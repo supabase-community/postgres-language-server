@@ -86,7 +86,7 @@ pub enum TaskCommand {
         #[bpaf(long("group"))]
         group: String,
 
-        /// Group of the rule
+        /// Severity of the rule
         #[bpaf(long("severity"), fallback(Severity::Error))]
         severity: Severity,
     },
