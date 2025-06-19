@@ -21,8 +21,9 @@ fn main() -> Result<()> {
             name,
             category,
             group,
+            severity,
         } => {
-            generate_new_analyser_rule(category, &name, &group);
+            generate_new_analyser_rule(category, &name, &group, severity);
         }
         TaskCommand::Configuration => {
             generate_rules_configuration(Overwrite)?;

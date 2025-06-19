@@ -1,6 +1,7 @@
 use crate::{to_capitalized, update};
 use biome_string_case::Case;
 use pgt_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleGroup, RuleMetadata};
+use pgt_diagnostics::Severity;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use quote::quote;
@@ -135,10 +136,9 @@ fn generate_for_groups(
 
             /// Given a category coming from [Diagnostic](pgt_diagnostics::Diagnostic), this function returns
             /// the [Severity](pgt_diagnostics::Severity) associated to the rule, if the configuration changed it.
-            /// If the severity is off or not set, then the function returns the default severity of the rule:
-            /// [Severity::Error] for recommended rules and [Severity::Warning] for other rules.
-            ///
-            /// If not, the function returns [None].
+            /// If the severity is off or not set, then the function returns the default severity of the rule,
+            /// which is configured at the rule definition.
+            /// The function can return `None` if the rule is not properly configured.
             pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
                 let mut split_code = category.name().split('/');
 
@@ -155,13 +155,10 @@ fn generate_for_groups(
                             .as_ref()
                             .and_then(|group| group.get_rule_configuration(rule_name))
                             .filter(|(level, _)| !matches!(level, RulePlainConfiguration::Off))
-                            .map_or_else(|| {
-                                if #group_pascal_idents::is_recommended_rule(rule_name) {
-                                    Severity::Error
-                                } else {
-                                    Severity::Warning
-                                }
-                            }, |(level, _)| level.into()),
+                            .map_or_else(
+                                || #group_pascal_idents::severity(rule_name),
+                                |(level, _)| level.into()
+                            ),
                     )*
                 };
                 Some(severity)
@@ -453,7 +450,6 @@ fn generate_group_struct(
     rules: &BTreeMap<&'static str, RuleMetadata>,
     kind: RuleCategory,
 ) -> TokenStream {
-    let mut lines_recommended_rule = Vec::new();
     let mut lines_recommended_rule_as_filter = Vec::new();
     let mut lines_all_rule_as_filter = Vec::new();
     let mut lines_rule = Vec::new();
@@ -461,6 +457,7 @@ fn generate_group_struct(
     let mut rule_enabled_check_line = Vec::new();
     let mut rule_disabled_check_line = Vec::new();
     let mut get_rule_configuration_line = Vec::new();
+    let mut get_severity_lines = Vec::new();
 
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = {
@@ -522,10 +519,6 @@ fn generate_group_struct(
             lines_recommended_rule_as_filter.push(quote! {
                 RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
             });
-
-            lines_recommended_rule.push(quote! {
-                #rule
-            });
         }
         lines_all_rule_as_filter.push(quote! {
             RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
@@ -567,6 +560,18 @@ fn generate_group_struct(
         get_rule_configuration_line.push(quote! {
             #rule => self.#rule_identifier.as_ref().map(|conf| (conf.level(), conf.get_options()))
         });
+
+        let severity = match metadata.severity {
+            Severity::Hint => quote! { Severity::Hint },
+            Severity::Information => quote! { Severity::Information },
+            Severity::Warning => quote! { Severity::Warning },
+            Severity::Error => quote! { Severity::Error },
+            Severity::Fatal => quote! { Severity::Fatal },
+        };
+
+        get_severity_lines.push(quote! {
+            #rule => #severity
+        })
     }
 
     let group_pascal_ident = Ident::new(&to_capitalized(group), Span::call_site());
@@ -648,10 +653,6 @@ fn generate_group_struct(
                     #( #lines_rule ),*
                 ];
 
-                const RECOMMENDED_RULES: &'static [&'static str] = &[
-                    #( #lines_recommended_rule ),*
-                ];
-
                 const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
                     #( #lines_recommended_rule_as_filter ),*
                 ];
@@ -695,11 +696,6 @@ fn generate_group_struct(
                     Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
                 }
 
-                /// Checks if, given a rule name, it is marked as recommended
-                pub(crate) fn is_recommended_rule(rule_name: &str) -> bool {
-                     Self::RECOMMENDED_RULES.contains(&rule_name)
-                }
-
                 pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
                     Self::RECOMMENDED_RULES_AS_FILTERS
                 }
@@ -722,6 +718,13 @@ fn generate_group_struct(
                         enabled_rules.extend(Self::all_rules_as_filters());
                     } else if self.is_recommended_true() || self.is_recommended_unset() && self.is_all_unset() && parent_is_recommended {
                         enabled_rules.extend(Self::recommended_rules_as_filters());
+                    }
+                }
+
+                pub(crate) fn severity(rule_name: &str) -> Severity {
+                    match rule_name {
+                        #( #get_severity_lines ),*,
+                        _ => unreachable!()
                     }
                 }
 

@@ -65,10 +65,9 @@ impl Rules {
     }
     #[doc = r" Given a category coming from [Diagnostic](pgt_diagnostics::Diagnostic), this function returns"]
     #[doc = r" the [Severity](pgt_diagnostics::Severity) associated to the rule, if the configuration changed it."]
-    #[doc = r" If the severity is off or not set, then the function returns the default severity of the rule:"]
-    #[doc = r" [Severity::Error] for recommended rules and [Severity::Warning] for other rules."]
-    #[doc = r""]
-    #[doc = r" If not, the function returns [None]."]
+    #[doc = r" If the severity is off or not set, then the function returns the default severity of the rule,"]
+    #[doc = r" which is configured at the rule definition."]
+    #[doc = r" The function can return `None` if the rule is not properly configured."]
     pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
         let mut split_code = category.name().split('/');
         let _lint = split_code.next();
@@ -82,16 +81,7 @@ impl Rules {
                 .as_ref()
                 .and_then(|group| group.get_rule_configuration(rule_name))
                 .filter(|(level, _)| !matches!(level, RulePlainConfiguration::Off))
-                .map_or_else(
-                    || {
-                        if Safety::is_recommended_rule(rule_name) {
-                            Severity::Error
-                        } else {
-                            Severity::Warning
-                        }
-                    },
-                    |(level, _)| level.into(),
-                ),
+                .map_or_else(|| Safety::severity(rule_name), |(level, _)| level.into()),
         };
         Some(severity)
     }
@@ -150,33 +140,41 @@ pub struct Safety {
     #[doc = "Dropping a column may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_column: Option<RuleConfiguration<pgt_analyser::options::BanDropColumn>>,
+    #[doc = "Dropping a database may break existing clients (and everything else, really)."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_database: Option<RuleConfiguration<pgt_analyser::options::BanDropDatabase>>,
     #[doc = "Dropping a NOT NULL constraint may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_not_null: Option<RuleConfiguration<pgt_analyser::options::BanDropNotNull>>,
     #[doc = "Dropping a table may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_table: Option<RuleConfiguration<pgt_analyser::options::BanDropTable>>,
+    #[doc = "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_truncate_cascade: Option<RuleConfiguration<pgt_analyser::options::BanTruncateCascade>>,
 }
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
     pub(crate) const GROUP_RULES: &'static [&'static str] = &[
         "addingRequiredField",
         "banDropColumn",
+        "banDropDatabase",
         "banDropNotNull",
         "banDropTable",
+        "banTruncateCascade",
     ];
-    const RECOMMENDED_RULES: &'static [&'static str] =
-        &["banDropColumn", "banDropNotNull", "banDropTable"];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -203,14 +201,24 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
         index_set
@@ -227,14 +235,24 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
         index_set
@@ -242,10 +260,6 @@ impl Safety {
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
         Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
-    }
-    #[doc = r" Checks if, given a rule name, it is marked as recommended"]
-    pub(crate) fn is_recommended_rule(rule_name: &str) -> bool {
-        Self::RECOMMENDED_RULES.contains(&rule_name)
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS
@@ -268,6 +282,17 @@ impl Safety {
             enabled_rules.extend(Self::recommended_rules_as_filters());
         }
     }
+    pub(crate) fn severity(rule_name: &str) -> Severity {
+        match rule_name {
+            "addingRequiredField" => Severity::Error,
+            "banDropColumn" => Severity::Warning,
+            "banDropDatabase" => Severity::Warning,
+            "banDropNotNull" => Severity::Warning,
+            "banDropTable" => Severity::Warning,
+            "banTruncateCascade" => Severity::Error,
+            _ => unreachable!(),
+        }
+    }
     pub(crate) fn get_rule_configuration(
         &self,
         rule_name: &str,
@@ -281,12 +306,20 @@ impl Safety {
                 .ban_drop_column
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
+            "banDropDatabase" => self
+                .ban_drop_database
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "banDropNotNull" => self
                 .ban_drop_not_null
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "banDropTable" => self
                 .ban_drop_table
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "banTruncateCascade" => self
+                .ban_truncate_cascade
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,

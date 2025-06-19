@@ -3,7 +3,7 @@ use pgt_console::{MarkupBuf, markup};
 use pgt_diagnostics::advice::CodeSuggestionAdvice;
 use pgt_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticTags, Location, LogCategory, MessageAndDescription,
-    Visit,
+    Severity, Visit,
 };
 use pgt_text_size::TextRange;
 use std::cmp::Ordering;
@@ -31,10 +31,17 @@ pub struct RuleMetadata {
     pub recommended: bool,
     /// The source URL of the rule
     pub sources: &'static [RuleSource],
+    /// The default severity of the rule
+    pub severity: Severity,
 }
 
 impl RuleMetadata {
-    pub const fn new(version: &'static str, name: &'static str, docs: &'static str) -> Self {
+    pub const fn new(
+        version: &'static str,
+        name: &'static str,
+        docs: &'static str,
+        severity: Severity,
+    ) -> Self {
         Self {
             deprecated: None,
             version,
@@ -42,6 +49,7 @@ impl RuleMetadata {
             docs,
             sources: &[],
             recommended: false,
+            severity,
         }
     }
 

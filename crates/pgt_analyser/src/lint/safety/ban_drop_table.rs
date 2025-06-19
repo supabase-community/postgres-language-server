@@ -1,5 +1,6 @@
 use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
 use pgt_console::markup;
+use pgt_diagnostics::Severity;
 
 declare_lint_rule! {
     /// Dropping a table may break existing clients.
@@ -18,6 +19,7 @@ declare_lint_rule! {
     pub BanDropTable {
         version: "next",
         name: "banDropTable",
+        severity: Severity::Warning,
         recommended: true,
         sources: &[RuleSource::Squawk("ban-drop-table")],
     }

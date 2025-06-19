@@ -28,7 +28,7 @@ drop table some_table;
 ```sh
 code-block.sql lint/safety/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Dropping a table may break existing clients.
+  ! Dropping a table may break existing clients.
   
   i Update your application code to no longer read or write the table, and only then delete the table. Be sure to create a backup.
   

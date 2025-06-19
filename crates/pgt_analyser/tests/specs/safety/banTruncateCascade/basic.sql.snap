@@ -1,0 +1,16 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_only_lint/safety/banTruncateCascade
+truncate a cascade;
+```
+
+# Diagnostics
+lint/safety/banTruncateCascade ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × The `CASCADE` option will also truncate any tables that are foreign-keyed to the specified tables.
+  
+  i Do not use the `CASCADE` option. Instead, specify manually what you want: `TRUNCATE a, b;`.

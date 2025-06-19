@@ -15,8 +15,10 @@
 define_categories! {
     "lint/safety/addingRequiredField": "https://pglt.dev/linter/rules/adding-required-field",
     "lint/safety/banDropColumn": "https://pglt.dev/linter/rules/ban-drop-column",
+    "lint/safety/banDropDatabase": "https://pgtools.dev/linter/rules/ban-drop-database",
     "lint/safety/banDropNotNull": "https://pglt.dev/linter/rules/ban-drop-not-null",
     "lint/safety/banDropTable": "https://pglt.dev/linter/rules/ban-drop-table",
+    "lint/safety/banTruncateCascade": "https://pgtools.dev/linter/rules/ban-truncate-cascade",
     // end lint rules
     ;
     // General categories

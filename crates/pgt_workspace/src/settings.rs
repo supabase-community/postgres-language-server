@@ -275,12 +275,10 @@ impl Settings {
         &self,
         code: &Category,
     ) -> Option<pgt_diagnostics::Severity> {
-        let rules = self.linter.rules.as_ref();
-        if let Some(rules) = rules {
-            rules.get_severity_from_code(code)
-        } else {
-            None
-        }
+        self.linter
+            .rules
+            .as_ref()
+            .and_then(|r| r.get_severity_from_code(code))
     }
 }
 

@@ -27,7 +27,7 @@ alter table users alter column email drop not null;
 ```sh
 code-block.sql lint/safety/banDropNotNull ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Dropping a NOT NULL constraint may break existing clients.
+  ! Dropping a NOT NULL constraint may break existing clients.
   
   i Consider using a marker value that represents NULL. Alternatively, create a new table allowing NULL values, copy the data from the old table, and create a view that filters NULL values.
   

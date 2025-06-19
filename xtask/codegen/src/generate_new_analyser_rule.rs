@@ -1,5 +1,6 @@
 use biome_string_case::Case;
 use bpaf::Bpaf;
+use pgt_diagnostics::Severity;
 use std::str::FromStr;
 use xtask::project_root;
 
@@ -24,15 +25,26 @@ fn generate_rule_template(
     category: &Category,
     rule_name_upper_camel: &str,
     rule_name_lower_camel: &str,
+    severity: Severity,
 ) -> String {
     let macro_name = match category {
         Category::Lint => "declare_lint_rule",
     };
+
+    let severity_code = match severity {
+        Severity::Hint => "Severity::Hint",
+        Severity::Information => "Severity::Information",
+        Severity::Warning => "Severity::Warning",
+        Severity::Error => "Severity::Error",
+        Severity::Fatal => "Severity::Fatal",
+    };
+
     format!(
         r#"use pgt_analyse::{{
     context::RuleContext, {macro_name}, Rule, RuleDiagnostic
 }};
 use pgt_console::markup;
+use pgt_diagnostics::Severity;
 
 {macro_name}! {{
     /// Succinct description of the rule.
@@ -58,6 +70,7 @@ use pgt_console::markup;
     pub {rule_name_upper_camel} {{
         version: "next",
         name: "{rule_name_lower_camel}",
+        severity: {severity_code},
         recommended: false,
     }}
 }}
@@ -77,7 +90,12 @@ fn gen_sql(category_name: &str) -> String {
     format!("-- expect_only_{category_name}\n-- select 1;")
 }
 
-pub fn generate_new_analyser_rule(category: Category, rule_name: &str, group: &str) {
+pub fn generate_new_analyser_rule(
+    category: Category,
+    rule_name: &str,
+    group: &str,
+    severity: Severity,
+) {
     let rule_name_camel = Case::Camel.convert(rule_name);
     let crate_folder = project_root().join("crates/pgt_analyser");
     let rule_folder = match &category {
@@ -92,6 +110,7 @@ pub fn generate_new_analyser_rule(category: Category, rule_name: &str, group: &s
         &category,
         Case::Pascal.convert(rule_name).as_str(),
         rule_name_camel.as_str(),
+        severity,
     );
     let file_name = format!(
         "{}/{}.rs",

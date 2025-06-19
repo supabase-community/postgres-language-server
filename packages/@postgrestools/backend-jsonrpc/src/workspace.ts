@@ -65,8 +65,10 @@ export interface Advices {
 export type Category =
 	| "lint/safety/addingRequiredField"
 	| "lint/safety/banDropColumn"
+	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
+	| "lint/safety/banTruncateCascade"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -217,7 +219,8 @@ export type CompletionItemKind =
 	| "function"
 	| "column"
 	| "schema"
-	| "policy";
+	| "policy"
+	| "role";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
@@ -392,6 +395,10 @@ export interface Safety {
 	 */
 	banDropColumn?: RuleConfiguration_for_Null;
 	/**
+	 * Dropping a database may break existing clients (and everything else, really).
+	 */
+	banDropDatabase?: RuleConfiguration_for_Null;
+	/**
 	 * Dropping a NOT NULL constraint may break existing clients.
 	 */
 	banDropNotNull?: RuleConfiguration_for_Null;
@@ -399,6 +406,10 @@ export interface Safety {
 	 * Dropping a table may break existing clients.
 	 */
 	banDropTable?: RuleConfiguration_for_Null;
+	/**
+	 * Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.
+	 */
+	banTruncateCascade?: RuleConfiguration_for_Null;
 	/**
 	 * It enables the recommended rules for this group
 	 */

@@ -12,10 +12,11 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
-pgt_analyse   = { workspace = true }
-pgt_console   = { workspace = true }
-pgt_query_ext = { workspace = true }
-serde         = { workspace = true }
+pgt_analyse     = { workspace = true }
+pgt_console     = { workspace = true }
+pgt_diagnostics = { workspace = true }
+pgt_query_ext   = { workspace = true }
+serde           = { workspace = true }
 
 [dev-dependencies]
 insta           = { version = "1.42.1" }

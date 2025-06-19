@@ -6,6 +6,7 @@ use std::{
     str::FromStr,
 };
 
+use bpaf::Bpaf;
 use enumflags2::{BitFlags, bitflags, make_bitflags};
 use serde::{Deserialize, Serialize};
 
@@ -115,7 +116,7 @@ pub trait Diagnostic: Debug {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default, Bpaf,
 )]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
