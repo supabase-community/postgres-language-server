@@ -258,7 +258,7 @@ impl Safety {
             enabled_rules.extend(Self::recommended_rules_as_filters());
         }
     }
-    pub(crate) fn severity(&self, rule_name: &str) -> Severity {
+    pub(crate) fn severity(rule_name: &str) -> Severity {
         match rule_name {
             "addingRequiredField" => Severity::Error,
             "banDropColumn" => Severity::Warning,
