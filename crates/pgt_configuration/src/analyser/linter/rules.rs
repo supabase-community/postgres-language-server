@@ -155,8 +155,6 @@ impl Safety {
         "banDropNotNull",
         "banDropTable",
     ];
-    const RECOMMENDED_RULES: &'static [&'static str] =
-        &["banDropColumn", "banDropNotNull", "banDropTable"];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
@@ -232,10 +230,6 @@ impl Safety {
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
         Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
-    }
-    #[doc = r" Checks if, given a rule name, it is marked as recommended"]
-    pub(crate) fn is_recommended_rule(rule_name: &str) -> bool {
-        Self::RECOMMENDED_RULES.contains(&rule_name)
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS
