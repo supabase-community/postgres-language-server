@@ -33,7 +33,7 @@ fn generate_rule_template(
     context::RuleContext, {macro_name}, Rule, RuleDiagnostic
 }};
 use pgt_console::markup;
-use pgt::diagnostics::Severity;
+use pgt_diagnostics::Severity;
 
 {macro_name}! {{
     /// Succinct description of the rule.
