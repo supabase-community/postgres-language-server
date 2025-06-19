@@ -65,6 +65,7 @@ export interface Advices {
 export type Category =
 	| "lint/safety/addingRequiredField"
 	| "lint/safety/banDropColumn"
+	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
 	| "stdin"
@@ -392,6 +393,10 @@ export interface Safety {
 	 * Dropping a column may break existing clients.
 	 */
 	banDropColumn?: RuleConfiguration_for_Null;
+	/**
+	 * Succinct description of the rule.
+	 */
+	banDropDatabase?: RuleConfiguration_for_Null;
 	/**
 	 * Dropping a NOT NULL constraint may break existing clients.
 	 */

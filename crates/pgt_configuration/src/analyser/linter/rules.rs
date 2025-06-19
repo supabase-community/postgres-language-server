@@ -140,6 +140,9 @@ pub struct Safety {
     #[doc = "Dropping a column may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_column: Option<RuleConfiguration<pgt_analyser::options::BanDropColumn>>,
+    #[doc = "Succinct description of the rule."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_database: Option<RuleConfiguration<pgt_analyser::options::BanDropDatabase>>,
     #[doc = "Dropping a NOT NULL constraint may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_not_null: Option<RuleConfiguration<pgt_analyser::options::BanDropNotNull>>,
@@ -152,19 +155,21 @@ impl Safety {
     pub(crate) const GROUP_RULES: &'static [&'static str] = &[
         "addingRequiredField",
         "banDropColumn",
+        "banDropDatabase",
         "banDropNotNull",
         "banDropTable",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -191,14 +196,19 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
         index_set
@@ -215,14 +225,19 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
         index_set
@@ -256,6 +271,7 @@ impl Safety {
         match rule_name {
             "addingRequiredField" => Severity::Error,
             "banDropColumn" => Severity::Warning,
+            "banDropDatabase" => Severity::Error,
             "banDropNotNull" => Severity::Warning,
             "banDropTable" => Severity::Warning,
             _ => unreachable!(),
@@ -272,6 +288,10 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "banDropColumn" => self
                 .ban_drop_column
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "banDropDatabase" => self
+                .ban_drop_database
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "banDropNotNull" => self
