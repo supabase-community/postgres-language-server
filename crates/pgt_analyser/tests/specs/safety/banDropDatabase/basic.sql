@@ -1,2 +1,2 @@
 -- expect_only_lint/safety/banDropDatabase
--- select 1;
+drop database all_users;
