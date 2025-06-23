@@ -248,6 +248,8 @@ pub(crate) fn unknown(p: &mut Parser, exclude: &[SyntaxKind]) {
                         // for grant
                         SyntaxKind::Grant,
                         SyntaxKind::Ascii44,
+                        // Do update in INSERT stmt
+                        SyntaxKind::Do,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
