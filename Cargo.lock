@@ -2808,6 +2808,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgt_suppressions"
+version = "0.1.0"
+
+[[package]]
 name = "pgt_test_macros"
 version = "0.0.0"
 dependencies = [
