@@ -570,6 +570,19 @@ impl Workspace for WorkspaceServer {
             },
         ));
 
+        let suppressions = parser.document_suppressions();
+
+        diagnostics.retain(|d| !suppressions.is_suppressed(d));
+
+        let suppression_errors: Vec<Error> = suppressions
+            .diagnostics
+            .clone()
+            .into_iter()
+            .map(Error::from)
+            .collect::<Vec<pgt_diagnostics::Error>>();
+
+        diagnostics.extend(suppression_errors.into_iter().map(|e| SDiagnostic::new(e)));
+
         let errors = diagnostics
             .iter()
             .filter(|d| d.severity() == Severity::Error || d.severity() == Severity::Fatal)

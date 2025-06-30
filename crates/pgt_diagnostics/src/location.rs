@@ -41,13 +41,13 @@ impl Eq for Location<'_> {}
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
-pub enum Resource<P> {
+pub enum Resource<Path> {
     /// The diagnostic is related to the content of the command line arguments.
     Argv,
     /// The diagnostic is related to the content of a memory buffer.
     Memory,
     /// The diagnostic is related to a file on the filesystem.
-    File(P),
+    File(Path),
 }
 
 impl<P> Resource<P> {

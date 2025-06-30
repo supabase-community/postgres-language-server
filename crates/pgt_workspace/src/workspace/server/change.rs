@@ -1,3 +1,4 @@
+use pgt_suppressions::SuppressionsParser;
 use pgt_text_size::{TextLen, TextRange, TextSize};
 use std::ops::{Add, Sub};
 
@@ -85,6 +86,7 @@ impl Document {
         }
 
         self.version = change.version;
+        self.suppressions = SuppressionsParser::parse(&self.content);
 
         changes
     }

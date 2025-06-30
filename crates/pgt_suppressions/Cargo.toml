@@ -11,4 +11,9 @@ name                 = "pgt_suppressions"
 repository.workspace = true
 version              = "0.0.0"
 
+[dependencies]
+pgt_text_size = {workspace = true }
+pgt_diagnostics = {workspace = true }
+pgt_analyse = {workspace = true }
+
 

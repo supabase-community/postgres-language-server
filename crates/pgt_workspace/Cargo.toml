@@ -24,6 +24,7 @@ pgt_completions           = { workspace = true }
 pgt_configuration         = { workspace = true }
 pgt_console               = { workspace = true }
 pgt_diagnostics           = { workspace = true }
+pgt_suppressions           = { workspace = true }
 pgt_fs                    = { workspace = true, features = ["serde"] }
 pgt_lexer                 = { workspace = true }
 pgt_query_ext             = { workspace = true }
