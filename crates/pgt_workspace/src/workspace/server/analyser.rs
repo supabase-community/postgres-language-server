@@ -68,6 +68,7 @@ impl<'a, 'b> LintVisitor<'a, 'b> {
 
     fn finish(mut self) -> (FxHashSet<RuleFilter<'a>>, FxHashSet<RuleFilter<'a>>) {
         let has_only_filter = !self.only.is_empty();
+
         if !has_only_filter {
             let enabled_rules = self
                 .settings
@@ -75,7 +76,15 @@ impl<'a, 'b> LintVisitor<'a, 'b> {
                 .map(|rules| rules.as_enabled_rules())
                 .unwrap_or_default();
             self.enabled_rules.extend(enabled_rules);
+
+            let disabled_rules = self
+                .settings
+                .as_linter_rules()
+                .map(|rules| rules.as_disabled_rules())
+                .unwrap_or_default();
+            self.disabled_rules.extend(disabled_rules);
         }
+
         (self.enabled_rules, self.disabled_rules)
     }
 
@@ -125,5 +134,44 @@ impl RegistryVisitor for LintVisitor<'_, '_> {
         R: Rule<Options: Default> + 'static,
     {
         self.push_rule::<R>()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pgt_analyse::RuleFilter;
+    use pgt_configuration::{RuleConfiguration, Rules, analyser::Safety};
+
+    use crate::{
+        settings::{LinterSettings, Settings},
+        workspace::server::analyser::AnalyserVisitorBuilder,
+    };
+
+    #[test]
+    fn recognizes_disabled_rules() {
+        let settings = Settings {
+            linter: LinterSettings {
+                rules: Some(Rules {
+                    safety: Some(Safety {
+                        ban_drop_column: Some(RuleConfiguration::Plain(
+                            pgt_configuration::RulePlainConfiguration::Off,
+                        )),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let (_, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
+            .with_linter_rules(&[], &[])
+            .finish();
+
+        assert_eq!(
+            disabled_rules,
+            vec![RuleFilter::Rule("safety", "banDropColumn")]
+        )
     }
 }
