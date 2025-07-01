@@ -61,6 +61,8 @@ fn generate_for_groups(
     let mut group_idents = Vec::with_capacity(groups.len());
     let mut group_strings = Vec::with_capacity(groups.len());
     let mut group_as_default_rules = Vec::with_capacity(groups.len());
+    let mut group_as_disabled_rules = Vec::with_capacity(groups.len());
+
     for (group, rules) in groups {
         let group_pascal_ident = quote::format_ident!("{}", &Case::Pascal.convert(group));
         let group_ident = quote::format_ident!("{}", group);
@@ -92,6 +94,12 @@ fn generate_for_groups(
                 if let Some(group) = self.#group_ident.as_ref() {
                     enabled_rules.extend(&group.get_enabled_rules());
                 }
+            }
+        });
+
+        group_as_disabled_rules.push(quote! {
+            if let Some(group) = self.#group_ident.as_ref() {
+                disabled_rules.extend(&group.get_disabled_rules());
             }
         });
 
@@ -246,6 +254,13 @@ fn generate_for_groups(
                     #( #group_as_default_rules )*
                     enabled_rules
                 }
+
+                /// It returns the disabled rules by configuration.
+                pub fn as_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
+                    let mut disabled_rules = FxHashSet::default();
+                    #( #group_as_disabled_rules )*
+                    disabled_rules
+                }
             }
 
             #( #struct_groups )*
@@ -357,6 +372,13 @@ fn generate_for_groups(
                     #( #group_as_default_rules )*
 
                     enabled_rules.difference(&disabled_rules).copied().collect()
+                }
+
+                /// It returns the disabled rules by configuration.
+                pub fn as_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
+                    let mut disabled_rules = FxHashSet::default();
+                    #( #group_as_disabled_rules )*
+                    disabled_rules
                 }
             }
 
