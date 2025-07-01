@@ -2814,6 +2814,7 @@ dependencies = [
  "pgt_analyse",
  "pgt_diagnostics",
  "pgt_text_size",
+ "tracing",
 ]
 
 [[package]]

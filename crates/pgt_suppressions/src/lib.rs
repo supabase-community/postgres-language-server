@@ -3,7 +3,7 @@ use std::{
     str::Lines,
 };
 
-use pgt_analyse::RuleCategory;
+use pgt_analyse::{RuleCategory, RuleFilter};
 use pgt_diagnostics::{Diagnostic, Location, MessageAndDescription};
 use pgt_text_size::{TextRange, TextSize};
 
@@ -24,7 +24,7 @@ pub struct SuppressionDiagnostic {
     message: MessageAndDescription,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SuppressionKind {
     File,
     Line,
@@ -32,7 +32,7 @@ pub enum SuppressionKind {
     End,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum RuleSpecifier {
     Category(RuleCategory),
     Group(RuleCategory, String),
@@ -62,6 +62,21 @@ impl RuleSpecifier {
             _ => None,
         }
     }
+
+    fn is_disabled(&self, disabled_rules: &[RuleFilter<'_>]) -> bool {
+        // note: it is not possible to disable entire categories via the config
+        let group = self.group();
+        let rule = self.rule();
+
+        tracing::error!("group and rule: {:#?} {:#?}", group, rule);
+
+        disabled_rules.iter().any(|r| match r {
+            RuleFilter::Group(gr) => group.is_some_and(|specifier_group| specifier_group == *gr),
+            RuleFilter::Rule(gr, ru) => group.is_some_and(|specifier_group| {
+                rule.is_some_and(|specifier_rule| specifier_group == *gr && specifier_rule == *ru)
+            }),
+        })
+    }
 }
 
 impl TryFrom<&str> for RuleSpecifier {
@@ -84,12 +99,12 @@ impl TryFrom<&str> for RuleSpecifier {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Suppression {
     suppression_range: TextRange,
-    /// `None` means that all categories are suppressed
     kind: SuppressionKind,
     rule_specifier: RuleSpecifier,
+    #[allow(unused)]
     explanation: Option<String>,
 }
 
@@ -191,9 +206,18 @@ impl Suppression {
 
         false
     }
+
+    fn to_disabled_diagnostic(self) -> SuppressionDiagnostic {
+        SuppressionDiagnostic {
+            span: self.suppression_range,
+            message: MessageAndDescription::from(format!(
+                "This rule has been disabled via the configuration. The suppression has no effect."
+            )),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RangeSuppression {
     suppressed_range: TextRange,
     start_suppression: Suppression,
@@ -201,7 +225,7 @@ pub struct RangeSuppression {
 
 type Line = usize;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Suppressions {
     file_suppressions: Vec<Suppression>,
     line_suppressions: std::collections::HashMap<Line, Suppression>,
@@ -211,6 +235,53 @@ pub struct Suppressions {
 }
 
 impl Suppressions {
+    pub fn considering_disabled_rules(mut self, disabled_rules: &[RuleFilter<'_>]) -> Self {
+        tracing::error!("disabled rules: {:#?}", disabled_rules);
+
+        {
+            let (enabled, disabled) = self
+                .file_suppressions
+                .into_iter()
+                .partition(|s| !s.rule_specifier.is_disabled(disabled_rules));
+
+            self.file_suppressions = enabled;
+
+            for suppr in disabled {
+                self.diagnostics.push(suppr.to_disabled_diagnostic());
+            }
+        }
+
+        {
+            let (enabled, disabled) = self
+                .line_suppressions
+                .into_iter()
+                .partition(|(_, s)| !s.rule_specifier.is_disabled(disabled_rules));
+
+            self.line_suppressions = enabled;
+
+            for (_, suppr) in disabled {
+                self.diagnostics.push(suppr.to_disabled_diagnostic());
+            }
+        }
+
+        {
+            let (enabled, disabled) = self.range_suppressions.into_iter().partition(|s| {
+                !s.start_suppression
+                    .rule_specifier
+                    .is_disabled(disabled_rules)
+            });
+
+            self.range_suppressions = enabled;
+
+            for range_suppr in disabled {
+                self.diagnostics
+                    .push(range_suppr.start_suppression.to_disabled_diagnostic());
+            }
+        }
+
+        self
+    }
+
     pub fn is_suppressed<D: Diagnostic>(&self, diagnostic: &D) -> bool {
         let location = diagnostic.location();
 
@@ -402,196 +473,3 @@ impl<'a> SuppressionsParser<'a> {
         }
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     fn parse(doc: &str) -> Suppressions {
-//         SuppressionsParser::parse(doc)
-//     }
-
-//     #[test]
-//     fn test_ignore_with_extra_colons_in_explanation() {
-//         let doc = "// pgt-ignore lint/safety: reason: with: colons";
-//         let sups = parse(doc);
-//         let suppr = sups.line_suppressions.values().next().unwrap();
-//         assert_eq!(suppr.explanation, Some("reason: with: colons"));
-//     }
-
-//     #[test]
-//     fn test_ignore_with_trailing_whitespace() {
-//         let doc = "// pgt-ignore lint/safety   ";
-//         let sups = parse(doc);
-//         assert_eq!(sups.line_suppressions.len(), 1);
-//         assert!(sups.diagnostics.is_empty());
-//     }
-
-//     #[test]
-//     fn test_ignore_with_leading_whitespace() {
-//         let doc = "   // pgt-ignore lint/safety";
-//         let sups = parse(doc);
-//         assert_eq!(sups.line_suppressions.len(), 1);
-//         assert!(sups.diagnostics.is_empty());
-//     }
-
-//     #[test]
-//     fn test_multiple_unmatched_ends() {
-//         let doc = r#"
-//                     // pgt-ignore-end lint/safety
-//                     // pgt-ignore-end lint/performance
-//                 "#;
-//         let sups = parse(doc);
-//         assert_eq!(sups.diagnostics.len(), 2);
-//         for diag in sups.diagnostics {
-//             assert!(
-//                 diag.message
-//                     .to_string()
-//                     .contains("does not have a matching start")
-//             );
-//         }
-//     }
-
-//     #[test]
-//     fn test_multiple_unmatched_starts() {
-//         let doc = r#"
-//                     // pgt-ignore-start lint/safety
-//                     // pgt-ignore-start lint/performance
-//                 "#;
-//         let sups = parse(doc);
-//         assert_eq!(sups.diagnostics.len(), 2);
-//         for diag in sups.diagnostics {
-//             assert!(
-//                 diag.message
-//                     .to_string()
-//                     .contains("does not have a matching end")
-//             );
-//         }
-//     }
-
-//     #[test]
-//     fn test_ignore_with_invalid_tag_and_valid_tag() {
-//         let doc = r#"
-//                     // pgt-ignore-foo lint/safety
-//                     // pgt-ignore lint/safety
-//                 "#;
-//         let sups = parse(doc);
-//         assert_eq!(sups.diagnostics.len(), 1);
-//         assert_eq!(sups.line_suppressions.len(), 1);
-//     }
-
-//     #[test]
-//     fn test_ignore_with_missing_category_and_valid_tag() {
-//         let doc = r#"
-//                     // pgt-ignore
-//                     // pgt-ignore lint/safety
-//                 "#;
-//         let sups = parse(doc);
-//         assert_eq!(sups.diagnostics.len(), 1);
-//         assert_eq!(sups.line_suppressions.len(), 1);
-//     }
-
-//     #[test]
-//     fn test_ignore_with_group_and_rule_and_explanation() {
-//         let doc = "// pgt-ignore lint/safety/banDropColumn: explanation";
-//         let sups = parse(doc);
-//         let suppr = sups.line_suppressions.values().next().unwrap();
-//         assert_eq!(suppr.explanation, Some("explanation"));
-//         match suppr.rule_filter {
-//             Some(RuleFilter::Rule(group, rule)) => {
-//                 assert_eq!(group, "safety");
-//                 assert_eq!(rule, "banDropColumn");
-//             }
-//             _ => panic!("Expected RuleFilter::Rule"),
-//         }
-//     }
-
-//     #[test]
-//     fn test_ignore_with_group_only_and_explanation() {
-//         let doc = "// pgt-ignore lint/safety: explanation";
-//         let sups = parse(doc);
-//         let suppr = sups.line_suppressions.values().next().unwrap();
-//         assert_eq!(suppr.explanation, Some("explanation"));
-//         match suppr.rule_filter {
-//             Some(RuleFilter::Group(group)) => {
-//                 assert_eq!(group, "safety");
-//             }
-//             _ => panic!("Expected RuleFilter::Group"),
-//         }
-//     }
-
-//     #[test]
-//     fn test_ignore_with_no_group_or_rule_and_explanation() {
-//         let doc = "// pgt-ignore lint: explanation";
-//         let sups = parse(doc);
-//         let suppr = sups.line_suppressions.values().next().unwrap();
-//         assert_eq!(suppr.explanation, Some("explanation"));
-//         assert!(suppr.rule_filter.is_none());
-//     }
-
-//     #[test]
-//     fn test_ignore_with_empty_explanation() {
-//         let doc = "// pgt-ignore lint/safety:";
-//         let sups = parse(doc);
-//         let suppr = sups.line_suppressions.values().next().unwrap();
-//         assert_eq!(suppr.explanation, Some(""));
-//     }
-
-//     #[test]
-//     fn test_ignore_with_multiple_colons_and_spaces() {
-//         let doc = "// pgt-ignore lint/safety:   explanation: with spaces  ";
-//         let sups = parse(doc);
-//         let suppr = sups.line_suppressions.values().next().unwrap();
-//         assert_eq!(suppr.explanation, Some("explanation: with spaces"));
-//     }
-
-//     #[test]
-//     fn test_ignore_with_invalid_category() {
-//         let doc = "// pgt-ignore foo/safety";
-//         let sups = parse(doc);
-//         assert_eq!(sups.line_suppressions.len(), 0);
-//         assert_eq!(sups.diagnostics.len(), 1);
-//         let diag = &sups.diagnostics[0];
-//         assert_eq!(diag.message.to_string(), "Invalid Rule Category: foo");
-//     }
-
-//     #[test]
-//     fn test_ignore_with_missing_specifier() {
-//         let doc = "// pgt-ignore";
-//         let sups = parse(doc);
-//         assert_eq!(sups.line_suppressions.len(), 0);
-//         assert_eq!(sups.diagnostics.len(), 1);
-//         let diag = &sups.diagnostics[0];
-//         assert!(
-//             diag.message
-//                 .to_string()
-//                 .contains("must specify which lints to suppress")
-//                 || diag.message.to_string().contains("must specify")
-//         );
-//     }
-
-//     #[test]
-//     fn test_range_suppression_basic() {
-//         let doc = r#"
-//             // pgt-ignore-start lint/safety/banDropColumn: start explanation
-//             SELECT * FROM foo;
-//             // pgt-ignore-end lint/safety/banDropColumn: end explanation
-//         "#;
-//         let sups = parse(doc);
-//         // Should have one range suppression
-//         assert_eq!(sups.range_suppressions.len(), 1);
-//         let range = &sups.range_suppressions[0];
-//         assert_eq!(range.rule_category, RuleCategory::Lint);
-//         assert_eq!(
-//             range.rule_filter,
-//             Some(RuleFilter::Rule("safety", "banDropColumn"))
-//         );
-//         assert_eq!(range.explanation, Some("start explanation"));
-//         // The start and end suppressions should be present and correct
-//         assert_eq!(
-//             range.start_suppression.explanation,
-//             Some("start explanation")
-//         );
-//         assert_eq!(range.end_suppression.explanation, Some("end explanation"));
-//     }
-// }

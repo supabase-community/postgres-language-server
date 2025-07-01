@@ -1,6 +1,6 @@
 use pgt_text_size::TextSize;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct LineIndex {
     line_offset: Vec<pgt_text_size::TextSize>,
 }

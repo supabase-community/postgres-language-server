@@ -15,5 +15,6 @@ version              = "0.0.0"
 pgt_text_size = {workspace = true }
 pgt_diagnostics = {workspace = true }
 pgt_analyse = {workspace = true }
+tracing = { workspace = true }
 
 
