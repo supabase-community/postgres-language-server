@@ -1,5 +1,4 @@
 mod codegen;
-mod diagnostics;
 mod lexed;
 mod lexer;
 

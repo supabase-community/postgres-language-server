@@ -1,4 +1,4 @@
-use pgt_diagnostics::MessageAndDescription;
+use pgt_diagnostics::{Diagnostic, MessageAndDescription};
 use pgt_text_size::TextRange;
 
 use crate::SyntaxKind;
@@ -11,11 +11,14 @@ pub struct LexError {
 }
 
 /// A specialized diagnostic for lex errors.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Diagnostic, PartialEq)]
+#[diagnostic(category = "syntax", severity = Error)]
 pub struct LexDiagnostic {
-    /// The location where the error occurred
+    /// The location where the error is occurred
+    #[location(span)]
     pub span: TextRange,
-    /// The error message
+    #[message]
+    #[description]
     pub message: MessageAndDescription,
 }
 
