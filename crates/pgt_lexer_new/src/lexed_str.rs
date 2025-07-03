@@ -31,20 +31,20 @@ impl<'a> LexedStr<'a> {
         conv.finalize_with_eof()
     }
 
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.kind.len() - 1
     }
 
-    pub(crate) fn kind(&self, i: usize) -> SyntaxKind {
+    pub fn kind(&self, i: usize) -> SyntaxKind {
         assert!(i < self.len());
         self.kind[i]
     }
 
-    pub(crate) fn text(&self, i: usize) -> &str {
+    pub fn text(&self, i: usize) -> &str {
         self.range_text(i..i + 1)
     }
 
-    pub(crate) fn range_text(&self, r: ops::Range<usize>) -> &str {
+    pub fn range_text(&self, r: ops::Range<usize>) -> &str {
         assert!(r.start < r.end && r.end <= self.len());
         let lo = self.start[r.start] as usize;
         let hi = self.start[r.end] as usize;

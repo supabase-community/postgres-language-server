@@ -2803,7 +2803,9 @@ name = "pgt_lexer_new"
 version = "0.0.0"
 dependencies = [
  "insta",
+ "pgt_diagnostics",
  "pgt_lexer_new_codegen",
+ "pgt_text_size",
  "pgt_tokenizer",
 ]
 
