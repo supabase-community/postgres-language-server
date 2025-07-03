@@ -79,6 +79,13 @@ impl<'a, 'b> LintVisitor<'a, 'b> {
                 .unwrap_or_default();
 
             self.enabled_rules.extend(enabled_rules);
+
+            let disabled_rules = self
+                .settings
+                .as_linter_rules()
+                .map(|rules| rules.as_disabled_rules())
+                .unwrap_or_default();
+            self.disabled_rules.extend(disabled_rules);
         }
 
         (self.enabled_rules, self.disabled_rules)
@@ -135,6 +142,7 @@ impl RegistryVisitor for LintVisitor<'_, '_> {
 
 #[cfg(test)]
 mod tests {
+    use pgt_analyse::RuleFilter;
     use pgt_configuration::{RuleConfiguration, Rules, analyser::Safety};
 
     use crate::{
@@ -143,11 +151,10 @@ mod tests {
     };
 
     #[test]
-    fn identifies_disabled_rules() {
+    fn recognizes_disabled_rules() {
         let settings = Settings {
             linter: LinterSettings {
                 rules: Some(Rules {
-                    recommended: Some(true),
                     safety: Some(Safety {
                         ban_drop_column: Some(RuleConfiguration::Plain(
                             pgt_configuration::RulePlainConfiguration::Off,
@@ -156,17 +163,18 @@ mod tests {
                     }),
                     ..Default::default()
                 }),
-
                 ..Default::default()
             },
             ..Default::default()
         };
 
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
+        let (_, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
             .with_linter_rules(&[], &[])
             .finish();
 
-        println!("{:#?}", enabled_rules);
-        println!("{:#?}", disabled_rules);
+        assert_eq!(
+            disabled_rules,
+            vec![RuleFilter::Rule("safety", "banDropColumn")]
+        )
     }
 }
