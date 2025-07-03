@@ -584,7 +584,7 @@ impl Workspace for WorkspaceServer {
             .map(Error::from)
             .collect::<Vec<pgt_diagnostics::Error>>();
 
-        diagnostics.extend(suppression_errors.into_iter().map(|e| SDiagnostic::new(e)));
+        diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
         let errors = diagnostics
             .iter()

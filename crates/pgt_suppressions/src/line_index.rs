@@ -24,7 +24,7 @@ impl LineIndex {
     }
 
     pub fn offset_for_line(&self, idx: usize) -> Option<&pgt_text_size::TextSize> {
-        self.line_offset.iter().skip(idx).next()
+        self.line_offset.get(idx)
     }
 
     pub fn line_for_offset(&self, offset: TextSize) -> Option<usize> {

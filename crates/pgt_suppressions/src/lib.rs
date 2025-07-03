@@ -153,9 +153,9 @@ impl Suppression {
             None => {
                 return Err(SuppressionDiagnostic {
                     span,
-                    message: MessageAndDescription::from(format!(
-                        "You must specify which lints to suppress."
-                    )),
+                    message: MessageAndDescription::from(
+                        "You must specify which lints to suppress.".to_string(),
+                    ),
                 });
             }
         };
@@ -209,9 +209,10 @@ impl Suppression {
     fn to_disabled_diagnostic(self) -> SuppressionDiagnostic {
         SuppressionDiagnostic {
             span: self.suppression_range,
-            message: MessageAndDescription::from(format!(
+            message: MessageAndDescription::from(
                 "This rule has been disabled via the configuration. The suppression has no effect."
-            )),
+                    .to_string(),
+            ),
         }
     }
 }
@@ -300,7 +301,10 @@ impl Suppressions {
 
         for (line, suppr) in &self.line_suppressions {
             let mut expected_diagnostic_line = line + 1;
-            while let Some(_) = self.line_suppressions.get(&expected_diagnostic_line) {
+            while self
+                .line_suppressions
+                .contains_key(&expected_diagnostic_line)
+            {
                 expected_diagnostic_line += 1;
             }
 
@@ -320,9 +324,9 @@ impl Suppressions {
             } else {
                 self.diagnostics.push(SuppressionDiagnostic {
                     span: suppr.suppression_range,
-                    message: MessageAndDescription::from(format!(
-                        "This suppression has no effect."
-                    )),
+                    message: MessageAndDescription::from(
+                        "This suppression has no effect.".to_string(),
+                    ),
                 })
             }
         }
@@ -394,7 +398,7 @@ impl Suppressions {
 
                 eligible
             })
-            .unwrap_or(vec![])
+            .unwrap_or_default()
     }
 }
 
@@ -462,7 +466,7 @@ impl<'a> SuppressionsParser<'a> {
     }
 
     fn parse_suppressions(&mut self) {
-        while let Some((idx, line)) = self.lines.next() {
+        for (idx, line) in self.lines.by_ref() {
             if !line.trim().starts_with("-- pgt-ignore") {
                 continue;
             }
@@ -481,9 +485,9 @@ impl<'a> SuppressionsParser<'a> {
                 SuppressionKind::File => {
                     self.diagnostics.push(SuppressionDiagnostic {
                         span: suppr.suppression_range,
-                        message: MessageAndDescription::from(format!(
-                            "File suppressions should be at the top of the file."
-                        )),
+                        message: MessageAndDescription::from(
+                            "File suppressions should be at the top of the file.".to_string(),
+                        ),
                     });
                 }
 
@@ -514,9 +518,9 @@ impl<'a> SuppressionsParser<'a> {
                     } else {
                         self.diagnostics.push(SuppressionDiagnostic {
                             span: suppr.suppression_range,
-                            message: MessageAndDescription::from(format!(
-                                "This end suppression does not have a matching start."
-                            )),
+                            message: MessageAndDescription::from(
+                                "This end suppression does not have a matching start.".to_string(),
+                            ),
                         });
                     }
                 }
@@ -527,14 +531,14 @@ impl<'a> SuppressionsParser<'a> {
     /// If we have `pgt-ignore-start` suppressions without matching end tags after parsing the entire file,
     /// we'll report diagnostics for those.
     fn handle_unmatched_start_suppressions(&mut self) {
-        let start_suppressions = std::mem::replace(&mut self.start_suppressions_stack, vec![]);
+        let start_suppressions = std::mem::take(&mut self.start_suppressions_stack);
 
         for suppr in start_suppressions {
             self.diagnostics.push(SuppressionDiagnostic {
                 span: suppr.suppression_range,
-                message: MessageAndDescription::from(format!(
-                    "This start suppression does not have a matching end."
-                )),
+                message: MessageAndDescription::from(
+                    "This start suppression does not have a matching end.".to_string(),
+                ),
             });
         }
     }
