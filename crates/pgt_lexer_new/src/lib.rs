@@ -13,7 +13,7 @@ pub struct Lexed<'a> {
     inner: LexedStr<'a>,
 }
 
-impl<'a> Lexed<'a> {
+impl Lexed<'_> {
     /// Returns the number of tokens (excluding EOF)
     pub fn len(&self) -> usize {
         self.inner.len()
