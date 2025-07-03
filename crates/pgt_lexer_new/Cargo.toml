@@ -12,6 +12,8 @@ version              = "0.0.0"
 
 
 [dependencies]
+pgt_lexer_new_codegen.workspace = true
+pgt_tokenizer.workspace         = true
 
 [dev-dependencies]
 insta.workspace = true

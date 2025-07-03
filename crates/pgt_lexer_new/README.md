@@ -1,1 +1,1 @@
-Heavily inspired by and copied from [squawk_lexer](https://github.com/sbdchd/squawk/tree/9acfecbbb7f3c7eedcbaf060e7b25f9afa136db3/crates/squawk_lexer). Thanks for making all the hard work MIT-licensed!
+Heavily inspired by and copied from [squawk_parser](https://github.com/sbdchd/squawk/tree/9acfecbbb7f3c7eedcbaf060e7b25f9afa136db3/crates/squawk_parser). Thanks for making all the hard work MIT-licensed!

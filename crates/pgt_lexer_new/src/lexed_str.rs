@@ -2,7 +2,7 @@
 
 use std::ops;
 
-use pgt_lexer_new::tokenize;
+use pgt_tokenizer::tokenize;
 
 use crate::SyntaxKind;
 
@@ -109,7 +109,7 @@ impl<'a> Converter<'a> {
         }
     }
 
-    fn extend_token(&mut self, kind: &pgt_lexer_new::TokenKind, token_text: &str) {
+    fn extend_token(&mut self, kind: &pgt_tokenizer::TokenKind, token_text: &str) {
         // A note on an intended tradeoff:
         // We drop some useful information here (see patterns with double dots `..`)
         // Storing that info in `SyntaxKind` is not possible due to its layout requirements of
@@ -118,8 +118,8 @@ impl<'a> Converter<'a> {
 
         let syntax_kind = {
             match kind {
-                pgt_lexer_new::TokenKind::LineComment => SyntaxKind::COMMENT,
-                pgt_lexer_new::TokenKind::BlockComment { terminated } => {
+                pgt_tokenizer::TokenKind::LineComment => SyntaxKind::COMMENT,
+                pgt_tokenizer::TokenKind::BlockComment { terminated } => {
                     if !terminated {
                         err = "Missing trailing `*/` symbols to terminate the block comment";
                     }
@@ -127,13 +127,13 @@ impl<'a> Converter<'a> {
                 }
 
                 // whitespace
-                pgt_lexer_new::TokenKind::Space => SyntaxKind::SPACE,
-                pgt_lexer_new::TokenKind::Tab => SyntaxKind::TAB,
-                pgt_lexer_new::TokenKind::Newline => SyntaxKind::NEWLINE,
-                pgt_lexer_new::TokenKind::CarriageReturn => SyntaxKind::CARRIAGE_RETURN,
-                pgt_lexer_new::TokenKind::VerticalTab => SyntaxKind::VERTICAL_TAB,
-                pgt_lexer_new::TokenKind::FormFeed => SyntaxKind::FORM_FEED,
-                pgt_lexer_new::TokenKind::Ident => {
+                pgt_tokenizer::TokenKind::Space => SyntaxKind::SPACE,
+                pgt_tokenizer::TokenKind::Tab => SyntaxKind::TAB,
+                pgt_tokenizer::TokenKind::Newline => SyntaxKind::NEWLINE,
+                pgt_tokenizer::TokenKind::CarriageReturn => SyntaxKind::CARRIAGE_RETURN,
+                pgt_tokenizer::TokenKind::VerticalTab => SyntaxKind::VERTICAL_TAB,
+                pgt_tokenizer::TokenKind::FormFeed => SyntaxKind::FORM_FEED,
+                pgt_tokenizer::TokenKind::Ident => {
                     // TODO: check for max identifier length
                     //
                     // see: https://www.postgresql.org/docs/16/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -146,43 +146,43 @@ impl<'a> Converter<'a> {
                     // see: https://github.com/postgres/postgres/blob/e032e4c7ddd0e1f7865b246ec18944365d4f8614/src/include/pg_config_manual.h#L29
                     SyntaxKind::from_keyword(token_text).unwrap_or(SyntaxKind::IDENT)
                 }
-                pgt_lexer_new::TokenKind::Literal { kind, .. } => {
+                pgt_tokenizer::TokenKind::Literal { kind, .. } => {
                     self.extend_literal(token_text.len(), kind);
                     return;
                 }
-                pgt_lexer_new::TokenKind::Semi => SyntaxKind::SEMICOLON,
-                pgt_lexer_new::TokenKind::Comma => SyntaxKind::COMMA,
-                pgt_lexer_new::TokenKind::Dot => SyntaxKind::DOT,
-                pgt_lexer_new::TokenKind::OpenParen => SyntaxKind::L_PAREN,
-                pgt_lexer_new::TokenKind::CloseParen => SyntaxKind::R_PAREN,
-                pgt_lexer_new::TokenKind::OpenBracket => SyntaxKind::L_BRACK,
-                pgt_lexer_new::TokenKind::CloseBracket => SyntaxKind::R_BRACK,
-                pgt_lexer_new::TokenKind::At => SyntaxKind::AT,
-                pgt_lexer_new::TokenKind::Pound => SyntaxKind::POUND,
-                pgt_lexer_new::TokenKind::Tilde => SyntaxKind::TILDE,
-                pgt_lexer_new::TokenKind::Question => SyntaxKind::QUESTION,
-                pgt_lexer_new::TokenKind::Colon => SyntaxKind::COLON,
-                pgt_lexer_new::TokenKind::Eq => SyntaxKind::EQ,
-                pgt_lexer_new::TokenKind::Bang => SyntaxKind::BANG,
-                pgt_lexer_new::TokenKind::Lt => SyntaxKind::L_ANGLE,
-                pgt_lexer_new::TokenKind::Gt => SyntaxKind::R_ANGLE,
-                pgt_lexer_new::TokenKind::Minus => SyntaxKind::MINUS,
-                pgt_lexer_new::TokenKind::And => SyntaxKind::AMP,
-                pgt_lexer_new::TokenKind::Or => SyntaxKind::PIPE,
-                pgt_lexer_new::TokenKind::Plus => SyntaxKind::PLUS,
-                pgt_lexer_new::TokenKind::Star => SyntaxKind::STAR,
-                pgt_lexer_new::TokenKind::Slash => SyntaxKind::SLASH,
-                pgt_lexer_new::TokenKind::Caret => SyntaxKind::CARET,
-                pgt_lexer_new::TokenKind::Percent => SyntaxKind::PERCENT,
-                pgt_lexer_new::TokenKind::Unknown => SyntaxKind::ERROR,
-                pgt_lexer_new::TokenKind::UnknownPrefix => {
+                pgt_tokenizer::TokenKind::Semi => SyntaxKind::SEMICOLON,
+                pgt_tokenizer::TokenKind::Comma => SyntaxKind::COMMA,
+                pgt_tokenizer::TokenKind::Dot => SyntaxKind::DOT,
+                pgt_tokenizer::TokenKind::OpenParen => SyntaxKind::L_PAREN,
+                pgt_tokenizer::TokenKind::CloseParen => SyntaxKind::R_PAREN,
+                pgt_tokenizer::TokenKind::OpenBracket => SyntaxKind::L_BRACK,
+                pgt_tokenizer::TokenKind::CloseBracket => SyntaxKind::R_BRACK,
+                pgt_tokenizer::TokenKind::At => SyntaxKind::AT,
+                pgt_tokenizer::TokenKind::Pound => SyntaxKind::POUND,
+                pgt_tokenizer::TokenKind::Tilde => SyntaxKind::TILDE,
+                pgt_tokenizer::TokenKind::Question => SyntaxKind::QUESTION,
+                pgt_tokenizer::TokenKind::Colon => SyntaxKind::COLON,
+                pgt_tokenizer::TokenKind::Eq => SyntaxKind::EQ,
+                pgt_tokenizer::TokenKind::Bang => SyntaxKind::BANG,
+                pgt_tokenizer::TokenKind::Lt => SyntaxKind::L_ANGLE,
+                pgt_tokenizer::TokenKind::Gt => SyntaxKind::R_ANGLE,
+                pgt_tokenizer::TokenKind::Minus => SyntaxKind::MINUS,
+                pgt_tokenizer::TokenKind::And => SyntaxKind::AMP,
+                pgt_tokenizer::TokenKind::Or => SyntaxKind::PIPE,
+                pgt_tokenizer::TokenKind::Plus => SyntaxKind::PLUS,
+                pgt_tokenizer::TokenKind::Star => SyntaxKind::STAR,
+                pgt_tokenizer::TokenKind::Slash => SyntaxKind::SLASH,
+                pgt_tokenizer::TokenKind::Caret => SyntaxKind::CARET,
+                pgt_tokenizer::TokenKind::Percent => SyntaxKind::PERCENT,
+                pgt_tokenizer::TokenKind::Unknown => SyntaxKind::ERROR,
+                pgt_tokenizer::TokenKind::UnknownPrefix => {
                     err = "unknown literal prefix";
                     SyntaxKind::IDENT
                 }
-                pgt_lexer_new::TokenKind::Eof => SyntaxKind::EOF,
-                pgt_lexer_new::TokenKind::Backtick => SyntaxKind::BACKTICK,
-                pgt_lexer_new::TokenKind::PositionalParam => SyntaxKind::POSITIONAL_PARAM,
-                pgt_lexer_new::TokenKind::QuotedIdent { terminated } => {
+                pgt_tokenizer::TokenKind::Eof => SyntaxKind::EOF,
+                pgt_tokenizer::TokenKind::Backtick => SyntaxKind::BACKTICK,
+                pgt_tokenizer::TokenKind::PositionalParam => SyntaxKind::POSITIONAL_PARAM,
+                pgt_tokenizer::TokenKind::QuotedIdent { terminated } => {
                     if !terminated {
                         err = "Missing trailing \" to terminate the quoted identifier"
                     }
@@ -195,17 +195,17 @@ impl<'a> Converter<'a> {
         self.push(syntax_kind, token_text.len(), err);
     }
 
-    fn extend_literal(&mut self, len: usize, kind: &pgt_lexer_new::LiteralKind) {
+    fn extend_literal(&mut self, len: usize, kind: &pgt_tokenizer::LiteralKind) {
         let mut err = "";
 
         let syntax_kind = match *kind {
-            pgt_lexer_new::LiteralKind::Int { empty_int, base: _ } => {
+            pgt_tokenizer::LiteralKind::Int { empty_int, base: _ } => {
                 if empty_int {
                     err = "Missing digits after the integer base prefix";
                 }
                 SyntaxKind::INT_NUMBER
             }
-            pgt_lexer_new::LiteralKind::Float {
+            pgt_tokenizer::LiteralKind::Float {
                 empty_exponent,
                 base: _,
             } => {
@@ -214,28 +214,28 @@ impl<'a> Converter<'a> {
                 }
                 SyntaxKind::FLOAT_NUMBER
             }
-            pgt_lexer_new::LiteralKind::Str { terminated } => {
+            pgt_tokenizer::LiteralKind::Str { terminated } => {
                 if !terminated {
                     err = "Missing trailing `'` symbol to terminate the string literal";
                 }
                 // TODO: rust analzyer checks for un-escaped strings, we should too
                 SyntaxKind::STRING
             }
-            pgt_lexer_new::LiteralKind::ByteStr { terminated } => {
+            pgt_tokenizer::LiteralKind::ByteStr { terminated } => {
                 if !terminated {
                     err = "Missing trailing `'` symbol to terminate the hex bit string literal";
                 }
                 // TODO: rust analzyer checks for un-escaped strings, we should too
                 SyntaxKind::BYTE_STRING
             }
-            pgt_lexer_new::LiteralKind::BitStr { terminated } => {
+            pgt_tokenizer::LiteralKind::BitStr { terminated } => {
                 if !terminated {
                     err = "Missing trailing `\'` symbol to terminate the bit string literal";
                 }
                 // TODO: rust analzyer checks for un-escaped strings, we should too
                 SyntaxKind::BIT_STRING
             }
-            pgt_lexer_new::LiteralKind::DollarQuotedString { terminated } => {
+            pgt_tokenizer::LiteralKind::DollarQuotedString { terminated } => {
                 if !terminated {
                     // TODO: we could be fancier and say the ending string we're looking for
                     err = "Unterminated dollar quoted string literal";
@@ -243,14 +243,14 @@ impl<'a> Converter<'a> {
                 // TODO: rust analzyer checks for un-escaped strings, we should too
                 SyntaxKind::DOLLAR_QUOTED_STRING
             }
-            pgt_lexer_new::LiteralKind::UnicodeEscStr { terminated } => {
+            pgt_tokenizer::LiteralKind::UnicodeEscStr { terminated } => {
                 if !terminated {
                     err = "Missing trailing `'` symbol to terminate the unicode escape string literal";
                 }
                 // TODO: rust analzyer checks for un-escaped strings, we should too
                 SyntaxKind::BYTE_STRING
             }
-            pgt_lexer_new::LiteralKind::EscStr { terminated } => {
+            pgt_tokenizer::LiteralKind::EscStr { terminated } => {
                 if !terminated {
                     err = "Missing trailing `\'` symbol to terminate the escape string literal";
                 }

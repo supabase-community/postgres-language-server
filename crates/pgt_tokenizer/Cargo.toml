@@ -6,14 +6,12 @@ edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "pgt_parser"
+name                 = "pgt_tokenizer"
 repository.workspace = true
 version              = "0.0.0"
 
 
 [dependencies]
-pgt_lexer_new.workspace      = true
-pgt_parser_codegen.workspace = true
 
 [dev-dependencies]
 insta.workspace = true

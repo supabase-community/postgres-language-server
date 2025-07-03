@@ -2803,6 +2803,22 @@ name = "pgt_lexer_new"
 version = "0.0.0"
 dependencies = [
  "insta",
+ "pgt_lexer_new_codegen",
+ "pgt_tokenizer",
+]
+
+[[package]]
+name = "pgt_lexer_new_codegen"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "convert_case",
+ "enum-iterator",
+ "proc-macro2",
+ "prost-reflect",
+ "protox",
+ "quote",
+ "ureq",
 ]
 
 [[package]]
@@ -2841,29 +2857,6 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
-]
-
-[[package]]
-name = "pgt_parser"
-version = "0.0.0"
-dependencies = [
- "insta",
- "pgt_lexer_new",
- "pgt_parser_codegen",
-]
-
-[[package]]
-name = "pgt_parser_codegen"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "convert_case",
- "enum-iterator",
- "proc-macro2",
- "prost-reflect",
- "protox",
- "quote",
- "ureq",
 ]
 
 [[package]]
@@ -2967,6 +2960,13 @@ dependencies = [
  "serde",
  "serde_test",
  "static_assertions",
+]
+
+[[package]]
+name = "pgt_tokenizer"
+version = "0.0.0"
+dependencies = [
+ "insta",
 ]
 
 [[package]]
