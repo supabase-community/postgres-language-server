@@ -70,8 +70,6 @@ impl<'a, 'b> LintVisitor<'a, 'b> {
         let has_only_filter = !self.only.is_empty();
 
         if !has_only_filter {
-            println!("does not have only filter!");
-
             let enabled_rules = self
                 .settings
                 .as_linter_rules()

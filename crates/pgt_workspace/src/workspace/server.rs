@@ -573,13 +573,13 @@ impl Workspace for WorkspaceServer {
         let suppressions = parser
             .document_suppressions()
             .clone()
-            .considering_disabled_rules(&disabled_rules);
+            .considering_disabled_rules(&disabled_rules)
+            .with_unused_suppressions_as_errors(&diagnostics);
 
         diagnostics.retain(|d| !suppressions.is_suppressed(d));
 
         let suppression_errors: Vec<Error> = suppressions
             .diagnostics
-            .clone()
             .into_iter()
             .map(Error::from)
             .collect::<Vec<pgt_diagnostics::Error>>();
