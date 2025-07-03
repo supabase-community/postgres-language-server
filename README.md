@@ -33,6 +33,25 @@ Our current focus is on refining and enhancing these core features while buildin
 - [psteinroe](https://github.com/psteinroe)
 - [juleswritescode](https://github.com/juleswritescode)
 
+## Development
+
+### Using Nix
+
+```bash
+nix develop
+docker-compose up -d
+bun install
+cargo check
+```
+
+### Using Docker
+
+```bash
+docker-compose up -d
+bun install
+cargo check
+```
+
 ## Acknowledgements
 
 A big thanks to the following projects, without which this project wouldn't have been possible:
