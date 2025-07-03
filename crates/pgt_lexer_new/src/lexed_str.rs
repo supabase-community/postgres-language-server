@@ -58,10 +58,6 @@ impl<'a> LexedStr<'a> {
         let hi = self.start[i + 1] as usize;
         lo..hi
     }
-    pub fn text_start(&self, i: usize) -> usize {
-        assert!(i <= self.len());
-        self.start[i] as usize
-    }
 
     pub fn errors(&self) -> impl Iterator<Item = (usize, &str)> + '_ {
         self.error
