@@ -40,16 +40,12 @@ Our current focus is on refining and enhancing these core features while buildin
 ```bash
 nix develop
 docker-compose up -d
-bun install
-cargo check
 ```
 
 ### Using Docker
 
 ```bash
 docker-compose up -d
-bun install
-cargo check
 ```
 
 ## Acknowledgements
