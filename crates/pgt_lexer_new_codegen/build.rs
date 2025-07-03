@@ -10,19 +10,19 @@ static LIBPG_QUERY_TAG: &str = "17-6.1.0";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let version = LIBPG_QUERY_TAG.to_string();
 
-    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    let vendor_dir = out_dir.join("vendor");
-    let libpg_query_dir = vendor_dir.join("libpg_query").join(&version);
-    let kwlist_path = libpg_query_dir.join("kwlist.h");
-    let stamp_file = libpg_query_dir.join(".stamp");
+    // Check for the postgres header file in the source tree first
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
+    let headers_dir = manifest_dir.join("postgres").join(&version);
+    let kwlist_path = headers_dir.join("kwlist.h");
 
-    if !stamp_file.exists() {
+    // Only download if the file doesn't exist
+    if !kwlist_path.exists() {
         println!(
             "cargo:warning=Downloading kwlist.h for libpg_query {}",
             version
         );
 
-        fs::create_dir_all(&libpg_query_dir)?;
+        fs::create_dir_all(&headers_dir)?;
 
         let proto_url = format!(
             "https://raw.githubusercontent.com/pganalyze/libpg_query/{}/src/postgres/include/parser/kwlist.h",
@@ -35,8 +35,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut file = fs::File::create(&kwlist_path)?;
         file.write_all(content.as_bytes())?;
 
-        fs::File::create(&stamp_file)?;
-
         println!("cargo:warning=Successfully downloaded kwlist.h");
     }
 
@@ -45,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         kwlist_path.display()
     );
 
-    println!("cargo:rerun-if-changed={}", stamp_file.display());
+    println!("cargo:rerun-if-changed={}", kwlist_path.display());
 
     Ok(())
 }
