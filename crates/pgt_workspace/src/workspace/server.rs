@@ -573,7 +573,7 @@ impl Workspace for WorkspaceServer {
         let suppressions = parser
             .document_suppressions()
             .clone()
-            .considering_disabled_rules(&disabled_rules)
+            .with_disabled_rules(&disabled_rules)
             .with_unused_suppressions_as_errors(&diagnostics);
 
         diagnostics.retain(|d| !suppressions.is_suppressed(d));

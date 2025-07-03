@@ -235,8 +235,10 @@ pub struct Suppressions {
 }
 
 impl Suppressions {
+    /// Some diagnostics can be turned off via the configuration.
+    /// This will mark suppressions that try to suppress these disabled diagnostics as errors.
     #[must_use]
-    pub fn considering_disabled_rules(mut self, disabled_rules: &[RuleFilter<'_>]) -> Self {
+    pub fn with_disabled_rules(mut self, disabled_rules: &[RuleFilter<'_>]) -> Self {
         {
             let (enabled, disabled) = self
                 .file_suppressions
