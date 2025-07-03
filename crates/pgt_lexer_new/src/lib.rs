@@ -1,78 +1,15 @@
 mod codegen;
 mod diagnostics;
-mod lexed_str;
-
-use diagnostics::LexError;
-use lexed_str::LexedStr;
-use pgt_text_size::TextRange;
+mod lexed;
+mod lexer;
 
 pub use crate::codegen::syntax_kind::SyntaxKind;
-
-/// Result of lexing a string, providing access to tokens and diagnostics
-///
-/// Thin wrapper around LexedStr for better API ergonomics
-pub struct Lexed<'a> {
-    inner: LexedStr<'a>,
-}
-
-impl Lexed<'_> {
-    /// Returns the number of tokens (excluding EOF)
-    pub fn len(&self) -> usize {
-        self.inner.len()
-    }
-
-    /// Returns true if there are no tokens
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// Returns an iterator over token kinds
-    pub fn tokens(&self) -> impl Iterator<Item = SyntaxKind> + '_ {
-        (0..self.len()).map(move |i| self.inner.kind(i))
-    }
-
-    /// Returns the kind of token at the given index
-    pub fn kind(&self, idx: usize) -> SyntaxKind {
-        self.inner.kind(idx)
-    }
-
-    /// Returns the text range of token at the given index
-    pub fn range(&self, idx: usize) -> TextRange {
-        let range = self.inner.text_range(idx);
-        TextRange::new(
-            range.start.try_into().unwrap(),
-            range.end.try_into().unwrap(),
-        )
-    }
-
-    /// Returns the text of token at the given index
-    pub fn text(&self, idx: usize) -> &str {
-        self.inner.text(idx)
-    }
-
-    /// Returns all lexing errors with their text ranges
-    pub fn errors(&self) -> Vec<LexError> {
-        self.inner
-            .errors()
-            .map(|(i, msg)| {
-                let range = self.inner.text_range(i);
-                LexError {
-                    message: msg.into(),
-                    span: TextRange::new(
-                        range.start.try_into().unwrap(),
-                        range.end.try_into().unwrap(),
-                    ),
-                }
-            })
-            .collect()
-    }
-}
+pub use crate::lexed::{LexDiagnostic, Lexed};
+pub use crate::lexer::Lexer;
 
 /// Lex the input string into tokens and diagnostics
 pub fn lex(input: &str) -> Lexed {
-    Lexed {
-        inner: LexedStr::new(input),
-    }
+    Lexer::new(input).lex()
 }
 
 #[cfg(test)]
