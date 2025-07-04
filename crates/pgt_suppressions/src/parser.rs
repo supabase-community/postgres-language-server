@@ -123,7 +123,7 @@ impl<'a> SuppressionsParser<'a> {
                                 None
                             }
                         })
-                        .last();
+                        .next_back();
 
                     if let Some(start_idx) = matching_start_idx {
                         let start = self.start_suppressions_stack.remove(start_idx);

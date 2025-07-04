@@ -38,6 +38,6 @@ impl LineIndex {
                     None
                 }
             })
-            .last()
+            .next_back()
     }
 }
