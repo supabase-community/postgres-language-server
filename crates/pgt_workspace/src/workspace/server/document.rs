@@ -1,5 +1,5 @@
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, Severity, serde::Diagnostic as SDiagnostic};
-use pgt_suppressions::{Suppressions, SuppressionsParser};
+use pgt_suppressions::Suppressions;
 use pgt_text_size::{TextRange, TextSize};
 
 use super::statement_identifier::{StatementId, StatementIdGenerator};
@@ -25,7 +25,7 @@ impl Document {
 
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
 
-        let suppressions = SuppressionsParser::parse(&content);
+        let suppressions = Suppressions::from(content.as_str());
 
         Self {
             positions: ranges
