@@ -51,7 +51,7 @@ impl<'a> SuppressionsParser<'a> {
             line_suppressions: parser.line_suppressions,
             range_suppressions: parser.range_suppressions,
             diagnostics: parser.diagnostics,
-            line_index: LineIndex::new(doc),
+            line_index: parser.line_index,
         }
     }
 
@@ -60,6 +60,11 @@ impl<'a> SuppressionsParser<'a> {
     /// suppression, this will stop.
     fn parse_file_suppressions(&mut self) {
         while let Some((_, preview)) = self.lines.peek() {
+            if preview.trim().is_empty() {
+                self.lines.next();
+                continue;
+            }
+
             if !preview.trim().starts_with("-- pgt-ignore-all") {
                 return;
             }
@@ -109,9 +114,16 @@ impl<'a> SuppressionsParser<'a> {
                 SuppressionKind::End => {
                     let matching_start_idx = self
                         .start_suppressions_stack
-                        .iter_mut()
-                        .rev()
-                        .position(|start| start.rule_specifier == suppr.rule_specifier);
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(idx, s)| {
+                            if s.rule_specifier == suppr.rule_specifier {
+                                Some(idx)
+                            } else {
+                                None
+                            }
+                        })
+                        .last();
 
                     if let Some(start_idx) = matching_start_idx {
                         let start = self.start_suppressions_stack.remove(start_idx);
@@ -151,5 +163,193 @@ impl<'a> SuppressionsParser<'a> {
                 ),
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pgt_analyse::RuleCategory;
+
+    use super::*;
+    use crate::suppression::{RuleSpecifier, SuppressionKind};
+
+    #[test]
+    fn test_parse_line_suppressions() {
+        let doc = r#"
+SELECT 1;
+-- pgt-ignore lint/safety/banDropColumn
+SELECT 2;
+"#;
+        let suppressions = SuppressionsParser::parse(doc);
+
+        // Should have a line suppression on line 1 (0-based index)
+        let suppression = suppressions
+            .line_suppressions
+            .get(&2)
+            .expect("no suppression found");
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                RuleCategory::Lint,
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn test_parse_multiple_line_suppressions() {
+        let doc = r#"
+SELECT 1;
+-- pgt-ignore lint/safety/banDropColumn
+-- pgt-ignore lint/safety/banDropTable
+-- pgt-ignore lint/safety/banDropSomething
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.line_suppressions.len(), 3);
+
+        assert_eq!(
+            suppressions
+                .line_suppressions
+                .get(&2)
+                .unwrap()
+                .rule_specifier
+                .rule(),
+            Some("banDropColumn")
+        );
+
+        assert_eq!(
+            suppressions
+                .line_suppressions
+                .get(&3)
+                .unwrap()
+                .rule_specifier
+                .rule(),
+            Some("banDropTable")
+        );
+
+        assert_eq!(
+            suppressions
+                .line_suppressions
+                .get(&4)
+                .unwrap()
+                .rule_specifier
+                .rule(),
+            Some("banDropSomething")
+        );
+    }
+
+    #[test]
+    fn parses_file_level_suppressions() {
+        let doc = r#"
+-- pgt-ignore-all lint
+-- pgt-ignore-all action
+
+SELECT 1;
+-- pgt-ignore-all lint/safety
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.diagnostics.len(), 1);
+        assert_eq!(suppressions.file_suppressions.len(), 2);
+
+        assert_eq!(
+            suppressions.file_suppressions[0].rule_specifier,
+            RuleSpecifier::Category(RuleCategory::Lint)
+        );
+        assert_eq!(
+            suppressions.file_suppressions[1].rule_specifier,
+            RuleSpecifier::Category(RuleCategory::Action)
+        );
+
+        assert_eq!(
+            suppressions.diagnostics[0].message.to_string(),
+            String::from("File suppressions should be at the top of the file.")
+        );
+    }
+
+    #[test]
+    fn parses_range_suppressions() {
+        let doc = r#"
+-- pgt-ignore-start lint/safety/banDropTable
+drop table users;
+drop table auth;
+drop table posts;
+-- pgt-ignore-end lint/safety/banDropTable
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.range_suppressions.len(), 1);
+
+        assert_eq!(
+            suppressions.range_suppressions[0],
+            RangeSuppression {
+                suppressed_range: TextRange::new(1.into(), 141.into()),
+                start_suppression: Suppression {
+                    kind: SuppressionKind::Start,
+                    rule_specifier: RuleSpecifier::Rule(
+                        RuleCategory::Lint,
+                        "safety".to_string(),
+                        "banDropTable".to_string()
+                    ),
+                    suppression_range: TextRange::new(1.into(), 45.into()),
+                    explanation: None,
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn parses_range_suppressions_with_errors() {
+        let doc = r#"
+-- pgt-ignore-start lint/safety/banDropTable
+drop table users;
+-- pgt-ignore-start lint/safety/banDropTable
+drop table auth;
+drop table posts;
+-- pgt-ignore-end lint/safety/banDropTable
+-- pgt-ignore-end lint/safety/banDropColumn
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.range_suppressions.len(), 1);
+        assert_eq!(suppressions.diagnostics.len(), 2);
+
+        // the inner, nested start/end combination is recognized.
+        assert_eq!(
+            suppressions.range_suppressions[0],
+            RangeSuppression {
+                suppressed_range: TextRange::new(64.into(), 186.into()),
+                start_suppression: Suppression {
+                    kind: SuppressionKind::Start,
+                    rule_specifier: RuleSpecifier::Rule(
+                        RuleCategory::Lint,
+                        "safety".to_string(),
+                        "banDropTable".to_string()
+                    ),
+                    suppression_range: TextRange::new(64.into(), 108.into()),
+                    explanation: None,
+                },
+            }
+        );
+
+        // the outer end is an error
+        assert_eq!(
+            suppressions.diagnostics[0].message.to_string(),
+            String::from("This end suppression does not have a matching start.")
+        );
+
+        // the outer start is an error
+        assert_eq!(
+            suppressions.diagnostics[1].message.to_string(),
+            String::from("This start suppression does not have a matching end.")
+        );
     }
 }

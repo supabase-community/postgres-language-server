@@ -205,3 +205,138 @@ impl Suppressions {
             .unwrap_or_default()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use pgt_diagnostics::{Diagnostic, MessageAndDescription};
+    use pgt_text_size::TextRange;
+
+    use crate::suppression::SuppressionDiagnostic;
+
+    #[derive(Clone, Debug, Diagnostic)]
+    #[diagnostic(category = "lint", severity = Error)]
+    pub struct TestDiagnostic {
+        #[location(span)]
+        pub span: TextRange,
+    }
+
+    #[test]
+    fn correctly_suppresses_diagnostics_at_top_level() {
+        let doc = r#"
+        -- pgt-ignore-all lint
+
+        select 1;
+        "#;
+
+        let len_doc: u32 = doc.len().try_into().unwrap();
+
+        let suppressions = super::Suppressions::from(doc);
+
+        assert!(suppressions.is_suppressed(&TestDiagnostic {
+            span: TextRange::new((len_doc - 10).into(), len_doc.into()),
+        }));
+    }
+
+    #[test]
+    fn correctly_suppresses_diagnostics_at_line() {
+        let doc = r#"
+            select 2;
+
+            -- pgt-ignore lint
+            select 1;
+            "#;
+
+        let suppressions = super::Suppressions::from(doc);
+
+        assert!(suppressions.is_suppressed(&TestDiagnostic {
+            span: TextRange::new(89.into(), 98.into()),
+        }));
+    }
+
+    #[test]
+    fn correctly_suppresses_with_multiple_line_diagnostics() {
+        let doc = r#"
+            select 2;
+
+            -- pgt-ignore lint
+            -- pgt-ignore action
+            select 1;
+            "#;
+
+        let suppressions = super::Suppressions::from(doc);
+
+        assert!(suppressions.is_suppressed(&TestDiagnostic {
+            span: TextRange::new(100.into(), 109.into()),
+        }));
+    }
+
+    #[test]
+    fn correctly_suppresses_diagnostics_with_ranges() {
+        let doc = r#"
+            select 2;
+
+            -- pgt-ignore-start lint
+            select 1;
+            -- pgt-ignore-end lint
+            "#;
+
+        let suppressions = super::Suppressions::from(doc);
+
+        assert!(suppressions.is_suppressed(&TestDiagnostic {
+            span: TextRange::new(73.into(), 82.into()),
+        }));
+    }
+
+    #[test]
+    fn marks_disabled_rule_suppressions_as_errors() {
+        let doc = r#"
+            select 2;
+
+            -- pgt-ignore lint/safety/banDropTable
+            select 1;
+            "#;
+
+        let suppressions = super::Suppressions::from(doc)
+            .with_disabled_rules(&[pgt_analyse::RuleFilter::Group("safety")]);
+
+        assert!(!suppressions.is_suppressed(&TestDiagnostic {
+            span: TextRange::new(89.into(), 98.into()),
+        }));
+
+        assert_eq!(suppressions.diagnostics.len(), 1);
+
+        assert_eq!(
+            suppressions.diagnostics[0],
+            SuppressionDiagnostic {
+                span: TextRange::new(36.into(), 74.into()),
+                message: MessageAndDescription::from("This rule has been disabled via the configuration. The suppression has no effect.".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn marks_unused_suppressions_as_errors() {
+        let doc = r#"
+            select 2;
+
+            -- pgt-ignore lint
+            select 1;
+            "#;
+
+        // no diagnostics
+        let diagnostics: Vec<TestDiagnostic> = vec![];
+
+        let suppressions =
+            super::Suppressions::from(doc).with_unused_suppressions_as_errors(&diagnostics);
+
+        assert_eq!(suppressions.diagnostics.len(), 1);
+
+        assert_eq!(
+            suppressions.diagnostics[0],
+            SuppressionDiagnostic {
+                span: TextRange::new(36.into(), 54.into()),
+                message: MessageAndDescription::from("This suppression has no effect.".to_string())
+            }
+        );
+    }
+}

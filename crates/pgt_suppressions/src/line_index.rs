@@ -31,7 +31,13 @@ impl LineIndex {
         self.line_offset
             .iter()
             .enumerate()
-            .find(|(_, line_offset)| **line_offset >= offset)
-            .map(|(i, _)| i)
+            .filter_map(|(i, line_offset)| {
+                if offset >= *line_offset {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .last()
     }
 }

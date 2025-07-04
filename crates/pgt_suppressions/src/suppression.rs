@@ -5,7 +5,7 @@ use pgt_text_size::{TextRange, TextSize};
 /// A specialized diagnostic for the typechecker.
 ///
 /// Type diagnostics are always **errors**.
-#[derive(Clone, Debug, Diagnostic)]
+#[derive(Clone, Debug, Diagnostic, PartialEq)]
 #[diagnostic(category = "lint", severity = Warning)]
 pub struct SuppressionDiagnostic {
     #[location(span)]
@@ -15,7 +15,7 @@ pub struct SuppressionDiagnostic {
     pub message: MessageAndDescription,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum SuppressionKind {
     File,
     Line,
@@ -23,7 +23,7 @@ pub(crate) enum SuppressionKind {
     End,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub(crate) enum RuleSpecifier {
     Category(RuleCategory),
     Group(RuleCategory, String),
@@ -31,7 +31,7 @@ pub(crate) enum RuleSpecifier {
 }
 
 impl RuleSpecifier {
-    fn category(&self) -> &RuleCategory {
+    pub(crate) fn category(&self) -> &RuleCategory {
         match self {
             RuleSpecifier::Category(rule_category) => rule_category,
             RuleSpecifier::Group(rule_category, _) => rule_category,
@@ -39,7 +39,7 @@ impl RuleSpecifier {
         }
     }
 
-    fn group(&self) -> Option<&str> {
+    pub(crate) fn group(&self) -> Option<&str> {
         match self {
             RuleSpecifier::Category(_) => None,
             RuleSpecifier::Group(_, gr) => Some(gr),
@@ -47,7 +47,7 @@ impl RuleSpecifier {
         }
     }
 
-    fn rule(&self) -> Option<&str> {
+    pub(crate) fn rule(&self) -> Option<&str> {
         match self {
             RuleSpecifier::Rule(_, _, ru) => Some(ru),
             _ => None,
@@ -88,13 +88,13 @@ impl TryFrom<&str> for RuleSpecifier {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Suppression {
     pub(crate) suppression_range: TextRange,
     pub(crate) kind: SuppressionKind,
     pub(crate) rule_specifier: RuleSpecifier,
     #[allow(unused)]
-    explanation: Option<String>,
+    pub(crate) explanation: Option<String>,
 }
 
 impl Suppression {
@@ -207,8 +207,238 @@ impl Suppression {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RangeSuppression {
     pub(crate) suppressed_range: TextRange,
     pub(crate) start_suppression: Suppression,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pgt_text_size::{TextRange, TextSize};
+
+    #[test]
+    fn test_suppression_from_line_rule() {
+        let line = "-- pgt-ignore lint/safety/banDropColumn: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                RuleCategory::Lint,
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_group() {
+        let line = "-- pgt-ignore lint/safety: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Group(RuleCategory::Lint, "safety".to_string())
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_category() {
+        let line = "-- pgt-ignore lint";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Category(RuleCategory::Lint)
+        );
+    }
+
+    #[test]
+    fn test_suppression_from_line_category_with_explanation() {
+        let line = "-- pgt-ignore lint: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Category(RuleCategory::Lint)
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_file_kind() {
+        let line = "-- pgt-ignore-all lint/safety/banDropColumn: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::File);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                RuleCategory::Lint,
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_start_kind() {
+        let line = "-- pgt-ignore-start lint/safety/banDropColumn: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Start);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                RuleCategory::Lint,
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_end_kind() {
+        let line = "-- pgt-ignore-end lint/safety/banDropColumn: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::End);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                RuleCategory::Lint,
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_span_with_offset() {
+        let line = "    \n-- pgt-ignore lint/safety/banDropColumn: explanation";
+        let offset = TextSize::new(5);
+        let suppression = Suppression::from_line(line, &offset).unwrap();
+
+        let expected_start = offset + TextSize::new(5);
+        let expected_len = TextSize::new(line.trim_ascii().len() as u32);
+
+        let expected_end = expected_start + expected_len;
+        let expected_span = TextRange::new(expected_start, expected_end);
+
+        assert_eq!(suppression.suppression_range, expected_span);
+    }
+
+    #[test]
+    fn test_suppression_from_line_invalid_tag_and_missing_specifier() {
+        let lines = vec![
+            "-- pgt-ignore-foo lint/safety/banDropColumn: explanation",
+            "-- pgt-ignore foo lint/safety/banDropColumn: explanation",
+            "-- pgt-ignore xyz lint/safety/banDropColumn: explanation",
+            "-- pgt-ignore",
+        ];
+        let offset = &TextSize::new(0);
+        for line in lines {
+            let result = Suppression::from_line(line, offset);
+            assert!(result.is_err(), "Expected error for line: {}", line);
+        }
+    }
+
+    #[test]
+    fn test_suppression_matches() {
+        let cases = vec![
+            // the category works for all groups & rules
+            ("-- pgt-ignore lint", "lint/somethingElse/aRule", true),
+            ("-- pgt-ignore lint", "lint/safety/banDropColumn", true),
+            // the group works for all rules in that group
+            (
+                "-- pgt-ignore lint/safety",
+                "lint/safety/banDropColumn",
+                true,
+            ),
+            (
+                "-- pgt-ignore lint/safety",
+                "lint/somethingElse/aRule",
+                false,
+            ),
+            // a specific supppression only works for that same rule
+            (
+                "-- pgt-ignore lint/safety/banDropColumn",
+                "lint/safety/banDropColumn",
+                true,
+            ),
+            (
+                "-- pgt-ignore lint/safety/banDropColumn",
+                "lint/safety/banDropTable",
+                false,
+            ),
+        ];
+
+        let offset = &TextSize::new(0);
+
+        for (suppr_line, specifier_str, expected) in cases {
+            let suppression = Suppression::from_line(suppr_line, offset).unwrap();
+            let specifier = RuleSpecifier::try_from(specifier_str).unwrap();
+            assert_eq!(
+                suppression.matches(&specifier),
+                expected,
+                "Suppression line '{}' vs specifier '{}' should be {}",
+                suppr_line,
+                specifier_str,
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn test_rule_specifier_is_disabled() {
+        use pgt_analyse::RuleFilter;
+
+        // Group filter disables all rules in that group
+        let spec = RuleSpecifier::Rule(
+            RuleCategory::Lint,
+            "safety".to_string(),
+            "banDropColumn".to_string(),
+        );
+        let disabled = vec![RuleFilter::Group("safety")];
+        assert!(spec.is_disabled(&disabled));
+
+        let spec2 = RuleSpecifier::Rule(
+            RuleCategory::Lint,
+            "safety".to_string(),
+            "banDropColumn".to_string(),
+        );
+        let disabled2 = vec![RuleFilter::Rule("safety", "banDropColumn")];
+        assert!(spec2.is_disabled(&disabled2));
+
+        let disabled3 = vec![RuleFilter::Rule("safety", "otherRule")];
+        assert!(!spec2.is_disabled(&disabled3));
+
+        let disabled4 = vec![RuleFilter::Group("perf")];
+        assert!(!spec.is_disabled(&disabled4));
+
+        // one match is enough
+        let disabled5 = vec![
+            RuleFilter::Group("perf"),
+            RuleFilter::Rule("safety", "banDropColumn"),
+        ];
+        assert!(spec.is_disabled(&disabled5));
+    }
 }
