@@ -13,7 +13,6 @@ version              = "0.0.0"
 
 [dependencies]
 pgt_diagnostics         = { workspace = true }
-pgt_lexer.workspace     = true
 pgt_lexer_new.workspace = true
 pgt_query_ext.workspace = true
 pgt_text_size.workspace = true

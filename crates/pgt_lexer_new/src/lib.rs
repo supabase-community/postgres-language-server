@@ -94,7 +94,6 @@ mod tests {
             }
         }
 
-        println!("{:?}", non_whitespace);
         assert_eq!(non_whitespace.len(), 2); // SELECT and id
     }
 

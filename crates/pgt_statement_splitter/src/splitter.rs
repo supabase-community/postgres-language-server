@@ -67,7 +67,6 @@ impl<'a> Splitter<'a> {
     }
 
     pub fn start_stmt(&mut self) {
-        println!("starting new statement at {:?}", self.current());
         assert!(
             self.current_stmt_start.is_none(),
             "cannot start statement within statement",
@@ -76,7 +75,6 @@ impl<'a> Splitter<'a> {
     }
 
     pub fn close_stmt(&mut self) {
-        println!("closing statement at {:?}", self.current());
         assert!(
             self.current_stmt_start.is_some(),
             "Must start statement before closing it."

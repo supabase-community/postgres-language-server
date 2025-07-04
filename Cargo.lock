@@ -2778,27 +2778,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_lexer"
-version = "0.0.0"
-dependencies = [
- "insta",
- "pg_query",
- "pgt_diagnostics",
- "pgt_lexer_codegen",
- "pgt_text_size",
- "regex",
-]
-
-[[package]]
-name = "pgt_lexer_codegen"
-version = "0.0.0"
-dependencies = [
- "pgt_query_proto_parser",
- "proc-macro2",
- "quote",
-]
-
-[[package]]
 name = "pgt_lexer_new"
 version = "0.0.0"
 dependencies = [
@@ -2868,18 +2847,7 @@ dependencies = [
  "petgraph",
  "pg_query",
  "pgt_diagnostics",
- "pgt_lexer",
- "pgt_query_ext_codegen",
  "pgt_text_size",
-]
-
-[[package]]
-name = "pgt_query_ext_codegen"
-version = "0.0.0"
-dependencies = [
- "pgt_query_proto_parser",
- "proc-macro2",
- "quote",
 ]
 
 [[package]]
@@ -2914,7 +2882,6 @@ version = "0.0.0"
 dependencies = [
  "ntest",
  "pgt_diagnostics",
- "pgt_lexer",
  "pgt_lexer_new",
  "pgt_query_ext",
  "pgt_text_size",
@@ -3026,7 +2993,7 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_fs",
- "pgt_lexer",
+ "pgt_lexer_new",
  "pgt_query_ext",
  "pgt_schema_cache",
  "pgt_statement_splitter",

@@ -5,7 +5,8 @@
       "Bash(rg:*)",
       "Bash(cargo test:*)",
       "Bash(cargo run:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(cargo fmt:*)"
     ],
     "deny": []
   }

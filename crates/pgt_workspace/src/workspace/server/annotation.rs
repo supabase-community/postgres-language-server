@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use pgt_lexer::{SyntaxKind, WHITESPACE_TOKENS};
+use pgt_lexer_new::SyntaxKind;
 
 use super::statement_identifier::StatementId;
 
@@ -11,7 +11,7 @@ pub struct StatementAnnotations {
 }
 
 pub struct AnnotationStore {
-    db: DashMap<StatementId, Option<Arc<StatementAnnotations>>>,
+    db: DashMap<StatementId, Arc<StatementAnnotations>>,
 }
 
 impl AnnotationStore {
@@ -24,26 +24,38 @@ impl AnnotationStore {
         &self,
         statement_id: &StatementId,
         content: &str,
-    ) -> Option<Arc<StatementAnnotations>> {
+    ) -> Arc<StatementAnnotations> {
         if let Some(existing) = self.db.get(statement_id).map(|x| x.clone()) {
             return existing;
         }
 
-        // we swallow the error here because the lexing within the document would have already
-        // thrown and we wont even get here if that happened.
-        let annotations = pgt_lexer::lex(content).ok().map(|tokens| {
-            let ends_with_semicolon = tokens
-                .iter()
-                .rev()
-                .find(|token| !WHITESPACE_TOKENS.contains(&token.kind))
-                .is_some_and(|token| token.kind == SyntaxKind::Ascii59);
+        let lexed = pgt_lexer_new::lex(content);
 
-            Arc::new(StatementAnnotations {
-                ends_with_semicolon,
-            })
+        let mut ends_with_semicolon = false;
+
+        // Iterate through tokens in reverse to find the last non-whitespace token
+        for idx in (0..lexed.len()).rev() {
+            let kind = lexed.kind(idx);
+            if !matches!(
+                kind,
+                SyntaxKind::SPACE
+                    | SyntaxKind::TAB
+                    | SyntaxKind::VERTICAL_TAB
+                    | SyntaxKind::FORM_FEED
+                    | SyntaxKind::LINE_ENDING
+                    | SyntaxKind::EOF
+            ) {
+                ends_with_semicolon = kind == SyntaxKind::SEMICOLON;
+                break;
+            }
+        }
+
+        let annotations = Arc::new(StatementAnnotations {
+            ends_with_semicolon,
         });
 
-        self.db.insert(statement_id.clone(), None);
+        self.db.insert(statement_id.clone(), annotations.clone());
+
         annotations
     }
 
@@ -80,8 +92,7 @@ mod tests {
 
             let annotations = store.get_annotations(&statement_id, content);
 
-            assert!(annotations.is_some());
-            assert_eq!(annotations.unwrap().ends_with_semicolon, *expected);
+            assert_eq!(annotations.ends_with_semicolon, *expected);
         }
     }
 }

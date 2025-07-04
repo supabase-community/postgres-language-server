@@ -25,7 +25,7 @@ pgt_configuration         = { workspace = true }
 pgt_console               = { workspace = true }
 pgt_diagnostics           = { workspace = true }
 pgt_fs                    = { workspace = true, features = ["serde"] }
-pgt_lexer                 = { workspace = true }
+pgt_lexer_new             = { workspace = true }
 pgt_query_ext             = { workspace = true }
 pgt_schema_cache          = { workspace = true }
 pgt_statement_splitter    = { workspace = true }
