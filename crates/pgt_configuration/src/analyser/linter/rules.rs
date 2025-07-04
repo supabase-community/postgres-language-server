@@ -121,6 +121,14 @@ impl Rules {
         }
         enabled_rules.difference(&disabled_rules).copied().collect()
     }
+    #[doc = r" It returns the disabled rules by configuration."]
+    pub fn as_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
+        let mut disabled_rules = FxHashSet::default();
+        if let Some(group) = self.safety.as_ref() {
+            disabled_rules.extend(&group.get_disabled_rules());
+        }
+        disabled_rules
+    }
 }
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
