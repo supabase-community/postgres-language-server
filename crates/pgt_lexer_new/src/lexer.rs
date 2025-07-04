@@ -124,6 +124,7 @@ impl<'a> Lexer<'a> {
                 pgt_tokenizer::TokenKind::Caret => SyntaxKind::CARET,
                 pgt_tokenizer::TokenKind::Percent => SyntaxKind::PERCENT,
                 pgt_tokenizer::TokenKind::Unknown => SyntaxKind::ERROR,
+                pgt_tokenizer::TokenKind::Backslash => SyntaxKind::BACKSLASH,
                 pgt_tokenizer::TokenKind::UnknownPrefix => {
                     err = "unknown literal prefix";
                     SyntaxKind::IDENT

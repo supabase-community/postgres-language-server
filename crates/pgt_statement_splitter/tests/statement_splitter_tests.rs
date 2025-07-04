@@ -22,7 +22,7 @@ fn test_statement_splitter() {
 
         let contents = fs::read_to_string(&path).unwrap();
 
-        let split = pgt_statement_splitter::split(&contents).expect("Failed to split");
+        let split = pgt_statement_splitter::split(&contents);
 
         assert_eq!(
             split.ranges.len(),

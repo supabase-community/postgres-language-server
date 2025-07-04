@@ -1,17 +1,17 @@
-use pgt_lexer::SyntaxKind;
+use pgt_lexer_new::SyntaxKind;
 
 // All tokens listed here must be explicitly handled in the `unknown` function to ensure that we do
 // not break in the middle of another statement that contains a statement start token.
 //
-// All of these statements must have a dedicated parser function called from the `statement` function
+// All of these statements must have a dedicated splitter function called from the `statement` function
 static STATEMENT_START_TOKENS: &[SyntaxKind] = &[
-    SyntaxKind::With,
-    SyntaxKind::Select,
-    SyntaxKind::Insert,
-    SyntaxKind::Update,
-    SyntaxKind::DeleteP,
-    SyntaxKind::Create,
-    SyntaxKind::Alter,
+    SyntaxKind::WITH_KW,
+    SyntaxKind::SELECT_KW,
+    SyntaxKind::INSERT_KW,
+    SyntaxKind::UPDATE_KW,
+    SyntaxKind::DELETE_KW,
+    SyntaxKind::CREATE_KW,
+    SyntaxKind::ALTER_KW,
 ];
 
 pub(crate) fn at_statement_start(kind: SyntaxKind, exclude: &[SyntaxKind]) -> Option<&SyntaxKind> {

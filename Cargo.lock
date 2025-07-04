@@ -2915,6 +2915,7 @@ dependencies = [
  "ntest",
  "pgt_diagnostics",
  "pgt_lexer",
+ "pgt_lexer_new",
  "pgt_query_ext",
  "pgt_text_size",
  "regex",

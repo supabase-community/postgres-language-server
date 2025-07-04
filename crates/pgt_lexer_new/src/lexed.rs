@@ -31,10 +31,10 @@ pub struct Lexed<'a> {
     pub(crate) line_ending_counts: Vec<usize>,
 }
 
-impl<'a> Lexed<'a> {
-    /// Returns the number of tokens (excluding EOF)
+impl Lexed<'_> {
+    /// Returns the number of tokens
     pub fn len(&self) -> usize {
-        self.kind.len() - 1
+        self.kind.len()
     }
 
     /// Returns true if there are no tokens

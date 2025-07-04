@@ -134,6 +134,7 @@ impl Cursor<'_> {
             },
             // One-symbol tokens.
             ';' => TokenKind::Semi,
+            '\\' => TokenKind::Backslash,
             ',' => TokenKind::Comma,
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,

@@ -30,6 +30,8 @@ pub enum TokenKind {
     Eof,
     /// `/`
     Slash,
+    /// `\`
+    Backslash,
     /// `-- foo`
     LineComment,
     /// ```

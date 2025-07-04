@@ -31,6 +31,7 @@ const PUNCT: &[(&str, &str)] = &[
     ("+", "PLUS"),
     ("*", "STAR"),
     ("/", "SLASH"),
+    ("\\", "BACKSLASH"),
     ("^", "CARET"),
     ("%", "PERCENT"),
     ("_", "UNDERSCORE"),
