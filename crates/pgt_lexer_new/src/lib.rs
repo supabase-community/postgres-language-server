@@ -74,8 +74,8 @@ mod tests {
     fn test_empty_input() {
         let input = "";
         let lexed = lex(input);
-        assert!(lexed.is_empty());
-        assert_eq!(lexed.len(), 0);
+        assert_eq!(lexed.len(), 1);
+        assert_eq!(lexed.kind(0), SyntaxKind::EOF);
     }
 
     #[test]
@@ -88,12 +88,13 @@ mod tests {
         for (idx, kind) in lexed.tokens().enumerate() {
             if !matches!(
                 kind,
-                SyntaxKind::SPACE | SyntaxKind::TAB | SyntaxKind::NEWLINE
+                SyntaxKind::SPACE | SyntaxKind::TAB | SyntaxKind::LINE_ENDING | SyntaxKind::EOF
             ) {
                 non_whitespace.push(lexed.text(idx));
             }
         }
 
+        println!("{:?}", non_whitespace);
         assert_eq!(non_whitespace.len(), 2); // SELECT and id
     }
 

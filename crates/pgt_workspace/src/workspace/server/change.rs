@@ -462,9 +462,7 @@ mod tests {
     }
 
     fn assert_document_integrity(d: &Document) {
-        let ranges = pgt_statement_splitter::split(&d.content)
-            .expect("Unexpected scan error")
-            .ranges;
+        let ranges = pgt_statement_splitter::split(&d.content).ranges;
 
         assert!(
             ranges.len() == d.positions.len(),
