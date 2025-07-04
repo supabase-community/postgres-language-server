@@ -249,7 +249,7 @@ mod tests {
         let suppressions = super::Suppressions::from(doc);
 
         assert!(suppressions.is_suppressed(&TestDiagnostic {
-            span: TextRange::new(89.into(), 98.into()),
+            span: TextRange::new(67.into(), 76.into()),
         }));
     }
 
