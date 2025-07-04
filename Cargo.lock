@@ -2778,18 +2778,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_lexer_new"
+name = "pgt_lexer"
 version = "0.0.0"
 dependencies = [
  "insta",
  "pgt_diagnostics",
- "pgt_lexer_new_codegen",
+ "pgt_lexer_codegen",
  "pgt_text_size",
  "pgt_tokenizer",
 ]
 
 [[package]]
-name = "pgt_lexer_new_codegen"
+name = "pgt_lexer_codegen"
 version = "0.0.0"
 dependencies = [
  "anyhow",
@@ -2882,7 +2882,7 @@ version = "0.0.0"
 dependencies = [
  "ntest",
  "pgt_diagnostics",
- "pgt_lexer_new",
+ "pgt_lexer",
  "pgt_query_ext",
  "pgt_text_size",
  "regex",
@@ -2993,7 +2993,7 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_fs",
- "pgt_lexer_new",
+ "pgt_lexer",
  "pgt_query_ext",
  "pgt_schema_cache",
  "pgt_statement_splitter",

@@ -5,7 +5,7 @@ pub mod diagnostics;
 mod splitter;
 
 use diagnostics::SplitDiagnostic;
-use pgt_lexer_new::Lexer;
+use pgt_lexer::Lexer;
 use pgt_text_size::TextRange;
 use splitter::{Splitter, source};
 
@@ -42,7 +42,7 @@ pub fn split(sql: &str) -> SplitResult {
 mod tests {
     use diagnostics::SplitDiagnostic;
     use ntest::timeout;
-    use pgt_lexer_new::SyntaxKind;
+    use pgt_lexer::SyntaxKind;
     use pgt_text_size::TextRange;
 
     use super::*;

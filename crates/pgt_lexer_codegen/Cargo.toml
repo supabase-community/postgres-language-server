@@ -6,7 +6,7 @@ edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "pgt_lexer_new_codegen"
+name                 = "pgt_lexer_codegen"
 repository.workspace = true
 version              = "0.0.0"
 

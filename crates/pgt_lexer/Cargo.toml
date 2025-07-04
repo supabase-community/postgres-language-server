@@ -6,16 +6,16 @@ edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "pgt_lexer_new"
+name                 = "pgt_lexer"
 repository.workspace = true
 version              = "0.0.0"
 
 
 [dependencies]
-pgt_diagnostics.workspace       = true
-pgt_lexer_new_codegen.workspace = true
-pgt_text_size.workspace         = true
-pgt_tokenizer.workspace         = true
+pgt_diagnostics.workspace   = true
+pgt_lexer_codegen.workspace = true
+pgt_text_size.workspace     = true
+pgt_tokenizer.workspace     = true
 
 [dev-dependencies]
 insta.workspace = true

@@ -5,7 +5,7 @@ mod dml;
 
 pub use common::source;
 
-use pgt_lexer_new::{Lexed, SyntaxKind};
+use pgt_lexer::{Lexed, SyntaxKind};
 use pgt_text_size::TextRange;
 
 pub struct SplitResult {
@@ -39,7 +39,6 @@ pub struct Splitter<'a> {
 
 impl<'a> Splitter<'a> {
     pub fn new(lexed: &'a Lexed<'a>) -> Self {
-        println!("{:?}", lexed.tokens().collect::<Vec<_>>());
         Self {
             lexed,
             current_pos: 0,

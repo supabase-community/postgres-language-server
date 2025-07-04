@@ -71,8 +71,8 @@ pgt_diagnostics_categories = { path = "./crates/pgt_diagnostics_categories", ver
 pgt_diagnostics_macros     = { path = "./crates/pgt_diagnostics_macros", version = "0.0.0" }
 pgt_flags                  = { path = "./crates/pgt_flags", version = "0.0.0" }
 pgt_fs                     = { path = "./crates/pgt_fs", version = "0.0.0" }
-pgt_lexer_new              = { path = "./crates/pgt_lexer_new", version = "0.0.0" }
-pgt_lexer_new_codegen      = { path = "./crates/pgt_lexer_new_codegen", version = "0.0.0" }
+pgt_lexer                  = { path = "./crates/pgt_lexer", version = "0.0.0" }
+pgt_lexer_codegen          = { path = "./crates/pgt_lexer_codegen", version = "0.0.0" }
 pgt_lsp                    = { path = "./crates/pgt_lsp", version = "0.0.0" }
 pgt_markup                 = { path = "./crates/pgt_markup", version = "0.0.0" }
 pgt_query_ext              = { path = "./crates/pgt_query_ext", version = "0.0.0" }

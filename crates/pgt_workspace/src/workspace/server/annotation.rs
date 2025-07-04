@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use pgt_lexer_new::SyntaxKind;
+use pgt_lexer::SyntaxKind;
 
 use super::statement_identifier::StatementId;
 
@@ -29,7 +29,7 @@ impl AnnotationStore {
             return existing;
         }
 
-        let lexed = pgt_lexer_new::lex(content);
+        let lexed = pgt_lexer::lex(content);
 
         let mut ends_with_semicolon = false;
 

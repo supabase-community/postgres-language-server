@@ -1,4 +1,4 @@
-use pgt_lexer_new::SyntaxKind;
+use pgt_lexer::SyntaxKind;
 
 use super::{
     Splitter,

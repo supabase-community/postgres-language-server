@@ -445,9 +445,7 @@ fn get_affected(content: &str, range: TextRange) -> &str {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use pgt_diagnostics::Diagnostic;
     use pgt_text_size::TextRange;
 
     use crate::workspace::{ChangeFileParams, ChangeParams};

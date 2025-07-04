@@ -1,4 +1,4 @@
-use pgt_lexer_new::SyntaxKind;
+use pgt_lexer::SyntaxKind;
 
 // All tokens listed here must be explicitly handled in the `unknown` function to ensure that we do
 // not break in the middle of another statement that contains a statement start token.

@@ -1,5 +1,5 @@
 use pgt_diagnostics::{Diagnostic, MessageAndDescription};
-use pgt_lexer_new::{LexDiagnostic, Lexed};
+use pgt_lexer::{LexDiagnostic, Lexed};
 use pgt_text_size::TextRange;
 
 use crate::splitter::SplitError;
