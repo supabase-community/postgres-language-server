@@ -28,6 +28,7 @@ pub struct Lexed<'a> {
     pub(crate) kind: Vec<SyntaxKind>,
     pub(crate) start: Vec<u32>,
     pub(crate) error: Vec<LexError>,
+    pub(crate) line_ending_counts: Vec<usize>,
 }
 
 impl<'a> Lexed<'a> {
@@ -50,6 +51,13 @@ impl<'a> Lexed<'a> {
     pub fn kind(&self, idx: usize) -> SyntaxKind {
         assert!(idx < self.len());
         self.kind[idx]
+    }
+
+    /// Returns the number of line endings in the token at the given index
+    pub fn line_ending_count(&self, idx: usize) -> usize {
+        assert!(idx < self.len());
+        assert!(self.kind(idx) == SyntaxKind::LINE_ENDING);
+        self.line_ending_counts[idx]
     }
 
     /// Returns the text range of token at the given index

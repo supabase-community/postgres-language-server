@@ -10,6 +10,8 @@ pub struct Lexer<'a> {
     start: Vec<u32>,
     error: Vec<LexError>,
     offset: usize,
+    /// we store line ending counts outside of SyntaxKind because of the u16 represenation of SyntaxKind
+    line_ending_counts: Vec<usize>,
 }
 
 impl<'a> Lexer<'a> {
@@ -21,6 +23,7 @@ impl<'a> Lexer<'a> {
             start: Vec::new(),
             error: Vec::new(),
             offset: 0,
+            line_ending_counts: Vec::new(),
         }
     }
 
@@ -32,20 +35,34 @@ impl<'a> Lexer<'a> {
         }
 
         // Add EOF token
-        self.push(SyntaxKind::EOF, 0, None);
+        self.push(SyntaxKind::EOF, 0, None, None);
 
         Lexed {
             text: self.text,
             kind: self.kind,
             start: self.start,
             error: self.error,
+            line_ending_counts: self.line_ending_counts,
         }
     }
 
-    fn push(&mut self, kind: SyntaxKind, len: usize, err: Option<&str>) {
+    fn push(
+        &mut self,
+        kind: SyntaxKind,
+        len: usize,
+        err: Option<&str>,
+        line_ending_count: Option<usize>,
+    ) {
         self.kind.push(kind);
         self.start.push(self.offset as u32);
         self.offset += len;
+
+        assert!(
+            kind != SyntaxKind::LINE_ENDING || line_ending_count.is_some(),
+            "Line ending token must have a line ending count"
+        );
+
+        self.line_ending_counts.push(line_ending_count.unwrap_or(0));
 
         if let Some(err) = err {
             let token = (self.kind.len() - 1) as u32;
@@ -56,6 +73,7 @@ impl<'a> Lexer<'a> {
 
     fn extend_token(&mut self, kind: &pgt_tokenizer::TokenKind, token_text: &str) {
         let mut err = "";
+        let mut line_ending_count = None;
 
         let syntax_kind = {
             match kind {
@@ -68,8 +86,10 @@ impl<'a> Lexer<'a> {
                 }
                 pgt_tokenizer::TokenKind::Space => SyntaxKind::SPACE,
                 pgt_tokenizer::TokenKind::Tab => SyntaxKind::TAB,
-                pgt_tokenizer::TokenKind::Newline => SyntaxKind::NEWLINE,
-                pgt_tokenizer::TokenKind::CarriageReturn => SyntaxKind::CARRIAGE_RETURN,
+                pgt_tokenizer::TokenKind::LineEnding { count } => {
+                    line_ending_count = Some(*count);
+                    SyntaxKind::LINE_ENDING
+                }
                 pgt_tokenizer::TokenKind::VerticalTab => SyntaxKind::VERTICAL_TAB,
                 pgt_tokenizer::TokenKind::FormFeed => SyntaxKind::FORM_FEED,
                 pgt_tokenizer::TokenKind::Ident => {
@@ -121,7 +141,7 @@ impl<'a> Lexer<'a> {
         };
 
         let err = if err.is_empty() { None } else { Some(err) };
-        self.push(syntax_kind, token_text.len(), err);
+        self.push(syntax_kind, token_text.len(), err, line_ending_count);
     }
 
     fn extend_literal(&mut self, len: usize, kind: &pgt_tokenizer::LiteralKind) {
@@ -182,6 +202,6 @@ impl<'a> Lexer<'a> {
         };
 
         let err = if err.is_empty() { None } else { Some(err) };
-        self.push(syntax_kind, len, err);
+        self.push(syntax_kind, len, err, None);
     }
 }

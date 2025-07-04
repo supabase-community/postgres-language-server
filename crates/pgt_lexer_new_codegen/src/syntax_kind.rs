@@ -5,12 +5,11 @@ use quote::{format_ident, quote};
 use crate::keywords::{KeywordKinds, keyword_kinds};
 
 const WHITESPACE: &[&str] = &[
-    "SPACE",           // " "
-    "TAB",             // "\t"
-    "NEWLINE",         // "\n"
-    "CARRIAGE_RETURN", // "\r"
-    "VERTICAL_TAB",    // "\x0B"
-    "FORM_FEED",       // "\x0C"
+    "SPACE",        // " "
+    "TAB",          // "\t"
+    "VERTICAL_TAB", // "\x0B"
+    "FORM_FEED",    // "\x0C"
+    "LINE_ENDING",  // "\n" or "\r" in any combination
 ];
 
 const PUNCT: &[(&str, &str)] = &[
