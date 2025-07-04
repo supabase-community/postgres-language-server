@@ -14,10 +14,12 @@ pub enum TokenKind {
     /// Whitespace characters.
     Space,
     Tab,
-    Newline,
-    CarriageReturn,
     VerticalTab,
     FormFeed,
+    // Handles \n, \r, and sequences
+    LineEnding {
+        count: usize,
+    },
     /// Identifier
     ///
     /// case-sensitive

@@ -33,6 +33,14 @@ impl<'a> Cursor<'a> {
         self.chars.clone().next().unwrap_or(EOF_CHAR)
     }
 
+    /// Peeks the second next symbol from the input stream without consuming it.
+    /// If requested position doesn't exist, `EOF_CHAR` is returned.
+    /// However, getting `EOF_CHAR` doesn't always mean actual end of file,
+    /// it should be checked with `is_eof` method.
+    pub(crate) fn second(&self) -> char {
+        self.chars.clone().nth(1).unwrap_or(EOF_CHAR)
+    }
+
     /// Checks if there is nothing more to consume.
     pub(crate) fn is_eof(&self) -> bool {
         self.chars.as_str().is_empty()

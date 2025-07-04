@@ -30,15 +30,10 @@ const fn is_tab(c: char) -> bool {
     )
 }
 
-const fn is_newline(c: char) -> bool {
+const fn is_line_ending(c: char) -> bool {
     matches!(
-        c, '\n' // newline
-    )
-}
-
-const fn is_carriage_return(c: char) -> bool {
-    matches!(
-        c, '\r' // carriage return
+        c,
+        '\n' | '\r' // newline or carriage return
     )
 }
 
@@ -81,15 +76,7 @@ impl Cursor<'_> {
                 TokenKind::Tab
             }
 
-            c if is_newline(c) => {
-                self.eat_while(is_newline);
-                TokenKind::Newline
-            }
-
-            c if is_carriage_return(c) => {
-                self.eat_while(is_carriage_return);
-                TokenKind::CarriageReturn
-            }
+            c if is_line_ending(c) => self.line_ending_sequence(c),
 
             c if is_vertical_tab(c) => {
                 self.eat_while(is_vertical_tab);
@@ -252,6 +239,43 @@ impl Cursor<'_> {
         TokenKind::BlockComment {
             terminated: depth == 0,
         }
+    }
+
+    // invariant: we care about the number of consecutive newlines so we count them.
+    //
+    // Postgres considers a DOS-style \r\n sequence as two successive newlines, but we care about
+    // logical line breaks and consider \r\n as one logical line break
+    fn line_ending_sequence(&mut self, prev: char) -> TokenKind {
+        // already consumed first line ending character (\n or \r)
+        let mut line_breaks = 1;
+
+        // started with \r, check if it's part of \r\n
+        if prev == '\r' && self.first() == '\n' {
+            // consume the \n - \r\n still counts as 1 logical line break
+            self.bump();
+        }
+
+        // continue checking for more line endings
+        loop {
+            match self.first() {
+                '\r' if self.second() == '\n' => {
+                    self.bump(); // consume \r
+                    self.bump(); // consume \n
+                    line_breaks += 1;
+                }
+                '\n' => {
+                    self.bump();
+                    line_breaks += 1;
+                }
+                '\r' => {
+                    self.bump();
+                    line_breaks += 1;
+                }
+                _ => break,
+            }
+        }
+
+        TokenKind::LineEnding { count: line_breaks }
     }
 
     fn prefixed_string(
