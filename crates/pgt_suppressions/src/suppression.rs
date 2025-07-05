@@ -27,6 +27,9 @@ pub(crate) enum SuppressionKind {
 /// Represents the suppressed rule, as written in the suppression comment.
 /// e.g. `lint/safety/banDropColumn`, or `lint/safety`, or just `lint`.
 /// The format of a rule specifier string is `<category>(/<group>(/<rule>))`.
+///
+/// `RuleSpecifier` can only be constructed from a `&str` that matches a valid
+/// [pgt_diagnostics::Category].
 pub(crate) enum RuleSpecifier {
     Category(String),
     Group(String, String),
