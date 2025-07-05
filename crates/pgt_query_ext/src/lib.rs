@@ -9,15 +9,10 @@
 //! - `get_node_properties` to get the properties of a node
 //! - `get_nodes` to get all the nodes in the AST as a petgraph tree
 //! - `ChildrenIterator` to iterate over the children of a node
-mod codegen;
 pub mod diagnostics;
 
 pub use pg_query::protobuf;
 pub use pg_query::{Error, NodeEnum, Result};
-
-pub use codegen::{
-    ChildrenIterator, Node, TokenProperty, get_location, get_node_properties, get_nodes,
-};
 
 pub fn parse(sql: &str) -> Result<NodeEnum> {
     pg_query::parse(sql).map(|parsed| {
