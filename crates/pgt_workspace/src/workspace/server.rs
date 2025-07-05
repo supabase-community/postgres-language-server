@@ -570,20 +570,24 @@ impl Workspace for WorkspaceServer {
             },
         ));
 
-        let suppressions = parser
-            .document_suppressions()
-            .clone()
-            .with_disabled_rules(&disabled_rules)
-            .with_unused_suppressions_as_errors(&diagnostics);
+        let suppressions = parser.document_suppressions();
 
-        diagnostics.retain(|d| !suppressions.is_suppressed(d));
+        let disabled_suppression_errors =
+            suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
+
+        let unused_suppression_errors =
+            suppressions.get_unused_suppressions_as_errors(&diagnostics);
 
         let suppression_errors: Vec<Error> = suppressions
             .diagnostics
-            .into_iter()
+            .iter()
+            .chain(disabled_suppression_errors.iter())
+            .chain(unused_suppression_errors.iter())
+            .cloned()
             .map(Error::from)
             .collect::<Vec<pgt_diagnostics::Error>>();
 
+        diagnostics.retain(|d| !suppressions.is_suppressed(d));
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
         let errors = diagnostics

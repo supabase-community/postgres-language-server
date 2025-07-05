@@ -39,54 +39,55 @@ impl From<String> for Suppressions {
 impl Suppressions {
     /// Some diagnostics can be turned off via the configuration.
     /// This will mark suppressions that try to suppress these disabled diagnostics as errors.
-    #[must_use]
-    pub fn with_disabled_rules(mut self, disabled_rules: &[RuleFilter<'_>]) -> Self {
-        {
-            let (enabled, disabled) = self
-                .file_suppressions
-                .into_iter()
-                .partition(|s| !s.rule_specifier.is_disabled(disabled_rules));
+    pub fn get_disabled_diagnostic_suppressions_as_errors(
+        &self,
+        disabled_rules: &[RuleFilter<'_>],
+    ) -> Vec<SuppressionDiagnostic> {
+        let mut diagnostics = vec![];
 
-            self.file_suppressions = enabled;
+        {
+            let disabled = self
+                .file_suppressions
+                .iter()
+                .filter(|s| s.rule_specifier.is_disabled(disabled_rules));
 
             for suppr in disabled {
-                self.diagnostics.push(suppr.to_disabled_diagnostic());
+                diagnostics.push(suppr.to_disabled_diagnostic());
             }
         }
 
         {
-            let (enabled, disabled) = self
+            let disabled = self
                 .line_suppressions
-                .into_iter()
-                .partition(|(_, s)| !s.rule_specifier.is_disabled(disabled_rules));
-
-            self.line_suppressions = enabled;
+                .iter()
+                .filter(|(_, s)| s.rule_specifier.is_disabled(disabled_rules));
 
             for (_, suppr) in disabled {
-                self.diagnostics.push(suppr.to_disabled_diagnostic());
+                diagnostics.push(suppr.to_disabled_diagnostic());
             }
         }
 
         {
-            let (enabled, disabled) = self.range_suppressions.into_iter().partition(|s| {
-                !s.start_suppression
+            let disabled = self.range_suppressions.iter().filter(|s| {
+                s.start_suppression
                     .rule_specifier
                     .is_disabled(disabled_rules)
             });
 
-            self.range_suppressions = enabled;
-
             for range_suppr in disabled {
-                self.diagnostics
-                    .push(range_suppr.start_suppression.to_disabled_diagnostic());
+                diagnostics.push(range_suppr.start_suppression.to_disabled_diagnostic());
             }
         }
 
-        self
+        diagnostics
     }
 
-    #[must_use]
-    pub fn with_unused_suppressions_as_errors<D: Diagnostic>(mut self, diagnostics: &[D]) -> Self {
+    pub fn get_unused_suppressions_as_errors<D: Diagnostic>(
+        &self,
+        diagnostics: &[D],
+    ) -> Vec<SuppressionDiagnostic> {
+        let mut results = vec![];
+
         let mut diagnostics_by_line: HashMap<usize, Vec<&D>> = HashMap::new();
         for diag in diagnostics {
             if let Some(line) = diag
@@ -103,6 +104,14 @@ impl Suppressions {
             }
         }
 
+        // Users may use many suppressions for a single diagnostic, like so:
+        // ```
+        // -- pgt ignore lint/safety/banDropTable
+        // -- pgt ignore lint/safety/banDropColumn
+        // <statement causing two diagnostics>
+        // ```
+        // So to find a matching diagnostic for any suppression, we're moving
+        // down lines until we find a line where there's no suppression.
         for (line, suppr) in &self.line_suppressions {
             let mut expected_diagnostic_line = line + 1;
             while self
@@ -126,7 +135,7 @@ impl Suppressions {
             {
                 continue;
             } else {
-                self.diagnostics.push(SuppressionDiagnostic {
+                results.push(SuppressionDiagnostic {
                     span: suppr.suppression_range,
                     message: MessageAndDescription::from(
                         "This suppression has no effect.".to_string(),
@@ -135,7 +144,7 @@ impl Suppressions {
             }
         }
 
-        self
+        results
     }
 
     pub fn is_suppressed<D: Diagnostic>(&self, diagnostic: &D) -> bool {
@@ -296,17 +305,18 @@ mod tests {
             select 1;
             "#;
 
-        let suppressions = super::Suppressions::from(doc)
-            .with_disabled_rules(&[pgt_analyse::RuleFilter::Group("safety")]);
+        let suppressions = super::Suppressions::from(doc);
 
-        assert!(!suppressions.is_suppressed(&TestDiagnostic {
-            span: TextRange::new(89.into(), 98.into()),
-        }));
+        let disabled_diagnostics = suppressions.get_disabled_diagnostic_suppressions_as_errors(&[
+            pgt_analyse::RuleFilter::Group("safety"),
+        ]);
 
-        assert_eq!(suppressions.diagnostics.len(), 1);
+        println!("{:?}", disabled_diagnostics);
+
+        assert_eq!(disabled_diagnostics.len(), 1);
 
         assert_eq!(
-            suppressions.diagnostics[0],
+            disabled_diagnostics[0],
             SuppressionDiagnostic {
                 span: TextRange::new(36.into(), 74.into()),
                 message: MessageAndDescription::from("This rule has been disabled via the configuration. The suppression has no effect.".to_string())
@@ -326,13 +336,14 @@ mod tests {
         // no diagnostics
         let diagnostics: Vec<TestDiagnostic> = vec![];
 
-        let suppressions =
-            super::Suppressions::from(doc).with_unused_suppressions_as_errors(&diagnostics);
+        let suppressions = super::Suppressions::from(doc);
 
-        assert_eq!(suppressions.diagnostics.len(), 1);
+        let unused_diagnostics = suppressions.get_unused_suppressions_as_errors(&diagnostics);
+
+        assert_eq!(unused_diagnostics.len(), 1);
 
         assert_eq!(
-            suppressions.diagnostics[0],
+            unused_diagnostics[0],
             SuppressionDiagnostic {
                 span: TextRange::new(36.into(), 54.into()),
                 message: MessageAndDescription::from("This suppression has no effect.".to_string())

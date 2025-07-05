@@ -24,6 +24,10 @@ pub(crate) enum SuppressionKind {
 }
 
 #[derive(Debug, PartialEq, Clone, Eq)]
+/// Represents the suppressed rule, as written in the suppression comment.
+/// e.g. `lint/safety/banDropColumn`, or `lint/safety`, or just `lint`.
+/// The format of a rule specifier string is `<category>(/<group>(/<rule>))`.
+///
 pub(crate) enum RuleSpecifier {
     Category(RuleCategory),
     Group(RuleCategory, String),
@@ -98,6 +102,9 @@ pub(crate) struct Suppression {
 }
 
 impl Suppression {
+    /// Creates a suppression from a suppression comment line.
+    /// The line start must match `-- pgt-ignore`, otherwise, this will panic.
+    /// Leading whitespace is ignored.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
         let start_trimmed = line.trim_ascii_start();
         let leading_whitespace_offset = line.len() - start_trimmed.len();
@@ -196,7 +203,7 @@ impl Suppression {
         false
     }
 
-    pub(crate) fn to_disabled_diagnostic(self) -> SuppressionDiagnostic {
+    pub(crate) fn to_disabled_diagnostic(&self) -> SuppressionDiagnostic {
         SuppressionDiagnostic {
             span: self.suppression_range,
             message: MessageAndDescription::from(

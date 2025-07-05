@@ -57,7 +57,7 @@ impl<'a> SuppressionsParser<'a> {
 
     /// Will parse the suppressions at the start of the file.
     /// As soon as anything is encountered that's not a `pgt-ignore-all`
-    /// suppression, this will stop.
+    /// suppression or an empty line, this will stop.
     fn parse_file_suppressions(&mut self) {
         while let Some((_, preview)) = self.lines.peek() {
             if preview.trim().is_empty() {
