@@ -383,7 +383,7 @@ mod tests {
     fn test_suppression_matches() {
         let cases = vec![
             // the category works for all groups & rules
-            ("-- pgt-ignore lint", "lint/somethingElse/aRule", true),
+            ("-- pgt-ignore lint", "lint/safety/banDropNotNull", true),
             ("-- pgt-ignore lint", "lint/safety/banDropColumn", true),
             // the group works for all rules in that group
             (
@@ -391,11 +391,8 @@ mod tests {
                 "lint/safety/banDropColumn",
                 true,
             ),
-            (
-                "-- pgt-ignore lint/safety",
-                "lint/somethingElse/aRule",
-                false,
-            ),
+            ("-- pgt-ignore lint", "typecheck", false),
+            ("-- pgt-ignore lint/safety", "typecheck", false),
             // a specific supppression only works for that same rule
             (
                 "-- pgt-ignore lint/safety/banDropColumn",
