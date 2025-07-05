@@ -311,8 +311,6 @@ mod tests {
             pgt_analyse::RuleFilter::Group("safety"),
         ]);
 
-        println!("{:?}", disabled_diagnostics);
-
         assert_eq!(disabled_diagnostics.len(), 1);
 
         assert_eq!(
