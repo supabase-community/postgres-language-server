@@ -1,5 +1,5 @@
-use pgt_analyse::{RuleCategory, RuleFilter};
-use pgt_diagnostics::{Diagnostic, MessageAndDescription};
+use pgt_analyse::RuleFilter;
+use pgt_diagnostics::{Category, Diagnostic, MessageAndDescription};
 use pgt_text_size::{TextRange, TextSize};
 
 /// A specialized diagnostic for the typechecker.
@@ -28,14 +28,16 @@ pub(crate) enum SuppressionKind {
 /// e.g. `lint/safety/banDropColumn`, or `lint/safety`, or just `lint`.
 /// The format of a rule specifier string is `<category>(/<group>(/<rule>))`.
 ///
+/// `RuleSpecifier` can only be constructed from a `&str` that matches a valid
+/// [pgt_diagnostics::Category].
 pub(crate) enum RuleSpecifier {
-    Category(RuleCategory),
-    Group(RuleCategory, String),
-    Rule(RuleCategory, String, String),
+    Category(String),
+    Group(String, String),
+    Rule(String, String, String),
 }
 
 impl RuleSpecifier {
-    pub(crate) fn category(&self) -> &RuleCategory {
+    pub(crate) fn category(&self) -> &str {
         match self {
             RuleSpecifier::Category(rule_category) => rule_category,
             RuleSpecifier::Group(rule_category, _) => rule_category,
@@ -72,23 +74,32 @@ impl RuleSpecifier {
     }
 }
 
+impl From<&Category> for RuleSpecifier {
+    fn from(category: &Category) -> Self {
+        let mut specifiers = category.name().split('/').map(|s| s.to_string());
+
+        let category_str = specifiers.next();
+        let group = specifiers.next();
+        let rule = specifiers.next();
+
+        match (category_str, group, rule) {
+            (Some(c), Some(g), Some(r)) => RuleSpecifier::Rule(c, g, r),
+            (Some(c), Some(g), None) => RuleSpecifier::Group(c, g),
+            (Some(c), None, None) => RuleSpecifier::Category(c),
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl TryFrom<&str> for RuleSpecifier {
     type Error = String;
 
     fn try_from(specifier_str: &str) -> Result<Self, Self::Error> {
-        let mut specifiers = specifier_str.split('/').map(|s| s.to_string());
+        let cat = specifier_str
+            .parse::<&Category>()
+            .map_err(|_| "Invalid rule.".to_string())?;
 
-        let rule_category: RuleCategory = specifiers.next().unwrap().try_into()?;
-
-        let group = specifiers.next();
-        let rule = specifiers.next();
-
-        match (group, rule) {
-            (Some(g), Some(r)) => Ok(RuleSpecifier::Rule(rule_category, g, r)),
-            (Some(g), None) => Ok(RuleSpecifier::Group(rule_category, g)),
-            (None, None) => Ok(RuleSpecifier::Category(rule_category)),
-            _ => unreachable!(),
-        }
+        Ok(RuleSpecifier::from(cat))
     }
 }
 
@@ -235,7 +246,7 @@ mod tests {
         assert_eq!(
             suppression.rule_specifier,
             RuleSpecifier::Rule(
-                RuleCategory::Lint,
+                "lint".to_string(),
                 "safety".to_string(),
                 "banDropColumn".to_string()
             )
@@ -252,7 +263,7 @@ mod tests {
         assert_eq!(suppression.kind, SuppressionKind::Line);
         assert_eq!(
             suppression.rule_specifier,
-            RuleSpecifier::Group(RuleCategory::Lint, "safety".to_string())
+            RuleSpecifier::Group("lint".to_string(), "safety".to_string())
         );
         assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
     }
@@ -266,7 +277,7 @@ mod tests {
         assert_eq!(suppression.kind, SuppressionKind::Line);
         assert_eq!(
             suppression.rule_specifier,
-            RuleSpecifier::Category(RuleCategory::Lint)
+            RuleSpecifier::Category("lint".to_string())
         );
     }
 
@@ -279,7 +290,7 @@ mod tests {
         assert_eq!(suppression.kind, SuppressionKind::Line);
         assert_eq!(
             suppression.rule_specifier,
-            RuleSpecifier::Category(RuleCategory::Lint)
+            RuleSpecifier::Category("lint".to_string())
         );
         assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
     }
@@ -294,7 +305,7 @@ mod tests {
         assert_eq!(
             suppression.rule_specifier,
             RuleSpecifier::Rule(
-                RuleCategory::Lint,
+                "lint".to_string(),
                 "safety".to_string(),
                 "banDropColumn".to_string()
             )
@@ -312,7 +323,7 @@ mod tests {
         assert_eq!(
             suppression.rule_specifier,
             RuleSpecifier::Rule(
-                RuleCategory::Lint,
+                "lint".to_string(),
                 "safety".to_string(),
                 "banDropColumn".to_string()
             )
@@ -330,7 +341,7 @@ mod tests {
         assert_eq!(
             suppression.rule_specifier,
             RuleSpecifier::Rule(
-                RuleCategory::Lint,
+                "lint".to_string(),
                 "safety".to_string(),
                 "banDropColumn".to_string()
             )
@@ -420,7 +431,7 @@ mod tests {
 
         // Group filter disables all rules in that group
         let spec = RuleSpecifier::Rule(
-            RuleCategory::Lint,
+            "lint".to_string(),
             "safety".to_string(),
             "banDropColumn".to_string(),
         );
@@ -428,7 +439,7 @@ mod tests {
         assert!(spec.is_disabled(&disabled));
 
         let spec2 = RuleSpecifier::Rule(
-            RuleCategory::Lint,
+            "lint".to_string(),
             "safety".to_string(),
             "banDropColumn".to_string(),
         );
