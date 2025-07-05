@@ -168,8 +168,6 @@ impl<'a> SuppressionsParser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use pgt_analyse::RuleCategory;
-
     use super::*;
     use crate::suppression::{RuleSpecifier, SuppressionKind};
 
@@ -192,7 +190,7 @@ SELECT 2;
         assert_eq!(
             suppression.rule_specifier,
             RuleSpecifier::Rule(
-                RuleCategory::Lint,
+                "lint".to_string(),
                 "safety".to_string(),
                 "banDropColumn".to_string()
             )
@@ -205,7 +203,7 @@ SELECT 2;
 SELECT 1;
 -- pgt-ignore lint/safety/banDropColumn
 -- pgt-ignore lint/safety/banDropTable
--- pgt-ignore lint/safety/banDropSomething
+-- pgt-ignore lint/safety/banDropNotNull
 "#;
 
         let suppressions = SuppressionsParser::parse(doc);
@@ -239,7 +237,7 @@ SELECT 1;
                 .unwrap()
                 .rule_specifier
                 .rule(),
-            Some("banDropSomething")
+            Some("banDropNotNull")
         );
     }
 
@@ -247,7 +245,7 @@ SELECT 1;
     fn parses_file_level_suppressions() {
         let doc = r#"
 -- pgt-ignore-all lint
--- pgt-ignore-all action
+-- pgt-ignore-all typecheck
 
 SELECT 1;
 -- pgt-ignore-all lint/safety
@@ -260,11 +258,11 @@ SELECT 1;
 
         assert_eq!(
             suppressions.file_suppressions[0].rule_specifier,
-            RuleSpecifier::Category(RuleCategory::Lint)
+            RuleSpecifier::Category("lint".to_string())
         );
         assert_eq!(
             suppressions.file_suppressions[1].rule_specifier,
-            RuleSpecifier::Category(RuleCategory::Action)
+            RuleSpecifier::Category("typecheck".to_string())
         );
 
         assert_eq!(
@@ -294,7 +292,7 @@ drop table posts;
                 start_suppression: Suppression {
                     kind: SuppressionKind::Start,
                     rule_specifier: RuleSpecifier::Rule(
-                        RuleCategory::Lint,
+                        "lint".to_string(),
                         "safety".to_string(),
                         "banDropTable".to_string()
                     ),
@@ -330,7 +328,7 @@ drop table posts;
                 start_suppression: Suppression {
                     kind: SuppressionKind::Start,
                     rule_specifier: RuleSpecifier::Rule(
-                        RuleCategory::Lint,
+                        "lint".to_string(),
                         "safety".to_string(),
                         "banDropTable".to_string()
                     ),

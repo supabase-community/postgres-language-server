@@ -268,7 +268,7 @@ mod tests {
             select 2;
 
             -- pgt-ignore lint
-            -- pgt-ignore action
+            -- pgt-ignore syntax
             select 1;
             "#;
 
