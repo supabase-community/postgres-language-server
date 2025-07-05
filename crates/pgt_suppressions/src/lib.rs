@@ -202,7 +202,7 @@ impl Suppressions {
                 let mut eligible = vec![];
 
                 // one-for-one, we're checking the lines above a diagnostic location
-                // until there are no more diagnostics
+                // until there are no more suppressions
                 line_no -= 1;
                 while let Some(suppr) = self.line_suppressions.get(&line_no) {
                     eligible.push(suppr);
