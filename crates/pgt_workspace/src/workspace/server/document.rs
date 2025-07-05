@@ -1,4 +1,5 @@
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, Severity, serde::Diagnostic as SDiagnostic};
+use pgt_suppressions::Suppressions;
 use pgt_text_size::{TextRange, TextSize};
 
 use super::statement_identifier::{StatementId, StatementIdGenerator};
@@ -10,6 +11,8 @@ pub(crate) struct Document {
     pub(crate) version: i32,
 
     pub(super) diagnostics: Vec<SDiagnostic>,
+    pub(super) suppressions: Suppressions,
+
     /// List of statements sorted by range.start()
     pub(super) positions: Vec<StatementPos>,
 
@@ -22,6 +25,8 @@ impl Document {
 
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
 
+        let suppressions = Suppressions::from(content.as_str());
+
         Self {
             positions: ranges
                 .into_iter()
@@ -31,6 +36,7 @@ impl Document {
             version,
             diagnostics,
             id_generator,
+            suppressions,
         }
     }
 

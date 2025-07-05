@@ -75,6 +75,7 @@ impl<'a, 'b> LintVisitor<'a, 'b> {
                 .as_linter_rules()
                 .map(|rules| rules.as_enabled_rules())
                 .unwrap_or_default();
+
             self.enabled_rules.extend(enabled_rules);
 
             let disabled_rules = self

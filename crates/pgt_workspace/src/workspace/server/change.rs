@@ -1,3 +1,4 @@
+use pgt_suppressions::Suppressions;
 use pgt_text_size::{TextLen, TextRange, TextSize};
 use std::ops::{Add, Sub};
 
@@ -85,6 +86,7 @@ impl Document {
         }
 
         self.version = change.version;
+        self.suppressions = Suppressions::from(self.content.as_str());
 
         changes
     }

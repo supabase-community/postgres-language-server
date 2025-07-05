@@ -3,6 +3,7 @@ use std::sync::Arc;
 use pgt_diagnostics::serde::Diagnostic as SDiagnostic;
 use pgt_fs::PgTPath;
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
+use pgt_suppressions::Suppressions;
 use pgt_text_size::{TextRange, TextSize};
 
 use crate::workspace::ChangeFileParams;
@@ -96,6 +97,10 @@ impl ParsedDocument {
 
     pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
         &self.doc.diagnostics
+    }
+
+    pub fn document_suppressions(&self) -> &Suppressions {
+        &self.doc.suppressions
     }
 
     pub fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
