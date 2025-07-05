@@ -106,7 +106,7 @@ impl Suppressions {
 
         // Users may use many suppressions for a single diagnostic, like so:
         // ```
-        // -- pgt ignore lint/safety/banDropTable
+        // -- pgt-ignore lint/safety/banDropTable
         // -- pgt ignore lint/safety/banDropColumn
         // <statement causing two diagnostics>
         // ```
