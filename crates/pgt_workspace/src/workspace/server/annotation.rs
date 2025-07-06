@@ -14,6 +14,15 @@ pub struct AnnotationStore {
     db: DashMap<StatementId, Arc<StatementAnnotations>>,
 }
 
+const WHITESPACE_TOKENS: [SyntaxKind; 6] = [
+    SyntaxKind::SPACE,
+    SyntaxKind::TAB,
+    SyntaxKind::VERTICAL_TAB,
+    SyntaxKind::FORM_FEED,
+    SyntaxKind::LINE_ENDING,
+    SyntaxKind::EOF,
+];
+
 impl AnnotationStore {
     pub fn new() -> AnnotationStore {
         AnnotationStore { db: DashMap::new() }
@@ -31,24 +40,12 @@ impl AnnotationStore {
 
         let lexed = pgt_lexer::lex(content);
 
-        let mut ends_with_semicolon = false;
-
-        // Iterate through tokens in reverse to find the last non-whitespace token
-        for idx in (0..lexed.len()).rev() {
-            let kind = lexed.kind(idx);
-            if !matches!(
-                kind,
-                SyntaxKind::SPACE
-                    | SyntaxKind::TAB
-                    | SyntaxKind::VERTICAL_TAB
-                    | SyntaxKind::FORM_FEED
-                    | SyntaxKind::LINE_ENDING
-                    | SyntaxKind::EOF
-            ) {
-                ends_with_semicolon = kind == SyntaxKind::SEMICOLON;
-                break;
-            }
-        }
+        let ends_with_semicolon = (0..lexed.len())
+            // Iterate through tokens in reverse to find the last non-whitespace token
+            .filter(|t| !WHITESPACE_TOKENS.contains(&lexed.kind(*t)))
+            .next_back()
+            .map(|t| lexed.kind(t) == SyntaxKind::SEMICOLON)
+            .unwrap_or(false);
 
         let annotations = Arc::new(StatementAnnotations {
             ends_with_semicolon,
