@@ -442,7 +442,7 @@ fn print_diagnostics(
     });
 
     // split and parse each statement
-    let stmts = pgt_statement_splitter::split(code).expect("unexpected parse error");
+    let stmts = pgt_statement_splitter::split(code);
     for stmt in stmts.ranges {
         match pgt_query_ext::parse(&code[stmt]) {
             Ok(ast) => {
