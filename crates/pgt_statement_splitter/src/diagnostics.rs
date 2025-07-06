@@ -1,5 +1,8 @@
 use pgt_diagnostics::{Diagnostic, MessageAndDescription};
+use pgt_lexer::{LexDiagnostic, Lexed};
 use pgt_text_size::TextRange;
+
+use crate::splitter::SplitError;
 
 /// A specialized diagnostic for the statement splitter parser.
 ///
@@ -20,6 +23,25 @@ impl SplitDiagnostic {
         Self {
             span: Some(range),
             message: MessageAndDescription::from(message.into()),
+        }
+    }
+}
+
+impl From<LexDiagnostic> for SplitDiagnostic {
+    fn from(lex_diagnostic: LexDiagnostic) -> Self {
+        Self {
+            span: Some(lex_diagnostic.span),
+            message: lex_diagnostic.message,
+        }
+    }
+}
+
+impl SplitDiagnostic {
+    pub fn from_split_error(split_error: SplitError, lexed: &Lexed) -> Self {
+        let range = lexed.range(split_error.token);
+        Self {
+            span: Some(range),
+            message: MessageAndDescription::from(split_error.msg),
         }
     }
 }

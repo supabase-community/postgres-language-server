@@ -43,6 +43,9 @@ slotmap                  = "1.0.7"
 smallvec                 = { version = "1.13.2", features = ["union", "const_new", "serde"] }
 strum                    = { version = "0.27.1", features = ["derive"] }
 # this will use tokio if available, otherwise async-std
+convert_case             = "0.6.0"
+prost-reflect            = "0.15.3"
+protox                   = "0.8.0"
 sqlx                     = { version = "0.8.2", features = ["runtime-tokio", "runtime-async-std", "postgres", "json"] }
 syn                      = "1.0.109"
 termcolor                = "1.4.1"
@@ -72,12 +75,12 @@ pgt_lexer_codegen          = { path = "./crates/pgt_lexer_codegen", version = "0
 pgt_lsp                    = { path = "./crates/pgt_lsp", version = "0.0.0" }
 pgt_markup                 = { path = "./crates/pgt_markup", version = "0.0.0" }
 pgt_query_ext              = { path = "./crates/pgt_query_ext", version = "0.0.0" }
-pgt_query_ext_codegen      = { path = "./crates/pgt_query_ext_codegen", version = "0.0.0" }
 pgt_query_proto_parser     = { path = "./crates/pgt_query_proto_parser", version = "0.0.0" }
 pgt_schema_cache           = { path = "./crates/pgt_schema_cache", version = "0.0.0" }
 pgt_statement_splitter     = { path = "./crates/pgt_statement_splitter", version = "0.0.0" }
 pgt_text_edit              = { path = "./crates/pgt_text_edit", version = "0.0.0" }
 pgt_text_size              = { path = "./crates/pgt_text_size", version = "0.0.0" }
+pgt_tokenizer              = { path = "./crates/pgt_tokenizer", version = "0.0.0" }
 pgt_treesitter_queries     = { path = "./crates/pgt_treesitter_queries", version = "0.0.0" }
 pgt_typecheck              = { path = "./crates/pgt_typecheck", version = "0.0.0" }
 pgt_workspace              = { path = "./crates/pgt_workspace", version = "0.0.0" }

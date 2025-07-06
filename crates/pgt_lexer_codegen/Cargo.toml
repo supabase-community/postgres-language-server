@@ -10,12 +10,16 @@ name                 = "pgt_lexer_codegen"
 repository.workspace = true
 version              = "0.0.0"
 
-
 [dependencies]
-pgt_query_proto_parser.workspace = true
-proc-macro2.workspace            = true
-quote                            = "1.0.33"
+anyhow                = { workspace = true }
+convert_case          = { workspace = true }
+proc-macro2.workspace = true
+prost-reflect         = { workspace = true }
+protox                = { workspace = true }
+quote.workspace       = true
+
+[build-dependencies]
+ureq = "2.9"
 
 [lib]
-doctest    = false
 proc-macro = true
