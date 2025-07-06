@@ -13,7 +13,6 @@ version              = "0.0.0"
 [dependencies]
 anyhow                = { workspace = true }
 convert_case          = { workspace = true }
-enum-iterator         = { workspace = true }
 proc-macro2.workspace = true
 prost-reflect         = { workspace = true }
 protox                = { workspace = true }

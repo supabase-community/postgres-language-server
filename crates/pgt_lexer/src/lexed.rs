@@ -44,29 +44,35 @@ impl Lexed<'_> {
 
     /// Returns an iterator over token kinds
     pub fn tokens(&self) -> impl Iterator<Item = SyntaxKind> + '_ {
-        (0..self.len()).map(move |i| self.kind(i))
+        self.kind.iter().copied()
     }
 
     /// Returns the kind of token at the given index
     pub fn kind(&self, idx: usize) -> SyntaxKind {
-        assert!(idx < self.len());
+        assert!(
+            idx < self.len(),
+            "expected index < {}, got {}",
+            self.len(),
+            idx
+        );
         self.kind[idx]
     }
 
     /// Returns the number of line endings in the token at the given index
     pub fn line_ending_count(&self, idx: usize) -> usize {
-        assert!(idx < self.len());
+        assert!(
+            idx < self.len(),
+            "expected index < {}, got {}",
+            self.len(),
+            idx
+        );
         assert!(self.kind(idx) == SyntaxKind::LINE_ENDING);
         self.line_ending_counts[idx]
     }
 
     /// Returns the text range of token at the given index
     pub fn range(&self, idx: usize) -> TextRange {
-        let range = self.text_range(idx);
-        TextRange::new(
-            range.start.try_into().unwrap(),
-            range.end.try_into().unwrap(),
-        )
+        self.text_range(idx)
     }
 
     /// Returns the text of token at the given index
@@ -78,24 +84,18 @@ impl Lexed<'_> {
     pub fn errors(&self) -> Vec<LexDiagnostic> {
         self.error
             .iter()
-            .map(|it| {
-                let range = self.text_range(it.token as usize);
-                LexDiagnostic {
-                    message: it.msg.as_str().into(),
-                    span: TextRange::new(
-                        range.start.try_into().unwrap(),
-                        range.end.try_into().unwrap(),
-                    ),
-                }
+            .map(|it| LexDiagnostic {
+                message: it.msg.as_str().into(),
+                span: self.text_range(it.token as usize),
             })
             .collect()
     }
 
-    pub(crate) fn text_range(&self, i: usize) -> std::ops::Range<usize> {
+    pub(crate) fn text_range(&self, i: usize) -> TextRange {
         assert!(i < self.len());
-        let lo = self.start[i] as usize;
-        let hi = self.start[i + 1] as usize;
-        lo..hi
+        let lo = self.start[i];
+        let hi = self.start[i + 1];
+        TextRange::new(lo.into(), hi.into())
     }
 
     fn range_text(&self, r: std::ops::Range<usize>) -> &str {
