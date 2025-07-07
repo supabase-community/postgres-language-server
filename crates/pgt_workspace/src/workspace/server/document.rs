@@ -68,32 +68,21 @@ pub(crate) fn split_with_diagnostics(
     offset: Option<TextSize>,
 ) -> (Vec<TextRange>, Vec<SDiagnostic>) {
     let o = offset.unwrap_or_else(|| 0.into());
-    match pgt_statement_splitter::split(content) {
-        Ok(parse) => (
-            parse.ranges,
-            parse
-                .errors
-                .into_iter()
-                .map(|err| {
-                    SDiagnostic::new(
-                        err.clone()
-                            .with_file_span(err.location().span.map(|r| r + o)),
-                    )
-                })
-                .collect(),
-        ),
-        Err(errs) => (
-            vec![],
-            errs.into_iter()
-                .map(|err| {
-                    SDiagnostic::new(
-                        err.clone()
-                            .with_file_span(err.location().span.map(|r| r + o)),
-                    )
-                })
-                .collect(),
-        ),
-    }
+    let result = pgt_statement_splitter::split(content);
+
+    (
+        result.ranges,
+        result
+            .errors
+            .into_iter()
+            .map(|err| {
+                SDiagnostic::new(
+                    err.clone()
+                        .with_file_span(err.location().span.map(|r| r + o)),
+                )
+            })
+            .collect(),
+    )
 }
 
 pub struct StatementIterator<'a> {

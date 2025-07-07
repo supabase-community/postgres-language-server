@@ -2,19 +2,40 @@
 //!
 //! This crate provides a function to split a SQL source string into individual statements.
 pub mod diagnostics;
-mod parser;
+mod splitter;
 
-use parser::{Parser, ParserResult, source};
-use pgt_lexer::diagnostics::ScanError;
+use diagnostics::SplitDiagnostic;
+use pgt_lexer::Lexer;
+use pgt_text_size::TextRange;
+use splitter::{Splitter, source};
 
-pub fn split(sql: &str) -> Result<ParserResult, Vec<ScanError>> {
-    let tokens = pgt_lexer::lex(sql)?;
+pub struct SplitResult {
+    pub ranges: Vec<TextRange>,
+    pub errors: Vec<SplitDiagnostic>,
+}
 
-    let mut parser = Parser::new(tokens);
+pub fn split(sql: &str) -> SplitResult {
+    let lexed = Lexer::new(sql).lex();
 
-    source(&mut parser);
+    let mut splitter = Splitter::new(&lexed);
 
-    Ok(parser.finish())
+    source(&mut splitter);
+
+    let split_result = splitter.finish();
+
+    let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
+
+    errors.extend(
+        split_result
+            .errors
+            .into_iter()
+            .map(|err| SplitDiagnostic::from_split_error(err, &lexed)),
+    );
+
+    SplitResult {
+        ranges: split_result.ranges,
+        errors,
+    }
 }
 
 #[cfg(test)]
@@ -28,13 +49,13 @@ mod tests {
 
     struct Tester {
         input: String,
-        parse: ParserResult,
+        result: SplitResult,
     }
 
     impl From<&str> for Tester {
         fn from(input: &str) -> Self {
             Tester {
-                parse: split(input).expect("Failed to split"),
+                result: split(input),
                 input: input.to_string(),
             }
         }
@@ -43,25 +64,25 @@ mod tests {
     impl Tester {
         fn expect_statements(&self, expected: Vec<&str>) -> &Self {
             assert_eq!(
-                self.parse.ranges.len(),
+                self.result.ranges.len(),
                 expected.len(),
                 "Expected {} statements for input {}, got {}: {:?}",
                 expected.len(),
                 self.input,
-                self.parse.ranges.len(),
-                self.parse
+                self.result.ranges.len(),
+                self.result
                     .ranges
                     .iter()
                     .map(|r| &self.input[*r])
                     .collect::<Vec<_>>()
             );
 
-            for (range, expected) in self.parse.ranges.iter().zip(expected.iter()) {
+            for (range, expected) in self.result.ranges.iter().zip(expected.iter()) {
                 assert_eq!(*expected, self.input[*range].to_string());
             }
 
             assert!(
-                self.parse.ranges.is_sorted_by_key(|r| r.start()),
+                self.result.ranges.is_sorted_by_key(|r| r.start()),
                 "Ranges are not sorted"
             );
 
@@ -70,15 +91,15 @@ mod tests {
 
         fn expect_errors(&self, expected: Vec<SplitDiagnostic>) -> &Self {
             assert_eq!(
-                self.parse.errors.len(),
+                self.result.errors.len(),
                 expected.len(),
                 "Expected {} errors, got {}: {:?}",
                 expected.len(),
-                self.parse.errors.len(),
-                self.parse.errors
+                self.result.errors.len(),
+                self.result.errors
             );
 
-            for (err, expected) in self.parse.errors.iter().zip(expected.iter()) {
+            for (err, expected) in self.result.errors.iter().zip(expected.iter()) {
                 assert_eq!(expected, err);
             }
 
@@ -91,13 +112,6 @@ mod tests {
         Tester::from("alter table foo add column bar timestamp with time zone;").expect_statements(
             vec!["alter table foo add column bar timestamp with time zone;"],
         );
-    }
-
-    #[test]
-    fn failing_lexer() {
-        let input = "select 1443ddwwd33djwdkjw13331333333333";
-        let res = split(input).unwrap_err();
-        assert!(!res.is_empty());
     }
 
     #[test]
@@ -161,7 +175,7 @@ mod tests {
         Tester::from("\ninsert select 1\n\nselect 3")
             .expect_statements(vec!["insert select 1", "select 3"])
             .expect_errors(vec![SplitDiagnostic::new(
-                format!("Expected {:?}", SyntaxKind::Into),
+                format!("Expected {:?}", SyntaxKind::INTO_KW),
                 TextRange::new(8.into(), 14.into()),
             )]);
     }

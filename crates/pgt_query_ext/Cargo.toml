@@ -14,11 +14,9 @@ version              = "0.0.0"
 [dependencies]
 petgraph = "0.6.4"
 
-pg_query.workspace              = true
-pgt_diagnostics.workspace       = true
-pgt_lexer.workspace             = true
-pgt_query_ext_codegen.workspace = true
-pgt_text_size.workspace         = true
+pg_query.workspace        = true
+pgt_diagnostics.workspace = true
+pgt_text_size.workspace   = true
 
 [lib]
 doctest = false

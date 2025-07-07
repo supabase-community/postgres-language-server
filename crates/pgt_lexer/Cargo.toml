@@ -12,16 +12,12 @@ version              = "0.0.0"
 
 
 [dependencies]
-regex = "1.9.1"
-
-pg_query.workspace          = true
 pgt_diagnostics.workspace   = true
 pgt_lexer_codegen.workspace = true
-
-pgt_text_size.workspace = true
+pgt_text_size.workspace     = true
+pgt_tokenizer.workspace     = true
 
 [dev-dependencies]
 insta.workspace = true
 
 [lib]
-doctest = false

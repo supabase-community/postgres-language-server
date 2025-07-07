@@ -447,9 +447,7 @@ fn get_affected(content: &str, range: TextRange) -> &str {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use pgt_diagnostics::Diagnostic;
     use pgt_text_size::TextRange;
 
     use crate::workspace::{ChangeFileParams, ChangeParams};
@@ -464,9 +462,7 @@ mod tests {
     }
 
     fn assert_document_integrity(d: &Document) {
-        let ranges = pgt_statement_splitter::split(&d.content)
-            .expect("Unexpected scan error")
-            .ranges;
+        let ranges = pgt_statement_splitter::split(&d.content).ranges;
 
         assert!(
             ranges.len() == d.positions.len(),
@@ -479,16 +475,6 @@ mod tests {
                 .all(|r| { d.positions.iter().any(|(_, stmt_range)| stmt_range == r) }),
             "all ranges should be in positions"
         );
-    }
-
-    #[test]
-    fn open_doc_with_scan_error() {
-        let input = "select id from users;\n\n\n\nselect 1443ddwwd33djwdkjw13331333333333;";
-
-        let d = Document::new(input.to_string(), 0);
-
-        assert_eq!(d.positions.len(), 0);
-        assert!(d.has_fatal_error());
     }
 
     #[test]
@@ -621,149 +607,6 @@ mod tests {
         assert_eq!(d.positions.len(), 1);
 
         assert_document_integrity(&d);
-    }
-
-    #[test]
-    fn change_into_scan_error_within_statement() {
-        let path = PgTPath::new("test.sql");
-        let input = "select id from users;\n\n\n\nselect 1;";
-
-        let mut d = Document::new(input.to_string(), 0);
-
-        assert_eq!(d.positions.len(), 2);
-        assert!(!d.has_fatal_error());
-
-        let change = ChangeFileParams {
-            path: path.clone(),
-            version: 1,
-            changes: vec![ChangeParams {
-                text: "d".to_string(),
-                range: Some(TextRange::new(33.into(), 33.into())),
-            }],
-        };
-
-        let changed = d.apply_file_change(&change);
-
-        assert_eq!(d.content, "select id from users;\n\n\n\nselect 1d;");
-        assert!(
-            changed
-                .iter()
-                .all(|c| matches!(c, StatementChange::Deleted(_))),
-            "should delete all statements"
-        );
-        assert!(d.positions.is_empty(), "should clear all positions");
-        assert_eq!(d.diagnostics.len(), 1, "should return a scan error");
-        assert_eq!(
-            d.diagnostics[0].location().span,
-            Some(TextRange::new(32.into(), 34.into())),
-            "should have correct span"
-        );
-        assert!(d.has_fatal_error());
-    }
-
-    #[test]
-    fn change_into_scan_error_across_statements() {
-        let path = PgTPath::new("test.sql");
-        let input = "select id from users;\n\n\n\nselect 1;";
-
-        let mut d = Document::new(input.to_string(), 0);
-
-        assert_eq!(d.positions.len(), 2);
-        assert!(!d.has_fatal_error());
-
-        let change = ChangeFileParams {
-            path: path.clone(),
-            version: 1,
-            changes: vec![ChangeParams {
-                text: "1d".to_string(),
-                range: Some(TextRange::new(7.into(), 33.into())),
-            }],
-        };
-
-        let changed = d.apply_file_change(&change);
-
-        assert_eq!(d.content, "select 1d;");
-        assert!(
-            changed
-                .iter()
-                .all(|c| matches!(c, StatementChange::Deleted(_))),
-            "should delete all statements"
-        );
-        assert!(d.positions.is_empty(), "should clear all positions");
-        assert_eq!(d.diagnostics.len(), 1, "should return a scan error");
-        assert_eq!(
-            d.diagnostics[0].location().span,
-            Some(TextRange::new(7.into(), 9.into())),
-            "should have correct span"
-        );
-        assert!(d.has_fatal_error());
-    }
-
-    #[test]
-    fn change_from_invalid_to_invalid() {
-        let path = PgTPath::new("test.sql");
-        let input = "select 1d;";
-
-        let mut d = Document::new(input.to_string(), 0);
-
-        assert_eq!(d.positions.len(), 0);
-        assert!(d.has_fatal_error());
-        assert_eq!(d.diagnostics.len(), 1);
-
-        let change = ChangeFileParams {
-            path: path.clone(),
-            version: 1,
-            changes: vec![ChangeParams {
-                text: "2e".to_string(),
-                range: Some(TextRange::new(7.into(), 9.into())),
-            }],
-        };
-
-        let changed = d.apply_file_change(&change);
-
-        assert_eq!(d.content, "select 2e;");
-        assert!(changed.is_empty(), "should not emit any changes");
-        assert!(d.positions.is_empty(), "should keep positions empty");
-        assert_eq!(d.diagnostics.len(), 1, "should still have a scan error");
-        assert_eq!(
-            d.diagnostics[0].location().span,
-            Some(TextRange::new(7.into(), 9.into())),
-            "should have updated span"
-        );
-        assert!(d.has_fatal_error());
-    }
-
-    #[test]
-    fn change_from_invalid_to_valid() {
-        let path = PgTPath::new("test.sql");
-        let input = "select 1d;";
-
-        let mut d = Document::new(input.to_string(), 0);
-
-        assert_eq!(d.positions.len(), 0);
-        assert!(d.has_fatal_error());
-        assert_eq!(d.diagnostics.len(), 1);
-
-        let change = ChangeFileParams {
-            path: path.clone(),
-            version: 1,
-            changes: vec![ChangeParams {
-                text: "1".to_string(),
-                range: Some(TextRange::new(7.into(), 9.into())),
-            }],
-        };
-
-        let changed = d.apply_file_change(&change);
-
-        assert_eq!(d.content, "select 1;");
-        assert_eq!(changed.len(), 1, "should emit one change");
-        assert!(matches!(
-            changed[0],
-            StatementChange::Added(AddedStatement { .. })
-        ));
-        assert_eq!(d.positions.len(), 1, "should have one position");
-        assert!(d.diagnostics.is_empty(), "should have no diagnostics");
-        assert!(!d.has_fatal_error());
     }
 
     #[test]

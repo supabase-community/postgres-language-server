@@ -47,6 +47,15 @@ impl From<String> for MessageAndDescription {
     }
 }
 
+impl From<&str> for MessageAndDescription {
+    fn from(description: &str) -> Self {
+        Self {
+            message: markup! { {description} }.to_owned(),
+            description: description.into(),
+        }
+    }
+}
+
 impl From<MarkupBuf> for MessageAndDescription {
     fn from(message: MarkupBuf) -> Self {
         let description = markup_to_string(&message);
