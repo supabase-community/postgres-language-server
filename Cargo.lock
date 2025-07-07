@@ -2868,6 +2868,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgt_suppressions"
+version = "0.0.0"
+dependencies = [
+ "pgt_analyse",
+ "pgt_diagnostics",
+ "pgt_text_size",
+ "tracing",
+]
+
+[[package]]
 name = "pgt_test_macros"
 version = "0.0.0"
 dependencies = [
@@ -2976,6 +2986,7 @@ dependencies = [
  "pgt_query_ext",
  "pgt_schema_cache",
  "pgt_statement_splitter",
+ "pgt_suppressions",
  "pgt_text_size",
  "pgt_typecheck",
  "rustc-hash 2.1.0",

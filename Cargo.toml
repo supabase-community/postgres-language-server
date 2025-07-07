@@ -78,6 +78,7 @@ pgt_query_ext              = { path = "./crates/pgt_query_ext", version = "0.0.0
 pgt_query_proto_parser     = { path = "./crates/pgt_query_proto_parser", version = "0.0.0" }
 pgt_schema_cache           = { path = "./crates/pgt_schema_cache", version = "0.0.0" }
 pgt_statement_splitter     = { path = "./crates/pgt_statement_splitter", version = "0.0.0" }
+pgt_suppressions           = { path = "./crates/pgt_suppressions", version = "0.0.0" }
 pgt_text_edit              = { path = "./crates/pgt_text_edit", version = "0.0.0" }
 pgt_text_size              = { path = "./crates/pgt_text_size", version = "0.0.0" }
 pgt_tokenizer              = { path = "./crates/pgt_tokenizer", version = "0.0.0" }
