@@ -76,8 +76,8 @@ mod tests {
             ("SELECT * FROM foo\n", false),
         ];
 
-        for (idx, (content, expected)) in test_cases.iter().enumerate() {
-            let statement_id = StatementId::Root(idx.into());
+        for (content, expected) in test_cases.iter() {
+            let statement_id = StatementId::new(content);
 
             let annotations = store.get_annotations(&statement_id, content);
 

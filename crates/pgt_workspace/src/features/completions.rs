@@ -76,7 +76,6 @@ pub(crate) fn get_statement_for_completions(
 
 #[cfg(test)]
 mod tests {
-    use pgt_fs::PgTPath;
     use pgt_text_size::TextSize;
 
     use crate::workspace::Document;
@@ -93,11 +92,7 @@ mod tests {
         let pos: u32 = pos.try_into().unwrap();
 
         (
-            Document::new(
-                PgTPath::new("test.sql"),
-                sql.replace(CURSOR_POSITION, ""),
-                5,
-            ),
+            Document::new(sql.replace(CURSOR_POSITION, ""), 5),
             TextSize::new(pos),
         )
     }
