@@ -45,10 +45,10 @@ pub(crate) async fn did_change(
     let url = params.text_document.uri;
     let version = params.text_document.version;
 
-    let biome_path = session.file_path(&url)?;
+    let pgt_path = session.file_path(&url)?;
 
     let old_text = session.workspace.get_file_content(GetFileContentParams {
-        path: biome_path.clone(),
+        path: pgt_path.clone(),
     })?;
     tracing::trace!("old document: {:?}", old_text);
     tracing::trace!("content changes: {:?}", params.content_changes);
@@ -64,7 +64,7 @@ pub(crate) async fn did_change(
     session.insert_document(url.clone(), Document::new(version, &text));
 
     session.workspace.change_file(ChangeFileParams {
-        path: biome_path,
+        path: pgt_path,
         version,
         content: text,
     })?;
