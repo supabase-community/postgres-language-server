@@ -9,12 +9,11 @@ use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use dashmap::DashMap;
-use document::Document;
-use futures::{StreamExt, stream};
-use parsed_document::{
-    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
-    ParsedDocument, SyncDiagnosticsMapper,
+use document::{
+    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
+    SyncDiagnosticsMapper,
 };
+use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
@@ -51,12 +50,10 @@ pub use statement_identifier::StatementId;
 mod analyser;
 mod annotation;
 mod async_helper;
-mod change;
 mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
 mod migration;
-pub(crate) mod parsed_document;
 mod pg_query;
 mod schema_cache_manager;
 mod sql_function;
@@ -70,7 +67,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    parsed_documents: DashMap<PgTPath, ParsedDocument>,
+    documents: DashMap<PgTPath, Document>,
 
     connection: ConnectionManager,
 }
@@ -92,7 +89,7 @@ impl WorkspaceServer {
     pub(crate) fn new() -> Self {
         Self {
             settings: RwLock::default(),
-            parsed_documents: DashMap::default(),
+            documents: DashMap::default(),
             schema_cache: SchemaCacheManager::new(),
             connection: ConnectionManager::new(),
         }
@@ -265,11 +262,9 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_documents
+        self.documents
             .entry(params.path.clone())
-            .or_insert_with(|| {
-                ParsedDocument::new(params.path.clone(), params.content, params.version)
-            });
+            .or_insert_with(|| Document::new(params.content, params.version));
 
         if let Some(project_key) = self.path_belongs_to_current_workspace(&params.path) {
             self.set_current_project(project_key);
@@ -280,7 +275,7 @@ impl Workspace for WorkspaceServer {
 
     /// Remove a file from the workspace
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_documents
+        self.documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
 
@@ -293,16 +288,16 @@ impl Workspace for WorkspaceServer {
         version = params.version
     ), err)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut parser =
-            self.parsed_documents
-                .entry(params.path.clone())
-                .or_insert(ParsedDocument::new(
-                    params.path.clone(),
-                    "".to_string(),
-                    params.version,
-                ));
-
-        parser.apply_change(params);
+        match self.documents.entry(params.path.clone()) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                entry
+                    .get_mut()
+                    .update_content(params.content, params.version);
+            }
+            dashmap::mapref::entry::Entry::Vacant(entry) => {
+                entry.insert(Document::new(params.content, params.version));
+            }
+        }
 
         Ok(())
     }
@@ -313,7 +308,7 @@ impl Workspace for WorkspaceServer {
 
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
         let document = self
-            .parsed_documents
+            .documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
         Ok(document.get_document_content().to_string())
@@ -328,7 +323,7 @@ impl Workspace for WorkspaceServer {
         params: code_actions::CodeActionsParams,
     ) -> Result<code_actions::CodeActionsResult, WorkspaceError> {
         let parser = self
-            .parsed_documents
+            .documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -370,7 +365,7 @@ impl Workspace for WorkspaceServer {
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
         let parser = self
-            .parsed_documents
+            .documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -428,7 +423,7 @@ impl Workspace for WorkspaceServer {
         };
 
         let parser = self
-            .parsed_documents
+            .documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -448,7 +443,7 @@ impl Workspace for WorkspaceServer {
             // sorry for the ugly code :(
             let async_results = run_async(async move {
                 stream::iter(input)
-                    .map(|(_id, range, content, ast, cst, sign)| {
+                    .map(|(id, range, ast, cst, sign)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
                         let schema_cache = Arc::clone(&schema_cache);
@@ -456,7 +451,7 @@ impl Workspace for WorkspaceServer {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
                                     conn: &pool,
-                                    sql: &content,
+                                    sql: &id.content(),
                                     ast: &ast,
                                     tree: &cst,
                                     schema_cache: schema_cache.as_ref(),
@@ -592,7 +587,7 @@ impl Workspace for WorkspaceServer {
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
         let parsed_doc = self
-            .parsed_documents
+            .documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -623,7 +618,7 @@ impl Workspace for WorkspaceServer {
                 tracing::debug!(
                     "Found {} completion items for statement with id {}",
                     items.len(),
-                    id.raw()
+                    id.content()
                 );
 
                 Ok(CompletionsResult { items })

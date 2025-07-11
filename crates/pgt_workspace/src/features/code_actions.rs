@@ -44,7 +44,7 @@ pub struct CommandAction {
     pub category: CommandActionCategory,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, strum::EnumIter)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum CommandActionCategory {
     ExecuteStatement(StatementId),

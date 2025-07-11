@@ -17,22 +17,13 @@ impl PgQueryStore {
     pub fn get_or_cache_ast(
         &self,
         statement: &StatementId,
-        content: &str,
     ) -> Arc<Result<pgt_query_ext::NodeEnum, SyntaxDiagnostic>> {
         if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
             return existing;
         }
 
-        let r = Arc::new(pgt_query_ext::parse(content).map_err(SyntaxDiagnostic::from));
+        let r = Arc::new(pgt_query_ext::parse(statement.content()).map_err(SyntaxDiagnostic::from));
         self.db.insert(statement.clone(), r.clone());
         r
-    }
-
-    pub fn clear_statement(&self, id: &StatementId) {
-        self.db.remove(id);
-
-        if let Some(child_id) = id.get_child_id() {
-            self.db.remove(&child_id);
-        }
     }
 }

@@ -4,7 +4,7 @@ use pgt_completions::CompletionItem;
 use pgt_fs::PgTPath;
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::workspace::{GetCompletionsFilter, GetCompletionsMapper, ParsedDocument, StatementId};
+use crate::workspace::{Document, GetCompletionsFilter, GetCompletionsMapper, StatementId};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -30,7 +30,7 @@ impl IntoIterator for CompletionsResult {
 }
 
 pub(crate) fn get_statement_for_completions(
-    doc: &ParsedDocument,
+    doc: &Document,
     position: TextSize,
 ) -> Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> {
     let count = doc.count();
@@ -79,13 +79,13 @@ mod tests {
     use pgt_fs::PgTPath;
     use pgt_text_size::TextSize;
 
-    use crate::workspace::ParsedDocument;
+    use crate::workspace::Document;
 
     use super::get_statement_for_completions;
 
     static CURSOR_POSITION: &str = "€";
 
-    fn get_doc_and_pos(sql: &str) -> (ParsedDocument, TextSize) {
+    fn get_doc_and_pos(sql: &str) -> (Document, TextSize) {
         let pos = sql
             .find(CURSOR_POSITION)
             .expect("Please add cursor position to test sql");
@@ -93,7 +93,7 @@ mod tests {
         let pos: u32 = pos.try_into().unwrap();
 
         (
-            ParsedDocument::new(
+            Document::new(
                 PgTPath::new("test.sql"),
                 sql.replace(CURSOR_POSITION, ""),
                 5,

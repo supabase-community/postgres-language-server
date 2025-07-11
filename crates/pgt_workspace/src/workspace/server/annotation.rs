@@ -55,14 +55,6 @@ impl AnnotationStore {
 
         annotations
     }
-
-    pub fn clear_statement(&self, id: &StatementId) {
-        self.db.remove(id);
-
-        if let Some(child_id) = id.get_child_id() {
-            self.db.remove(&child_id);
-        }
-    }
 }
 
 #[cfg(test)]

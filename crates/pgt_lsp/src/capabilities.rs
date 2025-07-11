@@ -1,13 +1,9 @@
 use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
-use pgt_workspace::features::code_actions::CommandActionCategory;
-use strum::IntoEnumIterator;
 use tower_lsp::lsp_types::{
     ClientCapabilities, CompletionOptions, ExecuteCommandOptions, PositionEncodingKind,
     SaveOptions, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkDoneProgressOptions,
 };
-
-use crate::handlers::code_actions::command_id;
 
 /// The capabilities to send from server as part of [`InitializeResult`]
 ///
@@ -51,9 +47,7 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
             },
         }),
         execute_command_provider: Some(ExecuteCommandOptions {
-            commands: CommandActionCategory::iter()
-                .map(|c| command_id(&c))
-                .collect::<Vec<String>>(),
+            commands: available_command_ids(),
 
             ..Default::default()
         }),
@@ -66,4 +60,14 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
         rename_provider: None,
         ..Default::default()
     }
+}
+
+/// Returns all available command IDs for capability registration.
+/// Since CommandActionCategory has variants with data, we can't use strum::IntoEnumIterator.
+/// Instead, we manually list the command IDs we want to register.
+fn available_command_ids() -> Vec<String> {
+    vec![
+        "postgres-tools.executeStatement".to_string(),
+        // Add other command IDs here as needed
+    ]
 }

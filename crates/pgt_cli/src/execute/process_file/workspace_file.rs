@@ -2,13 +2,14 @@ use crate::execute::diagnostics::{ResultExt, ResultIoExt};
 use crate::execute::process_file::SharedTraversalOptions;
 use pgt_diagnostics::{Error, category};
 use pgt_fs::{File, OpenOptions, PgTPath};
-use pgt_workspace::workspace::{ChangeParams, FileGuard, OpenFileParams};
+use pgt_workspace::workspace::{FileGuard, OpenFileParams};
 use pgt_workspace::{Workspace, WorkspaceError};
 use std::path::{Path, PathBuf};
 
 /// Small wrapper that holds information and operations around the current processed file
 pub(crate) struct WorkspaceFile<'ctx, 'app> {
     guard: FileGuard<'app, dyn Workspace + 'ctx>,
+    #[allow(dead_code)]
     file: Box<dyn File>,
     pub(crate) path: PathBuf,
 }
@@ -56,20 +57,5 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
 
     pub(crate) fn input(&self) -> Result<String, WorkspaceError> {
         self.guard().get_file_content()
-    }
-
-    /// It updates the workspace file with `new_content`
-    #[allow(dead_code)]
-    pub(crate) fn update_file(&mut self, new_content: impl Into<String>) -> Result<(), Error> {
-        let new_content = new_content.into();
-
-        self.file
-            .set_content(new_content.as_bytes())
-            .with_file_path(self.path.display().to_string())?;
-        self.guard.change_file(
-            self.file.file_version(),
-            vec![ChangeParams::overwrite(new_content)],
-        )?;
-        Ok(())
     }
 }

@@ -1,24 +1,6 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct RootId {
-    inner: usize,
-}
-
-#[cfg(test)]
-impl From<RootId> for usize {
-    fn from(val: RootId) -> Self {
-        val.inner
-    }
-}
-
-#[cfg(test)]
-impl From<usize> for RootId {
-    fn from(inner: usize) -> Self {
-        RootId { inner }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -35,91 +17,83 @@ impl From<usize> for RootId {
 /// ```
 ///
 /// For now, we only support SQL functions – no complex, nested statements.
-///
-/// An SQL function only ever has ONE child, that's why the inner `RootId` of a `Root`
-/// is the same as the one of its `Child`.
 pub enum StatementId {
-    Root(RootId),
-    // StatementId is the same as the root id since we can only have a single sql function body per Root
-    Child(RootId),
-}
-
-impl Default for StatementId {
-    fn default() -> Self {
-        StatementId::Root(RootId { inner: 0 })
-    }
+    Root {
+        content: Arc<str>,
+    },
+    Child {
+        content: Arc<str>,        // child's actual content
+        parent_content: Arc<str>, // parent's content for lookups
+    },
 }
 
 impl StatementId {
-    pub fn raw(&self) -> usize {
+    pub fn new(statement: &str) -> Self {
+        StatementId::Root {
+            content: statement.into(),
+        }
+    }
+
+    /// Creates a child statement ID with the given content and parent content.
+    pub fn new_child(child_content: &str, parent_content: &str) -> Self {
+        StatementId::Child {
+            content: child_content.into(),
+            parent_content: parent_content.into(),
+        }
+    }
+
+    /// Use this if you need to create a matching `StatementId::Child` for `Root`.
+    /// You cannot create a `Child` of a `Child`.
+    /// Note: This method requires the child content to be provided.
+    pub fn create_child(&self, child_content: &str) -> StatementId {
         match self {
-            StatementId::Root(s) => s.inner,
-            StatementId::Child(s) => s.inner,
+            StatementId::Root { content } => StatementId::Child {
+                content: child_content.into(),
+                parent_content: content.clone(),
+            },
+            StatementId::Child { .. } => panic!("Cannot create child from a child statement id"),
+        }
+    }
+
+    pub fn content(&self) -> &str {
+        match self {
+            StatementId::Root { content } => content,
+            StatementId::Child { content, .. } => content,
+        }
+    }
+
+    /// Returns the parent content if this is a child statement
+    pub fn parent_content(&self) -> Option<&str> {
+        match self {
+            StatementId::Root { .. } => None,
+            StatementId::Child { parent_content, .. } => Some(parent_content),
         }
     }
 
     pub fn is_root(&self) -> bool {
-        matches!(self, StatementId::Root(_))
+        matches!(self, StatementId::Root { .. })
     }
 
     pub fn is_child(&self) -> bool {
-        matches!(self, StatementId::Child(_))
+        matches!(self, StatementId::Child { .. })
     }
 
     pub fn is_child_of(&self, maybe_parent: &StatementId) -> bool {
         match self {
-            StatementId::Root(_) => false,
-            StatementId::Child(child_root) => match maybe_parent {
-                StatementId::Root(parent_rood) => child_root == parent_rood,
-                // TODO: can we have multiple nested statements?
-                StatementId::Child(_) => false,
+            StatementId::Root { .. } => false,
+            StatementId::Child { parent_content, .. } => match maybe_parent {
+                StatementId::Root { content } => parent_content == content,
+                StatementId::Child { .. } => false,
             },
         }
     }
 
     pub fn parent(&self) -> Option<StatementId> {
         match self {
-            StatementId::Root(_) => None,
-            StatementId::Child(id) => Some(StatementId::Root(id.clone())),
-        }
-    }
-}
-
-/// Helper struct to generate unique statement ids
-pub struct StatementIdGenerator {
-    next_id: usize,
-}
-
-impl StatementIdGenerator {
-    pub fn new() -> Self {
-        Self { next_id: 0 }
-    }
-
-    pub fn next(&mut self) -> StatementId {
-        let id = self.next_id;
-        self.next_id += 1;
-        StatementId::Root(RootId { inner: id })
-    }
-}
-
-impl StatementId {
-    /// Use this to get the matching `StatementId::Child` for
-    /// a `StatementId::Root`.
-    /// If the `StatementId` was already a `Child`, this will return `None`.
-    /// It is not guaranteed that the `Root` actually has a `Child` statement in the workspace.
-    pub fn get_child_id(&self) -> Option<StatementId> {
-        match self {
-            StatementId::Root(id) => Some(StatementId::Child(RootId { inner: id.inner })),
-            StatementId::Child(_) => None,
-        }
-    }
-
-    /// Use this if you need to create a matching `StatementId::Child` for `Root`.
-    /// You cannot create a `Child` of a `Child`.
-    pub fn create_child(&self) -> StatementId {
-        match self {
-            StatementId::Root(id) => StatementId::Child(RootId { inner: id.inner }),
-            StatementId::Child(_) => panic!("Cannot create child from a child statement id"),
+            StatementId::Root { .. } => None,
+            StatementId::Child { parent_content, .. } => Some(StatementId::Root {
+                content: parent_content.clone(),
+            }),
         }
     }
 }
