@@ -167,7 +167,7 @@ where
             }
 
             // Return the current statement if it passes the filter
-            if self.filter.predicate(&root_id, &range, content) {
+            if self.filter.predicate(&root_id, range, content) {
                 return Some(self.mapper.map(self.parser, root_id, *range));
             }
 
