@@ -6,22 +6,23 @@ repo_name: supabase-community/postgres-language-server
 repo_url: https://github.com/supabase-community/postgres-language-server
 
 theme:
-    name: 'readthedocs'
-    features:
-      - navigation.expand
-    palette:
-        primary: grey
-        accent: red
+  name: "readthedocs"
+  features:
+    - navigation.expand
+  palette:
+    primary: grey
+    accent: red
 nav:
   - Introduction: index.md
   - Guides:
-    - Linting Migrations: checking_migrations.md
-    - Troubleshooting: troubleshooting.md
+      - Linting Migrations: checking_migrations.md
+      - Troubleshooting: troubleshooting.md
   - Reference:
-    - Rules: rules.md
-    - Rule Sources: rule_sources.md
-    - CLI: cli_reference.md
-    - Environment Variables: env_variables.md
+      - Rules: rules.md
+      - Rule Sources: rule_sources.md
+      - Rule Suppressions: rule_suppressions.md
+      - CLI: cli_reference.md
+      - Environment Variables: env_variables.md
 
 plugins:
   - gh-admonitions
