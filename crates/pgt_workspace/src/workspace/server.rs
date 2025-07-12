@@ -625,7 +625,7 @@ impl Workspace for WorkspaceServer {
 
         let schema_cache = self.schema_cache.load(pool)?;
 
-        match get_statement_for_completions(&parsed_doc, params.position) {
+        match get_statement_for_completions(parsed_doc, params.position) {
             None => {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
