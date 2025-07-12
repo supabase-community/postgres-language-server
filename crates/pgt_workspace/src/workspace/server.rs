@@ -451,7 +451,7 @@ impl Workspace for WorkspaceServer {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
                                     conn: &pool,
-                                    sql: &id.content(),
+                                    sql: id.content(),
                                     ast: &ast,
                                     tree: &cst,
                                     schema_cache: schema_cache.as_ref(),
