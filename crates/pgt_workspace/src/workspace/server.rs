@@ -13,11 +13,11 @@ use document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
     SyncDiagnosticsMapper,
 };
-use futures::{StreamExt, stream};
+use futures::{stream, StreamExt};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
-    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
+    serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt, Error, Severity,
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
@@ -26,17 +26,17 @@ use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
 
 use crate::{
-    WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
-        completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
+        completions::{get_statement_for_completions, CompletionsResult, GetCompletionsParams},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
+    WorkspaceError,
 };
 
 use super::{
@@ -422,7 +422,7 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let parser = self
+        let doc = self
             .documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
@@ -431,7 +431,7 @@ impl Workspace for WorkspaceServer {
          * The statements in the document might already have associated diagnostics,
          * e.g. if they contain syntax errors that surfaced while parsing/splitting the statements
          */
-        let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
+        let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
 
         /*
          * Type-checking against database connection
@@ -439,7 +439,7 @@ impl Workspace for WorkspaceServer {
         if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+            let input = doc.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
                 stream::iter(input)
@@ -522,48 +522,69 @@ impl Workspace for WorkspaceServer {
             filter,
         });
 
-        diagnostics.extend(parser.iter(SyncDiagnosticsMapper).flat_map(
-            |(_id, range, ast, diag)| {
-                let mut errors: Vec<Error> = vec![];
+        diagnostics.extend(
+            doc.iter(SyncDiagnosticsMapper)
+                .flat_map(|(_id, range, ast, diag)| {
+                    let mut errors: Vec<Error> = vec![];
 
-                if let Some(diag) = diag {
-                    errors.push(diag.into());
-                }
+                    if let Some(diag) = diag {
+                        errors.push(diag.into());
+                    }
 
-                if let Some(ast) = ast {
-                    errors.extend(
-                        analyser
-                            .run(AnalyserContext { root: &ast })
-                            .into_iter()
-                            .map(Error::from)
-                            .collect::<Vec<pgt_diagnostics::Error>>(),
-                    );
-                }
+                    if let Some(ast) = ast {
+                        errors.extend(
+                            analyser
+                                .run(AnalyserContext { root: &ast })
+                                .into_iter()
+                                .map(Error::from)
+                                .collect::<Vec<pgt_diagnostics::Error>>(),
+                        );
+                    }
 
-                errors
-                    .into_iter()
-                    .map(|d| {
-                        let severity = d
-                            .category()
-                            .filter(|category| category.name().starts_with("lint/"))
-                            .map_or_else(
-                                || d.severity(),
-                                |category| {
-                                    settings
-                                        .get_severity_from_rule_code(category)
-                                        .unwrap_or(Severity::Warning)
-                                },
-                            );
+                    errors
+                        .into_iter()
+                        .map(|d| {
+                            let severity = d
+                                .category()
+                                .filter(|category| category.name().starts_with("lint/"))
+                                .map_or_else(
+                                    || d.severity(),
+                                    |category| {
+                                        settings
+                                            .get_severity_from_rule_code(category)
+                                            .unwrap_or(Severity::Warning)
+                                    },
+                                );
 
-                        SDiagnostic::new(
-                            d.with_file_path(params.path.as_path().display().to_string())
-                                .with_file_span(range)
-                                .with_severity(severity),
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            },
-        ));
+                            SDiagnostic::new(
+                                d.with_file_path(params.path.as_path().display().to_string())
+                                    .with_file_span(range)
+                                    .with_severity(severity),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                }),
+        );
+
+        let suppressions = doc.suppressions();
+
+        let disabled_suppression_errors =
+            suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
+
+        let unused_suppression_errors =
+            suppressions.get_unused_suppressions_as_errors(&diagnostics);
+
+        let suppression_errors: Vec<Error> = suppressions
+            .diagnostics
+            .iter()
+            .chain(disabled_suppression_errors.iter())
+            .chain(unused_suppression_errors.iter())
+            .cloned()
+            .map(Error::from)
+            .collect::<Vec<pgt_diagnostics::Error>>();
+
+        diagnostics.retain(|d| !suppressions.is_suppressed(d));
+        diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
         let errors = diagnostics
             .iter()

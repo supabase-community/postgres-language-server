@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
-use pgt_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgt_diagnostics::{serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt};
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
+use pgt_suppressions::Suppressions;
 use pgt_text_size::{TextRange, TextSize};
 
 use super::{
     annotation::AnnotationStore,
     pg_query::PgQueryStore,
-    sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
+    sql_function::{get_sql_fn_body, get_sql_fn_signature, SQLFunctionSignature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
@@ -21,6 +22,7 @@ pub struct Document {
     cst_db: TreeSitterStore,
     #[allow(dead_code)]
     annotation_db: AnnotationStore,
+    suppressions: Suppressions,
 }
 
 impl Document {
@@ -28,6 +30,7 @@ impl Document {
         let cst_db = TreeSitterStore::new();
         let ast_db = PgQueryStore::new();
         let annotation_db = AnnotationStore::new();
+        let suppressions = Suppressions::from(content.as_str());
 
         let (ranges, diagnostics) = split_with_diagnostics(&content, None);
 
@@ -39,6 +42,7 @@ impl Document {
             ast_db,
             cst_db,
             annotation_db,
+            suppressions,
         }
     }
 
@@ -50,6 +54,11 @@ impl Document {
 
         self.ranges = ranges;
         self.diagnostics = diagnostics;
+        self.suppressions = Suppressions::from(self.content.as_str());
+    }
+
+    pub fn suppressions(&self) -> &Suppressions {
+        &self.suppressions
     }
 
     pub fn get_document_content(&self) -> &str {

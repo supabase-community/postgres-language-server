@@ -16,6 +16,27 @@ pub enum RuleCategory {
     Transformation,
 }
 
+impl TryFrom<String> for RuleCategory {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.as_str().try_into()
+    }
+}
+
+impl TryFrom<&str> for RuleCategory {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "lint" => Ok(Self::Lint),
+            "action" => Ok(Self::Action),
+            "transformation" => Ok(Self::Transformation),
+            _ => Err(format!("Invalid Rule Category: {}", value)),
+        }
+    }
+}
+
 /// Actions that suppress rules should start with this string
 pub const SUPPRESSION_ACTION_CATEGORY: &str = "quickfix.suppressRule";
 
