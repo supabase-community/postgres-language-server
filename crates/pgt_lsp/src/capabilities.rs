@@ -1,4 +1,5 @@
 use crate::adapters::{PositionEncoding, WideEncoding, negotiated_encoding};
+use crate::handlers::code_actions::command_id;
 use pgt_workspace::features::code_actions::CommandActionCategory;
 use strum::IntoEnumIterator;
 use tower_lsp::lsp_types::{
@@ -6,8 +7,6 @@ use tower_lsp::lsp_types::{
     SaveOptions, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkDoneProgressOptions,
 };
-
-use crate::handlers::code_actions::command_id;
 
 /// The capabilities to send from server as part of [`InitializeResult`]
 ///
@@ -54,7 +53,6 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
             commands: CommandActionCategory::iter()
                 .map(|c| command_id(&c))
                 .collect::<Vec<String>>(),
-
             ..Default::default()
         }),
         document_formatting_provider: None,

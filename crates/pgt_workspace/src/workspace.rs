@@ -4,7 +4,6 @@ pub use self::client::{TransportRequest, WorkspaceClient, WorkspaceTransport};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{PartialConfiguration, RuleSelector};
 use pgt_fs::PgTPath;
-use pgt_text_size::TextRange;
 #[cfg(feature = "schema")]
 use schemars::{JsonSchema, SchemaGenerator, schema::Schema};
 use serde::{Deserialize, Serialize};
@@ -25,7 +24,7 @@ mod client;
 mod server;
 
 pub use server::StatementId;
-pub(crate) use server::parsed_document::*;
+pub(crate) use server::document::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -46,21 +45,7 @@ pub struct CloseFileParams {
 pub struct ChangeFileParams {
     pub path: PgTPath,
     pub version: i32,
-    pub changes: Vec<ChangeParams>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct ChangeParams {
-    /// The range of the file that changed. If `None`, the whole file changed.
-    pub range: Option<TextRange>,
-    pub text: String,
-}
-
-impl ChangeParams {
-    pub fn overwrite(text: String) -> Self {
-        Self { range: None, text }
-    }
+    pub content: String,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -205,15 +190,11 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
         Ok(Self { workspace, path })
     }
 
-    pub fn change_file(
-        &self,
-        version: i32,
-        changes: Vec<ChangeParams>,
-    ) -> Result<(), WorkspaceError> {
+    pub fn change_file(&self, version: i32, content: String) -> Result<(), WorkspaceError> {
         self.workspace.change_file(ChangeFileParams {
             path: self.path.clone(),
             version,
-            changes,
+            content,
         })
     }
 

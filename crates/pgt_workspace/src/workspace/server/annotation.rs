@@ -55,14 +55,6 @@ impl AnnotationStore {
 
         annotations
     }
-
-    pub fn clear_statement(&self, id: &StatementId) {
-        self.db.remove(id);
-
-        if let Some(child_id) = id.get_child_id() {
-            self.db.remove(&child_id);
-        }
-    }
 }
 
 #[cfg(test)]
@@ -84,8 +76,8 @@ mod tests {
             ("SELECT * FROM foo\n", false),
         ];
 
-        for (idx, (content, expected)) in test_cases.iter().enumerate() {
-            let statement_id = StatementId::Root(idx.into());
+        for (content, expected) in test_cases.iter() {
+            let statement_id = StatementId::new(content);
 
             let annotations = store.get_annotations(&statement_id, content);
 
