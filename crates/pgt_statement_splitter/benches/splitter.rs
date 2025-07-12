@@ -2,8 +2,7 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use pgt_statement_splitter::split;
 
 pub fn splitter_benchmark(c: &mut Criterion) {
-    c.bench_function("large statement", |b| {
-        let statement = r#"with
+    let large_statement = r#"with
   available_tables as (
     select
       c.relname as table_name,
@@ -62,18 +61,24 @@ where
 
 "#;
 
-        let content = statement.repeat(500);
+    let large_content = large_statement.repeat(500);
 
-        b.iter(|| black_box(split(&content)));
-    });
+    c.bench_function(
+        format!("large statement with length {}", large_content.len()).as_str(),
+        |b| {
+            b.iter(|| black_box(split(&large_content)));
+        },
+    );
 
-    c.bench_function("small statement", |b| {
-        let statement = r#"select 1 from public.user where id = 1"#;
+    let small_statement = r#"select 1 from public.user where id = 1"#;
+    let small_content = small_statement.repeat(500);
 
-        let content = statement.repeat(500);
-
-        b.iter(|| black_box(split(&content)));
-    });
+    c.bench_function(
+        format!("small statement with length {}", small_content.len()).as_str(),
+        |b| {
+            b.iter(|| black_box(split(&small_content)));
+        },
+    );
 }
 
 criterion_group!(benches, splitter_benchmark);
