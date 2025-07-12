@@ -13,11 +13,11 @@ use document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
     SyncDiagnosticsMapper,
 };
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
 use pgt_diagnostics::{
-    serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt, Error, Severity,
+    Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
@@ -26,17 +26,17 @@ use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
 
 use crate::{
+    WorkspaceError,
     configuration::to_analyser_rules,
     features::{
         code_actions::{
             self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
-        completions::{get_statement_for_completions, CompletionsResult, GetCompletionsParams},
+        completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    WorkspaceError,
 };
 
 use super::{

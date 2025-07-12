@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgt_diagnostics::{serde::Diagnostic as SDiagnostic, Diagnostic, DiagnosticExt};
+use pgt_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
 use pgt_suppressions::Suppressions;
 use pgt_text_size::{TextRange, TextSize};
@@ -8,7 +8,7 @@ use pgt_text_size::{TextRange, TextSize};
 use super::{
     annotation::AnnotationStore,
     pg_query::PgQueryStore,
-    sql_function::{get_sql_fn_body, get_sql_fn_signature, SQLFunctionSignature},
+    sql_function::{SQLFunctionSignature, get_sql_fn_body, get_sql_fn_signature},
     statement_identifier::StatementId,
     tree_sitter::TreeSitterStore,
 };
