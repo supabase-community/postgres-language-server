@@ -1,11 +1,14 @@
+use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
-use dashmap::DashMap;
+use lru::LruCache;
 
 use super::statement_identifier::StatementId;
 
+const DEFAULT_CACHE_SIZE: usize = 1000;
+
 pub struct TreeSitterStore {
-    db: DashMap<StatementId, Arc<tree_sitter::Tree>>,
+    db: Mutex<LruCache<StatementId, Arc<tree_sitter::Tree>>>,
     parser: Mutex<tree_sitter::Parser>,
 }
 
@@ -17,20 +20,35 @@ impl TreeSitterStore {
             .expect("Error loading sql language");
 
         TreeSitterStore {
-            db: DashMap::new(),
+            db: Mutex::new(LruCache::new(
+                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
+            )),
             parser: Mutex::new(parser),
         }
     }
 
     pub fn get_or_cache_tree(&self, statement: &StatementId) -> Arc<tree_sitter::Tree> {
-        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
-            return existing;
+        let mut cache = self.db.lock().expect("Failed to lock cache");
+
+        if let Some(existing) = cache.get(statement) {
+            return existing.clone();
         }
+
+        // Cache miss - drop cache lock, parse, then re-acquire to insert
+        drop(cache);
 
         let mut parser = self.parser.lock().expect("Failed to lock parser");
         let tree = Arc::new(parser.parse(statement.content(), None).unwrap());
-        self.db.insert(statement.clone(), tree.clone());
+        drop(parser);
 
+        let mut cache = self.db.lock().expect("Failed to lock cache");
+
+        // Double-check after re-acquiring lock
+        if let Some(existing) = cache.get(statement) {
+            return existing.clone();
+        }
+
+        cache.put(statement.clone(), tree.clone());
         tree
     }
 }
