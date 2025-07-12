@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs,
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
@@ -8,7 +9,6 @@ use std::{
 use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 use connection_manager::ConnectionManager;
-use dashmap::DashMap;
 use document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
     SyncDiagnosticsMapper,
@@ -67,7 +67,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    documents: DashMap<PgTPath, Document>,
+    documents: RwLock<HashMap<PgTPath, Document>>,
 
     connection: ConnectionManager,
 }
@@ -89,7 +89,7 @@ impl WorkspaceServer {
     pub(crate) fn new() -> Self {
         Self {
             settings: RwLock::default(),
-            documents: DashMap::default(),
+            documents: RwLock::new(HashMap::new()),
             schema_cache: SchemaCacheManager::new(),
             connection: ConnectionManager::new(),
         }
@@ -262,7 +262,8 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.documents
+        let mut documents = self.documents.write().unwrap();
+        documents
             .entry(params.path.clone())
             .or_insert_with(|| Document::new(params.content, params.version));
 
@@ -275,7 +276,8 @@ impl Workspace for WorkspaceServer {
 
     /// Remove a file from the workspace
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        self.documents
+        let mut documents = self.documents.write().unwrap();
+        documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
 
@@ -288,13 +290,15 @@ impl Workspace for WorkspaceServer {
         version = params.version
     ), err)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        match self.documents.entry(params.path.clone()) {
-            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+        let mut documents = self.documents.write().unwrap();
+
+        match documents.entry(params.path.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut entry) => {
                 entry
                     .get_mut()
                     .update_content(params.content, params.version);
             }
-            dashmap::mapref::entry::Entry::Vacant(entry) => {
+            std::collections::hash_map::Entry::Vacant(entry) => {
                 entry.insert(Document::new(params.content, params.version));
             }
         }
@@ -307,8 +311,8 @@ impl Workspace for WorkspaceServer {
     }
 
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        let document = self
-            .documents
+        let documents = self.documents.read().unwrap();
+        let document = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
         Ok(document.get_document_content().to_string())
@@ -322,8 +326,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: code_actions::CodeActionsParams,
     ) -> Result<code_actions::CodeActionsResult, WorkspaceError> {
-        let parser = self
-            .documents
+        let documents = self.documents.read().unwrap();
+        let parser = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -364,8 +368,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
-        let parser = self
-            .documents
+        let documents = self.documents.read().unwrap();
+        let parser = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -422,8 +426,8 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let doc = self
-            .documents
+        let documents = self.documents.read().unwrap();
+        let doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -607,8 +611,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
-        let parsed_doc = self
-            .documents
+        let documents = self.documents.read().unwrap();
+        let parsed_doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 

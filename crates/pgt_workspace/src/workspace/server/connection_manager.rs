@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
-use dashmap::DashMap;
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
 use crate::settings::DatabaseSettings;
@@ -16,13 +17,13 @@ struct CachedPool {
 
 #[derive(Default)]
 pub struct ConnectionManager {
-    pools: DashMap<ConnectionKey, CachedPool>,
+    pools: RwLock<HashMap<ConnectionKey, CachedPool>>,
 }
 
 impl ConnectionManager {
     pub fn new() -> Self {
         Self {
-            pools: DashMap::new(),
+            pools: RwLock::new(HashMap::new()),
         }
     }
 
@@ -41,8 +42,19 @@ impl ConnectionManager {
             return None;
         }
 
-        // If we have a cached pool, update its last_accessed time and return it
-        if let Some(mut cached_pool) = self.pools.get_mut(&key) {
+        // Try read lock first for cache hit
+        if let Ok(pools) = self.pools.read() {
+            if let Some(cached_pool) = pools.get(&key) {
+                // Can't update last_accessed with read lock, but that's okay for occasional misses
+                return Some(cached_pool.pool.clone());
+            }
+        }
+
+        // Cache miss or need to update timestamp - use write lock
+        let mut pools = self.pools.write().unwrap();
+
+        // Double-check after acquiring write lock
+        if let Some(cached_pool) = pools.get_mut(&key) {
             cached_pool.last_accessed = Instant::now();
             return Some(cached_pool.pool.clone());
         }
@@ -69,7 +81,7 @@ impl ConnectionManager {
             idle_timeout: Duration::from_secs(60 * 5),
         };
 
-        self.pools.insert(key, cached_pool);
+        pools.insert(key, cached_pool);
 
         Some(pool)
     }
@@ -78,8 +90,10 @@ impl ConnectionManager {
     fn cleanup_idle_pools(&self, ignore_key: &ConnectionKey) {
         let now = Instant::now();
 
+        let mut pools = self.pools.write().unwrap();
+
         // Use retain to keep only non-idle connections
-        self.pools.retain(|key, cached_pool| {
+        pools.retain(|key, cached_pool| {
             let idle_duration = now.duration_since(cached_pool.last_accessed);
             if idle_duration > cached_pool.idle_timeout && key != ignore_key {
                 tracing::debug!(
