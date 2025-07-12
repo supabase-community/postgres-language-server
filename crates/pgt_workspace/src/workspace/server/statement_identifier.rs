@@ -27,18 +27,17 @@ pub enum StatementId {
     },
 }
 
+// this is only here for strum to work on the code actions enum
+impl Default for StatementId {
+    fn default() -> Self {
+        StatementId::Root { content: "".into() }
+    }
+}
+
 impl StatementId {
     pub fn new(statement: &str) -> Self {
         StatementId::Root {
             content: statement.into(),
-        }
-    }
-
-    /// Creates a child statement ID with the given content and parent content.
-    pub fn new_child(child_content: &str, parent_content: &str) -> Self {
-        StatementId::Child {
-            content: child_content.into(),
-            parent_content: parent_content.into(),
         }
     }
 

@@ -626,7 +626,7 @@ impl Workspace for WorkspaceServer {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((id, range, content, cst)) => {
+            Some((_id, range, content, cst)) => {
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {
@@ -635,12 +635,6 @@ impl Workspace for WorkspaceServer {
                     tree: &cst,
                     text: content,
                 });
-
-                tracing::debug!(
-                    "Found {} completion items for statement with id {:?}",
-                    items.len(),
-                    id
-                );
 
                 Ok(CompletionsResult { items })
             }
