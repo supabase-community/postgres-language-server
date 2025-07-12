@@ -637,9 +637,9 @@ impl Workspace for WorkspaceServer {
                 });
 
                 tracing::debug!(
-                    "Found {} completion items for statement with id {}",
+                    "Found {} completion items for statement with id {:?}",
                     items.len(),
-                    id.content()
+                    id
                 );
 
                 Ok(CompletionsResult { items })
