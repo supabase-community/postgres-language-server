@@ -38,7 +38,6 @@ serde                     = { workspace = true, features = ["derive"] }
 serde_json                = { workspace = true, features = ["raw_value"] }
 slotmap                   = { workspace = true, features = ["serde"] }
 sqlx.workspace            = true
-string-interner           = { workspace = true, features = ["serde"] }
 strum                     = { workspace = true }
 tokio                     = { workspace = true, features = ["rt", "rt-multi-thread"] }
 tracing                   = { workspace = true, features = ["attributes", "log"] }
