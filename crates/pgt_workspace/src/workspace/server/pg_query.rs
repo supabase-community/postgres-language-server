@@ -1,38 +1,38 @@
-use std::sync::Arc;
+use std::num::NonZeroUsize;
+use std::sync::{Arc, Mutex};
 
-use dashmap::DashMap;
+use lru::LruCache;
 use pgt_query_ext::diagnostics::*;
 
 use super::statement_identifier::StatementId;
 
+const DEFAULT_CACHE_SIZE: usize = 1000;
+
 pub struct PgQueryStore {
-    db: DashMap<StatementId, Arc<Result<pgt_query_ext::NodeEnum, SyntaxDiagnostic>>>,
+    db: Mutex<LruCache<StatementId, Arc<Result<pgt_query_ext::NodeEnum, SyntaxDiagnostic>>>>,
 }
 
 impl PgQueryStore {
     pub fn new() -> PgQueryStore {
-        PgQueryStore { db: DashMap::new() }
+        PgQueryStore {
+            db: Mutex::new(LruCache::new(
+                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
+            )),
+        }
     }
 
     pub fn get_or_cache_ast(
         &self,
         statement: &StatementId,
-        content: &str,
     ) -> Arc<Result<pgt_query_ext::NodeEnum, SyntaxDiagnostic>> {
-        if let Some(existing) = self.db.get(statement).map(|x| x.clone()) {
-            return existing;
+        let mut cache = self.db.lock().unwrap();
+
+        if let Some(existing) = cache.get(statement) {
+            return existing.clone();
         }
 
-        let r = Arc::new(pgt_query_ext::parse(content).map_err(SyntaxDiagnostic::from));
-        self.db.insert(statement.clone(), r.clone());
+        let r = Arc::new(pgt_query_ext::parse(statement.content()).map_err(SyntaxDiagnostic::from));
+        cache.put(statement.clone(), r.clone());
         r
-    }
-
-    pub fn clear_statement(&self, id: &StatementId) {
-        self.db.remove(id);
-
-        if let Some(child_id) = id.get_child_id() {
-            self.db.remove(&child_id);
-        }
     }
 }

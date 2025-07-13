@@ -1,9 +1,12 @@
-use std::sync::Arc;
+use std::num::NonZeroUsize;
+use std::sync::{Arc, Mutex};
 
-use dashmap::DashMap;
+use lru::LruCache;
 use pgt_lexer::SyntaxKind;
 
 use super::statement_identifier::StatementId;
+
+const DEFAULT_CACHE_SIZE: usize = 1000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatementAnnotations {
@@ -11,7 +14,7 @@ pub struct StatementAnnotations {
 }
 
 pub struct AnnotationStore {
-    db: DashMap<StatementId, Arc<StatementAnnotations>>,
+    db: Mutex<LruCache<StatementId, Arc<StatementAnnotations>>>,
 }
 
 const WHITESPACE_TOKENS: [SyntaxKind; 6] = [
@@ -25,7 +28,11 @@ const WHITESPACE_TOKENS: [SyntaxKind; 6] = [
 
 impl AnnotationStore {
     pub fn new() -> AnnotationStore {
-        AnnotationStore { db: DashMap::new() }
+        AnnotationStore {
+            db: Mutex::new(LruCache::new(
+                NonZeroUsize::new(DEFAULT_CACHE_SIZE).unwrap(),
+            )),
+        }
     }
 
     #[allow(unused)]
@@ -34,8 +41,10 @@ impl AnnotationStore {
         statement_id: &StatementId,
         content: &str,
     ) -> Arc<StatementAnnotations> {
-        if let Some(existing) = self.db.get(statement_id).map(|x| x.clone()) {
-            return existing;
+        let mut cache = self.db.lock().unwrap();
+
+        if let Some(existing) = cache.get(statement_id) {
+            return existing.clone();
         }
 
         let lexed = pgt_lexer::lex(content);
@@ -51,17 +60,9 @@ impl AnnotationStore {
             ends_with_semicolon,
         });
 
-        self.db.insert(statement_id.clone(), annotations.clone());
+        cache.put(statement_id.clone(), annotations.clone());
 
         annotations
-    }
-
-    pub fn clear_statement(&self, id: &StatementId) {
-        self.db.remove(id);
-
-        if let Some(child_id) = id.get_child_id() {
-            self.db.remove(&child_id);
-        }
     }
 }
 
@@ -84,8 +85,8 @@ mod tests {
             ("SELECT * FROM foo\n", false),
         ];
 
-        for (idx, (content, expected)) in test_cases.iter().enumerate() {
-            let statement_id = StatementId::Root(idx.into());
+        for (content, expected) in test_cases.iter() {
+            let statement_id = StatementId::new(content);
 
             let annotations = store.get_annotations(&statement_id, content);
 

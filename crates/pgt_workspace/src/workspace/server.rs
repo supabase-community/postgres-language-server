@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs,
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
@@ -8,13 +9,11 @@ use std::{
 use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 use connection_manager::ConnectionManager;
-use dashmap::DashMap;
-use document::Document;
-use futures::{StreamExt, stream};
-use parsed_document::{
-    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
-    ParsedDocument,
+use document::{
+    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
+    SyncDiagnosticsMapper,
 };
+use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams};
 use pgt_diagnostics::{
@@ -53,12 +52,10 @@ pub use statement_identifier::StatementId;
 mod analyser;
 mod annotation;
 mod async_helper;
-mod change;
 mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
 mod migration;
-pub(crate) mod parsed_document;
 mod pg_query;
 mod schema_cache_manager;
 mod sql_function;
@@ -72,7 +69,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    parsed_documents: DashMap<PgTPath, ParsedDocument>,
+    documents: RwLock<HashMap<PgTPath, Document>>,
 
     connection: ConnectionManager,
 }
@@ -94,7 +91,7 @@ impl WorkspaceServer {
     pub(crate) fn new() -> Self {
         Self {
             settings: RwLock::default(),
-            parsed_documents: DashMap::default(),
+            documents: RwLock::new(HashMap::new()),
             schema_cache: SchemaCacheManager::new(),
             connection: ConnectionManager::new(),
         }
@@ -267,11 +264,10 @@ impl Workspace for WorkspaceServer {
     /// Add a new file to the workspace
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_documents
+        let mut documents = self.documents.write().unwrap();
+        documents
             .entry(params.path.clone())
-            .or_insert_with(|| {
-                ParsedDocument::new(params.path.clone(), params.content, params.version)
-            });
+            .or_insert_with(|| Document::new(params.content, params.version));
 
         if let Some(project_key) = self.path_belongs_to_current_workspace(&params.path) {
             self.set_current_project(project_key);
@@ -282,7 +278,8 @@ impl Workspace for WorkspaceServer {
 
     /// Remove a file from the workspace
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
-        self.parsed_documents
+        let mut documents = self.documents.write().unwrap();
+        documents
             .remove(&params.path)
             .ok_or_else(WorkspaceError::not_found)?;
 
@@ -295,16 +292,18 @@ impl Workspace for WorkspaceServer {
         version = params.version
     ), err)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        let mut parser =
-            self.parsed_documents
-                .entry(params.path.clone())
-                .or_insert(ParsedDocument::new(
-                    params.path.clone(),
-                    "".to_string(),
-                    params.version,
-                ));
+        let mut documents = self.documents.write().unwrap();
 
-        parser.apply_change(params);
+        match documents.entry(params.path.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut entry) => {
+                entry
+                    .get_mut()
+                    .update_content(params.content, params.version);
+            }
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                entry.insert(Document::new(params.content, params.version));
+            }
+        }
 
         Ok(())
     }
@@ -314,8 +313,8 @@ impl Workspace for WorkspaceServer {
     }
 
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        let document = self
-            .parsed_documents
+        let documents = self.documents.read().unwrap();
+        let document = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
         Ok(document.get_document_content().to_string())
@@ -329,8 +328,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: code_actions::CodeActionsParams,
     ) -> Result<code_actions::CodeActionsResult, WorkspaceError> {
-        let parser = self
-            .parsed_documents
+        let documents = self.documents.read().unwrap();
+        let parser = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -371,8 +370,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError> {
-        let parser = self
-            .parsed_documents
+        let documents = self.documents.read().unwrap();
+        let parser = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -429,8 +428,8 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        let parser = self
-            .parsed_documents
+        let documents = self.documents.read().unwrap();
+        let doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -438,7 +437,7 @@ impl Workspace for WorkspaceServer {
          * The statements in the document might already have associated diagnostics,
          * e.g. if they contain syntax errors that surfaced while parsing/splitting the statements
          */
-        let mut diagnostics: Vec<SDiagnostic> = parser.document_diagnostics().to_vec();
+        let mut diagnostics: Vec<SDiagnostic> = doc.document_diagnostics().to_vec();
 
         /*
          * Type-checking against database connection
@@ -446,11 +445,11 @@ impl Workspace for WorkspaceServer {
         if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let input = parser.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+            let input = doc.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
                 stream::iter(input)
-                    .map(|(_id, range, content, ast, cst, sign)| {
+                    .map(|(id, range, ast, cst, sign)| {
                         let pool = pool.clone();
                         let path = path_clone.clone();
                         let schema_cache = Arc::clone(&schema_cache);
@@ -458,7 +457,7 @@ impl Workspace for WorkspaceServer {
                             if let Some(ast) = ast {
                                 pgt_typecheck::check_sql(TypecheckParams {
                                     conn: &pool,
-                                    sql: &content,
+                                    sql: id.content(),
                                     ast: &ast,
                                     tree: &cst,
                                     schema_cache: schema_cache.as_ref(),
@@ -532,7 +531,7 @@ impl Workspace for WorkspaceServer {
         let (analysable_stmts, syntax_diagnostics): (
             Vec<Result<AnalysableStatement, _>>,
             Vec<Result<_, SyntaxDiagnostic>>,
-        ) = parser.iter(LintDiagnosticsMapper).partition(Result::is_ok);
+        ) = doc.iter(LintDiagnosticsMapper).partition(Result::is_ok);
 
         let analysable_stmts = analysable_stmts.into_iter().map(Result::unwrap).collect();
 
@@ -583,7 +582,7 @@ impl Workspace for WorkspaceServer {
                 }),
         );
 
-        let suppressions = parser.document_suppressions();
+        let suppressions = doc.suppressions();
 
         let disabled_suppression_errors =
             suppressions.get_disabled_diagnostic_suppressions_as_errors(&disabled_rules);
@@ -624,8 +623,8 @@ impl Workspace for WorkspaceServer {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError> {
-        let parsed_doc = self
-            .parsed_documents
+        let documents = self.documents.read().unwrap();
+        let parsed_doc = documents
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
@@ -638,12 +637,12 @@ impl Workspace for WorkspaceServer {
 
         let schema_cache = self.schema_cache.load(pool)?;
 
-        match get_statement_for_completions(&parsed_doc, params.position) {
+        match get_statement_for_completions(parsed_doc, params.position) {
             None => {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((id, range, content, cst)) => {
+            Some((_id, range, content, cst)) => {
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {
@@ -652,12 +651,6 @@ impl Workspace for WorkspaceServer {
                     tree: &cst,
                     text: content,
                 });
-
-                tracing::debug!(
-                    "Found {} completion items for statement with id {}",
-                    items.len(),
-                    id.raw()
-                );
 
                 Ok(CompletionsResult { items })
             }
