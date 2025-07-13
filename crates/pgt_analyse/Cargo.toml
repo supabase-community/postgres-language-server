@@ -13,11 +13,11 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgt_console.workspace     = true
-pgt_diagnostics.workspace = true
-pgt_query_ext.workspace   = true
+pgt_console.workspace      = true
+pgt_diagnostics.workspace  = true
+pgt_query_ext.workspace    = true
 pgt_schema_cache.workspace = true
-rustc-hash                = { workspace = true }
+rustc-hash                 = { workspace = true }
 
 biome_deserialize        = { workspace = true, optional = true }
 biome_deserialize_macros = { workspace = true, optional = true }
