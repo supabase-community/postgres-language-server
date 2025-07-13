@@ -215,6 +215,12 @@ impl RuleDiagnostic {
         self
     }
 
+    /// Sets the span of this diagnostic.
+    pub fn span(mut self, span: TextRange) -> Self {
+        self.span = Some(span);
+        self
+    }
+
     /// Marks this diagnostic as unnecessary code, which will
     /// be displayed in the language server.
     ///

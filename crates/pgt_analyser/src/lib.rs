@@ -4,6 +4,7 @@ use pgt_analyse::{
     AnalysedFileContext, AnalyserOptions, AnalysisFilter, MetadataRegistry, RegistryRuleParams,
     RuleDiagnostic, RuleRegistry,
 };
+use pgt_diagnostics::DiagnosticExt;
 pub use registry::visit_registry;
 
 mod lint;
@@ -76,7 +77,8 @@ impl<'a> Analyser<'a> {
                 self.registry
                     .rules
                     .iter()
-                    .flat_map(|rule| (rule.run)(&rule_params)),
+                    .flat_map(|rule| (rule.run)(&rule_params))
+                    .map(|r| r.span(stmt.range)),
             );
 
             file_context.update_from(&stmt.root);
