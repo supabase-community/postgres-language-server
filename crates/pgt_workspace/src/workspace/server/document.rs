@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pgt_analyser::AnalysableStatement;
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
 use pgt_suppressions::Suppressions;
@@ -244,14 +245,8 @@ pub struct LintDiagnosticsMapper;
 impl<'a> StatementMapper<'a> for LintDiagnosticsMapper {
     type Output = Result<pgt_analyser::AnalysableStatement, SyntaxDiagnostic>;
 
-    fn map(
-        &self,
-        parser: &'a ParsedDocument,
-        id: StatementId,
-        range: TextRange,
-        content: &str,
-    ) -> Self::Output {
-        let maybe_node = parser.ast_db.get_or_cache_ast(&id, content);
+    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
+        let maybe_node = parser.ast_db.get_or_cache_ast(&id);
 
         match maybe_node.as_ref() {
             Ok(node) => Ok(AnalysableStatement {
@@ -263,27 +258,6 @@ impl<'a> StatementMapper<'a> for LintDiagnosticsMapper {
                 span: Some(range),
             }),
         }
-    }
-}
-
-pub struct SyncDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        Option<pgt_query_ext::NodeEnum>,
-        Option<SyntaxDiagnostic>,
-    );
-
-    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
-        let ast_result = parser.ast_db.get_or_cache_ast(&id);
-
-        let (ast_option, diagnostics) = match &*ast_result {
-            Ok(node) => (Some(node.clone()), None),
-            Err(diag) => (None, Some(diag.clone())),
-        };
-
-        (id.clone(), range, ast_option, diagnostics)
     }
 }
 

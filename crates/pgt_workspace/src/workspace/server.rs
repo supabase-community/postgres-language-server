@@ -11,7 +11,6 @@ use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
-    SyncDiagnosticsMapper,
 };
 use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
