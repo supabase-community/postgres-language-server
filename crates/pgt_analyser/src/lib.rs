@@ -4,7 +4,6 @@ use pgt_analyse::{
     AnalysedFileContext, AnalyserOptions, AnalysisFilter, MetadataRegistry, RegistryRuleParams,
     RuleDiagnostic, RuleRegistry,
 };
-use pgt_diagnostics::DiagnosticExt;
 pub use registry::visit_registry;
 
 mod lint;
