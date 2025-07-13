@@ -175,7 +175,7 @@ chmod +x postgrestools
 </code></pre>
 <p>You’ll now have a <code>postgrestools.jsonc</code> file in your directory:</p>
 <pre><code class="language-json">{
-  &quot;$schema&quot;: &quot;https://pgtools.dev/schemas/0.0.0/schema.json&quot;,
+  &quot;$schema&quot;: &quot;https://pgtools.dev/latest/schema.json&quot;,
   &quot;vcs&quot;: {
     &quot;enabled&quot;: false,
     &quot;clientKind&quot;: &quot;git&quot;,
@@ -202,6 +202,7 @@ chmod +x postgrestools
 }
 </code></pre>
 <p>Make sure to edit the database connection settings to connect to your local development database. To see all options, run <code>postgrestools --help</code>.</p>
+<p>You can use your current <code>postgrestools</code> version instead of "latest" in the <code>$schema</code> URL, e.g. <code>https://pgtools.dev/0.8.1/schema.json</code>.</p>
 <h2 id="usage">Usage</h2>
 <p>You can use Postgres Tools via the command line or a using a code editor that supports an LSP.</p>
 <h4 id="using-the-cli">Using the CLI</h4>
@@ -285,5 +286,5 @@ In order to do so, you first need to start a daemon process with the start comma
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-07-12 18:45:18.657931+00:00
+Build Date UTC : 2025-07-13 12:50:10.595282+00:00
 -->
