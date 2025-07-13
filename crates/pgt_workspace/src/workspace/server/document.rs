@@ -241,8 +241,8 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
     }
 }
 
-pub struct LintDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for LintDiagnosticsMapper {
+pub struct AnalyserDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
     type Output = Result<pgt_analyser::AnalysableStatement, SyntaxDiagnostic>;
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {

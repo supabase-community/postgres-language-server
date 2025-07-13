@@ -37,7 +37,7 @@ use crate::{
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::LintDiagnosticsMapper,
+    workspace::AnalyserDiagnosticsMapper,
 };
 
 use super::{
@@ -530,7 +530,7 @@ impl Workspace for WorkspaceServer {
         let (analysable_stmts, syntax_diagnostics): (
             Vec<Result<AnalysableStatement, _>>,
             Vec<Result<_, SyntaxDiagnostic>>,
-        ) = doc.iter(LintDiagnosticsMapper).partition(Result::is_ok);
+        ) = doc.iter(AnalyserDiagnosticsMapper).partition(Result::is_ok);
 
         let analysable_stmts = analysable_stmts.into_iter().map(Result::unwrap).collect();
 
