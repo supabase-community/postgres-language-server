@@ -223,7 +223,7 @@ In order to do so, you first need to start a daemon process with the start comma
 <pre><code class="language-sh">postgrestools start
 </code></pre>
 <p>Then, every command needs to add the <code>--use-server</code> options, e.g.:</p>
-<pre><code class="language-sh">echo &quot;select 1&quot; | biome check --use-server --stdin-file-path=dummy.sql
+<pre><code class="language-sh">echo &quot;select 1&quot; | postgrestools check --use-server --stdin-file-path=dummy.sql
 </code></pre>
 <h4 id="daemon-logs">Daemon logs</h4>
 <p>The daemon saves logs in your file system. Logs are stored in a folder called <code>pgt-logs</code>. The path of this folder changes based on your operative system:</p>
@@ -286,5 +286,5 @@ In order to do so, you first need to start a daemon process with the start comma
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-07-13 12:50:10.595282+00:00
+Build Date UTC : 2025-07-13 13:30:09.626247+00:00
 -->
