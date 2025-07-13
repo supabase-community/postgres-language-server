@@ -5,7 +5,7 @@ mod filter;
 pub mod macros;
 pub mod options;
 mod registry;
-pub mod rule;
+mod rule;
 
 // Re-exported for use in the `declare_group` macro
 pub use pgt_diagnostics::category_concat;
