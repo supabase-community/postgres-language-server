@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pgt_analyser::AnalysableStatement;
 use pgt_diagnostics::serde::Diagnostic as SDiagnostic;
 use pgt_fs::PgTPath;
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
@@ -310,6 +311,32 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
             });
 
         (id, range, content_owned, ast_option, cst_result, sql_fn_sig)
+    }
+}
+
+pub struct LintDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for LintDiagnosticsMapper {
+    type Output = Result<pgt_analyser::AnalysableStatement, SyntaxDiagnostic>;
+
+    fn map(
+        &self,
+        parser: &'a ParsedDocument,
+        id: StatementId,
+        range: TextRange,
+        content: &str,
+    ) -> Self::Output {
+        let maybe_node = parser.ast_db.get_or_cache_ast(&id, content);
+
+        match maybe_node.as_ref() {
+            Ok(node) => Ok(AnalysableStatement {
+                range,
+                root: node.clone(),
+            }),
+            Err(diag) => Err(SyntaxDiagnostic {
+                message: diag.message.clone(),
+                span: Some(range),
+            }),
+        }
     }
 }
 

@@ -2,7 +2,7 @@ use core::slice;
 use std::{fmt::Write, fs::read_to_string, path::Path};
 
 use pgt_analyse::{AnalyserOptions, AnalysisFilter, RuleDiagnostic, RuleFilter};
-use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
+use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams};
 use pgt_console::StdDisplay;
 use pgt_diagnostics::PrintDiagnostic;
 
@@ -32,7 +32,15 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         filter,
     });
 
-    let results = analyser.run(AnalyserContext { root: &ast });
+    let stmt = AnalysableStatement {
+        root: ast,
+        range: pgt_text_size::TextRange::new(0.into(), u32::try_from(query.len()).unwrap().into()),
+    };
+
+    let results = analyser.run(AnalyserParams {
+        stmts: vec![stmt],
+        schema_cache: None,
+    });
 
     let mut snapshot = String::new();
     write_snapshot(&mut snapshot, query.as_str(), results.as_slice());

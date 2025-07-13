@@ -2,6 +2,7 @@ use std::{borrow, collections::BTreeSet};
 
 use crate::{
     AnalyserOptions,
+    analysed_file_context::AnalysedFileContext,
     context::RuleContext,
     filter::{AnalysisFilter, GroupKey, RuleKey},
     rule::{GroupCategory, Rule, RuleDiagnostic, RuleGroup},
@@ -158,6 +159,8 @@ impl RuleRegistry {
 pub struct RegistryRuleParams<'a> {
     pub root: &'a pgt_query_ext::NodeEnum,
     pub options: &'a AnalyserOptions,
+    pub analysed_file_context: &'a AnalysedFileContext,
+    pub schema_cache: Option<&'a pgt_schema_cache::SchemaCache>,
 }
 
 /// Executor for rule as a generic function pointer
@@ -175,7 +178,7 @@ impl RegistryRule {
         {
             let options = params.options.rule_options::<R>().unwrap_or_default();
             let ctx = RuleContext::new(params.root, &options);
-            R::run(&ctx)
+            R::run(&ctx, params.analysed_file_context, params.schema_cache)
         }
 
         Self { run: run::<R> }

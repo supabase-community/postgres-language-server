@@ -1,8 +1,8 @@
 use std::{ops::Deref, sync::LazyLock};
 
 use pgt_analyse::{
-    AnalyserOptions, AnalysisFilter, MetadataRegistry, RegistryRuleParams, RuleDiagnostic,
-    RuleRegistry,
+    AnalysedFileContext, AnalyserOptions, AnalysisFilter, MetadataRegistry, RegistryRuleParams,
+    RuleDiagnostic, RuleRegistry,
 };
 pub use registry::visit_registry;
 
@@ -30,8 +30,15 @@ pub struct Analyser<'a> {
     registry: RuleRegistry,
 }
 
-pub struct AnalyserContext<'a> {
-    pub root: &'a pgt_query_ext::NodeEnum,
+#[derive(Debug)]
+pub struct AnalysableStatement {
+    pub root: pgt_query_ext::NodeEnum,
+    pub range: pgt_text_size::TextRange,
+}
+
+pub struct AnalyserParams<'a> {
+    pub stmts: Vec<AnalysableStatement>,
+    pub schema_cache: Option<&'a pgt_schema_cache::SchemaCache>,
 }
 
 pub struct AnalyserConfig<'a> {
@@ -52,17 +59,30 @@ impl<'a> Analyser<'a> {
         }
     }
 
-    pub fn run(&self, ctx: AnalyserContext) -> Vec<RuleDiagnostic> {
-        let params = RegistryRuleParams {
-            root: ctx.root,
-            options: self.options,
-        };
+    pub fn run(&self, params: AnalyserParams) -> Vec<RuleDiagnostic> {
+        let mut diagnostics = vec![];
 
-        self.registry
-            .rules
-            .iter()
-            .flat_map(|rule| (rule.run)(&params))
-            .collect::<Vec<_>>()
+        let mut file_context = AnalysedFileContext::default();
+
+        for stmt in params.stmts {
+            let rule_params = RegistryRuleParams {
+                root: &stmt.root,
+                options: self.options,
+                analysed_file_context: &file_context,
+                schema_cache: params.schema_cache,
+            };
+
+            diagnostics.extend(
+                self.registry
+                    .rules
+                    .iter()
+                    .flat_map(|rule| (rule.run)(&rule_params)),
+            );
+
+            file_context.update_from(&stmt.root);
+        }
+
+        diagnostics
     }
 }
 
@@ -77,9 +97,10 @@ mod tests {
         markup,
     };
     use pgt_diagnostics::PrintDiagnostic;
+    use pgt_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::Analyser;
+    use crate::{AnalysableStatement, Analyser};
 
     #[ignore]
     #[test]
@@ -102,6 +123,7 @@ mod tests {
         };
 
         let ast = pgt_query_ext::parse(SQL).expect("failed to parse SQL");
+        let range = TextRange::new(0.into(), u32::try_from(SQL.len()).unwrap().into());
 
         let options = AnalyserOptions::default();
 
@@ -110,7 +132,10 @@ mod tests {
             filter,
         });
 
-        let results = analyser.run(crate::AnalyserContext { root: &ast });
+        let results = analyser.run(crate::AnalyserParams {
+            stmts: vec![AnalysableStatement { root: ast, range }],
+            schema_cache: None,
+        });
 
         println!("*******************");
         for result in &results {

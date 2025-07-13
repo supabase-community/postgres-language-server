@@ -5,10 +5,12 @@ use pgt_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticTags, Location, LogCategory, MessageAndDescription,
     Severity, Visit,
 };
+use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextRange;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
+use crate::analysed_file_context::AnalysedFileContext;
 use crate::{categories::RuleCategory, context::RuleContext, registry::RegistryVisitor};
 
 #[derive(Clone, Debug)]
@@ -102,7 +104,12 @@ pub trait GroupCategory {
 pub trait Rule: RuleMeta + Sized {
     type Options: Default + Clone + Debug;
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic>;
+    /// `schema_cache` will only be available if the user has a working database connection.
+    fn run(
+        rule_context: &RuleContext<Self>,
+        file_context: &AnalysedFileContext,
+        schema_cache: Option<&SchemaCache>,
+    ) -> Vec<RuleDiagnostic>;
 }
 
 /// Diagnostic object returned by a single analysis rule

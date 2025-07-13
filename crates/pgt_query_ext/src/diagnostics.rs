@@ -9,7 +9,7 @@ use pgt_text_size::TextRange;
 pub struct SyntaxDiagnostic {
     /// The location where the error is occurred
     #[location(span)]
-    span: Option<TextRange>,
+    pub span: Option<TextRange>,
     #[message]
     #[description]
     pub message: MessageAndDescription,

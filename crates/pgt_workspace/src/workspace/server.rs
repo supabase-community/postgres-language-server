@@ -13,14 +13,15 @@ use document::Document;
 use futures::{StreamExt, stream};
 use parsed_document::{
     AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, ExecuteStatementMapper,
-    ParsedDocument, SyncDiagnosticsMapper,
+    ParsedDocument,
 };
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
-use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
+use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams};
 use pgt_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgt_fs::{ConfigName, PgTPath};
+use pgt_query_ext::diagnostics::SyntaxDiagnostic;
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use schema_cache_manager::SchemaCacheManager;
 use sqlx::{Executor, PgPool};
@@ -38,6 +39,7 @@ use crate::{
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
+    workspace::LintDiagnosticsMapper,
 };
 
 use super::{
@@ -527,48 +529,59 @@ impl Workspace for WorkspaceServer {
             filter,
         });
 
-        diagnostics.extend(parser.iter(SyncDiagnosticsMapper).flat_map(
-            |(_id, range, ast, diag)| {
-                let mut errors: Vec<Error> = vec![];
+        let (analysable_stmts, syntax_diagnostics): (
+            Vec<Result<AnalysableStatement, _>>,
+            Vec<Result<_, SyntaxDiagnostic>>,
+        ) = parser.iter(LintDiagnosticsMapper).partition(Result::is_ok);
 
-                if let Some(diag) = diag {
-                    errors.push(diag.into());
-                }
+        let analysable_stmts = analysable_stmts.into_iter().map(Result::unwrap).collect();
 
-                if let Some(ast) = ast {
-                    errors.extend(
-                        analyser
-                            .run(AnalyserContext { root: &ast })
-                            .into_iter()
-                            .map(Error::from)
-                            .collect::<Vec<pgt_diagnostics::Error>>(),
-                    );
-                }
+        let schema_cache = self
+            .get_current_connection()
+            .and_then(|pool| self.schema_cache.load(pool.clone()).ok());
 
-                errors
-                    .into_iter()
-                    .map(|d| {
-                        let severity = d
-                            .category()
-                            .filter(|category| category.name().starts_with("lint/"))
-                            .map_or_else(
-                                || d.severity(),
-                                |category| {
-                                    settings
-                                        .get_severity_from_rule_code(category)
-                                        .unwrap_or(Severity::Warning)
-                                },
-                            );
+        let path = params.path.as_path().display().to_string();
 
-                        SDiagnostic::new(
-                            d.with_file_path(params.path.as_path().display().to_string())
-                                .with_file_span(range)
-                                .with_severity(severity),
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            },
-        ));
+        diagnostics.extend(
+            syntax_diagnostics
+                .into_iter()
+                .map(Result::unwrap_err)
+                .map(|diag| {
+                    let span = diag.span.unwrap();
+                    SDiagnostic::new(
+                        diag.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(Severity::Error),
+                    )
+                }),
+        );
+
+        diagnostics.extend(
+            analyser
+                .run(AnalyserParams {
+                    stmts: analysable_stmts,
+                    schema_cache: schema_cache.as_deref(),
+                })
+                .into_iter()
+                .map(Error::from)
+                .map(|d| {
+                    let severity = d
+                        .category()
+                        .map(|category| {
+                            settings
+                                .get_severity_from_rule_code(category)
+                                .unwrap_or(Severity::Warning)
+                        })
+                        .unwrap();
+
+                    let span = d.location().span;
+                    SDiagnostic::new(
+                        d.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(severity),
+                    )
+                }),
+        );
 
         let suppressions = parser.document_suppressions();
 
