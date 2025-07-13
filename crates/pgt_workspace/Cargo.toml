@@ -62,6 +62,8 @@ schema = [
 ]
 
 [dev-dependencies]
+pgt_test_utils = { workspace = true }
+sqlx           = { workspace = true }
 tempfile = "3.15.0"
 
 [lib]

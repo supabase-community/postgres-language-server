@@ -663,3 +663,7 @@ impl Workspace for WorkspaceServer {
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
 }
+
+#[cfg(test)]
+#[path = "server.tests.rs"]
+mod tests;
