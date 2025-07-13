@@ -25,9 +25,13 @@ alter table test drop column id;
 ```
 
 ```sh
-code-block.sql lint/safety/banDropColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+code-block.sql:1:1 lint/safety/banDropColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a column may break existing clients.
+  
+  > 1 │ alter table test drop column id;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
   
   i You can leave the column as nullable or delete the column once queries no longer select or modify the column.
   
