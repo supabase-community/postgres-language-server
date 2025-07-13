@@ -10,7 +10,8 @@ use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use document::{
-    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
+    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
+    TypecheckDiagnosticsMapper,
 };
 use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
@@ -444,7 +445,7 @@ impl Workspace for WorkspaceServer {
         if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let input = doc.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+            let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
                 stream::iter(input)

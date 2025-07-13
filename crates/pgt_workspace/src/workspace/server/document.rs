@@ -209,8 +209,8 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     }
 }
 
-pub struct AsyncDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
+pub struct TypecheckDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
         TextRange,
