@@ -90,7 +90,7 @@ You’ll now have a `postgrestools.jsonc` file in your directory:
 
 ```json
 {
-  "$schema": "https://pgtools.dev/schemas/0.0.0/schema.json",
+  "$schema": "https://pgtools.dev/latest/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -120,6 +120,8 @@ You’ll now have a `postgrestools.jsonc` file in your directory:
 [//]: # "END DEFAULT_CONFIGURATION"
 
 Make sure to edit the database connection settings to connect to your local development database. To see all options, run `postgrestools --help`.
+
+You can use your current `postgrestools` version instead of "latest" in the `$schema` URL, e.g. `https://pgtools.dev/0.8.1/schema.json`.
 
 ## Usage
 
