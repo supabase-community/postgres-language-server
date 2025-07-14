@@ -53,18 +53,16 @@ impl PgQueryStore {
             _ => return None,
         };
 
-        let mut cache = self.plpgsql_db.lock().unwrap();
-
-        if let Some(existing) = cache.get(statement) {
-            return Some(existing.clone());
-        }
-
-        drop(cache);
-
         let language = find_option_value(create_fn, "language")?;
 
         if language != "plpgsql" {
             return None;
+        }
+
+        let mut cache = self.plpgsql_db.lock().unwrap();
+
+        if let Some(existing) = cache.get(statement) {
+            return Some(existing.clone());
         }
 
         let sql_body = find_option_value(create_fn, "as")?;
@@ -74,11 +72,10 @@ impl PgQueryStore {
 
         let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
 
-        let mut cache = self.plpgsql_db.lock().unwrap();
-
         let r = pgt_query_ext::parse_plpgsql(statement.content())
             .map_err(|err| SyntaxDiagnostic::new(err.to_string(), Some(range)));
         cache.put(statement.clone(), r.clone());
+
         Some(r)
     }
 }
