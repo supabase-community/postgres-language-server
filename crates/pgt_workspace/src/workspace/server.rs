@@ -53,6 +53,7 @@ mod async_helper;
 mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
+mod function_utils;
 mod migration;
 mod pg_query;
 mod schema_cache_manager;

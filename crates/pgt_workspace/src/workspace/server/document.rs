@@ -253,7 +253,14 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
         let ast_result = parser.ast_db.get_or_cache_ast(&id);
 
         let (ast_option, diagnostics) = match &*ast_result {
-            Ok(node) => (Some(node.clone()), None),
+            Ok(node) => {
+                let plpgsql_result = parser.ast_db.get_or_cache_plpgsql_parse(&id);
+                if let Some(Err(diag)) = plpgsql_result {
+                    (Some(node.clone()), Some(diag.clone()))
+                } else {
+                    (Some(node.clone()), None)
+                }
+            }
             Err(diag) => (None, Some(diag.clone())),
         };
 

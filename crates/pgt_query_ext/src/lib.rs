@@ -25,3 +25,13 @@ pub fn parse(sql: &str) -> Result<NodeEnum> {
             .ok_or_else(|| Error::Parse("Unable to find root node".to_string()))
     })?
 }
+
+/// This function parses a PL/pgSQL function.
+///
+/// It expects the entire `CREATE FUNCTION` statement.
+pub fn parse_plpgsql(sql: &str) -> Result<()> {
+    // we swallow the error until we have a proper binding
+    let _ = pg_query::parse_plpgsql(sql)?;
+
+    Ok(())
+}
