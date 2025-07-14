@@ -79,3 +79,152 @@ impl PgQueryStore {
         Some(r)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_plpgsql_syntax_error() {
+        let input = "
+create function test_organisation_id ()
+    returns setof text
+    language plpgsql
+    security invoker
+    as $$
+    -- syntax error here
+    delare
+        v_organisation_id uuid;
+begin
+    return next is(private.organisation_id(), v_organisation_id, 'should return organisation_id of token');
+end
+$$;
+";
+
+        let store = PgQueryStore::new();
+
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+
+        assert!(matches!(res, Some(Err(_))));
+    }
+
+    #[test]
+    fn test_plpgsql_valid() {
+        let input = "
+CREATE FUNCTION test_function()
+    RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    counter integer := 0;
+BEGIN
+    counter := counter + 1;
+    RETURN counter;
+END;
+$$;
+";
+
+        let store = PgQueryStore::new();
+
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+
+        assert!(matches!(res, Some(Ok(_))));
+    }
+
+    #[test]
+    fn test_non_plpgsql_function() {
+        let input = "
+CREATE FUNCTION add_numbers(a integer, b integer)
+    RETURNS integer
+    LANGUAGE sql
+    AS $$
+        SELECT a + b;
+    $$;
+";
+
+        let store = PgQueryStore::new();
+
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+
+        assert!(res.is_none());
+    }
+
+    #[test]
+    fn test_non_function_statement() {
+        let input = "SELECT * FROM users WHERE id = 1;";
+
+        let store = PgQueryStore::new();
+
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+
+        assert!(res.is_none());
+    }
+
+    #[test]
+    fn test_cache_behavior() {
+        let input = "
+CREATE FUNCTION cached_function()
+    RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Hello from cache test';
+END;
+$$;
+";
+
+        let store = PgQueryStore::new();
+        let statement_id = StatementId::new(input);
+
+        // First call should parse
+        let res1 = store.get_or_cache_plpgsql_parse(&statement_id);
+        assert!(matches!(res1, Some(Ok(_))));
+
+        // Second call should return cached result
+        let res2 = store.get_or_cache_plpgsql_parse(&statement_id);
+        assert!(matches!(res2, Some(Ok(_))));
+    }
+
+    #[test]
+    fn test_plpgsql_with_complex_body() {
+        let input = "
+CREATE FUNCTION complex_function(p_id integer)
+    RETURNS TABLE(id integer, name text, status boolean)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_count integer;
+    v_status boolean := true;
+BEGIN
+    SELECT COUNT(*) INTO v_count FROM users WHERE user_id = p_id;
+
+    IF v_count > 0 THEN
+        RETURN QUERY
+        SELECT u.id, u.name, v_status
+        FROM users u
+        WHERE u.user_id = p_id;
+    ELSE
+        RAISE EXCEPTION 'User not found';
+    END IF;
+END;
+$$;
+";
+
+        let store = PgQueryStore::new();
+
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+
+        assert!(matches!(res, Some(Ok(_))));
+    }
+
+    #[test]
+    fn test_invalid_ast() {
+        let input = "CREATE FUNCTION invalid syntax here";
+
+        let store = PgQueryStore::new();
+
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input));
+
+        assert!(res.is_none());
+    }
+}

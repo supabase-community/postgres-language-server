@@ -529,7 +529,7 @@ impl Workspace for WorkspaceServer {
 
         diagnostics.extend(
             doc.iter(SyncDiagnosticsMapper)
-                .flat_map(|(_id, range, ast, diag)| {
+                .flat_map(|(range, ast, diag)| {
                     let mut errors: Vec<Error> = vec![];
 
                     if let Some(diag) = diag {
@@ -561,9 +561,12 @@ impl Workspace for WorkspaceServer {
                                     },
                                 );
 
+                            // adjust the span of the diagnostics to the statement (if it has one)
+                            let span = d.location().span.map(|s| s + range.start());
+
                             SDiagnostic::new(
                                 d.with_file_path(params.path.as_path().display().to_string())
-                                    .with_file_span(range)
+                                    .with_file_span(span.unwrap_or(range))
                                     .with_severity(severity),
                             )
                         })

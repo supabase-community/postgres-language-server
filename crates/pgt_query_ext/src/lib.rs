@@ -35,3 +35,28 @@ pub fn parse_plpgsql(sql: &str) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_plpgsql_err() {
+        let input = "
+create function test_organisation_id ()
+    returns setof text
+    language plpgsql
+    security invoker
+    as $$
+    -- syntax error here
+    decare
+        v_organisation_id uuid;
+begin
+    select 1;
+end
+$$;
+        ";
+
+        assert!(parse_plpgsql(input).is_err());
+    }
+}
