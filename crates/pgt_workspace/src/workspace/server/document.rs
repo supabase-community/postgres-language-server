@@ -404,7 +404,7 @@ $$;";
         let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_range, ast, diagnostic) = &results[0];
+        let (ast, diagnostic) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -435,7 +435,7 @@ $$;";
         let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_range, ast, diagnostic) = &results[0];
+        let (ast, diagnostic) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -460,13 +460,13 @@ $$;";
 
         let results1 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
         assert_eq!(results1.len(), 1);
-        assert!(results1[0].1.is_some());
-        assert!(results1[0].2.is_none());
+        assert!(results1[0].0.is_some());
+        assert!(results1[0].1.is_none());
 
         let results2 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
         assert_eq!(results2.len(), 1);
-        assert!(results2[0].1.is_some());
-        assert!(results2[0].2.is_none());
+        assert!(results2[0].0.is_some());
+        assert!(results2[0].1.is_none());
     }
 
     #[test]
@@ -513,7 +513,7 @@ END;
 $$ LANGUAGE plpgsql;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
         let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
@@ -532,7 +532,7 @@ $$ LANGUAGE plpgsql;";
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
         assert_eq!(results.len(), 2);
 
         // Check the function body
