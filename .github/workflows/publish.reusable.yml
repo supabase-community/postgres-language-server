@@ -34,19 +34,6 @@ jobs:
           RELEASE_TAG: ${{ inputs.release-tag }}
           PRERELEASE: ${{ inputs.is-prerelease }}
 
-      - name: Verify NPM TOKEN exists
-        run: |
-          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "Secret is not defined"
-            exit 1
-          else
-            echo "Secret is defined"
-          fi
-
-      - name: Print package.json
-        run: |
-          cat packages/@postgrestools/postgrestools/package.json
-
       - name: Publish npm packages as nightly
         if: inputs.is-prerelease == 'true'
         run: |
