@@ -64,6 +64,7 @@ jobs:
         if: inputs.is-prerelease != 'true'
         run: |
           for package in packages/@postgrestools/*; do
+            package_name=$(basename "$package")
             if [[ "$package_name" != "backend-jsonrpc" && "$package_name" != "postgrestools" ]]; then
               npm publish "$package" --tag latest --access public --provenance
             fi
