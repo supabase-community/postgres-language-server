@@ -15,12 +15,11 @@ use document::{
 };
 use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
-use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams};
+use pgt_analyser::{Analyser, AnalyserConfig, AnalyserParams};
 use pgt_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
 use pgt_fs::{ConfigName, PgTPath};
-use pgt_query_ext::diagnostics::SyntaxDiagnostic;
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use schema_cache_manager::SchemaCacheManager;
 use sqlx::{Executor, PgPool};
