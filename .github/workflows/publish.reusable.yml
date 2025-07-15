@@ -60,28 +60,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
 
-      - name: Temp LS packages
-        run: |
-          cd packages
-          ls @postgrestools/
-
-      - name: Temp publish
-        if: inputs.is-prerelease != 'true'
-        run: |
-          npm publish "@postgrestools/postgrestools_aarch64-apple-darwin" --tag latest --access public --provenance
-          npm publish "@postgrestools/postgrestools_aarch64-windows-msvc" --tag latest --access public --provenance
-          npm publish "@postgrestools/postgrestools_aarch64-linux-gnu" --tag latest --access public --provenance
-          npm publish "@postgrestools/postgrestools_x86_64-apple-darwin" --tag latest --access public --provenance
-          npm publish "@postgrestools/postgrestools_x86_64-windows-msvc" --tag latest --access public --provenance
-          npm publish "@postgrestools/postgrestools_x86_64-linux-gnu" --tag latest --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish npm packages as latest
         if: inputs.is-prerelease != 'true'
         run: |
           for package in packages/@postgrestools/*; do
-            npm publish "$package" --tag latest --access public --provenance
+            if [[ "$package_name" != "backend-jsonrpc" && "$package_name" != "postgrestools" ]]; then
+              npm publish "$package" --tag latest --access public --provenance
+            fi
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
