@@ -1734,13 +1734,24 @@ $$;
 
     server.open_document(initial_content).await?;
 
-    let notification = tokio::time::timeout(Duration::from_secs(5), async {
+    let got_notification = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             match receiver.next().await {
                 Some(ServerNotification::PublishDiagnostics(msg)) => {
                     if msg.diagnostics.iter().any(|d| {
                         d.message
                             .contains("Invalid statement: syntax error at or near \"declre\"")
+                            && d.range
+                                == Range {
+                                    start: Position {
+                                        line: 5,
+                                        character: 9,
+                                    },
+                                    end: Position {
+                                        line: 11,
+                                        character: 0,
+                                    },
+                                }
                     }) {
                         return true;
                     }
@@ -1752,7 +1763,10 @@ $$;
     .await
     .is_ok();
 
-    assert!(notification, "expected diagnostics for unknown column");
+    assert!(
+        got_notification,
+        "expected diagnostics for invalid declare statement"
+    );
 
     server.shutdown().await?;
     reader.abort();
