@@ -60,15 +60,21 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
 
+      - name: Temp LS packages
+        run: |
+          cd packages
+          ls @postgrestools/
+
       - name: Temp publish
         if: inputs.is-prerelease != 'true'
         run: |
-          npm publish "@postgrestools/cli-aarch64-apple-darwin" --tag latest --access public --provenance
-          npm publish "@postgrestools/cli-aarch64-windows-msvc" --tag latest --access public --provenance
-          npm publish "@postgrestools/cli-aarch64-linux-gnu" --tag latest --access public --provenance
-          npm publish "@postgrestools/cli-x86_64-apple-darwin" --tag latest --access public --provenance
-          npm publish "@postgrestools/cli-x86_64-windows-msvc" --tag latest --access public --provenance
-          npm publish "@postgrestools/cli-x86_64-linux-gnu" --tag latest --access public --provenance
+          cd packages
+          npm publish "@postgrestools/postgrestools_aarch64-apple-darwin" --tag latest --access public --provenance
+          npm publish "@postgrestools/postgrestools_aarch64-windows-msvc" --tag latest --access public --provenance
+          npm publish "@postgrestools/postgrestools_aarch64-linux-gnu" --tag latest --access public --provenance
+          npm publish "@postgrestools/postgrestools_x86_64-apple-darwin" --tag latest --access public --provenance
+          npm publish "@postgrestools/postgrestools_x86_64-windows-msvc" --tag latest --access public --provenance
+          npm publish "@postgrestools/postgrestools_x86_64-linux-gnu" --tag latest --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
