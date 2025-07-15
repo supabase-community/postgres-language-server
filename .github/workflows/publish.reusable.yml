@@ -47,6 +47,10 @@ jobs:
         run: |
           cat packages/@postgrestools/postgrestools/package.json
 
+      - name: Print package.json
+        run: |
+          cat packages/@postgrestools/cli-aarch64-apple-darwin/package.json
+
       - name: Publish npm packages as nightly
         if: inputs.is-prerelease == 'true'
         run: |
