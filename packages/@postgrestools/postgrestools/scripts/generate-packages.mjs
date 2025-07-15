@@ -163,7 +163,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	const ext = getBinaryExt(os);
 	const manifestPath = resolve(packageRoot, "package.json");
-	console.info(`Update manifest ${manifestPath}`);
+	console.info(`Update manifest ${manifestPath} to ${JSON.stringify(manifest)}`);
 	fs.writeFileSync(manifestPath, manifest);
 
 	// Copy the CLI binary
