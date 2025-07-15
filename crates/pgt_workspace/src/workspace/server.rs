@@ -55,6 +55,7 @@ mod async_helper;
 mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
+mod function_utils;
 mod migration;
 mod pg_query;
 mod schema_cache_manager;
@@ -528,32 +529,24 @@ impl Workspace for WorkspaceServer {
             filter,
         });
 
-        let (analysable_stmts, syntax_diagnostics): (
-            Vec<Result<AnalysableStatement, _>>,
-            Vec<Result<_, SyntaxDiagnostic>>,
-        ) = doc.iter(AnalyserDiagnosticsMapper).partition(Result::is_ok);
-
-        let analysable_stmts = analysable_stmts.into_iter().map(Result::unwrap).collect();
+        let path = params.path.as_path().display().to_string();
 
         let schema_cache = self
             .get_current_connection()
             .and_then(|pool| self.schema_cache.load(pool.clone()).ok());
 
-        let path = params.path.as_path().display().to_string();
-
-        diagnostics.extend(
-            syntax_diagnostics
-                .into_iter()
-                .map(Result::unwrap_err)
-                .map(|diag| {
-                    let span = diag.span.unwrap();
-                    SDiagnostic::new(
-                        diag.with_file_path(path.clone())
-                            .with_file_span(span)
-                            .with_severity(Severity::Error),
-                    )
-                }),
-        );
+        let mut analysable_stmts = vec![];
+        for (stmt_root, diagnostic) in doc.iter(AnalyserDiagnosticsMapper) {
+            if let Some(node) = stmt_root {
+                analysable_stmts.push(node);
+            }
+            if let Some(diag) = diagnostic {
+                diagnostics.push(SDiagnostic::new(
+                    diag.with_file_path(path.clone())
+                        .with_severity(Severity::Error),
+                ));
+            }
+        }
 
         diagnostics.extend(
             analyser

@@ -15,6 +15,16 @@ pub struct SyntaxDiagnostic {
     pub message: MessageAndDescription,
 }
 
+impl SyntaxDiagnostic {
+    /// Create a new syntax diagnostic with the given message and optional span.
+    pub fn new(message: impl Into<String>, span: Option<TextRange>) -> Self {
+        SyntaxDiagnostic {
+            span,
+            message: MessageAndDescription::from(message.into()),
+        }
+    }
+}
+
 impl From<pg_query::Error> for SyntaxDiagnostic {
     fn from(err: pg_query::Error) -> Self {
         SyntaxDiagnostic {
