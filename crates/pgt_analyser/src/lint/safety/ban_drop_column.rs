@@ -1,9 +1,6 @@
-use pgt_analyse::{
-    AnalysedFileContext, Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule,
-};
+use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
 use pgt_console::markup;
 use pgt_diagnostics::Severity;
-use pgt_schema_cache::SchemaCache;
 
 declare_lint_rule! {
     /// Dropping a column may break existing clients.
@@ -32,11 +29,7 @@ declare_lint_rule! {
 impl Rule for BanDropColumn {
     type Options = ();
 
-    fn run(
-        ctx: &RuleContext<Self>,
-        _file_context: &AnalysedFileContext,
-        _schema_cache: Option<&SchemaCache>,
-    ) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgt_query_ext::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {

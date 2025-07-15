@@ -105,11 +105,7 @@ pub trait Rule: RuleMeta + Sized {
     type Options: Default + Clone + Debug;
 
     /// `schema_cache` will only be available if the user has a working database connection.
-    fn run(
-        rule_context: &RuleContext<Self>,
-        file_context: &AnalysedFileContext,
-        schema_cache: Option<&SchemaCache>,
-    ) -> Vec<RuleDiagnostic>;
+    fn run(rule_context: &RuleContext<Self>) -> Vec<RuleDiagnostic>;
 }
 
 /// Diagnostic object returned by a single analysis rule
