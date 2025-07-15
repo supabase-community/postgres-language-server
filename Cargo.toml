@@ -85,6 +85,7 @@ pgt_tokenizer              = { path = "./crates/pgt_tokenizer", version = "0.0.0
 pgt_treesitter_queries     = { path = "./crates/pgt_treesitter_queries", version = "0.0.0" }
 pgt_typecheck              = { path = "./crates/pgt_typecheck", version = "0.0.0" }
 pgt_workspace              = { path = "./crates/pgt_workspace", version = "0.0.0" }
+pgt_workspace_macros              = { path = "./crates/pgt_workspace_macros", version = "0.0.0" }
 
 pgt_test_macros = { path = "./crates/pgt_test_macros" }
 pgt_test_utils  = { path = "./crates/pgt_test_utils" }

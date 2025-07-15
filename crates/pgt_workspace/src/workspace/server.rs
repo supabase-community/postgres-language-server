@@ -21,6 +21,7 @@ use pgt_diagnostics::{
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
+use pgt_workspace_macros::ignored_path;
 use schema_cache_manager::SchemaCacheManager;
 use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
@@ -407,6 +408,7 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[ignored_path(path = &params.path)]
     fn pull_diagnostics(
         &self,
         params: PullDiagnosticsParams,
