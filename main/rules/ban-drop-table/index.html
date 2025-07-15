@@ -102,9 +102,13 @@ Be sure to back up the table before deleting it, just in case you need to restor
 <h2 id="examples">Examples</h2>
 <pre><code class="language-sql">drop table some_table;
 </code></pre>
-<pre><code class="language-sh">code-block.sql lint/safety/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/banDropTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ! Dropping a table may break existing clients.
+
+  &gt; 1 │ drop table some_table;
+      │ ^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
 
   i Update your application code to no longer read or write the table, and only then delete the table. Be sure to create a backup.
 
