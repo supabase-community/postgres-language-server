@@ -5,12 +5,10 @@ use pgt_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticTags, Location, LogCategory, MessageAndDescription,
     Severity, Visit,
 };
-use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextRange;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
-use crate::analysed_file_context::AnalysedFileContext;
 use crate::{categories::RuleCategory, context::RuleContext, registry::RegistryVisitor};
 
 #[derive(Clone, Debug)]
