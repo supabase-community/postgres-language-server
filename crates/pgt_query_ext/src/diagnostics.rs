@@ -23,6 +23,11 @@ impl SyntaxDiagnostic {
             message: MessageAndDescription::from(message.into()),
         }
     }
+
+    pub fn span(mut self, span: TextRange) -> Self {
+        self.span = Some(span);
+        self
+    }
 }
 
 impl From<pg_query::Error> for SyntaxDiagnostic {

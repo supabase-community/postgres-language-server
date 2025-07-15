@@ -252,7 +252,9 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
             Ok(node) => {
                 let plpgsql_result = parser.ast_db.get_or_cache_plpgsql_parse(&id);
                 if let Some(Err(diag)) = plpgsql_result {
-                    (Some(node.clone()), Some(diag.clone()))
+                    // offset the pgpsql diagnostic from the parent statement start
+                    let span = diag.location().span.map(|sp| sp + range.start());
+                    (Some(node.clone()), Some(diag.span(span.unwrap_or(range))))
                 } else {
                     (Some(node.clone()), None)
                 }
