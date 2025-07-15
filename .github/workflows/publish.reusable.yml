@@ -68,7 +68,6 @@ jobs:
       - name: Temp publish
         if: inputs.is-prerelease != 'true'
         run: |
-          cd packages
           npm publish "@postgrestools/postgrestools_aarch64-apple-darwin" --tag latest --access public --provenance
           npm publish "@postgrestools/postgrestools_aarch64-windows-msvc" --tag latest --access public --provenance
           npm publish "@postgrestools/postgrestools_aarch64-linux-gnu" --tag latest --access public --provenance
