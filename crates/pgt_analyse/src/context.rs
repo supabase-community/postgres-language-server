@@ -1,4 +1,7 @@
+use pgt_schema_cache::SchemaCache;
+
 use crate::{
+    AnalysedFileContext,
     categories::RuleCategory,
     rule::{GroupCategory, Rule, RuleGroup, RuleMetadata},
 };
@@ -6,6 +9,8 @@ use crate::{
 pub struct RuleContext<'a, R: Rule> {
     stmt: &'a pgt_query_ext::NodeEnum,
     options: &'a R::Options,
+    schema_cache: Option<&'a SchemaCache>,
+    file_context: &'a AnalysedFileContext,
 }
 
 impl<'a, R> RuleContext<'a, R>
@@ -13,8 +18,18 @@ where
     R: Rule + Sized + 'static,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(stmt: &'a pgt_query_ext::NodeEnum, options: &'a R::Options) -> Self {
-        Self { stmt, options }
+    pub fn new(
+        stmt: &'a pgt_query_ext::NodeEnum,
+        options: &'a R::Options,
+        schema_cache: Option<&'a SchemaCache>,
+        file_context: &'a AnalysedFileContext,
+    ) -> Self {
+        Self {
+            stmt,
+            options,
+            schema_cache,
+            file_context,
+        }
     }
 
     /// Returns the group that belongs to the current rule
@@ -30,6 +45,14 @@ where
     /// Returns the AST root
     pub fn stmt(&self) -> &pgt_query_ext::NodeEnum {
         self.stmt
+    }
+
+    pub fn file_context(&self) -> &AnalysedFileContext {
+        self.file_context
+    }
+
+    pub fn schema_cache(&self) -> Option<&SchemaCache> {
+        self.schema_cache
     }
 
     /// Returns the metadata of the rule

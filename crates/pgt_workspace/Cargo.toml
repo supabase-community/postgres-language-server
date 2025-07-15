@@ -62,7 +62,9 @@ schema = [
 ]
 
 [dev-dependencies]
-tempfile = "3.15.0"
+pgt_test_utils = { workspace = true }
+sqlx           = { workspace = true }
+tempfile       = "3.15.0"
 
 [lib]
 doctest = false

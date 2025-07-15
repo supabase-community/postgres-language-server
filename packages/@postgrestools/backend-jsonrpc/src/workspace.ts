@@ -435,16 +435,9 @@ export interface OpenFileParams {
 	version: number;
 }
 export interface ChangeFileParams {
-	changes: ChangeParams[];
+	content: string;
 	path: PgTPath;
 	version: number;
-}
-export interface ChangeParams {
-	/**
-	 * The range of the file that changed. If `None`, the whole file changed.
-	 */
-	range?: TextRange;
-	text: string;
 }
 export interface CloseFileParams {
 	path: PgTPath;

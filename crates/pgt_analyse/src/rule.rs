@@ -102,7 +102,8 @@ pub trait GroupCategory {
 pub trait Rule: RuleMeta + Sized {
     type Options: Default + Clone + Debug;
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic>;
+    /// `schema_cache` will only be available if the user has a working database connection.
+    fn run(rule_context: &RuleContext<Self>) -> Vec<RuleDiagnostic>;
 }
 
 /// Diagnostic object returned by a single analysis rule
@@ -205,6 +206,12 @@ impl RuleDiagnostic {
     /// This does not have any influence on the diagnostic rendering.
     pub fn deprecated(mut self) -> Self {
         self.tags |= DiagnosticTags::DEPRECATED_CODE;
+        self
+    }
+
+    /// Sets the span of this diagnostic.
+    pub fn span(mut self, span: TextRange) -> Self {
+        self.span = Some(span);
         self
     }
 

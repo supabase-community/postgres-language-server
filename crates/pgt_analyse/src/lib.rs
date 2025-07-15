@@ -1,3 +1,4 @@
+mod analysed_file_context;
 mod categories;
 pub mod context;
 mod filter;
@@ -9,6 +10,7 @@ mod rule;
 // Re-exported for use in the `declare_group` macro
 pub use pgt_diagnostics::category_concat;
 
+pub use crate::analysed_file_context::AnalysedFileContext;
 pub use crate::categories::{
     ActionCategory, RefactorKind, RuleCategories, RuleCategoriesBuilder, RuleCategory,
     SUPPRESSION_ACTION_CATEGORY, SourceActionKind,

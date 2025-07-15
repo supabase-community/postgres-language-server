@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pgt_analyser::AnalysableStatement;
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
 use pgt_suppressions::Suppressions;
@@ -208,8 +209,8 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     }
 }
 
-pub struct AsyncDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
+pub struct TypecheckDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
         TextRange,
@@ -240,22 +241,20 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
     }
 }
 
-pub struct SyncDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
-    type Output = (
-        TextRange,
-        Option<pgt_query_ext::NodeEnum>,
-        Option<SyntaxDiagnostic>,
-    );
+pub struct AnalyserDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
+    type Output = (Option<AnalysableStatement>, Option<SyntaxDiagnostic>);
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
-        let ast_result = parser.ast_db.get_or_cache_ast(&id);
+        let maybe_node = parser.ast_db.get_or_cache_ast(&id);
 
-        let (ast_option, diagnostics) = match &*ast_result {
+        let (ast_option, diagnostics) = match &*maybe_node {
             Ok(node) => {
                 let plpgsql_result = parser.ast_db.get_or_cache_plpgsql_parse(&id);
                 if let Some(Err(diag)) = plpgsql_result {
-                    (Some(node.clone()), Some(diag.clone()))
+                    // offset the pgpsql diagnostic from the parent statement start
+                    let span = diag.location().span.map(|sp| sp + range.start());
+                    (Some(node.clone()), Some(diag.span(span.unwrap_or(range))))
                 } else {
                     (Some(node.clone()), None)
                 }
@@ -263,7 +262,10 @@ impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
             Err(diag) => (None, Some(diag.clone())),
         };
 
-        (range, ast_option, diagnostics)
+        (
+            ast_option.map(|root| AnalysableStatement { range, root }),
+            diagnostics,
+        )
     }
 }
 
@@ -401,10 +403,10 @@ END;
 $$;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(SyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_range, ast, diagnostic) = &results[0];
+        let (ast, diagnostic) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -432,10 +434,10 @@ END;
 $$;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(SyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_range, ast, diagnostic) = &results[0];
+        let (ast, diagnostic) = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -458,15 +460,15 @@ $$;";
 
         let d = Document::new(input.to_string(), 1);
 
-        let results1 = d.iter(SyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results1 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
         assert_eq!(results1.len(), 1);
-        assert!(results1[0].1.is_some());
-        assert!(results1[0].2.is_none());
+        assert!(results1[0].0.is_some());
+        assert!(results1[0].1.is_none());
 
-        let results2 = d.iter(SyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results2 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
         assert_eq!(results2.len(), 1);
-        assert!(results2[0].1.is_some());
-        assert!(results2[0].2.is_none());
+        assert!(results2[0].0.is_some());
+        assert!(results2[0].1.is_none());
     }
 
     #[test]
@@ -513,7 +515,7 @@ END;
 $$ LANGUAGE plpgsql;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
         let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
@@ -532,7 +534,7 @@ $$ LANGUAGE plpgsql;";
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
         assert_eq!(results.len(), 2);
 
         // Check the function body

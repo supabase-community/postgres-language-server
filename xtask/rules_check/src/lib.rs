@@ -7,7 +7,7 @@ use pgt_analyse::{
     AnalyserOptions, AnalysisFilter, GroupCategory, RegistryVisitor, Rule, RuleCategory,
     RuleFilter, RuleGroup, RuleMetadata,
 };
-use pgt_analyser::{Analyser, AnalyserConfig};
+use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
 use pgt_console::{markup, Console};
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
@@ -127,10 +127,16 @@ fn assert_lint(
     });
 
     let result = pgt_statement_splitter::split(code);
-    for stmt in result.ranges {
-        match pgt_query_ext::parse(&code[stmt]) {
+    for stmt_range in result.ranges {
+        match pgt_query_ext::parse(&code[stmt_range]) {
             Ok(ast) => {
-                for rule_diag in analyser.run(pgt_analyser::AnalyserContext { root: &ast }) {
+                for rule_diag in analyser.run(pgt_analyser::AnalyserParams {
+                    schema_cache: None,
+                    stmts: vec![AnalysableStatement {
+                        range: stmt_range,
+                        root: ast,
+                    }],
+                }) {
                     let diag = pgt_diagnostics::serde::Diagnostic::new(rule_diag);
 
                     let category = diag.category().expect("linter diagnostic has no code");

@@ -9,7 +9,7 @@ use pgt_text_size::TextRange;
 pub struct SyntaxDiagnostic {
     /// The location where the error is occurred
     #[location(span)]
-    span: Option<TextRange>,
+    pub span: Option<TextRange>,
     #[message]
     #[description]
     pub message: MessageAndDescription,
@@ -22,6 +22,11 @@ impl SyntaxDiagnostic {
             span,
             message: MessageAndDescription::from(message.into()),
         }
+    }
+
+    pub fn span(mut self, span: TextRange) -> Self {
+        self.span = Some(span);
+        self
     }
 }
 

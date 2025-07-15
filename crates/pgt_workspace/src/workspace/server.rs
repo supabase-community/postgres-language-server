@@ -10,12 +10,12 @@ use analyser::AnalyserVisitorBuilder;
 use async_helper::run_async;
 use connection_manager::ConnectionManager;
 use document::{
-    AsyncDiagnosticsMapper, CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
-    SyncDiagnosticsMapper,
+    CursorPositionFilter, DefaultMapper, Document, ExecuteStatementMapper,
+    TypecheckDiagnosticsMapper,
 };
 use futures::{StreamExt, stream};
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
-use pgt_analyser::{Analyser, AnalyserConfig, AnalyserContext};
+use pgt_analyser::{Analyser, AnalyserConfig, AnalyserParams};
 use pgt_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -37,6 +37,7 @@ use crate::{
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
+    workspace::AnalyserDiagnosticsMapper,
 };
 
 use super::{
@@ -444,7 +445,7 @@ impl Workspace for WorkspaceServer {
         if let Some(pool) = self.get_current_connection() {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
-            let input = doc.iter(AsyncDiagnosticsMapper).collect::<Vec<_>>();
+            let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
             // sorry for the ugly code :(
             let async_results = run_async(async move {
                 stream::iter(input)
@@ -527,50 +528,49 @@ impl Workspace for WorkspaceServer {
             filter,
         });
 
+        let path = params.path.as_path().display().to_string();
+
+        let schema_cache = self
+            .get_current_connection()
+            .and_then(|pool| self.schema_cache.load(pool.clone()).ok());
+
+        let mut analysable_stmts = vec![];
+        for (stmt_root, diagnostic) in doc.iter(AnalyserDiagnosticsMapper) {
+            if let Some(node) = stmt_root {
+                analysable_stmts.push(node);
+            }
+            if let Some(diag) = diagnostic {
+                diagnostics.push(SDiagnostic::new(
+                    diag.with_file_path(path.clone())
+                        .with_severity(Severity::Error),
+                ));
+            }
+        }
+
         diagnostics.extend(
-            doc.iter(SyncDiagnosticsMapper)
-                .flat_map(|(range, ast, diag)| {
-                    let mut errors: Vec<Error> = vec![];
-
-                    if let Some(diag) = diag {
-                        errors.push(diag.into());
-                    }
-
-                    if let Some(ast) = ast {
-                        errors.extend(
-                            analyser
-                                .run(AnalyserContext { root: &ast })
-                                .into_iter()
-                                .map(Error::from)
-                                .collect::<Vec<pgt_diagnostics::Error>>(),
-                        );
-                    }
-
-                    errors
-                        .into_iter()
-                        .map(|d| {
-                            let severity = d
-                                .category()
-                                .filter(|category| category.name().starts_with("lint/"))
-                                .map_or_else(
-                                    || d.severity(),
-                                    |category| {
-                                        settings
-                                            .get_severity_from_rule_code(category)
-                                            .unwrap_or(Severity::Warning)
-                                    },
-                                );
-
-                            // adjust the span of the diagnostics to the statement (if it has one)
-                            let span = d.location().span.map(|s| s + range.start());
-
-                            SDiagnostic::new(
-                                d.with_file_path(params.path.as_path().display().to_string())
-                                    .with_file_span(span.unwrap_or(range))
-                                    .with_severity(severity),
-                            )
+            analyser
+                .run(AnalyserParams {
+                    stmts: analysable_stmts,
+                    schema_cache: schema_cache.as_deref(),
+                })
+                .into_iter()
+                .map(Error::from)
+                .map(|d| {
+                    let severity = d
+                        .category()
+                        .map(|category| {
+                            settings
+                                .get_severity_from_rule_code(category)
+                                .unwrap_or(Severity::Warning)
                         })
-                        .collect::<Vec<_>>()
+                        .unwrap();
+
+                    let span = d.location().span;
+                    SDiagnostic::new(
+                        d.with_file_path(path.clone())
+                            .with_file_span(span)
+                            .with_severity(severity),
+                    )
                 }),
         );
 
@@ -655,3 +655,7 @@ impl Workspace for WorkspaceServer {
 fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && fs::read_link(path).is_ok_and(|path| path.is_dir()))
 }
+
+#[cfg(test)]
+#[path = "server.tests.rs"]
+mod tests;
