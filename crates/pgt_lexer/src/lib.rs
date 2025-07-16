@@ -51,6 +51,36 @@ mod tests {
     }
 
     #[test]
+    fn test_lexing_string_params_with_errors() {
+        let input = "SELECT :'unterminated string";
+        let lexed = lex(input);
+
+        // Should have tokens
+        assert!(!lexed.is_empty());
+
+        // Should have an error for unterminated string
+        let errors = lexed.errors();
+        assert!(!errors.is_empty());
+        // Check the error message exists
+        assert!(!errors[0].message.to_string().is_empty());
+    }
+
+    #[test]
+    fn test_lexing_identifier_params_with_errors() {
+        let input = "SELECT :\"unterminated string";
+        let lexed = lex(input);
+
+        // Should have tokens
+        assert!(!lexed.is_empty());
+
+        // Should have an error for unterminated string
+        let errors = lexed.errors();
+        assert!(!errors.is_empty());
+        // Check the error message exists
+        assert!(!errors[0].message.to_string().is_empty());
+    }
+
+    #[test]
     fn test_token_ranges() {
         let input = "SELECT id";
         let lexed = lex(input);
