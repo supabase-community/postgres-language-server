@@ -34,9 +34,6 @@ impl ConnectionManager {
     pub(crate) fn get_pool(&self, settings: &DatabaseSettings) -> Option<PgPool> {
         let key = ConnectionKey::from(settings);
 
-        // Cleanup idle connections first
-        self.cleanup_idle_pools(&key);
-
         if !settings.enable_connection {
             tracing::info!("Database connection disabled.");
             return None;
@@ -58,6 +55,9 @@ impl ConnectionManager {
             cached_pool.last_accessed = Instant::now();
             return Some(cached_pool.pool.clone());
         }
+
+        // Clean up idle connections before creating new ones to avoid unbounded growth
+        self.cleanup_idle_pools_with_lock(&mut pools, &key);
 
         // Create a new pool
         let config = PgConnectOptions::new()
@@ -87,10 +87,13 @@ impl ConnectionManager {
     }
 
     /// Remove pools that haven't been accessed for longer than the idle timeout
-    fn cleanup_idle_pools(&self, ignore_key: &ConnectionKey) {
+    /// This version works with an existing write lock to avoid deadlocks
+    fn cleanup_idle_pools_with_lock(
+        &self,
+        pools: &mut HashMap<ConnectionKey, CachedPool>,
+        ignore_key: &ConnectionKey,
+    ) {
         let now = Instant::now();
-
-        let mut pools = self.pools.write().unwrap();
 
         // Use retain to keep only non-idle connections
         pools.retain(|key, cached_pool| {
