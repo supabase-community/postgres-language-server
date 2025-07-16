@@ -94,6 +94,12 @@ pub enum TokenKind {
     ///
     /// see: <https://www.postgresql.org/docs/16/sql-expressions.html#SQL-EXPRESSIONS-PARAMETERS-POSITIONAL>
     PositionalParam,
+    /// Named Parameter, e.g., `@name`
+    ///
+    /// This is used in some ORMs and query builders, like sqlc.
+    NamedParam {
+        kind: NamedParamKind,
+    },
     /// Quoted Identifier, e.g., `"update"` in `update "my_table" set "a" = 5;`
     ///
     /// These are case-sensitive, unlike [`TokenKind::Ident`]
@@ -102,6 +108,30 @@ pub enum TokenKind {
     QuotedIdent {
         terminated: bool,
     },
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum NamedParamKind {
+    /// e.g. `@name`
+    ///
+    /// Used in:
+    /// - sqlc: https://docs.sqlc.dev/en/latest/howto/named_parameters.html
+    AtPrefix,
+
+    /// e.g. `:name` (raw substitution)
+    ///
+    /// Used in: psql
+    ColonRaw,
+
+    /// e.g. `:'name'` (quoted string substitution)
+    ///
+    /// Used in: psql
+    ColonString { terminated: bool },
+
+    /// e.g. `:"name"` (quoted identifier substitution)
+    ///
+    /// Used in: psql
+    ColonIdentifier { terminated: bool },
 }
 
 /// Parsed token.
