@@ -115,6 +115,14 @@ mod tests {
     }
 
     #[test]
+    fn test_crash_eof() {
+        Tester::from("CREATE INDEX \"idx_analytics_read_ratio\" ON \"public\".\"message\" USING \"btree\" (\"inbox_id\", \"timestamp\") INCLUDE (\"status\") WHERE (\"is_inbound\" = false and channel_type not in ('postal'', 'sms'));")
+            .expect_statements(vec![
+                "CREATE INDEX \"idx_analytics_read_ratio\" ON \"public\".\"message\" USING \"btree\" (\"inbox_id\", \"timestamp\") INCLUDE (\"status\") WHERE (\"is_inbound\" = false and channel_type not in ('postal'', 'sms'));",
+            ]);
+    }
+
+    #[test]
     #[timeout(1000)]
     fn basic() {
         Tester::from("select 1 from contact; select 1;")

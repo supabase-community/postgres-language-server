@@ -1773,3 +1773,490 @@ $$;
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_crash_on_delete_character() -> Result<()> {
+    let factory = ServerFactory::default();
+    let (service, client) = factory.create(None).into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    // Open document with initial CREATE INDEX statement - exactly as in log
+    let initial_content = "\n\n\n\nCREATE INDEX \"idx_analytics_read_ratio\" ON \"public\".\"message\" USING \"btree\" (\"inbox_id\", \"timestamp\") INCLUDE (\"status\") WHERE (\"is_inbound\" = false);\n";
+
+    server.open_document(initial_content).await?;
+
+    // Add a space after false (position 148 from the log)
+    server
+        .change_document(
+            3,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 148,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 148,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    // Follow the exact sequence from the logfile
+    // Type character by character in exact order
+
+    // Version 4: "a" at 149
+    server
+        .change_document(
+            4,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 149,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 149,
+                    },
+                }),
+                range_length: Some(0),
+                text: "a".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 5: "n" at 150
+    server
+        .change_document(
+            5,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 150,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 150,
+                    },
+                }),
+                range_length: Some(0),
+                text: "n".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 6: "d" at 151
+    server
+        .change_document(
+            6,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 151,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 151,
+                    },
+                }),
+                range_length: Some(0),
+                text: "d".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 7: " " at 152
+    server
+        .change_document(
+            7,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 152,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 152,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 8: "c" at 153
+    server
+        .change_document(
+            8,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 153,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 153,
+                    },
+                }),
+                range_length: Some(0),
+                text: "c".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 10: "h" at 154 and "a" at 155 (two changes in one version)
+    server
+        .change_document(
+            10,
+            vec![
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 4,
+                            character: 154,
+                        },
+                        end: Position {
+                            line: 4,
+                            character: 154,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "h".to_string(),
+                },
+                TextDocumentContentChangeEvent {
+                    range: Some(Range {
+                        start: Position {
+                            line: 4,
+                            character: 155,
+                        },
+                        end: Position {
+                            line: 4,
+                            character: 155,
+                        },
+                    }),
+                    range_length: Some(0),
+                    text: "a".to_string(),
+                },
+            ],
+        )
+        .await?;
+
+    // Version 11: "n" at 156
+    server
+        .change_document(
+            11,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 156,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 156,
+                    },
+                }),
+                range_length: Some(0),
+                text: "n".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 12: "n" at 157
+    server
+        .change_document(
+            12,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 157,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 157,
+                    },
+                }),
+                range_length: Some(0),
+                text: "n".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 13: "e" at 158
+    server
+        .change_document(
+            13,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 158,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 158,
+                    },
+                }),
+                range_length: Some(0),
+                text: "e".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 14: "l" at 159
+    server
+        .change_document(
+            14,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 159,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 159,
+                    },
+                }),
+                range_length: Some(0),
+                text: "l".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 15: "_" at 160
+    server
+        .change_document(
+            15,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 160,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 160,
+                    },
+                }),
+                range_length: Some(0),
+                text: "_".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 16: "t" at 161
+    server
+        .change_document(
+            16,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 161,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 161,
+                    },
+                }),
+                range_length: Some(0),
+                text: "t".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 17: "y" at 162
+    server
+        .change_document(
+            17,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 162,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 162,
+                    },
+                }),
+                range_length: Some(0),
+                text: "y".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 18: "p" at 163
+    server
+        .change_document(
+            18,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 163,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 163,
+                    },
+                }),
+                range_length: Some(0),
+                text: "p".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 19: "e" at 164
+    server
+        .change_document(
+            19,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 164,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 164,
+                    },
+                }),
+                range_length: Some(0),
+                text: "e".to_string(),
+            }],
+        )
+        .await?;
+
+    // Version 20: " " at 165
+    server
+        .change_document(
+            20,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 165,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 165,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    // Now we should have: "WHERE ("is_inbound" = false and channel_type )"
+
+    // Version 21: Paste the problematic text with double single quotes
+    server
+        .change_document(
+            21,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 166,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 166,
+                    },
+                }),
+                range_length: Some(0),
+                text: "channel_type not in (''postal'', ''sms'')".to_string(),
+            }],
+        )
+        .await?;
+
+    // Delete "channel_type"
+    server
+        .change_document(
+            22,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 166,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 178,
+                    },
+                }),
+                range_length: Some(12),
+                text: "".to_string(),
+            }],
+        )
+        .await?;
+
+    // Delete one more character
+    server
+        .change_document(
+            23,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 166,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 167,
+                    },
+                }),
+                range_length: Some(1),
+                text: "".to_string(),
+            }],
+        )
+        .await?;
+
+    // This final delete should trigger the panic
+    let result = server
+        .change_document(
+            24,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 4,
+                        character: 175,
+                    },
+                    end: Position {
+                        line: 4,
+                        character: 176,
+                    },
+                }),
+                range_length: Some(1),
+                text: "".to_string(),
+            }],
+        )
+        .await;
+
+    assert!(result.is_ok());
+
+    reader.abort();
+
+    Ok(())
+}
