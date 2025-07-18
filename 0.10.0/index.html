@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling." /><link rel="canonical" href="https://pgtools.dev/0.10.0/" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Postgres Language Server</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Introduction";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = "/0.10.0/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Introduction</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#postgres-language-server">Postgres Language Server</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cli-demo">CLI Demo</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#cli">CLI</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#npm">NPM</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#vscode">VSCode</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#neovim">Neovim</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#emacs">Emacs</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#zed">Zed</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#github-actions">GitHub Actions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-the-cli">Using the CLI</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#using-the-lsp-proxy">Using the LSP Proxy</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#using-the-daemon-with-the-binary">Using the daemon with the binary</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#daemon-logs">Daemon logs</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="checking_migrations/">Linting Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="troubleshooting/">Troubleshooting</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="rules/">Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="rule_sources/">Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="rule_suppressions/">Rule Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="cli_reference/">CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/index.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <p><img alt="Postgres Language Server" src="images/pls-github.png" /></p>
+<h1 id="postgres-tools">Postgres Tools</h1>
+<p>A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.</p>
+<hr />
+<p><strong>Source Code</strong>: <a href="https://github.com/supabase-community/postgres-language-server" target="_blank">https://github.com/supabase-community/postgres-language-server</a></p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>This project provides a toolchain for Postgres development</p>
+<h5 id="postgres-language-server">Postgres Language Server</h5>
+<p><img alt="LSP Demo" src="images/lsp-demo.gif" /></p>
+<h5 id="cli-demo">CLI Demo</h5>
+<p><img alt="CLI Demo" src="images/cli-demo.png" /></p>
+<p>The toolchain is built on Postgres' own parser <code>libpg_query</code> to ensure 100% syntax compatibility. It uses a Server-Client architecture and is a transport-agnostic. This means all features can be accessed through the <a href="https://microsoft.github.io/language-server-protocol/">Language Server Protocol</a> as well as various interfaces like a CLI, HTTP APIs, or a WebAssembly module.</p>
+<p>The following features are implemented:</p>
+<ul>
+<li>Autocompletion</li>
+<li>Syntax Error Highlighting</li>
+<li>Type-checking (via <code>EXPLAIN</code> error insights)</li>
+<li>Linter, inspired by <a href="https://squawkhq.com">Squawk</a></li>
+</ul>
+<p>We are currently focused on refining and enhancing these core features. For future plans and opportunities to contribute, please check out the issues and discussions. Any contributions are welcome!</p>
+<h2 id="installation">Installation</h2>
+<p>There are various ways to use the toolchain.</p>
+<h3 id="cli">CLI</h3>
+<p>Grab the executable for your platform from the <a href="https://github.com/supabase-community/postgres-language-server/releases/latest">latest CLI release</a> on GitHub and give it execution permission:</p>
+<pre><code class="language-sh">curl -L https://github.com/supabase-community/postgres-language-server/releases/download/&lt;version&gt;/postgrestools_aarch64-apple-darwin -o postgrestools
+chmod +x postgrestools
+</code></pre>
+<p>Now you can use Postgres Tools by simply running <code>./postgrestools</code>.</p>
+<h3 id="npm">NPM</h3>
+<p>If you are using Node, you can install the CLI via NPM. Run the following commands in a directory containing a <code>package.json</code> file.</p>
+<pre><code class="language-sh">npm add --save-dev --save-exact @postgrestools/postgrestools
+</code></pre>
+<h3 id="vscode">VSCode</h3>
+<p>The language server is available on the <a href="https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools">VSCode Marketplace</a>. It's published from <a href="https://github.com/supabase-community/postgrestools-vscode">this repo</a>.</p>
+<h3 id="neovim">Neovim</h3>
+<p>You will have to install <code>nvim-lspconfig</code>, and follow the <a href="https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp">instructions</a>.</p>
+<h3 id="emacs">Emacs</h3>
+<p>The language client is available through <a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a>. For more details, refer to their <a href="https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/">manual page</a>.</p>
+<h3 id="zed">Zed</h3>
+<p>The language server is available as an Extension. It's published from <a href="https://github.com/LoamStudios/zed-postgres-language-server">this repo</a>.</p>
+<h3 id="github-actions">GitHub Actions</h3>
+<p>To use the CLI in GitHub Actions, you can install it via our <a href="https://github.com/supabase-community/postgrestools-cli-action">GitHub Action</a>.</p>
+<h2 id="configuration">Configuration</h2>
+<p>We recommend creating a <code>postgrestools.jsonc</code> configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional: if you are happy with the defaults, you don’t need a configuration file. To create the <code>postgrestools.jsonc</code> file, run the <code>init</code> command in the root folder of your project:</p>
+<pre><code class="language-sh">postgrestools init
+</code></pre>
+<p>You’ll now have a <code>postgrestools.jsonc</code> file in your directory:</p>
+<pre><code class="language-json">{
+  &quot;$schema&quot;: &quot;https://pgtools.dev/latest/schema.json&quot;,
+  &quot;vcs&quot;: {
+    &quot;enabled&quot;: false,
+    &quot;clientKind&quot;: &quot;git&quot;,
+    &quot;useIgnoreFile&quot;: false
+  },
+  &quot;files&quot;: {
+    &quot;ignore&quot;: []
+  },
+  &quot;linter&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;rules&quot;: {
+      &quot;recommended&quot;: true
+    }
+  },
+  &quot;db&quot;: {
+    &quot;host&quot;: &quot;127.0.0.1&quot;,
+    &quot;port&quot;: 5432,
+    &quot;username&quot;: &quot;postgres&quot;,
+    &quot;password&quot;: &quot;postgres&quot;,
+    &quot;database&quot;: &quot;postgres&quot;,
+    &quot;connTimeoutSecs&quot;: 10,
+    &quot;allowStatementExecutionsAgainst&quot;: [&quot;127.0.0.1/*&quot;, &quot;localhost/*&quot;]
+  }
+}
+</code></pre>
+<p>Make sure to edit the database connection settings to connect to your local development database. To see all options, run <code>postgrestools --help</code>.</p>
+<p>You can use your current <code>postgrestools</code> version instead of "latest" in the <code>$schema</code> URL, e.g. <code>https://pgtools.dev/0.8.1/schema.json</code>.</p>
+<h2 id="usage">Usage</h2>
+<p>You can use Postgres Tools via the command line or a using a code editor that supports an LSP.</p>
+<h4 id="using-the-cli">Using the CLI</h4>
+<p>The CLI exposes a simple <code>check</code> command that will run all checks on the given files or paths.</p>
+<pre><code class="language-sh">postgrestools check myfile.sql
+</code></pre>
+<p>Make sure to check out the other options by running <code>postgrestools --help</code>. We will provide guides for specific use cases like linting migration files soon.</p>
+<h4 id="using-the-lsp-proxy">Using the LSP Proxy</h4>
+<p>Postgres Tools has a command called <code>lsp-proxy</code>. When executed, two processes will spawn:</p>
+<ul>
+<li>a daemon that does execute the requested operations;</li>
+<li>a server that functions as a proxy between the requests of the client - the editor - and the server - the daemon;
+  If your editor is able to interact with a server and send <a href="https://www.jsonrpc.org">JSON-RPC</a> requests, you only need to configure the editor to run that command.</li>
+</ul>
+<h4 id="using-the-daemon-with-the-binary">Using the daemon with the binary</h4>
+<p>Using the binary via CLI is very efficient, although you won’t be able to provide logs to your users. The CLI allows you to bootstrap a daemon and then use the CLI commands through the daemon itself.
+In order to do so, you first need to start a daemon process with the start command:</p>
+<pre><code class="language-sh">postgrestools start
+</code></pre>
+<p>Then, every command needs to add the <code>--use-server</code> options, e.g.:</p>
+<pre><code class="language-sh">echo &quot;select 1&quot; | postgrestools check --use-server --stdin-file-path=dummy.sql
+</code></pre>
+<h4 id="daemon-logs">Daemon logs</h4>
+<p>The daemon saves logs in your file system. Logs are stored in a folder called <code>pgt-logs</code>. The path of this folder changes based on your operative system:</p>
+<ul>
+<li>Linux: <code>~/.cache/pgt;</code></li>
+<li>Windows: <code>C:\Users\&lt;UserName&gt;\AppData\Local\supabase-community\pgt\cache</code></li>
+<li>macOS: <code>/Users/&lt;UserName&gt;/Library/Caches/dev.supabase-community.pgt</code></li>
+</ul>
+<p>For other operative systems, you can find the folder in the system’s temporary directory.</p>
+<p>You can change the location of the <code>pgt-logs</code> folder via the <code>PGT_LOG_PATH</code> variable.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="checking_migrations/" class="btn btn-neutral float-right" title="Linting Migrations">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+    
+      <span><a href="checking_migrations/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-07-18 07:40:26.462735+00:00
+-->
