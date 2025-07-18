@@ -57,7 +57,7 @@ pub struct ExecuteStatementParams {
     pub path: PgTPath,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExecuteStatementResult {
     pub message: String,

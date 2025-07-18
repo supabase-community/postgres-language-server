@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{TypePath, parse_macro_input};
+use syn::{TypePath, TypeTuple, parse_macro_input};
 
 struct IgnoredPath {
     path: syn::Expr,
@@ -41,7 +41,8 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
     let block = &input_fn.block;
     let attrs = &input_fn.attrs;
 
-    // get T in Result<T, E>
+    // handles cases `fn foo() -> Result<T, E>` and `fn foo() -> Result<(), E>`
+    // T needs to implement default
     if let syn::ReturnType::Type(_, ty) = &sig.output {
         if let syn::Type::Path(TypePath { path, .. }) = ty.deref() {
             if let Some(seg) = path.segments.last() {
@@ -49,30 +50,32 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
                     if let syn::PathArguments::AngleBracketed(type_args) = &seg.arguments {
                         if let Some(t) = type_args.args.first() {
                             if let syn::GenericArgument::Type(t) = t {
+                                if let syn::Type::Tuple(TypeTuple { elems, .. }) = t {
+                                    // case: Result<(), E>
+                                    if elems.len() == 0 {
+                                        return TokenStream::from(quote! {
+                                          #(#attrs)*
+                                          #vis #sig {
+                                            if self.is_ignored(#macro_specified_path) {
+                                              return Ok(());
+                                            };
+                                            #block
+                                          }
+                                        });
+                                    }
+                                }
                                 if let syn::Type::Path(TypePath { path, .. }) = t {
                                     if let Some(seg) = path.segments.first() {
                                         let ident = &seg.ident;
-                                        if ident == "()" {
-                                            return TokenStream::from(quote! {
-                                              #(#attrs)*
-                                              #vis #sig {
-                                                if self.is_ignored(#macro_specified_path) {
-                                                  return Ok(());
-                                                };
-                                                #block
-                                              }
-                                            });
-                                        } else {
-                                            return TokenStream::from(quote! {
-                                              #(#attrs)*
-                                              #vis #sig {
-                                                if self.is_ignored(#macro_specified_path) {
-                                                  return Ok(#ident::default());
-                                                };
-                                                #block
-                                              }
-                                            });
-                                        }
+                                        return TokenStream::from(quote! {
+                                          #(#attrs)*
+                                          #vis #sig {
+                                            if self.is_ignored(#macro_specified_path) {
+                                              return Ok(#ident::default());
+                                            };
+                                            #block
+                                          }
+                                        });
                                     }
                                 }
                             };
@@ -83,6 +86,9 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
         };
     };
 
+    // case fn foo() -> T {}
+    // handles all other T's
+    // T needs to implement Default
     return TokenStream::from(quote! {
       #(#attrs)*
       #vis #sig {

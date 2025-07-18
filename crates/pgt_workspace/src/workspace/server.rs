@@ -294,6 +294,7 @@ impl Workspace for WorkspaceServer {
         path = params.path.as_os_str().to_str(),
         version = params.version
     ), err)]
+    #[ignored_path(path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
 
