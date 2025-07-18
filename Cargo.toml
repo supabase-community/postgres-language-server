@@ -47,7 +47,7 @@ convert_case             = "0.6.0"
 prost-reflect            = "0.15.3"
 protox                   = "0.8.0"
 sqlx                     = { version = "0.8.2", features = ["runtime-tokio", "runtime-async-std", "postgres", "json"] }
-syn                      = "1.0.109"
+syn                      = { version = "1.0.109", features = ["full"] }
 termcolor                = "1.4.1"
 test-log                 = "0.2.17"
 tokio                    = { version = "1.40.0", features = ["full"] }
@@ -85,7 +85,7 @@ pgt_tokenizer              = { path = "./crates/pgt_tokenizer", version = "0.0.0
 pgt_treesitter_queries     = { path = "./crates/pgt_treesitter_queries", version = "0.0.0" }
 pgt_typecheck              = { path = "./crates/pgt_typecheck", version = "0.0.0" }
 pgt_workspace              = { path = "./crates/pgt_workspace", version = "0.0.0" }
-pgt_workspace_macros              = { path = "./crates/pgt_workspace_macros", version = "0.0.0" }
+pgt_workspace_macros       = { path = "./crates/pgt_workspace_macros", version = "0.0.0" }
 
 pgt_test_macros = { path = "./crates/pgt_test_macros" }
 pgt_test_utils  = { path = "./crates/pgt_test_utils" }

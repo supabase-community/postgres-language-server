@@ -34,7 +34,8 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
     let ignored_path = parse_macro_input!(args as IgnoredPath);
     let input_fn = parse_macro_input!(input as syn::ItemFn);
 
-    let path = ignored_path.path;
+    let macro_specified_path = ignored_path.path;
+
     let vis = &input_fn.vis;
     let sig = &input_fn.sig;
     let block = &input_fn.block;
@@ -51,15 +52,27 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
                                 if let syn::Type::Path(TypePath { path, .. }) = t {
                                     if let Some(seg) = path.segments.first() {
                                         let ident = &seg.ident;
-                                        return TokenStream::from(quote! {
-                                          #(#attrs)*
-                                          #vis #sig {
-                                            if self.is_ignored(#path) {
-                                              return Ok(#ident::default());
-                                            };
-                                            #block
-                                          }
-                                        });
+                                        if ident == "()" {
+                                            return TokenStream::from(quote! {
+                                              #(#attrs)*
+                                              #vis #sig {
+                                                if self.is_ignored(#macro_specified_path) {
+                                                  return Ok(());
+                                                };
+                                                #block
+                                              }
+                                            });
+                                        } else {
+                                            return TokenStream::from(quote! {
+                                              #(#attrs)*
+                                              #vis #sig {
+                                                if self.is_ignored(#macro_specified_path) {
+                                                  return Ok(#ident::default());
+                                                };
+                                                #block
+                                              }
+                                            });
+                                        }
                                     }
                                 }
                             };
@@ -73,7 +86,7 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
     return TokenStream::from(quote! {
       #(#attrs)*
       #vis #sig {
-        if self.is_ignored(#path) {
+        if self.is_ignored(#macro_specified_path) {
           return Default::default();
         }
         #block

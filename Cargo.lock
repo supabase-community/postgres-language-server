@@ -3102,6 +3102,7 @@ dependencies = [
  "pgt_schema_cache",
  "pgt_statement_splitter",
  "pgt_suppressions",
+ "pgt_test_utils",
  "pgt_text_size",
  "pgt_typecheck",
  "pgt_workspace_macros",

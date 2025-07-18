@@ -12,7 +12,7 @@ pub struct CodeActionsParams {
     pub skip: Vec<RuleSelector>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CodeActionsResult {
     pub actions: Vec<CodeAction>,
@@ -57,7 +57,7 @@ pub struct ExecuteStatementParams {
     pub path: PgTPath,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExecuteStatementResult {
     pub message: String,
