@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pgt_analyser::AnalysableStatement;
 use pgt_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgt_query_ext::diagnostics::SyntaxDiagnostic;
 use pgt_suppressions::Suppressions;
@@ -208,8 +209,8 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     }
 }
 
-pub struct AsyncDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
+pub struct TypecheckDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
         TextRange,
@@ -240,24 +241,31 @@ impl<'a> StatementMapper<'a> for AsyncDiagnosticsMapper {
     }
 }
 
-pub struct SyncDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for SyncDiagnosticsMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        Option<pgt_query_ext::NodeEnum>,
-        Option<SyntaxDiagnostic>,
-    );
+pub struct AnalyserDiagnosticsMapper;
+impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
+    type Output = (Option<AnalysableStatement>, Option<SyntaxDiagnostic>);
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
-        let ast_result = parser.ast_db.get_or_cache_ast(&id);
+        let maybe_node = parser.ast_db.get_or_cache_ast(&id);
 
-        let (ast_option, diagnostics) = match &*ast_result {
-            Ok(node) => (Some(node.clone()), None),
-            Err(diag) => (None, Some(diag.clone())),
+        let (ast_option, diagnostics) = match &*maybe_node {
+            Ok(node) => {
+                let plpgsql_result = parser.ast_db.get_or_cache_plpgsql_parse(&id);
+                if let Some(Err(diag)) = plpgsql_result {
+                    // offset the pgpsql diagnostic from the parent statement start
+                    let span = diag.location().span.map(|sp| sp + range.start());
+                    (Some(node.clone()), Some(diag.span(span.unwrap_or(range))))
+                } else {
+                    (Some(node.clone()), None)
+                }
+            }
+            Err(diag) => (None, Some(diag.clone().span(range))),
         };
 
-        (id.clone(), range, ast_option, diagnostics)
+        (
+            ast_option.map(|root| AnalysableStatement { range, root }),
+            diagnostics,
+        )
     }
 }
 
@@ -378,5 +386,275 @@ mod tests {
 
         assert_eq!(stmts.len(), 2);
         assert_eq!(stmts[1].2, "select $1 + $2;");
+    }
+
+    #[test]
+    fn test_sync_diagnostics_mapper_plpgsql_syntax_error() {
+        let input = "
+CREATE FUNCTION test_func()
+    RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- syntax error: missing semicolon and typo
+    DECLAR x integer
+    x := 10;
+END;
+$$;";
+
+        let d = Document::new(input.to_string(), 1);
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 1);
+        let (ast, diagnostic) = &results[0];
+
+        // Should have parsed the CREATE FUNCTION statement
+        assert!(ast.is_some());
+
+        // Should have a PL/pgSQL syntax error
+        assert!(diagnostic.is_some());
+        assert_eq!(
+            format!("{:?}", diagnostic.as_ref().unwrap().message),
+            "Invalid statement: syntax error at or near \"DECLAR\""
+        );
+    }
+
+    #[test]
+    fn test_sync_diagnostics_mapper_plpgsql_valid() {
+        let input = "
+CREATE FUNCTION valid_func()
+    RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    x integer := 5;
+BEGIN
+    RETURN x * 2;
+END;
+$$;";
+
+        let d = Document::new(input.to_string(), 1);
+        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 1);
+        let (ast, diagnostic) = &results[0];
+
+        // Should have parsed the CREATE FUNCTION statement
+        assert!(ast.is_some());
+
+        // Should NOT have any PL/pgSQL syntax errors
+        assert!(diagnostic.is_none());
+    }
+
+    #[test]
+    fn test_sync_diagnostics_mapper_plpgsql_caching() {
+        let input = "
+CREATE FUNCTION cached_func()
+    RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Testing cache';
+END;
+$$;";
+
+        let d = Document::new(input.to_string(), 1);
+
+        let results1 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results1.len(), 1);
+        assert!(results1[0].0.is_some());
+        assert!(results1[0].1.is_none());
+
+        let results2 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results2.len(), 1);
+        assert!(results2[0].0.is_some());
+        assert!(results2[0].1.is_none());
+    }
+
+    #[test]
+    fn test_default_mapper() {
+        let input = "SELECT 1; INSERT INTO users VALUES (1);";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(DefaultMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
+
+        assert_eq!(results[0].2, "SELECT 1;");
+        assert_eq!(results[1].2, "INSERT INTO users VALUES (1);");
+
+        assert_eq!(results[0].1.start(), 0.into());
+        assert_eq!(results[0].1.end(), 9.into());
+        assert_eq!(results[1].1.start(), 10.into());
+        assert_eq!(results[1].1.end(), 39.into());
+    }
+
+    #[test]
+    fn test_execute_statement_mapper() {
+        let input = "SELECT 1; INVALID SYNTAX HERE;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(ExecuteStatementMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
+
+        // First statement should parse successfully
+        assert_eq!(results[0].2, "SELECT 1;");
+        assert!(results[0].3.is_some());
+
+        // Second statement should fail to parse
+        assert_eq!(results[1].2, "INVALID SYNTAX HERE;");
+        assert!(results[1].3.is_none());
+    }
+
+    #[test]
+    fn test_async_diagnostics_mapper() {
+        let input = "
+CREATE FUNCTION test_fn() RETURNS integer AS $$
+BEGIN
+    RETURN 42;
+END;
+$$ LANGUAGE plpgsql;";
+
+        let d = Document::new(input.to_string(), 1);
+        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+
+        assert_eq!(results.len(), 1);
+        let (_id, _range, ast, cst, sql_fn_sig) = &results[0];
+
+        // Should have both AST and CST
+        assert!(ast.is_some());
+        assert_eq!(cst.root_node().kind(), "program");
+
+        // Should not have SQL function signature for top-level statement
+        assert!(sql_fn_sig.is_none());
+    }
+
+    #[test]
+    fn test_async_diagnostics_mapper_with_sql_function_body() {
+        let input =
+            "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
+
+        // Check the function body
+        let (_id, _range, ast, _cst, sql_fn_sig) = &results[1];
+        assert_eq!(_id.content(), "SELECT $1 + $2;");
+        assert!(ast.is_some());
+        assert!(sql_fn_sig.is_some());
+
+        let sig = sql_fn_sig.as_ref().unwrap();
+        assert_eq!(sig.name, "add");
+        assert_eq!(sig.args.len(), 2);
+        assert_eq!(sig.args[0].name, Some("a".to_string()));
+        assert_eq!(sig.args[1].name, Some("b".to_string()));
+    }
+
+    #[test]
+    fn test_get_completions_mapper() {
+        let input = "SELECT * FROM users;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d.iter(GetCompletionsMapper).collect::<Vec<_>>();
+        assert_eq!(results.len(), 1);
+
+        let (_id, _range, content, tree) = &results[0];
+        assert_eq!(content, "SELECT * FROM users;");
+        assert_eq!(tree.root_node().kind(), "program");
+    }
+
+    #[test]
+    fn test_get_completions_filter() {
+        let input = "SELECT * FROM users; INSERT INTO";
+        let d = Document::new(input.to_string(), 1);
+
+        // Test cursor at end of first statement (terminated with semicolon)
+        let filter1 = GetCompletionsFilter {
+            cursor_position: 20.into(),
+        };
+        let results1 = d
+            .iter_with_filter(DefaultMapper, filter1)
+            .collect::<Vec<_>>();
+        assert_eq!(results1.len(), 0); // No completions after semicolon
+
+        // Test cursor at end of second statement (not terminated)
+        let filter2 = GetCompletionsFilter {
+            cursor_position: 32.into(),
+        };
+        let results2 = d
+            .iter_with_filter(DefaultMapper, filter2)
+            .collect::<Vec<_>>();
+        assert_eq!(results2.len(), 1);
+        assert_eq!(results2[0].2, "INSERT INTO");
+    }
+
+    #[test]
+    fn test_cursor_position_filter() {
+        let input = "SELECT 1; INSERT INTO users VALUES (1);";
+        let d = Document::new(input.to_string(), 1);
+
+        // Cursor in first statement
+        let filter1 = CursorPositionFilter::new(5.into());
+        let results1 = d
+            .iter_with_filter(DefaultMapper, filter1)
+            .collect::<Vec<_>>();
+        assert_eq!(results1.len(), 1);
+        assert_eq!(results1[0].2, "SELECT 1;");
+
+        // Cursor in second statement
+        let filter2 = CursorPositionFilter::new(25.into());
+        let results2 = d
+            .iter_with_filter(DefaultMapper, filter2)
+            .collect::<Vec<_>>();
+        assert_eq!(results2.len(), 1);
+        assert_eq!(results2[0].2, "INSERT INTO users VALUES (1);");
+    }
+
+    #[test]
+    fn test_id_filter() {
+        let input = "SELECT 1; SELECT 2;";
+        let d = Document::new(input.to_string(), 1);
+
+        // Get all statements first to get their IDs
+        let all_results = d.iter(DefaultMapper).collect::<Vec<_>>();
+        assert_eq!(all_results.len(), 2);
+
+        // Filter by first statement ID
+        let filter = IdFilter::new(all_results[0].0.clone());
+        let results = d
+            .iter_with_filter(DefaultMapper, filter)
+            .collect::<Vec<_>>();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].2, "SELECT 1;");
+    }
+
+    #[test]
+    fn test_no_filter() {
+        let input = "SELECT 1; SELECT 2; SELECT 3;";
+        let d = Document::new(input.to_string(), 1);
+
+        let results = d
+            .iter_with_filter(DefaultMapper, NoFilter)
+            .collect::<Vec<_>>();
+        assert_eq!(results.len(), 3);
+    }
+
+    #[test]
+    fn test_find_method() {
+        let input = "SELECT 1; SELECT 2;";
+        let d = Document::new(input.to_string(), 1);
+
+        // Get all statements to get their IDs
+        let all_results = d.iter(DefaultMapper).collect::<Vec<_>>();
+
+        // Find specific statement
+        let result = d.find(all_results[1].0.clone(), DefaultMapper);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().2, "SELECT 2;");
+
+        // Try to find non-existent statement
+        let fake_id = StatementId::new("SELECT 3;");
+        let result = d.find(fake_id, DefaultMapper);
+        assert!(result.is_none());
     }
 }

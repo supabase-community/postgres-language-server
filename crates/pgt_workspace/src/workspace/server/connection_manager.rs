@@ -34,23 +34,19 @@ impl ConnectionManager {
     pub(crate) fn get_pool(&self, settings: &DatabaseSettings) -> Option<PgPool> {
         let key = ConnectionKey::from(settings);
 
-        // Cleanup idle connections first
-        self.cleanup_idle_pools(&key);
-
         if !settings.enable_connection {
             tracing::info!("Database connection disabled.");
             return None;
         }
 
-        // Try read lock first for cache hit
-        if let Ok(pools) = self.pools.read() {
-            if let Some(cached_pool) = pools.get(&key) {
-                // Can't update last_accessed with read lock, but that's okay for occasional misses
-                return Some(cached_pool.pool.clone());
+        {
+            if let Ok(pools) = self.pools.read() {
+                if let Some(cached_pool) = pools.get(&key) {
+                    return Some(cached_pool.pool.clone());
+                }
             }
         }
 
-        // Cache miss or need to update timestamp - use write lock
         let mut pools = self.pools.write().unwrap();
 
         // Double-check after acquiring write lock
@@ -58,6 +54,21 @@ impl ConnectionManager {
             cached_pool.last_accessed = Instant::now();
             return Some(cached_pool.pool.clone());
         }
+
+        // Clean up idle connections before creating new ones to avoid unbounded growth
+        let now = Instant::now();
+        pools.retain(|k, cached_pool| {
+            let idle_duration = now.duration_since(cached_pool.last_accessed);
+            if idle_duration > cached_pool.idle_timeout && k != &key {
+                tracing::debug!(
+                    "Removing idle database connection (idle for {:?})",
+                    idle_duration
+                );
+                false
+            } else {
+                true
+            }
+        });
 
         // Create a new pool
         let config = PgConnectOptions::new()
@@ -84,26 +95,5 @@ impl ConnectionManager {
         pools.insert(key, cached_pool);
 
         Some(pool)
-    }
-
-    /// Remove pools that haven't been accessed for longer than the idle timeout
-    fn cleanup_idle_pools(&self, ignore_key: &ConnectionKey) {
-        let now = Instant::now();
-
-        let mut pools = self.pools.write().unwrap();
-
-        // Use retain to keep only non-idle connections
-        pools.retain(|key, cached_pool| {
-            let idle_duration = now.duration_since(cached_pool.last_accessed);
-            if idle_duration > cached_pool.idle_timeout && key != ignore_key {
-                tracing::debug!(
-                    "Removing idle database connection (idle for {:?})",
-                    idle_duration
-                );
-                false
-            } else {
-                true
-            }
-        });
     }
 }

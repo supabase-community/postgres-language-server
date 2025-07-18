@@ -12,7 +12,7 @@ pub struct PullDiagnosticsParams {
     pub skip: Vec<RuleSelector>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullDiagnosticsResult {
     pub diagnostics: Vec<pgt_diagnostics::serde::Diagnostic>,

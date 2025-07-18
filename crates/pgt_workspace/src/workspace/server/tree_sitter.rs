@@ -28,27 +28,29 @@ impl TreeSitterStore {
     }
 
     pub fn get_or_cache_tree(&self, statement: &StatementId) -> Arc<tree_sitter::Tree> {
-        let mut cache = self.db.lock().expect("Failed to lock cache");
-
-        if let Some(existing) = cache.get(statement) {
-            return existing.clone();
+        // First check cache
+        {
+            let mut cache = self.db.lock().unwrap();
+            if let Some(existing) = cache.get(statement) {
+                return existing.clone();
+            }
         }
 
-        // Cache miss - drop cache lock, parse, then re-acquire to insert
-        drop(cache);
-
-        let mut parser = self.parser.lock().expect("Failed to lock parser");
+        // Cache miss - parse outside of cache lock to avoid deadlock
+        let mut parser = self.parser.lock().unwrap();
         let tree = Arc::new(parser.parse(statement.content(), None).unwrap());
         drop(parser);
 
-        let mut cache = self.db.lock().expect("Failed to lock cache");
-
-        // Double-check after re-acquiring lock
-        if let Some(existing) = cache.get(statement) {
-            return existing.clone();
+        // Insert into cache
+        {
+            let mut cache = self.db.lock().unwrap();
+            // Double-check in case another thread inserted while we were parsing
+            if let Some(existing) = cache.get(statement) {
+                return existing.clone();
+            }
+            cache.put(statement.clone(), tree.clone());
         }
 
-        cache.put(statement.clone(), tree.clone());
         tree
     }
 }
