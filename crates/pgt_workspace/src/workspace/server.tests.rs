@@ -194,7 +194,7 @@ async fn correctly_ignores_files() {
     let close_file_result =
         workspace.close_file(crate::workspace::CloseFileParams { path: path.clone() });
 
-    assert!(close_file_result.is_ok_and(|res| res == ()));
+    assert!(close_file_result.is_ok());
 
     let execute_statement_result =
         workspace.execute_statement(crate::workspace::ExecuteStatementParams {
