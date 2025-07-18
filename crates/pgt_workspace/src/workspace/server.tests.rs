@@ -186,7 +186,7 @@ async fn correctly_ignores_files() {
     });
 
     assert!(
-        diagnostics_result.is_ok_and(|res| res.diagnostics.len() == 0
+        diagnostics_result.is_ok_and(|res| res.diagnostics.is_empty()
             && res.errors == 0
             && res.skipped_diagnostics == 0)
     );

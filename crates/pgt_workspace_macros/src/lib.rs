@@ -78,7 +78,7 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
                             if let syn::GenericArgument::Type(t) = t {
                                 if let syn::Type::Tuple(TypeTuple { elems, .. }) = t {
                                     // case: Result<(), E>
-                                    if elems.len() == 0 {
+                                    if elems.is_empty() {
                                         return TokenStream::from(quote! {
                                           #(#attrs)*
                                           #vis #sig {
@@ -115,7 +115,7 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
     // case fn foo() -> T {}
     // handles all other T's
     // T needs to implement Default
-    return TokenStream::from(quote! {
+    TokenStream::from(quote! {
       #(#attrs)*
       #vis #sig {
         if self.is_ignored(#macro_specified_path) {
@@ -123,5 +123,5 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
         }
         #block
       }
-    });
+    })
 }
