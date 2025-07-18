@@ -35,9 +35,10 @@ use crate::{
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
+        on_hover::{self, OnHoverParams, OnHoverResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::AnalyserDiagnosticsMapper,
+    workspace::{AnalyserDiagnosticsMapper, WithCSTMapper, WithCSTandASTMapper},
 };
 
 use super::{
@@ -634,18 +635,54 @@ impl Workspace for WorkspaceServer {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((_id, range, content, cst)) => {
+            Some((_id, range, cst)) => {
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {
                     position,
                     schema: schema_cache.as_ref(),
                     tree: &cst,
-                    text: content,
+                    text: _id.content().to_string(),
                 });
 
                 Ok(CompletionsResult { items })
             }
+        }
+    }
+
+    fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
+        let documents = self.documents.read().unwrap();
+        let doc = documents
+            .get(&params.path)
+            .ok_or(WorkspaceError::not_found())?;
+
+        let pool = self.get_current_connection();
+        if pool.is_none() {
+            tracing::debug!("No database connection available. Skipping completions.");
+            return Ok(OnHoverResult::default());
+        }
+        let pool = pool.unwrap();
+
+        let schema_cache = self.schema_cache.load(pool)?;
+
+        match doc
+            .iter_with_filter(
+                WithCSTandASTMapper,
+                CursorPositionFilter::new(params.position),
+            )
+            .next()
+        {
+            Some((stmt_id, range, content, ts_tree, maybe_ast)) => {
+                let markdown_blocks = pgt_hover::on_hover(pgt_hover::OnHoverParams {
+                    ts_tree: &ts_tree,
+                    schema_cache: &schema_cache,
+                    ast: maybe_ast,
+                    position,
+                });
+
+                OnHoverResult { markdown_blocks }
+            }
+            None => Ok(OnHoverResult::default()),
         }
     }
 }

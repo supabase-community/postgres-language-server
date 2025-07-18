@@ -268,14 +268,35 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
         )
     }
 }
-
-pub struct GetCompletionsMapper;
-impl<'a> StatementMapper<'a> for GetCompletionsMapper {
-    type Output = (StatementId, TextRange, String, Arc<tree_sitter::Tree>);
+pub struct WithCSTMapper;
+impl<'a> StatementMapper<'a> for WithCSTMapper {
+    type Output = (StatementId, TextRange, Arc<tree_sitter::Tree>);
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let tree = parser.cst_db.get_or_cache_tree(&id);
-        (id.clone(), range, id.content().to_string(), tree)
+        (id.clone(), range, tree)
+    }
+}
+
+pub struct WithCSTandASTMapper;
+impl<'a> StatementMapper<'a> for WithCSTandASTMapper {
+    type Output = (
+        StatementId,
+        TextRange,
+        Arc<tree_sitter::Tree>,
+        Option<pgt_query_ext::NodeEnum>,
+    );
+
+    fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
+        let tree = parser.cst_db.get_or_cache_tree(&id);
+        let ast_result = parser.ast_db.get_or_cache_ast(&id);
+
+        let ast_option = match &*ast_result {
+            Ok(node) => Some(node.clone()),
+            Err(_) => None,
+        };
+
+        (id.clone(), range, tree, ast_option)
     }
 }
 
@@ -555,7 +576,7 @@ $$ LANGUAGE plpgsql;";
         let input = "SELECT * FROM users;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(GetCompletionsMapper).collect::<Vec<_>>();
+        let results = d.iter(WithCSTMapper).collect::<Vec<_>>();
         assert_eq!(results.len(), 1);
 
         let (_id, _range, content, tree) = &results[0];

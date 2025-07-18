@@ -13,6 +13,7 @@ use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::panic::RefUnwindSafe;
 use std::path::PathBuf;
+use std::result;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -262,6 +263,14 @@ impl LanguageServer for LSPServer {
                         .await;
                 }
             }
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn hover(&self, params: HoverParams) -> LspResult<Option<HoverContents>> {
+        match handlers::hover::on_hover(session, params) {
+            Ok(result) => LspResult::Ok(Some(result)),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
         }
     }
 
