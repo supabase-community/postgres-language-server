@@ -74,37 +74,35 @@ pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
             if let Some(seg) = path.segments.last() {
                 if seg.ident == "Result" {
                     if let syn::PathArguments::AngleBracketed(type_args) = &seg.arguments {
-                        if let Some(t) = type_args.args.first() {
-                            if let syn::GenericArgument::Type(t) = t {
-                                if let syn::Type::Tuple(TypeTuple { elems, .. }) = t {
-                                    // case: Result<(), E>
-                                    if elems.is_empty() {
-                                        return TokenStream::from(quote! {
-                                          #(#attrs)*
-                                          #vis #sig {
-                                            if self.is_ignored(#macro_specified_path) {
-                                              return Ok(());
-                                            };
-                                            #block
-                                          }
-                                        });
-                                    }
+                        if let Some(syn::GenericArgument::Type(t)) = type_args.args.first() {
+                            if let syn::Type::Tuple(TypeTuple { elems, .. }) = t {
+                                // case: Result<(), E>
+                                if elems.is_empty() {
+                                    return TokenStream::from(quote! {
+                                      #(#attrs)*
+                                      #vis #sig {
+                                        if self.is_ignored(#macro_specified_path) {
+                                          return Ok(());
+                                        };
+                                        #block
+                                      }
+                                    });
                                 }
-                                if let syn::Type::Path(TypePath { path, .. }) = t {
-                                    if let Some(seg) = path.segments.first() {
-                                        let ident = &seg.ident;
-                                        return TokenStream::from(quote! {
-                                          #(#attrs)*
-                                          #vis #sig {
-                                            if self.is_ignored(#macro_specified_path) {
-                                              return Ok(#ident::default());
-                                            };
-                                            #block
-                                          }
-                                        });
-                                    }
+                            }
+                            if let syn::Type::Path(TypePath { path, .. }) = t {
+                                if let Some(seg) = path.segments.first() {
+                                    let ident = &seg.ident;
+                                    return TokenStream::from(quote! {
+                                      #(#attrs)*
+                                      #vis #sig {
+                                        if self.is_ignored(#macro_specified_path) {
+                                          return Ok(#ident::default());
+                                        };
+                                        #block
+                                      }
+                                    });
                                 }
-                            };
+                            }
                         };
                     };
                 };
