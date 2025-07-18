@@ -259,7 +259,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     (Some(node.clone()), None)
                 }
             }
-            Err(diag) => (None, Some(diag.clone())),
+            Err(diag) => (None, Some(diag.clone().span(range))),
         };
 
         (
