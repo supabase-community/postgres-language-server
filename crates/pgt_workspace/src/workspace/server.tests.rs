@@ -97,3 +97,58 @@ async fn test_diagnostics(test_db: PgPool) {
         Some(TextRange::new(106.into(), 136.into()))
     );
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_syntax_error(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+    let content = r#"
+      seect 1;
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 1, "Expected one diagnostic");
+
+    let diagnostic = &diagnostics[0];
+
+    assert_eq!(diagnostic.category().map(|c| c.name()), Some("syntax"));
+
+    assert_eq!(
+        diagnostic.location().span,
+        Some(TextRange::new(7.into(), 15.into()))
+    );
+}
