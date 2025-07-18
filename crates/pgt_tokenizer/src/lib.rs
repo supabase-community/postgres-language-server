@@ -1,7 +1,7 @@
 mod cursor;
 mod token;
 use cursor::{Cursor, EOF_CHAR};
-pub use token::{Base, LiteralKind, Token, TokenKind};
+pub use token::{Base, LiteralKind, NamedParamKind, Token, TokenKind};
 
 // via: https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L346
 // ident_start		[A-Za-z\200-\377_]
@@ -132,6 +132,46 @@ impl Cursor<'_> {
                 }
                 _ => TokenKind::Dot,
             },
+            '@' => {
+                if is_ident_start(self.first()) {
+                    // Named parameter with @ prefix.
+                    self.eat_while(is_ident_cont);
+                    TokenKind::NamedParam {
+                        kind: NamedParamKind::AtPrefix,
+                    }
+                } else {
+                    TokenKind::At
+                }
+            }
+            ':' => {
+                // Named parameters in psql with different substitution styles.
+                //
+                // https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
+                match self.first() {
+                    '\'' => {
+                        // Named parameter with colon prefix and single quotes.
+                        self.bump();
+                        let terminated = self.single_quoted_string();
+                        let kind = NamedParamKind::ColonString { terminated };
+                        TokenKind::NamedParam { kind }
+                    }
+                    '"' => {
+                        // Named parameter with colon prefix and double quotes.
+                        self.bump();
+                        let terminated = self.double_quoted_string();
+                        let kind = NamedParamKind::ColonIdentifier { terminated };
+                        TokenKind::NamedParam { kind }
+                    }
+                    c if is_ident_start(c) => {
+                        // Named parameter with colon prefix.
+                        self.eat_while(is_ident_cont);
+                        TokenKind::NamedParam {
+                            kind: NamedParamKind::ColonRaw,
+                        }
+                    }
+                    _ => TokenKind::Colon,
+                }
+            }
             // One-symbol tokens.
             ';' => TokenKind::Semi,
             '\\' => TokenKind::Backslash,
@@ -140,11 +180,9 @@ impl Cursor<'_> {
             ')' => TokenKind::CloseParen,
             '[' => TokenKind::OpenBracket,
             ']' => TokenKind::CloseBracket,
-            '@' => TokenKind::At,
             '#' => TokenKind::Pound,
             '~' => TokenKind::Tilde,
             '?' => TokenKind::Question,
-            ':' => TokenKind::Colon,
             '$' => {
                 // Dollar quoted strings
                 if is_ident_start(self.first()) || self.first() == '$' {
@@ -613,6 +651,31 @@ mod tests {
         }
         tokens
     }
+
+    #[test]
+    fn named_param_at() {
+        let result = lex("select 1 from c where id = @id;");
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn named_param_colon_raw() {
+        let result = lex("select 1 from c where id = :id;");
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn named_param_colon_string() {
+        let result = lex("select 1 from c where id = :'id';");
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn named_param_colon_identifier() {
+        let result = lex("select 1 from c where id = :\"id\";");
+        assert_debug_snapshot!(result);
+    }
+
     #[test]
     fn lex_statement() {
         let result = lex("select 1;");

@@ -1678,3 +1678,98 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
 
     Ok(())
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_plpgsql(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    let initial_content = r#"
+create function test_organisation_id ()
+    returns setof text
+    language plpgsql
+    security invoker
+    as $$
+    declre
+        v_organisation_id uuid;
+begin
+    return next is(private.organisation_id(), v_organisation_id, 'should return organisation_id of token');
+end
+$$;
+"#;
+
+    server.open_document(initial_content).await?;
+
+    let got_notification = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(msg)) => {
+                    if msg.diagnostics.iter().any(|d| {
+                        d.message
+                            .contains("Invalid statement: syntax error at or near \"declre\"")
+                            && d.range
+                                == Range {
+                                    start: Position {
+                                        line: 5,
+                                        character: 9,
+                                    },
+                                    end: Position {
+                                        line: 11,
+                                        character: 0,
+                                    },
+                                }
+                    }) {
+                        return true;
+                    }
+                }
+                _ => continue,
+            }
+        }
+    })
+    .await
+    .is_ok();
+
+    assert!(
+        got_notification,
+        "expected diagnostics for invalid declare statement"
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}

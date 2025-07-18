@@ -150,6 +150,29 @@ mod tests {
     }
 
     #[test]
+    fn revoke() {
+        Tester::from("revoke delete on table \"public\".\"voice_call\" from \"anon\";")
+            .expect_statements(vec![
+                "revoke delete on table \"public\".\"voice_call\" from \"anon\";",
+            ]);
+
+        Tester::from("revoke select on table \"public\".\"voice_call\" from \"anon\";")
+            .expect_statements(vec![
+                "revoke select on table \"public\".\"voice_call\" from \"anon\";",
+            ]);
+
+        Tester::from("revoke update on table \"public\".\"voice_call\" from \"anon\";")
+            .expect_statements(vec![
+                "revoke update on table \"public\".\"voice_call\" from \"anon\";",
+            ]);
+
+        Tester::from("revoke insert on table \"public\".\"voice_call\" from \"anon\";")
+            .expect_statements(vec![
+                "revoke insert on table \"public\".\"voice_call\" from \"anon\";",
+            ]);
+    }
+
+    #[test]
     fn double_newlines() {
         Tester::from("select 1 from contact\n\nselect 1\n\nselect 3").expect_statements(vec![
             "select 1 from contact",

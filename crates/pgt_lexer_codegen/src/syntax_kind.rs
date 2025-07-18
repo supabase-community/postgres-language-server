@@ -43,7 +43,7 @@ const PUNCT: &[(&str, &str)] = &[
     ("`", "BACKTICK"),
 ];
 
-const EXTRA: &[&str] = &["POSITIONAL_PARAM", "ERROR", "COMMENT", "EOF"];
+const EXTRA: &[&str] = &["POSITIONAL_PARAM", "NAMED_PARAM", "ERROR", "COMMENT", "EOF"];
 
 const LITERALS: &[&str] = &[
     "BIT_STRING",

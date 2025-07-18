@@ -157,7 +157,7 @@ postgrestools start
 Then, every command needs to add the `--use-server` options, e.g.:
 
 ```sh
-echo "select 1" | biome check --use-server --stdin-file-path=dummy.sql
+echo "select 1" | postgrestools check --use-server --stdin-file-path=dummy.sql
 ```
 
 #### Daemon logs

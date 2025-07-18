@@ -2693,6 +2693,7 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_query_ext",
+ "pgt_schema_cache",
  "pgt_text_size",
  "rustc-hash 2.1.0",
  "schemars",
@@ -2708,7 +2709,9 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_query_ext",
+ "pgt_schema_cache",
  "pgt_test_macros",
+ "pgt_text_size",
  "serde",
  "termcolor",
 ]

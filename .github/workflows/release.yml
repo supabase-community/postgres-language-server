@@ -122,7 +122,7 @@ jobs:
           fetch-depth: 0
 
       - name: 📝 Create Changelog
-        uses: orhun/git-cliff-action@v3
+        uses: orhun/git-cliff-action@v4
         id: create_changelog
         with:
           config: cliff.toml

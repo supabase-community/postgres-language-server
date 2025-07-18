@@ -183,6 +183,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         SyntaxKind::EXCEPT_KW,
                         // for grant
                         SyntaxKind::GRANT_KW,
+                        // for revoke
+                        SyntaxKind::REVOKE_KW,
                         SyntaxKind::COMMA,
                     ]
                     .iter()
@@ -215,6 +217,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         SyntaxKind::INSTEAD_KW,
                         // for grant
                         SyntaxKind::GRANT_KW,
+                        // for revoke
+                        SyntaxKind::REVOKE_KW,
                         SyntaxKind::COMMA,
                         // Do update in INSERT stmt
                         SyntaxKind::DO_KW,

@@ -9,10 +9,25 @@ use pgt_text_size::TextRange;
 pub struct SyntaxDiagnostic {
     /// The location where the error is occurred
     #[location(span)]
-    span: Option<TextRange>,
+    pub span: Option<TextRange>,
     #[message]
     #[description]
     pub message: MessageAndDescription,
+}
+
+impl SyntaxDiagnostic {
+    /// Create a new syntax diagnostic with the given message and optional span.
+    pub fn new(message: impl Into<String>, span: Option<TextRange>) -> Self {
+        SyntaxDiagnostic {
+            span,
+            message: MessageAndDescription::from(message.into()),
+        }
+    }
+
+    pub fn span(mut self, span: TextRange) -> Self {
+        self.span = Some(span);
+        self
+    }
 }
 
 impl From<pg_query::Error> for SyntaxDiagnostic {
