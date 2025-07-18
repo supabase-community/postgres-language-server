@@ -30,6 +30,32 @@ impl syn::parse::Parse for IgnoredPath {
 }
 
 #[proc_macro_attribute]
+/// You can use this on a workspace server function to return a default if the specified path
+/// is ignored by the user's settings.
+///
+///
+/// Usage:
+/// ```
+/// impl WorkspaceServer {
+///   #[ignore_path(path=&params.path)]
+///   fn foo(&self, params: FooParams) -> Result<FooResult, WorkspaceError> {
+///     ... codeblock
+///   }
+/// }
+///
+/// // …expands to…
+///
+/// impl WorkspaceServer {
+///   fn foo(&self, params: FooParams) -> Result<FooResult, WorkspaceError> {
+///     if self.is_ignored(&params.path) {
+///       return Ok(FooResult::default());
+///     }
+///     ... codeblock
+///   }
+/// }
+/// ```
+///
+/// This will work for any function where &self is in scope and that returns `Result<T, E>`, `Result<(), E>`, or `T`, where `T: Default`.
 pub fn ignored_path(args: TokenStream, input: TokenStream) -> TokenStream {
     let ignored_path = parse_macro_input!(args as IgnoredPath);
     let input_fn = parse_macro_input!(input as syn::ItemFn);
