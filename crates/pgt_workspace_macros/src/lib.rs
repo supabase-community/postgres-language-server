@@ -20,10 +20,7 @@ impl syn::parse::Parse for IgnoredPath {
         }
 
         let _: syn::Token!(=) = input.parse()?;
-        let path: syn::Expr = match input.parse() {
-            Ok(it) => it,
-            Err(_) => return Err(syn::Error::new_spanned(arg_name, "This is wrong brotha")),
-        };
+        let path: syn::Expr = input.parse()?;
 
         Ok(Self { path })
     }
@@ -34,7 +31,7 @@ impl syn::parse::Parse for IgnoredPath {
 /// is ignored by the user's settings.
 ///
 /// This will work for any function where &self is in scope and that returns `Result<T, E>`, `Result<(), E>`, or `T`, where `T: Default`.
-/// `path` needs to point at a `&PgTPath``.
+/// `path` needs to point at a `&PgTPath`.
 ///
 /// ### Usage
 ///
