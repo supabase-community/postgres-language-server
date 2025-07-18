@@ -1,5 +1,6 @@
+use crate::adapters::from_lsp::text_range;
 use crate::adapters::line_index::LineIndex;
-use crate::adapters::{PositionEncoding, from_lsp, to_lsp};
+use crate::adapters::{PositionEncoding, to_lsp};
 use anyhow::{Context, Result, ensure};
 use pgt_console::MarkupBuf;
 use pgt_console::fmt::Termcolor;
@@ -10,8 +11,8 @@ use pgt_text_size::{TextRange, TextSize};
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
-use std::io;
 use std::ops::{Add, Range};
+use std::{io, mem};
 use tower_lsp::jsonrpc::Error as LspError;
 use tower_lsp::lsp_types;
 use tower_lsp::lsp_types::{self as lsp, CodeDescription, Url};
@@ -183,7 +184,7 @@ pub(crate) fn panic_to_lsp_error(err: Box<dyn Any + Send>) -> LspError {
 pub(crate) fn apply_document_changes(
     position_encoding: PositionEncoding,
     current_content: String,
-    content_changes: &[lsp_types::TextDocumentContentChangeEvent],
+    mut content_changes: Vec<lsp_types::TextDocumentContentChangeEvent>,
 ) -> String {
     // Skip to the last full document change, as it invalidates all previous changes anyways.
     let mut start = content_changes
@@ -192,12 +193,12 @@ pub(crate) fn apply_document_changes(
         .position(|change| change.range.is_none())
         .map_or(0, |idx| content_changes.len() - idx - 1);
 
-    let mut text: String = match content_changes.get(start) {
+    let mut text: String = match content_changes.get_mut(start) {
         // peek at the first content change as an optimization
         Some(lsp_types::TextDocumentContentChangeEvent {
             range: None, text, ..
         }) => {
-            let text = text.clone();
+            let text = mem::take(text);
             start += 1;
 
             // The only change is a full document update
@@ -225,12 +226,11 @@ pub(crate) fn apply_document_changes(
                 line_index = LineIndex::new(&text);
             }
             index_valid = range.start.line;
-            if let Ok(range) = from_lsp::text_range(&line_index, range, position_encoding) {
+            if let Ok(range) = text_range(&line_index, range, position_encoding) {
                 text.replace_range(Range::<usize>::from(range), &change.text);
             }
         }
     }
-
     text
 }
 
