@@ -1,6 +1,6 @@
 use crate::adapters::from_lsp::text_range;
 use crate::adapters::line_index::LineIndex;
-use crate::adapters::{PositionEncoding, from_lsp, to_lsp};
+use crate::adapters::{PositionEncoding, to_lsp};
 use anyhow::{Context, Result, ensure};
 use pgt_console::MarkupBuf;
 use pgt_console::fmt::Termcolor;
