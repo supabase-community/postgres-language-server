@@ -24,7 +24,7 @@ impl From<&str> for QueryWithCursorPosition {
     fn from(value: &str) -> Self {
         let position = value
             .find(CURSOR_POS)
-            .expect("Use `InputQuery::cursor_marker()` to insert cursor position into your Query.");
+            .expect("Use `QueryWithCursorPosition::cursor_marker()` to insert cursor position into your Query.");
 
         QueryWithCursorPosition {
             sql: value.replace(CURSOR_POS, "").trim().to_string(),
