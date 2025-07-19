@@ -14,6 +14,7 @@ version              = "0.0.0"
 [dependencies]
 pgt_text_size.workspace = true
 pgt_schema_cache.workspace       = true
+pgt_treesitter.workspace = true
 pgt_query_ext.workspace = true
 schemars                         = { workspace = true, optional = true }
 serde                            = { workspace = true, features = ["derive"] }

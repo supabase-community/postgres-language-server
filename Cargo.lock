@@ -2892,6 +2892,7 @@ dependencies = [
  "pgt_schema_cache",
  "pgt_test_utils",
  "pgt_text_size",
+ "pgt_treesitter",
  "schemars",
  "serde",
  "serde_json",
