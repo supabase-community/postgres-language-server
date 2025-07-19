@@ -31,19 +31,18 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
 
     let ctx = TreesitterContext::new(TreeSitterContextParams {
         position: sanitized_params.position,
-        schema: sanitized_params.schema,
         text: &sanitized_params.text,
         tree: &sanitized_params.tree,
     });
 
     let mut builder = CompletionBuilder::new(&ctx);
 
-    complete_tables(&ctx, &mut builder);
-    complete_functions(&ctx, &mut builder);
-    complete_columns(&ctx, &mut builder);
-    complete_schemas(&ctx, &mut builder);
-    complete_policies(&ctx, &mut builder);
-    complete_roles(&ctx, &mut builder);
+    complete_tables(&ctx, sanitized_params.schema, &mut builder);
+    complete_functions(&ctx, sanitized_params.schema, &mut builder);
+    complete_columns(&ctx, sanitized_params.schema, &mut builder);
+    complete_schemas(&ctx, sanitized_params.schema, &mut builder);
+    complete_policies(&ctx, sanitized_params.schema, &mut builder);
+    complete_roles(&ctx, sanitized_params.schema, &mut builder);
 
     builder.finish()
 }

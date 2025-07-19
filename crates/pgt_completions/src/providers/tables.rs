@@ -1,3 +1,4 @@
+use pgt_schema_cache::SchemaCache;
 use pgt_treesitter::TreesitterContext;
 
 use crate::{
@@ -8,8 +9,12 @@ use crate::{
 
 use super::helper::get_completion_text_with_schema_or_alias;
 
-pub fn complete_tables<'a>(ctx: &'a TreesitterContext, builder: &mut CompletionBuilder<'a>) {
-    let available_tables = &ctx.schema_cache.tables;
+pub fn complete_tables<'a>(
+    ctx: &'a TreesitterContext,
+    schema_cache: &'a SchemaCache,
+    builder: &mut CompletionBuilder<'a>,
+) {
+    let available_tables = &schema_cache.tables;
 
     for table in available_tables {
         let relevance = CompletionRelevanceData::Table(table);

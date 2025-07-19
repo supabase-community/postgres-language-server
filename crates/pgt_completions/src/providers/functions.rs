@@ -1,4 +1,4 @@
-use pgt_schema_cache::Function;
+use pgt_schema_cache::{Function, SchemaCache};
 use pgt_treesitter::TreesitterContext;
 
 use crate::{
@@ -10,8 +10,12 @@ use crate::{
 
 use super::helper::get_completion_text_with_schema_or_alias;
 
-pub fn complete_functions<'a>(ctx: &'a TreesitterContext, builder: &mut CompletionBuilder<'a>) {
-    let available_functions = &ctx.schema_cache.functions;
+pub fn complete_functions<'a>(
+    ctx: &'a TreesitterContext,
+    schema_cache: &'a SchemaCache,
+    builder: &mut CompletionBuilder<'a>,
+) {
+    let available_functions = &schema_cache.functions;
 
     for func in available_functions {
         let relevance = CompletionRelevanceData::Function(func);

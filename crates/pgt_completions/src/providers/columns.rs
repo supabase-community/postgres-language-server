@@ -1,3 +1,4 @@
+use pgt_schema_cache::SchemaCache;
 use pgt_treesitter::{TreesitterContext, WrappingClause};
 
 use crate::{
@@ -8,8 +9,12 @@ use crate::{
 
 use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
 
-pub fn complete_columns<'a>(ctx: &TreesitterContext<'a>, builder: &mut CompletionBuilder<'a>) {
-    let available_columns = &ctx.schema_cache.columns;
+pub fn complete_columns<'a>(
+    ctx: &TreesitterContext<'a>,
+    schema_cache: &'a SchemaCache,
+    builder: &mut CompletionBuilder<'a>,
+) {
+    let available_columns = &schema_cache.columns;
 
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);

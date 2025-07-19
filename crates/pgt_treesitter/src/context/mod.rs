@@ -8,7 +8,6 @@ mod policy_parser;
 mod revoke_parser;
 
 use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
-use pgt_schema_cache::SchemaCache;
 use pgt_text_size::{TextRange, TextSize};
 
 use crate::context::{
@@ -146,7 +145,6 @@ impl TryFrom<String> for WrappingNode {
 pub struct TreeSitterContextParams<'a> {
     pub position: TextSize,
     pub text: &'a str,
-    pub schema: &'a pgt_schema_cache::SchemaCache,
     pub tree: &'a tree_sitter::Tree,
 }
 
@@ -156,7 +154,6 @@ pub struct TreesitterContext<'a> {
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
-    pub schema_cache: &'a SchemaCache,
     pub position: usize,
 
     /// If the cursor is on a node that uses dot notation
@@ -196,7 +193,6 @@ impl<'a> TreesitterContext<'a> {
         let mut ctx = Self {
             tree: params.tree,
             text: params.text,
-            schema_cache: params.schema,
             position: usize::from(params.position),
             node_under_cursor: None,
             schema_or_alias_name: None,
@@ -884,7 +880,6 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
-                schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
             let ctx = TreesitterContext::new(params);
@@ -934,7 +929,6 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
-                schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
             let ctx = TreesitterContext::new(params);
@@ -995,7 +989,6 @@ mod tests {
                 position: (position as u32).into(),
                 text: text.as_str(),
                 tree: &tree,
-                schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
             let ctx = TreesitterContext::new(params);
@@ -1026,7 +1019,6 @@ mod tests {
                 position: (position as u32).into(),
                 text: &text,
                 tree: &tree,
-                schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
             let ctx = TreesitterContext::new(params);
@@ -1062,7 +1054,6 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
-            schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
         let ctx = TreesitterContext::new(params);
@@ -1089,7 +1080,6 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
-            schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
         let ctx = TreesitterContext::new(params);
@@ -1119,7 +1109,6 @@ mod tests {
             position: (position as u32).into(),
             text: &text,
             tree: &tree,
-            schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
         let ctx = TreesitterContext::new(params);
