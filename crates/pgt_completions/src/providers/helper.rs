@@ -1,10 +1,10 @@
 use pgt_text_size::{TextRange, TextSize};
-use pgt_treesitter::CompletionContext;
+use pgt_treesitter::TreesitterContext;
 
 use crate::{CompletionText, remove_sanitized_token};
 
 pub(crate) fn find_matching_alias_for_table(
-    ctx: &CompletionContext,
+    ctx: &TreesitterContext,
     table_name: &str,
 ) -> Option<String> {
     for (alias, table) in ctx.mentioned_table_aliases.iter() {
@@ -15,7 +15,7 @@ pub(crate) fn find_matching_alias_for_table(
     None
 }
 
-pub(crate) fn get_range_to_replace(ctx: &CompletionContext) -> TextRange {
+pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     match ctx.node_under_cursor.as_ref() {
         Some(node) => {
             let content = ctx.get_node_under_cursor_content().unwrap_or("".into());
@@ -31,7 +31,7 @@ pub(crate) fn get_range_to_replace(ctx: &CompletionContext) -> TextRange {
 }
 
 pub(crate) fn get_completion_text_with_schema_or_alias(
-    ctx: &CompletionContext,
+    ctx: &TreesitterContext,
     item_name: &str,
     schema_or_alias_name: &str,
 ) -> Option<CompletionText> {

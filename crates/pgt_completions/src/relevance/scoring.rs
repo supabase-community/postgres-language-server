@@ -1,6 +1,6 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use pgt_treesitter::context::{CompletionContext, WrappingClause, WrappingNode};
+use pgt_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
 
 use crate::sanitization;
 
@@ -26,7 +26,7 @@ impl CompletionScore<'_> {
         self.score
     }
 
-    pub fn calc_score(&mut self, ctx: &CompletionContext) {
+    pub fn calc_score(&mut self, ctx: &TreesitterContext) {
         self.check_is_user_defined();
         self.check_matches_schema(ctx);
         self.check_matches_query_input(ctx);
@@ -37,7 +37,7 @@ impl CompletionScore<'_> {
         self.check_columns_in_stmt(ctx);
     }
 
-    fn check_matches_query_input(&mut self, ctx: &CompletionContext) {
+    fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
         let content = match ctx.get_node_under_cursor_content() {
             Some(c) if !sanitization::is_sanitized_token(c.as_str()) => c.replace('"', ""),
             _ => return,
@@ -71,7 +71,7 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_matching_clause_type(&mut self, ctx: &CompletionContext) {
+    fn check_matching_clause_type(&mut self, ctx: &TreesitterContext) {
         let clause_type = match ctx.wrapping_clause_type.as_ref() {
             None => return,
             Some(ct) => ct,
@@ -137,7 +137,7 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_matching_wrapping_node(&mut self, ctx: &CompletionContext) {
+    fn check_matching_wrapping_node(&mut self, ctx: &TreesitterContext) {
         let wrapping_node = match ctx.wrapping_node_kind.as_ref() {
             None => return,
             Some(wn) => wn,
@@ -174,7 +174,7 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_is_invocation(&mut self, ctx: &CompletionContext) {
+    fn check_is_invocation(&mut self, ctx: &TreesitterContext) {
         self.score += match self.data {
             CompletionRelevanceData::Function(_) if ctx.is_invocation => 30,
             CompletionRelevanceData::Function(_) if !ctx.is_invocation => -10,
@@ -183,7 +183,7 @@ impl CompletionScore<'_> {
         };
     }
 
-    fn check_matches_schema(&mut self, ctx: &CompletionContext) {
+    fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
         let schema_name = match ctx.schema_or_alias_name.as_ref() {
             None => return,
             Some(n) => n,
@@ -232,7 +232,7 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_relations_in_stmt(&mut self, ctx: &CompletionContext) {
+    fn check_relations_in_stmt(&mut self, ctx: &TreesitterContext) {
         match self.data {
             CompletionRelevanceData::Table(_) | CompletionRelevanceData::Function(_) => return,
             _ => {}
@@ -316,7 +316,7 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_columns_in_stmt(&mut self, ctx: &CompletionContext) {
+    fn check_columns_in_stmt(&mut self, ctx: &TreesitterContext) {
         if let CompletionRelevanceData::Column(column) = self.data {
             /*
              * Columns can be mentioned in one of two ways:

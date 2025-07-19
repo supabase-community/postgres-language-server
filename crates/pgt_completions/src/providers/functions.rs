@@ -1,5 +1,5 @@
 use pgt_schema_cache::Function;
-use pgt_treesitter::CompletionContext;
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
@@ -10,7 +10,7 @@ use crate::{
 
 use super::helper::get_completion_text_with_schema_or_alias;
 
-pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_functions<'a>(ctx: &'a TreesitterContext, builder: &mut CompletionBuilder<'a>) {
     let available_functions = &ctx.schema_cache.functions;
 
     for func in available_functions {
@@ -30,7 +30,7 @@ pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut Completi
     }
 }
 
-fn get_completion_text(ctx: &CompletionContext, func: &Function) -> CompletionText {
+fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
     let range = get_range_to_replace(ctx);
     let mut text = get_completion_text_with_schema_or_alias(ctx, &func.name, &func.schema)
         .map(|ct| ct.text)

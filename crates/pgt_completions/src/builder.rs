@@ -4,7 +4,7 @@ use crate::{
     relevance::{filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use pgt_treesitter::CompletionContext;
+use pgt_treesitter::TreesitterContext;
 
 pub(crate) struct PossibleCompletionItem<'a> {
     pub label: String,
@@ -18,11 +18,11 @@ pub(crate) struct PossibleCompletionItem<'a> {
 
 pub(crate) struct CompletionBuilder<'a> {
     items: Vec<PossibleCompletionItem<'a>>,
-    ctx: &'a CompletionContext<'a>,
+    ctx: &'a TreesitterContext<'a>,
 }
 
 impl<'a> CompletionBuilder<'a> {
-    pub fn new(ctx: &'a CompletionContext) -> Self {
+    pub fn new(ctx: &'a TreesitterContext) -> Self {
         CompletionBuilder { items: vec![], ctx }
     }
 

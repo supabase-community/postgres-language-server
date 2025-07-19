@@ -1,6 +1,6 @@
 use pgt_schema_cache::ProcKind;
 
-use pgt_treesitter::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
+use pgt_treesitter::context::{NodeUnderCursor, TreesitterContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -16,7 +16,7 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 }
 
 impl CompletionFilter<'_> {
-    pub fn is_relevant(&self, ctx: &CompletionContext) -> Option<()> {
+    pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         self.completable_context(ctx)?;
         self.check_clause(ctx)?;
         self.check_invocation(ctx)?;
@@ -25,7 +25,7 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn completable_context(&self, ctx: &CompletionContext) -> Option<()> {
+    fn completable_context(&self, ctx: &TreesitterContext) -> Option<()> {
         if ctx.wrapping_node_kind.is_none() && ctx.wrapping_clause_type.is_none() {
             return None;
         }
@@ -70,7 +70,7 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
+    fn check_clause(&self, ctx: &TreesitterContext) -> Option<()> {
         ctx.wrapping_clause_type
             .as_ref()
             .map(|clause| {
@@ -208,7 +208,7 @@ impl CompletionFilter<'_> {
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
     }
 
-    fn check_invocation(&self, ctx: &CompletionContext) -> Option<()> {
+    fn check_invocation(&self, ctx: &TreesitterContext) -> Option<()> {
         if !ctx.is_invocation {
             return Some(());
         }
@@ -221,7 +221,7 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_mentioned_schema_or_alias(&self, ctx: &CompletionContext) -> Option<()> {
+    fn check_mentioned_schema_or_alias(&self, ctx: &TreesitterContext) -> Option<()> {
         if ctx.schema_or_alias_name.is_none() {
             return Some(());
         }

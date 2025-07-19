@@ -1,4 +1,4 @@
-use pgt_treesitter::{CompletionContext, WrappingClause};
+use pgt_treesitter::{TreesitterContext, WrappingClause};
 
 use crate::{
     CompletionItemKind,
@@ -8,7 +8,7 @@ use crate::{
 
 use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
 
-pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_columns<'a>(ctx: &TreesitterContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
 
     for col in available_columns {

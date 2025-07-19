@@ -1,4 +1,4 @@
-use pgt_treesitter::CompletionContext;
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
@@ -8,7 +8,7 @@ use crate::{
 
 use super::helper::get_completion_text_with_schema_or_alias;
 
-pub fn complete_tables<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_tables<'a>(ctx: &'a TreesitterContext, builder: &mut CompletionBuilder<'a>) {
     let available_tables = &ctx.schema_cache.tables;
 
     for table in available_tables {

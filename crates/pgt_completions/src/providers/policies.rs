@@ -1,5 +1,5 @@
 use pgt_text_size::{TextRange, TextSize};
-use pgt_treesitter::CompletionContext;
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
@@ -9,7 +9,7 @@ use crate::{
 
 use super::helper::get_range_to_replace;
 
-pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_policies<'a>(ctx: &TreesitterContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_policies = &ctx.schema_cache.policies;
 
     let surrounded_by_quotes = ctx

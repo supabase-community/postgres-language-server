@@ -1,6 +1,6 @@
 use pgt_text_size::TextSize;
 
-use pgt_treesitter::{TreeSitterContextParams, context::CompletionContext};
+use pgt_treesitter::{TreeSitterContextParams, context::TreesitterContext};
 
 use crate::{
     builder::CompletionBuilder,
@@ -29,7 +29,7 @@ pub struct CompletionParams<'a> {
 pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
     let sanitized_params = SanitizedCompletionParams::from(params);
 
-    let ctx = CompletionContext::new(TreeSitterContextParams {
+    let ctx = TreesitterContext::new(TreeSitterContextParams {
         position: sanitized_params.position,
         schema: sanitized_params.schema,
         text: &sanitized_params.text,

@@ -2,9 +2,9 @@ use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgt_treesitter::CompletionContext;
+use pgt_treesitter::TreesitterContext;
 
-pub fn complete_schemas<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_schemas<'a>(ctx: &'a TreesitterContext, builder: &mut CompletionBuilder<'a>) {
     let available_schemas = &ctx.schema_cache.schemas;
 
     for schema in available_schemas {

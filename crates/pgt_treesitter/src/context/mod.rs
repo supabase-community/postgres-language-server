@@ -151,7 +151,7 @@ pub struct TreeSitterContextParams<'a> {
 }
 
 #[derive(Debug)]
-pub struct CompletionContext<'a> {
+pub struct TreesitterContext<'a> {
     pub node_under_cursor: Option<NodeUnderCursor<'a>>,
 
     pub tree: &'a tree_sitter::Tree,
@@ -191,7 +191,7 @@ pub struct CompletionContext<'a> {
     pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 }
 
-impl<'a> CompletionContext<'a> {
+impl<'a> TreesitterContext<'a> {
     pub fn new(params: TreeSitterContextParams<'a>) -> Self {
         let mut ctx = Self {
             tree: params.tree,
@@ -792,7 +792,7 @@ impl<'a> CompletionContext<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::context::{CompletionContext, TreeSitterContextParams, WrappingClause};
+    use crate::context::{TreeSitterContextParams, TreesitterContext, WrappingClause};
 
     use pgt_test_utils::QueryWithCursorPosition;
 
@@ -887,7 +887,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(params);
+            let ctx = TreesitterContext::new(params);
 
             assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
         }
@@ -937,7 +937,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(params);
+            let ctx = TreesitterContext::new(params);
 
             assert_eq!(
                 ctx.schema_or_alias_name,
@@ -998,7 +998,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(params);
+            let ctx = TreesitterContext::new(params);
 
             assert_eq!(ctx.is_invocation, is_invocation);
         }
@@ -1029,7 +1029,7 @@ mod tests {
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(params);
+            let ctx = TreesitterContext::new(params);
 
             let node = ctx.node_under_cursor.as_ref().unwrap();
 
@@ -1065,7 +1065,7 @@ mod tests {
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(params);
+        let ctx = TreesitterContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
@@ -1092,7 +1092,7 @@ mod tests {
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(params);
+        let ctx = TreesitterContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
@@ -1122,7 +1122,7 @@ mod tests {
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(params);
+        let ctx = TreesitterContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
