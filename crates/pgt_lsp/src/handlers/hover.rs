@@ -21,7 +21,7 @@ pub(crate) fn on_hover(
             Ok(lsp_types::HoverContents::Array(
                 result
                     .into_iter()
-                    .map(|markdown| MarkedString::from_markdown(markdown))
+                    .map(MarkedString::from_markdown)
                     .collect(),
             ))
         }

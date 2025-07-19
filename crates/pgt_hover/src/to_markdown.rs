@@ -8,9 +8,9 @@ pub(crate) trait ToHoverMarkdown {
 
 impl ToHoverMarkdown for pgt_schema_cache::Table {
     fn to_hover_markdown<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
-        HeadlineWriter::for_table(writer, &self)?;
-        BodyWriter::for_table(writer, &self)?;
-        FooterWriter::for_table(writer, &self)?;
+        HeadlineWriter::for_table(writer, self)?;
+        BodyWriter::for_table(writer, self)?;
+        FooterWriter::for_table(writer, self)?;
 
         Ok(())
     }
