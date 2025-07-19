@@ -7,12 +7,9 @@ mod grant_parser;
 mod policy_parser;
 mod revoke_parser;
 
+use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
 use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextRange;
-use pgt_treesitter_queries::{
-    TreeSitterQueriesExecutor,
-    queries::{self, QueryResult},
-};
 
 use crate::{
     NodeText,
@@ -178,6 +175,7 @@ pub(crate) struct CompletionContext<'a> {
     ///     on u.id = i.user_id;
     /// ```
     pub schema_or_alias_name: Option<String>,
+
     pub wrapping_clause_type: Option<WrappingClause<'a>>,
 
     pub wrapping_node_kind: Option<WrappingNode>,

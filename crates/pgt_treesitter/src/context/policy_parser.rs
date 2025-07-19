@@ -212,8 +212,9 @@ mod tests {
     use crate::{
         context::base_parser::CompletionStatementParser,
         context::policy_parser::{PolicyContext, PolicyStmtKind},
-        test_helper::CURSOR_POS,
     };
+
+    static CURSOR_POS: char = '€';
 
     use super::PolicyParser;
 
