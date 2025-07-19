@@ -1,6 +1,6 @@
 use pgt_schema_cache::ProcKind;
 
-use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
+use pgt_treesitter::context::{NodeUnderCursor, TreesitterContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -16,7 +16,7 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 }
 
 impl CompletionFilter<'_> {
-    pub fn is_relevant(&self, ctx: &CompletionContext) -> Option<()> {
+    pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         self.completable_context(ctx)?;
         self.check_clause(ctx)?;
         self.check_invocation(ctx)?;
@@ -25,7 +25,7 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn completable_context(&self, ctx: &CompletionContext) -> Option<()> {
+    fn completable_context(&self, ctx: &TreesitterContext) -> Option<()> {
         if ctx.wrapping_node_kind.is_none() && ctx.wrapping_clause_type.is_none() {
             return None;
         }
@@ -70,7 +70,7 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_clause(&self, ctx: &CompletionContext) -> Option<()> {
+    fn check_clause(&self, ctx: &TreesitterContext) -> Option<()> {
         ctx.wrapping_clause_type
             .as_ref()
             .map(|clause| {
@@ -208,7 +208,7 @@ impl CompletionFilter<'_> {
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
     }
 
-    fn check_invocation(&self, ctx: &CompletionContext) -> Option<()> {
+    fn check_invocation(&self, ctx: &TreesitterContext) -> Option<()> {
         if !ctx.is_invocation {
             return Some(());
         }
@@ -221,7 +221,7 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_mentioned_schema_or_alias(&self, ctx: &CompletionContext) -> Option<()> {
+    fn check_mentioned_schema_or_alias(&self, ctx: &TreesitterContext) -> Option<()> {
         if ctx.schema_or_alias_name.is_none() {
             return Some(());
         }
@@ -255,8 +255,10 @@ mod tests {
     use sqlx::{Executor, PgPool};
 
     use crate::test_helper::{
-        CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
+        CompletionAssertion, assert_complete_results, assert_no_complete_results,
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completion_after_asterisk(pool: PgPool) {
@@ -270,11 +272,16 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(format!("select * {}", CURSOR_POS).as_str(), None, &pool).await;
+        assert_no_complete_results(
+            format!("select * {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            None,
+            &pool,
+        )
+        .await;
 
         // if there s a COMMA after the asterisk, we're good
         assert_complete_results(
-            format!("select *, {}", CURSOR_POS).as_str(),
+            format!("select *, {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::Label("address".into()),
                 CompletionAssertion::Label("email".into()),
@@ -288,13 +295,20 @@ mod tests {
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completion_after_create_table(pool: PgPool) {
-        assert_no_complete_results(format!("create table {}", CURSOR_POS).as_str(), None, &pool)
-            .await;
+        assert_no_complete_results(
+            format!("create table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            None,
+            &pool,
+        )
+        .await;
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completion_in_column_definitions(pool: PgPool) {
-        let query = format!(r#"create table instruments ( {} )"#, CURSOR_POS);
+        let query = format!(
+            r#"create table instruments ( {} )"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
         assert_no_complete_results(query.as_str(), None, &pool).await;
     }
 }

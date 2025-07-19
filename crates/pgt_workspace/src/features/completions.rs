@@ -82,17 +82,17 @@ mod tests {
 
     use super::get_statement_for_completions;
 
-    static CURSOR_POSITION: &str = "€";
+    use pgt_test_utils::QueryWithCursorPosition;
 
     fn get_doc_and_pos(sql: &str) -> (Document, TextSize) {
         let pos = sql
-            .find(CURSOR_POSITION)
+            .find(QueryWithCursorPosition::cursor_marker())
             .expect("Please add cursor position to test sql");
 
         let pos: u32 = pos.try_into().unwrap();
 
         (
-            Document::new(sql.replace(CURSOR_POSITION, ""), 5),
+            Document::new(sql.replace(QueryWithCursorPosition::cursor_marker(), ""), 5),
             TextSize::new(pos),
         )
     }
@@ -107,7 +107,7 @@ mod tests {
 
             select 1;
         "#,
-            CURSOR_POSITION
+            QueryWithCursorPosition::cursor_marker()
         );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn does_not_break_when_no_statements_exist() {
-        let sql = CURSOR_POSITION.to_string();
+        let sql = QueryWithCursorPosition::cursor_marker().to_string();
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -129,7 +129,10 @@ mod tests {
 
     #[test]
     fn does_not_return_overlapping_statements_if_too_close() {
-        let sql = format!("select * from {}select 1;", CURSOR_POSITION);
+        let sql = format!(
+            "select * from {}select 1;",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -141,7 +144,10 @@ mod tests {
 
     #[test]
     fn is_fine_with_spaces() {
-        let sql = format!("select * from     {}     ;", CURSOR_POSITION);
+        let sql = format!(
+            "select * from     {}     ;",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -153,7 +159,7 @@ mod tests {
 
     #[test]
     fn considers_offset() {
-        let sql = format!("select * from {}", CURSOR_POSITION);
+        let sql = format!("select * from {}", QueryWithCursorPosition::cursor_marker());
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -174,7 +180,7 @@ mod tests {
                 select {} from cool;
             $$;
         "#,
-            CURSOR_POSITION
+            QueryWithCursorPosition::cursor_marker()
         );
 
         let sql = sql.trim();
@@ -189,7 +195,10 @@ mod tests {
 
     #[test]
     fn does_not_consider_too_far_offset() {
-        let sql = format!("select * from  {}", CURSOR_POSITION);
+        let sql = format!(
+            "select * from  {}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -198,7 +207,10 @@ mod tests {
 
     #[test]
     fn does_not_consider_offset_if_statement_terminated_by_semi() {
-        let sql = format!("select * from users;{}", CURSOR_POSITION);
+        let sql = format!(
+            "select * from users;{}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
