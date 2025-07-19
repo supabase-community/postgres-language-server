@@ -255,8 +255,10 @@ mod tests {
     use sqlx::{Executor, PgPool};
 
     use crate::test_helper::{
-        CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
+        CompletionAssertion, assert_complete_results, assert_no_complete_results,
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completion_after_asterisk(pool: PgPool) {
@@ -270,11 +272,16 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(format!("select * {}", CURSOR_POS).as_str(), None, &pool).await;
+        assert_no_complete_results(
+            format!("select * {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            None,
+            &pool,
+        )
+        .await;
 
         // if there s a COMMA after the asterisk, we're good
         assert_complete_results(
-            format!("select *, {}", CURSOR_POS).as_str(),
+            format!("select *, {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::Label("address".into()),
                 CompletionAssertion::Label("email".into()),
@@ -288,13 +295,20 @@ mod tests {
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completion_after_create_table(pool: PgPool) {
-        assert_no_complete_results(format!("create table {}", CURSOR_POS).as_str(), None, &pool)
-            .await;
+        assert_no_complete_results(
+            format!("create table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            None,
+            &pool,
+        )
+        .await;
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completion_in_column_definitions(pool: PgPool) {
-        let query = format!(r#"create table instruments ( {} )"#, CURSOR_POS);
+        let query = format!(
+            r#"create table instruments ( {} )"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
         assert_no_complete_results(query.as_str(), None, &pool).await;
     }
 }

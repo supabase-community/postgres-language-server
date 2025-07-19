@@ -29,7 +29,9 @@ pub fn complete_roles<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionB
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
+    use crate::test_helper::{CompletionAssertion, assert_complete_results};
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     const SETUP: &str = r#"
             create table users (
@@ -42,7 +44,7 @@ mod tests {
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn works_in_drop_role(pool: PgPool) {
         assert_complete_results(
-            format!("drop role {}", CURSOR_POS).as_str(),
+            format!("drop role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
@@ -63,7 +65,7 @@ mod tests {
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn works_in_alter_role(pool: PgPool) {
         assert_complete_results(
-            format!("alter role {}", CURSOR_POS).as_str(),
+            format!("alter role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
@@ -86,7 +88,7 @@ mod tests {
         pool.execute(SETUP).await.unwrap();
 
         assert_complete_results(
-            format!("set role {}", CURSOR_POS).as_str(),
+            format!("set role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
@@ -104,7 +106,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("set session authorization {}", CURSOR_POS).as_str(),
+            format!(
+                "set session authorization {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
                 CompletionAssertion::LabelAndKind(
@@ -133,7 +139,7 @@ mod tests {
             for all
             to {}
             using (true);"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -157,7 +163,7 @@ mod tests {
                 r#"create policy "my cool policy" on public.users
             for select
             to {}"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -186,7 +192,7 @@ mod tests {
                 r#"grant select
                     on table public.users
                     to {}"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -211,7 +217,7 @@ mod tests {
                 r#"grant select
                     on table public.users
                     to owner, {}"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -232,7 +238,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!(r#"grant {} to owner"#, CURSOR_POS).as_str(),
+            format!(
+                r#"grant {} to owner"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 // recognizing already mentioned roles is not supported for now
                 CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
@@ -256,12 +266,30 @@ mod tests {
         pool.execute(SETUP).await.unwrap();
 
         let queries = vec![
-            format!("revoke {} from owner", CURSOR_POS),
-            format!("revoke admin option for {} from owner", CURSOR_POS),
-            format!("revoke owner from {}", CURSOR_POS),
-            format!("revoke all on schema public from {} granted by", CURSOR_POS),
-            format!("revoke all on schema public from owner, {}", CURSOR_POS),
-            format!("revoke all on table userse from owner, {}", CURSOR_POS),
+            format!(
+                "revoke {} from owner",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "revoke admin option for {} from owner",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "revoke owner from {}",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "revoke all on schema public from {} granted by",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "revoke all on schema public from owner, {}",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "revoke all on table userse from owner, {}",
+                QueryWithCursorPosition::cursor_marker()
+            ),
         ];
 
         for query in queries {

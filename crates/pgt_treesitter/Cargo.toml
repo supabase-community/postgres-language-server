@@ -19,6 +19,7 @@ pgt_text_size.workspace = true
 pgt_schema_cache.workspace = true
 
 [dev-dependencies]
+pgt_test_utils.workspace = true
 
 [lib]
 doctest = false

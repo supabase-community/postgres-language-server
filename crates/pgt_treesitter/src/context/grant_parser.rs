@@ -189,13 +189,13 @@ mod tests {
         context::grant_parser::{GrantContext, GrantParser},
     };
 
-    static CURSOR_POS: char = '€';
+    use pgt_test_utils::QueryWithCursorPosition;
 
     fn with_pos(query: String) -> (usize, String) {
         let mut pos: Option<usize> = None;
 
         for (p, c) in query.char_indices() {
-            if c == CURSOR_POS {
+            if c == QueryWithCursorPosition::cursor_marker() {
                 pos = Some(p);
                 break;
             }
@@ -203,7 +203,9 @@ mod tests {
 
         (
             pos.expect("Please add cursor position!"),
-            query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
+            query
+                .replace(QueryWithCursorPosition::cursor_marker(), "REPLACED_TOKEN")
+                .to_string(),
         )
     }
 
@@ -213,7 +215,7 @@ mod tests {
             r#"
             grant {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -236,7 +238,7 @@ mod tests {
             r#"
             grant select on {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -259,7 +261,7 @@ mod tests {
             r#"
             grant select on table {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -282,7 +284,7 @@ mod tests {
             r#"
             grant select on public.{} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -305,7 +307,7 @@ mod tests {
             r#"
             grant select on table public.{} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -328,7 +330,7 @@ mod tests {
             r#"
             grant select on public.users to {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -351,7 +353,7 @@ mod tests {
             r#"
             grant select on public.{} to test_role
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -374,7 +376,7 @@ mod tests {
             r#"
             grant select on "MySchema"."MyTable" to {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);
@@ -397,7 +399,7 @@ mod tests {
             r#"
             grant select on public.users to alice, {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = GrantParser::get_context(query.as_str(), pos);

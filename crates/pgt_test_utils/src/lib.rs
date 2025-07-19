@@ -20,6 +20,12 @@ impl QueryWithCursorPosition {
     }
 }
 
+impl From<String> for QueryWithCursorPosition {
+    fn from(value: String) -> Self {
+        value.as_str().into()
+    }
+}
+
 impl From<&str> for QueryWithCursorPosition {
     fn from(value: &str) -> Self {
         let position = value

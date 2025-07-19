@@ -47,10 +47,12 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CURSOR_POS, CompletionAssertion, assert_complete_results, assert_no_complete_results,
+            CompletionAssertion, assert_complete_results, assert_no_complete_results,
             get_test_deps, get_test_params,
         },
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn autocompletes_simple_table(pool: PgPool) {
@@ -62,7 +64,10 @@ mod tests {
             );
         "#;
 
-        let query = format!("select * from u{}", CURSOR_POS);
+        let query = format!(
+            "select * from u{}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -98,9 +103,27 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let test_cases = vec![
-            (format!("select * from u{}", CURSOR_POS), "users"),
-            (format!("select * from e{}", CURSOR_POS), "emails"),
-            (format!("select * from a{}", CURSOR_POS), "addresses"),
+            (
+                format!(
+                    "select * from u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "users",
+            ),
+            (
+                format!(
+                    "select * from e{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "emails",
+            ),
+            (
+                format!(
+                    "select * from a{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "addresses",
+            ),
         ];
 
         for (query, expected_label) in test_cases {
@@ -142,10 +165,25 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let test_cases = vec![
-            (format!("select * from u{}", CURSOR_POS), "user_y"), // user_y is preferred alphanumerically
-            (format!("select * from private.u{}", CURSOR_POS), "user_z"),
             (
-                format!("select * from customer_support.u{}", CURSOR_POS),
+                format!(
+                    "select * from u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "user_y",
+            ), // user_y is preferred alphanumerically
+            (
+                format!(
+                    "select * from private.u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "user_z",
+            ),
+            (
+                format!(
+                    "select * from customer_support.u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 "user_y",
             ),
         ];
@@ -186,7 +224,10 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}"#, CURSOR_POS);
+        let query = format!(
+            r#"select * from coo{}"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -213,7 +254,7 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!("update {}", CURSOR_POS).as_str(),
+            format!("update {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![CompletionAssertion::LabelAndKind(
                 "public".into(),
                 CompletionItemKind::Schema,
@@ -224,7 +265,7 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("update public.{}", CURSOR_POS).as_str(),
+            format!("update public.{}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![CompletionAssertion::LabelAndKind(
                 "coos".into(),
                 CompletionItemKind::Table,
@@ -235,14 +276,22 @@ mod tests {
         .await;
 
         assert_no_complete_results(
-            format!("update public.coos {}", CURSOR_POS).as_str(),
+            format!(
+                "update public.coos {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             None,
             &pool,
         )
         .await;
 
         assert_complete_results(
-            format!("update coos set {}", CURSOR_POS).as_str(),
+            format!(
+                "update coos set {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
@@ -253,7 +302,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("update coos set name = 'cool' where {}", CURSOR_POS).as_str(),
+            format!(
+                "update coos set name = 'cool' where {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
@@ -275,10 +328,15 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(format!("delete {}", CURSOR_POS).as_str(), None, &pool).await;
+        assert_no_complete_results(
+            format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            None,
+            &pool,
+        )
+        .await;
 
         assert_complete_results(
-            format!("delete from {}", CURSOR_POS).as_str(),
+            format!("delete from {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
@@ -289,7 +347,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("delete from public.{}", CURSOR_POS).as_str(),
+            format!(
+                "delete from public.{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![CompletionAssertion::Label("coos".into())],
             None,
             &pool,
@@ -297,7 +359,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("delete from public.coos where {}", CURSOR_POS).as_str(),
+            format!(
+                "delete from public.coos where {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("id".into()),
                 CompletionAssertion::Label("name".into()),
@@ -329,7 +395,11 @@ mod tests {
         "#;
 
         assert_complete_results(
-            format!("select * from auth.users u join {}", CURSOR_POS).as_str(),
+            format!(
+                "select * from auth.users u join {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
@@ -365,7 +435,7 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!("alter table {}", CURSOR_POS).as_str(),
+            format!("alter table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
@@ -378,7 +448,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("alter table if exists {}", CURSOR_POS).as_str(),
+            format!(
+                "alter table if exists {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
@@ -391,7 +465,7 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("drop table {}", CURSOR_POS).as_str(),
+            format!("drop table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
@@ -404,7 +478,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("drop table if exists {}", CURSOR_POS).as_str(),
+            format!(
+                "drop table if exists {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
@@ -432,7 +510,7 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!("insert into {}", CURSOR_POS).as_str(),
+            format!("insert into {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
@@ -444,7 +522,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("insert into auth.{}", CURSOR_POS).as_str(),
+            format!(
+                "insert into auth.{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![CompletionAssertion::LabelAndKind(
                 "users".into(),
                 CompletionItemKind::Table,
@@ -458,7 +540,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "insert into {} (name, email) values ('jules', 'a@b.com');",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![

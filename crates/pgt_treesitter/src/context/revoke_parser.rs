@@ -182,13 +182,13 @@ mod tests {
         context::revoke_parser::{RevokeContext, RevokeParser},
     };
 
-    static CURSOR_POS: char = '€';
+    use pgt_test_utils::QueryWithCursorPosition;
 
     fn with_pos(query: String) -> (usize, String) {
         let mut pos: Option<usize> = None;
 
         for (p, c) in query.char_indices() {
-            if c == CURSOR_POS {
+            if c == QueryWithCursorPosition::cursor_marker() {
                 pos = Some(p);
                 break;
             }
@@ -196,7 +196,9 @@ mod tests {
 
         (
             pos.expect("Please add cursor position!"),
-            query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
+            query
+                .replace(QueryWithCursorPosition::cursor_marker(), "REPLACED_TOKEN")
+                .to_string(),
         )
     }
 
@@ -206,7 +208,7 @@ mod tests {
             r#"
             revoke {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = RevokeParser::get_context(query.as_str(), pos);
@@ -229,7 +231,7 @@ mod tests {
             r#"
             revoke select on {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = RevokeParser::get_context(query.as_str(), pos);
@@ -252,7 +254,7 @@ mod tests {
             r#"
             revoke select on public.{} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = RevokeParser::get_context(query.as_str(), pos);
@@ -275,7 +277,7 @@ mod tests {
             r#"
             revoke select on public.users from {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = RevokeParser::get_context(query.as_str(), pos);
@@ -298,7 +300,7 @@ mod tests {
             r#"
             revoke select on public.users from alice, {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = RevokeParser::get_context(query.as_str(), pos);
@@ -321,7 +323,7 @@ mod tests {
             r#"
             revoke select on "MySchema"."MyTable" from {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = RevokeParser::get_context(query.as_str(), pos);

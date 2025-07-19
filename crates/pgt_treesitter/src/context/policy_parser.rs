@@ -214,7 +214,7 @@ mod tests {
         context::policy_parser::{PolicyContext, PolicyStmtKind},
     };
 
-    static CURSOR_POS: char = '€';
+    use pgt_test_utils::QueryWithCursorPosition;
 
     use super::PolicyParser;
 
@@ -222,7 +222,7 @@ mod tests {
         let mut pos: Option<usize> = None;
 
         for (p, c) in query.char_indices() {
-            if c == CURSOR_POS {
+            if c == QueryWithCursorPosition::cursor_marker() {
                 pos = Some(p);
                 break;
             }
@@ -230,7 +230,9 @@ mod tests {
 
         (
             pos.expect("Please add cursor position!"),
-            query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
+            query
+                .replace(QueryWithCursorPosition::cursor_marker(), "REPLACED_TOKEN")
+                .to_string(),
         )
     }
 
@@ -240,7 +242,7 @@ mod tests {
             r#"
           create policy {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -266,7 +268,7 @@ mod tests {
             r#"
           create policy "my cool policy" {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -292,7 +294,7 @@ mod tests {
             r#"
           create policy "my cool policy" on {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -318,7 +320,7 @@ mod tests {
             r#"
           create policy "my cool policy" on auth.{}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -345,7 +347,7 @@ mod tests {
           create policy "my cool policy" on auth.users 
             as {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -373,7 +375,7 @@ mod tests {
             as permissive
             {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -401,7 +403,7 @@ mod tests {
             as permissive
             to {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -433,7 +435,7 @@ mod tests {
             to all 
             using (true);
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -465,7 +467,7 @@ mod tests {
             to all 
             using (true);
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -494,7 +496,7 @@ mod tests {
             r#"
           drop policy {} on auth.users;
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -521,7 +523,7 @@ mod tests {
             r#"
           drop policy "{}" on auth.users;
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -550,7 +552,7 @@ mod tests {
             r#"
           drop policy "{} on auth.users;
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
         let context = PolicyParser::get_context(query.as_str(), pos);
@@ -568,7 +570,7 @@ mod tests {
             to all 
             using (id = {})
         "#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ));
 
             let context = PolicyParser::get_context(query.as_str(), pos);
@@ -599,7 +601,7 @@ mod tests {
             to all
             using ({}
         "#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ));
 
             let context = PolicyParser::get_context(query.as_str(), pos);
@@ -630,7 +632,7 @@ mod tests {
             to all
             with check ({}
         "#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ));
 
             let context = PolicyParser::get_context(query.as_str(), pos);

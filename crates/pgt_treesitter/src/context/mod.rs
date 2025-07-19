@@ -818,8 +818,10 @@ mod tests {
         NodeText,
         context::{CompletionContext, WrappingClause},
         sanitization::SanitizedCompletionParams,
-        test_helper::{CURSOR_POS, get_text_and_position},
+        test_helper::get_text_and_position,
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     use super::NodeUnderCursor;
 
@@ -836,45 +838,72 @@ mod tests {
     fn identifies_clauses() {
         let test_cases = vec![
             (
-                format!("Select {}* from users;", CURSOR_POS),
+                format!(
+                    "Select {}* from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Select,
             ),
             (
-                format!("Select * from u{};", CURSOR_POS),
+                format!(
+                    "Select * from u{};",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::From,
             ),
             (
-                format!("Select {}* from users where n = 1;", CURSOR_POS),
+                format!(
+                    "Select {}* from users where n = 1;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Select,
             ),
             (
-                format!("Select * from users where {}n = 1;", CURSOR_POS),
+                format!(
+                    "Select * from users where {}n = 1;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Where,
             ),
             (
-                format!("update users set u{} = 1 where n = 2;", CURSOR_POS),
+                format!(
+                    "update users set u{} = 1 where n = 2;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Update,
             ),
             (
-                format!("update users set u = 1 where n{} = 2;", CURSOR_POS),
+                format!(
+                    "update users set u = 1 where n{} = 2;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Where,
             ),
             (
-                format!("delete{} from users;", CURSOR_POS),
+                format!(
+                    "delete{} from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Delete,
             ),
             (
-                format!("delete from {}users;", CURSOR_POS),
+                format!(
+                    "delete from {}users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::From,
             ),
             (
-                format!("select name, age, location from public.u{}sers", CURSOR_POS),
+                format!(
+                    "select name, age, location from public.u{}sers",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::From,
             ),
         ];
 
         for (query, expected_clause) in test_cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
 
@@ -895,15 +924,33 @@ mod tests {
     fn identifies_schema() {
         let test_cases = vec![
             (
-                format!("Select * from private.u{}", CURSOR_POS),
+                format!(
+                    "Select * from private.u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 Some("private"),
             ),
             (
-                format!("Select * from private.u{}sers()", CURSOR_POS),
+                format!(
+                    "Select * from private.u{}sers()",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 Some("private"),
             ),
-            (format!("Select * from u{}sers", CURSOR_POS), None),
-            (format!("Select * from u{}sers()", CURSOR_POS), None),
+            (
+                format!(
+                    "Select * from u{}sers",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                None,
+            ),
+            (
+                format!(
+                    "Select * from u{}sers()",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                None,
+            ),
         ];
 
         for (query, expected_schema) in test_cases {
@@ -929,16 +976,40 @@ mod tests {
     #[test]
     fn identifies_invocation() {
         let test_cases = vec![
-            (format!("Select * from u{}sers", CURSOR_POS), false),
-            (format!("Select * from u{}sers()", CURSOR_POS), true),
-            (format!("Select cool{};", CURSOR_POS), false),
-            (format!("Select cool{}();", CURSOR_POS), true),
             (
-                format!("Select upp{}ercase as title from users;", CURSOR_POS),
+                format!(
+                    "Select * from u{}sers",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 false,
             ),
             (
-                format!("Select upp{}ercase(name) as title from users;", CURSOR_POS),
+                format!(
+                    "Select * from u{}sers()",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                true,
+            ),
+            (
+                format!("Select cool{};", QueryWithCursorPosition::cursor_marker()),
+                false,
+            ),
+            (
+                format!("Select cool{}();", QueryWithCursorPosition::cursor_marker()),
+                true,
+            ),
+            (
+                format!(
+                    "Select upp{}ercase as title from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                false,
+            ),
+            (
+                format!(
+                    "Select upp{}ercase(name) as title from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 true,
             ),
         ];
@@ -963,8 +1034,14 @@ mod tests {
     #[test]
     fn does_not_fail_on_leading_whitespace() {
         let cases = vec![
-            format!("{}      select * from", CURSOR_POS),
-            format!(" {}      select * from", CURSOR_POS),
+            format!(
+                "{}      select * from",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                " {}      select * from",
+                QueryWithCursorPosition::cursor_marker()
+            ),
         ];
 
         for query in cases {
@@ -1002,7 +1079,10 @@ mod tests {
 
     #[test]
     fn does_not_fail_on_trailing_whitespace() {
-        let query = format!("select * from   {}", CURSOR_POS);
+        let query = format!(
+            "select * from   {}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (position, text) = get_text_and_position(query.as_str().into());
 
@@ -1032,7 +1112,7 @@ mod tests {
 
     #[test]
     fn does_not_fail_with_empty_statements() {
-        let query = format!("{}", CURSOR_POS);
+        let query = format!("{}", QueryWithCursorPosition::cursor_marker());
 
         let (position, text) = get_text_and_position(query.as_str().into());
 
@@ -1065,7 +1145,7 @@ mod tests {
     fn does_not_fail_on_incomplete_keywords() {
         //  Instead of autocompleting "FROM", we'll assume that the user
         // is selecting a certain column name, such as `frozen_account`.
-        let query = format!("select * fro{}", CURSOR_POS);
+        let query = format!("select * fro{}", QueryWithCursorPosition::cursor_marker());
 
         let (position, text) = get_text_and_position(query.as_str().into());
 

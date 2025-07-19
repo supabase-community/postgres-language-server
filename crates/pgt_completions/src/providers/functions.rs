@@ -70,10 +70,11 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CURSOR_POS, CompletionAssertion, assert_complete_results, get_test_deps,
-            get_test_params,
+            CompletionAssertion, assert_complete_results, get_test_deps, get_test_params,
         },
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completes_fn(pool: PgPool) {
@@ -89,7 +90,7 @@ mod tests {
           $$;
         "#;
 
-        let query = format!("select coo{}", CURSOR_POS);
+        let query = format!("select coo{}", QueryWithCursorPosition::cursor_marker());
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -122,7 +123,7 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}()"#, CURSOR_POS);
+        let query = format!(r#"select * from coo{}()"#, QueryWithCursorPosition::cursor_marker());
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -156,7 +157,7 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select coo{}"#, CURSOR_POS);
+        let query = format!(r#"select coo{}"#, QueryWithCursorPosition::cursor_marker());
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -190,7 +191,7 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}()"#, CURSOR_POS);
+        let query = format!(r#"select * from coo{}()"#, QueryWithCursorPosition::cursor_marker());
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -259,7 +260,7 @@ mod tests {
 
         let query = format!(
             r#"create policy "my_pol" on public.instruments for insert with check (id = {})"#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         );
 
         assert_complete_results(
