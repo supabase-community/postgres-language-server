@@ -4,7 +4,7 @@ use pgt_completions::CompletionItem;
 use pgt_fs::PgTPath;
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::workspace::{Document, GetCompletionsFilter, GetCompletionsMapper, StatementId};
+use crate::workspace::{Document, GetCompletionsFilter, StatementId, WithCSTMapper};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -32,7 +32,7 @@ impl IntoIterator for CompletionsResult {
 pub(crate) fn get_statement_for_completions(
     doc: &Document,
     position: TextSize,
-) -> Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> {
+) -> Option<(StatementId, TextRange, Arc<tree_sitter::Tree>)> {
     let count = doc.count();
     // no arms no cookies
     if count == 0 {
@@ -40,7 +40,7 @@ pub(crate) fn get_statement_for_completions(
     }
 
     let mut eligible_statements = doc.iter_with_filter(
-        GetCompletionsMapper,
+        WithCSTMapper,
         GetCompletionsFilter {
             cursor_position: position,
         },
@@ -49,7 +49,7 @@ pub(crate) fn get_statement_for_completions(
     if count == 1 {
         eligible_statements.next()
     } else {
-        let mut prev_stmt: Option<(StatementId, TextRange, String, Arc<tree_sitter::Tree>)> = None;
+        let mut prev_stmt: Option<(StatementId, TextRange, Arc<tree_sitter::Tree>)> = None;
 
         for current_stmt in eligible_statements {
             /*
@@ -112,10 +112,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text, "update users set email = 'myemail@com';")
+        assert_eq!(stmt.content(), "update users set email = 'myemail@com';")
     }
 
     #[test]
@@ -151,10 +151,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text, "select * from          ;")
+        assert_eq!(stmt.content(), "select * from          ;")
     }
 
     #[test]
@@ -163,10 +163,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text, "select * from")
+        assert_eq!(stmt.content(), "select * from")
     }
 
     #[test]
@@ -187,10 +187,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql);
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text.trim(), "select  from cool;")
+        assert_eq!(stmt.content().trim(), "select  from cool;")
     }
 
     #[test]
