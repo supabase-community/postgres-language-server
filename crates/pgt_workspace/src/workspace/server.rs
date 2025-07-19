@@ -35,10 +35,10 @@ use crate::{
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
-        on_hover::{self, OnHoverParams, OnHoverResult},
+        on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::{AnalyserDiagnosticsMapper, WithCSTMapper, WithCSTandASTMapper},
+    workspace::{AnalyserDiagnosticsMapper, WithCSTandASTMapper},
 };
 
 use super::{
@@ -672,15 +672,18 @@ impl Workspace for WorkspaceServer {
             )
             .next()
         {
-            Some((stmt_id, range, content, ts_tree, maybe_ast)) => {
+            Some((stmt_id, range, ts_tree, maybe_ast)) => {
+                let position_in_stmt = params.position + range.start();
+
                 let markdown_blocks = pgt_hover::on_hover(pgt_hover::OnHoverParams {
                     ts_tree: &ts_tree,
                     schema_cache: &schema_cache,
-                    ast: maybe_ast,
-                    position,
+                    ast: maybe_ast.as_ref(),
+                    position: position_in_stmt,
+                    stmt_sql: stmt_id.content(),
                 });
 
-                OnHoverResult { markdown_blocks }
+                Ok(OnHoverResult { markdown_blocks })
             }
             None => Ok(OnHoverResult::default()),
         }

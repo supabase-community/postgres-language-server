@@ -42,7 +42,7 @@ impl HeadlineWriter {
             table.schema, table.name, table_kind, locked_txt
         )?;
 
-        writeln!(writer)?;
+        markdown_newline(writer)?;
 
         Ok(())
     }
@@ -57,7 +57,7 @@ impl BodyWriter {
     ) -> Result<(), std::fmt::Error> {
         if let Some(c) = table.comment.as_ref() {
             write!(writer, "{}", c)?;
-            writeln!(writer)?;
+            markdown_newline(writer)?;
         }
 
         Ok(())
@@ -81,4 +81,10 @@ impl FooterWriter {
 
         Ok(())
     }
+}
+
+fn markdown_newline<W: Write>(writer: &mut W) -> Result<(), std::fmt::Error> {
+    write!(writer, "  ")?;
+    writeln!(writer)?;
+    Ok(())
 }

@@ -15,9 +15,6 @@ pub struct OnHoverParams<'a> {
 }
 
 pub fn on_hover(params: OnHoverParams) -> Vec<String> {
-    // needs to find the right element(s) in the schema_cache
-    // then, we should map the schema_cache items into markdown strings.
-
     if let Some(hovered_node) = HoveredNode::get(params.position, params.stmt_sql, params.ts_tree) {
         match hovered_node {
             HoveredNode::Table(node_identification) => {

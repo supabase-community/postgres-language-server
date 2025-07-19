@@ -3,9 +3,10 @@ use crate::handlers::code_actions::command_id;
 use pgt_workspace::features::code_actions::CommandActionCategory;
 use strum::IntoEnumIterator;
 use tower_lsp::lsp_types::{
-    ClientCapabilities, CompletionOptions, ExecuteCommandOptions, PositionEncodingKind,
-    SaveOptions, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkDoneProgressOptions,
+    ClientCapabilities, CompletionOptions, ExecuteCommandOptions, HoverProviderCapability,
+    PositionEncodingKind, SaveOptions, ServerCapabilities, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
+    WorkDoneProgressOptions,
 };
 
 /// The capabilities to send from server as part of [`InitializeResult`]
@@ -62,6 +63,7 @@ pub(crate) fn server_capabilities(capabilities: &ClientCapabilities) -> ServerCa
             true,
         )),
         rename_provider: None,
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
         ..Default::default()
     }
 }

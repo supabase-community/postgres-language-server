@@ -112,10 +112,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text, "update users set email = 'myemail@com';")
+        assert_eq!(stmt.content(), "update users set email = 'myemail@com';")
     }
 
     #[test]
@@ -151,10 +151,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text, "select * from          ;")
+        assert_eq!(stmt.content(), "select * from          ;")
     }
 
     #[test]
@@ -163,10 +163,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text, "select * from")
+        assert_eq!(stmt.content(), "select * from")
     }
 
     #[test]
@@ -187,10 +187,10 @@ mod tests {
 
         let (doc, position) = get_doc_and_pos(sql);
 
-        let (_, _, text, _) =
+        let (stmt, _, _) =
             get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(text.trim(), "select  from cool;")
+        assert_eq!(stmt.content().trim(), "select  from cool;")
     }
 
     #[test]

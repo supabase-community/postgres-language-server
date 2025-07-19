@@ -579,8 +579,8 @@ $$ LANGUAGE plpgsql;";
         let results = d.iter(WithCSTMapper).collect::<Vec<_>>();
         assert_eq!(results.len(), 1);
 
-        let (_id, _range, content, tree) = &results[0];
-        assert_eq!(content, "SELECT * FROM users;");
+        let (id, _, tree) = &results[0];
+        assert_eq!(id.content(), "SELECT * FROM users;");
         assert_eq!(tree.root_node().kind(), "program");
     }
 

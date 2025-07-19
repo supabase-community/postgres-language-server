@@ -1,5 +1,5 @@
-use biome_rowan::TextSize;
 use pgt_fs::PgTPath;
+use pgt_text_size::TextSize;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -18,7 +18,7 @@ pub struct OnHoverResult {
 
 impl IntoIterator for OnHoverResult {
     type Item = String;
-    type IntoIter = <Vec<CompletionItem> as IntoIterator>::IntoIter;
+    type IntoIter = <Vec<String> as IntoIterator>::IntoIter;
     fn into_iter(self) -> Self::IntoIter {
         self.markdown_blocks.into_iter()
     }

@@ -1,5 +1,3 @@
-use pgt_console::Markup;
-use pgt_diagnostics::adapters;
 use pgt_workspace::{WorkspaceError, features::on_hover::OnHoverParams};
 use tower_lsp::lsp_types::{self, MarkedString, MarkupContent};
 
@@ -15,22 +13,30 @@ pub(crate) fn on_hover(
 
     match session.workspace.on_hover(OnHoverParams {
         path,
-        position: get_cursor_position(session, &url, position),
+        position: get_cursor_position(session, &url, position)?,
     }) {
-        Ok(result) => lsp_types::HoverContents::Array(
-            result
-                .into_iter()
-                .map(|markdown| MarkedString::from_markdown(markdown)),
-        ),
+        Ok(result) => {
+            tracing::warn!("Got a result. {:#?}", result);
+
+            Ok(lsp_types::HoverContents::Array(
+                result
+                    .into_iter()
+                    .map(|markdown| MarkedString::from_markdown(markdown))
+                    .collect(),
+            ))
+        }
 
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
                 Ok(lsp_types::HoverContents::Markup(MarkupContent {
                     kind: lsp_types::MarkupKind::PlainText,
                     value: "Cannot connect to database.".into(),
-                }));
+                }))
             }
-            _ => Err(e.into()),
+            _ => {
+                tracing::error!("Received an error: {:#?}", e);
+                Err(e.into())
+            }
         },
     }
 }
