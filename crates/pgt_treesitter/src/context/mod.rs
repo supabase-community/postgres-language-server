@@ -9,7 +9,7 @@ mod revoke_parser;
 
 use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
 use pgt_schema_cache::SchemaCache;
-use pgt_text_size::TextRange;
+use pgt_text_size::{TextRange, TextSize};
 
 use crate::{
     NodeText,
@@ -147,6 +147,13 @@ impl TryFrom<String> for WrappingNode {
     }
 }
 
+struct TreeSitterContextParams<'a> {
+    pub position: TextSize,
+    pub text: &'a str,
+    pub schema: &'a pgt_schema_cache::SchemaCache,
+    pub tree: &'a tree_sitter::Tree,
+}
+
 #[derive(Debug)]
 pub(crate) struct CompletionContext<'a> {
     pub node_under_cursor: Option<NodeUnderCursor<'a>>,
@@ -189,10 +196,10 @@ pub(crate) struct CompletionContext<'a> {
 }
 
 impl<'a> CompletionContext<'a> {
-    pub fn new(params: &'a SanitizedCompletionParams) -> Self {
+    pub fn new(params: TreeSitterContextParams<'a>) -> Self {
         let mut ctx = Self {
-            tree: params.tree.as_ref(),
-            text: &params.text,
+            tree: params.tree,
+            text: params.text,
             schema_cache: params.schema,
             position: usize::from(params.position),
             node_under_cursor: None,
@@ -816,9 +823,7 @@ impl<'a> CompletionContext<'a> {
 mod tests {
     use crate::{
         NodeText,
-        context::{CompletionContext, WrappingClause},
-        sanitization::SanitizedCompletionParams,
-        test_helper::get_text_and_position,
+        context::{CompletionContext, TreeSitterContextParams, WrappingClause},
     };
 
     use pgt_test_utils::QueryWithCursorPosition;
@@ -907,14 +912,14 @@ mod tests {
 
             let tree = get_tree(text.as_str());
 
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
+                text: &text,
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(params);
 
             assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
         }
@@ -954,17 +959,17 @@ mod tests {
         ];
 
         for (query, expected_schema) in test_cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
+                text: &text,
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(params);
 
             assert_eq!(
                 ctx.schema_or_alias_name,
@@ -1015,17 +1020,17 @@ mod tests {
         ];
 
         for (query, is_invocation) in test_cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
+                text: text.as_str(),
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(params);
 
             assert_eq!(ctx.is_invocation, is_invocation);
         }
@@ -1045,18 +1050,18 @@ mod tests {
         ];
 
         for query in cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
 
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
+                text: &text,
+                tree: &tree,
                 schema: &pgt_schema_cache::SchemaCache::default(),
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = CompletionContext::new(params);
 
             let node = ctx.node_under_cursor.as_ref().unwrap();
 
@@ -1084,18 +1089,18 @@ mod tests {
             QueryWithCursorPosition::cursor_marker()
         );
 
-        let (position, text) = get_text_and_position(query.as_str().into());
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
         let tree = get_tree(text.as_str());
 
-        let params = SanitizedCompletionParams {
+        let params = TreeSitterContextParams {
             position: (position as u32).into(),
-            text,
-            tree: std::borrow::Cow::Owned(tree),
+            text: &text,
+            tree: &tree,
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = CompletionContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
@@ -1114,18 +1119,18 @@ mod tests {
     fn does_not_fail_with_empty_statements() {
         let query = format!("{}", QueryWithCursorPosition::cursor_marker());
 
-        let (position, text) = get_text_and_position(query.as_str().into());
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
         let tree = get_tree(text.as_str());
 
-        let params = SanitizedCompletionParams {
+        let params = TreeSitterContextParams {
             position: (position as u32).into(),
-            text,
-            tree: std::borrow::Cow::Owned(tree),
+            text: &text,
+            tree: &tree,
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = CompletionContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
@@ -1147,18 +1152,18 @@ mod tests {
         // is selecting a certain column name, such as `frozen_account`.
         let query = format!("select * fro{}", QueryWithCursorPosition::cursor_marker());
 
-        let (position, text) = get_text_and_position(query.as_str().into());
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
         let tree = get_tree(text.as_str());
 
-        let params = SanitizedCompletionParams {
+        let params = TreeSitterContextParams {
             position: (position as u32).into(),
-            text,
-            tree: std::borrow::Cow::Owned(tree),
+            text: &text,
+            tree: &tree,
             schema: &pgt_schema_cache::SchemaCache::default(),
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = CompletionContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
