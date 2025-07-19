@@ -1,3 +1,4 @@
+use pgt_schema_cache::SchemaCache;
 use pgt_text_size::{TextRange, TextSize};
 use pgt_treesitter::TreesitterContext;
 
@@ -9,8 +10,12 @@ use crate::{
 
 use super::helper::get_range_to_replace;
 
-pub fn complete_policies<'a>(ctx: &TreesitterContext<'a>, builder: &mut CompletionBuilder<'a>) {
-    let available_policies = &ctx.schema_cache.policies;
+pub fn complete_policies<'a>(
+    ctx: &TreesitterContext<'a>,
+    schema_cache: &'a SchemaCache,
+    builder: &mut CompletionBuilder<'a>,
+) {
+    let available_policies = &schema_cache.policies;
 
     let surrounded_by_quotes = ctx
         .get_node_under_cursor_content()
