@@ -1,7 +1,8 @@
+use pgt_treesitter::{CompletionContext, WrappingClause};
+
 use crate::{
     CompletionItemKind,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::{CompletionContext, WrappingClause},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 

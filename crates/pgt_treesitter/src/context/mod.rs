@@ -11,14 +11,11 @@ use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
 use pgt_schema_cache::SchemaCache;
 use pgt_text_size::{TextRange, TextSize};
 
-use crate::{
-    NodeText,
-    context::{
-        base_parser::CompletionStatementParser,
-        grant_parser::GrantParser,
-        policy_parser::{PolicyParser, PolicyStmtKind},
-        revoke_parser::RevokeParser,
-    },
+use crate::context::{
+    base_parser::CompletionStatementParser,
+    grant_parser::GrantParser,
+    policy_parser::{PolicyParser, PolicyStmtKind},
+    revoke_parser::RevokeParser,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -55,9 +52,9 @@ pub enum WrappingClause<'a> {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
-pub(crate) struct MentionedColumn {
-    pub(crate) column: String,
-    pub(crate) alias: Option<String>,
+pub struct MentionedColumn {
+    pub column: String,
+    pub alias: Option<String>,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -77,10 +74,10 @@ pub enum WrappingNode {
 }
 
 #[derive(Debug)]
-pub(crate) enum NodeUnderCursor<'a> {
+pub enum NodeUnderCursor<'a> {
     TsNode(tree_sitter::Node<'a>),
     CustomNode {
-        text: NodeText,
+        text: String,
         range: TextRange,
         kind: String,
         previous_node_kind: Option<String>,
@@ -146,7 +143,7 @@ impl TryFrom<String> for WrappingNode {
     }
 }
 
-struct TreeSitterContextParams<'a> {
+pub struct TreeSitterContextParams<'a> {
     pub position: TextSize,
     pub text: &'a str,
     pub schema: &'a pgt_schema_cache::SchemaCache,
@@ -154,7 +151,7 @@ struct TreeSitterContextParams<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) struct CompletionContext<'a> {
+pub struct CompletionContext<'a> {
     pub node_under_cursor: Option<NodeUnderCursor<'a>>,
 
     pub tree: &'a tree_sitter::Tree,
@@ -401,29 +398,18 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<NodeText> {
+    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<String> {
         let source = self.text;
-        ts_node.utf8_text(source.as_bytes()).ok().map(|txt| {
-            if SanitizedCompletionParams::is_sanitized_token(txt) {
-                NodeText::Replaced
-            } else {
-                NodeText::Original(txt.into())
-            }
-        })
+        ts_node
+            .utf8_text(source.as_bytes())
+            .ok()
+            .map(|txt| txt.into())
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
         match self.node_under_cursor.as_ref()? {
-            NodeUnderCursor::TsNode(node) => {
-                self.get_ts_node_content(node).and_then(|nt| match nt {
-                    NodeText::Replaced => None,
-                    NodeText::Original(c) => Some(c.to_string()),
-                })
-            }
-            NodeUnderCursor::CustomNode { text, .. } => match text {
-                NodeText::Replaced => None,
-                NodeText::Original(c) => Some(c.to_string()),
-            },
+            NodeUnderCursor::TsNode(node) => self.get_ts_node_content(node),
+            NodeUnderCursor::CustomNode { text, .. } => Some(text.clone()),
         }
     }
 
@@ -505,15 +491,10 @@ impl<'a> CompletionContext<'a> {
         match current_node_kind {
             "object_reference" | "field" => {
                 let content = self.get_ts_node_content(&current_node);
-                if let Some(node_txt) = content {
-                    match node_txt {
-                        NodeText::Original(txt) => {
-                            let parts: Vec<&str> = txt.split('.').collect();
-                            if parts.len() == 2 {
-                                self.schema_or_alias_name = Some(parts[0].to_string());
-                            }
-                        }
-                        NodeText::Replaced => {}
+                if let Some(txt) = content {
+                    let parts: Vec<&str> = txt.split('.').collect();
+                    if parts.len() == 2 {
+                        self.schema_or_alias_name = Some(parts[0].to_string());
                     }
                 }
             }
@@ -642,12 +623,7 @@ impl<'a> CompletionContext<'a> {
                         break;
                     }
 
-                    if let Some(sibling_content) =
-                        self.get_ts_node_content(&sib).and_then(|txt| match txt {
-                            NodeText::Original(txt) => Some(txt),
-                            NodeText::Replaced => None,
-                        })
-                    {
+                    if let Some(sibling_content) = self.get_ts_node_content(&sib) {
                         if sibling_content == tokens[idx] {
                             idx += 1;
                         }
@@ -678,9 +654,7 @@ impl<'a> CompletionContext<'a> {
                     while let Some(sib) = first_sibling.next_sibling() {
                         match sib.kind() {
                             "object_reference" => {
-                                if let Some(NodeText::Original(txt)) =
-                                    self.get_ts_node_content(&sib)
-                                {
+                                if let Some(txt) = self.get_ts_node_content(&sib) {
                                     let mut iter = txt.split('.').rev();
                                     let table = iter.next().unwrap().to_string();
                                     let schema = iter.next().map(|s| s.to_string());
@@ -694,9 +668,7 @@ impl<'a> CompletionContext<'a> {
                             }
 
                             "column" => {
-                                if let Some(NodeText::Original(txt)) =
-                                    self.get_ts_node_content(&sib)
-                                {
+                                if let Some(txt) = self.get_ts_node_content(&sib) {
                                     let entry = MentionedColumn {
                                         column: txt,
                                         alias: None,
@@ -721,7 +693,7 @@ impl<'a> CompletionContext<'a> {
                 WrappingClause::AlterColumn => {
                     while let Some(sib) = first_sibling.next_sibling() {
                         if sib.kind() == "object_reference" {
-                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
+                            if let Some(txt) = self.get_ts_node_content(&sib) {
                                 let mut iter = txt.split('.').rev();
                                 let table = iter.next().unwrap().to_string();
                                 let schema = iter.next().map(|s| s.to_string());
@@ -781,7 +753,7 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    pub(crate) fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
+    pub fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor
             .as_ref()
             .is_some_and(|under_cursor| match under_cursor {
@@ -792,7 +764,7 @@ impl<'a> CompletionContext<'a> {
                 NodeUnderCursor::CustomNode { .. } => false,
             })
     }
-    pub(crate) fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
+    pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
             match under_cursor {
                 NodeUnderCursor::TsNode(node) => {
@@ -820,10 +792,7 @@ impl<'a> CompletionContext<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        NodeText,
-        context::{CompletionContext, TreeSitterContextParams, WrappingClause},
-    };
+    use crate::context::{CompletionContext, TreeSitterContextParams, WrappingClause};
 
     use pgt_test_utils::QueryWithCursorPosition;
 
@@ -1066,10 +1035,7 @@ mod tests {
 
             match node {
                 NodeUnderCursor::TsNode(node) => {
-                    assert_eq!(
-                        ctx.get_ts_node_content(node),
-                        Some(NodeText::Original("select".into()))
-                    );
+                    assert_eq!(ctx.get_ts_node_content(node), Some("select".into()));
 
                     assert_eq!(
                         ctx.wrapping_clause_type,
@@ -1105,10 +1071,7 @@ mod tests {
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(
-                    ctx.get_ts_node_content(node),
-                    Some(NodeText::Original("from".into()))
-                );
+                assert_eq!(ctx.get_ts_node_content(node), Some("from".into()));
             }
             _ => unreachable!(),
         }
@@ -1135,10 +1098,7 @@ mod tests {
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(
-                    ctx.get_ts_node_content(node),
-                    Some(NodeText::Original("".into()))
-                );
+                assert_eq!(ctx.get_ts_node_content(node), Some("".into()));
                 assert_eq!(ctx.wrapping_clause_type, None);
             }
             _ => unreachable!(),
@@ -1168,10 +1128,7 @@ mod tests {
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(
-                    ctx.get_ts_node_content(node),
-                    Some(NodeText::Original("fro".into()))
-                );
+                assert_eq!(ctx.get_ts_node_content(node), Some("fro".into()));
                 assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
             }
             _ => unreachable!(),

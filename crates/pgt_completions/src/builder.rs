@@ -1,9 +1,10 @@
 use crate::{
     CompletionItemKind, CompletionText,
-    context::CompletionContext,
     item::CompletionItem,
     relevance::{filtering::CompletionFilter, scoring::CompletionScore},
 };
+
+use pgt_treesitter::CompletionContext;
 
 pub(crate) struct PossibleCompletionItem<'a> {
     pub label: String,

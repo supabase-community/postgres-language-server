@@ -1,6 +1,8 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use crate::context::{CompletionContext, WrappingClause, WrappingNode};
+use pgt_treesitter::context::{CompletionContext, WrappingClause, WrappingNode};
+
+use crate::sanitization;
 
 use super::CompletionRelevanceData;
 
@@ -37,8 +39,8 @@ impl CompletionScore<'_> {
 
     fn check_matches_query_input(&mut self, ctx: &CompletionContext) {
         let content = match ctx.get_node_under_cursor_content() {
-            Some(c) => c.replace('"', ""),
-            None => return,
+            Some(c) if !sanitization::is_sanitized_token(c.as_str()) => c.replace('"', ""),
+            _ => return,
         };
 
         let name = match self.data {
@@ -142,7 +144,9 @@ impl CompletionScore<'_> {
         };
 
         let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
-        let has_node_text = ctx.get_node_under_cursor_content().is_some();
+        let has_node_text = ctx
+            .get_node_under_cursor_content()
+            .is_some_and(|txt| !sanitization::is_sanitized_token(txt.as_str()));
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match wrapping_node {

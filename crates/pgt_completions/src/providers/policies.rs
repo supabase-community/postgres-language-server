@@ -1,9 +1,9 @@
 use pgt_text_size::{TextRange, TextSize};
+use pgt_treesitter::CompletionContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -90,7 +90,11 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!("alter policy \"{}\" on private.users;", QueryWithCursorPosition::cursor_marker()).as_str(),
+            format!(
+                "alter policy \"{}\" on private.users;",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("read for public users disallowed".into()),
                 CompletionAssertion::Label("write for public users allowed".into()),
@@ -101,7 +105,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("alter policy \"w{}\" on private.users;", QueryWithCursorPosition::cursor_marker()).as_str(),
+            format!(
+                "alter policy \"w{}\" on private.users;",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![CompletionAssertion::Label(
                 "write for public users allowed".into(),
             )],

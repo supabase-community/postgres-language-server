@@ -1,6 +1,6 @@
 use pgt_schema_cache::ProcKind;
 
-use crate::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
+use pgt_treesitter::context::{CompletionContext, NodeUnderCursor, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 

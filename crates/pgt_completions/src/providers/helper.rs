@@ -1,6 +1,7 @@
 use pgt_text_size::{TextRange, TextSize};
+use pgt_treesitter::CompletionContext;
 
-use crate::{CompletionText, context::CompletionContext, remove_sanitized_token};
+use crate::{CompletionText, remove_sanitized_token};
 
 pub(crate) fn find_matching_alias_for_table(
     ctx: &CompletionContext,

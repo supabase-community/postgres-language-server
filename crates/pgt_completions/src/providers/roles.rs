@@ -1,9 +1,9 @@
 use crate::{
     CompletionItemKind,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
+use pgt_treesitter::CompletionContext;
 
 pub fn complete_roles<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_roles = &ctx.schema_cache.roles;

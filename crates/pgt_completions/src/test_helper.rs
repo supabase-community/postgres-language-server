@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use pgt_schema_cache::SchemaCache;
 use pgt_test_utils::QueryWithCursorPosition;
 use sqlx::{Executor, PgPool};
@@ -62,7 +60,7 @@ pub(crate) fn get_test_params<'a>(
     schema_cache: &'a pgt_schema_cache::SchemaCache,
     sql: QueryWithCursorPosition,
 ) -> CompletionParams<'a> {
-    let (position, text) = get_text_and_position(sql);
+    let (position, text) = sql.get_text_and_position();
 
     CompletionParams {
         position: (position as u32).into(),

@@ -1,9 +1,9 @@
 use pgt_schema_cache::Function;
+use pgt_treesitter::CompletionContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     providers::helper::get_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
@@ -123,7 +123,10 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}()"#, QueryWithCursorPosition::cursor_marker());
+        let query = format!(
+            r#"select * from coo{}()"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -191,7 +194,10 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}()"#, QueryWithCursorPosition::cursor_marker());
+        let query = format!(
+            r#"select * from coo{}()"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());

@@ -1,6 +1,7 @@
+use pgt_treesitter::CompletionContext;
+
 use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     item::CompletionItemKind,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };

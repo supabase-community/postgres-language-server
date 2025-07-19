@@ -1,8 +1,8 @@
 use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
+use pgt_treesitter::CompletionContext;
 
 pub fn complete_schemas<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
     let available_schemas = &ctx.schema_cache.schemas;
@@ -99,7 +99,11 @@ mod tests {
         "#;
 
         assert_complete_results(
-            format!("select * from u{}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            format!(
+                "select * from u{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("ultimate".into(), CompletionItemKind::Schema),
