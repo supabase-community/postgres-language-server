@@ -19,7 +19,5 @@ pub(crate) enum HoveredNode {
 }
 
 impl HoveredNode {
-    pub(crate) fn get(position: TextSize, cst: &tree_sitter::Tree) -> Self {
-        todo!()
-    }
+    pub(crate) fn get(position: TextSize, cst: &tree_sitter::Tree) -> Self {}
 }

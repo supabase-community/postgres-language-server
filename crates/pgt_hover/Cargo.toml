@@ -23,6 +23,7 @@ tree-sitter.workspace            = true
 tree_sitter_sql.workspace        = true
 sqlx.workspace = true
 tokio = { version = "1.41.1", features = ["full"] }
+humansize ={ version = "2.1.3" }
 
 [dev-dependencies]
 pgt_test_utils.workspace = true
