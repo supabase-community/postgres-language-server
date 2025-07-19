@@ -1,12 +1,10 @@
-use crate::{
-    diagnostics::LspError, documents::Document, session::Session, utils::apply_document_changes,
-};
+use crate::{documents::Document, session::Session, utils::apply_document_changes};
 use anyhow::Result;
 use pgt_workspace::workspace::{
     ChangeFileParams, CloseFileParams, GetFileContentParams, OpenFileParams,
 };
 use tower_lsp::lsp_types;
-use tracing::error;
+use tracing::{error, field};
 
 /// Handler for `textDocument/didOpen` LSP notification
 #[tracing::instrument(level = "debug", skip(session), err)]
@@ -36,12 +34,12 @@ pub(crate) async fn did_open(
     Ok(())
 }
 
-// Handler for `textDocument/didChange` LSP notification
-#[tracing::instrument(level = "debug", skip(session), err)]
+/// Handler for `textDocument/didChange` LSP notification
+#[tracing::instrument(level = "debug", skip_all, fields(url = field::display(&params.text_document.uri), version = params.text_document.version), err)]
 pub(crate) async fn did_change(
     session: &Session,
     params: lsp_types::DidChangeTextDocumentParams,
-) -> Result<(), LspError> {
+) -> Result<()> {
     let url = params.text_document.uri;
     let version = params.text_document.version;
 
@@ -56,7 +54,7 @@ pub(crate) async fn did_change(
     let text = apply_document_changes(
         session.position_encoding(),
         old_text,
-        &params.content_changes,
+        params.content_changes,
     );
 
     tracing::trace!("new document: {:?}", text);
