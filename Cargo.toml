@@ -83,7 +83,7 @@ pgt_suppressions           = { path = "./crates/pgt_suppressions", version = "0.
 pgt_text_edit              = { path = "./crates/pgt_text_edit", version = "0.0.0" }
 pgt_text_size              = { path = "./crates/pgt_text_size", version = "0.0.0" }
 pgt_tokenizer              = { path = "./crates/pgt_tokenizer", version = "0.0.0" }
-pgt_treesitter_queries     = { path = "./crates/pgt_treesitter_queries", version = "0.0.0" }
+pgt_treesitter             = { path = "./crates/pgt_treesitter", version = "0.0.0" }
 pgt_typecheck              = { path = "./crates/pgt_typecheck", version = "0.0.0" }
 pgt_workspace              = { path = "./crates/pgt_workspace", version = "0.0.0" }
 

@@ -70,7 +70,9 @@ pub(crate) fn parenthesis(p: &mut Splitter) {
                 depth += 1;
             }
             SyntaxKind::R_PAREN | SyntaxKind::EOF => {
-                p.advance();
+                if p.current() == SyntaxKind::R_PAREN {
+                    p.advance();
+                }
                 depth -= 1;
                 if depth == 0 {
                     break;

@@ -1,13 +1,14 @@
+use pgt_treesitter::{TreesitterContext, WrappingClause};
+
 use crate::{
     CompletionItemKind,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::{CompletionContext, WrappingClause},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
 use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
 
-pub fn complete_columns<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_columns<'a>(ctx: &TreesitterContext<'a>, builder: &mut CompletionBuilder<'a>) {
     let available_columns = &ctx.schema_cache.columns;
 
     for col in available_columns {
@@ -49,10 +50,12 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CURSOR_POS, CompletionAssertion, InputQuery, assert_complete_results,
-            assert_no_complete_results, get_test_deps, get_test_params,
+            CompletionAssertion, assert_complete_results, assert_no_complete_results,
+            get_test_deps, get_test_params,
         },
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     struct TestCase {
         query: String,
@@ -62,7 +65,7 @@ mod tests {
     }
 
     impl TestCase {
-        fn get_input_query(&self) -> InputQuery {
+        fn get_input_query(&self) -> QueryWithCursorPosition {
             let strs: Vec<&str> = self.query.split_whitespace().collect();
             strs.join(" ").as_str().into()
         }
@@ -94,7 +97,10 @@ mod tests {
         let queries: Vec<TestCase> = vec![
             TestCase {
                 message: "correctly prefers the columns of present tables",
-                query: format!(r#"select na{} from public.audio_books;"#, CURSOR_POS),
+                query: format!(
+                    r#"select na{} from public.audio_books;"#,
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 label: "narrator",
                 description: "public.audio_books",
             },
@@ -111,14 +117,17 @@ mod tests {
                 join public.users u
                 on u.id = subquery.id;
                 "#,
-                    CURSOR_POS
+                    QueryWithCursorPosition::cursor_marker()
                 ),
                 label: "narrator_id",
                 description: "private.audio_books",
             },
             TestCase {
                 message: "works without a schema",
-                query: format!(r#"select na{} from users;"#, CURSOR_POS),
+                query: format!(
+                    r#"select na{} from users;"#,
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 label: "name",
                 description: "public.users",
             },
@@ -165,7 +174,7 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let case = TestCase {
-            query: format!(r#"select n{};"#, CURSOR_POS),
+            query: format!(r#"select n{};"#, QueryWithCursorPosition::cursor_marker()),
             description: "",
             label: "",
             message: "",
@@ -220,7 +229,10 @@ mod tests {
 
         let test_case = TestCase {
             message: "suggests user created tables first",
-            query: format!(r#"select {} from users"#, CURSOR_POS),
+            query: format!(
+                r#"select {} from users"#,
+                QueryWithCursorPosition::cursor_marker()
+            ),
             label: "",
             description: "",
         };
@@ -270,7 +282,10 @@ mod tests {
 
         let test_case = TestCase {
             message: "suggests user created tables first",
-            query: format!(r#"select * from private.{}"#, CURSOR_POS),
+            query: format!(
+                r#"select * from private.{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            ),
             label: "",
             description: "",
         };
@@ -311,7 +326,11 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!(r#"select {} from users"#, CURSOR_POS).as_str(),
+            format!(
+                r#"select {} from users"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("address2".into()),
                 CompletionAssertion::Label("email2".into()),
@@ -324,7 +343,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!(r#"select {} from private.users"#, CURSOR_POS).as_str(),
+            format!(
+                r#"select {} from private.users"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("address1".into()),
                 CompletionAssertion::Label("email1".into()),
@@ -338,7 +361,11 @@ mod tests {
 
         // asserts fuzzy finding for "settings"
         assert_complete_results(
-            format!(r#"select sett{} from private.users"#, CURSOR_POS).as_str(),
+            format!(
+                r#"select sett{} from private.users"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![CompletionAssertion::Label("user_settings".into())],
             None,
             &pool,
@@ -372,7 +399,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select u.id, p.{} from auth.users u join auth.posts p on u.id = p.user_id;",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -394,7 +421,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select u.id, p.content from auth.users u join auth.posts p on u.id = p.{};",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -440,7 +467,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select u.id, p.content from auth.users u join auth.{}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -479,7 +506,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select u.id, auth.posts.content from auth.users u join auth.posts on u.{}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -496,7 +523,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select u.id, p.content from auth.users u join auth.posts p on p.user_id = u.{}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -536,7 +563,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select {} from public.one o join public.two on o.id = t.id;",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -555,7 +582,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select a, {} from public.one o join public.two on o.id = t.id;",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -577,7 +604,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select o.id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -593,7 +620,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![CompletionAssertion::Label("z".to_string())],
@@ -625,7 +652,11 @@ mod tests {
         // are lower in the alphabet
 
         assert_complete_results(
-            format!("insert into instruments ({})", CURSOR_POS).as_str(),
+            format!(
+                "insert into instruments ({})",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("id".to_string()),
                 CompletionAssertion::Label("name".to_string()),
@@ -637,7 +668,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("insert into instruments (id, {})", CURSOR_POS).as_str(),
+            format!(
+                "insert into instruments (id, {})",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("name".to_string()),
                 CompletionAssertion::Label("z".to_string()),
@@ -648,7 +683,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("insert into instruments (id, {}, name)", CURSOR_POS).as_str(),
+            format!(
+                "insert into instruments (id, {}, name)",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![CompletionAssertion::Label("z".to_string())],
             None,
             &pool,
@@ -659,7 +698,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "insert into instruments (name, {}) values ('my_bass');",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -673,7 +712,11 @@ mod tests {
 
         // no completions in the values list!
         assert_no_complete_results(
-            format!("insert into instruments (id, name) values ({})", CURSOR_POS).as_str(),
+            format!(
+                "insert into instruments (id, name) values ({})",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             None,
             &pool,
         )
@@ -700,7 +743,11 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!("select name from instruments where {} ", CURSOR_POS).as_str(),
+            format!(
+                "select name from instruments where {} ",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("created_at".into()),
                 CompletionAssertion::Label("id".into()),
@@ -715,7 +762,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select name from instruments where z = 'something' and created_at > {}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             // simply do not complete columns + schemas; functions etc. are ok
@@ -732,7 +779,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select name from instruments where id = 'something' and {}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -749,7 +796,7 @@ mod tests {
         assert_complete_results(
             format!(
                 "select name from instruments i join others o on i.z = o.a where i.{}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
@@ -783,22 +830,37 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let queries = vec![
-            format!("alter table instruments drop column {}", CURSOR_POS),
+            format!(
+                "alter table instruments drop column {}",
+                QueryWithCursorPosition::cursor_marker()
+            ),
             format!(
                 "alter table instruments drop column if exists {}",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
             format!(
                 "alter table instruments alter column {} set default",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
-            format!("alter table instruments alter {} set default", CURSOR_POS),
-            format!("alter table public.instruments alter column {}", CURSOR_POS),
-            format!("alter table instruments alter {}", CURSOR_POS),
-            format!("alter table instruments rename {} to new_col", CURSOR_POS),
+            format!(
+                "alter table instruments alter {} set default",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "alter table public.instruments alter column {}",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "alter table instruments alter {}",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                "alter table instruments rename {} to new_col",
+                QueryWithCursorPosition::cursor_marker()
+            ),
             format!(
                 "alter table public.instruments rename column {} to new_col",
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
         ];
 
@@ -834,19 +896,19 @@ mod tests {
         let col_queries = vec![
             format!(
                 r#"create policy "my_pol" on public.instruments for select using ({})"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
             format!(
                 r#"create policy "my_pol" on public.instruments for insert with check ({})"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
             format!(
                 r#"create policy "my_pol" on public.instruments for update using (id = 1 and {})"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
             format!(
                 r#"create policy "my_pol" on public.instruments for insert with check (id = 1 and {})"#,
-                CURSOR_POS
+                QueryWithCursorPosition::cursor_marker()
             ),
         ];
 

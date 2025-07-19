@@ -1,5 +1,5 @@
 use pgt_schema_cache::PostgresType;
-use pgt_treesitter_queries::{TreeSitterQueriesExecutor, queries::ParameterMatch};
+use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
 /// A typed identifier is a parameter that has a type associated with it.
 /// It is used to replace parameters within the SQL string.

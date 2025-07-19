@@ -1,10 +1,10 @@
 use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
+use pgt_treesitter::TreesitterContext;
 
-pub fn complete_schemas<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_schemas<'a>(ctx: &'a TreesitterContext, builder: &mut CompletionBuilder<'a>) {
     let available_schemas = &ctx.schema_cache.schemas;
 
     for schema in available_schemas {
@@ -31,8 +31,10 @@ mod tests {
 
     use crate::{
         CompletionItemKind,
-        test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results},
+        test_helper::{CompletionAssertion, assert_complete_results},
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn autocompletes_schemas(pool: PgPool) {
@@ -50,7 +52,7 @@ mod tests {
         "#;
 
         assert_complete_results(
-            format!("select * from {}", CURSOR_POS).as_str(),
+            format!("select * from {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("public".to_string(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".to_string(), CompletionItemKind::Schema),
@@ -97,7 +99,11 @@ mod tests {
         "#;
 
         assert_complete_results(
-            format!("select * from u{}", CURSOR_POS).as_str(),
+            format!(
+                "select * from u{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("ultimate".into(), CompletionItemKind::Schema),

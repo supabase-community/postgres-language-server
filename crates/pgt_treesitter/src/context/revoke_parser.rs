@@ -5,7 +5,7 @@ use crate::context::base_parser::{
 };
 
 #[derive(Default, Debug, PartialEq, Eq)]
-pub(crate) struct GrantContext {
+pub(crate) struct RevokeContext {
     pub table_name: Option<String>,
     pub schema_name: Option<String>,
     pub node_text: String,
@@ -17,21 +17,22 @@ pub(crate) struct GrantContext {
 /// completions.
 /// The parser will only work if the (trimmed) sql starts with `create policy`, `drop policy`, or `alter policy`.
 /// It can only parse policy statements.
-pub(crate) struct GrantParser {
+pub(crate) struct RevokeParser {
     navigator: TokenNavigator,
-    context: GrantContext,
+    context: RevokeContext,
     cursor_position: usize,
     in_roles_list: bool,
+    is_revoking_role: bool,
 }
 
-impl CompletionStatementParser for GrantParser {
-    type Context = GrantContext;
-    const NAME: &'static str = "GrantParser";
+impl CompletionStatementParser for RevokeParser {
+    type Context = RevokeContext;
+    const NAME: &'static str = "RevokeParser";
 
     fn looks_like_matching_stmt(sql: &str) -> bool {
         let lowercased = sql.to_ascii_lowercase();
         let trimmed = lowercased.trim();
-        trimmed.starts_with("grant")
+        trimmed.starts_with("revoke")
     }
 
     fn parse(mut self) -> Self::Context {
@@ -49,14 +50,15 @@ impl CompletionStatementParser for GrantParser {
     fn make_parser(tokens: Vec<WordWithIndex>, cursor_position: usize) -> Self {
         Self {
             navigator: tokens.into(),
-            context: GrantContext::default(),
+            context: RevokeContext::default(),
             cursor_position,
             in_roles_list: false,
+            is_revoking_role: false,
         }
     }
 }
 
-impl GrantParser {
+impl RevokeParser {
     fn handle_token_under_cursor(&mut self, token: WordWithIndex) {
         if self.navigator.previous_token.is_none() {
             return;
@@ -74,24 +76,27 @@ impl GrantParser {
             .to_ascii_lowercase()
             .as_str()
         {
-            "grant" => {
-                self.context.node_range = token.get_range();
-                self.context.node_kind = "grant_role".into();
-                self.context.node_text = token.get_word();
-            }
             "on" if !matches!(current.as_deref(), Some("table")) => self.handle_table(&token),
 
             "table" => {
                 self.handle_table(&token);
             }
-            "to" => {
+
+            "from" | "revoke" => {
                 self.context.node_range = token.get_range();
-                self.context.node_kind = "grant_role".into();
+                self.context.node_kind = "revoke_role".into();
                 self.context.node_text = token.get_word();
             }
+
+            "for" if self.is_revoking_role => {
+                self.context.node_range = token.get_range();
+                self.context.node_kind = "revoke_role".into();
+                self.context.node_text = token.get_word();
+            }
+
             t => {
                 if self.in_roles_list && t.ends_with(',') {
-                    self.context.node_kind = "grant_role".into();
+                    self.context.node_kind = "revoke_role".into();
                 }
 
                 self.context.node_range = token.get_range();
@@ -116,7 +121,7 @@ impl GrantParser {
                 .expect("Text too long");
 
             self.context.node_range = range_without_schema;
-            self.context.node_kind = "grant_table".into();
+            self.context.node_kind = "revoke_table".into();
 
             // In practice, we should always have a table name.
             // The completion sanitization will add a word after a `.` if nothing follows it;
@@ -125,35 +130,23 @@ impl GrantParser {
         } else {
             self.context.node_range = token.get_range();
             self.context.node_text = token.get_word();
-            self.context.node_kind = "grant_table".into();
+            self.context.node_kind = "revoke_table".into();
         }
     }
 
     fn handle_token(&mut self, token: WordWithIndex) {
         match token.get_word_without_quotes().as_str() {
-            "on" if !self.navigator.next_matches(&[
-                "table",
-                "schema",
-                "foreign",
-                "domain",
-                "sequence",
-                "database",
-                "function",
-                "procedure",
-                "routine",
-                "language",
-                "large",
-                "parameter",
-                "schema",
-                "tablespace",
-                "type",
-            ]) =>
-            {
-                self.table_with_schema()
+            "on" if !self.navigator.next_matches(&["table"]) => self.table_with_schema(),
+
+            // This is the only case where there is no "GRANT" before the option:
+            // REVOKE [ { ADMIN | INHERIT | SET } OPTION FOR ] role_name
+            "option" if !self.navigator.prev_matches(&["grant"]) => {
+                self.is_revoking_role = true;
             }
+
             "table" => self.table_with_schema(),
 
-            "to" => {
+            "from" => {
                 self.in_roles_list = true;
             }
 
@@ -186,15 +179,16 @@ mod tests {
 
     use crate::{
         context::base_parser::CompletionStatementParser,
-        context::grant_parser::{GrantContext, GrantParser},
-        test_helper::CURSOR_POS,
+        context::revoke_parser::{RevokeContext, RevokeParser},
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     fn with_pos(query: String) -> (usize, String) {
         let mut pos: Option<usize> = None;
 
         for (p, c) in query.char_indices() {
-            if c == CURSOR_POS {
+            if c == QueryWithCursorPosition::cursor_marker() {
                 pos = Some(p);
                 break;
             }
@@ -202,29 +196,31 @@ mod tests {
 
         (
             pos.expect("Please add cursor position!"),
-            query.replace(CURSOR_POS, "REPLACED_TOKEN").to_string(),
+            query
+                .replace(QueryWithCursorPosition::cursor_marker(), "REPLACED_TOKEN")
+                .to_string(),
         )
     }
 
     #[test]
-    fn infers_grant_keyword() {
+    fn infers_revoke_keyword() {
         let (pos, query) = with_pos(format!(
             r#"
-            grant {}
+            revoke {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
-        let context = GrantParser::get_context(query.as_str(), pos);
+        let context = RevokeParser::get_context(query.as_str(), pos);
 
         assert_eq!(
             context,
-            GrantContext {
+            RevokeContext {
                 table_name: None,
                 schema_name: None,
                 node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(19), TextSize::new(33)),
-                node_kind: "grant_role".into(),
+                node_range: TextRange::new(TextSize::new(20), TextSize::new(34)),
+                node_kind: "revoke_role".into(),
             }
         );
     }
@@ -233,44 +229,21 @@ mod tests {
     fn infers_table_name() {
         let (pos, query) = with_pos(format!(
             r#"
-            grant select on {} 
+            revoke select on {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
-        let context = GrantParser::get_context(query.as_str(), pos);
+        let context = RevokeParser::get_context(query.as_str(), pos);
 
         assert_eq!(
             context,
-            GrantContext {
+            RevokeContext {
                 table_name: None,
                 schema_name: None,
                 node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(29), TextSize::new(43)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_table_name_with_keyword() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on table {} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: None,
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(35), TextSize::new(49)),
-                node_kind: "grant_table".into(),
+                node_range: TextRange::new(TextSize::new(30), TextSize::new(44)),
+                node_kind: "revoke_table".into(),
             }
         );
     }
@@ -279,44 +252,21 @@ mod tests {
     fn infers_schema_and_table_name() {
         let (pos, query) = with_pos(format!(
             r#"
-            grant select on public.{} 
+            revoke select on public.{} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
-        let context = GrantParser::get_context(query.as_str(), pos);
+        let context = RevokeParser::get_context(query.as_str(), pos);
 
         assert_eq!(
             context,
-            GrantContext {
+            RevokeContext {
                 table_name: None,
                 schema_name: Some("public".into()),
                 node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(36), TextSize::new(50)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_schema_and_table_name_with_keyword() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on table public.{} 
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(42), TextSize::new(56)),
-                node_kind: "grant_table".into(),
+                node_range: TextRange::new(TextSize::new(37), TextSize::new(51)),
+                node_kind: "revoke_table".into(),
             }
         );
     }
@@ -325,67 +275,21 @@ mod tests {
     fn infers_role_name() {
         let (pos, query) = with_pos(format!(
             r#"
-            grant select on public.users to {} 
+            revoke select on public.users from {} 
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
-        let context = GrantParser::get_context(query.as_str(), pos);
+        let context = RevokeParser::get_context(query.as_str(), pos);
 
         assert_eq!(
             context,
-            GrantContext {
+            RevokeContext {
                 table_name: Some("users".into()),
                 schema_name: Some("public".into()),
                 node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(45), TextSize::new(59)),
-                node_kind: "grant_role".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn determines_table_name_after_schema() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on public.{} to test_role
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: None,
-                schema_name: Some("public".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(36), TextSize::new(50)),
-                node_kind: "grant_table".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn infers_quoted_schema_and_table() {
-        let (pos, query) = with_pos(format!(
-            r#"
-            grant select on "MySchema"."MyTable" to {}
-        "#,
-            CURSOR_POS
-        ));
-
-        let context = GrantParser::get_context(query.as_str(), pos);
-
-        assert_eq!(
-            context,
-            GrantContext {
-                table_name: Some("MyTable".into()),
-                schema_name: Some("MySchema".into()),
-                node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(53), TextSize::new(67)),
-                node_kind: "grant_role".into(),
+                node_range: TextRange::new(TextSize::new(48), TextSize::new(62)),
+                node_kind: "revoke_role".into(),
             }
         );
     }
@@ -394,21 +298,44 @@ mod tests {
     fn infers_multiple_roles() {
         let (pos, query) = with_pos(format!(
             r#"
-            grant select on public.users to alice, {}
+            revoke select on public.users from alice, {}
         "#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         ));
 
-        let context = GrantParser::get_context(query.as_str(), pos);
+        let context = RevokeParser::get_context(query.as_str(), pos);
 
         assert_eq!(
             context,
-            GrantContext {
+            RevokeContext {
                 table_name: Some("users".into()),
                 schema_name: Some("public".into()),
                 node_text: "REPLACED_TOKEN".into(),
-                node_range: TextRange::new(TextSize::new(52), TextSize::new(66)),
-                node_kind: "grant_role".into(),
+                node_range: TextRange::new(TextSize::new(55), TextSize::new(69)),
+                node_kind: "revoke_role".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn infers_quoted_schema_and_table() {
+        let (pos, query) = with_pos(format!(
+            r#"
+            revoke select on "MySchema"."MyTable" from {}
+        "#,
+            QueryWithCursorPosition::cursor_marker()
+        ));
+
+        let context = RevokeParser::get_context(query.as_str(), pos);
+
+        assert_eq!(
+            context,
+            RevokeContext {
+                table_name: Some("MyTable".into()),
+                schema_name: Some("MySchema".into()),
+                node_text: "REPLACED_TOKEN".into(),
+                node_range: TextRange::new(TextSize::new(56), TextSize::new(70)),
+                node_kind: "revoke_role".into(),
             }
         );
     }
