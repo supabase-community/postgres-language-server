@@ -212,11 +212,11 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        if PolicyParser::looks_like_matching_stmt(&params.text) {
+        if PolicyParser::looks_like_matching_stmt(params.text) {
             ctx.gather_policy_context();
-        } else if GrantParser::looks_like_matching_stmt(&params.text) {
+        } else if GrantParser::looks_like_matching_stmt(params.text) {
             ctx.gather_grant_context();
-        } else if RevokeParser::looks_like_matching_stmt(&params.text) {
+        } else if RevokeParser::looks_like_matching_stmt(params.text) {
             ctx.gather_revoke_context();
         } else {
             ctx.gather_tree_context();
@@ -230,7 +230,7 @@ impl<'a> CompletionContext<'a> {
         let revoke_context = RevokeParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: revoke_context.node_text.into(),
+            text: revoke_context.node_text,
             range: revoke_context.node_range,
             kind: revoke_context.node_kind.clone(),
             previous_node_kind: None,
@@ -258,7 +258,7 @@ impl<'a> CompletionContext<'a> {
         let grant_context = GrantParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: grant_context.node_text.into(),
+            text: grant_context.node_text,
             range: grant_context.node_range,
             kind: grant_context.node_kind.clone(),
             previous_node_kind: None,
@@ -286,7 +286,7 @@ impl<'a> CompletionContext<'a> {
         let policy_context = PolicyParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: policy_context.node_text.into(),
+            text: policy_context.node_text,
             range: policy_context.node_range,
             kind: policy_context.node_kind.clone(),
             previous_node_kind: Some(policy_context.previous_node_kind),

@@ -129,7 +129,10 @@ mod tests {
 
     #[test]
     fn does_not_return_overlapping_statements_if_too_close() {
-        let sql = format!("select * from {}select 1;", QueryWithCursorPosition::cursor_marker());
+        let sql = format!(
+            "select * from {}select 1;",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -141,7 +144,10 @@ mod tests {
 
     #[test]
     fn is_fine_with_spaces() {
-        let sql = format!("select * from     {}     ;", QueryWithCursorPosition::cursor_marker());
+        let sql = format!(
+            "select * from     {}     ;",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -189,7 +195,10 @@ mod tests {
 
     #[test]
     fn does_not_consider_too_far_offset() {
-        let sql = format!("select * from  {}", QueryWithCursorPosition::cursor_marker());
+        let sql = format!(
+            "select * from  {}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
@@ -198,7 +207,10 @@ mod tests {
 
     #[test]
     fn does_not_consider_offset_if_statement_terminated_by_semi() {
-        let sql = format!("select * from users;{}", QueryWithCursorPosition::cursor_marker());
+        let sql = format!(
+            "select * from users;{}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
