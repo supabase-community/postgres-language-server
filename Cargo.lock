@@ -3052,6 +3052,7 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.23",
  "pgt_schema_cache",
+ "pgt_test_utils",
  "pgt_text_size",
  "tree-sitter",
  "tree_sitter_sql",
