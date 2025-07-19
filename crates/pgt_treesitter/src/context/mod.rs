@@ -19,7 +19,6 @@ use crate::{
         policy_parser::{PolicyParser, PolicyStmtKind},
         revoke_parser::RevokeParser,
     },
-    sanitization::SanitizedCompletionParams,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
