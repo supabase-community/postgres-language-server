@@ -134,6 +134,23 @@ const _: () = {
 };
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+pub struct PgQueryPlpgsqlParseResult {
+    pub plpgsql_funcs: *mut ::std::os::raw::c_char,
+    pub error: *mut PgQueryError,
+}
+#[allow(clippy::unnecessary_operation, clippy::identity_op)]
+const _: () = {
+    ["Size of PgQueryPlpgsqlParseResult"]
+        [::std::mem::size_of::<PgQueryPlpgsqlParseResult>() - 16usize];
+    ["Alignment of PgQueryPlpgsqlParseResult"]
+        [::std::mem::align_of::<PgQueryPlpgsqlParseResult>() - 8usize];
+    ["Offset of field: PgQueryPlpgsqlParseResult::plpgsql_funcs"]
+        [::std::mem::offset_of!(PgQueryPlpgsqlParseResult, plpgsql_funcs) - 0usize];
+    ["Offset of field: PgQueryPlpgsqlParseResult::error"]
+        [::std::mem::offset_of!(PgQueryPlpgsqlParseResult, error) - 8usize];
+};
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct PgQueryFingerprintResult {
     pub fingerprint: u64,
     pub fingerprint_str: *mut ::std::os::raw::c_char,
@@ -183,6 +200,11 @@ unsafe extern "C" {
     ) -> PgQueryProtobufParseResult;
 }
 unsafe extern "C" {
+    pub fn pg_query_parse_plpgsql(
+        input: *const ::std::os::raw::c_char,
+    ) -> PgQueryPlpgsqlParseResult;
+}
+unsafe extern "C" {
     pub fn pg_query_fingerprint(input: *const ::std::os::raw::c_char) -> PgQueryFingerprintResult;
 }
 unsafe extern "C" {
@@ -208,6 +230,9 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn pg_query_free_protobuf_parse_result(result: PgQueryProtobufParseResult);
+}
+unsafe extern "C" {
+    pub fn pg_query_free_plpgsql_parse_result(result: PgQueryPlpgsqlParseResult);
 }
 unsafe extern "C" {
     pub fn pg_query_free_fingerprint_result(result: PgQueryFingerprintResult);

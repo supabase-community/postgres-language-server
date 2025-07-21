@@ -32,10 +32,10 @@ impl Rule for BanDropColumn {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgt_query_ext::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
+        if let pgt_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
-                if let Some(pgt_query_ext::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    if cmd.subtype() == pgt_query_ext::protobuf::AlterTableType::AtDropColumn {
+                if let Some(pgt_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
+                    if cmd.subtype() == pgt_query::protobuf::AlterTableType::AtDropColumn {
                         diagnostics.push(RuleDiagnostic::new(
                             rule_category!(),
                             None,

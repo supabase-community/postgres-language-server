@@ -128,28 +128,30 @@ fn assert_lint(
 
     let result = pgt_statement_splitter::split(code);
     for stmt_range in result.ranges {
-        match pgt_query_ext::parse(&code[stmt_range]) {
+        match pgt_query::parse(&code[stmt_range]) {
             Ok(ast) => {
-                for rule_diag in analyser.run(pgt_analyser::AnalyserParams {
-                    schema_cache: None,
-                    stmts: vec![AnalysableStatement {
-                        range: stmt_range,
-                        root: ast,
-                    }],
-                }) {
-                    let diag = pgt_diagnostics::serde::Diagnostic::new(rule_diag);
+                if let Some(root) = ast.into_root() {
+                    for rule_diag in analyser.run(pgt_analyser::AnalyserParams {
+                        schema_cache: None,
+                        stmts: vec![AnalysableStatement {
+                            range: stmt_range,
+                            root,
+                        }],
+                    }) {
+                        let diag = pgt_diagnostics::serde::Diagnostic::new(rule_diag);
 
-                    let category = diag.category().expect("linter diagnostic has no code");
-                    let severity = settings.get_severity_from_rule_code(category).expect(
+                        let category = diag.category().expect("linter diagnostic has no code");
+                        let severity = settings.get_severity_from_rule_code(category).expect(
                                 "If you see this error, it means you need to run cargo codegen-configuration",
                             );
 
-                    let error = diag
-                        .with_severity(severity)
-                        .with_file_path(&file_path)
-                        .with_file_source_code(code);
+                        let error = diag
+                            .with_severity(severity)
+                            .with_file_path(&file_path)
+                            .with_file_source_code(code);
 
-                    write_diagnostic(code, error)?;
+                        write_diagnostic(code, error)?;
+                    }
                 }
             }
             Err(e) => {

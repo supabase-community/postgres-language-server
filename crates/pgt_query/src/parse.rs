@@ -91,7 +91,7 @@ impl ParseResult {
             .collect()
     }
 
-    /// Returns the root node of the parse tree.
+    /// Returns a reference to the root node of the parse tree.
     ///
     /// Returns None if there is not exactly one statement in the parse result.
     pub fn root(&self) -> Option<&NodeEnum> {
@@ -104,6 +104,22 @@ impl ParseResult {
 
         // Navigate: RawStmt -> Node -> NodeEnum
         raw_stmt.stmt.as_ref().and_then(|stmt| stmt.node.as_ref())
+    }
+
+    /// Consumes the ParseResult and returns the root node of the parse tree.
+    ///
+    /// Returns None if there is not exactly one statement in the parse result.
+    /// This method avoids cloning by taking ownership of the ParseResult.
+    pub fn into_root(self) -> Option<NodeEnum> {
+        if self.protobuf.stmts.len() != 1 {
+            return None;
+        }
+
+        // Extract the first (and only) statement by taking ownership
+        let raw_stmt = self.protobuf.stmts.into_iter().next()?;
+
+        // Navigate: RawStmt -> Node -> NodeEnum
+        raw_stmt.stmt.and_then(|stmt| stmt.node)
     }
 
     /// Returns a mutable reference to the root node of the parse tree.

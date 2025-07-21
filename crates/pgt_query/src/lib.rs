@@ -9,6 +9,7 @@ mod node_ref;
 mod node_structs;
 mod normalize;
 mod parse;
+mod plpgsql;
 mod scan;
 mod split;
 
@@ -22,6 +23,7 @@ pub use node_mut::*;
 pub use node_ref::*;
 pub use normalize::*;
 pub use parse::*;
+pub use plpgsql::*;
 pub use scan::*;
 pub use split::*;
 
@@ -40,7 +42,7 @@ mod bindings {
 
 // Include the generated protobuf code
 #[allow(clippy::all)]
-mod protobuf {
+pub mod protobuf {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/protobuf.rs"));
 }
 

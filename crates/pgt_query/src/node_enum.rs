@@ -6,7 +6,7 @@ pub use protobuf::node::Node as NodeEnum;
 pgt_query_macros::node_enum_codegen!();
 
 impl NodeEnum {
-    pub fn deparse(&self) -> Result<String> {
+    pub fn deparse(&self) -> Result<std::string::String> {
         crate::deparse(&protobuf::ParseResult {
             version: crate::bindings::PG_VERSION_NUM as i32,
             stmts: vec![protobuf::RawStmt {

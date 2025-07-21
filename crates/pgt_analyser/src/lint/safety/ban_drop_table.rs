@@ -31,8 +31,8 @@ impl Rule for BanDropTable {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgt_query_ext::NodeEnum::DropStmt(stmt) = &ctx.stmt() {
-            if stmt.remove_type() == pgt_query_ext::protobuf::ObjectType::ObjectTable {
+        if let pgt_query::NodeEnum::DropStmt(stmt) = &ctx.stmt() {
+            if stmt.remove_type() == pgt_query::protobuf::ObjectType::ObjectTable {
                 diagnostics.push(
                     RuleDiagnostic::new(
                         rule_category!(),

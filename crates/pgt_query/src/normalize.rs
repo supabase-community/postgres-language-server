@@ -13,7 +13,7 @@ use crate::error::*;
 /// let result = result.unwrap();
 /// assert_eq!(result, "SELECT * FROM contacts WHERE name=$1");
 /// ```
-pub fn normalize(statement: &str) -> Result<String> {
+pub fn normalize(statement: &str) -> Result<std::string::String> {
     let input = CString::new(statement).unwrap();
     let result = unsafe { pg_query_normalize(input.as_ptr()) };
     let normalized_query = if !result.error.is_null() {

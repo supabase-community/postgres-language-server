@@ -5,9 +5,9 @@ pub(crate) enum PossibleType {
     AnyOf(Vec<i64>),
 }
 
-pub fn resolve_type(node: &pgt_query_ext::NodeEnum, schema_cache: &SchemaCache) -> PossibleType {
+pub fn resolve_type(node: &pgt_query::NodeEnum, schema_cache: &SchemaCache) -> PossibleType {
     match node {
-        pgt_query_ext::NodeEnum::AConst(n) => {
+        pgt_query::NodeEnum::AConst(n) => {
             if n.isnull {
                 PossibleType::Null
             } else {
@@ -16,7 +16,7 @@ pub fn resolve_type(node: &pgt_query_ext::NodeEnum, schema_cache: &SchemaCache) 
                     .as_ref()
                     .expect("expected non-nullable AConst to have a value")
                 {
-                    pgt_query_ext::protobuf::a_const::Val::Ival(_) => {
+                    pgt_query::protobuf::a_const::Val::Ival(_) => {
                         let types: Vec<String> = ["int2", "int4", "int8"]
                             .iter()
                             .map(|s| s.to_string())
@@ -33,7 +33,7 @@ pub fn resolve_type(node: &pgt_query_ext::NodeEnum, schema_cache: &SchemaCache) 
                                 .collect(),
                         )
                     }
-                    pgt_query_ext::protobuf::a_const::Val::Fval(_) => {
+                    pgt_query::protobuf::a_const::Val::Fval(_) => {
                         let types: Vec<String> =
                             ["float4", "float8"].iter().map(|s| s.to_string()).collect();
 
@@ -46,7 +46,7 @@ pub fn resolve_type(node: &pgt_query_ext::NodeEnum, schema_cache: &SchemaCache) 
                                 .collect(),
                         )
                     }
-                    pgt_query_ext::protobuf::a_const::Val::Boolval(_) => PossibleType::AnyOf(
+                    pgt_query::protobuf::a_const::Val::Boolval(_) => PossibleType::AnyOf(
                         schema_cache
                             .types
                             .iter()
@@ -54,7 +54,7 @@ pub fn resolve_type(node: &pgt_query_ext::NodeEnum, schema_cache: &SchemaCache) 
                             .map(|t| t.id)
                             .collect(),
                     ),
-                    pgt_query_ext::protobuf::a_const::Val::Sval(v) => {
+                    pgt_query::protobuf::a_const::Val::Sval(v) => {
                         let types: Vec<String> =
                             ["text", "varchar"].iter().map(|s| s.to_string()).collect();
 
@@ -70,7 +70,7 @@ pub fn resolve_type(node: &pgt_query_ext::NodeEnum, schema_cache: &SchemaCache) 
                                 .collect(),
                         )
                     }
-                    pgt_query_ext::protobuf::a_const::Val::Bsval(_) => todo!(),
+                    pgt_query::protobuf::a_const::Val::Bsval(_) => todo!(),
                 }
             }
         }

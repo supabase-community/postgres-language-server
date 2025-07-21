@@ -371,29 +371,6 @@ checksum = "3a8241f3ebb85c056b509d4327ad0358fbbba6ffb340bf388f26350aeda225b1"
 
 [[package]]
 name = "bindgen"
-version = "0.66.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2b84e06fc203107bfbad243f4aba2af864eb7db3b1cf46ea0a023b0b433d2a7"
-dependencies = [
- "bitflags 2.6.0",
- "cexpr",
- "clang-sys",
- "lazy_static",
- "lazycell",
- "log",
- "peeking_take_while",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash 1.1.0",
- "shlex",
- "syn 2.0.90",
- "which 4.4.2",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f72209734318d0b619a5e0f5129918b848c416e122a3c4ce054e03cb87b726f"
@@ -1322,6 +1299,7 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_flags",
+ "pgt_query",
  "pgt_query_ext",
  "pgt_statement_splitter",
  "pgt_workspace",
@@ -2221,12 +2199,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lazycell"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
-
-[[package]]
 name = "libc"
 version = "0.2.168"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2727,12 +2699,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "peeking_take_while"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
-
-[[package]]
 name = "pem-rfc7468"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2758,24 +2724,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pg_query"
-version = "6.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f71c7c56dfe299ec6f98aa210aa23458be3b0610c485be60a5873c2f3627c40e"
-dependencies = [
- "bindgen 0.66.1",
- "cc",
- "fs_extra",
- "glob",
- "itertools 0.10.5",
- "prost",
- "prost-build",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "pgt_analyse"
 version = "0.0.0"
 dependencies = [
@@ -2784,7 +2732,7 @@ dependencies = [
  "enumflags2",
  "pgt_console",
  "pgt_diagnostics",
- "pgt_query_ext",
+ "pgt_query",
  "pgt_schema_cache",
  "pgt_text_size",
  "rustc-hash 2.1.0",
@@ -2800,7 +2748,7 @@ dependencies = [
  "pgt_analyse",
  "pgt_console",
  "pgt_diagnostics",
- "pgt_query_ext",
+ "pgt_query",
  "pgt_schema_cache",
  "pgt_test_macros",
  "pgt_text_size",
@@ -3032,7 +2980,7 @@ dependencies = [
 name = "pgt_query"
 version = "0.0.0"
 dependencies = [
- "bindgen 0.72.0",
+ "bindgen",
  "cc",
  "clippy",
  "easy-parallel",
@@ -3042,16 +2990,15 @@ dependencies = [
  "prost",
  "prost-build",
  "thiserror 1.0.69",
- "which 6.0.3",
+ "which",
 ]
 
 [[package]]
 name = "pgt_query_ext"
 version = "0.0.0"
 dependencies = [
- "petgraph",
- "pg_query",
  "pgt_diagnostics",
+ "pgt_query",
  "pgt_text_size",
 ]
 
@@ -3065,15 +3012,6 @@ dependencies = [
  "protox",
  "quote",
  "ureq",
-]
-
-[[package]]
-name = "pgt_query_proto_parser"
-version = "0.0.0"
-dependencies = [
- "convert_case",
- "protobuf",
- "protobuf-parse",
 ]
 
 [[package]]
@@ -3101,7 +3039,7 @@ dependencies = [
  "ntest",
  "pgt_diagnostics",
  "pgt_lexer",
- "pgt_query_ext",
+ "pgt_query",
  "pgt_text_size",
  "regex",
 ]
@@ -3180,7 +3118,7 @@ dependencies = [
 name = "pgt_type_resolver"
 version = "0.0.0"
 dependencies = [
- "pgt_query_ext",
+ "pgt_query",
  "pgt_schema_cache",
 ]
 
@@ -3191,7 +3129,7 @@ dependencies = [
  "insta",
  "pgt_console",
  "pgt_diagnostics",
- "pgt_query_ext",
+ "pgt_query",
  "pgt_schema_cache",
  "pgt_test_utils",
  "pgt_text_size",
@@ -3222,6 +3160,7 @@ dependencies = [
  "pgt_diagnostics",
  "pgt_fs",
  "pgt_lexer",
+ "pgt_query",
  "pgt_query_ext",
  "pgt_schema_cache",
  "pgt_statement_splitter",
@@ -3534,42 +3473,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protobuf"
-version = "3.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3a7c64d9bf75b1b8d981124c14c179074e8caa7dfe7b6a12e6222ddcd0c8f72"
-dependencies = [
- "once_cell",
- "protobuf-support",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "protobuf-parse"
-version = "3.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322330e133eab455718444b4e033ebfac7c6528972c784fcde28d2cc783c6257"
-dependencies = [
- "anyhow",
- "indexmap 2.7.0",
- "log",
- "protobuf",
- "protobuf-support",
- "tempfile",
- "thiserror 1.0.69",
- "which 4.4.2",
-]
-
-[[package]]
-name = "protobuf-support"
-version = "3.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b088fd20b938a875ea00843b6faf48579462630015c3788d397ad6a786663252"
-dependencies = [
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "protox"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3822,6 +3725,7 @@ dependencies = [
  "pgt_analyser",
  "pgt_console",
  "pgt_diagnostics",
+ "pgt_query",
  "pgt_query_ext",
  "pgt_statement_splitter",
  "pgt_workspace",
@@ -5368,18 +5272,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8782dd5a41a24eed3a4f40b606249b3e236ca61adf1f25ea4d45c73de122b502"
 dependencies = [
  "rustls-pki-types",
-]
-
-[[package]]
-name = "which"
-version = "4.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
-dependencies = [
- "either",
- "home",
- "once_cell",
- "rustix 0.38.42",
 ]
 
 [[package]]

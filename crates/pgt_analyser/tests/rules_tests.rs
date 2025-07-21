@@ -25,7 +25,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     let query =
         read_to_string(full_path).unwrap_or_else(|_| panic!("Failed to read file: {} ", full_path));
 
-    let ast = pgt_query_ext::parse(&query).expect("failed to parse SQL");
+    let ast = pgt_query::parse(&query).expect("failed to parse SQL");
     let options = AnalyserOptions::default();
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
@@ -33,7 +33,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     });
 
     let stmt = AnalysableStatement {
-        root: ast,
+        root: ast.into_root(),
         range: pgt_text_size::TextRange::new(0.into(), u32::try_from(query.len()).unwrap().into()),
     };
 

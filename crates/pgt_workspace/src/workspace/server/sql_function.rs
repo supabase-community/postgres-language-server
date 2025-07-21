@@ -30,9 +30,9 @@ pub struct SQLFunctionBody {
 }
 
 /// Extracts the function signature from a SQL function definition
-pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunctionSignature> {
+pub fn get_sql_fn_signature(ast: &pgt_query::NodeEnum) -> Option<SQLFunctionSignature> {
     let create_fn = match ast {
-        pgt_query_ext::NodeEnum::CreateFunctionStmt(cf) => cf,
+        pgt_query::NodeEnum::CreateFunctionStmt(cf) => cf,
         _ => return None,
     };
 
@@ -49,7 +49,7 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
     // we return None if anything is not expected
     let mut fn_args = Vec::new();
     for arg in &create_fn.parameters {
-        if let Some(pgt_query_ext::NodeEnum::FunctionParameter(node)) = &arg.node {
+        if let Some(pgt_query::NodeEnum::FunctionParameter(node)) = &arg.node {
             let arg_name = (!node.name.is_empty()).then_some(node.name.clone());
 
             let arg_type = node.arg_type.as_ref()?;
@@ -79,9 +79,9 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
 }
 
 /// Extracts the SQL body from a function definition
-pub fn get_sql_fn_body(ast: &pgt_query_ext::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
+pub fn get_sql_fn_body(ast: &pgt_query::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
     let create_fn = match ast {
-        pgt_query_ext::NodeEnum::CreateFunctionStmt(cf) => cf,
+        pgt_query::NodeEnum::CreateFunctionStmt(cf) => cf,
         _ => return None,
     };
 
@@ -120,7 +120,7 @@ mod tests {
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;";
 
-        let ast = pgt_query_ext::parse(input).unwrap();
+        let ast = pgt_query::parse(input).unwrap().into_root();
 
         let sig = get_sql_fn_signature(&ast);
 
@@ -146,7 +146,7 @@ mod tests {
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;";
 
-        let ast = pgt_query_ext::parse(input).unwrap();
+        let ast = pgt_query::parse(input).unwrap().into_root();
 
         let sig = get_sql_fn_signature(&ast);
 

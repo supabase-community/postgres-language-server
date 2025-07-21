@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn resolve_func_call<'b>(
-    node: &pgt_query_ext::protobuf::FuncCall,
+    node: &pgt_query::protobuf::FuncCall,
     schema_cache: &'b SchemaCache,
 ) -> Option<&'b Function> {
     let (schema, name) = resolve_func_identifier(node);
@@ -30,7 +30,7 @@ pub fn resolve_func_call<'b>(
     if fns.len() == 1 { Some(fns[0]) } else { None }
 }
 
-fn resolve_func_identifier(node: &pgt_query_ext::protobuf::FuncCall) -> (Option<String>, String) {
+fn resolve_func_identifier(node: &pgt_query::protobuf::FuncCall) -> (Option<String>, String) {
     match node.funcname.as_slice() {
         [name] => (None, get_string_from_node(name)),
         [schema, name] => (
