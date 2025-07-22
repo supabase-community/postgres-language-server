@@ -1,17 +1,21 @@
-use pgt_schema_cache::Function;
+use pgt_schema_cache::{Function, SchemaCache};
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     providers::helper::get_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
 use super::helper::get_completion_text_with_schema_or_alias;
 
-pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut CompletionBuilder<'a>) {
-    let available_functions = &ctx.schema_cache.functions;
+pub fn complete_functions<'a>(
+    ctx: &'a TreesitterContext,
+    schema_cache: &'a SchemaCache,
+    builder: &mut CompletionBuilder<'a>,
+) {
+    let available_functions = &schema_cache.functions;
 
     for func in available_functions {
         let relevance = CompletionRelevanceData::Function(func);
@@ -30,7 +34,7 @@ pub fn complete_functions<'a>(ctx: &'a CompletionContext, builder: &mut Completi
     }
 }
 
-fn get_completion_text(ctx: &CompletionContext, func: &Function) -> CompletionText {
+fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
     let range = get_range_to_replace(ctx);
     let mut text = get_completion_text_with_schema_or_alias(ctx, &func.name, &func.schema)
         .map(|ct| ct.text)
@@ -70,10 +74,11 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CURSOR_POS, CompletionAssertion, assert_complete_results, get_test_deps,
-            get_test_params,
+            CompletionAssertion, assert_complete_results, get_test_deps, get_test_params,
         },
     };
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completes_fn(pool: PgPool) {
@@ -89,7 +94,7 @@ mod tests {
           $$;
         "#;
 
-        let query = format!("select coo{}", CURSOR_POS);
+        let query = format!("select coo{}", QueryWithCursorPosition::cursor_marker());
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -122,7 +127,10 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}()"#, CURSOR_POS);
+        let query = format!(
+            r#"select * from coo{}()"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -156,7 +164,7 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select coo{}"#, CURSOR_POS);
+        let query = format!(r#"select coo{}"#, QueryWithCursorPosition::cursor_marker());
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -190,7 +198,10 @@ mod tests {
           $$;
         "#;
 
-        let query = format!(r#"select * from coo{}()"#, CURSOR_POS);
+        let query = format!(
+            r#"select * from coo{}()"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
 
         let (tree, cache) = get_test_deps(Some(setup), query.as_str().into(), &pool).await;
         let params = get_test_params(&tree, &cache, query.as_str().into());
@@ -259,7 +270,7 @@ mod tests {
 
         let query = format!(
             r#"create policy "my_pol" on public.instruments for insert with check (id = {})"#,
-            CURSOR_POS
+            QueryWithCursorPosition::cursor_marker()
         );
 
         assert_complete_results(

@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::{Query, QueryResult};
+use crate::queries::{Query, QueryResult};
 
 use super::QueryTryFrom;
 
@@ -64,7 +64,7 @@ impl<'a> QueryTryFrom<'a> for WhereColumnMatch<'a> {
 }
 
 impl<'a> Query<'a> for WhereColumnMatch<'a> {
-    fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<crate::QueryResult<'a>> {
+    fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
         let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());

@@ -7,22 +7,14 @@ mod grant_parser;
 mod policy_parser;
 mod revoke_parser;
 
-use pgt_schema_cache::SchemaCache;
-use pgt_text_size::TextRange;
-use pgt_treesitter_queries::{
-    TreeSitterQueriesExecutor,
-    queries::{self, QueryResult},
-};
+use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
+use pgt_text_size::{TextRange, TextSize};
 
-use crate::{
-    NodeText,
-    context::{
-        base_parser::CompletionStatementParser,
-        grant_parser::GrantParser,
-        policy_parser::{PolicyParser, PolicyStmtKind},
-        revoke_parser::RevokeParser,
-    },
-    sanitization::SanitizedCompletionParams,
+use crate::context::{
+    base_parser::CompletionStatementParser,
+    grant_parser::GrantParser,
+    policy_parser::{PolicyParser, PolicyStmtKind},
+    revoke_parser::RevokeParser,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -59,9 +51,9 @@ pub enum WrappingClause<'a> {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
-pub(crate) struct MentionedColumn {
-    pub(crate) column: String,
-    pub(crate) alias: Option<String>,
+pub struct MentionedColumn {
+    pub column: String,
+    pub alias: Option<String>,
 }
 
 /// We can map a few nodes, such as the "update" node, to actual SQL clauses.
@@ -81,10 +73,10 @@ pub enum WrappingNode {
 }
 
 #[derive(Debug)]
-pub(crate) enum NodeUnderCursor<'a> {
+pub enum NodeUnderCursor<'a> {
     TsNode(tree_sitter::Node<'a>),
     CustomNode {
-        text: NodeText,
+        text: String,
         range: TextRange,
         kind: String,
         previous_node_kind: Option<String>,
@@ -150,13 +142,18 @@ impl TryFrom<String> for WrappingNode {
     }
 }
 
+pub struct TreeSitterContextParams<'a> {
+    pub position: TextSize,
+    pub text: &'a str,
+    pub tree: &'a tree_sitter::Tree,
+}
+
 #[derive(Debug)]
-pub(crate) struct CompletionContext<'a> {
+pub struct TreesitterContext<'a> {
     pub node_under_cursor: Option<NodeUnderCursor<'a>>,
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
-    pub schema_cache: &'a SchemaCache,
     pub position: usize,
 
     /// If the cursor is on a node that uses dot notation
@@ -178,6 +175,7 @@ pub(crate) struct CompletionContext<'a> {
     ///     on u.id = i.user_id;
     /// ```
     pub schema_or_alias_name: Option<String>,
+
     pub wrapping_clause_type: Option<WrappingClause<'a>>,
 
     pub wrapping_node_kind: Option<WrappingNode>,
@@ -190,12 +188,11 @@ pub(crate) struct CompletionContext<'a> {
     pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 }
 
-impl<'a> CompletionContext<'a> {
-    pub fn new(params: &'a SanitizedCompletionParams) -> Self {
+impl<'a> TreesitterContext<'a> {
+    pub fn new(params: TreeSitterContextParams<'a>) -> Self {
         let mut ctx = Self {
-            tree: params.tree.as_ref(),
-            text: &params.text,
-            schema_cache: params.schema,
+            tree: params.tree,
+            text: params.text,
             position: usize::from(params.position),
             node_under_cursor: None,
             schema_or_alias_name: None,
@@ -211,11 +208,11 @@ impl<'a> CompletionContext<'a> {
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
         // so the tree_sitter_sql language does not support it.
         // We infer the context manually.
-        if PolicyParser::looks_like_matching_stmt(&params.text) {
+        if PolicyParser::looks_like_matching_stmt(params.text) {
             ctx.gather_policy_context();
-        } else if GrantParser::looks_like_matching_stmt(&params.text) {
+        } else if GrantParser::looks_like_matching_stmt(params.text) {
             ctx.gather_grant_context();
-        } else if RevokeParser::looks_like_matching_stmt(&params.text) {
+        } else if RevokeParser::looks_like_matching_stmt(params.text) {
             ctx.gather_revoke_context();
         } else {
             ctx.gather_tree_context();
@@ -229,7 +226,7 @@ impl<'a> CompletionContext<'a> {
         let revoke_context = RevokeParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: revoke_context.node_text.into(),
+            text: revoke_context.node_text,
             range: revoke_context.node_range,
             kind: revoke_context.node_kind.clone(),
             previous_node_kind: None,
@@ -257,7 +254,7 @@ impl<'a> CompletionContext<'a> {
         let grant_context = GrantParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: grant_context.node_text.into(),
+            text: grant_context.node_text,
             range: grant_context.node_range,
             kind: grant_context.node_kind.clone(),
             previous_node_kind: None,
@@ -285,7 +282,7 @@ impl<'a> CompletionContext<'a> {
         let policy_context = PolicyParser::get_context(self.text, self.position);
 
         self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: policy_context.node_text.into(),
+            text: policy_context.node_text,
             range: policy_context.node_range,
             kind: policy_context.node_kind.clone(),
             previous_node_kind: Some(policy_context.previous_node_kind),
@@ -397,29 +394,18 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<NodeText> {
+    fn get_ts_node_content(&self, ts_node: &tree_sitter::Node<'a>) -> Option<String> {
         let source = self.text;
-        ts_node.utf8_text(source.as_bytes()).ok().map(|txt| {
-            if SanitizedCompletionParams::is_sanitized_token(txt) {
-                NodeText::Replaced
-            } else {
-                NodeText::Original(txt.into())
-            }
-        })
+        ts_node
+            .utf8_text(source.as_bytes())
+            .ok()
+            .map(|txt| txt.into())
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
         match self.node_under_cursor.as_ref()? {
-            NodeUnderCursor::TsNode(node) => {
-                self.get_ts_node_content(node).and_then(|nt| match nt {
-                    NodeText::Replaced => None,
-                    NodeText::Original(c) => Some(c.to_string()),
-                })
-            }
-            NodeUnderCursor::CustomNode { text, .. } => match text {
-                NodeText::Replaced => None,
-                NodeText::Original(c) => Some(c.to_string()),
-            },
+            NodeUnderCursor::TsNode(node) => self.get_ts_node_content(node),
+            NodeUnderCursor::CustomNode { text, .. } => Some(text.clone()),
         }
     }
 
@@ -501,15 +487,10 @@ impl<'a> CompletionContext<'a> {
         match current_node_kind {
             "object_reference" | "field" => {
                 let content = self.get_ts_node_content(&current_node);
-                if let Some(node_txt) = content {
-                    match node_txt {
-                        NodeText::Original(txt) => {
-                            let parts: Vec<&str> = txt.split('.').collect();
-                            if parts.len() == 2 {
-                                self.schema_or_alias_name = Some(parts[0].to_string());
-                            }
-                        }
-                        NodeText::Replaced => {}
+                if let Some(txt) = content {
+                    let parts: Vec<&str> = txt.split('.').collect();
+                    if parts.len() == 2 {
+                        self.schema_or_alias_name = Some(parts[0].to_string());
                     }
                 }
             }
@@ -638,12 +619,7 @@ impl<'a> CompletionContext<'a> {
                         break;
                     }
 
-                    if let Some(sibling_content) =
-                        self.get_ts_node_content(&sib).and_then(|txt| match txt {
-                            NodeText::Original(txt) => Some(txt),
-                            NodeText::Replaced => None,
-                        })
-                    {
+                    if let Some(sibling_content) = self.get_ts_node_content(&sib) {
                         if sibling_content == tokens[idx] {
                             idx += 1;
                         }
@@ -674,9 +650,7 @@ impl<'a> CompletionContext<'a> {
                     while let Some(sib) = first_sibling.next_sibling() {
                         match sib.kind() {
                             "object_reference" => {
-                                if let Some(NodeText::Original(txt)) =
-                                    self.get_ts_node_content(&sib)
-                                {
+                                if let Some(txt) = self.get_ts_node_content(&sib) {
                                     let mut iter = txt.split('.').rev();
                                     let table = iter.next().unwrap().to_string();
                                     let schema = iter.next().map(|s| s.to_string());
@@ -690,9 +664,7 @@ impl<'a> CompletionContext<'a> {
                             }
 
                             "column" => {
-                                if let Some(NodeText::Original(txt)) =
-                                    self.get_ts_node_content(&sib)
-                                {
+                                if let Some(txt) = self.get_ts_node_content(&sib) {
                                     let entry = MentionedColumn {
                                         column: txt,
                                         alias: None,
@@ -717,7 +689,7 @@ impl<'a> CompletionContext<'a> {
                 WrappingClause::AlterColumn => {
                     while let Some(sib) = first_sibling.next_sibling() {
                         if sib.kind() == "object_reference" {
-                            if let Some(NodeText::Original(txt)) = self.get_ts_node_content(&sib) {
+                            if let Some(txt) = self.get_ts_node_content(&sib) {
                                 let mut iter = txt.split('.').rev();
                                 let table = iter.next().unwrap().to_string();
                                 let schema = iter.next().map(|s| s.to_string());
@@ -777,7 +749,7 @@ impl<'a> CompletionContext<'a> {
         }
     }
 
-    pub(crate) fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
+    pub fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor
             .as_ref()
             .is_some_and(|under_cursor| match under_cursor {
@@ -788,7 +760,7 @@ impl<'a> CompletionContext<'a> {
                 NodeUnderCursor::CustomNode { .. } => false,
             })
     }
-    pub(crate) fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
+    pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
             match under_cursor {
                 NodeUnderCursor::TsNode(node) => {
@@ -816,12 +788,9 @@ impl<'a> CompletionContext<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        NodeText,
-        context::{CompletionContext, WrappingClause},
-        sanitization::SanitizedCompletionParams,
-        test_helper::{CURSOR_POS, get_text_and_position},
-    };
+    use crate::context::{TreeSitterContextParams, TreesitterContext, WrappingClause};
+
+    use pgt_test_utils::QueryWithCursorPosition;
 
     use super::NodeUnderCursor;
 
@@ -838,56 +807,82 @@ mod tests {
     fn identifies_clauses() {
         let test_cases = vec![
             (
-                format!("Select {}* from users;", CURSOR_POS),
+                format!(
+                    "Select {}* from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Select,
             ),
             (
-                format!("Select * from u{};", CURSOR_POS),
+                format!(
+                    "Select * from u{};",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::From,
             ),
             (
-                format!("Select {}* from users where n = 1;", CURSOR_POS),
+                format!(
+                    "Select {}* from users where n = 1;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Select,
             ),
             (
-                format!("Select * from users where {}n = 1;", CURSOR_POS),
+                format!(
+                    "Select * from users where {}n = 1;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Where,
             ),
             (
-                format!("update users set u{} = 1 where n = 2;", CURSOR_POS),
+                format!(
+                    "update users set u{} = 1 where n = 2;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Update,
             ),
             (
-                format!("update users set u = 1 where n{} = 2;", CURSOR_POS),
+                format!(
+                    "update users set u = 1 where n{} = 2;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Where,
             ),
             (
-                format!("delete{} from users;", CURSOR_POS),
+                format!(
+                    "delete{} from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::Delete,
             ),
             (
-                format!("delete from {}users;", CURSOR_POS),
+                format!(
+                    "delete from {}users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::From,
             ),
             (
-                format!("select name, age, location from public.u{}sers", CURSOR_POS),
+                format!(
+                    "select name, age, location from public.u{}sers",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 WrappingClause::From,
             ),
         ];
 
         for (query, expected_clause) in test_cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
 
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
-                schema: &pgt_schema_cache::SchemaCache::default(),
+                text: &text,
+                tree: &tree,
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = TreesitterContext::new(params);
 
             assert_eq!(ctx.wrapping_clause_type, Some(expected_clause));
         }
@@ -897,29 +892,46 @@ mod tests {
     fn identifies_schema() {
         let test_cases = vec![
             (
-                format!("Select * from private.u{}", CURSOR_POS),
+                format!(
+                    "Select * from private.u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 Some("private"),
             ),
             (
-                format!("Select * from private.u{}sers()", CURSOR_POS),
+                format!(
+                    "Select * from private.u{}sers()",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 Some("private"),
             ),
-            (format!("Select * from u{}sers", CURSOR_POS), None),
-            (format!("Select * from u{}sers()", CURSOR_POS), None),
+            (
+                format!(
+                    "Select * from u{}sers",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                None,
+            ),
+            (
+                format!(
+                    "Select * from u{}sers()",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                None,
+            ),
         ];
 
         for (query, expected_schema) in test_cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
-                schema: &pgt_schema_cache::SchemaCache::default(),
+                text: &text,
+                tree: &tree,
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = TreesitterContext::new(params);
 
             assert_eq!(
                 ctx.schema_or_alias_name,
@@ -931,32 +943,55 @@ mod tests {
     #[test]
     fn identifies_invocation() {
         let test_cases = vec![
-            (format!("Select * from u{}sers", CURSOR_POS), false),
-            (format!("Select * from u{}sers()", CURSOR_POS), true),
-            (format!("Select cool{};", CURSOR_POS), false),
-            (format!("Select cool{}();", CURSOR_POS), true),
             (
-                format!("Select upp{}ercase as title from users;", CURSOR_POS),
+                format!(
+                    "Select * from u{}sers",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 false,
             ),
             (
-                format!("Select upp{}ercase(name) as title from users;", CURSOR_POS),
+                format!(
+                    "Select * from u{}sers()",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                true,
+            ),
+            (
+                format!("Select cool{};", QueryWithCursorPosition::cursor_marker()),
+                false,
+            ),
+            (
+                format!("Select cool{}();", QueryWithCursorPosition::cursor_marker()),
+                true,
+            ),
+            (
+                format!(
+                    "Select upp{}ercase as title from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                false,
+            ),
+            (
+                format!(
+                    "Select upp{}ercase(name) as title from users;",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 true,
             ),
         ];
 
         for (query, is_invocation) in test_cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
-                schema: &pgt_schema_cache::SchemaCache::default(),
+                text: text.as_str(),
+                tree: &tree,
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = TreesitterContext::new(params);
 
             assert_eq!(ctx.is_invocation, is_invocation);
         }
@@ -965,32 +1000,34 @@ mod tests {
     #[test]
     fn does_not_fail_on_leading_whitespace() {
         let cases = vec![
-            format!("{}      select * from", CURSOR_POS),
-            format!(" {}      select * from", CURSOR_POS),
+            format!(
+                "{}      select * from",
+                QueryWithCursorPosition::cursor_marker()
+            ),
+            format!(
+                " {}      select * from",
+                QueryWithCursorPosition::cursor_marker()
+            ),
         ];
 
         for query in cases {
-            let (position, text) = get_text_and_position(query.as_str().into());
+            let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
             let tree = get_tree(text.as_str());
 
-            let params = SanitizedCompletionParams {
+            let params = TreeSitterContextParams {
                 position: (position as u32).into(),
-                text,
-                tree: std::borrow::Cow::Owned(tree),
-                schema: &pgt_schema_cache::SchemaCache::default(),
+                text: &text,
+                tree: &tree,
             };
 
-            let ctx = CompletionContext::new(&params);
+            let ctx = TreesitterContext::new(params);
 
             let node = ctx.node_under_cursor.as_ref().unwrap();
 
             match node {
                 NodeUnderCursor::TsNode(node) => {
-                    assert_eq!(
-                        ctx.get_ts_node_content(node),
-                        Some(NodeText::Original("select".into()))
-                    );
+                    assert_eq!(ctx.get_ts_node_content(node), Some("select".into()));
 
                     assert_eq!(
                         ctx.wrapping_clause_type,
@@ -1004,29 +1041,28 @@ mod tests {
 
     #[test]
     fn does_not_fail_on_trailing_whitespace() {
-        let query = format!("select * from   {}", CURSOR_POS);
+        let query = format!(
+            "select * from   {}",
+            QueryWithCursorPosition::cursor_marker()
+        );
 
-        let (position, text) = get_text_and_position(query.as_str().into());
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
         let tree = get_tree(text.as_str());
 
-        let params = SanitizedCompletionParams {
+        let params = TreeSitterContextParams {
             position: (position as u32).into(),
-            text,
-            tree: std::borrow::Cow::Owned(tree),
-            schema: &pgt_schema_cache::SchemaCache::default(),
+            text: &text,
+            tree: &tree,
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = TreesitterContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(
-                    ctx.get_ts_node_content(node),
-                    Some(NodeText::Original("from".into()))
-                );
+                assert_eq!(ctx.get_ts_node_content(node), Some("from".into()));
             }
             _ => unreachable!(),
         }
@@ -1034,29 +1070,25 @@ mod tests {
 
     #[test]
     fn does_not_fail_with_empty_statements() {
-        let query = format!("{}", CURSOR_POS);
+        let query = format!("{}", QueryWithCursorPosition::cursor_marker());
 
-        let (position, text) = get_text_and_position(query.as_str().into());
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
         let tree = get_tree(text.as_str());
 
-        let params = SanitizedCompletionParams {
+        let params = TreeSitterContextParams {
             position: (position as u32).into(),
-            text,
-            tree: std::borrow::Cow::Owned(tree),
-            schema: &pgt_schema_cache::SchemaCache::default(),
+            text: &text,
+            tree: &tree,
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = TreesitterContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(
-                    ctx.get_ts_node_content(node),
-                    Some(NodeText::Original("".into()))
-                );
+                assert_eq!(ctx.get_ts_node_content(node), Some("".into()));
                 assert_eq!(ctx.wrapping_clause_type, None);
             }
             _ => unreachable!(),
@@ -1067,29 +1099,25 @@ mod tests {
     fn does_not_fail_on_incomplete_keywords() {
         //  Instead of autocompleting "FROM", we'll assume that the user
         // is selecting a certain column name, such as `frozen_account`.
-        let query = format!("select * fro{}", CURSOR_POS);
+        let query = format!("select * fro{}", QueryWithCursorPosition::cursor_marker());
 
-        let (position, text) = get_text_and_position(query.as_str().into());
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
 
         let tree = get_tree(text.as_str());
 
-        let params = SanitizedCompletionParams {
+        let params = TreeSitterContextParams {
             position: (position as u32).into(),
-            text,
-            tree: std::borrow::Cow::Owned(tree),
-            schema: &pgt_schema_cache::SchemaCache::default(),
+            text: &text,
+            tree: &tree,
         };
 
-        let ctx = CompletionContext::new(&params);
+        let ctx = TreesitterContext::new(params);
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
         match node {
             NodeUnderCursor::TsNode(node) => {
-                assert_eq!(
-                    ctx.get_ts_node_content(node),
-                    Some(NodeText::Original("fro".into()))
-                );
+                assert_eq!(ctx.get_ts_node_content(node), Some("fro".into()));
                 assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
             }
             _ => unreachable!(),
