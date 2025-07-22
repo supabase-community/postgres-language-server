@@ -120,7 +120,7 @@ mod tests {
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;";
 
-        let ast = pgt_query::parse(input).unwrap().into_root();
+        let ast = pgt_query::parse(input).unwrap().into_root().unwrap();
 
         let sig = get_sql_fn_signature(&ast);
 
@@ -146,7 +146,7 @@ mod tests {
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;";
 
-        let ast = pgt_query::parse(input).unwrap().into_root();
+        let ast = pgt_query::parse(input).unwrap().into_root().unwrap();
 
         let sig = get_sql_fn_signature(&ast);
 
