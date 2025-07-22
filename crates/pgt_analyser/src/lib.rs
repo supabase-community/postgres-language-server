@@ -135,7 +135,7 @@ mod tests {
 
         let results = analyser.run(crate::AnalyserParams {
             stmts: vec![AnalysableStatement {
-                root: ast.into_root(),
+                root: ast.into_root().unwrap(),
                 range,
             }],
             schema_cache: None,
