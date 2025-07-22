@@ -33,7 +33,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     });
 
     let stmt = AnalysableStatement {
-        root: ast.into_root(),
+        root: ast.into_root().expect("Failed to convert AST to root node"),
         range: pgt_text_size::TextRange::new(0.into(), u32::try_from(query.len()).unwrap().into()),
     };
 
