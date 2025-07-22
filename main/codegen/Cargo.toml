@@ -26,6 +26,7 @@ pgt_cli = { workspace = true }
 pgt_analyse = { workspace = true }
 pgt_analyser = { workspace = true }
 pgt_diagnostics = { workspace = true }
+pgt_query = { workspace = true }
 pgt_query_ext = { workspace = true }
 pgt_workspace = { workspace = true }
 pgt_statement_splitter = { workspace = true }
