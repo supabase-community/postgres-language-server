@@ -23,7 +23,10 @@ async fn test(name: &str, query: &str, setup: Option<&str>, test_db: &PgPool) {
         .await
         .expect("Failed to load Schema Cache");
 
-    let root = pgt_query::parse(query).unwrap();
+    let root = pgt_query::parse(query)
+        .unwrap()
+        .into_root()
+        .expect("Failed to parse query");
     let tree = parser.parse(query, None).unwrap();
 
     let conn = &test_db;
