@@ -37,7 +37,7 @@ pub use protobuf::Node;
 #[allow(improper_ctypes)]
 #[allow(unsafe_op_in_unsafe_fn)]
 mod bindings {
-    include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/bindings.rs"));
+    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
 // Include the generated protobuf code

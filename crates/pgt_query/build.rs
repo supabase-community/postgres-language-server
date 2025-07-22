@@ -193,7 +193,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .generate()
         .map_err(|_| "Unable to generate bindings")?;
 
-    let bindings_path = src_dir.join("bindings.rs");
+    let bindings_path = out_dir.join("bindings.rs");
     bindings.write_to_file(&bindings_path)?;
 
     // For WASM/emscripten builds, manually add the function declarations
