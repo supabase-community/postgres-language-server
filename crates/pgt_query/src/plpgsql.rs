@@ -9,7 +9,7 @@ use crate::error::*;
 /// # Example
 ///
 /// ```rust
-/// let result = pg_query::parse_plpgsql("
+/// let result = pgt_query::parse_plpgsql("
 ///     CREATE OR REPLACE FUNCTION cs_fmt_browser_version(v_name varchar, v_version varchar)
 ///     RETURNS varchar AS $$
 ///     BEGIN
