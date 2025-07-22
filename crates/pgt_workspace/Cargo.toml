@@ -33,6 +33,7 @@ pgt_statement_splitter    = { workspace = true }
 pgt_suppressions          = { workspace = true }
 pgt_text_size.workspace   = true
 pgt_typecheck             = { workspace = true }
+pgt_workspace_macros      = { workspace = true }
 rustc-hash                = { workspace = true }
 schemars                  = { workspace = true, optional = true }
 serde                     = { workspace = true, features = ["derive"] }

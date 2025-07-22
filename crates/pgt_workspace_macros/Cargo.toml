@@ -6,17 +6,14 @@ edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "pgt_treesitter_queries"
+name                 = "pgt_workspace_macros"
 repository.workspace = true
 version              = "0.0.0"
 
+[lib]
+proc-macro = true
 
 [dependencies]
-clap                      = { version = "4.5.23", features = ["derive"] }
-tree-sitter.workspace     = true
-tree_sitter_sql.workspace = true
-
-[dev-dependencies]
-
-[lib]
-doctest = false
+proc-macro2 = { version = "1.0.95" }
+quote       = { workspace = true }
+syn         = { workspace = true }

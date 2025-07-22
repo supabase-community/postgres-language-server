@@ -1,16 +1,21 @@
+use pgt_schema_cache::SchemaCache;
 use pgt_text_size::{TextRange, TextSize};
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    context::CompletionContext,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
 use super::helper::get_range_to_replace;
 
-pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut CompletionBuilder<'a>) {
-    let available_policies = &ctx.schema_cache.policies;
+pub fn complete_policies<'a>(
+    ctx: &TreesitterContext<'a>,
+    schema_cache: &'a SchemaCache,
+    builder: &mut CompletionBuilder<'a>,
+) {
+    let available_policies = &schema_cache.policies;
 
     let surrounded_by_quotes = ctx
         .get_node_under_cursor_content()
@@ -61,7 +66,8 @@ pub fn complete_policies<'a>(ctx: &CompletionContext<'a>, builder: &mut Completi
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{CURSOR_POS, CompletionAssertion, assert_complete_results};
+    use crate::test_helper::{CompletionAssertion, assert_complete_results};
+    use pgt_test_utils::QueryWithCursorPosition;
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completes_within_quotation_marks(pool: PgPool) {
@@ -89,7 +95,11 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         assert_complete_results(
-            format!("alter policy \"{}\" on private.users;", CURSOR_POS).as_str(),
+            format!(
+                "alter policy \"{}\" on private.users;",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![
                 CompletionAssertion::Label("read for public users disallowed".into()),
                 CompletionAssertion::Label("write for public users allowed".into()),
@@ -100,7 +110,11 @@ mod tests {
         .await;
 
         assert_complete_results(
-            format!("alter policy \"w{}\" on private.users;", CURSOR_POS).as_str(),
+            format!(
+                "alter policy \"w{}\" on private.users;",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
             vec![CompletionAssertion::Label(
                 "write for public users allowed".into(),
             )],

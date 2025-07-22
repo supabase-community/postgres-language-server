@@ -21,6 +21,7 @@ use pgt_diagnostics::{
 };
 use pgt_fs::{ConfigName, PgTPath};
 use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
+use pgt_workspace_macros::ignored_path;
 use schema_cache_manager::SchemaCacheManager;
 use sqlx::{Executor, PgPool};
 use tracing::{debug, info};
@@ -30,7 +31,7 @@ use crate::{
     configuration::to_analyser_rules,
     features::{
         code_actions::{
-            self, CodeAction, CodeActionKind, CodeActionsResult, CommandAction,
+            CodeAction, CodeActionKind, CodeActionsParams, CodeActionsResult, CommandAction,
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
@@ -262,6 +263,7 @@ impl Workspace for WorkspaceServer {
     }
 
     /// Add a new file to the workspace
+    #[ignored_path(path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
@@ -277,6 +279,7 @@ impl Workspace for WorkspaceServer {
     }
 
     /// Remove a file from the workspace
+    #[ignored_path(path=&params.path)]
     fn close_file(&self, params: super::CloseFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
         documents
@@ -291,6 +294,7 @@ impl Workspace for WorkspaceServer {
         path = params.path.as_os_str().to_str(),
         version = params.version
     ), err)]
+    #[ignored_path(path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         let mut documents = self.documents.write().unwrap();
 
@@ -312,6 +316,7 @@ impl Workspace for WorkspaceServer {
         None
     }
 
+    #[ignored_path(path=&params.path)]
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
         let documents = self.documents.read().unwrap();
         let document = documents
@@ -324,10 +329,11 @@ impl Workspace for WorkspaceServer {
         Ok(self.is_ignored(params.pgt_path.as_path()))
     }
 
+    #[ignored_path(path=&params.path)]
     fn pull_code_actions(
         &self,
-        params: code_actions::CodeActionsParams,
-    ) -> Result<code_actions::CodeActionsResult, WorkspaceError> {
+        params: CodeActionsParams,
+    ) -> Result<CodeActionsResult, WorkspaceError> {
         let documents = self.documents.read().unwrap();
         let parser = documents
             .get(&params.path)
@@ -366,6 +372,7 @@ impl Workspace for WorkspaceServer {
         Ok(CodeActionsResult { actions })
     }
 
+    #[ignored_path(path=&params.path)]
     fn execute_statement(
         &self,
         params: ExecuteStatementParams,
@@ -409,6 +416,7 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[ignored_path(path=&params.path)]
     fn pull_diagnostics(
         &self,
         params: PullDiagnosticsParams,
@@ -607,6 +615,7 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    #[ignored_path(path=&params.path)]
     #[tracing::instrument(level = "debug", skip_all, fields(
         path = params.path.as_os_str().to_str(),
         position = params.position.to_string()

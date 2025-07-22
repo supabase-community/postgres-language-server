@@ -23,6 +23,10 @@ pub(crate) fn remove_sanitized_token(it: &str) -> String {
     it.replace(SANITIZED_TOKEN, "")
 }
 
+pub(crate) fn is_sanitized_token(txt: &str) -> bool {
+    txt == SANITIZED_TOKEN
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub(crate) enum NodeText {
     Replaced,
@@ -117,10 +121,6 @@ where
             schema: params.schema,
             tree: Cow::Borrowed(params.tree),
         }
-    }
-
-    pub fn is_sanitized_token(txt: &str) -> bool {
-        txt == SANITIZED_TOKEN
     }
 }
 

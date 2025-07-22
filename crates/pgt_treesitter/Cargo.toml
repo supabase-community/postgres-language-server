@@ -6,25 +6,19 @@ edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "pgt_typecheck"
+name                 = "pgt_treesitter"
 repository.workspace = true
 version              = "0.0.0"
 
 
 [dependencies]
-pgt_console.workspace      = true
-pgt_diagnostics.workspace  = true
-pgt_query.workspace        = true
+clap                       = { version = "4.5.23", features = ["derive"] }
 pgt_schema_cache.workspace = true
 pgt_text_size.workspace    = true
-pgt_treesitter.workspace   = true
-sqlx.workspace             = true
-tokio.workspace            = true
 tree-sitter.workspace      = true
 tree_sitter_sql.workspace  = true
 
 [dev-dependencies]
-insta.workspace          = true
 pgt_test_utils.workspace = true
 
 [lib]

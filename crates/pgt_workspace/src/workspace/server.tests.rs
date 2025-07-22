@@ -1,6 +1,10 @@
-use biome_deserialize::Merge;
+use std::sync::Arc;
+
+use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
-use pgt_configuration::{PartialConfiguration, database::PartialDatabaseConfiguration};
+use pgt_configuration::{
+    PartialConfiguration, database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
+};
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
@@ -8,8 +12,10 @@ use sqlx::PgPool;
 
 use crate::{
     Workspace, WorkspaceError,
+    features::code_actions::ExecuteStatementResult,
     workspace::{
-        OpenFileParams, RegisterProjectFolderParams, UpdateSettingsParams, server::WorkspaceServer,
+        OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
+        server::WorkspaceServer,
     },
 };
 
@@ -151,4 +157,52 @@ async fn test_syntax_error(test_db: PgPool) {
         diagnostic.location().span,
         Some(TextRange::new(7.into(), 15.into()))
     );
+}
+
+#[tokio::test]
+async fn correctly_ignores_files() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        files: Some(PartialFilesConfiguration {
+            ignore: Some(StringSet::from_iter(["test.sql".to_string()])),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+    let content = r#"
+      seect 1;
+    "#;
+
+    let diagnostics_result = workspace.pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        path: path.clone(),
+        categories: RuleCategories::all(),
+        max_diagnostics: 100,
+        only: vec![],
+        skip: vec![],
+    });
+
+    assert!(
+        diagnostics_result.is_ok_and(|res| res.diagnostics.is_empty()
+            && res.errors == 0
+            && res.skipped_diagnostics == 0)
+    );
+
+    let close_file_result =
+        workspace.close_file(crate::workspace::CloseFileParams { path: path.clone() });
+
+    assert!(close_file_result.is_ok());
+
+    let execute_statement_result =
+        workspace.execute_statement(crate::workspace::ExecuteStatementParams {
+            path: path.clone(),
+            statement_id: StatementId::Root {
+                content: Arc::from(content),
+            },
+        });
+
+    assert!(execute_statement_result.is_ok_and(|res| res == ExecuteStatementResult::default()));
 }

@@ -164,6 +164,7 @@ impl From<super::Location<'_>> for Location {
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(test, derive(Eq, PartialEq))]
+
 struct Advices {
     advices: Vec<Advice>,
 }
@@ -250,7 +251,7 @@ impl super::Advices for Advices {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 enum Advice {
     Log(LogCategory, MarkupBuf),
     List(Vec<MarkupBuf>),
