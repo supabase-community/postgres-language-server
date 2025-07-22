@@ -206,6 +206,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bindings_content.push_str("\nextern \"C\" {\n");
             bindings_content.push_str("    pub fn pg_query_scan(input: *const ::std::os::raw::c_char) -> PgQueryScanResult;\n");
             bindings_content.push_str("    pub fn pg_query_parse_protobuf(input: *const ::std::os::raw::c_char) -> PgQueryProtobufParseResult;\n");
+            bindings_content.push_str("    pub fn pg_query_parse_plpgsql(input: *const ::std::os::raw::c_char) -> PgQueryPlpgsqlParseResult;\n");
             bindings_content.push_str("    pub fn pg_query_deparse_protobuf(protobuf: PgQueryProtobuf) -> PgQueryDeparseResult;\n");
             bindings_content.push_str("    pub fn pg_query_normalize(input: *const ::std::os::raw::c_char) -> PgQueryNormalizeResult;\n");
             bindings_content.push_str("    pub fn pg_query_fingerprint(input: *const ::std::os::raw::c_char) -> PgQueryFingerprintResult;\n");
@@ -214,6 +215,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bindings_content
                 .push_str("    pub fn pg_query_free_scan_result(result: PgQueryScanResult);\n");
             bindings_content.push_str("    pub fn pg_query_free_protobuf_parse_result(result: PgQueryProtobufParseResult);\n");
+            bindings_content.push_str("    pub fn pg_query_free_plpgsql_parse_result(result: PgQueryPlpgsqlParseResult);\n");
             bindings_content.push_str(
                 "    pub fn pg_query_free_deparse_result(result: PgQueryDeparseResult);\n",
             );
