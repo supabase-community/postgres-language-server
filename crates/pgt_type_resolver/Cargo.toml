@@ -12,7 +12,7 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgt_query_ext.workspace    = true
+pgt_query.workspace        = true
 pgt_schema_cache.workspace = true
 
 [dev-dependencies]

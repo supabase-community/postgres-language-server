@@ -44,12 +44,14 @@ smallvec                 = { version = "1.13.2", features = ["union", "const_new
 strum                    = { version = "0.27.1", features = ["derive"] }
 # this will use tokio if available, otherwise async-std
 convert_case             = "0.6.0"
+prost                    = "0.13.5"
 prost-reflect            = "0.15.3"
 protox                   = "0.8.0"
 sqlx                     = { version = "0.8.2", features = ["runtime-tokio", "runtime-async-std", "postgres", "json"] }
 syn                      = { version = "1.0.109", features = ["full"] }
 termcolor                = "1.4.1"
 test-log                 = "0.2.17"
+thiserror                = "1.0.31"
 tokio                    = { version = "1.40.0", features = ["full"] }
 tracing                  = { version = "0.1.40", default-features = false, features = ["std"] }
 tracing-bunyan-formatter = { version = "0.3.10 " }
@@ -74,8 +76,9 @@ pgt_lexer                  = { path = "./crates/pgt_lexer", version = "0.0.0" }
 pgt_lexer_codegen          = { path = "./crates/pgt_lexer_codegen", version = "0.0.0" }
 pgt_lsp                    = { path = "./crates/pgt_lsp", version = "0.0.0" }
 pgt_markup                 = { path = "./crates/pgt_markup", version = "0.0.0" }
+pgt_query                  = { path = "./crates/pgt_query", version = "0.0.0" }
 pgt_query_ext              = { path = "./crates/pgt_query_ext", version = "0.0.0" }
-pgt_query_proto_parser     = { path = "./crates/pgt_query_proto_parser", version = "0.0.0" }
+pgt_query_macros           = { path = "./crates/pgt_query_macros", version = "0.0.0" }
 pgt_schema_cache           = { path = "./crates/pgt_schema_cache", version = "0.0.0" }
 pgt_statement_splitter     = { path = "./crates/pgt_statement_splitter", version = "0.0.0" }
 pgt_suppressions           = { path = "./crates/pgt_suppressions", version = "0.0.0" }

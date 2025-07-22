@@ -21,7 +21,7 @@ impl Rule for BanDropDatabase {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgt_query_ext::NodeEnum::DropdbStmt(_) = &ctx.stmt() {
+        if let pgt_query::NodeEnum::DropdbStmt(_) = &ctx.stmt() {
             diagnostics.push(
                 RuleDiagnostic::new(
                     rule_category!(),

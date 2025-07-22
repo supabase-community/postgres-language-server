@@ -1,7 +1,7 @@
 use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
 use pgt_console::markup;
 use pgt_diagnostics::Severity;
-use pgt_query_ext::protobuf::DropBehavior;
+use pgt_query::protobuf::DropBehavior;
 
 declare_lint_rule! {
     /// Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables.
@@ -34,7 +34,7 @@ impl Rule for BanTruncateCascade {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgt_query_ext::NodeEnum::TruncateStmt(stmt) = &ctx.stmt() {
+        if let pgt_query::NodeEnum::TruncateStmt(stmt) = &ctx.stmt() {
             if stmt.behavior() == DropBehavior::DropCascade {
                 diagnostics.push(RuleDiagnostic::new(
                             rule_category!(),

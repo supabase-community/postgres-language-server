@@ -157,7 +157,7 @@ impl RuleRegistry {
 }
 
 pub struct RegistryRuleParams<'a> {
-    pub root: &'a pgt_query_ext::NodeEnum,
+    pub root: &'a pgt_query::NodeEnum,
     pub options: &'a AnalyserOptions,
     pub analysed_file_context: &'a AnalysedFileContext,
     pub schema_cache: Option<&'a pgt_schema_cache::SchemaCache>,

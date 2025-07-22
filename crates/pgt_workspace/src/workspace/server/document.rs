@@ -191,12 +191,7 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
 
 pub struct ExecuteStatementMapper;
 impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        String,
-        Option<pgt_query_ext::NodeEnum>,
-    );
+    type Output = (StatementId, TextRange, String, Option<pgt_query::NodeEnum>);
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
         let ast_result = parser.ast_db.get_or_cache_ast(&id);
@@ -214,7 +209,7 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
         TextRange,
-        Option<pgt_query_ext::NodeEnum>,
+        Option<pgt_query::NodeEnum>,
         Arc<tree_sitter::Tree>,
         Option<SQLFunctionSignature>,
     );

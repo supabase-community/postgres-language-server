@@ -30,8 +30,8 @@ impl SyntaxDiagnostic {
     }
 }
 
-impl From<pg_query::Error> for SyntaxDiagnostic {
-    fn from(err: pg_query::Error) -> Self {
+impl From<pgt_query::Error> for SyntaxDiagnostic {
+    fn from(err: pgt_query::Error) -> Self {
         SyntaxDiagnostic {
             span: None,
             message: MessageAndDescription::from(err.to_string()),
