@@ -49,14 +49,6 @@ impl SchemaCache {
         })
     }
 
-    /// Applies an AST node to the repository
-    ///
-    /// For example, alter table add column will add the column to the table if it does not exist
-    /// yet
-    pub fn mutate(&mut self) {
-        unimplemented!();
-    }
-
     pub fn find_table(&self, name: &str, schema: Option<&str>) -> Option<&Table> {
         self.tables
             .iter()
