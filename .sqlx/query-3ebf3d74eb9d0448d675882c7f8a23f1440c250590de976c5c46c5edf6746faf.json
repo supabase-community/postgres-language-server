@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n  e.name as \"name!\",\n  n.nspname AS schema,\n  e.default_version as \"default_version!\",\n  x.extversion AS installed_version,\n  e.comment\nFROM\n  pg_available_extensions() e(name, default_version, comment)\n  LEFT JOIN pg_extension x ON e.name = x.extname\n  LEFT JOIN pg_namespace n ON x.extnamespace = n.oid\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 1,
+        "name": "schema",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "default_version!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "installed_version",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "comment",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      true,
+      null,
+      true,
+      null
+    ]
+  },
+  "hash": "3ebf3d74eb9d0448d675882c7f8a23f1440c250590de976c5c46c5edf6746faf"
+}
