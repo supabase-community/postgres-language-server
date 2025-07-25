@@ -20,19 +20,6 @@ pub struct TypecheckParams<'a> {
     pub identifiers: Vec<TypedIdentifier>,
 }
 
-#[derive(Debug, Clone)]
-pub struct TypeError {
-    pub message: String,
-    pub code: String,
-    pub severity: PgSeverity,
-    pub position: Option<usize>,
-    pub range: Option<TextRange>,
-    pub table: Option<String>,
-    pub column: Option<String>,
-    pub data_type: Option<String>,
-    pub constraint: Option<String>,
-}
-
 pub async fn check_sql(
     params: TypecheckParams<'_>,
 ) -> Result<Option<TypecheckDiagnostic>, sqlx::Error> {

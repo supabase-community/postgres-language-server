@@ -32,6 +32,7 @@ define_categories! {
     "flags/invalid",
     "project",
     "typecheck",
+    "plpgsql_check",
     "internalError/panic",
     "syntax",
     "dummy",

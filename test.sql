@@ -24,3 +24,11 @@ begin
 end
 $$;
 
+
+create function f1()
+returns void as $$
+declare b constant int;
+begin
+  call p1(10, b);
+end;
+$$ language plpgsql;
