@@ -1,7 +1,5 @@
 use pgt_text_size::TextRange;
 
-use super::function_utils::{find_option_value, parse_name};
-
 #[derive(Debug, Clone)]
 pub struct ArgType {
     pub schema: Option<String>,
@@ -37,14 +35,14 @@ pub fn get_sql_fn_signature(ast: &pgt_query::NodeEnum) -> Option<SQLFunctionSign
     };
 
     // Extract language from function options
-    let language = find_option_value(create_fn, "language")?;
+    let language = pgt_query_ext::utils::find_option_value(create_fn, "language")?;
 
     // Only process SQL functions
     if language != "sql" {
         return None;
     }
 
-    let fn_name = parse_name(&create_fn.funcname)?;
+    let fn_name = pgt_query_ext::utils::parse_name(&create_fn.funcname)?;
 
     // we return None if anything is not expected
     let mut fn_args = Vec::new();
@@ -53,7 +51,7 @@ pub fn get_sql_fn_signature(ast: &pgt_query::NodeEnum) -> Option<SQLFunctionSign
             let arg_name = (!node.name.is_empty()).then_some(node.name.clone());
 
             let arg_type = node.arg_type.as_ref()?;
-            let type_name = parse_name(&arg_type.names)?;
+            let type_name = pgt_query_ext::utils::parse_name(&arg_type.names)?;
             fn_args.push(SQLFunctionArg {
                 name: arg_name,
                 type_: ArgType {
@@ -86,7 +84,7 @@ pub fn get_sql_fn_body(ast: &pgt_query::NodeEnum, content: &str) -> Option<SQLFu
     };
 
     // Extract language from function options
-    let language = find_option_value(create_fn, "language")?;
+    let language = pgt_query_ext::utils::find_option_value(create_fn, "language")?;
 
     // Only process SQL functions
     if language != "sql" {
@@ -94,7 +92,7 @@ pub fn get_sql_fn_body(ast: &pgt_query::NodeEnum, content: &str) -> Option<SQLFu
     }
 
     // Extract SQL body from function options
-    let sql_body = find_option_value(create_fn, "as")?;
+    let sql_body = pgt_query_ext::utils::find_option_value(create_fn, "as")?;
 
     // Find the range of the SQL body in the content
     let start = content.find(&sql_body)?;
