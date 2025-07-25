@@ -124,8 +124,6 @@ pub async fn check_plpgsql(
     .fetch_one(&mut *tx)
     .await?;
 
-    println!("plpgsql_check result: {}", result);
-
     let check_result: PlpgSqlCheckResult = serde_json::from_str(&result).map_err(|e| {
         sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {}", e))
     })?;
