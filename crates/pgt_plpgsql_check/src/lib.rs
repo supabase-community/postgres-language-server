@@ -251,6 +251,8 @@ mod tests {
     async fn test_plpgsql_check_missing_var(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
+
+            CREATE TABLE t1(a int, b int);
         "#;
 
         let create_fn_sql = r#"
@@ -259,7 +261,7 @@ mod tests {
             LANGUAGE plpgsql
             AS $function$
             BEGIN
-                RAISE NOTICE 'c is %s', c;
+                SELECT 1 from t1 where a = v_c;
             END;
             $function$;
         "#;
@@ -272,7 +274,7 @@ mod tests {
             diagnostics[0].severity,
             pgt_diagnostics::Severity::Error
         ));
-        assert_eq!(span_texts[0].as_deref(), Some("c"));
+        assert_eq!(span_texts[0].as_deref(), Some("v_c"));
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
