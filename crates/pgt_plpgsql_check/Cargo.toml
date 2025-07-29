@@ -18,6 +18,7 @@ pgt_query        = { workspace = true }
 pgt_query_ext    = { workspace = true }
 pgt_schema_cache = { workspace = true }
 pgt_text_size    = { workspace = true }
+regex            = { workspace = true }
 serde            = { workspace = true }
 serde_json       = { workspace = true }
 sqlx             = { workspace = true }

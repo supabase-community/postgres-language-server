@@ -2,6 +2,7 @@ mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
+use regex::Regex;
 use serde::Deserialize;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Acquire, PgPool, Postgres, Transaction};
@@ -107,15 +108,45 @@ pub async fn check_plpgsql(
 
     let fn_body = pgt_query_ext::utils::find_option_value(create_fn, "as")
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body".to_string()))?;
-    let start = params
+    let offset = params
         .sql
         .find(&fn_body)
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
+    let is_trigger = create_fn
+        .return_type
+        .as_ref()
+        .map(|n| match pgt_query_ext::utils::parse_name(&n.names) {
+            Some((None, name)) => name == "trigger",
+            _ => false,
+        })
+        .unwrap_or(false);
 
     let mut conn = params.conn.acquire().await?;
+    conn.close_on_drop();
+
     let mut tx: Transaction<'_, Postgres> = conn.begin().await?;
 
-    sqlx::query(params.sql).execute(&mut *tx).await?;
+    // disable function body checking to rely on plpgsql_check
+    sqlx::query("SET LOCAL check_function_bodies = off")
+        .execute(&mut *tx)
+        .await?;
+
+    // make sure we run with "or replace"
+    let sql_with_replace = if !create_fn.replace {
+        let re = Regex::new(r"(?i)\bCREATE\s+FUNCTION\b").unwrap();
+        re.replace(params.sql, "CREATE OR REPLACE FUNCTION")
+            .to_string()
+    } else {
+        params.sql.to_string()
+    };
+
+    // create the function - this should always succeed
+    sqlx::query(&sql_with_replace).execute(&mut *tx).await?;
+
+    // TODO: handle trigger
+    if is_trigger {
+        return Ok(vec![]);
+    }
 
     let result: String = sqlx::query_scalar(&format!(
         "select plpgsql_check_function('{}', format := 'json')",
@@ -130,11 +161,9 @@ pub async fn check_plpgsql(
 
     tx.rollback().await?;
 
-    Ok(create_diagnostics_from_check_result(
-        &check_result,
-        &fn_body,
-        start,
-    ))
+    let diagnostics = create_diagnostics_from_check_result(&check_result, &fn_body, offset);
+
+    Ok(diagnostics)
 }
 
 #[cfg(test)]
@@ -178,6 +207,79 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_if_expr(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE t1(a int, b int);
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.f1()
+            RETURNS void
+            LANGUAGE plpgsql
+            AS $function$
+            declare r t1 := (select t1 from t1 where a = 1);
+            BEGIN
+              if r.c is null or
+                 true is false
+                then -- there is bug - table t1 missing "c" column
+                RAISE NOTICE 'c is null';
+              end if;
+            END;
+            $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1);
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert_eq!(
+            span_texts[0].as_deref(),
+            Some("if r.c is null or\n                 true is false\n                then")
+        );
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_missing_col_if_stmt(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE t1(a int, b int);
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.f1()
+            RETURNS void
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+              if (select c from t1 where id = 1) is null then -- there is bug - table t1 missing "c" column
+                RAISE NOTICE 'c is null';
+              end if;
+            END;
+            $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+        println!("Diagnostics: {:?}", diagnostics);
+
+        assert_eq!(diagnostics.len(), 1);
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert_eq!(span_texts[0].as_deref(), Some("c"));
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn test_plpgsql_check(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -209,7 +311,7 @@ mod tests {
             diagnostics[0].severity,
             pgt_diagnostics::Severity::Error
         ));
-        assert_eq!(span_texts[0].as_deref(), Some("RAISE"));
+        assert_eq!(span_texts[0].as_deref(), Some("RAISE NOTICE '%', r.c;"));
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
@@ -273,7 +375,10 @@ mod tests {
             diagnostics[0].severity,
             pgt_diagnostics::Severity::Error
         ));
-        assert_eq!(span_texts[0].as_deref(), Some("open"));
+        assert_eq!(
+            span_texts[0].as_deref(),
+            Some("open rc for select a from rc_test;")
+        );
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
@@ -308,7 +413,35 @@ mod tests {
             diagnostics[0].severity,
             pgt_diagnostics::Severity::Error
         ));
-        assert_eq!(span_texts[0].as_deref(), Some("call"));
+        assert_eq!(span_texts[0].as_deref(), Some("call p1(10, b);"));
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_missing_procedure(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+        "#;
+
+        let create_fn_sql = r#"
+            create function f1()
+            returns void as $$
+            declare b constant int;
+            begin
+              call p1(10, b);
+            end;
+            $$ language plpgsql;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert!(!diagnostics.is_empty());
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert_eq!(span_texts[0].as_deref(), Some("p1"));
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
@@ -338,10 +471,6 @@ mod tests {
         assert_eq!(diagnostics.len(), 1);
         assert!(span_texts[0].is_some());
 
-        assert_eq!(
-            diagnostics[0].advices.query.as_deref(),
-            Some("insert into t1 values(10,20)")
-        );
         assert_eq!(diagnostics[0].advices.code.as_deref(), Some("0A000"));
     }
 
@@ -379,7 +508,6 @@ mod tests {
             diagnostics[0].severity,
             pgt_diagnostics::Severity::Error
         ));
-        assert!(diagnostics[0].advices.query.is_none());
         assert!(span_texts[0].is_some());
     }
 }

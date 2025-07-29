@@ -55,3 +55,45 @@ pub fn parse_name(nodes: &[pgt_query::protobuf::Node]) -> Option<(Option<String>
         _ => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_find_option_value() {
+        let input = "
+            CREATE OR REPLACE FUNCTION public.f1()
+            RETURNS boolean
+            LANGUAGE plpgsql
+            AS $function$
+            declare r t1 := (select t1 from t1 where a = 1);
+            BEGIN
+              if r.c is null or
+                 true is false
+                then -- there is bug - table t1 missing \"c\" column
+                RAISE NOTICE 'c is null';
+              end if;
+            END;
+            $function$;
+"
+        .trim();
+
+        let ast = pgt_query::parse(input).unwrap().into_root().unwrap();
+        let create_fn = match &ast {
+            pgt_query::NodeEnum::CreateFunctionStmt(stmt) => stmt,
+            _ => panic!("Expected CreateFunctionStmt"),
+        };
+
+        assert_eq!(
+            find_option_value(&create_fn, "language"),
+            Some("plpgsql".to_string())
+        );
+
+        assert!(find_option_value(&create_fn, "as").is_some(),);
+
+        assert_eq!(
+            parse_name(&create_fn.return_type.as_ref().unwrap().names),
+            Some((Some("pg_catalog".to_string()), "bool".to_string()))
+        );
+    }
+}

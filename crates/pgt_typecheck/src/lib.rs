@@ -3,7 +3,6 @@ mod typed_identifier;
 
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
-use pgt_text_size::TextRange;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
