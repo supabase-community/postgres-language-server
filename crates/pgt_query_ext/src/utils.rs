@@ -58,6 +58,7 @@ pub fn parse_name(nodes: &[pgt_query::protobuf::Node]) -> Option<(Option<String>
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::{find_option_value, parse_name};
 
     #[test]
     fn test_find_option_value() {

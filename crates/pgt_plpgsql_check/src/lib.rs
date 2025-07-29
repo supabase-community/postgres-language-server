@@ -159,6 +159,8 @@ pub async fn check_plpgsql(
         sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {}", e))
     })?;
 
+    println!("{:#?}", check_result);
+
     tx.rollback().await?;
 
     let diagnostics = create_diagnostics_from_check_result(&check_result, &fn_body, offset);
@@ -246,6 +248,34 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_missing_var(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.f1()
+            RETURNS void
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                RAISE NOTICE 'c is %s', c;
+            END;
+            $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+        assert_eq!(diagnostics.len(), 1);
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert_eq!(span_texts[0].as_deref(), Some("c"));
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn test_plpgsql_check_missing_col_if_stmt(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -269,8 +299,6 @@ mod tests {
         let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
             .await
             .expect("Failed to run plpgsql_check test");
-        println!("Diagnostics: {:?}", diagnostics);
-
         assert_eq!(diagnostics.len(), 1);
         assert!(matches!(
             diagnostics[0].severity,

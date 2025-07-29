@@ -6,6 +6,60 @@ use pgt_text_size::TextRange;
 
 use crate::{PlpgSqlCheckIssue, PlpgSqlCheckResult};
 
+/// Find the first occurrence of target text that is not within string literals
+fn find_text_outside_strings(text: &str, target: &str) -> Option<usize> {
+    let text_lower = text.to_lowercase();
+    let target_lower = target.to_lowercase();
+    let mut in_string = false;
+    let mut quote_char = '\0';
+    let bytes = text_lower.as_bytes();
+    let mut i = 0;
+
+    while i < bytes.len() {
+        let ch = bytes[i] as char;
+
+        if !in_string {
+            // Check if we're starting a string literal
+            if ch == '\'' || ch == '"' {
+                in_string = true;
+                quote_char = ch;
+            } else {
+                // Check if we found our target at this position
+                if text_lower[i..].starts_with(&target_lower) {
+                    // Check if this is a complete word (not part of another identifier)
+                    let is_word_start =
+                        i == 0 || !bytes[i - 1].is_ascii_alphanumeric() && bytes[i - 1] != b'_';
+                    let target_end = i + target_lower.len();
+                    let is_word_end = target_end >= bytes.len()
+                        || (!bytes[target_end].is_ascii_alphanumeric()
+                            && bytes[target_end] != b'_');
+
+                    if is_word_start && is_word_end {
+                        return Some(i);
+                    }
+                }
+            }
+        } else {
+            // We're inside a string literal
+            if ch == quote_char {
+                // Check if it's escaped (look for double quotes/apostrophes)
+                if i + 1 < bytes.len() && bytes[i + 1] as char == quote_char {
+                    // Skip the escaped quote
+                    i += 1;
+                } else {
+                    // End of string literal
+                    in_string = false;
+                    quote_char = '\0';
+                }
+            }
+        }
+
+        i += 1;
+    }
+
+    None
+}
+
 /// A specialized diagnostic for plpgsql_check.
 #[derive(Clone, Debug, Diagnostic)]
 #[diagnostic(category = "plpgsql_check")]
@@ -24,6 +78,9 @@ pub struct PlPgSqlCheckDiagnostic {
 #[derive(Debug, Clone)]
 pub struct PlPgSqlCheckAdvices {
     pub code: Option<String>,
+    /// the relation (table or view) where the issue was found, if applicable
+    /// only applicable for trigger functions
+    pub relation: Option<String>,
 }
 
 impl Advices for PlPgSqlCheckAdvices {
@@ -33,6 +90,14 @@ impl Advices for PlPgSqlCheckAdvices {
             visitor.record_log(
                 LogCategory::Error,
                 &markup! { "SQL State: " <Emphasis>{code}</Emphasis> },
+            )?;
+        }
+
+        // Show relation information if available
+        if let Some(relation) = &self.relation {
+            visitor.record_log(
+                LogCategory::Info,
+                &markup! { "Relation: " <Emphasis>{relation}</Emphasis> },
             )?;
         }
 
@@ -71,6 +136,7 @@ fn create_diagnostic_from_issue(
         span: resolve_span(issue, fn_body, offset),
         advices: PlPgSqlCheckAdvices {
             code: issue.sql_state.clone(),
+            relation: None,
         },
     }
 }
@@ -106,10 +172,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     let stmt_offset = line_offset + start;
 
     if let Some(q) = &issue.query {
-        // first find the query within the fn body *after* stmt_offset
-        let query_start = fn_body[stmt_offset..]
-            .to_lowercase()
-            .find(&q.text.to_lowercase())
+        // first find the query within the fn body *after* stmt_offset, ignoring string literals
+        let query_start = find_text_outside_strings(&fn_body[stmt_offset..], &q.text)
             .map(|pos| pos + stmt_offset);
 
         // the position is *within* the query text
@@ -129,12 +193,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
             .find(|(_, c)| {
                 c.is_whitespace() || matches!(c, ',' | ';' | ')' | '(' | '=' | '<' | '>')
             })
-            .map(|(i, c)| {
-                if matches!(c, ';') {
-                    i + 1 // include the semicolon
-                } else {
-                    i // just the token end
-                }
+            .map(|(i, _c)| {
+                i // just the token end, don't include delimiters
             })
             .unwrap_or(remaining.len());
 

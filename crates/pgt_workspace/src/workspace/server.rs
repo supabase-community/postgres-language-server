@@ -570,6 +570,7 @@ impl Workspace for WorkspaceServer {
             if let Some(node) = stmt_root {
                 analysable_stmts.push(node);
             }
+            // TODO: ignore the syntax error if we already have a diagnostic for it
             if let Some(diag) = diagnostic {
                 diagnostics.push(SDiagnostic::new(
                     diag.with_file_path(path.clone())
