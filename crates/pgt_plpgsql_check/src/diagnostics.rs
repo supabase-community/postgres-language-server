@@ -115,32 +115,25 @@ pub fn create_diagnostics_from_check_result(
     result
         .issues
         .iter()
-        .map(|issue| create_diagnostic_from_issue(issue, fn_body, offset, relation.clone()))
+        .map(|issue| {
+            let severity = match issue.level.as_str() {
+                "error" => Severity::Error,
+                "warning" => Severity::Warning,
+                "notice" => Severity::Hint,
+                _ => Severity::Information,
+            };
+
+            PlPgSqlCheckDiagnostic {
+                message: issue.message.clone().into(),
+                severity,
+                span: resolve_span(issue, fn_body, offset),
+                advices: PlPgSqlCheckAdvices {
+                    code: issue.sql_state.clone(),
+                    relation: relation.clone(),
+                },
+            }
+        })
         .collect()
-}
-
-fn create_diagnostic_from_issue(
-    issue: &PlpgSqlCheckIssue,
-    fn_body: &str,
-    offset: usize,
-    relation: Option<String>,
-) -> PlPgSqlCheckDiagnostic {
-    let severity = match issue.level.as_str() {
-        "error" => Severity::Error,
-        "warning" => Severity::Warning,
-        "notice" => Severity::Hint,
-        _ => Severity::Information,
-    };
-
-    PlPgSqlCheckDiagnostic {
-        message: issue.message.clone().into(),
-        severity,
-        span: resolve_span(issue, fn_body, offset),
-        advices: PlPgSqlCheckAdvices {
-            code: issue.sql_state.clone(),
-            relation,
-        },
-    }
 }
 
 fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Option<TextRange> {
