@@ -105,16 +105,17 @@ impl Advices for PlPgSqlCheckAdvices {
     }
 }
 
-/// Convert plpgsql_check results into diagnostics
+/// Convert plpgsql_check results into diagnostics with optional relation info for triggers
 pub fn create_diagnostics_from_check_result(
     result: &PlpgSqlCheckResult,
     fn_body: &str,
     offset: usize,
+    relation: Option<String>,
 ) -> Vec<PlPgSqlCheckDiagnostic> {
     result
         .issues
         .iter()
-        .map(|issue| create_diagnostic_from_issue(issue, fn_body, offset))
+        .map(|issue| create_diagnostic_from_issue(issue, fn_body, offset, relation.clone()))
         .collect()
 }
 
@@ -122,6 +123,7 @@ fn create_diagnostic_from_issue(
     issue: &PlpgSqlCheckIssue,
     fn_body: &str,
     offset: usize,
+    relation: Option<String>,
 ) -> PlPgSqlCheckDiagnostic {
     let severity = match issue.level.as_str() {
         "error" => Severity::Error,
@@ -136,7 +138,7 @@ fn create_diagnostic_from_issue(
         span: resolve_span(issue, fn_body, offset),
         advices: PlPgSqlCheckAdvices {
             code: issue.sql_state.clone(),
-            relation: None,
+            relation,
         },
     }
 }

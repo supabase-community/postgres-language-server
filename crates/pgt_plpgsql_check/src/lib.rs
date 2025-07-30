@@ -2,6 +2,7 @@ mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
+use pgt_query::protobuf::CreateFunctionStmt;
 use regex::Regex;
 use serde::Deserialize;
 pub use sqlx::postgres::PgSeverity;
@@ -44,37 +45,52 @@ pub struct Query {
     pub text: String,
 }
 
-pub async fn check_plpgsql(
-    params: PlPgSqlCheckParams<'_>,
-) -> Result<Vec<PlPgSqlCheckDiagnostic>, sqlx::Error> {
-    let create_fn = match params.ast {
+/// check if the given node is a plpgsql function that should be checked
+fn should_check_function<'a>(
+    ast: &'a pgt_query::NodeEnum,
+    schema_cache: &pgt_schema_cache::SchemaCache,
+) -> Option<&'a CreateFunctionStmt> {
+    let create_fn = match ast {
         pgt_query::NodeEnum::CreateFunctionStmt(stmt) => stmt,
-        _ => return Ok(vec![]),
+        _ => return None,
     };
 
     if pgt_query_ext::utils::find_option_value(create_fn, "language") != Some("plpgsql".to_string())
     {
-        return Ok(vec![]);
+        return None;
     }
 
-    if params
-        .schema_cache
+    if !schema_cache
         .extensions
         .iter()
-        .find(|e| e.name == "plpgsql_check")
-        .is_none()
+        .any(|e| e.name == "plpgsql_check")
     {
-        return Ok(vec![]);
+        return None;
     }
 
-    let fn_name = match pgt_query_ext::utils::parse_name(&create_fn.funcname) {
-        Some((schema, name)) => match schema {
-            Some(s) => format!("{}.{}", s, name),
-            None => name,
-        },
-        None => return Ok(vec![]),
-    };
+    Some(create_fn)
+}
 
+/// check if a function is a trigger function
+fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
+    create_fn
+        .return_type
+        .as_ref()
+        .map(|n| {
+            matches!(
+                pgt_query_ext::utils::parse_name(&n.names),
+                Some((None, name)) if name == "trigger"
+            )
+        })
+        .unwrap_or(false)
+}
+
+/// build the function identifier string used by plpgsql_check
+fn build_function_identifier(
+    create_fn: &CreateFunctionStmt,
+    fn_schema: &Option<String>,
+    fn_name: &str,
+) -> String {
     let args = create_fn
         .parameters
         .iter()
@@ -91,20 +107,41 @@ pub async fn check_plpgsql(
                 },
                 None => return None,
             };
-            let is_array = !type_name_node.array_bounds.is_empty();
 
-            if is_array {
-                return Some(format!("{}[]", type_name));
+            if !type_name_node.array_bounds.is_empty() {
+                Some(format!("{}[]", type_name))
+            } else {
+                Some(type_name)
             }
-            Some(type_name)
         })
         .collect::<Vec<_>>();
 
-    let fn_identifier = if args.is_empty() {
-        fn_name
-    } else {
-        format!("{}({})", fn_name, args.join(", "))
+    let fn_qualified_name = match fn_schema {
+        Some(schema) => format!("{}.{}", schema, fn_name),
+        None => fn_name.to_string(),
     };
+
+    if args.is_empty() {
+        fn_qualified_name
+    } else {
+        format!("{}({})", fn_qualified_name, args.join(", "))
+    }
+}
+
+pub async fn check_plpgsql(
+    params: PlPgSqlCheckParams<'_>,
+) -> Result<Vec<PlPgSqlCheckDiagnostic>, sqlx::Error> {
+    let create_fn = match should_check_function(params.ast, params.schema_cache) {
+        Some(stmt) => stmt,
+        None => return Ok(vec![]),
+    };
+
+    let (fn_schema, fn_name) = match pgt_query_ext::utils::parse_name(&create_fn.funcname) {
+        Some(n) => n,
+        None => return Ok(vec![]),
+    };
+
+    let fn_identifier = build_function_identifier(create_fn, &fn_schema, &fn_name);
 
     let fn_body = pgt_query_ext::utils::find_option_value(create_fn, "as")
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body".to_string()))?;
@@ -112,14 +149,7 @@ pub async fn check_plpgsql(
         .sql
         .find(&fn_body)
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
-    let is_trigger = create_fn
-        .return_type
-        .as_ref()
-        .map(|n| match pgt_query_ext::utils::parse_name(&n.names) {
-            Some((None, name)) => name == "trigger",
-            _ => false,
-        })
-        .unwrap_or(false);
+    let is_trigger = is_trigger_function(create_fn);
 
     let mut conn = params.conn.acquire().await?;
     conn.close_on_drop();
@@ -143,27 +173,60 @@ pub async fn check_plpgsql(
     // create the function - this should always succeed
     sqlx::query(&sql_with_replace).execute(&mut *tx).await?;
 
-    // TODO: handle trigger
-    if is_trigger {
-        return Ok(vec![]);
-    }
+    // run plpgsql_check and collect results with their relations
+    let results_with_relations: Vec<(String, Option<String>)> = if is_trigger {
+        let mut results = Vec::new();
 
-    let result: String = sqlx::query_scalar(&format!(
-        "select plpgsql_check_function('{}', format := 'json')",
-        fn_identifier
-    ))
-    .fetch_one(&mut *tx)
-    .await?;
+        for trigger in params.schema_cache.triggers.iter() {
+            if trigger.proc_name == fn_name
+                && (fn_schema.is_none() || fn_schema.as_deref() == Some(&trigger.proc_schema))
+            {
+                let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
 
-    let check_result: PlpgSqlCheckResult = serde_json::from_str(&result).map_err(|e| {
-        sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {}", e))
-    })?;
+                let result: Option<String> = sqlx::query_scalar(&format!(
+                    "select plpgsql_check_function('{}', '{}', format := 'json')",
+                    fn_identifier, relation
+                ))
+                .fetch_optional(&mut *tx)
+                .await?
+                .flatten();
 
-    println!("{:#?}", check_result);
+                if let Some(result) = result {
+                    results.push((result, Some(relation)));
+                }
+            }
+        }
+
+        results
+    } else {
+        let result: Option<String> = sqlx::query_scalar(&format!(
+            "select plpgsql_check_function('{}', format := 'json')",
+            fn_identifier
+        ))
+        .fetch_optional(&mut *tx)
+        .await?
+        .flatten();
+
+        if let Some(result) = result {
+            vec![(result, None)]
+        } else {
+            vec![]
+        }
+    };
 
     tx.rollback().await?;
 
-    let diagnostics = create_diagnostics_from_check_result(&check_result, &fn_body, offset);
+    // Parse results and create diagnostics
+    let mut diagnostics = Vec::new();
+    for (result_json, relation) in results_with_relations {
+        let check_result: PlpgSqlCheckResult = serde_json::from_str(&result_json).map_err(|e| {
+            sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {}", e))
+        })?;
+
+        let mut result_diagnostics =
+            create_diagnostics_from_check_result(&check_result, &fn_body, offset, relation);
+        diagnostics.append(&mut result_diagnostics);
+    }
 
     Ok(diagnostics)
 }
@@ -539,5 +602,193 @@ mod tests {
             pgt_diagnostics::Severity::Error
         ));
         assert!(span_texts[0].is_some());
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_trigger_basic(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE users(
+                id serial primary key,
+                name text not null,
+                email text
+            );
+
+            CREATE OR REPLACE FUNCTION public.log_user_changes()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                -- Intentional error: referencing non-existent column
+                INSERT INTO audit_log(table_name, changed_id, old_email, new_email)
+                VALUES ('users', NEW.id, OLD.email, NEW.email);
+                RETURN NEW;
+            END;
+            $function$;
+
+            CREATE TRIGGER trg_users_audit
+                AFTER UPDATE ON users
+                FOR EACH ROW
+                EXECUTE FUNCTION public.log_user_changes();
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.log_user_changes()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                -- Intentional error: referencing non-existent column
+                INSERT INTO audit_log(table_name, changed_id, old_email, new_email)
+                VALUES ('users', NEW.id, OLD.email, NEW.email);
+                RETURN NEW;
+            END;
+            $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert!(!diagnostics.is_empty());
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert!(diagnostics[0].advices.relation.is_some());
+        assert_eq!(
+            diagnostics[0].advices.relation.as_deref(),
+            Some("public.users")
+        );
+        assert_eq!(span_texts[0].as_deref(), Some("audit_log"));
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_trigger_missing_column(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE products(
+                id serial primary key,
+                name text not null,
+                price numeric(10,2)
+            );
+
+            CREATE OR REPLACE FUNCTION public.validate_product()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                -- Error: referencing non-existent column
+                IF NEW.category IS NULL THEN
+                    RAISE EXCEPTION 'Category is required';
+                END IF;
+                RETURN NEW;
+            END;
+            $function$;
+
+            CREATE TRIGGER trg_product_validation
+                BEFORE INSERT OR UPDATE ON products
+                FOR EACH ROW
+                EXECUTE FUNCTION public.validate_product();
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.validate_product()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                -- Error: referencing non-existent column
+                IF NEW.category IS NULL THEN
+                    RAISE EXCEPTION 'Category is required';
+                END IF;
+                RETURN NEW;
+            END;
+            $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert!(!diagnostics.is_empty());
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert!(span_texts[0].as_deref().unwrap().contains("category"));
+        assert_eq!(
+            diagnostics[0].advices.relation.as_deref(),
+            Some("public.products")
+        );
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_trigger_multiple_tables(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE table_a(
+                id serial primary key,
+                name text
+            );
+
+            CREATE TABLE table_b(
+                id serial primary key,
+                description text
+            );
+
+            CREATE OR REPLACE FUNCTION public.generic_audit()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                -- Error: referencing column that doesn't exist in both tables
+                INSERT INTO audit_log(table_name, record_id, old_status)
+                VALUES (TG_TABLE_NAME, NEW.id, OLD.status);
+                RETURN NEW;
+            END;
+            $function$;
+
+            CREATE TRIGGER trg_audit_a
+                AFTER UPDATE ON table_a
+                FOR EACH ROW
+                EXECUTE FUNCTION public.generic_audit();
+
+            CREATE TRIGGER trg_audit_b
+                AFTER UPDATE ON table_b
+                FOR EACH ROW
+                EXECUTE FUNCTION public.generic_audit();
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.generic_audit()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                -- Error: referencing column that doesn't exist in both tables
+                INSERT INTO audit_log(table_name, record_id, old_status)
+                VALUES (TG_TABLE_NAME, NEW.id, OLD.status);
+                RETURN NEW;
+            END;
+            $function$;
+        "#;
+
+        let (diagnostics, _span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert!(!diagnostics.is_empty());
+        assert!(diagnostics.len() >= 2);
+
+        let relations: Vec<_> = diagnostics
+            .iter()
+            .filter_map(|d| d.advices.relation.as_ref())
+            .collect();
+        assert!(relations.contains(&&"public.table_a".to_string()));
+        assert!(relations.contains(&&"public.table_b".to_string()));
     }
 }
