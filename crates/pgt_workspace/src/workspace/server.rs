@@ -570,8 +570,21 @@ impl Workspace for WorkspaceServer {
             if let Some(node) = stmt_root {
                 analysable_stmts.push(node);
             }
-            // TODO: ignore the syntax error if we already have a diagnostic for it
             if let Some(diag) = diagnostic {
+                // ignore the syntax error if we already have more specialized diagnostics for the
+                // same statement.
+                // this is important for create function statements, where we might already have detailed
+                // diagnostics from plpgsql_check.
+                if diagnostics.iter().any(|d| {
+                    d.location().span.is_some_and(|async_loc| {
+                        diag.location()
+                            .span
+                            .is_some_and(|syntax_loc| syntax_loc.contains(async_loc))
+                    })
+                }) {
+                    continue;
+                }
+
                 diagnostics.push(SDiagnostic::new(
                     diag.with_file_path(path.clone())
                         .with_severity(Severity::Error),
