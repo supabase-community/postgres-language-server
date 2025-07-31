@@ -79,20 +79,23 @@ jobs:
   lint:
     name: Lint Project
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
     steps:
       - name: Checkout PR Branch
         uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Build and start postgres with plpgsql_check
+        run: |
+          docker build -t postgres-plpgsql-check:latest .
+          docker run -d --name postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            postgres-plpgsql-check:latest
+          # Wait for postgres to be ready
+          sleep 5
+          docker exec postgres pg_isready -U postgres
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
@@ -154,13 +157,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # running containers via `services` only works on linux
-      # https://github.com/actions/runner/issues/1866
-      - name: Setup postgres
-        id: postgres
-        uses: ikalnytskyi/action-setup-postgres@v7
+      # Build and run custom postgres image with plpgsql_check
+      - name: Build and start postgres with plpgsql_check
+        run: |
+          docker build -t postgres-plpgsql-check:latest .
+          docker run -d --name postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            postgres-plpgsql-check:latest
+          # Wait for postgres to be ready
+          sleep 5
+          docker exec postgres pg_isready -U postgres
       - name: Print Roles
-        run: psql ${{ steps.postgres.outputs.connection-uri }} -c "select rolname from pg_roles;"
+        run: docker exec postgres psql -U postgres -c "select rolname from pg_roles;"
       - name: Run tests
         run: cargo test --workspace
 
@@ -169,20 +180,23 @@ jobs:
       Test JS Bindings
       # use the same image we use for compiling
     runs-on: ubuntu-22.04
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Build and start postgres with plpgsql_check
+        run: |
+          docker build -t postgres-plpgsql-check:latest .
+          docker run -d --name postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            postgres-plpgsql-check:latest
+          # Wait for postgres to be ready
+          sleep 5
+          docker exec postgres pg_isready -U postgres
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
@@ -205,20 +219,23 @@ jobs:
   codegen:
     name: Check Codegen
     runs-on: ubuntu-22.04
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Build and start postgres with plpgsql_check
+        run: |
+          docker build -t postgres-plpgsql-check:latest .
+          docker run -d --name postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            postgres-plpgsql-check:latest
+          # Wait for postgres to be ready
+          sleep 5
+          docker exec postgres pg_isready -U postgres
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
