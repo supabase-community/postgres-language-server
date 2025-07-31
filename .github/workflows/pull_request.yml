@@ -159,6 +159,7 @@ jobs:
 
       # Build and run custom postgres image with plpgsql_check
       - name: Build and start postgres with plpgsql_check
+        if: runner.os == 'Linux'
         run: |
           docker build -t postgres-plpgsql-check:latest .
           docker run -d --name postgres \
@@ -170,7 +171,18 @@ jobs:
           # Wait for postgres to be ready
           sleep 5
           docker exec postgres pg_isready -U postgres
+      - name: Build and start postgres with plpgsql_check (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          docker build -t postgres-plpgsql-check:latest .
+          docker run -d --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5432:5432 postgres-plpgsql-check:latest
+          Start-Sleep -Seconds 5
+          docker exec postgres pg_isready -U postgres
       - name: Print Roles
+        if: runner.os == 'Linux'
+        run: docker exec postgres psql -U postgres -c "select rolname from pg_roles;"
+      - name: Print Roles (Windows)
+        if: runner.os == 'Windows'
         run: docker exec postgres psql -U postgres -c "select rolname from pg_roles;"
       - name: Run tests
         run: cargo test --workspace
