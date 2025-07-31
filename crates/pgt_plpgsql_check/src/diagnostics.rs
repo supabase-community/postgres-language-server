@@ -137,7 +137,15 @@ pub fn create_diagnostics_from_check_result(
 }
 
 fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Option<TextRange> {
-    let stmt = issue.statement.as_ref()?;
+    let stmt = match issue.statement.as_ref() {
+        Some(s) => s,
+        None => {
+            return Some(TextRange::new(
+                (offset as u32).into(),
+                ((offset + fn_body.len()) as u32).into(),
+            ));
+        }
+    };
 
     let line_number = stmt
         .line_number

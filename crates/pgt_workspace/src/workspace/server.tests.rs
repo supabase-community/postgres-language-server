@@ -8,7 +8,7 @@ use pgt_configuration::{
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
-use sqlx::PgPool;
+use sqlx::{Executor, PgPool};
 
 use crate::{
     Workspace, WorkspaceError,
@@ -205,4 +205,74 @@ async fn correctly_ignores_files() {
         });
 
     assert!(execute_statement_result.is_ok_and(|res| res == ExecuteStatementResult::default()));
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_dedupe_diagnostics(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let setup_sql = "CREATE EXTENSION IF NOT EXISTS plpgsql_check;";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let content = r#"
+        CREATE OR REPLACE FUNCTION public.f1()
+        RETURNS void
+        LANGUAGE plpgsql
+        AS $function$
+        decare r text;
+        BEGIN
+            select '1' into into r;
+        END;
+        $function$;
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 1, "Expected one diagnostic");
+
+    let diagnostic = &diagnostics[0];
+
+    assert_eq!(
+        diagnostic.category().map(|c| c.name()),
+        Some("plpgsql_check")
+    );
+
+    assert_eq!(
+        diagnostic.location().span,
+        Some(TextRange::new(115.into(), 210.into()))
+    );
 }

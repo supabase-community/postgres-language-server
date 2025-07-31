@@ -511,6 +511,8 @@ impl Workspace for WorkspaceServer {
                                 .await
                                 .unwrap_or_else(|_| vec![]);
 
+                                println!("{:#?}", plpgsql_check_results);
+
                                 for d in plpgsql_check_results {
                                     let r = d.span.map(|span| span + range.start());
                                     diagnostics.push(
@@ -571,6 +573,8 @@ impl Workspace for WorkspaceServer {
                 analysable_stmts.push(node);
             }
             if let Some(diag) = diagnostic {
+                println!("{:?}", diag);
+                println!("{:?}", diagnostics);
                 // ignore the syntax error if we already have more specialized diagnostics for the
                 // same statement.
                 // this is important for create function statements, where we might already have detailed
@@ -579,7 +583,7 @@ impl Workspace for WorkspaceServer {
                     d.location().span.is_some_and(|async_loc| {
                         diag.location()
                             .span
-                            .is_some_and(|syntax_loc| syntax_loc.contains(async_loc))
+                            .is_some_and(|syntax_loc| syntax_loc.contains_range(async_loc))
                     })
                 }) {
                     continue;
