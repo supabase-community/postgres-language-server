@@ -55,7 +55,6 @@ mod async_helper;
 mod connection_key;
 mod connection_manager;
 pub(crate) mod document;
-mod function_utils;
 mod migration;
 mod pg_query;
 mod schema_cache_manager;
@@ -454,7 +453,8 @@ impl Workspace for WorkspaceServer {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
             let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
-            // sorry for the ugly code :(
+
+            // Combined async context for both typecheck and plpgsql_check
             let async_results = run_async(async move {
                 stream::iter(input)
                     .map(|(id, range, ast, cst, sign)| {
@@ -462,8 +462,11 @@ impl Workspace for WorkspaceServer {
                         let path = path_clone.clone();
                         let schema_cache = Arc::clone(&schema_cache);
                         async move {
+                            let mut diagnostics = Vec::new();
+
                             if let Some(ast) = ast {
-                                pgt_typecheck::check_sql(TypecheckParams {
+                                // Type checking
+                                let typecheck_result = pgt_typecheck::check_sql(TypecheckParams {
                                     conn: &pool,
                                     sql: id.content(),
                                     ast: &ast,
@@ -486,18 +489,40 @@ impl Workspace for WorkspaceServer {
                                         })
                                         .unwrap_or_default(),
                                 })
-                                .await
-                                .map(|d| {
-                                    d.map(|d| {
-                                        let r = d.location().span.map(|span| span + range.start());
+                                .await;
 
+                                if let Ok(Some(diag)) = typecheck_result {
+                                    let r = diag.location().span.map(|span| span + range.start());
+                                    diagnostics.push(
+                                        diag.with_file_path(path.as_path().display().to_string())
+                                            .with_file_span(r.unwrap_or(range)),
+                                    );
+                                }
+
+                                // plpgsql_check
+                                let plpgsql_check_results = pgt_plpgsql_check::check_plpgsql(
+                                    pgt_plpgsql_check::PlPgSqlCheckParams {
+                                        conn: &pool,
+                                        sql: id.content(),
+                                        ast: &ast,
+                                        schema_cache: schema_cache.as_ref(),
+                                    },
+                                )
+                                .await
+                                .unwrap_or_else(|_| vec![]);
+
+                                println!("{:#?}", plpgsql_check_results);
+
+                                for d in plpgsql_check_results {
+                                    let r = d.span.map(|span| span + range.start());
+                                    diagnostics.push(
                                         d.with_file_path(path.as_path().display().to_string())
-                                            .with_file_span(r.unwrap_or(range))
-                                    })
-                                })
-                            } else {
-                                Ok(None)
+                                            .with_file_span(r.unwrap_or(range)),
+                                    );
+                                }
                             }
+
+                            Ok::<Vec<pgt_diagnostics::Error>, sqlx::Error>(diagnostics)
                         }
                     })
                     .buffer_unordered(10)
@@ -506,8 +531,8 @@ impl Workspace for WorkspaceServer {
             })?;
 
             for result in async_results.into_iter() {
-                let result = result?;
-                if let Some(diag) = result {
+                let diagnostics_batch = result?;
+                for diag in diagnostics_batch {
                     diagnostics.push(SDiagnostic::new(diag));
                 }
             }
@@ -548,6 +573,20 @@ impl Workspace for WorkspaceServer {
                 analysable_stmts.push(node);
             }
             if let Some(diag) = diagnostic {
+                // ignore the syntax error if we already have more specialized diagnostics for the
+                // same statement.
+                // this is important for create function statements, where we might already have detailed
+                // diagnostics from plpgsql_check.
+                if diagnostics.iter().any(|d| {
+                    d.location().span.is_some_and(|async_loc| {
+                        diag.location()
+                            .span
+                            .is_some_and(|syntax_loc| syntax_loc.contains_range(async_loc))
+                    })
+                }) {
+                    continue;
+                }
+
                 diagnostics.push(SDiagnostic::new(
                     diag.with_file_path(path.clone())
                         .with_severity(Severity::Error),

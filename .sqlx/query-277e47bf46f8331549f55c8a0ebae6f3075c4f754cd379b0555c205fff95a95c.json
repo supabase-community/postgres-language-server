@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "-- we need to join tables from the pg_catalog since \"TRUNCATE\" triggers are\n-- not available in the information_schema.trigger table.\nselect\n t.tgname as \"name!\",\n c.relname as \"table_name!\",\n p.proname as \"proc_name!\",\n proc_ns.nspname as \"proc_schema!\",\n table_ns.nspname as \"table_schema!\",\n t.tgtype as \"details_bitmask!\"\nfrom\n pg_catalog.pg_trigger t\nleft join pg_catalog.pg_proc p on t.tgfoid = p.oid\nleft join pg_catalog.pg_class c on t.tgrelid = c.oid\nleft join pg_catalog.pg_namespace table_ns on c.relnamespace = table_ns.oid\nleft join pg_catalog.pg_namespace proc_ns on p.pronamespace = proc_ns.oid\nwhere\n t.tgisinternal = false and\n t.tgconstraint = 0;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 1,
+        "name": "table_name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "proc_name!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "proc_schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 4,
+        "name": "table_schema!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 5,
+        "name": "details_bitmask!",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "277e47bf46f8331549f55c8a0ebae6f3075c4f754cd379b0555c205fff95a95c"
+}

@@ -90,9 +90,9 @@
     "nullable": [
       null,
       true,
+      false,
       true,
-      true,
-      true,
+      false,
       null,
       null,
       null,
@@ -101,9 +101,9 @@
       null,
       null,
       null,
-      true,
+      false,
       null,
-      true
+      false
     ]
   },
   "hash": "4ea19fee016f1daeafdc466647d117910b19f540f19393b76aa6434e9d1d8502"
