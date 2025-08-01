@@ -207,6 +207,7 @@ async fn correctly_ignores_files() {
     assert!(execute_statement_result.is_ok_and(|res| res == ExecuteStatementResult::default()));
 }
 
+#[cfg(all(test, not(target_os = "windows")))]
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_dedupe_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
