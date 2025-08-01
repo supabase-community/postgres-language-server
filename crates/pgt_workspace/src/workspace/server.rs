@@ -573,8 +573,6 @@ impl Workspace for WorkspaceServer {
                 analysable_stmts.push(node);
             }
             if let Some(diag) = diagnostic {
-                println!("{:?}", diag);
-                println!("{:?}", diagnostics);
                 // ignore the syntax error if we already have more specialized diagnostics for the
                 // same statement.
                 // this is important for create function statements, where we might already have detailed
