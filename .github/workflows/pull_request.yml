@@ -79,15 +79,6 @@ jobs:
   lint:
     name: Lint Project
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
     steps:
       - name: Checkout PR Branch
         uses: actions/checkout@v4
@@ -102,6 +93,24 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # we need to use the same database as we do locally for sqlx prepare to output the same hashes
+      - name: Build and start PostgreSQL with plpgsql_check
+        run: |
+          docker build -t postgres-plpgsql-check:latest .
+          docker run -d --name postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            postgres-plpgsql-check:latest
+          # Wait for postgres to be ready
+          for _ in {1..30}; do
+            if docker exec postgres pg_isready -U postgres; then
+              break
+            fi
+            sleep 1
+          done
 
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli

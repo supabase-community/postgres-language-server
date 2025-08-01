@@ -86,11 +86,11 @@ mod tests {
         };
 
         assert_eq!(
-            find_option_value(&create_fn, "language"),
+            find_option_value(create_fn, "language"),
             Some("plpgsql".to_string())
         );
 
-        assert!(find_option_value(&create_fn, "as").is_some(),);
+        assert!(find_option_value(create_fn, "as").is_some(),);
 
         assert_eq!(
             parse_name(&create_fn.return_type.as_ref().unwrap().names),
