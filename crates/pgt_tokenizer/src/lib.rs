@@ -144,32 +144,37 @@ impl Cursor<'_> {
                 }
             }
             ':' => {
-                // Named parameters in psql with different substitution styles.
-                //
-                // https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
-                match self.first() {
-                    '\'' => {
-                        // Named parameter with colon prefix and single quotes.
-                        self.bump();
-                        let terminated = self.single_quoted_string();
-                        let kind = NamedParamKind::ColonString { terminated };
-                        TokenKind::NamedParam { kind }
-                    }
-                    '"' => {
-                        // Named parameter with colon prefix and double quotes.
-                        self.bump();
-                        let terminated = self.double_quoted_string();
-                        let kind = NamedParamKind::ColonIdentifier { terminated };
-                        TokenKind::NamedParam { kind }
-                    }
-                    c if is_ident_start(c) => {
-                        // Named parameter with colon prefix.
-                        self.eat_while(is_ident_cont);
-                        TokenKind::NamedParam {
-                            kind: NamedParamKind::ColonRaw,
+                if self.first() == ':' {
+                    self.bump();
+                    TokenKind::DoubleColon
+                } else {
+                    // Named parameters in psql with different substitution styles.
+                    //
+                    // https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
+                    match self.first() {
+                        '\'' => {
+                            // Named parameter with colon prefix and single quotes.
+                            self.bump();
+                            let terminated = self.single_quoted_string();
+                            let kind = NamedParamKind::ColonString { terminated };
+                            TokenKind::NamedParam { kind }
                         }
+                        '"' => {
+                            // Named parameter with colon prefix and double quotes.
+                            self.bump();
+                            let terminated = self.double_quoted_string();
+                            let kind = NamedParamKind::ColonIdentifier { terminated };
+                            TokenKind::NamedParam { kind }
+                        }
+                        c if is_ident_start(c) => {
+                            // Named parameter with colon prefix.
+                            self.eat_while(is_ident_cont);
+                            TokenKind::NamedParam {
+                                kind: NamedParamKind::ColonRaw,
+                            }
+                        }
+                        _ => TokenKind::Colon,
                     }
-                    _ => TokenKind::Colon,
                 }
             }
             // One-symbol tokens.
@@ -661,6 +666,23 @@ mod tests {
     #[test]
     fn named_param_colon_raw() {
         let result = lex("select 1 from c where id = :id;");
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn debug_simple_cast() {
+        let result = lex("::test");
+        assert_debug_snapshot!(result, @r###"
+        [
+            "::" @ DoubleColon,
+            "test" @ Ident,
+        ]
+        "###);
+    }
+
+    #[test]
+    fn named_param_colon_raw_vs_cast() {
+        let result = lex("select 1 from c where id::test = :id;");
         assert_debug_snapshot!(result);
     }
 
