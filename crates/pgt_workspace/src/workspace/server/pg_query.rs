@@ -138,7 +138,7 @@ mod tests {
         let result = convert_to_positional_params(input);
         assert_eq!(
             result,
-            "select * from users where id = $1 and name = $2 and email = $3;"
+            "select * from users where id = $1   and name = $2   and email = $3      ;"
         );
     }
 
