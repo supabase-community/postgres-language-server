@@ -11,7 +11,6 @@ repository.workspace = true
 version              = "0.0.0"
 
 [lib]
-proc-macro = true
 doctest = false
 
 [dependencies]

@@ -2928,7 +2928,7 @@ name = "pgt_hover"
 version = "0.0.0"
 dependencies = [
  "humansize",
- "pgt_query_ext",
+ "pgt_query",
  "pgt_schema_cache",
  "pgt_test_utils",
  "pgt_text_size",

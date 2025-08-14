@@ -10,7 +10,7 @@ pub struct OnHoverParams<'a> {
     pub position: TextSize,
     pub schema_cache: &'a SchemaCache,
     pub stmt_sql: &'a str,
-    pub ast: Option<&'a pgt_query_ext::NodeEnum>,
+    pub ast: Option<&'a pgt_query::NodeEnum>,
     pub ts_tree: &'a tree_sitter::Tree,
 }
 

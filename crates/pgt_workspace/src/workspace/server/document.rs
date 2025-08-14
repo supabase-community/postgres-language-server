@@ -279,7 +279,7 @@ impl<'a> StatementMapper<'a> for WithCSTandASTMapper {
         StatementId,
         TextRange,
         Arc<tree_sitter::Tree>,
-        Option<pgt_query_ext::NodeEnum>,
+        Option<pgt_query::NodeEnum>,
     );
 
     fn map(&self, parser: &'a Document, id: StatementId, range: TextRange) -> Self::Output {
