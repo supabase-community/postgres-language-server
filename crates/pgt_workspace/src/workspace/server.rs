@@ -681,14 +681,14 @@ impl Workspace for WorkspaceServer {
                 tracing::debug!("No statement found.");
                 Ok(CompletionsResult::default())
             }
-            Some((_id, range, cst)) => {
+            Some((id, range, cst)) => {
                 let position = params.position - range.start();
 
                 let items = pgt_completions::complete(pgt_completions::CompletionParams {
                     position,
                     schema: schema_cache.as_ref(),
                     tree: &cst,
-                    text: _id.content().to_string(),
+                    text: id.content().to_string(),
                 });
 
                 Ok(CompletionsResult { items })
