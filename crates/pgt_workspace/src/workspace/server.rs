@@ -511,8 +511,6 @@ impl Workspace for WorkspaceServer {
                                 .await
                                 .unwrap_or_else(|_| vec![]);
 
-                                println!("{:#?}", plpgsql_check_results);
-
                                 for d in plpgsql_check_results {
                                     let r = d.span.map(|span| span + range.start());
                                     diagnostics.push(

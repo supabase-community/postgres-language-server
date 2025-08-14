@@ -132,6 +132,9 @@ pub enum NamedParamKind {
     ///
     /// Used in: psql
     ColonIdentifier { terminated: bool },
+
+    /// e.g. `$name`
+    DollarRaw,
 }
 
 /// Parsed token.

@@ -186,9 +186,29 @@ impl Cursor<'_> {
             '$' => {
                 // Dollar quoted strings
                 if is_ident_start(self.first()) || self.first() == '$' {
-                    self.dollar_quoted_string()
+                    // Get the start sequence of the dollar quote, i.e., 'foo' in $foo$hello$foo$
+                    // if ident does not continue and there is no terminating dollar
+                    // sign, we have a positional param `$name`
+                    let mut start = vec![];
+                    loop {
+                        match self.first() {
+                            '$' => {
+                                self.bump();
+                                break self.dollar_quoted_string(start);
+                            }
+                            c if is_ident_cont(c) => {
+                                self.bump();
+                                start.push(c);
+                            }
+                            _ => {
+                                break TokenKind::NamedParam {
+                                    kind: NamedParamKind::DollarRaw,
+                                };
+                            }
+                        }
+                    }
                 } else {
-                    // Parameters
+                    // positional parameter, e.g. `$1`
                     while self.first().is_ascii_digit() {
                         self.bump();
                     }
@@ -490,22 +510,7 @@ impl Cursor<'_> {
     }
 
     // https://www.postgresql.org/docs/16/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
-    fn dollar_quoted_string(&mut self) -> TokenKind {
-        // Get the start sequence of the dollar quote, i.e., 'foo' in
-        // $foo$hello$foo$
-        let mut start = vec![];
-        while let Some(c) = self.bump() {
-            match c {
-                '$' => {
-                    self.bump();
-                    break;
-                }
-                _ => {
-                    start.push(c);
-                }
-            }
-        }
-
+    fn dollar_quoted_string(&mut self, start: Vec<char>) -> TokenKind {
         // we have a dollar quoted string deliminated with `$$`
         if start.is_empty() {
             loop {
@@ -655,6 +660,12 @@ mod tests {
     #[test]
     fn named_param_at() {
         let result = lex("select 1 from c where id = @id;");
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn named_param_dollar_raw() {
+        let result = lex("select 1 from c where id = $id;");
         assert_debug_snapshot!(result);
     }
 
