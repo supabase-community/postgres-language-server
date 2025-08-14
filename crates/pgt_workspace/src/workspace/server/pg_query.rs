@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
@@ -97,7 +98,8 @@ impl PgQueryStore {
 ///
 /// Useful for preparing SQL queries for parsing or execution where named paramters are not supported.
 pub fn convert_to_positional_params(text: &str) -> String {
-    let mut result = String::new();
+    let mut result = String::with_capacity(text.len());
+    let mut param_mapping: HashMap<&str, usize> = HashMap::new();
     let mut param_index = 1;
     let mut position = 0;
 
@@ -106,7 +108,17 @@ pub fn convert_to_positional_params(text: &str) -> String {
         let token_text = &text[position..position + token_len];
 
         if matches!(token.kind, pgt_tokenizer::TokenKind::NamedParam { .. }) {
-            let replacement = format!("${}", param_index);
+            let idx = match param_mapping.get(token_text) {
+                Some(&index) => index,
+                None => {
+                    let index = param_index;
+                    param_mapping.insert(token_text, index);
+                    param_index += 1;
+                    index
+                }
+            };
+
+            let replacement = format!("${}", idx);
             let original_len = token_text.len();
             let replacement_len = replacement.len();
 
@@ -116,8 +128,6 @@ pub fn convert_to_positional_params(text: &str) -> String {
             if replacement_len < original_len {
                 result.push_str(&" ".repeat(original_len - replacement_len));
             }
-
-            param_index += 1;
         } else {
             result.push_str(token_text);
         }
@@ -139,6 +149,16 @@ mod tests {
         assert_eq!(
             result,
             "select * from users where id = $1   and name = $2   and email = $3      ;"
+        );
+    }
+
+    #[test]
+    fn test_convert_to_positional_params_with_duplicates() {
+        let input = "select * from users where first_name = @one and starts_with(email, @one) and created_at > @two;";
+        let result = convert_to_positional_params(input);
+        assert_eq!(
+            result,
+            "select * from users where first_name = $1   and starts_with(email, $1  ) and created_at > $2  ;"
         );
     }
 
