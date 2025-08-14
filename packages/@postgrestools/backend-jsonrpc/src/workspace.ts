@@ -79,6 +79,7 @@ export type Category =
 	| "flags/invalid"
 	| "project"
 	| "typecheck"
+	| "plpgsql_check"
 	| "internalError/panic"
 	| "syntax"
 	| "dummy"
