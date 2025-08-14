@@ -16,7 +16,7 @@ pub(crate) fn on_hover(
         position: get_cursor_position(session, &url, position)?,
     }) {
         Ok(result) => {
-            tracing::warn!("Got a result. {:#?}", result);
+            tracing::debug!("Found hover items: {:#?}", result);
 
             Ok(lsp_types::HoverContents::Array(
                 result
