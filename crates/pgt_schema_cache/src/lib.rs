@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 mod columns;
+mod extensions;
 mod functions;
 mod policies;
 mod roles;
@@ -14,6 +15,7 @@ mod types;
 mod versions;
 
 pub use columns::*;
+pub use extensions::Extension;
 pub use functions::{Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
 pub use policies::{Policy, PolicyCommand};
 pub use roles::*;

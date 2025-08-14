@@ -32,7 +32,7 @@ pub struct Analyser<'a> {
 
 #[derive(Debug)]
 pub struct AnalysableStatement {
-    pub root: pgt_query_ext::NodeEnum,
+    pub root: pgt_query::NodeEnum,
     pub range: pgt_text_size::TextRange,
 }
 
@@ -123,7 +123,7 @@ mod tests {
             ..Default::default()
         };
 
-        let ast = pgt_query_ext::parse(SQL).expect("failed to parse SQL");
+        let ast = pgt_query::parse(SQL).expect("failed to parse SQL");
         let range = TextRange::new(0.into(), u32::try_from(SQL.len()).unwrap().into());
 
         let options = AnalyserOptions::default();
@@ -134,7 +134,10 @@ mod tests {
         });
 
         let results = analyser.run(crate::AnalyserParams {
-            stmts: vec![AnalysableStatement { root: ast, range }],
+            stmts: vec![AnalysableStatement {
+                root: ast.into_root().unwrap(),
+                range,
+            }],
             schema_cache: None,
         });
 

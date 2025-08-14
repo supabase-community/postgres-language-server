@@ -10,6 +10,9 @@ name                 = "pgt_treesitter"
 repository.workspace = true
 version              = "0.0.0"
 
+[lib]
+proc-macro = true
+doctest = false
 
 [dependencies]
 clap                       = { version = "4.5.23", features = ["derive"] }
@@ -20,6 +23,3 @@ tree_sitter_sql.workspace  = true
 
 [dev-dependencies]
 pgt_test_utils.workspace = true
-
-[lib]
-doctest = false

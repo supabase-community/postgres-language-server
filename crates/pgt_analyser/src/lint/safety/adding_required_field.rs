@@ -30,7 +30,7 @@ impl Rule for AddingRequiredField {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = vec![];
 
-        if let pgt_query_ext::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
+        if let pgt_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
             // We are currently lacking a way to check if a `AtAddColumn` subtype sets a
             // not null constraint – so we'll need to check the plain SQL.
             let plain_sql = ctx.stmt().to_ref().deparse().unwrap().to_ascii_lowercase();
@@ -41,9 +41,8 @@ impl Rule for AddingRequiredField {
             }
 
             for cmd in &stmt.cmds {
-                if let Some(pgt_query_ext::NodeEnum::AlterTableCmd(alter_table_cmd)) = &cmd.node {
-                    if alter_table_cmd.subtype()
-                        == pgt_query_ext::protobuf::AlterTableType::AtAddColumn
+                if let Some(pgt_query::NodeEnum::AlterTableCmd(alter_table_cmd)) = &cmd.node {
+                    if alter_table_cmd.subtype() == pgt_query::protobuf::AlterTableType::AtAddColumn
                     {
                         diagnostics.push(
                             RuleDiagnostic::new(

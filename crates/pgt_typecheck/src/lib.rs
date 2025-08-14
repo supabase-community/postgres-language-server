@@ -3,7 +3,6 @@ mod typed_identifier;
 
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
-use pgt_text_size::TextRange;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
@@ -14,23 +13,10 @@ pub use typed_identifier::{IdentifierType, TypedIdentifier};
 pub struct TypecheckParams<'a> {
     pub conn: &'a PgPool,
     pub sql: &'a str,
-    pub ast: &'a pgt_query_ext::NodeEnum,
+    pub ast: &'a pgt_query::NodeEnum,
     pub tree: &'a tree_sitter::Tree,
     pub schema_cache: &'a pgt_schema_cache::SchemaCache,
     pub identifiers: Vec<TypedIdentifier>,
-}
-
-#[derive(Debug, Clone)]
-pub struct TypeError {
-    pub message: String,
-    pub code: String,
-    pub severity: PgSeverity,
-    pub position: Option<usize>,
-    pub range: Option<TextRange>,
-    pub table: Option<String>,
-    pub column: Option<String>,
-    pub data_type: Option<String>,
-    pub constraint: Option<String>,
 }
 
 pub async fn check_sql(
@@ -39,11 +25,11 @@ pub async fn check_sql(
     // Check if the AST is not a supported statement type
     if !matches!(
         params.ast,
-        pgt_query_ext::NodeEnum::SelectStmt(_)
-            | pgt_query_ext::NodeEnum::InsertStmt(_)
-            | pgt_query_ext::NodeEnum::UpdateStmt(_)
-            | pgt_query_ext::NodeEnum::DeleteStmt(_)
-            | pgt_query_ext::NodeEnum::CommonTableExpr(_)
+        pgt_query::NodeEnum::SelectStmt(_)
+            | pgt_query::NodeEnum::InsertStmt(_)
+            | pgt_query::NodeEnum::UpdateStmt(_)
+            | pgt_query::NodeEnum::DeleteStmt(_)
+            | pgt_query::NodeEnum::CommonTableExpr(_)
     ) {
         return Ok(None);
     }

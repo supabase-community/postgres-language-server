@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub struct RuleContext<'a, R: Rule> {
-    stmt: &'a pgt_query_ext::NodeEnum,
+    stmt: &'a pgt_query::NodeEnum,
     options: &'a R::Options,
     schema_cache: Option<&'a SchemaCache>,
     file_context: &'a AnalysedFileContext,
@@ -19,7 +19,7 @@ where
 {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        stmt: &'a pgt_query_ext::NodeEnum,
+        stmt: &'a pgt_query::NodeEnum,
         options: &'a R::Options,
         schema_cache: Option<&'a SchemaCache>,
         file_context: &'a AnalysedFileContext,
@@ -43,7 +43,7 @@ where
     }
 
     /// Returns the AST root
-    pub fn stmt(&self) -> &pgt_query_ext::NodeEnum {
+    pub fn stmt(&self) -> &pgt_query::NodeEnum {
         self.stmt
     }
 

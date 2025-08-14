@@ -6,15 +6,19 @@ edition.workspace    = true
 homepage.workspace   = true
 keywords.workspace   = true
 license.workspace    = true
-name                 = "pgt_query_proto_parser"
+name                 = "pgt_query_macros"
 repository.workspace = true
 version              = "0.0.0"
 
-
 [dependencies]
-convert_case   = "0.6.0"
-protobuf       = "3.3.0"
-protobuf-parse = "3.3.0"
+convert_case          = { workspace = true }
+proc-macro2.workspace = true
+prost-reflect         = { workspace = true }
+protox                = { workspace = true }
+quote.workspace       = true
 
 [lib]
-doctest = false
+proc-macro = true
+
+[build-dependencies]
+ureq = "2.9"

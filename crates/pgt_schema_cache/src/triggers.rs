@@ -82,20 +82,22 @@ impl TryFrom<i16> for TriggerTiming {
 pub struct TriggerQueried {
     name: String,
     table_name: String,
-    schema_name: String,
+    table_schema: String,
     proc_name: String,
+    proc_schema: String,
     details_bitmask: i16,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Trigger {
-    name: String,
-    table_name: String,
-    schema_name: String,
-    proc_name: String,
-    affected: TriggerAffected,
-    timing: TriggerTiming,
-    events: Vec<TriggerEvent>,
+    pub name: String,
+    pub table_name: String,
+    pub table_schema: String,
+    pub proc_name: String,
+    pub proc_schema: String,
+    pub affected: TriggerAffected,
+    pub timing: TriggerTiming,
+    pub events: Vec<TriggerEvent>,
 }
 
 impl From<TriggerQueried> for Trigger {
@@ -104,7 +106,8 @@ impl From<TriggerQueried> for Trigger {
             name: value.name,
             table_name: value.table_name,
             proc_name: value.proc_name,
-            schema_name: value.schema_name,
+            proc_schema: value.proc_schema,
+            table_schema: value.table_schema,
             affected: value.details_bitmask.into(),
             timing: value.details_bitmask.try_into().unwrap(),
             events: TriggerEvents::from(value.details_bitmask).0,
@@ -141,7 +144,7 @@ mod tests {
                     id serial primary key,
                     name text
                 );
-    
+
                 create or replace function public.log_user_insert()
                 returns trigger as $$
                 begin
@@ -149,17 +152,17 @@ mod tests {
                     return new;
                 end;
                 $$ language plpgsql;
-    
+
                 create trigger trg_users_insert
                     before insert on public.users
                     for each row
                     execute function public.log_user_insert();
-    
+
                 create trigger trg_users_update
                     after update or insert on public.users
                     for each statement
                     execute function public.log_user_insert();
-    
+
                 create trigger trg_users_delete
                     before delete on public.users
                     for each row
@@ -186,7 +189,7 @@ mod tests {
             .iter()
             .find(|t| t.name == "trg_users_insert")
             .unwrap();
-        assert_eq!(insert_trigger.schema_name, "public");
+        assert_eq!(insert_trigger.table_schema, "public");
         assert_eq!(insert_trigger.table_name, "users");
         assert_eq!(insert_trigger.timing, TriggerTiming::Before);
         assert_eq!(insert_trigger.affected, TriggerAffected::Row);
@@ -197,7 +200,7 @@ mod tests {
             .iter()
             .find(|t| t.name == "trg_users_update")
             .unwrap();
-        assert_eq!(insert_trigger.schema_name, "public");
+        assert_eq!(insert_trigger.table_schema, "public");
         assert_eq!(insert_trigger.table_name, "users");
         assert_eq!(update_trigger.timing, TriggerTiming::After);
         assert_eq!(update_trigger.affected, TriggerAffected::Statement);
@@ -209,7 +212,7 @@ mod tests {
             .iter()
             .find(|t| t.name == "trg_users_delete")
             .unwrap();
-        assert_eq!(insert_trigger.schema_name, "public");
+        assert_eq!(insert_trigger.table_schema, "public");
         assert_eq!(insert_trigger.table_name, "users");
         assert_eq!(delete_trigger.timing, TriggerTiming::Before);
         assert_eq!(delete_trigger.affected, TriggerAffected::Row);
@@ -275,7 +278,7 @@ mod tests {
             .iter()
             .find(|t| t.name == "trg_docs_instead_update")
             .unwrap();
-        assert_eq!(instead_trigger.schema_name, "public");
+        assert_eq!(instead_trigger.table_schema, "public");
         assert_eq!(instead_trigger.table_name, "docs_view");
         assert_eq!(instead_trigger.timing, TriggerTiming::Instead);
         assert_eq!(instead_trigger.affected, TriggerAffected::Row);
@@ -286,7 +289,7 @@ mod tests {
             .iter()
             .find(|t| t.name == "trg_docs_truncate")
             .unwrap();
-        assert_eq!(truncate_trigger.schema_name, "public");
+        assert_eq!(truncate_trigger.table_schema, "public");
         assert_eq!(truncate_trigger.table_name, "docs");
         assert_eq!(truncate_trigger.timing, TriggerTiming::After);
         assert_eq!(truncate_trigger.affected, TriggerAffected::Statement);

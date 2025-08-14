@@ -1,7 +1,5 @@
 use pgt_text_size::TextRange;
 
-use super::function_utils::{find_option_value, parse_name};
-
 #[derive(Debug, Clone)]
 pub struct ArgType {
     pub schema: Option<String>,
@@ -30,30 +28,30 @@ pub struct SQLFunctionBody {
 }
 
 /// Extracts the function signature from a SQL function definition
-pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunctionSignature> {
+pub fn get_sql_fn_signature(ast: &pgt_query::NodeEnum) -> Option<SQLFunctionSignature> {
     let create_fn = match ast {
-        pgt_query_ext::NodeEnum::CreateFunctionStmt(cf) => cf,
+        pgt_query::NodeEnum::CreateFunctionStmt(cf) => cf,
         _ => return None,
     };
 
     // Extract language from function options
-    let language = find_option_value(create_fn, "language")?;
+    let language = pgt_query_ext::utils::find_option_value(create_fn, "language")?;
 
     // Only process SQL functions
     if language != "sql" {
         return None;
     }
 
-    let fn_name = parse_name(&create_fn.funcname)?;
+    let fn_name = pgt_query_ext::utils::parse_name(&create_fn.funcname)?;
 
     // we return None if anything is not expected
     let mut fn_args = Vec::new();
     for arg in &create_fn.parameters {
-        if let Some(pgt_query_ext::NodeEnum::FunctionParameter(node)) = &arg.node {
+        if let Some(pgt_query::NodeEnum::FunctionParameter(node)) = &arg.node {
             let arg_name = (!node.name.is_empty()).then_some(node.name.clone());
 
             let arg_type = node.arg_type.as_ref()?;
-            let type_name = parse_name(&arg_type.names)?;
+            let type_name = pgt_query_ext::utils::parse_name(&arg_type.names)?;
             fn_args.push(SQLFunctionArg {
                 name: arg_name,
                 type_: ArgType {
@@ -79,14 +77,14 @@ pub fn get_sql_fn_signature(ast: &pgt_query_ext::NodeEnum) -> Option<SQLFunction
 }
 
 /// Extracts the SQL body from a function definition
-pub fn get_sql_fn_body(ast: &pgt_query_ext::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
+pub fn get_sql_fn_body(ast: &pgt_query::NodeEnum, content: &str) -> Option<SQLFunctionBody> {
     let create_fn = match ast {
-        pgt_query_ext::NodeEnum::CreateFunctionStmt(cf) => cf,
+        pgt_query::NodeEnum::CreateFunctionStmt(cf) => cf,
         _ => return None,
     };
 
     // Extract language from function options
-    let language = find_option_value(create_fn, "language")?;
+    let language = pgt_query_ext::utils::find_option_value(create_fn, "language")?;
 
     // Only process SQL functions
     if language != "sql" {
@@ -94,7 +92,7 @@ pub fn get_sql_fn_body(ast: &pgt_query_ext::NodeEnum, content: &str) -> Option<S
     }
 
     // Extract SQL body from function options
-    let sql_body = find_option_value(create_fn, "as")?;
+    let sql_body = pgt_query_ext::utils::find_option_value(create_fn, "as")?;
 
     // Find the range of the SQL body in the content
     let start = content.find(&sql_body)?;
@@ -120,7 +118,7 @@ mod tests {
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;";
 
-        let ast = pgt_query_ext::parse(input).unwrap();
+        let ast = pgt_query::parse(input).unwrap().into_root().unwrap();
 
         let sig = get_sql_fn_signature(&ast);
 
@@ -146,7 +144,7 @@ mod tests {
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;";
 
-        let ast = pgt_query_ext::parse(input).unwrap();
+        let ast = pgt_query::parse(input).unwrap().into_root().unwrap();
 
         let sig = get_sql_fn_signature(&ast);
 
