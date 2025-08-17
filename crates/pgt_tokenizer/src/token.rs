@@ -46,6 +46,8 @@ pub enum TokenKind {
     Minus,
     /// `:`
     Colon,
+    /// `::`
+    DoubleColon,
     /// `.`
     Dot,
     /// `=`

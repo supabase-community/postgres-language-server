@@ -14,6 +14,7 @@ use document::{
     TypecheckDiagnosticsMapper,
 };
 use futures::{StreamExt, stream};
+use pg_query::convert_to_positional_params;
 use pgt_analyse::{AnalyserOptions, AnalysisFilter};
 use pgt_analyser::{Analyser, AnalyserConfig, AnalyserParams};
 use pgt_diagnostics::{
@@ -468,7 +469,7 @@ impl Workspace for WorkspaceServer {
                                 // Type checking
                                 let typecheck_result = pgt_typecheck::check_sql(TypecheckParams {
                                     conn: &pool,
-                                    sql: id.content(),
+                                    sql: convert_to_positional_params(id.content()).as_str(),
                                     ast: &ast,
                                     tree: &cst,
                                     schema_cache: schema_cache.as_ref(),
