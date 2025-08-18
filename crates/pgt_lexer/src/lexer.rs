@@ -111,6 +111,7 @@ impl<'a> Lexer<'a> {
                 pgt_tokenizer::TokenKind::Tilde => SyntaxKind::TILDE,
                 pgt_tokenizer::TokenKind::Question => SyntaxKind::QUESTION,
                 pgt_tokenizer::TokenKind::Colon => SyntaxKind::COLON,
+                pgt_tokenizer::TokenKind::DoubleColon => SyntaxKind::DOUBLE_COLON,
                 pgt_tokenizer::TokenKind::Eq => SyntaxKind::EQ,
                 pgt_tokenizer::TokenKind::Bang => SyntaxKind::BANG,
                 pgt_tokenizer::TokenKind::Lt => SyntaxKind::L_ANGLE,

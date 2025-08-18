@@ -37,6 +37,7 @@ const PUNCT: &[(&str, &str)] = &[
     ("_", "UNDERSCORE"),
     (".", "DOT"),
     (":", "COLON"),
+    ("::", "DOUBLE_COLON"),
     ("=", "EQ"),
     ("!", "BANG"),
     ("-", "MINUS"),

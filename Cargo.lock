@@ -3219,6 +3219,7 @@ dependencies = [
  "pgt_suppressions",
  "pgt_test_utils",
  "pgt_text_size",
+ "pgt_tokenizer",
  "pgt_typecheck",
  "pgt_workspace_macros",
  "rustc-hash 2.1.0",

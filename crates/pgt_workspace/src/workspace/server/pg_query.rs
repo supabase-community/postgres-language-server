@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 use lru::LruCache;
 use pgt_query_ext::diagnostics::*;
 use pgt_text_size::TextRange;
+use pgt_tokenizer::tokenize;
 
 use super::statement_identifier::StatementId;
 
@@ -37,7 +39,7 @@ impl PgQueryStore {
         }
 
         let r = Arc::new(
-            pgt_query::parse(statement.content())
+            pgt_query::parse(&convert_to_positional_params(statement.content()))
                 .map_err(SyntaxDiagnostic::from)
                 .and_then(|ast| {
                     ast.into_root().ok_or_else(|| {
@@ -87,9 +89,78 @@ impl PgQueryStore {
     }
 }
 
+/// Converts named parameters in a SQL query string to positional parameters.
+///
+/// This function scans the input SQL string for named parameters (e.g., `@param`, `:param`, `:'param'`)
+/// and replaces them with positional parameters (e.g., `$1`, `$2`, etc.).
+///
+/// It maintains the original spacing of the named parameters in the output string.
+///
+/// Useful for preparing SQL queries for parsing or execution where named paramters are not supported.
+pub fn convert_to_positional_params(text: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut param_mapping: HashMap<&str, usize> = HashMap::new();
+    let mut param_index = 1;
+    let mut position = 0;
+
+    for token in tokenize(text) {
+        let token_len = token.len as usize;
+        let token_text = &text[position..position + token_len];
+
+        if matches!(token.kind, pgt_tokenizer::TokenKind::NamedParam { .. }) {
+            let idx = match param_mapping.get(token_text) {
+                Some(&index) => index,
+                None => {
+                    let index = param_index;
+                    param_mapping.insert(token_text, index);
+                    param_index += 1;
+                    index
+                }
+            };
+
+            let replacement = format!("${}", idx);
+            let original_len = token_text.len();
+            let replacement_len = replacement.len();
+
+            result.push_str(&replacement);
+
+            // maintain original spacing
+            if replacement_len < original_len {
+                result.push_str(&" ".repeat(original_len - replacement_len));
+            }
+        } else {
+            result.push_str(token_text);
+        }
+
+        position += token_len;
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_convert_to_positional_params() {
+        let input = "select * from users where id = @one and name = :two and email = :'three';";
+        let result = convert_to_positional_params(input);
+        assert_eq!(
+            result,
+            "select * from users where id = $1   and name = $2   and email = $3      ;"
+        );
+    }
+
+    #[test]
+    fn test_convert_to_positional_params_with_duplicates() {
+        let input = "select * from users where first_name = @one and starts_with(email, @one) and created_at > @two;";
+        let result = convert_to_positional_params(input);
+        assert_eq!(
+            result,
+            "select * from users where first_name = $1   and starts_with(email, $1  ) and created_at > $2  ;"
+        );
+    }
 
     #[test]
     fn test_plpgsql_syntax_error() {

@@ -277,3 +277,57 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
         Some(TextRange::new(115.into(), 210.into()))
     );
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_positional_params(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let setup_sql = r"
+      create table users (
+          id serial primary key,
+          name text not null,
+          email text not null
+      );
+    ";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let content = r#"select * from users where id = @one and name = :two and email = :'three';"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
