@@ -66,13 +66,13 @@ impl SchemaCache {
     pub fn find_table(&self, name: &str, schema: Option<&str>) -> Option<&Table> {
         self.tables
             .iter()
-            .find(|t| t.name == name && schema.is_none() || Some(t.schema.as_str()) == schema)
+            .find(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
     }
 
     pub fn find_type(&self, name: &str, schema: Option<&str>) -> Option<&PostgresType> {
         self.types
             .iter()
-            .find(|t| t.name == name && schema.is_none() || Some(t.schema.as_str()) == schema)
+            .find(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
     }
 
     pub fn find_col(&self, name: &str, table: &str, schema: Option<&str>) -> Option<&Column> {
@@ -86,7 +86,7 @@ impl SchemaCache {
     pub fn find_types(&self, name: &str, schema: Option<&str>) -> Vec<&PostgresType> {
         self.types
             .iter()
-            .filter(|t| t.name == name && schema.is_none() || Some(t.schema.as_str()) == schema)
+            .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
             .collect()
     }
 }

@@ -266,6 +266,17 @@ impl LanguageServer for LSPServer {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
+    async fn hover(&self, params: HoverParams) -> LspResult<Option<Hover>> {
+        match handlers::hover::on_hover(&self.session, params) {
+            Ok(result) => LspResult::Ok(Some(Hover {
+                contents: result,
+                range: None,
+            })),
+            Err(e) => LspResult::Err(into_lsp_error(e)),
+        }
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
     async fn completion(&self, params: CompletionParams) -> LspResult<Option<CompletionResponse>> {
         match handlers::completions::get_completions(&self.session, params) {
             Ok(result) => LspResult::Ok(Some(result)),

@@ -17,6 +17,7 @@ use crate::{
         },
         completions::{CompletionsResult, GetCompletionsParams},
         diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
+        on_hover::{OnHoverParams, OnHoverResult},
     },
 };
 
@@ -112,6 +113,8 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: GetCompletionsParams,
     ) -> Result<CompletionsResult, WorkspaceError>;
+
+    fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError>;
 
     /// Register a possible workspace project folder. Returns the key of said project. Use this key when you want to switch to different projects.
     fn register_project_folder(

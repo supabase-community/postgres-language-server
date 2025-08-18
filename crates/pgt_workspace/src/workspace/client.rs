@@ -161,4 +161,11 @@ where
     ) -> Result<crate::features::completions::CompletionsResult, WorkspaceError> {
         self.request("pgt/get_completions", params)
     }
+
+    fn on_hover(
+        &self,
+        params: crate::features::on_hover::OnHoverParams,
+    ) -> Result<crate::features::on_hover::OnHoverResult, WorkspaceError> {
+        self.request("pgt/on_hover", params)
+    }
 }

@@ -25,6 +25,7 @@ pgt_configuration         = { workspace = true }
 pgt_console               = { workspace = true }
 pgt_diagnostics           = { workspace = true }
 pgt_fs                    = { workspace = true, features = ["serde"] }
+pgt_hover                 = { workspace = true }
 pgt_lexer                 = { workspace = true }
 pgt_plpgsql_check         = { workspace = true }
 pgt_query                 = { workspace = true }
