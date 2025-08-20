@@ -176,24 +176,37 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install postgresql@15
-          echo "/opt/homebrew/opt/postgresql@15/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/postgresql@15/bin" >> "$GITHUB_PATH"
 
       # Install the pglpgsql_check extension on macOS (Part 2)
-      - name: Compile and install plpgsql_check
+      - name: Install and compile plpgsql_check
         if: runner.os == 'macOS'
         run: |
-          # Clone the official repository
+          # First, ensure we're using the same PostgreSQL that the action installed
+          export PATH="$(pg_config --bindir):$PATH"
+
+          # Verify we're targeting the right PostgreSQL installation
+          echo "PostgreSQL version: $(pg_config --version)"
+          echo "Extension directory: $(pg_config --sharedir)/extension"
+          echo "Library directory: $(pg_config --pkglibdir)"
+
+          # Clone and build plpgsql_check
           git clone https://github.com/okbob/plpgsql_check.git
           cd plpgsql_check
 
-          # Clean any previous build artifacts
+          # Clean and compile
           make USE_PGXS=1 clean
-
-          # Compile the extension
           make USE_PGXS=1 all
 
-          # Install extension files (requires sudo)
+          # Install (may need sudo depending on permissions)
           sudo make USE_PGXS=1 install
+
+          # Verify installation
+          echo "Extension control files:"
+          ls -la "$(pg_config --sharedir)/extension/" | grep plpgsql || echo "No plpgsql_check found"
+
+          echo "Extension library files:"
+          ls -la "$(pg_config --pkglibdir)/" | grep plpgsql || echo "No plpgsql_check library found"
 
       # Install the pglpgsql_check extension on macOS (Part 3)
       - name: Create extension in database
