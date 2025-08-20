@@ -67,6 +67,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
+      # The Docker runtime is not available by default on macOS runners
+      # https://github.com/actions/runner-images/issues/2150
+      # https://blog.netnerds.net/2022/11/docker-macos-github-actions/
+      - name: Install Docker
+        if: runner.os == 'macOS'
+        run: |
+          brew install docker
+          colima start
+
       # For Linux, use custom Docker image with plpgsql_check
       - name: Build and start PostgreSQL with plpgsql_check
         if: runner.os == 'macOS' || runner.os == 'Linux'
