@@ -8,8 +8,8 @@ inputs:
 runs:
   using: composite
   steps:
-    # For Windows and macOS, use the action since PostgreSQL Docker image doesn't support Windows containers
-    # and macOS runners do not support Docker
+    # For Windows and macOS, use the action
+    # PostgreSQL Docker image doesn't support Windows containers and macOS runners do not support Docker
     - name: Setup postgres (Windows)
       if: runner.os == 'Windows' || runner.os == 'macOS'
       id: postgres
@@ -21,7 +21,7 @@ runs:
         database: postgres
         port: 5432
 
-    # Install the pglpgsql_check extension on macOS (Part 1)
+    # Install the pglpgsql_check extension on macOS and Windows (Part 1)
     - name: Install and compile plpgsql_check
       if: runner.os == 'Windows' || runner.os == 'macOS'
       shell: bash
@@ -52,7 +52,7 @@ runs:
         echo "Extension library files:"
         ls -la "$(pg_config --pkglibdir)/" | grep plpgsql || echo "No plpgsql_check library found"
 
-    # Install the pglpgsql_check extension on macOS (Part 2)
+    # Install the pglpgsql_check extension on macOS and Windows (Part 2)
     - name: Create extension in database
       if: runner.os == 'Windows' || runner.os == 'macOS'
       shell: bash
