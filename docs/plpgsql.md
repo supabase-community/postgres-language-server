@@ -1,4 +1,4 @@
-# PL/pgSQL
+# PL/pgSQL Support
 
 Postgres Language Tools partially supports PL/pgSQL. We use `libpg_query` to parse the function body and show any syntax error. For a more sophisticated integration, make sure to enable the `plpgsql_check` extension in your development database.
 
