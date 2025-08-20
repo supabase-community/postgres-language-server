@@ -67,39 +67,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
-      # The Docker runtime is not available by default on macOS runners
-      # https://github.com/actions/runner-images/issues/2150
-      # https://blog.netnerds.net/2022/11/docker-macos-github-actions/
-      - name: Install Docker
-        if: runner.os == 'macOS'
-        run: |
-          brew install docker
-          colima start
-
-      # For Linux, use custom Docker image with plpgsql_check
-      - name: Build and start PostgreSQL with plpgsql_check
-        if: runner.os == 'macOS' || runner.os == 'Linux'
-        run: |
-          docker build -t postgres-plpgsql-check:latest .
-          docker run -d --name postgres \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=postgres \
-            -p 5432:5432 \
-            postgres-plpgsql-check:latest
-          # Wait for postgres to be ready
-          for _ in {1..30}; do
-            if docker exec postgres pg_isready -U postgres; then
-              break
-            fi
-            sleep 1
-          done
-
-      # For Windows, use the action since PostgreSQL Docker image doesn't support Windows containers
-      - name: Setup postgres (Windows)
-        if: runner.os == 'Windows'
-        id: postgres
-        uses: ikalnytskyi/action-setup-postgres@v7
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
 
       - name: 🧪 Run Tests
         run: cargo test --release

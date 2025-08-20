@@ -149,6 +149,7 @@ jobs:
           # use the same images we use for compiling
           - os: windows-2022
           - os: ubuntu-22.04
+          - os: macos-14
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -163,37 +164,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # For Linux, use custom Docker image with plpgsql_check
-      - name: Build and start PostgreSQL with plpgsql_check
-        if: runner.os == 'Linux'
-        run: |
-          docker build -t postgres-plpgsql-check:latest .
-          docker run -d --name postgres \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=postgres \
-            -p 5432:5432 \
-            postgres-plpgsql-check:latest
-          # Wait for postgres to be ready
-          for _ in {1..30}; do
-            if docker exec postgres pg_isready -U postgres; then
-              break
-            fi
-            sleep 1
-          done
-      # For Windows, use the action since PostgreSQL Docker image doesn't support Windows containers
-      - name: Setup postgres (Windows)
-        if: runner.os == 'Windows'
-        id: postgres
-        uses: ikalnytskyi/action-setup-postgres@v7
-      - name: Print Roles
-        run: |
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            docker exec postgres psql -U postgres -c "select rolname from pg_roles;"
-          else
-            psql ${{ steps.postgres.outputs.connection-uri }} -c "select rolname from pg_roles;"
-          fi
-        shell: bash
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
+
       - name: Run tests
         run: cargo test --workspace
 
