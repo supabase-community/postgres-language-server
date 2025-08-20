@@ -69,7 +69,7 @@ jobs:
 
       # For Linux, use custom Docker image with plpgsql_check
       - name: Build and start PostgreSQL with plpgsql_check
-        if: runner.os == 'Linux'
+        if: runner.os == 'macOS' || runner.os == 'Linux'
         run: |
           docker build -t postgres-plpgsql-check:latest .
           docker run -d --name postgres \
