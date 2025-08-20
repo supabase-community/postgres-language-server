@@ -164,27 +164,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # for macOS, setup postgres manually since the macos runner does not support docker
-      # Part 1
-      - name: Setup PostgreSQL 15
-        if: runner.os == 'macOS'
-        uses: ikalnytskyi/action-setup-postgres@v7
+      # For Windows and macOS, use the action since PostgreSQL Docker image doesn't support Windows containers
+      # and macOS runners do not support Docker
+      - name: Setup postgres (Windows)
+        if: runner.os == 'Windows' || runner.os == 'macOS'
         id: postgres
-        with:
-          postgres-version: "15"
-          username: postgres
-          password: postgres
-          database: test_db
-          port: 5432
+        uses: ikalnytskyi/action-setup-postgres@v7
 
-      # Part 2
+      # Install the pglpgsql_check extension on macOS (Part 1)
       - name: Install PostgreSQL development tools
         if: runner.os == 'macOS'
         run: |
           brew install postgresql@15
           echo "/opt/homebrew/opt/postgresql@15/bin" >> $GITHUB_PATH
 
-      # Part 3
+      # Install the pglpgsql_check extension on macOS (Part 2)
       - name: Compile and install plpgsql_check
         if: runner.os == 'macOS'
         run: |
@@ -201,6 +195,7 @@ jobs:
           # Install extension files (requires sudo)
           sudo make USE_PGXS=1 install
 
+      # Install the pglpgsql_check extension on macOS (Part 3)
       - name: Create extension in database
         if: runner.os == 'macOS'
         env:
@@ -230,19 +225,6 @@ jobs:
             sleep 1
           done
 
-      # For Windows, use the action since PostgreSQL Docker image doesn't support Windows containers
-      - name: Setup postgres (Windows)
-        if: runner.os == 'Windows'
-        id: postgres
-        uses: ikalnytskyi/action-setup-postgres@v7
-      - name: Print Roles
-        run: |
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            docker exec postgres psql -U postgres -c "select rolname from pg_roles;"
-          else
-            psql ${{ steps.postgres.outputs.connection-uri }} -c "select rolname from pg_roles;"
-          fi
-        shell: bash
       - name: Run tests
         run: cargo test --workspace
 
