@@ -164,18 +164,53 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # The Docker runtime is not available by default on macOS runners
-      # https://github.com/actions/runner-images/issues/2150
-      # https://blog.netnerds.net/2022/11/docker-macos-github-actions/
-      - name: Install Docker
+      # for macOS, setup postgres manually since the macos runner does not support docker
+      - name: Setup PostgreSQL 15
+        if: runner.os == 'macOS'
+        uses: ikalnytskyi/action-setup-postgres@v7
+        id: postgres
+        with:
+          postgres-version: "15"
+          username: postgres
+          password: postgres
+          database: test_db
+          port: 5432
+
+      - name: Install PostgreSQL development tools
         if: runner.os == 'macOS'
         run: |
-          brew install docker
-          colima start
+          brew install postgresql@15
+          echo "/opt/homebrew/opt/postgresql@15/bin" >> $GITHUB_PATH
+
+      - name: Compile and install plpgsql_check
+        if: runner.os == 'macOS'
+        run: |
+          # Clone the official repository
+          git clone https://github.com/okbob/plpgsql_check.git
+          cd plpgsql_check
+
+          # Clean any previous build artifacts
+          make USE_PGXS=1 clean
+
+          # Compile the extension
+          make USE_PGXS=1 all
+
+          # Install extension files (requires sudo)
+          sudo make USE_PGXS=1 install
+
+      - name: Create extension in database
+        if: runner.os == 'macOS'
+        env:
+          PGSERVICE: ${{ steps.postgres.outputs.service-name }}
+        run: |
+          psql -c "CREATE EXTENSION plpgsql_check;"
+
+          # Verify installation
+          psql -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'plpgsql_check';"
 
       # For Linux, use custom Docker image with plpgsql_check
       - name: Build and start PostgreSQL with plpgsql_check
-        if: runner.os == 'macOS' || runner.os == 'Linux'
+        if: runner.os == 'Linux'
         run: |
           docker build -t postgres-plpgsql-check:latest .
           docker run -d --name postgres \
@@ -191,6 +226,7 @@ jobs:
             fi
             sleep 1
           done
+
       # For Windows, use the action since PostgreSQL Docker image doesn't support Windows containers
       - name: Setup postgres (Windows)
         if: runner.os == 'Windows'
