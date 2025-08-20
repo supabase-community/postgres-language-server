@@ -165,6 +165,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # for macOS, setup postgres manually since the macos runner does not support docker
+      # Part 1
       - name: Setup PostgreSQL 15
         if: runner.os == 'macOS'
         uses: ikalnytskyi/action-setup-postgres@v7
@@ -176,12 +177,14 @@ jobs:
           database: test_db
           port: 5432
 
+      # Part 2
       - name: Install PostgreSQL development tools
         if: runner.os == 'macOS'
         run: |
           brew install postgresql@15
           echo "/opt/homebrew/opt/postgresql@15/bin" >> $GITHUB_PATH
 
+      # Part 3
       - name: Compile and install plpgsql_check
         if: runner.os == 'macOS'
         run: |
