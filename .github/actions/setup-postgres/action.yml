@@ -23,7 +23,7 @@ runs:
 
     # Install the pglpgsql_check extension on macOS (Part 1)
     - name: Install and compile plpgsql_check
-      if: runner.os == 'macOS'
+      if: runner.os == 'Windows' || runner.os == 'macOS'
       shell: bash
       run: |
         # First, ensure we're using the same PostgreSQL that the action installed
@@ -54,7 +54,7 @@ runs:
 
     # Install the pglpgsql_check extension on macOS (Part 2)
     - name: Create extension in database
-      if: runner.os == 'macOS'
+      if: runner.os == 'Windows' || runner.os == 'macOS'
       shell: bash
       env:
         PGSERVICE: ${{ steps.postgres.outputs.service-name }}
