@@ -170,6 +170,8 @@ jobs:
         if: runner.os == 'Windows' || runner.os == 'macOS'
         id: postgres
         uses: ikalnytskyi/action-setup-postgres@v7
+        with:
+          postgres-version: "15"
 
       # Install the pglpgsql_check extension on macOS (Part 1)
       - name: Install PostgreSQL development tools
