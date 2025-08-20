@@ -24,6 +24,7 @@ runs:
     # Install the pglpgsql_check extension on macOS (Part 1)
     - name: Install and compile plpgsql_check
       if: runner.os == 'macOS'
+      shell: bash
       run: |
         # First, ensure we're using the same PostgreSQL that the action installed
         export PATH="$(pg_config --bindir):$PATH"
@@ -65,6 +66,7 @@ runs:
     # For Linux, use custom Docker image with plpgsql_check
     - name: Build and start PostgreSQL with plpgsql_check
       if: runner.os == 'Linux'
+      shell: bash
       run: |
         docker build -t postgres-plpgsql-check:latest .
         docker run -d --name postgres \
