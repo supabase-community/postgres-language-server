@@ -16,6 +16,7 @@ nav:
   - Introduction: index.md
   - Guides:
       - Linting Migrations: checking_migrations.md
+      - PL/pgSQL Support: plpgsql.md
       - Troubleshooting: troubleshooting.md
   - Reference:
       - Rules: rules.md
