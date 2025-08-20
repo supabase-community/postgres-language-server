@@ -4,14 +4,14 @@ inputs:
   postgres-version:
     description: Postgres Version
     default: 15
-  install-plpgsql-check:
-    description: Install plpgsql_check extension (only supported on macOS/Linux)
-    default: 'true'
+
 runs:
   using: composite
   steps:
-    # For Windows and macOS, use the action
-    - name: Setup postgres (Windows/macOS)
+    # For Windows and macOS, use the action since
+    # PostgreSQL Docker image doesn't support Windows containers and
+    # macOS runners do not support Docker
+    - name: Setup postgres (Windows)
       if: runner.os == 'Windows' || runner.os == 'macOS'
       id: postgres
       uses: ikalnytskyi/action-setup-postgres@v7
@@ -22,63 +22,50 @@ runs:
         database: postgres
         port: 5432
 
-    # Install build tools on Windows if extension is requested
-    - name: Install build tools (Windows)
-      if: runner.os == 'Windows' && inputs.install-plpgsql-check == 'true'
+    # Install the pglpgsql_check extension on macOS (Part 1)
+    - name: Install and compile plpgsql_check
+      if: runner.os == 'macOS'
       shell: bash
       run: |
-        echo "Installing MSYS2 for compilation..."
-        choco install msys2 -y --timeout=600
-
-        # Initialize MSYS2 and install build tools
-        C:/tools/msys64/usr/bin/bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain git"
-
-    # Install and compile plpgsql_check (Windows with build tools)
-    - name: Install and compile plpgsql_check (Windows)
-      if: runner.os == 'Windows' && inputs.install-plpgsql-check == 'true'
-      shell: bash
-      run: |
-        export PATH="/c/tools/msys64/usr/bin:$PATH"
-
-        echo "PostgreSQL version: $(pg_config --version)"
-        echo "Extension directory: $(pg_config --sharedir)/extension"
-
-        git clone https://github.com/okbob/plpgsql_check.git
-        cd plpgsql_check
-
-        # Use MSYS2 make with full paths
-        C:/tools/msys64/usr/bin/make.exe USE_PGXS=1 clean
-        C:/tools/msys64/usr/bin/make.exe USE_PGXS=1 all
-        C:/tools/msys64/usr/bin/make.exe USE_PGXS=1 install
-
-    # Install and compile plpgsql_check (macOS)
-    - name: Install and compile plpgsql_check (macOS)
-      if: runner.os == 'macOS' && inputs.install-plpgsql-check == 'true'
-      shell: bash
-      run: |
+        # First, ensure we're using the same PostgreSQL that the action installed
         export PATH="$(pg_config --bindir):$PATH"
 
+        # Verify we're targeting the right PostgreSQL installation
         echo "PostgreSQL version: $(pg_config --version)"
         echo "Extension directory: $(pg_config --sharedir)/extension"
+        echo "Library directory: $(pg_config --pkglibdir)"
 
+        # Clone and build plpgsql_check
         git clone https://github.com/okbob/plpgsql_check.git
         cd plpgsql_check
 
+        # Clean and compile
         make USE_PGXS=1 clean
         make USE_PGXS=1 all
+
+        # Install (may need sudo depending on permissions)
         sudo make USE_PGXS=1 install
 
-    # Create extension in database (Windows/macOS)
+        # Verify installation
+        echo "Extension control files:"
+        ls -la "$(pg_config --sharedir)/extension/" | grep plpgsql || echo "No plpgsql_check found"
+
+        echo "Extension library files:"
+        ls -la "$(pg_config --pkglibdir)/" | grep plpgsql || echo "No plpgsql_check library found"
+
+    # Install the pglpgsql_check extension on macOS (Part 2)
     - name: Create extension in database
-      if: (runner.os == 'Windows' || runner.os == 'macOS') && inputs.install-plpgsql-check == 'true'
+      if: runner.os == 'macOS'
       shell: bash
       env:
         PGSERVICE: ${{ steps.postgres.outputs.service-name }}
       run: |
-        psql -c "CREATE EXTENSION plpgsql_check;" || echo "Extension creation failed - this is expected if compilation failed"
-        psql -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'plpgsql_check';" || echo "Extension not available"
+        psql -c "CREATE EXTENSION plpgsql_check;"
 
-    # For Linux, use custom Docker image
+        # Verify installation
+        psql -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'plpgsql_check';"
+
+    # For Linux, use custom Docker image with plpgsql_check
     - name: Build and start PostgreSQL with plpgsql_check
       if: runner.os == 'Linux'
       shell: bash
@@ -90,10 +77,11 @@ runs:
           -e POSTGRES_DB=postgres \
           -p 5432:5432 \
           postgres-plpgsql-check:latest
-
+        # Wait for postgres to be ready
         for _ in {1..30}; do
           if docker exec postgres pg_isready -U postgres; then
             break
           fi
           sleep 1
         done
+
