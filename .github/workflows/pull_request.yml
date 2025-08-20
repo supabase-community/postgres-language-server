@@ -149,6 +149,7 @@ jobs:
           # use the same images we use for compiling
           - os: windows-2022
           - os: ubuntu-22.04
+          - os: macos-14
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -163,9 +164,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # The Docker runtime is not available by default on macOS runners
+      # https://github.com/actions/runner-images/issues/2150
+      # https://blog.netnerds.net/2022/11/docker-macos-github-actions/
+      - name: Install Docker
+        if: runner.os == 'macOS'
+        run: |
+          brew install docker
+          colima start
+
       # For Linux, use custom Docker image with plpgsql_check
       - name: Build and start PostgreSQL with plpgsql_check
-        if: runner.os == 'Linux'
+        if: runner.os == 'macOS' || runner.os == 'Linux'
         run: |
           docker build -t postgres-plpgsql-check:latest .
           docker run -d --name postgres \
