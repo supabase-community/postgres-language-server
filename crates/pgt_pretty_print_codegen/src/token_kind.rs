@@ -77,7 +77,7 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
 
         enum_variants.push(quote! { #kind_ident });
         from_kw_match_arms.push(quote! {
-            #kw => Some(SyntaxKind::#kind_ident)
+            #kw => Some(TokenKind::#kind_ident)
         });
     }
 

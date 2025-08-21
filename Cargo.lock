@@ -3028,6 +3028,7 @@ name = "pgt_pretty_print"
 version = "0.0.0"
 dependencies = [
  "pgt_pretty_print_codegen",
+ "pgt_query",
 ]
 
 [[package]]
