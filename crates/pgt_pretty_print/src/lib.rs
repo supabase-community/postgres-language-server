@@ -39,7 +39,6 @@ impl EventEmitter {
         }
     }
 
-    /// Helper methods for emitting events
     pub fn token(&mut self, token: TokenKind) {
         self.events.push_back(LayoutEvent::Token(token));
     }
