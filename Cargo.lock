@@ -3024,6 +3024,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgt_pretty_print"
+version = "0.0.0"
+dependencies = [
+ "pgt_pretty_print_codegen",
+]
+
+[[package]]
+name = "pgt_pretty_print_codegen"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "convert_case",
+ "proc-macro2",
+ "prost-reflect",
+ "protox",
+ "quote",
+ "ureq",
+]
+
+[[package]]
 name = "pgt_query"
 version = "0.0.0"
 dependencies = [
