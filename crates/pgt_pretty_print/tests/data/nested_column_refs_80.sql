@@ -1,0 +1,1 @@
+SELECT schema.table.column FROM schema.table

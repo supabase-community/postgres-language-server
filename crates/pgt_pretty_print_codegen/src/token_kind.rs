@@ -34,16 +34,16 @@ const LITERALS: &[&str] = &[
 ];
 
 const VARIANT_DATA: &[(&str, &str)] = &[
-    ("String", "String"),
-    ("EscString", "String"),          // E'hello\nworld'
-    ("DollarQuotedString", "String"), // $$hello world$$
-    ("IntNumber", "i64"),             // 123, -456
-    ("FloatNumber", "f64"),           // 123.45, 1.2e-3
-    ("BitString", "String"),          // B'1010', X'FF'
-    ("ByteString", "String"),         // Similar to bit string
-    ("Ident", "String"),              // user_id, table_name
-    ("PositionalParam", "u32"),       // $1, $2, $3 (the number matters!)
-    ("Comment", "String"),            // /* comment text */
+    ("STRING", "String"),
+    ("ESC_STRING", "String"),           // E'hello\nworld'
+    ("DOLLAR_QUOTED_STRING", "String"), // $$hello world$$
+    ("INT_NUMBER", "i64"),              // 123, -456
+    ("FLOAT_NUMBER", "f64"),            // 123.45, 1.2e-3
+    ("BIT_STRING", "String"),           // B'1010', X'FF'
+    ("BYTE_STRING", "String"),          // Similar to bit string
+    ("IDENT", "String"),                // user_id, table_name
+    ("POSITIONAL_PARAM", "u32"),        // $1, $2, $3 (the number matters!)
+    ("COMMENT", "String"),              // /* comment text */
 ];
 
 pub fn token_kind_mod() -> proc_macro2::TokenStream {
@@ -53,6 +53,7 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
 
     let mut enum_variants: Vec<TokenStream> = Vec::new();
     let mut from_kw_match_arms: Vec<TokenStream> = Vec::new();
+    let mut render_kw_match_arms: Vec<TokenStream> = Vec::new();
 
     // helper function to create a variant quote for enum
     // used to handle variants with data types
@@ -79,6 +80,9 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
         from_kw_match_arms.push(quote! {
             #kw => Some(TokenKind::#kind_ident)
         });
+        render_kw_match_arms.push(quote! {
+            TokenKind::#kind_ident => #kw.to_uppercase()
+        });
     }
 
     // collect extra keywords
@@ -102,7 +106,7 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
     });
 
     quote! {
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+        #[derive(Clone, PartialEq, Debug)]
         pub enum TokenKind {
             #(#enum_variants),*,
         }
@@ -113,6 +117,33 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                 match lower_ident.as_str() {
                     #(#from_kw_match_arms),*,
                     _ => None
+                }
+            }
+        }
+
+        impl TokenKind {
+            pub fn render(&self) -> String {
+                match self {
+                    TokenKind::SEMICOLON => ";".to_string(),
+                    TokenKind::COMMA => ",".to_string(),
+                    TokenKind::L_PAREN => "(".to_string(),
+                    TokenKind::R_PAREN => ")".to_string(),
+                    TokenKind::L_BRACK => "[".to_string(),
+                    TokenKind::R_BRACK => "]".to_string(),
+                    TokenKind::DOT => ".".to_string(),
+                    TokenKind::DOUBLE_COLON => "::".to_string(),
+                    TokenKind::DOLLAR => "$".to_string(),
+                    TokenKind::IDENT(ident) => ident.clone(),
+                    TokenKind::STRING(s) => s.clone(),
+                    TokenKind::ESC_STRING(s) => s.clone(),
+                    TokenKind::DOLLAR_QUOTED_STRING(s) => s.clone(),
+                    TokenKind::INT_NUMBER(n) => n.to_string(),
+                    TokenKind::FLOAT_NUMBER(n) => n.to_string(),
+                    TokenKind::BIT_STRING(s) => s.clone(),
+                    TokenKind::BYTE_STRING(s) => s.clone(),
+                    TokenKind::NULL => "NULL".to_string(),
+                    #(#render_kw_match_arms),*,
+                    _ => format!("{:?}", self), // Fallback for other variants
                 }
             }
         }

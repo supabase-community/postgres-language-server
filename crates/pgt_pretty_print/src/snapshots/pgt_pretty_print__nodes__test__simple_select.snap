@@ -1,0 +1,137 @@
+---
+source: crates/pgt_pretty_print/src/nodes.rs
+expression: emitter.events
+snapshot_kind: text
+---
+[
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    Token(
+        SELECT_KW,
+    ),
+    IndentStart,
+    Line(
+        SoftOrSpace,
+    ),
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    Token(
+        IDENT(
+            "public",
+        ),
+    ),
+    Token(
+        DOT,
+    ),
+    Token(
+        IDENT(
+            "t",
+        ),
+    ),
+    Token(
+        DOT,
+    ),
+    Token(
+        IDENT(
+            "a",
+        ),
+    ),
+    GroupEnd,
+    Space,
+    Token(
+        AS_KW,
+    ),
+    Space,
+    Token(
+        IDENT(
+            "y",
+        ),
+    ),
+    GroupEnd,
+    Token(
+        COMMA,
+    ),
+    Line(
+        SoftOrSpace,
+    ),
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    Token(
+        IDENT(
+            "b",
+        ),
+    ),
+    GroupEnd,
+    Space,
+    Token(
+        AS_KW,
+    ),
+    Space,
+    Token(
+        IDENT(
+            "z",
+        ),
+    ),
+    GroupEnd,
+    Token(
+        COMMA,
+    ),
+    Line(
+        SoftOrSpace,
+    ),
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    Token(
+        IDENT(
+            "c",
+        ),
+    ),
+    GroupEnd,
+    GroupEnd,
+    IndentEnd,
+    Line(
+        SoftOrSpace,
+    ),
+    Token(
+        FROM_KW,
+    ),
+    Line(
+        SoftOrSpace,
+    ),
+    IndentStart,
+    GroupStart {
+        id: None,
+        break_parent: false,
+    },
+    Token(
+        IDENT(
+            "t",
+        ),
+    ),
+    GroupEnd,
+    IndentEnd,
+    Token(
+        SEMICOLON,
+    ),
+    GroupEnd,
+]
