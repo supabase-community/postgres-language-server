@@ -87,7 +87,6 @@ impl<W: Write> Renderer<W> {
     }
 
     fn render_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
-        // Check for break_parent in any nested group
         let should_break = self.has_break_parent(group_events);
 
         if !should_break {
@@ -101,7 +100,6 @@ impl<W: Write> Renderer<W> {
             }
         }
 
-        // break version - process events with proper nested group handling
         self.render_events_with_breaks(group_events)
     }
 
@@ -136,12 +134,12 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::GroupStart { .. } => {
                     let group_end = self.find_group_end(events, i);
-                    let inner_events = &events[i + 1..group_end]; // Skip GroupStart/GroupEnd
+                    let inner_events = &events[i + 1..group_end]; // skip GroupStart/GroupEnd
                     self.render_events_with_breaks(inner_events)?;
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {
-                    i += 1; // Skip isolated group end
+                    i += 1; // skip isolated group end
                 }
                 LayoutEvent::IndentStart => {
                     self.indent_level += 1;
