@@ -19,6 +19,7 @@ impl ToTokens for pgt_query::protobuf::node::Node {
             pgt_query::protobuf::node::Node::ColumnRef(col_ref) => col_ref.to_tokens(e),
             pgt_query::protobuf::node::Node::String(string) => string.to_tokens(e),
             pgt_query::protobuf::node::Node::RangeVar(string) => string.to_tokens(e),
+            pgt_query::protobuf::node::Node::FuncCall(func_call) => func_call.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -119,6 +120,41 @@ impl ToTokens for pgt_query::protobuf::RangeVar {
 
         e.token(TokenKind::IDENT(self.relname.clone()));
 
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::FuncCall {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(None, false);
+
+        // Render function name
+        if let Some(first_name) = self.funcname.first() {
+            first_name.to_tokens(e);
+        }
+
+        e.token(TokenKind::L_PAREN);
+
+        // For function arguments, use break_parent: true to test break propagation
+        if !self.args.is_empty() {
+            e.group_start(None, true); // break_parent: true
+            e.line(LineType::SoftOrSpace);
+            e.indent_start();
+
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::SoftOrSpace);
+                }
+                arg.to_tokens(e);
+            }
+
+            e.indent_end();
+            e.line(LineType::SoftOrSpace);
+            e.group_end();
+        }
+
+        e.token(TokenKind::R_PAREN);
         e.group_end();
     }
 }

@@ -87,36 +87,69 @@ impl<W: Write> Renderer<W> {
     }
 
     fn render_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
-        if let Some(single_line) = self.try_single_line(group_events) {
-            let would_fit =
-                self.current_line_length + single_line.len() <= self.config.max_line_length;
-            if would_fit {
-                self.write_text(&single_line)?;
-                return Ok(());
+        // Check for break_parent in any nested group
+        let should_break = self.has_break_parent(group_events);
+
+        if !should_break {
+            if let Some(single_line) = self.try_single_line(group_events) {
+                let would_fit =
+                    self.current_line_length + single_line.len() <= self.config.max_line_length;
+                if would_fit {
+                    self.write_text(&single_line)?;
+                    return Ok(());
+                }
             }
         }
 
-        // break version - render each event directly without recursion
-        for event in group_events {
-            match event {
+        // break version - process events with proper nested group handling
+        self.render_events_with_breaks(group_events)
+    }
+
+    fn has_break_parent(&self, events: &[LayoutEvent]) -> bool {
+        for event in events {
+            if let LayoutEvent::GroupStart {
+                break_parent: true, ..
+            } = event
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn render_events_with_breaks(&mut self, events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
+        let mut i = 0;
+        while i < events.len() {
+            match &events[i] {
                 LayoutEvent::Token(token) => {
                     let text = token.render();
                     self.write_text(&text)?;
+                    i += 1;
                 }
                 LayoutEvent::Space => {
                     self.write_space()?;
+                    i += 1;
                 }
                 LayoutEvent::Line(_) => {
                     self.write_line_break()?;
+                    i += 1;
                 }
-                LayoutEvent::GroupStart { .. } | LayoutEvent::GroupEnd => {
-                    // skip group boundaries
+                LayoutEvent::GroupStart { .. } => {
+                    let group_end = self.find_group_end(events, i);
+                    let inner_events = &events[i + 1..group_end]; // Skip GroupStart/GroupEnd
+                    self.render_events_with_breaks(inner_events)?;
+                    i = group_end + 1;
+                }
+                LayoutEvent::GroupEnd => {
+                    i += 1; // Skip isolated group end
                 }
                 LayoutEvent::IndentStart => {
                     self.indent_level += 1;
+                    i += 1;
                 }
                 LayoutEvent::IndentEnd => {
                     self.indent_level = self.indent_level.saturating_sub(1);
+                    i += 1;
                 }
             }
         }
