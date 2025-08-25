@@ -71,7 +71,7 @@ impl<W: Write> Renderer<W> {
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {
-                    return Err(std::fmt::Error); // Should not happen
+                    assert!(false, "Unmatched group end");
                 }
                 LayoutEvent::IndentStart => {
                     self.indent_level += 1;
@@ -139,7 +139,7 @@ impl<W: Write> Renderer<W> {
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {
-                    i += 1; // skip isolated group end
+                    assert!(false, "Unmatched group end");
                 }
                 LayoutEvent::IndentStart => {
                     self.indent_level += 1;
@@ -216,7 +216,7 @@ impl<W: Write> Renderer<W> {
                 _ => {}
             }
         }
-        events.len() - 1 // Fallback
+        assert!(false, "Unmatched group start");
     }
 
     fn write_text(&mut self, text: &str) -> Result<(), std::fmt::Error> {

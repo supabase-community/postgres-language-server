@@ -128,16 +128,18 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
     fn to_tokens(&self, e: &mut EventEmitter) {
         e.group_start(None, false);
 
-        // Render function name
-        if let Some(first_name) = self.funcname.first() {
-            first_name.to_tokens(e);
+        for (i, name) in self.funcname.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.line(LineType::SoftOrSpace);
+            }
+            name.to_tokens(e);
         }
 
         e.token(TokenKind::L_PAREN);
 
-        // For function arguments, use break_parent: true to test break propagation
         if !self.args.is_empty() {
-            e.group_start(None, true); // break_parent: true
+            e.group_start(None, true);
             e.line(LineType::SoftOrSpace);
             e.indent_start();
 
