@@ -59,6 +59,27 @@ fn test_formatter(fixture: Fixture<&str>) {
     });
 }
 
+#[dir_test(
+    dir: "$CARGO_MANIFEST_DIR/tests/data/",
+    glob: "*.sql",
+)]
+fn validate_test_data(fixture: Fixture<&str>) {
+    let content = fixture.content();
+    let absolute_fixture_path = Utf8Path::new(fixture.path());
+    let test_name = absolute_fixture_path
+        .file_name()
+        .and_then(|x| x.strip_suffix(".sql"))
+        .unwrap();
+
+    let result = pgt_query::parse(content);
+
+    if let Ok(res) = result.as_ref() {
+        assert!(res.root().is_some(), "should have a single root node");
+    }
+
+    assert!(result.is_ok(), "should be valid SQL");
+}
+
 fn clear_location(node: &mut pgt_query::NodeEnum) {
     unsafe {
         node.iter_mut().for_each(|n| match n {

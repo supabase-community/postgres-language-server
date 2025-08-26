@@ -216,7 +216,7 @@ impl<W: Write> Renderer<W> {
                 _ => {}
             }
         }
-        assert!(false, "Unmatched group start");
+        panic!("Unmatched group start");
     }
 
     fn write_text(&mut self, text: &str) -> Result<(), std::fmt::Error> {

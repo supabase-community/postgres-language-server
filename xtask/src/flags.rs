@@ -18,6 +18,12 @@ xflags::xflags! {
             /// Install only the language server.
             optional --server
         }
+
+        /// AI-powered development tasks using Claude.
+        cmd agentic {
+            /// Generate ToTokens implementations for pretty printing
+            cmd pretty-print-impls {}
+        }
     }
 }
 
@@ -32,6 +38,7 @@ pub struct Xtask {
 #[derive(Debug)]
 pub enum XtaskCmd {
     Install(Install),
+    Agentic(Agentic),
 }
 
 #[derive(Debug)]
@@ -40,6 +47,19 @@ pub struct Install {
     pub code_bin: Option<String>,
     pub server: bool,
 }
+
+#[derive(Debug)]
+pub struct Agentic {
+    pub subcommand: AgenticCmd,
+}
+
+#[derive(Debug)]
+pub enum AgenticCmd {
+    PrettyPrintImpls(PrettyPrintImpls),
+}
+
+#[derive(Debug)]
+pub struct PrettyPrintImpls;
 
 impl Xtask {
     #[allow(dead_code)]

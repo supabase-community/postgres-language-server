@@ -5666,6 +5666,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "xtask_agentic"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bpaf",
+ "pgt_pretty_print",
+ "pgt_query",
+ "serde",
+ "serde_json",
+ "xtask",
+]
+
+[[package]]
 name = "xtask_codegen"
 version = "0.0.0"
 dependencies = [

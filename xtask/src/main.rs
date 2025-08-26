@@ -14,8 +14,8 @@
     semicolon_in_expressions_from_macros
 )]
 
+mod agentic;
 mod flags;
-
 mod install;
 
 use std::{
@@ -32,6 +32,7 @@ fn main() -> anyhow::Result<()> {
 
     match flags.subcommand {
         flags::XtaskCmd::Install(cmd) => cmd.run(sh),
+        flags::XtaskCmd::Agentic(cmd) => agentic::run(cmd, sh),
     }
 }
 
