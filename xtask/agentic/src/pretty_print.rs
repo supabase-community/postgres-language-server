@@ -97,8 +97,9 @@ pub fn run_pretty_print_generator() -> Result<()> {
             // Read existing content
             let existing_content = fs::read_to_string(&nodes_file).unwrap_or_default();
 
-            // Add variant to Node match statement if it doesn't exist
-            let updated_content = add_node_variant_to_match(&existing_content, &node)?;
+            // Ask Claude to add variant to Node match statement if needed
+            let updated_content =
+                update_node_match_with_claude(&mut claude_session, &existing_content, &node)?;
 
             // Append the new implementation
             let final_content = format!("{}{}", updated_content, impl_content);
@@ -744,33 +745,38 @@ fn get_existing_test_examples(node: &str) -> Result<Vec<String>> {
     Ok(examples)
 }
 
-fn add_node_variant_to_match(content: &str, node: &str) -> Result<String> {
-    // Find the Node match statement and add our variant if it doesn't exist
+fn update_node_match_with_claude(
+    session: &mut ClaudeSession,
+    content: &str,
+    node: &str,
+) -> Result<String> {
+    // Check if the variant already exists
     let variant_pattern = format!("pgt_query::protobuf::node::Node::{}(", node);
-
-    // If the variant already exists, return content unchanged
     if content.contains(&variant_pattern) {
+        println!("Node variant {} already exists in match statement", node);
         return Ok(content.to_string());
     }
 
-    // Find the match statement ending with "_ => {"
-    if let Some(match_end) = content.find("            _ => {") {
-        // Insert our new variant before the default case
-        let before_default = &content[..match_end];
-        let after_default = &content[match_end..];
+    println!(
+        "Asking Claude to add {} variant to Node match statement",
+        node
+    );
 
-        let new_variant = format!(
-            "            pgt_query::protobuf::node::Node::{}(node) => node.to_tokens(e),\n            ",
-            node
-        );
+    let prompt = format!(
+        "I need to add a new variant to the Node match statement in this Rust code.\n\n\
+        Current code:\n{}\n\n\
+        Please add this variant to the match statement:\n\
+        pgt_query::protobuf::node::Node::{}(node) => node.to_tokens(e),\n\n\
+        Add it BEFORE the `_ => {{` default case.\n\
+        Return the complete updated code with the new variant added.\n\
+        DO NOT use markdown code blocks - return plain Rust code.",
+        content, node
+    );
 
-        let updated = format!("{}{}{}", before_default, new_variant, after_default);
-        println!("Added {} variant to Node match statement", node);
-        return Ok(updated);
-    }
+    let response = session.call_claude(&prompt, false)?;
+    println!("Claude added {} variant to Node match statement", node);
 
-    println!("Warning: Could not find Node match statement to update");
-    Ok(content.to_string())
+    Ok(response)
 }
 
 fn run_formatter_tests(_node: &str, filename: &str) -> Result<(bool, String)> {
