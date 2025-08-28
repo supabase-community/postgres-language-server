@@ -23,6 +23,8 @@ xflags::xflags! {
         cmd agentic {
             /// Generate ToTokens implementations for pretty printing
             cmd pretty-print-impls {}
+            /// Run autonomous pretty print implementation generator
+            cmd autonomous-pretty-print {}
         }
     }
 }
@@ -56,10 +58,14 @@ pub struct Agentic {
 #[derive(Debug)]
 pub enum AgenticCmd {
     PrettyPrintImpls(PrettyPrintImpls),
+    AutonomousPrettyPrint(AutonomousPrettyPrint),
 }
 
 #[derive(Debug)]
 pub struct PrettyPrintImpls;
+
+#[derive(Debug)]
+pub struct AutonomousPrettyPrint;
 
 impl Xtask {
     #[allow(dead_code)]

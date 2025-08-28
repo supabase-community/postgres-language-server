@@ -528,16 +528,16 @@ impl PrettyPrintGenerator {
         filename: &str,
     ) -> Result<bool> {
         // Step 1: Test the specific file we created
-        println!("Step 1: Running file-specific validation...");
+        self.log("Step 1: Running file-specific validation...");
         if !self.validate_single_file(filename)? {
             return Ok(false);
         }
 
         // Step 2: Ask Claude to analyze if the SQL would create the expected node
-        println!(
+        self.log(&format!(
             "Step 2: Getting Claude's analysis of SQL for {} node...",
             expected_node
-        );
+        ));
         let prompt = format!(
             "I generated this SQL to create a {} AST node:\n{}\n\n\
             Does this SQL actually create a {} node when parsed by PostgreSQL? \
@@ -550,11 +550,11 @@ impl PrettyPrintGenerator {
         let is_correct = response.trim().starts_with("YES");
 
         if !is_correct {
-            println!("Claude analysis: {}", response);
+            self.log(&format!("Claude analysis: {}", response));
             return Ok(false);
         }
 
-        println!("✓ All validation steps passed!");
+        self.log("✓ All validation steps passed!");
         Ok(true)
     }
 
@@ -583,11 +583,11 @@ impl PrettyPrintGenerator {
         if !success {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            println!("Validation failed for {}:", filename);
-            println!("STDOUT:\n{}", stdout);
-            println!("STDERR:\n{}", stderr);
+            self.log(&format!("Validation failed for {}:", filename));
+            self.log(&format!("STDOUT:\n{}", stdout));
+            self.log(&format!("STDERR:\n{}", stderr));
         } else {
-            println!("✓ Validation passed for {}", filename);
+            self.log(&format!("✓ Validation passed for {}", filename));
         }
 
         Ok(success)
@@ -663,9 +663,11 @@ impl PrettyPrintGenerator {
             IMPLEMENTATION INSTRUCTIONS:\n\
             - Use the EXACT trait signature shown above\n\
             - {}\n\
-            - DO NOT add any comments in the code\n\
+            - NEVER add comments to the Rust code - no // comments, no /* */ comments\n\
             - Use existing TokenKind variants like INSERT_KW, INTO_KW, VALUES_KW, L_PAREN, R_PAREN, COMMA, etc.\n\
-            - Add separator comment: // Implementation for {}\n\n\
+            - Add ONLY this file separator comment BEFORE the impl: // Implementation for {}\n\
+            - The impl block and all code inside must have ZERO comments - absolutely no explanatory comments\n\
+            - CRITICAL: Do not add comments like '// Handle the VALUES clause' or any explanations\n\n\
             After updating the file, just respond 'Done'.",
             node,
             iteration_guidance,
@@ -698,8 +700,8 @@ impl PrettyPrintGenerator {
         Ok(())
     }
 
-    fn check_compilation_with_errors(&self) -> Result<(bool, String)> {
-        println!("Running cargo check on pgt_pretty_print...");
+    fn check_compilation_with_errors(&mut self) -> Result<(bool, String)> {
+        self.log("Running cargo check on pgt_pretty_print...");
 
         let output = Command::new("cargo")
             .arg("check")
@@ -714,10 +716,10 @@ impl PrettyPrintGenerator {
         let full_output = format!("STDOUT:\\n{}\\nSTDERR:\\n{}", stdout, stderr);
 
         if !success {
-            println!("Compilation failed:");
-            println!("{}", full_output);
+            self.log("Compilation failed:");
+            self.log(&full_output);
         } else {
-            println!("✓ Compilation successful");
+            self.log("✓ Compilation successful");
         }
 
         Ok((success, full_output))
@@ -739,7 +741,8 @@ impl PrettyPrintGenerator {
             Fix requirements:\\n\
             - Keep the same overall structure and logic\\n\
             - Fix syntax errors, type errors, missing imports, etc.\\n\
-            - Preserve the rest of the file exactly\\n\\n\
+            - Preserve the rest of the file exactly\\n\
+            - NEVER add comments to the Rust code - no // comments, no /* */ comments\\n\\n\
             After fixing, just respond 'Fixed'.",
             node,
             nodes_file.display(),
@@ -751,11 +754,11 @@ impl PrettyPrintGenerator {
         Ok(())
     }
 
-    fn run_formatter_tests(&self, _node: &str, filename: &str) -> Result<(bool, String)> {
+    fn run_formatter_tests(&mut self, _node: &str, filename: &str) -> Result<(bool, String)> {
         // Run the specific formatter test for the node we just implemented
         let test_name = format!("test_formatter__{}", filename.replace(".sql", ""));
 
-        println!("Running test: {}", test_name);
+        self.log(&format!("Running test: {}", test_name));
 
         let output = Command::new("cargo")
             .arg("test")
@@ -940,7 +943,9 @@ impl PrettyPrintGenerator {
             3. Use Edit to improve the ToTokens implementation to handle the missing fields\\n\
             4. Focus on fields that appear in 'left' but are empty/missing in 'right'\\n\\n\
             For example, if left has `values_lists: [...]` but right has `values_lists: []`, \
-            then you need to add code to handle the values_lists field in your ToTokens implementation.\\n\\n\
+            then you need to add code to handle the values_lists field in your ToTokens implementation.\\n\
+            \\n\
+            CRITICAL: NEVER add comments to the Rust code - no // comments, no /* */ comments\\n\\n\
             After fixing, just respond 'Fixed'.",
             node, nodes_file.display(), test_errors, analysis, node
         );

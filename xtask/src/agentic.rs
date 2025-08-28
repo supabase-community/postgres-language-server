@@ -9,6 +9,10 @@ pub fn run(cmd: Agentic, sh: &Shell) -> Result<()> {
             println!("Running agentic pretty print implementation generator...");
             cmd!(sh, "cargo run -p xtask_agentic").run()?;
         }
+        AgenticCmd::AutonomousPrettyPrint(_) => {
+            println!("Running autonomous pretty print implementation generator...");
+            cmd!(sh, "cargo run -p xtask_agentic -- autonomous").run()?;
+        }
     }
     Ok(())
 }
