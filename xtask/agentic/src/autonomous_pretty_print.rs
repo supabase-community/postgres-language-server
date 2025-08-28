@@ -124,7 +124,7 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 
 ## FORBIDDEN PATTERNS:
 - `// Handle XYZ formatting directly` - NEVER add explanatory comments
-- `if let Some(node::Node::SomeType(inner)) = &node.node { /* manual implementation */ }` - NEVER manually implement child nodes
+- `if let Some(node::Node::SomeType(inner)) = &node.node {{{{ /* manual implementation */ }}}}` - NEVER manually implement child nodes
 - Always use: `child_node.to_tokens(e)` instead of manual implementations
 
 ## FILE PATHS:
@@ -170,32 +170,32 @@ After each cycle, respond with just:
 
 ## CORRECT IMPLEMENTATION PATTERN:
 ```rust
-impl ToTokens for SomeNode {
-    fn to_tokens(&self, e: &mut Elements) {
+impl ToTokens for SomeNode {{
+    fn to_tokens(&self, e: &mut Elements) {{
         // Implementation for SomeNode
-        if let Some(ref child) = self.some_child {
+        if let Some(ref child) = self.some_child {{
             child.to_tokens(e);  // ✅ CORRECT - delegate to existing ToTokens
-        }
+        }}
         e.token(TokenKind::KEYWORD("SELECT".to_string()));
         // NO COMMENTS ANYWHERE ELSE
-    }
-}
+    }}
+}}
 ```
 
 ## WRONG IMPLEMENTATION PATTERN (FORBIDDEN):
 ```rust
-impl ToTokens for SomeNode {
-    fn to_tokens(&self, e: &mut Elements) {
+impl ToTokens for SomeNode {{
+    fn to_tokens(&self, e: &mut Elements) {{
         // Implementation for SomeNode
-        if let Some(ref child) = self.some_child {
+        if let Some(ref child) = self.some_child {{
             // Handle child formatting directly ❌ FORBIDDEN COMMENT
-            if let Some(node::Node::ChildType(inner)) = &child.node {
+            if let Some(node::Node::ChildType(inner)) = &child.node {{
                 // ❌ FORBIDDEN - manual implementation of child
                 e.token(TokenKind::IDENT(inner.name.clone()));
-            }
-        }
-    }
-}
+            }}
+        }}
+    }}
+}}
 ```
 
 ## ACTION PLAN:
