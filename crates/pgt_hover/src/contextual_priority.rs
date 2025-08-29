@@ -48,10 +48,8 @@ impl ContextualPriority for Table {
     fn relevance_score(&self, ctx: &TreesitterContext) -> f32 {
         let mut score = 0.0;
 
-        // Highest priority: table explicitly mentioned in the query
         for (schema_opt, tables) in &ctx.mentioned_relations {
             if tables.contains(&self.name) {
-                // Extra points if schema also matches
                 if schema_opt.as_deref() == Some(&self.schema) {
                     score += 200.0;
                 } else {
@@ -60,16 +58,6 @@ impl ContextualPriority for Table {
             }
         }
 
-        // Check if table is mentioned via alias
-        if ctx
-            .mentioned_table_aliases
-            .values()
-            .any(|table_name| *table_name == self.name)
-        {
-            score += 140.0;
-        }
-
-        // Medium priority: same schema as mentioned tables
         if ctx
             .mentioned_relations
             .keys()
@@ -78,8 +66,7 @@ impl ContextualPriority for Table {
             score += 50.0;
         }
 
-        // Lower priority: public schema
-        if self.schema == "public" {
+        if self.schema == "public" && score == 0.0 {
             score += 10.0;
         }
 
