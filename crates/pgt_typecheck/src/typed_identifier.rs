@@ -319,7 +319,7 @@ mod tests {
             .set_language(tree_sitter_sql::language())
             .expect("Error loading sql language");
 
-        let schema_cache = pgt_schema_cache::SchemaCache::load(&test_db)
+        let schema_cache = pgt_schema_cache::SchemaCache::load(&test_db, vec![])
             .await
             .expect("Failed to load Schema Cache");
 

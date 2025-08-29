@@ -27,7 +27,7 @@ mod tests {
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn loads_roles(test_db: PgPool) {
-        let cache = SchemaCache::load(&test_db)
+        let cache = SchemaCache::load(&test_db, vec![])
             .await
             .expect("Failed to load Schema Cache");
 

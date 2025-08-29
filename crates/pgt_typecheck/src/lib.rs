@@ -49,6 +49,17 @@ pub async fn check_sql(
         params.sql,
     );
 
+    // Build dynamic search_path from schema cache configuration
+    let search_schemas = params.schema_cache.schemas_in_search_path();
+    if !search_schemas.is_empty() {
+        let mut schema_names: Vec<&str> = search_schemas.iter().map(|s| s.name.as_str()).collect();
+        if !schema_names.contains(&"public") {
+            schema_names.push("public");
+        }
+        let search_path_query = format!("SET search_path TO {};", schema_names.join(", "));
+        conn.execute(&*search_path_query).await?;
+    }
+
     let res = conn.prepare(&prepared).await;
 
     match res {

@@ -16,7 +16,7 @@ pub(crate) async fn get_test_deps(
             .expect("Failed to execute setup query");
     }
 
-    let schema_cache = SchemaCache::load(test_db)
+    let schema_cache = SchemaCache::load(test_db, vec![])
         .await
         .expect("Failed to load Schema Cache");
 
@@ -41,7 +41,7 @@ pub(crate) async fn test_against_connection_string(
         .await
         .expect("Unable to connect to database.");
 
-    let schema_cache = SchemaCache::load(&pool)
+    let schema_cache = SchemaCache::load(&pool, vec![])
         .await
         .expect("Failed to load Schema Cache");
 

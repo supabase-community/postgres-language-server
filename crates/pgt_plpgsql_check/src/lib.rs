@@ -247,7 +247,7 @@ mod tests {
         let ast = pgt_query::parse(create_fn_sql)?
             .into_root()
             .ok_or("Failed to parse SQL root")?;
-        let schema_cache = pgt_schema_cache::SchemaCache::load(test_db).await?;
+        let schema_cache = pgt_schema_cache::SchemaCache::load(test_db, vec![]).await?;
 
         let diagnostics = super::check_plpgsql(super::PlPgSqlCheckParams {
             conn: test_db,

@@ -11,16 +11,22 @@ use super::{async_helper::run_async, connection_key::ConnectionKey};
 #[derive(Default)]
 pub struct SchemaCacheManager {
     schemas: RwLock<HashMap<ConnectionKey, Arc<SchemaCache>>>,
+    default_search_path: Vec<String>,
 }
 
 impl SchemaCacheManager {
     pub fn new() -> Self {
         Self {
             schemas: RwLock::new(HashMap::new()),
+            default_search_path: vec![],
         }
     }
 
-    pub fn load(&self, pool: PgPool) -> Result<Arc<SchemaCache>, WorkspaceError> {
+    pub fn load(
+        &self,
+        pool: PgPool,
+        default_search_path: Vec<String>,
+    ) -> Result<Arc<SchemaCache>, WorkspaceError> {
         let key: ConnectionKey = (&pool).into();
 
         // Try read lock first for cache hit
@@ -40,9 +46,9 @@ impl SchemaCacheManager {
 
         // Load schema cache
         let pool_clone = pool.clone();
-        let schema_cache = Arc::new(run_async(
-            async move { SchemaCache::load(&pool_clone).await },
-        )??);
+        let schema_cache = Arc::new(run_async(async move {
+            SchemaCache::load(&pool_clone, default_search_path).await
+        })??);
 
         schemas.insert(key, schema_cache.clone());
         Ok(schema_cache)

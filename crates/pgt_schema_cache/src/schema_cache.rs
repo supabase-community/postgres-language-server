@@ -1,3 +1,4 @@
+use globset::Glob;
 use sqlx::postgres::PgPool;
 
 use crate::columns::Column;
@@ -8,6 +9,8 @@ use crate::tables::Table;
 use crate::types::PostgresType;
 use crate::versions::Version;
 use crate::{Extension, Role, Trigger};
+
+use itertools::Itertools;
 
 #[derive(Debug, Default)]
 pub struct SchemaCache {
@@ -21,10 +24,11 @@ pub struct SchemaCache {
     pub extensions: Vec<Extension>,
     pub triggers: Vec<Trigger>,
     pub roles: Vec<Role>,
+    search_path: Vec<String>,
 }
 
 impl SchemaCache {
-    pub async fn load(pool: &PgPool) -> Result<SchemaCache, sqlx::Error> {
+    pub async fn load(pool: &PgPool, search_path: Vec<String>) -> Result<SchemaCache, sqlx::Error> {
         let (
             schemas,
             tables,
@@ -60,6 +64,7 @@ impl SchemaCache {
             triggers,
             roles,
             extensions,
+            search_path,
         })
     }
 
@@ -89,6 +94,28 @@ impl SchemaCache {
             .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
             .collect()
     }
+
+    pub fn schemas_in_search_path(&self) -> Vec<&Schema> {
+        self.search_path
+            .iter()
+            .filter_map(|pattern| {
+                if let Ok(glob) = Glob::new(pattern) {
+                    let matcher = glob.compile_matcher();
+
+                    Some(
+                        self.schemas
+                            .iter()
+                            .filter(|schema| matcher.is_match(schema.name.as_str()))
+                            .collect::<Vec<&Schema>>(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .unique_by(|s| &s.name)
+            .collect()
+    }
 }
 
 pub trait SchemaCacheItem {
@@ -105,7 +132,7 @@ mod tests {
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn it_loads(test_db: PgPool) {
-        SchemaCache::load(&test_db)
+        SchemaCache::load(&test_db, vec![])
             .await
             .expect("Couldnt' load Schema Cache");
     }
