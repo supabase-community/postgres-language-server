@@ -100,8 +100,8 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 1. **Read the current nodes.rs file** to see what's already implemented
 2. **Pick the next unimplemented node** from the AST nodes list
 3. **Analyze the node structure** in crates/pgt_query/src/protobuf.rs
-4. **Generate a minimal SQL test case** and write it to tests/data/
-5. **Validate the SQL example** by running: cargo test -p pgt_pretty_print --test tests validate_test_data__[filename]
+4. **Generate a minimal SQL test case** and write it to tests/data/ with filename format: `[node_name]_[index]_60.sql` (60 is the line width for proper formatting)
+5. **Validate the SQL example** by running: cargo test -p pgt_pretty_print --test tests validate_test_data__[filename_without_sql]
 6. **Implement the ToTokens trait** for the node
 7. **Add the node to the match statement** if not already there
 8. **Run compilation checks** with cargo check -p pgt_pretty_print
@@ -113,6 +113,7 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 
 ## CRITICAL RULES:
 
+- **ALWAYS use line width 60** in test filenames (e.g., `select_stmt_0_60.sql`) to ensure proper line breaking
 - **NEVER EVER add comments to Rust code** - ZERO // comments, ZERO /* */ comments in implementations
 - **NEVER manually implement nested nodes** - Always call .to_tokens(e) on child nodes, never implement their logic
 - **Use existing ToTokens implementations** - If a node already has ToTokens, call it, don't reimplement
@@ -154,9 +155,9 @@ After creating a SQL file, validate it with:
 ```bash
 cargo test -p pgt_pretty_print --test tests validate_test_data__[filename_without_sql]
 ```
-Example: For insert_stmt_0_80.sql, run:
+Example: For insert_stmt_0_60.sql, run:
 ```bash
-cargo test -p pgt_pretty_print --test tests validate_test_data__insert_stmt_0_80
+cargo test -p pgt_pretty_print --test tests validate_test_data__insert_stmt_0_60
 ```
 This ensures the SQL parses correctly and produces the expected AST node type.
 
@@ -167,8 +168,8 @@ After running formatter tests, check the quality by:
 3. **Validate round-trip**: Parse the formatted SQL and compare AST structure with original
 4. **Look for common issues**: Missing whitespace, incorrect operator precedence, malformed syntax
 
-Example: For insert_stmt_0_80.sql, check:
-`crates/pgt_pretty_print/tests/snapshots/tests__test_formatter__insert_stmt_0_80.snap`
+Example: For insert_stmt_0_60.sql, check:
+`crates/pgt_pretty_print/tests/snapshots/tests__test_formatter__insert_stmt_0_60.snap`
 
 ## RESPONSE FORMAT:
 After each cycle, respond with just:
