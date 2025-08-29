@@ -80,12 +80,13 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
 
     fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
         if let Some(tname) = self.type_name.as_ref() {
-            write!(writer, "{}", tname)?;
+            write!(writer, "`{}", tname)?;
             if let Some(l) = self.varchar_length {
                 write!(writer, "({})", l)?;
             }
+            write!(writer, "`")?;
         } else {
-            write!(writer, "typeid: {}", self.type_id)?;
+            write!(writer, "typeid: `{}`", self.type_id)?;
         }
 
         if self.is_primary_key {
@@ -97,7 +98,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
         if self.is_nullable {
             write!(writer, " - nullable")?;
         } else {
-            write!(writer, " - not-nullable")?;
+            write!(writer, " - not null")?;
         }
 
         if let Some(comment) = &self.comment {

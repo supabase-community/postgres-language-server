@@ -139,7 +139,8 @@ mod tests {
 
         assert_eq!(real_estate_schema_columns, 7);
 
-        let user_id_col = cache.find_col("id", "users", None).unwrap();
+        let user_id_cols = cache.find_cols("id", Some("users"), None);
+        let user_id_col = user_id_cols.first().unwrap();
         assert_eq!(user_id_col.class_kind, ColumnClassKind::OrdinaryTable);
         assert_eq!(user_id_col.comment, None);
         assert_eq!(
@@ -151,7 +152,8 @@ mod tests {
         assert!(user_id_col.is_unique);
         assert_eq!(user_id_col.varchar_length, None);
 
-        let user_name_col = cache.find_col("name", "users", None).unwrap();
+        let user_name_cols = cache.find_cols("name", Some("users"), None);
+        let user_name_col = user_name_cols.first().unwrap();
         assert_eq!(user_name_col.class_kind, ColumnClassKind::OrdinaryTable);
         assert_eq!(user_name_col.comment, None);
         assert_eq!(user_name_col.default_expr, None);
@@ -160,7 +162,8 @@ mod tests {
         assert!(!user_name_col.is_unique);
         assert_eq!(user_name_col.varchar_length, Some(255));
 
-        let user_is_veg_col = cache.find_col("is_vegetarian", "users", None).unwrap();
+        let user_is_veg_cols = cache.find_cols("is_vegetarian", Some("users"), None);
+        let user_is_veg_col = user_is_veg_cols.first().unwrap();
         assert_eq!(user_is_veg_col.class_kind, ColumnClassKind::OrdinaryTable);
         assert_eq!(user_is_veg_col.comment, None);
         assert_eq!(user_is_veg_col.default_expr, Some("false".into()));
@@ -169,7 +172,8 @@ mod tests {
         assert!(!user_is_veg_col.is_unique);
         assert_eq!(user_is_veg_col.varchar_length, None);
 
-        let user_middle_name_col = cache.find_col("middle_name", "users", None).unwrap();
+        let user_middle_name_cols = cache.find_cols("middle_name", Some("users"), None);
+        let user_middle_name_col = user_middle_name_cols.first().unwrap();
         assert_eq!(
             user_middle_name_col.class_kind,
             ColumnClassKind::OrdinaryTable
@@ -181,9 +185,9 @@ mod tests {
         assert!(!user_middle_name_col.is_unique);
         assert_eq!(user_middle_name_col.varchar_length, Some(255));
 
-        let properties_owner_id_col = cache
-            .find_col("owner_id", "properties", Some("real_estate"))
-            .unwrap();
+        let properties_owner_id_cols = cache
+            .find_cols("owner_id", Some("properties"), Some("real_estate"));
+        let properties_owner_id_col = properties_owner_id_cols.first().unwrap();
         assert_eq!(
             properties_owner_id_col.class_kind,
             ColumnClassKind::OrdinaryTable

@@ -2,8 +2,13 @@ use pgt_schema_cache::SchemaCache;
 use pgt_text_size::TextSize;
 use pgt_treesitter::TreeSitterContextParams;
 
-use crate::{hovered_node::HoveredNode, to_markdown::format_hover_markdown};
+use crate::{
+    contextual_priority::prioritize_by_context, hovered_item::HoverItem, hovered_node::HoveredNode,
+    to_markdown::format_hover_markdown,
+};
 
+mod contextual_priority;
+mod hovered_item;
 mod hovered_node;
 mod to_markdown;
 
@@ -23,54 +28,53 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
     });
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
-        match hovered_node {
-            HoveredNode::Table(node_identification) => {
-                let possible_tables = match node_identification {
-                    hovered_node::NodeIdentification::Name(n) => {
-                        params.schema_cache.find_tables(n.as_str(), None)
-                    }
-                    hovered_node::NodeIdentification::SchemaAndName((s, n)) => params
-                        .schema_cache
-                        .find_tables(n.as_str(), Some(s.as_str())),
-                    hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
-                };
-
-                possible_tables
+        let items: Vec<HoverItem> = match hovered_node {
+            HoveredNode::Table(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(n) => params
+                    .schema_cache
+                    .find_tables(n.as_str(), None)
                     .into_iter()
-                    .filter_map(|t| match format_hover_markdown(t) {
-                        Ok(markdown) => Some(markdown),
-                        Err(_) => None,
-                    })
-                    .collect()
-            }
+                    .map(|t| HoverItem::from(t))
+                    .collect(),
 
-            HoveredNode::Column(node_identification) => {
-                let possible_columns = match node_identification {
-                    hovered_node::NodeIdentification::Name(column_name) => {
-                        params.schema_cache.find_cols(&column_name, None, None)
-                    }
-
-                    hovered_node::NodeIdentification::SchemaAndName((
-                        table_or_alias,
-                        column_name,
-                    )) => params
-                        .schema_cache
-                        .find_cols(&column_name, Some(&table_or_alias), None),
-
-                    hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
-                };
-
-                possible_columns
+                hovered_node::NodeIdentification::SchemaAndName((s, n)) => params
+                    .schema_cache
+                    .find_tables(n.as_str(), Some(&s))
                     .into_iter()
-                    .filter_map(|c| match format_hover_markdown(c) {
-                        Ok(markdown) => Some(markdown),
-                        Err(_) => None,
-                    })
-                    .collect()
-            }
+                    .map(HoverItem::from)
+                    .collect(),
+
+                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+            },
+
+            HoveredNode::Column(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(column_name) => params
+                    .schema_cache
+                    .find_cols(&column_name, None, None)
+                    .into_iter()
+                    .map(HoverItem::from)
+                    .collect(),
+
+                hovered_node::NodeIdentification::SchemaAndName((table_or_alias, column_name)) => {
+                    params
+                        .schema_cache
+                        .find_cols(&column_name, Some(&table_or_alias), None)
+                        .into_iter()
+                        .map(HoverItem::from)
+                        .collect()
+                }
+
+                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+            },
 
             _ => todo!(),
-        }
+        };
+
+        prioritize_by_context(items, &ctx)
+            .into_iter()
+            .map(|item| format_hover_markdown(&item))
+            .filter_map(Result::ok)
+            .collect()
     } else {
         Default::default()
     }
