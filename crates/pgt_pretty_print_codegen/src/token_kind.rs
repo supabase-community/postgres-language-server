@@ -31,6 +31,7 @@ const LITERALS: &[&str] = &[
     "NULL",
     "STRING",
     "IDENT",
+    "BOOLEAN",
 ];
 
 const VARIANT_DATA: &[(&str, &str)] = &[
@@ -44,6 +45,7 @@ const VARIANT_DATA: &[(&str, &str)] = &[
     ("IDENT", "String"),                // user_id, table_name
     ("POSITIONAL_PARAM", "u32"),        // $1, $2, $3 (the number matters!)
     ("COMMENT", "String"),              // /* comment text */
+    ("BOOLEAN", "bool"),                // true, false
 ];
 
 pub fn token_kind_mod() -> proc_macro2::TokenStream {
@@ -141,6 +143,10 @@ pub fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::FLOAT_NUMBER(n) => n.to_string(),
                     TokenKind::BIT_STRING(s) => s.clone(),
                     TokenKind::BYTE_STRING(s) => s.clone(),
+                    TokenKind::BOOLEAN(b) => match b {
+                        true => "TRUE".to_string(),
+                        false => "FALSE".to_string(),
+                    },
                     TokenKind::NULL => "NULL".to_string(),
                     #(#render_kw_match_arms),*,
                     _ => format!("{:?}", self), // Fallback for other variants

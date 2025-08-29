@@ -7,6 +7,7 @@ snapshot_kind: text
     GroupStart {
         id: None,
         break_parent: false,
+        kind: SelectStmt,
     },
     Token(
         SELECT_KW,
@@ -18,10 +19,12 @@ snapshot_kind: text
     GroupStart {
         id: None,
         break_parent: false,
+        kind: ResTarget,
     },
     GroupStart {
         id: None,
         break_parent: false,
+        kind: ColumnRef,
     },
     Token(
         IDENT(
@@ -65,10 +68,12 @@ snapshot_kind: text
     GroupStart {
         id: None,
         break_parent: false,
+        kind: ResTarget,
     },
     GroupStart {
         id: None,
         break_parent: false,
+        kind: ColumnRef,
     },
     Token(
         IDENT(
@@ -96,10 +101,12 @@ snapshot_kind: text
     GroupStart {
         id: None,
         break_parent: false,
+        kind: ResTarget,
     },
     GroupStart {
         id: None,
         break_parent: false,
+        kind: ColumnRef,
     },
     Token(
         IDENT(
@@ -122,6 +129,7 @@ snapshot_kind: text
     GroupStart {
         id: None,
         break_parent: false,
+        kind: RangeVar,
     },
     Token(
         IDENT(

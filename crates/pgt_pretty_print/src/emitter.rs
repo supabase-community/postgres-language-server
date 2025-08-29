@@ -1,3 +1,4 @@
+pub use crate::codegen::group_kind::GroupKind;
 pub use crate::codegen::token_kind::TokenKind;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -18,6 +19,7 @@ pub enum LayoutEvent {
     GroupStart {
         id: Option<String>,
         break_parent: bool,
+        kind: GroupKind,
     },
     GroupEnd,
     IndentStart,
@@ -45,9 +47,62 @@ impl EventEmitter {
         self.events.push(LayoutEvent::Line(line_type));
     }
 
-    pub fn group_start(&mut self, id: Option<String>, break_parent: bool) {
-        self.events
-            .push(LayoutEvent::GroupStart { id, break_parent });
+    pub fn group_start(&mut self, kind: GroupKind, id: Option<String>, break_parent: bool) {
+        self.events.push(LayoutEvent::GroupStart {
+            id,
+            break_parent,
+            kind,
+        });
+    }
+
+    pub fn is_within_group(&self, target_kind: GroupKind) -> bool {
+        let mut depth = 0;
+        for event in self.events.iter().rev() {
+            match event {
+                LayoutEvent::GroupEnd => depth += 1,
+                LayoutEvent::GroupStart { kind, .. } => {
+                    if depth == 0 && *kind == target_kind {
+                        return true;
+                    }
+                    if depth > 0 {
+                        depth -= 1;
+                    }
+                }
+                _ => {}
+            }
+        }
+        false
+    }
+
+    pub fn parent_group(&self) -> Option<GroupKind> {
+        let mut depth = 0;
+        for event in self.events.iter().rev() {
+            match event {
+                LayoutEvent::GroupEnd => depth += 1,
+                LayoutEvent::GroupStart { kind, .. } => {
+                    if depth == 1 {
+                        return Some(kind.clone());
+                    }
+                    if depth > 0 {
+                        depth -= 1;
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    pub fn is_top_level(&self) -> bool {
+        let mut depth = 0;
+        for event in &self.events {
+            match event {
+                LayoutEvent::GroupStart { .. } => depth += 1,
+                LayoutEvent::GroupEnd => depth -= 1,
+                _ => {}
+            }
+        }
+        depth == 1
     }
 
     pub fn group_end(&mut self) {

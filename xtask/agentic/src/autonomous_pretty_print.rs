@@ -114,13 +114,20 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 ## CRITICAL RULES:
 
 - **NEVER EVER add comments to Rust code** - ZERO // comments, ZERO /* */ comments in implementations
-- **Only add this separator**: // Implementation for NodeName
 - **NEVER manually implement nested nodes** - Always call .to_tokens(e) on child nodes, never implement their logic
 - **Use existing ToTokens implementations** - If a node already has ToTokens, call it, don't reimplement
 - **Start with simplest possible implementations** - use todo!() for complex fields initially
 - **Incremental improvement** - come back to nodes later to add more fields
 - **When tests fail**, analyze the AST diff and fix the missing ToTokens fields
 - **Prioritize Stmt nodes first** (SelectStmt, InsertStmt, etc.)
+
+## GROUP AND CONTEXT SYSTEM:
+
+- **Complex nodes MUST create groups**: `e.group_start(GroupKind::NodeName, None, false);` and `e.group_end();`
+- **Simple nodes NO groups**: String, AConst, and other leaf nodes emit tokens directly
+- **Context-aware formatting**: Use `e.is_within_group(GroupKind::ParentType)` to adapt behavior
+- **Semicolons for top-level statements**: Use `if e.is_top_level() { e.token(TokenKind::SEMICOLON); }`
+- **Never maintain explicit context state** - always introspect the event stream
 
 ## FORBIDDEN PATTERNS:
 - `// Handle XYZ formatting directly` - NEVER add explanatory comments
@@ -170,14 +177,43 @@ After each cycle, respond with just:
 
 ## CORRECT IMPLEMENTATION PATTERN:
 ```rust
-impl ToTokens for SomeNode {{
-    fn to_tokens(&self, e: &mut Elements) {{
-        // Implementation for SomeNode
+// Complex node with group
+impl ToTokens for SomeComplexNode {{
+    fn to_tokens(&self, e: &mut EventEmitter) {{
+        e.group_start(GroupKind::SomeComplexNode, None, false);
+        
+        e.token(TokenKind::KEYWORD("SELECT".to_string()));
         if let Some(ref child) = self.some_child {{
             child.to_tokens(e);  // ✅ CORRECT - delegate to existing ToTokens
         }}
-        e.token(TokenKind::KEYWORD("SELECT".to_string()));
-        // NO COMMENTS ANYWHERE ELSE
+        
+        if e.is_top_level() {{
+            e.token(TokenKind::SEMICOLON);
+        }}
+        
+        e.group_end();
+    }}
+}}
+
+// Simple leaf node without group
+impl ToTokens for SomeSimpleNode {{
+    fn to_tokens(&self, e: &mut EventEmitter) {{
+        e.token(TokenKind::IDENT(self.value.clone()));
+    }}
+}}
+
+// Context-aware node
+impl ToTokens for ContextSensitiveNode {{
+    fn to_tokens(&self, e: &mut EventEmitter) {{
+        e.group_start(GroupKind::ContextSensitiveNode, None, false);
+        
+        if e.is_within_group(GroupKind::UpdateStmt) {{
+            // UPDATE SET formatting: column = value
+        }} else {{
+            // SELECT formatting: value AS alias
+        }}
+        
+        e.group_end();
     }}
 }}
 ```
@@ -185,8 +221,9 @@ impl ToTokens for SomeNode {{
 ## WRONG IMPLEMENTATION PATTERN (FORBIDDEN):
 ```rust
 impl ToTokens for SomeNode {{
-    fn to_tokens(&self, e: &mut Elements) {{
-        // Implementation for SomeNode
+    fn to_tokens(&self, e: &mut EventEmitter) {{
+        e.group_start(GroupKind::SomeNode, None, false);
+        
         if let Some(ref child) = self.some_child {{
             // Handle child formatting directly ❌ FORBIDDEN COMMENT
             if let Some(node::Node::ChildType(inner)) = &child.node {{
@@ -194,6 +231,8 @@ impl ToTokens for SomeNode {{
                 e.token(TokenKind::IDENT(inner.name.clone()));
             }}
         }}
+        
+        e.group_end();
     }}
 }}
 ```
@@ -201,7 +240,12 @@ impl ToTokens for SomeNode {{
 ## ACTION PLAN:
 Start by reading nodes.rs to see current state, then begin the implementation loop. Work systematically through the nodes list, implementing ToTokens for each one with proper error handling and testing.
 
-ALWAYS delegate to existing ToTokens implementations. NEVER add explanatory comments.
+## KEY CONTEXT RULES:
+- **Complex nodes** (statements, expressions, structured data) MUST use groups with GroupKind
+- **Simple leaf nodes** (String, AConst) emit tokens directly without groups
+- **Context-sensitive nodes** use `e.is_within_group(GroupKind::ParentType)` to adapt formatting
+- **Top-level statements** use `e.is_top_level()` to add semicolons
+- **Always delegate** to existing ToTokens implementations. NEVER add explanatory comments.
 
 Continue this loop indefinitely until all nodes are implemented and all tests pass.
 "#,
