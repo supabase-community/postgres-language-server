@@ -185,8 +185,8 @@ mod tests {
         assert!(!user_middle_name_col.is_unique);
         assert_eq!(user_middle_name_col.varchar_length, Some(255));
 
-        let properties_owner_id_cols = cache
-            .find_cols("owner_id", Some("properties"), Some("real_estate"));
+        let properties_owner_id_cols =
+            cache.find_cols("owner_id", Some("properties"), Some("real_estate"));
         let properties_owner_id_col = properties_owner_id_cols.first().unwrap();
         assert_eq!(
             properties_owner_id_col.class_kind,

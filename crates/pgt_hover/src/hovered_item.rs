@@ -19,7 +19,7 @@ impl<'a> From<&'a pgt_schema_cache::Column> for HoverItem<'a> {
     }
 }
 
-impl<'a> ContextualPriority for HoverItem<'a> {
+impl ContextualPriority for HoverItem<'_> {
     fn relevance_score(&self, ctx: &pgt_treesitter::TreesitterContext) -> f32 {
         match self {
             HoverItem::Table(table) => table.relevance_score(ctx),
@@ -28,7 +28,7 @@ impl<'a> ContextualPriority for HoverItem<'a> {
     }
 }
 
-impl<'a> ToHoverMarkdown for HoverItem<'a> {
+impl ToHoverMarkdown for HoverItem<'_> {
     fn hover_headline<W: std::fmt::Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
         match self {
             HoverItem::Table(table) => ToHoverMarkdown::hover_headline(*table, writer),

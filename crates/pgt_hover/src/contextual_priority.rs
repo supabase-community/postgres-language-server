@@ -185,7 +185,7 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].table_name, "users");
         assert_eq!(result[0].schema_name, "auth");
-        assert_eq!(result[0].is_primary_key, true);
+        assert!(result[0].is_primary_key);
     }
 
     #[test]
@@ -227,6 +227,6 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].table_name, "posts");
         assert_eq!(result[0].schema_name, "public");
-        assert_eq!(result[0].is_primary_key, false);
+        assert!(!result[0].is_primary_key);
     }
 }

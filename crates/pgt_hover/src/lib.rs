@@ -34,7 +34,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .schema_cache
                     .find_tables(n.as_str(), None)
                     .into_iter()
-                    .map(|t| HoverItem::from(t))
+                    .map(HoverItem::from)
                     .collect(),
 
                 hovered_node::NodeIdentification::SchemaAndName((s, n)) => params
