@@ -25,7 +25,7 @@ impl HoveredNode {
         let under_node = ctx.node_under_cursor.as_ref()?;
 
         match under_node.kind() {
-            "identifier" if ctx.parent_matches_one_of_kind(&["object_reference", "relation"]) => {
+            "identifier" if ctx.matches_ancestor_history(&["relation", "object_reference"]) => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
                         schema.clone(),
@@ -35,7 +35,7 @@ impl HoveredNode {
                     Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
                 }
             }
-            "identifier" if ctx.parent_matches_one_of_kind(&["field"]) => {
+            "identifier" if ctx.matches_ancestor_history(&["field"]) => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
                         table_or_alias.clone(),
@@ -43,6 +43,18 @@ impl HoveredNode {
                     ))))
                 } else {
                     Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
+                }
+            }
+            "identifier" if ctx.matches_ancestor_history(&["invocation", "object_reference"]) => {
+                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::Function(NodeIdentification::SchemaAndName((
+                        schema.clone(),
+                        node_content,
+                    ))))
+                } else {
+                    Some(HoveredNode::Function(NodeIdentification::Name(
+                        node_content,
+                    )))
                 }
             }
             _ => None,

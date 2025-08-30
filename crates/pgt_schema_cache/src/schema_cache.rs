@@ -93,6 +93,13 @@ impl SchemaCache {
             .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
             .collect()
     }
+
+    pub fn find_functions(&self, name: &str, schema: Option<&str>) -> Vec<&Function> {
+        self.functions
+            .iter()
+            .filter(|f| f.name == name && schema.is_none_or(|s| s == f.schema.as_str()))
+            .collect()
+    }
 }
 
 pub trait SchemaCacheItem {

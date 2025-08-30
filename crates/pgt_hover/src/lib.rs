@@ -67,6 +67,24 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
             },
 
+            HoveredNode::Function(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(function_name) => params
+                    .schema_cache
+                    .find_functions(&function_name, None)
+                    .into_iter()
+                    .map(HoverItem::from)
+                    .collect(),
+
+                hovered_node::NodeIdentification::SchemaAndName((schema, function_name)) => params
+                    .schema_cache
+                    .find_functions(&function_name, Some(&schema))
+                    .into_iter()
+                    .map(HoverItem::from)
+                    .collect(),
+
+                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+            },
+
             _ => todo!(),
         };
 

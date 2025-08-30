@@ -5,6 +5,7 @@ use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdow
 pub(crate) enum HoverItem<'a> {
     Table(&'a pgt_schema_cache::Table),
     Column(&'a pgt_schema_cache::Column),
+    Function(&'a pgt_schema_cache::Function),
 }
 
 impl<'a> From<&'a pgt_schema_cache::Table> for HoverItem<'a> {
@@ -19,11 +20,18 @@ impl<'a> From<&'a pgt_schema_cache::Column> for HoverItem<'a> {
     }
 }
 
+impl<'a> From<&'a pgt_schema_cache::Function> for HoverItem<'a> {
+    fn from(value: &'a pgt_schema_cache::Function) -> Self {
+        HoverItem::Function(value)
+    }
+}
+
 impl ContextualPriority for HoverItem<'_> {
     fn relevance_score(&self, ctx: &pgt_treesitter::TreesitterContext) -> f32 {
         match self {
             HoverItem::Table(table) => table.relevance_score(ctx),
             HoverItem::Column(column) => column.relevance_score(ctx),
+            HoverItem::Function(function) => function.relevance_score(ctx),
         }
     }
 }
@@ -33,6 +41,7 @@ impl ToHoverMarkdown for HoverItem<'_> {
         match self {
             HoverItem::Table(table) => ToHoverMarkdown::hover_headline(*table, writer),
             HoverItem::Column(column) => ToHoverMarkdown::hover_headline(*column, writer),
+            HoverItem::Function(function) => ToHoverMarkdown::hover_headline(*function, writer),
         }
     }
 
@@ -40,6 +49,7 @@ impl ToHoverMarkdown for HoverItem<'_> {
         match self {
             HoverItem::Table(table) => ToHoverMarkdown::hover_body(*table, writer),
             HoverItem::Column(column) => ToHoverMarkdown::hover_body(*column, writer),
+            HoverItem::Function(function) => ToHoverMarkdown::hover_body(*function, writer),
         }
     }
 
@@ -47,6 +57,7 @@ impl ToHoverMarkdown for HoverItem<'_> {
         match self {
             HoverItem::Table(table) => ToHoverMarkdown::hover_footer(*table, writer),
             HoverItem::Column(column) => ToHoverMarkdown::hover_footer(*column, writer),
+            HoverItem::Function(function) => ToHoverMarkdown::hover_footer(*function, writer),
         }
     }
 }

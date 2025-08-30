@@ -118,6 +118,56 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
     }
 }
 
+impl ToHoverMarkdown for pgt_schema_cache::Function {
+    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+        let kind_text = match self.kind {
+            pgt_schema_cache::ProcKind::Function => "",
+            pgt_schema_cache::ProcKind::Procedure => " (Procedure)",
+            pgt_schema_cache::ProcKind::Aggregate => " (Aggregate)",
+            pgt_schema_cache::ProcKind::Window => " (Window)",
+        };
+
+        write!(writer, "{}.{}{}", self.schema, self.name, kind_text)
+    }
+
+    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        if let Some(args) = &self.argument_types {
+            write!(writer, "`{}({})`", self.name, args)?;
+        } else {
+            write!(writer, "`{}()`", self.name)?;
+        }
+
+        if let Some(return_type) = &self.return_type {
+            write!(writer, " → `{}`", return_type)?;
+        }
+
+        if self.is_set_returning_function {
+            write!(writer, " - returns set")?;
+        }
+
+        let behavior_text = match self.behavior {
+            pgt_schema_cache::Behavior::Immutable => " - immutable",
+            pgt_schema_cache::Behavior::Stable => " - stable", 
+            pgt_schema_cache::Behavior::Volatile => "",
+        };
+
+        if !behavior_text.is_empty() {
+            write!(writer, "{}", behavior_text)?;
+        }
+
+        if self.security_definer {
+            write!(writer, " - security definer")?;
+        }
+
+        Ok(true)
+    }
+
+    fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        write!(writer, "Language: `{}`", self.language)?;
+        Ok(true)
+    }
+}
+
 fn markdown_newline<W: Write>(writer: &mut W) -> Result<(), std::fmt::Error> {
     write!(writer, "  ")?;
     writeln!(writer)?;

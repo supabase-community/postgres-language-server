@@ -1,4 +1,4 @@
-use pgt_schema_cache::{Column, Table};
+use pgt_schema_cache::{Column, Function, Table};
 use pgt_treesitter::context::TreesitterContext;
 
 pub(crate) trait ContextualPriority {
@@ -68,6 +68,34 @@ impl ContextualPriority for Table {
 
         if self.schema == "public" && score == 0.0 {
             score += 10.0;
+        }
+
+        score
+    }
+}
+
+impl ContextualPriority for Function {
+    fn relevance_score(&self, _ctx: &TreesitterContext) -> f32 {
+        let mut score = 0.0;
+
+        // built-in functions get higher priority
+        if self.language == "internal" {
+            score += 100.0;
+        }
+
+        // public schema functions get base priority
+        if self.schema == "public" {
+            score += 50.0;
+        } else {
+            score += 25.0;
+        }
+
+        // aggregate and window functions are commonly used
+        match self.kind {
+            pgt_schema_cache::ProcKind::Aggregate => score += 20.0,
+            pgt_schema_cache::ProcKind::Window => score += 15.0,
+            pgt_schema_cache::ProcKind::Function => score += 10.0,
+            pgt_schema_cache::ProcKind::Procedure => score += 5.0,
         }
 
         score
