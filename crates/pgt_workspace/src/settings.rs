@@ -291,6 +291,7 @@ fn to_linter_settings(
         rules: Some(conf.rules),
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
+        search_path_patterns: conf.search_path_patterns.into_iter().collect(),
     })
 }
 
@@ -388,6 +389,31 @@ pub struct LinterSettings {
 
     /// List of included paths/files to match
     pub included_files: Matcher,
+
+    /// Glob patterns for additional schemas to check when typechecking
+    pub search_path_patterns: Vec<String>,
+}
+
+impl LinterSettings {
+    /// Returns schema names that match the configured search path patterns.
+    /// Supports glob patterns like "app_*" or exact matches.
+    pub fn get_matching_schemas<'a>(&self, schema_names: &'a [&str]) -> Vec<&'a str> {
+        schema_names
+            .iter()
+            .filter(|&&schema_name| {
+                self.search_path_patterns.iter().any(|pattern| {
+                    if let Ok(glob) = Glob::new(pattern) {
+                        let matcher = glob.compile_matcher();
+                        matcher.is_match(schema_name)
+                    } else {
+                        // fallback to exact match if glob pattern is invalid
+                        pattern == schema_name
+                    }
+                })
+            })
+            .copied()
+            .collect()
+    }
 }
 
 impl Default for LinterSettings {
@@ -397,6 +423,7 @@ impl Default for LinterSettings {
             rules: Some(pgt_configuration::analyser::linter::Rules::default()),
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),
+            search_path_patterns: vec!["public".to_string()],
         }
     }
 }

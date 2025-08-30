@@ -203,7 +203,7 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        let cache = SchemaCache::load(&pool, vec![]).await.unwrap();
+        let cache = SchemaCache::load(&pool).await.unwrap();
 
         // Find and check the function
         let foo_fn = cache

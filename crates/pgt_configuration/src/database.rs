@@ -38,12 +38,6 @@ pub struct DatabaseConfiguration {
     #[partial(bpaf(long("conn_timeout_secs"), fallback(Some(10)), debug_fallback))]
     pub conn_timeout_secs: u16,
 
-    /// Default search path schemas for type checking.
-    /// Can be a list of schema names or glob patterns like ["public", "app_*"].
-    /// If not specified, defaults to ["public"].
-    #[partial(bpaf(long("search_path")))]
-    pub search_path: StringSet,
-
     /// Actively disable all database-related features.
     #[partial(bpaf(long("disable-db"), switch, fallback(Some(false))))]
     #[partial(cfg_attr(feature = "schema", schemars(skip)))]
@@ -61,7 +55,6 @@ impl Default for DatabaseConfiguration {
             database: "postgres".to_string(),
             allow_statement_executions_against: Default::default(),
             conn_timeout_secs: 10,
-            search_path: ["public".to_string()].into_iter().collect(),
         }
     }
 }

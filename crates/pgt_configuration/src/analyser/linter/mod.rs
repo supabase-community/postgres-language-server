@@ -28,6 +28,12 @@ pub struct LinterConfiguration {
     /// match these patterns.
     #[partial(bpaf(hide))]
     pub include: StringSet,
+
+    /// Default search path schemas for type checking.
+    /// Can be a list of schema names or glob patterns like ["public", "app_*"].
+    /// If not specified, defaults to ["public"].
+    #[partial(bpaf(long("search_path")))]
+    pub search_path_patterns: StringSet,
 }
 
 impl LinterConfiguration {
@@ -43,6 +49,7 @@ impl Default for LinterConfiguration {
             rules: Default::default(),
             ignore: Default::default(),
             include: Default::default(),
+            search_path_patterns: ["public".to_string()].into_iter().collect(),
         }
     }
 }

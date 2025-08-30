@@ -455,6 +455,7 @@ impl Workspace for WorkspaceServer {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
             let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+            let search_path_patterns = settings.linter.search_path_patterns.clone();
 
             // Combined async context for both typecheck and plpgsql_check
             let async_results = run_async(async move {
@@ -463,6 +464,8 @@ impl Workspace for WorkspaceServer {
                         let pool = pool.clone();
                         let path = path_clone.clone();
                         let schema_cache = Arc::clone(&schema_cache);
+                        let search_path_patterns = search_path_patterns.clone();
+
                         async move {
                             let mut diagnostics = Vec::new();
 
@@ -474,6 +477,7 @@ impl Workspace for WorkspaceServer {
                                     ast: &ast,
                                     tree: &cst,
                                     schema_cache: schema_cache.as_ref(),
+                                    search_path_patterns,
                                     identifiers: sign
                                         .map(|s| {
                                             s.args

@@ -12,6 +12,7 @@ version              = "0.0.0"
 
 
 [dependencies]
+globset                    = "0.4.16"
 pgt_console.workspace      = true
 pgt_diagnostics.workspace  = true
 pgt_query.workspace        = true
@@ -22,6 +23,7 @@ sqlx.workspace             = true
 tokio.workspace            = true
 tree-sitter.workspace      = true
 tree_sitter_sql.workspace  = true
+itertools ={ version = "0.14.0" }
 
 [dev-dependencies]
 insta.workspace          = true

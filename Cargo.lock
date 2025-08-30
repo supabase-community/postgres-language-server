@@ -3068,8 +3068,6 @@ dependencies = [
  "anyhow",
  "async-std",
  "futures-util",
- "globset",
- "itertools 0.14.0",
  "pgt_console",
  "pgt_diagnostics",
  "pgt_test_utils",
@@ -3178,7 +3176,9 @@ dependencies = [
 name = "pgt_typecheck"
 version = "0.0.0"
 dependencies = [
+ "globset",
  "insta",
+ "itertools 0.14.0",
  "pgt_console",
  "pgt_diagnostics",
  "pgt_query",

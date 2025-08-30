@@ -12,7 +12,8 @@
     "enabled": true,
     "rules": {
       "recommended": true
-    }
+    },
+    "search_path_patterns": ["private", "public"]
   },
   // YOU CAN COMMENT ME OUT :)
   "db": {

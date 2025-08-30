@@ -3,6 +3,9 @@ mod typed_identifier;
 
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
+use globset::Glob;
+use itertools::Itertools;
+use pgt_schema_cache::SchemaCache;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
@@ -17,6 +20,9 @@ pub struct TypecheckParams<'a> {
     pub tree: &'a tree_sitter::Tree,
     pub schema_cache: &'a pgt_schema_cache::SchemaCache,
     pub identifiers: Vec<TypedIdentifier>,
+    /// Set of glob patterns that will be matched against the schemas in the database.
+    /// Each matching schema will be added to the search_path for the typecheck.
+    pub search_path_patterns: Vec<String>,
 }
 
 pub async fn check_sql(
@@ -49,14 +55,16 @@ pub async fn check_sql(
         params.sql,
     );
 
-    // Build dynamic search_path from schema cache configuration
-    let search_schemas = params.schema_cache.schemas_in_search_path();
-    if !search_schemas.is_empty() {
-        let mut schema_names: Vec<&str> = search_schemas.iter().map(|s| s.name.as_str()).collect();
-        if !schema_names.contains(&"public") {
-            schema_names.push("public");
+    let mut search_path_schemas =
+        get_schemas_in_search_path(params.schema_cache, params.search_path_patterns);
+
+    if !search_path_schemas.is_empty() {
+        // Always include public if we have any schemas in search path
+        if !search_path_schemas.contains(&"public") {
+            search_path_schemas.push("public");
         }
-        let search_path_query = format!("SET search_path TO {};", schema_names.join(", "));
+
+        let search_path_query = format!("SET search_path TO {};", search_path_schemas.join(", "));
         conn.execute(&*search_path_query).await?;
     }
 
@@ -74,4 +82,37 @@ pub async fn check_sql(
         }
         Err(err) => Err(err),
     }
+}
+
+fn get_schemas_in_search_path<'a>(
+    schema_cache: &'a SchemaCache,
+    glob_patterns: Vec<String>,
+) -> Vec<&'a str> {
+    // iterate over glob_patterns on the outside to keep the order
+    glob_patterns
+        .iter()
+        .filter_map(|pattern| {
+            if let Ok(glob) = Glob::new(pattern) {
+                let matcher = glob.compile_matcher();
+
+                Some(
+                    schema_cache
+                        .schemas
+                        .iter()
+                        .filter_map(|s| {
+                            if matcher.is_match(s.name.as_str()) {
+                                Some(s.name.as_str())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<&str>>(),
+                )
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .unique()
+        .collect()
 }

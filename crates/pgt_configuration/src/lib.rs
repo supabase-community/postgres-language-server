@@ -118,7 +118,6 @@ impl PartialConfiguration {
                 database: Some("postgres".to_string()),
                 allow_statement_executions_against: Default::default(),
                 conn_timeout_secs: Some(10),
-                search_path: Default::default(),
                 disable_connection: Some(false),
             }),
         }

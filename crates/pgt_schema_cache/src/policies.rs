@@ -137,7 +137,7 @@ mod tests {
             .await
             .expect("Failed to setup test database");
 
-        let cache = SchemaCache::load(&test_db, vec![])
+        let cache = SchemaCache::load(&test_db)
             .await
             .expect("Failed to load Schema Cache");
 
