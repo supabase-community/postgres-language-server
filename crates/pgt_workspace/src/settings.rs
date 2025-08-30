@@ -394,28 +394,6 @@ pub struct LinterSettings {
     pub search_path_patterns: Vec<String>,
 }
 
-impl LinterSettings {
-    /// Returns schema names that match the configured search path patterns.
-    /// Supports glob patterns like "app_*" or exact matches.
-    pub fn get_matching_schemas<'a>(&self, schema_names: &'a [&str]) -> Vec<&'a str> {
-        schema_names
-            .iter()
-            .filter(|&&schema_name| {
-                self.search_path_patterns.iter().any(|pattern| {
-                    if let Ok(glob) = Glob::new(pattern) {
-                        let matcher = glob.compile_matcher();
-                        matcher.is_match(schema_name)
-                    } else {
-                        // fallback to exact match if glob pattern is invalid
-                        pattern == schema_name
-                    }
-                })
-            })
-            .copied()
-            .collect()
-    }
-}
-
 impl Default for LinterSettings {
     fn default() -> Self {
         Self {

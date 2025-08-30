@@ -13,7 +13,7 @@
     "rules": {
       "recommended": true
     },
-    "search_path_patterns": ["private", "public"]
+    "searchPathPatterns": ["pr*"]
   },
   // YOU CAN COMMENT ME OUT :)
   "db": {

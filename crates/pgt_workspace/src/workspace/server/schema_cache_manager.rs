@@ -40,9 +40,9 @@ impl SchemaCacheManager {
 
         // Load schema cache
         let pool_clone = pool.clone();
-        let schema_cache = Arc::new(run_async(async move {
-            SchemaCache::load(&pool_clone).await
-        })??);
+        let schema_cache = Arc::new(run_async(
+            async move { SchemaCache::load(&pool_clone).await },
+        )??);
 
         schemas.insert(key, schema_cache.clone());
         Ok(schema_cache)

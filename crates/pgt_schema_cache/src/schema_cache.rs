@@ -89,7 +89,6 @@ impl SchemaCache {
             .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
             .collect()
     }
-
 }
 
 pub trait SchemaCacheItem {
