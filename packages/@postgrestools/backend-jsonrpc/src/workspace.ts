@@ -326,6 +326,10 @@ export interface PartialLinterConfiguration {
 	 * List of rules
 	 */
 	rules?: Rules;
+	/**
+	 * Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
+	 */
+	searchPathPatterns?: StringSet;
 }
 /**
  * The configuration of the filesystem
