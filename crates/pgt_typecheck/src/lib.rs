@@ -84,10 +84,7 @@ pub async fn check_sql(
     }
 }
 
-fn get_schemas_in_search_path<'a>(
-    schema_cache: &'a SchemaCache,
-    glob_patterns: Vec<String>,
-) -> Vec<&'a str> {
+fn get_schemas_in_search_path(schema_cache: &SchemaCache, glob_patterns: Vec<String>) -> Vec<&str> {
     // iterate over glob_patterns on the outside to keep the order
     glob_patterns
         .iter()
