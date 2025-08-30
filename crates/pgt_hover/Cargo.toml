@@ -28,6 +28,7 @@ tree_sitter_sql.workspace  = true
 
 [dev-dependencies]
 pgt_test_utils.workspace = true
+insta           = { version = "1.42.1" }
 
 [lib]
 doctest = false

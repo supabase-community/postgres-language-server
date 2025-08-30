@@ -56,9 +56,15 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .collect(),
 
                 hovered_node::NodeIdentification::SchemaAndName((table_or_alias, column_name)) => {
+                    // resolve alias to actual table name if needed
+                    let actual_table = ctx.mentioned_table_aliases
+                        .get(table_or_alias.as_str())
+                        .map(|s| s.as_str())
+                        .unwrap_or(table_or_alias.as_str());
+                    
                     params
                         .schema_cache
-                        .find_cols(&column_name, Some(&table_or_alias), None)
+                        .find_cols(&column_name, Some(actual_table), None)
                         .into_iter()
                         .map(HoverItem::from)
                         .collect()
