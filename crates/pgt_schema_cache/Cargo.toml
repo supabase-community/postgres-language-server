@@ -23,7 +23,6 @@ sqlx.workspace            = true
 strum                     = { workspace = true }
 tokio.workspace           = true
 
-
 [dev-dependencies]
 pgt_test_utils.workspace = true
 
