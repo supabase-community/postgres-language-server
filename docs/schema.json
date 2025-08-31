@@ -55,6 +55,17 @@
         }
       ]
     },
+    "typecheck": {
+      "description": "The configuration for type checking",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TypecheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "migrations": {
       "description": "Configure migrations",
       "anyOf": [
@@ -223,9 +234,16 @@
               "type": "null"
             }
           ]
-        },
-        "searchPathPatterns": {
-          "description": "Default search path schemas for type checking. Can be a list of schema names or glob patterns like [\"private\", \"app_*\"]. \"public\" will always be searched, and it will be searched last.",
+        }
+      },
+      "additionalProperties": false
+    },
+    "TypecheckConfiguration": {
+      "description": "The configuration for type checking.",
+      "type": "object",
+      "properties": {
+        "searchPath": {
+          "description": "Default search path schemas for type checking. Can be a list of schema names or glob patterns like [\"public\", \"app_*\"]. If not specified, defaults to [\"public\"].",
           "anyOf": [
             {
               "$ref": "#/definitions/StringSet"

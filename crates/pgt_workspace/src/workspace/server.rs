@@ -455,7 +455,7 @@ impl Workspace for WorkspaceServer {
             let path_clone = params.path.clone();
             let schema_cache = self.schema_cache.load(pool.clone())?;
             let input = doc.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
-            let search_path_patterns = settings.linter.search_path_patterns.clone();
+            let search_path_patterns = settings.typecheck.search_path.clone();
 
             // Combined async context for both typecheck and plpgsql_check
             let async_results = run_async(async move {
