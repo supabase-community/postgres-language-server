@@ -19,13 +19,8 @@ xflags::xflags! {
             optional --server
         }
 
-        /// AI-powered development tasks using Claude.
-        cmd agentic {
-            /// Generate ToTokens implementations for pretty printing
-            cmd pretty-print-impls {}
-            /// Run autonomous pretty print implementation generator
-            cmd autonomous-pretty-print {}
-        }
+        /// Run autonomous pretty print implementation generator using Claude.
+        cmd agentic {}
     }
 }
 
@@ -51,21 +46,7 @@ pub struct Install {
 }
 
 #[derive(Debug)]
-pub struct Agentic {
-    pub subcommand: AgenticCmd,
-}
-
-#[derive(Debug)]
-pub enum AgenticCmd {
-    PrettyPrintImpls(PrettyPrintImpls),
-    AutonomousPrettyPrint(AutonomousPrettyPrint),
-}
-
-#[derive(Debug)]
-pub struct PrettyPrintImpls;
-
-#[derive(Debug)]
-pub struct AutonomousPrettyPrint;
+pub struct Agentic;
 
 impl Xtask {
     #[allow(dead_code)]

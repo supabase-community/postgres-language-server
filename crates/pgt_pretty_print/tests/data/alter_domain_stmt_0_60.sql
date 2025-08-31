@@ -1,0 +1,1 @@
+ALTER DOMAIN myschema.mydomain SET NOT NULL;

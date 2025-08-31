@@ -131,6 +131,9 @@ fn clear_location(node: &mut pgt_query::NodeEnum) {
             pgt_query::NodeMut::RangeVar(n) => {
                 (*n).location = 0;
             }
+            pgt_query::NodeMut::RoleSpec(n) => {
+                (*n).location = 0;
+            }
             _ => {}
         });
     }

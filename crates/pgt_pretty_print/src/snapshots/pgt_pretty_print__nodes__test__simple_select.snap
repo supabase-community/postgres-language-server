@@ -138,6 +138,61 @@ snapshot_kind: text
     ),
     GroupEnd,
     IndentEnd,
+    Line(
+        SoftOrSpace,
+    ),
+    Token(
+        WHERE_KW,
+    ),
+    Space,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: AExpr,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "id",
+        ),
+    ),
+    GroupEnd,
+    Space,
+    Token(
+        IDENT(
+            "=",
+        ),
+    ),
+    Space,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: AExpr,
+    },
+    Space,
+    Token(
+        IDENT(
+            "@",
+        ),
+    ),
+    Space,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "id",
+        ),
+    ),
+    GroupEnd,
+    GroupEnd,
+    GroupEnd,
     Token(
         SEMICOLON,
     ),

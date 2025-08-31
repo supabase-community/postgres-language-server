@@ -1,0 +1,1 @@
+COPY users TO '/tmp/users.csv' WITH CSV HEADER;

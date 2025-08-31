@@ -30,9 +30,9 @@ gen-lint:
   cargo run -p docs_codegen
   just format
 
-# Run the agentic loop with the specified name (e.g., just agentic pretty-print-impls)
-agentic loop_name:
-  cargo xtask agentic {{loop_name}}
+# Run the autonomous pretty print implementation generator
+pretty-print:
+  cargo xtask agentic
 
 # Creates a new lint rule in the given path, with the given name. Name has to be camel case. Group should be lowercase.
 new-lintrule group rulename severity="error":

@@ -58,13 +58,36 @@ impl AutonomousPrettyPrintGenerator {
     pub fn run(&mut self) -> Result<()> {
         self.log("Starting autonomous pretty print implementation generator...");
 
+        let result = self.run_loop();
+
+        match &result {
+            Ok(_) => self.log("Autonomous pretty print generator completed successfully!"),
+            Err(e) => self.log(&format!("ERROR: Autonomous generator failed: {}", e)),
+        }
+
+        result
+    }
+
+    fn run_loop(&mut self) -> Result<()> {
         loop {
             self.log("Starting new autonomous cycle...");
 
-            let prompt = self.build_comprehensive_prompt()?;
+            let prompt = match self.build_comprehensive_prompt() {
+                Ok(p) => p,
+                Err(e) => {
+                    self.log(&format!("ERROR: Failed to build prompt: {}", e));
+                    return Err(e);
+                }
+            };
 
             self.log("Sending comprehensive prompt to Claude...");
-            let response = self.claude_session.call_claude(&prompt, false)?;
+            let response = match self.claude_session.call_claude(&prompt, false) {
+                Ok(r) => r,
+                Err(e) => {
+                    self.log(&format!("ERROR: Claude API call failed: {}", e));
+                    return Err(e);
+                }
+            };
 
             self.log(&format!("Claude response: {}", response));
 
@@ -78,7 +101,6 @@ impl AutonomousPrettyPrintGenerator {
             std::thread::sleep(std::time::Duration::from_secs(2));
         }
 
-        self.log("Autonomous pretty print generator completed!");
         Ok(())
     }
 
@@ -127,7 +149,7 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 - **Complex nodes MUST create groups**: `e.group_start(GroupKind::NodeName, None, false);` and `e.group_end();`
 - **Simple nodes NO groups**: String, AConst, and other leaf nodes emit tokens directly
 - **Context-aware formatting**: Use `e.is_within_group(GroupKind::ParentType)` to adapt behavior
-- **Semicolons for top-level statements**: Use `if e.is_top_level() { e.token(TokenKind::SEMICOLON); }`
+- **Semicolons for top-level statements**: Use `if e.is_top_level() {{ e.token(TokenKind::SEMICOLON); }}`
 - **Never maintain explicit context state** - always introspect the event stream
 
 ## FORBIDDEN PATTERNS:
