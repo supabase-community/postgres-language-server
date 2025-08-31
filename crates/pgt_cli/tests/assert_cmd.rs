@@ -9,7 +9,7 @@ fn test_cli_check_command() {
 
     let test_sql_path = PathBuf::from("tests/fixtures/test.sql");
 
-    cmd.args(["check", test_sql_path.to_str().unwrap()])
+    cmd.args(["check", "--disable-db", test_sql_path.to_str().unwrap()])
         .assert()
         .failure()
         .stdout(predicate::str::contains("Found 1 error"));

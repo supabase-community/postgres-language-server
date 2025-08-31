@@ -276,5 +276,5 @@ async fn shortens_lengthy_functions(test_db: PgPool) {
         QueryWithCursorPosition::cursor_marker()
     );
 
-    test_hover_at_cursor("lenghty function", query, Some(setup), &test_db).await;
+    test_hover_at_cursor("lenghty_function", query, Some(setup), &test_db).await;
 }
