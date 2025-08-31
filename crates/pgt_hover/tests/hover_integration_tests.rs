@@ -216,3 +216,65 @@ async fn test_no_hover_on_keyword(test_db: PgPool) {
 
     test_hover_at_cursor("no_hover_keyword", query, Some(setup), &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn shortens_lengthy_functions(test_db: PgPool) {
+    let setup = r#"
+        create or replace function public.func(cool_stuff text,       something_else int,a_third_thing text)
+        returns void
+        language sql
+        stable
+        as $$
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+            select 1;
+        $$;
+    "#;
+
+    let query = format!(
+        "select public.fu{}nc()",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("lenghty function", query, Some(setup), &test_db).await;
+}

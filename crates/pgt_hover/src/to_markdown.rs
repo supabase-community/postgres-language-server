@@ -170,9 +170,49 @@ impl ToHoverMarkdown for pgt_schema_cache::Function {
 
     fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
         if let Some(def) = self.definition.as_ref() {
-            write!(writer, "```\n{}\n```", def)?;
+            /*
+             * We don't want to show 250 lines of functions to the user.
+             * If we have more than 30 lines, we'll only show the signature.
+             */
+            if def.lines().count() > 30 {
+                let without_boilerplate: String = def
+                    .split_ascii_whitespace()
+                    .skip_while(|elem| {
+                        ["create", "or", "replace", "function"]
+                            .contains(&elem.to_ascii_lowercase().as_str())
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(" ");
+
+                for char in without_boilerplate.chars() {
+                    match char {
+                        '(' => {
+                            write!(writer, "(\n  ")?;
+                        }
+
+                        ')' => {
+                            write!(writer, "\n)\n")?;
+                            break;
+                        }
+
+                        ',' => {
+                            // one space already present
+                            write!(writer, ",\n ")?;
+                        }
+
+                        _ => {
+                            write!(writer, "{}", char)?;
+                        }
+                    }
+                }
+            } else {
+                write!(writer, "```\n{}\n```", def)?;
+            }
+
+            Ok(true)
+        } else {
+            Ok(false)
         }
-        Ok(true)
     }
 }
 
