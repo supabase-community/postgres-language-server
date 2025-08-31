@@ -3,7 +3,8 @@ use std::sync::Arc;
 use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{
-    PartialConfiguration, database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
+    PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
+    files::PartialFilesConfiguration,
 };
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
@@ -384,4 +385,114 @@ async fn test_cstyle_comments(test_db: PgPool) {
         .diagnostics;
 
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_search_path_configuration(test_db: PgPool) {
+    // Setup test schemas and functions
+    let setup_sql = r#"
+        create schema if not exists private;
+
+        create or replace function private.get_user_id() returns integer as $$
+            select 1;
+        $$ language sql;
+    "#;
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let path_glob = PgTPath::new("test_glob.sql");
+    let file_content = r#"
+        select get_user_id();  -- on private schema
+    "#;
+
+    // first check that the we get a valid typecheck
+    let mut glob_conf = PartialConfiguration::init();
+    glob_conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    // without glob
+    {
+        let workspace =
+            get_test_workspace(Some(glob_conf.clone())).expect("Unable to create test workspace");
+
+        workspace
+            .open_file(OpenFileParams {
+                path: path_glob.clone(),
+                content: file_content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+
+        let diagnostics_glob = workspace
+            .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+                path: path_glob.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics;
+
+        assert_eq!(
+            diagnostics_glob.len(),
+            1,
+            "get_user_id() should not be found in search_path"
+        );
+
+        // yep, type error!
+        assert_eq!(
+            diagnostics_glob[0].category().map(|c| c.name()),
+            Some("typecheck")
+        );
+    }
+
+    // adding the glob
+    glob_conf.merge_with(PartialConfiguration {
+        typecheck: Some(PartialTypecheckConfiguration {
+            // Adding glob pattern to match the "private" schema
+            search_path: Some(StringSet::from_iter(vec!["pr*".to_string()])),
+        }),
+        ..Default::default()
+    }); // checking with the pattern should yield no diagnostics
+
+    {
+        let workspace =
+            get_test_workspace(Some(glob_conf.clone())).expect("Unable to create test workspace");
+
+        workspace
+            .open_file(OpenFileParams {
+                path: path_glob.clone(),
+                content: file_content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+
+        let diagnostics_glob = workspace
+            .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+                path: path_glob.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics;
+
+        assert_eq!(
+            diagnostics_glob.len(),
+            0,
+            "Glob pattern should put private schema in search path"
+        );
+    }
 }

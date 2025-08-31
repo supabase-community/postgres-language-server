@@ -36,6 +36,7 @@ async fn test(name: &str, query: &str, setup: Option<&str>, test_db: &PgPool) {
         ast: &root,
         tree: &tree,
         schema_cache: &schema_cache,
+        search_path_patterns: vec![],
         identifiers: vec![],
     })
     .await;
