@@ -3,8 +3,8 @@ use std::sync::Arc;
 use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{
-    PartialConfiguration, PartialLinterConfiguration, PartialTypecheckConfiguration,
-    database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
+    PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
+    files::PartialFilesConfiguration,
 };
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
@@ -408,7 +408,6 @@ async fn test_search_path_configuration(test_db: PgPool) {
         typecheck: Some(PartialTypecheckConfiguration {
             // Adding glob pattern to match the "private" schema
             search_path: Some(StringSet::from_iter(vec!["pr*".to_string()])),
-            ..Default::default()
         }),
         ..Default::default()
     }); // checking with the pattern should yield no diagnostics
