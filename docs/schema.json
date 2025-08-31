@@ -55,22 +55,22 @@
         }
       ]
     },
-    "typecheck": {
-      "description": "The configuration for type checking",
+    "migrations": {
+      "description": "Configure migrations",
       "anyOf": [
         {
-          "$ref": "#/definitions/TypecheckConfiguration"
+          "$ref": "#/definitions/MigrationsConfiguration"
         },
         {
           "type": "null"
         }
       ]
     },
-    "migrations": {
-      "description": "Configure migrations",
+    "typecheck": {
+      "description": "The configuration for type checking",
       "anyOf": [
         {
-          "$ref": "#/definitions/MigrationsConfiguration"
+          "$ref": "#/definitions/TypecheckConfiguration"
         },
         {
           "type": "null"
@@ -229,24 +229,6 @@
           "anyOf": [
             {
               "$ref": "#/definitions/Rules"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "TypecheckConfiguration": {
-      "description": "The configuration for type checking.",
-      "type": "object",
-      "properties": {
-        "searchPath": {
-          "description": "Default search path schemas for type checking. Can be a list of schema names or glob patterns like [\"public\", \"app_*\"]. If not specified, defaults to [\"public\"].",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringSet"
             },
             {
               "type": "null"
@@ -438,6 +420,24 @@
         "type": "string"
       },
       "uniqueItems": true
+    },
+    "TypecheckConfiguration": {
+      "description": "The configuration for type checking.",
+      "type": "object",
+      "properties": {
+        "searchPath": {
+          "description": "Default search path schemas for type checking. Can be a list of schema names or glob patterns like [\"public\", \"app_*\"]. If not specified, defaults to [\"public\"].",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "VcsClientKind": {
       "oneOf": [
