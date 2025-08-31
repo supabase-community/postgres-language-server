@@ -334,6 +334,60 @@ async fn test_positional_params(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_cstyle_comments(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let content = r#"
+        /*
+         * a
+         * multi-line
+         * comment.
+         */
+        select 1; /* Another comment */
+        -- A single line comment
+        select 2; -- Another single line comment
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_search_path_configuration(test_db: PgPool) {
     // Setup test schemas and functions
     let setup_sql = r#"
