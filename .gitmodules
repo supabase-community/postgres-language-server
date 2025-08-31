@@ -5,3 +5,5 @@
 [submodule "crates/pgt_query/vendor/libpg_query"]
 	path = crates/pgt_query/vendor/libpg_query
 	url = https://github.com/pganalyze/libpg_query.git
+	fetchRecurseSubmodules = true
+	shallow = false

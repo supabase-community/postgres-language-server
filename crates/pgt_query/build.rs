@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !libpg_query_submodule.join(".git").exists() && !libpg_query_submodule.join("src").exists() {
         return Err(
-            "libpg_query submodule not found. Please run: git submodule update --init --recursive"
+            "libpg_query submodule not found. Please run: git submodule update --init --recursive && cd crates/pgt_query/vendor/libpg_query && git fetch --tags"
                 .into(),
         );
     }
@@ -53,16 +53,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             current.trim() != target.trim()
         }
         Err(_) => {
-            // tag not found locally, try fetching
-            let status = Command::new("git")
-                .args(["fetch", "--tags"])
-                .current_dir(&libpg_query_submodule)
-                .status()?;
-
-            if !status.success() {
-                return Err("Failed to fetch tags from libpg_query".into());
-            }
-            true
+            // tag not found locally
+            return Err(format!(
+                "Tag {} not found in libpg_query submodule. Please run:\n\
+                cd {} && git fetch --tags && git checkout {} && git checkout {} && git checkout {}",
+                libpg_query_tag,
+                libpg_query_submodule.display(),
+                "15-4.2.4",
+                "16-5.2.0",
+                "17-6.1.0"
+            )
+            .into());
         }
     };
 
