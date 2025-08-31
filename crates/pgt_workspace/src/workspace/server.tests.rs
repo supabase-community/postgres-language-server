@@ -3,8 +3,8 @@ use std::sync::Arc;
 use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{
-    PartialConfiguration, PartialLinterConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
-    files::PartialFilesConfiguration,
+    PartialConfiguration, PartialLinterConfiguration, PartialTypecheckConfiguration,
+    database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
 };
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;

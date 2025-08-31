@@ -23,9 +23,3 @@ impl Default for TypecheckConfiguration {
         }
     }
 }
-
-pub const fn partial_typecheck_configuration() -> PartialTypecheckConfiguration {
-    PartialTypecheckConfiguration {
-        search_path: None,
-    }
-}

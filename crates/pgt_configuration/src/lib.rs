@@ -23,9 +23,6 @@ pub use analyser::{
     RulePlainConfiguration, RuleSelector, RuleWithFixOptions, RuleWithOptions, Rules,
     partial_linter_configuration,
 };
-pub use typecheck::{
-    TypecheckConfiguration, PartialTypecheckConfiguration, partial_typecheck_configuration,
-};
 use biome_deserialize::StringSet;
 use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
@@ -37,8 +34,8 @@ use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
 };
 use serde::{Deserialize, Serialize};
-use typecheck::{
-    TypecheckConfiguration, PartialTypecheckConfiguration, partial_typecheck_configuration,
+pub use typecheck::{
+    PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
 };
 use vcs::VcsClientKind;
 
