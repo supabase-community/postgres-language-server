@@ -6,17 +6,7 @@ use std::process::Command;
 
 static LIBRARY_NAME: &str = "pg_query";
 
-fn get_libpg_query_tag() -> &'static str {
-    #[cfg(feature = "postgres-15")]
-    return "15-4.2.4";
-    #[cfg(feature = "postgres-16")]
-    return "16-5.2.0";
-    #[cfg(feature = "postgres-17")]
-    return "17-6.1.0";
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let libpg_query_tag = get_libpg_query_tag();
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
     let libpg_query_submodule = manifest_dir.join("vendor").join("libpg_query");
@@ -28,62 +18,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rustc-link-search=native={}", out_dir.display());
     println!("cargo:rustc-link-lib=static={LIBRARY_NAME}");
 
+    // Check if submodule exists
     if !libpg_query_submodule.join(".git").exists() && !libpg_query_submodule.join("src").exists() {
         return Err(
-            "libpg_query submodule not found. Please run: git submodule update --init --recursive && cd crates/pgt_query/vendor/libpg_query && git fetch --tags"
+            "libpg_query submodule not found. Please run: git submodule update --init --recursive"
                 .into(),
         );
     }
 
-    // check if we need to checkout a different tag
-    let current_head = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .current_dir(&libpg_query_submodule)
-        .output()?;
-
-    let tag_commit = Command::new("git")
-        .args(["rev-list", "-n", "1", libpg_query_tag])
-        .current_dir(&libpg_query_submodule)
-        .output();
-
-    let needs_checkout = match tag_commit {
-        Ok(output) => {
-            let current = String::from_utf8_lossy(&current_head.stdout);
-            let target = String::from_utf8_lossy(&output.stdout);
-            current.trim() != target.trim()
-        }
-        Err(_) => {
-            // tag not found locally
-            return Err(format!(
-                "Tag {} not found in libpg_query submodule. Please run:\n\
-                cd {} && git fetch --tags && git checkout {} && git checkout {} && git checkout {}",
-                libpg_query_tag,
-                libpg_query_submodule.display(),
-                "15-4.2.4",
-                "16-5.2.0",
-                "17-6.1.0"
-            )
-            .into());
-        }
-    };
-
-    if needs_checkout {
-        // checkout the correct tag for the selected postgresql version
-        println!(
-            "cargo:warning=Checking out libpg_query tag: {}",
-            libpg_query_tag
-        );
-        let status = Command::new("git")
-            .args(["checkout", libpg_query_tag])
-            .current_dir(&libpg_query_submodule)
-            .status()?;
-
-        if !status.success() {
-            return Err(format!("Failed to checkout libpg_query tag: {}", libpg_query_tag).into());
-        }
-    }
-
-    // tell cargo to rerun if the submodule changes
+    // Tell cargo to rerun if the submodule changes
     println!(
         "cargo:rerun-if-changed={}",
         libpg_query_submodule.join("src").display()
@@ -95,6 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let source_paths = vec![
         libpg_query_submodule.join(LIBRARY_NAME).with_extension("h"),
+        libpg_query_submodule.join("postgres_deparse.h"),
         libpg_query_submodule.join("Makefile"),
         libpg_query_submodule.join("src"),
         libpg_query_submodule.join("protobuf"),
