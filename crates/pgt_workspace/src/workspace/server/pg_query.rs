@@ -97,9 +97,8 @@ impl PgQueryStore {
     }
 }
 
-static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"Invalid statement: "([^"]+\.[^"]+)" is not a known variable"#).unwrap()
-});
+static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
 
 fn is_composite_type_error(err: &str) -> bool {
     COMPOSITE_TYPE_ERROR_RE.is_match(err)
