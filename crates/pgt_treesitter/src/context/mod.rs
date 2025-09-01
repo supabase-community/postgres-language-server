@@ -749,17 +749,6 @@ impl<'a> TreesitterContext<'a> {
         }
     }
 
-    pub fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .is_some_and(|under_cursor| match under_cursor {
-                NodeUnderCursor::TsNode(node) => node
-                    .parent()
-                    .is_some_and(|parent| kinds.contains(&parent.kind())),
-
-                NodeUnderCursor::CustomNode { .. } => false,
-            })
-    }
     pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
             match under_cursor {
@@ -783,6 +772,33 @@ impl<'a> TreesitterContext<'a> {
                     .is_some_and(|k| kinds.contains(&k.as_str())),
             }
         })
+    }
+
+    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
+    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
+    ///
+    /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
+    /// you need to pass `&["relation", "object_reference"]`.
+    pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => {
+                    let mut current = Some(*node);
+
+                    for &expected_kind in expected_ancestors.iter().rev() {
+                        current = current.and_then(|n| n.parent());
+
+                        match current {
+                            Some(ancestor) if ancestor.kind() == expected_kind => continue,
+                            _ => return false,
+                        }
+                    }
+
+                    true
+                }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
     }
 }
 

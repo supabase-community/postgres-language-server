@@ -17,10 +17,12 @@ pub(crate) fn format_hover_markdown<T: ToHoverMarkdown>(
     item.hover_headline(&mut markdown)?;
     markdown_newline(&mut markdown)?;
 
-    if item.hover_body(&mut markdown)? {
-        markdown_newline(&mut markdown)?;
-    }
+    write!(markdown, "#### ")?;
+    item.hover_body(&mut markdown)?;
+    markdown_newline(&mut markdown)?;
 
+    write!(markdown, "---  ")?;
+    markdown_newline(&mut markdown)?;
     item.hover_footer(&mut markdown)?;
 
     Ok(markdown)
@@ -28,6 +30,8 @@ pub(crate) fn format_hover_markdown<T: ToHoverMarkdown>(
 
 impl ToHoverMarkdown for pgt_schema_cache::Table {
     fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+        write!(writer, "`{}.{}`", self.schema, self.name)?;
+
         let table_kind = match self.table_kind {
             pgt_schema_cache::TableKind::View => " (View)",
             pgt_schema_cache::TableKind::MaterializedView => " (M.View)",
@@ -35,17 +39,17 @@ impl ToHoverMarkdown for pgt_schema_cache::Table {
             pgt_schema_cache::TableKind::Ordinary => "",
         };
 
+        write!(writer, "{}", table_kind)?;
+
         let locked_txt = if self.rls_enabled {
             " - 🔒 RLS enabled"
         } else {
             " - 🔓 RLS disabled"
         };
 
-        write!(
-            writer,
-            "{}.{}{}{}",
-            self.schema, self.name, table_kind, locked_txt
-        )
+        write!(writer, "{}", locked_txt)?;
+
+        Ok(())
     }
 
     fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
@@ -73,7 +77,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
     fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
         write!(
             writer,
-            "{}.{}.{}",
+            "`{}.{}.{}`",
             self.schema_name, self.table_name, self.name
         )
     }
@@ -111,6 +115,100 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
     fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
         if let Some(default) = &self.default_expr {
             write!(writer, "Default: `{}`", default)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+}
+
+impl ToHoverMarkdown for pgt_schema_cache::Function {
+    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+        write!(writer, "`{}.{}", self.schema, self.name)?;
+
+        if let Some(args) = &self.argument_types {
+            write!(writer, "({})", args)?;
+        } else {
+            write!(writer, "()")?;
+        }
+
+        write!(
+            writer,
+            " → {}`",
+            self.return_type.as_ref().unwrap_or(&"void".to_string())
+        )?;
+
+        Ok(())
+    }
+
+    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        let kind_text = match self.kind {
+            pgt_schema_cache::ProcKind::Function => "Function",
+            pgt_schema_cache::ProcKind::Procedure => "Procedure",
+            pgt_schema_cache::ProcKind::Aggregate => "Aggregate",
+            pgt_schema_cache::ProcKind::Window => "Window",
+        };
+
+        write!(writer, "{}", kind_text)?;
+
+        let behavior_text = match self.behavior {
+            pgt_schema_cache::Behavior::Immutable => " - Immutable",
+            pgt_schema_cache::Behavior::Stable => " - Stable",
+            pgt_schema_cache::Behavior::Volatile => "",
+        };
+
+        write!(writer, "{}", behavior_text)?;
+
+        if self.security_definer {
+            write!(writer, " - Security DEFINER")?;
+        } else {
+            write!(writer, " - Security INVOKER")?;
+        }
+
+        Ok(true)
+    }
+
+    fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        if let Some(def) = self.definition.as_ref() {
+            /*
+             * We don't want to show 250 lines of functions to the user.
+             * If we have more than 30 lines, we'll only show the signature.
+             */
+            if def.lines().count() > 30 {
+                let without_boilerplate: String = def
+                    .split_ascii_whitespace()
+                    .skip_while(|elem| {
+                        ["create", "or", "replace", "function"]
+                            .contains(&elem.to_ascii_lowercase().as_str())
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(" ");
+
+                for char in without_boilerplate.chars() {
+                    match char {
+                        '(' => {
+                            write!(writer, "(\n  ")?;
+                        }
+
+                        ')' => {
+                            write!(writer, "\n)\n")?;
+                            break;
+                        }
+
+                        ',' => {
+                            // one space already present
+                            write!(writer, ",\n ")?;
+                        }
+
+                        _ => {
+                            write!(writer, "{}", char)?;
+                        }
+                    }
+                }
+            } else {
+                write!(writer, "```\n{}\n```", def)?;
+            }
+
             Ok(true)
         } else {
             Ok(false)
