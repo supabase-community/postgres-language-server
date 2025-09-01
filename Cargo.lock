@@ -2928,6 +2928,7 @@ name = "pgt_hover"
 version = "0.0.0"
 dependencies = [
  "humansize",
+ "insta",
  "pgt_query",
  "pgt_schema_cache",
  "pgt_test_utils",

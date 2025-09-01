@@ -27,6 +27,7 @@ tree-sitter.workspace      = true
 tree_sitter_sql.workspace  = true
 
 [dev-dependencies]
+insta                    = { version = "1.42.1" }
 pgt_test_utils.workspace = true
 
 [lib]

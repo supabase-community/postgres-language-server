@@ -90,7 +90,7 @@ impl CompletionFilter<'_> {
                                 .is_none_or(|n| n != &WrappingNode::List)
                                 && (ctx.before_cursor_matches_kind(&["keyword_into"])
                                     || (ctx.before_cursor_matches_kind(&["."])
-                                        && ctx.parent_matches_one_of_kind(&["object_reference"])))
+                                        && ctx.matches_ancestor_history(&["object_reference"])))
                         }
 
                         WrappingClause::DropTable | WrappingClause::AlterTable => ctx
@@ -136,7 +136,7 @@ impl CompletionFilter<'_> {
                             WrappingClause::Where => {
                                 ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
                                     || (ctx.before_cursor_matches_kind(&["."])
-                                        && ctx.parent_matches_one_of_kind(&["field"]))
+                                        && ctx.matches_ancestor_history(&["field"]))
                             }
 
                             WrappingClause::PolicyCheck => {
