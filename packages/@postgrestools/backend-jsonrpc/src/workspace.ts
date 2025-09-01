@@ -257,6 +257,10 @@ export interface PartialConfiguration {
 	 */
 	migrations?: PartialMigrationsConfiguration;
 	/**
+	 * The configuration for type checking
+	 */
+	typecheck?: PartialTypecheckConfiguration;
+	/**
 	 * The configuration of the VCS integration
 	 */
 	vcs?: PartialVcsConfiguration;
@@ -339,6 +343,15 @@ export interface PartialMigrationsConfiguration {
 	 * The directory where the migration files are stored
 	 */
 	migrationsDir?: string;
+}
+/**
+ * The configuration for type checking.
+ */
+export interface PartialTypecheckConfiguration {
+	/**
+	 * Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
+	 */
+	searchPath?: StringSet;
 }
 /**
  * Set of properties to integrate with a VCS software.

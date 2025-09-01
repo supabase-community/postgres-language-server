@@ -9,6 +9,7 @@ pub mod diagnostics;
 pub mod files;
 pub mod generated;
 pub mod migrations;
+pub mod typecheck;
 pub mod vcs;
 
 pub use crate::diagnostics::ConfigurationDiagnostic;
@@ -33,6 +34,9 @@ use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
 };
 use serde::{Deserialize, Serialize};
+pub use typecheck::{
+    PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
+};
 use vcs::VcsClientKind;
 
 pub const VERSION: &str = match option_env!("PGT_VERSION") {
@@ -77,6 +81,10 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_linter_configuration), optional))]
     pub linter: LinterConfiguration,
 
+    /// The configuration for type checking
+    #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
+    pub typecheck: TypecheckConfiguration,
+
     /// The configuration of the database connection
     #[partial(
         type,
@@ -108,6 +116,9 @@ impl PartialConfiguration {
                     recommended: Some(true),
                     ..Default::default()
                 }),
+                ..Default::default()
+            }),
+            typecheck: Some(PartialTypecheckConfiguration {
                 ..Default::default()
             }),
             db: Some(PartialDatabaseConfiguration {
