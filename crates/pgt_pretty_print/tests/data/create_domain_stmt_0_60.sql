@@ -1,0 +1,1 @@
+CREATE DOMAIN myint AS integer;

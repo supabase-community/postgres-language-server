@@ -1,1 +1,1 @@
-ALTER DOMAIN myschema.mydomain SET NOT NULL;
+ALTER DOMAIN myschema.mydomain DROP CONSTRAINT mycheck;
