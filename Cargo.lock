@@ -3225,6 +3225,7 @@ dependencies = [
  "pgt_tokenizer",
  "pgt_typecheck",
  "pgt_workspace_macros",
+ "regex",
  "rustc-hash 2.1.0",
  "schemars",
  "serde",
