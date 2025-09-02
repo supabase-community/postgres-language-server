@@ -1,0 +1,19 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select public.func()
+                ↑ hovered here
+```
+
+# Hover Results
+### `public.func(cool_stuff text, something_else integer, a_third_thing text) → void`  
+#### Function - Stable - Security INVOKER  
+---    
+public.func(
+  cool_stuff text,
+  something_else integer,
+  a_third_thing text
+)
