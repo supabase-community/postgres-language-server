@@ -824,4 +824,83 @@ mod tests {
         assert!(relations.contains(&&"public.table_a".to_string()));
         assert!(relations.contains(&&"public.table_b".to_string()));
     }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_issue_495(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            create table if not exists stellenangebote_update_audit (
+                created timestamp primary key default current_timestamp,
+                job_refnr text not null,
+                column_name text not null,
+                old_value text,
+                new_value text
+            );
+
+            create table if not exists stellenangebote (
+                refnr varchar(32) not null,
+                beruf text null,
+                titel text null,
+                ort text null,
+                region text null,
+                land text null,
+                lat numeric null,
+                lon numeric null,
+                arbeitgeber text null,
+                veroeffentlichungsdatum date null,
+                modifikationsTimestamp timestamp null,
+                eintrittsdatum date null,
+                kundennummerHash text null,
+                externeUrl text null,
+                created timestamp not null default current_timestamp,
+                updated timestamp not null default current_timestamp,
+                deleted timestamp null,
+                archive_partition smallint not null default 0 check (archive_partition >= 0)
+            ) partition by range(archive_partition);
+        "#;
+
+        let create_fn_sql = r#"
+            create or replace function stellenangebote_update_audit_handler ()
+                returns trigger language plpgsql as $audit$
+            declare
+                column_names text[] := array[
+                    'refnr',
+                    'beruf',
+                    'titel',
+                    'ort',
+                    'region',
+                    'land',
+                    'lat',
+                    'lon',
+                    'arbeitgeber',
+                    'veroeffentlichungsdatum',
+                    'modifikationstimestamp',
+                    'eintrittsdatum',
+                    'kundennummerhash',
+                    'externeurl'
+                ];
+                t text := null;
+                is_equal boolean;
+            begin
+                foreach t in array column_names loop
+                    execute format('select ($1).%1$I is not distinct from ($2).%1$I', t)
+                        using old, new into is_equal;
+                    if not is_equal then
+                        execute format('insert into stellenangebote_update_audit '
+                            '(job_refnr, column_name, old_value, new_value) values '
+                            '($1, ''%1$s'', ($2).%1$I::text, ($3).%1$I::text)', t)
+                            using old.refnr, old, new;
+                    end if;
+                end loop;
+                return new;
+            end $audit$;
+        "#;
+
+        let (diagnostics, _span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert!(diagnostics.is_empty());
+    }
 }
