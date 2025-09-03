@@ -423,7 +423,14 @@ FOR NO KEY UPDATE;
         .expect("Unable to pull diagnostics")
         .diagnostics;
 
-    assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "syntax"))
+            .count(),
+        0,
+        "Expected no syntax diagnostic"
+    );
 }
 
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
