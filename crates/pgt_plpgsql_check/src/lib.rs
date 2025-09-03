@@ -297,7 +297,7 @@ mod tests {
             $prototype$;
         "#;
 
-        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+        let (diagnostics, _span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
             .await
             .expect("Failed to run plpgsql_check test");
 
