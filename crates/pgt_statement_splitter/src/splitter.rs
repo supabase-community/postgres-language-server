@@ -102,6 +102,15 @@ impl<'a> Splitter<'a> {
         self.lexed.kind(self.current_pos)
     }
 
+    fn eat(&mut self, kind: SyntaxKind) -> bool {
+        if self.current() == kind {
+            self.advance();
+            true
+        } else {
+            false
+        }
+    }
+
     fn kind(&self, idx: usize) -> SyntaxKind {
         self.lexed.kind(idx)
     }

@@ -387,6 +387,46 @@ async fn test_positional_params(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_named_params(_test_db: PgPool) {
+    let conf = PartialConfiguration::init();
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let content = r#"
+SELECT
+  1
+FROM
+  assessments AS a
+WHERE
+  a.id = $assessment_id
+FOR NO KEY UPDATE;
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_cstyle_comments(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {

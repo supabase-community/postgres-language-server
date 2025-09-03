@@ -224,6 +224,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         SyntaxKind::COMMA,
                         // Do update in INSERT stmt
                         SyntaxKind::DO_KW,
+                        // FOR NO KEY UPDATE
+                        SyntaxKind::KEY_KW,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
