@@ -227,7 +227,7 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
         }
 
         // Check for dollar quotes in the current line
-        let mut chars = result.chars().peekable();
+        let _chars = result.chars().peekable();
         let mut i = 0;
         while i < result.len() {
             if let Some(caps) = dollar_quote_regex.find_at(&result, i) {

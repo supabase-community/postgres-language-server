@@ -32,6 +32,7 @@ gen-lint:
 
 # Run the autonomous pretty print implementation generator
 pretty-print:
+  unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "Please run cargo check and fix any issues. It is okay to remove things that are not fully implemented yet."
   cargo xtask agentic
 
 # Creates a new lint rule in the given path, with the given name. Name has to be camel case. Group should be lowercase.
