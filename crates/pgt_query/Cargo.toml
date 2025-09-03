@@ -18,10 +18,7 @@ pgt_query_macros = { workspace = true }
 
 
 [features]
-default     = ["postgres-17"]
-postgres-15 = []
-postgres-16 = []
-postgres-17 = []
+default = []
 
 [build-dependencies]
 bindgen     = "0.72.0"

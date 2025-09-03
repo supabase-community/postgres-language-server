@@ -1,6 +1,3 @@
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-
 use fs_extra::dir::CopyOptions;
 use glob::glob;
 use std::env;
@@ -8,73 +5,44 @@ use std::path::PathBuf;
 use std::process::Command;
 
 static LIBRARY_NAME: &str = "pg_query";
-static LIBPG_QUERY_REPO: &str = "https://github.com/pganalyze/libpg_query.git";
-fn get_libpg_query_tag() -> &'static str {
-    #[cfg(feature = "postgres-15")]
-    return "15-5.3.0";
-    #[cfg(feature = "postgres-16")]
-    return "16-6.1.0";
-    #[cfg(feature = "postgres-17")]
-    return "17-6.1.0";
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let libpg_query_tag = get_libpg_query_tag();
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    let vendor_dir = out_dir.join("vendor");
-    let libpg_query_dir = vendor_dir.join("libpg_query").join(libpg_query_tag);
-    let stamp_file = libpg_query_dir.join(".stamp");
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
+    let libpg_query_submodule = manifest_dir.join("vendor").join("libpg_query");
 
-    let src_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?).join("src");
+    let src_dir = manifest_dir.join("src");
     let target = env::var("TARGET").unwrap();
     let is_emscripten = target.contains("emscripten");
 
-    // Configure cargo through stdout
     println!("cargo:rustc-link-search=native={}", out_dir.display());
     println!("cargo:rustc-link-lib=static={LIBRARY_NAME}");
 
-    // Clone libpg_query if not already present
-    if !stamp_file.exists() {
-        println!("cargo:warning=Cloning libpg_query {}", libpg_query_tag);
-
-        // Create vendor directory
-        std::fs::create_dir_all(&vendor_dir)?;
-
-        // Clone the repository with partial clone for faster download
-        let status = Command::new("git")
-            .args([
-                "clone",
-                "--filter=blob:none",
-                "--depth",
-                "1",
-                "--branch",
-                libpg_query_tag,
-                LIBPG_QUERY_REPO,
-                libpg_query_dir.to_str().unwrap(),
-            ])
-            .status()?;
-
-        if !status.success() {
-            return Err("Failed to clone libpg_query".into());
-        }
-
-        // Create stamp file
-        std::fs::File::create(&stamp_file)?;
+    // Check if submodule exists
+    if !libpg_query_submodule.join(".git").exists() && !libpg_query_submodule.join("src").exists() {
+        return Err(
+            "libpg_query submodule not found. Please run: git submodule update --init --recursive"
+                .into(),
+        );
     }
 
-    // Tell cargo to rerun if the stamp file is deleted
-    println!("cargo:rerun-if-changed={}", stamp_file.display());
+    // Tell cargo to rerun if the submodule changes
+    println!(
+        "cargo:rerun-if-changed={}",
+        libpg_query_submodule.join("src").display()
+    );
 
-    // Copy necessary files to OUT_DIR for compilation
+    // copy necessary files to out_dir for compilation
     let out_header_path = out_dir.join(LIBRARY_NAME).with_extension("h");
     let out_protobuf_path = out_dir.join("protobuf");
 
     let source_paths = vec![
-        libpg_query_dir.join(LIBRARY_NAME).with_extension("h"),
-        libpg_query_dir.join("Makefile"),
-        libpg_query_dir.join("src"),
-        libpg_query_dir.join("protobuf"),
-        libpg_query_dir.join("vendor"),
+        libpg_query_submodule.join(LIBRARY_NAME).with_extension("h"),
+        libpg_query_submodule.join("postgres_deparse.h"),
+        libpg_query_submodule.join("Makefile"),
+        libpg_query_submodule.join("src"),
+        libpg_query_submodule.join("protobuf"),
+        libpg_query_submodule.join("vendor"),
     ];
 
     let copy_options = CopyOptions {
@@ -84,17 +52,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     fs_extra::copy_items(&source_paths, &out_dir, &copy_options)?;
 
-    // Compile the C library.
+    // compile the c library.
     let mut build = cc::Build::new();
 
-    // Configure for Emscripten if needed
+    // configure for emscripten if needed
     if is_emscripten {
-        // Use emcc as the compiler instead of gcc/clang
+        // use emcc as the compiler instead of gcc/clang
         build.compiler("emcc");
-        // Use emar as the archiver instead of ar
+        // use emar as the archiver instead of ar
         build.archiver("emar");
-        // Note: We don't add WASM-specific flags here as this creates a static library
-        // The final linking flags should be added when building the final WASM module
+        // note: we don't add wasm-specific flags here as this creates a static library
+        // the final linking flags should be added when building the final wasm module
     }
 
     build
@@ -115,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .include(out_dir.join("./vendor"))
         .include(out_dir.join("./src/postgres/include"))
         .include(out_dir.join("./src/include"))
-        .warnings(false); // Avoid unnecessary warnings, as they are already considered as part of libpg_query development
+        .warnings(false); // avoid unnecessary warnings, as they are already considered as part of libpg_query development
     if env::var("PROFILE").unwrap() == "debug" || env::var("DEBUG").unwrap() == "1" {
         build.define("USE_ASSERT_CHECKING", None);
     }
