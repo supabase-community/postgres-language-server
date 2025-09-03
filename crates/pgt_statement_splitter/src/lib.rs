@@ -277,6 +277,22 @@ mod tests {
     }
 
     #[test]
+    fn trigger_instead_of() {
+        Tester::from(
+            "CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();",
+        )
+        .expect_statements(vec![
+            "CREATE OR REPLACE TRIGGER my_trigger
+       INSTEAD OF INSERT ON my_table
+       FOR EACH ROW
+       EXECUTE FUNCTION my_table_trigger_fn();",
+        ]);
+    }
+
+    #[test]
     fn with_recursive() {
         Tester::from(
             "
