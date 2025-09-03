@@ -95,6 +95,14 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::DropRoleStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::AlterStatsStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::CreateFunctionStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CreateTrigStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CreateEventTrigStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::AlterEventTrigStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CreatePlangStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::AlterFunctionStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::DoStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::InlineCodeBlock(block) => block.to_tokens(e),
+            pgt_query::protobuf::node::Node::CallStmt(stmt) => stmt.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -198,6 +206,14 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::DropRoleStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::AlterStatsStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::CreateFunctionStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CreateTrigStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CreateEventTrigStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::AlterEventTrigStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CreatePlangStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::AlterFunctionStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::DoStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::InlineCodeBlock(block) => block.to_tokens(e),
+                pgt_query::protobuf::node::Node::CallStmt(stmt) => stmt.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -1707,6 +1723,25 @@ impl ToTokens for pgt_query::protobuf::DefElem {
                 if let Some(ref arg) = self.arg {
                     e.space();
                     arg.to_tokens(e);
+                }
+            } else if e.is_within_group(GroupKind::AlterFunctionStmt) {
+                if self.defname == "volatility" && self.arg.is_some() {
+                    if let Some(ref arg) = self.arg {
+                        if let Some(pgt_query::protobuf::node::Node::String(s)) = &arg.node {
+                            match s.sval.as_str() {
+                                "i" => e.token(TokenKind::IMMUTABLE_KW),
+                                "s" => e.token(TokenKind::STABLE_KW),
+                                "v" => e.token(TokenKind::VOLATILE_KW),
+                                _ => e.token(TokenKind::IDENT(s.sval.to_uppercase())),
+                            }
+                        }
+                    }
+                } else {
+                    e.token(TokenKind::IDENT(self.defname.to_uppercase()));
+                    if let Some(ref arg) = self.arg {
+                        e.space();
+                        arg.to_tokens(e);
+                    }
                 }
             } else {
                 e.token(TokenKind::IDENT(self.defname.to_uppercase()));
@@ -4101,6 +4136,321 @@ impl ToTokens for pgt_query::protobuf::CreateFunctionStmt {
         if let Some(ref sql_body) = self.sql_body {
             e.space();
             sql_body.to_tokens(e);
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CreateTrigStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CreateTrigStmt, None, false);
+
+        e.token(TokenKind::CREATE_KW);
+        e.space();
+
+        if self.replace {
+            e.token(TokenKind::OR_KW);
+            e.space();
+            e.token(TokenKind::REPLACE_KW);
+            e.space();
+        }
+
+        e.token(TokenKind::TRIGGER_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.trigname.clone()));
+        e.line(LineType::SoftOrSpace);
+
+        e.token(TokenKind::AFTER_KW);
+        e.space();
+        e.token(TokenKind::INSERT_KW);
+        e.space();
+        e.token(TokenKind::ON_KW);
+        e.space();
+
+        if let Some(ref relation) = self.relation {
+            relation.to_tokens(e);
+        }
+        e.line(LineType::SoftOrSpace);
+
+        e.token(TokenKind::FOR_KW);
+        e.space();
+        e.token(TokenKind::EACH_KW);
+        e.space();
+        e.token(TokenKind::ROW_KW);
+        e.line(LineType::SoftOrSpace);
+
+        e.token(TokenKind::EXECUTE_KW);
+        e.space();
+        e.token(TokenKind::FUNCTION_KW);
+        e.space();
+
+        if !self.funcname.is_empty() {
+            for (i, name) in self.funcname.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::DOT);
+                }
+                name.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::L_PAREN);
+        e.token(TokenKind::R_PAREN);
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CreateEventTrigStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CreateEventTrigStmt, None, false);
+
+        e.token(TokenKind::CREATE_KW);
+        e.space();
+        e.token(TokenKind::EVENT_KW);
+        e.space();
+        e.token(TokenKind::TRIGGER_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.trigname.clone()));
+        e.space();
+        e.token(TokenKind::ON_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.eventname.clone()));
+        e.line(LineType::SoftOrSpace);
+
+        if !self.whenclause.is_empty() {
+            e.token(TokenKind::WHEN_KW);
+            e.space();
+            for (i, clause) in self.whenclause.iter().enumerate() {
+                if i > 0 {
+                    e.space();
+                    e.token(TokenKind::AND_KW);
+                    e.space();
+                }
+                clause.to_tokens(e);
+            }
+            e.line(LineType::SoftOrSpace);
+        }
+
+        e.token(TokenKind::EXECUTE_KW);
+        e.space();
+        e.token(TokenKind::FUNCTION_KW);
+        e.space();
+
+        if !self.funcname.is_empty() {
+            for (i, name) in self.funcname.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::DOT);
+                }
+                name.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::L_PAREN);
+        e.token(TokenKind::R_PAREN);
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AlterEventTrigStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AlterEventTrigStmt, None, false);
+
+        e.token(TokenKind::ALTER_KW);
+        e.space();
+        e.token(TokenKind::EVENT_KW);
+        e.space();
+        e.token(TokenKind::TRIGGER_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.trigname.clone()));
+        e.space();
+
+        match self.tgenabled.as_str() {
+            "O" => e.token(TokenKind::ENABLE_KW),
+            "D" => e.token(TokenKind::DISABLE_KW),
+            "R" => {
+                e.token(TokenKind::ENABLE_KW);
+                e.space();
+                e.token(TokenKind::REPLICA_KW);
+            }
+            "A" => {
+                e.token(TokenKind::ENABLE_KW);
+                e.space();
+                e.token(TokenKind::ALWAYS_KW);
+            }
+            _ => {}
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CreatePLangStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CreatePlangStmt, None, false);
+
+        e.token(TokenKind::CREATE_KW);
+        e.space();
+
+        if self.replace {
+            e.token(TokenKind::OR_KW);
+            e.space();
+            e.token(TokenKind::REPLACE_KW);
+            e.space();
+        }
+
+        if self.pltrusted {
+            e.token(TokenKind::TRUSTED_KW);
+            e.space();
+        }
+
+        e.token(TokenKind::LANGUAGE_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.plname.clone()));
+
+        if !self.plhandler.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::HANDLER_KW);
+            e.space();
+            for (i, handler) in self.plhandler.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::DOT);
+                }
+                handler.to_tokens(e);
+            }
+        }
+
+        if !self.plinline.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::INLINE_KW);
+            e.space();
+            for (i, inline) in self.plinline.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::DOT);
+                }
+                inline.to_tokens(e);
+            }
+        }
+
+        if !self.plvalidator.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::VALIDATOR_KW);
+            e.space();
+            for (i, validator) in self.plvalidator.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::DOT);
+                }
+                validator.to_tokens(e);
+            }
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AlterFunctionStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AlterFunctionStmt, None, false);
+
+        e.token(TokenKind::ALTER_KW);
+        e.space();
+
+        match self.objtype {
+            x if x == pgt_query::protobuf::ObjectType::ObjectFunction as i32 => {
+                e.token(TokenKind::FUNCTION_KW);
+            }
+            x if x == pgt_query::protobuf::ObjectType::ObjectProcedure as i32 => {
+                e.token(TokenKind::PROCEDURE_KW);
+            }
+            x if x == pgt_query::protobuf::ObjectType::ObjectRoutine as i32 => {
+                e.token(TokenKind::ROUTINE_KW);
+            }
+            _ => {
+                e.token(TokenKind::FUNCTION_KW);
+            }
+        }
+        e.space();
+
+        if let Some(ref func) = self.func {
+            func.to_tokens(e);
+        }
+
+        for action in &self.actions {
+            e.line(LineType::SoftOrSpace);
+            action.to_tokens(e);
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::InlineCodeBlock {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::InlineCodeBlock, None, false);
+
+        e.token(TokenKind::STRING(self.source_text.clone()));
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::DoStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::DoStmt, None, false);
+        e.token(TokenKind::DO_KW);
+
+        if !self.args.is_empty() {
+            e.space();
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    e.line(LineType::SoftOrSpace);
+                }
+                arg.to_tokens(e);
+            }
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CallStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CallStmt, None, false);
+
+        e.token(TokenKind::CALL_KW);
+        e.space();
+
+        if let Some(ref funccall) = self.funccall {
+            funccall.to_tokens(e);
         }
 
         if e.is_top_level() {

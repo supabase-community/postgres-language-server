@@ -1,0 +1,1 @@
+CALL my_procedure('test', 123);

@@ -42,6 +42,7 @@ fn test_formatter(fixture: Fixture<&str>) {
     let mut renderer = Renderer::new(&mut output, config);
     renderer.render(emitter.events).expect("Failed to render");
 
+    println!("Formatted output: {}", output);
     let parsed_output = pgt_query::parse(&output).expect("Failed to parse SQL");
     let mut parsed_ast = parsed_output.into_root().expect("No root node found");
 

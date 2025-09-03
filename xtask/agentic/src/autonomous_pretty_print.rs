@@ -3,7 +3,7 @@ use std::fs;
 use std::io::Write;
 use xtask::project_root;
 
-use crate::claude_session::{AgenticState, ClaudeSession};
+use crate::claude_session::ClaudeSession;
 
 struct Logger {
     file: std::fs::File,
@@ -35,19 +35,16 @@ impl Logger {
 pub struct AutonomousPrettyPrintGenerator {
     logger: Logger,
     claude_session: ClaudeSession,
-    state: AgenticState,
 }
 
 impl AutonomousPrettyPrintGenerator {
     pub fn new(forever: bool) -> Result<Self> {
         let logger = Logger::new()?;
         let claude_session = ClaudeSession::new(forever);
-        let state = AgenticState::load()?;
 
         Ok(Self {
             logger,
             claude_session,
-            state,
         })
     }
 
