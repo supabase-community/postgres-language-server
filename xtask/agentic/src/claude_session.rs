@@ -55,12 +55,14 @@ impl AgenticState {
 
 pub struct ClaudeSession {
     conversation_id: Option<String>,
+    forever: bool,
 }
 
 impl ClaudeSession {
-    pub fn new() -> Self {
+    pub fn new(forever: bool) -> Self {
         Self {
             conversation_id: None,
+            forever,
         }
     }
 
@@ -116,9 +118,11 @@ impl ClaudeSession {
                 || stderr.contains("rate_limit")
                 || stderr.contains("429")
             {
-                eprintln!("Hit Claude API rate limit. Sleeping for 5 hours 30 minutes...");
-                thread::sleep(Duration::from_secs(5 * 3600 + 30 * 60)); // 5h 30m
-                eprintln!("Resuming after rate limit sleep");
+                if self.forever {
+                    eprintln!("Hit Claude API rate limit. Sleeping for 5 hours 30 minutes...");
+                    thread::sleep(Duration::from_secs(5 * 3600 + 30 * 60)); // 5h 30m
+                    eprintln!("Resuming after rate limit sleep");
+                }
             }
 
             return Err(anyhow::anyhow!("Claude CLI failed: {}", stderr));

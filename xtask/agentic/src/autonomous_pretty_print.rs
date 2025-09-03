@@ -39,9 +39,9 @@ pub struct AutonomousPrettyPrintGenerator {
 }
 
 impl AutonomousPrettyPrintGenerator {
-    pub fn new() -> Result<Self> {
+    pub fn new(forever: bool) -> Result<Self> {
         let logger = Logger::new()?;
-        let claude_session = ClaudeSession::new();
+        let claude_session = ClaudeSession::new(forever);
         let state = AgenticState::load()?;
 
         Ok(Self {
@@ -288,7 +288,7 @@ Continue this loop indefinitely until all nodes are implemented and all tests pa
     }
 }
 
-pub fn run_autonomous_pretty_print_generator() -> Result<()> {
-    let mut generator = AutonomousPrettyPrintGenerator::new()?;
+pub fn run_autonomous_pretty_print_generator(forever: bool) -> Result<()> {
+    let mut generator = AutonomousPrettyPrintGenerator::new(forever)?;
     generator.run()
 }
