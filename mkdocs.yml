@@ -14,6 +14,7 @@ theme:
     accent: red
 nav:
   - Getting Started: getting_started.md
+  - Manual Installation: manual_installation.md
   - Configuration: configuration.md
   - Features:
       - Syntax Diagnostics: features/syntax_diagnostics.md
@@ -27,6 +28,7 @@ nav:
       - Configure database connection: guides/configure_database.md
       - Suppress false positives: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
+      - Continuous Integration: guides/continuous_integration.md
   - Reference:
       - CLI Commands: reference/cli.md
       - Linter Rules: reference/rules.md

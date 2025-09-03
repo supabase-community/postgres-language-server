@@ -1,0 +1,1 @@
+# Check migrations in CI
