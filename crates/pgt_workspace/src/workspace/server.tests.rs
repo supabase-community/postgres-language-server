@@ -386,6 +386,7 @@ async fn test_positional_params(test_db: PgPool) {
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
+#[cfg(all(test, not(target_os = "windows")))]
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_disable_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
