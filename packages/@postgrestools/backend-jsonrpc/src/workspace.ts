@@ -259,6 +259,10 @@ export interface PartialConfiguration {
 	/**
 	 * The configuration for type checking
 	 */
+	plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
+	/**
+	 * The configuration for type checking
+	 */
 	typecheck?: PartialTypecheckConfiguration;
 	/**
 	 * The configuration of the VCS integration
@@ -347,7 +351,20 @@ export interface PartialMigrationsConfiguration {
 /**
  * The configuration for type checking.
  */
+export interface PartialPlPgSqlCheckConfiguration {
+	/**
+	 * if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
+	 */
+	enabled?: boolean;
+}
+/**
+ * The configuration for type checking.
+ */
 export interface PartialTypecheckConfiguration {
+	/**
+	 * if `false`, it disables the feature and the typechecker won't be executed. `true` by default
+	 */
+	enabled?: boolean;
 	/**
 	 * Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 	 */
