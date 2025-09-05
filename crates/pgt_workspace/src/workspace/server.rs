@@ -719,6 +719,11 @@ impl Workspace for WorkspaceServer {
         }
     }
 
+    #[ignored_path(path=&params.path)]
+    #[tracing::instrument(level = "debug", skip_all, fields(
+        path = params.path.as_os_str().to_str(),
+        position = params.position.to_string()
+    ), err)]
     fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError> {
         let documents = self.documents.read().unwrap();
         let doc = documents
@@ -734,15 +739,14 @@ impl Workspace for WorkspaceServer {
 
         let schema_cache = self.schema_cache.load(pool)?;
 
-        match doc
-            .iter_with_filter(
-                WithCSTandASTMapper,
-                CursorPositionFilter::new(params.position),
-            )
-            .next()
-        {
+        let mut matching_docs = doc.iter_with_filter(
+            WithCSTandASTMapper,
+            CursorPositionFilter::new(params.position),
+        );
+
+        match matching_docs.next() {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
-                let position_in_stmt = params.position + range.start();
+                let position_in_stmt = params.position - range.start();
 
                 let markdown_blocks = pgt_hover::on_hover(pgt_hover::OnHoverParams {
                     ts_tree: &ts_tree,
