@@ -1,0 +1,12 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+create role alternate_owner with superuser createdb login
+                        ↑ hovered here
+```
+
+# Hover Results
+No hover information found.

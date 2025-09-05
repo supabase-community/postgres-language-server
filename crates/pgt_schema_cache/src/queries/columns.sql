@@ -30,6 +30,7 @@ with
   )
 select
   atts.attname as name,
+  atts.attnum as number,
   ts.table_name,
   ts.table_oid :: int8 as "table_oid!",
   ts.class_kind :: char as "class_kind!",

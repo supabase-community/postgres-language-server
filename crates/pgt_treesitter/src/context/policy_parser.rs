@@ -127,8 +127,15 @@ impl PolicyParser {
             }
             "to" => {
                 self.context.node_range = token.get_range();
-                self.context.node_kind = "policy_role".into();
                 self.context.node_text = token.get_word();
+
+                self.context.node_kind = match self.context.node_text.as_ref() {
+                    "public" => "policy_all_roles".into(),
+                    "current_role" | "current_user" | "session_user" => {
+                        "policy_dynamic_role".into()
+                    }
+                    _ => "policy_role".into(),
+                };
 
                 self.context.previous_node_kind = "keyword_to".into();
             }
@@ -432,7 +439,7 @@ mod tests {
             r#"
           create policy "my cool policy"
             on {}
-            to all 
+            to public 
             using (true);
         "#,
             QueryWithCursorPosition::cursor_marker()
@@ -464,7 +471,7 @@ mod tests {
             r#"
           create policy "my cool policy"
             on auth.{}
-            to all 
+            to public 
             using (true);
         "#,
             QueryWithCursorPosition::cursor_marker()
@@ -567,7 +574,7 @@ mod tests {
                 r#"
           create policy "my cool policy"
             on auth.users
-            to all 
+            to public 
             using (id = {})
         "#,
                 QueryWithCursorPosition::cursor_marker()
@@ -583,11 +590,11 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(112), TextSize::new(126)),
+                    node_range: TextRange::new(TextSize::new(115), TextSize::new(129)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
                     previous_node_kind: "=".into(),
-                    previous_node_range: TextRange::new(110.into(), 111.into()),
+                    previous_node_range: TextRange::new(113.into(), 114.into()),
                     previous_node_text: "=".into(),
                 }
             );
@@ -598,7 +605,7 @@ mod tests {
                 r#"
           create policy "my cool policy"
             on auth.users
-            to all
+            to public
             using ({}
         "#,
                 QueryWithCursorPosition::cursor_marker()
@@ -614,11 +621,11 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(106), TextSize::new(120)),
+                    node_range: TextRange::new(TextSize::new(109), TextSize::new(123)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
                     previous_node_kind: "(".into(),
-                    previous_node_range: TextRange::new(105.into(), 106.into()),
+                    previous_node_range: TextRange::new(108.into(), 109.into()),
                     previous_node_text: "(".into(),
                 }
             )
@@ -629,7 +636,7 @@ mod tests {
                 r#"
           create policy "my cool policy"
             on auth.users
-            to all
+            to public
             with check ({}
         "#,
                 QueryWithCursorPosition::cursor_marker()
@@ -645,14 +652,66 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(111), TextSize::new(125)),
+                    node_range: TextRange::new(TextSize::new(114), TextSize::new(128)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
                     previous_node_kind: "(".into(),
-                    previous_node_range: TextRange::new(110.into(), 111.into()),
+                    previous_node_range: TextRange::new(113.into(), 114.into()),
                     previous_node_text: "(".into(),
                 }
             )
+        }
+    }
+
+    #[test]
+    fn correctly_determines_role_type() {
+        let marker = QueryWithCursorPosition::cursor_marker();
+        let cases = vec![
+            (format!("pu{}blic", marker), "policy_all_roles"),
+            (format!("current_u{}ser", marker), "policy_dynamic_role"),
+            (format!("session_u{}ser", marker), "policy_dynamic_role"),
+            (format!("current_r{}ole", marker), "policy_dynamic_role"),
+            (format!("own{}er", marker), "policy_role"),
+        ];
+
+        fn with_pos_unreplaced(query: String) -> (usize, String) {
+            let mut pos: Option<usize> = None;
+
+            for (p, c) in query.char_indices() {
+                if c == QueryWithCursorPosition::cursor_marker() {
+                    pos = Some(p);
+                    break;
+                }
+            }
+
+            (
+                pos.expect("Please add cursor position!"),
+                query
+                    .replace(QueryWithCursorPosition::cursor_marker(), "")
+                    .to_string(),
+            )
+        }
+
+        for (q, expected) in cases {
+            let (pos, query) = with_pos_unreplaced(format!(
+                r#"
+          create policy "my cool policy"
+            on auth.users
+            to {}
+            with check (true);
+        "#,
+                q
+            ));
+
+            let context = PolicyParser::get_context(query.as_str(), pos);
+
+            assert_eq!(
+                context.node_kind,
+                expected.to_string(),
+                "expected {} for role '{}'",
+                expected,
+                q.replace(marker, "")
+            );
         }
     }
 }

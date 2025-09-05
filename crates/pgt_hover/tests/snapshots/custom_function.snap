@@ -10,9 +10,12 @@ select custom_add(1, 2)
 
 # Hover Results
 ### `public.custom_add(a integer, b integer) → integer`  
-#### Function - Immutable - Security INVOKER  
+```plain  
+Function - Immutable - Security INVOKER  
+```  
 ---    
-```
+```sql  
+
 CREATE OR REPLACE FUNCTION public.custom_add(a integer, b integer)
  RETURNS integer
  LANGUAGE plpgsql
@@ -23,4 +26,5 @@ AS $function$
         end;
         $function$
 
+  
 ```

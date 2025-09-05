@@ -10,10 +10,15 @@ select public.func()
 
 # Hover Results
 ### `public.func(cool_stuff text, something_else integer, a_third_thing text) → void`  
-#### Function - Stable - Security INVOKER  
+```plain  
+Function - Stable - Security INVOKER  
+```  
 ---    
+```sql  
 public.func(
   cool_stuff text,
   something_else integer,
   a_third_thing text
 )
+  
+```

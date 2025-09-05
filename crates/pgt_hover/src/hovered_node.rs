@@ -57,6 +57,13 @@ impl HoveredNode {
                     )))
                 }
             }
+            "identifier" if ctx.matches_ancestor_history(&["alter_role"]) => {
+                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+            }
+            "revoke_role" | "grant_role" | "policy_role" => {
+                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+            }
+
             _ => None,
         }
     }

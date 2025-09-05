@@ -10,12 +10,21 @@ select count(*) from users
 
 # Hover Results
 ### `pg_catalog.count("any") → bigint`  
-#### Aggregate - Immutable - Security INVOKER  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
 ---    
-
+```sql  
+  
+```
 
 ---
 
 ### `pg_catalog.count() → bigint`  
-#### Aggregate - Immutable - Security INVOKER  
----
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```

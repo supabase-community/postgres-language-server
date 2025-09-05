@@ -10,6 +10,12 @@ select * from users u join posts p on u.id = p.user_id
 
 # Hover Results
 ### `public.posts.user_id`  
-#### `int4` - not null  
+```plain  
+int4 - not null
+  
+```  
 ---    
-Default: `nextval('posts_user_id_seq'::regclass)`
+```plain  
+
+Default: nextval('posts_user_id_seq'::regclass)  
+```
