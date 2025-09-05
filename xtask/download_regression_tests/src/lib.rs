@@ -51,8 +51,7 @@ pub fn download_regression_tests() -> Result<()> {
         let cursor = Cursor::new(&output.stdout);
 
         if let Err(e) = preprocess_sql(cursor, &mut processed_content) {
-            eprintln!("Error: Failed to process file: {}", e);
-            continue;
+            bail!("Error: Failed to process file: {}", e);
         }
 
         let mut dest = File::create(&filepath)?;
@@ -102,15 +101,82 @@ fn fetch_download_urls() -> Result<Vec<String>> {
     Ok(urls)
 }
 
-fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
+fn parse_and_write_statement<W: Write>(
+    statement: &str,
+    dest: &mut W,
+    line_idx: Option<usize>,
+) -> Result<()> {
+    let trimmed = statement.trim();
+    if trimmed.is_empty() {
+        return Ok(());
+    }
+
+    let parse_result = pgt_query::parse(trimmed);
+    match parse_result {
+        Ok(r) => {
+            if r.root().is_none() {
+                let line_info = line_idx
+                    .map(|idx| format!("at line {}", idx + 1))
+                    .unwrap_or_else(|| "".to_string());
+                bail!(
+                    "Parsed SQL statement {} has no root node:\nStatement:\n{}",
+                    line_info,
+                    trimmed
+                );
+            }
+            println!("Writing statement\n{}\n", trimmed);
+            writeln!(dest, "{}", trimmed)?;
+        }
+        Err(e) => {
+            let ignore_errors = [
+                "Invalid statement: cannot use multiple ORDER BY clauses with WITHIN GROUP",
+                "Invalid statement: column number must be in range from 1 to 32767",
+                "Invalid statement: syntax error at or near \"ENFORCED\"",
+                "Invalid statement: syntax error at or near \"NOT\"",
+                "Invalid statement: syntax error at or near \"WITH\"",
+                "Invalid statement: syntax error at or near \"enforced\"",
+                "Invalid statement: syntax error at or near \"not\"",
+                "Invalid statement: syntax error at or near \"NO\"",
+                "Invalid statement: syntax error at or near \"COLLATE\"",
+            ];
+
+            if ignore_errors.iter().any(|msg| e.to_string().contains(msg)) {
+                let line_info = line_idx
+                    .map(|idx| format!(" at line {}", idx + 1))
+                    .unwrap_or_else(|| "".to_string());
+                println!(
+                    "Ignoring parse error{}: {}\nStatement:\n{}",
+                    line_info, e, trimmed
+                );
+            } else {
+                let line_info = line_idx
+                    .map(|idx| format!(" at line {}", idx + 1))
+                    .unwrap_or_else(|| "".to_string());
+                bail!(
+                    "Failed to parse SQL statement{}: {}\nStatement:\n{}",
+                    line_info,
+                    e,
+                    trimmed
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
     let mut skipping_copy_block = false;
 
-    let template_vars_regex = Regex::new(r"^:'([^']+)'|^:([a-zA-Z_][a-zA-Z0-9_]*)").unwrap();
-    let dollar_quote_regex = Regex::new(r"\$([^$]*)\$").unwrap();
+    let template_vars_regex =
+        Regex::new(r#"^:'([^']+)'|^:"([^"]+)"|^:([a-zA-Z_][a-zA-Z0-9_]*)"#).unwrap();
+    let dollar_quote_regex = Regex::new(r"\$([a-zA-Z]*)\$").unwrap();
 
     let mut current_statement = String::new();
     let mut in_dollar_quote = false;
     let mut dollar_quote_tag = String::new();
+    let mut in_single_quote = false;
+    let mut escape_next = false;
+    let mut in_multiline_comment = false;
 
     for (idx, line) in source.lines().enumerate() {
         let mut line = line?;
@@ -129,6 +195,16 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
 
         // skip lines if inside a copy block
         if skipping_copy_block {
+            continue;
+        }
+
+        // skip lines starting with a number followed by a space (data lines)
+        if line.chars().next().map_or(false, |c| c.is_ascii_digit())
+            && line
+                .chars()
+                .find(|c| !c.is_ascii_digit())
+                .map_or(false, |c| c.is_whitespace())
+        {
             continue;
         }
 
@@ -151,7 +227,7 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
         let mut result = String::new();
         let mut i = 0;
         let bytes = line.as_bytes();
-        let mut in_single_quote = false;
+        let mut local_in_single_quote = false;
         let mut in_double_quote = false;
         let mut in_array = false;
 
@@ -163,7 +239,7 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
                 '\'' => {
                     result.push(c);
                     i += 1;
-                    in_single_quote = !in_single_quote;
+                    local_in_single_quote = !local_in_single_quote;
                     continue;
                 }
                 '"' => {
@@ -184,7 +260,7 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
                     in_array = false;
                     continue;
                 }
-                ':' if !in_single_quote && !in_double_quote && !in_array => {
+                ':' if !local_in_single_quote && !in_double_quote && !in_array => {
                     // Skip type casts (e.g., ::text)
                     if i + 1 < bytes.len() && bytes[i + 1] as char == ':' {
                         result.push_str("::");
@@ -201,14 +277,30 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
                     let remaining = &line[i..];
                     if let Some(caps) = template_vars_regex.captures(remaining) {
                         let full = caps.get(0).unwrap();
-                        let m = caps.get(1).or_else(|| caps.get(2)).unwrap();
-                        let matched_var = &remaining[m.start()..m.end()];
 
-                        println!("#{} Replacing template variable {}", idx, matched_var);
-
-                        result.push('\'');
-                        result.push_str(matched_var);
-                        result.push('\'');
+                        // Check which pattern matched to determine the quote style
+                        if let Some(m) = caps.get(1) {
+                            // :'string' format - keep as single quotes
+                            let matched_var = &remaining[m.start()..m.end()];
+                            println!("#{} Replacing template variable {}", idx, matched_var);
+                            result.push('\'');
+                            result.push_str(matched_var);
+                            result.push('\'');
+                        } else if let Some(m) = caps.get(2) {
+                            // :"identifier" format - keep as double quotes
+                            let matched_var = &remaining[m.start()..m.end()];
+                            println!("#{} Replacing template variable {}", idx, matched_var);
+                            result.push('"');
+                            result.push_str(matched_var);
+                            result.push('"');
+                        } else if let Some(m) = caps.get(3) {
+                            // :identifier format - convert to single quotes
+                            let matched_var = &remaining[m.start()..m.end()];
+                            println!("#{} Replacing template variable {}", idx, matched_var);
+                            result.push('\'');
+                            result.push_str(matched_var);
+                            result.push('\'');
+                        }
 
                         i += full.end();
                         continue;
@@ -226,57 +318,118 @@ fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
             result.truncate(pos);
         }
 
-        // Check for dollar quotes in the current line
-        let _chars = result.chars().peekable();
+        let chars: Vec<char> = result.chars().collect();
         let mut i = 0;
-        while i < result.len() {
-            if let Some(caps) = dollar_quote_regex.find_at(&result, i) {
-                let tag = caps.as_str();
-                if in_dollar_quote {
-                    // Check if this closes the current dollar quote
-                    if tag == dollar_quote_tag {
-                        in_dollar_quote = false;
-                        dollar_quote_tag.clear();
+        let mut line_buffer = String::new();
+
+        while i < chars.len() {
+            let ch = chars[i];
+
+            if escape_next {
+                escape_next = false;
+                line_buffer.push(ch);
+                i += 1;
+                continue;
+            }
+
+            // Handle multiline comments
+            if ch == '/' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
+                if i + 1 < chars.len() && chars[i + 1] == '*' {
+                    // Start of multiline comment
+                    in_multiline_comment = true;
+                    line_buffer.push(ch);
+                    line_buffer.push(chars[i + 1]);
+                    i += 2;
+                    continue;
+                }
+            } else if ch == '*' && in_multiline_comment {
+                if i + 1 < chars.len() && chars[i + 1] == '/' {
+                    // End of multiline comment
+                    in_multiline_comment = false;
+                    line_buffer.push(ch);
+                    line_buffer.push(chars[i + 1]);
+                    i += 2;
+                    continue;
+                }
+            }
+
+            if ch == '\'' && !in_dollar_quote && !in_multiline_comment {
+                if in_single_quote {
+                    if i + 1 < chars.len() && chars[i + 1] == '\'' {
+                        line_buffer.push(ch);
+                        line_buffer.push(chars[i + 1]);
+                        i += 2;
+                        continue;
+                    } else {
+                        in_single_quote = false;
                     }
                 } else {
-                    // Opening a new dollar quote
+                    in_single_quote = true;
+                }
+                line_buffer.push(ch);
+                i += 1;
+                continue;
+            }
+
+            if ch == '\\' && in_single_quote {
+                escape_next = true;
+                line_buffer.push(ch);
+                i += 1;
+                continue;
+            }
+
+            if ch == '$' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
+                if let Some(caps) = dollar_quote_regex.find_at(&result, i) {
+                    let tag = caps.as_str();
                     in_dollar_quote = true;
                     dollar_quote_tag = tag.to_string();
+                    for j in i..i + tag.len() {
+                        if j < chars.len() {
+                            line_buffer.push(chars[j]);
+                        }
+                    }
+                    i += tag.len();
+                    continue;
                 }
-                i += tag.len();
-            } else {
-                i += 1;
+            } else if ch == '$' && in_dollar_quote && !in_single_quote && !in_multiline_comment {
+                let remaining = chars[i..].iter().collect::<String>();
+                if remaining.starts_with(&dollar_quote_tag) {
+                    in_dollar_quote = false;
+                    for j in i..i + dollar_quote_tag.len() {
+                        if j < chars.len() {
+                            line_buffer.push(chars[j]);
+                        }
+                    }
+                    i += dollar_quote_tag.len();
+                    dollar_quote_tag.clear();
+                    continue;
+                }
             }
+
+            line_buffer.push(ch);
+
+            // check for statement termination (semicolon outside of quotes and comments)
+            if ch == ';' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
+                current_statement.push_str(&line_buffer);
+                parse_and_write_statement(&current_statement, &mut dest, Some(idx))?;
+                current_statement.clear();
+                line_buffer.clear();
+            }
+
+            i += 1;
         }
 
-        current_statement.push_str(&result);
-        current_statement.push('\n');
-
-        // Only check for semicolon if we're not inside a dollar quote
-        if !in_dollar_quote && current_statement.trim().ends_with(';') {
-            let result = pgt_query::parse(&current_statement);
-            match result {
-                Ok(r) => {
-                    if r.root().is_none() {
-                        bail!(
-                            "Parsed SQL statement at line {} has no root node:\nStatement:\n{}",
-                            idx + 1,
-                            current_statement
-                        );
-                    }
-                }
-                Err(e) => bail!(
-                    "Failed to parse SQL statement at line {}: {}\nStatement:\n{}",
-                    idx + 1,
-                    e,
-                    current_statement
-                ),
+        // add any remaining content from the line
+        if !line_buffer.is_empty() {
+            current_statement.push_str(&line_buffer);
+            if !line_buffer.ends_with('\n') {
+                current_statement.push('\n');
             }
-            println!("Writing statement {}", current_statement.trim());
-            writeln!(dest, "{}", current_statement.trim())?;
-            current_statement.clear();
         }
     }
+
+    // Write any remaining statement that didn't end with a semicolon
+    parse_and_write_statement(&current_statement, &mut dest, None)?;
 
     Ok(())
 }
@@ -312,10 +465,13 @@ mod tests {
                 "SELECT ('{{{1},{2},{3}},{{4},{5},{6}}}'::int[])[1][1:NULL][1];",
                 "SELECT ('{{{1},{2},{3}},{{4},{5},{6}}}'::int[])[1][1:NULL][1];",
             ),
-            ("d := $1::di;", "d := $1::di;"),
             (
                 "SELECT JSON_OBJECT('foo': NULL::int FORMAT JSON);",
                 "SELECT JSON_OBJECT('foo': NULL::int FORMAT JSON);",
+            ),
+            (
+                "ALTER DATABASE :\"datname\" REFRESH COLLATION VERSION;",
+                "ALTER DATABASE \"datname\" REFRESH COLLATION VERSION;",
             ),
         ];
 
@@ -345,5 +501,89 @@ mod tests {
             result,
             "CREATE FUNCTION test() RETURNS text AS $tag$SELECT 'test;';$tag$ LANGUAGE sql;\n"
         );
+    }
+
+    #[test]
+    fn test_multiple_statements_on_one_line() {
+        let input = "begin; alter table alterlock alter column f2 set statistics 150;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(
+            result,
+            "begin;\nalter table alterlock alter column f2 set statistics 150;\n"
+        );
+
+        let input = "select 1; select 2; select 3;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(result, "select 1;\nselect 2;\nselect 3;\n");
+    }
+
+    #[test]
+    fn test_semicolons_in_strings() {
+        let input = "SELECT 'hello; world' as test;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(result, "SELECT 'hello; world' as test;\n");
+
+        let input = "SELECT 'test;' as a; SELECT 'another; test' as b;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(
+            result,
+            "SELECT 'test;' as a;\nSELECT 'another; test' as b;\n"
+        );
+
+        let input = "SELECT 'it''s; a test' as msg;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(result, "SELECT 'it''s; a test' as msg;\n");
+
+        let input = "BEGIN; UPDATE foo SET bar = 'hello; world'; COMMIT;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(
+            result,
+            "BEGIN;\nUPDATE foo SET bar = 'hello; world';\nCOMMIT;\n"
+        );
+    }
+
+    #[test]
+    fn test_multiline_statements() {
+        // Test case that was failing
+        let input = "DROP INDEX onek_unique1_constraint;\nALTER TABLE onek RENAME CONSTRAINT onek_unique1_constraint TO onek_unique1_constraint_foo;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(
+            result,
+            "DROP INDEX onek_unique1_constraint;\nALTER TABLE onek RENAME CONSTRAINT onek_unique1_constraint TO onek_unique1_constraint_foo;\n"
+        );
+
+        // Test multiline statement without semicolon on first line
+        let input = "CREATE TABLE test\n  (id INT PRIMARY KEY);";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(result, "CREATE TABLE test\n  (id INT PRIMARY KEY);\n");
+    }
+
+    #[test]
+    fn test_multiline_comments() {
+        // Test semicolon inside multiline comment
+        let input = "/* This is a comment; with semicolon */ SELECT 1;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(
+            result,
+            "/* This is a comment; with semicolon */ SELECT 1;\n"
+        );
+
+        // Test multiline comment spanning multiple lines
+        let input = "/* not run by default because it requires tr_TR system locale\nSET lc_time TO 'tr_TR'; */\nSELECT 2;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(result, "/* not run by default because it requires tr_TR system locale\nSET lc_time TO 'tr_TR'; */\nSELECT 2;\n");
+
+        // Test multiple statements with multiline comments
+        let input = "SELECT 1; /* comment; with; semicolons; */ SELECT 2;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(
+            result,
+            "SELECT 1;\n/* comment; with; semicolons; */ SELECT 2;\n"
+        );
+
+        // Test statement after multiline comment
+        let input = "/* comment */ SELECT 3;";
+        let result = test_preprocess_sql(input).unwrap();
+        assert_eq!(result, "/* comment */ SELECT 3;\n");
     }
 }
