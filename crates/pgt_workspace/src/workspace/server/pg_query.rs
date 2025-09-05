@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use lru::LruCache;
 use pgt_query_ext::diagnostics::*;
 use pgt_text_size::TextRange;
 use pgt_tokenizer::tokenize;
+use regex::Regex;
 
 use super::statement_identifier::StatementId;
 
@@ -82,11 +83,25 @@ impl PgQueryStore {
         let range = TextRange::new(start.try_into().unwrap(), end.try_into().unwrap());
 
         let r = pgt_query::parse_plpgsql(statement.content())
-            .map_err(|err| SyntaxDiagnostic::new(err.to_string(), Some(range)));
+            .or_else(|e| match &e {
+                // ignore `is not a known variable` for composite types because libpg_query reports a false positive.
+                // https://github.com/pganalyze/libpg_query/issues/159
+                pgt_query::Error::Parse(err) if is_composite_type_error(err) => Ok(()),
+                _ => Err(e),
+            })
+            .map_err(|e| SyntaxDiagnostic::new(e.to_string(), Some(range)));
+
         cache.put(statement.clone(), r.clone());
 
         Some(r)
     }
+}
+
+static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
+
+fn is_composite_type_error(err: &str) -> bool {
+    COMPOSITE_TYPE_ERROR_RE.is_match(err)
 }
 
 /// Converts named parameters in a SQL query string to positional parameters.
