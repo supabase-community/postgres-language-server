@@ -10,8 +10,15 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      rust-overlay,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
@@ -25,43 +32,49 @@
         buildInputs = with pkgs; [
           # Rust toolchain
           rustToolchain
-          
+
           # Node.js ecosystem
           bun
           nodejs_20
-          
+
           # Python for additional tooling
           python3
           python3Packages.pip
-          
+
           # System dependencies
           pkg-config
           openssl
-          
+
           # Build tools
           just
           git
-          
+
+          # Docker
+          docker-compose
+
           # LSP and development tools
           rust-analyzer
-          
+
           # Additional tools that might be needed
           cmake
           gcc
           libiconv
+          llvmPackages.clang
+          llvmPackages.libclang
         ];
-        
+
         # Environment variables
         env = {
           RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
         };
 
       in
       {
         devShells.default = pkgs.mkShell {
           inherit buildInputs;
-          
+          hardeningDisable = [ "fortify" ];
           shellHook = ''
             echo "PostgreSQL Language Server Development Environment"
             echo "Available tools:"
@@ -78,10 +91,11 @@
             echo "Use Docker for database:"
             echo "  • docker-compose up -d"
             echo ""
-            
+
             # Set environment variables
-            ${pkgs.lib.concatStringsSep "\n" 
-              (pkgs.lib.mapAttrsToList (name: value: "export ${name}=\"${value}\"") env)}
+            ${pkgs.lib.concatStringsSep "\n" (
+              pkgs.lib.mapAttrsToList (name: value: "export ${name}=\"${value}\"") env
+            )}
           '';
         };
 
