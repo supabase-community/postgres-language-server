@@ -36,7 +36,7 @@ impl HoveredNode {
                 }
             }
 
-            "policy_table" => {
+            "policy_table" | "revoke_table" | "grant_table" => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
                         schema.clone(),
