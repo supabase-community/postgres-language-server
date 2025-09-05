@@ -7,7 +7,10 @@ pub struct Role {
     pub can_create_db: bool,
     pub can_login: bool,
     pub can_bypass_rls: bool,
+    pub can_create_roles: bool,
     pub comment: Option<String>,
+    pub member_of: Vec<String>,
+    pub has_member: Vec<String>,
 }
 
 impl SchemaCacheItem for Role {

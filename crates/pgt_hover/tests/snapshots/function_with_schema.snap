@@ -10,9 +10,12 @@ select test_schema.schema_func('test')
 
 # Hover Results
 ### `test_schema.schema_func(text) → text`  
-#### Function - Stable - Security INVOKER  
+```plain  
+Function - Stable - Security INVOKER  
+```  
 ---    
-```
+```plain  
+
 CREATE OR REPLACE FUNCTION test_schema.schema_func(text)
  RETURNS text
  LANGUAGE sql
@@ -21,4 +24,5 @@ AS $function$
             select $1 || ' processed';
         $function$
 
+  
 ```

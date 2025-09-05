@@ -15,14 +15,18 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
     }
 
     fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        if let Some(comment) = &self.comment {
+            write!(writer, "Comment: '{}'", comment)?;
+            writeln!(writer)?;
+        }
+
         if let Some(tname) = self.type_name.as_ref() {
-            write!(writer, "`{}", tname)?;
+            write!(writer, "{}", tname)?;
             if let Some(l) = self.varchar_length {
                 write!(writer, "({})", l)?;
             }
-            write!(writer, "`")?;
         } else {
-            write!(writer, "typeid: `{}`", self.type_id)?;
+            write!(writer, "typeid: {}", self.type_id)?;
         }
 
         if self.is_primary_key {
@@ -37,16 +41,15 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
             write!(writer, " - not null")?;
         }
 
-        if let Some(comment) = &self.comment {
-            write!(writer, "  \n{}", comment)?;
-        }
+        writeln!(writer)?;
 
         Ok(true)
     }
 
     fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
         if let Some(default) = &self.default_expr {
-            write!(writer, "Default: `{}`", default)?;
+            writeln!(writer)?;
+            write!(writer, "Default: {}", default)?;
             Ok(true)
         } else {
             Ok(false)

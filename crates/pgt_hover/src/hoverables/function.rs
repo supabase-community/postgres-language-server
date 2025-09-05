@@ -6,6 +6,10 @@ use pgt_treesitter::TreesitterContext;
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
 impl ToHoverMarkdown for Function {
+    fn footer_markdown_type(&self) -> &'static str {
+        "sql"
+    }
+
     fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}.{}", self.schema, self.name)?;
 
@@ -89,7 +93,7 @@ impl ToHoverMarkdown for Function {
                     }
                 }
             } else {
-                write!(writer, "```\n{}\n```", def)?;
+                write!(writer, "\n{}\n", def)?;
             }
 
             Ok(true)

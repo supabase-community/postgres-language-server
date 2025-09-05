@@ -78,4 +78,22 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Role(role) => ToHoverMarkdown::hover_footer(*role, writer),
         }
     }
+
+    fn body_markdown_type(&self) -> &'static str {
+        match self {
+            Hoverable::Table(table) => table.body_markdown_type(),
+            Hoverable::Column(column) => column.body_markdown_type(),
+            Hoverable::Function(function) => function.body_markdown_type(),
+            Hoverable::Role(role) => role.body_markdown_type(),
+        }
+    }
+
+    fn footer_markdown_type(&self) -> &'static str {
+        match self {
+            Hoverable::Table(table) => table.footer_markdown_type(),
+            Hoverable::Column(column) => column.footer_markdown_type(),
+            Hoverable::Function(function) => function.footer_markdown_type(),
+            Hoverable::Role(role) => role.footer_markdown_type(),
+        }
+    }
 }

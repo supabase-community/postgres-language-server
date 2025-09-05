@@ -32,7 +32,8 @@ impl ToHoverMarkdown for Table {
 
     fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
-            write!(writer, "{}", comment)?;
+            write!(writer, "Comment: '{}'", comment)?;
+            writeln!(writer)?;
             Ok(true)
         } else {
             Ok(false)
@@ -40,6 +41,7 @@ impl ToHoverMarkdown for Table {
     }
 
     fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        writeln!(writer)?;
         write!(
             writer,
             "~{} rows, ~{} dead rows, {}",
