@@ -4,7 +4,7 @@ use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{
     PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
-    files::PartialFilesConfiguration, plpgsql_check::PartialPlPgSqlCheckConfiguration,
+    files::PartialFilesConfiguration,
 };
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
