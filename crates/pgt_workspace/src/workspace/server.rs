@@ -739,12 +739,13 @@ impl Workspace for WorkspaceServer {
 
         let schema_cache = self.schema_cache.load(pool)?;
 
-        let mut matching_docs = doc.iter_with_filter(
-            WithCSTandASTMapper,
-            CursorPositionFilter::new(params.position),
-        );
-
-        match matching_docs.next() {
+        match doc
+            .iter_with_filter(
+                WithCSTandASTMapper,
+                CursorPositionFilter::new(params.position),
+            )
+            .next()
+        {
             Some((stmt_id, range, ts_tree, maybe_ast)) => {
                 let position_in_stmt = params.position - range.start();
 
