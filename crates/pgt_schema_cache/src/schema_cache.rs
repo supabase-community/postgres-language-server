@@ -102,11 +102,13 @@ impl SchemaCache {
     }
 
     pub fn find_roles(&self, name: &str) -> Vec<&Role> {
-        self.roles
-            .iter()
-            .filter(|r| r.name == name)
-            .collect()
+        self.roles.iter().filter(|r| r.name == name).collect()
     }
+}
+
+pub enum CommentSearch {
+    Object { id: i64 },
+    Column { table_id: i64, col_num: i64 },
 }
 
 pub trait SchemaCacheItem {

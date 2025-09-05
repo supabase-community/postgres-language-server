@@ -7,6 +7,7 @@ pub struct Role {
     pub can_create_db: bool,
     pub can_login: bool,
     pub can_bypass_rls: bool,
+    pub comment: Option<String>,
 }
 
 impl SchemaCacheItem for Role {
@@ -22,6 +23,8 @@ impl SchemaCacheItem for Role {
 #[cfg(test)]
 mod tests {
     use sqlx::PgPool;
+
+    use sqlx::Executor;
 
     use crate::SchemaCache;
 
@@ -50,5 +53,24 @@ mod tests {
         assert!(!login_role.can_create_db);
         assert!(login_role.can_login);
         assert!(!login_role.can_bypass_rls);
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn loads_comments(test_db: PgPool) {
+        let setup = r#"
+            comment on role owner is 'test';
+        "#;
+
+        test_db.execute(setup).await.expect("Setup failed");
+
+        let cache = SchemaCache::load(&test_db)
+            .await
+            .expect("Failed to load Schema Cache");
+
+        let roles = &cache.roles;
+
+        let super_role = roles.iter().find(|r| r.name == "owner").unwrap();
+
+        assert_eq!(super_role.comment, Some("test".into()))
     }
 }

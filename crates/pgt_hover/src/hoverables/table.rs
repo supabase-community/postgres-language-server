@@ -1,0 +1,82 @@
+use std::fmt::Write;
+
+use humansize::DECIMAL;
+use pgt_schema_cache::Table;
+use pgt_treesitter::TreesitterContext;
+
+use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
+
+impl ToHoverMarkdown for Table {
+    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+        write!(writer, "`{}.{}`", self.schema, self.name)?;
+
+        let table_kind = match self.table_kind {
+            pgt_schema_cache::TableKind::View => " (View)",
+            pgt_schema_cache::TableKind::MaterializedView => " (M.View)",
+            pgt_schema_cache::TableKind::Partitioned => " (Partitioned)",
+            pgt_schema_cache::TableKind::Ordinary => "",
+        };
+
+        write!(writer, "{}", table_kind)?;
+
+        let locked_txt = if self.rls_enabled {
+            " - 🔒 RLS enabled"
+        } else {
+            " - 🔓 RLS disabled"
+        };
+
+        write!(writer, "{}", locked_txt)?;
+
+        Ok(())
+    }
+
+    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        if let Some(comment) = &self.comment {
+            write!(writer, "{}", comment)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        write!(
+            writer,
+            "~{} rows, ~{} dead rows, {}",
+            self.live_rows_estimate,
+            self.dead_rows_estimate,
+            humansize::format_size(self.bytes as u64, DECIMAL)
+        )?;
+        Ok(true)
+    }
+}
+
+impl ContextualPriority for Table {
+    fn relevance_score(&self, ctx: &TreesitterContext) -> f32 {
+        let mut score = 0.0;
+
+        for (schema_opt, tables) in &ctx.mentioned_relations {
+            if tables.contains(&self.name) {
+                if schema_opt.as_deref() == Some(&self.schema) {
+                    score += 200.0;
+                } else {
+                    score += 150.0;
+                }
+            }
+        }
+
+        if ctx
+            .mentioned_relations
+            .keys()
+            .any(|schema| schema.as_deref() == Some(&self.schema))
+        {
+            score += 50.0;
+        }
+
+        if self.schema == "public" && score == 0.0 {
+            score += 10.0;
+        }
+
+        score
+    }
+}
