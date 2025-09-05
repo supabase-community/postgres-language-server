@@ -122,6 +122,8 @@ impl ClaudeSession {
                     eprintln!("Hit Claude API rate limit. Sleeping for 5 hours 30 minutes...");
                     thread::sleep(Duration::from_secs(5 * 3600 + 30 * 60)); // 5h 30m
                     eprintln!("Resuming after rate limit sleep");
+                    // Retry the call after sleeping
+                    return self.call_claude(prompt, new_conversation);
                 }
             }
 

@@ -20,7 +20,10 @@ xflags::xflags! {
         }
 
         /// Run autonomous pretty print implementation generator using Claude.
-        cmd agentic {}
+        cmd agentic {
+            /// Run continuously, retrying after rate limits.
+            optional --forever
+        }
     }
 }
 
@@ -46,7 +49,9 @@ pub struct Install {
 }
 
 #[derive(Debug)]
-pub struct Agentic;
+pub struct Agentic {
+    pub forever: bool,
+}
 
 impl Xtask {
     #[allow(dead_code)]
