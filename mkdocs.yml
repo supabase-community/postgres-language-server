@@ -24,7 +24,7 @@ nav:
       - Autocompletion & Hover: features/editor_features.md
   - Guides:
       - Use in your IDE: guides/ide_setup.md
-      - Check migrations in CI: guides/check_migrations.md
+      - Checking Migrations: guides/checking_migrations.md
       - Configure database connection: guides/configure_database.md
       - Suppress false positives: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
