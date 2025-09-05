@@ -590,11 +590,11 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(112), TextSize::new(126)),
+                    node_range: TextRange::new(TextSize::new(115), TextSize::new(129)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
                     previous_node_kind: "=".into(),
-                    previous_node_range: TextRange::new(110.into(), 111.into()),
+                    previous_node_range: TextRange::new(113.into(), 114.into()),
                     previous_node_text: "=".into(),
                 }
             );
