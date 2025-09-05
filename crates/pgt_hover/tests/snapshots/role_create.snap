@@ -4,17 +4,9 @@ expression: snapshot
 ---
 # Input
 ```sql
-create role owner with superuser createdb login
-              ↑ hovered here
+create role alternate_owner with superuser createdb login
+                        ↑ hovered here
 ```
 
 # Hover Results
-### `owner`  
-#### test  
-Permissions:    
-- 🔐 is superuser  
-- 🔑 can login  
-- 🏗 can create DB  
-- 🛡 can bypass RLS  
-  
----
+No hover information found.

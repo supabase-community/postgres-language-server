@@ -282,7 +282,7 @@ async fn shortens_lengthy_functions(test_db: PgPool) {
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_role_hover_create_role(test_db: PgPool) {
     let query = format!(
-        "create role ow{}ner with superuser createdb login",
+        "create role alternate_ow{}ner with superuser createdb login",
         QueryWithCursorPosition::cursor_marker()
     );
 
