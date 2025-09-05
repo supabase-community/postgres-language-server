@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct TypecheckConfiguration {
+    /// if `false`, it disables the feature and the typechecker won't be executed. `true` by default
+    #[partial(bpaf(hide))]
+    pub enabled: bool,
     /// Default search path schemas for type checking.
     /// Can be a list of schema names or glob patterns like ["public", "app_*"].
     /// If not specified, defaults to ["public"].
@@ -19,6 +22,7 @@ pub struct TypecheckConfiguration {
 impl Default for TypecheckConfiguration {
     fn default() -> Self {
         Self {
+            enabled: true,
             search_path: ["public".to_string()].into_iter().collect(),
         }
     }

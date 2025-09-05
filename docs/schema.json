@@ -66,6 +66,17 @@
         }
       ]
     },
+    "plpgsqlCheck": {
+      "description": "The configuration for type checking",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PlPgSqlCheckConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "typecheck": {
       "description": "The configuration for type checking",
       "anyOf": [
@@ -261,6 +272,20 @@
       },
       "additionalProperties": false
     },
+    "PlPgSqlCheckConfiguration": {
+      "description": "The configuration for type checking.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "RuleConfiguration": {
       "anyOf": [
         {
@@ -425,6 +450,13 @@
       "description": "The configuration for type checking.",
       "type": "object",
       "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and the typechecker won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "searchPath": {
           "description": "Default search path schemas for type checking. Can be a list of schema names or glob patterns like [\"public\", \"app_*\"]. If not specified, defaults to [\"public\"].",
           "anyOf": [
