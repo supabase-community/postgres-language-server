@@ -16,13 +16,14 @@ pub fn get_completions(
 ) -> Result<lsp_types::CompletionResponse, LspError> {
     let url = params.text_document_position.text_document.uri;
     let path = session.file_path(&url)?;
+    let position = params.text_document_position.position;
 
     let doc = session.document(&url)?;
     let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
 
     let completion_result = match session.workspace.get_completions(GetCompletionsParams {
         path,
-        position: get_cursor_position(session, &url, params.text_document_position.position)?,
+        position: get_cursor_position(session, &url, position)?,
     }) {
         Ok(result) => result,
         Err(e) => match e {

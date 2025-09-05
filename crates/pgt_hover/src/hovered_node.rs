@@ -35,6 +35,18 @@ impl HoveredNode {
                     Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
                 }
             }
+
+            "policy_table" | "revoke_table" | "grant_table" => {
+                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
+                        schema.clone(),
+                        node_content,
+                    ))))
+                } else {
+                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
+                }
+            }
+
             "identifier" if ctx.matches_ancestor_history(&["field"]) => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
