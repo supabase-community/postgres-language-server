@@ -9,6 +9,12 @@ create role owner with superuser createdb login
 ```
 
 # Hover Results
-### `owner` - 🔑 superuser - 👤 login - 🏗️ create DB - 🛡️ bypass RLS  
-#### Superuser role  
+### `owner`  
+#### test  
+Permissions:    
+- 🔐 is superuser  
+- 🔑 can login  
+- 🏗 can create DB  
+- 🛡 can bypass RLS  
+  
 ---
