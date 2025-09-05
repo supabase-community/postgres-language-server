@@ -80,11 +80,24 @@ where
 
         let max = max(cursor_pos + 1, params.text.len());
 
+        // TODO: first pass through SQL to find out if we close all quotes.
+        // if we do, we won't add a ".
+        // if we don't, make sure we're in opened_quote state before the friggin cursor pos
+        let mut opened_quote = false;
+
         for idx in 0..max {
             match sql_iter.next() {
                 Some(c) => {
+                    if c == '"' {
+                        opened_quote = !opened_quote;
+                    }
+
                     if idx == cursor_pos {
                         sql.push_str(SANITIZED_TOKEN);
+                        if opened_quote {
+                            sql.push('"');
+                            opened_quote = false;
+                        }
                     }
                     sql.push(c);
                 }
@@ -268,6 +281,27 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     head_of_list || end_of_list || between_list_items || after_and_keyword || after_eq_sign
 }
 
+fn cursor_after_opened_quote(sql: &str, position: TextSize) -> bool {
+    let position: usize = position.into();
+    let mut opened_quote = false;
+    let mut preceding_quote = false;
+
+    for (idx, c) in sql.char_indices() {
+        if idx == position && opened_quote && preceding_quote {
+            return true;
+        }
+
+        if c == '"' {
+            preceding_quote = true;
+            opened_quote = !opened_quote;
+        } else {
+            preceding_quote = false;
+        }
+    }
+
+    opened_quote && preceding_quote
+}
+
 #[cfg(test)]
 mod tests {
     use pgt_schema_cache::SchemaCache;
@@ -276,8 +310,9 @@ mod tests {
     use crate::{
         CompletionParams, SanitizedCompletionParams,
         sanitization::{
-            cursor_before_semicolon, cursor_between_parentheses, cursor_inbetween_nodes,
-            cursor_on_a_dot, cursor_prepared_to_write_token_after_last_node,
+            cursor_after_opened_quote, cursor_before_semicolon, cursor_between_parentheses,
+            cursor_inbetween_nodes, cursor_on_a_dot,
+            cursor_prepared_to_write_token_after_last_node,
         },
     };
 
@@ -466,5 +501,45 @@ mod tests {
 
         // does not break if sql is really short
         assert!(!cursor_between_parentheses("(a)", TextSize::new(2)));
+    }
+
+    #[test]
+    fn after_single_quote() {
+        // select "|    <-- right after single quote
+        assert!(cursor_after_opened_quote(r#"select ""#, TextSize::new(8)));
+        // select "| from something;    <-- right after opening quote
+        assert!(cursor_after_opened_quote(
+            r#"select " from something;"#,
+            TextSize::new(8)
+        ));
+
+        // select "user_id", "|    <-- right after opening quote
+        assert!(cursor_after_opened_quote(
+            r#"select "user_id", ""#,
+            TextSize::new(19)
+        ));
+        // select "user_id, "| from something;    <-- right after opening quote
+        assert!(cursor_after_opened_quote(
+            r#"select "user_id", " from something;"#,
+            TextSize::new(19)
+        ));
+
+        // select "user_id"| from something;    <-- after closing quote
+        assert!(!cursor_after_opened_quote(
+            r#"select "user_id" from something;"#,
+            TextSize::new(16)
+        ));
+
+        // select ""| from something;    <-- after closing quote
+        assert!(!cursor_after_opened_quote(
+            r#"select "" from something;"#,
+            TextSize::new(9)
+        ));
+
+        // select "user_id, " |from something;    <-- one off after opening quote
+        assert!(!cursor_after_opened_quote(
+            r#"select "user_id", " from something;"#,
+            TextSize::new(20)
+        ));
     }
 }
