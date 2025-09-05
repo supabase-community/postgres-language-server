@@ -9,6 +9,14 @@ alter role test_login set work_mem = '256MB'
 ```
 
 # Hover Results
-### `test_login` - 👤 login  
-#### Login role  
----
+### `test_login`  
+```plain  
+Permissions:  
+- 🔑 can login
+
+  
+```  
+---    
+```plain  
+  
+```

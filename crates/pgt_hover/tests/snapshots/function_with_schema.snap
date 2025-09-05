@@ -14,7 +14,7 @@ select test_schema.schema_func('test')
 Function - Stable - Security INVOKER  
 ```  
 ---    
-```plain  
+```sql  
 
 CREATE OR REPLACE FUNCTION test_schema.schema_func(text)
  RETURNS text
