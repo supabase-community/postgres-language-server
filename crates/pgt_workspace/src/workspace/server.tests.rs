@@ -3,22 +3,24 @@ use std::sync::Arc;
 use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{
-    database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
-    plpgsql_check::PartialPlPgSqlCheckConfiguration, PartialConfiguration,
-    PartialTypecheckConfiguration,
+    PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
+    files::PartialFilesConfiguration,
 };
+
+#[cfg(not(target_os = "windows"))]
+use pgt_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
 use sqlx::{Executor, PgPool};
 
 use crate::{
+    Workspace, WorkspaceError,
     features::code_actions::ExecuteStatementResult,
     workspace::{
-        server::WorkspaceServer, OpenFileParams, RegisterProjectFolderParams, StatementId,
-        UpdateSettingsParams,
+        OpenFileParams, RegisterProjectFolderParams, StatementId, UpdateSettingsParams,
+        server::WorkspaceServer,
     },
-    Workspace, WorkspaceError,
 };
 
 fn get_test_workspace(
