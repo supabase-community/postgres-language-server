@@ -41,7 +41,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
             permissions.push("🛡 can bypass RLS");
         }
 
-        if permissions.len() > 0 {
+        if !permissions.is_empty() {
             write!(writer, "Permissions:  ")?;
             writeln!(writer)?;
 
@@ -56,7 +56,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
             writeln!(writer)?;
         }
 
-        if self.member_of.len() > 0 {
+        if !self.member_of.is_empty() {
             write!(writer, "Member Of:")?;
             writeln!(writer)?;
 
@@ -68,7 +68,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
             writeln!(writer)?;
         }
 
-        if self.has_member.len() > 0 {
+        if !self.has_member.is_empty() {
             write!(writer, "Has Members:")?;
             writeln!(writer)?;
 
