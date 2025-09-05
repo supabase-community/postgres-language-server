@@ -1,14 +1,31 @@
 use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
 use regex::Regex;
+use std::env;
 use std::fs::{create_dir_all, remove_dir_all, File};
 use std::io::{BufRead, Cursor, Write};
 use std::process::Command;
 
 const OUTPUT_DIR: &str = "crates/pgt_pretty_print/tests/data/regression_suite";
 
+fn find_project_root() -> Result<Utf8PathBuf> {
+    // Start from the current directory and walk up until we find Cargo.toml
+    let mut current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
+    loop {
+        if current_dir.join("Cargo.toml").exists() && current_dir.join("crates").exists() {
+            return Ok(current_dir);
+        }
+        if let Some(parent) = current_dir.parent() {
+            current_dir = parent.to_path_buf();
+        } else {
+            bail!("Could not find project root");
+        }
+    }
+}
+
 pub fn download_regression_tests() -> Result<()> {
-    let target_dir = Utf8PathBuf::from(OUTPUT_DIR);
+    let project_root = find_project_root()?;
+    let target_dir = project_root.join(OUTPUT_DIR);
 
     if target_dir.exists() {
         println!("cleaning target directory: {:?}", target_dir);
@@ -26,7 +43,6 @@ pub fn download_regression_tests() -> Result<()> {
             // skipping this for now, we don't support psql
             continue;
         }
-        let filepath = target_dir.join(filename);
 
         println!(
             "[{}/{}] Downloading {}... ",
@@ -46,16 +62,11 @@ pub fn download_regression_tests() -> Result<()> {
             ));
         }
 
-        let mut processed_content = Vec::new();
-
         let cursor = Cursor::new(&output.stdout);
 
-        if let Err(e) = preprocess_sql(cursor, &mut processed_content) {
+        if let Err(e) = preprocess_sql(cursor, &target_dir, filename) {
             bail!("Error: Failed to process file: {}", e);
         }
-
-        let mut dest = File::create(&filepath)?;
-        dest.write_all(&processed_content)?
     }
 
     Ok(())
@@ -101,9 +112,11 @@ fn fetch_download_urls() -> Result<Vec<String>> {
     Ok(urls)
 }
 
-fn parse_and_write_statement<W: Write>(
+fn parse_and_write_statement(
     statement: &str,
-    dest: &mut W,
+    base_path: &Utf8PathBuf,
+    original_filename: &str,
+    statement_counter: &mut usize,
     line_idx: Option<usize>,
 ) -> Result<()> {
     let trimmed = statement.trim();
@@ -124,8 +137,19 @@ fn parse_and_write_statement<W: Write>(
                     trimmed
                 );
             }
-            println!("Writing statement\n{}\n", trimmed);
-            writeln!(dest, "{}", trimmed)?;
+            // Generate filename for this statement
+            let base_name = original_filename
+                .strip_suffix(".sql")
+                .unwrap_or(original_filename);
+            let filename = format!("{}_stmt_{:03}.sql", base_name, *statement_counter);
+            let filepath = base_path.join(filename);
+
+            println!("Writing statement {} to {}", *statement_counter, filepath);
+
+            let mut file = File::create(&filepath)?;
+            writeln!(file, "{}", trimmed)?;
+
+            *statement_counter += 1;
         }
         Err(e) => {
             let ignore_errors = [
@@ -164,7 +188,11 @@ fn parse_and_write_statement<W: Write>(
     Ok(())
 }
 
-pub fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
+pub fn preprocess_sql<R: BufRead>(
+    source: R,
+    base_path: &Utf8PathBuf,
+    original_filename: &str,
+) -> Result<()> {
     let mut skipping_copy_block = false;
 
     let template_vars_regex =
@@ -177,6 +205,7 @@ pub fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()
     let mut in_single_quote = false;
     let mut escape_next = false;
     let mut in_multiline_comment = false;
+    let mut statement_counter = 1;
 
     for (idx, line) in source.lines().enumerate() {
         let mut line = line?;
@@ -411,7 +440,13 @@ pub fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()
             // check for statement termination (semicolon outside of quotes and comments)
             if ch == ';' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
                 current_statement.push_str(&line_buffer);
-                parse_and_write_statement(&current_statement, &mut dest, Some(idx))?;
+                parse_and_write_statement(
+                    &current_statement,
+                    base_path,
+                    original_filename,
+                    &mut statement_counter,
+                    Some(idx),
+                )?;
                 current_statement.clear();
                 line_buffer.clear();
             }
@@ -429,7 +464,13 @@ pub fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()
     }
 
     // Write any remaining statement that didn't end with a semicolon
-    parse_and_write_statement(&current_statement, &mut dest, None)?;
+    parse_and_write_statement(
+        &current_statement,
+        base_path,
+        original_filename,
+        &mut statement_counter,
+        None,
+    )?;
 
     Ok(())
 }
@@ -439,11 +480,47 @@ mod tests {
     use super::*;
 
     fn test_preprocess_sql(sql: &str) -> Result<String> {
+        use std::fs;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        // Create a unique temporary directory for test files
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let temp_dir = env::temp_dir().join(format!("test_sql_statements_{}", timestamp));
+        let temp_dir_utf8 = Utf8PathBuf::try_from(temp_dir).unwrap();
+
+        fs::create_dir_all(&temp_dir_utf8)?;
+
         let input = sql.as_bytes();
-        let mut output = Vec::new();
         let cursor = Cursor::new(input);
-        preprocess_sql(cursor, &mut output)?;
-        String::from_utf8(output).map_err(Into::into)
+        preprocess_sql(cursor, &temp_dir_utf8, "test.sql")?;
+
+        // Read all generated files and concatenate their contents
+        let mut result = String::new();
+        let mut entries: Vec<_> = fs::read_dir(&temp_dir_utf8)?
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with("test_stmt_")
+            })
+            .collect();
+
+        // Sort by filename to maintain order
+        entries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+        for entry in entries {
+            let content = fs::read_to_string(entry.path())?;
+            result.push_str(&content);
+        }
+
+        // Clean up
+        let _ = fs::remove_dir_all(&temp_dir_utf8); // Ignore cleanup errors
+
+        Ok(result)
     }
 
     #[test]
