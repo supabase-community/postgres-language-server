@@ -621,11 +621,11 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(106), TextSize::new(120)),
+                    node_range: TextRange::new(TextSize::new(109), TextSize::new(123)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
                     previous_node_kind: "(".into(),
-                    previous_node_range: TextRange::new(105.into(), 106.into()),
+                    previous_node_range: TextRange::new(108.into(), 109.into()),
                     previous_node_text: "(".into(),
                 }
             )
@@ -652,11 +652,11 @@ mod tests {
                     schema_name: Some("auth".into()),
                     statement_kind: PolicyStmtKind::Create,
                     node_text: "REPLACED_TOKEN".into(),
-                    node_range: TextRange::new(TextSize::new(111), TextSize::new(125)),
+                    node_range: TextRange::new(TextSize::new(114), TextSize::new(128)),
                     node_kind: "".into(),
                     in_check_or_using_clause: true,
                     previous_node_kind: "(".into(),
-                    previous_node_range: TextRange::new(110.into(), 111.into()),
+                    previous_node_range: TextRange::new(113.into(), 114.into()),
                     previous_node_text: "(".into(),
                 }
             )
