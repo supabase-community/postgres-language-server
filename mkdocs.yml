@@ -29,12 +29,12 @@ nav:
       - Suppress false positives: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
       - Continuous Integration: guides/continuous_integration.md
+      - Workspace Support: guides/workspace_support.md
   - Reference:
       - CLI Commands: reference/cli.md
       - Linter Rules: reference/rules.md
       - Configuration Schema: reference/schema.md
       - Environment Variables: reference/env_variables.md
-      - Troubleshooting: reference/troubleshooting.md
 
 plugins:
   - gh-admonitions
