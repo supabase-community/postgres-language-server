@@ -1,0 +1,6 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/alter_object_depends_stmt_0_60.sql
+snapshot_kind: text
+---
+ALTER FUNCTION my_func(pg_catalog.int4) DEPENDS ON EXTENSION btree_gist;
