@@ -278,3 +278,23 @@ async fn shortens_lengthy_functions(test_db: PgPool) {
 
     test_hover_at_cursor("lenghty_function", query, Some(setup), &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_role_hover_create_role(test_db: PgPool) {
+    let query = format!(
+        "create role ow{}ner with superuser createdb login",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("role_create", query, None, &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_role_hover_alter_role(test_db: PgPool) {
+    let query = format!(
+        "alter role test_log{}in set work_mem = '256MB'",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("role_alter", query, None, &test_db).await;
+}

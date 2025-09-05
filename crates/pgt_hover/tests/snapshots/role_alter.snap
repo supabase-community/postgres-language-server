@@ -1,0 +1,14 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+alter role test_login set work_mem = '256MB'
+                   ↑ hovered here
+```
+
+# Hover Results
+### `test_login` - 👤 login  
+#### Login role  
+---

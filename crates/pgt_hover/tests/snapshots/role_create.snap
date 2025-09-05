@@ -1,0 +1,14 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+create role owner with superuser createdb login
+              ↑ hovered here
+```
+
+# Hover Results
+### `owner` - 🔑 superuser - 👤 login - 🏗️ create DB - 🛡️ bypass RLS  
+#### Superuser role  
+---

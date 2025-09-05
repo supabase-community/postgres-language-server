@@ -1,4 +1,4 @@
-use pgt_schema_cache::{Column, Function, Table};
+use pgt_schema_cache::{Column, Function, Role, Table};
 use pgt_treesitter::context::TreesitterContext;
 
 pub(crate) trait ContextualPriority {
@@ -96,6 +96,33 @@ impl ContextualPriority for Function {
             pgt_schema_cache::ProcKind::Window => score += 15.0,
             pgt_schema_cache::ProcKind::Function => score += 10.0,
             pgt_schema_cache::ProcKind::Procedure => score += 5.0,
+        }
+
+        score
+    }
+}
+
+impl ContextualPriority for Role {
+    fn relevance_score(&self, _ctx: &TreesitterContext) -> f32 {
+        let mut score = 50.0;
+
+        // superusers get highest priority as they're most commonly referenced
+        if self.is_super_user {
+            score += 100.0;
+        }
+
+        // login roles are more commonly referenced than non-login roles
+        if self.can_login {
+            score += 25.0;
+        }
+
+        // roles with additional privileges get slight boost
+        if self.can_create_db {
+            score += 10.0;
+        }
+
+        if self.can_bypass_rls {
+            score += 5.0;
         }
 
         score

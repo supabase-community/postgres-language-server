@@ -221,3 +221,59 @@ fn markdown_newline<W: Write>(writer: &mut W) -> Result<(), std::fmt::Error> {
     writeln!(writer)?;
     Ok(())
 }
+
+impl ToHoverMarkdown for pgt_schema_cache::Role {
+    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+        write!(writer, "`{}`", self.name)?;
+
+        if self.is_super_user {
+            write!(writer, " - 🔑 superuser")?;
+        }
+
+        if self.can_login {
+            write!(writer, " - 👤 login")?;
+        }
+
+        if self.can_create_db {
+            write!(writer, " - 🏗️ create DB")?;
+        }
+
+        if self.can_bypass_rls {
+            write!(writer, " - 🛡️ bypass RLS")?;
+        }
+
+        Ok(())
+    }
+
+    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+        let role_type = if self.is_super_user {
+            "Superuser role"
+        } else if self.can_login {
+            "Login role"
+        } else {
+            "Group role"
+        };
+
+        write!(writer, "{}", role_type)?;
+
+        let mut capabilities = Vec::new();
+
+        if self.can_create_db && !self.is_super_user {
+            capabilities.push("create databases");
+        }
+
+        if self.can_bypass_rls && !self.is_super_user {
+            capabilities.push("bypass row-level security");
+        }
+
+        if !capabilities.is_empty() {
+            write!(writer, " with permission to {}", capabilities.join(", "))?;
+        }
+
+        Ok(true)
+    }
+
+    fn hover_footer<W: Write>(&self, _writer: &mut W) -> Result<bool, std::fmt::Error> {
+        Ok(false)
+    }
+}
