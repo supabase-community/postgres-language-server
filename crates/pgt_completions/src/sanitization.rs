@@ -5,6 +5,7 @@ use pgt_text_size::TextSize;
 use crate::CompletionParams;
 
 static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
+static SANITIZED_TOKEN_WITH_QUOTE: &str = r#"REPLACED_TOKEN_WITH_QUOTE""#;
 
 #[derive(Debug)]
 pub(crate) struct SanitizedCompletionParams<'a> {
@@ -21,10 +22,11 @@ pub fn benchmark_sanitization(params: CompletionParams) -> String {
 
 pub(crate) fn remove_sanitized_token(it: &str) -> String {
     it.replace(SANITIZED_TOKEN, "")
+        .replace(SANITIZED_TOKEN_WITH_QUOTE, "")
 }
 
 pub(crate) fn is_sanitized_token(txt: &str) -> bool {
-    txt == SANITIZED_TOKEN
+    txt == SANITIZED_TOKEN || txt == SANITIZED_TOKEN_WITH_QUOTE
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -35,7 +37,7 @@ pub(crate) enum NodeText {
 
 impl From<&str> for NodeText {
     fn from(value: &str) -> Self {
-        if value == SANITIZED_TOKEN {
+        if is_sanitized_token(value) {
             NodeText::Replaced
         } else {
             NodeText::Original(value.into())
@@ -60,6 +62,7 @@ where
             || cursor_before_semicolon(params.tree, params.position)
             || cursor_on_a_dot(&params.text, params.position)
             || cursor_between_parentheses(&params.text, params.position)
+            || cursor_after_opened_quote(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -80,9 +83,7 @@ where
 
         let max = max(cursor_pos + 1, params.text.len());
 
-        // TODO: first pass through SQL to find out if we close all quotes.
-        // if we do, we won't add a ".
-        // if we don't, make sure we're in opened_quote state before the friggin cursor pos
+        let has_uneven_quotes = params.text.chars().filter(|c| *c == '"').count() % 2 != 0;
         let mut opened_quote = false;
 
         for idx in 0..max {
@@ -93,12 +94,14 @@ where
                     }
 
                     if idx == cursor_pos {
-                        sql.push_str(SANITIZED_TOKEN);
-                        if opened_quote {
-                            sql.push('"');
+                        if opened_quote && has_uneven_quotes {
+                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
                             opened_quote = false;
+                        } else {
+                            sql.push_str(SANITIZED_TOKEN);
                         }
                     }
+
                     sql.push(c);
                 }
                 None => {
@@ -316,29 +319,85 @@ mod tests {
         },
     };
 
+    fn get_test_params(input: &str, position: TextSize) -> CompletionParams {
+        let mut ts = tree_sitter::Parser::new();
+        ts.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = Box::new(ts.parse(input, None).unwrap());
+        let cache = Box::new(SchemaCache::default());
+
+        let leaked_tree = Box::leak(tree);
+        let leaked_cache = Box::leak(cache);
+
+        CompletionParams {
+            position,
+            schema: leaked_cache,
+            text: input.into(),
+            tree: leaked_tree,
+        }
+    }
+
     #[test]
     fn should_lowercase_everything_except_replaced_token() {
         let input = "SELECT  FROM users WHERE ts = NOW();";
-
         let position = TextSize::new(7);
-        let cache = SchemaCache::default();
 
-        let mut ts = tree_sitter::Parser::new();
-        ts.set_language(tree_sitter_sql::language()).unwrap();
-        let tree = ts.parse(input, None).unwrap();
-
-        let params = CompletionParams {
-            position,
-            schema: &cache,
-            text: input.into(),
-            tree: &tree,
-        };
-
+        let params = get_test_params(input, position);
         let sanitized = SanitizedCompletionParams::from(params);
 
         assert_eq!(
             sanitized.text,
             "select REPLACED_TOKEN from users where ts = now();"
+        );
+    }
+
+    #[test]
+    fn should_sanitize_with_opened_quotes() {
+        // select "email", "| from "auth"."users";
+        let input = r#"select "email", " from "auth"."users";"#;
+        let position = TextSize::new(17);
+
+        let params = get_test_params(input, position);
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            r#"select "email", "REPLACED_TOKEN_WITH_QUOTE" from "auth"."users";"#
+        );
+    }
+
+    #[test]
+    fn should_not_complete_quote_if_we_are_inside_pair() {
+        // select "email", "|  " from "auth"."users";
+        // we have opened a quote, but it is already closed a couple of characters later
+        let input = r#"select "email", "  " from "auth"."users";"#;
+        let position = TextSize::new(17);
+
+        let params = get_test_params(input, position);
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            r#"select "email", "REPLACED_TOKEN  " from "auth"."users";"#
+        );
+    }
+
+    #[test]
+    fn should_not_use_quote_token_if_we_are_not_within_opened_quote() {
+        // select "users".| from "users" join "public"."
+        // we have an opened quote at the end, but the cursor is not within an opened quote
+        let input = r#"select "users". from "users" join "public"."   "#;
+        let position = TextSize::new(15);
+
+        let params = get_test_params(input, position);
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            r#"select "users".REPLACED_TOKEN from "users" join "public"."   "#
         );
     }
 
