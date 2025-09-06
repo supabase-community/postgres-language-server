@@ -25,34 +25,15 @@ pub(crate) fn remove_sanitized_token(it: &str) -> String {
         .replace(SANITIZED_TOKEN_WITH_QUOTE, "")
 }
 
-pub(crate) fn is_sanitized_token(txt: &str) -> bool {
-    txt == SANITIZED_TOKEN || txt == SANITIZED_TOKEN_WITH_QUOTE
+pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {
+    node_under_cursor_txt == SANITIZED_TOKEN || is_sanitized_token_with_quote(node_under_cursor_txt)
 }
 
-pub(crate) fn is_sanitized_token_with_quote(txt: &str) -> bool {
-    txt == SANITIZED_TOKEN_WITH_QUOTE
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub(crate) enum NodeText {
-    Replaced,
-    Original(String),
-}
-
-impl From<&str> for NodeText {
-    fn from(value: &str) -> Self {
-        if is_sanitized_token(value) {
-            NodeText::Replaced
-        } else {
-            NodeText::Original(value.into())
-        }
-    }
-}
-
-impl From<String> for NodeText {
-    fn from(value: String) -> Self {
-        NodeText::from(value.as_str())
-    }
+pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool {
+    // Node under cursor text will be "REPLACED_TOKEN_WITH_QUOTE".
+    // The SANITIZED_TOKEN_WITH_QUOTE does not have the leading ".
+    // We need to omit it from the txt.
+    &node_under_cursor_txt[1..] == SANITIZED_TOKEN_WITH_QUOTE
 }
 
 impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>

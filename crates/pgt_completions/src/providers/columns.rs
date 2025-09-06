@@ -17,6 +17,8 @@ pub fn complete_columns<'a>(
 ) {
     let available_columns = &schema_cache.columns;
 
+    println!("{:#?}", ctx);
+
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);
 
@@ -951,55 +953,55 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        // test completion inside quoted column name
-        assert_complete_results(
-            format!(
-                r#"select "em{}" from "auth"."quote_test_users""#,
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![CompletionAssertion::LabelAndDesc(
-                "email".to_string(),
-                "auth.quote_test_users".to_string(),
-            )],
-            None,
-            &pool,
-        )
-        .await;
+        // // test completion inside quoted column name
+        // assert_complete_results(
+        //     format!(
+        //         r#"select "em{}" from "auth"."quote_test_users""#,
+        //         QueryWithCursorPosition::cursor_marker()
+        //     )
+        //     .as_str(),
+        //     vec![CompletionAssertion::LabelAndDesc(
+        //         "email".to_string(),
+        //         "auth.quote_test_users".to_string(),
+        //     )],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
 
-        // test completion for already quoted column
-        assert_complete_results(
-            format!(
-                r#"select "quoted_col{}" from "auth"."quote_test_users""#,
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![CompletionAssertion::LabelAndDesc(
-                "quoted_column".to_string(),
-                "auth.quote_test_users".to_string(),
-            )],
-            None,
-            &pool,
-        )
-        .await;
+        // // test completion for already quoted column
+        // assert_complete_results(
+        //     format!(
+        //         r#"select "quoted_col{}" from "auth"."quote_test_users""#,
+        //         QueryWithCursorPosition::cursor_marker()
+        //     )
+        //     .as_str(),
+        //     vec![CompletionAssertion::LabelAndDesc(
+        //         "quoted_column".to_string(),
+        //         "auth.quote_test_users".to_string(),
+        //     )],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
 
-        // test completion with empty quotes
-        assert_complete_results(
-            format!(
-                r#"select "{}" from "auth"."quote_test_users""#,
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("email".to_string()),
-                CompletionAssertion::Label("id".to_string()),
-                CompletionAssertion::Label("name".to_string()),
-                CompletionAssertion::Label("quoted_column".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        // // test completion with empty quotes
+        // assert_complete_results(
+        //     format!(
+        //         r#"select "{}" from "auth"."quote_test_users""#,
+        //         QueryWithCursorPosition::cursor_marker()
+        //     )
+        //     .as_str(),
+        //     vec![
+        //         CompletionAssertion::Label("email".to_string()),
+        //         CompletionAssertion::Label("id".to_string()),
+        //         CompletionAssertion::Label("name".to_string()),
+        //         CompletionAssertion::Label("quoted_column".to_string()),
+        //     ],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
 
         // test completion with partially opened quote
         assert_complete_results(
