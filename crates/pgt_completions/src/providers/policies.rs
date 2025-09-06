@@ -1,5 +1,4 @@
 use pgt_schema_cache::SchemaCache;
-use pgt_text_size::{TextRange, TextSize};
 use pgt_treesitter::TreesitterContext;
 
 use crate::{
