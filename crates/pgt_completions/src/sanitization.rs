@@ -29,6 +29,10 @@ pub(crate) fn is_sanitized_token(txt: &str) -> bool {
     txt == SANITIZED_TOKEN || txt == SANITIZED_TOKEN_WITH_QUOTE
 }
 
+pub(crate) fn is_sanitized_token_with_quote(txt: &str) -> bool {
+    txt == SANITIZED_TOKEN_WITH_QUOTE
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub(crate) enum NodeText {
     Replaced,

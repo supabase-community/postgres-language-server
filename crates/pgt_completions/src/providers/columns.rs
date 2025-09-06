@@ -1,13 +1,14 @@
-use pgt_schema_cache::SchemaCache;
-use pgt_treesitter::{TreesitterContext, WrappingClause};
+use pgt_schema_cache::{Column, SchemaCache};
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
-    CompletionItemKind,
+    CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
+    providers::helper::{get_range_to_replace, with_closed_quote},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
+use super::helper::{find_matching_alias_for_table, with_schema_or_alias};
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
@@ -19,30 +20,31 @@ pub fn complete_columns<'a>(
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);
 
-        let mut item = PossibleCompletionItem {
+        let item = PossibleCompletionItem {
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             description: format!("{}.{}", col.schema_name, col.table_name),
             kind: CompletionItemKind::Column,
-            completion_text: None,
+            completion_text: Some(get_completion_text(ctx, col)),
             detail: col.type_name.as_ref().map(|t| t.to_string()),
         };
 
-        // autocomplete with the alias in a join clause if we find one
-        if matches!(
-            ctx.wrapping_clause_type,
-            Some(WrappingClause::Join { .. })
-                | Some(WrappingClause::Where)
-                | Some(WrappingClause::Select)
-        ) {
-            item.completion_text = find_matching_alias_for_table(ctx, col.table_name.as_str())
-                .and_then(|alias| {
-                    get_completion_text_with_schema_or_alias(ctx, col.name.as_str(), alias.as_str())
-                });
-        }
-
         builder.add_item(item);
+    }
+}
+
+fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
+    let range = get_range_to_replace(ctx);
+    let col_name = with_closed_quote(ctx, col.name.as_str());
+    let alias = find_matching_alias_for_table(ctx, col.table_name.as_str());
+    let with_schema_or_alias =
+        with_schema_or_alias(ctx, col_name.as_str(), alias.as_ref().map(|s| s.as_str()));
+
+    CompletionText {
+        is_snippet: false,
+        range,
+        text: with_schema_or_alias,
     }
 }
 
@@ -931,5 +933,90 @@ mod tests {
             )
             .await;
         }
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_quoted_columns(pool: PgPool) {
+        let setup = r#"
+            create schema if not exists auth;
+            drop table if exists auth.quote_test_users;
+            
+            create table auth.quote_test_users (
+                id serial primary key,
+                email text unique not null,
+                name text not null,
+                "quoted_column" text
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        // test completion inside quoted column name
+        assert_complete_results(
+            format!(
+                r#"select "em{}" from "auth"."quote_test_users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::LabelAndDesc(
+                "email".to_string(),
+                "auth.quote_test_users".to_string(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+
+        // test completion for already quoted column
+        assert_complete_results(
+            format!(
+                r#"select "quoted_col{}" from "auth"."quote_test_users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::LabelAndDesc(
+                "quoted_column".to_string(),
+                "auth.quote_test_users".to_string(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+
+        // test completion with empty quotes
+        assert_complete_results(
+            format!(
+                r#"select "{}" from "auth"."quote_test_users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("email".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("quoted_column".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        // test completion with partially opened quote
+        assert_complete_results(
+            format!(
+                r#"select "{} from "auth"."quote_test_users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("email".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("quoted_column".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
     }
 }

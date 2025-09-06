@@ -4,11 +4,11 @@ use pgt_treesitter::TreesitterContext;
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    providers::helper::get_range_to_replace,
+    providers::helper::{get_range_to_replace, with_closed_quote},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::get_completion_text_with_schema_or_alias;
+use super::helper::with_schema_or_alias;
 
 pub fn complete_functions<'a>(
     ctx: &'a TreesitterContext,
@@ -36,9 +36,8 @@ pub fn complete_functions<'a>(
 
 fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
     let range = get_range_to_replace(ctx);
-    let mut text = get_completion_text_with_schema_or_alias(ctx, &func.name, &func.schema)
-        .map(|ct| ct.text)
-        .unwrap_or(func.name.to_string());
+    let closed_quote = with_closed_quote(ctx, &func.name);
+    let mut text = with_schema_or_alias(ctx, closed_quote.as_str(), Some(func.schema.as_str()));
 
     if ctx.is_invocation {
         CompletionText {
