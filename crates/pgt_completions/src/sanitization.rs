@@ -21,8 +21,8 @@ pub fn benchmark_sanitization(params: CompletionParams) -> String {
 }
 
 pub(crate) fn remove_sanitized_token(it: &str) -> String {
-    it.replace(SANITIZED_TOKEN, "")
-        .replace(SANITIZED_TOKEN_WITH_QUOTE, "")
+    it.replace(SANITIZED_TOKEN_WITH_QUOTE, "")
+        .replace(SANITIZED_TOKEN, "")
 }
 
 pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {

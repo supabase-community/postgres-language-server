@@ -15,19 +15,30 @@ pub(crate) fn find_matching_alias_for_table(
     None
 }
 
+pub(crate) fn node_text_surrounded_by_quotes(ctx: &TreesitterContext) -> bool {
+    ctx.get_node_under_cursor_content()
+        .is_some_and(|c| c.starts_with('"') && c.ends_with('"') && c != "\"\"")
+}
+
 pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     match ctx.node_under_cursor.as_ref() {
         Some(node) => {
             let content = ctx.get_node_under_cursor_content().unwrap_or("".into());
             let content = content.as_str();
 
-            let length = remove_sanitized_token(content).len();
+            let sanitized = remove_sanitized_token(content);
+            let length = sanitized.len();
 
-            let start = node.start_byte();
+            let mut start = node.start_byte();
             let mut end = start + length;
 
-            if is_sanitized_token_with_quote(content) {
-                end += 1;
+            if sanitized.starts_with('"') {
+                start += 1;
+            }
+
+            // might be '"' so we need to check for length
+            if sanitized.ends_with('"') && sanitized.len() != 1 {
+                end -= 1;
             }
 
             TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
