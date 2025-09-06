@@ -17,8 +17,6 @@ pub fn complete_columns<'a>(
 ) {
     let available_columns = &schema_cache.columns;
 
-    println!("{:#?}", ctx);
-
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);
 
