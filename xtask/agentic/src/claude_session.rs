@@ -112,9 +112,10 @@ impl ClaudeSession {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
 
             // Check if this is a usage limit error
-            if stderr.contains("usage limit") {
+            if stderr.contains("usage limit") || stdout.contains("usage limit") {
                 if self.forever {
                     eprintln!("Hit Claude API usage limit. Sleeping for 5 hours 30 minutes...");
                     thread::sleep(Duration::from_secs(5 * 3600 + 30 * 60)); // 5h 30m
