@@ -1,0 +1,1 @@
+GRANT SELECT ON TABLE users TO john;

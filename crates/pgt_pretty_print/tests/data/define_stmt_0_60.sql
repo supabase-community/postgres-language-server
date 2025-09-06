@@ -1,0 +1,1 @@
+CREATE COLLATION mycoll FROM "C";

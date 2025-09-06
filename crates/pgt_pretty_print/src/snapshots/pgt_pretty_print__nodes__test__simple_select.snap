@@ -1,0 +1,200 @@
+---
+source: crates/pgt_pretty_print/src/nodes.rs
+expression: emitter.events
+snapshot_kind: text
+---
+[
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: SelectStmt,
+    },
+    Token(
+        SELECT_KW,
+    ),
+    IndentStart,
+    Line(
+        SoftOrSpace,
+    ),
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ResTarget,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "public",
+        ),
+    ),
+    Token(
+        DOT,
+    ),
+    Token(
+        IDENT(
+            "t",
+        ),
+    ),
+    Token(
+        DOT,
+    ),
+    Token(
+        IDENT(
+            "a",
+        ),
+    ),
+    GroupEnd,
+    Space,
+    Token(
+        AS_KW,
+    ),
+    Space,
+    Token(
+        IDENT(
+            "y",
+        ),
+    ),
+    GroupEnd,
+    Token(
+        COMMA,
+    ),
+    Line(
+        SoftOrSpace,
+    ),
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ResTarget,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "b",
+        ),
+    ),
+    GroupEnd,
+    Space,
+    Token(
+        AS_KW,
+    ),
+    Space,
+    Token(
+        IDENT(
+            "z",
+        ),
+    ),
+    GroupEnd,
+    Token(
+        COMMA,
+    ),
+    Line(
+        SoftOrSpace,
+    ),
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ResTarget,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "c",
+        ),
+    ),
+    GroupEnd,
+    GroupEnd,
+    IndentEnd,
+    Line(
+        SoftOrSpace,
+    ),
+    Token(
+        FROM_KW,
+    ),
+    Line(
+        SoftOrSpace,
+    ),
+    IndentStart,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: RangeVar,
+    },
+    Token(
+        IDENT(
+            "t",
+        ),
+    ),
+    GroupEnd,
+    IndentEnd,
+    Line(
+        SoftOrSpace,
+    ),
+    Token(
+        WHERE_KW,
+    ),
+    Space,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: AExpr,
+    },
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "id",
+        ),
+    ),
+    GroupEnd,
+    Space,
+    Token(
+        IDENT(
+            "=",
+        ),
+    ),
+    Space,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: AExpr,
+    },
+    Space,
+    Token(
+        IDENT(
+            "@",
+        ),
+    ),
+    Space,
+    GroupStart {
+        id: None,
+        break_parent: false,
+        kind: ColumnRef,
+    },
+    Token(
+        IDENT(
+            "id",
+        ),
+    ),
+    GroupEnd,
+    GroupEnd,
+    GroupEnd,
+    Token(
+        SEMICOLON,
+    ),
+    GroupEnd,
+]
