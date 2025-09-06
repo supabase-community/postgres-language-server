@@ -141,8 +141,6 @@ pub(crate) async fn assert_complete_results(
     let params = get_test_params(&tree, &cache, query.into());
     let items = complete(params);
 
-    println!("{:#?}", &items[..3]);
-
     let (not_existing, existing): (Vec<CompletionAssertion>, Vec<CompletionAssertion>) =
         assertions.into_iter().partition(|a| match a {
             CompletionAssertion::LabelNotExists(_) | CompletionAssertion::KindNotExists(_) => true,

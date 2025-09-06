@@ -938,10 +938,9 @@ mod tests {
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn completes_quoted_columns(pool: PgPool) {
         let setup = r#"
-            create schema if not exists auth;
-            drop table if exists auth.quote_test_users;
+            create schema if not exists private;
             
-            create table auth.quote_test_users (
+            create table private.users (
                 id serial primary key,
                 email text unique not null,
                 name text not null,
@@ -951,60 +950,60 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        // // test completion inside quoted column name
-        // assert_complete_results(
-        //     format!(
-        //         r#"select "em{}" from "auth"."quote_test_users""#,
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![CompletionAssertion::LabelAndDesc(
-        //         "email".to_string(),
-        //         "auth.quote_test_users".to_string(),
-        //     )],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        // test completion inside quoted column name
+        assert_complete_results(
+            format!(
+                r#"select "em{}" from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::LabelAndDesc(
+                "email".to_string(),
+                "private.users".to_string(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
 
-        // // test completion for already quoted column
-        // assert_complete_results(
-        //     format!(
-        //         r#"select "quoted_col{}" from "auth"."quote_test_users""#,
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![CompletionAssertion::LabelAndDesc(
-        //         "quoted_column".to_string(),
-        //         "auth.quote_test_users".to_string(),
-        //     )],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        // test completion for already quoted column
+        assert_complete_results(
+            format!(
+                r#"select "quoted_col{}" from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::LabelAndDesc(
+                "quoted_column".to_string(),
+                "private.users".to_string(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
 
-        // // test completion with empty quotes
-        // assert_complete_results(
-        //     format!(
-        //         r#"select "{}" from "auth"."quote_test_users""#,
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("email".to_string()),
-        //         CompletionAssertion::Label("id".to_string()),
-        //         CompletionAssertion::Label("name".to_string()),
-        //         CompletionAssertion::Label("quoted_column".to_string()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        // test completion with empty quotes
+        assert_complete_results(
+            format!(
+                r#"select "{}" from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("email".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("quoted_column".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
         // test completion with partially opened quote
         assert_complete_results(
             format!(
-                r#"select "{} from "auth"."quote_test_users""#,
+                r#"select "{} from "private"."users""#,
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),

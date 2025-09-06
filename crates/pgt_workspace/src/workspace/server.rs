@@ -1,4 +1,5 @@
 use std::{
+    cmp::min,
     collections::HashMap,
     fs,
     panic::RefUnwindSafe,
@@ -713,6 +714,9 @@ impl Workspace for WorkspaceServer {
                     tree: &cst,
                     text: id.content().to_string(),
                 });
+
+                let max_items = min(items.len(), 3);
+                tracing::warn!("found items: {:#?}", &items[..max_items]);
 
                 Ok(CompletionsResult { items })
             }
