@@ -141,7 +141,7 @@ fn parse_and_write_statement(
             let base_name = original_filename
                 .strip_suffix(".sql")
                 .unwrap_or(original_filename);
-            let filename = format!("{}_stmt_{:03}.sql", base_name, *statement_counter);
+            let filename = format!("{}_stmt_{:03}_60.sql", base_name, *statement_counter);
             let filepath = base_path.join(filename);
 
             println!("Writing statement {} to {}", *statement_counter, filepath);
