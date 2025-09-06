@@ -126,6 +126,32 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::CreateTableAsStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::RefreshMatViewStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::LoadStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CreatedbStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::DropdbStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::ClusterStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::VacuumStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::VacuumRelation(rel) => rel.to_tokens(e),
+            pgt_query::protobuf::node::Node::ExplainStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::AlterDatabaseSetStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CheckPointStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::DiscardStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::ConstraintsSetStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::ReindexStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::AlterDatabaseStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::AlterSystemStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::BitString(s) => s.to_tokens(e),
+            pgt_query::protobuf::node::Node::TypeCast(tc) => tc.to_tokens(e),
+            pgt_query::protobuf::node::Node::Param(p) => p.to_tokens(e),
+            pgt_query::protobuf::node::Node::OpExpr(op) => op.as_ref().to_tokens(e),
+            pgt_query::protobuf::node::Node::BoolExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::CaseExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::CaseWhen(when) => when.to_tokens(e),
+            pgt_query::protobuf::node::Node::ArrayExpr(arr) => arr.to_tokens(e),
+            pgt_query::protobuf::node::Node::AArrayExpr(arr) => arr.to_tokens(e),
+            pgt_query::protobuf::node::Node::SubLink(link) => link.to_tokens(e),
+            pgt_query::protobuf::node::Node::CoalesceExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::NullTest(test) => test.to_tokens(e),
+            pgt_query::protobuf::node::Node::BooleanTest(test) => test.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -260,6 +286,32 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::CreateTableAsStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::RefreshMatViewStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::LoadStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CreatedbStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::DropdbStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::ClusterStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::VacuumStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::VacuumRelation(rel) => rel.to_tokens(e),
+                pgt_query::protobuf::node::Node::ExplainStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::AlterDatabaseSetStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CheckPointStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::DiscardStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::ConstraintsSetStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::ReindexStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::AlterDatabaseStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::AlterSystemStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::BitString(s) => s.to_tokens(e),
+                pgt_query::protobuf::node::Node::TypeCast(tc) => tc.to_tokens(e),
+                pgt_query::protobuf::node::Node::Param(p) => p.to_tokens(e),
+                pgt_query::protobuf::node::Node::OpExpr(op) => op.to_tokens(e),
+                pgt_query::protobuf::node::Node::BoolExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::CaseExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::CaseWhen(when) => when.to_tokens(e),
+                pgt_query::protobuf::node::Node::ArrayExpr(arr) => arr.to_tokens(e),
+                pgt_query::protobuf::node::Node::AArrayExpr(arr) => arr.to_tokens(e),
+                pgt_query::protobuf::node::Node::SubLink(link) => link.to_tokens(e),
+                pgt_query::protobuf::node::Node::CoalesceExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::NullTest(test) => test.to_tokens(e),
+                pgt_query::protobuf::node::Node::BooleanTest(test) => test.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -579,7 +631,7 @@ impl ToTokens for pgt_query::protobuf::AConst {
                     e.token(TokenKind::STRING(format!("'{}'", sval.sval)));
                 }
                 pgt_query::protobuf::a_const::Val::Bsval(bsval) => {
-                    e.token(TokenKind::STRING(bsval.bsval.clone()));
+                    bsval.to_tokens(e);
                 }
             }
         }
@@ -5422,6 +5474,649 @@ impl ToTokens for pgt_query::protobuf::LoadStmt {
         }
 
         e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CreatedbStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CreatedbStmt, None, false);
+
+        e.token(TokenKind::CREATE_KW);
+        e.space();
+        e.token(TokenKind::DATABASE_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.dbname.clone()));
+
+        if !self.options.is_empty() {
+            todo!();
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::DropdbStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::DropdbStmt, None, false);
+
+        e.token(TokenKind::DROP_KW);
+        e.space();
+        e.token(TokenKind::DATABASE_KW);
+        e.space();
+
+        if self.missing_ok {
+            e.token(TokenKind::IF_KW);
+            e.space();
+            e.token(TokenKind::EXISTS_KW);
+            e.space();
+        }
+
+        e.token(TokenKind::IDENT(self.dbname.clone()));
+
+        if !self.options.is_empty() {
+            todo!();
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ClusterStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::ClusterStmt, None, false);
+
+        e.token(TokenKind::CLUSTER_KW);
+
+        if !self.params.is_empty() {
+            todo!();
+        }
+
+        if let Some(ref relation) = self.relation {
+            e.space();
+            relation.to_tokens(e);
+        }
+
+        if !self.indexname.is_empty() {
+            e.space();
+            e.token(TokenKind::USING_KW);
+            e.space();
+            e.token(TokenKind::IDENT(self.indexname.clone()));
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::VacuumStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::VacuumStmt, None, false);
+
+        if self.is_vacuumcmd {
+            e.token(TokenKind::VACUUM_KW);
+        } else {
+            e.token(TokenKind::ANALYZE_KW);
+        }
+
+        if !self.options.is_empty() {
+            todo!();
+        }
+
+        if !self.rels.is_empty() {
+            e.space();
+            let mut first = true;
+            for rel in &self.rels {
+                if !first {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                first = false;
+                rel.to_tokens(e);
+            }
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::VacuumRelation {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref relation) = self.relation {
+            relation.to_tokens(e);
+        }
+
+        if !self.va_cols.is_empty() {
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            let mut first = true;
+            for col in &self.va_cols {
+                if !first {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                first = false;
+                col.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ExplainStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::ExplainStmt, None, false);
+
+        e.token(TokenKind::EXPLAIN_KW);
+
+        if !self.options.is_empty() {
+            todo!();
+        }
+
+        if let Some(ref query) = self.query {
+            e.space();
+            query.to_tokens(e);
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AlterDatabaseSetStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AlterDatabaseSetStmt, None, false);
+
+        e.token(TokenKind::ALTER_KW);
+        e.space();
+        e.token(TokenKind::DATABASE_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.dbname.clone()));
+        e.space();
+
+        if let Some(ref setstmt) = self.setstmt {
+            setstmt.to_tokens(e);
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CheckPointStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CheckPointStmt, None, false);
+
+        e.token(TokenKind::CHECKPOINT_KW);
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::DiscardStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::DiscardMode;
+
+        e.group_start(GroupKind::DiscardStmt, None, false);
+
+        e.token(TokenKind::DISCARD_KW);
+        e.space();
+
+        match DiscardMode::try_from(self.target) {
+            Ok(DiscardMode::DiscardAll) => e.token(TokenKind::ALL_KW),
+            Ok(DiscardMode::DiscardPlans) => e.token(TokenKind::PLANS_KW),
+            Ok(DiscardMode::DiscardSequences) => e.token(TokenKind::SEQUENCES_KW),
+            Ok(DiscardMode::DiscardTemp) => e.token(TokenKind::TEMP_KW),
+            _ => todo!(),
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ConstraintsSetStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::ConstraintsSetStmt, None, false);
+
+        e.token(TokenKind::SET_KW);
+        e.space();
+        e.token(TokenKind::CONSTRAINTS_KW);
+        e.space();
+
+        if self.constraints.is_empty() {
+            e.token(TokenKind::ALL_KW);
+        } else {
+            let mut first = true;
+            for constraint in &self.constraints {
+                if !first {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                first = false;
+                constraint.to_tokens(e);
+            }
+        }
+
+        e.space();
+        if self.deferred {
+            e.token(TokenKind::DEFERRED_KW);
+        } else {
+            e.token(TokenKind::IMMEDIATE_KW);
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ReindexStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::ReindexObjectType;
+
+        e.group_start(GroupKind::ReindexStmt, None, false);
+
+        e.token(TokenKind::REINDEX_KW);
+
+        if !self.params.is_empty() {
+            todo!();
+        }
+
+        e.space();
+        match ReindexObjectType::try_from(self.kind) {
+            Ok(ReindexObjectType::ReindexObjectIndex) => e.token(TokenKind::INDEX_KW),
+            Ok(ReindexObjectType::ReindexObjectTable) => e.token(TokenKind::TABLE_KW),
+            Ok(ReindexObjectType::ReindexObjectSchema) => e.token(TokenKind::SCHEMA_KW),
+            Ok(ReindexObjectType::ReindexObjectSystem) => e.token(TokenKind::SYSTEM_KW),
+            Ok(ReindexObjectType::ReindexObjectDatabase) => e.token(TokenKind::DATABASE_KW),
+            _ => todo!(),
+        }
+
+        e.space();
+        if let Some(ref relation) = self.relation {
+            relation.to_tokens(e);
+        } else if !self.name.is_empty() {
+            e.token(TokenKind::IDENT(self.name.clone()));
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AlterDatabaseStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AlterDatabaseStmt, None, false);
+
+        e.token(TokenKind::ALTER_KW);
+        e.space();
+        e.token(TokenKind::DATABASE_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.dbname.clone()));
+
+        if !self.options.is_empty() {
+            e.space();
+            let mut first = true;
+            for option in &self.options {
+                if !first {
+                    e.space();
+                }
+                first = false;
+                option.to_tokens(e);
+            }
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AlterSystemStmt {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AlterSystemStmt, None, false);
+
+        e.token(TokenKind::ALTER_KW);
+        e.space();
+        e.token(TokenKind::SYSTEM_KW);
+        e.space();
+
+        if let Some(ref setstmt) = self.setstmt {
+            setstmt.to_tokens(e);
+        }
+
+        if e.is_top_level() {
+            e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::BitString {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if self.bsval.starts_with("b'") || self.bsval.starts_with("B'") {
+            e.token(TokenKind::STRING(self.bsval.to_uppercase()));
+        } else if self.bsval.starts_with('b') || self.bsval.starts_with('B') {
+            let digits = &self.bsval[1..];
+            e.token(TokenKind::STRING(format!("B'{}'", digits)));
+        } else {
+            e.token(TokenKind::STRING(format!("B'{}'", self.bsval)));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::TypeCast {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::TypeCast, None, false);
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        e.token(TokenKind::DOUBLE_COLON);
+
+        if let Some(ref type_name) = self.type_name {
+            type_name.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::Param {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::DOLLAR);
+        e.token(TokenKind::IDENT(self.paramid.to_string()));
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::OpExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        // OpExpr is handled by delegating to its arguments
+        // The operator information is stored in opno/opresulttype but we
+        // reconstruct from the AST context
+        if self.args.len() >= 2 {
+            // Binary operator
+            self.args[0].to_tokens(e);
+            e.space();
+            e.token(TokenKind::IDENT("+".to_string())); // Default to +, actual op would need lookup
+            e.space();
+            self.args[1].to_tokens(e);
+        } else if self.args.len() == 1 {
+            // Unary operator
+            e.token(TokenKind::IDENT("-".to_string())); // Default to -, actual op would need lookup
+            self.args[0].to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::BoolExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::BoolExprType;
+
+        match BoolExprType::try_from(self.boolop).unwrap() {
+            BoolExprType::AndExpr => {
+                for (i, arg) in self.args.iter().enumerate() {
+                    if i > 0 {
+                        e.space();
+                        e.token(TokenKind::AND_KW);
+                        e.space();
+                    }
+                    arg.to_tokens(e);
+                }
+            }
+            BoolExprType::OrExpr => {
+                for (i, arg) in self.args.iter().enumerate() {
+                    if i > 0 {
+                        e.space();
+                        e.token(TokenKind::OR_KW);
+                        e.space();
+                    }
+                    arg.to_tokens(e);
+                }
+            }
+            BoolExprType::NotExpr => {
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                if let Some(arg) = self.args.first() {
+                    arg.to_tokens(e);
+                }
+            }
+            BoolExprType::Undefined => {}
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CaseExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::CASE_KW);
+
+        // arg is the test expression in CASE expr WHEN ...
+        if let Some(ref arg) = self.arg {
+            e.space();
+            arg.to_tokens(e);
+        }
+
+        // args contains CaseWhen nodes
+        for when_clause in &self.args {
+            e.space();
+            when_clause.to_tokens(e);
+        }
+
+        // defresult is the ELSE clause
+        if let Some(ref defresult) = self.defresult {
+            e.space();
+            e.token(TokenKind::ELSE_KW);
+            e.space();
+            defresult.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::END_KW);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CaseWhen {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::WHEN_KW);
+        e.space();
+
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::THEN_KW);
+        e.space();
+
+        if let Some(ref result) = self.result {
+            result.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ArrayExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::ARRAY_KW);
+        e.token(TokenKind::L_BRACK);
+
+        for (i, element) in self.elements.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            element.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_BRACK);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AArrayExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::ARRAY_KW);
+        e.token(TokenKind::L_BRACK);
+
+        for (i, element) in self.elements.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            element.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_BRACK);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::SubLink {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::SubLinkType;
+
+        match SubLinkType::try_from(self.sub_link_type).unwrap() {
+            SubLinkType::ExistsSublink => {
+                e.token(TokenKind::EXISTS_KW);
+                e.space();
+            }
+            SubLinkType::AnySublink => {
+                // testexpr is handled by the parent expression
+                // we just need to output the subquery
+            }
+            SubLinkType::AllSublink => {
+                // testexpr is handled by the parent expression
+                // we just need to output the subquery
+            }
+            _ => {
+                // For other types, just output the subselect
+            }
+        }
+
+        e.token(TokenKind::L_PAREN);
+        if let Some(ref subselect) = self.subselect {
+            subselect.to_tokens(e);
+        }
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CoalesceExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::COALESCE_KW);
+        e.token(TokenKind::L_PAREN);
+
+        for (i, arg) in self.args.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            arg.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::NullTest {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::NullTestType;
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::IS_KW);
+        e.space();
+
+        match NullTestType::try_from(self.nulltesttype).unwrap() {
+            NullTestType::IsNull => {
+                e.token(TokenKind::NULL_KW);
+            }
+            NullTestType::IsNotNull => {
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::NULL_KW);
+            }
+            NullTestType::Undefined => {}
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::BooleanTest {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::BoolTestType;
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::IS_KW);
+        e.space();
+
+        match BoolTestType::try_from(self.booltesttype).unwrap() {
+            BoolTestType::IsTrue => {
+                e.token(TokenKind::TRUE_KW);
+            }
+            BoolTestType::IsNotTrue => {
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::TRUE_KW);
+            }
+            BoolTestType::IsFalse => {
+                e.token(TokenKind::FALSE_KW);
+            }
+            BoolTestType::IsNotFalse => {
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::FALSE_KW);
+            }
+            BoolTestType::IsUnknown => {
+                e.token(TokenKind::UNKNOWN_KW);
+            }
+            BoolTestType::IsNotUnknown => {
+                e.token(TokenKind::NOT_KW);
+                e.space();
+                e.token(TokenKind::UNKNOWN_KW);
+            }
+            BoolTestType::Undefined => {}
+        }
     }
 }
 

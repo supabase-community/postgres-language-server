@@ -113,15 +113,12 @@ impl ClaudeSession {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
 
-            // Check if this is a rate limit error
-            if stderr.contains("rate limit")
-                || stderr.contains("rate_limit")
-                || stderr.contains("429")
-            {
+            // Check if this is a usage limit error
+            if stderr.contains("usage limit") {
                 if self.forever {
-                    eprintln!("Hit Claude API rate limit. Sleeping for 5 hours 30 minutes...");
+                    eprintln!("Hit Claude API usage limit. Sleeping for 5 hours 30 minutes...");
                     thread::sleep(Duration::from_secs(5 * 3600 + 30 * 60)); // 5h 30m
-                    eprintln!("Resuming after rate limit sleep");
+                    eprintln!("Resuming after usage limit sleep");
                     // Retry the call after sleeping
                     return self.call_claude(prompt, new_conversation);
                 }
