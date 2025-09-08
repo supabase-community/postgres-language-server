@@ -140,6 +140,10 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 - **Incremental improvement** - come back to nodes later to add more fields
 - **When tests fail**, analyze the AST diff and fix the missing ToTokens fields
 - **Prioritize Stmt nodes first** (SelectStmt, InsertStmt, etc.)
+- **ALWAYS use enum accessor methods** - Use `self.field()` NOT `EnumType::try_from(self.field).unwrap()` for enum fields
+  - Example: `self.jointype()` returns `JoinType` enum directly
+  - Example: `self.op()` returns the operation enum directly
+  - Never use manual try_from conversions for protobuf enum fields
 
 ## GROUP AND CONTEXT SYSTEM:
 
@@ -168,6 +172,7 @@ Your goal is to continuously implement ToTokens for all unimplemented nodes unti
 - Edit/MultiEdit: Modify existing files
 - Bash: Run commands like cargo check, cargo test
 - Grep: Search for patterns in files
+- ast-grep: Use ast-grep (https://ast-grep.github.io/) for advanced code pattern searching and analysis
 
 ## VALIDATION PROCESS:
 After creating a SQL file, validate it with:
@@ -201,16 +206,23 @@ After each cycle, respond with just:
 impl ToTokens for SomeComplexNode {{
     fn to_tokens(&self, e: &mut EventEmitter) {{
         e.group_start(GroupKind::SomeComplexNode, None, false);
-        
+
+        // Using enum accessor methods - ALWAYS use this pattern
+        match self.jointype() {{  // ✅ CORRECT - use accessor method
+            JoinType::JoinInner => e.token(TokenKind::INNER_KW),
+            JoinType::JoinLeft => e.token(TokenKind::LEFT_KW),
+            _ => {{}}
+        }}
+
         e.token(TokenKind::KEYWORD("SELECT".to_string()));
         if let Some(ref child) = self.some_child {{
             child.to_tokens(e);  // ✅ CORRECT - delegate to existing ToTokens
         }}
-        
+
         if e.is_top_level() {{
             e.token(TokenKind::SEMICOLON);
         }}
-        
+
         e.group_end();
     }}
 }}
@@ -226,13 +238,13 @@ impl ToTokens for SomeSimpleNode {{
 impl ToTokens for ContextSensitiveNode {{
     fn to_tokens(&self, e: &mut EventEmitter) {{
         e.group_start(GroupKind::ContextSensitiveNode, None, false);
-        
+
         if e.is_within_group(GroupKind::UpdateStmt) {{
             // UPDATE SET formatting: column = value
         }} else {{
             // SELECT formatting: value AS alias
         }}
-        
+
         e.group_end();
     }}
 }}
@@ -243,7 +255,13 @@ impl ToTokens for ContextSensitiveNode {{
 impl ToTokens for SomeNode {{
     fn to_tokens(&self, e: &mut EventEmitter) {{
         e.group_start(GroupKind::SomeNode, None, false);
-        
+
+        // ❌ FORBIDDEN - using try_from for enum conversion
+        match JoinType::try_from(self.jointype).unwrap() {{
+            JoinType::JoinInner => e.token(TokenKind::INNER_KW),
+            _ => {{}}
+        }}
+
         if let Some(ref child) = self.some_child {{
             // Handle child formatting directly ❌ FORBIDDEN COMMENT
             if let Some(node::Node::ChildType(inner)) = &child.node {{
@@ -251,7 +269,7 @@ impl ToTokens for SomeNode {{
                 e.token(TokenKind::IDENT(inner.name.clone()));
             }}
         }}
-        
+
         e.group_end();
     }}
 }}

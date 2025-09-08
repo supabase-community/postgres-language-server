@@ -1,0 +1,1 @@
+SELECT * FROM (SELECT id, name FROM users WHERE active = true) AS active_users;
