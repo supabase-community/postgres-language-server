@@ -14,7 +14,7 @@ When you type or modify SQL, the language server:
 
 - Always correct: Uses the same parser as Postgres itself for accurate syntax validation
 - Named Parameter Support: Postgres does not support named parameters such as `:param` and `@param`. Since they are commonly used in ORMs and other tooling, we convert them to positional parameters (`$1`, `$2`) before parsing
-- `PL/pgSQL Support`: In addition to SQL, also validates `PL/pgSQL` function bodies for basic syntax errors
+- `PL/pgSQL`: In addition to SQL, also validates `PL/pgSQL` function bodies for basic syntax errors
 
 ## Error Information
 
