@@ -79,7 +79,7 @@ If you prefer to work without a database connection, you can disable all databas
 Or use the command line flag:
 
 ```bash
-postgrestools lsp --disable-db
+postgrestools check sql/ --disable-db
 ```
 
 When disabled, you'll still get:
