@@ -78,7 +78,6 @@ pub(crate) enum CompletionAssertion {
     LabelAndDesc(String, String),
     LabelNotExists(String),
     KindNotExists(CompletionItemKind),
-    CompletionText(String),
     CompletionTextAndRange(String, TextRange),
 }
 
@@ -130,18 +129,6 @@ impl CompletionAssertion {
                     desc, &item.description
                 );
             }
-            CompletionAssertion::CompletionText(txt) => {
-                assert_eq!(
-                    item.completion_text.as_ref().map(|t| t.text.as_str()),
-                    Some(txt.as_str()),
-                    "Expected completion text to be {}, but got {}",
-                    txt,
-                    item.completion_text
-                        .as_ref()
-                        .map(|t| t.text.clone())
-                        .unwrap_or("None".to_string())
-                );
-            }
             CompletionAssertion::CompletionTextAndRange(txt, text_range) => {
                 assert_eq!(
                     item.completion_text.as_ref().map(|t| t.text.as_str()),
@@ -184,7 +171,6 @@ pub(crate) async fn assert_complete_results(
             CompletionAssertion::LabelNotExists(_) | CompletionAssertion::KindNotExists(_) => true,
             CompletionAssertion::Label(_)
             | CompletionAssertion::LabelAndKind(_, _)
-            | CompletionAssertion::CompletionText(_)
             | CompletionAssertion::CompletionTextAndRange(_, _)
             | CompletionAssertion::LabelAndDesc(_, _) => false,
         });

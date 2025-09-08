@@ -28,7 +28,7 @@ pub fn complete_policies<'a>(
 
         let relevance = CompletionRelevanceData::Policy(pol);
 
-        let range = get_range_to_replace(ctx, text.as_str());
+        let range = get_range_to_replace(ctx);
 
         let item = PossibleCompletionItem {
             label: pol.name.chars().take(35).collect::<String>(),

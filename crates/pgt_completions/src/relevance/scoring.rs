@@ -77,7 +77,7 @@ impl CompletionScore<'_> {
             Some(ct) => ct,
         };
 
-        let has_mentioned_tables = ctx.has_mentioned_relations();
+        let has_mentioned_tables = ctx.has_any_mentioned_relations();
         let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
 
         self.score += match self.data {

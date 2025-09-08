@@ -8,7 +8,7 @@ pub(crate) fn node_text_surrounded_by_quotes(ctx: &TreesitterContext) -> bool {
         .is_some_and(|c| c.starts_with('"') && c.ends_with('"') && c.len() > 1)
 }
 
-pub(crate) fn get_range_to_replace(ctx: &TreesitterContext, completion_text: &str) -> TextRange {
+pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     match ctx.node_under_cursor.as_ref() {
         Some(node) => {
             let content = ctx.get_node_under_cursor_content().unwrap_or("".into());

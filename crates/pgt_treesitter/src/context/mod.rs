@@ -1,7 +1,6 @@
 use std::{
     cmp,
     collections::{HashMap, HashSet},
-    fmt::format,
 };
 mod base_parser;
 mod grant_parser;
@@ -840,7 +839,7 @@ impl<'a> TreesitterContext<'a> {
         self.mentioned_columns.get(clause)
     }
 
-    pub fn has_mentioned_relations(&self) -> bool {
+    pub fn has_any_mentioned_relations(&self) -> bool {
         !self.mentioned_relations.is_empty()
     }
 

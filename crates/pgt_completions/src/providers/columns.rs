@@ -4,7 +4,7 @@ use pgt_treesitter::TreesitterContext;
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    providers::helper::{get_range_to_replace, with_closed_quote},
+    providers::helper::get_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -18,10 +18,6 @@ pub fn complete_columns<'a>(
     let available_columns = &schema_cache.columns;
 
     for col in available_columns {
-        if col.name.as_str() != "email" {
-            continue;
-        }
-
         let relevance = CompletionRelevanceData::Column(col);
 
         let item = PossibleCompletionItem {
@@ -44,7 +40,7 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
     let with_schema_or_alias =
         with_schema_or_alias(ctx, col.name.as_str(), alias.as_ref().map(|s| s.as_str()));
 
-    let range = get_range_to_replace(ctx, &with_schema_or_alias);
+    let range = get_range_to_replace(ctx);
 
     CompletionText {
         is_snippet: false,
@@ -1146,10 +1142,24 @@ mod tests {
             );
             assert_complete_results(
                 query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""pr".email"#.into(),
-                    TextRange::new(7.into(), 7.into()),
-                )],
+                vec![
+                    CompletionAssertion::CompletionTextAndRange(
+                        "n.name".into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        "n.uid".into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr".email"#.into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr".id"#.into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                ],
                 None,
                 &pool,
             )
@@ -1164,10 +1174,24 @@ mod tests {
             );
             assert_complete_results(
                 query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""pr"."email""#.into(),
-                    TextRange::new(7.into(), 9.into()),
-                )],
+                vec![
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""n"."name""#.into(),
+                        TextRange::new(7.into(), 9.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""n"."uid""#.into(),
+                        TextRange::new(7.into(), 9.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr"."email""#.into(),
+                        TextRange::new(7.into(), 9.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr"."id""#.into(),
+                        TextRange::new(7.into(), 9.into()),
+                    ),
+                ],
                 None,
                 &pool,
             )
@@ -1182,10 +1206,16 @@ mod tests {
             );
             assert_complete_results(
                 query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""pr"."email""#.into(),
-                    TextRange::new(7.into(), 8.into()),
-                )],
+                vec![
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr"."email""#.into(),
+                        TextRange::new(7.into(), 8.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr"."id""#.into(),
+                        TextRange::new(7.into(), 8.into()),
+                    ),
+                ],
                 None,
                 &pool,
             )

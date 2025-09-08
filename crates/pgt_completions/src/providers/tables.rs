@@ -47,7 +47,7 @@ fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText
     let closed_quote = with_closed_quote(ctx, &table.name);
     let text = with_schema_or_alias(ctx, closed_quote.as_str(), Some(table.schema.as_str()));
 
-    let range = get_range_to_replace(ctx, &text);
+    let range = get_range_to_replace(ctx);
 
     CompletionText {
         text,
@@ -345,35 +345,35 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        // assert_no_complete_results(
-        //     format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_no_complete_results(
+            format!("delete {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            None,
+            &pool,
+        )
+        .await;
 
-        // assert_complete_results(
-        //     format!("delete from {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-        //     vec![
-        //         CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
-        //         CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!("delete from {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
-        // assert_complete_results(
-        //     format!(
-        //         "delete from public.{}",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![CompletionAssertion::Label("coos".into())],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                "delete from public.{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::Label("coos".into())],
+            None,
+            &pool,
+        )
+        .await;
 
         assert_complete_results(
             format!(

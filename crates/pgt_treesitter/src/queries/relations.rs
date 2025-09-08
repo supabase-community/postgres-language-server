@@ -181,8 +181,8 @@ mod tests {
             .collect();
 
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0].get_schema(sql), Some("public".to_string()));
-        assert_eq!(results[0].get_table(sql), "users");
+        assert_eq!(results[0].get_schema(sql), Some(r#""public""#.to_string()));
+        assert_eq!(results[0].get_table(sql), r#""users""#);
     }
 
     #[test]
