@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::process::Command;
-use std::thread;
-use std::time::Duration;
 use xtask::project_root;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -55,14 +53,12 @@ impl AgenticState {
 
 pub struct ClaudeSession {
     conversation_id: Option<String>,
-    forever: bool,
 }
 
 impl ClaudeSession {
-    pub fn new(forever: bool) -> Self {
+    pub fn new() -> Self {
         Self {
             conversation_id: None,
-            forever,
         }
     }
 
@@ -113,17 +109,6 @@ impl ClaudeSession {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-
-            // Check if this is a usage limit error
-            if stderr.contains("usage limit") || stdout.contains("usage limit") {
-                if self.forever {
-                    eprintln!("Hit Claude API usage limit. Sleeping for 5 hours 30 minutes...");
-                    thread::sleep(Duration::from_secs(5 * 3600 + 30 * 60)); // 5h 30m
-                    eprintln!("Resuming after usage limit sleep");
-                    // Retry the call after sleeping
-                    return self.call_claude(prompt, new_conversation);
-                }
-            }
 
             return Err(anyhow::anyhow!("Claude CLI failed: {}", stderr));
         }
