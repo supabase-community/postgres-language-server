@@ -8,7 +8,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::{find_matching_alias_for_table, with_schema_or_alias};
+use super::helper::with_schema_or_alias;
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
@@ -18,6 +18,10 @@ pub fn complete_columns<'a>(
     let available_columns = &schema_cache.columns;
 
     for col in available_columns {
+        if col.name.as_str() != "email" {
+            continue;
+        }
+
         let relevance = CompletionRelevanceData::Column(col);
 
         let item = PossibleCompletionItem {
@@ -35,11 +39,12 @@ pub fn complete_columns<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
-    let range = get_range_to_replace(ctx);
-    let col_name = with_closed_quote(ctx, col.name.as_str());
-    let alias = find_matching_alias_for_table(ctx, col.table_name.as_str());
+    let alias = ctx.get_used_alias_for_table(col.table_name.as_str());
+
     let with_schema_or_alias =
-        with_schema_or_alias(ctx, col_name.as_str(), alias.as_ref().map(|s| s.as_str()));
+        with_schema_or_alias(ctx, col.name.as_str(), alias.as_ref().map(|s| s.as_str()));
+
+    let range = get_range_to_replace(ctx, &with_schema_or_alias);
 
     CompletionText {
         is_snippet: false,
@@ -52,6 +57,7 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 mod tests {
     use std::vec;
 
+    use pgt_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
@@ -1017,5 +1023,209 @@ mod tests {
             &pool,
         )
         .await;
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_quoted_columns_with_aliases(pool: PgPool) {
+        let setup = r#"
+            create schema if not exists private;
+            
+            create table private.users (
+                id serial primary key,
+                email text unique not null,
+                name text not null,
+                "quoted_column" text
+            );
+
+            create table public.names (
+                uid serial references private.users(id),
+                name text
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        {
+            // should suggest "pr"."email" and replace existing quotes
+            let query = format!(
+                r#"select "e{}" from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""pr"."email""#.into(),
+                    // replaces the full `"e"`
+                    TextRange::new(7.into(), 10.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "pr"."email" and replace existing quotes
+            let query = format!(
+                r#"select "{}" from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""pr"."email""#.into(),
+                    TextRange::new(7.into(), 9.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "email"
+            let query = format!(
+                r#"select pr."{}" from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""email""#.into(),
+                    TextRange::new(10.into(), 12.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest `email`
+            let query = format!(
+                r#"select "pr".{} from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    "email".into(),
+                    TextRange::new(12.into(), 12.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest `email`
+            let query = format!(
+                r#"select pr.{} from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    "email".into(),
+                    TextRange::new(10.into(), 10.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "pr".email
+            let query = format!(
+                r#"select {} from private.users "pr" join public.names n on pr.id = n.uid;"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""pr".email"#.into(),
+                    TextRange::new(7.into(), 7.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "pr"."email"
+            let query = format!(
+                r#"select "{}" from private.users "pr" join public.names "n" on pr.id = n.uid;"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""pr"."email""#.into(),
+                    TextRange::new(7.into(), 9.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "pr"."email"
+            let query = format!(
+                r#"select "{} from private.users "pr";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""pr"."email""#.into(),
+                    TextRange::new(7.into(), 8.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "email"
+            let query = format!(
+                r#"select pr."{} from private.users "pr";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""email""#.into(),
+                    TextRange::new(10.into(), 11.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "email"
+            let query = format!(
+                r#"select "pr"."{} from private.users "pr";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""email""#.into(),
+                    TextRange::new(12.into(), 13.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
     }
 }

@@ -6,6 +6,7 @@ use crate::{
 
 use pgt_treesitter::TreesitterContext;
 
+#[derive(Debug)]
 pub(crate) struct PossibleCompletionItem<'a> {
     pub label: String,
     pub description: String,

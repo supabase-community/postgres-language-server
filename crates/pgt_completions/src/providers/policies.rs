@@ -28,6 +28,8 @@ pub fn complete_policies<'a>(
 
         let relevance = CompletionRelevanceData::Policy(pol);
 
+        let range = get_range_to_replace(ctx, text.as_str());
+
         let item = PossibleCompletionItem {
             label: pol.name.chars().take(35).collect::<String>(),
             score: CompletionScore::from(relevance.clone()),
@@ -36,7 +38,7 @@ pub fn complete_policies<'a>(
             kind: CompletionItemKind::Policy,
             completion_text: Some(CompletionText {
                 text,
-                range: get_range_to_replace(ctx),
+                range,
                 is_snippet: false,
             }),
             detail: None,

@@ -11,25 +11,25 @@ impl ContextualPriority for Column {
 
         // high score if we match the specific alias or table being referenced in the cursor context
         if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
-            if table_or_alias == self.table_name.as_str() {
+            if table_or_alias.replace('"', "") == self.table_name.as_str() {
                 score += 250.0;
-            } else if let Some(table_name) = ctx.mentioned_table_aliases.get(table_or_alias) {
+            } else if let Some(table_name) = ctx.get_mentioned_table_for_alias(table_or_alias) {
                 if table_name == self.table_name.as_str() {
                     score += 250.0;
                 }
             }
         }
 
-        // medium score if the current column maps to any of the query's mentioned
-        // "(schema.)table" combinations
-        for (schema_opt, tables) in &ctx.mentioned_relations {
-            if tables.contains(&self.table_name) {
-                if schema_opt.as_deref() == Some(&self.schema_name) {
-                    score += 150.0;
-                } else {
-                    score += 100.0;
-                }
-            }
+        if ctx
+            .get_mentioned_relations(&Some(self.schema_name.clone()))
+            .is_some_and(|t| t.contains(&self.table_name))
+        {
+            score += 150.0;
+        } else if ctx
+            .get_mentioned_relations(&None)
+            .is_some_and(|t| t.contains(&self.table_name))
+        {
+            score += 100.0;
         }
 
         if self.schema_name == "public" && score == 0.0 {
@@ -48,20 +48,19 @@ impl ContextualPriority for Table {
     fn relevance_score(&self, ctx: &TreesitterContext) -> f32 {
         let mut score = 0.0;
 
-        for (schema_opt, tables) in &ctx.mentioned_relations {
-            if tables.contains(&self.name) {
-                if schema_opt.as_deref() == Some(&self.schema) {
-                    score += 200.0;
-                } else {
-                    score += 150.0;
-                }
-            }
-        }
-
         if ctx
-            .mentioned_relations
-            .keys()
-            .any(|schema| schema.as_deref() == Some(&self.schema))
+            .get_mentioned_relations(&Some(self.schema.clone()))
+            .is_some_and(|t| t.contains(&self.name))
+        {
+            score += 200.0;
+        } else if ctx
+            .get_mentioned_relations(&None)
+            .is_some_and(|t| t.contains(&self.name))
+        {
+            score += 150.0;
+        } else if ctx
+            .get_mentioned_relations(&Some(self.schema.clone()))
+            .is_some()
         {
             score += 50.0;
         }

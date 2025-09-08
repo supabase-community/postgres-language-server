@@ -35,9 +35,10 @@ pub fn complete_functions<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
-    let range = get_range_to_replace(ctx);
     let closed_quote = with_closed_quote(ctx, &func.name);
     let mut text = with_schema_or_alias(ctx, closed_quote.as_str(), Some(func.schema.as_str()));
+
+    let range = get_range_to_replace(ctx, text.as_str());
 
     if ctx.is_invocation {
         CompletionText {

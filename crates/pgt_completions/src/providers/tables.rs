@@ -44,9 +44,10 @@ pub fn complete_tables<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText {
-    let range = get_range_to_replace(ctx);
     let closed_quote = with_closed_quote(ctx, &table.name);
     let text = with_schema_or_alias(ctx, closed_quote.as_str(), Some(table.schema.as_str()));
+
+    let range = get_range_to_replace(ctx, &text);
 
     CompletionText {
         text,
