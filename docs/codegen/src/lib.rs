@@ -1,4 +1,5 @@
 pub mod cli_doc;
+pub mod config_doc;
 pub mod default_configuration;
 pub mod env_variables;
 pub mod rules_docs;
