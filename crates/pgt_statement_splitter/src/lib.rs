@@ -478,6 +478,14 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn revoke_create() {
+        Tester::from("REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;")
+            .expect_statements(vec![
+                "REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;",
+            ]);
+    }
+
+    #[test]
     fn unknown() {
         Tester::from("random stuff\n\nmore randomness\n\nselect 3").expect_statements(vec![
             "random stuff",

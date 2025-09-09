@@ -406,6 +406,46 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_entire_body_broken(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE t1(a int, b int);
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.f1()
+            RETURNS void
+            LANGUAGE plpgsql
+            AS 
+            $function$    DECLRE r record; -- spelled declare wrong!
+            BEGIN
+                select * from t1;
+            END;     $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1);
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert_eq!(
+            span_texts[0].as_deref(),
+            // the span starts at the keyword and omits the whitespace before/after $function$
+            Some(
+                r#"DECLRE r record; -- spelled declare wrong!
+            BEGIN
+                select * from t1;
+            END;"#
+            )
+        );
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn test_plpgsql_check(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
