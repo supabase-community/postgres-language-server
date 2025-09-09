@@ -1,0 +1,24 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select test_schema.schema_func('test')
+                           ↑ hovered here
+```
+
+# Hover Results
+### `test_schema.schema_func(text) → text`  
+#### Function - Stable - Security INVOKER  
+---    
+```
+CREATE OR REPLACE FUNCTION test_schema.schema_func(text)
+ RETURNS text
+ LANGUAGE sql
+ STABLE
+AS $function$
+            select $1 || ' processed';
+        $function$
+
+```

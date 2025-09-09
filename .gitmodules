@@ -2,3 +2,7 @@
 	path = lib/tree_sitter_sql/tree-sitter-sql
 	url = https://github.com/DerekStride/tree-sitter-sql
 	branch = gh-pages
+[submodule "crates/pgt_query/vendor/libpg_query"]
+	path = crates/pgt_query/vendor/libpg_query
+	url = https://github.com/pganalyze/libpg_query.git
+	branch = 17-latest

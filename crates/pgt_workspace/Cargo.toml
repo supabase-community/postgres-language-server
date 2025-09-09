@@ -37,6 +37,7 @@ pgt_text_size.workspace   = true
 pgt_tokenizer             = { workspace = true }
 pgt_typecheck             = { workspace = true }
 pgt_workspace_macros      = { workspace = true }
+regex                     = { workspace = true }
 rustc-hash                = { workspace = true }
 schemars                  = { workspace = true, optional = true }
 serde                     = { workspace = true, features = ["derive"] }

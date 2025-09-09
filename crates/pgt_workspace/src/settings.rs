@@ -17,6 +17,7 @@ use pgt_configuration::{
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    plpgsql_check::PlPgSqlCheckConfiguration,
 };
 use pgt_fs::PgTPath;
 
@@ -213,6 +214,9 @@ pub struct Settings {
     /// Type checking settings for the workspace
     pub typecheck: TypecheckSettings,
 
+    /// plpgsql_check settings for the workspace
+    pub plpgsql_check: PlPgSqlCheckSettings,
+
     /// Migrations settings
     pub migrations: Option<MigrationSettings>,
 }
@@ -251,6 +255,12 @@ impl Settings {
         // typecheck part
         if let Some(typecheck) = configuration.typecheck {
             self.typecheck = to_typecheck_settings(TypecheckConfiguration::from(typecheck));
+        }
+
+        // plpgsql_check part
+        if let Some(plpgsql_check) = configuration.plpgsql_check {
+            self.plpgsql_check =
+                to_plpgsql_check_settings(PlPgSqlCheckConfiguration::from(plpgsql_check));
         }
 
         // Migrations settings
@@ -305,6 +315,13 @@ fn to_linter_settings(
 fn to_typecheck_settings(conf: TypecheckConfiguration) -> TypecheckSettings {
     TypecheckSettings {
         search_path: conf.search_path.into_iter().collect(),
+        enabled: conf.enabled,
+    }
+}
+
+fn to_plpgsql_check_settings(conf: PlPgSqlCheckConfiguration) -> PlPgSqlCheckSettings {
+    PlPgSqlCheckSettings {
+        enabled: conf.enabled,
     }
 }
 
@@ -417,7 +434,22 @@ impl Default for LinterSettings {
 
 /// Type checking settings for the entire workspace
 #[derive(Debug)]
+pub struct PlPgSqlCheckSettings {
+    /// Enabled by default
+    pub enabled: bool,
+}
+
+impl Default for PlPgSqlCheckSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+/// Type checking settings for the entire workspace
+#[derive(Debug)]
 pub struct TypecheckSettings {
+    /// Enabled by default
+    pub enabled: bool,
     /// Default search path schemas for type checking
     pub search_path: Vec<String>,
 }
@@ -425,6 +457,7 @@ pub struct TypecheckSettings {
 impl Default for TypecheckSettings {
     fn default() -> Self {
         Self {
+            enabled: true,
             search_path: vec!["public".to_string()],
         }
     }

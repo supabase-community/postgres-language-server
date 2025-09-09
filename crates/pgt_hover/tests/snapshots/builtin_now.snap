@@ -1,0 +1,14 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select now() from users
+        ↑ hovered here
+```
+
+# Hover Results
+### `pg_catalog.now() → timestamp with time zone`  
+#### Function - Stable - Security INVOKER  
+---

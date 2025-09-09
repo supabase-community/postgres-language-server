@@ -272,6 +272,39 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_plpgsql_check_composite_types(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            create table if not exists _fetch_cycle_continuation_data (
+                next_id bigint,
+                next_state jsonb null default '{}'::jsonb
+                constraint abstract_no_data check(false) no inherit
+            );
+        "#;
+
+        let create_fn_sql = r#"
+            create or replace function continue_fetch_cycle_prototype (
+            ) returns _fetch_cycle_continuation_data language plpgsql as $prototype$
+            declare
+                result _fetch_cycle_continuation_data := null;
+            begin
+                result.next_id := 0;
+                result.next_state := '{}'::jsonb;
+
+                return result;
+            end;
+            $prototype$;
+        "#;
+
+        let (diagnostics, _span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 0);
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
     async fn test_plpgsql_check_if_expr(test_db: PgPool) {
         let setup = r#"
             create extension if not exists plpgsql_check;
@@ -370,6 +403,46 @@ mod tests {
             pgt_diagnostics::Severity::Error
         ));
         assert_eq!(span_texts[0].as_deref(), Some("c"));
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_entire_body_broken(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+
+            CREATE TABLE t1(a int, b int);
+        "#;
+
+        let create_fn_sql = r#"
+            CREATE OR REPLACE FUNCTION public.f1()
+            RETURNS void
+            LANGUAGE plpgsql
+            AS 
+            $function$    DECLRE r record; -- spelled declare wrong!
+            BEGIN
+                select * from t1;
+            END;     $function$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1);
+        assert!(matches!(
+            diagnostics[0].severity,
+            pgt_diagnostics::Severity::Error
+        ));
+        assert_eq!(
+            span_texts[0].as_deref(),
+            // the span starts at the keyword and omits the whitespace before/after $function$
+            Some(
+                r#"DECLRE r record; -- spelled declare wrong!
+            BEGIN
+                select * from t1;
+            END;"#
+            )
+        );
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
