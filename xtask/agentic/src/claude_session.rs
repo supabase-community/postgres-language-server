@@ -108,7 +108,7 @@ impl ClaudeSession {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
+            let _stdout = String::from_utf8_lossy(&output.stdout);
 
             return Err(anyhow::anyhow!("Claude CLI failed: {}", stderr));
         }

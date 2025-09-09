@@ -177,6 +177,13 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::NullTest(test) => test.to_tokens(e),
             pgt_query::protobuf::node::Node::BooleanTest(test) => test.to_tokens(e),
             pgt_query::protobuf::node::Node::PublicationObjSpec(spec) => spec.to_tokens(e),
+            pgt_query::protobuf::node::Node::NamedArgExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::WithClause(clause) => clause.to_tokens(e),
+            pgt_query::protobuf::node::Node::CommonTableExpr(cte) => cte.to_tokens(e),
+            pgt_query::protobuf::node::Node::GroupingSet(gs) => gs.to_tokens(e),
+            pgt_query::protobuf::node::Node::AIndirection(ind) => ind.to_tokens(e),
+            pgt_query::protobuf::node::Node::AIndices(idx) => idx.to_tokens(e),
+            pgt_query::protobuf::node::Node::LockingClause(clause) => clause.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -366,6 +373,13 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::NullTest(test) => test.to_tokens(e),
                 pgt_query::protobuf::node::Node::BooleanTest(test) => test.to_tokens(e),
                 pgt_query::protobuf::node::Node::PublicationObjSpec(spec) => spec.to_tokens(e),
+                pgt_query::protobuf::node::Node::NamedArgExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::WithClause(clause) => clause.to_tokens(e),
+                pgt_query::protobuf::node::Node::CommonTableExpr(cte) => cte.to_tokens(e),
+                pgt_query::protobuf::node::Node::GroupingSet(gs) => gs.to_tokens(e),
+                pgt_query::protobuf::node::Node::AIndirection(ind) => ind.to_tokens(e),
+                pgt_query::protobuf::node::Node::AIndices(idx) => idx.to_tokens(e),
+                pgt_query::protobuf::node::Node::LockingClause(clause) => clause.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -377,6 +391,11 @@ impl ToTokens for pgt_query::Node {
 impl ToTokens for pgt_query::protobuf::SelectStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
         e.group_start(GroupKind::SelectStmt, None, false);
+
+        if let Some(ref with_clause) = self.with_clause {
+            with_clause.to_tokens(e);
+            e.line(LineType::SoftOrSpace);
+        }
 
         use pgt_query::protobuf::SetOperation;
         let is_set_operation = matches!(
@@ -471,6 +490,28 @@ impl ToTokens for pgt_query::protobuf::SelectStmt {
                 e.token(TokenKind::WHERE_KW);
                 e.space();
                 where_clause.to_tokens(e);
+            }
+
+            if !self.group_clause.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::GROUP_KW);
+                e.space();
+                e.token(TokenKind::BY_KW);
+                e.space();
+                for (i, group) in self.group_clause.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    group.to_tokens(e);
+                }
+            }
+
+            if !self.locking_clause.is_empty() {
+                for clause in &self.locking_clause {
+                    e.space();
+                    clause.to_tokens(e);
+                }
             }
         }
 
@@ -642,7 +683,9 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
 
         e.token(TokenKind::L_PAREN);
 
-        if !self.args.is_empty() {
+        if self.agg_star {
+            e.token(TokenKind::IDENT("*".to_string()));
+        } else if !self.args.is_empty() {
             e.group_start(GroupKind::FuncCall, None, true);
             e.line(LineType::SoftOrSpace);
             e.indent_start();
@@ -948,6 +991,40 @@ impl ToTokens for pgt_query::protobuf::AExpr {
                 e.token(TokenKind::IN_KW);
                 e.space();
                 e.token(TokenKind::L_PAREN);
+
+                if let Some(ref rexpr) = self.rexpr {
+                    rexpr.to_tokens(e);
+                }
+
+                e.token(TokenKind::R_PAREN);
+            }
+            AExprKind::AexprDistinct => {
+                if let Some(ref lexpr) = self.lexpr {
+                    lexpr.to_tokens(e);
+                }
+
+                e.space();
+                e.token(TokenKind::IS_KW);
+                e.space();
+                e.token(TokenKind::DISTINCT_KW);
+                e.space();
+                e.token(TokenKind::FROM_KW);
+                e.space();
+
+                if let Some(ref rexpr) = self.rexpr {
+                    rexpr.to_tokens(e);
+                }
+            }
+            AExprKind::AexprNullif => {
+                e.token(TokenKind::NULLIF_KW);
+                e.token(TokenKind::L_PAREN);
+
+                if let Some(ref lexpr) = self.lexpr {
+                    lexpr.to_tokens(e);
+                }
+
+                e.token(TokenKind::COMMA);
+                e.space();
 
                 if let Some(ref rexpr) = self.rexpr {
                     rexpr.to_tokens(e);
@@ -7663,6 +7740,23 @@ impl ToTokens for pgt_query::protobuf::AlterSubscriptionStmt {
     }
 }
 
+impl ToTokens for pgt_query::protobuf::NamedArgExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::NamedArgExpr, None, false);
+
+        e.token(TokenKind::IDENT(self.name.clone()));
+        e.space();
+        e.token(TokenKind::IDENT("=>".to_string()));
+        e.space();
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
 impl ToTokens for pgt_query::protobuf::DropSubscriptionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
         e.group_start(GroupKind::DropSubscriptionStmt, None, false);
@@ -7688,6 +7782,245 @@ impl ToTokens for pgt_query::protobuf::DropSubscriptionStmt {
 
         if e.is_top_level() {
             e.token(TokenKind::SEMICOLON);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::WithClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::WithClause, None, false);
+
+        e.token(TokenKind::WITH_KW);
+        if self.recursive {
+            e.space();
+            e.token(TokenKind::RECURSIVE_KW);
+        }
+        e.space();
+
+        for (i, cte) in self.ctes.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            cte.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CommonTableExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CommonTableExpr, None, false);
+
+        e.token(TokenKind::IDENT(self.ctename.clone()));
+
+        if !self.aliascolnames.is_empty() {
+            e.token(TokenKind::L_PAREN);
+            for (i, col) in self.aliascolnames.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                col.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        }
+
+        e.space();
+        e.token(TokenKind::AS_KW);
+        e.space();
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref query) = self.ctequery {
+            query.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::GroupingSet {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::GroupingSetKind;
+
+        e.group_start(GroupKind::GroupingSet, None, false);
+
+        match self.kind() {
+            GroupingSetKind::GroupingSetEmpty => {
+                e.token(TokenKind::L_PAREN);
+                e.token(TokenKind::R_PAREN);
+            }
+            GroupingSetKind::GroupingSetSimple => {
+                for (i, item) in self.content.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    item.to_tokens(e);
+                }
+            }
+            GroupingSetKind::GroupingSetSets => {
+                e.token(TokenKind::GROUPING_KW);
+                e.space();
+                e.token(TokenKind::SETS_KW);
+                e.space();
+                e.token(TokenKind::L_PAREN);
+                for (i, item) in self.content.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    if let Some(pgt_query::protobuf::node::Node::GroupingSet(inner)) = &item.node {
+                        if matches!(inner.kind(), GroupingSetKind::GroupingSetEmpty) {
+                            e.token(TokenKind::L_PAREN);
+                            e.token(TokenKind::R_PAREN);
+                        } else {
+                            item.to_tokens(e);
+                        }
+                    } else {
+                        e.token(TokenKind::L_PAREN);
+                        item.to_tokens(e);
+                        e.token(TokenKind::R_PAREN);
+                    }
+                }
+                e.token(TokenKind::R_PAREN);
+            }
+            GroupingSetKind::GroupingSetRollup => {
+                e.token(TokenKind::ROLLUP_KW);
+                e.token(TokenKind::L_PAREN);
+                for (i, item) in self.content.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    item.to_tokens(e);
+                }
+                e.token(TokenKind::R_PAREN);
+            }
+            GroupingSetKind::GroupingSetCube => {
+                e.token(TokenKind::CUBE_KW);
+                e.token(TokenKind::L_PAREN);
+                for (i, item) in self.content.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    item.to_tokens(e);
+                }
+                e.token(TokenKind::R_PAREN);
+            }
+            GroupingSetKind::Undefined => {
+                for (i, item) in self.content.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    item.to_tokens(e);
+                }
+            }
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AIndirection {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AIndirection, None, false);
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        for ind in &self.indirection {
+            ind.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::AIndices {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::L_BRACK);
+
+        if self.is_slice {
+            if let Some(ref lidx) = self.lidx {
+                lidx.to_tokens(e);
+            }
+            e.token(TokenKind::IDENT(":".to_string()));
+            if let Some(ref uidx) = self.uidx {
+                uidx.to_tokens(e);
+            }
+        } else {
+            if let Some(ref uidx) = self.uidx {
+                uidx.to_tokens(e);
+            } else if let Some(ref lidx) = self.lidx {
+                lidx.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::R_BRACK);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::LockingClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::{LockClauseStrength, LockWaitPolicy};
+
+        e.group_start(GroupKind::LockingClause, None, false);
+
+        e.token(TokenKind::FOR_KW);
+        e.space();
+
+        match self.strength() {
+            LockClauseStrength::LcsNone | LockClauseStrength::Undefined => {}
+            LockClauseStrength::LcsForupdate => e.token(TokenKind::UPDATE_KW),
+            LockClauseStrength::LcsFornokeyupdate => {
+                e.token(TokenKind::NO_KW);
+                e.space();
+                e.token(TokenKind::KEY_KW);
+                e.space();
+                e.token(TokenKind::UPDATE_KW);
+            }
+            LockClauseStrength::LcsForshare => e.token(TokenKind::SHARE_KW),
+            LockClauseStrength::LcsForkeyshare => {
+                e.token(TokenKind::KEY_KW);
+                e.space();
+                e.token(TokenKind::SHARE_KW);
+            }
+        }
+
+        if !self.locked_rels.is_empty() {
+            e.space();
+            e.token(TokenKind::OF_KW);
+            e.space();
+            for (i, rel) in self.locked_rels.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                rel.to_tokens(e);
+            }
+        }
+
+        match self.wait_policy() {
+            LockWaitPolicy::LockWaitBlock | LockWaitPolicy::Undefined => {}
+            LockWaitPolicy::LockWaitSkip => {
+                e.space();
+                e.token(TokenKind::SKIP_KW);
+                e.space();
+                e.token(TokenKind::LOCKED_KW);
+            }
+            LockWaitPolicy::LockWaitError => {
+                e.space();
+                e.token(TokenKind::NOWAIT_KW);
+            }
         }
 
         e.group_end();
