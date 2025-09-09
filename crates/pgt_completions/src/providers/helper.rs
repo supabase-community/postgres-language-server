@@ -20,9 +20,12 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
             let mut start = node.start_byte();
             let mut end = start + length;
 
-            if node_text_surrounded_by_quotes(ctx) {
-                start -= 1;
-                end -= 1;
+            if sanitized.starts_with('"') && sanitized.ends_with('"') {
+                start += 1;
+
+                if sanitized.len() > 1 {
+                    end -= 1;
+                }
             }
 
             TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
@@ -45,16 +48,20 @@ pub(crate) fn with_schema_or_alias(
     let is_quote_sanitized = is_sanitized_token_with_quote(node_under_cursor_txt);
 
     if schema_or_alias_name.is_none_or(|s| s == "public") || is_already_prefixed_with_schema_name {
-        item_name.to_string()
+        if is_quote_sanitized {
+            format!(r#"{}""#, item_name)
+        } else {
+            item_name.to_string()
+        }
     } else {
         let schema_or_als = schema_or_alias_name.unwrap();
 
         if is_quote_sanitized {
-            format!(r#"{}"."{}""#, schema_or_als.replace('"', ""), item_name).to_string()
+            format!(r#"{}"."{}""#, schema_or_als.replace('"', ""), item_name)
         } else if with_quotes {
-            format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name).to_string()
+            format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name)
         } else {
-            format!("{}.{}", schema_or_als, item_name).to_string()
+            format!("{}.{}", schema_or_als, item_name)
         }
     }
 }

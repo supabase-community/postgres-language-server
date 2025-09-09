@@ -1042,7 +1042,7 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         {
-            // should suggest "pr"."email" and replace existing quotes
+            // should suggest pr"."email and insert into existing quotes
             let query = format!(
                 r#"select "e{}" from private.users "pr""#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1051,9 +1051,9 @@ mod tests {
             assert_complete_results(
                 query.as_str(),
                 vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""pr"."email""#.into(),
+                    r#"pr"."email"#.into(),
                     // replaces the full `"e"`
-                    TextRange::new(7.into(), 10.into()),
+                    TextRange::new(8.into(), 9.into()),
                 )],
                 None,
                 &pool,
@@ -1062,7 +1062,7 @@ mod tests {
         }
 
         {
-            // should suggest "pr"."email" and replace existing quotes
+            // should suggest pr"."email and insert into existing quotes
             let query = format!(
                 r#"select "{}" from private.users "pr""#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1071,8 +1071,8 @@ mod tests {
             assert_complete_results(
                 query.as_str(),
                 vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""pr"."email""#.into(),
-                    TextRange::new(7.into(), 9.into()),
+                    r#"pr"."email"#.into(),
+                    TextRange::new(8.into(), 8.into()),
                 )],
                 None,
                 &pool,
@@ -1081,7 +1081,7 @@ mod tests {
         }
 
         {
-            // should suggest "email"
+            // should suggest email and insert into quotes
             let query = format!(
                 r#"select pr."{}" from private.users "pr""#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1089,8 +1089,8 @@ mod tests {
             assert_complete_results(
                 query.as_str(),
                 vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""email""#.into(),
-                    TextRange::new(10.into(), 12.into()),
+                    r#"email"#.into(),
+                    TextRange::new(11.into(), 11.into()),
                 )],
                 None,
                 &pool,
@@ -1099,7 +1099,7 @@ mod tests {
         }
 
         {
-            // should suggest `email`
+            // should suggest email
             let query = format!(
                 r#"select "pr".{} from private.users "pr""#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1135,7 +1135,6 @@ mod tests {
         }
 
         {
-            // should suggest "pr".email
             let query = format!(
                 r#"select {} from private.users "pr" join public.names n on pr.id = n.uid;"#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1176,20 +1175,20 @@ mod tests {
                 query.as_str(),
                 vec![
                     CompletionAssertion::CompletionTextAndRange(
-                        r#""n"."name""#.into(),
-                        TextRange::new(7.into(), 9.into()),
+                        r#"n"."name"#.into(),
+                        TextRange::new(8.into(), 8.into()),
                     ),
                     CompletionAssertion::CompletionTextAndRange(
-                        r#""n"."uid""#.into(),
-                        TextRange::new(7.into(), 9.into()),
+                        r#"n"."uid"#.into(),
+                        TextRange::new(8.into(), 8.into()),
                     ),
                     CompletionAssertion::CompletionTextAndRange(
-                        r#""pr"."email""#.into(),
-                        TextRange::new(7.into(), 9.into()),
+                        r#"pr"."email"#.into(),
+                        TextRange::new(8.into(), 8.into()),
                     ),
                     CompletionAssertion::CompletionTextAndRange(
-                        r#""pr"."id""#.into(),
-                        TextRange::new(7.into(), 9.into()),
+                        r#"pr"."id"#.into(),
+                        TextRange::new(8.into(), 8.into()),
                     ),
                 ],
                 None,
@@ -1199,7 +1198,7 @@ mod tests {
         }
 
         {
-            // should suggest "pr"."email"
+            // should suggest pr"."email"
             let query = format!(
                 r#"select "{} from private.users "pr";"#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1208,12 +1207,12 @@ mod tests {
                 query.as_str(),
                 vec![
                     CompletionAssertion::CompletionTextAndRange(
-                        r#""pr"."email""#.into(),
-                        TextRange::new(7.into(), 8.into()),
+                        r#"pr"."email""#.into(),
+                        TextRange::new(8.into(), 8.into()),
                     ),
                     CompletionAssertion::CompletionTextAndRange(
-                        r#""pr"."id""#.into(),
-                        TextRange::new(7.into(), 8.into()),
+                        r#"pr"."id""#.into(),
+                        TextRange::new(8.into(), 8.into()),
                     ),
                 ],
                 None,
@@ -1223,7 +1222,7 @@ mod tests {
         }
 
         {
-            // should suggest "email"
+            // should suggest email"
             let query = format!(
                 r#"select pr."{} from private.users "pr";"#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1231,8 +1230,8 @@ mod tests {
             assert_complete_results(
                 query.as_str(),
                 vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""email""#.into(),
-                    TextRange::new(10.into(), 11.into()),
+                    r#"email""#.into(),
+                    TextRange::new(11.into(), 11.into()),
                 )],
                 None,
                 &pool,
@@ -1241,7 +1240,7 @@ mod tests {
         }
 
         {
-            // should suggest "email"
+            // should suggest email"
             let query = format!(
                 r#"select "pr"."{} from private.users "pr";"#,
                 QueryWithCursorPosition::cursor_marker()
@@ -1249,8 +1248,8 @@ mod tests {
             assert_complete_results(
                 query.as_str(),
                 vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""email""#.into(),
-                    TextRange::new(12.into(), 13.into()),
+                    r#"email""#.into(),
+                    TextRange::new(13.into(), 13.into()),
                 )],
                 None,
                 &pool,
