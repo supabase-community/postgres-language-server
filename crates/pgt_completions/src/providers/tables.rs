@@ -388,8 +388,6 @@ mod tests {
             &pool,
         )
         .await;
-
-        return ();
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
