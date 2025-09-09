@@ -3,12 +3,12 @@ use pgt_text_size::TextSize;
 use pgt_treesitter::TreeSitterContextParams;
 
 use crate::{
-    contextual_priority::prioritize_by_context, hovered_item::HoverItem, hovered_node::HoveredNode,
+    contextual_priority::prioritize_by_context, hoverables::Hoverable, hovered_node::HoveredNode,
     to_markdown::format_hover_markdown,
 };
 
 mod contextual_priority;
-mod hovered_item;
+mod hoverables;
 mod hovered_node;
 mod to_markdown;
 
@@ -28,20 +28,20 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
     });
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
-        let items: Vec<HoverItem> = match hovered_node {
+        let items: Vec<Hoverable> = match hovered_node {
             HoveredNode::Table(node_identification) => match node_identification {
                 hovered_node::NodeIdentification::Name(n) => params
                     .schema_cache
                     .find_tables(n.as_str(), None)
                     .into_iter()
-                    .map(HoverItem::from)
+                    .map(Hoverable::from)
                     .collect(),
 
                 hovered_node::NodeIdentification::SchemaAndName((s, n)) => params
                     .schema_cache
                     .find_tables(n.as_str(), Some(&s))
                     .into_iter()
-                    .map(HoverItem::from)
+                    .map(Hoverable::from)
                     .collect(),
 
                 hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
@@ -52,7 +52,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .schema_cache
                     .find_cols(&column_name, None, None)
                     .into_iter()
-                    .map(HoverItem::from)
+                    .map(Hoverable::from)
                     .collect(),
 
                 hovered_node::NodeIdentification::SchemaAndName((table_or_alias, column_name)) => {
@@ -66,7 +66,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                         .schema_cache
                         .find_cols(&column_name, Some(actual_table), None)
                         .into_iter()
-                        .map(HoverItem::from)
+                        .map(Hoverable::from)
                         .collect()
                 }
 
@@ -78,16 +78,28 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .schema_cache
                     .find_functions(&function_name, None)
                     .into_iter()
-                    .map(HoverItem::from)
+                    .map(Hoverable::from)
                     .collect(),
 
                 hovered_node::NodeIdentification::SchemaAndName((schema, function_name)) => params
                     .schema_cache
                     .find_functions(&function_name, Some(&schema))
                     .into_iter()
-                    .map(HoverItem::from)
+                    .map(Hoverable::from)
                     .collect(),
 
+                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+            },
+
+            HoveredNode::Role(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(role_name) => params
+                    .schema_cache
+                    .find_roles(&role_name)
+                    .into_iter()
+                    .map(Hoverable::from)
+                    .collect(),
+
+                hovered_node::NodeIdentification::SchemaAndName(_) => vec![],
                 hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
             },
 
