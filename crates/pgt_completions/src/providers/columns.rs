@@ -37,8 +37,7 @@ pub fn complete_columns<'a>(
 fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
     let alias = ctx.get_used_alias_for_table(col.table_name.as_str());
 
-    let with_schema_or_alias =
-        with_schema_or_alias(ctx, col.name.as_str(), alias.as_ref().map(|s| s.as_str()));
+    let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
 
     let range = get_range_to_replace(ctx);
 
