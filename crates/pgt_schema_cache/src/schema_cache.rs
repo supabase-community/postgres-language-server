@@ -106,11 +106,6 @@ impl SchemaCache {
     }
 }
 
-pub enum CommentSearch {
-    Object { id: i64 },
-    Column { table_id: i64, col_num: i64 },
-}
-
 pub trait SchemaCacheItem {
     type Item;
 
