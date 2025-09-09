@@ -30,6 +30,10 @@ pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {
 }
 
 pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool {
+    if node_under_cursor_txt.len() <= 1 {
+        return false;
+    }
+
     // Node under cursor text will be "REPLACED_TOKEN_WITH_QUOTE".
     // The SANITIZED_TOKEN_WITH_QUOTE does not have the leading ".
     // We need to omit it from the txt.
