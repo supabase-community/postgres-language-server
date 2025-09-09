@@ -15,7 +15,7 @@ The language server requires a database connection for schema-dependent features
 
 Configure database connection details in your `postgrestools.jsonc` file:
 
-```jsonc
+```json
 {
   "database": {
     // Database host address (default: "127.0.0.1")

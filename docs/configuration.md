@@ -8,7 +8,7 @@ The Postgres Language Server allows you to customize its behavior using CLI opti
 
 A configuration file is usually placed in your project’s root folder. It is organized around the tools that are provided. All tools are enabled by default, but some require additional setup like a database connection or the `plpgsql_check` extension.
 
-```jsonc
+```json
 {
   "$schema": "https://pgtools.dev/latest/schema.json",
   "linter": {
@@ -66,7 +66,7 @@ Paths and globs inside the configuration file are resolved relative to the folde
 #### Include files via configuration
 Let’s take the following configuration, where we want to include only SQL files (`.sql`) that are inside the `sql/` folder:
 
-```postgrestools.jsonc
+```json
 {
   "files": {
     "includes": ["sql/**/*.sql"]
@@ -79,7 +79,7 @@ If you want to exclude files and folders from being processed, you can use the `
 
 In the following example, we include all files, except those in any test/ folder:
 
-```postgrestools.jsonc
+```json
 {
   "files": {
     "ignore": [

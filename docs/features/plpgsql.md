@@ -30,7 +30,7 @@ The integration provides more detailed and actionable feedback compared to basic
 
 You can always disable the integration if you do not want the language server to hit your development database.
 
-```postgrestools.jsonc
+```json
 {
   "plpqsqlCheck": {
     "enabled": false

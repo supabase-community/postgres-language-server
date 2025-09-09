@@ -12,7 +12,7 @@ See the [Rules Reference](../reference/rules.md) for the complete list of availa
 
 Configure linting behavior in your `postgrestools.jsonc`:
 
-```jsonc
+```json
 {
   "linter": {
     // Enable/disable the linter entirely

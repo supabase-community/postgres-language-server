@@ -26,14 +26,13 @@ nav:
       - Use in your IDE: guides/ide_setup.md
       - Checking Migrations: guides/checking_migrations.md
       - Configure database connection: guides/configure_database.md
-      - Suppress false positives: guides/suppressions.md
+      - Suppressions: guides/suppressions.md
       - Integrate with VCS: guides/vcs_integration.md
       - Continuous Integration: guides/continuous_integration.md
-      - Workspace Support: guides/workspace_support.md
   - Reference:
       - CLI Commands: reference/cli.md
       - Linter Rules: reference/rules.md
-      - Configuration Schema: reference/schema.md
+      - Rule Sources: reference/rule_sources.md
       - Environment Variables: reference/env_variables.md
 
 plugins:

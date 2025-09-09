@@ -24,7 +24,7 @@ Since we are using `EXPLAIN`, type checking is only available for DML statements
 
 You can configure the schemas included in the search path for type checking:
 
-```postgrestools.jsonc
+```json
 {
   "typecheck": {
     "searchPath": ["public", "app_*", "auth"]
@@ -42,6 +42,7 @@ If not configured, defaults to `["public"]`.
 ## What Gets Checked
 
 The type checker catches common SQL mistakes:
+
 - **Typos in table and column names**: `SELECT user_naem FROM users` → "column 'user_naem' does not exist"
 - **Type mismatches**: `WHERE user_id = 'abc'` when `user_id` is an integer
 - **Missing tables**: `SELECT * FROM user` when the table is named `users`
@@ -50,5 +51,6 @@ The type checker catches common SQL mistakes:
 ## Requirements
 
 Type checking requires:
+
 - An active database connection
 - Appropriate permissions to prepare statements in your database

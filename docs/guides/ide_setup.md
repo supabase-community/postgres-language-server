@@ -18,7 +18,7 @@ The language client is available through [lsp-mode](https://github.com/emacs-lsp
 
 The language server is available as an Extension. It's published from [this repo](https://github.com/LoamStudios/zed-postgres-language-server).
 
->![NOTE]
+> [!NOTE]
 > Is there a extension for an editor that is not listed here? Please file a PR and we will be happy to add it to the list
 
 ## Integrate in an editor extension
