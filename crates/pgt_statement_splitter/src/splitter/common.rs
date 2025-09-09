@@ -261,6 +261,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                     if [
                         // for grant
                         SyntaxKind::GRANT_KW,
+                        // for revoke
+                        SyntaxKind::REVOKE_KW,
                         SyntaxKind::COMMA,
                     ]
                     .iter()

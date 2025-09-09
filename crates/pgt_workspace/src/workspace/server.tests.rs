@@ -278,7 +278,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 
     assert_eq!(
         diagnostic.location().span,
-        Some(TextRange::new(115.into(), 210.into()))
+        Some(TextRange::new(124.into(), 201.into()))
     );
 }
 
