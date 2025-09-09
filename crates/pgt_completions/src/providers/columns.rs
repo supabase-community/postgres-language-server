@@ -1256,5 +1256,23 @@ mod tests {
             )
             .await;
         }
+
+        {
+            // should suggest "n".name
+            let query = format!(
+                r#"select {} from names "n";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""n".name"#.into(),
+                    TextRange::new(7.into(), 7.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
     }
 }
