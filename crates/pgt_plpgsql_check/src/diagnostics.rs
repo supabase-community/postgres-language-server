@@ -140,9 +140,14 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     let stmt = match issue.statement.as_ref() {
         Some(s) => s,
         None => {
+            let leading_whitespace = fn_body.len() - fn_body.trim_ascii_start().len();
+            let trailing_whitespace = fn_body.len() - fn_body.trim_ascii_end().len();
+
             return Some(TextRange::new(
-                (offset as u32).into(),
-                ((offset + fn_body.len()) as u32).into(),
+                (offset + leading_whitespace).try_into().unwrap(),
+                (offset + fn_body.len() - trailing_whitespace)
+                    .try_into()
+                    .unwrap(),
             ));
         }
     };
