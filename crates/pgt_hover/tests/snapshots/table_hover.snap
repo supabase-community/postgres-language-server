@@ -10,6 +10,11 @@ select id from users
 
 # Hover Results
 ### `public.users` - 🔓 RLS disabled  
-####   
+```plain  
+  
+```  
 ---    
-~0 rows, ~0 dead rows, 8.19 kB
+```plain  
+
+~0 rows, ~0 dead rows, 8.19 kB  
+```

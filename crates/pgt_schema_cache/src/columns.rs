@@ -46,6 +46,9 @@ pub struct Column {
     /// What type of class does this column belong to?
     pub class_kind: ColumnClassKind,
 
+    /// the column number in the table
+    pub number: i64,
+
     pub schema_name: String,
     pub type_id: i64,
     pub type_name: Option<String>,
