@@ -1,13 +1,15 @@
-use pgt_schema_cache::SchemaCache;
+use pgt_schema_cache::{SchemaCache, Table};
 use pgt_treesitter::TreesitterContext;
 
 use crate::{
+    CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
     item::CompletionItemKind,
+    providers::helper::get_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::get_completion_text_with_schema_or_alias;
+use super::helper::with_schema_or_alias;
 
 pub fn complete_tables<'a>(
     ctx: &'a TreesitterContext,
@@ -34,14 +36,22 @@ pub fn complete_tables<'a>(
             description: table.schema.to_string(),
             kind: CompletionItemKind::Table,
             detail,
-            completion_text: get_completion_text_with_schema_or_alias(
-                ctx,
-                &table.name,
-                &table.schema,
-            ),
+            completion_text: Some(get_completion_text(ctx, table)),
         };
 
         builder.add_item(item);
+    }
+}
+
+fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText {
+    let text = with_schema_or_alias(ctx, table.name.as_str(), Some(table.schema.as_str()));
+
+    let range = get_range_to_replace(ctx);
+
+    CompletionText {
+        text,
+        range,
+        is_snippet: false,
     }
 }
 

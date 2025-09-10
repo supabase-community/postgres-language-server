@@ -1,10 +1,10 @@
 use pgt_schema_cache::SchemaCache;
-use pgt_text_size::{TextRange, TextSize};
 use pgt_treesitter::TreesitterContext;
 
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
+    providers::helper::node_text_surrounded_by_quotes,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -17,36 +17,18 @@ pub fn complete_policies<'a>(
 ) {
     let available_policies = &schema_cache.policies;
 
-    let surrounded_by_quotes = ctx
-        .get_node_under_cursor_content()
-        .is_some_and(|c| c.starts_with('"') && c.ends_with('"') && c != "\"\"");
-
     for pol in available_policies {
-        let completion_text = if surrounded_by_quotes {
+        let text = if node_text_surrounded_by_quotes(ctx) {
             // If we're within quotes, we want to change the content
             // *within* the quotes.
-            // If we attempt to replace outside the quotes, the VSCode
-            // client won't show the suggestions.
-            let range = get_range_to_replace(ctx);
-            Some(CompletionText {
-                text: pol.name.clone(),
-                is_snippet: false,
-                range: TextRange::new(
-                    range.start() + TextSize::new(1),
-                    range.end() - TextSize::new(1),
-                ),
-            })
+            pol.name.to_string()
         } else {
-            // If we aren't within quotes, we want to complete the
-            // full policy including quotation marks.
-            Some(CompletionText {
-                is_snippet: false,
-                text: format!("\"{}\"", pol.name),
-                range: get_range_to_replace(ctx),
-            })
+            format!("\"{}\"", pol.name)
         };
 
         let relevance = CompletionRelevanceData::Policy(pol);
+
+        let range = get_range_to_replace(ctx);
 
         let item = PossibleCompletionItem {
             label: pol.name.chars().take(35).collect::<String>(),
@@ -54,7 +36,11 @@ pub fn complete_policies<'a>(
             filter: CompletionFilter::from(relevance),
             description: pol.table_name.to_string(),
             kind: CompletionItemKind::Policy,
-            completion_text,
+            completion_text: Some(CompletionText {
+                text,
+                range,
+                is_snippet: false,
+            }),
             detail: None,
         };
 

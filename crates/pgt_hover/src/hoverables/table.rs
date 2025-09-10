@@ -57,20 +57,19 @@ impl ContextualPriority for Table {
     fn relevance_score(&self, ctx: &TreesitterContext) -> f32 {
         let mut score = 0.0;
 
-        for (schema_opt, tables) in &ctx.mentioned_relations {
-            if tables.contains(&self.name) {
-                if schema_opt.as_deref() == Some(&self.schema) {
-                    score += 200.0;
-                } else {
-                    score += 150.0;
-                }
-            }
-        }
-
         if ctx
-            .mentioned_relations
-            .keys()
-            .any(|schema| schema.as_deref() == Some(&self.schema))
+            .get_mentioned_relations(&Some(self.schema.clone()))
+            .is_some_and(|t| t.contains(&self.name))
+        {
+            score += 200.0;
+        } else if ctx
+            .get_mentioned_relations(&None)
+            .is_some_and(|t| t.contains(&self.name))
+        {
+            score += 150.0;
+        } else if ctx
+            .get_mentioned_relations(&Some(self.schema.clone()))
+            .is_some()
         {
             score += 50.0;
         }

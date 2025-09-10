@@ -58,8 +58,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 hovered_node::NodeIdentification::SchemaAndName((table_or_alias, column_name)) => {
                     // resolve alias to actual table name if needed
                     let actual_table = ctx
-                        .mentioned_table_aliases
-                        .get(table_or_alias.as_str())
+                        .get_mentioned_table_for_alias(table_or_alias.as_str())
                         .map(|s| s.as_str())
                         .unwrap_or(table_or_alias.as_str());
 

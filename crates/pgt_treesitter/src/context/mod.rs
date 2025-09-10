@@ -183,9 +183,9 @@ pub struct TreesitterContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
-    pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
-    pub mentioned_table_aliases: HashMap<String, String>,
-    pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
+    mentioned_relations: HashMap<Option<String>, HashSet<String>>,
+    mentioned_table_aliases: HashMap<String, String>,
+    mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 }
 
 impl<'a> TreesitterContext<'a> {
@@ -799,6 +799,56 @@ impl<'a> TreesitterContext<'a> {
                 }
                 NodeUnderCursor::CustomNode { .. } => false,
             })
+    }
+
+    pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
+        if let Some(key) = key.as_ref() {
+            let sanitized_key = key.replace('"', "");
+
+            self.mentioned_relations
+                .get(&Some(sanitized_key.clone()))
+                .or(self
+                    .mentioned_relations
+                    .get(&Some(format!(r#""{}""#, sanitized_key))))
+        } else {
+            self.mentioned_relations.get(&None)
+        }
+    }
+
+    pub fn get_mentioned_table_for_alias(&self, key: &str) -> Option<&String> {
+        let sanitized_key = key.replace('"', "");
+
+        self.mentioned_table_aliases.get(&sanitized_key).or(self
+            .mentioned_table_aliases
+            .get(&format!(r#""{}""#, sanitized_key)))
+    }
+
+    pub fn get_used_alias_for_table(&self, table_name: &str) -> Option<String> {
+        for (alias, table) in self.mentioned_table_aliases.iter() {
+            if table == table_name {
+                return Some(alias.to_string());
+            }
+        }
+        None
+    }
+
+    pub fn get_mentioned_columns(
+        &self,
+        clause: &Option<WrappingClause<'a>>,
+    ) -> Option<&HashSet<MentionedColumn>> {
+        self.mentioned_columns.get(clause)
+    }
+
+    pub fn has_any_mentioned_relations(&self) -> bool {
+        !self.mentioned_relations.is_empty()
+    }
+
+    pub fn has_mentioned_table_aliases(&self) -> bool {
+        !self.mentioned_table_aliases.is_empty()
+    }
+
+    pub fn has_mentioned_columns(&self) -> bool {
+        !self.mentioned_columns.is_empty()
     }
 }
 

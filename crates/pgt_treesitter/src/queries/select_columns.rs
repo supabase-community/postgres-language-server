@@ -28,13 +28,13 @@ pub struct SelectColumnMatch<'a> {
 
 impl SelectColumnMatch<'_> {
     pub fn get_alias(&self, sql: &str) -> Option<String> {
-        let str = self
-            .alias
-            .as_ref()?
-            .utf8_text(sql.as_bytes())
-            .expect("Failed to get alias from ColumnMatch");
-
-        Some(str.to_string())
+        Some(
+            self.alias
+                .as_ref()?
+                .utf8_text(sql.as_bytes())
+                .expect("Failed to get alias from ColumnMatch")
+                .to_string(),
+        )
     }
 
     pub fn get_column(&self, sql: &str) -> String {
