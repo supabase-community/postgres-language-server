@@ -32,11 +32,39 @@ In squawk, you will see:
 
 If you learn something new that might help in porting all the rules, please update this document.
 
+LEARNINGS:
+
+
 Please update the list below with the rules that we need to migrate, and the ones that are already migrated. Keep the list up-to-date.
 
 TODO:
-
+- adding_field_with_default
+- adding_foreign_key_constraint
+- adding_not_null_field
+- adding_primary_key_constraint
+- ban_char_field
+- ban_concurrent_index_creation_in_transaction
+- changing_column_type
+- constraint_missing_not_valid
+- disallow_unique_constraint
+- prefer_big_int
+- prefer_bigint_over_int
+- prefer_bigint_over_smallint
+- prefer_identity
+- prefer_robust_stmts
+- prefer_text_field
+- prefer_timestamptz
+- renaming_column
+- renaming_table
+- require_concurrent_index_creation
+- require_concurrent_index_deletion
+- transaction_nesting
 
 DONE:
+- adding_required_field (already exists in pgt_analyser)
+- ban_drop_column (already exists in pgt_analyser)
+- ban_drop_database (already exists in pgt_analyser, as bad_drop_database in squawk)
+- ban_drop_not_null (already exists in pgt_analyser)
+- ban_drop_table (already exists in pgt_analyser)
 
 

@@ -154,4 +154,4 @@ show-logs:
     tail -f $(ls $PGT_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
 
 port-squawk:
-    unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions < PLAN.md
+    unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions "please read PLAN.md and follow the instructions closely"
