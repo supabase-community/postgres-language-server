@@ -4,7 +4,7 @@ use std::{fs, path::Path};
 use crate::utils;
 
 pub fn generate_cli_doc(docs_dir: &Path) -> anyhow::Result<()> {
-    let file_path = docs_dir.join("cli_reference.md");
+    let file_path = docs_dir.join("reference/cli.md");
 
     let content = fs::read_to_string(&file_path)?;
 

@@ -20,7 +20,7 @@ use std::{
 ///
 /// * `docs_dir`: Path to the docs directory.
 pub fn generate_rules_docs(docs_dir: &Path) -> anyhow::Result<()> {
-    let rules_dir = docs_dir.join("rules");
+    let rules_dir = docs_dir.join("reference/rules");
 
     if rules_dir.exists() {
         fs::remove_dir_all(&rules_dir)?;

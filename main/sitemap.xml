@@ -2,62 +2,102 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://pgtools.dev/main/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/checking_migrations/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/configuration/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/cli_reference/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/getting_started/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/env_variables/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/manual_installation/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/plpgsql/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/features/editor_features/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rule_sources/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/features/linting/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rule_suppressions/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/features/plpgsql/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/features/syntax_diagnostics/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/troubleshooting/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/features/type_checking/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/adding-required-field/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/guides/checking_migrations/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/ban-drop-column/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/guides/configure_database/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/ban-drop-database/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/guides/continuous_integration/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/ban-drop-not-null/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/guides/ide_setup/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/ban-drop-table/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/guides/suppressions/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
     <url>
-         <loc>https://pgtools.dev/main/rules/ban-truncate-cascade/</loc>
-         <lastmod>2025-09-09</lastmod>
+         <loc>https://pgtools.dev/main/guides/vcs_integration/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/cli/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/env_variables/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rule_sources/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/adding-required-field/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/ban-drop-column/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/ban-drop-database/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/ban-drop-not-null/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/ban-drop-table/</loc>
+         <lastmod>2025-09-10</lastmod>
+    </url>
+    <url>
+         <loc>https://pgtools.dev/main/reference/rules/ban-truncate-cascade/</loc>
+         <lastmod>2025-09-10</lastmod>
     </url>
 </urlset>

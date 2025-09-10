@@ -6,7 +6,7 @@ use std::path::Path;
 use crate::utils::replace_section;
 
 pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
-    let file_path = docs_dir.join("env_variables.md");
+    let file_path = docs_dir.join("reference/env_variables.md");
 
     let mut content = vec![];
 
