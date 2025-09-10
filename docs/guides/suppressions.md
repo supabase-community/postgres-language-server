@@ -1,4 +1,4 @@
-# Rule Suppressions
+# Diagnostics Suppressions
 
 You can suppress specific diagnostics or rules in your code using suppression comments. This is useful when you want to ignore a particular rule for an entire file, a line or a block of code.
 
@@ -90,5 +90,5 @@ alter table tasks drop column created_at;
 
 ## Notes
 
-- Trying to suppress diagnostics that have already been disabled in your [configuration file](/#configuration) will show a warning.
-- Trying to suppress diagnostics that don't haven't been raised will also show a warning.
+- Trying to suppress diagnostics that have already been disabled in your [configuration file](/#configuration) will show a warning.  
+- Trying to suppress diagnostics that don't haven't been raised will also show a warning.  
