@@ -83,5 +83,6 @@ postgrestools check sql/ --disable-db
 ```
 
 When disabled, you'll still get:
+
 - Basic syntax highlighting
 - Linting rules that don't require schema information

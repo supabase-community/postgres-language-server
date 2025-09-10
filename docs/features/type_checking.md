@@ -5,11 +5,12 @@ The Postgres Language Server validates your SQL queries against your actual data
 ## How it Works
 
 When you write a SQL query, the language server:
+
 1. Connects to your database
 2. Asks Postgres to validate your query without running it
 3. Shows any errors directly in your editor
 
-Since it uses your actual database, you get the exact same validation that would happen at runtime - but instantly as you type.
+Since it uses your actual database, you get the same validation that happens at runtime - as soon as you type.
 
 ## Supported Statements
 

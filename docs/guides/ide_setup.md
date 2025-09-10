@@ -28,8 +28,8 @@ Is your favorite editor missing? Thanks to the language server protocol, integra
 ### Use the LSP proxy
 The CLI has a command called `lsp-proxy`. When executed, we will spawn two processes:
 
-- a daemon that does execute the requested operations;
-- a server that functions as a proxy between the requests of the client - the editor - and the server - the daemon;
+- a daemon that does execute the requested operations;  
+- a server that functions as a proxy between the requests of the client - the editor - and the server - the daemon;  
 
 If your editor is able to interact with a server and send [JSON-RPC](https://www.jsonrpc.org/) request, you only need to configure the editor run that command.
 
@@ -60,9 +60,9 @@ Operations via the daemon are significantly slower than the CLI itself, so it’
 
 The daemon saves logs in your file system. Logs are stored in a folder called `pgt-logs`. The path of this folder changes based on your operative system:
 
-- Linux: `~/.cache/pgt;`
-- Windows: `C:\Users\<UserName>\AppData\Local\supabase-community\pgt\cache`
-- macOS: `/Users/<UserName>/Library/Caches/dev.supabase-community.pgt`
+- Linux: `~/.cache/pgt;`  
+- Windows: `C:\Users\<UserName>\AppData\Local\supabase-community\pgt\cache`  
+- macOS: `/Users/<UserName>/Library/Caches/dev.supabase-community.pgt`  
 
 For other operative systems, you can find the folder in the system’s temporary directory.
 

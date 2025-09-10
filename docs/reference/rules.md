@@ -2,7 +2,7 @@
 
 Below the list of rules supported by the Postgres Language Server, divided by group. Here's a legend of the emojis:
 
-- The icon ✅ indicates that the rule is part of the recommended rules.
+- The icon ✅ indicates that the rule is part of the recommended rules.  
 
 [//]: # (BEGIN RULES_INDEX)
 
