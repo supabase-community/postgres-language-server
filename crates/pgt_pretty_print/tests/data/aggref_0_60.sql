@@ -1,0 +1,1 @@
+SELECT COUNT(*), SUM(amount), AVG(amount) FROM orders

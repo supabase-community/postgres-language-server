@@ -184,6 +184,15 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::AIndirection(ind) => ind.to_tokens(e),
             pgt_query::protobuf::node::Node::AIndices(idx) => idx.to_tokens(e),
             pgt_query::protobuf::node::Node::LockingClause(clause) => clause.to_tokens(e),
+            pgt_query::protobuf::node::Node::TableFunc(func) => func.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonTable(table) => table.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonValueExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonTablePathSpec(spec) => spec.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonTableColumn(col) => col.to_tokens(e),
+            pgt_query::protobuf::node::Node::DistinctExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::CollateExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::NullIfExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::SqlvalueFunction(expr) => expr.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -380,6 +389,15 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::AIndirection(ind) => ind.to_tokens(e),
                 pgt_query::protobuf::node::Node::AIndices(idx) => idx.to_tokens(e),
                 pgt_query::protobuf::node::Node::LockingClause(clause) => clause.to_tokens(e),
+                pgt_query::protobuf::node::Node::TableFunc(func) => func.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonTable(table) => table.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonValueExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonTablePathSpec(spec) => spec.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonTableColumn(col) => col.to_tokens(e),
+                pgt_query::protobuf::node::Node::DistinctExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::CollateExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::NullIfExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::SqlvalueFunction(expr) => expr.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -1178,6 +1196,49 @@ impl ToTokens for pgt_query::protobuf::DropStmt {
         if e.is_top_level() {
             e.token(TokenKind::SEMICOLON);
         }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::RowCompareExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::RowCompareExpr, None, false);
+
+        e.token(TokenKind::L_PAREN);
+        for (i, arg) in self.largs.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            arg.to_tokens(e);
+        }
+        e.token(TokenKind::R_PAREN);
+
+        e.space();
+
+        use pgt_query::protobuf::RowCompareType;
+        match self.rctype() {
+            RowCompareType::RowcompareLt => e.token(TokenKind::LT),
+            RowCompareType::RowcompareLe => e.token(TokenKind::LTE),
+            RowCompareType::RowcompareEq => e.token(TokenKind::EQ),
+            RowCompareType::RowcompareGe => e.token(TokenKind::GTE),
+            RowCompareType::RowcompareGt => e.token(TokenKind::GT),
+            RowCompareType::RowcompareNe => e.token(TokenKind::NE),
+            RowCompareType::Undefined => todo!(),
+        }
+
+        e.space();
+
+        e.token(TokenKind::L_PAREN);
+        for (i, arg) in self.rargs.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            arg.to_tokens(e);
+        }
+        e.token(TokenKind::R_PAREN);
 
         e.group_end();
     }
@@ -8021,6 +8082,203 @@ impl ToTokens for pgt_query::protobuf::LockingClause {
                 e.space();
                 e.token(TokenKind::NOWAIT_KW);
             }
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::TableFunc {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::TableFunc, None, false);
+
+        match self.functype() {
+            pgt_query::protobuf::TableFuncType::TftJsonTable => {
+                e.token(TokenKind::IDENT("JSON_TABLE".to_string()));
+            }
+            pgt_query::protobuf::TableFuncType::TftXmltable => {
+                e.token(TokenKind::IDENT("XMLTABLE".to_string()));
+            }
+            _ => todo!("Unknown table function type"),
+        }
+
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref docexpr) = self.docexpr {
+            docexpr.to_tokens(e);
+            e.token(TokenKind::COMMA);
+            e.line(LineType::SoftOrSpace);
+        }
+
+        if let Some(ref rowexpr) = self.rowexpr {
+            rowexpr.to_tokens(e);
+            e.line(LineType::SoftOrSpace);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonTable {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonTable, None, false);
+
+        e.token(TokenKind::IDENT("JSON_TABLE".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref context_item) = self.context_item {
+            context_item.to_tokens(e);
+            e.token(TokenKind::COMMA);
+            e.line(LineType::SoftOrSpace);
+        }
+
+        if let Some(ref pathspec) = self.pathspec {
+            pathspec.to_tokens(e);
+        }
+
+        if !self.columns.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::COLUMNS_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.line(LineType::Hard);
+            e.indent_start();
+
+            for (i, col) in self.columns.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::Hard);
+                }
+                col.to_tokens(e);
+            }
+
+            e.indent_end();
+            e.line(LineType::Hard);
+            e.token(TokenKind::R_PAREN);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        if let Some(ref alias) = self.alias {
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            alias.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonValueExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref raw_expr) = self.raw_expr {
+            raw_expr.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonTablePathSpec {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref string) = self.string {
+            string.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonTableColumn {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT(self.name.clone()));
+        e.space();
+
+        if let Some(ref type_name) = self.type_name {
+            type_name.to_tokens(e);
+        }
+
+        if let Some(ref pathspec) = self.pathspec {
+            e.space();
+            e.token(TokenKind::PATH_KW);
+            e.space();
+            pathspec.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::DistinctExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::DistinctExpr, None, false);
+
+        if !self.args.is_empty() {
+            if self.args.len() >= 2 {
+                self.args[0].to_tokens(e);
+                e.space();
+                e.token(TokenKind::IS_KW);
+                e.space();
+                e.token(TokenKind::DISTINCT_KW);
+                e.space();
+                e.token(TokenKind::FROM_KW);
+                e.space();
+                self.args[1].to_tokens(e);
+            }
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::NullIfExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::NullIfExpr, None, false);
+
+        e.token(TokenKind::NULLIF_KW);
+        e.token(TokenKind::L_PAREN);
+
+        if self.args.len() >= 2 {
+            self.args[0].to_tokens(e);
+            e.token(TokenKind::COMMA);
+            e.space();
+            self.args[1].to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::SqlValueFunction {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::SqlValueFunctionOp;
+
+        match self.op() {
+            SqlValueFunctionOp::SvfopCurrentDate => e.token(TokenKind::CURRENT_DATE_KW),
+            SqlValueFunctionOp::SvfopCurrentTime => e.token(TokenKind::CURRENT_TIME_KW),
+            SqlValueFunctionOp::SvfopCurrentTimeN => e.token(TokenKind::CURRENT_TIME_KW),
+            SqlValueFunctionOp::SvfopCurrentTimestamp => e.token(TokenKind::CURRENT_TIMESTAMP_KW),
+            SqlValueFunctionOp::SvfopCurrentTimestampN => e.token(TokenKind::CURRENT_TIMESTAMP_KW),
+            SqlValueFunctionOp::SvfopLocaltime => e.token(TokenKind::LOCALTIME_KW),
+            SqlValueFunctionOp::SvfopLocaltimeN => e.token(TokenKind::LOCALTIME_KW),
+            SqlValueFunctionOp::SvfopLocaltimestamp => e.token(TokenKind::LOCALTIMESTAMP_KW),
+            SqlValueFunctionOp::SvfopLocaltimestampN => e.token(TokenKind::LOCALTIMESTAMP_KW),
+            SqlValueFunctionOp::SvfopCurrentRole => e.token(TokenKind::CURRENT_ROLE_KW),
+            SqlValueFunctionOp::SvfopCurrentUser => e.token(TokenKind::CURRENT_USER_KW),
+            SqlValueFunctionOp::SvfopUser => e.token(TokenKind::USER_KW),
+            SqlValueFunctionOp::SvfopSessionUser => e.token(TokenKind::SESSION_USER_KW),
+            SqlValueFunctionOp::SvfopCurrentCatalog => e.token(TokenKind::CURRENT_CATALOG_KW),
+            SqlValueFunctionOp::SvfopCurrentSchema => e.token(TokenKind::CURRENT_SCHEMA_KW),
+            SqlValueFunctionOp::SqlvalueFunctionOpUndefined => todo!(),
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CollateExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::CollateExpr, None, false);
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
         }
 
         e.group_end();

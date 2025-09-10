@@ -1,0 +1,15 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 59
+input_file: crates/pgt_pretty_print/tests/data/aggref_0_60.sql
+---
+SELECT
+  count(*),
+  sum(
+    amount
+  ),
+  avg(
+    amount
+  )
+FROM
+  orders;
