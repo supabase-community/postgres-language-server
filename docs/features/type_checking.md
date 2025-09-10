@@ -38,7 +38,7 @@ The `searchPath` supports:
 - Glob patterns (e.g., `"app_*"` to match `app_users`, `app_products`, etc.)
 - The order matters - schemas are searched in the order specified
 
-If not configured, defaults to `["public"]`.
+Even if not specified, the LSP will always search`"public"` in last position.
 
 ## What Gets Checked
 

@@ -1,6 +1,8 @@
 # Integrate with VCS
 
-The VCS (Version Control System) integration is meant to take advantage of additional features that only a VCS can provide. These features include ignoring files based on your VCS ignore patterns, checking only changed files, and checking staged files before commits. The integration is opt-in. You have to enable `vcs.enabled` and set `vcs.clientKind` in the configuration file:
+The VCS (Version Control System) integration is meant to take advantage of additional features that only a VCS can provide. These features include ignoring files based on your VCS ignore patterns, checking only changed files, and checking staged files before commits.
+
+The integration is opt-in. You have to enable `vcs.enabled` and set `vcs.clientKind` in the configuration file:
 
 
 ```json
