@@ -141,6 +141,17 @@ pub struct Safety {
     #[doc = r" It enables ALL rules for this group."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all: Option<bool>,
+    #[doc = "Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_foreign_key_constraint:
+        Option<RuleConfiguration<pgt_analyser::options::AddingForeignKeyConstraint>>,
+    #[doc = "Setting a column NOT NULL blocks reads while the table is scanned."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_not_null_field: Option<RuleConfiguration<pgt_analyser::options::AddingNotNullField>>,
+    #[doc = "Adding a primary key constraint results in locks and table rewrites."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_primary_key_constraint:
+        Option<RuleConfiguration<pgt_analyser::options::AddingPrimaryKeyConstraint>>,
     #[doc = "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adding_required_field:
@@ -164,6 +175,10 @@ pub struct Safety {
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
     pub(crate) const GROUP_RULES: &'static [&'static str] = &[
+        "addingFieldWithDefault",
+        "addingForeignKeyConstraint",
+        "addingNotNullField",
+        "addingPrimaryKeyConstraint",
         "addingRequiredField",
         "banDropColumn",
         "banDropDatabase",
@@ -172,9 +187,13 @@ impl Safety {
         "banTruncateCascade",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -183,6 +202,10 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -199,68 +222,98 @@ impl Safety {
     }
     pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.adding_required_field.as_ref() {
-            if rule.is_enabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-            }
-        }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.adding_not_null_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.adding_required_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_database.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
         index_set
     }
     pub(crate) fn get_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.adding_required_field.as_ref() {
-            if rule.is_disabled() {
-                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
-            }
-        }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.adding_not_null_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.adding_required_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_database.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
         index_set
@@ -292,6 +345,10 @@ impl Safety {
     }
     pub(crate) fn severity(rule_name: &str) -> Severity {
         match rule_name {
+            "addingFieldWithDefault" => Severity::Warning,
+            "addingForeignKeyConstraint" => Severity::Warning,
+            "addingNotNullField" => Severity::Warning,
+            "addingPrimaryKeyConstraint" => Severity::Warning,
             "addingRequiredField" => Severity::Error,
             "banDropColumn" => Severity::Warning,
             "banDropDatabase" => Severity::Warning,
@@ -306,6 +363,18 @@ impl Safety {
         rule_name: &str,
     ) -> Option<(RulePlainConfiguration, Option<RuleOptions>)> {
         match rule_name {
+            "addingForeignKeyConstraint" => self
+                .adding_foreign_key_constraint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "addingNotNullField" => self
+                .adding_not_null_field
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "addingPrimaryKeyConstraint" => self
+                .adding_primary_key_constraint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "addingRequiredField" => self
                 .adding_required_field
                 .as_ref()

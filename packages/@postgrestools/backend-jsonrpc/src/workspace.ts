@@ -63,6 +63,10 @@ export interface Advices {
 	advices: Advice[];
 }
 export type Category =
+	| "lint/safety/addingFieldWithDefault"
+	| "lint/safety/addingForeignKeyConstraint"
+	| "lint/safety/addingNotNullField"
+	| "lint/safety/addingPrimaryKeyConstraint"
 	| "lint/safety/addingRequiredField"
 	| "lint/safety/banDropColumn"
 	| "lint/safety/banDropDatabase"
@@ -413,6 +417,22 @@ export type VcsClientKind = "git";
  * A list of rules that belong to this group
  */
 export interface Safety {
+	/**
+	 * Adding a field with a default value might lock the table.
+	 */
+	addingFieldWithDefault?: RuleConfiguration_for_Null;
+	/**
+	 * Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.
+	 */
+	addingForeignKeyConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Setting a column NOT NULL blocks reads while the table is scanned.
+	 */
+	addingNotNullField?: RuleConfiguration_for_Null;
+	/**
+	 * Adding a primary key constraint results in locks and table rewrites.
+	 */
+	addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
 	/**
 	 * Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
 	 */

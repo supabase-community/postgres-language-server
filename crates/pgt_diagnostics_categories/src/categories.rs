@@ -13,6 +13,10 @@
 // must be between `define_categories! {\n` and `\n    ;\n`.
 
 define_categories! {
+    "lint/safety/addingFieldWithDefault": "https://pgtools.dev/latest/rules/adding-field-with-default",
+    "lint/safety/addingForeignKeyConstraint": "https://pgtools.dev/latest/rules/adding-foreign-key-constraint",
+    "lint/safety/addingNotNullField": "https://pgtools.dev/latest/rules/adding-not-null-field",
+    "lint/safety/addingPrimaryKeyConstraint": "https://pgtools.dev/latest/rules/adding-primary-key-constraint",
     "lint/safety/addingRequiredField": "https://pgtools.dev/latest/rules/adding-required-field",
     "lint/safety/banDropColumn": "https://pgtools.dev/latest/rules/ban-drop-column",
     "lint/safety/banDropDatabase": "https://pgtools.dev/latest/rules/ban-drop-database",

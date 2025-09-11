@@ -30,18 +30,23 @@ In squawk, you will see:
 
 ```
 
+Please always write idiomatic code!
+Only add comments to explain WHY the code is doing something. DO NOT write comments to explain WHAT the code is doing.
+
 If you learn something new that might help in porting all the rules, please update this document.
 
 LEARNINGS:
-
+- Use `cargo clippy` to check your code after writing it
+- The `just new-lintrule` command expects severity to be "info", "warn", or "error" (not "warning")
+- RuleDiagnostic methods: `detail(span, msg)` takes two parameters, `note(msg)` takes only one parameter
+- To check Postgres version: access `ctx.schema_cache().is_some_and(|sc| sc.version.major_version)` which gives e.g. 17
+- NEVER skip anything, or use a subset of something. ALWAYS do the full thing. For example, copy the entire non-volatile functions list from Squawk, not just a subset.
+- Remember to run `just gen-lint` after creating a new rule to generate all necessary files
 
 Please update the list below with the rules that we need to migrate, and the ones that are already migrated. Keep the list up-to-date.
 
 TODO:
 - adding_field_with_default
-- adding_foreign_key_constraint
-- adding_not_null_field
-- adding_primary_key_constraint
 - ban_char_field
 - ban_concurrent_index_creation_in_transaction
 - changing_column_type
@@ -61,6 +66,9 @@ TODO:
 - transaction_nesting
 
 DONE:
+- adding_foreign_key_constraint ✓ (ported from Squawk)
+- adding_not_null_field ✓ (ported from Squawk)
+- adding_primary_key_constraint ✓ (ported from Squawk)
 - adding_required_field (already exists in pgt_analyser)
 - ban_drop_column (already exists in pgt_analyser)
 - ban_drop_database (already exists in pgt_analyser, as bad_drop_database in squawk)
