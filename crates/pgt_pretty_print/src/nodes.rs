@@ -193,6 +193,12 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::CollateExpr(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::NullIfExpr(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::SqlvalueFunction(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::IntoClause(clause) => clause.to_tokens(e),
+            pgt_query::protobuf::node::Node::PartitionElem(elem) => elem.to_tokens(e),
+            pgt_query::protobuf::node::Node::PartitionSpec(spec) => spec.to_tokens(e),
+            pgt_query::protobuf::node::Node::PartitionBoundSpec(spec) => spec.to_tokens(e),
+            pgt_query::protobuf::node::Node::SetToDefault(def) => def.to_tokens(e),
+            pgt_query::protobuf::node::Node::TableLikeClause(clause) => clause.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -398,6 +404,12 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::CollateExpr(expr) => expr.to_tokens(e),
                 pgt_query::protobuf::node::Node::NullIfExpr(expr) => expr.to_tokens(e),
                 pgt_query::protobuf::node::Node::SqlvalueFunction(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::IntoClause(clause) => clause.to_tokens(e),
+                pgt_query::protobuf::node::Node::PartitionElem(elem) => elem.to_tokens(e),
+                pgt_query::protobuf::node::Node::PartitionSpec(spec) => spec.to_tokens(e),
+                pgt_query::protobuf::node::Node::PartitionBoundSpec(spec) => spec.to_tokens(e),
+                pgt_query::protobuf::node::Node::SetToDefault(def) => def.to_tokens(e),
+                pgt_query::protobuf::node::Node::TableLikeClause(clause) => clause.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -485,6 +497,10 @@ impl ToTokens for pgt_query::protobuf::SelectStmt {
                     target.to_tokens(e);
                 }
                 e.indent_end();
+            }
+
+            if let Some(ref into_clause) = self.into_clause {
+                into_clause.to_tokens(e);
             }
 
             if !self.from_clause.is_empty() {
@@ -1125,6 +1141,20 @@ impl ToTokens for pgt_query::protobuf::CreateStmt {
             relation.to_tokens(e);
         }
 
+        if let Some(ref partbound) = self.partbound {
+            e.space();
+            e.token(TokenKind::PARTITION_KW);
+            e.space();
+            e.token(TokenKind::OF_KW);
+            e.space();
+            if !self.inh_relations.is_empty() {
+                if let Some(ref parent) = self.inh_relations.first() {
+                    parent.to_tokens(e);
+                }
+            }
+            partbound.to_tokens(e);
+        }
+
         if !self.table_elts.is_empty() {
             e.space();
             e.token(TokenKind::L_PAREN);
@@ -1136,6 +1166,10 @@ impl ToTokens for pgt_query::protobuf::CreateStmt {
                 elt.to_tokens(e);
             }
             e.token(TokenKind::R_PAREN);
+        }
+
+        if let Some(ref partspec) = self.partspec {
+            partspec.to_tokens(e);
         }
 
         if e.is_top_level() {
@@ -1219,12 +1253,12 @@ impl ToTokens for pgt_query::protobuf::RowCompareExpr {
 
         use pgt_query::protobuf::RowCompareType;
         match self.rctype() {
-            RowCompareType::RowcompareLt => e.token(TokenKind::LT),
-            RowCompareType::RowcompareLe => e.token(TokenKind::LTE),
-            RowCompareType::RowcompareEq => e.token(TokenKind::EQ),
-            RowCompareType::RowcompareGe => e.token(TokenKind::GTE),
-            RowCompareType::RowcompareGt => e.token(TokenKind::GT),
-            RowCompareType::RowcompareNe => e.token(TokenKind::NE),
+            RowCompareType::RowcompareLt => e.token(TokenKind::IDENT("<".to_string())),
+            RowCompareType::RowcompareLe => e.token(TokenKind::IDENT("<=".to_string())),
+            RowCompareType::RowcompareEq => e.token(TokenKind::IDENT("=".to_string())),
+            RowCompareType::RowcompareGe => e.token(TokenKind::IDENT(">=".to_string())),
+            RowCompareType::RowcompareGt => e.token(TokenKind::IDENT(">".to_string())),
+            RowCompareType::RowcompareNe => e.token(TokenKind::IDENT("<>".to_string())),
             RowCompareType::Undefined => todo!(),
         }
 
@@ -8282,6 +8316,199 @@ impl ToTokens for pgt_query::protobuf::CollateExpr {
         }
 
         e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::IntoClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::IntoClause, None, false);
+
+        e.space();
+        e.token(TokenKind::INTO_KW);
+        e.space();
+
+        if let Some(ref rel) = self.rel {
+            rel.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::PartitionElem {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::PartitionElem, None, false);
+
+        if !self.name.is_empty() {
+            e.token(TokenKind::IDENT(self.name.clone()));
+        } else if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::PartitionSpec {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::PartitionSpec, None, false);
+
+        e.space();
+        e.token(TokenKind::PARTITION_KW);
+        e.space();
+        e.token(TokenKind::BY_KW);
+        e.space();
+
+        use pgt_query::protobuf::PartitionStrategy;
+        match self.strategy() {
+            PartitionStrategy::List => e.token(TokenKind::IDENT("LIST".to_string())),
+            PartitionStrategy::Range => e.token(TokenKind::RANGE_KW),
+            PartitionStrategy::Hash => e.token(TokenKind::IDENT("HASH".to_string())),
+            _ => {}
+        }
+
+        e.space();
+        e.token(TokenKind::L_PAREN);
+
+        for (i, param) in self.part_params.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            param.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::PartitionBoundSpec {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::PartitionBoundSpec, None, false);
+
+        e.space();
+        e.token(TokenKind::FOR_KW);
+        e.space();
+        e.token(TokenKind::VALUES_KW);
+        e.space();
+
+        if self.is_default {
+            e.token(TokenKind::DEFAULT_KW);
+        } else if !self.listdatums.is_empty() {
+            e.token(TokenKind::IN_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            for (i, datum) in self.listdatums.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                datum.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        } else if !self.lowerdatums.is_empty() && !self.upperdatums.is_empty() {
+            e.token(TokenKind::FROM_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            for (i, datum) in self.lowerdatums.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                datum.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+            e.space();
+            e.token(TokenKind::TO_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            for (i, datum) in self.upperdatums.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                datum.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        } else if self.modulus > 0 {
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.token(TokenKind::IDENT("MODULUS".to_string()));
+            e.space();
+            e.token(TokenKind::IDENT(self.modulus.to_string()));
+            e.token(TokenKind::COMMA);
+            e.space();
+            e.token(TokenKind::IDENT("REMAINDER".to_string()));
+            e.space();
+            e.token(TokenKind::IDENT(self.remainder.to_string()));
+            e.token(TokenKind::R_PAREN);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::SetToDefault {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::DEFAULT_KW);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::TableLikeClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::LIKE_KW);
+        e.space();
+        if let Some(ref relation) = self.relation {
+            relation.to_tokens(e);
+        }
+
+        let options = self.options;
+        if options == 2147483647 {
+            e.space();
+            e.token(TokenKind::INCLUDING_KW);
+            e.space();
+            e.token(TokenKind::ALL_KW);
+        } else {
+            if options & 1 != 0 {
+                e.space();
+                e.token(TokenKind::INCLUDING_KW);
+                e.space();
+                e.token(TokenKind::IDENT("DEFAULTS".to_string()));
+            }
+            if options & 2 != 0 {
+                e.space();
+                e.token(TokenKind::INCLUDING_KW);
+                e.space();
+                e.token(TokenKind::IDENT("IDENTITY".to_string()));
+            }
+            if options & 4 != 0 {
+                e.space();
+                e.token(TokenKind::INCLUDING_KW);
+                e.space();
+                e.token(TokenKind::IDENT("INDEXES".to_string()));
+            }
+            if options & 8 != 0 {
+                e.space();
+                e.token(TokenKind::INCLUDING_KW);
+                e.space();
+                e.token(TokenKind::IDENT("STORAGE".to_string()));
+            }
+            if options & 16 != 0 {
+                e.space();
+                e.token(TokenKind::INCLUDING_KW);
+                e.space();
+                e.token(TokenKind::IDENT("COMMENTS".to_string()));
+            }
+            if options & 32 != 0 {
+                e.space();
+                e.token(TokenKind::INCLUDING_KW);
+                e.space();
+                e.token(TokenKind::IDENT("STATISTICS".to_string()));
+            }
+        }
     }
 }
 

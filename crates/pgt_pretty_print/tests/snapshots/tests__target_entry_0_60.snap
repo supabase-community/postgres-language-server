@@ -1,6 +1,6 @@
 ---
 source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 59
 input_file: crates/pgt_pretty_print/tests/data/target_entry_0_60.sql
+snapshot_kind: text
 ---
 SELECT a FROM t;
