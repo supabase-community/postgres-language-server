@@ -569,4 +569,57 @@ mod tests {
         )
         .await;
     }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn after_quoted_schemas(pool: PgPool) {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        assert_complete_results(
+            format!(
+                r#"select * from "auth".{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"select * from "auth".{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
 }
