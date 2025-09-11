@@ -58,6 +58,7 @@ fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText
 #[cfg(test)]
 mod tests {
 
+    use pgt_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
@@ -599,8 +600,14 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+                CompletionAssertion::CompletionTextAndRange(
+                    "posts".into(),
+                    TextRange::new(21.into(), 21.into()),
+                ),
+                CompletionAssertion::CompletionTextAndRange(
+                    "users".into(),
+                    TextRange::new(21.into(), 21.into()),
+                ),
             ],
             None,
             &pool,
@@ -609,13 +616,40 @@ mod tests {
 
         assert_complete_results(
             format!(
-                r#"select * from "auth".{}"#,
+                r#"select * from "auth"."{}""#,
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+                CompletionAssertion::CompletionTextAndRange(
+                    "posts".into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
+                CompletionAssertion::CompletionTextAndRange(
+                    "users".into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"select * from "auth"."{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::CompletionTextAndRange(
+                    r#"posts""#.into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
+                CompletionAssertion::CompletionTextAndRange(
+                    r#"users""#.into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
             ],
             None,
             &pool,
