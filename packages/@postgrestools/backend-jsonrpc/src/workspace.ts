@@ -68,6 +68,7 @@ export type Category =
 	| "lint/safety/addingNotNullField"
 	| "lint/safety/addingPrimaryKeyConstraint"
 	| "lint/safety/addingRequiredField"
+	| "lint/safety/banCharField"
 	| "lint/safety/banDropColumn"
 	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
@@ -418,7 +419,7 @@ export type VcsClientKind = "git";
  */
 export interface Safety {
 	/**
-	 * Adding a field with a default value might lock the table.
+	 * Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
 	 */
 	addingFieldWithDefault?: RuleConfiguration_for_Null;
 	/**
@@ -441,6 +442,10 @@ export interface Safety {
 	 * It enables ALL rules for this group.
 	 */
 	all?: boolean;
+	/**
+	 * Using CHAR(n) or CHARACTER(n) types is discouraged.
+	 */
+	banCharField?: RuleConfiguration_for_Null;
 	/**
 	 * Dropping a column may break existing clients.
 	 */

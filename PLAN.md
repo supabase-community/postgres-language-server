@@ -46,8 +46,6 @@ LEARNINGS:
 Please update the list below with the rules that we need to migrate, and the ones that are already migrated. Keep the list up-to-date.
 
 TODO:
-- adding_field_with_default
-- ban_char_field
 - ban_concurrent_index_creation_in_transaction
 - changing_column_type
 - constraint_missing_not_valid
@@ -66,10 +64,12 @@ TODO:
 - transaction_nesting
 
 DONE:
+- adding_field_with_default ✓ (ported from Squawk)
 - adding_foreign_key_constraint ✓ (ported from Squawk)
 - adding_not_null_field ✓ (ported from Squawk)
 - adding_primary_key_constraint ✓ (ported from Squawk)
 - adding_required_field (already exists in pgt_analyser)
+- ban_char_field ✓ (ported from Squawk)
 - ban_drop_column (already exists in pgt_analyser)
 - ban_drop_database (already exists in pgt_analyser, as bad_drop_database in squawk)
 - ban_drop_not_null (already exists in pgt_analyser)

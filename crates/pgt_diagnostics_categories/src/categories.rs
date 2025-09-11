@@ -18,6 +18,7 @@ define_categories! {
     "lint/safety/addingNotNullField": "https://pgtools.dev/latest/rules/adding-not-null-field",
     "lint/safety/addingPrimaryKeyConstraint": "https://pgtools.dev/latest/rules/adding-primary-key-constraint",
     "lint/safety/addingRequiredField": "https://pgtools.dev/latest/rules/adding-required-field",
+    "lint/safety/banCharField": "https://pgtools.dev/latest/rules/ban-char-field",
     "lint/safety/banDropColumn": "https://pgtools.dev/latest/rules/ban-drop-column",
     "lint/safety/banDropDatabase": "https://pgtools.dev/latest/rules/ban-drop-database",
     "lint/safety/banDropNotNull": "https://pgtools.dev/latest/rules/ban-drop-not-null",

@@ -357,7 +357,7 @@
       "type": "object",
       "properties": {
         "addingFieldWithDefault": {
-          "description": "Adding a field with a default value might lock the table.",
+          "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -416,6 +416,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "banCharField": {
+          "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "banDropColumn": {
