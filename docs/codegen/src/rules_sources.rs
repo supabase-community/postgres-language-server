@@ -28,7 +28,7 @@ impl PartialOrd for SourceSet {
 }
 
 pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
-    let rule_sources_file = docs_dir.join("rule_sources.md");
+    let rule_sources_file = docs_dir.join("reference/rule_sources.md");
 
     let mut visitor = crate::utils::LintRulesVisitor::default();
     pgt_analyser::visit_registry(&mut visitor);
@@ -69,7 +69,16 @@ pub fn generate_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
         }
     }
 
+    writeln!(buffer, "# Rule Sources",)?;
+    writeln!(
+        buffer,
+        "Many rules are inspired by or directly ported from other tools. This page lists the sources of each rule.",
+    )?;
+
     writeln!(buffer, "## Exclusive rules",)?;
+    if exclusive_rules.is_empty() {
+        writeln!(buffer, "_No exclusive rules available._")?;
+    }
     for (rule, link) in exclusive_rules {
         writeln!(buffer, "- [{rule}]({link}) ")?;
     }

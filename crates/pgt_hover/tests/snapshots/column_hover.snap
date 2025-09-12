@@ -10,6 +10,12 @@ select users.id from users
 
 # Hover Results
 ### `public.users.id`  
-#### `int4` - 🔑 primary key - not null  
+```plain  
+int4 - 🔑 primary key - not null
+  
+```  
 ---    
-Default: `nextval('users_id_seq'::regclass)`
+```plain  
+
+Default: nextval('users_id_seq'::regclass)  
+```

@@ -10,5 +10,10 @@ select now() from users
 
 # Hover Results
 ### `pg_catalog.now() → timestamp with time zone`  
-#### Function - Stable - Security INVOKER  
----
+```plain  
+Function - Stable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```

@@ -77,7 +77,7 @@ impl CompletionScore<'_> {
             Some(ct) => ct,
         };
 
-        let has_mentioned_tables = !ctx.mentioned_relations.is_empty();
+        let has_mentioned_tables = ctx.has_any_mentioned_relations();
         let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
 
         self.score += match self.data {
@@ -248,14 +248,12 @@ impl CompletionScore<'_> {
         };
 
         if ctx
-            .mentioned_relations
-            .get(&Some(schema.to_string()))
+            .get_mentioned_relations(&Some(schema.to_string()))
             .is_some_and(|tables| tables.contains(table_name))
         {
             self.score += 45;
         } else if ctx
-            .mentioned_relations
-            .get(&None)
+            .get_mentioned_relations(&None)
             .is_some_and(|tables| tables.contains(table_name))
         {
             self.score += 30;
@@ -334,13 +332,12 @@ impl CompletionScore<'_> {
              *
              */
             if ctx
-                .mentioned_columns
-                .get(&ctx.wrapping_clause_type)
+                .get_mentioned_columns(&ctx.wrapping_clause_type)
                 .is_some_and(|set| {
                     set.iter().any(|mentioned| match mentioned.alias.as_ref() {
                         Some(als) => {
-                            let aliased_table = ctx.mentioned_table_aliases.get(als.as_str());
-                            column.name == mentioned.column
+                            let aliased_table = ctx.get_mentioned_table_for_alias(als.as_str());
+                            column.name == mentioned.column.replace('"', "")
                                 && aliased_table.is_none_or(|t| t == &column.table_name)
                         }
                         None => mentioned.column == column.name,

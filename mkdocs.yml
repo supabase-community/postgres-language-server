@@ -13,17 +13,27 @@ theme:
     primary: grey
     accent: red
 nav:
-  - Introduction: index.md
+  - Getting Started: getting_started.md
+  - Manual Installation: manual_installation.md
+  - Configuration: configuration.md
+  - Features:
+      - Syntax Diagnostics: features/syntax_diagnostics.md
+      - Linting: features/linting.md
+      - Type Checking: features/type_checking.md
+      - PL/pgSQL Support: features/plpgsql.md
+      - Autocompletion & Hover: features/editor_features.md
   - Guides:
-      - Linting Migrations: checking_migrations.md
-      - PL/pgSQL Support: plpgsql.md
-      - Troubleshooting: troubleshooting.md
+      - Use in your IDE: guides/ide_setup.md
+      - Checking Migrations: guides/checking_migrations.md
+      - Configure database connection: guides/configure_database.md
+      - Suppressions: guides/suppressions.md
+      - Integrate with VCS: guides/vcs_integration.md
+      - Continuous Integration: guides/continuous_integration.md
   - Reference:
-      - Rules: rules.md
-      - Rule Sources: rule_sources.md
-      - Rule Suppressions: rule_suppressions.md
-      - CLI: cli_reference.md
-      - Environment Variables: env_variables.md
+      - CLI Commands: reference/cli.md
+      - Linter Rules: reference/rules.md
+      - Rule Sources: reference/rule_sources.md
+      - Environment Variables: reference/env_variables.md
 
 plugins:
   - gh-admonitions

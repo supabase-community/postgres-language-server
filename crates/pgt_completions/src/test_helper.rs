@@ -1,5 +1,6 @@
 use pgt_schema_cache::SchemaCache;
 use pgt_test_utils::QueryWithCursorPosition;
+use pgt_text_size::TextRange;
 use sqlx::{Executor, PgPool};
 
 use crate::{CompletionItem, CompletionItemKind, CompletionParams, complete};
@@ -77,6 +78,7 @@ pub(crate) enum CompletionAssertion {
     LabelAndDesc(String, String),
     LabelNotExists(String),
     KindNotExists(CompletionItemKind),
+    CompletionTextAndRange(String, TextRange),
 }
 
 impl CompletionAssertion {
@@ -127,6 +129,29 @@ impl CompletionAssertion {
                     desc, &item.description
                 );
             }
+            CompletionAssertion::CompletionTextAndRange(txt, text_range) => {
+                assert_eq!(
+                    item.completion_text.as_ref().map(|t| t.text.as_str()),
+                    Some(txt.as_str()),
+                    "Expected completion text to be {}, but got {}",
+                    txt,
+                    item.completion_text
+                        .as_ref()
+                        .map(|t| t.text.clone())
+                        .unwrap_or("None".to_string())
+                );
+
+                assert_eq!(
+                    item.completion_text.as_ref().map(|t| &t.range),
+                    Some(text_range),
+                    "Expected range to be {:?}, but got {:?}",
+                    text_range,
+                    item.completion_text
+                        .as_ref()
+                        .map(|t| format!("{:?}", &t.range))
+                        .unwrap_or("None".to_string())
+                );
+            }
         }
     }
 }
@@ -146,6 +171,7 @@ pub(crate) async fn assert_complete_results(
             CompletionAssertion::LabelNotExists(_) | CompletionAssertion::KindNotExists(_) => true,
             CompletionAssertion::Label(_)
             | CompletionAssertion::LabelAndKind(_, _)
+            | CompletionAssertion::CompletionTextAndRange(_, _)
             | CompletionAssertion::LabelAndDesc(_, _) => false,
         });
 
