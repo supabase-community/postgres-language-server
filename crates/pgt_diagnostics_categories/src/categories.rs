@@ -19,11 +19,18 @@ define_categories! {
     "lint/safety/addingPrimaryKeyConstraint": "https://pgtools.dev/latest/rules/adding-primary-key-constraint",
     "lint/safety/addingRequiredField": "https://pgtools.dev/latest/rules/adding-required-field",
     "lint/safety/banCharField": "https://pgtools.dev/latest/rules/ban-char-field",
+    "lint/safety/banConcurrentIndexCreationInTransaction": "https://pgtools.dev/latest/rules/ban-concurrent-index-creation-in-transaction",
     "lint/safety/banDropColumn": "https://pgtools.dev/latest/rules/ban-drop-column",
     "lint/safety/banDropDatabase": "https://pgtools.dev/latest/rules/ban-drop-database",
     "lint/safety/banDropNotNull": "https://pgtools.dev/latest/rules/ban-drop-not-null",
     "lint/safety/banDropTable": "https://pgtools.dev/latest/rules/ban-drop-table",
     "lint/safety/banTruncateCascade": "https://pgtools.dev/latest/rules/ban-truncate-cascade",
+    "lint/safety/changingColumnType": "https://pgtools.dev/latest/rules/changing-column-type",
+    "lint/safety/constraintMissingNotValid": "https://pgtools.dev/latest/rules/constraint-missing-not-valid",
+    "lint/safety/preferBigInt": "https://pgtools.dev/latest/rules/prefer-big-int",
+    "lint/safety/preferBigintOverInt": "https://pgtools.dev/latest/rules/prefer-bigint-over-int",
+    "lint/safety/preferBigintOverSmallint": "https://pgtools.dev/latest/rules/prefer-bigint-over-smallint",
+    "lint/safety/preferIdentity": "https://pgtools.dev/latest/rules/prefer-identity",
     // end lint rules
     ;
     // General categories

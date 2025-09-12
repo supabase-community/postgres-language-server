@@ -18,11 +18,18 @@ Rules that detect potential safety issues in your code.
 | [addingPrimaryKeyConstraint](./adding-primary-key-constraint) | Adding a primary key constraint results in locks and table rewrites. | ✅ |
 | [addingRequiredField](./adding-required-field) | Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required. |  |
 | [banCharField](./ban-char-field) | Using CHAR(n) or CHARACTER(n) types is discouraged. |  |
+| [banConcurrentIndexCreationInTransaction](./ban-concurrent-index-creation-in-transaction) | Concurrent index creation is not allowed within a transaction. | ✅ |
 | [banDropColumn](./ban-drop-column) | Dropping a column may break existing clients. | ✅ |
 | [banDropDatabase](./ban-drop-database) | Dropping a database may break existing clients (and everything else, really). |  |
 | [banDropNotNull](./ban-drop-not-null) | Dropping a NOT NULL constraint may break existing clients. | ✅ |
 | [banDropTable](./ban-drop-table) | Dropping a table may break existing clients. | ✅ |
 | [banTruncateCascade](./ban-truncate-cascade) | Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables. |  |
+| [changingColumnType](./changing-column-type) | Changing a column type may break existing clients. |  |
+| [constraintMissingNotValid](./constraint-missing-not-valid) | Adding constraints without NOT VALID blocks all reads and writes. |  |
+| [preferBigInt](./prefer-big-int) | Prefer BIGINT over smaller integer types. |  |
+| [preferBigintOverInt](./prefer-bigint-over-int) | Prefer BIGINT over INT/INTEGER types. |  |
+| [preferBigintOverSmallint](./prefer-bigint-over-smallint) | Prefer BIGINT over SMALLINT types. |  |
+| [preferIdentity](./prefer-identity) | Prefer using IDENTITY columns over serial columns. |  |
 
 [//]: # (END RULES_INDEX)
 

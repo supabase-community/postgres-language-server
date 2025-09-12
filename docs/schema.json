@@ -429,6 +429,17 @@
             }
           ]
         },
+        "banConcurrentIndexCreationInTransaction": {
+          "description": "Concurrent index creation is not allowed within a transaction.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banDropColumn": {
           "description": "Dropping a column may break existing clients.",
           "anyOf": [
@@ -475,6 +486,72 @@
         },
         "banTruncateCascade": {
           "description": "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changingColumnType": {
+          "description": "Changing a column type may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "constraintMissingNotValid": {
+          "description": "Adding constraints without NOT VALID blocks all reads and writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigInt": {
+          "description": "Prefer BIGINT over smaller integer types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigintOverInt": {
+          "description": "Prefer BIGINT over INT/INTEGER types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigintOverSmallint": {
+          "description": "Prefer BIGINT over SMALLINT types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferIdentity": {
+          "description": "Prefer using IDENTITY columns over serial columns.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

@@ -10,6 +10,7 @@ pub type AddingPrimaryKeyConstraint = < lint :: safety :: adding_primary_key_con
 pub type AddingRequiredField =
     <lint::safety::adding_required_field::AddingRequiredField as pgt_analyse::Rule>::Options;
 pub type BanCharField = <lint::safety::ban_char_field::BanCharField as pgt_analyse::Rule>::Options;
+pub type BanConcurrentIndexCreationInTransaction = < lint :: safety :: ban_concurrent_index_creation_in_transaction :: BanConcurrentIndexCreationInTransaction as pgt_analyse :: Rule > :: Options ;
 pub type BanDropColumn =
     <lint::safety::ban_drop_column::BanDropColumn as pgt_analyse::Rule>::Options;
 pub type BanDropDatabase =
@@ -19,3 +20,12 @@ pub type BanDropNotNull =
 pub type BanDropTable = <lint::safety::ban_drop_table::BanDropTable as pgt_analyse::Rule>::Options;
 pub type BanTruncateCascade =
     <lint::safety::ban_truncate_cascade::BanTruncateCascade as pgt_analyse::Rule>::Options;
+pub type ChangingColumnType =
+    <lint::safety::changing_column_type::ChangingColumnType as pgt_analyse::Rule>::Options;
+pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as pgt_analyse :: Rule > :: Options ;
+pub type PreferBigInt = <lint::safety::prefer_big_int::PreferBigInt as pgt_analyse::Rule>::Options;
+pub type PreferBigintOverInt =
+    <lint::safety::prefer_bigint_over_int::PreferBigintOverInt as pgt_analyse::Rule>::Options;
+pub type PreferBigintOverSmallint = < lint :: safety :: prefer_bigint_over_smallint :: PreferBigintOverSmallint as pgt_analyse :: Rule > :: Options ;
+pub type PreferIdentity =
+    <lint::safety::prefer_identity::PreferIdentity as pgt_analyse::Rule>::Options;

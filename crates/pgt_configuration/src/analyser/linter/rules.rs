@@ -163,6 +163,10 @@ pub struct Safety {
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgt_analyser::options::BanCharField>>,
+    #[doc = "Concurrent index creation is not allowed within a transaction."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_concurrent_index_creation_in_transaction:
+        Option<RuleConfiguration<pgt_analyser::options::BanConcurrentIndexCreationInTransaction>>,
     #[doc = "Dropping a column may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_column: Option<RuleConfiguration<pgt_analyser::options::BanDropColumn>>,
@@ -178,6 +182,27 @@ pub struct Safety {
     #[doc = "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_truncate_cascade: Option<RuleConfiguration<pgt_analyser::options::BanTruncateCascade>>,
+    #[doc = "Changing a column type may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changing_column_type: Option<RuleConfiguration<pgt_analyser::options::ChangingColumnType>>,
+    #[doc = "Adding constraints without NOT VALID blocks all reads and writes."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub constraint_missing_not_valid:
+        Option<RuleConfiguration<pgt_analyser::options::ConstraintMissingNotValid>>,
+    #[doc = "Prefer BIGINT over smaller integer types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_big_int: Option<RuleConfiguration<pgt_analyser::options::PreferBigInt>>,
+    #[doc = "Prefer BIGINT over INT/INTEGER types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_bigint_over_int:
+        Option<RuleConfiguration<pgt_analyser::options::PreferBigintOverInt>>,
+    #[doc = "Prefer BIGINT over SMALLINT types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_bigint_over_smallint:
+        Option<RuleConfiguration<pgt_analyser::options::PreferBigintOverSmallint>>,
+    #[doc = "Prefer using IDENTITY columns over serial columns."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_identity: Option<RuleConfiguration<pgt_analyser::options::PreferIdentity>>,
 }
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
@@ -188,11 +213,18 @@ impl Safety {
         "addingPrimaryKeyConstraint",
         "addingRequiredField",
         "banCharField",
+        "banConcurrentIndexCreationInTransaction",
         "banDropColumn",
         "banDropDatabase",
         "banDropNotNull",
         "banDropTable",
         "banTruncateCascade",
+        "changingColumnType",
+        "constraintMissingNotValid",
+        "preferBigInt",
+        "preferBigintOverInt",
+        "preferBigintOverSmallint",
+        "preferIdentity",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -200,8 +232,10 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -215,6 +249,15 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -261,29 +304,64 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_drop_table.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            }
+        }
+        if let Some(rule) = self.changing_column_type.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
+            }
+        }
+        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            }
+        }
+        if let Some(rule) = self.prefer_big_int.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
+            }
+        }
+        if let Some(rule) = self.prefer_identity.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
         index_set
@@ -320,29 +398,64 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_drop_table.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            }
+        }
+        if let Some(rule) = self.changing_column_type.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
+            }
+        }
+        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            }
+        }
+        if let Some(rule) = self.prefer_big_int.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
+            }
+        }
+        if let Some(rule) = self.prefer_identity.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
         index_set
@@ -380,11 +493,18 @@ impl Safety {
             "addingPrimaryKeyConstraint" => Severity::Warning,
             "addingRequiredField" => Severity::Error,
             "banCharField" => Severity::Warning,
+            "banConcurrentIndexCreationInTransaction" => Severity::Error,
             "banDropColumn" => Severity::Warning,
             "banDropDatabase" => Severity::Warning,
             "banDropNotNull" => Severity::Warning,
             "banDropTable" => Severity::Warning,
             "banTruncateCascade" => Severity::Error,
+            "changingColumnType" => Severity::Warning,
+            "constraintMissingNotValid" => Severity::Warning,
+            "preferBigInt" => Severity::Warning,
+            "preferBigintOverInt" => Severity::Warning,
+            "preferBigintOverSmallint" => Severity::Warning,
+            "preferIdentity" => Severity::Warning,
             _ => unreachable!(),
         }
     }
@@ -417,6 +537,10 @@ impl Safety {
                 .ban_char_field
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
+            "banConcurrentIndexCreationInTransaction" => self
+                .ban_concurrent_index_creation_in_transaction
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "banDropColumn" => self
                 .ban_drop_column
                 .as_ref()
@@ -435,6 +559,30 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "banTruncateCascade" => self
                 .ban_truncate_cascade
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "changingColumnType" => self
+                .changing_column_type
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "constraintMissingNotValid" => self
+                .constraint_missing_not_valid
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferBigInt" => self
+                .prefer_big_int
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferBigintOverInt" => self
+                .prefer_bigint_over_int
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferBigintOverSmallint" => self
+                .prefer_bigint_over_smallint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferIdentity" => self
+                .prefer_identity
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,

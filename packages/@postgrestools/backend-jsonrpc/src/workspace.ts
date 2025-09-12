@@ -69,11 +69,18 @@ export type Category =
 	| "lint/safety/addingPrimaryKeyConstraint"
 	| "lint/safety/addingRequiredField"
 	| "lint/safety/banCharField"
+	| "lint/safety/banConcurrentIndexCreationInTransaction"
 	| "lint/safety/banDropColumn"
 	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
 	| "lint/safety/banTruncateCascade"
+	| "lint/safety/changingColumnType"
+	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/preferBigInt"
+	| "lint/safety/preferBigintOverInt"
+	| "lint/safety/preferBigintOverSmallint"
+	| "lint/safety/preferIdentity"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -105,7 +112,7 @@ export type DiagnosticTags = DiagnosticTag[];
 /**
 	* Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
-See the [Visitor] trait for additional documentation on all the supported advice types. 
+See the [Visitor] trait for additional documentation on all the supported advice types.
 	 */
 export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
@@ -210,7 +217,7 @@ export interface CompletionItem {
 /**
 	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
 
-label: "users", description: "Schema: auth", completion_text: "auth.users". 
+label: "users", description: "Schema: auth", completion_text: "auth.users".
 	 */
 export interface CompletionText {
 	is_snippet: boolean;
@@ -394,7 +401,7 @@ export interface PartialVcsConfiguration {
 	/**
 	* The folder where we should check for VCS files. By default, we will use the same folder where `postgrestools.jsonc` was found.
 
-If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
 	 */
 	root?: string;
 	/**
@@ -447,6 +454,10 @@ export interface Safety {
 	 */
 	banCharField?: RuleConfiguration_for_Null;
 	/**
+	 * Concurrent index creation is not allowed within a transaction.
+	 */
+	banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
+	/**
 	 * Dropping a column may break existing clients.
 	 */
 	banDropColumn?: RuleConfiguration_for_Null;
@@ -466,6 +477,30 @@ export interface Safety {
 	 * Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables.
 	 */
 	banTruncateCascade?: RuleConfiguration_for_Null;
+	/**
+	 * Changing a column type may break existing clients.
+	 */
+	changingColumnType?: RuleConfiguration_for_Null;
+	/**
+	 * Adding constraints without NOT VALID blocks all reads and writes.
+	 */
+	constraintMissingNotValid?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer BIGINT over smaller integer types.
+	 */
+	preferBigInt?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer BIGINT over INT/INTEGER types.
+	 */
+	preferBigintOverInt?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer BIGINT over SMALLINT types.
+	 */
+	preferBigintOverSmallint?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer using IDENTITY columns over serial columns.
+	 */
+	preferIdentity?: RuleConfiguration_for_Null;
 	/**
 	 * It enables the recommended rules for this group
 	 */

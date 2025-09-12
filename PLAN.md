@@ -17,6 +17,15 @@ pub struct RuleContext<'a, R: Rule> {
     // the file context which contains other statements in that file in case you need them
     file_context: &'a AnalysedFileContext,
 }
+
+pub struct AnalysedFileContext<'a> {
+    // all other statements in this file
+    pub all_stmts: &'a Vec<pgt_query::NodeEnum>,
+    // total count of statements in this file
+    pub stmt_count: usize,
+    // all statements before the currently analysed one
+    pub previous_stmts: Vec<&'a pgt_query::NodeEnum>,
+}
 ```
 
 In squawk, you will see:
@@ -41,20 +50,14 @@ LEARNINGS:
 - RuleDiagnostic methods: `detail(span, msg)` takes two parameters, `note(msg)` takes only one parameter
 - To check Postgres version: access `ctx.schema_cache().is_some_and(|sc| sc.version.major_version)` which gives e.g. 17
 - NEVER skip anything, or use a subset of something. ALWAYS do the full thing. For example, copy the entire non-volatile functions list from Squawk, not just a subset.
+- If you are missing features from our context to be able to properly implement a rule, DO NOT DO IT. Instead, add that rule to the NEEDS FEATURES list below.
 - Remember to run `just gen-lint` after creating a new rule to generate all necessary files
 
 Please update the list below with the rules that we need to migrate, and the ones that are already migrated. Keep the list up-to-date.
 
+NEEDS FEATURES:
+
 TODO:
-- ban_concurrent_index_creation_in_transaction
-- changing_column_type
-- constraint_missing_not_valid
-- disallow_unique_constraint
-- prefer_big_int
-- prefer_bigint_over_int
-- prefer_bigint_over_smallint
-- prefer_identity
-- prefer_robust_stmts
 - prefer_text_field
 - prefer_timestamptz
 - renaming_column
@@ -62,6 +65,8 @@ TODO:
 - require_concurrent_index_creation
 - require_concurrent_index_deletion
 - transaction_nesting
+- disallow_unique_constraint
+- prefer_robust_stmts
 
 DONE:
 - adding_field_with_default ✓ (ported from Squawk)
@@ -70,9 +75,16 @@ DONE:
 - adding_primary_key_constraint ✓ (ported from Squawk)
 - adding_required_field (already exists in pgt_analyser)
 - ban_char_field ✓ (ported from Squawk)
+- ban_concurrent_index_creation_in_transaction ✓ (ported from Squawk)
 - ban_drop_column (already exists in pgt_analyser)
+- changing_column_type ✓ (ported from Squawk)
+- constraint_missing_not_valid ✓ (ported from Squawk)
 - ban_drop_database (already exists in pgt_analyser, as bad_drop_database in squawk)
 - ban_drop_not_null (already exists in pgt_analyser)
 - ban_drop_table (already exists in pgt_analyser)
+- prefer_big_int ✓ (ported from Squawk)
+- prefer_bigint_over_int ✓ (ported from Squawk)
+- prefer_bigint_over_smallint ✓ (ported from Squawk)
+- prefer_identity ✓ (ported from Squawk)
 
 
