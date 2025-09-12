@@ -1,1 +1,1 @@
-SELECT COUNT(*), SUM(amount), AVG(amount) FROM orders
+SELECT COUNT(*) FROM users;

@@ -1,0 +1,4 @@
+DO $$
+BEGIN
+    RETURN;
+END $$;

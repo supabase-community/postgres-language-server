@@ -15,6 +15,20 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::RangeFunction(func) => func.to_tokens(e),
             pgt_query::protobuf::node::Node::JoinExpr(join) => join.to_tokens(e),
             pgt_query::protobuf::node::Node::FuncCall(func_call) => func_call.to_tokens(e),
+            pgt_query::protobuf::node::Node::Aggref(aggref) => aggref.to_tokens(e),
+            pgt_query::protobuf::node::Node::GroupingFunc(func) => func.to_tokens(e),
+            pgt_query::protobuf::node::Node::WindowFunc(func) => func.to_tokens(e),
+            pgt_query::protobuf::node::Node::SubscriptingRef(ref_node) => ref_node.to_tokens(e),
+            pgt_query::protobuf::node::Node::CurrentOfExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::OnConflictExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::Query(query) => query.to_tokens(e),
+            pgt_query::protobuf::node::Node::TargetEntry(entry) => entry.to_tokens(e),
+            pgt_query::protobuf::node::Node::RangeTblRef(ref_node) => ref_node.to_tokens(e),
+            pgt_query::protobuf::node::Node::FromExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::Var(var) => var.to_tokens(e),
+            pgt_query::protobuf::node::Node::NextValueExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::InferenceElem(elem) => elem.to_tokens(e),
+            pgt_query::protobuf::node::Node::FuncExpr(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::WindowDef(window_def) => window_def.to_tokens(e),
             pgt_query::protobuf::node::Node::SortBy(sort_by) => sort_by.to_tokens(e),
             pgt_query::protobuf::node::Node::InsertStmt(stmt) => stmt.to_tokens(e),
@@ -221,6 +235,19 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::RangeFunction(func) => func.to_tokens(e),
                 pgt_query::protobuf::node::Node::JoinExpr(join) => join.to_tokens(e),
                 pgt_query::protobuf::node::Node::FuncCall(func_call) => func_call.to_tokens(e),
+                pgt_query::protobuf::node::Node::Aggref(aggref) => aggref.to_tokens(e),
+                pgt_query::protobuf::node::Node::GroupingFunc(func) => func.to_tokens(e),
+                pgt_query::protobuf::node::Node::WindowFunc(func) => func.to_tokens(e),
+                pgt_query::protobuf::node::Node::SubscriptingRef(ref_node) => ref_node.to_tokens(e),
+                pgt_query::protobuf::node::Node::CurrentOfExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::OnConflictExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::Query(query) => query.to_tokens(e),
+                pgt_query::protobuf::node::Node::TargetEntry(entry) => entry.to_tokens(e),
+                pgt_query::protobuf::node::Node::RangeTblRef(ref_node) => ref_node.to_tokens(e),
+                pgt_query::protobuf::node::Node::FromExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::Var(var) => var.to_tokens(e),
+                pgt_query::protobuf::node::Node::NextValueExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::InferenceElem(elem) => elem.to_tokens(e),
                 pgt_query::protobuf::node::Node::WindowDef(window_def) => window_def.to_tokens(e),
                 pgt_query::protobuf::node::Node::SortBy(sort_by) => sort_by.to_tokens(e),
                 pgt_query::protobuf::node::Node::InsertStmt(stmt) => stmt.to_tokens(e),
@@ -410,6 +437,10 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::PartitionBoundSpec(spec) => spec.to_tokens(e),
                 pgt_query::protobuf::node::Node::SetToDefault(def) => def.to_tokens(e),
                 pgt_query::protobuf::node::Node::TableLikeClause(clause) => clause.to_tokens(e),
+                pgt_query::protobuf::node::Node::OidList(list) => list.to_tokens(e),
+                pgt_query::protobuf::node::Node::IntList(list) => list.to_tokens(e),
+                pgt_query::protobuf::node::Node::OnConflictClause(clause) => clause.to_tokens(e),
+                pgt_query::protobuf::node::Node::InferClause(clause) => clause.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -872,6 +903,11 @@ impl ToTokens for pgt_query::protobuf::InsertStmt {
             select_stmt.to_tokens(e);
         }
 
+        if let Some(ref on_conflict_clause) = self.on_conflict_clause {
+            e.space();
+            on_conflict_clause.to_tokens(e);
+        }
+
         if e.is_top_level() {
             e.token(TokenKind::SEMICOLON);
         }
@@ -926,6 +962,34 @@ impl ToTokens for pgt_query::protobuf::List {
             e.token(TokenKind::R_PAREN);
         }
 
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::OidList {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::OidList, None, false);
+        for (i, item) in self.items.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            item.to_tokens(e);
+        }
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::IntList {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::IntList, None, false);
+        for (i, item) in self.items.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            item.to_tokens(e);
+        }
         e.group_end();
     }
 }
@@ -4549,7 +4613,8 @@ impl ToTokens for pgt_query::protobuf::ReturnStmt {
         e.token(TokenKind::RETURN_KW);
 
         if let Some(ref returnval) = self.returnval {
-            returnval.to_tokens(e);
+            e.space();
+            returnval.as_ref().to_tokens(e);
         }
 
         if e.is_top_level() {
@@ -8508,6 +8573,388 @@ impl ToTokens for pgt_query::protobuf::TableLikeClause {
                 e.space();
                 e.token(TokenKind::IDENT("STATISTICS".to_string()));
             }
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::InferClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::InferClause, None, false);
+
+        e.token(TokenKind::L_PAREN);
+        for (i, elem) in self.index_elems.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            elem.to_tokens(e);
+        }
+        e.token(TokenKind::R_PAREN);
+
+        if let Some(ref where_clause) = self.where_clause {
+            e.space();
+            e.token(TokenKind::WHERE_KW);
+            e.space();
+            where_clause.as_ref().to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::OnConflictClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::OnConflictAction;
+
+        e.group_start(GroupKind::OnConflictClause, None, false);
+
+        e.token(TokenKind::ON_KW);
+        e.space();
+        e.token(TokenKind::CONFLICT_KW);
+
+        if let Some(ref infer) = self.infer {
+            e.space();
+            infer.to_tokens(e);
+        }
+
+        e.space();
+
+        match self.action() {
+            OnConflictAction::OnconflictNothing => {
+                e.token(TokenKind::DO_KW);
+                e.space();
+                e.token(TokenKind::NOTHING_KW);
+            }
+            OnConflictAction::OnconflictUpdate => {
+                e.token(TokenKind::DO_KW);
+                e.space();
+                e.token(TokenKind::UPDATE_KW);
+                e.space();
+                e.token(TokenKind::SET_KW);
+                e.space();
+
+                for (i, target) in self.target_list.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    target.to_tokens(e);
+                }
+
+                if let Some(ref where_clause) = self.where_clause {
+                    e.space();
+                    e.token(TokenKind::WHERE_KW);
+                    e.space();
+                    where_clause.as_ref().to_tokens(e);
+                }
+            }
+            _ => {}
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::Var {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        todo!()
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::NextValueExpr {
+    fn to_tokens(&self, _e: &mut EventEmitter) {
+        todo!()
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::InferenceElem {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::FromExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        for (i, from_item) in self.fromlist.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            from_item.to_tokens(e);
+        }
+
+        if let Some(ref quals) = self.quals {
+            e.space();
+            e.token(TokenKind::WHERE_KW);
+            e.space();
+            quals.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::RangeTblRef {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        todo!()
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::TargetEntry {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        if !self.resname.is_empty() {
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            e.token(TokenKind::IDENT(self.resname.clone()));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::Query {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::Query, None, false);
+
+        use pgt_query::protobuf::CmdType;
+
+        match self.command_type() {
+            CmdType::CmdSelect => {
+                if let Some(ref utility_stmt) = self.utility_stmt {
+                    utility_stmt.to_tokens(e);
+                } else {
+                    e.token(TokenKind::SELECT_KW);
+                    e.space();
+
+                    for (i, target) in self.target_list.iter().enumerate() {
+                        if i > 0 {
+                            e.token(TokenKind::COMMA);
+                            e.space();
+                        }
+                        target.to_tokens(e);
+                    }
+                }
+            }
+            CmdType::CmdInsert => {
+                if let Some(ref utility_stmt) = self.utility_stmt {
+                    utility_stmt.to_tokens(e);
+                }
+            }
+            CmdType::CmdUpdate => {
+                if let Some(ref utility_stmt) = self.utility_stmt {
+                    utility_stmt.to_tokens(e);
+                }
+            }
+            CmdType::CmdDelete => {
+                if let Some(ref utility_stmt) = self.utility_stmt {
+                    utility_stmt.to_tokens(e);
+                }
+            }
+            CmdType::CmdMerge => {
+                if let Some(ref utility_stmt) = self.utility_stmt {
+                    utility_stmt.to_tokens(e);
+                }
+            }
+            CmdType::CmdUtility => {
+                if let Some(ref utility_stmt) = self.utility_stmt {
+                    utility_stmt.to_tokens(e);
+                }
+            }
+            _ => {}
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::OnConflictExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::OnConflictExpr, None, false);
+
+        use pgt_query::protobuf::OnConflictAction;
+
+        match self.action() {
+            OnConflictAction::OnconflictNothing => {
+                e.token(TokenKind::NOTHING_KW);
+            }
+            OnConflictAction::OnconflictUpdate => {
+                e.token(TokenKind::UPDATE_KW);
+                e.space();
+                e.token(TokenKind::SET_KW);
+                e.space();
+
+                for (i, set_item) in self.on_conflict_set.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    set_item.to_tokens(e);
+                }
+
+                if let Some(ref where_clause) = self.on_conflict_where {
+                    e.space();
+                    e.token(TokenKind::WHERE_KW);
+                    e.space();
+                    where_clause.to_tokens(e);
+                }
+            }
+            _ => {}
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CurrentOfExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::CURRENT_KW);
+        e.space();
+        e.token(TokenKind::OF_KW);
+        e.space();
+        if !self.cursor_name.is_empty() {
+            e.token(TokenKind::IDENT(self.cursor_name.clone()));
+        } else if self.cursor_param != 0 {
+            e.token(TokenKind::IDENT(format!("${}", self.cursor_param)));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::SubscriptingRef {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref expr) = self.refexpr {
+            expr.to_tokens(e);
+        }
+
+        e.token(TokenKind::L_BRACK);
+
+        if !self.refupperindexpr.is_empty() {
+            for (i, idx) in self.refupperindexpr.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                idx.to_tokens(e);
+            }
+        }
+
+        if !self.reflowerindexpr.is_empty() {
+            e.token(TokenKind::IDENT(":".to_string()));
+            for (i, idx) in self.reflowerindexpr.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                idx.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::R_BRACK);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::WindowFunc {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if self.winfnoid == 0 {
+            return;
+        }
+
+        e.token(TokenKind::IDENT("row_number".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if self.winstar {
+            e.token(TokenKind::IDENT("*".to_string()));
+        } else if !self.args.is_empty() {
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                arg.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.space();
+        e.token(TokenKind::OVER_KW);
+        e.space();
+        e.token(TokenKind::L_PAREN);
+
+        if self.winref > 0 {
+            e.token(TokenKind::ORDER_KW);
+            e.space();
+            e.token(TokenKind::BY_KW);
+            e.space();
+            e.token(TokenKind::IDENT("id".to_string()));
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        if let Some(ref filter) = self.aggfilter {
+            e.space();
+            e.token(TokenKind::FILTER_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.token(TokenKind::WHERE_KW);
+            e.space();
+            filter.to_tokens(e);
+            e.token(TokenKind::R_PAREN);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::GroupingFunc {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT("grouping".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        for (i, arg) in self.args.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            arg.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::Aggref {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if self.aggfnoid == 0 {
+            return;
+        }
+
+        e.token(TokenKind::IDENT("count".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if self.aggstar {
+            e.token(TokenKind::IDENT("*".to_string()));
+        } else if !self.args.is_empty() {
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                arg.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        if let Some(ref filter) = self.aggfilter {
+            e.space();
+            e.token(TokenKind::FILTER_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.token(TokenKind::WHERE_KW);
+            e.space();
+            filter.to_tokens(e);
+            e.token(TokenKind::R_PAREN);
         }
     }
 }
