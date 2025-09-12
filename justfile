@@ -153,16 +153,16 @@ quick-modify:
 show-logs:
     tail -f $(ls $PGT_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
 
-port-squawk:
-    unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read PLAN.md and follow the instructions closely"
+agentic name:
+    unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read agentic/{{name}}.md and follow the instructions closely"
 
-port-squawk-loop:
+agentic-loop name:
     #!/usr/bin/env bash
-    echo "Starting port-squawk loop until error..."
+    echo "Starting agentic loop until error..."
     iteration=1
     while true; do
         echo "$(date): Starting iteration $iteration..."
-        if just port-squawk; then
+        if just agentic {{name}}; then
             echo "$(date): Iteration $iteration completed successfully!"
             iteration=$((iteration + 1))
         else
