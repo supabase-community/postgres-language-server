@@ -143,7 +143,7 @@ impl<'a> Lexer<'a> {
                         }
                         _ => {}
                     };
-                    SyntaxKind::POSITIONAL_PARAM
+                    SyntaxKind::NAMED_PARAM
                 }
                 pgt_tokenizer::TokenKind::QuotedIdent { terminated } => {
                     if !terminated {
