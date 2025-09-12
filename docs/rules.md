@@ -31,8 +31,14 @@ Rules that detect potential safety issues in your code.
 | [preferBigintOverInt](./prefer-bigint-over-int) | Prefer BIGINT over INT/INTEGER types. |  |
 | [preferBigintOverSmallint](./prefer-bigint-over-smallint) | Prefer BIGINT over SMALLINT types. |  |
 | [preferIdentity](./prefer-identity) | Prefer using IDENTITY columns over serial columns. |  |
+| [preferRobustStmts](./prefer-robust-stmts) | Prefer statements with guards for robustness in migrations. |  |
 | [preferTextField](./prefer-text-field) | Prefer using TEXT over VARCHAR(n) types. |  |
 | [preferTimestamptz](./prefer-timestamptz) | Prefer TIMESTAMPTZ over TIMESTAMP types. |  |
+| [renamingColumn](./renaming-column) | Renaming columns may break existing queries and application code. |  |
+| [renamingTable](./renaming-table) | Renaming tables may break existing queries and application code. |  |
+| [requireConcurrentIndexCreation](./require-concurrent-index-creation) | Creating indexes non-concurrently can lock the table for writes. |  |
+| [requireConcurrentIndexDeletion](./require-concurrent-index-deletion) | Dropping indexes non-concurrently can lock the table for reads. |  |
+| [transactionNesting](./transaction-nesting) | Detects problematic transaction nesting that could lead to unexpected behavior. |  |
 
 [//]: # (END RULES_INDEX)
 

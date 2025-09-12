@@ -30,7 +30,17 @@ pub type PreferBigintOverInt =
 pub type PreferBigintOverSmallint = < lint :: safety :: prefer_bigint_over_smallint :: PreferBigintOverSmallint as pgt_analyse :: Rule > :: Options ;
 pub type PreferIdentity =
     <lint::safety::prefer_identity::PreferIdentity as pgt_analyse::Rule>::Options;
+pub type PreferRobustStmts =
+    <lint::safety::prefer_robust_stmts::PreferRobustStmts as pgt_analyse::Rule>::Options;
 pub type PreferTextField =
     <lint::safety::prefer_text_field::PreferTextField as pgt_analyse::Rule>::Options;
 pub type PreferTimestamptz =
     <lint::safety::prefer_timestamptz::PreferTimestamptz as pgt_analyse::Rule>::Options;
+pub type RenamingColumn =
+    <lint::safety::renaming_column::RenamingColumn as pgt_analyse::Rule>::Options;
+pub type RenamingTable =
+    <lint::safety::renaming_table::RenamingTable as pgt_analyse::Rule>::Options;
+pub type RequireConcurrentIndexCreation = < lint :: safety :: require_concurrent_index_creation :: RequireConcurrentIndexCreation as pgt_analyse :: Rule > :: Options ;
+pub type RequireConcurrentIndexDeletion = < lint :: safety :: require_concurrent_index_deletion :: RequireConcurrentIndexDeletion as pgt_analyse :: Rule > :: Options ;
+pub type TransactionNesting =
+    <lint::safety::transaction_nesting::TransactionNesting as pgt_analyse::Rule>::Options;

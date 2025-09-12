@@ -572,6 +572,17 @@
             }
           ]
         },
+        "preferRobustStmts": {
+          "description": "Prefer statements with guards for robustness in migrations.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "preferTextField": {
           "description": "Prefer using TEXT over VARCHAR(n) types.",
           "anyOf": [
@@ -599,6 +610,61 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "renamingColumn": {
+          "description": "Renaming columns may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renamingTable": {
+          "description": "Renaming tables may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexCreation": {
+          "description": "Creating indexes non-concurrently can lock the table for writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexDeletion": {
+          "description": "Dropping indexes non-concurrently can lock the table for reads.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactionNesting": {
+          "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },

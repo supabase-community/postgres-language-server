@@ -77,13 +77,19 @@ export type Category =
 	| "lint/safety/banTruncateCascade"
 	| "lint/safety/changingColumnType"
 	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/disallowUniqueConstraint"
 	| "lint/safety/preferBigInt"
 	| "lint/safety/preferBigintOverInt"
 	| "lint/safety/preferBigintOverSmallint"
 	| "lint/safety/preferIdentity"
+	| "lint/safety/preferRobustStmts"
 	| "lint/safety/preferTextField"
 	| "lint/safety/preferTimestamptz"
-	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/renamingColumn"
+	| "lint/safety/renamingTable"
+	| "lint/safety/requireConcurrentIndexCreation"
+	| "lint/safety/requireConcurrentIndexDeletion"
+	| "lint/safety/transactionNesting"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -509,6 +515,10 @@ export interface Safety {
 	 */
 	preferIdentity?: RuleConfiguration_for_Null;
 	/**
+	 * Prefer statements with guards for robustness in migrations.
+	 */
+	preferRobustStmts?: RuleConfiguration_for_Null;
+	/**
 	 * Prefer using TEXT over VARCHAR(n) types.
 	 */
 	preferTextField?: RuleConfiguration_for_Null;
@@ -520,6 +530,26 @@ export interface Safety {
 	 * It enables the recommended rules for this group
 	 */
 	recommended?: boolean;
+	/**
+	 * Renaming columns may break existing queries and application code.
+	 */
+	renamingColumn?: RuleConfiguration_for_Null;
+	/**
+	 * Renaming tables may break existing queries and application code.
+	 */
+	renamingTable?: RuleConfiguration_for_Null;
+	/**
+	 * Creating indexes non-concurrently can lock the table for writes.
+	 */
+	requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
+	/**
+	 * Dropping indexes non-concurrently can lock the table for reads.
+	 */
+	requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+	/**
+	 * Detects problematic transaction nesting that could lead to unexpected behavior.
+	 */
+	transactionNesting?: RuleConfiguration_for_Null;
 }
 export type RuleConfiguration_for_Null =
 	| RulePlainConfiguration

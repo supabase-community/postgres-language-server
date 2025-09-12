@@ -27,13 +27,19 @@ define_categories! {
     "lint/safety/banTruncateCascade": "https://pgtools.dev/latest/rules/ban-truncate-cascade",
     "lint/safety/changingColumnType": "https://pgtools.dev/latest/rules/changing-column-type",
     "lint/safety/constraintMissingNotValid": "https://pgtools.dev/latest/rules/constraint-missing-not-valid",
+    "lint/safety/disallowUniqueConstraint": "https://pgtools.dev/latest/rules/disallow-unique-constraint",
     "lint/safety/preferBigInt": "https://pgtools.dev/latest/rules/prefer-big-int",
     "lint/safety/preferBigintOverInt": "https://pgtools.dev/latest/rules/prefer-bigint-over-int",
     "lint/safety/preferBigintOverSmallint": "https://pgtools.dev/latest/rules/prefer-bigint-over-smallint",
     "lint/safety/preferIdentity": "https://pgtools.dev/latest/rules/prefer-identity",
+    "lint/safety/preferRobustStmts": "https://pgtools.dev/latest/rules/prefer-robust-stmts",
     "lint/safety/preferTextField": "https://pgtools.dev/latest/rules/prefer-text-field",
     "lint/safety/preferTimestamptz": "https://pgtools.dev/latest/rules/prefer-timestamptz",
-    "lint/safety/disallowUniqueConstraint": "https://pgtools.dev/latest/rules/disallow-unique-constraint",
+    "lint/safety/renamingColumn": "https://pgtools.dev/latest/rules/renaming-column",
+    "lint/safety/renamingTable": "https://pgtools.dev/latest/rules/renaming-table",
+    "lint/safety/requireConcurrentIndexCreation": "https://pgtools.dev/latest/rules/require-concurrent-index-creation",
+    "lint/safety/requireConcurrentIndexDeletion": "https://pgtools.dev/latest/rules/require-concurrent-index-deletion",
+    "lint/safety/transactionNesting": "https://pgtools.dev/latest/rules/transaction-nesting",
     // end lint rules
     ;
     // General categories

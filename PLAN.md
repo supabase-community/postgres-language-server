@@ -58,12 +58,6 @@ Please update the list below with the rules that we need to migrate, and the one
 NEEDS FEATURES:
 
 TODO:
-- renaming_column
-- renaming_table
-- require_concurrent_index_creation
-- require_concurrent_index_deletion
-- transaction_nesting
-- prefer_robust_stmts
 
 DONE:
 - adding_field_with_default ✓ (ported from Squawk)
@@ -86,5 +80,11 @@ DONE:
 - prefer_text_field ✓ (ported from Squawk)
 - prefer_timestamptz ✓ (ported from Squawk)
 - disallow_unique_constraint ✓ (ported from Squawk)
+- renaming_column ✓ (ported from Squawk)
+- renaming_table ✓ (ported from Squawk)
+- require_concurrent_index_creation ✓ (ported from Squawk)
+- require_concurrent_index_deletion ✓ (ported from Squawk)
+- transaction_nesting ✓ (ported from Squawk)
+- prefer_robust_stmts ✓ (ported from Squawk - simplified version)
 
 

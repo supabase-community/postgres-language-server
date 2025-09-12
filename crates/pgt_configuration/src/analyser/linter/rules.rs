@@ -207,12 +207,32 @@ pub struct Safety {
     #[doc = "Prefer using IDENTITY columns over serial columns."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_identity: Option<RuleConfiguration<pgt_analyser::options::PreferIdentity>>,
+    #[doc = "Prefer statements with guards for robustness in migrations."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_robust_stmts: Option<RuleConfiguration<pgt_analyser::options::PreferRobustStmts>>,
     #[doc = "Prefer using TEXT over VARCHAR(n) types."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_text_field: Option<RuleConfiguration<pgt_analyser::options::PreferTextField>>,
     #[doc = "Prefer TIMESTAMPTZ over TIMESTAMP types."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_timestamptz: Option<RuleConfiguration<pgt_analyser::options::PreferTimestamptz>>,
+    #[doc = "Renaming columns may break existing queries and application code."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_column: Option<RuleConfiguration<pgt_analyser::options::RenamingColumn>>,
+    #[doc = "Renaming tables may break existing queries and application code."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_table: Option<RuleConfiguration<pgt_analyser::options::RenamingTable>>,
+    #[doc = "Creating indexes non-concurrently can lock the table for writes."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_index_creation:
+        Option<RuleConfiguration<pgt_analyser::options::RequireConcurrentIndexCreation>>,
+    #[doc = "Dropping indexes non-concurrently can lock the table for reads."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_index_deletion:
+        Option<RuleConfiguration<pgt_analyser::options::RequireConcurrentIndexDeletion>>,
+    #[doc = "Detects problematic transaction nesting that could lead to unexpected behavior."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_nesting: Option<RuleConfiguration<pgt_analyser::options::TransactionNesting>>,
 }
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
@@ -236,8 +256,14 @@ impl Safety {
         "preferBigintOverInt",
         "preferBigintOverSmallint",
         "preferIdentity",
+        "preferRobustStmts",
         "preferTextField",
         "preferTimestamptz",
+        "renamingColumn",
+        "renamingTable",
+        "requireConcurrentIndexCreation",
+        "requireConcurrentIndexDeletion",
+        "transactionNesting",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -271,6 +297,12 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -382,14 +414,44 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.prefer_text_field.as_ref() {
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+        if let Some(rule) = self.prefer_text_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
+            }
+        }
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
+            }
+        }
+        if let Some(rule) = self.renaming_column.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
+            }
+        }
+        if let Some(rule) = self.renaming_table.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
             }
         }
         index_set
@@ -491,14 +553,44 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.prefer_text_field.as_ref() {
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+        if let Some(rule) = self.prefer_text_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
+            }
+        }
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
+            }
+        }
+        if let Some(rule) = self.renaming_column.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
+            }
+        }
+        if let Some(rule) = self.renaming_table.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
             }
         }
         index_set
@@ -549,8 +641,14 @@ impl Safety {
             "preferBigintOverInt" => Severity::Warning,
             "preferBigintOverSmallint" => Severity::Warning,
             "preferIdentity" => Severity::Warning,
+            "preferRobustStmts" => Severity::Warning,
             "preferTextField" => Severity::Warning,
             "preferTimestamptz" => Severity::Warning,
+            "renamingColumn" => Severity::Warning,
+            "renamingTable" => Severity::Warning,
+            "requireConcurrentIndexCreation" => Severity::Warning,
+            "requireConcurrentIndexDeletion" => Severity::Warning,
+            "transactionNesting" => Severity::Warning,
             _ => unreachable!(),
         }
     }
@@ -635,12 +733,36 @@ impl Safety {
                 .prefer_identity
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
+            "preferRobustStmts" => self
+                .prefer_robust_stmts
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "preferTextField" => self
                 .prefer_text_field
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "preferTimestamptz" => self
                 .prefer_timestamptz
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "renamingColumn" => self
+                .renaming_column
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "renamingTable" => self
+                .renaming_table
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "requireConcurrentIndexCreation" => self
+                .require_concurrent_index_creation
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "requireConcurrentIndexDeletion" => self
+                .require_concurrent_index_deletion
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "transactionNesting" => self
+                .transaction_nesting
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,
