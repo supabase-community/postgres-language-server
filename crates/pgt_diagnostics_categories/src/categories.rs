@@ -31,6 +31,9 @@ define_categories! {
     "lint/safety/preferBigintOverInt": "https://pgtools.dev/latest/rules/prefer-bigint-over-int",
     "lint/safety/preferBigintOverSmallint": "https://pgtools.dev/latest/rules/prefer-bigint-over-smallint",
     "lint/safety/preferIdentity": "https://pgtools.dev/latest/rules/prefer-identity",
+    "lint/safety/preferTextField": "https://pgtools.dev/latest/rules/prefer-text-field",
+    "lint/safety/preferTimestamptz": "https://pgtools.dev/latest/rules/prefer-timestamptz",
+    "lint/safety/disallowUniqueConstraint": "https://pgtools.dev/latest/rules/disallow-unique-constraint",
     // end lint rules
     ;
     // General categories

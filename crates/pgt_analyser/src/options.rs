@@ -23,9 +23,14 @@ pub type BanTruncateCascade =
 pub type ChangingColumnType =
     <lint::safety::changing_column_type::ChangingColumnType as pgt_analyse::Rule>::Options;
 pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as pgt_analyse :: Rule > :: Options ;
+pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as pgt_analyse :: Rule > :: Options ;
 pub type PreferBigInt = <lint::safety::prefer_big_int::PreferBigInt as pgt_analyse::Rule>::Options;
 pub type PreferBigintOverInt =
     <lint::safety::prefer_bigint_over_int::PreferBigintOverInt as pgt_analyse::Rule>::Options;
 pub type PreferBigintOverSmallint = < lint :: safety :: prefer_bigint_over_smallint :: PreferBigintOverSmallint as pgt_analyse :: Rule > :: Options ;
 pub type PreferIdentity =
     <lint::safety::prefer_identity::PreferIdentity as pgt_analyse::Rule>::Options;
+pub type PreferTextField =
+    <lint::safety::prefer_text_field::PreferTextField as pgt_analyse::Rule>::Options;
+pub type PreferTimestamptz =
+    <lint::safety::prefer_timestamptz::PreferTimestamptz as pgt_analyse::Rule>::Options;

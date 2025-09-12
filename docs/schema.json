@@ -517,6 +517,17 @@
             }
           ]
         },
+        "disallowUniqueConstraint": {
+          "description": "Disallow adding a UNIQUE constraint without using an existing index.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "preferBigInt": {
           "description": "Prefer BIGINT over smaller integer types.",
           "anyOf": [
@@ -552,6 +563,28 @@
         },
         "preferIdentity": {
           "description": "Prefer using IDENTITY columns over serial columns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTextField": {
+          "description": "Prefer using TEXT over VARCHAR(n) types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTimestamptz": {
+          "description": "Prefer TIMESTAMPTZ over TIMESTAMP types.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

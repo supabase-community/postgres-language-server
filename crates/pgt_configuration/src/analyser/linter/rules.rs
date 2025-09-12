@@ -189,6 +189,10 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub constraint_missing_not_valid:
         Option<RuleConfiguration<pgt_analyser::options::ConstraintMissingNotValid>>,
+    #[doc = "Disallow adding a UNIQUE constraint without using an existing index."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disallow_unique_constraint:
+        Option<RuleConfiguration<pgt_analyser::options::DisallowUniqueConstraint>>,
     #[doc = "Prefer BIGINT over smaller integer types."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_big_int: Option<RuleConfiguration<pgt_analyser::options::PreferBigInt>>,
@@ -203,6 +207,12 @@ pub struct Safety {
     #[doc = "Prefer using IDENTITY columns over serial columns."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_identity: Option<RuleConfiguration<pgt_analyser::options::PreferIdentity>>,
+    #[doc = "Prefer using TEXT over VARCHAR(n) types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_text_field: Option<RuleConfiguration<pgt_analyser::options::PreferTextField>>,
+    #[doc = "Prefer TIMESTAMPTZ over TIMESTAMP types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_timestamptz: Option<RuleConfiguration<pgt_analyser::options::PreferTimestamptz>>,
 }
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
@@ -221,10 +231,13 @@ impl Safety {
         "banTruncateCascade",
         "changingColumnType",
         "constraintMissingNotValid",
+        "disallowUniqueConstraint",
         "preferBigInt",
         "preferBigintOverInt",
         "preferBigintOverSmallint",
         "preferIdentity",
+        "preferTextField",
+        "preferTimestamptz",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -235,7 +248,6 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -258,6 +270,7 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -344,6 +357,11 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
             }
         }
+        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            }
+        }
         if let Some(rule) = self.prefer_big_int.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
@@ -362,6 +380,16 @@ impl Safety {
         if let Some(rule) = self.prefer_identity.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
+            }
+        }
+        if let Some(rule) = self.prefer_text_field.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
+            }
+        }
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
         index_set
@@ -438,6 +466,11 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
             }
         }
+        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            }
+        }
         if let Some(rule) = self.prefer_big_int.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
@@ -456,6 +489,16 @@ impl Safety {
         if let Some(rule) = self.prefer_identity.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
+            }
+        }
+        if let Some(rule) = self.prefer_text_field.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
+            }
+        }
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
         index_set
@@ -501,10 +544,13 @@ impl Safety {
             "banTruncateCascade" => Severity::Error,
             "changingColumnType" => Severity::Warning,
             "constraintMissingNotValid" => Severity::Warning,
+            "disallowUniqueConstraint" => Severity::Error,
             "preferBigInt" => Severity::Warning,
             "preferBigintOverInt" => Severity::Warning,
             "preferBigintOverSmallint" => Severity::Warning,
             "preferIdentity" => Severity::Warning,
+            "preferTextField" => Severity::Warning,
+            "preferTimestamptz" => Severity::Warning,
             _ => unreachable!(),
         }
     }
@@ -569,6 +615,10 @@ impl Safety {
                 .constraint_missing_not_valid
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
+            "disallowUniqueConstraint" => self
+                .disallow_unique_constraint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "preferBigInt" => self
                 .prefer_big_int
                 .as_ref()
@@ -583,6 +633,14 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "preferIdentity" => self
                 .prefer_identity
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferTextField" => self
+                .prefer_text_field
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferTimestamptz" => self
+                .prefer_timestamptz
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,

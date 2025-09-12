@@ -50,7 +50,7 @@ LEARNINGS:
 - RuleDiagnostic methods: `detail(span, msg)` takes two parameters, `note(msg)` takes only one parameter
 - To check Postgres version: access `ctx.schema_cache().is_some_and(|sc| sc.version.major_version)` which gives e.g. 17
 - NEVER skip anything, or use a subset of something. ALWAYS do the full thing. For example, copy the entire non-volatile functions list from Squawk, not just a subset.
-- If you are missing features from our context to be able to properly implement a rule, DO NOT DO IT. Instead, add that rule to the NEEDS FEATURES list below.
+- If you are missing features from our rule context to be able to properly implement a rule, DO NOT DO IT. Instead, add that rule to the NEEDS FEATURES list below. The node enum is generated from the same source as it is in squawk, so they have feature parity.
 - Remember to run `just gen-lint` after creating a new rule to generate all necessary files
 
 Please update the list below with the rules that we need to migrate, and the ones that are already migrated. Keep the list up-to-date.
@@ -58,14 +58,11 @@ Please update the list below with the rules that we need to migrate, and the one
 NEEDS FEATURES:
 
 TODO:
-- prefer_text_field
-- prefer_timestamptz
 - renaming_column
 - renaming_table
 - require_concurrent_index_creation
 - require_concurrent_index_deletion
 - transaction_nesting
-- disallow_unique_constraint
 - prefer_robust_stmts
 
 DONE:
@@ -86,5 +83,8 @@ DONE:
 - prefer_bigint_over_int ✓ (ported from Squawk)
 - prefer_bigint_over_smallint ✓ (ported from Squawk)
 - prefer_identity ✓ (ported from Squawk)
+- prefer_text_field ✓ (ported from Squawk)
+- prefer_timestamptz ✓ (ported from Squawk)
+- disallow_unique_constraint ✓ (ported from Squawk)
 
 
