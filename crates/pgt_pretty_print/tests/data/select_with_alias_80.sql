@@ -1,0 +1,1 @@
+SELECT a AS x, b AS y, c FROM t

@@ -1,0 +1,1 @@
+ALTER COLLATION myschema.mycollation REFRESH VERSION;

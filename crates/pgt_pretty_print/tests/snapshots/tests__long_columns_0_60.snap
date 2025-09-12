@@ -1,0 +1,12 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/long_columns_0_60.sql
+snapshot_kind: text
+---
+SELECT
+  customer_id,
+  customer_name,
+  customer_email,
+  customer_phone
+FROM
+  customer_table;

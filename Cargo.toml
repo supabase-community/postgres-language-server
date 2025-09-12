@@ -1,5 +1,13 @@
 [workspace]
-members  = ["crates/*", "lib/*", "xtask/codegen", "xtask/rules_check", "docs/codegen"]
+members = [
+  "crates/*",
+  "lib/*",
+  "xtask/codegen",
+  "xtask/rules_check",
+  "xtask/agentic",
+  "xtask/download_regression_tests",
+  "docs/codegen",
+]
 resolver = "2"
 
 [workspace.package]
@@ -23,7 +31,9 @@ biome_js_syntax          = "0.5.7"
 biome_rowan              = "0.5.7"
 biome_string_case        = "0.5.8"
 bpaf                     = { version = "0.9.15", features = ["derive"] }
+camino                   = "1.1.9"
 crossbeam                = "0.8.4"
+dir-test                 = "0.4.1"
 enumflags2               = "0.7.11"
 ignore                   = "0.4.23"
 indexmap                 = { version = "2.6.0", features = ["serde"] }
@@ -78,6 +88,8 @@ pgt_lexer_codegen          = { path = "./crates/pgt_lexer_codegen", version = "0
 pgt_lsp                    = { path = "./crates/pgt_lsp", version = "0.0.0" }
 pgt_markup                 = { path = "./crates/pgt_markup", version = "0.0.0" }
 pgt_plpgsql_check          = { path = "./crates/pgt_plpgsql_check", version = "0.0.0" }
+pgt_pretty_print           = { path = "./crates/pgt_pretty_print", version = "0.0.0" }
+pgt_pretty_print_codegen   = { path = "./crates/pgt_pretty_print_codegen", version = "0.0.0" }
 pgt_query                  = { path = "./crates/pgt_query", version = "0.0.0" }
 pgt_query_ext              = { path = "./crates/pgt_query_ext", version = "0.0.0" }
 pgt_query_macros           = { path = "./crates/pgt_query_macros", version = "0.0.0" }

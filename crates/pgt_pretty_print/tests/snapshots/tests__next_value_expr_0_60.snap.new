@@ -1,0 +1,9 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 59
+input_file: crates/pgt_pretty_print/tests/data/next_value_expr_0_60.sql
+---
+SELECT
+  nextval(
+    'user_id_seq'
+  );

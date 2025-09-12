@@ -1,0 +1,1 @@
+SELECT public.t.a, t.b, c FROM public.t
