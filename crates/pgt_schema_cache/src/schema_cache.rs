@@ -90,7 +90,6 @@ impl SchemaCache {
 
     pub fn find_cols(&self, name: &str, table: Option<&str>, schema: Option<&str>) -> Vec<&Column> {
         let sanitized_name = Self::sanitize_identifier(name);
-        println!("sanitized name: {:#?}", sanitized_name);
         self.columns
             .iter()
             .filter(|c| {
