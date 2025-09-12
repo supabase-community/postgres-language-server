@@ -1,0 +1,20 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select "auth"."user_profiles".first_name from "auth"."user_profiles"
+                                     ↑ hovered here
+```
+
+# Hover Results
+### `auth.user_profiles.first_name`  
+```plain  
+varchar(100) - nullable
+  
+```  
+---    
+```plain  
+  
+```

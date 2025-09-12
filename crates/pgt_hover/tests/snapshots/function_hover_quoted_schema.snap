@@ -1,0 +1,30 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select "auth".authenticate_user('test@example.com')
+                            ↑ hovered here
+```
+
+# Hover Results
+### `auth.authenticate_user(user_email text) → boolean`  
+```plain  
+Function - Security DEFINER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE FUNCTION auth.authenticate_user(user_email text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+        begin
+            return exists(select 1 from auth.users where email = user_email);
+        end;
+        $function$
+
+  
+```
