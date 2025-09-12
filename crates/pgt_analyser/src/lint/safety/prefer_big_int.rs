@@ -117,7 +117,7 @@ fn check_column_def(
                                 "Using smaller integer types can lead to overflow issues."
                             },
                         )
-                        .detail(None, &format!("The '{}' type has a limited range that may be exceeded as your data grows.", name.sval))
+                        .detail(None, format!("The '{}' type has a limited range that may be exceeded as your data grows.", name.sval))
                         .note("Consider using BIGINT for integer columns to avoid future migration issues."),
                     );
                 }

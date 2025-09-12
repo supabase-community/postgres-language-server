@@ -53,48 +53,48 @@ impl Rule for AddingForeignKeyConstraint {
                 if let Some(pgt_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
                     match cmd.subtype() {
                         pgt_query::protobuf::AlterTableType::AtAddConstraint => {
-                            if let Some(def) = cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
-                                if let pgt_query::NodeEnum::Constraint(constraint) = def {
-                                    // check if it's a foreign key constraint
-                                    if constraint.contype()
-                                        == pgt_query::protobuf::ConstrType::ConstrForeign
-                                    {
-                                        // it is okay if NOT VALID is specified (skip_validation = true)
-                                        if !constraint.skip_validation {
-                                            diagnostics.push(RuleDiagnostic::new(
-                                                rule_category!(),
-                                                None,
-                                                markup! {
-                                                    "Adding a foreign key constraint requires a table scan and locks on both tables."
-                                                },
-                                            ).detail(None, "This will block writes to both the referencing and referenced tables while PostgreSQL verifies the constraint.")
-                                            .note("Add the constraint as NOT VALID first, then VALIDATE it in a separate transaction."));
-                                        }
+                            if let Some(pgt_query::NodeEnum::Constraint(constraint)) =
+                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                            {
+                                // check if it's a foreign key constraint
+                                if constraint.contype()
+                                    == pgt_query::protobuf::ConstrType::ConstrForeign
+                                {
+                                    // it is okay if NOT VALID is specified (skip_validation = true)
+                                    if !constraint.skip_validation {
+                                        diagnostics.push(RuleDiagnostic::new(
+                                            rule_category!(),
+                                            None,
+                                            markup! {
+                                                "Adding a foreign key constraint requires a table scan and locks on both tables."
+                                            },
+                                        ).detail(None, "This will block writes to both the referencing and referenced tables while PostgreSQL verifies the constraint.")
+                                        .note("Add the constraint as NOT VALID first, then VALIDATE it in a separate transaction."));
                                     }
                                 }
                             }
                         }
                         pgt_query::protobuf::AlterTableType::AtAddColumn => {
-                            if let Some(def) = cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
-                                if let pgt_query::NodeEnum::ColumnDef(col_def) = def {
-                                    // check constraints on the column
-                                    for constraint in &col_def.constraints {
-                                        if let Some(pgt_query::NodeEnum::Constraint(constr)) =
-                                            &constraint.node
+                            if let Some(pgt_query::NodeEnum::ColumnDef(col_def)) =
+                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                            {
+                                // check constraints on the column
+                                for constraint in &col_def.constraints {
+                                    if let Some(pgt_query::NodeEnum::Constraint(constr)) =
+                                        &constraint.node
+                                    {
+                                        if constr.contype()
+                                            == pgt_query::protobuf::ConstrType::ConstrForeign
+                                            && !constr.skip_validation
                                         {
-                                            if constr.contype()
-                                                == pgt_query::protobuf::ConstrType::ConstrForeign
-                                                && !constr.skip_validation
-                                            {
-                                                diagnostics.push(RuleDiagnostic::new(
-                                                    rule_category!(),
-                                                    None,
-                                                    markup! {
-                                                        "Adding a column with a foreign key constraint requires a table scan and locks."
-                                                    },
-                                                ).detail(None, "Using REFERENCES when adding a column will block writes while verifying the constraint.")
-                                                .note("Add the column without the constraint first, then add the constraint as NOT VALID and VALIDATE it separately."));
-                                            }
+                                            diagnostics.push(RuleDiagnostic::new(
+                                                rule_category!(),
+                                                None,
+                                                markup! {
+                                                    "Adding a column with a foreign key constraint requires a table scan and locks."
+                                                },
+                                            ).detail(None, "Using REFERENCES when adding a column will block writes while verifying the constraint.")
+                                            .note("Add the column without the constraint first, then add the constraint as NOT VALID and VALIDATE it separately."));
                                         }
                                     }
                                 }

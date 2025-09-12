@@ -55,7 +55,7 @@ impl Rule for DisallowUniqueConstraint {
                         create
                             .relation
                             .as_ref()
-                            .map_or(false, |r| &r.relname == table_name)
+                            .is_some_and(|r| &r.relname == table_name)
                     } else {
                         false
                     }

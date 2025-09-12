@@ -51,45 +51,45 @@ impl Rule for AddingPrimaryKeyConstraint {
                     match cmd.subtype() {
                         // Check for ADD CONSTRAINT PRIMARY KEY
                         pgt_query::protobuf::AlterTableType::AtAddConstraint => {
-                            if let Some(def) = cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
-                                if let pgt_query::NodeEnum::Constraint(constraint) = def {
-                                    if constraint.contype()
-                                        == pgt_query::protobuf::ConstrType::ConstrPrimary
-                                        && constraint.indexname.is_empty()
-                                    {
-                                        diagnostics.push(RuleDiagnostic::new(
-                                            rule_category!(),
-                                            None,
-                                            markup! {
-                                                "Adding a PRIMARY KEY constraint results in locks and table rewrites."
-                                            },
-                                        ).detail(None, "Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.")
-                                        .note("Add the PRIMARY KEY constraint USING an index."));
-                                    }
+                            if let Some(pgt_query::NodeEnum::Constraint(constraint)) =
+                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                            {
+                                if constraint.contype()
+                                    == pgt_query::protobuf::ConstrType::ConstrPrimary
+                                    && constraint.indexname.is_empty()
+                                {
+                                    diagnostics.push(RuleDiagnostic::new(
+                                        rule_category!(),
+                                        None,
+                                        markup! {
+                                            "Adding a PRIMARY KEY constraint results in locks and table rewrites."
+                                        },
+                                    ).detail(None, "Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.")
+                                    .note("Add the PRIMARY KEY constraint USING an index."));
                                 }
                             }
                         }
                         // Check for ADD COLUMN with PRIMARY KEY
                         pgt_query::protobuf::AlterTableType::AtAddColumn => {
-                            if let Some(def) = cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
-                                if let pgt_query::NodeEnum::ColumnDef(col_def) = def {
-                                    for constraint in &col_def.constraints {
-                                        if let Some(pgt_query::NodeEnum::Constraint(constr)) =
-                                            &constraint.node
+                            if let Some(pgt_query::NodeEnum::ColumnDef(col_def)) =
+                                cmd.def.as_ref().and_then(|d| d.node.as_ref())
+                            {
+                                for constraint in &col_def.constraints {
+                                    if let Some(pgt_query::NodeEnum::Constraint(constr)) =
+                                        &constraint.node
+                                    {
+                                        if constr.contype()
+                                            == pgt_query::protobuf::ConstrType::ConstrPrimary
+                                            && constr.indexname.is_empty()
                                         {
-                                            if constr.contype()
-                                                == pgt_query::protobuf::ConstrType::ConstrPrimary
-                                                && constr.indexname.is_empty()
-                                            {
-                                                diagnostics.push(RuleDiagnostic::new(
-                                                    rule_category!(),
-                                                    None,
-                                                    markup! {
-                                                        "Adding a PRIMARY KEY constraint results in locks and table rewrites."
-                                                    },
-                                                ).detail(None, "Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.")
-                                                .note("Add the PRIMARY KEY constraint USING an index."));
-                                            }
+                                            diagnostics.push(RuleDiagnostic::new(
+                                                rule_category!(),
+                                                None,
+                                                markup! {
+                                                    "Adding a PRIMARY KEY constraint results in locks and table rewrites."
+                                                },
+                                            ).detail(None, "Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.")
+                                            .note("Add the PRIMARY KEY constraint USING an index."));
                                         }
                                     }
                                 }
