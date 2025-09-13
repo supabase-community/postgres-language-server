@@ -1,0 +1,20 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select * from auth.users;
+                ↑ hovered here
+```
+
+# Hover Results
+### `auth` - owned by postgres  
+```plain  
+  
+```  
+---    
+```plain  
+
+~16 kB, 1 tables, 0 views, 0 functions  
+```

@@ -108,6 +108,7 @@ ready:
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
+  cargo sqlx prepare --workspace
   just lint-fix
   just format
   git diff --exit-code --quiet

@@ -801,6 +801,60 @@ impl<'a> TreesitterContext<'a> {
             })
     }
 
+    /// Checks whether the Node under the cursor is the nth child of the parent.
+    ///
+    /// ```
+    /// /*
+    ///  * Given `select * from "a|uth"."users";`
+    ///  * The node under the cursor is "auth".
+    ///  *
+    ///  * [...] redacted
+    ///  * from [9..28] 'from "auth"."users"'
+    ///  *   keyword_from [9..13] 'from'
+    ///  *   relation [14..28] '"auth"."users"'
+    ///  *     object_reference [14..28] '"auth"."users"'
+    ///  *       identifier [14..20] '"auth"'
+    ///  *         . [20..21] '.'
+    ///  *       identifier [21..28] '"users"'
+    ///  */
+    ///
+    /// if node_under_cursor_is_nth_child(1) {
+    ///     node_type = "schema";
+    /// } else if node_under_cursor_is_nth_child(3) {
+    ///     node_type = "table";
+    /// }
+    /// ```
+    pub fn node_under_cursor_is_nth_child(&self, nth: usize) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => {
+                    let mut cursor = node.walk();
+                    node.parent().is_some_and(|p| {
+                        p.children(&mut cursor)
+                            .nth(nth - 1)
+                            .is_some_and(|n| n.id() == node.id())
+                    })
+                }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
+
+    /// Returns the number of siblings of the node under the cursor.
+    pub fn num_siblings(&self) -> usize {
+        self.node_under_cursor
+            .as_ref()
+            .map(|n| match n {
+                NodeUnderCursor::TsNode(node) => {
+                    // if there's no parent, we're on the top of the tree,
+                    // where we have 0 siblings.
+                    node.parent().map(|p| p.child_count() - 1).unwrap_or(0)
+                }
+                NodeUnderCursor::CustomNode { .. } => 0,
+            })
+            .unwrap_or(0)
+    }
+
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
         if let Some(key) = key.as_ref() {
             let sanitized_key = key.replace('"', "");

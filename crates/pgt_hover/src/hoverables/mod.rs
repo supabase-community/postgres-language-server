@@ -3,6 +3,7 @@ use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdow
 mod column;
 mod function;
 mod role;
+mod schema;
 mod table;
 
 mod test_helper;
@@ -14,6 +15,13 @@ pub enum Hoverable<'a> {
     Column(&'a pgt_schema_cache::Column),
     Function(&'a pgt_schema_cache::Function),
     Role(&'a pgt_schema_cache::Role),
+    Schema(&'a pgt_schema_cache::Schema),
+}
+
+impl<'a> From<&'a pgt_schema_cache::Schema> for Hoverable<'a> {
+    fn from(value: &'a pgt_schema_cache::Schema) -> Self {
+        Hoverable::Schema(value)
+    }
 }
 
 impl<'a> From<&'a pgt_schema_cache::Table> for Hoverable<'a> {
@@ -47,6 +55,7 @@ impl ContextualPriority for Hoverable<'_> {
             Hoverable::Column(column) => column.relevance_score(ctx),
             Hoverable::Function(function) => function.relevance_score(ctx),
             Hoverable::Role(role) => role.relevance_score(ctx),
+            Hoverable::Schema(schema) => schema.relevance_score(ctx),
         }
     }
 }
@@ -58,6 +67,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Column(column) => ToHoverMarkdown::hover_headline(*column, writer),
             Hoverable::Function(function) => ToHoverMarkdown::hover_headline(*function, writer),
             Hoverable::Role(role) => ToHoverMarkdown::hover_headline(*role, writer),
+            Hoverable::Schema(schema) => ToHoverMarkdown::hover_headline(*schema, writer),
         }
     }
 
@@ -67,6 +77,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Column(column) => ToHoverMarkdown::hover_body(*column, writer),
             Hoverable::Function(function) => ToHoverMarkdown::hover_body(*function, writer),
             Hoverable::Role(role) => ToHoverMarkdown::hover_body(*role, writer),
+            Hoverable::Schema(schema) => ToHoverMarkdown::hover_body(*schema, writer),
         }
     }
 
@@ -76,6 +87,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Column(column) => ToHoverMarkdown::hover_footer(*column, writer),
             Hoverable::Function(function) => ToHoverMarkdown::hover_footer(*function, writer),
             Hoverable::Role(role) => ToHoverMarkdown::hover_footer(*role, writer),
+            Hoverable::Schema(schema) => ToHoverMarkdown::hover_footer(*schema, writer),
         }
     }
 
@@ -85,6 +97,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Column(column) => column.body_markdown_type(),
             Hoverable::Function(function) => function.body_markdown_type(),
             Hoverable::Role(role) => role.body_markdown_type(),
+            Hoverable::Schema(schema) => schema.body_markdown_type(),
         }
     }
 
@@ -94,6 +107,7 @@ impl ToHoverMarkdown for Hoverable<'_> {
             Hoverable::Column(column) => column.footer_markdown_type(),
             Hoverable::Function(function) => function.footer_markdown_type(),
             Hoverable::Role(role) => role.footer_markdown_type(),
+            Hoverable::Schema(schema) => schema.footer_markdown_type(),
         }
     }
 }

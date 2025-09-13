@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select\n  n.oid :: int8 as \"id!\",\n  n.nspname as name,\n  u.rolname as \"owner!\",\n  obj_description(n.oid, 'pg_namespace') as \"comment\",\n\n  coalesce((\n    select array_agg(grantee::regrole::text)\n    from aclexplode(n.nspacl)\n    where privilege_type = 'USAGE'\n    and grantee::regrole::text <> ''\n    and grantee::regrole::text <> '-'\n  ), ARRAY[]::text[]) as \"allowed_users!\",\n\n  coalesce((\n    select array_agg(grantee::regrole::text)\n    from aclexplode(n.nspacl)\n    where privilege_type = 'CREATE'\n    and grantee::regrole::text <> ''\n    and grantee::regrole::text <> '-'\n  ), ARRAY[]::text[]) as \"allowed_creators!\",\n\n  (select count(*) from pg_class c where c.relnamespace = n.oid and c.relkind = 'r') as \"table_count!\",\n  (select count(*) from pg_class c where c.relnamespace = n.oid and c.relkind = 'v') as \"view_count!\",\n  (select count(*) from pg_proc p where p.pronamespace = n.oid) as \"function_count!\",\n\n  coalesce(\n  (select pg_size_pretty(sum(pg_total_relation_size(c.oid)))\n    from pg_class c \n    where c.relnamespace = n.oid and c.relkind in ('r', 'i', 'm')),\n  '0 bytes'\n) as \"total_size!\"\nfrom\n  pg_namespace n,\n  pg_roles u\nwhere\n  n.nspowner = u.oid\n  and (\n    pg_has_role(n.nspowner, 'USAGE')\n    or has_schema_privilege(n.oid, 'CREATE, USAGE')\n  )\n  and not pg_catalog.starts_with(n.nspname, 'pg_temp_')\n  and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "owner!",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 3,
+        "name": "comment",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "allowed_users!",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "allowed_creators!",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "table_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "view_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "function_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "total_size!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      true,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "c775d3eaa6e95504de411dd5c2433a1121d69c7dca3c0e5e202835d9fefaa7cc"
+}
