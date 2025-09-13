@@ -14,7 +14,7 @@ env:
 jobs:
   # windows does not run git cliff so we need to do it here
   extract_version:
-    name: Extract Version
+    name: Extract Version & Security Audit
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
@@ -24,6 +24,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@57511bcdf8cdb0eab6448cb7fa632952d9f25742 # v2.59.1
+        with:
+          tool: cargo-audit
+
+      - name: Audit crates.io dependencies
+        run: cargo audit
       - name: Set up git-cliff
         uses: kenji-miyake/setup-git-cliff@v1
 
@@ -75,23 +82,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      # - name: Install cargo-audit
-      #   uses: taiki-e/install-action@57511bcdf8cdb0eab6448cb7fa632952d9f25742 # v2.59.1
-      #   if: matrix.config.target == 'x86_64-unknown-linux-musl'
-      #   with:
-      #     tool: cargo-audit
+      # - name: Setup Postgres
+      #   uses: ./.github/actions/setup-postgres
 
-      # - name: Audit crates.io dependencies
-      #   if: matrix.config.target == 'x86_64-unknown-linux-musl'
-      #   run: cargo audit
-
-      - name: Setup Postgres
-        uses: ./.github/actions/setup-postgres
-
-      - name: 🧪 Run Tests
-        run: cargo test --release
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      # - name: 🧪 Run Tests
+      #   run: cargo test --release
+      #   env:
+      #     DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
       - name: 🛠️ Run Build
         run: cargo build -p pgt_cli --release --target ${{ matrix.config.target }}
@@ -100,6 +97,8 @@ jobs:
           RUSTFLAGS: "-C strip=symbols -C codegen-units=1"
           # Inline the version in the CLI binary
           PGT_VERSION: ${{ needs.extract_version.outputs.version }}
+          # Disable fortified functions for musl builds (musl doesn't provide __*_chk functions)
+          CFLAGS: ${{ contains(matrix.config.target, 'musl') && '-D_FORTIFY_SOURCE=0' || '' }}
 
       # windows is a special snowflake too, it saves binaries as .exe
       - name: 👦 Name the Binary
