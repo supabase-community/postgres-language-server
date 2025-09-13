@@ -109,7 +109,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .find_schema(&schema_name)
                     .map(Hoverable::from)
                     .map(|s| vec![s])
-                    .unwrap_or(vec![]),
+                    .unwrap_or_default(),
 
                 _ => vec![],
             },

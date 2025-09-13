@@ -831,13 +831,9 @@ impl<'a> TreesitterContext<'a> {
                 NodeUnderCursor::TsNode(node) => {
                     let mut cursor = node.walk();
                     node.parent().is_some_and(|p| {
-                        for (i, child) in p.children(&mut cursor).enumerate() {
-                            if i + 1 == nth && child.id() == node.id() {
-                                return true;
-                            }
-                        }
-
-                        false
+                        p.children(&mut cursor)
+                            .nth(nth - 1)
+                            .is_some_and(|n| n.id() == node.id())
                     })
                 }
                 NodeUnderCursor::CustomNode { .. } => false,
