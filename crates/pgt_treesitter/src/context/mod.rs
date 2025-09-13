@@ -104,15 +104,6 @@ impl NodeUnderCursor<'_> {
             NodeUnderCursor::CustomNode { kind, .. } => kind.as_str(),
         }
     }
-
-    pub fn has_prev_sibling(&self) -> bool {
-        match self {
-            NodeUnderCursor::TsNode(node) => node.prev_sibling().is_some(),
-            NodeUnderCursor::CustomNode {
-                previous_node_kind, ..
-            } => previous_node_kind.is_some(),
-        }
-    }
 }
 
 impl<'a> From<tree_sitter::Node<'a>> for NodeUnderCursor<'a> {
