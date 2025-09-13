@@ -3,6 +3,7 @@ use tower_lsp::lsp_types::{self, MarkedString, MarkupContent};
 
 use crate::{adapters::get_cursor_position, diagnostics::LspError, session::Session};
 
+#[tracing::instrument(level = "debug", skip(session), err)]
 pub(crate) fn on_hover(
     session: &Session,
     params: lsp_types::HoverParams,

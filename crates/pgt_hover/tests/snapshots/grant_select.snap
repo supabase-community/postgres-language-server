@@ -1,0 +1,20 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+grant select on users to public;
+                  ↑ hovered here
+```
+
+# Hover Results
+### `public.users` - 🔓 RLS disabled  
+```plain  
+  
+```  
+---    
+```plain  
+
+~0 rows, ~0 dead rows, 16.38 kB  
+```
