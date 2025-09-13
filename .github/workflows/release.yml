@@ -72,8 +72,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      # - name: Setup Postgres
-      #   uses: ./.github/actions/setup-postgres
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
 
       # - name: 🧪 Run Tests
       #   run: cargo test --release
