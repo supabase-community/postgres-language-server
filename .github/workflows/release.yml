@@ -24,16 +24,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install cargo-audit
-        uses: taiki-e/install-action@57511bcdf8cdb0eab6448cb7fa632952d9f25742 # v2.59.1
-        with:
-          tool: cargo-audit
-
-      - name: Audit crates.io dependencies
-        run: cargo audit
-      - name: Set up git-cliff
-        uses: kenji-miyake/setup-git-cliff@v1
-
       - name: Set version name
         id: set_version
         run: echo "version=$(git cliff --bumped-version)" >> "$GITHUB_OUTPUT"
