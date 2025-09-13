@@ -114,10 +114,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 _ => vec![],
             },
 
-            t => {
-                println!("{:?}", t);
-                todo!()
-            }
+            _ => todo!(),
         };
 
         prioritize_by_context(items, &ctx)
