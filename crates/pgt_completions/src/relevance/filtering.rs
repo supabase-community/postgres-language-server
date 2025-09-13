@@ -249,13 +249,13 @@ impl CompletionFilter<'_> {
             return Some(());
         }
 
-        let schema_or_alias = ctx.schema_or_alias_name.as_ref().unwrap();
+        let schema_or_alias = ctx.schema_or_alias_name.as_ref().unwrap().replace('"', "");
 
         let matches = match self.data {
-            CompletionRelevanceData::Table(table) => &table.schema == schema_or_alias,
-            CompletionRelevanceData::Function(f) => &f.schema == schema_or_alias,
+            CompletionRelevanceData::Table(table) => table.schema == schema_or_alias,
+            CompletionRelevanceData::Function(f) => f.schema == schema_or_alias,
             CompletionRelevanceData::Column(col) => ctx
-                .get_mentioned_table_for_alias(schema_or_alias)
+                .get_mentioned_table_for_alias(&schema_or_alias)
                 .is_some_and(|t| t == &col.table_name),
 
             // we should never allow schema suggestions if there already was one.

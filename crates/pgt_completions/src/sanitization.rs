@@ -98,7 +98,11 @@ where
                     // we want to push spaces until we arrive at the cursor position.
                     // we'll then add the SANITIZED_TOKEN
                     if idx == cursor_pos {
-                        sql.push_str(SANITIZED_TOKEN);
+                        if opened_quote && has_uneven_quotes {
+                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+                        } else {
+                            sql.push_str(SANITIZED_TOKEN);
+                        }
                     } else {
                         sql.push(' ');
                     }
@@ -342,18 +346,50 @@ mod tests {
 
     #[test]
     fn should_sanitize_with_opened_quotes() {
-        // select "email", "| from "auth"."users";
-        let input = r#"select "email", " from "auth"."users";"#;
-        let position = TextSize::new(17);
+        {
+            // select "email", "| from "auth"."users";
+            let input = r#"select "email", " from "auth"."users";"#;
+            let position = TextSize::new(17);
 
-        let params = get_test_params(input, position);
+            let params = get_test_params(input, position);
 
-        let sanitized = SanitizedCompletionParams::from(params);
+            let sanitized = SanitizedCompletionParams::from(params);
 
-        assert_eq!(
-            sanitized.text,
-            r#"select "email", "REPLACED_TOKEN_WITH_QUOTE" from "auth"."users";"#
-        );
+            assert_eq!(
+                sanitized.text,
+                r#"select "email", "REPLACED_TOKEN_WITH_QUOTE" from "auth"."users";"#
+            );
+        }
+
+        {
+            // select * from "auth"."|; <-- with semi
+            let input = r#"select * from "auth".";"#;
+            let position = TextSize::new(22);
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE";"#
+            );
+        }
+
+        {
+            // select * from "auth"."| <-- without semi
+            let input = r#"select * from "auth".""#;
+            let position = TextSize::new(22);
+
+            let params = get_test_params(input, position);
+
+            let sanitized = SanitizedCompletionParams::from(params);
+
+            assert_eq!(
+                sanitized.text,
+                r#"select * from "auth"."REPLACED_TOKEN_WITH_QUOTE""#
+            );
+        }
     }
 
     #[test]

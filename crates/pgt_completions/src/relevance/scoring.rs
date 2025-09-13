@@ -184,9 +184,10 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
+        // TODO
         let schema_name = match ctx.schema_or_alias_name.as_ref() {
             None => return,
-            Some(n) => n,
+            Some(n) => n.replace('"', ""),
         };
 
         let data_schema = match self.get_schema_name() {

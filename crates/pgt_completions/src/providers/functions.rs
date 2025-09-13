@@ -4,7 +4,7 @@ use pgt_treesitter::TreesitterContext;
 use crate::{
     CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    providers::helper::get_range_to_replace,
+    providers::helper::{get_range_to_replace, node_text_surrounded_by_quotes, only_leading_quote},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
@@ -37,7 +37,7 @@ pub fn complete_functions<'a>(
 fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
     let mut text = with_schema_or_alias(ctx, func.name.as_str(), Some(func.schema.as_str()));
 
-    let range = get_range_to_replace(ctx);
+    let mut range = get_range_to_replace(ctx);
 
     if ctx.is_invocation {
         CompletionText {
@@ -46,6 +46,11 @@ fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionTe
             is_snippet: false,
         }
     } else {
+        if node_text_surrounded_by_quotes(ctx) && !only_leading_quote(ctx) {
+            text.push('"');
+            range = range.checked_expand_end(1.into()).unwrap_or(range);
+        }
+
         text.push('(');
 
         let num_args = func.args.args.len();
@@ -68,6 +73,7 @@ fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionTe
 
 #[cfg(test)]
 mod tests {
+    use pgt_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
@@ -289,6 +295,70 @@ mod tests {
                     CompletionItemKind::Function,
                 ),
             ],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn autocompletes_after_schema_in_quotes(pool: PgPool) {
+        let setup = r#"
+          create schema auth;
+
+          create or replace function auth.my_cool_foo()
+          returns trigger
+          language plpgsql
+          security invoker
+          as $$
+          begin
+            raise exception 'dont matter';
+          end;
+          $$;
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        assert_complete_results(
+            format!(
+                r#"select "auth".{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::CompletionTextAndRange(
+                "my_cool_foo()".into(),
+                TextRange::new(14.into(), 14.into()),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"select "auth"."{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::CompletionTextAndRange(
+                r#"my_cool_foo"()"#.into(),
+                TextRange::new(15.into(), 15.into()),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"select "auth"."{}""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::CompletionTextAndRange(
+                r#"my_cool_foo"()"#.into(),
+                TextRange::new(15.into(), 16.into()),
+            )],
             None,
             &pool,
         )
