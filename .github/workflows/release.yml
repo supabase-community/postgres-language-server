@@ -39,6 +39,8 @@ jobs:
         config:
           - { os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
           - { os: ubuntu-22.04, target: aarch64-unknown-linux-gnu }
+          - { os: ubuntu-22.04, target: x86_64-unknown-linux-musl }
+          - { os: ubuntu-22.04, target: aarch64-unknown-linux-musl }
           - { os: macos-14, target: x86_64-apple-darwin }
           - { os: macos-14, target: aarch64-apple-darwin }
           - { os: windows-2022, target: x86_64-pc-windows-msvc }
@@ -66,6 +68,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install musl toolchain
+        if: matrix.config.target == 'aarch64-unknown-linux-musl' || matrix.config.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      # - name: Install cargo-audit
+      #   uses: taiki-e/install-action@57511bcdf8cdb0eab6448cb7fa632952d9f25742 # v2.59.1
+      #   if: matrix.config.target == 'x86_64-unknown-linux-musl'
+      #   with:
+      #     tool: cargo-audit
+
+      # - name: Audit crates.io dependencies
+      #   if: matrix.config.target == 'x86_64-unknown-linux-musl'
+      #   run: cargo audit
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres

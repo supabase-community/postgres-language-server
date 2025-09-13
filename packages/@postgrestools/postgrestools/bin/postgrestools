@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 const { platform, arch, env } = process;
 
-/**
- * platform and arch are values injected into the node runtime.
- * We use the values documented on https://nodejs.org.
- */
 const PLATFORMS = {
   win32: {
     x64: "@postgrestools/cli-x86_64-windows-msvc/postgrestools.exe",
@@ -18,9 +14,36 @@ const PLATFORMS = {
     x64: "@postgrestools/cli-x86_64-linux-gnu/postgrestools",
     arm64: "@postgrestools/cli-aarch64-linux-gnu/postgrestools",
   },
+  "linux-musl": {
+    x64: "@postgrestools/cli-x86_64-linux-musl/postgrestools",
+    arm64: "@postgrestools/cli-aarch64-linux-musl/postgrestools",
+  },
 };
 
-const binPath = env.POSTGRESTOOLS_BINARY || PLATFORMS?.[platform]?.[arch];
+function isMusl() {
+  let stderr;
+  try {
+    stderr = execSync("ldd --version", {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (err) {
+    stderr = err.stderr;
+  }
+  if (stderr.indexOf("musl") > -1) {
+    return true;
+  }
+  return false;
+}
+
+function getPlatform() {
+  if (platform === "linux") {
+    return isMusl() ? "linux-musl" : "linux";
+  }
+
+  return platform;
+}
+
+const binPath = env.POSTGRESTOOLS_BINARY || PLATFORMS?.[getPlatform()]?.[arch];
 
 if (binPath) {
   const result = require("child_process").spawnSync(
