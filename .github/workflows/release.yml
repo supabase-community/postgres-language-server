@@ -64,7 +64,7 @@ jobs:
 
       # The Aarch64 Linux is a special snowflake, we need to install its toolchain
       - name: Install arm64 toolchain
-        if: matrix.config.target == 'aarch64-unknown-linux-gnu'
+        if: matrix.config.target == 'aarch64-unknown-linux-gnu' || matrix.config.target == 'aarch64-unknown-linux-musl'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
