@@ -10,7 +10,7 @@ pub struct RuleContext<'a, R: Rule> {
     stmt: &'a pgt_query::NodeEnum,
     options: &'a R::Options,
     schema_cache: Option<&'a SchemaCache>,
-    file_context: &'a AnalysedFileContext,
+    file_context: &'a AnalysedFileContext<'a>,
 }
 
 impl<'a, R> RuleContext<'a, R>

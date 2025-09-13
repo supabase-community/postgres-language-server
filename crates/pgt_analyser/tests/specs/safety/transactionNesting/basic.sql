@@ -1,0 +1,2 @@
+-- expect_only_lint/safety/transactionNesting
+-- select 1;

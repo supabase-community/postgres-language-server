@@ -15,7 +15,7 @@ pub struct SchemaCache {
     pub tables: Vec<Table>,
     pub functions: Vec<Function>,
     pub types: Vec<PostgresType>,
-    pub versions: Vec<Version>,
+    pub version: Version,
     pub columns: Vec<Column>,
     pub policies: Vec<Policy>,
     pub extensions: Vec<Extension>,
@@ -49,12 +49,17 @@ impl SchemaCache {
             Extension::load(pool),
         )?;
 
+        let version = versions
+            .into_iter()
+            .next()
+            .expect("Expected at least one version row");
+
         Ok(SchemaCache {
             schemas,
             tables,
             functions,
             types,
-            versions,
+            version,
             columns,
             policies,
             triggers,

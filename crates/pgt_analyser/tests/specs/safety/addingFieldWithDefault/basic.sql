@@ -1,0 +1,2 @@
+-- expect_only_lint/safety/addingFieldWithDefault
+-- select 1;

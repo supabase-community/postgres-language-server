@@ -41,7 +41,7 @@ fn generate_rule_template(
 
     format!(
         r#"use pgt_analyse::{{
-    AnalysedFileContext, context::RuleContext, {macro_name}, Rule, RuleDiagnostic, 
+    AnalysedFileContext, context::RuleContext, {macro_name}, Rule, RuleDiagnostic,
 }};
 use pgt_console::markup;
 use pgt_diagnostics::Severity;
@@ -79,11 +79,7 @@ use pgt_schema_cache::SchemaCache;
 impl Rule for {rule_name_upper_camel} {{
     type Options = ();
 
-    fn run(
-        ctx: &RuleContext<Self>
-        _file_context: &AnalysedFileContext,
-        _schema_cache: Option<&SchemaCache>,
-    ) -> Vec<RuleDiagnostic> {{
+    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {{
         Vec::new()
     }}
 }}

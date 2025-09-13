@@ -1,0 +1,22 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_only_lint/safety/preferBigintOverSmallint
+CREATE TABLE users (
+    age smallint
+);
+
+```
+
+# Diagnostics
+lint/safety/preferBigintOverSmallint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × SMALLINT has a very limited range that is easily exceeded.
+  
+  i SMALLINT can only store values from -32,768 to 32,767. This range is often insufficient.
+  
+  i Consider using INTEGER or BIGINT for better range and future-proofing.

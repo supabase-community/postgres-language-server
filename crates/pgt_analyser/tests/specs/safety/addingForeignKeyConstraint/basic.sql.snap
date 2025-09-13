@@ -1,0 +1,21 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- https://postgrestools.com/analyser/safety/addingForeignKeyConstraint
+
+-- Should trigger: Adding constraint without NOT VALID
+ALTER TABLE "email" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+```
+
+# Diagnostics
+lint/safety/addingForeignKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a foreign key constraint requires a table scan and locks on both tables.
+  
+  i This will block writes to both the referencing and referenced tables while PostgreSQL verifies the constraint.
+  
+  i Add the constraint as NOT VALID first, then VALIDATE it in a separate transaction.
