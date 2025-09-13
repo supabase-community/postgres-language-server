@@ -6,10 +6,10 @@ on:
 permissions:
   contents: write
 
-env:
-  # Need these guys for cross-compilation
-  # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-  # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+# env:
+# Need these guys for cross-compilation
+# CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+# CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
 
 jobs:
   # windows does not run git cliff so we need to do it here
