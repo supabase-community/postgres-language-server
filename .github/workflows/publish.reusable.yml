@@ -34,20 +34,25 @@ jobs:
           RELEASE_TAG: ${{ inputs.release-tag }}
           PRERELEASE: ${{ inputs.is-prerelease }}
 
-      - name: Publish npm packages as nightly
-        if: inputs.is-prerelease == 'true'
+      - name: LS those packages
         run: |
-          for package in packages/@postgrestools/*; do
-            npm publish "$package" --tag nightly --access public --provenance
-          done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
+          ls packages/@postgrestools
+          cat packages/@postgrestools/postgrestools/package.json
 
-      - name: Publish npm packages as latest
-        if: inputs.is-prerelease != 'true'
-        run: |
-          for package in packages/@postgrestools/*; do
-            npm publish "$package" --tag latest --access public --provenance
-          done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - name: Publish npm packages as nightly
+      #   if: inputs.is-prerelease == 'true'
+      #   run: |
+      #     for package in packages/@postgrestools/*; do
+      #       npm publish "$package" --tag nightly --access public --provenance
+      #     done
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
+
+      # - name: Publish npm packages as latest
+      #   if: inputs.is-prerelease != 'true'
+      #   run: |
+      #     for package in packages/@postgrestools/*; do
+      #       npm publish "$package" --tag latest --access public --provenance
+      #     done
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
