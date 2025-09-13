@@ -26,7 +26,8 @@ impl HoveredNode {
 
         match under_cursor.kind() {
             "identifier" if ctx.matches_ancestor_history(&["relation", "object_reference"]) => {
-                if ctx.node_under_cursor_is_nth_child(1) && under_cursor.has_prev_sibling() {
+                let num_sibs = ctx.num_siblings();
+                if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {
                     return Some(HoveredNode::Schema(NodeIdentification::Name(node_content)));
                 }
 

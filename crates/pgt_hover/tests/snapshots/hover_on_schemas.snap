@@ -1,6 +1,5 @@
 ---
 source: crates/pgt_hover/tests/hover_integration_tests.rs
-assertion_line: 69
 expression: snapshot
 ---
 # Input

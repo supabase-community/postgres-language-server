@@ -8,12 +8,16 @@ select
     select array_agg(grantee::regrole::text)
     from aclexplode(n.nspacl)
     where privilege_type = 'USAGE'
+    and grantee::regrole::text <> ''
+    and grantee::regrole::text <> '-'
   ), ARRAY[]::text[]) as "allowed_users!",
 
   coalesce((
     select array_agg(grantee::regrole::text)
     from aclexplode(n.nspacl)
     where privilege_type = 'CREATE'
+    and grantee::regrole::text <> ''
+    and grantee::regrole::text <> '-'
   ), ARRAY[]::text[]) as "allowed_creators!",
 
   (select count(*) from pg_class c where c.relnamespace = n.oid and c.relkind = 'r') as "table_count!",

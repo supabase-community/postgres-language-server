@@ -853,6 +853,21 @@ impl<'a> TreesitterContext<'a> {
             })
     }
 
+    /// Returns the number of siblings of the node under the cursor.
+    pub fn num_siblings(&self) -> usize {
+        self.node_under_cursor
+            .as_ref()
+            .map(|n| match n {
+                NodeUnderCursor::TsNode(node) => {
+                    // if there's no parent, we're on the top of the tree,
+                    // where we have 0 siblings.
+                    node.parent().map(|p| p.child_count() - 1).unwrap_or(0)
+                }
+                NodeUnderCursor::CustomNode { .. } => 0,
+            })
+            .unwrap_or(0)
+    }
+
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
         if let Some(key) = key.as_ref() {
             let sanitized_key = key.replace('"', "");

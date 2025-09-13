@@ -16,6 +16,7 @@ impl ToHoverMarkdown for Schema {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{}'", comment)?;
             writeln!(writer)?;
+            writeln!(writer)?;
         }
 
         if !self.allowed_creators.is_empty() {
