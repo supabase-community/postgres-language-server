@@ -104,6 +104,15 @@ impl NodeUnderCursor<'_> {
             NodeUnderCursor::CustomNode { kind, .. } => kind.as_str(),
         }
     }
+
+    pub fn has_prev_sibling(&self) -> bool {
+        match self {
+            NodeUnderCursor::TsNode(node) => node.prev_sibling().is_some(),
+            NodeUnderCursor::CustomNode {
+                previous_node_kind, ..
+            } => previous_node_kind.is_some(),
+        }
+    }
 }
 
 impl<'a> From<tree_sitter::Node<'a>> for NodeUnderCursor<'a> {
@@ -796,6 +805,49 @@ impl<'a> TreesitterContext<'a> {
                     }
 
                     true
+                }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
+
+    /// Checks whether the Node under the cursor is the nth child of the parent.
+    ///
+    /// ```
+    /// /*
+    ///  * Given `select * from "a|uth"."users";`
+    ///  * The node under the cursor is "auth".
+    ///  *
+    ///  * [...] redacted
+    ///  * from [9..28] 'from "auth"."users"'
+    ///  *   keyword_from [9..13] 'from'
+    ///  *   relation [14..28] '"auth"."users"'
+    ///  *     object_reference [14..28] '"auth"."users"'
+    ///  *       identifier [14..20] '"auth"'
+    ///  *         . [20..21] '.'
+    ///  *       identifier [21..28] '"users"'
+    ///  */
+    ///
+    /// if node_under_cursor_is_nth_child(1) {
+    ///     node_type = "schema";
+    /// } else if node_under_cursor_is_nth_child(3) {
+    ///     node_type = "table";
+    /// }
+    /// ```
+    pub fn node_under_cursor_is_nth_child(&self, nth: usize) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => {
+                    let mut cursor = node.walk();
+                    node.parent().is_some_and(|p| {
+                        for (i, child) in p.children(&mut cursor).enumerate() {
+                            if i + 1 == nth && child.id() == node.id() {
+                                return true;
+                            }
+                        }
+
+                        false
+                    })
                 }
                 NodeUnderCursor::CustomNode { .. } => false,
             })

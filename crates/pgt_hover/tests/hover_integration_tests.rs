@@ -442,3 +442,22 @@ async fn test_column_hover_with_quoted_column_name_with_table(test_db: PgPool) {
     )
     .await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn hover_on_schemas(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+
+        create table auth.users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+    "#;
+
+    let query = format!(
+        r#"select * from au{}th.users;"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("hover_on_schemas", query, Some(setup), &test_db).await;
+}

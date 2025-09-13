@@ -103,7 +103,21 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
             },
 
-            _ => todo!(),
+            HoveredNode::Schema(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(schema_name) => params
+                    .schema_cache
+                    .find_schema(&schema_name)
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or(vec![]),
+
+                _ => vec![],
+            },
+
+            t => {
+                println!("{:?}", t);
+                todo!()
+            }
         };
 
         prioritize_by_context(items, &ctx)
