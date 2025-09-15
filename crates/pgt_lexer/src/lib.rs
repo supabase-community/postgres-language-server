@@ -7,7 +7,7 @@ pub use crate::lexed::{LexDiagnostic, Lexed};
 pub use crate::lexer::Lexer;
 
 /// Lex the input string into tokens and diagnostics
-pub fn lex(input: &str) -> Lexed {
+pub fn lex<'a>(input: &'a str) -> Lexed<'a> {
     Lexer::new(input).lex()
 }
 
