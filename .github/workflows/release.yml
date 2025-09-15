@@ -58,14 +58,6 @@ jobs:
         with:
           submodules: true
 
-      - name: DEBUG Rust Container
-        if: matrix.config.container != null
-        run: |
-          which rustc
-          rustc --version
-          rustup show
-          rustup target list --installed
-
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         if: matrix.config.container == null
         with:
@@ -74,6 +66,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         if: matrix.config.container == null
         id: rust-cache
+
+      - name: Add Rust target in container
+        if: matrix.config.container != null
+        run: rustup target add ${{ matrix.config.target }}
 
       # The Aarch64 Linux is a special snowflake, we need to install its toolchain
       - name: Install arm64 toolchain
