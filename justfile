@@ -49,8 +49,8 @@ pretty-print-forever: fix-cargo-check
       break
     else
       echo "$(date): Agentic loop failed, waiting 6 hours 1 minute before retry..."
-      sleep 21660  # 6 hours 1 minute = 6 * 60 * 60 + 1 * 60 = 21600 + 60 = 21660 seconds
-      echo "$(date): Resuming after 6-hour 1-minute wait..."
+      sleep 3660  # 1 hour 1 minute = 1 * 60 * 60 + 1 * 60 = 3600 + 60 = 3660 seconds
+      echo "$(date): Resuming after 1-hour 1-minute wait..."
     fi
   done
 

@@ -1,1 +1,1 @@
-SELECT name COLLATE "en_US" FROM users
+SELECT name COLLATE "en_US" FROM users;

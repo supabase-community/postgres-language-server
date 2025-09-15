@@ -1,0 +1,5 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+expression: formatted_sql
+---
+SELECT name COLLATE "en_US" FROM users;

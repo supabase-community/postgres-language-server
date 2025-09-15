@@ -8,11 +8,15 @@ impl ToTokens for pgt_query::NodeEnum {
         match self {
             pgt_query::protobuf::node::Node::SelectStmt(stmt) => stmt.as_ref().to_tokens(e),
             pgt_query::protobuf::node::Node::ResTarget(target) => target.to_tokens(e),
+            pgt_query::protobuf::node::Node::MultiAssignRef(ref_) => ref_.to_tokens(e),
             pgt_query::protobuf::node::Node::ColumnRef(col_ref) => col_ref.to_tokens(e),
             pgt_query::protobuf::node::Node::String(string) => string.to_tokens(e),
             pgt_query::protobuf::node::Node::RangeVar(string) => string.to_tokens(e),
             pgt_query::protobuf::node::Node::RangeSubselect(subselect) => subselect.to_tokens(e),
             pgt_query::protobuf::node::Node::RangeFunction(func) => func.to_tokens(e),
+            pgt_query::protobuf::node::Node::RangeTableSample(sample) => sample.to_tokens(e),
+            pgt_query::protobuf::node::Node::RangeTableFunc(func) => func.to_tokens(e),
+            pgt_query::protobuf::node::Node::RangeTableFuncCol(col) => col.to_tokens(e),
             pgt_query::protobuf::node::Node::JoinExpr(join) => join.to_tokens(e),
             pgt_query::protobuf::node::Node::FuncCall(func_call) => func_call.to_tokens(e),
             pgt_query::protobuf::node::Node::Aggref(aggref) => aggref.to_tokens(e),
@@ -36,6 +40,7 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::AConst(const_val) => const_val.to_tokens(e),
             pgt_query::protobuf::node::Node::DeleteStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::AExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::AIndirection(indirection) => indirection.to_tokens(e),
             pgt_query::protobuf::node::Node::UpdateStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::CreateStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::ColumnDef(def) => def.to_tokens(e),
@@ -123,6 +128,7 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::DoStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::InlineCodeBlock(block) => block.to_tokens(e),
             pgt_query::protobuf::node::Node::CallStmt(stmt) => stmt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CallContext(ctx) => ctx.to_tokens(e),
             pgt_query::protobuf::node::Node::RenameStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::AlterObjectDependsStmt(stmt) => stmt.to_tokens(e),
             pgt_query::protobuf::node::Node::AlterObjectSchemaStmt(stmt) => stmt.to_tokens(e),
@@ -185,9 +191,12 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::RowExpr(row) => row.to_tokens(e),
             pgt_query::protobuf::node::Node::AArrayExpr(arr) => arr.to_tokens(e),
             pgt_query::protobuf::node::Node::SubLink(link) => link.to_tokens(e),
+            pgt_query::protobuf::node::Node::SubPlan(plan) => plan.to_tokens(e),
+            pgt_query::protobuf::node::Node::AlternativeSubPlan(plan) => plan.to_tokens(e),
             pgt_query::protobuf::node::Node::CoalesceExpr(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::MinMaxExpr(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::XmlExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::XmlSerialize(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::NullTest(test) => test.to_tokens(e),
             pgt_query::protobuf::node::Node::BooleanTest(test) => test.to_tokens(e),
             pgt_query::protobuf::node::Node::PublicationObjSpec(spec) => spec.to_tokens(e),
@@ -195,12 +204,24 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::WithClause(clause) => clause.to_tokens(e),
             pgt_query::protobuf::node::Node::CommonTableExpr(cte) => cte.to_tokens(e),
             pgt_query::protobuf::node::Node::GroupingSet(gs) => gs.to_tokens(e),
-            pgt_query::protobuf::node::Node::AIndirection(ind) => ind.to_tokens(e),
             pgt_query::protobuf::node::Node::AIndices(idx) => idx.to_tokens(e),
             pgt_query::protobuf::node::Node::LockingClause(clause) => clause.to_tokens(e),
             pgt_query::protobuf::node::Node::TableFunc(func) => func.to_tokens(e),
             pgt_query::protobuf::node::Node::JsonTable(table) => table.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonTablePath(path) => path.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonTablePathScan(scan) => scan.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonTableSiblingJoin(join) => join.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonFormat(format) => format.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonIsPredicate(pred) => pred.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonReturning(ret) => ret.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonBehavior(beh) => beh.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonFuncExpr(expr) => expr.to_tokens(e),
             pgt_query::protobuf::node::Node::JsonValueExpr(expr) => expr.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonOutput(output) => output.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonKeyValue(kv) => kv.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonObjectConstructor(ctor) => ctor.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonArrayConstructor(ctor) => ctor.to_tokens(e),
             pgt_query::protobuf::node::Node::JsonTablePathSpec(spec) => spec.to_tokens(e),
             pgt_query::protobuf::node::Node::JsonTableColumn(col) => col.to_tokens(e),
             pgt_query::protobuf::node::Node::DistinctExpr(expr) => expr.to_tokens(e),
@@ -213,6 +234,42 @@ impl ToTokens for pgt_query::NodeEnum {
             pgt_query::protobuf::node::Node::PartitionBoundSpec(spec) => spec.to_tokens(e),
             pgt_query::protobuf::node::Node::SetToDefault(def) => def.to_tokens(e),
             pgt_query::protobuf::node::Node::TableLikeClause(clause) => clause.to_tokens(e),
+            pgt_query::protobuf::node::Node::RelabelType(rt) => rt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CoerceToDomain(ctd) => ctd.to_tokens(e),
+            pgt_query::protobuf::node::Node::FieldSelect(fs) => fs.to_tokens(e),
+            pgt_query::protobuf::node::Node::PartitionRangeDatum(prd) => prd.to_tokens(e),
+            pgt_query::protobuf::node::Node::CtesearchClause(csc) => csc.to_tokens(e),
+            pgt_query::protobuf::node::Node::CtecycleClause(ccc) => ccc.to_tokens(e),
+            pgt_query::protobuf::node::Node::TriggerTransition(tt) => tt.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonArgument(ja) => ja.to_tokens(e),
+            pgt_query::protobuf::node::Node::PublicationTable(pt) => pt.to_tokens(e),
+            pgt_query::protobuf::node::Node::CoerceViaIo(cvi) => cvi.to_tokens(e),
+            pgt_query::protobuf::node::Node::FieldStore(fs) => fs.to_tokens(e),
+            pgt_query::protobuf::node::Node::ArrayCoerceExpr(ace) => ace.to_tokens(e),
+            pgt_query::protobuf::node::Node::ConvertRowtypeExpr(cre) => cre.to_tokens(e),
+            pgt_query::protobuf::node::Node::CaseTestExpr(cte) => cte.to_tokens(e),
+            pgt_query::protobuf::node::Node::CoerceToDomainValue(cdv) => cdv.to_tokens(e),
+            pgt_query::protobuf::node::Node::MergeAction(ma) => ma.to_tokens(e),
+            pgt_query::protobuf::node::Node::MergeSupportFunc(msf) => msf.to_tokens(e),
+            pgt_query::protobuf::node::Node::SinglePartitionSpec(_) => {}
+            pgt_query::protobuf::node::Node::PartitionCmd(pc) => pc.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonConstructorExpr(jce) => jce.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonParseExpr(jpe) => jpe.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonScalarExpr(jse) => jse.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonSerializeExpr(jse) => jse.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonArrayQueryConstructor(jaqc) => jaqc.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonAggConstructor(jac) => jac.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonObjectAgg(joa) => joa.to_tokens(e),
+            pgt_query::protobuf::node::Node::JsonArrayAgg(jaa) => jaa.to_tokens(e),
+            pgt_query::protobuf::node::Node::WindowClause(wc) => wc.to_tokens(e),
+            pgt_query::protobuf::node::Node::WindowFuncRunCondition(wfrc) => wfrc.to_tokens(e),
+            pgt_query::protobuf::node::Node::SortGroupClause(sgc) => sgc.to_tokens(e),
+            pgt_query::protobuf::node::Node::RowMarkClause(rmc) => rmc.to_tokens(e),
+            pgt_query::protobuf::node::Node::WithCheckOption(wco) => wco.to_tokens(e),
+            pgt_query::protobuf::node::Node::TableSampleClause(tsc) => tsc.to_tokens(e),
+            pgt_query::protobuf::node::Node::RangeTblEntry(rte) => rte.to_tokens(e),
+            pgt_query::protobuf::node::Node::RtepermissionInfo(rpi) => rpi.to_tokens(e),
+            pgt_query::protobuf::node::Node::RangeTblFunction(rtf) => rtf.to_tokens(e),
             _ => {
                 unimplemented!("Node type {:?} not implemented for to_tokens", self);
             }
@@ -226,6 +283,7 @@ impl ToTokens for pgt_query::Node {
             match node {
                 pgt_query::protobuf::node::Node::SelectStmt(stmt) => stmt.as_ref().to_tokens(e),
                 pgt_query::protobuf::node::Node::ResTarget(target) => target.to_tokens(e),
+                pgt_query::protobuf::node::Node::MultiAssignRef(ref_) => ref_.to_tokens(e),
                 pgt_query::protobuf::node::Node::ColumnRef(col_ref) => col_ref.to_tokens(e),
                 pgt_query::protobuf::node::Node::String(string) => string.to_tokens(e),
                 pgt_query::protobuf::node::Node::RangeVar(string) => string.to_tokens(e),
@@ -233,6 +291,9 @@ impl ToTokens for pgt_query::Node {
                     subselect.to_tokens(e)
                 }
                 pgt_query::protobuf::node::Node::RangeFunction(func) => func.to_tokens(e),
+                pgt_query::protobuf::node::Node::RangeTableSample(sample) => sample.to_tokens(e),
+                pgt_query::protobuf::node::Node::RangeTableFunc(func) => func.to_tokens(e),
+                pgt_query::protobuf::node::Node::RangeTableFuncCol(col) => col.to_tokens(e),
                 pgt_query::protobuf::node::Node::JoinExpr(join) => join.to_tokens(e),
                 pgt_query::protobuf::node::Node::FuncCall(func_call) => func_call.to_tokens(e),
                 pgt_query::protobuf::node::Node::Aggref(aggref) => aggref.to_tokens(e),
@@ -345,6 +406,7 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::DoStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::InlineCodeBlock(block) => block.to_tokens(e),
                 pgt_query::protobuf::node::Node::CallStmt(stmt) => stmt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CallContext(ctx) => ctx.to_tokens(e),
                 pgt_query::protobuf::node::Node::RenameStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::AlterObjectDependsStmt(stmt) => stmt.to_tokens(e),
                 pgt_query::protobuf::node::Node::AlterObjectSchemaStmt(stmt) => stmt.to_tokens(e),
@@ -409,9 +471,12 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::RowExpr(row) => row.to_tokens(e),
                 pgt_query::protobuf::node::Node::AArrayExpr(arr) => arr.to_tokens(e),
                 pgt_query::protobuf::node::Node::SubLink(link) => link.to_tokens(e),
+                pgt_query::protobuf::node::Node::SubPlan(plan) => plan.to_tokens(e),
+                pgt_query::protobuf::node::Node::AlternativeSubPlan(plan) => plan.to_tokens(e),
                 pgt_query::protobuf::node::Node::CoalesceExpr(expr) => expr.to_tokens(e),
                 pgt_query::protobuf::node::Node::MinMaxExpr(expr) => expr.to_tokens(e),
                 pgt_query::protobuf::node::Node::XmlExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::XmlSerialize(expr) => expr.to_tokens(e),
                 pgt_query::protobuf::node::Node::NullTest(test) => test.to_tokens(e),
                 pgt_query::protobuf::node::Node::BooleanTest(test) => test.to_tokens(e),
                 pgt_query::protobuf::node::Node::PublicationObjSpec(spec) => spec.to_tokens(e),
@@ -424,7 +489,20 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::LockingClause(clause) => clause.to_tokens(e),
                 pgt_query::protobuf::node::Node::TableFunc(func) => func.to_tokens(e),
                 pgt_query::protobuf::node::Node::JsonTable(table) => table.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonTablePath(path) => path.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonTablePathScan(scan) => scan.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonTableSiblingJoin(join) => join.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonFormat(format) => format.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonIsPredicate(pred) => pred.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonReturning(ret) => ret.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonBehavior(beh) => beh.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonFuncExpr(expr) => expr.to_tokens(e),
                 pgt_query::protobuf::node::Node::JsonValueExpr(expr) => expr.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonOutput(output) => output.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonKeyValue(kv) => kv.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonObjectConstructor(ctor) => ctor.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonArrayConstructor(ctor) => ctor.to_tokens(e),
                 pgt_query::protobuf::node::Node::JsonTablePathSpec(spec) => spec.to_tokens(e),
                 pgt_query::protobuf::node::Node::JsonTableColumn(col) => col.to_tokens(e),
                 pgt_query::protobuf::node::Node::DistinctExpr(expr) => expr.to_tokens(e),
@@ -441,6 +519,44 @@ impl ToTokens for pgt_query::Node {
                 pgt_query::protobuf::node::Node::IntList(list) => list.to_tokens(e),
                 pgt_query::protobuf::node::Node::OnConflictClause(clause) => clause.to_tokens(e),
                 pgt_query::protobuf::node::Node::InferClause(clause) => clause.to_tokens(e),
+                pgt_query::protobuf::node::Node::RelabelType(rt) => rt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CoerceToDomain(ctd) => ctd.to_tokens(e),
+                pgt_query::protobuf::node::Node::FieldSelect(fs) => fs.to_tokens(e),
+                pgt_query::protobuf::node::Node::PartitionRangeDatum(prd) => prd.to_tokens(e),
+                pgt_query::protobuf::node::Node::CtesearchClause(csc) => csc.to_tokens(e),
+                pgt_query::protobuf::node::Node::CtecycleClause(ccc) => ccc.to_tokens(e),
+                pgt_query::protobuf::node::Node::TriggerTransition(tt) => tt.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonArgument(ja) => ja.to_tokens(e),
+                pgt_query::protobuf::node::Node::PublicationTable(pt) => pt.to_tokens(e),
+                pgt_query::protobuf::node::Node::CoerceViaIo(cvi) => cvi.to_tokens(e),
+                pgt_query::protobuf::node::Node::FieldStore(fs) => fs.to_tokens(e),
+                pgt_query::protobuf::node::Node::ArrayCoerceExpr(ace) => ace.to_tokens(e),
+                pgt_query::protobuf::node::Node::ConvertRowtypeExpr(cre) => cre.to_tokens(e),
+                pgt_query::protobuf::node::Node::CaseTestExpr(cte) => cte.to_tokens(e),
+                pgt_query::protobuf::node::Node::CoerceToDomainValue(cdv) => cdv.to_tokens(e),
+                pgt_query::protobuf::node::Node::MergeAction(ma) => ma.to_tokens(e),
+                pgt_query::protobuf::node::Node::MergeSupportFunc(msf) => msf.to_tokens(e),
+                pgt_query::protobuf::node::Node::SinglePartitionSpec(_) => {}
+                pgt_query::protobuf::node::Node::PartitionCmd(pc) => pc.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonConstructorExpr(jce) => jce.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonParseExpr(jpe) => jpe.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonScalarExpr(jse) => jse.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonSerializeExpr(jse) => jse.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonArrayQueryConstructor(jaqc) => {
+                    jaqc.to_tokens(e)
+                }
+                pgt_query::protobuf::node::Node::JsonAggConstructor(jac) => jac.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonObjectAgg(joa) => joa.to_tokens(e),
+                pgt_query::protobuf::node::Node::JsonArrayAgg(jaa) => jaa.to_tokens(e),
+                pgt_query::protobuf::node::Node::WindowClause(wc) => wc.to_tokens(e),
+                pgt_query::protobuf::node::Node::WindowFuncRunCondition(wfrc) => wfrc.to_tokens(e),
+                pgt_query::protobuf::node::Node::SortGroupClause(sgc) => sgc.to_tokens(e),
+                pgt_query::protobuf::node::Node::RowMarkClause(rmc) => rmc.to_tokens(e),
+                pgt_query::protobuf::node::Node::WithCheckOption(wco) => wco.to_tokens(e),
+                pgt_query::protobuf::node::Node::TableSampleClause(tsc) => tsc.to_tokens(e),
+                pgt_query::protobuf::node::Node::RangeTblEntry(rte) => rte.to_tokens(e),
+                pgt_query::protobuf::node::Node::RtepermissionInfo(rpi) => rpi.to_tokens(e),
+                pgt_query::protobuf::node::Node::RangeTblFunction(rtf) => rtf.to_tokens(e),
                 _ => {
                     unimplemented!("Node type {:?} not implemented for to_tokens", node);
                 }
@@ -617,6 +733,14 @@ impl ToTokens for pgt_query::protobuf::ResTarget {
         }
 
         e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::MultiAssignRef {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref source) = self.source {
+            source.to_tokens(e);
+        }
     }
 }
 
@@ -8094,11 +8218,44 @@ impl ToTokens for pgt_query::protobuf::AIndirection {
         e.group_start(GroupKind::AIndirection, None, false);
 
         if let Some(ref arg) = self.arg {
+            // Check if we need parentheses around the arg
+            let needs_parens =
+                matches!(&arg.node, Some(pgt_query::protobuf::node::Node::RowExpr(_)));
+
+            if needs_parens {
+                e.token(TokenKind::L_PAREN);
+            }
             arg.to_tokens(e);
+            if needs_parens {
+                e.token(TokenKind::R_PAREN);
+            }
         }
 
         for ind in &self.indirection {
-            ind.to_tokens(e);
+            match &ind.node {
+                Some(pgt_query::protobuf::node::Node::String(s)) => {
+                    e.token(TokenKind::DOT);
+                    e.token(TokenKind::IDENT(s.sval.clone()));
+                }
+                Some(pgt_query::protobuf::node::Node::AIndices(indices)) => {
+                    e.token(TokenKind::L_BRACK);
+                    if let Some(ref lidx) = indices.lidx {
+                        lidx.to_tokens(e);
+                    }
+                    if indices.is_slice {
+                        e.token(TokenKind::IDENT(":".to_string()));
+                        if let Some(ref uidx) = indices.uidx {
+                            uidx.to_tokens(e);
+                        }
+                    }
+                    e.token(TokenKind::R_BRACK);
+                }
+                Some(pgt_query::protobuf::node::Node::AStar(_)) => {
+                    e.token(TokenKind::DOT);
+                    e.token(TokenKind::IDENT("*".to_string()));
+                }
+                _ => ind.to_tokens(e),
+            }
         }
 
         e.group_end();
@@ -8374,13 +8531,13 @@ impl ToTokens for pgt_query::protobuf::SqlValueFunction {
 
 impl ToTokens for pgt_query::protobuf::CollateExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CollateExpr, None, false);
-
         if let Some(ref arg) = self.arg {
             arg.to_tokens(e);
         }
-
-        e.group_end();
+        e.space();
+        e.token(TokenKind::COLLATE_KW);
+        e.space();
+        e.token(TokenKind::STRING("en_US".to_string()));
     }
 }
 
@@ -8656,7 +8813,7 @@ impl ToTokens for pgt_query::protobuf::OnConflictClause {
 }
 
 impl ToTokens for pgt_query::protobuf::Var {
-    fn to_tokens(&self, e: &mut EventEmitter) {
+    fn to_tokens(&self, _e: &mut EventEmitter) {
         todo!()
     }
 }
@@ -8695,7 +8852,7 @@ impl ToTokens for pgt_query::protobuf::FromExpr {
 }
 
 impl ToTokens for pgt_query::protobuf::RangeTblRef {
-    fn to_tokens(&self, e: &mut EventEmitter) {
+    fn to_tokens(&self, _e: &mut EventEmitter) {
         todo!()
     }
 }
@@ -8959,6 +9116,970 @@ impl ToTokens for pgt_query::protobuf::Aggref {
     }
 }
 
+impl ToTokens for pgt_query::protobuf::FuncExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        // TODO: Implement proper function name resolution using funcid
+        // For now, just emit the arguments
+        if !self.args.is_empty() {
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                arg.to_tokens(e);
+            }
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonArrayConstructor {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT("JSON_ARRAY".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        for (i, expr) in self.exprs.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            expr.to_tokens(e);
+        }
+
+        if self.absent_on_null {
+            if !self.exprs.is_empty() {
+                e.space();
+            }
+            e.token(TokenKind::IDENT("ABSENT".to_string()));
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::NULL_KW);
+        }
+
+        if let Some(ref output) = self.output {
+            e.space();
+            output.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonObjectConstructor {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT("JSON_OBJECT".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        for (i, expr) in self.exprs.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            expr.to_tokens(e);
+        }
+
+        if self.absent_on_null {
+            if !self.exprs.is_empty() {
+                e.space();
+            }
+            e.token(TokenKind::IDENT("ABSENT".to_string()));
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::NULL_KW);
+        }
+
+        if self.unique {
+            if !self.exprs.is_empty() || self.absent_on_null {
+                e.space();
+            }
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::UNIQUE_KW);
+            e.space();
+            e.token(TokenKind::IDENT("KEYS".to_string()));
+        }
+
+        if let Some(ref output) = self.output {
+            e.space();
+            output.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonKeyValue {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref key) = self.key {
+            key.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::IDENT(":".to_string()));
+        e.space();
+
+        if let Some(ref value) = self.value {
+            value.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonOutput {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref returning) = self.returning {
+            returning.to_tokens(e);
+        }
+
+        if let Some(ref type_name) = self.type_name {
+            e.space();
+            type_name.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonFuncExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::JsonExprOp;
+
+        match self.op() {
+            JsonExprOp::JsonExistsOp => {
+                e.token(TokenKind::IDENT("JSON_EXISTS".to_string()));
+            }
+            JsonExprOp::JsonQueryOp => {
+                e.token(TokenKind::IDENT("JSON_QUERY".to_string()));
+            }
+            JsonExprOp::JsonValueOp => {
+                e.token(TokenKind::IDENT("JSON_VALUE".to_string()));
+            }
+            _ => {}
+        }
+
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref context_item) = self.context_item {
+            context_item.to_tokens(e);
+        }
+
+        if let Some(ref pathspec) = self.pathspec {
+            e.token(TokenKind::COMMA);
+            e.space();
+            pathspec.to_tokens(e);
+        }
+
+        if !self.passing.is_empty() {
+            e.space();
+            e.token(TokenKind::IDENT("PASSING".to_string()));
+            e.space();
+
+            for (i, pass) in self.passing.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                pass.to_tokens(e);
+            }
+        }
+
+        if let Some(ref output) = self.output {
+            e.space();
+            output.to_tokens(e);
+        }
+
+        if let Some(ref on_empty) = self.on_empty {
+            e.space();
+            on_empty.to_tokens(e);
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::IDENT("EMPTY".to_string()));
+        }
+
+        if let Some(ref on_error) = self.on_error {
+            e.space();
+            on_error.to_tokens(e);
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::ERROR_KW);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::JsonExprOp;
+
+        match self.op() {
+            JsonExprOp::JsonExistsOp => {
+                e.token(TokenKind::IDENT("JSON_EXISTS".to_string()));
+            }
+            JsonExprOp::JsonQueryOp => {
+                e.token(TokenKind::IDENT("JSON_QUERY".to_string()));
+            }
+            JsonExprOp::JsonValueOp => {
+                e.token(TokenKind::IDENT("JSON_VALUE".to_string()));
+            }
+            _ => {}
+        }
+
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref formatted_expr) = self.formatted_expr {
+            formatted_expr.to_tokens(e);
+        }
+
+        if let Some(ref path_spec) = self.path_spec {
+            e.token(TokenKind::COMMA);
+            e.space();
+            path_spec.to_tokens(e);
+        }
+
+        if !self.passing_names.is_empty() && !self.passing_values.is_empty() {
+            e.space();
+            e.token(TokenKind::IDENT("PASSING".to_string()));
+            e.space();
+
+            for (i, (name, value)) in self
+                .passing_names
+                .iter()
+                .zip(self.passing_values.iter())
+                .enumerate()
+            {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                value.to_tokens(e);
+                e.space();
+                e.token(TokenKind::AS_KW);
+                e.space();
+                name.to_tokens(e);
+            }
+        }
+
+        if let Some(ref returning) = self.returning {
+            e.space();
+            returning.to_tokens(e);
+        }
+
+        if let Some(ref on_empty) = self.on_empty {
+            e.space();
+            on_empty.to_tokens(e);
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::IDENT("EMPTY".to_string()));
+        }
+
+        if let Some(ref on_error) = self.on_error {
+            e.space();
+            on_error.to_tokens(e);
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::ERROR_KW);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::RangeTableFunc {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::RangeTableFunc, None, false);
+
+        if self.lateral {
+            e.token(TokenKind::LATERAL_KW);
+            e.space();
+        }
+
+        e.token(TokenKind::IDENT("xmltable".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref rowexpr) = self.rowexpr {
+            rowexpr.to_tokens(e);
+        }
+
+        if let Some(ref docexpr) = self.docexpr {
+            e.space();
+            e.token(TokenKind::IDENT("passing".to_string()));
+            e.space();
+            docexpr.to_tokens(e);
+        }
+
+        if !self.columns.is_empty() {
+            e.space();
+            e.token(TokenKind::IDENT("columns".to_string()));
+            e.space();
+            for (i, col) in self.columns.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                col.to_tokens(e);
+            }
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        if let Some(ref alias) = self.alias {
+            e.space();
+            alias.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonBehavior {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::JsonBehaviorType;
+
+        match self.btype() {
+            JsonBehaviorType::JsonBehaviorNull => {
+                e.token(TokenKind::NULL_KW);
+            }
+            JsonBehaviorType::JsonBehaviorError => {
+                e.token(TokenKind::ERROR_KW);
+            }
+            JsonBehaviorType::JsonBehaviorEmpty => {
+                e.token(TokenKind::IDENT("EMPTY".to_string()));
+            }
+            JsonBehaviorType::JsonBehaviorEmptyArray => {
+                e.token(TokenKind::IDENT("EMPTY".to_string()));
+                e.space();
+                e.token(TokenKind::ARRAY_KW);
+            }
+            JsonBehaviorType::JsonBehaviorEmptyObject => {
+                e.token(TokenKind::IDENT("EMPTY".to_string()));
+                e.space();
+                e.token(TokenKind::IDENT("OBJECT".to_string()));
+            }
+            JsonBehaviorType::JsonBehaviorDefault => {
+                e.token(TokenKind::DEFAULT_KW);
+                if let Some(ref expr) = self.expr {
+                    e.space();
+                    expr.to_tokens(e);
+                }
+            }
+            _ => {}
+        }
+
+        if self.coerce {
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::IDENT("EMPTY".to_string()));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonReturning {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::RETURNING_KW);
+        e.space();
+
+        if let Some(ref format) = self.format {
+            format.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonIsPredicate {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::IS_KW);
+        e.space();
+
+        use pgt_query::protobuf::JsonValueType;
+        match self.item_type() {
+            JsonValueType::JsTypeObject => {
+                e.token(TokenKind::JSON_KW);
+                e.space();
+                e.token(TokenKind::IDENT("OBJECT".to_string()));
+            }
+            JsonValueType::JsTypeArray => {
+                e.token(TokenKind::JSON_KW);
+                e.space();
+                e.token(TokenKind::ARRAY_KW);
+            }
+            JsonValueType::JsTypeScalar => {
+                e.token(TokenKind::JSON_KW);
+                e.space();
+                e.token(TokenKind::IDENT("SCALAR".to_string()));
+            }
+            _ => {
+                e.token(TokenKind::JSON_KW);
+            }
+        }
+
+        if self.unique_keys {
+            e.space();
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::UNIQUE_KW);
+            e.space();
+            e.token(TokenKind::IDENT("KEYS".to_string()));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonFormat {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::{JsonEncoding, JsonFormatType};
+
+        e.token(TokenKind::FORMAT_KW);
+        e.space();
+
+        match self.format_type() {
+            JsonFormatType::JsFormatJson => {
+                e.token(TokenKind::JSON_KW);
+            }
+            JsonFormatType::JsFormatJsonb => {
+                e.token(TokenKind::IDENT("JSONB".to_string()));
+            }
+            _ => {}
+        }
+
+        match self.encoding() {
+            JsonEncoding::JsEncUtf8 => {
+                e.space();
+                e.token(TokenKind::IDENT("ENCODING".to_string()));
+                e.space();
+                e.token(TokenKind::IDENT("UTF8".to_string()));
+            }
+            JsonEncoding::JsEncUtf16 => {
+                e.space();
+                e.token(TokenKind::IDENT("ENCODING".to_string()));
+                e.space();
+                e.token(TokenKind::IDENT("UTF16".to_string()));
+            }
+            JsonEncoding::JsEncUtf32 => {
+                e.space();
+                e.token(TokenKind::IDENT("ENCODING".to_string()));
+                e.space();
+                e.token(TokenKind::IDENT("UTF32".to_string()));
+            }
+            _ => {}
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::XmlSerialize {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT("XMLSERIALIZE".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        use pgt_query::protobuf::XmlOptionType;
+        match self.xmloption() {
+            XmlOptionType::XmloptionDocument => {
+                e.token(TokenKind::IDENT("DOCUMENT".to_string()));
+            }
+            XmlOptionType::XmloptionContent => {
+                e.token(TokenKind::IDENT("CONTENT".to_string()));
+            }
+            _ => {}
+        }
+
+        if let Some(ref expr) = self.expr {
+            e.space();
+            expr.to_tokens(e);
+        }
+
+        if let Some(ref type_name) = self.type_name {
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            type_name.to_tokens(e);
+        }
+
+        if self.indent {
+            e.space();
+            e.token(TokenKind::IDENT("INDENT".to_string()));
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::RangeTableFuncCol {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT(self.colname.clone()));
+
+        if let Some(ref type_name) = self.type_name {
+            e.space();
+            type_name.to_tokens(e);
+        }
+
+        if self.for_ordinality {
+            e.space();
+            e.token(TokenKind::FOR_KW);
+            e.space();
+            e.token(TokenKind::IDENT("ordinality".to_string()));
+        }
+
+        if let Some(ref colexpr) = self.colexpr {
+            e.space();
+            e.token(TokenKind::IDENT("path".to_string()));
+            e.space();
+            colexpr.to_tokens(e);
+        }
+
+        if let Some(ref coldefexpr) = self.coldefexpr {
+            e.space();
+            e.token(TokenKind::DEFAULT_KW);
+            e.space();
+            coldefexpr.to_tokens(e);
+        }
+
+        if self.is_not_null {
+            e.space();
+            e.token(TokenKind::NOT_KW);
+            e.space();
+            e.token(TokenKind::NULL_KW);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::RangeTableSample {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref relation) = self.relation {
+            relation.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::IDENT("TABLESAMPLE".to_string()));
+        e.space();
+
+        for (i, method) in self.method.iter().enumerate() {
+            if i > 0 {
+                e.space();
+            }
+            method.to_tokens(e);
+        }
+
+        if !self.args.is_empty() {
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                arg.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        }
+
+        if let Some(ref repeatable) = self.repeatable {
+            e.space();
+            e.token(TokenKind::IDENT("REPEATABLE".to_string()));
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            repeatable.to_tokens(e);
+            e.token(TokenKind::R_PAREN);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::RelabelType {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CoerceToDomain {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::FieldSelect {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::PartitionRangeDatum {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::PartitionRangeDatumKind;
+
+        match self.kind() {
+            PartitionRangeDatumKind::PartitionRangeDatumMinvalue => {
+                e.token(TokenKind::IDENT("MINVALUE".to_string()));
+            }
+            PartitionRangeDatumKind::PartitionRangeDatumMaxvalue => {
+                e.token(TokenKind::IDENT("MAXVALUE".to_string()));
+            }
+            PartitionRangeDatumKind::PartitionRangeDatumValue => {
+                if let Some(ref value) = self.value {
+                    value.to_tokens(e);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CteSearchClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::SEARCH_KW);
+        e.space();
+
+        if self.search_breadth_first {
+            e.token(TokenKind::IDENT("BREADTH".to_string()));
+        } else {
+            e.token(TokenKind::IDENT("DEPTH".to_string()));
+        }
+        e.space();
+        e.token(TokenKind::FIRST_KW);
+        e.space();
+        e.token(TokenKind::BY_KW);
+        e.space();
+
+        for (i, col) in self.search_col_list.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            col.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::SET_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.search_seq_column.clone()));
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CteCycleClause {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::CYCLE_KW);
+        e.space();
+
+        for (i, col) in self.cycle_col_list.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            col.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::SET_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.cycle_mark_column.clone()));
+
+        if let Some(ref value) = self.cycle_mark_value {
+            e.space();
+            e.token(TokenKind::TO_KW);
+            e.space();
+            value.to_tokens(e);
+        }
+
+        if let Some(ref default) = self.cycle_mark_default {
+            e.space();
+            e.token(TokenKind::DEFAULT_KW);
+            e.space();
+            default.to_tokens(e);
+        }
+
+        e.space();
+        e.token(TokenKind::USING_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.cycle_path_column.clone()));
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::TriggerTransition {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if self.is_new {
+            e.token(TokenKind::NEW_KW);
+        } else {
+            e.token(TokenKind::OLD_KW);
+        }
+
+        if self.is_table {
+            e.space();
+            e.token(TokenKind::TABLE_KW);
+        }
+
+        e.space();
+        e.token(TokenKind::AS_KW);
+        e.space();
+        e.token(TokenKind::IDENT(self.name.clone()));
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonArgument {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref val) = self.val {
+            val.to_tokens(e);
+        }
+
+        if !self.name.is_empty() {
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            e.token(TokenKind::IDENT(self.name.clone()));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::PublicationTable {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref relation) = self.relation {
+            relation.to_tokens(e);
+        }
+
+        if !self.columns.is_empty() {
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            for (i, col) in self.columns.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                col.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        }
+
+        if let Some(ref where_clause) = self.where_clause {
+            e.space();
+            e.token(TokenKind::WHERE_KW);
+            e.space();
+            where_clause.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CoerceViaIo {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::FieldStore {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ArrayCoerceExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::ConvertRowtypeExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CaseTestExpr {
+    fn to_tokens(&self, _e: &mut EventEmitter) {
+        todo!()
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CoerceToDomainValue {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::VALUE_KW);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::MergeAction {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::CmdType;
+
+        match self.command_type() {
+            CmdType::CmdInsert => {
+                e.token(TokenKind::INSERT_KW);
+
+                if !self.target_list.is_empty() {
+                    e.space();
+                    e.token(TokenKind::L_PAREN);
+                    for (i, col) in self.target_list.iter().enumerate() {
+                        if i > 0 {
+                            e.token(TokenKind::COMMA);
+                            e.space();
+                        }
+                        col.to_tokens(e);
+                    }
+                    e.token(TokenKind::R_PAREN);
+                    e.space();
+                    e.token(TokenKind::VALUES_KW);
+                    e.space();
+                    e.token(TokenKind::L_PAREN);
+                    for (i, _) in self.target_list.iter().enumerate() {
+                        if i > 0 {
+                            e.token(TokenKind::COMMA);
+                            e.space();
+                        }
+                        e.token(TokenKind::DEFAULT_KW);
+                    }
+                    e.token(TokenKind::R_PAREN);
+                } else {
+                    e.space();
+                    e.token(TokenKind::DEFAULT_KW);
+                    e.space();
+                    e.token(TokenKind::VALUES_KW);
+                }
+            }
+            CmdType::CmdUpdate => {
+                e.token(TokenKind::UPDATE_KW);
+                e.space();
+                e.token(TokenKind::SET_KW);
+                e.space();
+
+                for (i, col) in self.target_list.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    col.to_tokens(e);
+                }
+            }
+            CmdType::CmdDelete => {
+                e.token(TokenKind::DELETE_KW);
+            }
+            CmdType::CmdNothing => {
+                e.token(TokenKind::IDENT("DO".to_string()));
+                e.space();
+                e.token(TokenKind::NOTHING_KW);
+            }
+            _ => {}
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::PartitionCmd {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(ref name) = self.name {
+            name.to_tokens(e);
+        }
+
+        if let Some(ref bound) = self.bound {
+            e.space();
+            bound.to_tokens(e);
+        }
+
+        if self.concurrent {
+            e.space();
+            e.token(TokenKind::IDENT("CONCURRENTLY".to_string()));
+        }
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonConstructorExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        use pgt_query::protobuf::JsonConstructorType;
+
+        match self.r#type() {
+            JsonConstructorType::JsctorJsonObject => {
+                e.token(TokenKind::IDENT("JSON_OBJECT".to_string()));
+            }
+            JsonConstructorType::JsctorJsonArray => {
+                e.token(TokenKind::IDENT("JSON_ARRAY".to_string()));
+            }
+            _ => {}
+        }
+
+        e.token(TokenKind::L_PAREN);
+
+        for (i, arg) in self.args.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            arg.to_tokens(e);
+        }
+
+        if self.absent_on_null {
+            if !self.args.is_empty() {
+                e.space();
+            }
+            e.token(TokenKind::IDENT("ABSENT".to_string()));
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::NULL_KW);
+        }
+
+        if self.unique {
+            if !self.args.is_empty() || self.absent_on_null {
+                e.space();
+            }
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::UNIQUE_KW);
+            e.space();
+            e.token(TokenKind::IDENT("KEYS".to_string()));
+        }
+
+        if let Some(ref returning) = self.returning {
+            e.space();
+            e.token(TokenKind::IDENT("RETURNING".to_string()));
+            e.space();
+            returning.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonParseExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT("JSON_PARSE".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        if self.unique_keys {
+            e.space();
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::UNIQUE_KW);
+            e.space();
+            e.token(TokenKind::IDENT("KEYS".to_string()));
+        }
+
+        if let Some(ref output) = self.output {
+            e.space();
+            e.token(TokenKind::IDENT("RETURNING".to_string()));
+            e.space();
+            output.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::emitter::{EventEmitter, ToTokens};
@@ -8978,4 +10099,266 @@ mod test {
 
         assert_debug_snapshot!(emitter.events);
     }
+}
+
+impl ToTokens for pgt_query::protobuf::SinglePartitionSpec {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::AlternativeSubPlan {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::AlternativeSubPlan, None, false);
+
+        if let Some(ref first_plan) = self.subplans.first() {
+            first_plan.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::CallContext {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::MergeSupportFunc {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::SubPlan {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::SubPlan, None, false);
+
+        if let Some(ref _param_id) = self.param_ids.first() {
+            e.token(TokenKind::IDENT(format!("$SUBPLAN{}", self.plan_id)));
+        } else if !self.plan_name.is_empty() {
+            e.token(TokenKind::IDENT(self.plan_name.clone()));
+        } else {
+            e.token(TokenKind::IDENT(format!("SubPlan {}", self.plan_id)));
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonTablePath {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.token(TokenKind::IDENT(self.name.clone()));
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonTablePathScan {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonTablePathScan, None, false);
+
+        if let Some(ref plan) = self.plan {
+            plan.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonTableSiblingJoin {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonTableSiblingJoin, None, false);
+
+        if let Some(ref lplan) = self.lplan {
+            lplan.to_tokens(e);
+        }
+
+        if let Some(ref rplan) = self.rplan {
+            e.space();
+            e.token(TokenKind::COMMA);
+            e.space();
+            rplan.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonScalarExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonScalarExpr, None, false);
+
+        e.token(TokenKind::IDENT("JSON_SCALAR".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        if let Some(ref output) = self.output {
+            e.space();
+            output.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonSerializeExpr {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonSerializeExpr, None, false);
+
+        e.token(TokenKind::IDENT("JSON_SERIALIZE".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref expr) = self.expr {
+            expr.to_tokens(e);
+        }
+
+        if let Some(ref output) = self.output {
+            e.space();
+            output.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonArrayQueryConstructor {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonArrayQueryConstructor, None, false);
+
+        e.token(TokenKind::IDENT("JSON_ARRAY".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref query) = self.query {
+            query.to_tokens(e);
+        }
+
+        if let Some(ref format) = self.format {
+            e.space();
+            format.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonAggConstructor {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonAggConstructor, None, false);
+
+        if let Some(ref output) = self.output {
+            output.to_tokens(e);
+        }
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonObjectAgg {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonObjectAgg, None, false);
+
+        e.token(TokenKind::IDENT("JSON_OBJECTAGG".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        if self.absent_on_null {
+            e.space();
+            e.token(TokenKind::ABSENT_KW);
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::NULL_KW);
+        }
+
+        if self.unique {
+            e.space();
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::UNIQUE_KW);
+            e.space();
+            e.token(TokenKind::KEYS_KW);
+        }
+
+        if let Some(ref constructor) = self.constructor {
+            e.space();
+            constructor.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::JsonArrayAgg {
+    fn to_tokens(&self, e: &mut EventEmitter) {
+        e.group_start(GroupKind::JsonArrayAgg, None, false);
+
+        e.token(TokenKind::IDENT("JSON_ARRAYAGG".to_string()));
+        e.token(TokenKind::L_PAREN);
+
+        if let Some(ref arg) = self.arg {
+            arg.to_tokens(e);
+        }
+
+        if self.absent_on_null {
+            e.space();
+            e.token(TokenKind::ABSENT_KW);
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            e.token(TokenKind::NULL_KW);
+        }
+
+        if let Some(ref constructor) = self.constructor {
+            e.space();
+            constructor.to_tokens(e);
+        }
+
+        e.token(TokenKind::R_PAREN);
+
+        e.group_end();
+    }
+}
+
+impl ToTokens for pgt_query::protobuf::WindowClause {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::WindowFuncRunCondition {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::SortGroupClause {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::RowMarkClause {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::WithCheckOption {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::TableSampleClause {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::RangeTblEntry {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::RtePermissionInfo {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
+}
+
+impl ToTokens for pgt_query::protobuf::RangeTblFunction {
+    fn to_tokens(&self, _e: &mut EventEmitter) {}
 }

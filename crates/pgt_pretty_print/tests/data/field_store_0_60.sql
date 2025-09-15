@@ -1,0 +1,1 @@
+UPDATE my_table SET composite_col.field1 = 'new_value';
