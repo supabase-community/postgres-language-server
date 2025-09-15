@@ -10,7 +10,7 @@ const CLI_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const PACKAGES_POSTGRESTOOLS_ROOT = resolve(CLI_ROOT, "..");
 const POSTGRESTOOLS_ROOT = resolve(PACKAGES_POSTGRESTOOLS_ROOT, "../..");
 const SUPPORTED_PLATFORMS = [
-  "pc-windows-msvc",
+  // "pc-windows-msvc",
   "apple-darwin",
   "unknown-linux-gnu",
   "unknown-linux-musl",
