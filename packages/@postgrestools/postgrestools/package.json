@@ -39,7 +39,6 @@
     "@postgrestools/cli-aarch64-apple-darwin": "<placeholder>",
     "@postgrestools/cli-x86_64-linux-gnu": "<placeholder>",
     "@postgrestools/cli-aarch64-linux-gnu": "<placeholder>",
-    "@postgrestools/cli-x86_64-linux-musl": "<placeholder>",
-    "@postgrestools/cli-aarch64-linux-musl": "<placeholder>"
+    "@postgrestools/cli-x86_64-linux-musl": "<placeholder>"
   }
 }

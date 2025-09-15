@@ -9,7 +9,7 @@ permissions:
 env:
   # Need these guys for cross-compilation
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+  # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
 
 jobs:
   # windows does not run git cliff so we need to do it here
@@ -36,12 +36,11 @@ jobs:
         config:
           - { os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
           - { os: ubuntu-22.04, target: aarch64-unknown-linux-gnu }
-          - { os: ubuntu-22.04, target: x86_64-unknown-linux-musl }
-          - { os: ubuntu-22.04, target: aarch64-unknown-linux-musl }
           - { os: macos-14, target: x86_64-apple-darwin }
           - { os: macos-14, target: aarch64-apple-darwin }
           - { os: windows-2022, target: x86_64-pc-windows-msvc }
           - { os: windows-2022, target: aarch64-pc-windows-msvc }
+          - { os: ubuntu-22.04, target: x86_64-unknown-linux-musl }
 
     runs-on: ${{ matrix.config.os }}
 
@@ -61,21 +60,16 @@ jobs:
 
       # The Aarch64 Linux is a special snowflake, we need to install its toolchain
       - name: Install arm64 toolchain
-        if: matrix.config.target == 'aarch64-unknown-linux-gnu' || matrix.config.target == 'aarch64-unknown-linux-musl'
+        if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Install musl toolchain
-        if: matrix.config.target == 'aarch64-unknown-linux-musl' || matrix.config.target == 'x86_64-unknown-linux-musl'
+        if: matrix.config.target == 'x86_64-unknown-linux-musl'
         run: |
           sudo apt-get update
           sudo apt-get install -y musl-tools
-          
-      - name: Install additional aarch64 musl libraries
-        if: matrix.config.target == 'aarch64-unknown-linux-musl'
-        run: |
-          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
@@ -89,7 +83,7 @@ jobs:
         run: cargo build -p pgt_cli --release --target ${{ matrix.config.target }}
         env:
           # Strip all debug symbols from the resulting binaries
-          RUSTFLAGS: "-C strip=symbols -C codegen-units=1"
+          RUSTFLAGS: "-C strip=symbols -C codegen-units=1 ${{ contains(matrix.config.target, 'aarch64') && contains(matrix.config.target, 'musl') && '-C link-arg=-latomic' || '' }}"
           # Inline the version in the CLI binary
           PGT_VERSION: ${{ needs.extract_version.outputs.version }}
           # Disable fortified functions for musl builds (musl doesn't provide __*_chk functions)

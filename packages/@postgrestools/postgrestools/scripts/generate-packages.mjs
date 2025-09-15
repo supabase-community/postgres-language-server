@@ -247,6 +247,15 @@ function getVersion(releaseTag, isPrerelease) {
     const os = getOs(platform);
 
     for (const arch of SUPPORTED_ARCHITECTURES) {
+      if (platform === "unknown-linux-musl" && arch === "aarch64") {
+        /**
+         * It's hard to cross compile from a x86_64 github runner to
+         * aarch64 architecture using musl. Few users seem to need this combination,
+         * so we skip it for now.
+         */
+        continue;
+      }
+
       await makePackageDir(platform, arch);
       await downloadBinary(platform, arch, os, releaseTag, githubToken);
       copyBinaryToNativePackage(platform, arch, os);

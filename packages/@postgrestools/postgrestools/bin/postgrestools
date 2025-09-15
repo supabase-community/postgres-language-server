@@ -16,7 +16,7 @@ const PLATFORMS = {
   },
   "linux-musl": {
     x64: "@postgrestools/cli-x86_64-linux-musl/postgrestools",
-    arm64: "@postgrestools/cli-aarch64-linux-musl/postgrestools",
+    // no arm64 build for musl
   },
 };
 
