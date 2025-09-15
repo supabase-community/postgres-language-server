@@ -58,6 +58,14 @@ jobs:
         with:
           submodules: true
 
+      - name: DEBUG Rust Container
+        if: matrix.config.container != null
+        run: |
+          which rustc
+          rustc --version
+          rustup show
+          rustup target list --installed
+
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         if: matrix.config.container == null
         with:
