@@ -40,35 +40,47 @@ impl Rule for ConstraintMissingNotValid {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgt_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
-            for cmd in &stmt.cmds {
-                if let Some(pgt_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-                    // Check if we're adding a constraint
-                    if let Some(pgt_query::NodeEnum::Constraint(constraint)) =
-                        cmd.def.as_ref().and_then(|d| d.node.as_ref())
-                    {
-                        // Skip if the constraint has NOT VALID
-                        if constraint.initially_valid {
-                            // Only warn for CHECK and FOREIGN KEY constraints
-                            match constraint.contype() {
-                                pgt_query::protobuf::ConstrType::ConstrCheck
-                                | pgt_query::protobuf::ConstrType::ConstrForeign => {
-                                    diagnostics.push(RuleDiagnostic::new(
-                                        rule_category!(),
-                                        None,
-                                        markup! {
-                                            "Adding a constraint without NOT VALID will block reads and writes while validating existing rows."
-                                        }
-                                    ).detail(None, "Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction."));
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
+        let pgt_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
+            return diagnostics;
+        };
+
+        for cmd in &stmt.cmds {
+            let Some(pgt_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node else {
+                continue;
+            };
+
+            let Some(pgt_query::NodeEnum::Constraint(constraint)) = cmd.def.as_ref().and_then(|d| d.node.as_ref()) else {
+                continue;
+            };
+
+            if let Some(diagnostic) = check_constraint_needs_not_valid(constraint) {
+                diagnostics.push(diagnostic);
             }
         }
 
         diagnostics
+    }
+}
+
+fn check_constraint_needs_not_valid(constraint: &pgt_query::protobuf::Constraint) -> Option<RuleDiagnostic> {
+    // Skip if the constraint has NOT VALID
+    if !constraint.initially_valid {
+        return None;
+    }
+
+    // Only warn for CHECK and FOREIGN KEY constraints
+    match constraint.contype() {
+        pgt_query::protobuf::ConstrType::ConstrCheck
+        | pgt_query::protobuf::ConstrType::ConstrForeign => Some(
+            RuleDiagnostic::new(
+                rule_category!(),
+                None,
+                markup! {
+                    "Adding a constraint without NOT VALID will block reads and writes while validating existing rows."
+                }
+            )
+            .detail(None, "Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.")
+        ),
+        _ => None,
     }
 }

@@ -92,29 +92,33 @@ fn check_column_def(
     diagnostics: &mut Vec<RuleDiagnostic>,
     col_def: &pgt_query::protobuf::ColumnDef,
 ) {
-    if let Some(type_name) = &col_def.type_name {
-        for name_node in &type_name.names {
-            if let Some(pgt_query::NodeEnum::String(name)) = &name_node.node {
-                let type_name_lower = name.sval.to_lowercase();
-                let is_smallint = matches!(
-                    type_name_lower.as_str(),
-                    "smallint" | "int2" | "smallserial" | "serial2"
-                );
+    let Some(type_name) = &col_def.type_name else {
+        return;
+    };
 
-                if is_smallint {
-                    diagnostics.push(
-                        RuleDiagnostic::new(
-                            rule_category!(),
-                            None,
-                            markup! {
-                                "SMALLINT has a very limited range that is easily exceeded."
-                            },
-                        )
-                        .detail(None, "SMALLINT can only store values from -32,768 to 32,767. This range is often insufficient.")
-                        .note("Consider using INTEGER or BIGINT for better range and future-proofing."),
-                    );
-                }
-            }
+    for name_node in &type_name.names {
+        let Some(pgt_query::NodeEnum::String(name)) = &name_node.node else {
+            continue;
+        };
+
+        let type_name_lower = name.sval.to_lowercase();
+        if !matches!(
+            type_name_lower.as_str(),
+            "smallint" | "int2" | "smallserial" | "serial2"
+        ) {
+            continue;
         }
+
+        diagnostics.push(
+            RuleDiagnostic::new(
+                rule_category!(),
+                None,
+                markup! {
+                    "SMALLINT has a very limited range that is easily exceeded."
+                },
+            )
+            .detail(None, "SMALLINT can only store values from -32,768 to 32,767. This range is often insufficient.")
+            .note("Consider using INTEGER or BIGINT for better range and future-proofing."),
+        );
     }
 }

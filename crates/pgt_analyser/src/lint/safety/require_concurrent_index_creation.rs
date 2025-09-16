@@ -38,28 +38,37 @@ impl Rule for RequireConcurrentIndexCreation {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        if let pgt_query::NodeEnum::IndexStmt(stmt) = &ctx.stmt() {
-            if !stmt.concurrent {
-                // Check if this table was created in the same transaction/file
-                let table_name = stmt
-                    .relation
-                    .as_ref()
-                    .map(|r| r.relname.as_str())
-                    .unwrap_or("");
+        let pgt_query::NodeEnum::IndexStmt(stmt) = &ctx.stmt() else {
+            return diagnostics;
+        };
 
-                if !table_name.is_empty()
-                    && !is_table_created_in_file(ctx.file_context(), table_name)
-                {
-                    diagnostics.push(RuleDiagnostic::new(
-                        rule_category!(),
-                        None,
-                        markup! {
-                            "Creating an index non-concurrently blocks writes to the table."
-                        },
-                    ).detail(None, "Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table."));
-                }
-            }
+        // Concurrent indexes are safe
+        if stmt.concurrent {
+            return diagnostics;
         }
+
+        // Check if this table was created in the same transaction/file
+        let table_name = stmt
+            .relation
+            .as_ref()
+            .map(|r| r.relname.as_str())
+            .unwrap_or("");
+
+        // Skip if table name is empty or table was created in the same file
+        if table_name.is_empty() || is_table_created_in_file(ctx.file_context(), table_name) {
+            return diagnostics;
+        }
+
+        diagnostics.push(
+            RuleDiagnostic::new(
+                rule_category!(),
+                None,
+                markup! {
+                    "Creating an index non-concurrently blocks writes to the table."
+                },
+            )
+            .detail(None, "Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.")
+        );
 
         diagnostics
     }
