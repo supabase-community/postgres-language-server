@@ -2760,6 +2760,7 @@ dependencies = [
  "pgt_query",
  "pgt_query_ext",
  "pgt_schema_cache",
+ "pgt_statement_splitter",
  "pgt_test_macros",
  "pgt_text_size",
  "serde",

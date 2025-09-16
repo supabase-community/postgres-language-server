@@ -1,0 +1,22 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/banCharField
+CREATE TABLE test (
+    code bpchar(5)
+);
+
+```
+
+# Diagnostics
+lint/safety/banCharField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CHAR type is discouraged due to space padding behavior.
+  
+  i CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.
+  
+  i Use VARCHAR or TEXT instead for variable-length character data.

@@ -1,2 +1,2 @@
--- expect_only_lint/safety/addingFieldWithDefault
--- select 1;
+-- expect_lint/safety/addingFieldWithDefault
+ALTER TABLE "core_recipe" ADD COLUMN "foo" integer DEFAULT 10;

@@ -1,11 +1,11 @@
 ---
 source: crates/pgt_analyser/tests/rules_tests.rs
-assertion_line: 52
 expression: snapshot
+snapshot_kind: text
 ---
 # Input
 ```
--- expect_only_lint/safety/addingPrimaryKeyConstraint
+-- expect_lint/safety/addingPrimaryKeyConstraint
 ALTER TABLE users ADD PRIMARY KEY (id);
 ```
 

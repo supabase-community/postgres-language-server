@@ -1,2 +1,3 @@
--- expect_only_lint/safety/preferRobustStmts
--- select 1;
+-- expect_lint/safety/preferRobustStmts
+CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
+SELECT 1;

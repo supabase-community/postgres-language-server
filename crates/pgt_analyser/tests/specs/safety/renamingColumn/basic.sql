@@ -1,2 +1,2 @@
--- expect_only_lint/safety/renamingColumn
--- select 1;
+-- expect_lint/safety/renamingColumn
+ALTER TABLE users RENAME COLUMN name TO full_name;

@@ -1,0 +1,20 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN created_at timestamp DEFAULT now();
+
+```
+
+# Diagnostics
+lint/safety/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with a DEFAULT value causes a table rewrite.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.
+  
+  i Add the column without a default, then set the default in a separate statement.

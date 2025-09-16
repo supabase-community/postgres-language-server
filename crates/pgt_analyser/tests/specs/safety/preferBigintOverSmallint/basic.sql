@@ -1,4 +1,4 @@
--- expect_only_lint/safety/preferBigintOverSmallint
+-- expect_lint/safety/preferBigintOverSmallint
 CREATE TABLE users (
     age smallint
 );

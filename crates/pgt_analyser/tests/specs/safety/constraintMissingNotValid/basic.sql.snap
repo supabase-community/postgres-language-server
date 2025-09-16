@@ -1,0 +1,17 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/constraintMissingNotValid
+ALTER TABLE distributors ADD CONSTRAINT distfk FOREIGN KEY (address) REFERENCES addresses (address);
+```
+
+# Diagnostics
+lint/safety/constraintMissingNotValid ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a constraint without NOT VALID will block reads and writes while validating existing rows.
+  
+  i Add the constraint as NOT VALID in one transaction, then run VALIDATE CONSTRAINT in a separate transaction.

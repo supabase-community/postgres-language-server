@@ -46,11 +46,6 @@ impl Rule for PreferRobustStmts {
     fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
         let mut diagnostics = Vec::new();
 
-        // Skip if we only have one statement in the file
-        if ctx.file_context().stmt_count <= 1 {
-            return diagnostics;
-        }
-
         // Since we assume we're always in a transaction, we only check for
         // statements that explicitly run outside transactions
         match &ctx.stmt() {

@@ -1,2 +1,2 @@
--- expect_only_lint/safety/renamingTable
--- select 1;
+-- expect_lint/safety/renamingTable
+ALTER TABLE users RENAME TO customers;

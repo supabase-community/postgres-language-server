@@ -49,7 +49,9 @@ impl Rule for ConstraintMissingNotValid {
                 continue;
             };
 
-            let Some(pgt_query::NodeEnum::Constraint(constraint)) = cmd.def.as_ref().and_then(|d| d.node.as_ref()) else {
+            let Some(pgt_query::NodeEnum::Constraint(constraint)) =
+                cmd.def.as_ref().and_then(|d| d.node.as_ref())
+            else {
                 continue;
             };
 
@@ -62,7 +64,9 @@ impl Rule for ConstraintMissingNotValid {
     }
 }
 
-fn check_constraint_needs_not_valid(constraint: &pgt_query::protobuf::Constraint) -> Option<RuleDiagnostic> {
+fn check_constraint_needs_not_valid(
+    constraint: &pgt_query::protobuf::Constraint,
+) -> Option<RuleDiagnostic> {
     // Skip if the constraint has NOT VALID
     if !constraint.initially_valid {
         return None;

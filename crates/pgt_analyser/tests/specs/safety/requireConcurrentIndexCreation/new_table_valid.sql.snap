@@ -1,0 +1,12 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- Test index on newly created table (should be safe)
+-- expect_no_diagnostics
+CREATE TABLE users (id serial, email text);
+CREATE INDEX users_email_idx ON users (email);
+```

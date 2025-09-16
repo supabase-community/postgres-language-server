@@ -1,2 +1,2 @@
--- expect_only_lint/safety/preferIdentity
+-- expect_lint/safety/preferIdentity
 alter table test add column id serial;

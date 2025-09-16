@@ -1,2 +1,2 @@
--- expect_only_lint/safety/transactionNesting
--- select 1;
+-- expect_lint/safety/transactionNesting
+BEGIN;

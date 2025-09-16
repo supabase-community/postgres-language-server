@@ -1,0 +1,18 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/preferRobustStmts
+DROP INDEX CONCURRENTLY users_email_idx;
+
+```
+
+# Diagnostics
+lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Concurrent drop should use IF EXISTS.
+  
+  i Add IF EXISTS to make the migration re-runnable if it fails.

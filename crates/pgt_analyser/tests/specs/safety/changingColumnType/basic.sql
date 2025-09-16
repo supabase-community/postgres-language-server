@@ -1,2 +1,2 @@
--- expect_only_lint/safety/changingColumnType
--- select 1;
+-- expect_lint/safety/changingColumnType
+ALTER TABLE "core_recipe" ALTER COLUMN "edits" TYPE text USING "edits"::text;

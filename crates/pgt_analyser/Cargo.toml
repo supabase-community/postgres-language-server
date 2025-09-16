@@ -22,7 +22,8 @@ pgt_text_size    = { workspace = true }
 serde            = { workspace = true }
 
 [dev-dependencies]
-insta           = { version = "1.42.1" }
-pgt_diagnostics = { workspace = true }
-pgt_test_macros = { workspace = true }
-termcolor       = { workspace = true }
+insta                  = { version = "1.42.1" }
+pgt_diagnostics        = { workspace = true }
+pgt_statement_splitter = { workspace = true }
+pgt_test_macros        = { workspace = true }
+termcolor              = { workspace = true }

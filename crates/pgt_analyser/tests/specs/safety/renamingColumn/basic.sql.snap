@@ -1,0 +1,17 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/renamingColumn
+ALTER TABLE users RENAME COLUMN name TO full_name;
+```
+
+# Diagnostics
+lint/safety/renamingColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Renaming a column may break existing clients.
+  
+  i Consider creating a new column with the desired name and migrating data instead.

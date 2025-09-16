@@ -1,5 +1,5 @@
 use core::slice;
-use std::{fmt::Write, fs::read_to_string, path::Path};
+use std::{collections::HashMap, fmt::Write, fs::read_to_string, path::Path};
 
 use pgt_analyse::{AnalyserOptions, AnalysisFilter, RuleDiagnostic, RuleFilter};
 use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams};
@@ -25,20 +25,30 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     let query =
         read_to_string(full_path).unwrap_or_else(|_| panic!("Failed to read file: {} ", full_path));
 
-    let ast = pgt_query::parse(&query).expect("failed to parse SQL");
     let options = AnalyserOptions::default();
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
         filter,
     });
 
-    let stmt = AnalysableStatement {
-        root: ast.into_root().expect("Failed to convert AST to root node"),
-        range: pgt_text_size::TextRange::new(0.into(), u32::try_from(query.len()).unwrap().into()),
-    };
+    let split = pgt_statement_splitter::split(&query);
+
+    let stmts = split
+        .ranges
+        .iter()
+        .map(|r| {
+            let text = &query[*r];
+            let ast = pgt_query::parse(text).expect("failed to parse SQL");
+
+            AnalysableStatement {
+                root: ast.into_root().expect("Failed to convert AST to root node"),
+                range: *r,
+            }
+        })
+        .collect::<Vec<_>>();
 
     let results = analyser.run(AnalyserParams {
-        stmts: vec![stmt],
+        stmts,
         schema_cache: None,
     });
 
@@ -89,29 +99,45 @@ fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[RuleDiagnos
 
 enum Expectation {
     NoDiagnostics,
-    AnyDiagnostics,
-    OnlyOne(String),
+    Diagnostics(Vec<(String, usize)>),
 }
 
 impl Expectation {
     fn from_file(content: &str) -> Self {
+        let mut multiple_of: HashMap<&str, i32> = HashMap::new();
         for line in content.lines() {
             if line.contains("expect_no_diagnostics") {
+                if !multiple_of.is_empty() {
+                    panic!(
+                        "Cannot use both `expect_no_diagnostics` and `expect_` in the same test"
+                    );
+                }
                 return Self::NoDiagnostics;
             }
 
-            if line.contains("expect_only_") {
+            if line.contains("expect_") && !line.contains("expect_no_diagnostics") {
                 let kind = line
                     .splitn(3, "_")
                     .last()
-                    .expect("Use pattern: `-- expect_only_<category>`")
+                    .expect("Use pattern: `-- expect_<category>`")
                     .trim();
 
-                return Self::OnlyOne(kind.into());
+                *multiple_of.entry(kind).or_insert(0) += 1;
             }
         }
 
-        Self::AnyDiagnostics
+        if !multiple_of.is_empty() {
+            return Self::Diagnostics(
+                multiple_of
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v as usize))
+                    .collect(),
+            );
+        }
+
+        panic!(
+            "No expectation found in the test file. Use `-- expect_no_diagnostics` or `-- expect_<category>`"
+        );
     }
 
     fn assert(&self, diagnostics: &[RuleDiagnostic]) {
@@ -121,20 +147,21 @@ impl Expectation {
                     panic!("This test should not have any diagnostics.");
                 }
             }
-            Self::OnlyOne(category) => {
-                let found_kinds = diagnostics
-                    .iter()
-                    .map(|d| d.get_category_name())
-                    .collect::<Vec<&str>>()
-                    .join(", ");
+            Self::Diagnostics(expected) => {
+                let mut counts: HashMap<&str, usize> = HashMap::new();
+                for diag in diagnostics {
+                    *counts.entry(diag.get_category_name()).or_insert(0) += 1;
+                }
 
-                if diagnostics.len() != 1 || diagnostics[0].get_category_name() != category {
-                    panic!(
-                        "This test should only have one diagnostic of kind: {category}\nReceived: {found_kinds}"
-                    );
+                for (kind, expected_count) in expected {
+                    let actual_count = counts.get(kind.as_str()).copied().unwrap_or(0);
+                    if actual_count != *expected_count {
+                        panic!(
+                            "Expected {expected_count} diagnostics of kind `{kind}`, but found {actual_count}."
+                        );
+                    }
                 }
             }
-            Self::AnyDiagnostics => {}
         }
     }
 }
