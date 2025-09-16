@@ -2758,6 +2758,7 @@ dependencies = [
  "pgt_console",
  "pgt_diagnostics",
  "pgt_query",
+ "pgt_query_ext",
  "pgt_schema_cache",
  "pgt_test_macros",
  "pgt_text_size",

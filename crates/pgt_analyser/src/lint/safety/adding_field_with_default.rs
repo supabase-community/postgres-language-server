@@ -1,4 +1,4 @@
-use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use pgt_analyse::{context::RuleContext, declare_lint_rule, Rule, RuleDiagnostic, RuleSource};
 use pgt_console::markup;
 use pgt_diagnostics::Severity;
 use std::collections::HashSet;
@@ -38,11 +38,6 @@ declare_lint_rule! {
         sources: &[RuleSource::Squawk("adding-field-with-default")],
     }
 }
-
-// Generated via the following Postgres query:
-//      select proname from pg_proc where provolatile <> 'v';
-const NON_VOLATILE_BUILT_IN_FUNCTIONS: &str =
-    include_str!("../../../resources/non_volatile_built_in_functions.txt");
 
 impl Rule for AddingFieldWithDefault {
     type Options = ();
@@ -91,19 +86,12 @@ impl Rule for AddingFieldWithDefault {
                             } else if has_default {
                                 // For PG 11+, check if the default is volatile
                                 if pg_version.is_some_and(|v| v >= 11) {
-                                    let non_volatile_funcs: HashSet<_> =
-                                        NON_VOLATILE_BUILT_IN_FUNCTIONS
-                                            .lines()
-                                            .map(|x| x.trim().to_lowercase())
-                                            .filter(|x| !x.is_empty())
-                                            .collect();
-
                                     // Check if default is non-volatile
                                     let is_safe_default = col_def.constraints.iter().any(|constraint| {
                                         if let Some(pgt_query::NodeEnum::Constraint(c)) = &constraint.node {
                                             if c.contype() == pgt_query::protobuf::ConstrType::ConstrDefault {
                                                 if let Some(raw_expr) = &c.raw_expr {
-                                                    return is_safe_default_expr(&raw_expr.node.as_ref().map(|n| Box::new(n.clone())), &non_volatile_funcs);
+                                                    return is_safe_default_expr(&raw_expr.node.as_ref().map(|n| Box::new(n.clone())), ctx.schema_cache());
                                                 }
                                             }
                                         }
@@ -150,7 +138,7 @@ impl Rule for AddingFieldWithDefault {
 
 fn is_safe_default_expr(
     expr: &Option<Box<pgt_query::NodeEnum>>,
-    non_volatile_funcs: &HashSet<String>,
+    schema_cache: Option<&pgt_schema_cache::SchemaCache>,
 ) -> bool {
     match expr {
         Some(node) => match node.as_ref() {
@@ -159,23 +147,41 @@ fn is_safe_default_expr(
             // Type casts of constants are safe
             pgt_query::NodeEnum::TypeCast(tc) => is_safe_default_expr(
                 &tc.arg.as_ref().and_then(|a| a.node.clone()).map(Box::new),
-                non_volatile_funcs,
+                schema_cache,
             ),
-            // Function calls might be safe if they're non-volatile and have no args
+            // function calls might be safe if they are non-volatile and have no args
             pgt_query::NodeEnum::FuncCall(fc) => {
-                // Must have no args
+                // must have no args
                 if !fc.args.is_empty() {
                     return false;
                 }
-                // Check if function is in non-volatile list
-                if let Some(first_name) = fc.funcname.first() {
-                    if let Some(pgt_query::NodeEnum::String(s)) = &first_name.node {
-                        return non_volatile_funcs.contains(&s.sval.to_lowercase());
+
+                let Some(sc) = schema_cache else {
+                    return false;
+                };
+
+                let Some((schema, name)) = pgt_query_ext::utils::parse_name(&fc.funcname) else {
+                    return false;
+                };
+
+                // check if function is a non-volatile function
+                sc.functions.iter().any(|f| {
+                    // no args only
+                    if !f.args.args.is_empty() {
+                        return false;
                     }
-                }
-                false
+
+                    // must be non-volatile
+                    if f.behavior == pgt_schema_cache::Behavior::Volatile {
+                        return false;
+                    }
+
+                    // check name and schema (if given)
+                    f.name.eq_ignore_ascii_case(&name)
+                        && schema.as_ref().is_none_or(|s| &f.schema == s)
+                })
             }
-            // Everything else is potentially unsafe
+            // everything else is potentially unsafe
             _ => false,
         },
         None => false,
