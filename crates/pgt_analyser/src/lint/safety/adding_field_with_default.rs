@@ -1,7 +1,6 @@
-use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use pgt_analyse::{context::RuleContext, declare_lint_rule, Rule, RuleDiagnostic, RuleSource};
 use pgt_console::markup;
 use pgt_diagnostics::Severity;
-use std::collections::HashSet;
 
 declare_lint_rule! {
     /// Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
