@@ -65,6 +65,9 @@ pub fn syntax_kind_mod() -> proc_macro2::TokenStream {
 
     let mut enum_variants: Vec<TokenStream> = Vec::new();
     let mut from_kw_match_arms: Vec<TokenStream> = Vec::new();
+    let mut is_kw_match_arms: Vec<TokenStream> = Vec::new();
+
+    let mut is_trivia_match_arms: Vec<TokenStream> = Vec::new();
 
     // collect keywords
     for kw in &all_keywords {
@@ -78,18 +81,30 @@ pub fn syntax_kind_mod() -> proc_macro2::TokenStream {
         from_kw_match_arms.push(quote! {
             #kw => Some(SyntaxKind::#kind_ident)
         });
+        is_kw_match_arms.push(quote! {
+            SyntaxKind::#kind_ident => true
+        });
     }
 
     // collect extra keywords
     EXTRA.iter().for_each(|&name| {
         let variant_name = format_ident!("{}", name);
         enum_variants.push(quote! { #variant_name });
+
+        if name == "COMMENT" {
+            is_trivia_match_arms.push(quote! {
+                SyntaxKind::#variant_name => true
+            });
+        }
     });
 
     // collect whitespace variants
     WHITESPACE.iter().for_each(|&name| {
         let variant_name = format_ident!("{}", name);
         enum_variants.push(quote! { #variant_name });
+        is_trivia_match_arms.push(quote! {
+            SyntaxKind::#variant_name => true
+        });
     });
 
     // collect punctuations
@@ -117,6 +132,20 @@ pub fn syntax_kind_mod() -> proc_macro2::TokenStream {
                 match lower_ident.as_str() {
                     #(#from_kw_match_arms),*,
                     _ => None
+                }
+            }
+
+            pub fn is_keyword(&self) -> bool {
+                match self {
+                    #(#is_kw_match_arms),*,
+                    _ => false
+                }
+            }
+
+            pub fn is_trivia(&self) -> bool {
+                match self {
+                    #(#is_trivia_match_arms),*,
+                    _ => false
                 }
             }
         }
