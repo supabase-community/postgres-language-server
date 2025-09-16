@@ -23,6 +23,17 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
 ```
 
 ```sh
+code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Concurrent index creation should use IF NOT EXISTS.
+  
+  > 1 │ CREATE INDEX CONCURRENTLY users_email_idx ON users (email);
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+  i Add IF NOT EXISTS to make the migration re-runnable if it fails.
+  
+
 ```
 
 ```sql
@@ -30,6 +41,17 @@ DROP INDEX CONCURRENTLY users_email_idx;
 ```
 
 ```sh
+code-block.sql:1:1 lint/safety/preferRobustStmts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Concurrent drop should use IF EXISTS.
+  
+  > 1 │ DROP INDEX CONCURRENTLY users_email_idx;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+  i Add IF EXISTS to make the migration re-runnable if it fails.
+  
+
 ```
 
 ### Valid
