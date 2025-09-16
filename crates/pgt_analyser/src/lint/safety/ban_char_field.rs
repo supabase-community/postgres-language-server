@@ -49,30 +49,8 @@ impl Rule for BanCharField {
         if let pgt_query::NodeEnum::CreateStmt(stmt) = &ctx.stmt() {
             for table_elt in &stmt.table_elts {
                 if let Some(pgt_query::NodeEnum::ColumnDef(col_def)) = &table_elt.node {
-                    if let Some(type_name) = &col_def.type_name {
-                        for name_node in &type_name.names {
-                            if let Some(pgt_query::NodeEnum::String(name)) = &name_node.node {
-                                // Check for "bpchar" (internal name for CHAR type)
-                                // or "char" or "character"
-                                let type_str = name.sval.to_lowercase();
-                                if type_str == "bpchar"
-                                    || type_str == "char"
-                                    || type_str == "character"
-                                {
-                                    diagnostics.push(
-                                        RuleDiagnostic::new(
-                                            rule_category!(),
-                                            None,
-                                            markup! {
-                                                "CHAR type is discouraged due to space padding behavior."
-                                            },
-                                        )
-                                        .detail(None, "CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.")
-                                        .note("Use VARCHAR or TEXT instead for variable-length character data."),
-                                    );
-                                }
-                            }
-                        }
+                    if let Some(diagnostic) = check_column_for_char_type(col_def) {
+                        diagnostics.push(diagnostic);
                     }
                 }
             }
@@ -86,29 +64,8 @@ impl Rule for BanCharField {
                         if let Some(pgt_query::NodeEnum::ColumnDef(col_def)) =
                             &cmd.def.as_ref().and_then(|d| d.node.as_ref())
                         {
-                            if let Some(type_name) = &col_def.type_name {
-                                for name_node in &type_name.names {
-                                    if let Some(pgt_query::NodeEnum::String(name)) = &name_node.node
-                                    {
-                                        let type_str = name.sval.to_lowercase();
-                                        if type_str == "bpchar"
-                                            || type_str == "char"
-                                            || type_str == "character"
-                                        {
-                                            diagnostics.push(
-                                                RuleDiagnostic::new(
-                                                    rule_category!(),
-                                                    None,
-                                                    markup! {
-                                                        "CHAR type is discouraged due to space padding behavior."
-                                                    },
-                                                )
-                                                .detail(None, "CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.")
-                                                .note("Use VARCHAR or TEXT instead for variable-length character data."),
-                                            );
-                                        }
-                                    }
-                                }
+                            if let Some(diagnostic) = check_column_for_char_type(col_def) {
+                                diagnostics.push(diagnostic);
                             }
                         }
                     }
@@ -118,4 +75,30 @@ impl Rule for BanCharField {
 
         diagnostics
     }
+}
+
+fn check_column_for_char_type(col_def: &pgt_query::protobuf::ColumnDef) -> Option<RuleDiagnostic> {
+    if let Some(type_name) = &col_def.type_name {
+        for name_node in &type_name.names {
+            if let Some(pgt_query::NodeEnum::String(name)) = &name_node.node {
+                // Check for "bpchar" (internal name for CHAR type)
+                // or "char" or "character"
+                let type_str = name.sval.to_lowercase();
+                if type_str == "bpchar" || type_str == "char" || type_str == "character" {
+                    return Some(
+                        RuleDiagnostic::new(
+                            rule_category!(),
+                            None,
+                            markup! {
+                                "CHAR type is discouraged due to space padding behavior."
+                            },
+                        )
+                        .detail(None, "CHAR types are fixed-length and padded with spaces, which can lead to unexpected behavior.")
+                        .note("Use VARCHAR or TEXT instead for variable-length character data."),
+                    );
+                }
+            }
+        }
+    }
+    None
 }

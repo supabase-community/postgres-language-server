@@ -1,4 +1,4 @@
-use pgt_analyse::{context::RuleContext, declare_lint_rule, Rule, RuleDiagnostic, RuleSource};
+use pgt_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
 use pgt_console::markup;
 use pgt_diagnostics::Severity;
 use std::collections::HashSet;
