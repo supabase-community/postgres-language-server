@@ -207,6 +207,9 @@ pub struct Safety {
     #[doc = "Prefer using IDENTITY columns over serial columns."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_identity: Option<RuleConfiguration<pgt_analyser::options::PreferIdentity>>,
+    #[doc = "Prefer JSONB over JSON types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_jsonb: Option<RuleConfiguration<pgt_analyser::options::PreferJsonb>>,
     #[doc = "Prefer statements with guards for robustness in migrations."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefer_robust_stmts: Option<RuleConfiguration<pgt_analyser::options::PreferRobustStmts>>,
@@ -256,6 +259,7 @@ impl Safety {
         "preferBigintOverInt",
         "preferBigintOverSmallint",
         "preferIdentity",
+        "preferJsonb",
         "preferRobustStmts",
         "preferTextField",
         "preferTimestamptz",
@@ -303,6 +307,7 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -414,44 +419,49 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
+        if let Some(rule) = self.prefer_jsonb.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.prefer_text_field.as_ref() {
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
-        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+        if let Some(rule) = self.prefer_text_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
             }
         }
-        if let Some(rule) = self.renaming_column.as_ref() {
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
             }
         }
-        if let Some(rule) = self.renaming_table.as_ref() {
+        if let Some(rule) = self.renaming_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+        if let Some(rule) = self.renaming_table.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
             }
         }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
             }
         }
         index_set
@@ -553,44 +563,49 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
+        if let Some(rule) = self.prefer_jsonb.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.prefer_text_field.as_ref() {
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
-        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+        if let Some(rule) = self.prefer_text_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
             }
         }
-        if let Some(rule) = self.renaming_column.as_ref() {
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
             }
         }
-        if let Some(rule) = self.renaming_table.as_ref() {
+        if let Some(rule) = self.renaming_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+        if let Some(rule) = self.renaming_table.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
             }
         }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
             }
         }
         index_set
@@ -641,6 +656,7 @@ impl Safety {
             "preferBigintOverInt" => Severity::Warning,
             "preferBigintOverSmallint" => Severity::Warning,
             "preferIdentity" => Severity::Warning,
+            "preferJsonb" => Severity::Warning,
             "preferRobustStmts" => Severity::Warning,
             "preferTextField" => Severity::Warning,
             "preferTimestamptz" => Severity::Warning,
@@ -731,6 +747,10 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "preferIdentity" => self
                 .prefer_identity
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferJsonb" => self
+                .prefer_jsonb
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "preferRobustStmts" => self

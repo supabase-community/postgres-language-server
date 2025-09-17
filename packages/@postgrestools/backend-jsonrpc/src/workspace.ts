@@ -82,6 +82,7 @@ export type Category =
 	| "lint/safety/preferBigintOverInt"
 	| "lint/safety/preferBigintOverSmallint"
 	| "lint/safety/preferIdentity"
+	| "lint/safety/preferJsonb"
 	| "lint/safety/preferRobustStmts"
 	| "lint/safety/preferTextField"
 	| "lint/safety/preferTimestamptz"
@@ -514,6 +515,10 @@ export interface Safety {
 	 * Prefer using IDENTITY columns over serial columns.
 	 */
 	preferIdentity?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer JSONB over JSON types.
+	 */
+	preferJsonb?: RuleConfiguration_for_Null;
 	/**
 	 * Prefer statements with guards for robustness in migrations.
 	 */

@@ -30,6 +30,7 @@ pub type PreferBigintOverInt =
 pub type PreferBigintOverSmallint = < lint :: safety :: prefer_bigint_over_smallint :: PreferBigintOverSmallint as pgt_analyse :: Rule > :: Options ;
 pub type PreferIdentity =
     <lint::safety::prefer_identity::PreferIdentity as pgt_analyse::Rule>::Options;
+pub type PreferJsonb = <lint::safety::prefer_jsonb::PreferJsonb as pgt_analyse::Rule>::Options;
 pub type PreferRobustStmts =
     <lint::safety::prefer_robust_stmts::PreferRobustStmts as pgt_analyse::Rule>::Options;
 pub type PreferTextField =

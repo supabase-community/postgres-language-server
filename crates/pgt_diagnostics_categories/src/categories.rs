@@ -32,6 +32,7 @@ define_categories! {
     "lint/safety/preferBigintOverInt": "https://pgtools.dev/latest/rules/prefer-bigint-over-int",
     "lint/safety/preferBigintOverSmallint": "https://pgtools.dev/latest/rules/prefer-bigint-over-smallint",
     "lint/safety/preferIdentity": "https://pgtools.dev/latest/rules/prefer-identity",
+    "lint/safety/preferJsonb": "https://pgtools.dev/latest/rules/prefer-jsonb",
     "lint/safety/preferRobustStmts": "https://pgtools.dev/latest/rules/prefer-robust-stmts",
     "lint/safety/preferTextField": "https://pgtools.dev/latest/rules/prefer-text-field",
     "lint/safety/preferTimestamptz": "https://pgtools.dev/latest/rules/prefer-timestamptz",

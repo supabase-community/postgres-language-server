@@ -572,6 +572,17 @@
             }
           ]
         },
+        "preferJsonb": {
+          "description": "Prefer JSONB over JSON types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "preferRobustStmts": {
           "description": "Prefer statements with guards for robustness in migrations.",
           "anyOf": [

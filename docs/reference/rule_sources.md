@@ -3,6 +3,10 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 ## Exclusive rules
 _No exclusive rules available._
 ## Rules from other sources
+### Eugene
+| Eugene Rule Name | Rule Name |
+| ---- | ---- |
+| [prefer-jsonb](https://github.com/kaaveland/eugene/blob/main/docs/docs/prefer-jsonb.md) |[preferJsonb](../rules/prefer-jsonb) |
 ### Squawk
 | Squawk Rule Name | Rule Name |
 | ---- | ---- |

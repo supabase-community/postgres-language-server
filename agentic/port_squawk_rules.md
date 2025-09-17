@@ -77,6 +77,7 @@ DONE:
 - prefer_bigint_over_int ✓ (ported from Squawk)
 - prefer_bigint_over_smallint ✓ (ported from Squawk)
 - prefer_identity ✓ (ported from Squawk)
+- prefer_jsonb ✓ (new rule added)
 - prefer_text_field ✓ (ported from Squawk)
 - prefer_timestamptz ✓ (ported from Squawk)
 - disallow_unique_constraint ✓ (ported from Squawk)
