@@ -37,7 +37,7 @@ impl Rule for BanConcurrentIndexCreationInTransaction {
         //
         // since our analyser assumes we're always in a transaction context, we always flag concurrent indexes
         if let pgt_query::NodeEnum::IndexStmt(stmt) = ctx.stmt() {
-            if stmt.concurrent && ctx.file_context().stmt_count > 1 {
+            if stmt.concurrent && ctx.file_context().stmt_count() > 1 {
                 diagnostics.push(RuleDiagnostic::new(
                     rule_category!(),
                     None,

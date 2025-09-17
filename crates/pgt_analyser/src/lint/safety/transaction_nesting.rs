@@ -86,7 +86,7 @@ impl Rule for TransactionNesting {
 }
 
 fn has_transaction_start_before(file_context: &AnalysedFileContext) -> bool {
-    for stmt in &file_context.previous_stmts {
+    for stmt in file_context.previous_stmts() {
         if let pgt_query::NodeEnum::TransactionStmt(tx_stmt) = stmt {
             match tx_stmt.kind() {
                 pgt_query::protobuf::TransactionStmtKind::TransStmtBegin

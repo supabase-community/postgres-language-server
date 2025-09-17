@@ -18,13 +18,28 @@ pub struct RuleContext<'a, R: Rule> {
     file_context: &'a AnalysedFileContext,
 }
 
+
 pub struct AnalysedFileContext<'a> {
-    // all other statements in this file
-    pub all_stmts: &'a Vec<pgt_query::NodeEnum>,
-    // total count of statements in this file
-    pub stmt_count: usize,
+    // all statements in this file
+    pub stmts: &'a Vec<pgt_query::NodeEnum>,
+
+    pos: usize,
+}
+
+impl<'a> AnalysedFileContext<'a> {
+    pub fn new(stmts: &'a Vec<pgt_query::NodeEnum>) -> Self {
+        Self { stmts, pos: 0 }
+    }
+
     // all statements before the currently analysed one
-    pub previous_stmts: Vec<&'a pgt_query::NodeEnum>,
+    pub fn previous_stmts(&self) -> &[pgt_query::NodeEnum] {
+        &self.stmts[0..self.pos]
+    }
+
+    // total count of statements in this file
+    pub fn stmt_count(&self) -> usize {
+        self.stmts.len()
+    }
 }
 ```
 

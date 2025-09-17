@@ -84,7 +84,7 @@ impl<'a> Analyser<'a> {
 
             diagnostics.extend(stmt_diagnostics);
 
-            file_context.update_from(&roots[i]);
+            file_context.next();
         }
 
         diagnostics

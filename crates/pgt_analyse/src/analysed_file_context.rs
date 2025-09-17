@@ -1,19 +1,23 @@
 pub struct AnalysedFileContext<'a> {
-    pub all_stmts: &'a Vec<pgt_query::NodeEnum>,
-    pub stmt_count: usize,
-    pub previous_stmts: Vec<&'a pgt_query::NodeEnum>,
+    pub stmts: &'a Vec<pgt_query::NodeEnum>,
+
+    pos: usize,
 }
 
 impl<'a> AnalysedFileContext<'a> {
     pub fn new(stmts: &'a Vec<pgt_query::NodeEnum>) -> Self {
-        Self {
-            all_stmts: stmts,
-            stmt_count: stmts.len(),
-            previous_stmts: Vec::new(),
-        }
+        Self { stmts, pos: 0 }
     }
 
-    pub fn update_from(&mut self, stmt_root: &'a pgt_query::NodeEnum) {
-        self.previous_stmts.push(stmt_root);
+    pub fn previous_stmts(&self) -> &[pgt_query::NodeEnum] {
+        &self.stmts[0..self.pos]
+    }
+
+    pub fn stmt_count(&self) -> usize {
+        self.stmts.len()
+    }
+
+    pub fn next(&mut self) {
+        self.pos += 1;
     }
 }

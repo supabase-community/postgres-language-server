@@ -50,7 +50,7 @@ impl Rule for DisallowUniqueConstraint {
 
             // Look for tables created in previous statements of this file
             let table_created_in_transaction = if let Some(table_name) = table_name {
-                ctx.file_context().previous_stmts.iter().any(|prev_stmt| {
+                ctx.file_context().previous_stmts().iter().any(|prev_stmt| {
                     if let pgt_query::NodeEnum::CreateStmt(create) = prev_stmt {
                         create
                             .relation
