@@ -5,7 +5,7 @@
 
 
 **Sources**: 
-- Inspired from: <a href="https://github.com/kaaveland/eugene/blob/main/docs/docs/prefer-jsonb.md" target="_blank"><code>eugene/prefer-jsonb</code></a>
+- Inspired from: <a href="https://kaveland.no/eugene/hints/E3/index.html" target="_blank"><code>eugene/E3</code></a>
 
 ## Description
 Prefer JSONB over JSON types.

@@ -6,7 +6,7 @@ _No exclusive rules available._
 ### Eugene
 | Eugene Rule Name | Rule Name |
 | ---- | ---- |
-| [prefer-jsonb](https://github.com/kaaveland/eugene/blob/main/docs/docs/prefer-jsonb.md) |[preferJsonb](../rules/prefer-jsonb) |
+| [E3](https://kaveland.no/eugene/hints/E3/index.html) |[preferJsonb](../rules/prefer-jsonb) |
 ### Squawk
 | Squawk Rule Name | Rule Name |
 | ---- | ---- |
