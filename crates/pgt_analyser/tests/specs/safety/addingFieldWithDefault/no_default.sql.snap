@@ -1,0 +1,11 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- Test adding column without default (should be safe)
+-- expect_no_diagnostics
+ALTER TABLE users ADD COLUMN email text;
+```

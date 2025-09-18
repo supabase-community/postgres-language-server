@@ -1,0 +1,19 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/addingPrimaryKeyConstraint
+ALTER TABLE items ADD COLUMN id SERIAL PRIMARY KEY;
+```
+
+# Diagnostics
+lint/safety/addingPrimaryKeyConstraint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a PRIMARY KEY constraint results in locks and table rewrites.
+  
+  i Adding a PRIMARY KEY constraint requires an ACCESS EXCLUSIVE lock which blocks reads.
+  
+  i Add the PRIMARY KEY constraint USING an index.

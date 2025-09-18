@@ -291,6 +291,8 @@ impl RuleDiagnostic {
 pub enum RuleSource {
     /// Rules from [Squawk](https://squawkhq.com)
     Squawk(&'static str),
+    /// Rules from [Eugene](https://github.com/kaaveland/eugene)
+    Eugene(&'static str),
 }
 
 impl PartialEq for RuleSource {
@@ -303,6 +305,7 @@ impl std::fmt::Display for RuleSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Squawk(_) => write!(f, "Squawk"),
+            Self::Eugene(_) => write!(f, "Eugene"),
         }
     }
 }
@@ -325,18 +328,23 @@ impl RuleSource {
     pub fn as_rule_name(&self) -> &'static str {
         match self {
             Self::Squawk(rule_name) => rule_name,
+            Self::Eugene(rule_name) => rule_name,
         }
     }
 
     pub fn to_namespaced_rule_name(&self) -> String {
         match self {
             Self::Squawk(rule_name) => format!("squawk/{rule_name}"),
+            Self::Eugene(rule_name) => format!("eugene/{rule_name}"),
         }
     }
 
     pub fn to_rule_url(&self) -> String {
         match self {
             Self::Squawk(rule_name) => format!("https://squawkhq.com/docs/{rule_name}"),
+            Self::Eugene(rule_name) => {
+                format!("https://kaveland.no/eugene/hints/{rule_name}/index.html")
+            }
         }
     }
 

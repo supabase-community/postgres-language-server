@@ -1,0 +1,20 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/addingNotNullField
+ALTER TABLE "core_recipe" ALTER COLUMN "foo" SET NOT NULL;
+
+```
+
+# Diagnostics
+lint/safety/addingNotNullField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Setting a column NOT NULL blocks reads while the table is scanned.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and a full table scan to verify all rows.
+  
+  i Use a CHECK constraint with NOT VALID instead, then validate it in a separate transaction.

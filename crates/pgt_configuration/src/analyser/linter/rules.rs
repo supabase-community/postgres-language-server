@@ -141,10 +141,32 @@ pub struct Safety {
     #[doc = r" It enables ALL rules for this group."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all: Option<bool>,
+    #[doc = "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_field_with_default:
+        Option<RuleConfiguration<pgt_analyser::options::AddingFieldWithDefault>>,
+    #[doc = "Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_foreign_key_constraint:
+        Option<RuleConfiguration<pgt_analyser::options::AddingForeignKeyConstraint>>,
+    #[doc = "Setting a column NOT NULL blocks reads while the table is scanned."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_not_null_field: Option<RuleConfiguration<pgt_analyser::options::AddingNotNullField>>,
+    #[doc = "Adding a primary key constraint results in locks and table rewrites."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adding_primary_key_constraint:
+        Option<RuleConfiguration<pgt_analyser::options::AddingPrimaryKeyConstraint>>,
     #[doc = "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adding_required_field:
         Option<RuleConfiguration<pgt_analyser::options::AddingRequiredField>>,
+    #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_char_field: Option<RuleConfiguration<pgt_analyser::options::BanCharField>>,
+    #[doc = "Concurrent index creation is not allowed within a transaction."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_concurrent_index_creation_in_transaction:
+        Option<RuleConfiguration<pgt_analyser::options::BanConcurrentIndexCreationInTransaction>>,
     #[doc = "Dropping a column may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_column: Option<RuleConfiguration<pgt_analyser::options::BanDropColumn>>,
@@ -160,21 +182,102 @@ pub struct Safety {
     #[doc = "Using TRUNCATE's CASCADE option will truncate any tables that are also foreign-keyed to the specified tables."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_truncate_cascade: Option<RuleConfiguration<pgt_analyser::options::BanTruncateCascade>>,
+    #[doc = "Changing a column type may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changing_column_type: Option<RuleConfiguration<pgt_analyser::options::ChangingColumnType>>,
+    #[doc = "Adding constraints without NOT VALID blocks all reads and writes."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub constraint_missing_not_valid:
+        Option<RuleConfiguration<pgt_analyser::options::ConstraintMissingNotValid>>,
+    #[doc = "Disallow adding a UNIQUE constraint without using an existing index."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disallow_unique_constraint:
+        Option<RuleConfiguration<pgt_analyser::options::DisallowUniqueConstraint>>,
+    #[doc = "Prefer BIGINT over smaller integer types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_big_int: Option<RuleConfiguration<pgt_analyser::options::PreferBigInt>>,
+    #[doc = "Prefer BIGINT over INT/INTEGER types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_bigint_over_int:
+        Option<RuleConfiguration<pgt_analyser::options::PreferBigintOverInt>>,
+    #[doc = "Prefer BIGINT over SMALLINT types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_bigint_over_smallint:
+        Option<RuleConfiguration<pgt_analyser::options::PreferBigintOverSmallint>>,
+    #[doc = "Prefer using IDENTITY columns over serial columns."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_identity: Option<RuleConfiguration<pgt_analyser::options::PreferIdentity>>,
+    #[doc = "Prefer JSONB over JSON types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_jsonb: Option<RuleConfiguration<pgt_analyser::options::PreferJsonb>>,
+    #[doc = "Prefer statements with guards for robustness in migrations."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_robust_stmts: Option<RuleConfiguration<pgt_analyser::options::PreferRobustStmts>>,
+    #[doc = "Prefer using TEXT over VARCHAR(n) types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_text_field: Option<RuleConfiguration<pgt_analyser::options::PreferTextField>>,
+    #[doc = "Prefer TIMESTAMPTZ over TIMESTAMP types."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prefer_timestamptz: Option<RuleConfiguration<pgt_analyser::options::PreferTimestamptz>>,
+    #[doc = "Renaming columns may break existing queries and application code."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_column: Option<RuleConfiguration<pgt_analyser::options::RenamingColumn>>,
+    #[doc = "Renaming tables may break existing queries and application code."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub renaming_table: Option<RuleConfiguration<pgt_analyser::options::RenamingTable>>,
+    #[doc = "Creating indexes non-concurrently can lock the table for writes."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_index_creation:
+        Option<RuleConfiguration<pgt_analyser::options::RequireConcurrentIndexCreation>>,
+    #[doc = "Dropping indexes non-concurrently can lock the table for reads."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_concurrent_index_deletion:
+        Option<RuleConfiguration<pgt_analyser::options::RequireConcurrentIndexDeletion>>,
+    #[doc = "Detects problematic transaction nesting that could lead to unexpected behavior."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_nesting: Option<RuleConfiguration<pgt_analyser::options::TransactionNesting>>,
 }
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
     pub(crate) const GROUP_RULES: &'static [&'static str] = &[
+        "addingFieldWithDefault",
+        "addingForeignKeyConstraint",
+        "addingNotNullField",
+        "addingPrimaryKeyConstraint",
         "addingRequiredField",
+        "banCharField",
+        "banConcurrentIndexCreationInTransaction",
         "banDropColumn",
         "banDropDatabase",
         "banDropNotNull",
         "banDropTable",
         "banTruncateCascade",
+        "changingColumnType",
+        "constraintMissingNotValid",
+        "disallowUniqueConstraint",
+        "preferBigInt",
+        "preferBigintOverInt",
+        "preferBigintOverSmallint",
+        "preferIdentity",
+        "preferJsonb",
+        "preferRobustStmts",
+        "preferTextField",
+        "preferTimestamptz",
+        "renamingColumn",
+        "renamingTable",
+        "requireConcurrentIndexCreation",
+        "requireConcurrentIndexDeletion",
+        "transactionNesting",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -183,6 +286,28 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -199,68 +324,288 @@ impl Safety {
     }
     pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.adding_required_field.as_ref() {
+        if let Some(rule) = self.adding_field_with_default.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.adding_not_null_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.adding_required_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_char_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            }
+        }
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_column.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_database.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            }
+        }
+        if let Some(rule) = self.changing_column_type.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
+            }
+        }
+        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            }
+        }
+        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            }
+        }
+        if let Some(rule) = self.prefer_big_int.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
+            }
+        }
+        if let Some(rule) = self.prefer_identity.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
+            }
+        }
+        if let Some(rule) = self.prefer_jsonb.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
+            }
+        }
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
+            }
+        }
+        if let Some(rule) = self.prefer_text_field.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
+            }
+        }
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
+            }
+        }
+        if let Some(rule) = self.renaming_column.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
+            }
+        }
+        if let Some(rule) = self.renaming_table.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
             }
         }
         index_set
     }
     pub(crate) fn get_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.adding_required_field.as_ref() {
+        if let Some(rule) = self.adding_field_with_default.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.adding_not_null_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.adding_required_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_char_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            }
+        }
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_column.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_database.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
+            }
+        }
+        if let Some(rule) = self.ban_drop_table.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            }
+        }
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            }
+        }
+        if let Some(rule) = self.changing_column_type.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
+            }
+        }
+        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            }
+        }
+        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            }
+        }
+        if let Some(rule) = self.prefer_big_int.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
+            }
+        }
+        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
+            }
+        }
+        if let Some(rule) = self.prefer_identity.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
+            }
+        }
+        if let Some(rule) = self.prefer_jsonb.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
+            }
+        }
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
+            }
+        }
+        if let Some(rule) = self.prefer_text_field.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
+            }
+        }
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
+            }
+        }
+        if let Some(rule) = self.renaming_column.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
+            }
+        }
+        if let Some(rule) = self.renaming_table.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
+            }
+        }
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
             }
         }
         index_set
@@ -292,12 +637,34 @@ impl Safety {
     }
     pub(crate) fn severity(rule_name: &str) -> Severity {
         match rule_name {
+            "addingFieldWithDefault" => Severity::Warning,
+            "addingForeignKeyConstraint" => Severity::Warning,
+            "addingNotNullField" => Severity::Warning,
+            "addingPrimaryKeyConstraint" => Severity::Warning,
             "addingRequiredField" => Severity::Error,
+            "banCharField" => Severity::Warning,
+            "banConcurrentIndexCreationInTransaction" => Severity::Error,
             "banDropColumn" => Severity::Warning,
             "banDropDatabase" => Severity::Warning,
             "banDropNotNull" => Severity::Warning,
             "banDropTable" => Severity::Warning,
             "banTruncateCascade" => Severity::Error,
+            "changingColumnType" => Severity::Warning,
+            "constraintMissingNotValid" => Severity::Warning,
+            "disallowUniqueConstraint" => Severity::Error,
+            "preferBigInt" => Severity::Warning,
+            "preferBigintOverInt" => Severity::Warning,
+            "preferBigintOverSmallint" => Severity::Warning,
+            "preferIdentity" => Severity::Warning,
+            "preferJsonb" => Severity::Warning,
+            "preferRobustStmts" => Severity::Warning,
+            "preferTextField" => Severity::Warning,
+            "preferTimestamptz" => Severity::Warning,
+            "renamingColumn" => Severity::Warning,
+            "renamingTable" => Severity::Warning,
+            "requireConcurrentIndexCreation" => Severity::Warning,
+            "requireConcurrentIndexDeletion" => Severity::Warning,
+            "transactionNesting" => Severity::Warning,
             _ => unreachable!(),
         }
     }
@@ -306,8 +673,32 @@ impl Safety {
         rule_name: &str,
     ) -> Option<(RulePlainConfiguration, Option<RuleOptions>)> {
         match rule_name {
+            "addingFieldWithDefault" => self
+                .adding_field_with_default
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "addingForeignKeyConstraint" => self
+                .adding_foreign_key_constraint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "addingNotNullField" => self
+                .adding_not_null_field
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "addingPrimaryKeyConstraint" => self
+                .adding_primary_key_constraint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "addingRequiredField" => self
                 .adding_required_field
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "banCharField" => self
+                .ban_char_field
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "banConcurrentIndexCreationInTransaction" => self
+                .ban_concurrent_index_creation_in_transaction
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "banDropColumn" => self
@@ -328,6 +719,70 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "banTruncateCascade" => self
                 .ban_truncate_cascade
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "changingColumnType" => self
+                .changing_column_type
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "constraintMissingNotValid" => self
+                .constraint_missing_not_valid
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "disallowUniqueConstraint" => self
+                .disallow_unique_constraint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferBigInt" => self
+                .prefer_big_int
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferBigintOverInt" => self
+                .prefer_bigint_over_int
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferBigintOverSmallint" => self
+                .prefer_bigint_over_smallint
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferIdentity" => self
+                .prefer_identity
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferJsonb" => self
+                .prefer_jsonb
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferRobustStmts" => self
+                .prefer_robust_stmts
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferTextField" => self
+                .prefer_text_field
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "preferTimestamptz" => self
+                .prefer_timestamptz
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "renamingColumn" => self
+                .renaming_column
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "renamingTable" => self
+                .renaming_table
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "requireConcurrentIndexCreation" => self
+                .require_concurrent_index_creation
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "requireConcurrentIndexDeletion" => self
+                .require_concurrent_index_deletion
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "transactionNesting" => self
+                .transaction_nesting
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,

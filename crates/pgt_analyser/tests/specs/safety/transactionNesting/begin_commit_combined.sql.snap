@@ -1,0 +1,33 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/transactionNesting
+BEGIN;
+SELECT 1;
+-- expect_lint/safety/transactionNesting
+COMMIT;
+
+```
+
+# Diagnostics
+lint/safety/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Transaction already managed by migration tool.
+  
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.
+  
+
+
+lint/safety/transactionNesting ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Attempting to end transaction managed by migration tool.
+  
+  i Migration tools manage transactions automatically. Remove explicit transaction control.
+  
+  i Put migration statements in separate files to have them be in separate transactions.

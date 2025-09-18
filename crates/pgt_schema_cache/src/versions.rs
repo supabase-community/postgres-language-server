@@ -6,6 +6,7 @@ use crate::schema_cache::SchemaCacheItem;
 pub struct Version {
     pub version: Option<String>,
     pub version_num: Option<i64>,
+    pub major_version: Option<i64>,
     pub active_connections: Option<i64>,
     pub max_connections: Option<i64>,
 }

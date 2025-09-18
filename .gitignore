@@ -24,3 +24,5 @@ node_modules/
 
 **/dist/
 .claude-session-id
+
+squawk/

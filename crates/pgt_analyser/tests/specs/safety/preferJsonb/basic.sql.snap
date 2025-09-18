@@ -1,0 +1,23 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/preferJsonb
+CREATE TABLE users (
+    id integer,
+    data json
+);
+
+```
+
+# Diagnostics
+lint/safety/preferJsonb ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Prefer JSONB over JSON for better performance and functionality.
+  
+  i JSON stores exact text representation while JSONB stores parsed binary format. JSONB is faster for queries, supports indexing, and removes duplicate keys.
+  
+  i Consider using JSONB instead unless you specifically need to preserve formatting or duplicate keys.

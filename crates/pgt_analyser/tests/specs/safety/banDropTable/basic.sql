@@ -1,2 +1,2 @@
--- expect_only_lint/safety/banDropTable
+-- expect_lint/safety/banDropTable
 drop table test;
