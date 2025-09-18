@@ -9,7 +9,7 @@ permissions:
 env:
   # Need these guys for cross-compilation
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-  # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
 
 jobs:
   # windows does not run git cliff so we need to do it here
@@ -38,14 +38,9 @@ jobs:
           - { os: ubuntu-22.04, target: aarch64-unknown-linux-gnu }
           - { os: macos-14, target: x86_64-apple-darwin }
           - { os: macos-14, target: aarch64-apple-darwin }
-          # - { os: windows-2022, target: x86_64-pc-windows-msvc }
-          # - { os: windows-2022, target: aarch64-pc-windows-msvc }
+          - { os: windows-2022, target: x86_64-pc-windows-msvc }
+          - { os: windows-2022, target: aarch64-pc-windows-msvc }
           - { os: ubuntu-22.04, target: x86_64-unknown-linux-musl }
-          - {
-              os: ubuntu-22.04,
-              target: aarch64-unknown-linux-musl,
-              container: "messense/rust-musl-cross:aarch64-musl",
-            }
 
     runs-on: ${{ matrix.config.os }}
     container: ${{ matrix.config.container }}
@@ -58,26 +53,12 @@ jobs:
         with:
           submodules: true
 
-      - name: DEBUG Rust Container
-        if: matrix.config.container != null
-        run: |
-          which rustc
-          rustc --version
-          rustup show
-          rustup target list --installed
-
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-        if: matrix.config.container == null
         with:
           target: ${{ matrix.config.target }}
 
       - uses: Swatinem/rust-cache@v2
-        if: matrix.config.container == null
         id: rust-cache
-
-      - name: Add Rust target in container
-        if: matrix.config.container != null
-        run: rustup target add ${{ matrix.config.target }}
 
       # The Aarch64 Linux is a special snowflake, we need to install its toolchain
       - name: Install arm64 toolchain
@@ -93,13 +74,12 @@ jobs:
           sudo apt-get install -y musl-tools
 
       - name: Setup Postgres
-        if: matrix.config.container == null
         uses: ./.github/actions/setup-postgres
 
-      # - name: 🧪 Run Tests
-      #   run: cargo test --release
-      #   env:
-      #     DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      - name: 🧪 Run Tests
+        run: cargo test --release
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
       - name: 🛠️ Run Build
         run: cargo build -p pgt_cli --release --target ${{ matrix.config.target }}
@@ -108,7 +88,6 @@ jobs:
           RUSTFLAGS: "-C strip=symbols -C codegen-units=1"
           # Inline the version in the CLI binary
           PGT_VERSION: ${{ needs.extract_version.outputs.version }}
-          SQLX_OFFLINE: ${{ matrix.config.container != null }}
 
       # windows is a special snowflake too, it saves binaries as .exe
       - name: 👦 Name the Binary

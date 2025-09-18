@@ -9,14 +9,34 @@ const streamPipeline = promisify(pipeline);
 const CLI_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const PACKAGES_POSTGRESTOOLS_ROOT = resolve(CLI_ROOT, "..");
 const POSTGRESTOOLS_ROOT = resolve(PACKAGES_POSTGRESTOOLS_ROOT, "../..");
-const SUPPORTED_PLATFORMS = [
-  // "pc-windows-msvc",
-  "apple-darwin",
-  "unknown-linux-gnu",
-  "unknown-linux-musl",
-];
 const MANIFEST_PATH = resolve(CLI_ROOT, "package.json");
-const SUPPORTED_ARCHITECTURES = ["x86_64", "aarch64"];
+
+function platformArchCombinations() {
+  const SUPPORTED_PLATFORMS = [
+    "pc-windows-msvc",
+    "apple-darwin",
+    "unknown-linux-gnu",
+    "unknown-linux-musl",
+  ];
+
+  const SUPPORTED_ARCHITECTURES = ["x86_64", "aarch64"];
+
+  return SUPPORTED_PLATFORMS.flatMap((platform) => {
+    return SUPPORTED_ARCHITECTURES.flatMap((arch) => {
+      // we do not support MUSL builds on aarch64, as this would
+      // require difficult cross compilation and most aarch64 users should
+      // have sufficiently modern glibc versions
+      if (platform.endsWith("musl") && arch === "aarch64") {
+        return [];
+      }
+
+      return {
+        platform,
+        arch,
+      };
+    });
+  });
+}
 
 async function downloadSchema(releaseTag, githubToken) {
   const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/schema.json`;
@@ -80,11 +100,8 @@ async function writeManifest(packagePath, version) {
     fs.readFileSync(manifestPath).toString("utf-8")
   );
 
-  const nativePackages = SUPPORTED_PLATFORMS.flatMap((platform) =>
-    SUPPORTED_ARCHITECTURES.map((arch) => [
-      getPackageName(platform, arch),
-      version,
-    ])
+  const nativePackages = platformArchCombinations().map(
+    ({ platform, arch }) => [getPackageName(platform, arch), version]
   );
 
   manifestData.version = version;
@@ -243,15 +260,12 @@ function getVersion(releaseTag, isPrerelease) {
   await writeManifest("postgrestools", version);
   await writeManifest("backend-jsonrpc", version);
 
-  for (const platform of SUPPORTED_PLATFORMS) {
+  for (const { platform, arch } of platformArchCombinations()) {
     const os = getOs(platform);
-
-    for (const arch of SUPPORTED_ARCHITECTURES) {
-      await makePackageDir(platform, arch);
-      await downloadBinary(platform, arch, os, releaseTag, githubToken);
-      copyBinaryToNativePackage(platform, arch, os);
-      copySchemaToNativePackage(platform, arch);
-    }
+    await makePackageDir(platform, arch);
+    await downloadBinary(platform, arch, os, releaseTag, githubToken);
+    copyBinaryToNativePackage(platform, arch, os);
+    copySchemaToNativePackage(platform, arch);
   }
 
   process.exit(0);
