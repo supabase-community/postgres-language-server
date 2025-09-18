@@ -13,6 +13,9 @@ use pgt_pretty_print::{
 )]
 fn test_formatter(fixture: Fixture<&str>) {
     let content = fixture.content();
+
+    println!("Original content: {}", content);
+
     let absolute_fixture_path = Utf8Path::new(fixture.path());
     let input_file = absolute_fixture_path;
     let test_name = absolute_fixture_path
@@ -29,6 +32,8 @@ fn test_formatter(fixture: Fixture<&str>) {
 
     let parsed = pgt_query::parse(content).expect("Failed to parse SQL");
     let mut ast = parsed.into_root().expect("No root node found");
+
+    println!("Original AST: {:?}", ast);
 
     let mut emitter = EventEmitter::new();
     ast.to_tokens(&mut emitter);
@@ -67,7 +72,7 @@ fn test_formatter(fixture: Fixture<&str>) {
 fn validate_test_data(fixture: Fixture<&str>) {
     let content = fixture.content();
     let absolute_fixture_path = Utf8Path::new(fixture.path());
-    let test_name = absolute_fixture_path
+    let _test_name = absolute_fixture_path
         .file_name()
         .and_then(|x| x.strip_suffix(".sql"))
         .unwrap();

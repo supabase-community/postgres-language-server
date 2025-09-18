@@ -711,6 +711,10 @@ impl ToTokens for pgt_query::protobuf::ResTarget {
         if e.is_within_group(GroupKind::UpdateStmt) {
             if !self.name.is_empty() {
                 e.token(TokenKind::IDENT(self.name.clone()));
+                for d in &self.indirection {
+                    e.token(TokenKind::DOT);
+                    d.to_tokens(e);
+                }
                 e.space();
                 e.token(TokenKind::IDENT("=".to_string()));
                 e.space();
@@ -718,18 +722,16 @@ impl ToTokens for pgt_query::protobuf::ResTarget {
             if let Some(ref val) = self.val {
                 val.to_tokens(e);
             }
-        } else {
-            if let Some(ref val) = self.val {
-                val.to_tokens(e);
-                if !self.name.is_empty() {
-                    e.space();
-                    e.token(TokenKind::AS_KW);
-                    e.space();
-                    e.token(TokenKind::IDENT(self.name.clone()));
-                }
-            } else if !self.name.is_empty() {
+        } else if let Some(ref val) = self.val {
+            val.to_tokens(e);
+            if !self.name.is_empty() {
+                e.space();
+                e.token(TokenKind::AS_KW);
+                e.space();
                 e.token(TokenKind::IDENT(self.name.clone()));
             }
+        } else if !self.name.is_empty() {
+            e.token(TokenKind::IDENT(self.name.clone()));
         }
 
         e.group_end();
@@ -4183,6 +4185,11 @@ impl ToTokens for pgt_query::protobuf::CreateDomainStmt {
 
 impl ToTokens for pgt_query::protobuf::CollateClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
+        if let Some(arg) = &self.arg {
+            arg.to_tokens(e);
+            e.space();
+        }
+
         e.token(TokenKind::COLLATE_KW);
         e.space();
 
@@ -4190,7 +4197,9 @@ impl ToTokens for pgt_query::protobuf::CollateClause {
             if i > 0 {
                 e.token(TokenKind::DOT);
             }
+            e.token(TokenKind::IDENT('"'.to_string()));
             name.to_tokens(e);
+            e.token(TokenKind::IDENT('"'.to_string()));
         }
     }
 }

@@ -1,1 +1,0 @@
-SELECT name COLLATE "en_US" FROM users;
