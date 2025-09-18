@@ -14,7 +14,7 @@ env:
 jobs:
   # windows does not run git cliff so we need to do it here
   extract_version:
-    name: Extract Version & Security Audit
+    name: Extract Version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
@@ -23,6 +23,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up git-cliff
+        uses: kenji-miyake/setup-git-cliff@v1
 
       - name: Set version name
         id: set_version
@@ -43,7 +46,6 @@ jobs:
           - { os: ubuntu-22.04, target: x86_64-unknown-linux-musl }
 
     runs-on: ${{ matrix.config.os }}
-    container: ${{ matrix.config.container }}
 
     outputs:
       artifact_url: ${{ steps.upload-artifacts.outputs.artifact-url }}
@@ -134,11 +136,11 @@ jobs:
         env:
           GITHUB_REPO: ${{ github.repository }}
 
-      # - name: Ensure tag matches
-      #   if: steps.create_changelog.outputs.version != needs.extract_version.outputs.version
-      #   run: |
-      #     echo "Tag does not match: ${{ steps.create_changelog.outputs.version }} vs ${{ needs.extract_version.outputs.version }}"
-      #     exit 1
+      - name: Ensure tag matches
+        if: steps.create_changelog.outputs.version != needs.extract_version.outputs.version
+        run: |
+          echo "Tag does not match: ${{ steps.create_changelog.outputs.version }} vs ${{ needs.extract_version.outputs.version }}"
+          exit 1
 
       - name: 👇 Download Artifacts
         uses: actions/download-artifact@v4

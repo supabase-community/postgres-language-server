@@ -24,7 +24,11 @@ function isMusl() {
   let stderr;
   try {
     stderr = execSync("ldd --version", {
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: [
+        "ignore", // stdin
+        "pipe", // stdout – glibc systems print here
+        "pipe", // stderr – musl systems print here
+      ],
     });
   } catch (err) {
     stderr = err.stderr;
