@@ -30,6 +30,33 @@ gen-lint:
   cargo run -p docs_codegen
   just format
 
+# Fix cargo check issues using Claude
+fix-cargo-check:
+  unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "Please run cargo check and fix any issues. It is okay to remove things that are not fully implemented yet."
+
+# Run the autonomous pretty print implementation generator
+pretty-print: fix-cargo-check
+  cargo xtask agentic
+
+# Run the autonomous pretty print implementation generator with infinite retry loop
+pretty-print-forever: fix-cargo-check
+  #!/bin/bash
+  echo "Starting autonomous pretty print generator with error recovery..."
+  while true; do
+    echo "$(date): Starting agentic loop iteration..."
+    if cargo xtask agentic; then
+      echo "$(date): Agentic loop completed successfully!"
+      break
+    else
+      echo "$(date): Agentic loop failed, waiting 6 hours 1 minute before retry..."
+      sleep 3660  # 1 hour 1 minute = 1 * 60 * 60 + 1 * 60 = 3600 + 60 = 3660 seconds
+      echo "$(date): Resuming after 1-hour 1-minute wait..."
+    fi
+  done
+
+fix-and-push: fix-cargo-check
+  just quick-modify
+
 # Creates a new lint rule in the given path, with the given name. Name has to be camel case. Group should be lowercase.
 new-lintrule group rulename severity="error":
   cargo run -p xtask_codegen -- new-lintrule --category=lint --name={{rulename}} --group={{group}} --severity={{severity}}

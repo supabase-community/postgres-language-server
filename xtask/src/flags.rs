@@ -18,6 +18,12 @@ xflags::xflags! {
             /// Install only the language server.
             optional --server
         }
+
+        /// Run autonomous pretty print implementation generator using Claude.
+        cmd agentic {
+            /// Run continuously, retrying after rate limits.
+            optional --forever
+        }
     }
 }
 
@@ -32,6 +38,7 @@ pub struct Xtask {
 #[derive(Debug)]
 pub enum XtaskCmd {
     Install(Install),
+    Agentic(Agentic),
 }
 
 #[derive(Debug)]
@@ -39,6 +46,11 @@ pub struct Install {
     pub client: bool,
     pub code_bin: Option<String>,
     pub server: bool,
+}
+
+#[derive(Debug)]
+pub struct Agentic {
+    pub forever: bool,
 }
 
 impl Xtask {

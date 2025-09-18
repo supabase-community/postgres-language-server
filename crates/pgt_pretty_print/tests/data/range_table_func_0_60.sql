@@ -1,0 +1,1 @@
+SELECT * FROM xmltable('/root' passing '<root><item>value</item></root>' columns item text path 'item')

@@ -1,0 +1,1 @@
+ALTER DOMAIN myschema.mydomain DROP CONSTRAINT mycheck;

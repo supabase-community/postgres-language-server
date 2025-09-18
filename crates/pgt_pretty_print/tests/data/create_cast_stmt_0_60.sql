@@ -1,0 +1,1 @@
+CREATE CAST (text AS integer) WITH FUNCTION int4(text);

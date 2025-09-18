@@ -1,0 +1,9 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/create_trig_stmt_0_60.sql
+snapshot_kind: text
+---
+CREATE TRIGGER my_trigger
+AFTER INSERT ON my_table
+FOR EACH ROW
+EXECUTE FUNCTION my_function();

@@ -1,0 +1,1 @@
+CREATE RULE notify_me AS ON UPDATE TO mytable DO NOTIFY mytable_updated;

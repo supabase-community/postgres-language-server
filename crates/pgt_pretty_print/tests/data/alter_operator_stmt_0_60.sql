@@ -1,0 +1,1 @@
+ALTER OPERATOR + (int4, int4) OWNER TO postgres;
