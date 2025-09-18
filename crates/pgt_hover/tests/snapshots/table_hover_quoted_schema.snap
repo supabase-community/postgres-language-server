@@ -1,0 +1,20 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select * from "auth".users
+                        ↑ hovered here
+```
+
+# Hover Results
+### `auth.users` - 🔓 RLS disabled  
+```plain  
+  
+```  
+---    
+```plain  
+
+~0 rows, ~0 dead rows, 8.19 kB  
+```

@@ -1,0 +1,20 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select phone, id from users join phone_nums on "users"."email" = phone_nums.email;
+                                                          ↑ hovered here
+```
+
+# Hover Results
+### `public.users.email`  
+```plain  
+varchar(255) - not null
+  
+```  
+---    
+```plain  
+  
+```
