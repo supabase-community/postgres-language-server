@@ -19,12 +19,17 @@ pub fn iter_mut_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
 
     for node in &nodes {
         // Use the enum variant name from the Node enum
-        if let Some(variant_name) = type_to_variant.get(&node.name) {
+        if let Some(variant_name) = type_to_variant.get(&node.enum_variant_name) {
             let variant_ident = format_ident!("{}", variant_name);
             node_variant_names.push(variant_ident);
 
             let property_handlers = property_handlers(node);
             node_property_handlers.push(property_handlers);
+        } else {
+            panic!(
+                "No enum variant found for node type: {}",
+                node.enum_variant_name
+            );
         }
     }
 
