@@ -69,6 +69,17 @@ impl HoveredNode {
                 Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
             }
 
+            "policy_table" | "revoke_table" | "grant_table" => {
+                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
+                        schema.clone(),
+                        node_content,
+                    ))))
+                } else {
+                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
+                }
+            }
+
             _ => None,
         }
     }

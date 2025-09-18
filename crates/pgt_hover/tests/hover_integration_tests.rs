@@ -442,3 +442,59 @@ async fn test_column_hover_with_quoted_column_name_with_table(test_db: PgPool) {
     )
     .await;
 }
+
+async fn test_policy_table_hover(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    let query = format!(
+        r#"create policy "my cool pol" on us{}ers for all to public with check (true);"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("create_policy", query, None, &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_revoke_table_hover(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    let query = format!(
+        "revoke select on us{}ers from public;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("revoke_select", query, None, &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_grant_table_hover(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    let query = format!(
+        "grant select on us{}ers to public;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("grant_select", query, None, &test_db).await;
+}
