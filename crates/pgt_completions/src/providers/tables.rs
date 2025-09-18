@@ -58,6 +58,7 @@ fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText
 #[cfg(test)]
 mod tests {
 
+    use pgt_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
@@ -563,6 +564,92 @@ mod tests {
                 CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn after_quoted_schemas(pool: PgPool) {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        assert_complete_results(
+            format!(
+                r#"select * from "auth".{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::CompletionTextAndRange(
+                    "posts".into(),
+                    TextRange::new(21.into(), 21.into()),
+                ),
+                CompletionAssertion::CompletionTextAndRange(
+                    "users".into(),
+                    TextRange::new(21.into(), 21.into()),
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"select * from "auth"."{}""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::CompletionTextAndRange(
+                    "posts".into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
+                CompletionAssertion::CompletionTextAndRange(
+                    "users".into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"select * from "auth"."{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::CompletionTextAndRange(
+                    r#"posts""#.into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
+                CompletionAssertion::CompletionTextAndRange(
+                    r#"users""#.into(),
+                    TextRange::new(22.into(), 22.into()),
+                ),
             ],
             None,
             &pool,
