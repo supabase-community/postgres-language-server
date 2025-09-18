@@ -20,6 +20,10 @@ pub struct OnHoverParams<'a> {
     pub ts_tree: &'a tree_sitter::Tree,
 }
 
+#[tracing::instrument(level = "debug", skip_all, fields(
+    text = params.stmt_sql,
+    position = params.position.to_string()
+))]
 pub fn on_hover(params: OnHoverParams) -> Vec<String> {
     let ctx = pgt_treesitter::context::TreesitterContext::new(TreeSitterContextParams {
         position: params.position,
