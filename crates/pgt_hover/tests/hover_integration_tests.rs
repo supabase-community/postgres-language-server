@@ -443,7 +443,6 @@ async fn test_column_hover_with_quoted_column_name_with_table(test_db: PgPool) {
     .await;
 }
 
-#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
 async fn test_policy_table_hover(test_db: PgPool) {
     let setup = r#"
         create table users (
