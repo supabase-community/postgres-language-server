@@ -1,2 +1,5 @@
--- expect_only_lint/safety/preferJsonb
--- select 1;
+-- expect_lint/safety/preferJsonb
+CREATE TABLE users (
+    id integer,
+    data json
+);
