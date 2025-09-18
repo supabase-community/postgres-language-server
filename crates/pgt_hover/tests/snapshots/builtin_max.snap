@@ -1,0 +1,250 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select max(id) from users
+        ↑ hovered here
+```
+
+# Hover Results
+### `pg_catalog.max(bigint) → bigint`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(integer) → integer`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(smallint) → smallint`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(oid) → oid`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(real) → real`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(double precision) → double precision`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(date) → date`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(time without time zone) → time without time zone`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(time with time zone) → time with time zone`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(money) → money`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(timestamp without time zone) → timestamp without time zone`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(timestamp with time zone) → timestamp with time zone`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(interval) → interval`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(text) → text`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(numeric) → numeric`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(anyarray) → anyarray`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(character) → character`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(tid) → tid`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(inet) → inet`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(pg_lsn) → pg_lsn`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(xid8) → xid8`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.max(anyenum) → anyenum`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```

@@ -63,10 +63,11 @@ impl SchemaCache {
         })
     }
 
-    pub fn find_table(&self, name: &str, schema: Option<&str>) -> Option<&Table> {
+    pub fn find_tables(&self, name: &str, schema: Option<&str>) -> Vec<&Table> {
         self.tables
             .iter()
-            .find(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
+            .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
+            .collect()
     }
 
     pub fn find_type(&self, name: &str, schema: Option<&str>) -> Option<&PostgresType> {
@@ -75,12 +76,15 @@ impl SchemaCache {
             .find(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
     }
 
-    pub fn find_col(&self, name: &str, table: &str, schema: Option<&str>) -> Option<&Column> {
-        self.columns.iter().find(|c| {
-            c.name.as_str() == name
-                && c.table_name.as_str() == table
-                && schema.is_none_or(|s| s == c.schema_name.as_str())
-        })
+    pub fn find_cols(&self, name: &str, table: Option<&str>, schema: Option<&str>) -> Vec<&Column> {
+        self.columns
+            .iter()
+            .filter(|c| {
+                c.name.as_str() == name
+                    && table.is_none_or(|t| t == c.table_name.as_str())
+                    && schema.is_none_or(|s| s == c.schema_name.as_str())
+            })
+            .collect()
     }
 
     pub fn find_types(&self, name: &str, schema: Option<&str>) -> Vec<&PostgresType> {
@@ -88,6 +92,17 @@ impl SchemaCache {
             .iter()
             .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
             .collect()
+    }
+
+    pub fn find_functions(&self, name: &str, schema: Option<&str>) -> Vec<&Function> {
+        self.functions
+            .iter()
+            .filter(|f| f.name == name && schema.is_none_or(|s| s == f.schema.as_str()))
+            .collect()
+    }
+
+    pub fn find_roles(&self, name: &str) -> Vec<&Role> {
+        self.roles.iter().filter(|r| r.name == name).collect()
     }
 }
 

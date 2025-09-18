@@ -1,89 +1,50 @@
 use std::fmt::Write;
 
-use humansize::DECIMAL;
-
 pub(crate) trait ToHoverMarkdown {
-    fn to_hover_markdown<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error>;
-}
-
-impl ToHoverMarkdown for pgt_schema_cache::Table {
-    fn to_hover_markdown<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
-        HeadlineWriter::for_table(writer, self)?;
-        BodyWriter::for_table(writer, self)?;
-        FooterWriter::for_table(writer, self)?;
-
-        Ok(())
+    fn body_markdown_type(&self) -> &'static str {
+        "plain"
     }
-}
 
-struct HeadlineWriter;
-
-impl HeadlineWriter {
-    fn for_table<W: Write>(
-        writer: &mut W,
-        table: &pgt_schema_cache::Table,
-    ) -> Result<(), std::fmt::Error> {
-        let table_kind = match table.table_kind {
-            pgt_schema_cache::TableKind::View => " (View)",
-            pgt_schema_cache::TableKind::MaterializedView => " (M.View)",
-            pgt_schema_cache::TableKind::Partitioned => " (Partitioned)",
-            pgt_schema_cache::TableKind::Ordinary => "",
-        };
-
-        let locked_txt = if table.rls_enabled {
-            " - 🔒 RLS enabled"
-        } else {
-            " - 🔓 RLS disabled"
-        };
-
-        write!(
-            writer,
-            "### {}.{}{}{}",
-            table.schema, table.name, table_kind, locked_txt
-        )?;
-
-        markdown_newline(writer)?;
-
-        Ok(())
+    fn footer_markdown_type(&self) -> &'static str {
+        "plain"
     }
+
+    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error>;
+
+    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error>; // returns true if something was written
+
+    fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error>; // returns true if something was written
 }
 
-struct BodyWriter;
+pub(crate) fn format_hover_markdown<T: ToHoverMarkdown>(
+    item: &T,
+) -> Result<String, std::fmt::Error> {
+    let mut markdown = String::new();
 
-impl BodyWriter {
-    fn for_table<W: Write>(
-        writer: &mut W,
-        table: &pgt_schema_cache::Table,
-    ) -> Result<(), std::fmt::Error> {
-        if let Some(c) = table.comment.as_ref() {
-            write!(writer, "{}", c)?;
-            markdown_newline(writer)?;
-        }
+    write!(markdown, "### ")?;
+    item.hover_headline(&mut markdown)?;
+    markdown_newline(&mut markdown)?;
 
-        Ok(())
-    }
+    write!(markdown, "```{}", item.body_markdown_type())?;
+    markdown_newline(&mut markdown)?;
+    item.hover_body(&mut markdown)?;
+    markdown_newline(&mut markdown)?;
+    write!(markdown, "```")?;
+
+    markdown_newline(&mut markdown)?;
+    write!(markdown, "---  ")?;
+    markdown_newline(&mut markdown)?;
+
+    write!(markdown, "```{}", item.footer_markdown_type())?;
+    markdown_newline(&mut markdown)?;
+    item.hover_footer(&mut markdown)?;
+    markdown_newline(&mut markdown)?;
+    write!(markdown, "```")?;
+
+    Ok(markdown)
 }
 
-struct FooterWriter;
-
-impl FooterWriter {
-    fn for_table<W: Write>(
-        writer: &mut W,
-        table: &pgt_schema_cache::Table,
-    ) -> Result<(), std::fmt::Error> {
-        write!(
-            writer,
-            "~{} rows, ~{} dead rows, {}",
-            table.live_rows_estimate,
-            table.dead_rows_estimate,
-            humansize::format_size(table.bytes as u64, DECIMAL)
-        )?;
-
-        Ok(())
-    }
-}
-
-fn markdown_newline<W: Write>(writer: &mut W) -> Result<(), std::fmt::Error> {
+pub(crate) fn markdown_newline<W: Write>(writer: &mut W) -> Result<(), std::fmt::Error> {
     write!(writer, "  ")?;
     writeln!(writer)?;
     Ok(())

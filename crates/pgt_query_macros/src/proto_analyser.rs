@@ -38,8 +38,8 @@ pub(crate) struct Field {
 }
 
 pub(crate) struct Node {
-    pub name: String,
     #[allow(dead_code)]
+    pub name: String,
     pub enum_variant_name: String,
     pub fields: Vec<Field>,
 }

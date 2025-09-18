@@ -2967,6 +2967,7 @@ name = "pgt_hover"
 version = "0.0.0"
 dependencies = [
  "humansize",
+ "insta",
  "pgt_query",
  "pgt_schema_cache",
  "pgt_test_utils",
@@ -3239,7 +3240,9 @@ dependencies = [
 name = "pgt_typecheck"
 version = "0.0.0"
 dependencies = [
+ "globset",
  "insta",
+ "itertools 0.14.0",
  "pgt_console",
  "pgt_diagnostics",
  "pgt_query",
@@ -3285,6 +3288,7 @@ dependencies = [
  "pgt_tokenizer",
  "pgt_typecheck",
  "pgt_workspace_macros",
+ "regex",
  "rustc-hash 2.1.0",
  "schemars",
  "serde",
@@ -3926,9 +3930,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.28"
+version = "0.23.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7160e3e10bf4535308537f3c4e1641468cd0e485175d6163087c0393c7d46643"
+checksum = "c0ebcbd2f03de0fc1122ad9bb24b127a5a6cd51d72604a3f3c50ac459762b6cc"
 dependencies = [
  "log",
  "once_cell",
@@ -3950,9 +3954,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.3"
+version = "0.103.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4a72fe2bcf7a6ac6fd7d0b9e5cb68aeb7d4c0a0271730218b3e92d43b4eb435"
+checksum = "0a17884ae0c1b773f1ccd2bd4a8c72f16da897310a98b0e84bf349ad5ead92fc"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -5388,14 +5392,14 @@ version = "0.26.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "521bc38abb08001b01866da9f51eb7c5d647a19260e00054a8c7fd5f9e57f7a9"
 dependencies = [
- "webpki-roots 1.0.1",
+ "webpki-roots 1.0.2",
 ]
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8782dd5a41a24eed3a4f40b606249b3e236ca61adf1f25ea4d45c73de122b502"
+checksum = "7e8983c3ab33d6fb807cfcdad2491c4ea8cbc8ed839181c7dfd9c67c83e261b2"
 dependencies = [
  "rustls-pki-types",
 ]

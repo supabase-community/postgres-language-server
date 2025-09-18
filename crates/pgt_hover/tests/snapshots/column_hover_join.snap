@@ -1,0 +1,21 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select * from users u join posts p on u.id = p.user_id
+                                                  ↑ hovered here
+```
+
+# Hover Results
+### `public.posts.user_id`  
+```plain  
+int4 - not null
+  
+```  
+---    
+```plain  
+
+Default: nextval('posts_user_id_seq'::regclass)  
+```

@@ -1,13 +1,14 @@
-use pgt_schema_cache::SchemaCache;
-use pgt_treesitter::{TreesitterContext, WrappingClause};
+use pgt_schema_cache::{Column, SchemaCache};
+use pgt_treesitter::TreesitterContext;
 
 use crate::{
-    CompletionItemKind,
+    CompletionItemKind, CompletionText,
     builder::{CompletionBuilder, PossibleCompletionItem},
+    providers::helper::get_range_to_replace,
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::{find_matching_alias_for_table, get_completion_text_with_schema_or_alias};
+use super::helper::with_schema_or_alias;
 
 pub fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
@@ -19,30 +20,31 @@ pub fn complete_columns<'a>(
     for col in available_columns {
         let relevance = CompletionRelevanceData::Column(col);
 
-        let mut item = PossibleCompletionItem {
+        let item = PossibleCompletionItem {
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             description: format!("{}.{}", col.schema_name, col.table_name),
             kind: CompletionItemKind::Column,
-            completion_text: None,
+            completion_text: Some(get_completion_text(ctx, col)),
             detail: col.type_name.as_ref().map(|t| t.to_string()),
         };
 
-        // autocomplete with the alias in a join clause if we find one
-        if matches!(
-            ctx.wrapping_clause_type,
-            Some(WrappingClause::Join { .. })
-                | Some(WrappingClause::Where)
-                | Some(WrappingClause::Select)
-        ) {
-            item.completion_text = find_matching_alias_for_table(ctx, col.table_name.as_str())
-                .and_then(|alias| {
-                    get_completion_text_with_schema_or_alias(ctx, col.name.as_str(), alias.as_str())
-                });
-        }
-
         builder.add_item(item);
+    }
+}
+
+fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText {
+    let alias = ctx.get_used_alias_for_table(col.table_name.as_str());
+
+    let with_schema_or_alias = with_schema_or_alias(ctx, col.name.as_str(), alias.as_deref());
+
+    let range = get_range_to_replace(ctx);
+
+    CompletionText {
+        is_snippet: false,
+        range,
+        text: with_schema_or_alias,
     }
 }
 
@@ -50,6 +52,7 @@ pub fn complete_columns<'a>(
 mod tests {
     use std::vec;
 
+    use pgt_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
@@ -926,6 +929,345 @@ mod tests {
                     CompletionAssertion::Label("name".into()),
                     CompletionAssertion::Label("z".into()),
                 ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_quoted_columns(pool: PgPool) {
+        let setup = r#"
+            create schema if not exists private;
+            
+            create table private.users (
+                id serial primary key,
+                email text unique not null,
+                name text not null,
+                "quoted_column" text
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        // test completion inside quoted column name
+        assert_complete_results(
+            format!(
+                r#"select "em{}" from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::LabelAndDesc(
+                "email".to_string(),
+                "private.users".to_string(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+
+        // test completion for already quoted column
+        assert_complete_results(
+            format!(
+                r#"select "quoted_col{}" from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::LabelAndDesc(
+                "quoted_column".to_string(),
+                "private.users".to_string(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+
+        // test completion with empty quotes
+        assert_complete_results(
+            format!(
+                r#"select "{}" from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("email".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("quoted_column".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        // test completion with partially opened quote
+        assert_complete_results(
+            format!(
+                r#"select "{} from "private"."users""#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("email".to_string()),
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("quoted_column".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_quoted_columns_with_aliases(pool: PgPool) {
+        let setup = r#"
+            create schema if not exists private;
+            
+            create table private.users (
+                id serial primary key,
+                email text unique not null,
+                name text not null,
+                "quoted_column" text
+            );
+
+            create table public.names (
+                uid serial references private.users(id),
+                name text
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        {
+            // should suggest pr"."email and insert into existing quotes
+            let query = format!(
+                r#"select "e{}" from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#"pr"."email"#.into(),
+                    // replaces the full `"e"`
+                    TextRange::new(8.into(), 9.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest pr"."email and insert into existing quotes
+            let query = format!(
+                r#"select "{}" from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#"pr"."email"#.into(),
+                    TextRange::new(8.into(), 8.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest email and insert into quotes
+            let query = format!(
+                r#"select pr."{}" from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#"email"#.into(),
+                    TextRange::new(11.into(), 11.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest email
+            let query = format!(
+                r#"select "pr".{} from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    "email".into(),
+                    TextRange::new(12.into(), 12.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest `email`
+            let query = format!(
+                r#"select pr.{} from private.users "pr""#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    "email".into(),
+                    TextRange::new(10.into(), 10.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            let query = format!(
+                r#"select {} from private.users "pr" join public.names n on pr.id = n.uid;"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![
+                    CompletionAssertion::CompletionTextAndRange(
+                        "n.name".into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        "n.uid".into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr".email"#.into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#""pr".id"#.into(),
+                        TextRange::new(7.into(), 7.into()),
+                    ),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "pr"."email"
+            let query = format!(
+                r#"select "{}" from private.users "pr" join public.names "n" on pr.id = n.uid;"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#"n"."name"#.into(),
+                        TextRange::new(8.into(), 8.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#"n"."uid"#.into(),
+                        TextRange::new(8.into(), 8.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#"pr"."email"#.into(),
+                        TextRange::new(8.into(), 8.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#"pr"."id"#.into(),
+                        TextRange::new(8.into(), 8.into()),
+                    ),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest pr"."email"
+            let query = format!(
+                r#"select "{} from private.users "pr";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#"pr"."email""#.into(),
+                        TextRange::new(8.into(), 8.into()),
+                    ),
+                    CompletionAssertion::CompletionTextAndRange(
+                        r#"pr"."id""#.into(),
+                        TextRange::new(8.into(), 8.into()),
+                    ),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest email"
+            let query = format!(
+                r#"select pr."{} from private.users "pr";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#"email""#.into(),
+                    TextRange::new(11.into(), 11.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest email"
+            let query = format!(
+                r#"select "pr"."{} from private.users "pr";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#"email""#.into(),
+                    TextRange::new(13.into(), 13.into()),
+                )],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        {
+            // should suggest "n".name
+            let query = format!(
+                r#"select {} from names "n";"#,
+                QueryWithCursorPosition::cursor_marker()
+            );
+            assert_complete_results(
+                query.as_str(),
+                vec![CompletionAssertion::CompletionTextAndRange(
+                    r#""n".name"#.into(),
+                    TextRange::new(7.into(), 7.into()),
+                )],
                 None,
                 &pool,
             )

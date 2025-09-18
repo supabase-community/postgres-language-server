@@ -39,10 +39,33 @@ impl CompletionFilter<'_> {
         if current_node_kind.starts_with("keyword_")
             || current_node_kind == "="
             || current_node_kind == ","
-            || current_node_kind == "literal"
             || current_node_kind == "ERROR"
         {
             return None;
+        }
+
+        // "literal" nodes can be identfiers wrapped in quotes:
+        // `select "email" from auth.users;`
+        // Here, "email" is a literal node.
+        if current_node_kind == "literal" {
+            match self.data {
+                CompletionRelevanceData::Column(_) => match ctx.wrapping_clause_type.as_ref() {
+                    Some(WrappingClause::Select)
+                    | Some(WrappingClause::Where)
+                    | Some(WrappingClause::Join { .. })
+                    | Some(WrappingClause::Update)
+                    | Some(WrappingClause::Delete)
+                    | Some(WrappingClause::Insert)
+                    | Some(WrappingClause::DropColumn)
+                    | Some(WrappingClause::AlterColumn)
+                    | Some(WrappingClause::RenameColumn)
+                    | Some(WrappingClause::PolicyCheck) => {
+                        // the literal is probably a column
+                    }
+                    _ => return None,
+                },
+                _ => return None,
+            }
         }
 
         // No autocompletions if there are two identifiers without a separator.
@@ -90,7 +113,7 @@ impl CompletionFilter<'_> {
                                 .is_none_or(|n| n != &WrappingNode::List)
                                 && (ctx.before_cursor_matches_kind(&["keyword_into"])
                                     || (ctx.before_cursor_matches_kind(&["."])
-                                        && ctx.parent_matches_one_of_kind(&["object_reference"])))
+                                        && ctx.matches_ancestor_history(&["object_reference"])))
                         }
 
                         WrappingClause::DropTable | WrappingClause::AlterTable => ctx
@@ -136,7 +159,7 @@ impl CompletionFilter<'_> {
                             WrappingClause::Where => {
                                 ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
                                     || (ctx.before_cursor_matches_kind(&["."])
-                                        && ctx.parent_matches_one_of_kind(&["field"]))
+                                        && ctx.matches_ancestor_history(&["field"]))
                             }
 
                             WrappingClause::PolicyCheck => {
@@ -232,8 +255,7 @@ impl CompletionFilter<'_> {
             CompletionRelevanceData::Table(table) => &table.schema == schema_or_alias,
             CompletionRelevanceData::Function(f) => &f.schema == schema_or_alias,
             CompletionRelevanceData::Column(col) => ctx
-                .mentioned_table_aliases
-                .get(schema_or_alias)
+                .get_mentioned_table_for_alias(schema_or_alias)
                 .is_some_and(|t| t == &col.table_name),
 
             // we should never allow schema suggestions if there already was one.

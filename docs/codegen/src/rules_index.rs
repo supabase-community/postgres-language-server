@@ -17,7 +17,7 @@ use crate::utils;
 ///
 /// * `docs_dir`: Path to the docs directory.
 pub fn generate_rules_index(docs_dir: &Path) -> anyhow::Result<()> {
-    let index_file = docs_dir.join("rules.md");
+    let index_file = docs_dir.join("reference/rules.md");
 
     let mut visitor = crate::utils::LintRulesVisitor::default();
     pgt_analyser::visit_registry(&mut visitor);

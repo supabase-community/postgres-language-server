@@ -5,6 +5,7 @@ use pgt_text_size::TextSize;
 use crate::CompletionParams;
 
 static SANITIZED_TOKEN: &str = "REPLACED_TOKEN";
+static SANITIZED_TOKEN_WITH_QUOTE: &str = r#"REPLACED_TOKEN_WITH_QUOTE""#;
 
 #[derive(Debug)]
 pub(crate) struct SanitizedCompletionParams<'a> {
@@ -20,33 +21,23 @@ pub fn benchmark_sanitization(params: CompletionParams) -> String {
 }
 
 pub(crate) fn remove_sanitized_token(it: &str) -> String {
-    it.replace(SANITIZED_TOKEN, "")
+    it.replace(SANITIZED_TOKEN_WITH_QUOTE, "")
+        .replace(SANITIZED_TOKEN, "")
 }
 
-pub(crate) fn is_sanitized_token(txt: &str) -> bool {
-    txt == SANITIZED_TOKEN
+pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {
+    node_under_cursor_txt == SANITIZED_TOKEN || is_sanitized_token_with_quote(node_under_cursor_txt)
 }
 
-#[derive(PartialEq, Eq, Debug)]
-pub(crate) enum NodeText {
-    Replaced,
-    Original(String),
-}
-
-impl From<&str> for NodeText {
-    fn from(value: &str) -> Self {
-        if value == SANITIZED_TOKEN {
-            NodeText::Replaced
-        } else {
-            NodeText::Original(value.into())
-        }
+pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool {
+    if node_under_cursor_txt.len() <= 1 {
+        return false;
     }
-}
 
-impl From<String> for NodeText {
-    fn from(value: String) -> Self {
-        NodeText::from(value.as_str())
-    }
+    // Node under cursor text will be "REPLACED_TOKEN_WITH_QUOTE".
+    // The SANITIZED_TOKEN_WITH_QUOTE does not have the leading ".
+    // We need to omit it from the txt.
+    &node_under_cursor_txt[1..] == SANITIZED_TOKEN_WITH_QUOTE
 }
 
 impl<'larger, 'smaller> From<CompletionParams<'larger>> for SanitizedCompletionParams<'smaller>
@@ -60,6 +51,7 @@ where
             || cursor_before_semicolon(params.tree, params.position)
             || cursor_on_a_dot(&params.text, params.position)
             || cursor_between_parentheses(&params.text, params.position)
+            || cursor_after_opened_quote(&params.text, params.position)
         {
             SanitizedCompletionParams::with_adjusted_sql(params)
         } else {
@@ -80,12 +72,25 @@ where
 
         let max = max(cursor_pos + 1, params.text.len());
 
+        let has_uneven_quotes = params.text.chars().filter(|c| *c == '"').count() % 2 != 0;
+        let mut opened_quote = false;
+
         for idx in 0..max {
             match sql_iter.next() {
                 Some(c) => {
-                    if idx == cursor_pos {
-                        sql.push_str(SANITIZED_TOKEN);
+                    if c == '"' {
+                        opened_quote = !opened_quote;
                     }
+
+                    if idx == cursor_pos {
+                        if opened_quote && has_uneven_quotes {
+                            sql.push_str(SANITIZED_TOKEN_WITH_QUOTE);
+                            opened_quote = false;
+                        } else {
+                            sql.push_str(SANITIZED_TOKEN);
+                        }
+                    }
+
                     sql.push(c);
                 }
                 None => {
@@ -268,6 +273,27 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     head_of_list || end_of_list || between_list_items || after_and_keyword || after_eq_sign
 }
 
+fn cursor_after_opened_quote(sql: &str, position: TextSize) -> bool {
+    let position: usize = position.into();
+    let mut opened_quote = false;
+    let mut preceding_quote = false;
+
+    for (idx, c) in sql.char_indices() {
+        if idx == position && opened_quote && preceding_quote {
+            return true;
+        }
+
+        if c == '"' {
+            preceding_quote = true;
+            opened_quote = !opened_quote;
+        } else {
+            preceding_quote = false;
+        }
+    }
+
+    opened_quote && preceding_quote
+}
+
 #[cfg(test)]
 mod tests {
     use pgt_schema_cache::SchemaCache;
@@ -276,34 +302,91 @@ mod tests {
     use crate::{
         CompletionParams, SanitizedCompletionParams,
         sanitization::{
-            cursor_before_semicolon, cursor_between_parentheses, cursor_inbetween_nodes,
-            cursor_on_a_dot, cursor_prepared_to_write_token_after_last_node,
+            cursor_after_opened_quote, cursor_before_semicolon, cursor_between_parentheses,
+            cursor_inbetween_nodes, cursor_on_a_dot,
+            cursor_prepared_to_write_token_after_last_node,
         },
     };
+
+    fn get_test_params(input: &str, position: TextSize) -> CompletionParams {
+        let mut ts = tree_sitter::Parser::new();
+        ts.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = Box::new(ts.parse(input, None).unwrap());
+        let cache = Box::new(SchemaCache::default());
+
+        let leaked_tree = Box::leak(tree);
+        let leaked_cache = Box::leak(cache);
+
+        CompletionParams {
+            position,
+            schema: leaked_cache,
+            text: input.into(),
+            tree: leaked_tree,
+        }
+    }
 
     #[test]
     fn should_lowercase_everything_except_replaced_token() {
         let input = "SELECT  FROM users WHERE ts = NOW();";
-
         let position = TextSize::new(7);
-        let cache = SchemaCache::default();
 
-        let mut ts = tree_sitter::Parser::new();
-        ts.set_language(tree_sitter_sql::language()).unwrap();
-        let tree = ts.parse(input, None).unwrap();
-
-        let params = CompletionParams {
-            position,
-            schema: &cache,
-            text: input.into(),
-            tree: &tree,
-        };
-
+        let params = get_test_params(input, position);
         let sanitized = SanitizedCompletionParams::from(params);
 
         assert_eq!(
             sanitized.text,
             "select REPLACED_TOKEN from users where ts = now();"
+        );
+    }
+
+    #[test]
+    fn should_sanitize_with_opened_quotes() {
+        // select "email", "| from "auth"."users";
+        let input = r#"select "email", " from "auth"."users";"#;
+        let position = TextSize::new(17);
+
+        let params = get_test_params(input, position);
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            r#"select "email", "REPLACED_TOKEN_WITH_QUOTE" from "auth"."users";"#
+        );
+    }
+
+    #[test]
+    fn should_not_complete_quote_if_we_are_inside_pair() {
+        // select "email", "|  " from "auth"."users";
+        // we have opened a quote, but it is already closed a couple of characters later
+        let input = r#"select "email", "  " from "auth"."users";"#;
+        let position = TextSize::new(17);
+
+        let params = get_test_params(input, position);
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            r#"select "email", "REPLACED_TOKEN  " from "auth"."users";"#
+        );
+    }
+
+    #[test]
+    fn should_not_use_quote_token_if_we_are_not_within_opened_quote() {
+        // select "users".| from "users" join "public"."
+        // we have an opened quote at the end, but the cursor is not within an opened quote
+        let input = r#"select "users". from "users" join "public"."   "#;
+        let position = TextSize::new(15);
+
+        let params = get_test_params(input, position);
+
+        let sanitized = SanitizedCompletionParams::from(params);
+
+        assert_eq!(
+            sanitized.text,
+            r#"select "users".REPLACED_TOKEN from "users" join "public"."   "#
         );
     }
 
@@ -466,5 +549,45 @@ mod tests {
 
         // does not break if sql is really short
         assert!(!cursor_between_parentheses("(a)", TextSize::new(2)));
+    }
+
+    #[test]
+    fn after_single_quote() {
+        // select "|    <-- right after single quote
+        assert!(cursor_after_opened_quote(r#"select ""#, TextSize::new(8)));
+        // select "| from something;    <-- right after opening quote
+        assert!(cursor_after_opened_quote(
+            r#"select " from something;"#,
+            TextSize::new(8)
+        ));
+
+        // select "user_id", "|    <-- right after opening quote
+        assert!(cursor_after_opened_quote(
+            r#"select "user_id", ""#,
+            TextSize::new(19)
+        ));
+        // select "user_id, "| from something;    <-- right after opening quote
+        assert!(cursor_after_opened_quote(
+            r#"select "user_id", " from something;"#,
+            TextSize::new(19)
+        ));
+
+        // select "user_id"| from something;    <-- after closing quote
+        assert!(!cursor_after_opened_quote(
+            r#"select "user_id" from something;"#,
+            TextSize::new(16)
+        ));
+
+        // select ""| from something;    <-- after closing quote
+        assert!(!cursor_after_opened_quote(
+            r#"select "" from something;"#,
+            TextSize::new(9)
+        ));
+
+        // select "user_id, " |from something;    <-- one off after opening quote
+        assert!(!cursor_after_opened_quote(
+            r#"select "user_id", " from something;"#,
+            TextSize::new(20)
+        ));
     }
 }

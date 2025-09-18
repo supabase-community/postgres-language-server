@@ -12,11 +12,12 @@ use tracing::trace;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pgt_configuration::{
-    ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration,
+    ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration, TypecheckConfiguration,
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    plpgsql_check::PlPgSqlCheckConfiguration,
 };
 use pgt_fs::PgTPath;
 
@@ -210,6 +211,12 @@ pub struct Settings {
     /// Linter settings applied to all files in the workspace
     pub linter: LinterSettings,
 
+    /// Type checking settings for the workspace
+    pub typecheck: TypecheckSettings,
+
+    /// plpgsql_check settings for the workspace
+    pub plpgsql_check: PlPgSqlCheckSettings,
+
     /// Migrations settings
     pub migrations: Option<MigrationSettings>,
 }
@@ -243,6 +250,17 @@ impl Settings {
         if let Some(linter) = configuration.linter {
             self.linter =
                 to_linter_settings(working_directory.clone(), LinterConfiguration::from(linter))?;
+        }
+
+        // typecheck part
+        if let Some(typecheck) = configuration.typecheck {
+            self.typecheck = to_typecheck_settings(TypecheckConfiguration::from(typecheck));
+        }
+
+        // plpgsql_check part
+        if let Some(plpgsql_check) = configuration.plpgsql_check {
+            self.plpgsql_check =
+                to_plpgsql_check_settings(PlPgSqlCheckConfiguration::from(plpgsql_check));
         }
 
         // Migrations settings
@@ -292,6 +310,19 @@ fn to_linter_settings(
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
     })
+}
+
+fn to_typecheck_settings(conf: TypecheckConfiguration) -> TypecheckSettings {
+    TypecheckSettings {
+        search_path: conf.search_path.into_iter().collect(),
+        enabled: conf.enabled,
+    }
+}
+
+fn to_plpgsql_check_settings(conf: PlPgSqlCheckConfiguration) -> PlPgSqlCheckSettings {
+    PlPgSqlCheckSettings {
+        enabled: conf.enabled,
+    }
 }
 
 fn to_file_settings(
@@ -397,6 +428,37 @@ impl Default for LinterSettings {
             rules: Some(pgt_configuration::analyser::linter::Rules::default()),
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),
+        }
+    }
+}
+
+/// Type checking settings for the entire workspace
+#[derive(Debug)]
+pub struct PlPgSqlCheckSettings {
+    /// Enabled by default
+    pub enabled: bool,
+}
+
+impl Default for PlPgSqlCheckSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+/// Type checking settings for the entire workspace
+#[derive(Debug)]
+pub struct TypecheckSettings {
+    /// Enabled by default
+    pub enabled: bool,
+    /// Default search path schemas for type checking
+    pub search_path: Vec<String>,
+}
+
+impl Default for TypecheckSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            search_path: vec!["public".to_string()],
         }
     }
 }

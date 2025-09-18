@@ -1,28 +1,32 @@
 use pgt_text_size::{TextRange, TextSize};
 use pgt_treesitter::TreesitterContext;
 
-use crate::{CompletionText, remove_sanitized_token};
+use crate::{is_sanitized_token_with_quote, remove_sanitized_token};
 
-pub(crate) fn find_matching_alias_for_table(
-    ctx: &TreesitterContext,
-    table_name: &str,
-) -> Option<String> {
-    for (alias, table) in ctx.mentioned_table_aliases.iter() {
-        if table == table_name {
-            return Some(alias.to_string());
-        }
-    }
-    None
+pub(crate) fn node_text_surrounded_by_quotes(ctx: &TreesitterContext) -> bool {
+    ctx.get_node_under_cursor_content()
+        .is_some_and(|c| c.starts_with('"') && c.ends_with('"') && c.len() > 1)
 }
 
 pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     match ctx.node_under_cursor.as_ref() {
         Some(node) => {
             let content = ctx.get_node_under_cursor_content().unwrap_or("".into());
-            let length = remove_sanitized_token(content.as_str()).len();
+            let content = content.as_str();
 
-            let start = node.start_byte();
-            let end = start + length;
+            let sanitized = remove_sanitized_token(content);
+            let length = sanitized.len();
+
+            let mut start = node.start_byte();
+            let mut end = start + length;
+
+            if sanitized.starts_with('"') && sanitized.ends_with('"') {
+                start += 1;
+
+                if sanitized.len() > 1 {
+                    end -= 1;
+                }
+            }
 
             TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
         }
@@ -30,22 +34,34 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     }
 }
 
-pub(crate) fn get_completion_text_with_schema_or_alias(
+pub(crate) fn with_schema_or_alias(
     ctx: &TreesitterContext,
     item_name: &str,
-    schema_or_alias_name: &str,
-) -> Option<CompletionText> {
+    schema_or_alias_name: Option<&str>,
+) -> String {
     let is_already_prefixed_with_schema_name = ctx.schema_or_alias_name.is_some();
 
-    if schema_or_alias_name == "public" || is_already_prefixed_with_schema_name {
-        None
-    } else {
-        let range = get_range_to_replace(ctx);
+    let with_quotes = node_text_surrounded_by_quotes(ctx);
 
-        Some(CompletionText {
-            text: format!("{}.{}", schema_or_alias_name, item_name),
-            range,
-            is_snippet: false,
-        })
+    let node_under_cursor_txt = ctx.get_node_under_cursor_content().unwrap_or("".into());
+    let node_under_cursor_txt = node_under_cursor_txt.as_str();
+    let is_quote_sanitized = is_sanitized_token_with_quote(node_under_cursor_txt);
+
+    if schema_or_alias_name.is_none_or(|s| s == "public") || is_already_prefixed_with_schema_name {
+        if is_quote_sanitized {
+            format!(r#"{}""#, item_name)
+        } else {
+            item_name.to_string()
+        }
+    } else {
+        let schema_or_als = schema_or_alias_name.unwrap();
+
+        if is_quote_sanitized {
+            format!(r#"{}"."{}""#, schema_or_als.replace('"', ""), item_name)
+        } else if with_quotes {
+            format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name)
+        } else {
+            format!("{}.{}", schema_or_als, item_name)
+        }
     }
 }

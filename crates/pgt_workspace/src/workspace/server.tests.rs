@@ -3,8 +3,12 @@ use std::sync::Arc;
 use biome_deserialize::{Merge, StringSet};
 use pgt_analyse::RuleCategories;
 use pgt_configuration::{
-    PartialConfiguration, database::PartialDatabaseConfiguration, files::PartialFilesConfiguration,
+    PartialConfiguration, PartialTypecheckConfiguration, database::PartialDatabaseConfiguration,
+    files::PartialFilesConfiguration,
 };
+
+#[cfg(not(target_os = "windows"))]
+use pgt_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgt_diagnostics::Diagnostic;
 use pgt_fs::PgTPath;
 use pgt_text_size::TextRange;
@@ -274,8 +278,61 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 
     assert_eq!(
         diagnostic.location().span,
-        Some(TextRange::new(115.into(), 210.into()))
+        Some(TextRange::new(124.into(), 201.into()))
     );
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
+    let conf = PartialConfiguration::init();
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let setup_sql = r"
+        create table if not exists _fetch_cycle_continuation_data (
+            next_id bigint,
+            next_state jsonb null default '{}'::jsonb
+            constraint abstract_no_data check(false) no inherit
+        );
+    ";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let content = r#"
+        create or replace function continue_fetch_cycle_prototype ()
+        returns _fetch_cycle_continuation_data language plpgsql as $prototype$
+        declare
+            result _fetch_cycle_continuation_data := null;
+        begin
+            result.next_id := 0;
+            result.next_state := '{}'::jsonb
+
+            return result;
+        end;
+        $prototype$
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
 #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
@@ -330,4 +387,409 @@ async fn test_positional_params(test_db: PgPool) {
         .diagnostics;
 
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
+
+#[cfg(all(test, not(target_os = "windows")))]
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_disable_plpgsql_check(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let setup_sql = "CREATE EXTENSION IF NOT EXISTS plpgsql_check;";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let content = r#"
+        CREATE OR REPLACE FUNCTION public.f1()
+        RETURNS void
+        LANGUAGE plpgsql
+        AS $function$
+        decare r text;
+        BEGIN
+            select '1' into into r;
+        END;
+        $function$;
+    "#;
+
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
+            .count(),
+        1,
+        "Expected one plpgsql_check diagnostic"
+    );
+
+    let _ = workspace.update_settings(UpdateSettingsParams {
+        configuration: PartialConfiguration {
+            plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
+                enabled: Some(false),
+            }),
+            ..Default::default()
+        },
+        gitignore_matches: vec![],
+        vcs_base_path: None,
+        workspace_directory: None,
+    });
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
+            .count(),
+        0,
+        "Expected no plpgsql_check diagnostic"
+    );
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_disable_typecheck(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let setup_sql = r"
+      create table users (
+          id serial primary key,
+          email text not null
+      );
+    ";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let content = r#"select name from users where id = 1;"#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "typecheck"))
+            .count(),
+        1,
+        "Expected one typecheck diagnostic"
+    );
+
+    let _ = workspace.update_settings(UpdateSettingsParams {
+        configuration: PartialConfiguration {
+            typecheck: Some(PartialTypecheckConfiguration {
+                enabled: Some(false),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+        gitignore_matches: vec![],
+        vcs_base_path: None,
+        workspace_directory: None,
+    });
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "typecheck"))
+            .count(),
+        0,
+        "Expected no typecheck diagnostic"
+    );
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_named_params(_test_db: PgPool) {
+    let conf = PartialConfiguration::init();
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let content = r#"
+SELECT
+  1
+FROM
+  assessments AS a
+WHERE
+  a.id = $assessment_id
+FOR NO KEY UPDATE;
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "syntax"))
+            .count(),
+        0,
+        "Expected no syntax diagnostic"
+    );
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_cstyle_comments(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgTPath::new("test.sql");
+
+    let content = r#"
+        /*
+         * a
+         * multi-line
+         * comment.
+         */
+        select 1; /* Another comment */
+        -- A single line comment
+        select 2; -- Another single line comment
+    "#;
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_search_path_configuration(test_db: PgPool) {
+    // Setup test schemas and functions
+    let setup_sql = r#"
+        create schema if not exists private;
+
+        create or replace function private.get_user_id() returns integer as $$
+            select 1;
+        $$ language sql;
+    "#;
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let path_glob = PgTPath::new("test_glob.sql");
+    let file_content = r#"
+        select get_user_id();  -- on private schema
+    "#;
+
+    // first check that the we get a valid typecheck
+    let mut glob_conf = PartialConfiguration::init();
+    glob_conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    // without glob
+    {
+        let workspace =
+            get_test_workspace(Some(glob_conf.clone())).expect("Unable to create test workspace");
+
+        workspace
+            .open_file(OpenFileParams {
+                path: path_glob.clone(),
+                content: file_content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+
+        let diagnostics_glob = workspace
+            .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+                path: path_glob.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics;
+
+        assert_eq!(
+            diagnostics_glob.len(),
+            1,
+            "get_user_id() should not be found in search_path"
+        );
+
+        // yep, type error!
+        assert_eq!(
+            diagnostics_glob[0].category().map(|c| c.name()),
+            Some("typecheck")
+        );
+    }
+
+    // adding the glob
+    glob_conf.merge_with(PartialConfiguration {
+        typecheck: Some(PartialTypecheckConfiguration {
+            enabled: Some(true),
+            // Adding glob pattern to match the "private" schema
+            search_path: Some(StringSet::from_iter(vec!["pr*".to_string()])),
+        }),
+        ..Default::default()
+    }); // checking with the pattern should yield no diagnostics
+
+    {
+        let workspace =
+            get_test_workspace(Some(glob_conf.clone())).expect("Unable to create test workspace");
+
+        workspace
+            .open_file(OpenFileParams {
+                path: path_glob.clone(),
+                content: file_content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+
+        let diagnostics_glob = workspace
+            .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+                path: path_glob.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics;
+
+        assert_eq!(
+            diagnostics_glob.len(),
+            0,
+            "Glob pattern should put private schema in search path"
+        );
+    }
 }

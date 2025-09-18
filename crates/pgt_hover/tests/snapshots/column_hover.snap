@@ -1,0 +1,21 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select users.id from users
+              ↑ hovered here
+```
+
+# Hover Results
+### `public.users.id`  
+```plain  
+int4 - 🔑 primary key - not null
+  
+```  
+---    
+```plain  
+
+Default: nextval('users_id_seq'::regclass)  
+```

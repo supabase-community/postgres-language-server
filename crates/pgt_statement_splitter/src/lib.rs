@@ -62,6 +62,32 @@ mod tests {
     }
 
     impl Tester {
+        fn assert_single_statement(&self) -> &Self {
+            assert_eq!(
+                self.result.ranges.len(),
+                1,
+                "Expected a single statement for input {}, got {}: {:?}",
+                self.input,
+                self.result.ranges.len(),
+                self.result
+                    .ranges
+                    .iter()
+                    .map(|r| &self.input[*r])
+                    .collect::<Vec<_>>()
+            );
+            self
+        }
+
+        fn assert_no_errors(&self) -> &Self {
+            assert!(
+                self.result.errors.is_empty(),
+                "Expected no errors, got {}: {:?}",
+                self.result.errors.len(),
+                self.result.errors
+            );
+            self
+        }
+
         fn expect_statements(&self, expected: Vec<&str>) -> &Self {
             assert_eq!(
                 self.result.ranges.len(),
@@ -112,6 +138,16 @@ mod tests {
         Tester::from("alter table foo add column bar timestamp with time zone;").expect_statements(
             vec!["alter table foo add column bar timestamp with time zone;"],
         );
+    }
+
+    #[test]
+    fn test_for_no_key_update() {
+        Tester::from(
+            "SELECT 1 FROM assessments AS a WHERE a.id = $assessment_id FOR NO KEY UPDATE;",
+        )
+        .expect_statements(vec![
+            "SELECT 1 FROM assessments AS a WHERE a.id = $assessment_id FOR NO KEY UPDATE;",
+        ]);
     }
 
     #[test]
@@ -257,6 +293,55 @@ mod tests {
     }
 
     #[test]
+    fn with_recursive() {
+        Tester::from(
+            "
+WITH RECURSIVE
+  template_questions AS (
+    -- non-recursive term that finds the ID of the template question (if any) for question_id
+    SELECT
+      tq.id,
+      tq.qid,
+      tq.course_id,
+      tq.template_directory
+    FROM
+      questions AS q
+      JOIN questions AS tq ON (
+        tq.qid = q.template_directory
+        AND tq.course_id = q.course_id
+      )
+    WHERE
+      q.id = $question_id
+      AND tq.deleted_at IS NULL
+      -- required UNION for a recursive WITH statement
+    UNION
+    -- recursive term that references template_questions again
+    SELECT
+      tq.id,
+      tq.qid,
+      tq.course_id,
+      tq.template_directory
+    FROM
+      template_questions AS q
+      JOIN questions AS tq ON (
+        tq.qid = q.template_directory
+        AND tq.course_id = q.course_id
+      )
+    WHERE
+      tq.deleted_at IS NULL
+  )
+SELECT
+  id
+FROM
+  template_questions
+LIMIT
+  100;",
+        )
+        .assert_single_statement()
+        .assert_no_errors();
+    }
+
+    #[test]
     fn with_check() {
         Tester::from("create policy employee_insert on journey_execution for insert to authenticated with check ((select private.organisation_id()) = organisation_id);")
             .expect_statements(vec!["create policy employee_insert on journey_execution for insert to authenticated with check ((select private.organisation_id()) = organisation_id);"]);
@@ -390,6 +475,14 @@ values ('insert', new.id, now());",
     #[test]
     fn with_ordinality() {
         Tester::from("insert into table (col) select 1 from other t cross join lateral jsonb_array_elements(t.buttons) with ordinality as a(b, nr) where t.buttons is not null;").expect_statements(vec!["insert into table (col) select 1 from other t cross join lateral jsonb_array_elements(t.buttons) with ordinality as a(b, nr) where t.buttons is not null;"]);
+    }
+
+    #[test]
+    fn revoke_create() {
+        Tester::from("REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;")
+            .expect_statements(vec![
+                "REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;",
+            ]);
     }
 
     #[test]

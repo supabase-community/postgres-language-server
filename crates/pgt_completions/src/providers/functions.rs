@@ -8,7 +8,7 @@ use crate::{
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 
-use super::helper::get_completion_text_with_schema_or_alias;
+use super::helper::with_schema_or_alias;
 
 pub fn complete_functions<'a>(
     ctx: &'a TreesitterContext,
@@ -35,10 +35,9 @@ pub fn complete_functions<'a>(
 }
 
 fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionText {
+    let mut text = with_schema_or_alias(ctx, func.name.as_str(), Some(func.schema.as_str()));
+
     let range = get_range_to_replace(ctx);
-    let mut text = get_completion_text_with_schema_or_alias(ctx, &func.name, &func.schema)
-        .map(|ct| ct.text)
-        .unwrap_or(func.name.to_string());
 
     if ctx.is_invocation {
         CompletionText {

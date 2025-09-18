@@ -7,6 +7,7 @@ use super::{
 
 pub(crate) fn cte(p: &mut Splitter) {
     p.expect(SyntaxKind::WITH_KW);
+    p.eat(SyntaxKind::RECURSIVE_KW);
 
     loop {
         p.expect(SyntaxKind::IDENT);

@@ -183,9 +183,9 @@ pub struct TreesitterContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
-    pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
-    pub mentioned_table_aliases: HashMap<String, String>,
-    pub mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
+    mentioned_relations: HashMap<Option<String>, HashSet<String>>,
+    mentioned_table_aliases: HashMap<String, String>,
+    mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
 }
 
 impl<'a> TreesitterContext<'a> {
@@ -749,17 +749,6 @@ impl<'a> TreesitterContext<'a> {
         }
     }
 
-    pub fn parent_matches_one_of_kind(&self, kinds: &[&'static str]) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .is_some_and(|under_cursor| match under_cursor {
-                NodeUnderCursor::TsNode(node) => node
-                    .parent()
-                    .is_some_and(|parent| kinds.contains(&parent.kind())),
-
-                NodeUnderCursor::CustomNode { .. } => false,
-            })
-    }
     pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
             match under_cursor {
@@ -783,6 +772,83 @@ impl<'a> TreesitterContext<'a> {
                     .is_some_and(|k| kinds.contains(&k.as_str())),
             }
         })
+    }
+
+    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
+    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
+    ///
+    /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
+    /// you need to pass `&["relation", "object_reference"]`.
+    pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => {
+                    let mut current = Some(*node);
+
+                    for &expected_kind in expected_ancestors.iter().rev() {
+                        current = current.and_then(|n| n.parent());
+
+                        match current {
+                            Some(ancestor) if ancestor.kind() == expected_kind => continue,
+                            _ => return false,
+                        }
+                    }
+
+                    true
+                }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
+
+    pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
+        if let Some(key) = key.as_ref() {
+            let sanitized_key = key.replace('"', "");
+
+            self.mentioned_relations
+                .get(&Some(sanitized_key.clone()))
+                .or(self
+                    .mentioned_relations
+                    .get(&Some(format!(r#""{}""#, sanitized_key))))
+        } else {
+            self.mentioned_relations.get(&None)
+        }
+    }
+
+    pub fn get_mentioned_table_for_alias(&self, key: &str) -> Option<&String> {
+        let sanitized_key = key.replace('"', "");
+
+        self.mentioned_table_aliases.get(&sanitized_key).or(self
+            .mentioned_table_aliases
+            .get(&format!(r#""{}""#, sanitized_key)))
+    }
+
+    pub fn get_used_alias_for_table(&self, table_name: &str) -> Option<String> {
+        for (alias, table) in self.mentioned_table_aliases.iter() {
+            if table == table_name {
+                return Some(alias.to_string());
+            }
+        }
+        None
+    }
+
+    pub fn get_mentioned_columns(
+        &self,
+        clause: &Option<WrappingClause<'a>>,
+    ) -> Option<&HashSet<MentionedColumn>> {
+        self.mentioned_columns.get(clause)
+    }
+
+    pub fn has_any_mentioned_relations(&self) -> bool {
+        !self.mentioned_relations.is_empty()
+    }
+
+    pub fn has_mentioned_table_aliases(&self) -> bool {
+        !self.mentioned_table_aliases.is_empty()
+    }
+
+    pub fn has_mentioned_columns(&self) -> bool {
+        !self.mentioned_columns.is_empty()
     }
 }
 

@@ -44,13 +44,13 @@ pub struct RelationMatch<'a> {
 
 impl RelationMatch<'_> {
     pub fn get_schema(&self, sql: &str) -> Option<String> {
-        let str = self
-            .schema
-            .as_ref()?
-            .utf8_text(sql.as_bytes())
-            .expect("Failed to get schema from RelationMatch");
-
-        Some(str.to_string())
+        Some(
+            self.schema
+                .as_ref()?
+                .utf8_text(sql.as_bytes())
+                .expect("Failed to get schema from RelationMatch")
+                .to_string(),
+        )
     }
 
     pub fn get_table(&self, sql: &str) -> String {
@@ -160,6 +160,29 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].get_schema(sql), Some("public".to_string()));
         assert_eq!(results[0].get_table(sql), "users");
+    }
+
+    #[test]
+    fn finds_table_with_schema_quotes() {
+        let sql = r#"select * from "public"."users";"#;
+
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(tree_sitter_sql::language()).unwrap();
+
+        let tree = parser.parse(sql, None).unwrap();
+
+        let mut executor = TreeSitterQueriesExecutor::new(tree.root_node(), sql);
+
+        executor.add_query_results::<RelationMatch>();
+
+        let results: Vec<&RelationMatch> = executor
+            .get_iter(None)
+            .filter_map(|q| q.try_into().ok())
+            .collect();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].get_schema(sql), Some(r#""public""#.to_string()));
+        assert_eq!(results[0].get_table(sql), r#""users""#);
     }
 
     #[test]

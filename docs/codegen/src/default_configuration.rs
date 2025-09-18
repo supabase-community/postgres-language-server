@@ -5,7 +5,7 @@ use crate::utils::replace_section;
 use pgt_configuration::PartialConfiguration;
 
 pub fn generate_default_configuration(docs_dir: &Path) -> anyhow::Result<()> {
-    let index_path = docs_dir.join("index.md");
+    let index_path = docs_dir.join("getting_started.md");
 
     let printed_config = format!(
         "\n```json\n{}\n```\n",

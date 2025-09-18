@@ -1,0 +1,30 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select count(*) from users
+          ↑ hovered here
+```
+
+# Hover Results
+### `pg_catalog.count("any") → bigint`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.count() → bigint`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```

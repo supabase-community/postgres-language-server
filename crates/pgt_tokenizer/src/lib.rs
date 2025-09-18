@@ -669,6 +669,13 @@ mod tests {
     }
 
     #[test]
+    fn graphile_named_param() {
+        let result =
+            lex("grant usage on schema public, app_public, app_hidden to :DATABASE_VISITOR;");
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
     fn named_param_dollar_raw() {
         let result = lex("select 1 from c where id = $id;");
         assert_debug_snapshot!(result);

@@ -1,0 +1,30 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select custom_add(1, 2)
+               ↑ hovered here
+```
+
+# Hover Results
+### `public.custom_add(a integer, b integer) → integer`  
+```plain  
+Function - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+
+CREATE OR REPLACE FUNCTION public.custom_add(a integer, b integer)
+ RETURNS integer
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+        begin
+            return a + b;
+        end;
+        $function$
+
+  
+```

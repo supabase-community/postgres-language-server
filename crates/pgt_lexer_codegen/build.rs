@@ -3,39 +3,34 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-// TODO make this selectable via feature flags
-static LIBPG_QUERY_TAG: &str = "17-6.1.0";
+static LIBPG_QUERY_TAG: &str = "17-latest";
 
-/// Downloads the `kwlist.h` file from the specified version of `libpg_query`
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let version = LIBPG_QUERY_TAG.to_string();
-
-    // Check for the postgres header file in the source tree first
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-    let headers_dir = manifest_dir.join("postgres").join(&version);
-    let kwlist_path = headers_dir.join("kwlist.h");
+    let vendor_dir = manifest_dir.join("vendor").join(LIBPG_QUERY_TAG);
+    let kwlist_path = vendor_dir.join("kwlist.h");
 
-    // Only download if the file doesn't exist
+    // Download kwlist.h if not already present in source directory
     if !kwlist_path.exists() {
         println!(
-            "cargo:warning=Downloading kwlist.h for libpg_query {}",
-            version
+            "cargo:warning=Downloading kwlist.h for libpg_query {} to source directory",
+            LIBPG_QUERY_TAG
         );
 
-        fs::create_dir_all(&headers_dir)?;
+        fs::create_dir_all(&vendor_dir)?;
 
-        let proto_url = format!(
+        let kwlist_url = format!(
             "https://raw.githubusercontent.com/pganalyze/libpg_query/{}/src/postgres/include/parser/kwlist.h",
-            version
+            LIBPG_QUERY_TAG
         );
 
-        let response = ureq::get(&proto_url).call()?;
+        let response = ureq::get(&kwlist_url).call()?;
         let content = response.into_string()?;
 
         let mut file = fs::File::create(&kwlist_path)?;
         file.write_all(content.as_bytes())?;
 
-        println!("cargo:warning=Successfully downloaded kwlist.h");
+        println!("cargo:warning=Successfully downloaded kwlist.h to source");
     }
 
     println!(
