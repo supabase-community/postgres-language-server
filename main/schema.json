@@ -356,6 +356,50 @@
       "description": "A list of rules that belong to this group",
       "type": "object",
       "properties": {
+        "addingFieldWithDefault": {
+          "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingForeignKeyConstraint": {
+          "description": "Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingNotNullField": {
+          "description": "Setting a column NOT NULL blocks reads while the table is scanned.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "addingPrimaryKeyConstraint": {
+          "description": "Adding a primary key constraint results in locks and table rewrites.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "addingRequiredField": {
           "description": "Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.",
           "anyOf": [
@@ -372,6 +416,28 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "banCharField": {
+          "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banConcurrentIndexCreationInTransaction": {
+          "description": "Concurrent index creation is not allowed within a transaction.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "banDropColumn": {
@@ -429,11 +495,187 @@
             }
           ]
         },
+        "changingColumnType": {
+          "description": "Changing a column type may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "constraintMissingNotValid": {
+          "description": "Adding constraints without NOT VALID blocks all reads and writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "disallowUniqueConstraint": {
+          "description": "Disallow adding a UNIQUE constraint without using an existing index.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigInt": {
+          "description": "Prefer BIGINT over smaller integer types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigintOverInt": {
+          "description": "Prefer BIGINT over INT/INTEGER types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferBigintOverSmallint": {
+          "description": "Prefer BIGINT over SMALLINT types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferIdentity": {
+          "description": "Prefer using IDENTITY columns over serial columns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferJsonb": {
+          "description": "Prefer JSONB over JSON types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferRobustStmts": {
+          "description": "Prefer statements with guards for robustness in migrations.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTextField": {
+          "description": "Prefer using TEXT over VARCHAR(n) types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferTimestamptz": {
+          "description": "Prefer TIMESTAMPTZ over TIMESTAMP types.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "recommended": {
           "description": "It enables the recommended rules for this group",
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "renamingColumn": {
+          "description": "Renaming columns may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renamingTable": {
+          "description": "Renaming tables may break existing queries and application code.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexCreation": {
+          "description": "Creating indexes non-concurrently can lock the table for writes.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireConcurrentIndexDeletion": {
+          "description": "Dropping indexes non-concurrently can lock the table for reads.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactionNesting": {
+          "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
