@@ -9,13 +9,34 @@ const streamPipeline = promisify(pipeline);
 const CLI_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const PACKAGES_POSTGRESTOOLS_ROOT = resolve(CLI_ROOT, "..");
 const POSTGRESTOOLS_ROOT = resolve(PACKAGES_POSTGRESTOOLS_ROOT, "../..");
-const SUPPORTED_PLATFORMS = [
-	"pc-windows-msvc",
-	"apple-darwin",
-	"unknown-linux-gnu",
-];
 const MANIFEST_PATH = resolve(CLI_ROOT, "package.json");
-const SUPPORTED_ARCHITECTURES = ["x86_64", "aarch64"];
+
+function platformArchCombinations() {
+	const SUPPORTED_PLATFORMS = [
+		"pc-windows-msvc",
+		"apple-darwin",
+		"unknown-linux-gnu",
+		"unknown-linux-musl",
+	];
+
+	const SUPPORTED_ARCHITECTURES = ["x86_64", "aarch64"];
+
+	return SUPPORTED_PLATFORMS.flatMap((platform) => {
+		return SUPPORTED_ARCHITECTURES.flatMap((arch) => {
+			// we do not support MUSL builds on aarch64, as this would
+			// require difficult cross compilation and most aarch64 users should
+			// have sufficiently modern glibc versions
+			if (platform.endsWith("musl") && arch === "aarch64") {
+				return [];
+			}
+
+			return {
+				platform,
+				arch,
+			};
+		});
+	});
+}
 
 async function downloadSchema(releaseTag, githubToken) {
 	const assetUrl = `https://github.com/supabase-community/postgres-language-server/releases/download/${releaseTag}/schema.json`;
@@ -33,7 +54,7 @@ async function downloadSchema(releaseTag, githubToken) {
 
 	// download to root.
 	const fileStream = fs.createWriteStream(
-		resolve(POSTGRESTOOLS_ROOT, "schema.json"),
+		resolve(POSTGRESTOOLS_ROOT, "schema.json")
 	);
 
 	await streamPipeline(response.body, fileStream);
@@ -56,12 +77,14 @@ async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 	if (!response.ok) {
 		const error = await response.text();
 		throw new Error(
-			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`,
+			`Failed to Fetch Asset from ${assetUrl} (Reason: ${error})`
 		);
 	}
 
 	// just download to root.
-	const fileStream = fs.createWriteStream(getBinarySource(platform, arch, os));
+	const fileStream = fs.createWriteStream(
+		getBinarySource(platform, arch, os)
+	);
 
 	await streamPipeline(response.body, fileStream);
 
@@ -72,18 +95,15 @@ async function writeManifest(packagePath, version) {
 	const manifestPath = resolve(
 		PACKAGES_POSTGRESTOOLS_ROOT,
 		packagePath,
-		"package.json",
+		"package.json"
 	);
 
 	const manifestData = JSON.parse(
-		fs.readFileSync(manifestPath).toString("utf-8"),
+		fs.readFileSync(manifestPath).toString("utf-8")
 	);
 
-	const nativePackages = SUPPORTED_PLATFORMS.flatMap((platform) =>
-		SUPPORTED_ARCHITECTURES.map((arch) => [
-			getPackageName(platform, arch),
-			version,
-		]),
+	const nativePackages = platformArchCombinations().map(
+		({ platform, arch }) => [getPackageName(platform, arch), version]
 	);
 
 	manifestData.version = version;
@@ -127,7 +147,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	switch (os) {
 		case "linux": {
-			libc = "gnu";
+			libc = platform.endsWith("musl") ? "musl" : "gnu";
 			npm_os = "linux";
 			break;
 		}
@@ -158,7 +178,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 			libc,
 		},
 		null,
-		2,
+		2
 	);
 
 	const ext = getBinaryExt(os);
@@ -172,7 +192,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	if (!fs.existsSync(binarySource)) {
 		console.error(
-			`Source for binary for ${buildName} not found at: ${binarySource}`,
+			`Source for binary for ${buildName} not found at: ${binarySource}`
 		);
 		process.exit(1);
 	}
@@ -242,15 +262,12 @@ function getVersion(releaseTag, isPrerelease) {
 	await writeManifest("postgrestools", version);
 	await writeManifest("backend-jsonrpc", version);
 
-	for (const platform of SUPPORTED_PLATFORMS) {
+	for (const { platform, arch } of platformArchCombinations()) {
 		const os = getOs(platform);
-
-		for (const arch of SUPPORTED_ARCHITECTURES) {
-			await makePackageDir(platform, arch);
-			await downloadBinary(platform, arch, os, releaseTag, githubToken);
-			copyBinaryToNativePackage(platform, arch, os);
-			copySchemaToNativePackage(platform, arch);
-		}
+		await makePackageDir(platform, arch);
+		await downloadBinary(platform, arch, os, releaseTag, githubToken);
+		copyBinaryToNativePackage(platform, arch, os);
+		copySchemaToNativePackage(platform, arch);
 	}
 
 	process.exit(0);
