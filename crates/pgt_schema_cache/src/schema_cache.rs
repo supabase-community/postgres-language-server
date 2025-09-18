@@ -63,6 +63,11 @@ impl SchemaCache {
         })
     }
 
+    pub fn find_schema(&self, name: &str) -> Option<&Schema> {
+        let sanitized_name = Self::sanitize_identifier(name);
+        self.schemas.iter().find(|s| s.name == sanitized_name)
+    }
+
     pub fn find_tables(&self, name: &str, schema: Option<&str>) -> Vec<&Table> {
         let sanitized_name = Self::sanitize_identifier(name);
         self.tables
