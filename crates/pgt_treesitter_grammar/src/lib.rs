@@ -20,8 +20,8 @@
 
 use tree_sitter_language::LanguageFn;
 
-extern "C" {
-    fn tree_sitter_pgls() -> *const ();
+unsafe extern "C" {
+    unsafe fn tree_sitter_pgls() -> *const ();
 }
 
 /// The tree-sitter [`LanguageFn`] for this grammar.

@@ -1,8 +1,7 @@
 {
-  "name": "tree-sitter-pgls",
-  "version": "0.1.0",
+  "name": "pgt-treesitter-grammar",
+  "version": "0.0.0",
   "description": "A grammar specifically designed for use with the Postgres Language Server by Supabase-Community. It is tailored to provide autocompletions and other LSP features.",
-  "repository": "https://github.com/juleswritescode/tree-sitter-pgls",
   "license": "MIT",
   "author": {
     "name": "juleswritescode",

@@ -18,7 +18,7 @@ clap                       = { version = "4.5.23", features = ["derive"] }
 pgt_schema_cache.workspace = true
 pgt_text_size.workspace    = true
 tree-sitter.workspace      = true
-tree_sitter_sql.workspace  = true
+pgt_treesitter_grammar.workspace  = true
 
 [dev-dependencies]
 pgt_test_utils.workspace = true

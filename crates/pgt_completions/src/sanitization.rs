@@ -112,7 +112,7 @@ where
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(tree_sitter_sql::language())
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
         let tree = parser.parse(sql.clone(), None).unwrap();
 
@@ -314,7 +314,7 @@ mod tests {
 
     fn get_test_params(input: &str, position: TextSize) -> CompletionParams {
         let mut ts = tree_sitter::Parser::new();
-        ts.set_language(tree_sitter_sql::language()).unwrap();
+        ts.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = Box::new(ts.parse(input, None).unwrap());
         let cache = Box::new(SchemaCache::default());
@@ -495,7 +495,7 @@ mod tests {
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(tree_sitter_sql::language())
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
         let tree = parser.parse(input, None).unwrap();

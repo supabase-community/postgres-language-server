@@ -18,7 +18,7 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         )
     )
 "#;
-    tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
+    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR).expect("Invalid TS Query")
 });
 
 #[derive(Debug)]

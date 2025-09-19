@@ -1,15 +1,14 @@
 [package]
-name = "tree-sitter-pgls"
+name = "pgt_treesitter_grammar"
 description = "A grammar specifically designed for use with the Postgres Language Server by Supabase-Community. It is tailored to provide autocompletions and other LSP features."
-version = "0.1.0"
-authors = ["juleswritescode"]
-license = "MIT"
-readme = "README.md"
-keywords = ["incremental", "parsing", "tree-sitter", "pgls"]
-categories = ["parser-implementations", "parsing", "text-editors"]
-repository = "https://github.com/juleswritescode/tree-sitter-pgls"
-edition = "2021"
-autoexamples = false
+version = "0.0.0"
+authors.workspace    = true
+categories.workspace = true
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+repository.workspace = true
 
 build = "build.rs"
 include = [

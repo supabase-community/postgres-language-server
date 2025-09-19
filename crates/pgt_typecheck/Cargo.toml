@@ -23,7 +23,7 @@ pgt_treesitter.workspace   = true
 sqlx.workspace             = true
 tokio.workspace            = true
 tree-sitter.workspace      = true
-tree_sitter_sql.workspace  = true
+pgt_treesitter_grammar.workspace  = true
 
 [dev-dependencies]
 insta.workspace          = true

@@ -33,7 +33,7 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         )+
     )
 "#;
-    tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
+    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR).expect("Invalid TS Query")
 });
 
 #[derive(Debug)]
@@ -121,7 +121,7 @@ mod tests {
         let sql = r#"select * from users;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -144,7 +144,7 @@ mod tests {
         let sql = r#"select * from public.users;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -167,7 +167,7 @@ mod tests {
         let sql = r#"select * from "public"."users";"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -190,7 +190,7 @@ mod tests {
         let sql = r#"insert into auth.accounts (id, email) values (1, 'a@b.com');"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -213,7 +213,7 @@ mod tests {
         let sql = r#"insert into users (id, email) values (1, 'a@b.com');"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -236,7 +236,7 @@ mod tests {
         let sql = r#"alter table public.users alter some_col set default 15;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -259,7 +259,7 @@ mod tests {
         let sql = r#"alter table users alter some_col set default 15;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 

@@ -24,7 +24,7 @@ sqlx.workspace             = true
 tokio                      = { version = "1.41.1", features = ["full"] }
 tracing                    = { workspace = true }
 tree-sitter.workspace      = true
-tree_sitter_sql.workspace  = true
+pgt_treesitter_grammar.workspace  = true
 
 [dev-dependencies]
 insta                    = { version = "1.42.1" }

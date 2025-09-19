@@ -48,7 +48,7 @@ strum                     = { workspace = true }
 tokio                     = { workspace = true, features = ["rt", "rt-multi-thread"] }
 tracing                   = { workspace = true, features = ["attributes", "log"] }
 tree-sitter.workspace     = true
-tree_sitter_sql.workspace = true
+pgt_treesitter_grammar.workspace = true
 
 biome_js_factory = { workspace = true, optional = true }
 biome_js_syntax  = { workspace = true, optional = true }

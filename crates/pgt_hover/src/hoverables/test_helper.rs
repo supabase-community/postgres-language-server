@@ -11,7 +11,7 @@ pub(crate) fn create_test_context(query: QueryWithCursorPosition) -> TreesitterC
     let (pos, sql) = query.get_text_and_position();
 
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(tree_sitter_sql::language()).unwrap();
+    parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
     let tree = parser.parse(sql.clone(), None).unwrap();
 
     // Leak some stuff so test setup is easier

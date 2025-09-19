@@ -16,7 +16,7 @@ fn main() {
     let query = std::fs::read_to_string(&args.file).expect("Failed to read file.");
 
     let mut parser = tree_sitter::Parser::new();
-    let lang = tree_sitter_sql::language();
+    let lang = &pgt_treesitter_grammar::LANGUAGE.into();
 
     parser.set_language(lang).expect("Setting Language failed.");
 

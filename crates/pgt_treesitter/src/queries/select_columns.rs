@@ -17,7 +17,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         ","?
     )
 "#;
-    tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
+    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
+        .expect("Invalid TS Query")
 });
 
 #[derive(Debug)]
@@ -105,7 +106,9 @@ mod tests {
         let sql = r#"select aud, id, email from auth.users;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -144,7 +147,9 @@ from
 "#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 

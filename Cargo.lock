@@ -2817,6 +2817,7 @@ dependencies = [
  "pgt_test_utils",
  "pgt_text_size",
  "pgt_treesitter",
+ "pgt_treesitter_grammar",
  "schemars",
  "serde",
  "serde_json",
@@ -2824,7 +2825,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tree-sitter 0.20.10",
- "tree_sitter_sql",
 ]
 
 [[package]]
@@ -2936,6 +2936,7 @@ dependencies = [
  "pgt_test_utils",
  "pgt_text_size",
  "pgt_treesitter",
+ "pgt_treesitter_grammar",
  "schemars",
  "serde",
  "serde_json",
@@ -2943,7 +2944,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tree-sitter 0.20.10",
- "tree_sitter_sql",
 ]
 
 [[package]]
@@ -3122,9 +3122,9 @@ dependencies = [
  "anyhow",
  "clap 4.5.23",
  "dotenv",
+ "pgt_treesitter_grammar",
  "sqlx",
  "tree-sitter 0.20.10",
- "tree_sitter_sql",
  "uuid",
 ]
 
@@ -3163,8 +3163,17 @@ dependencies = [
  "pgt_schema_cache",
  "pgt_test_utils",
  "pgt_text_size",
+ "pgt_treesitter_grammar",
  "tree-sitter 0.20.10",
- "tree_sitter_sql",
+]
+
+[[package]]
+name = "pgt_treesitter_grammar"
+version = "0.0.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.25.9",
+ "tree-sitter-language",
 ]
 
 [[package]]
@@ -3189,10 +3198,10 @@ dependencies = [
  "pgt_test_utils",
  "pgt_text_size",
  "pgt_treesitter",
+ "pgt_treesitter_grammar",
  "sqlx",
  "tokio",
  "tree-sitter 0.20.10",
- "tree_sitter_sql",
 ]
 
 [[package]]
@@ -3225,6 +3234,7 @@ dependencies = [
  "pgt_test_utils",
  "pgt_text_size",
  "pgt_tokenizer",
+ "pgt_treesitter_grammar",
  "pgt_typecheck",
  "pgt_workspace_macros",
  "regex",
@@ -3239,7 +3249,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tree-sitter 0.20.10",
- "tree_sitter_sql",
 ]
 
 [[package]]
@@ -5050,23 +5059,6 @@ name = "tree-sitter-language"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4013970217383f67b18aef68f6fb2e8d409bc5755227092d32efb0422ba24b8"
-
-[[package]]
-name = "tree-sitter-pgls"
-version = "0.1.0"
-dependencies = [
- "cc",
- "tree-sitter 0.25.9",
- "tree-sitter-language",
-]
-
-[[package]]
-name = "tree_sitter_sql"
-version = "0.0.0"
-dependencies = [
- "cc",
- "tree-sitter 0.20.10",
-]
 
 [[package]]
 name = "trybuild"
