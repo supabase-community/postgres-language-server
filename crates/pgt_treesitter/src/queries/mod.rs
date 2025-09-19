@@ -188,7 +188,9 @@ where
 "#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -254,7 +256,9 @@ where
 "#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -302,7 +306,9 @@ on sq1.id = pt.id;
 "#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -343,7 +349,9 @@ on sq1.id = pt.id;
         let sql = r#"select v_test + fn_name.custom_type.v_test2 + $3 + custom_type.v_test3;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 

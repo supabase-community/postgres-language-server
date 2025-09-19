@@ -16,7 +16,7 @@ impl TreeSitterStore {
     pub fn new() -> TreeSitterStore {
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(tree_sitter_sql::language())
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
         TreeSitterStore {

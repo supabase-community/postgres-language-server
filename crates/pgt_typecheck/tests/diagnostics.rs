@@ -16,7 +16,7 @@ async fn test(name: &str, query: &str, setup: Option<&str>, test_db: &PgPool) {
 
     let mut parser = tree_sitter::Parser::new();
     parser
-        .set_language(tree_sitter_sql::language())
+        .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
         .expect("Error loading sql language");
 
     let schema_cache = pgt_schema_cache::SchemaCache::load(test_db)

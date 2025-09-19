@@ -23,7 +23,7 @@ pub(crate) async fn get_test_deps(
 
     let mut parser = tree_sitter::Parser::new();
     parser
-        .set_language(tree_sitter_sql::language())
+        .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
         .expect("Error loading sql language");
 
     let tree = parser.parse(input.to_string(), None).unwrap();
@@ -48,7 +48,7 @@ pub(crate) async fn test_against_connection_string(
 
     let mut parser = tree_sitter::Parser::new();
     parser
-        .set_language(tree_sitter_sql::language())
+        .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
         .expect("Error loading sql language");
 
     let tree = parser.parse(input.to_string(), None).unwrap();

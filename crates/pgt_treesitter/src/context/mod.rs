@@ -206,7 +206,7 @@ impl<'a> TreesitterContext<'a> {
         };
 
         // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
-        // so the tree_sitter_sql language does not support it.
+        // so the pgt_treesitter_grammar language does not support it.
         // We infer the context manually.
         if PolicyParser::looks_like_matching_stmt(params.text) {
             ctx.gather_policy_context();
@@ -432,9 +432,12 @@ impl<'a> TreesitterContext<'a> {
             .nth(self.position)
             .is_some_and(|c| !c.is_ascii_whitespace() && !&[';', ')'].contains(&c))
         {
-            self.position = cmp::min(self.position + 1, self.text.len());
+            self.position = cmp::min(self.position, self.text.len().saturating_sub(1));
         } else {
-            self.position = cmp::min(self.position, self.text.len());
+            self.position = cmp::min(
+                self.position.saturating_sub(1),
+                self.text.len().saturating_sub(1),
+            );
         }
 
         cursor.goto_first_child_for_byte(self.position);
@@ -917,7 +920,7 @@ mod tests {
     fn get_tree(input: &str) -> tree_sitter::Tree {
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(tree_sitter_sql::language())
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
             .expect("Couldn't set language");
 
         parser.parse(input, None).expect("Unable to parse tree")

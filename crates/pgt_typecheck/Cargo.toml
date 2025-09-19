@@ -12,18 +12,18 @@ version              = "0.0.0"
 
 
 [dependencies]
-globset                    = "0.4.16"
-itertools                  = { version = "0.14.0" }
-pgt_console.workspace      = true
-pgt_diagnostics.workspace  = true
-pgt_query.workspace        = true
-pgt_schema_cache.workspace = true
-pgt_text_size.workspace    = true
-pgt_treesitter.workspace   = true
-sqlx.workspace             = true
-tokio.workspace            = true
-tree-sitter.workspace      = true
-tree_sitter_sql.workspace  = true
+globset                          = "0.4.16"
+itertools                        = { version = "0.14.0" }
+pgt_console.workspace            = true
+pgt_diagnostics.workspace        = true
+pgt_query.workspace              = true
+pgt_schema_cache.workspace       = true
+pgt_text_size.workspace          = true
+pgt_treesitter.workspace         = true
+pgt_treesitter_grammar.workspace = true
+sqlx.workspace                   = true
+tokio.workspace                  = true
+tree-sitter.workspace            = true
 
 [dev-dependencies]
 insta.workspace          = true

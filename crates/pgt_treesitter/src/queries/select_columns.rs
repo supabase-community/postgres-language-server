@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
 use crate::queries::{Query, QueryResult};
+use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
@@ -17,7 +18,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         ","?
     )
 "#;
-    tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
+    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
+        .expect("Invalid TS Query")
 });
 
 #[derive(Debug)]
@@ -70,7 +72,7 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
 
         let mut to_return = vec![];
 
-        for m in matches {
+        matches.for_each(|m| {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
                 to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
@@ -88,7 +90,7 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
                     column,
                 }));
             }
-        }
+        });
 
         to_return
     }
@@ -105,7 +107,9 @@ mod tests {
         let sql = r#"select aud, id, email from auth.users;"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -144,7 +148,9 @@ from
 "#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_sql::language()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 

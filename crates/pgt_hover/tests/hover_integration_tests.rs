@@ -20,7 +20,7 @@ async fn test_hover_at_cursor(name: &str, query: String, setup: Option<&str>, te
 
     let mut parser = tree_sitter::Parser::new();
     parser
-        .set_language(tree_sitter_sql::language())
+        .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
         .expect("Error loading sql language");
 
     let tree = parser.parse(&sql, None).unwrap();

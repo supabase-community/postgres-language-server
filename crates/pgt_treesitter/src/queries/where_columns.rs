@@ -2,6 +2,8 @@ use std::sync::LazyLock;
 
 use crate::queries::{Query, QueryResult};
 
+use tree_sitter::StreamingIterator;
+
 use super::QueryTryFrom;
 
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
@@ -18,7 +20,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         )
     )
 "#;
-    tree_sitter::Query::new(tree_sitter_sql::language(), QUERY_STR).expect("Invalid TS Query")
+    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
+        .expect("Invalid TS Query")
 });
 
 #[derive(Debug)]
@@ -71,7 +74,7 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
 
         let mut to_return = vec![];
 
-        for m in matches {
+        matches.for_each(|m| {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
                 to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
@@ -89,7 +92,7 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
                     column,
                 }));
             }
-        }
+        });
 
         to_return
     }
