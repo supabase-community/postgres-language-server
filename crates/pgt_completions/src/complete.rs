@@ -35,8 +35,6 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
         tree: &sanitized_params.tree,
     });
 
-    println!("{:#?}", ctx);
-
     let mut builder = CompletionBuilder::new(&ctx);
 
     complete_tables(&ctx, sanitized_params.schema, &mut builder);

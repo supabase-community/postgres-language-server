@@ -432,9 +432,12 @@ impl<'a> TreesitterContext<'a> {
             .nth(self.position)
             .is_some_and(|c| !c.is_ascii_whitespace() && !&[';', ')'].contains(&c))
         {
-            self.position = cmp::min(self.position + 1, self.text.len());
+            self.position = cmp::min(self.position, self.text.len().saturating_sub(1));
         } else {
-            self.position = cmp::min(self.position, self.text.len());
+            self.position = cmp::min(
+                self.position.saturating_sub(1),
+                self.text.len().saturating_sub(1),
+            );
         }
 
         cursor.goto_first_child_for_byte(self.position);
