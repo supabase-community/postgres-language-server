@@ -1,0 +1,20 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/addingFieldWithDefault
+ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;
+
+```
+
+# Diagnostics
+lint/safety/addingFieldWithDefault ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a generated column requires a table rewrite.
+  
+  i This operation requires an ACCESS EXCLUSIVE lock and rewrites the entire table.
+  
+  i Add the column as nullable, backfill existing rows, and add a trigger to update the column on write instead.

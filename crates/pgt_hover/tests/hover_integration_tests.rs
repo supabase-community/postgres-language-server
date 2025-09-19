@@ -298,3 +298,223 @@ async fn test_role_hover_alter_role(test_db: PgPool) {
 
     test_hover_at_cursor("role_alter", query, None, &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_table_hover_with_quoted_schema(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+        create table auth.users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+    "#;
+
+    let query = format!(
+        r#"select * from "auth".use{}rs"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("table_hover_quoted_schema", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_function_hover_with_quoted_schema(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+        create or replace function auth.authenticate_user(user_email text)
+        returns boolean
+        language plpgsql
+        security definer
+        as $$
+        begin
+            return exists(select 1 from auth.users where email = user_email);
+        end;
+        $$;
+    "#;
+
+    let query = format!(
+        r#"select "auth".authenticate_u{}ser('test@example.com')"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("function_hover_quoted_schema", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_column_hover_with_quoted_schema_table(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+        create table auth.user_profiles (
+            id serial primary key,
+            user_id int not null,
+            first_name varchar(100),
+            last_name varchar(100)
+        );
+    "#;
+
+    let query = format!(
+        r#"select "auth"."user_profiles".first_n{}ame from "auth"."user_profiles""#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_hover_quoted_schema_table",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_table_hover_with_quoted_table_name(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+        create table auth.users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+    "#;
+
+    let query = format!(
+        r#"select * from "auth"."use{}rs""#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "table_hover_quoted_table_name",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_column_hover_with_quoted_column_name(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+        create table auth.users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+    "#;
+
+    let query = format!(
+        r#"select "ema{}il" from auth.users"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_hover_quoted_column_name",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_column_hover_with_quoted_column_name_with_table(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+
+        create table phone_nums (
+            phone_id serial primary key,
+            email varchar(255) not null,
+            phone int
+        );
+    "#;
+
+    let query = format!(
+        r#"select phone, id from users join phone_nums on "users"."em{}ail" = phone_nums.email;"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "column_hover_quoted_column_name_with_table",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn hover_on_schemas(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+
+        create table auth.users (
+            id serial primary key,
+            email varchar(255) not null
+        );
+    "#;
+
+    let query = format!(
+        r#"select * from au{}th.users;"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("hover_on_schemas", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_policy_table_hover(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    let query = format!(
+        r#"create policy "my cool pol" on us{}ers for all to public with check (true);"#,
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("create_policy", query, None, &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_revoke_table_hover(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    let query = format!(
+        "revoke select on us{}ers from public;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("revoke_select", query, None, &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn test_grant_table_hover(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    let query = format!(
+        "grant select on us{}ers to public;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("grant_select", query, None, &test_db).await;
+}

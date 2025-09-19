@@ -15,7 +15,7 @@ pub struct SchemaCache {
     pub tables: Vec<Table>,
     pub functions: Vec<Function>,
     pub types: Vec<PostgresType>,
-    pub versions: Vec<Version>,
+    pub version: Version,
     pub columns: Vec<Column>,
     pub policies: Vec<Policy>,
     pub extensions: Vec<Extension>,
@@ -49,12 +49,17 @@ impl SchemaCache {
             Extension::load(pool),
         )?;
 
+        let version = versions
+            .into_iter()
+            .next()
+            .expect("Expected at least one version row");
+
         Ok(SchemaCache {
             schemas,
             tables,
             functions,
             types,
-            versions,
+            version,
             columns,
             policies,
             triggers,
@@ -63,46 +68,92 @@ impl SchemaCache {
         })
     }
 
+    pub fn find_schema(&self, name: &str) -> Option<&Schema> {
+        let sanitized_name = Self::sanitize_identifier(name);
+        self.schemas.iter().find(|s| s.name == sanitized_name)
+    }
+
     pub fn find_tables(&self, name: &str, schema: Option<&str>) -> Vec<&Table> {
+        let sanitized_name = Self::sanitize_identifier(name);
         self.tables
             .iter()
-            .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
+            .filter(|t| {
+                t.name == sanitized_name
+                    && schema
+                        .map(Self::sanitize_identifier)
+                        .as_deref()
+                        .is_none_or(|s| s == t.schema.as_str())
+            })
             .collect()
     }
 
     pub fn find_type(&self, name: &str, schema: Option<&str>) -> Option<&PostgresType> {
-        self.types
-            .iter()
-            .find(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
+        let sanitized_name = Self::sanitize_identifier(name);
+        self.types.iter().find(|t| {
+            t.name == sanitized_name
+                && schema
+                    .map(Self::sanitize_identifier)
+                    .as_deref()
+                    .is_none_or(|s| s == t.schema.as_str())
+        })
     }
 
     pub fn find_cols(&self, name: &str, table: Option<&str>, schema: Option<&str>) -> Vec<&Column> {
+        let sanitized_name = Self::sanitize_identifier(name);
         self.columns
             .iter()
             .filter(|c| {
-                c.name.as_str() == name
-                    && table.is_none_or(|t| t == c.table_name.as_str())
-                    && schema.is_none_or(|s| s == c.schema_name.as_str())
+                c.name.as_str() == sanitized_name
+                    && table
+                        .map(Self::sanitize_identifier)
+                        .as_deref()
+                        .is_none_or(|t| t == c.table_name.as_str())
+                    && schema
+                        .map(Self::sanitize_identifier)
+                        .as_deref()
+                        .is_none_or(|s| s == c.schema_name.as_str())
             })
             .collect()
     }
 
     pub fn find_types(&self, name: &str, schema: Option<&str>) -> Vec<&PostgresType> {
+        let sanitized_name = Self::sanitize_identifier(name);
         self.types
             .iter()
-            .filter(|t| t.name == name && schema.is_none_or(|s| s == t.schema.as_str()))
+            .filter(|t| {
+                t.name == sanitized_name
+                    && schema
+                        .map(Self::sanitize_identifier)
+                        .as_deref()
+                        .is_none_or(|s| s == t.schema.as_str())
+            })
             .collect()
     }
 
     pub fn find_functions(&self, name: &str, schema: Option<&str>) -> Vec<&Function> {
+        let sanitized_name = Self::sanitize_identifier(name);
         self.functions
             .iter()
-            .filter(|f| f.name == name && schema.is_none_or(|s| s == f.schema.as_str()))
+            .filter(|f| {
+                f.name == sanitized_name
+                    && schema
+                        .map(Self::sanitize_identifier)
+                        .as_deref()
+                        .is_none_or(|s| s == f.schema.as_str())
+            })
             .collect()
     }
 
     pub fn find_roles(&self, name: &str) -> Vec<&Role> {
-        self.roles.iter().filter(|r| r.name == name).collect()
+        let sanitized_name = Self::sanitize_identifier(name);
+        self.roles
+            .iter()
+            .filter(|r| r.name == sanitized_name)
+            .collect()
+    }
+
+    fn sanitize_identifier(identifier: &str) -> String {
+        identifier.replace('"', "")
     }
 }
 

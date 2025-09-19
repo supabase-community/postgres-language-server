@@ -20,6 +20,10 @@ pub struct OnHoverParams<'a> {
     pub ts_tree: &'a tree_sitter::Tree,
 }
 
+#[tracing::instrument(level = "debug", skip_all, fields(
+    text = params.stmt_sql,
+    position = params.position.to_string()
+))]
 pub fn on_hover(params: OnHoverParams) -> Vec<String> {
     let ctx = pgt_treesitter::context::TreesitterContext::new(TreeSitterContextParams {
         position: params.position,
@@ -101,6 +105,17 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
 
                 hovered_node::NodeIdentification::SchemaAndName(_) => vec![],
                 hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+            },
+
+            HoveredNode::Schema(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(schema_name) => params
+                    .schema_cache
+                    .find_schema(&schema_name)
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+
+                _ => vec![],
             },
 
             _ => todo!(),

@@ -63,12 +63,34 @@ export interface Advices {
 	advices: Advice[];
 }
 export type Category =
+	| "lint/safety/addingFieldWithDefault"
+	| "lint/safety/addingForeignKeyConstraint"
+	| "lint/safety/addingNotNullField"
+	| "lint/safety/addingPrimaryKeyConstraint"
 	| "lint/safety/addingRequiredField"
+	| "lint/safety/banCharField"
+	| "lint/safety/banConcurrentIndexCreationInTransaction"
 	| "lint/safety/banDropColumn"
 	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
 	| "lint/safety/banTruncateCascade"
+	| "lint/safety/changingColumnType"
+	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/preferBigInt"
+	| "lint/safety/preferBigintOverInt"
+	| "lint/safety/preferBigintOverSmallint"
+	| "lint/safety/preferIdentity"
+	| "lint/safety/preferJsonb"
+	| "lint/safety/preferRobustStmts"
+	| "lint/safety/preferTextField"
+	| "lint/safety/preferTimestamptz"
+	| "lint/safety/renamingColumn"
+	| "lint/safety/renamingTable"
+	| "lint/safety/requireConcurrentIndexCreation"
+	| "lint/safety/requireConcurrentIndexDeletion"
+	| "lint/safety/transactionNesting"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -414,6 +436,22 @@ export type VcsClientKind = "git";
  */
 export interface Safety {
 	/**
+	 * Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
+	 */
+	addingFieldWithDefault?: RuleConfiguration_for_Null;
+	/**
+	 * Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes.
+	 */
+	addingForeignKeyConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Setting a column NOT NULL blocks reads while the table is scanned.
+	 */
+	addingNotNullField?: RuleConfiguration_for_Null;
+	/**
+	 * Adding a primary key constraint results in locks and table rewrites.
+	 */
+	addingPrimaryKeyConstraint?: RuleConfiguration_for_Null;
+	/**
 	 * Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
 	 */
 	addingRequiredField?: RuleConfiguration_for_Null;
@@ -421,6 +459,14 @@ export interface Safety {
 	 * It enables ALL rules for this group.
 	 */
 	all?: boolean;
+	/**
+	 * Using CHAR(n) or CHARACTER(n) types is discouraged.
+	 */
+	banCharField?: RuleConfiguration_for_Null;
+	/**
+	 * Concurrent index creation is not allowed within a transaction.
+	 */
+	banConcurrentIndexCreationInTransaction?: RuleConfiguration_for_Null;
 	/**
 	 * Dropping a column may break existing clients.
 	 */
@@ -442,9 +488,73 @@ export interface Safety {
 	 */
 	banTruncateCascade?: RuleConfiguration_for_Null;
 	/**
+	 * Changing a column type may break existing clients.
+	 */
+	changingColumnType?: RuleConfiguration_for_Null;
+	/**
+	 * Adding constraints without NOT VALID blocks all reads and writes.
+	 */
+	constraintMissingNotValid?: RuleConfiguration_for_Null;
+	/**
+	 * Disallow adding a UNIQUE constraint without using an existing index.
+	 */
+	disallowUniqueConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer BIGINT over smaller integer types.
+	 */
+	preferBigInt?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer BIGINT over INT/INTEGER types.
+	 */
+	preferBigintOverInt?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer BIGINT over SMALLINT types.
+	 */
+	preferBigintOverSmallint?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer using IDENTITY columns over serial columns.
+	 */
+	preferIdentity?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer JSONB over JSON types.
+	 */
+	preferJsonb?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer statements with guards for robustness in migrations.
+	 */
+	preferRobustStmts?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer using TEXT over VARCHAR(n) types.
+	 */
+	preferTextField?: RuleConfiguration_for_Null;
+	/**
+	 * Prefer TIMESTAMPTZ over TIMESTAMP types.
+	 */
+	preferTimestamptz?: RuleConfiguration_for_Null;
+	/**
 	 * It enables the recommended rules for this group
 	 */
 	recommended?: boolean;
+	/**
+	 * Renaming columns may break existing queries and application code.
+	 */
+	renamingColumn?: RuleConfiguration_for_Null;
+	/**
+	 * Renaming tables may break existing queries and application code.
+	 */
+	renamingTable?: RuleConfiguration_for_Null;
+	/**
+	 * Creating indexes non-concurrently can lock the table for writes.
+	 */
+	requireConcurrentIndexCreation?: RuleConfiguration_for_Null;
+	/**
+	 * Dropping indexes non-concurrently can lock the table for reads.
+	 */
+	requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+	/**
+	 * Detects problematic transaction nesting that could lead to unexpected behavior.
+	 */
+	transactionNesting?: RuleConfiguration_for_Null;
 }
 export type RuleConfiguration_for_Null =
 	| RulePlainConfiguration

@@ -1,0 +1,18 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/banConcurrentIndexCreationInTransaction
+CREATE INDEX CONCURRENTLY "field_name_idx" ON "table_name" ("field_name");
+SELECT 1;
+```
+
+# Diagnostics
+lint/safety/banConcurrentIndexCreationInTransaction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × CREATE INDEX CONCURRENTLY cannot be used inside a transaction block.
+  
+  i Run CREATE INDEX CONCURRENTLY outside of a transaction. Migration tools usually run in transactions, so you may need to run this statement in its own migration or manually.

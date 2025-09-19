@@ -1,0 +1,17 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/requireConcurrentIndexCreation
+CREATE INDEX users_email_idx ON users (email);
+```
+
+# Diagnostics
+lint/safety/requireConcurrentIndexCreation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Creating an index non-concurrently blocks writes to the table.
+  
+  i Use CREATE INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.

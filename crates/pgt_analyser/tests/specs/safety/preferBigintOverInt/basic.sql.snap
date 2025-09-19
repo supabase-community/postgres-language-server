@@ -1,0 +1,22 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/preferBigintOverInt
+CREATE TABLE users (
+    id integer
+);
+
+```
+
+# Diagnostics
+lint/safety/preferBigintOverInt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × INTEGER type may lead to overflow issues.
+  
+  i INTEGER has a maximum value of 2,147,483,647 which can be exceeded by ID columns and counters.
+  
+  i Consider using BIGINT instead for better future-proofing.

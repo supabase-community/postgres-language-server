@@ -1,0 +1,20 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select "email" from auth.users
+           ↑ hovered here
+```
+
+# Hover Results
+### `auth.users.email`  
+```plain  
+varchar(255) - not null
+  
+```  
+---    
+```plain  
+  
+```

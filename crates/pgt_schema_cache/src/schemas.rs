@@ -7,6 +7,13 @@ pub struct Schema {
     pub id: i64,
     pub name: String,
     pub owner: String,
+    pub allowed_users: Vec<String>,
+    pub allowed_creators: Vec<String>,
+    pub table_count: i64,
+    pub view_count: i64,
+    pub function_count: i64,
+    pub total_size: String,
+    pub comment: Option<String>,
 }
 
 impl SchemaCacheItem for Schema {

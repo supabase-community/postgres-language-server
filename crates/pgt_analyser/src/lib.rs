@@ -62,25 +62,29 @@ impl<'a> Analyser<'a> {
     pub fn run(&self, params: AnalyserParams) -> Vec<RuleDiagnostic> {
         let mut diagnostics = vec![];
 
-        let mut file_context = AnalysedFileContext::default();
+        let roots: Vec<pgt_query::NodeEnum> = params.stmts.iter().map(|s| s.root.clone()).collect();
+        let mut file_context = AnalysedFileContext::new(&roots);
 
-        for stmt in params.stmts {
-            let rule_params = RegistryRuleParams {
-                root: &stmt.root,
-                options: self.options,
-                analysed_file_context: &file_context,
-                schema_cache: params.schema_cache,
-            };
+        for (i, stmt) in params.stmts.into_iter().enumerate() {
+            let stmt_diagnostics: Vec<_> = {
+                let rule_params = RegistryRuleParams {
+                    root: &roots[i],
+                    options: self.options,
+                    analysed_file_context: &file_context,
+                    schema_cache: params.schema_cache,
+                };
 
-            diagnostics.extend(
                 self.registry
                     .rules
                     .iter()
                     .flat_map(|rule| (rule.run)(&rule_params))
-                    .map(|r| r.span(stmt.range)),
-            );
+                    .map(|r| r.span(stmt.range))
+                    .collect()
+            }; // end immutable borrow
 
-            file_context.update_from(&stmt.root);
+            diagnostics.extend(stmt_diagnostics);
+
+            file_context.next();
         }
 
         diagnostics

@@ -1660,7 +1660,20 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
         loop {
             match receiver.next().await {
                 Some(ServerNotification::PublishDiagnostics(msg)) => {
-                    if !msg.diagnostics.is_empty() {
+                    if msg
+                        .diagnostics
+                        .iter()
+                        .filter(|d| {
+                            d.code.as_ref().is_none_or(|c| match c {
+                                lsp::NumberOrString::Number(_) => true,
+                                lsp::NumberOrString::String(s) => {
+                                    s != "lint/safety/addingForeignKeyConstraint"
+                                }
+                            })
+                        })
+                        .count()
+                        > 0
+                    {
                         return true;
                     }
                 }

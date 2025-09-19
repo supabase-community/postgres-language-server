@@ -1,0 +1,17 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/requireConcurrentIndexDeletion
+DROP INDEX IF EXISTS users_email_idx;
+```
+
+# Diagnostics
+lint/safety/requireConcurrentIndexDeletion ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping an index non-concurrently blocks reads and writes to the table.
+  
+  i Use DROP INDEX CONCURRENTLY to avoid blocking concurrent operations on the table.

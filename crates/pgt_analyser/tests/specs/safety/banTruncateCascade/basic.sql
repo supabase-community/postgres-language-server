@@ -1,2 +1,2 @@
--- expect_only_lint/safety/banTruncateCascade
+-- expect_lint/safety/banTruncateCascade
 truncate a cascade;

@@ -34,6 +34,12 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     }
 }
 
+pub(crate) fn only_leading_quote(ctx: &TreesitterContext) -> bool {
+    let node_under_cursor_txt = ctx.get_node_under_cursor_content().unwrap_or("".into());
+    let node_under_cursor_txt = node_under_cursor_txt.as_str();
+    is_sanitized_token_with_quote(node_under_cursor_txt)
+}
+
 pub(crate) fn with_schema_or_alias(
     ctx: &TreesitterContext,
     item_name: &str,
@@ -42,13 +48,10 @@ pub(crate) fn with_schema_or_alias(
     let is_already_prefixed_with_schema_name = ctx.schema_or_alias_name.is_some();
 
     let with_quotes = node_text_surrounded_by_quotes(ctx);
-
-    let node_under_cursor_txt = ctx.get_node_under_cursor_content().unwrap_or("".into());
-    let node_under_cursor_txt = node_under_cursor_txt.as_str();
-    let is_quote_sanitized = is_sanitized_token_with_quote(node_under_cursor_txt);
+    let single_leading_quote = only_leading_quote(ctx);
 
     if schema_or_alias_name.is_none_or(|s| s == "public") || is_already_prefixed_with_schema_name {
-        if is_quote_sanitized {
+        if single_leading_quote {
             format!(r#"{}""#, item_name)
         } else {
             item_name.to_string()
@@ -56,7 +59,7 @@ pub(crate) fn with_schema_or_alias(
     } else {
         let schema_or_als = schema_or_alias_name.unwrap();
 
-        if is_quote_sanitized {
+        if single_leading_quote {
             format!(r#"{}"."{}""#, schema_or_als.replace('"', ""), item_name)
         } else if with_quotes {
             format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name)
