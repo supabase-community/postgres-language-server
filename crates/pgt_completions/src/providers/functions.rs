@@ -274,7 +274,7 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let query = format!(
-            r#"create policy "my_pol" on public.instruments for insert with check (id = {})"#,
+            r#"create policy "my_pol" on public.coos for insert with check (id = {})"#,
             QueryWithCursorPosition::cursor_marker()
         );
 
@@ -282,6 +282,8 @@ mod tests {
             query.as_str(),
             vec![
                 CompletionAssertion::LabelNotExists("string_concat".into()),
+                CompletionAssertion::LabelAndKind("id".into(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".into(), CompletionItemKind::Column),
                 CompletionAssertion::LabelAndKind(
                     "my_cool_foo".into(),
                     CompletionItemKind::Function,

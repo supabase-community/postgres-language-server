@@ -637,6 +637,65 @@
     }
   },
   {
+    "type": "alter_policy",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "check_or_using_clause",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_alter",
+          "named": true
+        },
+        {
+          "type": "keyword_current_role",
+          "named": true
+        },
+        {
+          "type": "keyword_current_user",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_public",
+          "named": true
+        },
+        {
+          "type": "keyword_rename",
+          "named": true
+        },
+        {
+          "type": "keyword_session_user",
+          "named": true
+        },
+        {
+          "type": "keyword_to",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "alter_role",
     "named": true,
     "fields": {
@@ -3194,6 +3253,101 @@
     }
   },
   {
+    "type": "check_or_using_clause",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "array",
+          "named": true
+        },
+        {
+          "type": "between_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "case",
+          "named": true
+        },
+        {
+          "type": "cast",
+          "named": true
+        },
+        {
+          "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field",
+          "named": true
+        },
+        {
+          "type": "interval",
+          "named": true
+        },
+        {
+          "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "keyword_check",
+          "named": true
+        },
+        {
+          "type": "keyword_using",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "object_id",
+          "named": true
+        },
+        {
+          "type": "parameter",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "subquery",
+          "named": true
+        },
+        {
+          "type": "subscript",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "window_function",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "column",
     "named": true,
     "fields": {
@@ -4568,6 +4722,93 @@
         },
         {
           "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "create_policy",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "check_or_using_clause",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_all",
+          "named": true
+        },
+        {
+          "type": "keyword_as",
+          "named": true
+        },
+        {
+          "type": "keyword_create",
+          "named": true
+        },
+        {
+          "type": "keyword_current_role",
+          "named": true
+        },
+        {
+          "type": "keyword_current_user",
+          "named": true
+        },
+        {
+          "type": "keyword_delete",
+          "named": true
+        },
+        {
+          "type": "keyword_for",
+          "named": true
+        },
+        {
+          "type": "keyword_insert",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_permissive",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_public",
+          "named": true
+        },
+        {
+          "type": "keyword_restrictive",
+          "named": true
+        },
+        {
+          "type": "keyword_select",
+          "named": true
+        },
+        {
+          "type": "keyword_to",
+          "named": true
+        },
+        {
+          "type": "keyword_update",
           "named": true
         },
         {
@@ -6324,6 +6565,53 @@
         },
         {
           "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_restrict",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "drop_policy",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_cascade",
+          "named": true
+        },
+        {
+          "type": "keyword_drop",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
           "named": true
         },
         {
@@ -10374,6 +10662,10 @@
           "named": true
         },
         {
+          "type": "alter_policy",
+          "named": true
+        },
+        {
           "type": "alter_role",
           "named": true
         },
@@ -10446,6 +10738,10 @@
           "named": true
         },
         {
+          "type": "create_policy",
+          "named": true
+        },
+        {
           "type": "create_role",
           "named": true
         },
@@ -10495,6 +10791,10 @@
         },
         {
           "type": "drop_index",
+          "named": true
+        },
+        {
+          "type": "drop_policy",
           "named": true
         },
         {
@@ -13128,7 +13428,15 @@
     "named": true
   },
   {
+    "type": "keyword_current_role",
+    "named": true
+  },
+  {
     "type": "keyword_current_timestamp",
+    "named": true
+  },
+  {
+    "type": "keyword_current_user",
     "named": true
   },
   {
@@ -13772,7 +14080,15 @@
     "named": true
   },
   {
+    "type": "keyword_permissive",
+    "named": true
+  },
+  {
     "type": "keyword_plain",
+    "named": true
+  },
+  {
+    "type": "keyword_policy",
     "named": true
   },
   {
@@ -13797,6 +14113,10 @@
   },
   {
     "type": "keyword_program",
+    "named": true
+  },
+  {
+    "type": "keyword_public",
     "named": true
   },
   {
@@ -13876,6 +14196,10 @@
     "named": true
   },
   {
+    "type": "keyword_restrictive",
+    "named": true
+  },
+  {
     "type": "keyword_return",
     "named": true
   },
@@ -13945,6 +14269,10 @@
   },
   {
     "type": "keyword_session",
+    "named": true
+  },
+  {
+    "type": "keyword_session_user",
     "named": true
   },
   {

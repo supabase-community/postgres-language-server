@@ -261,6 +261,14 @@ module.exports = grammar({
     keyword_storage: (_) => make_keyword("storage"),
     keyword_compression: (_) => make_keyword("compression"),
 
+    keyword_policy: (_) => make_keyword("policy"),
+    keyword_permissive: (_) => make_keyword("permissive"),
+    keyword_restrictive: (_) => make_keyword("restrictive"),
+    keyword_public: (_) => make_keyword("public"),
+    keyword_current_role: (_) => make_keyword("current_role"),
+    keyword_current_user: (_) => make_keyword("current_user"),
+    keyword_session_user: (_) => make_keyword("session_user"),
+
     keyword_trigger: (_) => make_keyword("trigger"),
     keyword_function: (_) => make_keyword("function"),
     keyword_returns: (_) => make_keyword("returns"),
@@ -952,6 +960,7 @@ module.exports = grammar({
           $.create_sequence,
           $.create_extension,
           $.create_trigger,
+          $.create_policy,
           prec.left(seq($.create_schema, repeat($._create_statement)))
         )
       ),
@@ -1000,6 +1009,93 @@ module.exports = grammar({
             ),
             seq(repeat($._table_settings), seq($.keyword_as, $.create_query))
           )
+        )
+      ),
+
+    create_policy: ($) =>
+      seq(
+        $.keyword_create,
+        $.keyword_policy,
+        $.identifier,
+        $.keyword_on,
+        $.object_reference,
+        optional(
+          seq($.keyword_as, choice($.keyword_permissive, $.keyword_restrictive))
+        ),
+        optional(
+          seq(
+            $.keyword_for,
+            choice(
+              $.keyword_all,
+              $.keyword_select,
+              $.keyword_insert,
+              $.keyword_update,
+              $.keyword_delete
+            )
+          )
+        ),
+        optional(
+          seq(
+            $.keyword_to,
+            comma_list(
+              choice(
+                $.identifier,
+                $.keyword_public,
+                $.keyword_current_user,
+                $.keyword_current_role
+              ),
+              true
+            )
+          )
+        ),
+        optional($.check_or_using_clause)
+      ),
+
+    alter_policy: ($) =>
+      seq(
+        $.keyword_alter,
+        $.keyword_policy,
+        $.identifier,
+        $.keyword_on,
+        $.object_reference,
+        choice(
+          seq($.keyword_rename, $.keyword_to, $.identifier),
+          seq(
+            optional(
+              seq(
+                $.keyword_to,
+                choice(
+                  $.identifier,
+                  $.keyword_public,
+                  $.keyword_current_role,
+                  $.keyword_current_user,
+                  $.keyword_session_user
+                )
+              )
+            ),
+            optional($.check_or_using_clause)
+          )
+        )
+      ),
+
+    drop_policy: ($) =>
+      seq(
+        $.keyword_drop,
+        $.keyword_policy,
+        optional($._if_exists),
+        $.identifier,
+        $.keyword_on,
+        $.object_reference,
+        optional(choice($.keyword_cascade, $.keyword_restrict))
+      ),
+
+    check_or_using_clause: ($) =>
+      choice(
+        seq($.keyword_using, wrapped_in_parenthesis($._expression)),
+        seq(
+          $.keyword_with,
+          $.keyword_check,
+          wrapped_in_parenthesis($._expression)
         )
       ),
 
@@ -1587,7 +1683,8 @@ module.exports = grammar({
           $.alter_index,
           $.alter_database,
           $.alter_role,
-          $.alter_sequence
+          $.alter_sequence,
+          $.alter_policy
         )
       ),
 
@@ -1999,7 +2096,8 @@ module.exports = grammar({
           $.drop_role,
           $.drop_sequence,
           $.drop_extension,
-          $.drop_function
+          $.drop_function,
+          $.drop_policy
         )
       ),
 

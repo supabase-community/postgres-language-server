@@ -1,5 +1,4 @@
 use pgt_schema_cache::ProcKind;
-
 use pgt_treesitter::context::{NodeUnderCursor, TreesitterContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
@@ -58,8 +57,7 @@ impl CompletionFilter<'_> {
                     | Some(WrappingClause::Insert)
                     | Some(WrappingClause::DropColumn)
                     | Some(WrappingClause::AlterColumn)
-                    | Some(WrappingClause::RenameColumn)
-                    | Some(WrappingClause::PolicyCheck) => {
+                    | Some(WrappingClause::RenameColumn) => {
                         // the literal is probably a column
                     }
                     _ => return None,
@@ -162,8 +160,11 @@ impl CompletionFilter<'_> {
                                         && ctx.matches_ancestor_history(&["field"]))
                             }
 
-                            WrappingClause::PolicyCheck => {
-                                ctx.before_cursor_matches_kind(&["keyword_and", "("])
+                            WrappingClause::CheckOrUsingClause => {
+                                ctx.before_cursor_matches_kind(&["(", "keyword_and"])
+                                    || ctx.wrapping_node_kind.as_ref().is_some_and(|nk| {
+                                        matches!(nk, WrappingNode::BinaryExpression)
+                                    })
                             }
 
                             _ => false,
@@ -176,9 +177,12 @@ impl CompletionFilter<'_> {
                         | WrappingClause::Where
                         | WrappingClause::Join { .. } => true,
 
-                        WrappingClause::PolicyCheck => {
-                            ctx.before_cursor_matches_kind(&["="])
-                                && matches!(f.kind, ProcKind::Function | ProcKind::Procedure)
+                        WrappingClause::CheckOrUsingClause => {
+                            !matches!(f.kind, ProcKind::Aggregate)
+                                && (ctx.before_cursor_matches_kind(&["(", "keyword_and"])
+                                    || ctx.wrapping_node_kind.as_ref().is_some_and(|nk| {
+                                        matches!(nk, WrappingNode::BinaryExpression)
+                                    }))
                         }
 
                         _ => false,
@@ -213,7 +217,11 @@ impl CompletionFilter<'_> {
                     },
 
                     CompletionRelevanceData::Policy(_) => {
-                        matches!(clause, WrappingClause::PolicyName)
+                        matches!(
+                            clause,
+                            // not CREATE – there can't be existing policies.
+                            WrappingClause::DropPolicy | WrappingClause::AlterPolicy
+                        )
                     }
 
                     CompletionRelevanceData::Role(_) => match clause {
@@ -223,6 +231,10 @@ impl CompletionFilter<'_> {
 
                         WrappingClause::SetStatement => ctx
                             .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+
+                        WrappingClause::AlterPolicy | WrappingClause::CreatePolicy => {
+                            ctx.before_cursor_matches_kind(&["keyword_to"])
+                        }
 
                         _ => false,
                     },
