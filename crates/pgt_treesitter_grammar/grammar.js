@@ -10,7 +10,7 @@
 // @ts-check
 
 module.exports = grammar({
-  name: "sql",
+  name: "pgls",
 
   extras: ($) => [/\s\n/, /\s/, $.comment, $.marginalia],
 

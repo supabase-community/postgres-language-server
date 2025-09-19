@@ -12,7 +12,9 @@ fn sql_and_pos(sql: &str) -> (String, usize) {
 
 fn get_tree(sql: &str) -> tree_sitter::Tree {
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
+    parser
+        .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
     parser.parse(sql, None).unwrap()
 }
 

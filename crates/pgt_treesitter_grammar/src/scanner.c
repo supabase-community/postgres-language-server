@@ -15,13 +15,13 @@ typedef struct LexerState {
   char* start_tag;
 } LexerState;
 
-void *tree_sitter_sql_external_scanner_create() {
+void *tree_sitter_pgls_external_scanner_create() {
   LexerState *state = malloc(sizeof(LexerState));
   state->start_tag = NULL;
   return state;
 }
 
-void tree_sitter_sql_external_scanner_destroy(void *payload) {
+void tree_sitter_pgls_external_scanner_destroy(void *payload) {
   LexerState *state = (LexerState*)payload;
   if (state->start_tag != NULL) {
     free(state->start_tag);
@@ -80,7 +80,7 @@ static char* scan_dollar_string_tag(TSLexer *lexer) {
   }
 }
 
-bool tree_sitter_sql_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
+bool tree_sitter_pgls_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
   LexerState *state = (LexerState*)payload;
   if (valid_symbols[DOLLAR_QUOTED_STRING_START_TAG] && state->start_tag == NULL) {
     while (iswspace(lexer->lookahead)) lexer->advance(lexer, true);
@@ -158,7 +158,7 @@ bool tree_sitter_sql_external_scanner_scan(void *payload, TSLexer *lexer, const 
   return false;
 }
 
-unsigned tree_sitter_sql_external_scanner_serialize(void *payload, char *buffer) {
+unsigned tree_sitter_pgls_external_scanner_serialize(void *payload, char *buffer) {
   LexerState *state = (LexerState *)payload;
   if (state == NULL || state->start_tag == NULL) {
     return 0;
@@ -177,7 +177,7 @@ unsigned tree_sitter_sql_external_scanner_serialize(void *payload, char *buffer)
   return tag_length;
 }
 
-void tree_sitter_sql_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
+void tree_sitter_pgls_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
   LexerState *state = (LexerState *)payload;
   state->start_tag = NULL;
   // A length of 1 can't exists.

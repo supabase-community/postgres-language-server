@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
 use crate::queries::{Query, QueryResult};
+use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
@@ -71,7 +72,7 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
 
         let mut to_return = vec![];
 
-        for m in matches {
+        matches.for_each(|m| {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
                 to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
@@ -89,7 +90,7 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
                     column,
                 }));
             }
-        }
+        });
 
         to_return
     }

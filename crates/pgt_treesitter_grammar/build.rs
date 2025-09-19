@@ -6,8 +6,8 @@ fn main() {
     // regenerate parser if grammar.js changes
     println!("cargo:rerun-if-changed={}", grammar_file.to_str().unwrap());
 
-    // generate parser files if they don't exist or grammar changed
-    if !parser_path.exists() || grammar_file.exists() {
+    // generate parser if it does not exist.
+    if !parser_path.exists() || is_file_newer(grammar_file, parser_path.as_path()) {
         let output = std::process::Command::new("tree-sitter")
             .arg("generate")
             .output();
@@ -43,5 +43,16 @@ fn main() {
         println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
     }
 
-    c_config.compile("tree-sitter-pgls");
+    c_config.compile("tree_sitter_pgls");
+}
+
+fn is_file_newer(file1: &std::path::Path, file2: &std::path::Path) -> bool {
+    if !file1.exists() || !file2.exists() {
+        return true;
+    }
+
+    let modified1 = file1.metadata().unwrap().modified().unwrap();
+    let modified2 = file2.metadata().unwrap().modified().unwrap();
+
+    modified1 > modified2
 }

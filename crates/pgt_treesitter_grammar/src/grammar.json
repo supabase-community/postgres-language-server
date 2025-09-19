@@ -1,6 +1,6 @@
 {
   "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
-  "name": "sql",
+  "name": "pgls",
   "word": "_identifier",
   "rules": {
     "program": {

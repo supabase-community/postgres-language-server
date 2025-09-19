@@ -7,7 +7,7 @@
 //! let code = r#"
 //! "#;
 //! let mut parser = tree_sitter::Parser::new();
-//! let language = tree_sitter_pgls::LANGUAGE;
+//! let language = pgt_treesitter_grammar::LANGUAGE;
 //! parser
 //!     .set_language(&language.into())
 //!     .expect("Error loading Postgres Language Server parser");

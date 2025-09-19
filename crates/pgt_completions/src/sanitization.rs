@@ -314,7 +314,8 @@ mod tests {
 
     fn get_test_params(input: &str, position: TextSize) -> CompletionParams {
         let mut ts = tree_sitter::Parser::new();
-        ts.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
+        ts.set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = Box::new(ts.parse(input, None).unwrap());
         let cache = Box::new(SchemaCache::default());

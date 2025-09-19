@@ -2824,7 +2824,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -2943,7 +2943,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -3023,7 +3023,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -3124,7 +3124,7 @@ dependencies = [
  "dotenv",
  "pgt_treesitter_grammar",
  "sqlx",
- "tree-sitter 0.20.10",
+ "tree-sitter",
  "uuid",
 ]
 
@@ -3164,7 +3164,7 @@ dependencies = [
  "pgt_test_utils",
  "pgt_text_size",
  "pgt_treesitter_grammar",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -3172,7 +3172,7 @@ name = "pgt_treesitter_grammar"
 version = "0.0.0"
 dependencies = [
  "cc",
- "tree-sitter 0.25.9",
+ "tree-sitter",
  "tree-sitter-language",
 ]
 
@@ -3201,7 +3201,7 @@ dependencies = [
  "pgt_treesitter_grammar",
  "sqlx",
  "tokio",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -3248,7 +3248,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -5028,16 +5028,6 @@ dependencies = [
  "tracing-core",
  "tracing-log 0.2.0",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "tree-sitter"
-version = "0.20.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e747b1f9b7b931ed39a548c1fae149101497de3c1fc8d9e18c62c1a66c683d3d"
-dependencies = [
- "cc",
- "regex",
 ]
 
 [[package]]

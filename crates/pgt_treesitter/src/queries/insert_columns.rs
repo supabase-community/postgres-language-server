@@ -1,4 +1,5 @@
 use std::sync::LazyLock;
+use tree_sitter::StreamingIterator;
 
 use crate::queries::{Query, QueryResult};
 
@@ -16,7 +17,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         )
     )
 "#;
-    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR).expect("Invalid TS Query")
+    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
+        .expect("Invalid TS Query")
 });
 
 #[derive(Debug)]
@@ -58,14 +60,15 @@ impl<'a> Query<'a> for InsertColumnMatch<'a> {
 
         let mut to_return = vec![];
 
-        for m in matches {
+        matches.for_each(|m| {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
                 to_return.push(QueryResult::InsertClauseColumns(InsertColumnMatch {
                     column: capture,
                 }));
             }
-        }
+        });
+        {}
 
         to_return
     }
@@ -80,7 +83,9 @@ mod tests {
         let sql = r#"insert into users (id, email, name) values (1, 'a@b.com', 'Alice');"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -109,7 +114,9 @@ mod tests {
         "#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 
@@ -132,7 +139,9 @@ mod tests {
         let sql = r#"insert into users values (1, 'a@b.com', 'Alice');"#;
 
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into()).unwrap();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
 

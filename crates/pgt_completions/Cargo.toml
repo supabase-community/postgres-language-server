@@ -18,13 +18,13 @@ pgt_schema_cache.workspace = true
 pgt_text_size.workspace    = true
 pgt_treesitter.workspace   = true
 
-fuzzy-matcher             = "0.3.7"
-schemars                  = { workspace = true, optional = true }
-serde                     = { workspace = true, features = ["derive"] }
-serde_json                = { workspace = true }
-tracing                   = { workspace = true }
-tree-sitter.workspace     = true
+fuzzy-matcher                    = "0.3.7"
 pgt_treesitter_grammar.workspace = true
+schemars                         = { workspace = true, optional = true }
+serde                            = { workspace = true, features = ["derive"] }
+serde_json                       = { workspace = true }
+tracing                          = { workspace = true }
+tree-sitter.workspace            = true
 
 sqlx.workspace = true
 

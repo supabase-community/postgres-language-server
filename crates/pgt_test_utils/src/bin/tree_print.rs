@@ -16,9 +16,10 @@ fn main() {
     let query = std::fs::read_to_string(&args.file).expect("Failed to read file.");
 
     let mut parser = tree_sitter::Parser::new();
-    let lang = &pgt_treesitter_grammar::LANGUAGE.into();
 
-    parser.set_language(lang).expect("Setting Language failed.");
+    parser
+        .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+        .expect("Setting Language failed.");
 
     let tree = parser
         .parse(query.clone(), None)

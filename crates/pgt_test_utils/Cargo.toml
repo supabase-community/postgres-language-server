@@ -21,6 +21,6 @@ clap   = { version = "4.5.23", features = ["derive"] }
 dotenv = "0.15.0"
 uuid   = { version = "1.11.0", features = ["v4"] }
 
-sqlx.workspace            = true
-tree-sitter.workspace     = true
 pgt_treesitter_grammar.workspace = true
+sqlx.workspace                   = true
+tree-sitter.workspace            = true

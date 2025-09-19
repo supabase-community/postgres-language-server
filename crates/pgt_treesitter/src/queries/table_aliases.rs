@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
 use crate::queries::{Query, QueryResult};
+use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
@@ -77,7 +78,7 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
 
         let mut to_return = vec![];
 
-        for m in matches {
+        matches.for_each(|m| {
             if m.captures.len() == 3 {
                 let schema = m.captures[0].node;
                 let table = m.captures[1].node;
@@ -100,7 +101,7 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
                     schema: None,
                 }));
             }
-        }
+        });
 
         to_return
     }

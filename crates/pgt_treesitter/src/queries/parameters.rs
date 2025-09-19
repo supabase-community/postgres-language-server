@@ -2,6 +2,8 @@ use std::sync::LazyLock;
 
 use crate::queries::{Query, QueryResult};
 
+use tree_sitter::StreamingIterator;
+
 use super::QueryTryFrom;
 
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
@@ -65,19 +67,19 @@ impl<'a> Query<'a> for ParameterMatch<'a> {
 
         let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
 
-        matches
-            .filter_map(|m| {
-                let captures = m.captures;
+        let mut result = vec![];
 
-                // We expect exactly one capture for a parameter
-                if captures.len() != 1 {
-                    return None;
-                }
+        matches.for_each(|m| {
+            let captures = m.captures;
 
-                Some(QueryResult::Parameter(ParameterMatch {
+            // We expect exactly one capture for a parameter
+            if captures.len() == 1 {
+                result.push(QueryResult::Parameter(ParameterMatch {
                     node: captures[0].node,
                 }))
-            })
-            .collect()
+            }
+        });
+
+        result
     }
 }
