@@ -57,7 +57,7 @@ tracing                  = { version = "0.1.40", default-features = false, featu
 tracing-bunyan-formatter = { version = "0.3.10 " }
 tracing-subscriber       = "0.3.18"
 tree-sitter              = "0.20.10"
-tree_sitter_sql          = { path = "./lib/tree_sitter_sql", version = "0.0.0" }
+tree_sitter_sql          = { path = "./lib/tree_sitter_pgls", version = "0.0.0" }
 unicode-width            = "0.1.12"
 
 # postgres specific crates

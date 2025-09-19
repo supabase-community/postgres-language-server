@@ -2823,7 +2823,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "tree-sitter",
+ "tree-sitter 0.20.10",
  "tree_sitter_sql",
 ]
 
@@ -2942,7 +2942,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "tree-sitter",
+ "tree-sitter 0.20.10",
  "tree_sitter_sql",
 ]
 
@@ -3023,7 +3023,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "tree-sitter",
+ "tree-sitter 0.20.10",
 ]
 
 [[package]]
@@ -3123,7 +3123,7 @@ dependencies = [
  "clap 4.5.23",
  "dotenv",
  "sqlx",
- "tree-sitter",
+ "tree-sitter 0.20.10",
  "tree_sitter_sql",
  "uuid",
 ]
@@ -3163,7 +3163,7 @@ dependencies = [
  "pgt_schema_cache",
  "pgt_test_utils",
  "pgt_text_size",
- "tree-sitter",
+ "tree-sitter 0.20.10",
  "tree_sitter_sql",
 ]
 
@@ -3191,7 +3191,7 @@ dependencies = [
  "pgt_treesitter",
  "sqlx",
  "tokio",
- "tree-sitter",
+ "tree-sitter 0.20.10",
  "tree_sitter_sql",
 ]
 
@@ -3238,7 +3238,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
- "tree-sitter",
+ "tree-sitter 0.20.10",
  "tree_sitter_sql",
 ]
 
@@ -3964,10 +3964,11 @@ checksum = "56e6fa9c48d24d85fb3de5ad847117517440f6beceb7798af16b4a87d616b8d0"
 
 [[package]]
 name = "serde"
-version = "1.0.215"
+version = "1.0.225"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6513c1ad0b11a9376da888e3e0baa0077f1aed55c17f50e7b2397136129fb88f"
+checksum = "fd6c24dee235d0da097043389623fb913daddf92c76e9f5a1db88607a0bcbd1d"
 dependencies = [
+ "serde_core",
  "serde_derive",
 ]
 
@@ -3982,10 +3983,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_derive"
-version = "1.0.215"
+name = "serde_core"
+version = "1.0.225"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad1e866f866923f252f05c889987993144fb74e722403468a4ebd70c3cd756c0"
+checksum = "659356f9a0cb1e529b24c01e43ad2bdf520ec4ceaf83047b83ddcc2251f96383"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.225"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ea936adf78b1f766949a4977b91d2f5595825bd6ec079aa9543ad2685fc4516"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4005,15 +4015,16 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.133"
+version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7fceb2473b9166b2294ef05efcb65a3db80803f0b03ef86a5fc88a2b85ee377"
+checksum = "402a6f66d8c709116cf22f558eab210f5a50187f702eb4d7e5ef38d9a7f1c79c"
 dependencies = [
  "indexmap 2.7.0",
  "itoa",
  "memchr",
  "ryu",
  "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -4414,6 +4425,12 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "streaming-iterator"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
 [[package]]
 name = "stringprep"
@@ -5015,11 +5032,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "tree-sitter"
+version = "0.25.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccd2a058a86cfece0bf96f7cce1021efef9c8ed0e892ab74639173e5ed7a34fa"
+dependencies = [
+ "cc",
+ "regex",
+ "regex-syntax 0.8.5",
+ "serde_json",
+ "streaming-iterator",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-language"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4013970217383f67b18aef68f6fb2e8d409bc5755227092d32efb0422ba24b8"
+
+[[package]]
+name = "tree-sitter-pgls"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "tree-sitter 0.25.9",
+ "tree-sitter-language",
+]
+
+[[package]]
 name = "tree_sitter_sql"
 version = "0.0.0"
 dependencies = [
  "cc",
- "tree-sitter",
+ "tree-sitter 0.20.10",
 ]
 
 [[package]]
