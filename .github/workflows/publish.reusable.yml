@@ -26,6 +26,13 @@ jobs:
           node-version: lts/*
           registry-url: "https://registry.npmjs.org"
 
+      - name: Verify `jq` is installed
+        run: |
+          if ! jq --version 2>/dev/null; then
+            echo "jq not installed, required for extracting package names."
+            exit 1
+          fi
+
       - name: Generate Packages
         id: generate-packages
         run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
@@ -48,11 +55,12 @@ jobs:
         run: |
           for package in packages/@postgrestools/*; do
             version="${{ inputs.release-tag }}"
+            npm_package_name=$(jq -r ".name" "$package/package.json")
 
-            if npm view "$package@$version" version 2>/dev/null; then
-              echo "Package $package@$version already exists, skipping..."
+            if npm view "$npm_package_name@$version" version 2>/dev/null; then
+              echo "Package $npm_package_name@$version already exists, skipping..."
             else
-              echo "Publishing $package@$version..."
+              echo "Publishing $npm_package_name@$version..."
               npm publish "$package" --tag latest --access public --provenance
             fi
           done
