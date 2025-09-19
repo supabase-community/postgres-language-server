@@ -55,7 +55,7 @@ jobs:
         run: |
           for package in packages/@postgrestools/*; do
             version="${{ inputs.release-tag }}"
-            npm_package_name=$(cat "$package/package.json" | jq ".name")
+            npm_package_name=$(cat $package/package.json | jq -r ".name")
 
             if npm view "$npm_package_name@$version" version 2>/dev/null; then
               echo "Package $npm_package_name@$version already exists, skipping..."
