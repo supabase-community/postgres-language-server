@@ -11,6 +11,7 @@ alias qm := quick-modify
 # Installs the tools needed to develop
 install-tools:
 	cargo install cargo-binstall
+  cargo install tree-sitter-cli
 	cargo binstall cargo-insta taplo-cli sqlx-cli
 	cargo binstall --git "https://github.com/astral-sh/uv" uv
 	bun install
@@ -18,6 +19,7 @@ install-tools:
 # Upgrades the tools needed to develop
 upgrade-tools:
 	cargo install cargo-binstall --force
+  cargo install tree-sitter-cli --force
 	cargo binstall cargo-insta taplo-cli sqlx-cli --force
 	cargo binstall --git "https://github.com/astral-sh/uv" uv --force
 
