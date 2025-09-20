@@ -1,6 +1,6 @@
 use crate::{
-    TokenKind,
     emitter::{EventEmitter, GroupKind, LineType, ToTokens},
+    TokenKind,
 };
 
 impl ToTokens for pgt_query::NodeEnum {
@@ -801,6 +801,7 @@ impl ToTokens for pgt_query::protobuf::JoinExpr {
         e.group_start(GroupKind::JoinExpr, None, false);
 
         if let Some(ref larg) = self.larg {
+            println!("Join larg: {:#?}", larg);
             larg.to_tokens(e);
         }
 
@@ -837,11 +838,14 @@ impl ToTokens for pgt_query::protobuf::JoinExpr {
             }
         }
 
-        e.space();
+        e.indent_start();
+        e.line(LineType::SoftOrSpace);
 
         if let Some(ref rarg) = self.rarg {
             rarg.to_tokens(e);
         }
+
+        e.indent_end();
 
         if !self.using_clause.is_empty() {
             e.space();
@@ -6857,23 +6861,51 @@ impl ToTokens for pgt_query::protobuf::BoolExpr {
 
         match self.boolop() {
             BoolExprType::AndExpr => {
+                // Add indentation for multi-line AND expressions in JOIN ON clauses
+                let needs_indent = e.is_within_group(GroupKind::JoinExpr);
+                if needs_indent && self.args.len() > 1 {
+                    e.indent_start();
+                }
+                
                 for (i, arg) in self.args.iter().enumerate() {
                     if i > 0 {
-                        e.space();
+                        e.indent_start();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::AND_KW);
                         e.space();
+                        arg.to_tokens(e);
+                        e.indent_end();
+                    } else {
+                        arg.to_tokens(e);
                     }
-                    arg.to_tokens(e);
+                }
+                
+                if needs_indent && self.args.len() > 1 {
+                    e.indent_end();
                 }
             }
             BoolExprType::OrExpr => {
+                // Add indentation for multi-line OR expressions in JOIN ON clauses
+                let needs_indent = e.is_within_group(GroupKind::JoinExpr);
+                if needs_indent && self.args.len() > 1 {
+                    e.indent_start();
+                }
+                
                 for (i, arg) in self.args.iter().enumerate() {
                     if i > 0 {
-                        e.space();
+                        e.indent_start();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::OR_KW);
                         e.space();
+                        arg.to_tokens(e);
+                        e.indent_end();
+                    } else {
+                        arg.to_tokens(e);
                     }
-                    arg.to_tokens(e);
+                }
+                
+                if needs_indent && self.args.len() > 1 {
+                    e.indent_end();
                 }
             }
             BoolExprType::NotExpr => {

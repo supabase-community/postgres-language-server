@@ -15,9 +15,10 @@ WITH RECURSIVE pks_fks AS (SELECT
   ord
 FROM
   pg_constraint
-  LEFT JOIN LATERAL unnest(
-    conkey
-  ) WITH ORDINALITY AS _(col, ord) ON TRUE
+  LEFT JOIN
+    LATERAL unnest(
+      conkey
+    ) WITH ORDINALITY AS _(col, ord) ON TRUE
 WHERE contype IN ('p', 'f')
 UNION
 SELECT
@@ -35,9 +36,10 @@ SELECT
   ord
 FROM
   pg_constraint
-  LEFT JOIN LATERAL unnest(
-    confkey
-  ) WITH ORDINALITY AS _(col, ord) ON TRUE
+  LEFT JOIN
+    LATERAL unnest(
+      confkey
+    ) WITH ORDINALITY AS _(col, ord) ON TRUE
 WHERE contype = 'f'), views AS (SELECT
   c.oid AS view_id,
   n.nspname AS view_schema,
@@ -45,8 +47,10 @@ WHERE contype = 'f'), views AS (SELECT
   r.ev_action AS view_definition
 FROM
   pg_class c
-  INNER JOIN pg_namespace n ON n.oid = c.relnamespace
-  INNER JOIN pg_rewrite r ON r.ev_class = c.oid
+  INNER JOIN
+    pg_namespace n ON n.oid = c.relnamespace
+  INNER JOIN
+    pg_rewrite r ON r.ev_class = c.oid
 WHERE c.relkind IN ('v', 'm')), transform_json AS (SELECT
   view_id,
   view_schema,
@@ -165,7 +169,9 @@ SELECT
   path || tab.resorigtbl
 FROM
   recursion view
-  INNER JOIN results tab ON view.resorigtbl = tab.view_id AND view.resorigcol = tab.view_column
+  INNER JOIN
+    results tab ON view.resorigtbl = tab.view_id
+      AND view.resorigcol = tab.view_column
 WHERE NOT is_cycle), repeated_references AS (SELECT
   view_id,
   view_schema,
@@ -177,7 +183,9 @@ WHERE NOT is_cycle), repeated_references AS (SELECT
   ) AS view_columns
 FROM
   recursion
-  INNER JOIN pg_attribute vcol ON vcol.attrelid = view_id AND vcol.attnum = view_column
+  INNER JOIN
+    pg_attribute vcol ON vcol.attrelid = view_id
+      AND vcol.attnum = view_column
 GROUP BY view_id, view_schema, view_name, resorigtbl, resorigcol)
 SELECT
   sch.nspname AS table_schema,
@@ -196,10 +204,15 @@ SELECT
   ORDER BY pks_fks.ord) AS column_dependencies
 FROM
   repeated_references rep
-  INNER JOIN pks_fks USING (resorigtbl, resorigcol)
-  INNER JOIN pg_class tbl ON tbl.oid = rep.resorigtbl
-  INNER JOIN pg_attribute col ON col.attrelid = tbl.oid AND col.attnum = rep.resorigcol
-  INNER JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+  INNER JOIN
+    pks_fks USING (resorigtbl, resorigcol)
+  INNER JOIN
+    pg_class tbl ON tbl.oid = rep.resorigtbl
+  INNER JOIN
+    pg_attribute col ON col.attrelid = tbl.oid
+      AND col.attnum = rep.resorigcol
+  INNER JOIN
+    pg_namespace sch ON sch.oid = tbl.relnamespace
 GROUP BY sch.nspname, tbl.relname, rep.view_schema, rep.view_name, pks_fks.conname, pks_fks.contype, pks_fks.ncol
 HAVING ncol = array_length(
   array_agg(

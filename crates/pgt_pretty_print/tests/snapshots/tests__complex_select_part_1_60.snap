@@ -10,6 +10,8 @@ SELECT
   r.ev_action AS view_definition
 FROM
   pg_class c
-  INNER JOIN pg_namespace n ON n.oid = c.relnamespace
-  INNER JOIN pg_rewrite r ON r.ev_class = c.oid
+  INNER JOIN
+    pg_namespace n ON n.oid = c.relnamespace
+  INNER JOIN
+    pg_rewrite r ON r.ev_class = c.oid
 WHERE c.relkind IN ('v', 'm');
