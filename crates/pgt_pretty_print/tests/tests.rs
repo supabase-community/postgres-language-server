@@ -33,8 +33,6 @@ fn test_formatter(fixture: Fixture<&str>) {
     let parsed = pgt_query::parse(content).expect("Failed to parse SQL");
     let mut ast = parsed.into_root().expect("No root node found");
 
-    println!("Original AST: {:?}", ast);
-
     let mut emitter = EventEmitter::new();
     ast.to_tokens(&mut emitter);
 
@@ -47,7 +45,8 @@ fn test_formatter(fixture: Fixture<&str>) {
     let mut renderer = Renderer::new(&mut output, config);
     renderer.render(emitter.events).expect("Failed to render");
 
-    println!("Formatted output: {}", output);
+    println!("Formatted content: {}", output);
+
     let parsed_output = pgt_query::parse(&output).expect("Failed to parse SQL");
     let mut parsed_ast = parsed_output.into_root().expect("No root node found");
 
@@ -388,16 +387,19 @@ fn clear_location(node: &mut pgt_query::NodeEnum) {
             pgt_query::NodeMut::RangeTableFuncCol(n) => {
                 (*n).location = 0;
             }
-            pgt_query::NodeMut::AIndirection(_n) => {
-                // AIndirection doesn't have a location field
-            }
             pgt_query::NodeMut::RowExpr(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::BoolExpr(n) => {
                 (*n).location = 0;
             }
             pgt_query::NodeMut::GroupingFunc(n) => {
                 (*n).location = 0;
             }
             pgt_query::NodeMut::GroupingSet(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::CommonTableExpr(n) => {
                 (*n).location = 0;
             }
             _ => {}

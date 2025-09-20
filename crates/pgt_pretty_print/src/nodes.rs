@@ -694,6 +694,13 @@ impl ToTokens for pgt_query::protobuf::SelectStmt {
                     clause.to_tokens(e);
                 }
             }
+
+            if let Some(ref having) = self.having_clause {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::HAVING_KW);
+                e.space();
+                having.to_tokens(e);
+            }
         }
 
         if e.is_top_level() {
@@ -892,6 +899,21 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
             e.indent_end();
             e.line(LineType::SoftOrSpace);
             e.group_end();
+        }
+
+        if !self.agg_order.is_empty() {
+            e.space();
+            e.token(TokenKind::ORDER_KW);
+            e.space();
+            e.token(TokenKind::BY_KW);
+            e.space();
+            for (i, agg_order) in self.agg_order.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                agg_order.to_tokens(e);
+            }
         }
 
         e.token(TokenKind::R_PAREN);
@@ -1179,6 +1201,10 @@ impl ToTokens for pgt_query::protobuf::AExpr {
 
         e.group_start(GroupKind::AExpr, None, false);
 
+        if e.is_within_group(GroupKind::TypeCast) {
+            e.token(TokenKind::L_PAREN);
+        }
+
         match self.kind() {
             AExprKind::AexprOpAny | AExprKind::AexprOpAll => {
                 if let Some(ref lexpr) = self.lexpr {
@@ -1273,6 +1299,10 @@ impl ToTokens for pgt_query::protobuf::AExpr {
                     rexpr.to_tokens(e);
                 }
             }
+        }
+
+        if e.is_within_group(GroupKind::TypeCast) {
+            e.token(TokenKind::R_PAREN);
         }
 
         e.group_end();
@@ -1841,6 +1871,17 @@ impl ToTokens for pgt_query::protobuf::RangeFunction {
 impl ToTokens for pgt_query::protobuf::Alias {
     fn to_tokens(&self, e: &mut EventEmitter) {
         e.token(TokenKind::IDENT(self.aliasname.clone()));
+        if !self.colnames.is_empty() {
+            e.token(TokenKind::L_PAREN);
+            for (i, col) in self.colnames.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                col.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        }
     }
 }
 

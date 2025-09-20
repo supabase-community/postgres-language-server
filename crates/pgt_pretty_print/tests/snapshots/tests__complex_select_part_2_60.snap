@@ -1,0 +1,89 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/complex_select_part_2_60.sql
+snapshot_kind: text
+---
+SELECT
+  view_id,
+  view_schema,
+  view_name,
+  replace(
+    replace(
+      replace(
+        replace(
+          replace(
+            replace(
+              replace(
+                regexp_replace(
+                  replace(
+                    replace(
+                      replace(
+                        replace(
+                          replace(
+                            replace(
+                              replace(
+                                replace(
+                                  replace(
+                                    replace(
+                                      replace(
+                                        view_definition::text,
+                                        '<>',
+                                        '()'
+                                      ),
+                                      ',',
+                                      ''
+                                    ),
+                                    '\\{',
+                                    ''
+                                  ),
+                                  '\\}',
+                                  ''
+                                ),
+                                ' :targetList ',
+                                ',"targetList":'
+                              ),
+                              ' :resno ',
+                              ',"resno":'
+                            ),
+                            ' :resorigtbl ',
+                            ',"resorigtbl":'
+                          ),
+                          ' :resorigcol ',
+                          ',"resorigcol":'
+                        ),
+                        '{',
+                        '{ :'
+                      ),
+                      '((',
+                      '{(('
+                    ),
+                    '({',
+                    '{({'
+                  ),
+                  ' :[^}{,]+',
+                  ',"":',
+                  'g'
+                ),
+                ',"":}',
+                '}'
+              ),
+              ',"":,',
+              ','
+            ),
+            '{(',
+            '('
+          ),
+          '{,',
+          '{'
+        ),
+        '(',
+        '['
+      ),
+      ')',
+      ']'
+    ),
+    ' ',
+    ','
+  )::pg_catalog.json AS view_definition
+FROM
+  views;
