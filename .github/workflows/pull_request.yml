@@ -170,18 +170,20 @@ jobs:
       - name: Run tests
         run: cargo test --workspace
 
-  test-js-packages:
+  test-js-bindings:
     name:
       Test JS Packages
       # use the same image we use for compiling
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          # use the same images we use for compiling
-          - os: windows-2022
-          - os: ubuntu-22.04
-          - os: macos-14
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -193,8 +195,6 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-      - name: Setup Postgres
-        uses: ./.github/actions/setup-postgres
       - name: Build main binary
         run: cargo build -p pgt_cli --release
       - name: Setup Bun
