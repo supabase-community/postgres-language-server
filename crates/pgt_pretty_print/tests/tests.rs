@@ -35,6 +35,7 @@ fn test_formatter(fixture: Fixture<&str>) {
 
     let mut emitter = EventEmitter::new();
     ast.to_tokens(&mut emitter);
+    println!("Emitted events: {:?}", emitter.events);
 
     let mut output = String::new();
     let config = RenderConfig {

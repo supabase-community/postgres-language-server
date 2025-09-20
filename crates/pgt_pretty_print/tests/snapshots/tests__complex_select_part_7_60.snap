@@ -19,7 +19,11 @@ SELECT
     )
   ORDER BY pks_fks.ord) AS column_dependencies
 FROM
-  repeated_references rep INNER JOIN pks_fks USING (resorigtbl, resorigcol) INNER JOIN pg_class tbl ON tbl.oid = rep.resorigtbl INNER JOIN pg_attribute col ON col.attrelid = tbl.oid AND col.attnum = rep.resorigcol INNER JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
+  repeated_references rep
+  INNER JOIN pks_fks USING (resorigtbl, resorigcol)
+  INNER JOIN pg_class tbl ON tbl.oid = rep.resorigtbl
+  INNER JOIN pg_attribute col ON col.attrelid = tbl.oid AND col.attnum = rep.resorigcol
+  INNER JOIN pg_namespace sch ON sch.oid = tbl.relnamespace
 GROUP BY sch.nspname, tbl.relname, rep.view_schema, rep.view_name, pks_fks.conname, pks_fks.contype, pks_fks.ncol
 HAVING ncol = array_length(
   array_agg(

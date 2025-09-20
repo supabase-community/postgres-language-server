@@ -13,5 +13,6 @@ SELECT
     attname
   ) AS view_columns
 FROM
-  recursion INNER JOIN pg_attribute vcol ON vcol.attrelid = view_id AND vcol.attnum = view_column
+  recursion
+  INNER JOIN pg_attribute vcol ON vcol.attrelid = view_id AND vcol.attnum = view_column
 GROUP BY view_id, view_schema, view_name, resorigtbl, resorigcol;

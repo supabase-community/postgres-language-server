@@ -14,7 +14,8 @@ SELECT
   col AS resorigcol,
   ord
 FROM
-  pg_constraint LEFT JOIN LATERAL unnest(
+  pg_constraint
+  LEFT JOIN LATERAL unnest(
     conkey
   ) WITH ORDINALITY AS _(col, ord) ON TRUE
 WHERE contype IN ('p', 'f')
@@ -33,7 +34,8 @@ SELECT
   col,
   ord
 FROM
-  pg_constraint LEFT JOIN LATERAL unnest(
+  pg_constraint
+  LEFT JOIN LATERAL unnest(
     confkey
   ) WITH ORDINALITY AS _(col, ord) ON TRUE
 WHERE contype = 'f';

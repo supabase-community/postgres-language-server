@@ -21,5 +21,6 @@ SELECT
   tab.resorigtbl = ANY(path),
   path || tab.resorigtbl
 FROM
-  recursion view INNER JOIN results tab ON view.resorigtbl = tab.view_id AND view.resorigcol = tab.view_column
+  recursion view
+  INNER JOIN results tab ON view.resorigtbl = tab.view_id AND view.resorigcol = tab.view_column
 WHERE NOT is_cycle;

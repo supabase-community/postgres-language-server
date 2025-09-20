@@ -804,7 +804,7 @@ impl ToTokens for pgt_query::protobuf::JoinExpr {
             larg.to_tokens(e);
         }
 
-        e.space();
+        e.line(LineType::SoftOrSpace);
 
         if self.is_natural {
             e.token(TokenKind::NATURAL_KW);
