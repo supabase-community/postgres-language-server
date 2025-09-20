@@ -16,11 +16,7 @@ pub enum LayoutEvent {
     Token(TokenKind),
     Space,
     Line(LineType),
-    GroupStart {
-        id: Option<String>,
-        break_parent: bool,
-        kind: GroupKind,
-    },
+    GroupStart { kind: GroupKind },
     GroupEnd,
     IndentStart,
     IndentEnd,
@@ -47,12 +43,8 @@ impl EventEmitter {
         self.events.push(LayoutEvent::Line(line_type));
     }
 
-    pub fn group_start(&mut self, kind: GroupKind, id: Option<String>, break_parent: bool) {
-        self.events.push(LayoutEvent::GroupStart {
-            id,
-            break_parent,
-            kind,
-        });
+    pub fn group_start(&mut self, kind: GroupKind) {
+        self.events.push(LayoutEvent::GroupStart { kind });
     }
 
     pub fn is_within_group(&self, target_kind: GroupKind) -> bool {

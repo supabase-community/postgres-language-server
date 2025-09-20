@@ -87,32 +87,16 @@ impl<W: Write> Renderer<W> {
     }
 
     fn render_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
-        let should_break = self.has_break_parent(group_events);
-
-        if !should_break {
-            if let Some(single_line) = self.try_single_line(group_events) {
-                let would_fit =
-                    self.current_line_length + single_line.len() <= self.config.max_line_length;
-                if would_fit {
-                    self.write_text(&single_line)?;
-                    return Ok(());
-                }
+        if let Some(single_line) = self.try_single_line(group_events) {
+            let would_fit =
+                self.current_line_length + single_line.len() <= self.config.max_line_length;
+            if would_fit {
+                self.write_text(&single_line)?;
+                return Ok(());
             }
         }
 
         self.render_events_with_breaks(group_events)
-    }
-
-    fn has_break_parent(&self, events: &[LayoutEvent]) -> bool {
-        for event in events {
-            if let LayoutEvent::GroupStart {
-                break_parent: true, ..
-            } = event
-            {
-                return true;
-            }
-        }
-        false
     }
 
     fn render_events_with_breaks(&mut self, events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {

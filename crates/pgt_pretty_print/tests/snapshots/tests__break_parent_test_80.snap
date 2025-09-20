@@ -3,10 +3,4 @@ source: crates/pgt_pretty_print/tests/tests.rs
 input_file: crates/pgt_pretty_print/tests/data/break_parent_test_80.sql
 snapshot_kind: text
 ---
-SELECT
-  very_long_function_name(
-    short_arg,
-    other_arg
-  )
-FROM
-  test_table;
+SELECT very_long_function_name(short_arg, other_arg) FROM test_table;

@@ -5,8 +5,6 @@ snapshot_kind: text
 ---
 [
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: SelectStmt,
     },
     Token(
@@ -17,13 +15,9 @@ snapshot_kind: text
         SoftOrSpace,
     ),
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ResTarget,
     },
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ColumnRef,
     },
     Token(
@@ -66,13 +60,9 @@ snapshot_kind: text
         SoftOrSpace,
     ),
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ResTarget,
     },
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ColumnRef,
     },
     Token(
@@ -99,13 +89,9 @@ snapshot_kind: text
         SoftOrSpace,
     ),
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ResTarget,
     },
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ColumnRef,
     },
     Token(
@@ -127,8 +113,6 @@ snapshot_kind: text
     ),
     IndentStart,
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: RangeVar,
     },
     Token(
@@ -146,13 +130,9 @@ snapshot_kind: text
     ),
     Space,
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: AExpr,
     },
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ColumnRef,
     },
     Token(
@@ -169,8 +149,6 @@ snapshot_kind: text
     ),
     Space,
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: AExpr,
     },
     Space,
@@ -181,8 +159,6 @@ snapshot_kind: text
     ),
     Space,
     GroupStart {
-        id: None,
-        break_parent: false,
         kind: ColumnRef,
     },
     Token(

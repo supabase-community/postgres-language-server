@@ -1,6 +1,6 @@
 use crate::{
-    emitter::{EventEmitter, GroupKind, LineType, ToTokens},
     TokenKind,
+    emitter::{EventEmitter, GroupKind, LineType, ToTokens},
 };
 
 impl ToTokens for pgt_query::NodeEnum {
@@ -567,7 +567,7 @@ impl ToTokens for pgt_query::Node {
 
 impl ToTokens for pgt_query::protobuf::SelectStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::SelectStmt, None, false);
+        e.group_start(GroupKind::SelectStmt);
 
         if let Some(ref with_clause) = self.with_clause {
             with_clause.to_tokens(e);
@@ -713,7 +713,7 @@ impl ToTokens for pgt_query::protobuf::SelectStmt {
 
 impl ToTokens for pgt_query::protobuf::ResTarget {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ResTarget, None, false);
+        e.group_start(GroupKind::ResTarget);
 
         if e.is_within_group(GroupKind::UpdateStmt) {
             if !self.name.is_empty() {
@@ -755,7 +755,7 @@ impl ToTokens for pgt_query::protobuf::MultiAssignRef {
 
 impl ToTokens for pgt_query::protobuf::ColumnRef {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ColumnRef, None, false);
+        e.group_start(GroupKind::ColumnRef);
 
         for (i, field) in self.fields.iter().enumerate() {
             if i > 0 {
@@ -776,7 +776,7 @@ impl ToTokens for pgt_query::protobuf::String {
 
 impl ToTokens for pgt_query::protobuf::RangeVar {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RangeVar, None, false);
+        e.group_start(GroupKind::RangeVar);
 
         if !self.schemaname.is_empty() {
             e.token(TokenKind::IDENT(self.schemaname.clone()));
@@ -798,7 +798,7 @@ impl ToTokens for pgt_query::protobuf::JoinExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::JoinType;
 
-        e.group_start(GroupKind::JoinExpr, None, false);
+        e.group_start(GroupKind::JoinExpr);
 
         if let Some(ref larg) = self.larg {
             println!("Join larg: {:#?}", larg);
@@ -873,7 +873,7 @@ impl ToTokens for pgt_query::protobuf::JoinExpr {
 
 impl ToTokens for pgt_query::protobuf::FuncCall {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::FuncCall, None, false);
+        e.group_start(GroupKind::FuncCall);
 
         for (i, name) in self.funcname.iter().enumerate() {
             if i > 0 {
@@ -888,8 +888,8 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
         if self.agg_star {
             e.token(TokenKind::IDENT("*".to_string()));
         } else if !self.args.is_empty() {
-            e.group_start(GroupKind::FuncCall, None, true);
-            e.line(LineType::SoftOrSpace);
+            e.group_start(GroupKind::FuncCall);
+            e.line(LineType::Soft);
             e.indent_start();
 
             for (i, arg) in self.args.iter().enumerate() {
@@ -901,7 +901,7 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
             }
 
             e.indent_end();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
             e.group_end();
         }
 
@@ -935,7 +935,7 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
 
 impl ToTokens for pgt_query::protobuf::WindowDef {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::WindowDef, None, false);
+        e.group_start(GroupKind::WindowDef);
 
         e.token(TokenKind::L_PAREN);
 
@@ -985,7 +985,7 @@ impl ToTokens for pgt_query::protobuf::SortBy {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::{SortByDir, SortByNulls};
 
-        e.group_start(GroupKind::SortBy, None, false);
+        e.group_start(GroupKind::SortBy);
 
         if let Some(ref node) = self.node {
             node.to_tokens(e);
@@ -1026,7 +1026,7 @@ impl ToTokens for pgt_query::protobuf::SortBy {
 
 impl ToTokens for pgt_query::protobuf::InsertStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::InsertStmt, None, false);
+        e.group_start(GroupKind::InsertStmt);
 
         e.token(TokenKind::INSERT_KW);
         e.space();
@@ -1070,7 +1070,7 @@ impl ToTokens for pgt_query::protobuf::InsertStmt {
 
 impl ToTokens for pgt_query::protobuf::List {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::List, None, false);
+        e.group_start(GroupKind::List);
 
         if e.is_within_group(GroupKind::DropStmt) {
             for (i, item) in self.items.iter().enumerate() {
@@ -1120,7 +1120,7 @@ impl ToTokens for pgt_query::protobuf::List {
 
 impl ToTokens for pgt_query::protobuf::OidList {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::OidList, None, false);
+        e.group_start(GroupKind::OidList);
         for (i, item) in self.items.iter().enumerate() {
             if i > 0 {
                 e.token(TokenKind::COMMA);
@@ -1134,7 +1134,7 @@ impl ToTokens for pgt_query::protobuf::OidList {
 
 impl ToTokens for pgt_query::protobuf::IntList {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::IntList, None, false);
+        e.group_start(GroupKind::IntList);
         for (i, item) in self.items.iter().enumerate() {
             if i > 0 {
                 e.token(TokenKind::COMMA);
@@ -1173,7 +1173,7 @@ impl ToTokens for pgt_query::protobuf::AConst {
 
 impl ToTokens for pgt_query::protobuf::DeleteStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DeleteStmt, None, false);
+        e.group_start(GroupKind::DeleteStmt);
 
         e.token(TokenKind::DELETE_KW);
         e.space();
@@ -1203,7 +1203,7 @@ impl ToTokens for pgt_query::protobuf::AExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::AExprKind;
 
-        e.group_start(GroupKind::AExpr, None, false);
+        e.group_start(GroupKind::AExpr);
 
         if e.is_within_group(GroupKind::TypeCast) {
             e.token(TokenKind::L_PAREN);
@@ -1315,7 +1315,7 @@ impl ToTokens for pgt_query::protobuf::AExpr {
 
 impl ToTokens for pgt_query::protobuf::UpdateStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::UpdateStmt, None, false);
+        e.group_start(GroupKind::UpdateStmt);
 
         e.token(TokenKind::UPDATE_KW);
         e.space();
@@ -1354,7 +1354,7 @@ impl ToTokens for pgt_query::protobuf::UpdateStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateStmt, None, false);
+        e.group_start(GroupKind::CreateStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -1406,7 +1406,7 @@ impl ToTokens for pgt_query::protobuf::CreateStmt {
 
 impl ToTokens for pgt_query::protobuf::ColumnDef {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ColumnDef, None, false);
+        e.group_start(GroupKind::ColumnDef);
 
         e.token(TokenKind::IDENT(self.colname.clone()));
 
@@ -1421,7 +1421,7 @@ impl ToTokens for pgt_query::protobuf::ColumnDef {
 
 impl ToTokens for pgt_query::protobuf::TypeName {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::TypeName, None, false);
+        e.group_start(GroupKind::TypeName);
 
         for (i, name) in self.names.iter().enumerate() {
             if i > 0 {
@@ -1436,7 +1436,7 @@ impl ToTokens for pgt_query::protobuf::TypeName {
 
 impl ToTokens for pgt_query::protobuf::DropStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropStmt, None, false);
+        e.group_start(GroupKind::DropStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -1461,7 +1461,7 @@ impl ToTokens for pgt_query::protobuf::DropStmt {
 
 impl ToTokens for pgt_query::protobuf::RowCompareExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RowCompareExpr, None, false);
+        e.group_start(GroupKind::RowCompareExpr);
 
         e.token(TokenKind::L_PAREN);
         for (i, arg) in self.largs.iter().enumerate() {
@@ -1504,7 +1504,7 @@ impl ToTokens for pgt_query::protobuf::RowCompareExpr {
 
 impl ToTokens for pgt_query::protobuf::TruncateStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::TruncateStmt, None, false);
+        e.group_start(GroupKind::TruncateStmt);
 
         e.token(TokenKind::TRUNCATE_KW);
         e.space();
@@ -1529,7 +1529,7 @@ impl ToTokens for pgt_query::protobuf::TruncateStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterTableStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTableStmt, None, false);
+        e.group_start(GroupKind::AlterTableStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -1560,7 +1560,7 @@ impl ToTokens for pgt_query::protobuf::AlterTableStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterTableCmd {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTableCmd, None, false);
+        e.group_start(GroupKind::AlterTableCmd);
 
         use pgt_query::protobuf::AlterTableType;
 
@@ -1612,7 +1612,7 @@ impl ToTokens for pgt_query::protobuf::AlterTableCmd {
 
 impl ToTokens for pgt_query::protobuf::ViewStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ViewStmt, None, false);
+        e.group_start(GroupKind::ViewStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -1640,7 +1640,7 @@ impl ToTokens for pgt_query::protobuf::ViewStmt {
 
 impl ToTokens for pgt_query::protobuf::MergeStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::MergeStmt, None, false);
+        e.group_start(GroupKind::MergeStmt);
 
         e.token(TokenKind::MERGE_KW);
         e.space();
@@ -1682,7 +1682,7 @@ impl ToTokens for pgt_query::protobuf::MergeStmt {
 
 impl ToTokens for pgt_query::protobuf::MergeWhenClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::MergeWhenClause, None, false);
+        e.group_start(GroupKind::MergeWhenClause);
 
         e.token(TokenKind::WHEN_KW);
         e.space();
@@ -1752,7 +1752,7 @@ impl ToTokens for pgt_query::protobuf::MergeWhenClause {
                 }
             }
             CmdType::CmdUpdate => {
-                e.group_start(GroupKind::UpdateStmt, None, false);
+                e.group_start(GroupKind::UpdateStmt);
                 e.token(TokenKind::UPDATE_KW);
                 if !self.target_list.is_empty() {
                     e.space();
@@ -1785,7 +1785,7 @@ impl ToTokens for pgt_query::protobuf::MergeWhenClause {
 
 impl ToTokens for pgt_query::protobuf::RangeSubselect {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RangeSubselect, None, false);
+        e.group_start(GroupKind::RangeSubselect);
 
         if self.lateral {
             e.token(TokenKind::LATERAL_KW);
@@ -1811,7 +1811,7 @@ impl ToTokens for pgt_query::protobuf::RangeSubselect {
 
 impl ToTokens for pgt_query::protobuf::RangeFunction {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RangeFunction, None, false);
+        e.group_start(GroupKind::RangeFunction);
 
         if self.lateral {
             e.token(TokenKind::LATERAL_KW);
@@ -1891,7 +1891,7 @@ impl ToTokens for pgt_query::protobuf::Alias {
 
 impl ToTokens for pgt_query::protobuf::CreateSchemaStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateSchemaStmt, None, false);
+        e.group_start(GroupKind::CreateSchemaStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -1958,7 +1958,7 @@ impl ToTokens for pgt_query::protobuf::RoleSpec {
 
 impl ToTokens for pgt_query::protobuf::GrantStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::GrantStmt, None, false);
+        e.group_start(GroupKind::GrantStmt);
 
         if self.is_grant {
             e.token(TokenKind::GRANT_KW);
@@ -2101,7 +2101,7 @@ impl ToTokens for pgt_query::protobuf::AccessPriv {
 
 impl ToTokens for pgt_query::protobuf::TransactionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::TransactionStmt, None, false);
+        e.group_start(GroupKind::TransactionStmt);
 
         use pgt_query::protobuf::TransactionStmtKind;
         match self.kind() {
@@ -2186,7 +2186,7 @@ impl ToTokens for pgt_query::protobuf::TransactionStmt {
 
 impl ToTokens for pgt_query::protobuf::VariableSetStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::VariableSetStmt, None, false);
+        e.group_start(GroupKind::VariableSetStmt);
 
         use pgt_query::protobuf::VariableSetKind;
         match self.kind() {
@@ -2279,7 +2279,7 @@ impl ToTokens for pgt_query::protobuf::VariableSetStmt {
 
 impl ToTokens for pgt_query::protobuf::IndexStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::IndexStmt, None, false);
+        e.group_start(GroupKind::IndexStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -2348,7 +2348,7 @@ impl ToTokens for pgt_query::protobuf::IndexStmt {
 
 impl ToTokens for pgt_query::protobuf::IndexElem {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::IndexElem, None, false);
+        e.group_start(GroupKind::IndexElem);
 
         if let Some(ref expr) = self.expr {
             expr.to_tokens(e);
@@ -2394,7 +2394,7 @@ impl ToTokens for pgt_query::protobuf::IndexElem {
 
 impl ToTokens for pgt_query::protobuf::CopyStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CopyStmt, None, false);
+        e.group_start(GroupKind::CopyStmt);
 
         e.token(TokenKind::COPY_KW);
         e.space();
@@ -2476,7 +2476,7 @@ impl ToTokens for pgt_query::protobuf::CopyStmt {
 
 impl ToTokens for pgt_query::protobuf::DefElem {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DefElem, None, false);
+        e.group_start(GroupKind::DefElem);
 
         if self.defname == "format" {
             if let Some(ref arg) = self.arg {
@@ -2756,7 +2756,7 @@ impl ToTokens for pgt_query::protobuf::DefElem {
 
 impl ToTokens for pgt_query::protobuf::Boolean {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::Boolean, None, false);
+        e.group_start(GroupKind::Boolean);
 
         if self.boolval {
             e.token(TokenKind::TRUE_KW);
@@ -2770,7 +2770,7 @@ impl ToTokens for pgt_query::protobuf::Boolean {
 
 impl ToTokens for pgt_query::protobuf::GrantRoleStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::GrantRoleStmt, None, false);
+        e.group_start(GroupKind::GrantRoleStmt);
 
         if self.is_grant {
             e.token(TokenKind::GRANT_KW);
@@ -2813,7 +2813,7 @@ impl ToTokens for pgt_query::protobuf::GrantRoleStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterDefaultPrivilegesStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterDefaultPrivilegesStmt, None, false);
+        e.group_start(GroupKind::AlterDefaultPrivilegesStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -2836,7 +2836,7 @@ impl ToTokens for pgt_query::protobuf::AlterDefaultPrivilegesStmt {
 
 impl ToTokens for pgt_query::protobuf::VariableShowStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::VariableShowStmt, None, false);
+        e.group_start(GroupKind::VariableShowStmt);
 
         e.token(TokenKind::SHOW_KW);
         e.space();
@@ -2852,7 +2852,7 @@ impl ToTokens for pgt_query::protobuf::VariableShowStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateTableSpaceStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateTableSpaceStmt, None, false);
+        e.group_start(GroupKind::CreateTableSpaceStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -2899,7 +2899,7 @@ impl ToTokens for pgt_query::protobuf::CreateTableSpaceStmt {
 
 impl ToTokens for pgt_query::protobuf::DropTableSpaceStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropTableSpaceStmt, None, false);
+        e.group_start(GroupKind::DropTableSpaceStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -2925,7 +2925,7 @@ impl ToTokens for pgt_query::protobuf::DropTableSpaceStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterTableSpaceOptionsStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTableSpaceOptionsStmt, None, false);
+        e.group_start(GroupKind::AlterTableSpaceOptionsStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -2970,7 +2970,7 @@ impl ToTokens for pgt_query::protobuf::Float {
 
 impl ToTokens for pgt_query::protobuf::AlterTableMoveAllStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTableMoveAllStmt, None, false);
+        e.group_start(GroupKind::AlterTableMoveAllStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3036,7 +3036,7 @@ impl ToTokens for pgt_query::protobuf::AlterTableMoveAllStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateExtensionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateExtensionStmt, None, false);
+        e.group_start(GroupKind::CreateExtensionStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3071,7 +3071,7 @@ impl ToTokens for pgt_query::protobuf::CreateExtensionStmt {
 
 impl ToTokens for pgt_query::protobuf::CommentStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CommentStmt, None, false);
+        e.group_start(GroupKind::CommentStmt);
 
         e.token(TokenKind::COMMENT_KW);
         e.space();
@@ -3137,7 +3137,7 @@ impl ToTokens for pgt_query::protobuf::CommentStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterExtensionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterExtensionStmt, None, false);
+        e.group_start(GroupKind::AlterExtensionStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3162,7 +3162,7 @@ impl ToTokens for pgt_query::protobuf::AlterExtensionStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterExtensionContentsStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterExtensionContentsStmt, None, false);
+        e.group_start(GroupKind::AlterExtensionContentsStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3210,7 +3210,7 @@ impl ToTokens for pgt_query::protobuf::AlterExtensionContentsStmt {
 
 impl ToTokens for pgt_query::protobuf::ObjectWithArgs {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ObjectWithArgs, None, false);
+        e.group_start(GroupKind::ObjectWithArgs);
 
         for (i, name) in self.objname.iter().enumerate() {
             if i > 0 {
@@ -3245,7 +3245,7 @@ impl ToTokens for pgt_query::protobuf::ObjectWithArgs {
 
 impl ToTokens for pgt_query::protobuf::FunctionParameter {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::FunctionParameter, None, false);
+        e.group_start(GroupKind::FunctionParameter);
 
         if !self.name.is_empty() {
             e.token(TokenKind::IDENT(self.name.clone()));
@@ -3262,7 +3262,7 @@ impl ToTokens for pgt_query::protobuf::FunctionParameter {
 
 impl ToTokens for pgt_query::protobuf::CreateFdwStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateFdwStmt, None, false);
+        e.group_start(GroupKind::CreateFdwStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3312,7 +3312,7 @@ impl ToTokens for pgt_query::protobuf::CreateFdwStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateRoleStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateRoleStmt, None, false);
+        e.group_start(GroupKind::CreateRoleStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3347,7 +3347,7 @@ impl ToTokens for pgt_query::protobuf::CreateRoleStmt {
 
 impl ToTokens for pgt_query::protobuf::SetOperationStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::SetOperationStmt, None, false);
+        e.group_start(GroupKind::SetOperationStmt);
 
         if let Some(ref larg) = self.larg {
             larg.to_tokens(e);
@@ -3399,7 +3399,7 @@ impl ToTokens for pgt_query::protobuf::SetOperationStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateForeignServerStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateForeignServerStmt, None, false);
+        e.group_start(GroupKind::CreateForeignServerStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3465,7 +3465,7 @@ impl ToTokens for pgt_query::protobuf::CreateForeignServerStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterFdwStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterFdwStmt, None, false);
+        e.group_start(GroupKind::AlterFdwStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3515,7 +3515,7 @@ impl ToTokens for pgt_query::protobuf::AlterFdwStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterForeignServerStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterForeignServerStmt, None, false);
+        e.group_start(GroupKind::AlterForeignServerStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3559,7 +3559,7 @@ impl ToTokens for pgt_query::protobuf::AlterForeignServerStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateForeignTableStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateForeignTableStmt, None, false);
+        e.group_start(GroupKind::CreateForeignTableStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3621,7 +3621,7 @@ impl ToTokens for pgt_query::protobuf::CreateForeignTableStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateUserMappingStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateUserMappingStmt, None, false);
+        e.group_start(GroupKind::CreateUserMappingStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3678,7 +3678,7 @@ impl ToTokens for pgt_query::protobuf::CreateUserMappingStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterUserMappingStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterUserMappingStmt, None, false);
+        e.group_start(GroupKind::AlterUserMappingStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3725,7 +3725,7 @@ impl ToTokens for pgt_query::protobuf::AlterUserMappingStmt {
 
 impl ToTokens for pgt_query::protobuf::DropUserMappingStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropUserMappingStmt, None, false);
+        e.group_start(GroupKind::DropUserMappingStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -3763,7 +3763,7 @@ impl ToTokens for pgt_query::protobuf::DropUserMappingStmt {
 
 impl ToTokens for pgt_query::protobuf::ImportForeignSchemaStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ImportForeignSchemaStmt, None, false);
+        e.group_start(GroupKind::ImportForeignSchemaStmt);
 
         e.token(TokenKind::IMPORT_KW);
         e.space();
@@ -3845,7 +3845,7 @@ impl ToTokens for pgt_query::protobuf::ImportForeignSchemaStmt {
 
 impl ToTokens for pgt_query::protobuf::CreatePolicyStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreatePolicyStmt, None, false);
+        e.group_start(GroupKind::CreatePolicyStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -3929,7 +3929,7 @@ impl ToTokens for pgt_query::protobuf::CreatePolicyStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterPolicyStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterPolicyStmt, None, false);
+        e.group_start(GroupKind::AlterPolicyStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -3988,7 +3988,7 @@ impl ToTokens for pgt_query::protobuf::AlterPolicyStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateAmStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateAmStmt, None, false);
+        e.group_start(GroupKind::CreateAmStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4027,7 +4027,7 @@ impl ToTokens for pgt_query::protobuf::CreateAmStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateSeqStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateSeqStmt, None, false);
+        e.group_start(GroupKind::CreateSeqStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4065,7 +4065,7 @@ impl ToTokens for pgt_query::protobuf::CreateSeqStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterSeqStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterSeqStmt, None, false);
+        e.group_start(GroupKind::AlterSeqStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -4109,7 +4109,7 @@ impl ToTokens for pgt_query::protobuf::Integer {
 
 impl ToTokens for pgt_query::protobuf::DefineStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DefineStmt, None, false);
+        e.group_start(GroupKind::DefineStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4189,7 +4189,7 @@ impl ToTokens for pgt_query::protobuf::DefineStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateDomainStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateDomainStmt, None, false);
+        e.group_start(GroupKind::CreateDomainStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4251,7 +4251,7 @@ impl ToTokens for pgt_query::protobuf::CollateClause {
 
 impl ToTokens for pgt_query::protobuf::AlterDomainStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterDomainStmt, None, false);
+        e.group_start(GroupKind::AlterDomainStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -4366,7 +4366,7 @@ impl ToTokens for pgt_query::protobuf::AlterDomainStmt {
 
 impl ToTokens for pgt_query::protobuf::Constraint {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::Constraint, None, false);
+        e.group_start(GroupKind::Constraint);
 
         if !self.conname.is_empty() {
             e.token(TokenKind::CONSTRAINT_KW);
@@ -4427,7 +4427,7 @@ impl ToTokens for pgt_query::protobuf::Constraint {
 
 impl ToTokens for pgt_query::protobuf::CreateOpClassStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateOpClassStmt, None, false);
+        e.group_start(GroupKind::CreateOpClassStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4498,7 +4498,7 @@ impl ToTokens for pgt_query::protobuf::CreateOpClassStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateOpClassItem {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateOpClassItem, None, false);
+        e.group_start(GroupKind::CreateOpClassItem);
 
         match self.itemtype {
             1 => {
@@ -4551,7 +4551,7 @@ impl ToTokens for pgt_query::protobuf::CreateOpClassItem {
 
 impl ToTokens for pgt_query::protobuf::CreateOpFamilyStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateOpFamilyStmt, None, false);
+        e.group_start(GroupKind::CreateOpFamilyStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4582,7 +4582,7 @@ impl ToTokens for pgt_query::protobuf::CreateOpFamilyStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterOpFamilyStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterOpFamilyStmt, None, false);
+        e.group_start(GroupKind::AlterOpFamilyStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -4647,7 +4647,7 @@ impl ToTokens for pgt_query::protobuf::ReplicaIdentityStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterCollationStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterCollationStmt, None, false);
+        e.group_start(GroupKind::AlterCollationStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -4676,7 +4676,7 @@ impl ToTokens for pgt_query::protobuf::AlterCollationStmt {
 
 impl ToTokens for pgt_query::protobuf::DeclareCursorStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DeclareCursorStmt, None, false);
+        e.group_start(GroupKind::DeclareCursorStmt);
 
         e.token(TokenKind::DECLARE_KW);
         e.space();
@@ -4704,7 +4704,7 @@ impl ToTokens for pgt_query::protobuf::DeclareCursorStmt {
 
 impl ToTokens for pgt_query::protobuf::ClosePortalStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ClosePortalStmt, None, false);
+        e.group_start(GroupKind::ClosePortalStmt);
 
         e.token(TokenKind::CLOSE_KW);
         e.space();
@@ -4720,7 +4720,7 @@ impl ToTokens for pgt_query::protobuf::ClosePortalStmt {
 
 impl ToTokens for pgt_query::protobuf::SecLabelStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::SecLabelStmt, None, false);
+        e.group_start(GroupKind::SecLabelStmt);
 
         e.token(TokenKind::SECURITY_KW);
         e.space();
@@ -4786,7 +4786,7 @@ impl ToTokens for pgt_query::protobuf::AStar {
 
 impl ToTokens for pgt_query::protobuf::ReturnStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ReturnStmt, None, false);
+        e.group_start(GroupKind::ReturnStmt);
 
         e.token(TokenKind::RETURN_KW);
 
@@ -4807,7 +4807,7 @@ impl ToTokens for pgt_query::protobuf::FetchStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::FetchDirection;
 
-        e.group_start(GroupKind::FetchStmt, None, false);
+        e.group_start(GroupKind::FetchStmt);
 
         if self.ismove {
             e.token(TokenKind::MOVE_KW);
@@ -4878,7 +4878,7 @@ impl ToTokens for pgt_query::protobuf::FetchStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateStatsStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateStatsStmt, None, false);
+        e.group_start(GroupKind::CreateStatsStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -4962,7 +4962,7 @@ impl ToTokens for pgt_query::protobuf::StatsElem {
 
 impl ToTokens for pgt_query::protobuf::AlterRoleStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterRoleStmt, None, false);
+        e.group_start(GroupKind::AlterRoleStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -5001,7 +5001,7 @@ impl ToTokens for pgt_query::protobuf::AlterRoleStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterRoleSetStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterRoleSetStmt, None, false);
+        e.group_start(GroupKind::AlterRoleSetStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -5036,7 +5036,7 @@ impl ToTokens for pgt_query::protobuf::AlterRoleSetStmt {
 
 impl ToTokens for pgt_query::protobuf::DropRoleStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropRoleStmt, None, false);
+        e.group_start(GroupKind::DropRoleStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -5070,7 +5070,7 @@ impl ToTokens for pgt_query::protobuf::DropRoleStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterStatsStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterStatsStmt, None, false);
+        e.group_start(GroupKind::AlterStatsStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -5112,7 +5112,7 @@ impl ToTokens for pgt_query::protobuf::AlterStatsStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateFunctionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateFunctionStmt, None, false);
+        e.group_start(GroupKind::CreateFunctionStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -5181,7 +5181,7 @@ impl ToTokens for pgt_query::protobuf::CreateFunctionStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateTrigStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateTrigStmt, None, false);
+        e.group_start(GroupKind::CreateTrigStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -5244,7 +5244,7 @@ impl ToTokens for pgt_query::protobuf::CreateTrigStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateEventTrigStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateEventTrigStmt, None, false);
+        e.group_start(GroupKind::CreateEventTrigStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -5300,7 +5300,7 @@ impl ToTokens for pgt_query::protobuf::CreateEventTrigStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterEventTrigStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterEventTrigStmt, None, false);
+        e.group_start(GroupKind::AlterEventTrigStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -5337,7 +5337,7 @@ impl ToTokens for pgt_query::protobuf::AlterEventTrigStmt {
 
 impl ToTokens for pgt_query::protobuf::CreatePLangStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreatePlangStmt, None, false);
+        e.group_start(GroupKind::CreatePlangStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -5404,7 +5404,7 @@ impl ToTokens for pgt_query::protobuf::CreatePLangStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterFunctionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterFunctionStmt, None, false);
+        e.group_start(GroupKind::AlterFunctionStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -5444,7 +5444,7 @@ impl ToTokens for pgt_query::protobuf::AlterFunctionStmt {
 
 impl ToTokens for pgt_query::protobuf::InlineCodeBlock {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::InlineCodeBlock, None, false);
+        e.group_start(GroupKind::InlineCodeBlock);
 
         e.token(TokenKind::STRING(self.source_text.clone()));
 
@@ -5454,7 +5454,7 @@ impl ToTokens for pgt_query::protobuf::InlineCodeBlock {
 
 impl ToTokens for pgt_query::protobuf::DoStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DoStmt, None, false);
+        e.group_start(GroupKind::DoStmt);
         e.token(TokenKind::DO_KW);
 
         if !self.args.is_empty() {
@@ -5477,7 +5477,7 @@ impl ToTokens for pgt_query::protobuf::DoStmt {
 
 impl ToTokens for pgt_query::protobuf::CallStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CallStmt, None, false);
+        e.group_start(GroupKind::CallStmt);
 
         e.token(TokenKind::CALL_KW);
         e.space();
@@ -5496,7 +5496,7 @@ impl ToTokens for pgt_query::protobuf::CallStmt {
 
 impl ToTokens for pgt_query::protobuf::RenameStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RenameStmt, None, false);
+        e.group_start(GroupKind::RenameStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
 
@@ -5530,7 +5530,7 @@ impl ToTokens for pgt_query::protobuf::RenameStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterObjectDependsStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterObjectDependsStmt, None, false);
+        e.group_start(GroupKind::AlterObjectDependsStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
 
@@ -5573,7 +5573,7 @@ impl ToTokens for pgt_query::protobuf::AlterObjectDependsStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterObjectSchemaStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterObjectSchemaStmt, None, false);
+        e.group_start(GroupKind::AlterObjectSchemaStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
 
@@ -5625,7 +5625,7 @@ impl ToTokens for pgt_query::protobuf::AlterObjectSchemaStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterOwnerStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterOwnerStmt, None, false);
+        e.group_start(GroupKind::AlterOwnerStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
 
@@ -5680,7 +5680,7 @@ impl ToTokens for pgt_query::protobuf::AlterOwnerStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterOperatorStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterOperatorStmt, None, false);
+        e.group_start(GroupKind::AlterOperatorStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
         e.token(TokenKind::OPERATOR_KW);
@@ -5709,7 +5709,7 @@ impl ToTokens for pgt_query::protobuf::AlterOperatorStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterTypeStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTypeStmt, None, false);
+        e.group_start(GroupKind::AlterTypeStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
         e.token(TokenKind::TYPE_KW);
@@ -5741,7 +5741,7 @@ impl ToTokens for pgt_query::protobuf::AlterTypeStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterEnumStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterEnumStmt, None, false);
+        e.group_start(GroupKind::AlterEnumStmt);
         e.token(TokenKind::ALTER_KW);
         e.space();
         e.token(TokenKind::TYPE_KW);
@@ -5800,7 +5800,7 @@ impl ToTokens for pgt_query::protobuf::AlterEnumStmt {
 
 impl ToTokens for pgt_query::protobuf::RuleStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RuleStmt, None, false);
+        e.group_start(GroupKind::RuleStmt);
         e.token(TokenKind::CREATE_KW);
         if self.replace {
             e.space();
@@ -5876,7 +5876,7 @@ impl ToTokens for pgt_query::protobuf::RuleStmt {
 
 impl ToTokens for pgt_query::protobuf::NotifyStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::NotifyStmt, None, false);
+        e.group_start(GroupKind::NotifyStmt);
         e.token(TokenKind::NOTIFY_KW);
         e.space();
         e.token(TokenKind::IDENT(self.conditionname.clone()));
@@ -5896,7 +5896,7 @@ impl ToTokens for pgt_query::protobuf::NotifyStmt {
 
 impl ToTokens for pgt_query::protobuf::ListenStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ListenStmt, None, false);
+        e.group_start(GroupKind::ListenStmt);
         e.token(TokenKind::LISTEN_KW);
         e.space();
         e.token(TokenKind::IDENT(self.conditionname.clone()));
@@ -5910,7 +5910,7 @@ impl ToTokens for pgt_query::protobuf::ListenStmt {
 
 impl ToTokens for pgt_query::protobuf::UnlistenStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::UnlistenStmt, None, false);
+        e.group_start(GroupKind::UnlistenStmt);
         e.token(TokenKind::UNLISTEN_KW);
         e.space();
         e.token(TokenKind::IDENT(self.conditionname.clone()));
@@ -5924,7 +5924,7 @@ impl ToTokens for pgt_query::protobuf::UnlistenStmt {
 
 impl ToTokens for pgt_query::protobuf::ExecuteStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ExecuteStmt, None, false);
+        e.group_start(GroupKind::ExecuteStmt);
         e.token(TokenKind::EXECUTE_KW);
         e.space();
         e.token(TokenKind::IDENT(self.name.clone()));
@@ -5951,7 +5951,7 @@ impl ToTokens for pgt_query::protobuf::ExecuteStmt {
 
 impl ToTokens for pgt_query::protobuf::PrepareStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::PrepareStmt, None, false);
+        e.group_start(GroupKind::PrepareStmt);
         e.token(TokenKind::PREPARE_KW);
         e.space();
         e.token(TokenKind::IDENT(self.name.clone()));
@@ -5986,7 +5986,7 @@ impl ToTokens for pgt_query::protobuf::PrepareStmt {
 
 impl ToTokens for pgt_query::protobuf::ParamRef {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ParamRef, None, false);
+        e.group_start(GroupKind::ParamRef);
         e.token(TokenKind::IDENT(format!("${}", self.number)));
         e.group_end();
     }
@@ -5994,7 +5994,7 @@ impl ToTokens for pgt_query::protobuf::ParamRef {
 
 impl ToTokens for pgt_query::protobuf::DeallocateStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DeallocateStmt, None, false);
+        e.group_start(GroupKind::DeallocateStmt);
         e.token(TokenKind::DEALLOCATE_KW);
         e.space();
 
@@ -6013,7 +6013,7 @@ impl ToTokens for pgt_query::protobuf::DeallocateStmt {
 
 impl ToTokens for pgt_query::protobuf::LockStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::LockStmt, None, false);
+        e.group_start(GroupKind::LockStmt);
         e.token(TokenKind::LOCK_KW);
         e.space();
 
@@ -6128,7 +6128,7 @@ impl ToTokens for pgt_query::protobuf::LockStmt {
 
 impl ToTokens for pgt_query::protobuf::CompositeTypeStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CompositeTypeStmt, None, false);
+        e.group_start(GroupKind::CompositeTypeStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -6164,7 +6164,7 @@ impl ToTokens for pgt_query::protobuf::CompositeTypeStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateEnumStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateEnumStmt, None, false);
+        e.group_start(GroupKind::CreateEnumStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -6209,7 +6209,7 @@ impl ToTokens for pgt_query::protobuf::CreateEnumStmt {
 
 impl ToTokens for pgt_query::protobuf::PlAssignStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::PlassignStmt, None, false);
+        e.group_start(GroupKind::PlassignStmt);
 
         e.token(TokenKind::IDENT(self.name.clone()));
 
@@ -6235,7 +6235,7 @@ impl ToTokens for pgt_query::protobuf::PlAssignStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateRangeStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateRangeStmt, None, false);
+        e.group_start(GroupKind::CreateRangeStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -6279,7 +6279,7 @@ impl ToTokens for pgt_query::protobuf::CreateRangeStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateTableAsStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateTableAsStmt, None, false);
+        e.group_start(GroupKind::CreateTableAsStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -6348,7 +6348,7 @@ impl ToTokens for pgt_query::protobuf::CreateTableAsStmt {
 
 impl ToTokens for pgt_query::protobuf::RefreshMatViewStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RefreshMatViewStmt, None, false);
+        e.group_start(GroupKind::RefreshMatViewStmt);
 
         e.token(TokenKind::REFRESH_KW);
         e.space();
@@ -6385,7 +6385,7 @@ impl ToTokens for pgt_query::protobuf::RefreshMatViewStmt {
 
 impl ToTokens for pgt_query::protobuf::LoadStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::LoadStmt, None, false);
+        e.group_start(GroupKind::LoadStmt);
 
         e.token(TokenKind::LOAD_KW);
         e.space();
@@ -6401,7 +6401,7 @@ impl ToTokens for pgt_query::protobuf::LoadStmt {
 
 impl ToTokens for pgt_query::protobuf::CreatedbStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreatedbStmt, None, false);
+        e.group_start(GroupKind::CreatedbStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -6423,7 +6423,7 @@ impl ToTokens for pgt_query::protobuf::CreatedbStmt {
 
 impl ToTokens for pgt_query::protobuf::DropdbStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropdbStmt, None, false);
+        e.group_start(GroupKind::DropdbStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -6453,7 +6453,7 @@ impl ToTokens for pgt_query::protobuf::DropdbStmt {
 
 impl ToTokens for pgt_query::protobuf::ClusterStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ClusterStmt, None, false);
+        e.group_start(GroupKind::ClusterStmt);
 
         e.token(TokenKind::CLUSTER_KW);
 
@@ -6483,7 +6483,7 @@ impl ToTokens for pgt_query::protobuf::ClusterStmt {
 
 impl ToTokens for pgt_query::protobuf::VacuumStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::VacuumStmt, None, false);
+        e.group_start(GroupKind::VacuumStmt);
 
         if self.is_vacuumcmd {
             e.token(TokenKind::VACUUM_KW);
@@ -6541,7 +6541,7 @@ impl ToTokens for pgt_query::protobuf::VacuumRelation {
 
 impl ToTokens for pgt_query::protobuf::ExplainStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ExplainStmt, None, false);
+        e.group_start(GroupKind::ExplainStmt);
 
         e.token(TokenKind::EXPLAIN_KW);
 
@@ -6564,7 +6564,7 @@ impl ToTokens for pgt_query::protobuf::ExplainStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterDatabaseSetStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterDatabaseSetStmt, None, false);
+        e.group_start(GroupKind::AlterDatabaseSetStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -6587,7 +6587,7 @@ impl ToTokens for pgt_query::protobuf::AlterDatabaseSetStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterDatabaseRefreshCollStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterDatabaseRefreshCollStmt, None, false);
+        e.group_start(GroupKind::AlterDatabaseRefreshCollStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -6611,7 +6611,7 @@ impl ToTokens for pgt_query::protobuf::AlterDatabaseRefreshCollStmt {
 
 impl ToTokens for pgt_query::protobuf::CheckPointStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CheckPointStmt, None, false);
+        e.group_start(GroupKind::CheckPointStmt);
 
         e.token(TokenKind::CHECKPOINT_KW);
 
@@ -6627,7 +6627,7 @@ impl ToTokens for pgt_query::protobuf::DiscardStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::DiscardMode;
 
-        e.group_start(GroupKind::DiscardStmt, None, false);
+        e.group_start(GroupKind::DiscardStmt);
 
         e.token(TokenKind::DISCARD_KW);
         e.space();
@@ -6650,7 +6650,7 @@ impl ToTokens for pgt_query::protobuf::DiscardStmt {
 
 impl ToTokens for pgt_query::protobuf::ConstraintsSetStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ConstraintsSetStmt, None, false);
+        e.group_start(GroupKind::ConstraintsSetStmt);
 
         e.token(TokenKind::SET_KW);
         e.space();
@@ -6690,7 +6690,7 @@ impl ToTokens for pgt_query::protobuf::ReindexStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::ReindexObjectType;
 
-        e.group_start(GroupKind::ReindexStmt, None, false);
+        e.group_start(GroupKind::ReindexStmt);
 
         e.token(TokenKind::REINDEX_KW);
 
@@ -6725,7 +6725,7 @@ impl ToTokens for pgt_query::protobuf::ReindexStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterDatabaseStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterDatabaseStmt, None, false);
+        e.group_start(GroupKind::AlterDatabaseStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -6755,7 +6755,7 @@ impl ToTokens for pgt_query::protobuf::AlterDatabaseStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterSystemStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterSystemStmt, None, false);
+        e.group_start(GroupKind::AlterSystemStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -6789,7 +6789,7 @@ impl ToTokens for pgt_query::protobuf::BitString {
 
 impl ToTokens for pgt_query::protobuf::TypeCast {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::TypeCast, None, false);
+        e.group_start(GroupKind::TypeCast);
 
         if let Some(ref arg) = self.arg {
             arg.to_tokens(e);
@@ -6834,7 +6834,7 @@ impl ToTokens for pgt_query::protobuf::OpExpr {
 
 impl ToTokens for pgt_query::protobuf::ScalarArrayOpExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ScalarArrayOpExpr, None, false);
+        e.group_start(GroupKind::ScalarArrayOpExpr);
 
         if self.args.len() >= 2 {
             self.args[0].to_tokens(e);
@@ -6866,7 +6866,7 @@ impl ToTokens for pgt_query::protobuf::BoolExpr {
                 if needs_indent && self.args.len() > 1 {
                     e.indent_start();
                 }
-                
+
                 for (i, arg) in self.args.iter().enumerate() {
                     if i > 0 {
                         e.indent_start();
@@ -6879,7 +6879,7 @@ impl ToTokens for pgt_query::protobuf::BoolExpr {
                         arg.to_tokens(e);
                     }
                 }
-                
+
                 if needs_indent && self.args.len() > 1 {
                     e.indent_end();
                 }
@@ -6890,7 +6890,7 @@ impl ToTokens for pgt_query::protobuf::BoolExpr {
                 if needs_indent && self.args.len() > 1 {
                     e.indent_start();
                 }
-                
+
                 for (i, arg) in self.args.iter().enumerate() {
                     if i > 0 {
                         e.indent_start();
@@ -6903,7 +6903,7 @@ impl ToTokens for pgt_query::protobuf::BoolExpr {
                         arg.to_tokens(e);
                     }
                 }
-                
+
                 if needs_indent && self.args.len() > 1 {
                     e.indent_end();
                 }
@@ -7004,7 +7004,7 @@ impl ToTokens for pgt_query::protobuf::AArrayExpr {
 
 impl ToTokens for pgt_query::protobuf::RowExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RowExpr, None, false);
+        e.group_start(GroupKind::RowExpr);
 
         e.token(TokenKind::ROW_KW);
         e.token(TokenKind::L_PAREN);
@@ -7074,7 +7074,7 @@ impl ToTokens for pgt_query::protobuf::MinMaxExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::MinMaxOp;
 
-        e.group_start(GroupKind::MinMaxExpr, None, false);
+        e.group_start(GroupKind::MinMaxExpr);
 
         match self.op() {
             MinMaxOp::IsGreatest => e.token(TokenKind::GREATEST_KW),
@@ -7102,7 +7102,7 @@ impl ToTokens for pgt_query::protobuf::XmlExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::XmlExprOp;
 
-        e.group_start(GroupKind::XmlExpr, None, false);
+        e.group_start(GroupKind::XmlExpr);
 
         match self.op() {
             XmlExprOp::IsXmlelement => {
@@ -7299,7 +7299,7 @@ impl ToTokens for pgt_query::protobuf::BooleanTest {
 
 impl ToTokens for pgt_query::protobuf::CreateConversionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateConversionStmt, None, false);
+        e.group_start(GroupKind::CreateConversionStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -7348,7 +7348,7 @@ impl ToTokens for pgt_query::protobuf::CreateConversionStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateCastStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateCastStmt, None, false);
+        e.group_start(GroupKind::CreateCastStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -7398,7 +7398,7 @@ impl ToTokens for pgt_query::protobuf::CreateCastStmt {
 
 impl ToTokens for pgt_query::protobuf::CreateTransformStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateTransformStmt, None, false);
+        e.group_start(GroupKind::CreateTransformStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -7470,7 +7470,7 @@ impl ToTokens for pgt_query::protobuf::CreateTransformStmt {
 
 impl ToTokens for pgt_query::protobuf::DropOwnedStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropOwnedStmt, None, false);
+        e.group_start(GroupKind::DropOwnedStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -7510,7 +7510,7 @@ impl ToTokens for pgt_query::protobuf::DropOwnedStmt {
 
 impl ToTokens for pgt_query::protobuf::ReassignOwnedStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::ReassignOwnedStmt, None, false);
+        e.group_start(GroupKind::ReassignOwnedStmt);
 
         e.token(TokenKind::REASSIGN_KW);
         e.space();
@@ -7545,7 +7545,7 @@ impl ToTokens for pgt_query::protobuf::ReassignOwnedStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterTsDictionaryStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTsdictionaryStmt, None, false);
+        e.group_start(GroupKind::AlterTsdictionaryStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -7586,7 +7586,7 @@ impl ToTokens for pgt_query::protobuf::AlterTsDictionaryStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterTsConfigurationStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterTsconfigurationStmt, None, false);
+        e.group_start(GroupKind::AlterTsconfigurationStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -7707,7 +7707,7 @@ impl ToTokens for pgt_query::protobuf::AlterTsConfigurationStmt {
 
 impl ToTokens for pgt_query::protobuf::CreatePublicationStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreatePublicationStmt, None, false);
+        e.group_start(GroupKind::CreatePublicationStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -7757,7 +7757,7 @@ impl ToTokens for pgt_query::protobuf::CreatePublicationStmt {
 
 impl ToTokens for pgt_query::protobuf::AlterPublicationStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlterPublicationStmt, None, false);
+        e.group_start(GroupKind::AlterPublicationStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -7855,7 +7855,7 @@ impl ToTokens for pgt_query::protobuf::AlterPublicationStmt {
 
 impl ToTokens for pgt_query::protobuf::PublicationObjSpec {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::PublicationObjSpec, None, false);
+        e.group_start(GroupKind::PublicationObjSpec);
 
         use pgt_query::protobuf::PublicationObjSpecType;
         match self.pubobjtype() {
@@ -7875,7 +7875,7 @@ impl ToTokens for pgt_query::protobuf::PublicationObjSpec {
 
 impl ToTokens for pgt_query::protobuf::CreateSubscriptionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CreateSubscriptionStmt, None, false);
+        e.group_start(GroupKind::CreateSubscriptionStmt);
 
         e.token(TokenKind::CREATE_KW);
         e.space();
@@ -7927,7 +7927,7 @@ impl ToTokens for pgt_query::protobuf::AlterSubscriptionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::AlterSubscriptionType;
 
-        e.group_start(GroupKind::AlterSubscriptionStmt, None, false);
+        e.group_start(GroupKind::AlterSubscriptionStmt);
 
         e.token(TokenKind::ALTER_KW);
         e.space();
@@ -8108,7 +8108,7 @@ impl ToTokens for pgt_query::protobuf::AlterSubscriptionStmt {
 
 impl ToTokens for pgt_query::protobuf::NamedArgExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::NamedArgExpr, None, false);
+        e.group_start(GroupKind::NamedArgExpr);
 
         e.token(TokenKind::IDENT(self.name.clone()));
         e.space();
@@ -8125,7 +8125,7 @@ impl ToTokens for pgt_query::protobuf::NamedArgExpr {
 
 impl ToTokens for pgt_query::protobuf::DropSubscriptionStmt {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DropSubscriptionStmt, None, false);
+        e.group_start(GroupKind::DropSubscriptionStmt);
 
         e.token(TokenKind::DROP_KW);
         e.space();
@@ -8156,7 +8156,7 @@ impl ToTokens for pgt_query::protobuf::DropSubscriptionStmt {
 
 impl ToTokens for pgt_query::protobuf::WithClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::WithClause, None, false);
+        e.group_start(GroupKind::WithClause);
 
         e.token(TokenKind::WITH_KW);
         if self.recursive {
@@ -8179,7 +8179,7 @@ impl ToTokens for pgt_query::protobuf::WithClause {
 
 impl ToTokens for pgt_query::protobuf::CommonTableExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::CommonTableExpr, None, false);
+        e.group_start(GroupKind::CommonTableExpr);
 
         e.token(TokenKind::IDENT(self.ctename.clone()));
 
@@ -8214,7 +8214,7 @@ impl ToTokens for pgt_query::protobuf::GroupingSet {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::GroupingSetKind;
 
-        e.group_start(GroupKind::GroupingSet, None, false);
+        e.group_start(GroupKind::GroupingSet);
 
         match self.kind() {
             GroupingSetKind::GroupingSetEmpty => {
@@ -8297,7 +8297,7 @@ impl ToTokens for pgt_query::protobuf::GroupingSet {
 
 impl ToTokens for pgt_query::protobuf::AIndirection {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AIndirection, None, false);
+        e.group_start(GroupKind::AIndirection);
 
         if let Some(ref arg) = self.arg {
             // Check if we need parentheses around the arg
@@ -8372,7 +8372,7 @@ impl ToTokens for pgt_query::protobuf::LockingClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::{LockClauseStrength, LockWaitPolicy};
 
-        e.group_start(GroupKind::LockingClause, None, false);
+        e.group_start(GroupKind::LockingClause);
 
         e.token(TokenKind::FOR_KW);
         e.space();
@@ -8428,7 +8428,7 @@ impl ToTokens for pgt_query::protobuf::LockingClause {
 
 impl ToTokens for pgt_query::protobuf::TableFunc {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::TableFunc, None, false);
+        e.group_start(GroupKind::TableFunc);
 
         match self.functype() {
             pgt_query::protobuf::TableFuncType::TftJsonTable => {
@@ -8461,7 +8461,7 @@ impl ToTokens for pgt_query::protobuf::TableFunc {
 
 impl ToTokens for pgt_query::protobuf::JsonTable {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonTable, None, false);
+        e.group_start(GroupKind::JsonTable);
 
         e.token(TokenKind::IDENT("JSON_TABLE".to_string()));
         e.token(TokenKind::L_PAREN);
@@ -8546,7 +8546,7 @@ impl ToTokens for pgt_query::protobuf::JsonTableColumn {
 
 impl ToTokens for pgt_query::protobuf::DistinctExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::DistinctExpr, None, false);
+        e.group_start(GroupKind::DistinctExpr);
 
         if !self.args.is_empty() {
             if self.args.len() >= 2 {
@@ -8568,7 +8568,7 @@ impl ToTokens for pgt_query::protobuf::DistinctExpr {
 
 impl ToTokens for pgt_query::protobuf::NullIfExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::NullIfExpr, None, false);
+        e.group_start(GroupKind::NullIfExpr);
 
         e.token(TokenKind::NULLIF_KW);
         e.token(TokenKind::L_PAREN);
@@ -8625,7 +8625,7 @@ impl ToTokens for pgt_query::protobuf::CollateExpr {
 
 impl ToTokens for pgt_query::protobuf::IntoClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::IntoClause, None, false);
+        e.group_start(GroupKind::IntoClause);
 
         e.space();
         e.token(TokenKind::INTO_KW);
@@ -8641,7 +8641,7 @@ impl ToTokens for pgt_query::protobuf::IntoClause {
 
 impl ToTokens for pgt_query::protobuf::PartitionElem {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::PartitionElem, None, false);
+        e.group_start(GroupKind::PartitionElem);
 
         if !self.name.is_empty() {
             e.token(TokenKind::IDENT(self.name.clone()));
@@ -8655,7 +8655,7 @@ impl ToTokens for pgt_query::protobuf::PartitionElem {
 
 impl ToTokens for pgt_query::protobuf::PartitionSpec {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::PartitionSpec, None, false);
+        e.group_start(GroupKind::PartitionSpec);
 
         e.space();
         e.token(TokenKind::PARTITION_KW);
@@ -8690,7 +8690,7 @@ impl ToTokens for pgt_query::protobuf::PartitionSpec {
 
 impl ToTokens for pgt_query::protobuf::PartitionBoundSpec {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::PartitionBoundSpec, None, false);
+        e.group_start(GroupKind::PartitionBoundSpec);
 
         e.space();
         e.token(TokenKind::FOR_KW);
@@ -8818,7 +8818,7 @@ impl ToTokens for pgt_query::protobuf::TableLikeClause {
 
 impl ToTokens for pgt_query::protobuf::InferClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::InferClause, None, false);
+        e.group_start(GroupKind::InferClause);
 
         e.token(TokenKind::L_PAREN);
         for (i, elem) in self.index_elems.iter().enumerate() {
@@ -8845,7 +8845,7 @@ impl ToTokens for pgt_query::protobuf::OnConflictClause {
     fn to_tokens(&self, e: &mut EventEmitter) {
         use pgt_query::protobuf::OnConflictAction;
 
-        e.group_start(GroupKind::OnConflictClause, None, false);
+        e.group_start(GroupKind::OnConflictClause);
 
         e.token(TokenKind::ON_KW);
         e.space();
@@ -8956,7 +8956,7 @@ impl ToTokens for pgt_query::protobuf::TargetEntry {
 
 impl ToTokens for pgt_query::protobuf::Query {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::Query, None, false);
+        e.group_start(GroupKind::Query);
 
         use pgt_query::protobuf::CmdType;
 
@@ -9011,7 +9011,7 @@ impl ToTokens for pgt_query::protobuf::Query {
 
 impl ToTokens for pgt_query::protobuf::OnConflictExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::OnConflictExpr, None, false);
+        e.group_start(GroupKind::OnConflictExpr);
 
         use pgt_query::protobuf::OnConflictAction;
 
@@ -9471,7 +9471,7 @@ impl ToTokens for pgt_query::protobuf::JsonExpr {
 
 impl ToTokens for pgt_query::protobuf::RangeTableFunc {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::RangeTableFunc, None, false);
+        e.group_start(GroupKind::RangeTableFunc);
 
         if self.lateral {
             e.token(TokenKind::LATERAL_KW);
@@ -10189,7 +10189,7 @@ impl ToTokens for pgt_query::protobuf::SinglePartitionSpec {
 
 impl ToTokens for pgt_query::protobuf::AlternativeSubPlan {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::AlternativeSubPlan, None, false);
+        e.group_start(GroupKind::AlternativeSubPlan);
 
         if let Some(ref first_plan) = self.subplans.first() {
             first_plan.to_tokens(e);
@@ -10209,7 +10209,7 @@ impl ToTokens for pgt_query::protobuf::MergeSupportFunc {
 
 impl ToTokens for pgt_query::protobuf::SubPlan {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::SubPlan, None, false);
+        e.group_start(GroupKind::SubPlan);
 
         if let Some(ref _param_id) = self.param_ids.first() {
             e.token(TokenKind::IDENT(format!("$SUBPLAN{}", self.plan_id)));
@@ -10231,7 +10231,7 @@ impl ToTokens for pgt_query::protobuf::JsonTablePath {
 
 impl ToTokens for pgt_query::protobuf::JsonTablePathScan {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonTablePathScan, None, false);
+        e.group_start(GroupKind::JsonTablePathScan);
 
         if let Some(ref plan) = self.plan {
             plan.to_tokens(e);
@@ -10243,7 +10243,7 @@ impl ToTokens for pgt_query::protobuf::JsonTablePathScan {
 
 impl ToTokens for pgt_query::protobuf::JsonTableSiblingJoin {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonTableSiblingJoin, None, false);
+        e.group_start(GroupKind::JsonTableSiblingJoin);
 
         if let Some(ref lplan) = self.lplan {
             lplan.to_tokens(e);
@@ -10262,7 +10262,7 @@ impl ToTokens for pgt_query::protobuf::JsonTableSiblingJoin {
 
 impl ToTokens for pgt_query::protobuf::JsonScalarExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonScalarExpr, None, false);
+        e.group_start(GroupKind::JsonScalarExpr);
 
         e.token(TokenKind::IDENT("JSON_SCALAR".to_string()));
         e.token(TokenKind::L_PAREN);
@@ -10284,7 +10284,7 @@ impl ToTokens for pgt_query::protobuf::JsonScalarExpr {
 
 impl ToTokens for pgt_query::protobuf::JsonSerializeExpr {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonSerializeExpr, None, false);
+        e.group_start(GroupKind::JsonSerializeExpr);
 
         e.token(TokenKind::IDENT("JSON_SERIALIZE".to_string()));
         e.token(TokenKind::L_PAREN);
@@ -10306,7 +10306,7 @@ impl ToTokens for pgt_query::protobuf::JsonSerializeExpr {
 
 impl ToTokens for pgt_query::protobuf::JsonArrayQueryConstructor {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonArrayQueryConstructor, None, false);
+        e.group_start(GroupKind::JsonArrayQueryConstructor);
 
         e.token(TokenKind::IDENT("JSON_ARRAY".to_string()));
         e.token(TokenKind::L_PAREN);
@@ -10328,7 +10328,7 @@ impl ToTokens for pgt_query::protobuf::JsonArrayQueryConstructor {
 
 impl ToTokens for pgt_query::protobuf::JsonAggConstructor {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonAggConstructor, None, false);
+        e.group_start(GroupKind::JsonAggConstructor);
 
         if let Some(ref output) = self.output {
             output.to_tokens(e);
@@ -10340,7 +10340,7 @@ impl ToTokens for pgt_query::protobuf::JsonAggConstructor {
 
 impl ToTokens for pgt_query::protobuf::JsonObjectAgg {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonObjectAgg, None, false);
+        e.group_start(GroupKind::JsonObjectAgg);
 
         e.token(TokenKind::IDENT("JSON_OBJECTAGG".to_string()));
         e.token(TokenKind::L_PAREN);
@@ -10380,7 +10380,7 @@ impl ToTokens for pgt_query::protobuf::JsonObjectAgg {
 
 impl ToTokens for pgt_query::protobuf::JsonArrayAgg {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        e.group_start(GroupKind::JsonArrayAgg, None, false);
+        e.group_start(GroupKind::JsonArrayAgg);
 
         e.token(TokenKind::IDENT("JSON_ARRAYAGG".to_string()));
         e.token(TokenKind::L_PAREN);
