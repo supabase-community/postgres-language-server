@@ -678,14 +678,15 @@ impl ToTokens for pgt_query::protobuf::SelectStmt {
                 e.token(TokenKind::GROUP_KW);
                 e.space();
                 e.token(TokenKind::BY_KW);
-                e.space();
+                e.indent_start();
                 for (i, group) in self.group_clause.iter().enumerate() {
                     if i > 0 {
                         e.token(TokenKind::COMMA);
-                        e.space();
                     }
+                    e.line(LineType::SoftOrSpace);
                     group.to_tokens(e);
                 }
+                e.indent_end();
             }
 
             if !self.locking_clause.is_empty() {
@@ -801,7 +802,6 @@ impl ToTokens for pgt_query::protobuf::JoinExpr {
         e.group_start(GroupKind::JoinExpr);
 
         if let Some(ref larg) = self.larg {
-            println!("Join larg: {:#?}", larg);
             larg.to_tokens(e);
         }
 
@@ -887,7 +887,7 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
 
         if self.agg_star {
             e.token(TokenKind::IDENT("*".to_string()));
-        } else if !self.args.is_empty() {
+        } else if !self.args.is_empty() || !self.agg_order.is_empty() {
             e.group_start(GroupKind::FuncCall);
             e.line(LineType::Soft);
             e.indent_start();
@@ -900,24 +900,24 @@ impl ToTokens for pgt_query::protobuf::FuncCall {
                 arg.to_tokens(e);
             }
 
+            if !self.agg_order.is_empty() {
+                e.space();
+                e.token(TokenKind::ORDER_KW);
+                e.space();
+                e.token(TokenKind::BY_KW);
+                e.space();
+                for (i, agg_order) in self.agg_order.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.space();
+                    }
+                    agg_order.to_tokens(e);
+                }
+            }
+
             e.indent_end();
             e.line(LineType::Soft);
             e.group_end();
-        }
-
-        if !self.agg_order.is_empty() {
-            e.space();
-            e.token(TokenKind::ORDER_KW);
-            e.space();
-            e.token(TokenKind::BY_KW);
-            e.space();
-            for (i, agg_order) in self.agg_order.iter().enumerate() {
-                if i > 0 {
-                    e.token(TokenKind::COMMA);
-                    e.space();
-                }
-                agg_order.to_tokens(e);
-            }
         }
 
         e.token(TokenKind::R_PAREN);

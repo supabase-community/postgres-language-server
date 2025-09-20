@@ -14,7 +14,7 @@ use pgt_pretty_print::{
 fn test_formatter(fixture: Fixture<&str>) {
     let content = fixture.content();
 
-    println!("Original content: {}", content);
+    println!("Original content:\n{}", content);
 
     let absolute_fixture_path = Utf8Path::new(fixture.path());
     let input_file = absolute_fixture_path;
@@ -35,7 +35,6 @@ fn test_formatter(fixture: Fixture<&str>) {
 
     let mut emitter = EventEmitter::new();
     ast.to_tokens(&mut emitter);
-    println!("Emitted events: {:?}", emitter.events);
 
     let mut output = String::new();
     let config = RenderConfig {
@@ -46,7 +45,16 @@ fn test_formatter(fixture: Fixture<&str>) {
     let mut renderer = Renderer::new(&mut output, config);
     renderer.render(emitter.events).expect("Failed to render");
 
-    println!("Formatted content: {}", output);
+    println!("Formatted content:\n{}", output);
+
+    for line in output.lines() {
+        assert!(
+            line.len() <= max_line_length,
+            "Line exceeds max length of {}: {}",
+            max_line_length,
+            line
+        );
+    }
 
     let parsed_output = pgt_query::parse(&output).expect("Failed to parse SQL");
     let mut parsed_ast = parsed_output.into_root().expect("No root node found");

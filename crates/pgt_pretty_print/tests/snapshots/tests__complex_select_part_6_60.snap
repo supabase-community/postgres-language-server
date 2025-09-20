@@ -17,4 +17,9 @@ FROM
   INNER JOIN
     pg_attribute vcol ON vcol.attrelid = view_id
       AND vcol.attnum = view_column
-GROUP BY view_id, view_schema, view_name, resorigtbl, resorigcol;
+GROUP BY
+  view_id,
+  view_schema,
+  view_name,
+  resorigtbl,
+  resorigcol;

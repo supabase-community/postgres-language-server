@@ -8,4 +8,5 @@ SELECT
   grouping(category)
 FROM
   products
-GROUP BY ROLLUP(category);
+GROUP BY
+  ROLLUP(category);

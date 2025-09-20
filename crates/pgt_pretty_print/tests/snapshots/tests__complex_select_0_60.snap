@@ -186,7 +186,12 @@ FROM
   INNER JOIN
     pg_attribute vcol ON vcol.attrelid = view_id
       AND vcol.attnum = view_column
-GROUP BY view_id, view_schema, view_name, resorigtbl, resorigcol)
+GROUP BY
+  view_id,
+  view_schema,
+  view_name,
+  resorigtbl,
+  resorigcol)
 SELECT
   sch.nspname AS table_schema,
   tbl.relname AS table_name,
@@ -200,8 +205,8 @@ SELECT
       col.attname,
       'view_columns',
       view_columns
-    )
-  ORDER BY pks_fks.ord) AS column_dependencies
+    ) ORDER BY pks_fks.ord
+  ) AS column_dependencies
 FROM
   repeated_references rep
   INNER JOIN
@@ -213,10 +218,17 @@ FROM
       AND col.attnum = rep.resorigcol
   INNER JOIN
     pg_namespace sch ON sch.oid = tbl.relnamespace
-GROUP BY sch.nspname, tbl.relname, rep.view_schema, rep.view_name, pks_fks.conname, pks_fks.contype, pks_fks.ncol
+GROUP BY
+  sch.nspname,
+  tbl.relname,
+  rep.view_schema,
+  rep.view_name,
+  pks_fks.conname,
+  pks_fks.contype,
+  pks_fks.ncol
 HAVING ncol = array_length(
   array_agg(
-    ROW(col.attname, view_columns)
-  ORDER BY pks_fks.ord),
+    ROW(col.attname, view_columns) ORDER BY pks_fks.ord
+  ),
   1
 );
