@@ -31,11 +31,9 @@ function isMusl() {
       ],
     });
   } catch (err) {
-        if (typeof err === "object" && err !== null && "stderr" in err) {
     stdout = err.stderr;
-        }
   }
-  if (typeof stdout === 'string' && stdout?.indexOf("musl") > -1) {
+  if (typeof stdout === 'string' && stdout.indexOf("musl") > -1) {
     return true;
   }
   return false;
