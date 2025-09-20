@@ -33,7 +33,7 @@ function isMusl() {
   } catch (err) {
     stderr = err.stderr;
   }
-  if (stderr.indexOf("musl") > -1) {
+  if (stderr?.indexOf("musl") > -1) {
     return true;
   }
   return false;
