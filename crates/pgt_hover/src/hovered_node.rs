@@ -1,3 +1,5 @@
+use pgt_treesitter::WrappingClause;
+
 #[derive(Debug)]
 pub(crate) enum NodeIdentification {
     Name(String),
@@ -40,6 +42,28 @@ impl HoveredNode {
                     Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
                 }
             }
+
+            "identifier"
+                if ctx.matches_ancestor_history(&["object_reference"])
+                    && ctx.wrapping_clause_type.as_ref().is_some_and(|clause| {
+                        matches!(
+                            clause,
+                            WrappingClause::AlterPolicy
+                                | WrappingClause::CreatePolicy
+                                | WrappingClause::DropPolicy
+                        )
+                    }) =>
+            {
+                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
+                        schema.clone(),
+                        node_content,
+                    ))))
+                } else {
+                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
+                }
+            }
+
             "identifier" if ctx.matches_ancestor_history(&["field"]) => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
@@ -75,7 +99,7 @@ impl HoveredNode {
                 Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
             }
 
-            "policy_table" | "revoke_table" | "grant_table" => {
+            "revoke_table" | "grant_table" => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
                         schema.clone(),
