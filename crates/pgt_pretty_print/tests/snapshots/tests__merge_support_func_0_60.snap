@@ -3,6 +3,11 @@ source: crates/pgt_pretty_print/tests/tests.rs
 input_file: crates/pgt_pretty_print/tests/data/merge_support_func_0_60.sql
 snapshot_kind: text
 ---
-MERGE INTO products p USING new_products np ON p.product_id = np.product_id
-WHEN MATCHED THEN UPDATE SET price = np.price
-WHEN NOT MATCHED THEN INSERT VALUES (np.product_id, np.price);
+MERGE INTO products p
+USING new_products np ON p.product_id = np.product_id
+WHEN MATCHED THEN
+  UPDATE SET
+    price = np.price
+WHEN NOT MATCHED THEN
+  INSERT
+    VALUES (np.product_id, np.price);

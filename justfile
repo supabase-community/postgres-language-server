@@ -173,6 +173,32 @@ quick-modify:
     git commit -m "progress"
     git push
 
+# Run a claude agent with the given agentic prompt file.
+# Commented out by default to avoid accidental usage that may incur costs.
+agentic name:
+    unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read agentic/{{name}}.md and follow the instructions closely"
+
+# Run agentic loop that breaks when task is complete
+agentic-loop name:
+    #!/usr/bin/env bash
+    while true; do
+        echo "$(date): Calling Claude..."
+        output=$(just agentic {{name}} 2>&1)
+        exit_code=$?
+        echo "$output"
+
+        if [ $exit_code -ne 0 ]; then
+            echo "$(date): Error occurred, waiting 61 minutes before retry..."
+            sleep 3660  # 61 minutes
+            continue
+        fi
+
+        if echo "$output" | grep -q "TASK COMPLETE"; then
+            echo "$(date): Task completed!"
+            break
+        fi
+    done
+
 # Make sure to set your PGT_LOG_PATH in your shell profile.
 # You can use the PGT_LOG_LEVEL to set your log level.
 # We recommend to install `bunyan` (npm i -g bunyan) and pipe the output through there for color-coding:
