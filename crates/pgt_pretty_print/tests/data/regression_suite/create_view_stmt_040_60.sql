@@ -1,1 +1,0 @@
-CREATE TEMP VIEW testview AS SELECT 1;

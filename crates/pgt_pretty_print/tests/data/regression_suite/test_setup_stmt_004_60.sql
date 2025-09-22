@@ -1,1 +1,0 @@
-CREATE TABLE CHAR_TBL(f1 char(4));

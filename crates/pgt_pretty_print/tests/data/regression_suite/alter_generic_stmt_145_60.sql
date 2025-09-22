@@ -1,1 +1,0 @@
-ALTER OPERATOR CLASS alt_opc3 USING hash SET SCHEMA alt_nsp2;

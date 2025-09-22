@@ -1,1 +1,0 @@
-RESET default_tablespace;

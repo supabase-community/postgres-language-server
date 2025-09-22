@@ -1,1 +1,0 @@
-CREATE TABLE t2 (c float) INHERITS (t1);

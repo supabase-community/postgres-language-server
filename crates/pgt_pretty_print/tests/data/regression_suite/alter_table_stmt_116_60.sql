@@ -1,1 +1,0 @@
-ALTER INDEX alter_idx_rename_test RENAME TO alter_idx_rename_test_2;

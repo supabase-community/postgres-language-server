@@ -1,1 +1,0 @@
-analyze tbl_rs;

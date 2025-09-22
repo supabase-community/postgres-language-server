@@ -1,1 +1,0 @@
-CREATE TABLE prt1_adv_default PARTITION OF prt1_adv DEFAULT;

@@ -1,1 +1,0 @@
-drop view aggordview1;

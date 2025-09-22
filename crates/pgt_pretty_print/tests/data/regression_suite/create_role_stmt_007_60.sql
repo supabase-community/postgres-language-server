@@ -1,1 +1,0 @@
-CREATE ROLE regress_nosuch_replication_bypassrls REPLICATION BYPASSRLS;

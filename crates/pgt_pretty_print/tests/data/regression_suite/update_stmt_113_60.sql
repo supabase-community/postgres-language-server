@@ -1,1 +1,0 @@
-CREATE POLICY seeall ON range_parted AS PERMISSIVE FOR SELECT USING (true);

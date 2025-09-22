@@ -1,1 +1,0 @@
-ANALYZE vacowned_parted;

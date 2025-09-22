@@ -1,1 +1,0 @@
-table some_tab;

@@ -1,1 +1,0 @@
-INSERT INTO pxtest4 VALUES (1);

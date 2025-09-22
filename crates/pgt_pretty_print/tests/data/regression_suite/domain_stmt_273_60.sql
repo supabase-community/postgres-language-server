@@ -1,1 +1,0 @@
-create domain connotnull integer;

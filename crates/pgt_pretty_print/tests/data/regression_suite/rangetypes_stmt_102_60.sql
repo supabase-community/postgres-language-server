@@ -1,1 +1,0 @@
-analyze numrange_test;

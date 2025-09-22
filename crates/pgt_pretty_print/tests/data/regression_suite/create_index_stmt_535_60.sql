@@ -1,1 +1,0 @@
-REINDEX INDEX CONCURRENTLY concur_reindex_part_index;

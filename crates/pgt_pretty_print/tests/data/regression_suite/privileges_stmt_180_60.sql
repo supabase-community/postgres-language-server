@@ -1,1 +1,0 @@
-SELECT * FROM atest2 FOR UPDATE;

@@ -1,1 +1,0 @@
-DROP TEXT SEARCH DICTIONARY IF EXISTS test_tsdict_exists;

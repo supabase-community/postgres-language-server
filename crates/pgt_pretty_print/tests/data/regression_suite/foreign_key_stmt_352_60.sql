@@ -1,1 +1,0 @@
-INSERT INTO pktable VALUES (15, 0);

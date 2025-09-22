@@ -1,2 +1,0 @@
-CREATE FUNCTION voidtest5(a int) RETURNS SETOF VOID LANGUAGE SQL AS
-$$ SELECT generate_series(1, a) $$ STABLE;

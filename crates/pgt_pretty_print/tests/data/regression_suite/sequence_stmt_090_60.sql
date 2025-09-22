@@ -1,1 +1,0 @@
-DROP SEQUENCE t1_f1_seq;

@@ -1,1 +1,0 @@
-ALTER TABLE test_replica_identity5 DROP CONSTRAINT test_replica_identity5_pkey;

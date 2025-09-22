@@ -1,1 +1,0 @@
-select interval 'PT2562047788H54.775807S';

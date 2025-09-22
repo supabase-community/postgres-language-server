@@ -1,1 +1,0 @@
-INSERT INTO fkpart9.fk VALUES (35);

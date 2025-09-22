@@ -1,1 +1,0 @@
-SELECT timestamptz 'now epoch';

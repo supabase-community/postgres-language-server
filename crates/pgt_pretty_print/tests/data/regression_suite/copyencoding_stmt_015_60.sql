@@ -1,1 +1,0 @@
-RESET client_encoding;

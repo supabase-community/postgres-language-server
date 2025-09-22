@@ -1,1 +1,0 @@
-SELECT 'a'::text::"char";

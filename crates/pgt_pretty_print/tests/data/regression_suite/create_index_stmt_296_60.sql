@@ -1,1 +1,0 @@
-ALTER TABLE cwi_test ADD PRIMARY KEY USING INDEX cwi_a_nnd;

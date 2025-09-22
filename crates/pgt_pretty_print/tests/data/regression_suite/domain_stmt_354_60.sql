@@ -1,1 +1,0 @@
-select doubledecrement(0);

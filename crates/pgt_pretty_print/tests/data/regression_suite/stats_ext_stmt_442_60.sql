@@ -1,1 +1,0 @@
-TRUNCATE mcv_lists;

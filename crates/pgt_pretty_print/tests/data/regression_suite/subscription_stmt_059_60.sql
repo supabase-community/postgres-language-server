@@ -1,1 +1,0 @@
-SET ROLE regress_subscription_user_dummy;

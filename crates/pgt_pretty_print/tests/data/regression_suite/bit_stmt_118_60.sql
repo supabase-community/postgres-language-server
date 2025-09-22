@@ -1,1 +1,0 @@
-INSERT INTO bit_defaults DEFAULT VALUES;

@@ -1,1 +1,0 @@
-SELECT d1 AS us_postgres FROM TIMESTAMP_TBL;

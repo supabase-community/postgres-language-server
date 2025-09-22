@@ -1,1 +1,0 @@
-REVOKE CREATE ON DATABASE REGRESSION FROM regress_subscription_user3;

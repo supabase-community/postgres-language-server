@@ -1,1 +1,0 @@
-SELECT * FROM INT2_TBL AS f(a, b);

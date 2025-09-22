@@ -1,1 +1,0 @@
-ALTER TABLE collate_test22 ADD FOREIGN KEY (f2) REFERENCES collate_test20;

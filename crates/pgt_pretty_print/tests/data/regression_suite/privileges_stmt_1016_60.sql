@@ -1,1 +1,0 @@
-DROP SCHEMA testns3 CASCADE;

@@ -1,1 +1,0 @@
-SELECT JSON_QUERY('"a"', '$.a'  RETURNING int[] DEFAULT (SELECT '{1}')::text COLLATE "C" ON ERROR);

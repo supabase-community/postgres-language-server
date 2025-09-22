@@ -1,1 +1,0 @@
-TRUNCATE cp_test;

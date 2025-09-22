@@ -1,1 +1,0 @@
-CREATE SEQUENCE uv_seq;

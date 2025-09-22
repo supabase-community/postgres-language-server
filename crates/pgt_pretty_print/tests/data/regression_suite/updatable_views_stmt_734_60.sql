@@ -1,1 +1,0 @@
-ANALYZE t111;

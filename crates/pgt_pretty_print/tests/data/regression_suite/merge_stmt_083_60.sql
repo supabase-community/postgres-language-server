@@ -1,1 +1,0 @@
-INSERT INTO source VALUES (4, 40);

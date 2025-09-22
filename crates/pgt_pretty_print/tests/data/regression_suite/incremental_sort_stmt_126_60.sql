@@ -1,1 +1,0 @@
-analyze prt_tbl;

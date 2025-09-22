@@ -1,1 +1,0 @@
-CREATE SCHEMA generated_virtual_tests;

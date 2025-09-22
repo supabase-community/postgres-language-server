@@ -1,1 +1,0 @@
-ALTER TABLE unlogged1 SET UNLOGGED;

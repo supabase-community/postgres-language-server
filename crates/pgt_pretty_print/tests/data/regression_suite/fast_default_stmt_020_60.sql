@@ -1,2 +1,0 @@
-ALTER TABLE T ADD COLUMN c_bpchar BPCHAR(5) DEFAULT 'hello',
-              ALTER COLUMN c_int SET DEFAULT 2;

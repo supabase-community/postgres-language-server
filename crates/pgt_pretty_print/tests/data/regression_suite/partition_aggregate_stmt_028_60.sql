@@ -1,1 +1,0 @@
-SELECT a FROM pagg_tab WHERE a < 3 GROUP BY a ORDER BY 1;

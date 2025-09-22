@@ -1,3 +1,0 @@
-INSERT INTO FKTABLE VALUES
-  (1, 1, 1, NULL),
-  (1, 2, NULL, 2);

@@ -1,2 +1,0 @@
-ALTER INDEX test_replica_identity4_pkey
-  ATTACH PARTITION test_replica_identity4_1_pkey;

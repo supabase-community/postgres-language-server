@@ -1,1 +1,0 @@
-UPDATE gtest1 SET b = DEFAULT WHERE a = 1;

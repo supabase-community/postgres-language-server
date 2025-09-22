@@ -1,1 +1,0 @@
-SELECT * FROM gtest3a ORDER BY a;

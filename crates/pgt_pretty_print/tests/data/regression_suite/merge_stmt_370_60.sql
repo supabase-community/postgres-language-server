@@ -1,1 +1,0 @@
-CREATE TABLE pa_targetp PARTITION OF pa_target DEFAULT;

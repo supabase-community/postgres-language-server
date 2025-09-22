@@ -1,1 +1,0 @@
-CREATE TABLE pkpart (a int) PARTITION BY LIST (a)

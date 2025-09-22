@@ -1,1 +1,0 @@
-INSERT INTO pk VALUES (1);

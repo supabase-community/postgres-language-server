@@ -1,1 +1,0 @@
-ALTER TABLE a_star RENAME COLUMN aa TO foo;

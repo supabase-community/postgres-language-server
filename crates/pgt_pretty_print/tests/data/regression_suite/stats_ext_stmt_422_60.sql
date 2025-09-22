@@ -1,1 +1,0 @@
-DROP TABLE functional_dependencies_multi;

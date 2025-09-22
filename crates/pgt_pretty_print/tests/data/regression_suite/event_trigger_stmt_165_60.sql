@@ -1,2 +1,0 @@
-CREATE FUNCTION reindex_end_command_snap() RETURNS EVENT_TRIGGER
-    AS $$ BEGIN PERFORM 1; END $$ LANGUAGE plpgsql;

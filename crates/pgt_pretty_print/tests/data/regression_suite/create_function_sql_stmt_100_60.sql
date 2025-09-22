@@ -1,1 +1,0 @@
-CREATE SEQUENCE functest1;

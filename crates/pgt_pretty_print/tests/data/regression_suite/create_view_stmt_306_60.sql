@@ -1,1 +1,0 @@
-reset restrict_nonsystem_relation_kind;

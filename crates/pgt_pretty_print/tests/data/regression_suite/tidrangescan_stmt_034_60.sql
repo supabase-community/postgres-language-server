@@ -1,2 +1,0 @@
-EXPLAIN (COSTS OFF)
-DECLARE c SCROLL CURSOR FOR SELECT ctid FROM tidrangescan WHERE ctid < '(1,0)';

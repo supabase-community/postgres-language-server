@@ -1,1 +1,0 @@
-DROP TABLE expr_stats_incompatible_test;

@@ -1,1 +1,0 @@
-CREATE TABLE VARCHAR_TBL(f1 varchar(4));

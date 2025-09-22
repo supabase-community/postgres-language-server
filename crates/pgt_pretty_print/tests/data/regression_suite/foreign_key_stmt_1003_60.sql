@@ -1,1 +1,0 @@
-INSERT INTO pt VALUES(1,2,3);

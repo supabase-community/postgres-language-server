@@ -1,1 +1,0 @@
-select format('>>%-s<<', 'Hello');

@@ -1,1 +1,0 @@
-analyze test_multirange_gist;

@@ -1,1 +1,0 @@
-INSERT INTO gtest27 (a, b) VALUES (NULL, NULL);

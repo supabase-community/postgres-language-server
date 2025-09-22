@@ -1,1 +1,0 @@
-analyze q1;

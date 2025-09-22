@@ -1,1 +1,0 @@
-select NULL::derived::base;

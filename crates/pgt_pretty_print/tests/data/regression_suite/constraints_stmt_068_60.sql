@@ -1,3 +1,0 @@
-CREATE TABLE INSERT_CHILD (cx INT default 42,
-	cy INT CHECK (cy > x))
-	INHERITS (INSERT_TBL);

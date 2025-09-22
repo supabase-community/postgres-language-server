@@ -1,1 +1,0 @@
-ANALYZE tab_anti;

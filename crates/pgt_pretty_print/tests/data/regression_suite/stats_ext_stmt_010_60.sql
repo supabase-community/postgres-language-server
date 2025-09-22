@@ -1,1 +1,0 @@
-CREATE STATISTICS tst ON a FROM (VALUES (x)) AS foo;

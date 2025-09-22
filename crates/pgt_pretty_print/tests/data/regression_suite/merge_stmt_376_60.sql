@@ -1,1 +1,0 @@
-DROP TABLE pa_target CASCADE;

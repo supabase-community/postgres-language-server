@@ -1,1 +1,0 @@
-CREATE TABLE POINT_TBL(f1 point);

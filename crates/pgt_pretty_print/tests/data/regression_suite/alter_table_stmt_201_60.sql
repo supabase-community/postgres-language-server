@@ -1,1 +1,0 @@
-DELETE FROM attmp3 WHERE NOT b > 10;

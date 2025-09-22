@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW test_maint_search_path.test_maint_mv;

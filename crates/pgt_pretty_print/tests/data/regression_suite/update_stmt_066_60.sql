@@ -1,1 +1,0 @@
-ALTER TABLE part_c_100_200 ADD COLUMN b bigint;

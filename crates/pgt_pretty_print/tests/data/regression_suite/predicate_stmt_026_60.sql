@@ -1,1 +1,0 @@
-ALTER TABLE pred_child ALTER a SET NOT NULL;

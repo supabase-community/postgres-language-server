@@ -1,1 +1,0 @@
-DECLARE c CURSOR FOR SELECT ctid, * FROM tidscan;

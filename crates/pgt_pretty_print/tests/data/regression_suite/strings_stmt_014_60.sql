@@ -1,1 +1,0 @@
-RESET standard_conforming_strings;

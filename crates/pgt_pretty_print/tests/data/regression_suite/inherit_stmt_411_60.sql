@@ -1,1 +1,0 @@
-analyze matest0;

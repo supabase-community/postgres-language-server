@@ -1,1 +1,0 @@
-CREATE TABLE a (aa TEXT);

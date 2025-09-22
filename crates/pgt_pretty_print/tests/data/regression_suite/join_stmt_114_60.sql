@@ -1,1 +1,0 @@
-set geqo = on;

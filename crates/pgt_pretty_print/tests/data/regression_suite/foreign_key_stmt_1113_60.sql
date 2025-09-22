@@ -1,1 +1,0 @@
-ALTER TABLE fkpart8.tbl2 DROP CONSTRAINT tbl2_f1_fkey;

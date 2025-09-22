@@ -1,1 +1,0 @@
-show standard_conforming_strings;

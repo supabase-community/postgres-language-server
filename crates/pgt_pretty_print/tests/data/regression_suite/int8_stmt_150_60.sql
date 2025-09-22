@@ -1,1 +1,0 @@
-SELECT int8 '0x42F';

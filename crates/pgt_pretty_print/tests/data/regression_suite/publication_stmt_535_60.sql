@@ -1,1 +1,0 @@
-SET SEARCH_PATH='';

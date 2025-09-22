@@ -1,1 +1,0 @@
-reset min_parallel_table_scan_size;

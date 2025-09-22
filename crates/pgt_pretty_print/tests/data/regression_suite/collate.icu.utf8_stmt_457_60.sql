@@ -1,1 +1,0 @@
-INSERT INTO test22 VALUES (2, 'DEF');

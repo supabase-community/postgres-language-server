@@ -1,1 +1,0 @@
-VACUUM TEXT_TBL;

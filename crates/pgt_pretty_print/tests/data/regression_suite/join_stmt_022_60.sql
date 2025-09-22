@@ -1,1 +1,0 @@
-create temp table onerow();

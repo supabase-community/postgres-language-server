@@ -1,1 +1,0 @@
-DELETE FROM PKTABLE WHERE ptest1=5 and ptest2=10;

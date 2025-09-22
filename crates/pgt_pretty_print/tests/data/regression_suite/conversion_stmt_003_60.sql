@@ -1,1 +1,0 @@
-CREATE USER regress_conversion_user WITH NOCREATEDB NOCREATEROLE;

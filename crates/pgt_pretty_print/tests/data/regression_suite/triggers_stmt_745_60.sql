@@ -1,1 +1,0 @@
-drop trigger trans_tab_parent_update_trig on trans_tab_parent;

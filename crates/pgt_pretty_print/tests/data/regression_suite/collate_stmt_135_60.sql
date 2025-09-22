@@ -1,1 +1,0 @@
-CREATE COLLATION case_sensitive (LOCALE = '', LOCALE = "NONSENSE");

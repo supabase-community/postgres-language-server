@@ -1,1 +1,0 @@
-CREATE TABLE LINE_TBL (s line);

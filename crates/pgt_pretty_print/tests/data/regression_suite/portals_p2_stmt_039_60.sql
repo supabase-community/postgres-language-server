@@ -1,1 +1,0 @@
-CLOSE foo25;

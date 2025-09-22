@@ -1,1 +1,0 @@
-SELECT x FROM test1bpci UNION SELECT x FROM test2bpci ORDER BY x;

@@ -1,1 +1,0 @@
-INSERT INTO inhg VALUES (20, 10);

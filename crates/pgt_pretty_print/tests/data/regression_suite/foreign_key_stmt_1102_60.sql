@@ -1,1 +1,0 @@
-ALTER TABLE fkpart7.pkpart1 ADD PRIMARY KEY (a);

@@ -1,1 +1,0 @@
-DROP LANGUAGE alt_lang3 CASCADE;

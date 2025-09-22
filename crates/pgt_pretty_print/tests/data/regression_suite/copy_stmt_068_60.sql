@@ -1,1 +1,0 @@
-drop trigger check_after_tab_progress_reporting on tab_progress_reporting;

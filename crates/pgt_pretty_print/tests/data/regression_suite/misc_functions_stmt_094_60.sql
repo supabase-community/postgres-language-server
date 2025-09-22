@@ -1,3 +1,0 @@
-CREATE FUNCTION my_int_eq(int, int) RETURNS bool
-  LANGUAGE internal STRICT IMMUTABLE PARALLEL SAFE
-  AS $$int4eq$$;

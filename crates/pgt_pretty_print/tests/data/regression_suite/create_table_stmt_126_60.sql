@@ -1,1 +1,0 @@
-CREATE TABLE part_p3 PARTITION OF list_parted FOR VALUES IN ((2+1));

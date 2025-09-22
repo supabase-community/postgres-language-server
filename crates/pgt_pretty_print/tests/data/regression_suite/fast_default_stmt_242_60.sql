@@ -1,1 +1,0 @@
-SELECT * FROM t WHERE a IS NULL;

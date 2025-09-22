@@ -1,1 +1,0 @@
-PREPARE TRANSACTION 'regress_sub1';

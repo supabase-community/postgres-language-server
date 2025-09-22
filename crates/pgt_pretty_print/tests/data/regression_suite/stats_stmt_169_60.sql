@@ -1,1 +1,0 @@
-SAVEPOINT sp1;

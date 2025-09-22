@@ -1,1 +1,0 @@
-SELECT f1, f1::path FROM POLYGON_TBL;

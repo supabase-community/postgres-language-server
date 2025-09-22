@@ -1,2 +1,0 @@
-CREATE FUNCTION func() RETURNS VOID AS
-$$ ALTER SUBSCRIPTION regress_testsub SET PUBLICATION mypub WITH (refresh = true) $$ LANGUAGE SQL;

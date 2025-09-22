@@ -1,1 +1,0 @@
-ALTER TABLE e_star* ADD COLUMN e int4;

@@ -1,1 +1,0 @@
-ALTER TABLE idxpart1 ADD PRIMARY KEY (c1, c2);

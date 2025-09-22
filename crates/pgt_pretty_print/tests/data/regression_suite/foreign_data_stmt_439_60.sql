@@ -1,1 +1,0 @@
-ALTER TABLE fd_pt1 ALTER COLUMN c8 TYPE char(10);

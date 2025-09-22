@@ -1,1 +1,0 @@
-ALTER DATABASE regression_utf8 RENAME TO regression_rename_rolled_back;

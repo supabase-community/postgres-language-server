@@ -1,1 +1,0 @@
-ANALYZE e_star;

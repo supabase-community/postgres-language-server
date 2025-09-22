@@ -1,1 +1,0 @@
-SELECT to_timestamp(1262349296.7890123);

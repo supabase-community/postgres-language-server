@@ -1,4 +1,0 @@
-CREATE TABLE fk_partitioned_fk_5 (a int, b int,
-	FOREIGN KEY (a, b) REFERENCES fk_notpartitioned_pk(a, b) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE,
-	FOREIGN KEY (a, b) REFERENCES fk_notpartitioned_pk(a, b) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE)
-  PARTITION BY RANGE (a);

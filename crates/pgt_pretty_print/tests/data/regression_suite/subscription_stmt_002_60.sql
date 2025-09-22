@@ -1,1 +1,0 @@
-CREATE ROLE regress_subscription_user3 IN ROLE pg_create_subscription;

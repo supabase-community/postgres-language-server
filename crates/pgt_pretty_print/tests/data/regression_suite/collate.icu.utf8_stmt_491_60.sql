@@ -1,1 +1,0 @@
-INSERT INTO test32 VALUES (2, 'DEF');

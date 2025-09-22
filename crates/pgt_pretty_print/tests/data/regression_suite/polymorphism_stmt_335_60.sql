@@ -1,1 +1,0 @@
-select testpolym(37);

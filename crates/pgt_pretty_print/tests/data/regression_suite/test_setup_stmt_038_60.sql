@@ -1,1 +1,0 @@
-COPY person FROM 'filename';

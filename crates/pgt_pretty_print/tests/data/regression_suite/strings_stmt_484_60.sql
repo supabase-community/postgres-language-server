@@ -1,1 +1,0 @@
-SELECT chr(0);

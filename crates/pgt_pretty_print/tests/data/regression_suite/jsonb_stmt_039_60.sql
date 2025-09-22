@@ -1,1 +1,0 @@
-SELECT 'true'::jsonb;

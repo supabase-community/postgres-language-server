@@ -1,1 +1,0 @@
-SET min_parallel_index_scan_size to 0;

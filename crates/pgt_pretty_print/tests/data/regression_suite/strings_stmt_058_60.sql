@@ -1,1 +1,0 @@
-SELECT SUBSTRING('string' FROM 2 FOR 2147483646) AS "tring";

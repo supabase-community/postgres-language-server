@@ -1,1 +1,0 @@
-DROP INDEX pht1_c_idx CASCADE;

@@ -1,2 +1,0 @@
-CREATE TRIGGER rw_view2_upd_trig INSTEAD OF UPDATE ON rw_view2
-  FOR EACH ROW EXECUTE PROCEDURE rw_view1_trig_fn();

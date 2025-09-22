@@ -1,3 +1,0 @@
-CREATE PUBLICATION dump_pub_nsp_2ct FOR
-  TABLES IN SCHEMA pubme,
-  TABLES IN SCHEMA pubme2;

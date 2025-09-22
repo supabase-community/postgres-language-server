@@ -1,1 +1,0 @@
-DROP FOREIGN TABLE IF EXISTS no_table;

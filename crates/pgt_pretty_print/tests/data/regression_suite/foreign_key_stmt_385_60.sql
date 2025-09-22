@@ -1,2 +1,0 @@
-ALTER TABLE fktable ADD CONSTRAINT fk_3_1
-FOREIGN KEY (x3) REFERENCES pktable(id1);

@@ -1,1 +1,0 @@
-REINDEX TABLE CONCURRENTLY concur_reindex_part_index_10;

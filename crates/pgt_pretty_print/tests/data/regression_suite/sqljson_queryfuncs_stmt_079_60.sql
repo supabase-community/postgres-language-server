@@ -1,1 +1,0 @@
-SELECT JSON_VALUE(jsonb '[1,2]', '$[*]' ERROR ON ERROR);

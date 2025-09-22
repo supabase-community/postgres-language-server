@@ -1,1 +1,0 @@
-SELECT 2 IS DISTINCT FROM 2 as "no";

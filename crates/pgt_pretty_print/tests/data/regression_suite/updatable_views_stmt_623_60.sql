@@ -1,1 +1,0 @@
-EXECUTE ins(10, ARRAY[4,5]);

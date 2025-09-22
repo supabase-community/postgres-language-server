@@ -1,1 +1,0 @@
-drop domain intdom1;

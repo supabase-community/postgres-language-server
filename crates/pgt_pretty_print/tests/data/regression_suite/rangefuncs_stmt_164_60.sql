@@ -1,1 +1,0 @@
-CREATE TEMPORARY SEQUENCE rngfunc_rescan_seq2;

@@ -1,1 +1,0 @@
-SELECT '""=r*/""'::aclitem;

@@ -1,1 +1,0 @@
-INSERT INTO gtest4 VALUES (1), (6);

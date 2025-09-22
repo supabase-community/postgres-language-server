@@ -1,1 +1,0 @@
-CREATE TABLE ptif_test11 PARTITION OF ptif_test1 FOR VALUES IN (1);

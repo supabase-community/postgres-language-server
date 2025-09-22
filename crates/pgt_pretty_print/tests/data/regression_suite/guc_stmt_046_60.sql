@@ -1,1 +1,0 @@
-SAVEPOINT second_sp;

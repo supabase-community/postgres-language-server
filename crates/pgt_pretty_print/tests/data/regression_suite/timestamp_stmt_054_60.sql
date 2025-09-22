@@ -1,1 +1,0 @@
-set datestyle to ymd;

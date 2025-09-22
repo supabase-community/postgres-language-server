@@ -1,1 +1,0 @@
-INSERT INTO z VALUES (NULL, 'text');

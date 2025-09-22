@@ -6,7 +6,7 @@ use std::fs::{create_dir_all, remove_dir_all, File};
 use std::io::{BufRead, Cursor, Write};
 use std::process::Command;
 
-const OUTPUT_DIR: &str = "crates/pgt_pretty_print/tests/data/regression_suite";
+const OUTPUT_DIR: &str = "crates/pgt_pretty_print/tests/data/multi";
 
 fn find_project_root() -> Result<Utf8PathBuf> {
     // Start from the current directory and walk up until we find Cargo.toml
@@ -74,7 +74,8 @@ pub fn download_regression_tests() -> Result<()> {
         let content_str = std::str::from_utf8(&processed_content)?;
         let split_result = pgt_statement_splitter::split(content_str);
 
-        let mut statement_counter = 0;
+        let mut valid_statements = Vec::new();
+
         for (idx, range) in split_result.ranges.iter().enumerate() {
             let statement = &content_str[usize::from(range.start())..usize::from(range.end())];
             let trimmed = statement.trim();
@@ -95,17 +96,8 @@ pub fn download_regression_tests() -> Result<()> {
                         continue;
                     }
 
-                    // Generate filename for this statement
-                    let base_name = filename.strip_suffix(".sql").unwrap_or(filename);
-                    let stmt_filename =
-                        format!("{}_stmt_{:03}_60.sql", base_name, statement_counter);
-                    let filepath = target_dir.join(stmt_filename);
-
-                    // Write the statement to file
-                    let mut dest = File::create(&filepath)?;
-                    writeln!(dest, "{}", trimmed)?;
-
-                    statement_counter += 1;
+                    // Add valid statement to the list
+                    valid_statements.push(trimmed);
                 }
                 Err(e) => {
                     eprintln!(
@@ -117,6 +109,22 @@ pub fn download_regression_tests() -> Result<()> {
                     continue;
                 }
             }
+        }
+
+        // Write all valid statements to a single file
+        if !valid_statements.is_empty() {
+            let base_name = filename.strip_suffix(".sql").unwrap_or(filename);
+            let output_filename = format!("{}_60.sql", base_name);
+            let filepath = target_dir.join(output_filename);
+
+            let mut dest = File::create(&filepath)?;
+            for (i, stmt) in valid_statements.iter().enumerate() {
+                if i > 0 {
+                    write!(dest, "\n\n")?;
+                }
+                write!(dest, "{}", stmt)?;
+            }
+            writeln!(dest)?; // Final newline
         }
     }
 
@@ -284,47 +292,13 @@ mod tests {
     use super::*;
 
     fn test_preprocess_sql(sql: &str) -> Result<String> {
-        use std::fs;
-        use std::time::{SystemTime, UNIX_EPOCH};
-
-        // Create a unique temporary directory for test files
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let temp_dir = env::temp_dir().join(format!("test_sql_statements_{}", timestamp));
-        let temp_dir_utf8 = Utf8PathBuf::try_from(temp_dir).unwrap();
-
-        fs::create_dir_all(&temp_dir_utf8)?;
-
         let input = sql.as_bytes();
         let cursor = Cursor::new(input);
-        preprocess_sql(cursor, &temp_dir_utf8, "test.sql")?;
+        let mut output = Vec::new();
 
-        // Read all generated files and concatenate their contents
-        let mut result = String::new();
-        let mut entries: Vec<_> = fs::read_dir(&temp_dir_utf8)?
-            .filter_map(|entry| entry.ok())
-            .filter(|entry| {
-                entry
-                    .file_name()
-                    .to_string_lossy()
-                    .starts_with("test_stmt_")
-            })
-            .collect();
+        preprocess_sql(cursor, &mut output)?;
 
-        // Sort by filename to maintain order
-        entries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
-
-        for entry in entries {
-            let content = fs::read_to_string(entry.path())?;
-            result.push_str(&content);
-        }
-
-        // Clean up
-        let _ = fs::remove_dir_all(&temp_dir_utf8); // Ignore cleanup errors
-
-        Ok(result)
+        Ok(String::from_utf8(output)?)
     }
 
     #[test]

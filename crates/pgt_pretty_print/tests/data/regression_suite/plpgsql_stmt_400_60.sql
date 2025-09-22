@@ -1,1 +1,0 @@
-select constant_refcursor();

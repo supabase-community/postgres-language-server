@@ -1,1 +1,0 @@
-REINDEX TABLE sro_tab;

@@ -1,1 +1,0 @@
-INSERT INTO trgfire VALUES (11);

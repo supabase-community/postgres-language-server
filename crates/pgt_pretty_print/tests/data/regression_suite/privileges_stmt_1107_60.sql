@@ -1,2 +1,0 @@
-ALTER DEFAULT PRIVILEGES FOR ROLE pg_signal_backend
-	REVOKE USAGE ON TYPES FROM pg_signal_backend;

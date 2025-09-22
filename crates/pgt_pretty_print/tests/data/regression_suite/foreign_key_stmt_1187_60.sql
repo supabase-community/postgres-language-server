@@ -1,1 +1,0 @@
-ALTER TABLE fkpart11.pk12 DROP c;

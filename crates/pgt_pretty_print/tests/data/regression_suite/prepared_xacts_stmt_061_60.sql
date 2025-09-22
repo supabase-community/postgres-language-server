@@ -1,1 +1,0 @@
-DECLARE foo CURSOR FOR SELECT * FROM pxtest4;

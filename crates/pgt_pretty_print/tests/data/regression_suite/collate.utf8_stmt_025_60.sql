@@ -1,1 +1,0 @@
-SELECT 'xAb' ~* '[W-Y]' COLLATE PG_C_UTF8;

@@ -1,1 +1,0 @@
-DROP SCHEMA lock_schema1 CASCADE;

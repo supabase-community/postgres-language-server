@@ -1,1 +1,0 @@
-RESET vacuum_truncate;

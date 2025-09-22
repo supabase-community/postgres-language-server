@@ -1,1 +1,0 @@
-ALTER TABLE tststats.priv_test_tbl ENABLE ROW LEVEL SECURITY;

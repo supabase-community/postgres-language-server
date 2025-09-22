@@ -1,1 +1,0 @@
-SELECT JSON_ARRAY(SELECT i, i FROM (VALUES (1)) foo(i));

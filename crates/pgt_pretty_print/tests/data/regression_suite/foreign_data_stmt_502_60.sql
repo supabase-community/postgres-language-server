@@ -1,1 +1,0 @@
-DROP TABLE fd_pt2;

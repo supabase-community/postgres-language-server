@@ -1,2 +1,0 @@
-CREATE TABLE ptif_test1 PARTITION OF ptif_test
-  FOR VALUES FROM (0) TO (100) PARTITION BY list (b);

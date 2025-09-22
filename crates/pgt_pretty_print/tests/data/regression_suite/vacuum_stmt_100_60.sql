@@ -1,1 +1,0 @@
-VACUUM (PARALLEL 2, FULL TRUE) pvactst;

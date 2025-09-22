@@ -1,1 +1,0 @@
-select '$.keyvalue().key'::jsonpath;

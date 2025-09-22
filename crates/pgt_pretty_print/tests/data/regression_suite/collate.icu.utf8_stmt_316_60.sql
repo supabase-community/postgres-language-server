@@ -1,1 +1,0 @@
-SELECT x FROM test3ci WHERE x SIMILAR TO 'a%';

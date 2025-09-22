@@ -1,1 +1,0 @@
-INSERT INTO datdba_only DEFAULT VALUES;

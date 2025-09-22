@@ -1,1 +1,0 @@
-ALTER TABLE gtest10a DROP COLUMN b;

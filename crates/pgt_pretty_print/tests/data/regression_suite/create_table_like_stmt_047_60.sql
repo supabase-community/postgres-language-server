@@ -1,1 +1,0 @@
-CREATE TABLE test_like_4c (LIKE test_like_4 INCLUDING GENERATED);

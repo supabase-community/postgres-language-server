@@ -1,1 +1,0 @@
-SELECT * FROM point_tbl WHERE f1 IS NULL;

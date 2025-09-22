@@ -1,1 +1,0 @@
-LOCK TABLE lock_view6 IN EXCLUSIVE MODE;

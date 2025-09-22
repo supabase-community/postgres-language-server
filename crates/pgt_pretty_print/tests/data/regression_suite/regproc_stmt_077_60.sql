@@ -1,1 +1,0 @@
-SELECT regrole('"Nonexistent"');

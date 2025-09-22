@@ -1,1 +1,0 @@
-FETCH 1 FROM foo;

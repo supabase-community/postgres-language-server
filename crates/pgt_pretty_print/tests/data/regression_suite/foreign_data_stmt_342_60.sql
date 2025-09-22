@@ -1,1 +1,0 @@
-GRANT USAGE ON FOREIGN SERVER s8 TO regress_test_role;

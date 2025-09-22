@@ -1,1 +1,0 @@
-INSERT INTO test21 VALUES (2, 'ABC');

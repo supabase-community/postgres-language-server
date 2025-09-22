@@ -1,5 +1,0 @@
-CREATE PROCEDURE ptest2()
-LANGUAGE SQL
-AS $$
-SELECT 5;
-$$;

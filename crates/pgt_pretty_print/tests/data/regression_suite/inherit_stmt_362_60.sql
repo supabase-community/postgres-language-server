@@ -1,1 +1,0 @@
-analyze patest2;

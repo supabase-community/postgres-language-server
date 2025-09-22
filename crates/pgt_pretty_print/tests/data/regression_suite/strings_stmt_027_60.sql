@@ -1,1 +1,0 @@
-SELECT reverse(''::bytea);

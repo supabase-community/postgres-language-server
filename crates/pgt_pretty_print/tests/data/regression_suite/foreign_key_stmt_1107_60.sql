@@ -1,1 +1,0 @@
-CREATE TABLE tbl1(f1 int PRIMARY KEY)

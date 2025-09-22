@@ -1,1 +1,0 @@
-SELECT JSON_VALUE(jsonb '"2017-02-20"', '$' RETURNING date) + 9;

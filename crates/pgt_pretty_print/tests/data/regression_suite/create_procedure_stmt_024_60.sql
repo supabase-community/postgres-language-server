@@ -1,5 +1,0 @@
-CREATE PROCEDURE ptest4a(INOUT a int, INOUT b int)
-LANGUAGE SQL
-AS $$
-SELECT 1, 2;
-$$;

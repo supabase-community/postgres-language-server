@@ -1,1 +1,0 @@
-ALTER TABLE gtest29 DROP COLUMN a;

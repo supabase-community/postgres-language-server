@@ -1,1 +1,0 @@
-SELECT JSON_OBJECT('foo': NULL::json FORMAT JSON);

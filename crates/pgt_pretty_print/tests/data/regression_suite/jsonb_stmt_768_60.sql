@@ -1,1 +1,0 @@
-select '[]'::jsonb || '["a"]'::jsonb;

@@ -1,1 +1,0 @@
-DROP FOREIGN DATA WRAPPER test_fdw;

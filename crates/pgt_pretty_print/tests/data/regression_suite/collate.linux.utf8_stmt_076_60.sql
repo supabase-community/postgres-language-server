@@ -1,1 +1,0 @@
-SELECT to_date('1234567890ab 2010', 'TMMONTH YYYY');

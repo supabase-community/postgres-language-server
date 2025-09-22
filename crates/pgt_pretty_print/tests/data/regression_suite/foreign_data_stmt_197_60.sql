@@ -1,1 +1,0 @@
-CREATE FOREIGN TABLE ft1 () SERVER no_server;

@@ -1,1 +1,0 @@
-REINDEX INDEX CONCURRENTLY brin_insert_optimization_idx;

@@ -1,1 +1,0 @@
-INSERT INTO T VALUES (7), (8);

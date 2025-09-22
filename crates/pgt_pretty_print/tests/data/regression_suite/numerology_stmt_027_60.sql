@@ -1,1 +1,0 @@
-PREPARE p1 AS SELECT $1a;

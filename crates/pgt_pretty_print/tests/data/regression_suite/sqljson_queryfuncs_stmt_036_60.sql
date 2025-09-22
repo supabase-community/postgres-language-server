@@ -1,1 +1,0 @@
-SELECT JSON_VALUE(jsonb '"1.23"', '$' RETURNING int ERROR ON ERROR);

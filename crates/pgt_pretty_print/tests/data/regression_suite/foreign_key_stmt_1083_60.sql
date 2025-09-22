@@ -1,1 +1,0 @@
-UPDATE pk SET a = 90 WHERE a = 30 RETURNING *;

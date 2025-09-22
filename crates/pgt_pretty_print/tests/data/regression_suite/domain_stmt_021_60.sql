@@ -1,1 +1,0 @@
-create domain domaintext text;

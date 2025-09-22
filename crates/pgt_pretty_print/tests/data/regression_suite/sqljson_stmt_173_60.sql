@@ -1,2 +1,0 @@
-SELECT JSON_ARRAYAGG(('111' || i)::bytea FORMAT JSON NULL ON NULL RETURNING text) OVER (PARTITION BY i % 2)
-FROM generate_series(1,5) i;

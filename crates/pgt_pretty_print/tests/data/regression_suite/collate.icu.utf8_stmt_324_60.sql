@@ -1,1 +1,0 @@
-SELECT DISTINCT x FROM test3ci ORDER BY x;

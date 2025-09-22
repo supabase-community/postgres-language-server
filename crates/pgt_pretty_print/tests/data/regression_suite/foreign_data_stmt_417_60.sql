@@ -1,1 +1,0 @@
-DROP TRIGGER trigtest_before_stmt ON foreign_schema.foreign_table_1;

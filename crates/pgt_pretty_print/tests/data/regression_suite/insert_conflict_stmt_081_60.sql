@@ -1,1 +1,0 @@
-drop index tricky_expr_comp_key_index;

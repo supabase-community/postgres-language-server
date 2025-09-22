@@ -1,1 +1,0 @@
-truncate parted_copytest;

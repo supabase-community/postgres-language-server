@@ -1,1 +1,0 @@
-DROP TABLE temporal_fk2_mltrng2mltrng;

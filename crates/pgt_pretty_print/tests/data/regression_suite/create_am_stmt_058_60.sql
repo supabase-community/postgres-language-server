@@ -1,1 +1,0 @@
-SELECT COUNT(a), COUNT(1) FILTER(WHERE a=1) FROM heaptable;

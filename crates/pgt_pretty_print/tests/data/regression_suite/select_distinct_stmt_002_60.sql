@@ -1,1 +1,0 @@
-SELECT DISTINCT string4 FROM onek ORDER BY 1;

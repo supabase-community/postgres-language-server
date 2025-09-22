@@ -1,1 +1,0 @@
-ALTER TABLE t2 ADD COLUMN d domain4;

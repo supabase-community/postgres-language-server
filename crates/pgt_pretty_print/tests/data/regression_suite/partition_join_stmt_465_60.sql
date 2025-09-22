@@ -1,1 +1,0 @@
-ALTER TABLE plt1_adv DETACH PARTITION plt1_adv_p1;

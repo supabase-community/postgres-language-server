@@ -1,1 +1,0 @@
-UPDATE v2 SET b = 'ONE' WHERE a = 1;

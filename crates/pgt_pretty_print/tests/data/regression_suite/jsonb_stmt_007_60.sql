@@ -1,1 +1,0 @@
-SELECT '"\n\"\\"'::jsonb;

@@ -1,1 +1,0 @@
-CREATE TABLE trgfire5 (LIKE trgfire) PARTITION BY LIST (i);

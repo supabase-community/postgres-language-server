@@ -1,1 +1,0 @@
-ALTER TABLE rf_tbl_abcd_nopk REPLICA IDENTITY NOTHING;

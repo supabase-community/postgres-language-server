@@ -1,1 +1,0 @@
-ALTER TABLE rf_tbl_abcd_nopk ALTER COLUMN c SET NOT NULL;

@@ -1,1 +1,0 @@
-DEALLOCATE select1;

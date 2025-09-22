@@ -1,1 +1,0 @@
-truncate list_parted;

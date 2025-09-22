@@ -1,1 +1,0 @@
-SELECT INTERVAL '01:00' AS "One hour";

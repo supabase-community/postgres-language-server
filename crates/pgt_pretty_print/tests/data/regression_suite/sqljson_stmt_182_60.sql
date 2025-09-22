@@ -1,1 +1,0 @@
-SELECT NULL::jsonb IS JSON;

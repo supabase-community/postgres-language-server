@@ -1,1 +1,0 @@
-CREATE ROLE regress_roleoption_protagonist;

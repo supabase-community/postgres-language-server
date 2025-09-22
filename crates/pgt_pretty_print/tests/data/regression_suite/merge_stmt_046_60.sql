@@ -1,1 +1,0 @@
-ALTER TABLE target ADD PRIMARY KEY (tid);

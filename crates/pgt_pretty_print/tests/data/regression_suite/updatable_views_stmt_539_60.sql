@@ -1,1 +1,0 @@
-SELECT * FROM ONLY rw_view1 ORDER BY a;

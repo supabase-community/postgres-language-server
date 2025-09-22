@@ -1,1 +1,0 @@
-INSERT INTO LINE_TBL VALUES ('[(1,3),(2,3)]');

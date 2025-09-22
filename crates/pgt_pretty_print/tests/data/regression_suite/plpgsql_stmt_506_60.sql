@@ -1,1 +1,0 @@
-select shadowtest(1);

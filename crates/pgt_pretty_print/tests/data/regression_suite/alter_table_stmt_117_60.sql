@@ -1,1 +1,0 @@
-ALTER INDEX alter_idx_rename_test_parted RENAME TO alter_idx_rename_test_parted_2;

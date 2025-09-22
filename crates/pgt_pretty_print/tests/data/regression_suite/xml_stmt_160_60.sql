@@ -1,1 +1,0 @@
-SELECT xpath('/nosuchtag', '<root/>');

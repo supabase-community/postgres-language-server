@@ -1,1 +1,0 @@
-SELECT * FROM v1 WHERE b=8;

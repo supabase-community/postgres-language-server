@@ -1,1 +1,0 @@
-DROP STATISTICS gtest31_2_stat;

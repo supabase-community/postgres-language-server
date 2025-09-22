@@ -1,1 +1,0 @@
-ANALYZE grouping_unique;

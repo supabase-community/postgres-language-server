@@ -1,1 +1,0 @@
-DROP EVENT TRIGGER regress_event_trigger_report_dropped;

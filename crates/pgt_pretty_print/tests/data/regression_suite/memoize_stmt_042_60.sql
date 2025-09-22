@@ -1,1 +1,0 @@
-CREATE TABLE prt (a int) PARTITION BY RANGE(a);

@@ -1,1 +1,0 @@
-ALTER TABLE atest6 DROP COLUMN three;

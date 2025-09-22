@@ -1,1 +1,0 @@
-UPDATE v2 SET a = 1;

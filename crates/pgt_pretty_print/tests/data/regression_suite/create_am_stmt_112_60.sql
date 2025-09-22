@@ -1,2 +1,0 @@
-CREATE TABLE am_partitioned_6p PARTITION OF am_partitioned
-  FOR VALUES WITH (MODULUS 10, REMAINDER 6) PARTITION BY hash(y);

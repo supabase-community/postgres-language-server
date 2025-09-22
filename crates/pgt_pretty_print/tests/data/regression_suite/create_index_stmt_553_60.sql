@@ -1,1 +1,0 @@
-DROP FUNCTION create_relfilenode_part;

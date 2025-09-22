@@ -1,1 +1,0 @@
-DROP VIEW atestv4;

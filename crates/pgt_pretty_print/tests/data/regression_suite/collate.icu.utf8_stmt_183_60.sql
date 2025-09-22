@@ -1,1 +1,0 @@
-DROP COLLATION test0;

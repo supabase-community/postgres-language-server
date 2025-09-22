@@ -1,1 +1,0 @@
-SELECT int4 '0x1EEE_FFFF';

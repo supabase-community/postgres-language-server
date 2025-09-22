@@ -1,1 +1,0 @@
-select compos();

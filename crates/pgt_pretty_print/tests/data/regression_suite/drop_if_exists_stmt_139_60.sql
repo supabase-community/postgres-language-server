@@ -1,1 +1,0 @@
-DROP TEXT SEARCH PARSER IF EXISTS no_such_schema.foo;

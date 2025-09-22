@@ -1,1 +1,0 @@
-DELETE FROM pvactst2 WHERE i < 1000;

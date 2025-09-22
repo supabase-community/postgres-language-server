@@ -1,1 +1,0 @@
-DROP TEXT SEARCH CONFIGURATION IF EXISTS test_tsconfig_exists;

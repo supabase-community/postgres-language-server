@@ -1,1 +1,0 @@
-ANALYZE real_city;

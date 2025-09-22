@@ -1,1 +1,0 @@
-RESET temp_buffers;

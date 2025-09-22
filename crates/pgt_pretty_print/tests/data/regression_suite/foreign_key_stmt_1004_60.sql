@@ -1,1 +1,0 @@
-INSERT INTO ref VALUES(1,2,3);

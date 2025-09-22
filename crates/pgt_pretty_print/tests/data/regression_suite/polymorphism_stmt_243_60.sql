@@ -1,1 +1,0 @@
-select dfunc('Hi', 'City');

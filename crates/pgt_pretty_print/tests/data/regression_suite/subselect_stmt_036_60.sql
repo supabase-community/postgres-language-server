@@ -1,1 +1,0 @@
-SELECT count FROM (SELECT COUNT(DISTINCT name) FROM road);

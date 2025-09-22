@@ -1,1 +1,0 @@
-SELECT * FROM T WHERE c_text LIKE '"%"' ORDER BY PK;

@@ -1,1 +1,0 @@
-VACUUM maintain_test;

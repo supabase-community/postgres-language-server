@@ -1,1 +1,0 @@
-CREATE USER regress_alter_table_user1;

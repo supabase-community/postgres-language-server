@@ -1,1 +1,0 @@
-SELECT x FROM test2cs UNION SELECT x FROM test1cs ORDER BY x;

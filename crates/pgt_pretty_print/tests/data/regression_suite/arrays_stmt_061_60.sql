@@ -1,1 +1,0 @@
-INSERT INTO arrtest_s VALUES(NULL, NULL);

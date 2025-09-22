@@ -1,1 +1,0 @@
-DROP TABLE city_table CASCADE;

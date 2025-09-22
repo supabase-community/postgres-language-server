@@ -1,1 +1,0 @@
-CREATE TABLE inhz (x text REFERENCES inhz, LIKE inhx INCLUDING INDEXES);

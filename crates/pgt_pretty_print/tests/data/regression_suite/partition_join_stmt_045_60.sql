@@ -1,3 +1,0 @@
-SELECT * FROM prt1 t1 JOIN LATERAL
-			  (SELECT * FROM prt1 t2 TABLESAMPLE SYSTEM (t1.a) REPEATABLE(t1.b)) s
-			  ON t1.a = s.a;

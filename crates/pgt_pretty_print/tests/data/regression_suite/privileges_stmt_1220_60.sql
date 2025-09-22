@@ -1,1 +1,0 @@
-DROP ROLE regress_group_indirect_manager;

@@ -1,1 +1,0 @@
-INSERT INTO gtest1_1 VALUES (4);

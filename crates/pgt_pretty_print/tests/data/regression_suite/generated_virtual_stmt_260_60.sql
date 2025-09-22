@@ -1,4 +1,0 @@
-CREATE TRIGGER gtest2b BEFORE INSERT OR UPDATE ON gtest26
-  FOR EACH ROW
-  WHEN (NEW.* IS NOT NULL)  -- error
-  EXECUTE PROCEDURE gtest_trigger_func();

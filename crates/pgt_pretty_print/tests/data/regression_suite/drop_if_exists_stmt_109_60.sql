@@ -1,1 +1,0 @@
-DROP ACCESS METHOD IF EXISTS no_such_am;

@@ -1,1 +1,0 @@
-DROP SEQUENCE functest1 CASCADE;

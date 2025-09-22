@@ -1,1 +1,0 @@
-SELECT f1, area(f1) FROM PATH_TBL;

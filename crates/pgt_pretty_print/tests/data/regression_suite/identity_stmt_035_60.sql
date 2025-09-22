@@ -1,1 +1,0 @@
-INSERT INTO itest5 VALUES (DEFAULT, 'a');

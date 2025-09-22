@@ -1,1 +1,0 @@
-CREATE TABLE BOX_TBL (f1 box);

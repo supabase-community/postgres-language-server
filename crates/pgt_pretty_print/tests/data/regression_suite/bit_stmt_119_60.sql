@@ -1,1 +1,0 @@
-TABLE bit_defaults;

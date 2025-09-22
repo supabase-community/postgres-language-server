@@ -1,1 +1,0 @@
-INSERT INTO atest5 VALUES (5,5,5);

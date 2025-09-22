@@ -1,1 +1,0 @@
-DROP SCHEMA testschema CASCADE;

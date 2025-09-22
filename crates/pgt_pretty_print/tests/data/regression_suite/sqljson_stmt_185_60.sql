@@ -1,1 +1,0 @@
-SELECT NULL::int IS JSON;

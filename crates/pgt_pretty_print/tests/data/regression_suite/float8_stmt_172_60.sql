@@ -1,1 +1,0 @@
-create type xfloat8;

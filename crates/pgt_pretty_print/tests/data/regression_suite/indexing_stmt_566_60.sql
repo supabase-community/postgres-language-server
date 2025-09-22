@@ -1,1 +1,0 @@
-reindex index test_pg_index_toast_index;

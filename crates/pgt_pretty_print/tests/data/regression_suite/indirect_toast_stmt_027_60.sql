@@ -1,1 +1,0 @@
-RESET default_toast_compression;

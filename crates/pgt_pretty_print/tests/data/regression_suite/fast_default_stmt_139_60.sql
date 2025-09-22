@@ -1,1 +1,0 @@
-ALTER TABLE t1 ADD COLUMN c text;

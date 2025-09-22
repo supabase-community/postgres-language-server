@@ -1,1 +1,0 @@
-analyze lprt_a;

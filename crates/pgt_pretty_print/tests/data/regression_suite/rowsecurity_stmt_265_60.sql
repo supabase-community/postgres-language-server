@@ -1,1 +1,0 @@
-DROP POLICY p3 on s1;

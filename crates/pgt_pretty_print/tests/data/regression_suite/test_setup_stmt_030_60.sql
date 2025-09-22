@@ -1,1 +1,0 @@
-CREATE TABLE onek2 AS SELECT * FROM onek;

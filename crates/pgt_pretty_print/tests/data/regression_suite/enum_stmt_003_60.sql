@@ -1,1 +1,0 @@
-SELECT 'mauve'::rainbow;

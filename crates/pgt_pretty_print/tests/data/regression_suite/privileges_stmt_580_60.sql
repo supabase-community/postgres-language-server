@@ -1,1 +1,0 @@
-DROP FUNCTION castfunc(int) CASCADE;

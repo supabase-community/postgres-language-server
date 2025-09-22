@@ -1,1 +1,0 @@
-INSERT INTO tasks VALUES (3,3,3,3);

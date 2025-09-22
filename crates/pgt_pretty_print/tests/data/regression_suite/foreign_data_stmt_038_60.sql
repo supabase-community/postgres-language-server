@@ -1,1 +1,0 @@
-ALTER FOREIGN DATA WRAPPER foo OPTIONS (a '1', b '2');

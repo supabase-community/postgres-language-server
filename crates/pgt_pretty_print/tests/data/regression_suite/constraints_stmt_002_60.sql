@@ -1,1 +1,0 @@
-INSERT INTO DEFAULT_TBL VALUES (1, 'bruce');

@@ -1,1 +1,0 @@
-LOCK TABLE lock_view4 IN EXCLUSIVE MODE;

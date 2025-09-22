@@ -1,1 +1,0 @@
-ALTER TABLE inhta ADD COLUMN i int, ADD COLUMN j bigint DEFAULT 1;

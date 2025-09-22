@@ -1,1 +1,0 @@
-SELECT E'DeAdBeEf'::bytea;

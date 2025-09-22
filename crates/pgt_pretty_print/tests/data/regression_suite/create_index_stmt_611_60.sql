@@ -1,1 +1,0 @@
-REINDEX INDEX CONCURRENTLY concur_temp_ind_2;

@@ -1,1 +1,0 @@
-DELETE FROM PKTABLE where ptest1=2;

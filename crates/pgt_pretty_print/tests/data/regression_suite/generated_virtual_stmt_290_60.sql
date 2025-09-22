@@ -1,1 +1,0 @@
-analyze gtest32;

@@ -1,1 +1,0 @@
-select recurse(10);

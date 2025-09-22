@@ -1,1 +1,0 @@
-INSERT INTO base_tbl VALUES (3);

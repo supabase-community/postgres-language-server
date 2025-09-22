@@ -1,1 +1,0 @@
-select infinite_recurse();

@@ -1,1 +1,0 @@
-select concat(variadic '{}'::int[]) = '';

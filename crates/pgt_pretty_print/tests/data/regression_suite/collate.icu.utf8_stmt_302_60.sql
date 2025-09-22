@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX ON test3cs (x);

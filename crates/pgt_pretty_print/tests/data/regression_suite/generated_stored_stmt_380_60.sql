@@ -1,1 +1,0 @@
-DROP TRIGGER gtest11 ON gtest26;

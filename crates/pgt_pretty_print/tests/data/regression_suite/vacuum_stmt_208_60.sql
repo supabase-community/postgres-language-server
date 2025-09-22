@@ -1,1 +1,0 @@
-ANALYZE (SKIP_LOCKED, VERBOSE) does_not_exist;

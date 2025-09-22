@@ -1,1 +1,0 @@
-RESET enable_bitmapscan;

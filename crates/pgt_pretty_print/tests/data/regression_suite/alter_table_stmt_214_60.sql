@@ -1,1 +1,0 @@
-INSERT INTO attmp7 VALUES (8, 18);

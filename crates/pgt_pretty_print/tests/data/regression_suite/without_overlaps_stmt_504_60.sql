@@ -1,1 +1,0 @@
-DROP TABLE temporal_partitioned_fk_rng2rng;

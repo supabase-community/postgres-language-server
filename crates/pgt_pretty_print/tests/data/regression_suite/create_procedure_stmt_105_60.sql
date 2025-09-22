@@ -1,1 +1,0 @@
-DROP PROCEDURE ptest1s;

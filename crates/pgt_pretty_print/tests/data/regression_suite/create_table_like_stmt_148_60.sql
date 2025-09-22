@@ -1,1 +1,0 @@
-CREATE SERVER ctl_s0 FOREIGN DATA WRAPPER ctl_dummy;

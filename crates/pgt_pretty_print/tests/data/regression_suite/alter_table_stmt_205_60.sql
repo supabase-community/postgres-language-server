@@ -1,1 +1,0 @@
-select * from attmp3;

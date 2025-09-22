@@ -1,1 +1,0 @@
-DROP VIEW rec1v, rec2v CASCADE;

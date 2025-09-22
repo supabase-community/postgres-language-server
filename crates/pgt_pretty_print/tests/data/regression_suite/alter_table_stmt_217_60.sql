@@ -1,1 +1,0 @@
-ALTER TABLE attmp3 VALIDATE CONSTRAINT identity;

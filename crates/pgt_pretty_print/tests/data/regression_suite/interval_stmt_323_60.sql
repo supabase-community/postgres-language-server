@@ -1,1 +1,0 @@
-select interval '-2147483648 months -2147483648 days -9223372036854775808 microseconds ago';

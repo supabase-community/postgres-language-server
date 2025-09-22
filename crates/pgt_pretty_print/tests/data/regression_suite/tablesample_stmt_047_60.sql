@@ -1,1 +1,0 @@
-SELECT id FROM test_tablesample_v1 TABLESAMPLE BERNOULLI (1);

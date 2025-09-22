@@ -1,1 +1,0 @@
-reset bytea_output;

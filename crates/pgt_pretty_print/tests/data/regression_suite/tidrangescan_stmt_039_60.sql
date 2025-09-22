@@ -1,1 +1,0 @@
-FETCH PRIOR c;

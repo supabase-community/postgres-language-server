@@ -1,1 +1,0 @@
-CLUSTER abbrev_abort_uuids USING abbrev_abort_uuids__abort_decreasing_idx;

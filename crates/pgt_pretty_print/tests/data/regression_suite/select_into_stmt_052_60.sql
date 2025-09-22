@@ -1,1 +1,0 @@
-CREATE VIEW foo AS SELECT 1 INTO int4_tbl;

@@ -1,1 +1,0 @@
-UPDATE PKTABLE SET ptest1=0 WHERE ptest1=2;

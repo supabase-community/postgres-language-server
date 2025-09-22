@@ -1,1 +1,0 @@
-SET xmloption TO CONTENT;

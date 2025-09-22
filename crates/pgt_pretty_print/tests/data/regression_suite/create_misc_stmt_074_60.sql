@@ -1,1 +1,0 @@
-ALTER TABLE b_star* RENAME COLUMN b TO bb;

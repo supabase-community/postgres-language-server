@@ -1,1 +1,0 @@
-select 'asdf'::xid8;

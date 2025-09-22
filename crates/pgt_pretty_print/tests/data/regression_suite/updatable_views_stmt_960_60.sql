@@ -1,1 +1,0 @@
-drop trigger base_tab_def_view_instrig on base_tab_def_view;

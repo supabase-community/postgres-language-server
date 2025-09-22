@@ -1,1 +1,0 @@
-ANALYZE transition_table_status;

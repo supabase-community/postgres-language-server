@@ -1,1 +1,0 @@
-SELECT JSON_QUERY(jsonb '"1"', '$' RETURNING qf_char_domain OMIT QUOTES ERROR ON ERROR);

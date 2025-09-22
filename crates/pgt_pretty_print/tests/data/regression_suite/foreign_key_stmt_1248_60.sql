@@ -1,1 +1,0 @@
-DELETE FROM fk_p;

@@ -1,1 +1,0 @@
-SELECT 'empty'::numrange &< nummultirange();

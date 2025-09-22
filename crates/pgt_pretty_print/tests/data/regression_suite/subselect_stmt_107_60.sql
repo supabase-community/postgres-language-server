@@ -1,1 +1,0 @@
-analyze semijoin_unique_tbl;

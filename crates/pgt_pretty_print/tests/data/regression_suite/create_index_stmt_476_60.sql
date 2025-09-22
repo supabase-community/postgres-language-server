@@ -1,1 +1,0 @@
-REINDEX TABLE CONCURRENTLY testcomment ;

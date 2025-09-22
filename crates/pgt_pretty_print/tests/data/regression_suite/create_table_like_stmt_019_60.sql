@@ -1,1 +1,0 @@
-CREATE TABLE inhg (x text, LIKE inhx INCLUDING CONSTRAINTS, y text);

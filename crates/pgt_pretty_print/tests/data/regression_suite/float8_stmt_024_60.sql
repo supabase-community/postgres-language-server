@@ -1,1 +1,0 @@
-SELECT 'nan'::float8;

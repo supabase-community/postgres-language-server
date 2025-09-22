@@ -1,1 +1,0 @@
-execute foo(false);

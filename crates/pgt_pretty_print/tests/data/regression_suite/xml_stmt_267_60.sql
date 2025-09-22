@@ -1,1 +1,0 @@
-SELECT xmltext('foo & <"bar">');

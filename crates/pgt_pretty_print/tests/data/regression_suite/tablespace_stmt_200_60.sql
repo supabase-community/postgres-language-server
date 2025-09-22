@@ -1,1 +1,0 @@
-DROP TABLESPACE regress_tblspace_renamed;

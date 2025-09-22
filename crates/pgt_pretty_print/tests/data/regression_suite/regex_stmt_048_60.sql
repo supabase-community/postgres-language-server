@@ -1,1 +1,0 @@
-select 'zyy' ~ '(?<![xy])yy+';

@@ -1,1 +1,0 @@
-SELECT ARRAY[1.1] || ARRAY[2,3,4];

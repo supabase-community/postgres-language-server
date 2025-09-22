@@ -1,1 +1,0 @@
-drop function base_tab_def_view_instrig_func;

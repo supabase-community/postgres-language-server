@@ -1,1 +1,0 @@
-INSERT INTO num_data VALUES (4, '7799461.4119');

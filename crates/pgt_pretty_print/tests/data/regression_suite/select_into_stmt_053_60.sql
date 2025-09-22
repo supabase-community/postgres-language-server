@@ -1,1 +1,0 @@
-INSERT INTO int4_tbl SELECT 1 INTO f;

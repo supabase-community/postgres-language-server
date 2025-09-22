@@ -1,1 +1,0 @@
-SELECT '          -INFINiTY   '::float4;

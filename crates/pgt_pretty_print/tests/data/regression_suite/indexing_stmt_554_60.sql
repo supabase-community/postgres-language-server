@@ -1,1 +1,0 @@
-alter index parted_replica_idx_1 ATTACH PARTITION parted_replica_idx_11;

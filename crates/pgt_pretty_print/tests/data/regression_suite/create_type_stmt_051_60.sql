@@ -1,1 +1,0 @@
-TABLE mytab;

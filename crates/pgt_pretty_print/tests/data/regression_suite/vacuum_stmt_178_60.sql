@@ -1,1 +1,0 @@
-VACUUM FULL vacparted, vactst;

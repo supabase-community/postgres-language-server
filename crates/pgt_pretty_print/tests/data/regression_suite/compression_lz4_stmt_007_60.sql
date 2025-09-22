@@ -1,1 +1,0 @@
-CREATE TABLE cmdata_lz4(f1 TEXT COMPRESSION lz4);

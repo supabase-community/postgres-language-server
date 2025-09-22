@@ -1,1 +1,0 @@
-ALTER TABLE trgfire ENABLE TRIGGER tg;

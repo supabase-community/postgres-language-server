@@ -1,5 +1,0 @@
-CREATE PROCEDURE ptest1(x text)
-LANGUAGE SQL
-AS $$
-INSERT INTO cp_test VALUES (1, x);
-$$;

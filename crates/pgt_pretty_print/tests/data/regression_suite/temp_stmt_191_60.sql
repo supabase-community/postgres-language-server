@@ -1,1 +1,0 @@
-TRUNCATE test_temp;

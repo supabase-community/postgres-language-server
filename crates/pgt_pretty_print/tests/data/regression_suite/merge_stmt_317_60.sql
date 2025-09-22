@@ -1,1 +1,0 @@
-ALTER TABLE part4 DROP COLUMN extraid;

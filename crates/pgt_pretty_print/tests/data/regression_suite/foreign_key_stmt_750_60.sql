@@ -1,1 +1,0 @@
-grant references on fk_notpartitioned_pk to regress_other_partitioned_fk_owner;

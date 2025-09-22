@@ -1,1 +1,0 @@
-CREATE TABLE trgfire (i int) PARTITION BY RANGE (i);

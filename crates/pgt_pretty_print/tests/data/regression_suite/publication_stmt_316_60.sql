@@ -1,1 +1,0 @@
-ALTER TABLE testpub_tbl8_0 ADD PRIMARY KEY (a);

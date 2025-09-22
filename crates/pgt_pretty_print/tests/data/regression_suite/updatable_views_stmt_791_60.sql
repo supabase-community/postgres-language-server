@@ -1,1 +1,0 @@
-INSERT INTO t2 VALUES (10), (20);

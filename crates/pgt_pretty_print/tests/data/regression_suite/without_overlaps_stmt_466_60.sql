@@ -1,1 +1,0 @@
-TRUNCATE temporal_mltrng, temporal_fk_mltrng2mltrng;

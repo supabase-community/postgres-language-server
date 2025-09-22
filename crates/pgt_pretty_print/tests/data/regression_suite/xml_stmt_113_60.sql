@@ -1,1 +1,0 @@
-SELECT '<>' IS NOT DOCUMENT;

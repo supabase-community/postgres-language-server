@@ -1,1 +1,0 @@
-ALTER TABLE testpub_tbl5 DROP COLUMN c;

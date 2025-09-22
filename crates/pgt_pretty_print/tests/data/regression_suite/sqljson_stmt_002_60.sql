@@ -1,1 +1,0 @@
-SELECT JSON('{ "a" : 1 } ' FORMAT JSON);

@@ -1,1 +1,0 @@
-DROP TABLE trunc_f CASCADE;

@@ -1,1 +1,0 @@
-DROP TABLE foo_parted CASCADE;

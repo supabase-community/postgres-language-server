@@ -1,1 +1,0 @@
-SELECT EXTRACT(ISODOW        FROM DATE 'infinity');

@@ -1,4 +1,0 @@
-CREATE TEMP TABLE users (
-  id INT PRIMARY KEY,
-  name VARCHAR NOT NULL
-);

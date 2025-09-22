@@ -1,1 +1,0 @@
-CREATE USER MAPPING FOR current_user SERVER s4;

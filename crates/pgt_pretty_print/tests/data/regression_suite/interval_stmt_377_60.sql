@@ -1,1 +1,0 @@
-SELECT i, isfinite(i) FROM INFINITE_INTERVAL_TBL;

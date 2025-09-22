@@ -1,1 +1,0 @@
-CREATE ROLE regress_passwd6 PASSWORD 'SCRAM-SHA-256$1234';

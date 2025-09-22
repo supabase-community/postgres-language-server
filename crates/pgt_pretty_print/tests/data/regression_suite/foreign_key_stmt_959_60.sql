@@ -1,1 +1,0 @@
-INSERT INTO fk4 VALUES (50);

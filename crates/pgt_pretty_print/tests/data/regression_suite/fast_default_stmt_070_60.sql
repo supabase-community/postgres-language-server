@@ -1,1 +1,0 @@
-CREATE DOMAIN domain1 AS int DEFAULT 11;

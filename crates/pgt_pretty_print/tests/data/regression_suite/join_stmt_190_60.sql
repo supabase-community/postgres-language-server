@@ -1,1 +1,0 @@
-INSERT INTO tt2 VALUES (21, 11);

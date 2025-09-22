@@ -1,1 +1,0 @@
-CREATE TABLE sro_part PARTITION OF sro_ptab FOR VALUES FROM (1) TO (10);

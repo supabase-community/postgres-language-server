@@ -1,1 +1,0 @@
-RELEASE SAVEPOINT savept1;

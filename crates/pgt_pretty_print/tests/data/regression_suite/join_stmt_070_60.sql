@@ -1,1 +1,0 @@
-INSERT INTO t1 VALUES ( 'bb', 11 );

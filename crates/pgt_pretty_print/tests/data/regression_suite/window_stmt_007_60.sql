@@ -1,1 +1,0 @@
-SELECT COUNT(*) OVER () FROM tenk1 WHERE unique2 < 10;

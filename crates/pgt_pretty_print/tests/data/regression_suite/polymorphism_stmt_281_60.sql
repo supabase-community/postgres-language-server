@@ -1,1 +1,0 @@
-drop function dfunc(text);

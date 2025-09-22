@@ -1,1 +1,0 @@
-GRANT SELECT ON atest12sbv TO PUBLIC;

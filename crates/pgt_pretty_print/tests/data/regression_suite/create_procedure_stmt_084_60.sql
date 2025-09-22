@@ -1,1 +1,0 @@
-ALTER PROCEDURE cp_testfunc1(int) VOLATILE;

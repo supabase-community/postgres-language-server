@@ -1,1 +1,0 @@
-SELECT timestamp '-infinity infinity';

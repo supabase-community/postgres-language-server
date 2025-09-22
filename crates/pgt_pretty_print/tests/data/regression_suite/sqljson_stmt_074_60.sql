@@ -1,1 +1,0 @@
-SELECT JSON_OBJECT(json '[1]': 123);

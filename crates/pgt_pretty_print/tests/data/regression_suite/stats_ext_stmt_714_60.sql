@@ -1,1 +1,0 @@
-drop statistics stts_t1_expr_expr_stat;

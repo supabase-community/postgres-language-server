@@ -1,1 +1,0 @@
-INSERT INTO POINT_TBL(f1) VALUES ('asdfasdf');

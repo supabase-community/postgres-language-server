@@ -1,1 +1,0 @@
-DELETE FROM fkpart9.pk WHERE a=35;

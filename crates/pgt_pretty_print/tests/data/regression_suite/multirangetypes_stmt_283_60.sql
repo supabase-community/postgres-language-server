@@ -1,1 +1,0 @@
-select 'empty'::numrange << nummultirange();

@@ -1,1 +1,0 @@
-DROP TABLE testpub_insert_onconfl_no_ri;

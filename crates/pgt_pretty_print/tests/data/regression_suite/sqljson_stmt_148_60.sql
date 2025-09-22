@@ -1,7 +1,0 @@
-SELECT
-	JSON_OBJECTAGG(i: i),
---	JSON_OBJECTAGG(i VALUE i),
---	JSON_OBJECTAGG(KEY i VALUE i),
-	JSON_OBJECTAGG(i: i RETURNING jsonb)
-FROM
-	generate_series(1, 5) i;

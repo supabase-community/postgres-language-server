@@ -1,1 +1,0 @@
-INSERT into fk VALUES (2000);

@@ -1,1 +1,0 @@
-INSERT INTO partkey_t VALUES (100);

@@ -1,1 +1,0 @@
-COPY aggtest FROM 'filename';

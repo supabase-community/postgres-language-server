@@ -1,1 +1,0 @@
-ALTER TABLE part_b DROP CONSTRAINT check_a;

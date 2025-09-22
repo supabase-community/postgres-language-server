@@ -1,1 +1,0 @@
-CREATE ROLE regress_write_server_files IN ROLE pg_write_server_files;

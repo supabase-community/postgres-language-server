@@ -1,1 +1,0 @@
-CREATE TYPE myvarchar;

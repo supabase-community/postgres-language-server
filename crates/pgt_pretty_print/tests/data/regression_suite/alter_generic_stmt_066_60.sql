@@ -1,1 +1,0 @@
-ALTER CONVERSION alt_conv3 SET SCHEMA alt_nsp2;

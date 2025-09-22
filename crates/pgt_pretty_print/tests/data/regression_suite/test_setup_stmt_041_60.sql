@@ -1,1 +1,0 @@
-COPY emp FROM 'filename';

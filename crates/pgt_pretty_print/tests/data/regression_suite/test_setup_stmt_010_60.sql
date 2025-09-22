@@ -1,1 +1,0 @@
-CREATE TABLE INT2_TBL(f1 int2);

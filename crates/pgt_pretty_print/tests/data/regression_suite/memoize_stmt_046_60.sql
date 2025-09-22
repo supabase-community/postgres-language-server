@@ -1,1 +1,0 @@
-INSERT INTO prt VALUES (10), (10), (10), (10);

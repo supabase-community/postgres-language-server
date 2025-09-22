@@ -1,1 +1,0 @@
-ALTER FOREIGN TABLE ft1 SET SCHEMA foreign_schema;

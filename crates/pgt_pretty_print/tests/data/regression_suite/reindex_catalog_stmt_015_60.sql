@@ -1,1 +1,0 @@
-REINDEX INDEX pg_index_indexrelid_index;

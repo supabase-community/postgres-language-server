@@ -1,1 +1,0 @@
-SELECT * FROM t1 ORDER BY a,b;

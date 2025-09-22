@@ -1,1 +1,0 @@
-ALTER TABLE gtest31_1 ALTER COLUMN b TYPE varchar;

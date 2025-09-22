@@ -1,1 +1,0 @@
-CREATE SCHEMA alt_nsp6;

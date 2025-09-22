@@ -1,1 +1,0 @@
-ALTER TABLE gtest20a ADD CHECK (b < 50);

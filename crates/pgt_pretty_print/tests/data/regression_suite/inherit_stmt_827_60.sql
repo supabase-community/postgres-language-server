@@ -1,1 +1,0 @@
-analyze tuplesest_parted;

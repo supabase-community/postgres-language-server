@@ -1,1 +1,0 @@
-TRUNCATE temporal_rng;

@@ -1,1 +1,0 @@
-ALTER PUBLICATION testpub2_forschema DROP TABLES IN SCHEMA pub_test1;

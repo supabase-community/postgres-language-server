@@ -1,1 +1,0 @@
-GRANT pg_read_all_stats TO regress_readallstats;

@@ -1,1 +1,0 @@
-analyze tt3;

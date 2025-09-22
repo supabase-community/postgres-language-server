@@ -1,1 +1,0 @@
-CREATE TABLE t12 (e int[]) INHERITS (t1);

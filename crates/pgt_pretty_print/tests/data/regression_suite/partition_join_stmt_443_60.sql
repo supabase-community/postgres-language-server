@@ -1,1 +1,0 @@
-INSERT INTO plt1_adv VALUES (-1, -1, NULL);

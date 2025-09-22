@@ -1,1 +1,0 @@
-select '{"a""b"}'::text[];

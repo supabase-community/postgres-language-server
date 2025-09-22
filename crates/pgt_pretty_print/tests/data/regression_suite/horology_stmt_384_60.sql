@@ -1,1 +1,0 @@
-SELECT to_date('-2147483648 01', 'CC YY');

@@ -1,1 +1,0 @@
-DROP DOMAIN domain4;

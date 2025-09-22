@@ -1,1 +1,0 @@
-SELECT DISTINCT y, x FROM (SELECT * FROM distinct_tbl ORDER BY x) s;

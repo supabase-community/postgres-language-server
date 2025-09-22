@@ -1,1 +1,0 @@
-ALTER TYPE planets ADD VALUE IF NOT EXISTS 'pluto';

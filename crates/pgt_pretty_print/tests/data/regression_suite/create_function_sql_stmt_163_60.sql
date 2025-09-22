@@ -1,2 +1,0 @@
-CREATE FUNCTION test1 (int) RETURNS int LANGUAGE SQL
-    AS 'SELECT 1, 2, 3;';

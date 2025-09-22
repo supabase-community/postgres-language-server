@@ -1,1 +1,0 @@
-INSERT INTO num_exp_sub VALUES (7,5,'-83044882.038491');

@@ -1,1 +1,0 @@
-ANALYZE ab1;

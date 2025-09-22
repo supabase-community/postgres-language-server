@@ -1,1 +1,0 @@
-CREATE TABLE varbit_table (a BIT VARYING(16), b BIT VARYING(16));

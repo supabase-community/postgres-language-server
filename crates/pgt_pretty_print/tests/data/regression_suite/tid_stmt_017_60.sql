@@ -1,1 +1,0 @@
-DROP MATERIALIZED VIEW tid_matview;

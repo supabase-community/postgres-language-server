@@ -1,1 +1,0 @@
-CREATE SCHEMA regress_tenant_schema AUTHORIZATION regress_tenant;

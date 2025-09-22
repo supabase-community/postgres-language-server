@@ -1,1 +1,0 @@
-CREATE DOMAIN dint4_0 AS int CHECK (VALUE <> 0 );

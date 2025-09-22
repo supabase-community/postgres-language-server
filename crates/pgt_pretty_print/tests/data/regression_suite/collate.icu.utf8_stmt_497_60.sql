@@ -1,1 +1,0 @@
-INSERT INTO test33 VALUES (2, 'DEF');

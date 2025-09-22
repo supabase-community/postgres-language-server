@@ -1,1 +1,0 @@
-INSERT INTO gtest20 (a) VALUES (30);

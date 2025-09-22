@@ -1,3 +1,0 @@
-CREATE PROCEDURE ptest8(x text)
-BEGIN ATOMIC
-END;

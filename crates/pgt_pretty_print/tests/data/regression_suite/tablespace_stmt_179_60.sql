@@ -1,1 +1,0 @@
-GRANT ALL ON TABLESPACE regress_tblspace TO PUBLIC;

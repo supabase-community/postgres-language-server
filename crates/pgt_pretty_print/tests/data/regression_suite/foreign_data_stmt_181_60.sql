@@ -1,1 +1,0 @@
-ALTER USER MAPPING FOR public SERVER s4 OPTIONS (ADD modified '1');

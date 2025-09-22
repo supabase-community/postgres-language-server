@@ -1,1 +1,0 @@
-SELECT CAST(interval '-9223372022400000000 us' AS time) AS "00:00:00";

@@ -1,1 +1,0 @@
-SHOW transaction_deferrable;

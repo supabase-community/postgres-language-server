@@ -1,1 +1,0 @@
-ALTER TABLE cj_source2 RENAME COLUMN sid2 TO sid;

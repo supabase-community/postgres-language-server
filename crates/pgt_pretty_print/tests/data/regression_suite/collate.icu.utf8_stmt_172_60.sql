@@ -1,1 +1,0 @@
-CREATE COLLATION test5 FROM test0;

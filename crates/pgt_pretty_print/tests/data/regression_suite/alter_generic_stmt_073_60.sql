@@ -1,1 +1,0 @@
-CREATE SERVER alt_fserv2 FOREIGN DATA WRAPPER alt_fdw2;

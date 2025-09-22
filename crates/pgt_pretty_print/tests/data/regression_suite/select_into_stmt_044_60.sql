@@ -1,1 +1,0 @@
-SELECT make_table();

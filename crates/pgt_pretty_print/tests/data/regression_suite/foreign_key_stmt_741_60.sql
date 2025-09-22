@@ -1,1 +1,0 @@
-ALTER TABLE fk_partitioned_fk_6 DETACH PARTITION fk_partitioned_fk_6_1;

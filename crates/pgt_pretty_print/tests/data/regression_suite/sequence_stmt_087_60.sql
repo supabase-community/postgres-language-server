@@ -1,1 +1,0 @@
-CREATE TEMP SEQUENCE myseq2;

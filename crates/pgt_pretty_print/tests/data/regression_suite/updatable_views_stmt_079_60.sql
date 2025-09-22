@@ -1,2 +1,0 @@
-CREATE RULE rw_view16_ins_rule AS ON INSERT TO rw_view16
-  WHERE NEW.a > 0 DO INSTEAD INSERT INTO base_tbl VALUES (NEW.a, NEW.b);

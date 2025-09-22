@@ -1,1 +1,0 @@
-CREATE SCHEMA testviewschm2;

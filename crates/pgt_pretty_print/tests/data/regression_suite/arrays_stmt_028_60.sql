@@ -1,1 +1,0 @@
-SELECT a FROM arrtest WHERE a[2] IS NULL;

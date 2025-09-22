@@ -1,2 +1,0 @@
-ALTER TABLE T ADD COLUMN c_date DATE DEFAULT '2016-06-02',
-              ALTER COLUMN c_text SET DEFAULT 'cat';

@@ -1,2 +1,0 @@
-CREATE TABLE am_partitioned_3 PARTITION OF am_partitioned
-  FOR VALUES WITH (MODULUS 10, REMAINDER 3);

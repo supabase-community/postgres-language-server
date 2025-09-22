@@ -1,1 +1,0 @@
-ALTER TABLE T ADD COLUMN c_text TEXT DEFAULT 'hello';

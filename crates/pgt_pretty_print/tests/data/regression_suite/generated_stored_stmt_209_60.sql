@@ -1,1 +1,0 @@
-INSERT INTO gtest22b VALUES (2);

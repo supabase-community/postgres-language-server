@@ -1,1 +1,0 @@
-CREATE SEQUENCE x_seq;

@@ -1,1 +1,0 @@
-VACUUM (SKIP_LOCKED) vactst;

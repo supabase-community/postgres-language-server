@@ -1,1 +1,0 @@
-CREATE DOMAIN gtestdomainnn AS int CHECK (VALUE IS NOT NULL);

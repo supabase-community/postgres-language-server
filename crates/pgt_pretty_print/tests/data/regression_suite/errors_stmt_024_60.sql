@@ -1,1 +1,0 @@
-drop aggregate newcnt (nonesuch);

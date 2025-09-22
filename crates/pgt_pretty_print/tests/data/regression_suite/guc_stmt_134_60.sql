@@ -1,1 +1,0 @@
-SHOW custom."bad-guc";

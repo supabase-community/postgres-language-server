@@ -1,1 +1,0 @@
-SELECT SUBSTR(f1, 200, 5) FROM cmdata_pglz;

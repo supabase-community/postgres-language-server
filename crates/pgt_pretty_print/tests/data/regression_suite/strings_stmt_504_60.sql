@@ -1,1 +1,0 @@
-SELECT unistr('a\\b');

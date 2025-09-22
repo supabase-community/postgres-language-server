@@ -1,1 +1,0 @@
-GRANT regress_publication_user2 TO regress_publication_user3;

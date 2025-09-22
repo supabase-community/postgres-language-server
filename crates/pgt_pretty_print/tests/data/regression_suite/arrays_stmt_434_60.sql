@@ -1,1 +1,0 @@
-select unnest(array['11 22 33'::int2vector]);

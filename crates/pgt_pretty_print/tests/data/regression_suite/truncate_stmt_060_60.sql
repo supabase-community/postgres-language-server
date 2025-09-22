@@ -1,1 +1,0 @@
-TRUNCATE trunc_f;

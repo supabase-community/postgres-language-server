@@ -1,1 +1,0 @@
-SELECT pg_stat_get_xact_tuples_inserted('drop_stats_test_xact_oid');

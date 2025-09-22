@@ -1,1 +1,0 @@
-ANALYZE (SKIP_LOCKED) vactst;

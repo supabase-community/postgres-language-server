@@ -1,1 +1,0 @@
-SELECT date '-infinity infinity';

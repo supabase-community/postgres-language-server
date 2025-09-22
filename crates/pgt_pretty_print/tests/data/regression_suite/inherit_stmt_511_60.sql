@@ -1,1 +1,0 @@
-ALTER TABLE inh_nn_parent ALTER a SET NOT NULL;

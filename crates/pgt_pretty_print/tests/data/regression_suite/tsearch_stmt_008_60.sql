@@ -1,1 +1,0 @@
-ANALYZE test_tsvector;

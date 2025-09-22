@@ -1,1 +1,0 @@
-SELECT a FROM savepoints WHERE a BETWEEN 12 AND 17;

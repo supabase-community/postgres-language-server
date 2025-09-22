@@ -1,1 +1,0 @@
-CREATE TABLE ct3() INHERITS(ft2);

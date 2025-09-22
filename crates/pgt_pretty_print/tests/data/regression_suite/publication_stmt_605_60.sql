@@ -1,1 +1,0 @@
-DROP SCHEMA pub_test2 CASCADE;

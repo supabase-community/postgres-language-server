@@ -1,1 +1,0 @@
-ALTER TABLE atnnpart1 ADD PRIMARY KEY (id);

@@ -1,1 +1,0 @@
-UPDATE pk SET a = 4502 WHERE a = 4500;

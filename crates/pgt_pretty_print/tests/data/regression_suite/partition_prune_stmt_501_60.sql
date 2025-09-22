@@ -1,1 +1,0 @@
-deallocate ps1;

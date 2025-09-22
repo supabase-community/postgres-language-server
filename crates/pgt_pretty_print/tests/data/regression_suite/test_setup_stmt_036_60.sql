@@ -1,1 +1,0 @@
-VACUUM ANALYZE tenk2;

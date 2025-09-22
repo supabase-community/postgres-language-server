@@ -1,1 +1,0 @@
-SELECT to_date('01 ÅUB 2010', 'DD TMMON YYYY');

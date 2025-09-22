@@ -1,1 +1,0 @@
-FETCH NEXT FROM c_3;

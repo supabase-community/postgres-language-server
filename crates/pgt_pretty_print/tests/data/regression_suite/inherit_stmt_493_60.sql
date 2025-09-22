@@ -1,1 +1,0 @@
-ALTER TABLE inh_parent ADD COLUMN i int NOT NULL;

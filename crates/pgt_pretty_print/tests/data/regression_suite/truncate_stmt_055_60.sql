@@ -1,1 +1,0 @@
-INSERT INTO trunc_fb VALUES (4, 444);

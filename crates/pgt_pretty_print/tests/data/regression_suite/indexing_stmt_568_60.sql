@@ -1,1 +1,0 @@
-drop function test_pg_index_toast_func;

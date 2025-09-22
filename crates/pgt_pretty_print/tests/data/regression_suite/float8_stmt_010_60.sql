@@ -1,1 +1,0 @@
-SELECT float8send('2.2250738585072014E-308'::float8);

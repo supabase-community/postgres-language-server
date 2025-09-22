@@ -1,1 +1,0 @@
-COMMENT ON FOREIGN DATA WRAPPER dummy IS 'useless';

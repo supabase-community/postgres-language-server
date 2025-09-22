@@ -1,1 +1,0 @@
-COMMENT ON COLLATION test0 IS 'US English';

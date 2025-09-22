@@ -1,1 +1,0 @@
-SELECT reverse('\xaa'::bytea);

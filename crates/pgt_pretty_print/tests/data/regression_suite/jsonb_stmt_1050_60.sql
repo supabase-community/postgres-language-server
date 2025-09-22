@@ -1,1 +1,0 @@
-select 'true'::jsonb::bool;

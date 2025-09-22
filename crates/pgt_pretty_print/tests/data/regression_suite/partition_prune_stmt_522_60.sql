@@ -1,1 +1,0 @@
-analyze ma_test;

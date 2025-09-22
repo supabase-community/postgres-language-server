@@ -1,1 +1,0 @@
-CREATE TABLE fk (id int, a int DEFAULT 50) PARTITION BY RANGE (a);

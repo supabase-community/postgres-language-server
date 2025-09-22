@@ -1,1 +1,0 @@
-INSERT INTO truncate_b DEFAULT VALUES;

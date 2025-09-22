@@ -1,1 +1,0 @@
-SHOW TIME ZONE;

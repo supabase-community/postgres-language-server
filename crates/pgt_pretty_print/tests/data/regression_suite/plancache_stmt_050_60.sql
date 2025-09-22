@@ -1,1 +1,0 @@
-create temp sequence seq;

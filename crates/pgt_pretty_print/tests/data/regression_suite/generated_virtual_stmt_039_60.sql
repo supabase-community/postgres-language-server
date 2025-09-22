@@ -1,1 +1,0 @@
-CREATE VIEW gtest1v AS SELECT * FROM gtest1;

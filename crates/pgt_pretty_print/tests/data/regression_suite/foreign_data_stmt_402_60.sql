@@ -1,1 +1,0 @@
-CREATE USER MAPPING FOR public SERVER s10 OPTIONS (user 'secret');

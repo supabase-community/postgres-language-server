@@ -1,1 +1,0 @@
-DROP COLLATION testx;

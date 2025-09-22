@@ -1,1 +1,0 @@
-CREATE USER regress_alter_generic_user1 IN ROLE regress_alter_generic_user3;

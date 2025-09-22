@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW mvtest_tvm;

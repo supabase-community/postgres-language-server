@@ -1,1 +1,0 @@
-TRUNCATE tid_tab;

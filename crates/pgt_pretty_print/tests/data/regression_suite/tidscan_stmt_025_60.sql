@@ -1,1 +1,0 @@
-FETCH FIRST FROM c;

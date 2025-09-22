@@ -1,1 +1,0 @@
-INSERT INTO clstr_1 VALUES (1);

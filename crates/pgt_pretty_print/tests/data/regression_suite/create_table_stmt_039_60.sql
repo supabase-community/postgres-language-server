@@ -1,1 +1,0 @@
-CREATE TEMP TABLE withoutoid() WITHOUT OIDS;

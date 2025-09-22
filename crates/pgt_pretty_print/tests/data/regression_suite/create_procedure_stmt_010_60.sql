@@ -1,1 +1,0 @@
-SELECT * FROM cp_test ORDER BY b COLLATE "C";

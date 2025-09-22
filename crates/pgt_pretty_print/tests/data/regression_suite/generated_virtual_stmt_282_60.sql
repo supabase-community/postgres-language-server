@@ -1,1 +1,0 @@
-INSERT INTO gtest26 (a) VALUES (1);

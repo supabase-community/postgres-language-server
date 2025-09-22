@@ -1,1 +1,0 @@
-SELECT ARRAY[[[[[['hello'],['world']]]]]];

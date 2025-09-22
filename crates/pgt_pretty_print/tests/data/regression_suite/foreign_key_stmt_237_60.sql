@@ -1,1 +1,0 @@
-DELETE FROM PKTABLE WHERE id = 1 OR id = 2;

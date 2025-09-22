@@ -1,1 +1,0 @@
-ALTER EVENT TRIGGER on_login_trigger ENABLE ALWAYS;

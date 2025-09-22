@@ -1,5 +1,0 @@
-ALTER TABLE gtest27
-  DROP COLUMN x,
-  ALTER COLUMN a TYPE bigint,
-  ALTER COLUMN b TYPE bigint,
-  ADD COLUMN x bigint GENERATED ALWAYS AS ((a + b) * 2) STORED;

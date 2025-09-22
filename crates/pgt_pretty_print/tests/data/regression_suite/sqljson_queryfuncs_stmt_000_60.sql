@@ -1,1 +1,0 @@
-SELECT JSON_EXISTS(NULL::jsonb, '$');

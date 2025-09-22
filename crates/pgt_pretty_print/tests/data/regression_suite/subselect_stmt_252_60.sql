@@ -1,1 +1,0 @@
-select nextval('ts1');

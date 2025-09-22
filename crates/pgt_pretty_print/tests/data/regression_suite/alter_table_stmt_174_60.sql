@@ -1,1 +1,0 @@
-DROP TABLE like_constraint_rename_cache;

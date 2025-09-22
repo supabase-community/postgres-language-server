@@ -1,2 +1,0 @@
-SELECT '"abc
-def"'::jsonb;

@@ -1,1 +1,0 @@
-SELECT collation for ('foo');

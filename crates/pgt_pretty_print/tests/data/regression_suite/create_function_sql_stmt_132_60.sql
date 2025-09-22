@@ -1,2 +1,0 @@
-CREATE FUNCTION voidtest1(a int) RETURNS VOID LANGUAGE SQL AS
-$$ SELECT a + 1 $$;

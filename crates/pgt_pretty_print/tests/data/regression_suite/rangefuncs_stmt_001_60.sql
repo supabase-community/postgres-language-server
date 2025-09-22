@@ -1,1 +1,0 @@
-INSERT INTO rngfunc2 VALUES(1, 11);

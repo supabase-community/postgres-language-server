@@ -1,1 +1,0 @@
-ALTER TABLE attmp ADD COLUMN c text;

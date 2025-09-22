@@ -1,1 +1,0 @@
-CREATE TABLE FKTABLE (ftest1 int8 REFERENCES pktable);

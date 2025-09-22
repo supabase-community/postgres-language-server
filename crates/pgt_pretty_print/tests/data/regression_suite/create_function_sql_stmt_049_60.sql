@@ -1,1 +1,0 @@
-ALTER FUNCTION functest_F_2(int) STRICT;

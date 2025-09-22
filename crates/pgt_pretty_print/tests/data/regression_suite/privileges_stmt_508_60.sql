@@ -1,1 +1,0 @@
-TRUNCATE atestc;

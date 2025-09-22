@@ -1,1 +1,0 @@
-VACUUM INT2_TBL;

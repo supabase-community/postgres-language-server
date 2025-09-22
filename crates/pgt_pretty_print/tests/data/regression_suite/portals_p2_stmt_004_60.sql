@@ -1,2 +1,0 @@
-DECLARE foo16 CURSOR FOR
-   SELECT * FROM onek WHERE unique1 = 53;

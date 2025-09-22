@@ -1,1 +1,0 @@
-CREATE COLLATION mycoll1 FROM "C";

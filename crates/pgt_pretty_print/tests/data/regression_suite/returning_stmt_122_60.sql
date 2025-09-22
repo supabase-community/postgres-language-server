@@ -1,1 +1,0 @@
-ALTER TABLE foo_parted ATTACH PARTITION foo_part_d2 FOR VALUES IN (4);

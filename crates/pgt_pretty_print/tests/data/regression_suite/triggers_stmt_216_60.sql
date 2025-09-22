@@ -1,1 +1,0 @@
-INSERT INTO main_view VALUES (20, 30);

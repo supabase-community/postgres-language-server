@@ -1,1 +1,0 @@
-analyze extremely_skewed;

@@ -1,1 +1,0 @@
-CREATE SEQUENCE tid_seq;

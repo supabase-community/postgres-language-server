@@ -1,1 +1,0 @@
-SELECT JSON('{"a": 1, "a": 2}' WITHOUT UNIQUE KEYS);

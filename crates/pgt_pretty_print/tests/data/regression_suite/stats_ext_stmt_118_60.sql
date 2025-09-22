@@ -1,1 +1,0 @@
-CREATE MATERIALIZED VIEW tststats.mv AS SELECT * FROM tststats.t;

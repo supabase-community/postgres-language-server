@@ -1,1 +1,0 @@
-INSERT INTO vtype2 VALUES (1);

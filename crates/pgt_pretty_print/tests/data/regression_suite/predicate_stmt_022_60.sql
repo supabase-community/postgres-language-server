@@ -1,1 +1,0 @@
-ALTER TABLE ONLY pred_parent ALTER a SET NOT NULL;

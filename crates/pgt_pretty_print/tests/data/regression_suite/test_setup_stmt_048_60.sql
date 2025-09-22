@@ -1,1 +1,0 @@
-VACUUM ANALYZE stud_emp;

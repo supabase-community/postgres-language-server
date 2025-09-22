@@ -1,1 +1,0 @@
-DROP SUBSCRIPTION IF EXISTS regress_testsub;

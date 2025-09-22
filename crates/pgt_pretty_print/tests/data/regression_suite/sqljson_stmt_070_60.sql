@@ -1,1 +1,0 @@
-SELECT JSON_OBJECT('a': 2::text);

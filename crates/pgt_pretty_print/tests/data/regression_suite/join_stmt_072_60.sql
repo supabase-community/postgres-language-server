@@ -1,1 +1,0 @@
-INSERT INTO t2 VALUES ( 'cc', 22 );

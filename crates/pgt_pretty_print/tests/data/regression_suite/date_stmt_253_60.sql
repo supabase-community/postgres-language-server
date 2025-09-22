@@ -1,1 +1,0 @@
-SELECT EXTRACT(YEAR       FROM DATE 'infinity');

@@ -1,1 +1,0 @@
-REVOKE pg_create_subscription FROM regress_subscription_user3;

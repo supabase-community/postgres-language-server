@@ -1,1 +1,0 @@
-CREATE VIEW ro_view19 AS SELECT * FROM uv_seq;

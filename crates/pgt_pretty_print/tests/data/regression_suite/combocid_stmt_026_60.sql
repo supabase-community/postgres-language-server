@@ -1,1 +1,0 @@
-FETCH ALL FROM c;

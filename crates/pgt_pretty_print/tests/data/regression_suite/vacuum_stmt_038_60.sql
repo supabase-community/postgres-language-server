@@ -1,1 +1,0 @@
-CREATE TABLE vaccluster (i INT PRIMARY KEY);

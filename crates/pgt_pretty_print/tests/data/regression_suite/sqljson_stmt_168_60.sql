@@ -1,2 +1,0 @@
-SELECT JSON_OBJECTAGG(i: ('111' || i)::bytea FORMAT JSON WITH UNIQUE RETURNING text) FILTER (WHERE i > 3)
-FROM generate_series(1,5) i;

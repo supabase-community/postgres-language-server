@@ -1,1 +1,0 @@
-TRUNCATE TABLE trunc_a1 CASCADE;

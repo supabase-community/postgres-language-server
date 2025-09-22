@@ -1,1 +1,0 @@
-INSERT INTO ab1 VALUES (1,1);

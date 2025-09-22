@@ -1,1 +1,0 @@
-SELECT date '4714-11-23 BC';

@@ -1,1 +1,0 @@
-CREATE SEQUENCE foo_seq;

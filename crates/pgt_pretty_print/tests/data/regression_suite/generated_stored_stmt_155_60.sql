@@ -1,1 +1,0 @@
-CREATE TABLE gtest11 (a int PRIMARY KEY, b int, c int GENERATED ALWAYS AS (b * 2) STORED);

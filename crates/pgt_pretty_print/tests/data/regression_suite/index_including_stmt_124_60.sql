@@ -1,1 +1,0 @@
-ALTER TABLE tbl ALTER c3 TYPE bigint;

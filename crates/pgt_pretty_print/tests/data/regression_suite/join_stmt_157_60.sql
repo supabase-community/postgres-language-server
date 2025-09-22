@@ -1,1 +1,0 @@
-DROP TABLE J1_TBL;

@@ -1,1 +1,0 @@
-CREATE SCHEMA test_ns_schema_1

@@ -1,1 +1,0 @@
-SELECT JSON_QUERY('"a"', '$.a'  RETURNING int[] DEFAULT (SELECT '{1}')::oid[]::int[] ON ERROR);

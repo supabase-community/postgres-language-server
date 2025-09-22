@@ -1,1 +1,0 @@
-INSERT INTO LSEG_TBL VALUES ('[(,2),(3,4)]');

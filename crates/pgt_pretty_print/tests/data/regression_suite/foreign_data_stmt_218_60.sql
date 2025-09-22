@@ -1,1 +1,0 @@
-CREATE FOREIGN TABLE ft_part2 (a INT) SERVER s0;

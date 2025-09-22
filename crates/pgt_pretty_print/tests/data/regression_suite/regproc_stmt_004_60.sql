@@ -1,1 +1,0 @@
-SELECT regprocedure('abs(numeric)');

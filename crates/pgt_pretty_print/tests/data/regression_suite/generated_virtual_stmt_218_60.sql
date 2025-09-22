@@ -1,1 +1,0 @@
-ALTER TABLE gtest27 ALTER COLUMN x TYPE numeric;

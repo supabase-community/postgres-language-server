@@ -1,1 +1,0 @@
-INSERT INTO voo VALUES(11,'zit');

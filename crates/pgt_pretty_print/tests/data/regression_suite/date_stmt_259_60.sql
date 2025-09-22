@@ -1,1 +1,0 @@
-SELECT EXTRACT(EPOCH      FROM DATE 'infinity');

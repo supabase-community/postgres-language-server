@@ -1,1 +1,0 @@
-ALTER TABLE temporal3 ALTER COLUMN valid_at DROP NOT NULL;

@@ -1,1 +1,0 @@
-ALTER TABLE inht1 RENAME aa TO aaa;

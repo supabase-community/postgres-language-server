@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW tid_matview;

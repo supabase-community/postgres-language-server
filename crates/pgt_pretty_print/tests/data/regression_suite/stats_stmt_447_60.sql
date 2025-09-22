@@ -1,1 +1,0 @@
-INSERT INTO brin_hot_2 VALUES (1, 100);

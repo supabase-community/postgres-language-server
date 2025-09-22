@@ -1,1 +1,0 @@
-ALTER SERVER s1 VERSION '1.0' OPTIONS (servername 's1');

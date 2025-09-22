@@ -1,1 +1,0 @@
-SELECT sqrt('-inf'::numeric);

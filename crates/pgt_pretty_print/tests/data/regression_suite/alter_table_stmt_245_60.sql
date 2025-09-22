@@ -1,1 +1,0 @@
-alter table nv_child_2011 VALIDATE CONSTRAINT nv_child_2011_d_check;

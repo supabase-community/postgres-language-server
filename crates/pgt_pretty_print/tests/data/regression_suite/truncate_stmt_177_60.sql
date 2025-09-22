@@ -1,1 +1,0 @@
-CREATE TABLE trunc_a2d PARTITION OF trunc_a2 DEFAULT;

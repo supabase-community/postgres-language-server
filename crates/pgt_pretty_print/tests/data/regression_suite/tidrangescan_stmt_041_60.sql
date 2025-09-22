@@ -1,1 +1,0 @@
-FETCH LAST c;

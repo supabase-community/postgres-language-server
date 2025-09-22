@@ -1,1 +1,0 @@
-VACUUM (DISABLE_PAGE_SKIPPING) vaccluster;

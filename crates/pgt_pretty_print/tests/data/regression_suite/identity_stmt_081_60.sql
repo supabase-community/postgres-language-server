@@ -1,1 +1,0 @@
-CREATE VIEW itestv10 AS SELECT * FROM itest10;

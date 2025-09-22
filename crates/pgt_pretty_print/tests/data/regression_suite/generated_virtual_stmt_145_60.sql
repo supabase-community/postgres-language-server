@@ -1,1 +1,0 @@
-INSERT INTO gtest20c VALUES (NULL);

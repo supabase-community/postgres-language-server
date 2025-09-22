@@ -1,1 +1,0 @@
-ALTER TABLE tbl_gist DROP COLUMN c1;

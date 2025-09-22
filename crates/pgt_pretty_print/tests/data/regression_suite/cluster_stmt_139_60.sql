@@ -1,1 +1,0 @@
-CLUSTER clstrpart;

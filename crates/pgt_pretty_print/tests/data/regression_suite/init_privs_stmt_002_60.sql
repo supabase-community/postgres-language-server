@@ -1,1 +1,0 @@
-GRANT SELECT (prosrc) ON pg_proc TO CURRENT_USER;

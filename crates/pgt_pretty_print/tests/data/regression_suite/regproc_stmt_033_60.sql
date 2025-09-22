@@ -1,1 +1,0 @@
-SELECT regdatabase('"template1"');

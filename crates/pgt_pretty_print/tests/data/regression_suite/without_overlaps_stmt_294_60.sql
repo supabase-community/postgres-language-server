@@ -1,1 +1,0 @@
-INSERT INTO temporal_mltrng (id, valid_at) VALUES ('[2,3)', datemultirange(daterange('2005-01-01', '2006-01-01'))) ON CONFLICT ON CONSTRAINT temporal_mltrng_pk DO UPDATE SET id = EXCLUDED.id + '[4,5)';

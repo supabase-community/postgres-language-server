@@ -1,1 +1,0 @@
-ALTER TABLESPACE regress_tblspace OWNER TO regress_tablespace_user1;

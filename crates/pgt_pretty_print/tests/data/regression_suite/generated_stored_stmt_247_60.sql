@@ -1,1 +1,0 @@
-INSERT INTO gtest23q VALUES (1, 2);

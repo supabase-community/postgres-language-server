@@ -1,1 +1,0 @@
-ANALYZE vacparted (b), vactst;

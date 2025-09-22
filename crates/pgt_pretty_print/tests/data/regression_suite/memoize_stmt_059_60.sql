@@ -1,1 +1,0 @@
-RESET work_mem;

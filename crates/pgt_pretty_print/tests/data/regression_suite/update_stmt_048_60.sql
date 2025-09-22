@@ -1,1 +1,0 @@
-ALTER TABLE upsert_test ATTACH PARTITION upsert_test_2 FOR VALUES IN (2);

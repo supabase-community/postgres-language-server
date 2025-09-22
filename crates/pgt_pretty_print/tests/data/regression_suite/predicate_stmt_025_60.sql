@@ -1,1 +1,0 @@
-ALTER TABLE pred_parent ALTER a DROP NOT NULL;

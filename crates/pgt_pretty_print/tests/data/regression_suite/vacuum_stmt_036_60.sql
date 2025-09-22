@@ -1,1 +1,0 @@
-VACUUM (FULL, FREEZE) vactst;

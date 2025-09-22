@@ -1,1 +1,0 @@
-SELECT * FROM serialTest2 ORDER BY f2 ASC;

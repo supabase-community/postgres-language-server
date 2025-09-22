@@ -1,1 +1,0 @@
-INSERT INTO gtest1v VALUES (8, DEFAULT);

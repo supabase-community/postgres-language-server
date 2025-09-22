@@ -1,1 +1,0 @@
-CREATE TABLE truncpart_2_d PARTITION OF truncpart_2 DEFAULT;

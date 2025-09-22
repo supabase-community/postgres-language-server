@@ -1,1 +1,0 @@
-analyze nummultirange_test;

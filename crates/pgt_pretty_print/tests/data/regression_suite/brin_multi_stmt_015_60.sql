@@ -1,1 +1,0 @@
-VACUUM brintest_multi;

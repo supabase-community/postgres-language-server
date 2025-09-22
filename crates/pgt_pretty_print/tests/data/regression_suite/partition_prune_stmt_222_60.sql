@@ -1,1 +1,0 @@
-ALTER TABLE part_rev DROP COLUMN c;

@@ -1,1 +1,0 @@
-DROP FUNCTION foo_f();

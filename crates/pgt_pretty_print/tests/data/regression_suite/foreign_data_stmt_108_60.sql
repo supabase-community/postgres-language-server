@@ -1,1 +1,0 @@
-REVOKE regress_test_indirect FROM regress_test_role;

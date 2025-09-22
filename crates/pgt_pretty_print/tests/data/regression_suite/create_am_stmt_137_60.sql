@@ -1,1 +1,0 @@
-DROP ACCESS METHOD heap2;

@@ -1,1 +1,0 @@
-SELECT * FROM itest9 ORDER BY c;

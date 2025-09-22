@@ -1,1 +1,0 @@
-ALTER TABLE truncate_a ADD FOREIGN KEY (col1) REFERENCES trunc_c;

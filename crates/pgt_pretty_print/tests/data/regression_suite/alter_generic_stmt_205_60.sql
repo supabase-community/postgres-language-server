@@ -1,1 +1,0 @@
-CREATE OPERATOR FAMILY alt_opf13 USING hash;

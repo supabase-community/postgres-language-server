@@ -1,1 +1,0 @@
-SELECT s FROM LINE_TBL WHERE ?| s;

@@ -1,1 +1,0 @@
-fetch from foo;

@@ -1,1 +1,0 @@
-CREATE TABLE sch1.tbl1 (a int) PARTITION BY RANGE(a);

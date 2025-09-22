@@ -1,1 +1,0 @@
-DROP OPERATOR =#>(integer, integer);

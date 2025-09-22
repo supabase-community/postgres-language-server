@@ -1,1 +1,0 @@
-CREATE TABLE pg_attrdef (LIKE ctlt1 INCLUDING ALL);

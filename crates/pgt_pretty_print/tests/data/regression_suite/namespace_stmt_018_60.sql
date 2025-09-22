@@ -1,1 +1,0 @@
-SHOW search_path;

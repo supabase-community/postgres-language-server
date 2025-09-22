@@ -1,1 +1,0 @@
-SELECT '\x80000000'::bytea::int4 AS "-2147483648", '\x7FFFFFFF'::bytea::int4 AS "2147483647";

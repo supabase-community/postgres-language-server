@@ -1,1 +1,0 @@
-DROP FOREIGN TABLE ft_part2;

@@ -1,1 +1,0 @@
-SELECT JSON_SCALAR('2020-06-07'::date);

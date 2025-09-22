@@ -1,1 +1,0 @@
-INSERT INTO point_tbl(f1[0]) VALUES(0) RETURNING *;

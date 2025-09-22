@@ -1,1 +1,0 @@
-SET SESSION AUTHORIZATION regress_range_parted_user;

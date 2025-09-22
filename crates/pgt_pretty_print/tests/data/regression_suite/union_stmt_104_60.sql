@@ -1,1 +1,0 @@
-SELECT f1 FROM int4_tbl ORDER BY 1;

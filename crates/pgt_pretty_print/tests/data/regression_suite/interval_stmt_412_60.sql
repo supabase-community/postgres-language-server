@@ -1,1 +1,0 @@
-SELECT interval '-infinity' / 'nan';

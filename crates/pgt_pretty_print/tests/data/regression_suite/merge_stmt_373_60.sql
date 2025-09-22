@@ -1,1 +1,0 @@
-TABLE pa_target;

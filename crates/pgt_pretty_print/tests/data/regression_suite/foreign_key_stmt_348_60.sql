@@ -1,1 +1,0 @@
-INSERT INTO fktable VALUES (5, 10);

@@ -1,1 +1,0 @@
-select cardinality(NULL::int[]);

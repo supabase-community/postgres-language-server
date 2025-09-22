@@ -1,1 +1,0 @@
-DELETE FROM attmp6 WHERE b > 20;

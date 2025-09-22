@@ -1,1 +1,0 @@
-ALTER TABLE tmp1 RENAME TO tx1;

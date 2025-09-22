@@ -1,1 +1,0 @@
-ANALYZE c_star;

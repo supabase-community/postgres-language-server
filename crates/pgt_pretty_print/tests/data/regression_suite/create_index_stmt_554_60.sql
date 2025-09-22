@@ -1,1 +1,0 @@
-DROP FUNCTION compare_relfilenode_part;

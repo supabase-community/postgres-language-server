@@ -1,1 +1,0 @@
-CREATE TABLE upsert_test_2 (b TEXT, a INT PRIMARY KEY);

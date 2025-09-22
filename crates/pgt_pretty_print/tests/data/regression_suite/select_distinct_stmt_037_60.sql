@@ -1,1 +1,0 @@
-SELECT DISTINCT four FROM tenk1;

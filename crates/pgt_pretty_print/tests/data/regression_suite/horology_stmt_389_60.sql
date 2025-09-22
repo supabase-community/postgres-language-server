@@ -1,1 +1,0 @@
-SET TIME ZONE '-1.5';

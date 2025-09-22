@@ -1,1 +1,0 @@
-select ' { empty, empty }  '::textmultirange;

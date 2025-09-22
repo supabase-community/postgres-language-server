@@ -1,1 +1,0 @@
-ALTER TABLE testpub_gencol REPLICA IDENTITY FULL;

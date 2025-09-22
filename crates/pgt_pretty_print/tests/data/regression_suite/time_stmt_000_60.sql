@@ -1,1 +1,0 @@
-CREATE TABLE TIME_TBL (f1 time(2));

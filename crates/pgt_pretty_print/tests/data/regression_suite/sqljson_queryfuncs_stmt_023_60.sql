@@ -1,1 +1,0 @@
-SELECT JSON_EXISTS(jsonb '1', '$.a > 2' ERROR ON ERROR);

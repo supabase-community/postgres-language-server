@@ -1,1 +1,0 @@
-CREATE TABLE ctlb (bb TEXT) INHERITS (ctla);

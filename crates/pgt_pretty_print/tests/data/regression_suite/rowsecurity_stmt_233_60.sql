@@ -1,1 +1,0 @@
-CREATE VIEW rec1v AS SELECT * FROM rec1;

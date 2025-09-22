@@ -1,1 +1,0 @@
-REINDEX INDEX pg_shdescription_o_c_index;

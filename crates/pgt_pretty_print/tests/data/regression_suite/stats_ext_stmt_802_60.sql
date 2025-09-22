@@ -1,1 +1,0 @@
-ANALYZE sb_2;

@@ -1,1 +1,0 @@
-CREATE TABLE fk (a int) PARTITION BY LIST (a);

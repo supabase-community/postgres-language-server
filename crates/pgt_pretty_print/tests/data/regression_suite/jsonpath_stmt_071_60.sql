@@ -1,1 +1,0 @@
-select '$.date()'::jsonpath;

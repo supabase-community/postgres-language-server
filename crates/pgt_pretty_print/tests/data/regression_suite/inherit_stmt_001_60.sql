@@ -1,1 +1,0 @@
-CREATE TABLE b (bb TEXT) INHERITS (a);

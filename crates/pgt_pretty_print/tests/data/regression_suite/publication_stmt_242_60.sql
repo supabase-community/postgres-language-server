@@ -1,1 +1,0 @@
-CREATE TABLE testpub_gencol (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED NOT NULL);

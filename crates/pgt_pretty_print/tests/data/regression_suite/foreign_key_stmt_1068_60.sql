@@ -1,1 +1,0 @@
-INSERT INTO fk VALUES (20), (50);

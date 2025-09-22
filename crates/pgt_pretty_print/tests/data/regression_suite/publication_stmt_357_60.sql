@@ -1,1 +1,0 @@
-CREATE PUBLICATION testpub_tbl9 FOR TABLES IN SCHEMA public;

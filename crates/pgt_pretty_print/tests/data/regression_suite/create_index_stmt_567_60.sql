@@ -1,1 +1,0 @@
-REINDEX DATABASE not_current_database;

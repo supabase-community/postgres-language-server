@@ -1,1 +1,0 @@
-INSERT INTO temptest VALUES (1);

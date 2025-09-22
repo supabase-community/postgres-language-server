@@ -1,3 +1,0 @@
-SELECT a, b FROM prt1 FULL JOIN prt2 p2(b,a,c) USING(a,b)
-  WHERE a BETWEEN 490 AND 510
-  GROUP BY 1, 2 ORDER BY 1, 2;

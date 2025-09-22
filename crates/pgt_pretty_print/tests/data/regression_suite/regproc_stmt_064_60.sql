@@ -1,1 +1,0 @@
-SELECT regprocedure('absinthe(numeric)');

@@ -1,1 +1,0 @@
-CREATE TABLE p1 PARTITION OF pt FOR VALUES WITH (modulus 4, remainder 0);

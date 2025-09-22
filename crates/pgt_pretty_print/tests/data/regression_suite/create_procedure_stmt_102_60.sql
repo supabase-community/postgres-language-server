@@ -1,1 +1,0 @@
-ALTER ROUTINE ptest1a RENAME TO ptest1;

@@ -1,1 +1,0 @@
-SET SESSION AUTHORIZATION regress_lo_user;

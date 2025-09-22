@@ -1,1 +1,0 @@
-SELECT xmlconcat('bad', '<syntax');

@@ -1,1 +1,0 @@
-SELECT crc32c('');

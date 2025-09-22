@@ -1,1 +1,0 @@
-VACUUM (BUFFER_USAGE_LIMIT 120) vac_option_tab;

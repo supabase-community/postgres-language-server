@@ -1,1 +1,0 @@
-select explain_filter('explain (analyze,buffers off,serialize) select * from int8_tbl i8');

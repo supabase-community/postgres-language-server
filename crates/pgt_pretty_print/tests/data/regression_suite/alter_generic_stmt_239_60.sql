@@ -1,1 +1,0 @@
-DROP OPERATOR FAMILY alt_opf18 USING btree;

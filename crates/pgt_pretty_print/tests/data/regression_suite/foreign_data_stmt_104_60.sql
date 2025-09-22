@@ -1,1 +1,0 @@
-GRANT regress_test_indirect TO regress_test_role;

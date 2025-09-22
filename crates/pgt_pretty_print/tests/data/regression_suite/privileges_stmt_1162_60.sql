@@ -1,1 +1,0 @@
-LOCK TABLE lock_table IN ACCESS SHARE MODE;

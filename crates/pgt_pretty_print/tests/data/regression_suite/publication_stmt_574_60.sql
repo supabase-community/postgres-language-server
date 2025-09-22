@@ -1,1 +1,0 @@
-DROP PUBLICATION testpubpart_forschema;

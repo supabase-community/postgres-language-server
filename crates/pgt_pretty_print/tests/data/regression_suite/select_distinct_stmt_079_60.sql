@@ -1,1 +1,0 @@
-ANALYZE distinct_tbl;

@@ -1,1 +1,0 @@
-reset search_path;

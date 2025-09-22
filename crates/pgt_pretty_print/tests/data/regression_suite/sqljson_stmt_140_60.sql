@@ -1,2 +1,0 @@
-SELECT JSON_ARRAYAGG(JSON_ARRAY(i, i + 1 RETURNING text) FORMAT JSON)
-FROM generate_series(1, 5) i;

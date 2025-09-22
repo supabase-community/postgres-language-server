@@ -1,1 +1,0 @@
-SHOW track_counts;

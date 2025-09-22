@@ -1,1 +1,0 @@
-INSERT INTO INTERVAL_TBL (f1) VALUES ('@ 5 hour');

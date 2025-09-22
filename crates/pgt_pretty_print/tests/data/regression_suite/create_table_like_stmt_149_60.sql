@@ -1,5 +1,0 @@
-CREATE TABLE ctl_table(a int PRIMARY KEY,
-  b varchar COMPRESSION pglz,
-  c int GENERATED ALWAYS AS (a * 2) STORED,
-  d bigint GENERATED ALWAYS AS IDENTITY,
-  e int DEFAULT 1);

@@ -1,1 +1,0 @@
-CREATE OPERATOR FAMILY alt_opf15 USING hash;

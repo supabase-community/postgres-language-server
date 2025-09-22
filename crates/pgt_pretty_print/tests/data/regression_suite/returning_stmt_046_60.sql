@@ -1,1 +1,0 @@
-DELETE FROM foo WHERE f2 = 'zit' RETURNING *;

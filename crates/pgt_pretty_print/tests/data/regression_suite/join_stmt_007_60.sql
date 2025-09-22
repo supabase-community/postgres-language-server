@@ -1,1 +1,0 @@
-INSERT INTO J1_TBL VALUES (6, 6, 'six');

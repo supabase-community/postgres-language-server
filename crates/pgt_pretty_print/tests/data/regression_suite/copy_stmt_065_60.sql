@@ -1,1 +1,0 @@
-truncate tab_progress_reporting;

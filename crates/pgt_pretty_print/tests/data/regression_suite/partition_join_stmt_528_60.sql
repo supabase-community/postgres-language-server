@@ -1,1 +1,0 @@
-CREATE TABLE plt1_adv_default PARTITION OF plt1_adv DEFAULT;
