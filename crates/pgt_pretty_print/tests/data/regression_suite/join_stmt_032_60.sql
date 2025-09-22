@@ -1,0 +1,2 @@
+SELECT i, k, t
+  FROM J1_TBL CROSS JOIN J2_TBL;

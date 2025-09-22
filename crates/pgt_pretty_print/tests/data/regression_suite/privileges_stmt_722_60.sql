@@ -1,0 +1,1 @@
+REINDEX INDEX sro_idx;

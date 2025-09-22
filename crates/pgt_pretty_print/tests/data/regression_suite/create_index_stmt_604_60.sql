@@ -1,0 +1,1 @@
+REINDEX TABLE CONCURRENTLY concur_temp_tab_1;

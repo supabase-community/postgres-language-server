@@ -1,0 +1,1 @@
+DELETE FROM tbl WHERE c1 = 5 OR c3 = 12;

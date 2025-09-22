@@ -1,0 +1,1 @@
+INSERT INTO past_inh_child DEFAULT VALUES;

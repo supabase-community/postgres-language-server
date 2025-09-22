@@ -1,0 +1,1 @@
+ALTER SEQUENCE ss1 OWNED BY deptest2.f1;

@@ -1,0 +1,1 @@
+TABLE ddl_test;

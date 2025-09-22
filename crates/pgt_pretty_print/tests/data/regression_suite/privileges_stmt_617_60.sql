@@ -1,0 +1,1 @@
+REVOKE ALL ON TYPE priv_testtype1 FROM PUBLIC;

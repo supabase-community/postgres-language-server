@@ -1,0 +1,1 @@
+DELETE FROM rw_view2 WHERE aa=4;

@@ -1,0 +1,1 @@
+DROP SERVER IF EXISTS nonexistent;

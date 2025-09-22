@@ -1,0 +1,1 @@
+SELECT (NULL::compositetable).oid;

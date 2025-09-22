@@ -1,0 +1,1 @@
+SELECT f1, f1::box FROM POLYGON_TBL;

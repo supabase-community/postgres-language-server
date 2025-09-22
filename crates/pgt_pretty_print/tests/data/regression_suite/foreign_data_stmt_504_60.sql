@@ -1,0 +1,2 @@
+CREATE FOREIGN TABLE foreign_part PARTITION OF temp_parted DEFAULT
+  SERVER s0;

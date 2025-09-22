@@ -1,0 +1,1 @@
+SELECT 37 + q1 AS plus4 FROM INT8_TBL;

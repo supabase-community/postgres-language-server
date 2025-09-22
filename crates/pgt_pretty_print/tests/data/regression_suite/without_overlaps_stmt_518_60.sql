@@ -1,0 +1,1 @@
+TRUNCATE temporal_partitioned_mltrng, temporal_partitioned_fk_mltrng2mltrng;

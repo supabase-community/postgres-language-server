@@ -1,0 +1,1 @@
+drop function anycompatiblearray_anycompatiblerange_func(anycompatiblearray, anycompatiblerange);

@@ -1,0 +1,1 @@
+VACUUM INT8_TBL;

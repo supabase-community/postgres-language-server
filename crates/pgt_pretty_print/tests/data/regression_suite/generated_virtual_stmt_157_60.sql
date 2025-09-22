@@ -1,0 +1,1 @@
+INSERT INTO gtest21b (a) VALUES (NULL);

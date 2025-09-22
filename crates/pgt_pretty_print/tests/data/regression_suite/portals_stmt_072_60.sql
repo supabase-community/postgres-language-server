@@ -1,0 +1,1 @@
+CLOSE foo3;

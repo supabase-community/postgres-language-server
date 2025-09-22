@@ -1,0 +1,1 @@
+TRUNCATE trunc_trigger_test;

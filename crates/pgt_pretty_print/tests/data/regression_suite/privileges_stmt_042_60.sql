@@ -1,0 +1,1 @@
+REVOKE regress_priv_user2 FROM regress_priv_user3;

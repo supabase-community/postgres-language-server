@@ -1,0 +1,1 @@
+CREATE PUBLICATION testpub4 FOR TABLE ONLY testpub_tbl3;

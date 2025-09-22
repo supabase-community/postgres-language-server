@@ -1,0 +1,1 @@
+select recurse(10);

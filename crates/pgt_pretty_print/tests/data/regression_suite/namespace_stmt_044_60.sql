@@ -1,0 +1,1 @@
+CLUSTER test_maint_search_path.test_maint USING test_maint_idx;

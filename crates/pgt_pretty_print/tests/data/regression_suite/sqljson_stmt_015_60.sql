@@ -1,0 +1,1 @@
+SELECT JSON('123'::bytea FORMAT JSON);

@@ -1,0 +1,1 @@
+SELECT EXTRACT(CENTURY    FROM DATE 'infinity');

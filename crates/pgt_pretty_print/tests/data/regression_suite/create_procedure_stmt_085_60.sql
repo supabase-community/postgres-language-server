@@ -1,0 +1,1 @@
+ALTER PROCEDURE nonexistent() VOLATILE;

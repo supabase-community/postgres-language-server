@@ -1,0 +1,1 @@
+UPDATE tbl SET c1 = 100 WHERE c1 = 2;

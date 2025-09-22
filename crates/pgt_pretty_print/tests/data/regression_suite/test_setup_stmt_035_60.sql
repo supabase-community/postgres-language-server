@@ -1,0 +1,1 @@
+CREATE TABLE tenk2 AS SELECT * FROM tenk1;

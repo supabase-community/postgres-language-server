@@ -1,0 +1,1 @@
+CLUSTER clstr_2;

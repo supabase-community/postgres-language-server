@@ -1,0 +1,2 @@
+CREATE TABLE fk_partitioned_pk_3 PARTITION OF fk_partitioned_pk FOR VALUES FROM (2000,2000) TO (3000,3000)
+  PARTITION BY RANGE (a);

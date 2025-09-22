@@ -1,0 +1,1 @@
+VACUUM (INDEX_CLEANUP TRUE, FULL TRUE) no_index_cleanup;

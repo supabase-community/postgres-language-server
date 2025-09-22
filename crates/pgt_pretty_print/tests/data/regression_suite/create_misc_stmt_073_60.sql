@@ -1,0 +1,1 @@
+ALTER TABLE c_star* RENAME COLUMN c TO cc;

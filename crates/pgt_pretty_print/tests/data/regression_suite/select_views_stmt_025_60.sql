@@ -1,0 +1,1 @@
+SELECT * FROM my_property_normal WHERE f_leak(passwd);

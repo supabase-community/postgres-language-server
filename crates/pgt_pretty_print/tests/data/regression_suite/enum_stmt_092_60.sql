@@ -1,0 +1,1 @@
+SELECT 'purple'::rgb;

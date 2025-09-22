@@ -1,0 +1,1 @@
+INSERT INTO cmdata_lz4 VALUES(repeat('1234567890', 1004));

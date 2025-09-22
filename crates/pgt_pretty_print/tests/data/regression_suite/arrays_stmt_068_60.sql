@@ -1,0 +1,1 @@
+SELECT f1[:] FROM POINT_TBL;

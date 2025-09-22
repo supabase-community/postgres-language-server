@@ -1,0 +1,1 @@
+SELECT EXTRACT(QUARTER       FROM DATE 'infinity');

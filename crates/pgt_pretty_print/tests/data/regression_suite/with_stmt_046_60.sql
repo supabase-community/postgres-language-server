@@ -1,0 +1,1 @@
+CREATE TEMP TABLE duplicates (a INT NOT NULL);

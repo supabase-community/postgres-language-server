@@ -1,0 +1,1 @@
+SELECT JSON_QUERY('"a"', '$.a'  RETURNING int DEFAULT (SELECT '"1"')::jsonb ON ERROR);

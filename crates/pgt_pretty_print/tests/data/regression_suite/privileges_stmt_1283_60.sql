@@ -1,0 +1,1 @@
+CLUSTER maintain_test USING maintain_test_a_idx;

@@ -1,0 +1,1 @@
+SELECT JSON_VALUE(jsonb '"123"', '$' RETURNING int) + 234;

@@ -1,0 +1,1 @@
+ANALYZE onek2;

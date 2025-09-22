@@ -1,0 +1,1 @@
+ALTER PUBLICATION pub2 SET TABLE gencols(a, gen1);

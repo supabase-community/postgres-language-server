@@ -1,0 +1,1 @@
+INSERT INTO CHECK2_TBL VALUES (6, 'check failed', 11);

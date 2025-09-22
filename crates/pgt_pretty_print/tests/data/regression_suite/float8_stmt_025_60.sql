@@ -1,0 +1,1 @@
+SELECT '   NAN  '::float8;

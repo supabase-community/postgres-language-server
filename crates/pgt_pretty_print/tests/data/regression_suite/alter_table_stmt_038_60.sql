@@ -1,0 +1,1 @@
+ALTER TABLE attmp ADD COLUMN d float8;

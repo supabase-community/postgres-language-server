@@ -1,0 +1,1 @@
+CREATE TABLE FLOAT8_TBL(f1 float8);

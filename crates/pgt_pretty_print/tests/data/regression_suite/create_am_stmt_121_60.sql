@@ -1,0 +1,1 @@
+SELECT INTO tableam_tblselectinto_heapx FROM tableam_tbl_heapx;

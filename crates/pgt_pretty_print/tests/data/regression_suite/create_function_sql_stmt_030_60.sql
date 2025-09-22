@@ -1,0 +1,1 @@
+ALTER FUNCTION functest_E_1(int) LEAKPROOF;

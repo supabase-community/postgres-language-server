@@ -1,0 +1,1 @@
+CREATE PUBLICATION addr_pub_schema FOR TABLES IN SCHEMA addr_nsp;

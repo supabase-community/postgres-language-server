@@ -1,0 +1,1 @@
+SET SEARCH_PATH='';

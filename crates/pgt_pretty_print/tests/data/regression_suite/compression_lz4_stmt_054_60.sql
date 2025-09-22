@@ -1,0 +1,1 @@
+INSERT INTO cmpart VALUES (repeat('123456789', 1004));

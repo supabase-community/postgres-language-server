@@ -1,0 +1,1 @@
+CREATE MATERIALIZED VIEW tid_matview AS SELECT a FROM tid_tab;

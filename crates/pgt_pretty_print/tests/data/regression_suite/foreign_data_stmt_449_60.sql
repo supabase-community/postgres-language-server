@@ -1,0 +1,1 @@
+ALTER TABLE fd_pt1 DROP COLUMN c8;

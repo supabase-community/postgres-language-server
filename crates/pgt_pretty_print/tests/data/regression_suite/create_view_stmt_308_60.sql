@@ -1,0 +1,1 @@
+DROP SCHEMA testviewschm2 CASCADE;

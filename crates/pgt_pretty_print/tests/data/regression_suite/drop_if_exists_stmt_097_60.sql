@@ -1,0 +1,1 @@
+DROP FOREIGN DATA WRAPPER IF EXISTS test_fdw_exists;

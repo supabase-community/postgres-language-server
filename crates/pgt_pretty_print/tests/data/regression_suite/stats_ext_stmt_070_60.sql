@@ -1,0 +1,1 @@
+CREATE TABLE ab1c () INHERITS (ab1);

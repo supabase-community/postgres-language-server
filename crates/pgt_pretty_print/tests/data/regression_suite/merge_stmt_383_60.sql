@@ -1,0 +1,1 @@
+INSERT INTO cj_source1 VALUES (3, 10, 400);

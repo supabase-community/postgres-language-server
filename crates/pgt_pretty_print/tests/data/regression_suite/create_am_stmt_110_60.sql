@@ -1,0 +1,2 @@
+CREATE TABLE am_partitioned_5p1 PARTITION OF am_partitioned_5p
+  FOR VALUES WITH (MODULUS 10, REMAINDER 1);

@@ -1,0 +1,1 @@
+INSERT INTO gtest11 VALUES (1, 10), (2, 20);

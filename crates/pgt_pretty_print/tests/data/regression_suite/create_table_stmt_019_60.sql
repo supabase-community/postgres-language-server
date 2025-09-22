@@ -1,0 +1,1 @@
+CREATE TABLE unlogged1 (a int) PARTITION BY RANGE (a);

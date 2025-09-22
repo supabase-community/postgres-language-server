@@ -1,0 +1,1 @@
+select '"aaa".type()'::jsonpath;

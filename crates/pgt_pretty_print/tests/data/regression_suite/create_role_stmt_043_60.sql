@@ -1,0 +1,1 @@
+CREATE ROLE regress_nosuch_admin_recursive ADMIN regress_nosuch_admin_recursive;

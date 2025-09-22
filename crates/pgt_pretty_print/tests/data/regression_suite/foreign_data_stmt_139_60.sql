@@ -1,0 +1,1 @@
+ALTER SERVER s8 RENAME to s8new;

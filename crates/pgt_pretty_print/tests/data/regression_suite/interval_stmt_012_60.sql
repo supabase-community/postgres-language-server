@@ -1,0 +1,1 @@
+CREATE TABLE INTERVAL_TBL (f1 interval);

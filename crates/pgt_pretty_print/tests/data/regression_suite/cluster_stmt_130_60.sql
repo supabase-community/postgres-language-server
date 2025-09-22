@@ -1,0 +1,1 @@
+CREATE TABLE clstrpart33 PARTITION OF clstrpart3 DEFAULT;

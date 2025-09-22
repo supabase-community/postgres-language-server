@@ -1,0 +1,1 @@
+CREATE TABLE c (cc TEXT) INHERITS (a);

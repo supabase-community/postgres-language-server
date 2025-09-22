@@ -1,0 +1,1 @@
+LOCK TABLE ONLY lock_tbl1;

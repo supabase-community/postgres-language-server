@@ -1,0 +1,1 @@
+SELECT x FROM test2ci EXCEPT SELECT x FROM test1ci;

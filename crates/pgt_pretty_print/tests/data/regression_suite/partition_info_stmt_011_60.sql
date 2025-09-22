@@ -1,0 +1,2 @@
+CREATE TABLE ptif_test2 PARTITION OF ptif_test
+  FOR VALUES FROM (100) TO (200);

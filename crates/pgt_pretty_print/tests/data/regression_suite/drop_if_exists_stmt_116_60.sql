@@ -1,0 +1,1 @@
+DROP CAST IF EXISTS (no_such_type1 AS INTEGER);

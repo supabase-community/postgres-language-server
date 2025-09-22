@@ -1,0 +1,1 @@
+COPY student FROM 'filename';

@@ -1,0 +1,1 @@
+DROP OPERATOR @#@ (int, int);

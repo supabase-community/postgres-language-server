@@ -1,0 +1,1 @@
+INSERT INTO test6 VALUES (2, U&'zy\0061\0308bc');

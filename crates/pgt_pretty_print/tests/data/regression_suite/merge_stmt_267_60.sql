@@ -1,0 +1,6 @@
+SELECT explain_merge('
+MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
+WHEN NOT MATCHED BY SOURCE AND t.a < 10 THEN
+	DELETE
+WHEN NOT MATCHED BY TARGET AND s.a < 20 THEN
+	INSERT VALUES (a, b)');

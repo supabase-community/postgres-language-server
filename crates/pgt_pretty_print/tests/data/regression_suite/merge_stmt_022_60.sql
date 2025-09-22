@@ -1,0 +1,4 @@
+WITH foo AS (
+  MERGE INTO target USING source ON (true)
+  WHEN MATCHED THEN DELETE
+) SELECT * FROM foo;

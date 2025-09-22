@@ -1,0 +1,1 @@
+CLOSE tablesample_cur;

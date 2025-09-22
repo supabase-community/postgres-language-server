@@ -1,0 +1,1 @@
+analyze tbl_ra;

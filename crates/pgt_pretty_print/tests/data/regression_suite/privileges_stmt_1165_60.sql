@@ -1,0 +1,1 @@
+LOCK TABLE lock_table IN ROW EXCLUSIVE MODE;

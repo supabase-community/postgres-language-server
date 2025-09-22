@@ -1,0 +1,1 @@
+reset session_replication_role;

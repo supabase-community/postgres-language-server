@@ -1,0 +1,2 @@
+CREATE PROCEDURE ptestx(a int DEFAULT 42, b OUT int) LANGUAGE SQL
+  AS $$ SELECT a $$;

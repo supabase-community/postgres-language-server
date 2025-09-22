@@ -1,0 +1,1 @@
+GRANT CREATE, USAGE ON SCHEMA regress_roleoption TO PUBLIC;

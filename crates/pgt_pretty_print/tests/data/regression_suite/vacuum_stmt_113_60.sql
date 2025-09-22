@@ -1,0 +1,1 @@
+DROP TABLE pvactst2;

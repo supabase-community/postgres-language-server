@@ -1,0 +1,1 @@
+ALTER TABLE inhts RENAME d TO dd;

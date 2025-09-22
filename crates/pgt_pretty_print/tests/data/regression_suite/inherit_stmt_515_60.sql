@@ -1,0 +1,1 @@
+ALTER TABLE inh_nn_lvl1 ADD PRIMARY KEY (a);

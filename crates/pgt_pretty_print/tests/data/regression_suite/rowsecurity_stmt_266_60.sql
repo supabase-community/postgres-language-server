@@ -1,0 +1,1 @@
+ALTER POLICY p2 ON s2 USING (x % 2 = 0);

@@ -1,0 +1,1 @@
+select shadowtest(1);

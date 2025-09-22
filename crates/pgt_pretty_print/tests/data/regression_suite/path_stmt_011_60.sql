@@ -1,0 +1,1 @@
+INSERT INTO PATH_TBL VALUES ('[(,2),(3,4)]');

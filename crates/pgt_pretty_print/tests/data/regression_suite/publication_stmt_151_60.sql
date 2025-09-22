@@ -1,0 +1,1 @@
+CREATE PUBLICATION testpub6 FOR TABLES IN SCHEMA testpub_rf_schema2;

@@ -1,0 +1,1 @@
+INSERT INTO LSEG_TBL VALUES ('[(NaN,1),(NaN,90)]');

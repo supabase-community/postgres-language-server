@@ -1,0 +1,1 @@
+SELECT CAST('36854775807.0'::float4 AS int8);

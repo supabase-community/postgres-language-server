@@ -1,0 +1,1 @@
+((SELECT 2)) UNION SELECT 2;

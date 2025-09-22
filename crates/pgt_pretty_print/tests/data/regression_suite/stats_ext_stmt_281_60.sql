@@ -1,0 +1,1 @@
+TRUNCATE functional_dependencies;

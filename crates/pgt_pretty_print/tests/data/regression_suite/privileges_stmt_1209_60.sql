@@ -1,0 +1,1 @@
+SET SESSION AUTHORIZATION regress_group_direct_manager;

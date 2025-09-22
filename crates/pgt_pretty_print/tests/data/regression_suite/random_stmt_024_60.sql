@@ -1,0 +1,4 @@
+SELECT (count(*) FILTER (WHERE r < -9038904596117680292)) > 0 AS has_small,
+       (count(*) FILTER (WHERE r > 9038904596117680291)) > 0 AS has_large
+FROM (SELECT random(-9223372036854775808, 9223372036854775807) r
+      FROM generate_series(1, 2000)) ss;

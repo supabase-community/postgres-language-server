@@ -1,0 +1,1 @@
+INSERT INTO num_data VALUES (8, '74881');

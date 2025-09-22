@@ -1,0 +1,1 @@
+ALTER SUBSCRIPTION regress_testsub OWNER TO regress_subscription_user2;

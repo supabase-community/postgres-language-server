@@ -1,0 +1,1 @@
+CREATE SCHEMA alt_nsp1;

@@ -1,0 +1,1 @@
+select 'null'::jsonb::bool;

@@ -1,0 +1,1 @@
+SELECT JSON_QUERY(jsonb '[1,2]', '$[*]' ERROR ON ERROR);

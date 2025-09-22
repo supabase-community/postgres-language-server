@@ -1,0 +1,1 @@
+CREATE TABLE droppk2_d PARTITION OF droppk2 DEFAULT;

@@ -1,0 +1,2 @@
+SELECT to_json(a) AS a, JSON_OBJECTAGG(k : v WITH UNIQUE KEYS) OVER (ORDER BY k)
+FROM (VALUES (1,1), (1,2), (2,2)) a(k,v);

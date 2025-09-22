@@ -1,0 +1,1 @@
+COMMENT ON COLUMN ctlt1.a IS 'A';

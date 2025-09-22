@@ -1,0 +1,1 @@
+select quote_literal('');

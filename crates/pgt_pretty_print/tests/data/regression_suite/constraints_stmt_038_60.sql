@@ -1,0 +1,1 @@
+INSERT INTO CHECK2_TBL VALUES (7, 'check ok', 7);

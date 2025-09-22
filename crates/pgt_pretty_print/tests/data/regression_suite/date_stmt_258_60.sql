@@ -1,0 +1,1 @@
+SELECT EXTRACT(ISOYEAR    FROM DATE 'infinity');

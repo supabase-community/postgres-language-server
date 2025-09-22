@@ -1,0 +1,1 @@
+CREATE SCHEMA test_view_schema

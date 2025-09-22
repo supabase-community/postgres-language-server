@@ -1,0 +1,1 @@
+select '$.a.v'::jsonpath;

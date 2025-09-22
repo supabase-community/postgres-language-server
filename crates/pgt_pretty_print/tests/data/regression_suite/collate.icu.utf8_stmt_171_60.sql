@@ -1,0 +1,1 @@
+CREATE COLLATION test4 FROM nonsense;

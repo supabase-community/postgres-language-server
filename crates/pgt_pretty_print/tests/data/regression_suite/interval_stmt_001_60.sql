@@ -1,0 +1,1 @@
+SET IntervalStyle to postgres;

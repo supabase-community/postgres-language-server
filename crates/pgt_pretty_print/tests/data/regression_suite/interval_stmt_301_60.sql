@@ -1,0 +1,1 @@
+select interval 'P-0.01MT-2562047788H-54.775808S';

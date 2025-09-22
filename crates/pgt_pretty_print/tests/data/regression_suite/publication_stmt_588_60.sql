@@ -1,0 +1,1 @@
+ALTER PUBLICATION testpub3_forschema SET TABLES IN SCHEMA pub_test1;

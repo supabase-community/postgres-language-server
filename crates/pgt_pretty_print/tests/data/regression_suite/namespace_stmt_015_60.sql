@@ -1,0 +1,1 @@
+CREATE VIEW abc_view AS SELECT a FROM abc;

@@ -1,0 +1,1 @@
+UPDATE itest2 SET a = DEFAULT WHERE a = 2;

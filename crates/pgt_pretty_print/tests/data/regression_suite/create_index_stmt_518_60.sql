@@ -1,0 +1,1 @@
+REINDEX TABLE CONCURRENTLY concur_reindex_part_0_2;

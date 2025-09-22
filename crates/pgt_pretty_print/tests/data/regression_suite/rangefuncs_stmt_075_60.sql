@@ -1,0 +1,1 @@
+SELECT * FROM getrngfunc2(1) WITH ORDINALITY AS t1(v,o);

@@ -1,0 +1,1 @@
+CREATE TABLE CIRCLE_TBL (f1 circle);

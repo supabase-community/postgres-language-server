@@ -1,0 +1,1 @@
+SELECT 'true, false'::json;

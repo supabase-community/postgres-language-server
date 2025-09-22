@@ -1,0 +1,1 @@
+SELECT date_part('second',      TIME WITH TIME ZONE '2020-05-26 13:30:25.575401-04');

@@ -1,0 +1,1 @@
+revoke all on fk_notpartitioned_pk from regress_other_partitioned_fk_owner;

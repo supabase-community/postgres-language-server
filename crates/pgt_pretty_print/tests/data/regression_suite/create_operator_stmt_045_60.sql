@@ -1,0 +1,3 @@
+CREATE OPERATOR #@%# (
+   procedure = factorial
+);

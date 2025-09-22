@@ -1,0 +1,2 @@
+SELECT '"abc
+def"'::jsonb;

@@ -1,0 +1,1 @@
+INSERT INTO J1_TBL VALUES (0, NULL, 'zero');

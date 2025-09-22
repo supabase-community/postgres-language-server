@@ -1,0 +1,1 @@
+CALL ptest8('');

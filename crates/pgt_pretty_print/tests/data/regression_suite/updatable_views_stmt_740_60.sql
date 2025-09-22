@@ -1,0 +1,1 @@
+SELECT * FROM v1 WHERE a=100;

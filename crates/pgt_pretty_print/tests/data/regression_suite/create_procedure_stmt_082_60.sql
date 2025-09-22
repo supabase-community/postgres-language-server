@@ -1,0 +1,1 @@
+ALTER PROCEDURE ptest1(text) STRICT;

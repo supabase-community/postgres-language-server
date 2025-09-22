@@ -1,0 +1,1 @@
+ALTER PUBLICATION pub ADD TABLE sch1.tbl1;

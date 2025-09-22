@@ -1,0 +1,1 @@
+DELETE FROM ONLY c WHERE aa='new';

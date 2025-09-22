@@ -1,0 +1,4 @@
+CREATE TRIGGER gtest4 AFTER INSERT OR UPDATE ON gtest26
+  FOR EACH ROW
+  WHEN (NEW.b < 0)  -- ok
+  EXECUTE PROCEDURE gtest_trigger_func();

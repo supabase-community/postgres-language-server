@@ -6,9 +6,10 @@ publish     = false
 version     = "0.0.0"
 
 [dependencies]
-anyhow               = { workspace = true }
-camino.workspace     = true
-pgt_query            = { workspace = true }
-regex.workspace      = true
-serde.workspace      = true
-serde_json.workspace = true
+anyhow                 = { workspace = true }
+camino.workspace       = true
+pgt_query              = { workspace = true }
+pgt_statement_splitter = { workspace = true }
+regex.workspace        = true
+serde.workspace        = true
+serde_json.workspace   = true

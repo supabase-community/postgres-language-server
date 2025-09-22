@@ -1,0 +1,1 @@
+DELETE FROM pk WHERE a = 4502;

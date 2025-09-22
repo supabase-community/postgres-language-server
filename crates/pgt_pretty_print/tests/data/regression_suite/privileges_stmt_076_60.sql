@@ -1,0 +1,1 @@
+REVOKE pg_read_all_settings FROM regress_priv_user9;

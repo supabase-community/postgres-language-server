@@ -1,0 +1,1 @@
+SELECT box(f1) AS box FROM CIRCLE_TBL;

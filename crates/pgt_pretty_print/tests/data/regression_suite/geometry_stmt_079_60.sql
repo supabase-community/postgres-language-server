@@ -1,0 +1,1 @@
+SELECT f1, @-@ f1 FROM PATH_TBL;

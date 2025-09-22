@@ -1,0 +1,1 @@
+INSERT INTO unlogged1 VALUES (42);

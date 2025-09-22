@@ -1,0 +1,1 @@
+select '$.string()'::jsonpath;

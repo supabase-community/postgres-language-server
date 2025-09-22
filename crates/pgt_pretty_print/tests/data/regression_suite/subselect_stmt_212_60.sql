@@ -1,0 +1,1 @@
+analyze exists_tbl;

@@ -1,0 +1,1 @@
+CREATE ROLE regress_nosuch_recursive ROLE regress_nosuch_recursive;

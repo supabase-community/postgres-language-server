@@ -1,0 +1,1 @@
+ALTER FOREIGN TABLE ft1 ADD COLUMN c4 integer;

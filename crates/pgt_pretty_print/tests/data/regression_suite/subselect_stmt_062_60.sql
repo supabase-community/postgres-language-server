@@ -1,0 +1,1 @@
+INSERT INTO bar VALUES (2, 2);

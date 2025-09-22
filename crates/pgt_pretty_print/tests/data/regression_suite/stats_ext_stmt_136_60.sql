@@ -1,0 +1,1 @@
+DROP FOREIGN DATA WRAPPER extstats_dummy_fdw CASCADE;

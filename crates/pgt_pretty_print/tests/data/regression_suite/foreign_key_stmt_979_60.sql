@@ -1,0 +1,1 @@
+SET CONSTRAINTS fk_a_fkey DEFERRED;

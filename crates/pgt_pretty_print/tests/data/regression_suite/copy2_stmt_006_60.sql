@@ -1,0 +1,1 @@
+COPY x TO stdout;

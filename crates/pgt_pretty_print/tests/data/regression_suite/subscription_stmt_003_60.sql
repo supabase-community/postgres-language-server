@@ -1,0 +1,1 @@
+CREATE ROLE regress_subscription_user_dummy LOGIN NOSUPERUSER;

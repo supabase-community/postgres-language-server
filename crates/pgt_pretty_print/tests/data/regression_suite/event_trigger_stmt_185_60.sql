@@ -1,0 +1,1 @@
+REINDEX SCHEMA CONCURRENTLY concur_reindex_schema;

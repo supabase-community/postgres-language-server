@@ -1,0 +1,1 @@
+create role regress_other_partitioned_fk_owner;

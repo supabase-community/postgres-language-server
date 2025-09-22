@@ -1,0 +1,1 @@
+CREATE ROLE regress_publication_user_dummy LOGIN NOSUPERUSER;

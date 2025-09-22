@@ -1,0 +1,1 @@
+ALTER FUNCTION functest_F_1(int) IMMUTABLE;

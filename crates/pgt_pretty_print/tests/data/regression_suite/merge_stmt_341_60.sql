@@ -1,0 +1,2 @@
+CREATE FUNCTION trig_fn() RETURNS trigger LANGUAGE plpgsql AS
+  $$ BEGIN RETURN NULL; END; $$;

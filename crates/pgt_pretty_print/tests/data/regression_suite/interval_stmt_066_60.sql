@@ -1,0 +1,2 @@
+SELECT span / 10 AS quotient
+FROM INTERVAL_MULDIV_TBL;

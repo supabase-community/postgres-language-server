@@ -1,0 +1,1 @@
+CREATE TABLE foo_part_s1 PARTITION OF foo_parted FOR VALUES IN (1);

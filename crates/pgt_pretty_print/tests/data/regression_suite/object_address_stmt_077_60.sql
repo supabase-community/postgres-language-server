@@ -1,0 +1,1 @@
+DROP SCHEMA addr_nsp CASCADE;

@@ -1,0 +1,1 @@
+SELECT 'xAb' ~* '[W-Y]' COLLATE PG_UNICODE_FAST;

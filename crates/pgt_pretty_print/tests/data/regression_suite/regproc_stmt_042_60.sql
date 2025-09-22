@@ -1,0 +1,1 @@
+SELECT regclass('-')::oid;

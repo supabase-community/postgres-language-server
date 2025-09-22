@@ -1,0 +1,1 @@
+INSERT INTO v2 VALUES (2, 'two', 20);

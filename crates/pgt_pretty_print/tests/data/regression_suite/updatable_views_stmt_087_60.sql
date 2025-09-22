@@ -1,0 +1,1 @@
+DROP SEQUENCE uv_seq CASCADE;

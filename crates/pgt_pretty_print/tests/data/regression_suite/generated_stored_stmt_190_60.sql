@@ -1,0 +1,1 @@
+CREATE TABLE gtest20c (a int, b int GENERATED ALWAYS AS (a * 2) STORED);

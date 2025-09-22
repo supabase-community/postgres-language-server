@@ -1,0 +1,22 @@
+CREATE INDEX brinidx_multi ON brintest_multi USING brin (
+	int8col int8_minmax_multi_ops,
+	int2col int2_minmax_multi_ops,
+	int4col int4_minmax_multi_ops,
+	oidcol oid_minmax_multi_ops,
+	tidcol tid_minmax_multi_ops,
+	float4col float4_minmax_multi_ops,
+	float8col float8_minmax_multi_ops,
+	macaddrcol macaddr_minmax_multi_ops,
+	macaddr8col macaddr8_minmax_multi_ops,
+	inetcol inet_minmax_multi_ops,
+	cidrcol inet_minmax_multi_ops,
+	datecol date_minmax_multi_ops,
+	timecol time_minmax_multi_ops,
+	timestampcol timestamp_minmax_multi_ops,
+	timestamptzcol timestamptz_minmax_multi_ops,
+	intervalcol interval_minmax_multi_ops,
+	timetzcol timetz_minmax_multi_ops,
+	numericcol numeric_minmax_multi_ops,
+	uuidcol uuid_minmax_multi_ops,
+	lsncol pg_lsn_minmax_multi_ops
+);

@@ -1,0 +1,1 @@
+CREATE TABLE pk4 (LIKE pk);

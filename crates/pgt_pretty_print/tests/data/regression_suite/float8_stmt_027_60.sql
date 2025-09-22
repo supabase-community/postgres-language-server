@@ -1,0 +1,1 @@
+SELECT '          -INFINiTY   '::float8;

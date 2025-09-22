@@ -1,0 +1,1 @@
+SELECT c FROM pagg_tab GROUP BY c ORDER BY 1;

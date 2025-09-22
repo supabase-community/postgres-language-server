@@ -1,0 +1,1 @@
+RESET default_statistics_target;

@@ -1,0 +1,1 @@
+CREATE TEMP TABLE temptest1(col int PRIMARY KEY);

@@ -1,0 +1,1 @@
+ALTER TABLESPACE regress_tblspace RENAME TO regress_tblspace_renamed;

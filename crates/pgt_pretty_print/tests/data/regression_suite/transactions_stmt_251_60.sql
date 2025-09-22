@@ -1,0 +1,1 @@
+INSERT INTO koju VALUES (1);

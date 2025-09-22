@@ -1,0 +1,1 @@
+SELECT SUBSTRING('string'::bytea FROM -10 FOR -2147483646) AS "error";

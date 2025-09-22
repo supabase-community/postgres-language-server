@@ -1,0 +1,1 @@
+ALTER INDEX concur_exprs_index_expr ALTER COLUMN 1 SET STATISTICS 100;

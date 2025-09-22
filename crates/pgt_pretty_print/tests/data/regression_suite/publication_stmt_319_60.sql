@@ -1,0 +1,1 @@
+ALTER TABLE testpub_tbl8_1 ADD PRIMARY KEY (b);

@@ -1,0 +1,1 @@
+DROP SERVER s0;

@@ -1,0 +1,1 @@
+SELECT ltrim('zzzytrim', 'xyz');

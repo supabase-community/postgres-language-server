@@ -1,0 +1,1 @@
+SELECT * FROM onek EXCEPT ALL SELECT * FROM onek_copy;

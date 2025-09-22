@@ -1,0 +1,3 @@
+SELECT	JSON_ARRAYAGG(i) IS NULL,
+		JSON_ARRAYAGG(i RETURNING jsonb) IS NULL
+FROM generate_series(1, 0) i;

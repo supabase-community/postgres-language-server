@@ -1,0 +1,1 @@
+SELECT DISTINCT four,1,2,3 FROM tenk1 WHERE four = 0;

@@ -1,0 +1,1 @@
+INSERT INTO gtest25 VALUES (3), (4);

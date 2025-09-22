@@ -1,0 +1,1 @@
+SELECT s FROM LSEG_TBL WHERE ?- s;

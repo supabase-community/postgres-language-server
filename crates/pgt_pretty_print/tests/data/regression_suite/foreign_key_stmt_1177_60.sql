@@ -1,0 +1,4 @@
+CREATE TABLE fk_another (
+    a INT,
+    CONSTRAINT fkey FOREIGN KEY (a) REFERENCES fk_parted (a) ON UPDATE CASCADE ON DELETE CASCADE
+  )

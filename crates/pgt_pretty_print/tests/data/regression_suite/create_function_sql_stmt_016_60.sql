@@ -1,0 +1,1 @@
+ALTER FUNCTION functest_B_2(int) VOLATILE;

@@ -1,0 +1,1 @@
+CREATE TABLE cmdata2 (f1 text COMPRESSION lz4);

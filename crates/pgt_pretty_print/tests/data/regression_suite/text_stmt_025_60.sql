@@ -1,0 +1,1 @@
+select format(NULL);

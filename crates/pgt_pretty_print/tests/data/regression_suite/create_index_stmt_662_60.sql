@@ -1,0 +1,1 @@
+REINDEX SCHEMA CONCURRENTLY schema_to_reindex;

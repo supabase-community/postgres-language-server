@@ -1,0 +1,1 @@
+CREATE TABLE ctlt11 (LIKE ctlv1);

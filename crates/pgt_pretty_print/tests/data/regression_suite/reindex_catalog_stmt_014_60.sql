@@ -1,0 +1,1 @@
+REINDEX INDEX pg_class_relname_nsp_index;

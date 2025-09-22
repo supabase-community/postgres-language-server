@@ -1,0 +1,1 @@
+INSERT INTO voo VALUES(14,'zoo2') RETURNING *;

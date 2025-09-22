@@ -1,0 +1,1 @@
+RESET max_parallel_maintenance_workers;

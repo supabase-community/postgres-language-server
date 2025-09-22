@@ -1,0 +1,1 @@
+VACUUM (PROCESS_MAIN FALSE, FULL) vac_option_tab;

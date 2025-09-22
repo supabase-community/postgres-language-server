@@ -1,0 +1,1 @@
+INSERT INTO cmdata VALUES(repeat('1234567890', 1000));

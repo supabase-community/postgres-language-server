@@ -1,0 +1,1 @@
+SELECT E'd\u0061t\U00000061' AS "data";

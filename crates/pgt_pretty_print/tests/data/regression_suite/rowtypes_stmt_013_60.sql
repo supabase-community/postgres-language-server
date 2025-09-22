@@ -1,0 +1,1 @@
+select '(Joe,Blow) /'::fullname;

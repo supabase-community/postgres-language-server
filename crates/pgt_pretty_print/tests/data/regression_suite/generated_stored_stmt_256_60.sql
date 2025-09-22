@@ -1,0 +1,1 @@
+INSERT INTO gtest24r (a) VALUES (6);

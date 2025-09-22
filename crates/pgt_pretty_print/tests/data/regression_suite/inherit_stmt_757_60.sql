@@ -1,0 +1,1 @@
+analyze permtest_parent;

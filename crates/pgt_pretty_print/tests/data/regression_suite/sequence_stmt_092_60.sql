@@ -1,0 +1,1 @@
+DROP SEQUENCE myseq3;

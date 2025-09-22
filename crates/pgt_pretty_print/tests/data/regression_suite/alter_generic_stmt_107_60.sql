@@ -1,0 +1,1 @@
+CREATE OPERATOR FAMILY alt_opf2 USING hash;

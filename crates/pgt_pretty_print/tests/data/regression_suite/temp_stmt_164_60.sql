@@ -1,0 +1,1 @@
+ROLLBACK TO SAVEPOINT rescue_me;

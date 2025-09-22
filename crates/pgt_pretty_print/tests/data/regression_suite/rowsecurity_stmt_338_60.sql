@@ -1,0 +1,1 @@
+INSERT INTO bv1 VALUES (12, 'xxx');

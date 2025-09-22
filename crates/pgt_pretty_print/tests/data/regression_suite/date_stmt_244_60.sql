@@ -1,0 +1,1 @@
+SELECT EXTRACT(DAY           FROM DATE 'infinity');

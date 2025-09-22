@@ -1,0 +1,1 @@
+ALTER TABLE test_like_6 DROP COLUMN c;

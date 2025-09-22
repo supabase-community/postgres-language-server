@@ -1,0 +1,1 @@
+CREATE TABLE ctlt_all (LIKE ctlt1 INCLUDING ALL);

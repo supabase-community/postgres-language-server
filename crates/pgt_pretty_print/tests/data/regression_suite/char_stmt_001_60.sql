@@ -1,0 +1,1 @@
+CREATE TEMP TABLE CHAR_TBL(f1 char);

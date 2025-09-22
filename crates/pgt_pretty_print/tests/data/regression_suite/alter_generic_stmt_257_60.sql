@@ -1,0 +1,1 @@
+CREATE TABLE alt_regress_2 (a INTEGER, b INTEGER);

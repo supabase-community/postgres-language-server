@@ -1,0 +1,1 @@
+GRANT regress_priv_group2 TO regress_priv_user2 GRANTED BY regress_priv_user1;

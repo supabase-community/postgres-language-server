@@ -1,0 +1,1 @@
+drop domain restrictedrange;

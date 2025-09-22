@@ -1,0 +1,1 @@
+SELECT casttestfunc('foo'::text);

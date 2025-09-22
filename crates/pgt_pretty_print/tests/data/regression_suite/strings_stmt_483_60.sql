@@ -1,0 +1,1 @@
+SELECT chr(65);

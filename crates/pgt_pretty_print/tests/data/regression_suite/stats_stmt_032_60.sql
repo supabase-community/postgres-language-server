@@ -1,0 +1,1 @@
+INSERT INTO trunc_stats_test2 DEFAULT VALUES;

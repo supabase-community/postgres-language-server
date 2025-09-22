@@ -1,0 +1,1 @@
+SELECT U&'\00E4\24D1c' IS NORMALIZED AS test_default;

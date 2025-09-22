@@ -1,0 +1,2 @@
+CREATE PUBLICATION dump_pub_nsp_1ct FOR
+  TABLES IN SCHEMA pubme;

@@ -1,0 +1,1 @@
+CREATE SCHEMA temp_view_test

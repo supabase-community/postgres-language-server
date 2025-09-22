@@ -1,0 +1,1 @@
+CREATE FUNCTION testpub_rf_func2() RETURNS integer IMMUTABLE AS $$ BEGIN RETURN 123; END; $$ LANGUAGE plpgsql;

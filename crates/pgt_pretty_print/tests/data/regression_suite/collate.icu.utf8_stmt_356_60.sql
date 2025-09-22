@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX ON test1bpci (x);

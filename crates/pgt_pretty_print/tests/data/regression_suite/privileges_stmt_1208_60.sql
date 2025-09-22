@@ -1,0 +1,1 @@
+GRANT regress_group_direct_manager TO regress_group_indirect_manager;

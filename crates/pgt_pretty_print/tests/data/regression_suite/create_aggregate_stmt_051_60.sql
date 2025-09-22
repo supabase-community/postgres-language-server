@@ -1,0 +1,1 @@
+DROP AGGREGATE myavg (numeric);

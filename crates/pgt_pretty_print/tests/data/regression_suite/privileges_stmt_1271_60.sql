@@ -1,0 +1,1 @@
+ANALYZE maintain_test;

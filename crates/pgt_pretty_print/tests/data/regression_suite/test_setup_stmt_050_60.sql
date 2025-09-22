@@ -1,0 +1,1 @@
+COPY road FROM 'filename';

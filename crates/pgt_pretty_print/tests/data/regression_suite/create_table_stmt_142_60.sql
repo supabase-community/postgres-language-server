@@ -1,0 +1,1 @@
+CREATE TABLE bools_true PARTITION OF bools FOR VALUES IN (1);

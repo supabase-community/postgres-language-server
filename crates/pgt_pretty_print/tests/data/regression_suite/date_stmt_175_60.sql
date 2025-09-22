@@ -1,0 +1,16 @@
+SELECT f1 as "date",
+    date_part('year', f1) AS year,
+    date_part('month', f1) AS month,
+    date_part('day', f1) AS day,
+    date_part('quarter', f1) AS quarter,
+    date_part('decade', f1) AS decade,
+    date_part('century', f1) AS century,
+    date_part('millennium', f1) AS millennium,
+    date_part('isoyear', f1) AS isoyear,
+    date_part('week', f1) AS week,
+    date_part('dow', f1) AS dow,
+    date_part('isodow', f1) AS isodow,
+    date_part('doy', f1) AS doy,
+    date_part('julian', f1) AS julian,
+    date_part('epoch', f1) AS epoch
+    FROM date_tbl;

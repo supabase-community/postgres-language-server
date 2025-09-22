@@ -1,0 +1,1 @@
+ALTER TABLE articles DROP CONSTRAINT articles_pkey RESTRICT;

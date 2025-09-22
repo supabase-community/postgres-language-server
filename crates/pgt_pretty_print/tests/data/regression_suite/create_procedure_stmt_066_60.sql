@@ -1,0 +1,1 @@
+drop procedure ptest10;

@@ -1,0 +1,4 @@
+CREATE TRIGGER gtest3 AFTER DELETE OR UPDATE ON gtest26
+  FOR EACH ROW
+  WHEN (OLD.b < 0)  -- ok
+  EXECUTE PROCEDURE gtest_trigger_func();

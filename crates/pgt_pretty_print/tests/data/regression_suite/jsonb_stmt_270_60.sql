@@ -1,0 +1,1 @@
+INSERT INTO foo VALUES (847003,'sub-alpha','GESS90');

@@ -1,0 +1,1 @@
+SELECT regdatabase('"template1"');

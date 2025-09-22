@@ -1,0 +1,1 @@
+ALTER INDEX regress_tblspace_test_tbl_idx SET TABLESPACE pg_default;

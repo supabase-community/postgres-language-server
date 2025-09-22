@@ -1,0 +1,1 @@
+select length(42);

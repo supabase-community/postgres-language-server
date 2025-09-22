@@ -1,0 +1,1 @@
+CREATE USER regress_alter_generic_user3;

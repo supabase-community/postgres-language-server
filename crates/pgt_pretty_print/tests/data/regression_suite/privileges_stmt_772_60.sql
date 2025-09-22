@@ -1,0 +1,1 @@
+SELECT dogrant_ok();

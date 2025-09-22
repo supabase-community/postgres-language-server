@@ -1,0 +1,1 @@
+DROP ROLE regress_group_direct_manager;

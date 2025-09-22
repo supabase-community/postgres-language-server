@@ -1,0 +1,1 @@
+DROP TABLE temporal_partitioned_fk_mltrng2mltrng;

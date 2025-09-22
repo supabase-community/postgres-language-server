@@ -1,0 +1,1 @@
+DROP ROLE regress_subscription_user_dummy;

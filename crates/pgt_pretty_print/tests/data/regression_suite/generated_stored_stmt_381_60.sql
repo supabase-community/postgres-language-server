@@ -1,0 +1,1 @@
+TRUNCATE gtest26;

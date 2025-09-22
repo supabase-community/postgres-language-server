@@ -1,0 +1,1 @@
+SELECT JSON_QUERY(jsonb '"aaa"', '$' RETURNING text KEEP QUOTES);

@@ -1,0 +1,1 @@
+ALTER TABLE cwi_test ADD UNIQUE USING INDEX cwi_uniq4_idx;

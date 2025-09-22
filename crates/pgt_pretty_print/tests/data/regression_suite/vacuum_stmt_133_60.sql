@@ -1,0 +1,1 @@
+VACUUM (INDEX_CLEANUP FALSE) vaccluster;

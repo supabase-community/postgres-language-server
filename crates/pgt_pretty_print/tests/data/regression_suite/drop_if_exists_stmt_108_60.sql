@@ -1,0 +1,1 @@
+DROP ACCESS METHOD no_such_am;

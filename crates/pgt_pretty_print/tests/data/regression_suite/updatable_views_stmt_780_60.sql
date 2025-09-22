@@ -1,0 +1,1 @@
+INSERT INTO vx1 VALUES (1);

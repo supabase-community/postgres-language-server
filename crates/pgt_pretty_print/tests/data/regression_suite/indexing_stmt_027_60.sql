@@ -1,0 +1,1 @@
+ALTER TABLE idxpart ALTER COLUMN c TYPE numeric;

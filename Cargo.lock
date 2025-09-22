@@ -1356,6 +1356,7 @@ dependencies = [
  "anyhow",
  "camino",
  "pgt_query",
+ "pgt_statement_splitter",
  "regex",
  "serde",
  "serde_json",

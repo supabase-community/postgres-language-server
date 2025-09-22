@@ -1,0 +1,1 @@
+CREATE FOREIGN TABLE fp PARTITION OF tableam_parted_a_heap2 DEFAULT SERVER x;

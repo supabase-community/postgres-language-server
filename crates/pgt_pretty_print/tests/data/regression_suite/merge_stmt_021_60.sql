@@ -1,0 +1,4 @@
+MERGE INTO target
+USING target
+ON tid = tid
+WHEN MATCHED THEN DO NOTHING;

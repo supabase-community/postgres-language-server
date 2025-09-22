@@ -1,0 +1,1 @@
+ALTER TABLE leader DROP c;

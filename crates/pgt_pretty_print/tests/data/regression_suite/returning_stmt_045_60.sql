@@ -1,0 +1,1 @@
+DELETE FROM foo WHERE f1 = 13;

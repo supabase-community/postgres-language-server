@@ -1,0 +1,1 @@
+CREATE TABLE past_part PARTITION OF past_parted FOR VALUES IN (1);

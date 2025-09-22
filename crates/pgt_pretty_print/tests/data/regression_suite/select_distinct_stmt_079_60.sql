@@ -1,0 +1,1 @@
+ANALYZE distinct_tbl;

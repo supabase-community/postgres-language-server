@@ -1,0 +1,1 @@
+INSERT INTO s1 VALUES (1, 'foo');

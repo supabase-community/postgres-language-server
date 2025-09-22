@@ -1,0 +1,2 @@
+CREATE PROCEDURE ptestx(a VARIADIC int[], b OUT int) LANGUAGE SQL
+  AS $$ SELECT a[1] $$;

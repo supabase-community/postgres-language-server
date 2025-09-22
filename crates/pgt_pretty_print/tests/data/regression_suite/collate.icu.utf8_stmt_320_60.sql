@@ -1,0 +1,1 @@
+SELECT x FROM test2ci ORDER BY x;

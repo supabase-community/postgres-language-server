@@ -1,0 +1,1 @@
+ANALYZE a_star;

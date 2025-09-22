@@ -1,0 +1,1 @@
+DROP TABLE bug18634s;

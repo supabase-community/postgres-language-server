@@ -1,0 +1,1 @@
+SELECT 'Î' ~* '[Î³-Î»]' COLLATE PG_UNICODE_FAST;

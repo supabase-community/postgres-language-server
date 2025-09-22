@@ -1,0 +1,1 @@
+TRUNCATE pa_target;

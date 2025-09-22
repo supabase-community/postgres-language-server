@@ -1,0 +1,1 @@
+ALTER TABLE evttrig.one ALTER COLUMN col_b DROP DEFAULT;

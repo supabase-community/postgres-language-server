@@ -1,0 +1,1 @@
+ALTER STATISTICS alt_stat3 SET SCHEMA alt_nsp2;

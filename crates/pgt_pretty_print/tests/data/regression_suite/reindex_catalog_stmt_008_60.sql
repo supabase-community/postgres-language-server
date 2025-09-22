@@ -1,0 +1,1 @@
+REINDEX INDEX pg_index_indrelid_index;

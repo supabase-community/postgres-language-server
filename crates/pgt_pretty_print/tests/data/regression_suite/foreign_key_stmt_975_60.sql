@@ -1,0 +1,1 @@
+INSERT INTO fk VALUES (1);

@@ -1,0 +1,1 @@
+INSERT INTO cmmove2 VALUES (repeat('1234567890', 1004));

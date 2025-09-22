@@ -1,0 +1,1 @@
+ALTER TABLE am_partitioned SET ACCESS METHOD heap;

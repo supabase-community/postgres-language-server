@@ -1,0 +1,1 @@
+VACUUM (PROCESS_TOAST FALSE, FULL) vac_option_tab;

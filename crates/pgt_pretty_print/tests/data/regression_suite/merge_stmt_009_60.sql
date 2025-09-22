@@ -1,0 +1,1 @@
+INSERT INTO target VALUES (3, 30);

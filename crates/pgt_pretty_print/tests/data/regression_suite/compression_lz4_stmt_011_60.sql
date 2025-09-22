@@ -1,0 +1,1 @@
+SELECT SUBSTR(f1, 2000, 50) FROM cmdata_lz4;

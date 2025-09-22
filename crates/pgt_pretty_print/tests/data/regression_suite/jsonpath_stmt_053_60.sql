@@ -1,0 +1,1 @@
+select 'last'::jsonpath;

@@ -1,0 +1,1 @@
+DEALLOCATE q1;

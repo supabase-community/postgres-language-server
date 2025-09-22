@@ -1,0 +1,1 @@
+CREATE TABLE idxpart (a INT, b TEXT, c INT) PARTITION BY RANGE(a);

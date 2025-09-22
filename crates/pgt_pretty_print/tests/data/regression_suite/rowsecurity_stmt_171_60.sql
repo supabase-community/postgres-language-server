@@ -1,0 +1,1 @@
+ALTER TABLE part_document_satire ENABLE ROW LEVEL SECURITY;

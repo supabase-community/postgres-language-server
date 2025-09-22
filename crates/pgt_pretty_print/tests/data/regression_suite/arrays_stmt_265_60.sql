@@ -1,0 +1,1 @@
+select '{foo,,bar}'::text[];

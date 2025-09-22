@@ -1,0 +1,1 @@
+select '(Joe,)'::fullname;

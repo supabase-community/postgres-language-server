@@ -1,0 +1,1 @@
+SELECT ctid, * FROM tidscan;

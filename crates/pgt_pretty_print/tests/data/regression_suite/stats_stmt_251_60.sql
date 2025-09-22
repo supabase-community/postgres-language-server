@@ -1,0 +1,1 @@
+CREATE TEMP TABLE test_stats_temp AS SELECT 17;

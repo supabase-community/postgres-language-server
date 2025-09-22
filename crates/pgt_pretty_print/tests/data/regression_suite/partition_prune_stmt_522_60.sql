@@ -1,0 +1,1 @@
+analyze ma_test;

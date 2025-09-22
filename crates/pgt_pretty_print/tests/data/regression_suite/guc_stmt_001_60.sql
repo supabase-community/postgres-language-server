@@ -1,0 +1,1 @@
+SET intervalstyle to 'asd';

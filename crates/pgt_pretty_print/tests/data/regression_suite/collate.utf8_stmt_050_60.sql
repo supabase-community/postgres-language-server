@@ -1,0 +1,1 @@
+SELECT 'àµ§' ~ '\d' COLLATE PG_UNICODE_FAST;

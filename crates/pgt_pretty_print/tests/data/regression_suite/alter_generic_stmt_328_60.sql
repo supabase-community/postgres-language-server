@@ -1,0 +1,1 @@
+DROP SCHEMA alt_nsp1 CASCADE;

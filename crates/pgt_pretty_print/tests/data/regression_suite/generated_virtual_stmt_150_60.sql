@@ -1,0 +1,1 @@
+ALTER TABLE gtest21ax ALTER COLUMN b SET EXPRESSION AS (nullif(a, 1));

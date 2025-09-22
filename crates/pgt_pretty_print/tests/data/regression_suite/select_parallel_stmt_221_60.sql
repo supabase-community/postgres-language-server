@@ -1,0 +1,1 @@
+set session authorization regress_parallel_worker;

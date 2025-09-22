@@ -1,0 +1,1 @@
+INSERT INTO z2 VALUES (NULL, 'text');

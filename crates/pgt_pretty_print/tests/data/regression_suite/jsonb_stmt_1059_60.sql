@@ -1,0 +1,1 @@
+select '12345'::jsonb::int2;

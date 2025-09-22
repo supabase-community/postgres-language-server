@@ -1,0 +1,1 @@
+COPY testjsonb FROM 'filename';

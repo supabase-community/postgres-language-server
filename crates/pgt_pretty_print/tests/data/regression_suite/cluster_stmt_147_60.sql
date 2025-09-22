@@ -1,0 +1,1 @@
+CREATE TABLE ptnowner2 PARTITION OF ptnowner FOR VALUES IN (2);

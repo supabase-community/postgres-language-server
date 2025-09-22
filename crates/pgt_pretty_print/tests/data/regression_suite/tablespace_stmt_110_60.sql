@@ -1,0 +1,1 @@
+CREATE TABLE testschema.dflt2 (a int PRIMARY KEY) PARTITION BY LIST (a);

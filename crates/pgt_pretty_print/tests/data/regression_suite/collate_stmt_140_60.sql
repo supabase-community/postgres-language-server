@@ -1,0 +1,1 @@
+CREATE COLLATION coll_dup_chk (LC_CTYPE = "POSIX", LOCALE = '');

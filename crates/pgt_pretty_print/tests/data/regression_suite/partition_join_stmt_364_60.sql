@@ -1,0 +1,1 @@
+CREATE TABLE prt2_adv_default PARTITION OF prt2_adv DEFAULT;

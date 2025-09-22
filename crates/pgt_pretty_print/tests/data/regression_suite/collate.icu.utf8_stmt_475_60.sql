@@ -1,0 +1,1 @@
+INSERT INTO test23a VALUES (2, ARRAY['DEF']);

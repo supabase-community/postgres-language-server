@@ -1,0 +1,1 @@
+SELECT c FROM toasttest;

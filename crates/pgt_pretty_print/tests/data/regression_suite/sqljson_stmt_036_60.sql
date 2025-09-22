@@ -1,0 +1,1 @@
+SELECT JSON_SERIALIZE(JSON('{ "a" : 1 } '));

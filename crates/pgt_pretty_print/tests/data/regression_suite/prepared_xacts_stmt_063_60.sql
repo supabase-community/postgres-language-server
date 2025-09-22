@@ -1,0 +1,1 @@
+PREPARE TRANSACTION 'regress_sub2';

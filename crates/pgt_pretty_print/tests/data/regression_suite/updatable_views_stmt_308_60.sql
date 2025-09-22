@@ -1,0 +1,1 @@
+SELECT * FROM rw_view1 FOR UPDATE;

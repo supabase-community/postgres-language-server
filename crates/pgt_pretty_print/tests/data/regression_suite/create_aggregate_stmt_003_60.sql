@@ -1,0 +1,1 @@
+COMMENT ON AGGREGATE newavg (int4) IS NULL;

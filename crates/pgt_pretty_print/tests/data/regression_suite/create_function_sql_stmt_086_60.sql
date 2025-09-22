@@ -1,0 +1,1 @@
+DROP TABLE functest1 CASCADE;

@@ -1,0 +1,1 @@
+ALTER OPERATOR FAMILY alt_opf3 USING hash RENAME TO alt_opf4;

@@ -1,0 +1,1 @@
+CREATE TABLE m(id OID);

@@ -1,0 +1,1 @@
+SELECT * FROM test21_1;

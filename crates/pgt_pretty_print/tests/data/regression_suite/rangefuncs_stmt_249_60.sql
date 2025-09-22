@@ -1,0 +1,1 @@
+SELECT dup('xyz'::text);

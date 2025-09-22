@@ -1,0 +1,1 @@
+SELECT unistr('wrong: \xyz');

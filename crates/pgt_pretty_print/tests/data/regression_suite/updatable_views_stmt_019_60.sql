@@ -1,0 +1,1 @@
+CREATE VIEW ro_view17 AS SELECT * FROM ro_view1;

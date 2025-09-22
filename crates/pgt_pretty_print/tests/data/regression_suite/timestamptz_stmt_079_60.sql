@@ -1,0 +1,1 @@
+SET timezone = 'America/Montevideo';

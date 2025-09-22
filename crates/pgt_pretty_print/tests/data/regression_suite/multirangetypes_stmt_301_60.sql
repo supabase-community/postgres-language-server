@@ -1,0 +1,1 @@
+select nummultirange() >> 'empty'::numrange;

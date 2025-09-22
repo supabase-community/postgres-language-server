@@ -1,0 +1,1 @@
+SELECT INTERVAL 'infinity years';

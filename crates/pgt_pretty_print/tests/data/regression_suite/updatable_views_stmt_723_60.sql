@@ -1,0 +1,1 @@
+CREATE TABLE t11 (d text) INHERITS (t1);

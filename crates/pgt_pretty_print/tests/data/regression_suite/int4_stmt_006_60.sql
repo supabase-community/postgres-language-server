@@ -1,0 +1,1 @@
+INSERT INTO INT4_TBL(f1) VALUES ('123       5');

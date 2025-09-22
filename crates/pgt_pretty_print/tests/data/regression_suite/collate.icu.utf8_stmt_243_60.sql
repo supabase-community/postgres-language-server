@@ -1,0 +1,1 @@
+INSERT INTO test6 VALUES (1, U&'zy\00E4bc');

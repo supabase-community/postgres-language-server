@@ -1,0 +1,1 @@
+FETCH 10 FROM c;

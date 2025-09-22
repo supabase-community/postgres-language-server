@@ -1,0 +1,1 @@
+SET LOCAL TimeZone TO 'UTC';

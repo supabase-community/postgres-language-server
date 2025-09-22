@@ -1,0 +1,1 @@
+ALTER FUNCTION ptest1(text) VOLATILE;

@@ -1,0 +1,1 @@
+alter table parted_uniq_detach_test detach partition parted_uniq_detach_test1;

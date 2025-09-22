@@ -1,0 +1,3 @@
+CREATE TABLE gtest_child3 PARTITION OF gtest_parent (
+    f3 GENERATED ALWAYS AS (f2 * 2) STORED  -- error
+) FOR VALUES FROM ('2016-09-01') TO ('2016-10-01');

@@ -1,0 +1,3 @@
+SELECT to_json(a) AS a, JSON_OBJECTAGG(k : v ABSENT ON NULL)
+OVER (ORDER BY k)
+FROM (VALUES (1,1), (1,null), (2,2)) a(k,v);

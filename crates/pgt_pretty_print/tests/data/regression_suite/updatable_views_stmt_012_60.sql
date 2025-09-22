@@ -1,0 +1,1 @@
+CREATE VIEW ro_view10 AS SELECT 1 AS a;

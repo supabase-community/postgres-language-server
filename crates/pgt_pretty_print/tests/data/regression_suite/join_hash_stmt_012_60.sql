@@ -1,0 +1,1 @@
+analyze bigger_than_it_looks;

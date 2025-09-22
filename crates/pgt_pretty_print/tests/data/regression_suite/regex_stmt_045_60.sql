@@ -1,0 +1,1 @@
+select 'xyy' ~ '(?<=[xy])yy+';

@@ -1,0 +1,1 @@
+select array[]::text[];

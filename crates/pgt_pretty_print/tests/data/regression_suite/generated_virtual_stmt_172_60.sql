@@ -1,0 +1,1 @@
+CREATE TABLE gtest24at (a int PRIMARY KEY);

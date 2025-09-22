@@ -1,0 +1,1 @@
+DROP TABLE inht1, inhs1 CASCADE;

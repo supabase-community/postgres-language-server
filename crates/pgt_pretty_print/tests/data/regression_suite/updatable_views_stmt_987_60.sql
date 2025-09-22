@@ -1,0 +1,1 @@
+drop rule base_tab_def_view_ins_rule on base_tab_def_view;

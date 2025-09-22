@@ -1,0 +1,1 @@
+SHOW special."weird name";

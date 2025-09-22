@@ -1,0 +1,1 @@
+INSERT INTO fkpart8.tbl1 VALUES(1);

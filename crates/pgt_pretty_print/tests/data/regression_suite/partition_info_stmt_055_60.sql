@@ -1,0 +1,1 @@
+CREATE MATERIALIZED VIEW ptif_test_matview AS SELECT 1;

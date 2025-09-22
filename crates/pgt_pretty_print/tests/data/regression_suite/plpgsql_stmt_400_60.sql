@@ -1,0 +1,1 @@
+select constant_refcursor();

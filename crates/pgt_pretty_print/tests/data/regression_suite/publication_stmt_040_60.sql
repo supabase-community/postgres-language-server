@@ -1,0 +1,1 @@
+ALTER PUBLICATION testpub_fortable DROP TABLES IN SCHEMA pub_test;

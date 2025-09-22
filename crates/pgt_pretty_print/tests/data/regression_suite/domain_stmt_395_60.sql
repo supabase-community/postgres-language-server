@@ -1,0 +1,1 @@
+drop type ddtest1;

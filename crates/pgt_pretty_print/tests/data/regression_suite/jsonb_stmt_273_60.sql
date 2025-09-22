@@ -1,0 +1,1 @@
+INSERT INTO foo VALUES (999999, NULL, 'bar');

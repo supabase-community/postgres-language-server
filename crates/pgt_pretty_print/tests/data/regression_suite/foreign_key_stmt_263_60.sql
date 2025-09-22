@@ -1,0 +1,1 @@
+CREATE TABLE PKTABLE (ptest1 numeric PRIMARY KEY);

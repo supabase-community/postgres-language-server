@@ -1,0 +1,1 @@
+SELECT * from CHECK2_TBL;

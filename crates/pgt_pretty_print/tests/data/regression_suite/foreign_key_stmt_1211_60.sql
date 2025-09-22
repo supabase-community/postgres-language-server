@@ -1,0 +1,6 @@
+CREATE FUNCTION fkpart11.print_row () RETURNS TRIGGER LANGUAGE plpgsql AS $$
+  BEGIN
+    RAISE NOTICE 'TABLE: %, OP: %, OLD: %, NEW: %', TG_RELNAME, TG_OP, OLD, NEW;
+    RETURN NULL;
+  END;
+$$;

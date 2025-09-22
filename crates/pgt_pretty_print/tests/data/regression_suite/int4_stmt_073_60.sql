@@ -1,0 +1,1 @@
+SELECT int4 '0x';

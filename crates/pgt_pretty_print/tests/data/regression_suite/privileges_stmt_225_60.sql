@@ -1,0 +1,1 @@
+CREATE INDEX ON atest12 (a);

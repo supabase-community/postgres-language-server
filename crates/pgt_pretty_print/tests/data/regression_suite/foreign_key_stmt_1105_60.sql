@@ -1,0 +1,1 @@
+DROP SCHEMA fkpart7 CASCADE;

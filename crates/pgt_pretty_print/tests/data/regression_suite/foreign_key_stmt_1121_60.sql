@@ -1,0 +1,1 @@
+INSERT INTO fkpart9.pk VALUES (35);

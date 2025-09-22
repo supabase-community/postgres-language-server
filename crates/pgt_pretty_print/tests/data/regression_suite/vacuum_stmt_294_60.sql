@@ -1,0 +1,1 @@
+ALTER TABLE vacowned_parted OWNER TO CURRENT_USER;

@@ -1,0 +1,1 @@
+ALTER TABLE attmp ADD COLUMN z int2[];

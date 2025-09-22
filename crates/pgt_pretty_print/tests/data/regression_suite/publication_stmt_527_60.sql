@@ -1,0 +1,1 @@
+CREATE PUBLICATION testpub1_forschema FOR TABLES IN SCHEMA pub_test1;

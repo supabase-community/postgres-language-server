@@ -1,0 +1,1 @@
+SELECT POSITION(B'0' IN B'');

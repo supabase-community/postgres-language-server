@@ -1,0 +1,1 @@
+SELECT * FROM t5 ORDER BY c ASC, a ASC;

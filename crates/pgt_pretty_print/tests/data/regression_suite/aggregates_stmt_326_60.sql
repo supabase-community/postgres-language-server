@@ -1,0 +1,1 @@
+reset parallel_leader_participation;

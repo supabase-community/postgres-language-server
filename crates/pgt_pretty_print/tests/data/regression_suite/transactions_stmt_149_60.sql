@@ -1,0 +1,1 @@
+SELECT trans_foo;

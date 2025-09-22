@@ -1,0 +1,1 @@
+DROP OPERATOR FAMILY alt_opf16 USING gist;

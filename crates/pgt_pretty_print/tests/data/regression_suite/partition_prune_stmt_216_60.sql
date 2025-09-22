@@ -1,0 +1,1 @@
+CREATE TABLE part (a INT, b INT) PARTITION BY LIST (a);

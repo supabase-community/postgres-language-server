@@ -1,0 +1,1 @@
+INSERT INTO T VALUES (19), (20);

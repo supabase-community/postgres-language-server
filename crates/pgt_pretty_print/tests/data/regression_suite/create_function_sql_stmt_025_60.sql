@@ -1,0 +1,1 @@
+ALTER FUNCTION functest_C_3(int) SECURITY DEFINER;

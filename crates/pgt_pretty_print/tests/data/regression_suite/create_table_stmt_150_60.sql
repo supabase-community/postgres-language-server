@@ -1,0 +1,1 @@
+CREATE TABLE bigintp_10 PARTITION OF bigintp FOR VALUES IN (10);

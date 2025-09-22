@@ -1,0 +1,1 @@
+DROP FUNCTION gf1(int);

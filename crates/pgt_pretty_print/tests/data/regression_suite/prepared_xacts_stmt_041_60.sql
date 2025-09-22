@@ -1,0 +1,1 @@
+DROP TABLE pxtest1;

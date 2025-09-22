@@ -1,0 +1,1 @@
+RESET default_transaction_read_only;

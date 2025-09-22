@@ -1,0 +1,1 @@
+PREPARE q1 AS SELECT 1 AS a;

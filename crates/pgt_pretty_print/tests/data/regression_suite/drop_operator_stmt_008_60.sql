@@ -1,0 +1,1 @@
+DROP OPERATOR |>(bigint, bigint);

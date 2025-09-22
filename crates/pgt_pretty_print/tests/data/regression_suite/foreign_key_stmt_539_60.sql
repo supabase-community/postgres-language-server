@@ -1,0 +1,1 @@
+select * from pktable2;

@@ -1,0 +1,1 @@
+SELECT to_date('0000-02-01','YYYY-MM-DD');

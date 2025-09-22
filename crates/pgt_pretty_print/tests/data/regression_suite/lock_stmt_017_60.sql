@@ -1,0 +1,1 @@
+LOCK TABLE lock_tbl1 IN SHARE MODE;

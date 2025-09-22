@@ -1,0 +1,1 @@
+SELECT * FROM pht1 p1 JOIN pht1 p2 USING (c) LIMIT 1;

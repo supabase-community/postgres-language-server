@@ -1,0 +1,1 @@
+LOCK TABLE fast_emp4000;

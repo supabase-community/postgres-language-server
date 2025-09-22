@@ -1,0 +1,1 @@
+SELECT NULL::bytea IS JSON;

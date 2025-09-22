@@ -1,0 +1,1 @@
+DROP TABLE sb_1, sb_2 CASCADE;

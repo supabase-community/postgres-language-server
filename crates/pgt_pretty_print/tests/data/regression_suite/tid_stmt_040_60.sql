@@ -1,0 +1,1 @@
+DROP TABLE tid_tab CASCADE;

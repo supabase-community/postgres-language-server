@@ -1,0 +1,1 @@
+SELECT merge_func();

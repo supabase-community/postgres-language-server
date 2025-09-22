@@ -1,0 +1,1 @@
+SELECT JSON_SERIALIZE('{ "a" : 1 } ' RETURNING jsonb);

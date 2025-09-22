@@ -1,0 +1,1 @@
+CREATE COLLATION test0 FROM "C";

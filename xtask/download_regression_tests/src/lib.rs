@@ -38,7 +38,7 @@ pub fn download_regression_tests() -> Result<()> {
     let total_files = urls.len();
 
     for (index, url) in urls.iter().enumerate() {
-        let filename = url.split('/').last().unwrap();
+        let filename = url.split('/').next_back().unwrap();
         if filename.contains("psql") {
             // skipping this for now, we don't support psql
             continue;
@@ -62,10 +62,61 @@ pub fn download_regression_tests() -> Result<()> {
             ));
         }
 
+        let mut processed_content = Vec::new();
+
         let cursor = Cursor::new(&output.stdout);
 
-        if let Err(e) = preprocess_sql(cursor, &target_dir, filename) {
-            bail!("Error: Failed to process file: {}", e);
+        if let Err(e) = preprocess_sql(cursor, &mut processed_content) {
+            eprintln!("Error: Failed to process file: {}", e);
+            continue;
+        }
+
+        let content_str = std::str::from_utf8(&processed_content)?;
+        let split_result = pgt_statement_splitter::split(content_str);
+
+        let mut statement_counter = 0;
+        for (idx, range) in split_result.ranges.iter().enumerate() {
+            let statement = &content_str[usize::from(range.start())..usize::from(range.end())];
+            let trimmed = statement.trim();
+
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            // Try to parse the statement
+            match pgt_query::parse(trimmed) {
+                Ok(parsed) => {
+                    if parsed.root().is_none() {
+                        eprintln!(
+                            "Warning: Statement {} in {} has no root node, skipping",
+                            idx + 1,
+                            filename
+                        );
+                        continue;
+                    }
+
+                    // Generate filename for this statement
+                    let base_name = filename.strip_suffix(".sql").unwrap_or(filename);
+                    let stmt_filename =
+                        format!("{}_stmt_{:03}_60.sql", base_name, statement_counter);
+                    let filepath = target_dir.join(stmt_filename);
+
+                    // Write the statement to file
+                    let mut dest = File::create(&filepath)?;
+                    writeln!(dest, "{}", trimmed)?;
+
+                    statement_counter += 1;
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Warning: Failed to parse statement {} in {}: {}",
+                        idx + 1,
+                        filename,
+                        e
+                    );
+                    continue;
+                }
+            }
         }
     }
 
@@ -112,138 +163,33 @@ fn fetch_download_urls() -> Result<Vec<String>> {
     Ok(urls)
 }
 
-fn parse_and_write_statement(
-    statement: &str,
-    base_path: &Utf8PathBuf,
-    original_filename: &str,
-    statement_counter: &mut usize,
-    line_idx: Option<usize>,
-) -> Result<()> {
-    let trimmed = statement.trim();
-    if trimmed.is_empty() {
-        return Ok(());
-    }
-
-    let parse_result = pgt_query::parse(trimmed);
-    match parse_result {
-        Ok(r) => {
-            if r.root().is_none() {
-                let line_info = line_idx
-                    .map(|idx| format!("at line {}", idx + 1))
-                    .unwrap_or_else(|| "".to_string());
-                bail!(
-                    "Parsed SQL statement {} has no root node:\nStatement:\n{}",
-                    line_info,
-                    trimmed
-                );
-            }
-            // Generate filename for this statement
-            let base_name = original_filename
-                .strip_suffix(".sql")
-                .unwrap_or(original_filename);
-            let filename = format!("{}_stmt_{:03}_60.sql", base_name, *statement_counter);
-            let filepath = base_path.join(filename);
-
-            println!("Writing statement {} to {}", *statement_counter, filepath);
-
-            let mut file = File::create(&filepath)?;
-            writeln!(file, "{}", trimmed)?;
-
-            *statement_counter += 1;
-        }
-        Err(e) => {
-            let ignore_errors = [
-                "Invalid statement: cannot use multiple ORDER BY clauses with WITHIN GROUP",
-                "Invalid statement: column number must be in range from 1 to 32767",
-                "Invalid statement: syntax error at or near \"ENFORCED\"",
-                "Invalid statement: syntax error at or near \"NOT\"",
-                "Invalid statement: syntax error at or near \"WITH\"",
-                "Invalid statement: syntax error at or near \"enforced\"",
-                "Invalid statement: syntax error at or near \"not\"",
-                "Invalid statement: syntax error at or near \"NO\"",
-                "Invalid statement: syntax error at or near \"COLLATE\"",
-            ];
-
-            if ignore_errors.iter().any(|msg| e.to_string().contains(msg)) {
-                let line_info = line_idx
-                    .map(|idx| format!(" at line {}", idx + 1))
-                    .unwrap_or_else(|| "".to_string());
-                println!(
-                    "Ignoring parse error{}: {}\nStatement:\n{}",
-                    line_info, e, trimmed
-                );
-            } else {
-                let line_info = line_idx
-                    .map(|idx| format!(" at line {}", idx + 1))
-                    .unwrap_or_else(|| "".to_string());
-                bail!(
-                    "Failed to parse SQL statement{}: {}\nStatement:\n{}",
-                    line_info,
-                    e,
-                    trimmed
-                );
-            }
-        }
-    }
-    Ok(())
-}
-
-pub fn preprocess_sql<R: BufRead>(
-    source: R,
-    base_path: &Utf8PathBuf,
-    original_filename: &str,
-) -> Result<()> {
+fn preprocess_sql<R: BufRead, W: Write>(source: R, mut dest: W) -> Result<()> {
     let mut skipping_copy_block = false;
 
-    let template_vars_regex =
-        Regex::new(r#"^:'([^']+)'|^:"([^"]+)"|^:([a-zA-Z_][a-zA-Z0-9_]*)"#).unwrap();
-    let dollar_quote_regex = Regex::new(r"\$([a-zA-Z]*)\$").unwrap();
-
-    let mut current_statement = String::new();
-    let mut in_dollar_quote = false;
-    let mut dollar_quote_tag = String::new();
-    let mut in_single_quote = false;
-    let mut escape_next = false;
-    let mut in_multiline_comment = false;
-    let mut statement_counter = 1;
+    let template_vars_regex = Regex::new(r"^:'([^']+)'|^:([a-zA-Z_][a-zA-Z0-9_]*)").unwrap();
 
     for (idx, line) in source.lines().enumerate() {
         let mut line = line?;
 
-        // detect the start of the copy block
+        // Detect the start of the COPY block
         if line.starts_with("COPY ") && line.to_lowercase().contains("from stdin") {
             skipping_copy_block = true;
             continue;
         }
 
-        // detect the end of the copy block
+        // Detect the end of the COPY block
         if skipping_copy_block && (line.starts_with("\\.") || line.is_empty()) {
             skipping_copy_block = false;
             continue;
         }
 
-        // skip lines if inside a copy block
+        // Skip lines if inside a COPY block
         if skipping_copy_block {
             continue;
         }
 
-        // skip lines starting with a number followed by a space (data lines)
-        if line.chars().next().map_or(false, |c| c.is_ascii_digit())
-            && line
-                .chars()
-                .find(|c| !c.is_ascii_digit())
-                .map_or(false, |c| c.is_whitespace())
-        {
-            continue;
-        }
-
-        if line.starts_with("--") {
-            // skip comments
-            continue;
-        }
-
         if line.starts_with("\\") {
-            // skip plpgsql commands (for now)
+            // Skip plpgsql commands (for now)
             continue;
         }
 
@@ -252,11 +198,11 @@ pub fn preprocess_sql<R: BufRead>(
             line = line.replace("\\gset", ";");
         }
 
-        // replace template variables
+        // Replace template variables
         let mut result = String::new();
         let mut i = 0;
         let bytes = line.as_bytes();
-        let mut local_in_single_quote = false;
+        let mut in_single_quote = false;
         let mut in_double_quote = false;
         let mut in_array = false;
 
@@ -268,7 +214,7 @@ pub fn preprocess_sql<R: BufRead>(
                 '\'' => {
                     result.push(c);
                     i += 1;
-                    local_in_single_quote = !local_in_single_quote;
+                    in_single_quote = !in_single_quote;
                     continue;
                 }
                 '"' => {
@@ -289,7 +235,7 @@ pub fn preprocess_sql<R: BufRead>(
                     in_array = false;
                     continue;
                 }
-                ':' if !local_in_single_quote && !in_double_quote && !in_array => {
+                ':' if !in_single_quote && !in_double_quote && !in_array => {
                     // Skip type casts (e.g., ::text)
                     if i + 1 < bytes.len() && bytes[i + 1] as char == ':' {
                         result.push_str("::");
@@ -306,30 +252,14 @@ pub fn preprocess_sql<R: BufRead>(
                     let remaining = &line[i..];
                     if let Some(caps) = template_vars_regex.captures(remaining) {
                         let full = caps.get(0).unwrap();
+                        let m = caps.get(1).or_else(|| caps.get(2)).unwrap();
+                        let matched_var = &remaining[m.start()..m.end()];
 
-                        // Check which pattern matched to determine the quote style
-                        if let Some(m) = caps.get(1) {
-                            // :'string' format - keep as single quotes
-                            let matched_var = &remaining[m.start()..m.end()];
-                            println!("#{} Replacing template variable {}", idx, matched_var);
-                            result.push('\'');
-                            result.push_str(matched_var);
-                            result.push('\'');
-                        } else if let Some(m) = caps.get(2) {
-                            // :"identifier" format - keep as double quotes
-                            let matched_var = &remaining[m.start()..m.end()];
-                            println!("#{} Replacing template variable {}", idx, matched_var);
-                            result.push('"');
-                            result.push_str(matched_var);
-                            result.push('"');
-                        } else if let Some(m) = caps.get(3) {
-                            // :identifier format - convert to single quotes
-                            let matched_var = &remaining[m.start()..m.end()];
-                            println!("#{} Replacing template variable {}", idx, matched_var);
-                            result.push('\'');
-                            result.push_str(matched_var);
-                            result.push('\'');
-                        }
+                        println!("#{} Replacing template variable {}", idx, matched_var);
+
+                        result.push('\'');
+                        result.push_str(matched_var);
+                        result.push('\'');
 
                         i += full.end();
                         continue;
@@ -342,135 +272,9 @@ pub fn preprocess_sql<R: BufRead>(
             i += 1;
         }
 
-        // remove everything after -- in the line (inline comments)
-        if let Some(pos) = result.find("--") {
-            result.truncate(pos);
-        }
-
-        let chars: Vec<char> = result.chars().collect();
-        let mut i = 0;
-        let mut line_buffer = String::new();
-
-        while i < chars.len() {
-            let ch = chars[i];
-
-            if escape_next {
-                escape_next = false;
-                line_buffer.push(ch);
-                i += 1;
-                continue;
-            }
-
-            // Handle multiline comments
-            if ch == '/' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
-                if i + 1 < chars.len() && chars[i + 1] == '*' {
-                    // Start of multiline comment
-                    in_multiline_comment = true;
-                    line_buffer.push(ch);
-                    line_buffer.push(chars[i + 1]);
-                    i += 2;
-                    continue;
-                }
-            } else if ch == '*' && in_multiline_comment {
-                if i + 1 < chars.len() && chars[i + 1] == '/' {
-                    // End of multiline comment
-                    in_multiline_comment = false;
-                    line_buffer.push(ch);
-                    line_buffer.push(chars[i + 1]);
-                    i += 2;
-                    continue;
-                }
-            }
-
-            if ch == '\'' && !in_dollar_quote && !in_multiline_comment {
-                if in_single_quote {
-                    if i + 1 < chars.len() && chars[i + 1] == '\'' {
-                        line_buffer.push(ch);
-                        line_buffer.push(chars[i + 1]);
-                        i += 2;
-                        continue;
-                    } else {
-                        in_single_quote = false;
-                    }
-                } else {
-                    in_single_quote = true;
-                }
-                line_buffer.push(ch);
-                i += 1;
-                continue;
-            }
-
-            if ch == '\\' && in_single_quote {
-                escape_next = true;
-                line_buffer.push(ch);
-                i += 1;
-                continue;
-            }
-
-            if ch == '$' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
-                if let Some(caps) = dollar_quote_regex.find_at(&result, i) {
-                    let tag = caps.as_str();
-                    in_dollar_quote = true;
-                    dollar_quote_tag = tag.to_string();
-                    for j in i..i + tag.len() {
-                        if j < chars.len() {
-                            line_buffer.push(chars[j]);
-                        }
-                    }
-                    i += tag.len();
-                    continue;
-                }
-            } else if ch == '$' && in_dollar_quote && !in_single_quote && !in_multiline_comment {
-                let remaining = chars[i..].iter().collect::<String>();
-                if remaining.starts_with(&dollar_quote_tag) {
-                    in_dollar_quote = false;
-                    for j in i..i + dollar_quote_tag.len() {
-                        if j < chars.len() {
-                            line_buffer.push(chars[j]);
-                        }
-                    }
-                    i += dollar_quote_tag.len();
-                    dollar_quote_tag.clear();
-                    continue;
-                }
-            }
-
-            line_buffer.push(ch);
-
-            // check for statement termination (semicolon outside of quotes and comments)
-            if ch == ';' && !in_dollar_quote && !in_single_quote && !in_multiline_comment {
-                current_statement.push_str(&line_buffer);
-                parse_and_write_statement(
-                    &current_statement,
-                    base_path,
-                    original_filename,
-                    &mut statement_counter,
-                    Some(idx),
-                )?;
-                current_statement.clear();
-                line_buffer.clear();
-            }
-
-            i += 1;
-        }
-
-        // add any remaining content from the line
-        if !line_buffer.is_empty() {
-            current_statement.push_str(&line_buffer);
-            if !line_buffer.ends_with('\n') {
-                current_statement.push('\n');
-            }
-        }
+        // Write the cleaned line
+        writeln!(dest, "{}", result)?;
     }
-
-    // Write any remaining statement that didn't end with a semicolon
-    parse_and_write_statement(
-        &current_statement,
-        base_path,
-        original_filename,
-        &mut statement_counter,
-        None,
-    )?;
 
     Ok(())
 }

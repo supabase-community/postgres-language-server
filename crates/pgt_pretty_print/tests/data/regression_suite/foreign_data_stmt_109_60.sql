@@ -1,0 +1,1 @@
+ALTER SERVER s0 OPTIONS (a '1');

@@ -1,0 +1,8 @@
+SELECT pg_catalog.pg_restore_attribute_stats(
+    'schemaname', 'stats_import',
+    'relname', 'test',
+    'attname', 'tags',
+    'inherited', false::boolean,
+    'null_frac', 0.34::real,
+    'most_common_elems', '{one,two}'::text
+    );

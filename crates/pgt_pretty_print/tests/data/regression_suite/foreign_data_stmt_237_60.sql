@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX ON lt1 (a);

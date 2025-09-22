@@ -1,0 +1,1 @@
+CREATE ROLE regress_execute_server_program IN ROLE pg_execute_server_program;

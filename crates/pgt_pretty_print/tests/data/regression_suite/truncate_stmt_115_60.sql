@@ -1,0 +1,1 @@
+TRUNCATE truncate_a;

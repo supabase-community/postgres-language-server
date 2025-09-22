@@ -1,0 +1,1 @@
+INSERT INTO INSERT_TBL(z,x) VALUES (-7,  7);

@@ -1,0 +1,1 @@
+SELECT DISTINCT x FROM test3bpci ORDER BY x;

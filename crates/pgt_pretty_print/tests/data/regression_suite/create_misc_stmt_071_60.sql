@@ -1,0 +1,1 @@
+ALTER TABLE e_star* RENAME COLUMN e TO ee;

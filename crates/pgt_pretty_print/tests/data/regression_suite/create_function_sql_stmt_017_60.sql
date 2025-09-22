@@ -1,0 +1,1 @@
+ALTER FUNCTION functest_B_3(int) COST 100;

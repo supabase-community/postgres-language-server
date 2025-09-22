@@ -1,0 +1,1 @@
+CREATE TABLE ctla (aa TEXT);

@@ -1,0 +1,1 @@
+REINDEX (TABLESPACE pg_global) TABLE CONCURRENTLY pg_authid;

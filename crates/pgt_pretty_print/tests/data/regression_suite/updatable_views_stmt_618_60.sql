@@ -1,0 +1,1 @@
+INSERT INTO rw_view1 VALUES (10, ARRAY[4,5]);

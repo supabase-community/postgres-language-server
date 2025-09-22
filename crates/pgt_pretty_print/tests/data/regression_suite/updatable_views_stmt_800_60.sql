@@ -1,0 +1,1 @@
+DELETE FROM v2 WHERE a = 2;

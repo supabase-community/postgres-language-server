@@ -1,0 +1,1 @@
+ANALYZE gtest22c;

@@ -1,0 +1,1 @@
+INSERT INTO bug18634s VALUES (1, 2, 'src1');

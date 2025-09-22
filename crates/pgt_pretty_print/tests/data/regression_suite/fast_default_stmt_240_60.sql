@@ -1,0 +1,1 @@
+UPDATE t SET a = NULL;

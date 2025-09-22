@@ -1,0 +1,1 @@
+CREATE MATERIALIZED VIEW heapmv USING heap AS SELECT * FROM heaptable;

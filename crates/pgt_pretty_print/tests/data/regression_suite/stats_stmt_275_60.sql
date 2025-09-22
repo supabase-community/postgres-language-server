@@ -1,0 +1,1 @@
+SELECT stats_reset AS recovery_prefetch_reset_ts FROM pg_stat_recovery_prefetch ;

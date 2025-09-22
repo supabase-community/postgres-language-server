@@ -1,0 +1,1 @@
+INSERT INTO gtestm VALUES (1, 5, 100);

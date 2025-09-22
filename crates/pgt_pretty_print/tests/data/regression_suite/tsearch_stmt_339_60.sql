@@ -1,0 +1,1 @@
+SET default_text_search_config=simple;

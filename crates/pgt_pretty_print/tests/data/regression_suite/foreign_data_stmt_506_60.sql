@@ -1,0 +1,1 @@
+ALTER TABLE temp_parted ATTACH PARTITION foreign_part DEFAULT;

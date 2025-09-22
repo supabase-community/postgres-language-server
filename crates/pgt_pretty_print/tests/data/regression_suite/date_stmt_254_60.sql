@@ -1,0 +1,1 @@
+SELECT EXTRACT(DECADE     FROM DATE 'infinity');

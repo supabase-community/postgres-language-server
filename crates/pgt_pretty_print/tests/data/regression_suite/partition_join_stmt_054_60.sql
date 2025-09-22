@@ -1,0 +1,1 @@
+RESET enable_partitionwise_aggregate;

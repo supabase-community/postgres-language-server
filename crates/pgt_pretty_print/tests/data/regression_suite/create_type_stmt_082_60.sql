@@ -1,0 +1,1 @@
+DROP FUNCTION myvarcharsend(myvarchar);

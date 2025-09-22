@@ -1,0 +1,1 @@
+ALTER TABLE d_star* RENAME COLUMN d TO dd;

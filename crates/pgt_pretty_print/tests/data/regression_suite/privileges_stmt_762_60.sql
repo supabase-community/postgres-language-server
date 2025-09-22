@@ -1,0 +1,1 @@
+REFRESH MATERIALIZED VIEW sro_index_mv;

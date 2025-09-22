@@ -1,0 +1,1 @@
+CREATE SCHEMA AUTHORIZATION regress_create_schema_role

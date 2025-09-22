@@ -1,0 +1,1 @@
+CREATE SCHEMA pub_test3;

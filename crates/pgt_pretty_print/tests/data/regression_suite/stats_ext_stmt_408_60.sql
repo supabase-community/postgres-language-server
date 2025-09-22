@@ -1,0 +1,1 @@
+ANALYZE functional_dependencies_multi;

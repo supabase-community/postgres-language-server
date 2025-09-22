@@ -1,0 +1,1 @@
+DROP OPERATOR === (boolean, boolean);

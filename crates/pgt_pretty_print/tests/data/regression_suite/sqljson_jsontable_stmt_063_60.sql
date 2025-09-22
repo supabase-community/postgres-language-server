@@ -1,0 +1,1 @@
+CREATE DOMAIN dint4 AS int;

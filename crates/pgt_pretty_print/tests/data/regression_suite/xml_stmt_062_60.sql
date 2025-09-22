@@ -1,0 +1,1 @@
+SELECT xmlpi(name xml);

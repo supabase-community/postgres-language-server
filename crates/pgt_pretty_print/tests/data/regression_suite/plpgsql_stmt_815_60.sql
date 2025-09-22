@@ -1,0 +1,1 @@
+select arrayassign1();

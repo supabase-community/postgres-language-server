@@ -1,0 +1,1 @@
+DELETE FROM clstr_1;

@@ -1,0 +1,1 @@
+SELECT int8 '0x1EEE_FFFF';

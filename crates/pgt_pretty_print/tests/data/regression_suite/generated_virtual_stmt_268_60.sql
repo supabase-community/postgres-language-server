@@ -1,0 +1,1 @@
+DELETE FROM gtest26 WHERE a = -6;

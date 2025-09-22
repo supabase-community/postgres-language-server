@@ -1,0 +1,1 @@
+ALTER TABLE pcachetest DROP COLUMN q3;

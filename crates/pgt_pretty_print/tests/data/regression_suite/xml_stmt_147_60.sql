@@ -1,0 +1,1 @@
+SELECT xpath('', '<!-- error -->');

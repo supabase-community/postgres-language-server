@@ -1,0 +1,1 @@
+SELECT xmlserialize(DOCUMENT NULL AS text INDENT);

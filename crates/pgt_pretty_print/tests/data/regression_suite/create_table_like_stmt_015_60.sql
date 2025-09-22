@@ -1,0 +1,1 @@
+ALTER TABLE inhx ADD PRIMARY KEY (xx);

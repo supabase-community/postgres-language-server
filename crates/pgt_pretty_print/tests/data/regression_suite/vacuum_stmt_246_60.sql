@@ -1,0 +1,1 @@
+VACUUM (BUFFER_USAGE_LIMIT '512 kB', FULL) vac_option_tab;

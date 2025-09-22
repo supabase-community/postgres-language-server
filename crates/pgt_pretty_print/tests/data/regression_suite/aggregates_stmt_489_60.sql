@@ -1,0 +1,1 @@
+SELECT min(x ORDER BY y) FROM (VALUES(1, NULL)) AS d(x,y);

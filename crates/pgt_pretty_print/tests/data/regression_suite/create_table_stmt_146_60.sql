@@ -1,0 +1,1 @@
+CREATE TABLE moneyp_11 PARTITION OF moneyp FOR VALUES IN ('11');

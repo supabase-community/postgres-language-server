@@ -1,0 +1,1 @@
+DROP OPERATOR FAMILY alt_opf4 USING btree;

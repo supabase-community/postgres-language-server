@@ -1,0 +1,1 @@
+SET datestyle = 'SQL, YMD';

@@ -1,0 +1,1 @@
+SELECT date 'J2451187';

@@ -1,0 +1,1 @@
+INSERT INTO INT8_TBL(q1) VALUES ('xxx');

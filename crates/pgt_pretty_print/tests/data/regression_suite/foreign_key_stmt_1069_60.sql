@@ -1,0 +1,1 @@
+UPDATE pk SET a = 21 WHERE a = 20;

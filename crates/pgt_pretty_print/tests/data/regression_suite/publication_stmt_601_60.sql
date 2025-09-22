@@ -1,0 +1,1 @@
+DROP PUBLICATION testpub_fortable_forschema;

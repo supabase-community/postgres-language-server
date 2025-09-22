@@ -1,0 +1,1 @@
+SELECT 'infinity'::float4;

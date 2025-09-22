@@ -1,0 +1,1 @@
+select pleast(10);

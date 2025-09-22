@@ -1,0 +1,1 @@
+CREATE SERVER "integer" FOREIGN DATA WRAPPER addr_fdw;

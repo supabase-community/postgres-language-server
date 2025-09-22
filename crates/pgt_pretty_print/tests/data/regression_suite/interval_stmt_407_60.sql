@@ -1,0 +1,1 @@
+SELECT interval 'infinity' / 'infinity';

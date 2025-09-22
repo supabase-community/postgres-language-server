@@ -1,0 +1,1 @@
+SELECT ln('-inf'::numeric);

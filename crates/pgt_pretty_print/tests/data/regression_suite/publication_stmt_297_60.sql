@@ -1,0 +1,1 @@
+CREATE TABLE testpub_tbl5d (a int PRIMARY KEY DEFERRABLE);

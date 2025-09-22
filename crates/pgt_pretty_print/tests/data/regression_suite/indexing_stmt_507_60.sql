@@ -1,0 +1,1 @@
+alter table parted_pk_detach_test1 drop constraint parted_pk_detach_test1_pkey;

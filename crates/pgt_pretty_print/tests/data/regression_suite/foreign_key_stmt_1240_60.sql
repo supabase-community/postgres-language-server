@@ -1,0 +1,1 @@
+INSERT INTO fk_r VALUES (1, 1, 1);

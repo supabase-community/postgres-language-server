@@ -1,0 +1,1 @@
+VACUUM (FREEZE, DISABLE_PAGE_SKIPPING) reloptions_test;

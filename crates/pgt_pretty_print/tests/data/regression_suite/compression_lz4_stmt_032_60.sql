@@ -1,0 +1,1 @@
+CREATE MATERIALIZED VIEW compressmv(x) AS SELECT * FROM cmdata_lz4;

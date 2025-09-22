@@ -1,0 +1,1 @@
+CREATE PUBLICATION testpub_forunloggedtbl FOR TABLE testpub_unloggedtbl;

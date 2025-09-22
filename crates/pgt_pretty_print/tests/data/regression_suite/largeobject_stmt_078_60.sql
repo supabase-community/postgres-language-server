@@ -1,0 +1,1 @@
+TRUNCATE lotest_stash_values;

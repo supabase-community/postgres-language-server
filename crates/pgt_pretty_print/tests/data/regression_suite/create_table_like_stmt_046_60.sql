@@ -1,0 +1,1 @@
+CREATE TABLE test_like_4b (LIKE test_like_4 INCLUDING DEFAULTS);

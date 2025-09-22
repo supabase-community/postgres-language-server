@@ -1,0 +1,1 @@
+SELECT * FROM T ORDER BY pk;

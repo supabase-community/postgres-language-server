@@ -1,0 +1,1 @@
+DROP VIEW lock_view3 CASCADE;

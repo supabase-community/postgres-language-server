@@ -1,0 +1,1 @@
+DROP TEXT SEARCH TEMPLATE IF EXISTS no_such_schema.foo;

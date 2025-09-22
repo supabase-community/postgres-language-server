@@ -1,0 +1,1 @@
+UPDATE tidscan SET id = -id WHERE CURRENT OF c RETURNING *;

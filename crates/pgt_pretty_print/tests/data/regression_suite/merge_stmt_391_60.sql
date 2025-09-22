@@ -1,0 +1,1 @@
+TRUNCATE cj_target;

@@ -1,0 +1,1 @@
+RESET transaction_deferrable;

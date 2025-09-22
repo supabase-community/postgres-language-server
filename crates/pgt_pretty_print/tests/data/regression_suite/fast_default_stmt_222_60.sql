@@ -1,0 +1,1 @@
+INSERT INTO vtype VALUES (1);

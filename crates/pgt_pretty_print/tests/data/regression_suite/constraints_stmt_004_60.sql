@@ -1,0 +1,1 @@
+INSERT INTO DEFAULT_TBL (x) VALUES ('marc');

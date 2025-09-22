@@ -1,0 +1,1 @@
+DROP FUNCTION functest_IS_4a CASCADE;

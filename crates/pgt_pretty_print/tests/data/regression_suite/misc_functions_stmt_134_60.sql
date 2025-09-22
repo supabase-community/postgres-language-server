@@ -1,0 +1,1 @@
+CREATE TABLE test_chunk_id (a TEXT, b TEXT STORAGE EXTERNAL);

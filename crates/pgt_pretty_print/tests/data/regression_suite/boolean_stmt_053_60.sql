@@ -1,0 +1,1 @@
+CREATE TABLE BOOLTBL2 (f1 bool);

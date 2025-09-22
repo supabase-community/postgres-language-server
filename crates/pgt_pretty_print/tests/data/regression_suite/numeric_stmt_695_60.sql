@@ -1,0 +1,1 @@
+SELECT to_char(val, 'SG9999999999999999.999999999999999th')   FROM num_data;

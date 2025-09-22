@@ -1,0 +1,1 @@
+SELECT fy FROM atestc;

@@ -1,0 +1,1 @@
+CREATE PUBLICATION testpub_both_filters;

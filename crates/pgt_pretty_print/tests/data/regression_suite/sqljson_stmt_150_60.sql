@@ -1,0 +1,2 @@
+SELECT JSON_OBJECTAGG(k: v WITH UNIQUE KEYS)
+FROM (VALUES (1, 1), (1, NULL), (2, 2)) foo(k, v);

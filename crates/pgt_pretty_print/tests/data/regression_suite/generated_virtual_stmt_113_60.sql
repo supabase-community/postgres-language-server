@@ -1,0 +1,1 @@
+ALTER TABLE gtest10 DROP COLUMN b;

@@ -1,0 +1,1 @@
+ALTER ROLE regress_test_superuser

@@ -1,0 +1,1 @@
+VACUUM INT4_TBL;

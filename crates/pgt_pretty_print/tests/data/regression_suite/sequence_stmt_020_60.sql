@@ -1,0 +1,1 @@
+CREATE SEQUENCE sequence_test13 AS smallint MINVALUE -32768;

@@ -1,0 +1,1 @@
+CREATE TABLE TEXT_TBL (f1 text);

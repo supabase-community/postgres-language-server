@@ -1,0 +1,1 @@
+TABLE information_schema.enabled_roles;

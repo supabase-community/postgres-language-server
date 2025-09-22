@@ -1,0 +1,1 @@
+CREATE TABLE pagg_tab4_p2 PARTITION OF pagg_tab4 FOR VALUES IN ('B', 'A');

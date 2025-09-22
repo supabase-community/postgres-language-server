@@ -1,0 +1,1 @@
+alter table parted_uniq_detach_test1 drop constraint parted_uniq_detach_test1_a_key;

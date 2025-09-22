@@ -1,0 +1,1 @@
+execute foo(true);

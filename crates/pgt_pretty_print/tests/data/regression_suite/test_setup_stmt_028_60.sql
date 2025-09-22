@@ -1,0 +1,1 @@
+COPY onek FROM 'filename';

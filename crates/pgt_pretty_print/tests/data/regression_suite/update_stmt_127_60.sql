@@ -1,0 +1,1 @@
+DROP FUNCTION func_d_1_15();

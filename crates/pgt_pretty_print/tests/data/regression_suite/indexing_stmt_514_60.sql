@@ -1,0 +1,1 @@
+drop table parted_uniq_detach_test, parted_uniq_detach_test1;

@@ -1,0 +1,1 @@
+ALTER TABLE cj_source1 RENAME COLUMN sid1 TO sid;

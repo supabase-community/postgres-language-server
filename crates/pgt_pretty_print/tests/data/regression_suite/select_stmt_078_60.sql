@@ -1,0 +1,1 @@
+select sillysrf(42);

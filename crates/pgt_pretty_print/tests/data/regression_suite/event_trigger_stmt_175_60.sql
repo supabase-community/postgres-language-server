@@ -1,0 +1,1 @@
+REINDEX INDEX CONCURRENTLY concur_reindex_ind;

@@ -1,0 +1,1 @@
+SELECT E'\\xDeAdBeE'::bytea;

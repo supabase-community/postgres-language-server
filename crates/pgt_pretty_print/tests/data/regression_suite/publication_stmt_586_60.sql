@@ -1,0 +1,1 @@
+CREATE PUBLICATION testpub3_forschema;

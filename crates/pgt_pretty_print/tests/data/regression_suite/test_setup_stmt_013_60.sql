@@ -1,0 +1,1 @@
+CREATE TABLE INT4_TBL(f1 int4);

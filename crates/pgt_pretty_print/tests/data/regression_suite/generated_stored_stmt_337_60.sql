@@ -1,0 +1,1 @@
+CREATE TABLE gtest30_1 () INHERITS (gtest30);

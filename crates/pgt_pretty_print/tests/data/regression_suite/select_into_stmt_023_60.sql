@@ -1,0 +1,1 @@
+DEALLOCATE data_sel;

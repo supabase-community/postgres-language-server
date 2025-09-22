@@ -1,0 +1,1 @@
+ALTER TABLE f_star ADD COLUMN f int4;

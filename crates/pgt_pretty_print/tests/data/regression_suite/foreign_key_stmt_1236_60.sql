@@ -1,0 +1,1 @@
+ALTER TABLE fk_r_1 DROP COLUMN x;

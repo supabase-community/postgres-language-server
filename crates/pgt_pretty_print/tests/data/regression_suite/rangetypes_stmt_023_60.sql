@@ -1,0 +1,1 @@
+select '([,z)'::textrange;

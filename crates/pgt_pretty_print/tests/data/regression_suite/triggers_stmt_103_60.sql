@@ -1,0 +1,1 @@
+INSERT INTO some_t VALUES (TRUE);

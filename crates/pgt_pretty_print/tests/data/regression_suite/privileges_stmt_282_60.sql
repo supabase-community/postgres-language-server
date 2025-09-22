@@ -1,0 +1,1 @@
+CREATE VIEW atestv2 AS SELECT * FROM atest2;

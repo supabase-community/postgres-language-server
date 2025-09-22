@@ -1,0 +1,1 @@
+INSERT INTO nulltest DEFAULT VALUES;

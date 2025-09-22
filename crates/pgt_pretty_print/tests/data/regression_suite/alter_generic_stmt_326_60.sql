@@ -1,0 +1,1 @@
+DROP LANGUAGE alt_lang2 CASCADE;

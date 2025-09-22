@@ -1,0 +1,1 @@
+CREATE TABLE gtest3 (a int, b int GENERATED ALWAYS AS (a * 3) STORED);

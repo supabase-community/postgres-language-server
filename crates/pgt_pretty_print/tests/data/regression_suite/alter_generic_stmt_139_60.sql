@@ -1,0 +1,1 @@
+ALTER OPERATOR FAMILY alt_opf3 USING hash SET SCHEMA alt_nsp2;

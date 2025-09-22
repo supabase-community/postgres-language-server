@@ -1,0 +1,1 @@
+DROP SEQUENCE tid_seq;

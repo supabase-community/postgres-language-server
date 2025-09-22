@@ -1,0 +1,1 @@
+ALTER TABLE cmdata2 ALTER COLUMN f1 TYPE int USING f1::integer;

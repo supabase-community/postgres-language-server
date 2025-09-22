@@ -1,0 +1,1 @@
+GRANT CREATE ON DATABASE REGRESSION TO regress_subscription_user3;

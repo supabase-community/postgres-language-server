@@ -1,0 +1,1 @@
+DELETE FROM gtest1 WHERE b = 2;

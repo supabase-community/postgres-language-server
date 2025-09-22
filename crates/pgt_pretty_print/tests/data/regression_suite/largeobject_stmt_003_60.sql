@@ -1,0 +1,1 @@
+ALTER LARGE OBJECT 42 OWNER TO regress_lo_user;

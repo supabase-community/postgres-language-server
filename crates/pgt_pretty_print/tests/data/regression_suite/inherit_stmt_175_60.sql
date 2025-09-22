@@ -1,0 +1,1 @@
+select NULL::derived::base;

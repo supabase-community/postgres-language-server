@@ -1,0 +1,1 @@
+SELECT JSON('{ "a" : 1 } '::bytea FORMAT JSON ENCODING UTF8);

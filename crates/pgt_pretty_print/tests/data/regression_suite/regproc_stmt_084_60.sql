@@ -1,0 +1,1 @@
+SELECT regdatabase('foo.bar');

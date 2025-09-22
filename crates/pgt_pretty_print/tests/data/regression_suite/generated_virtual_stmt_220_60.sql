@@ -1,0 +1,1 @@
+ALTER TABLE gtest27 ALTER COLUMN x TYPE boolean USING x <> 0;

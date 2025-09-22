@@ -1,0 +1,1 @@
+SELECT xmltext(NULL);

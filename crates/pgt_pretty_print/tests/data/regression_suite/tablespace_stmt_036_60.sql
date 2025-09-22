@@ -1,0 +1,1 @@
+ALTER TABLE regress_tblspace_test_tbl SET TABLESPACE regress_tblspace;

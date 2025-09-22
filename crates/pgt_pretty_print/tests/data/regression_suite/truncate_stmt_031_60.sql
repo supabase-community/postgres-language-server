@@ -1,0 +1,1 @@
+INSERT INTO trunc_d VALUES (1);

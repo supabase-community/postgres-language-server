@@ -1,0 +1,1 @@
+VACUUM (SKIP_DATABASE_STATS) vactst;

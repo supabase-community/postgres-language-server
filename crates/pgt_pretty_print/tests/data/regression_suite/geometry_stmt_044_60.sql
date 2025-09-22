@@ -1,0 +1,1 @@
+SELECT s, @@ s FROM LSEG_TBL;

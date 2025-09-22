@@ -1,0 +1,1 @@
+SET SESSION AUTHORIZATION regress_roleoption_recipient;

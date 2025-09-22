@@ -1,0 +1,1 @@
+truncate parted_conflict_test;

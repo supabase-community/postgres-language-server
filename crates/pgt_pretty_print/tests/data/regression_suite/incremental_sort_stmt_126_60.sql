@@ -1,0 +1,1 @@
+analyze prt_tbl;

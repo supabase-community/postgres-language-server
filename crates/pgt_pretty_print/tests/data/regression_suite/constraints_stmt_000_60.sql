@@ -1,0 +1,2 @@
+CREATE TABLE DEFAULT_TBL (i int DEFAULT 100,
+	x text DEFAULT 'vadim', f float8 DEFAULT 123.456);

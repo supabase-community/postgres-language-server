@@ -1,0 +1,1 @@
+CREATE TABLE cminh(f1 TEXT COMPRESSION lz4) INHERITS(cmdata_pglz);

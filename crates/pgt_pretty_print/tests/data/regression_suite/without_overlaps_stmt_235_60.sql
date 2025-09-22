@@ -1,0 +1,1 @@
+TRUNCATE temporal3;

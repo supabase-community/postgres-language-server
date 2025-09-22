@@ -1,0 +1,1 @@
+CREATE TABLE clstr_3 (a INT PRIMARY KEY);

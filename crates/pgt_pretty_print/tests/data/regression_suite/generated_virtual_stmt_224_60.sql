@@ -1,0 +1,3 @@
+ALTER TABLE gtest27
+  ALTER COLUMN a TYPE float8,
+  ALTER COLUMN b TYPE float8;

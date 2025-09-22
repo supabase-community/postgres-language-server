@@ -1,0 +1,1 @@
+INSERT INTO pxtest2 VALUES (3);

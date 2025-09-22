@@ -1,0 +1,1 @@
+INSERT INTO POLYGON_TBL(f1) VALUES ('(7,8),(5,6),(3,4),(1,2)');

@@ -1,0 +1,3 @@
+CREATE TRIGGER gtest11 BEFORE UPDATE OF b ON gtest26
+  FOR EACH ROW
+  EXECUTE PROCEDURE gtest_trigger_func3();

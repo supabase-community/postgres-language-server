@@ -1,0 +1,1 @@
+RESET TIME ZONE;

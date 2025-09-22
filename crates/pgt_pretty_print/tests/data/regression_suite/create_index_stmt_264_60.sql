@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY concur_temp_ind;

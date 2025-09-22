@@ -1,0 +1,1 @@
+SELECT timestamptz '-infinity infinity';

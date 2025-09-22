@@ -1,0 +1,1 @@
+DECLARE ok CURSOR FOR SELECT * FROM int8_tbl;

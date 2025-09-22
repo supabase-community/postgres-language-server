@@ -1,0 +1,1 @@
+ANALYZE past_parted;

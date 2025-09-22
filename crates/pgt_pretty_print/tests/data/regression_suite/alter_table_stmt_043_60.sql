@@ -1,0 +1,1 @@
+ALTER TABLE attmp ADD COLUMN k int4;

@@ -1,0 +1,1 @@
+ALTER TABLE T ADD COLUMN c2 TIMESTAMP DEFAULT clock_timestamp();

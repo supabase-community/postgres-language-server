@@ -1,0 +1,1 @@
+ALTER TABLE fd_pt1 ADD COLUMN c5 integer DEFAULT 0;

@@ -1,0 +1,1 @@
+EXECUTE foo ('good');

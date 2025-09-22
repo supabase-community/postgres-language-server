@@ -1,0 +1,2 @@
+SELECT 0x1122334455667788::int8::bytea AS "\x1122334455667788",
+       (-0x1122334455667788)::int8::bytea AS "\xeeddccbbaa998878";

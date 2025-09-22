@@ -1,0 +1,1 @@
+CREATE TEMP TABLE FKTABLE (ftest1 numeric);

@@ -1,0 +1,1 @@
+ALTER TABLE parted DROP CONSTRAINT check_a, DROP CONSTRAINT check_b;

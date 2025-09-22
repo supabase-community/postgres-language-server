@@ -1,0 +1,3 @@
+INSERT INTO concur_exprs_tab (c1, c2) VALUES (1369652450, FALSE),
+  (414515746, TRUE),
+  (897778963, FALSE);

@@ -1,0 +1,1 @@
+INSERT INTO vactst VALUES (1);

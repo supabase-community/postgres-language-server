@@ -1,0 +1,1 @@
+INSERT INTO test6a VALUES (2, ARRAY[U&'\0061\0308bc']);

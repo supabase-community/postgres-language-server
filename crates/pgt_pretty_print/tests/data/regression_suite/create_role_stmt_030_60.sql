@@ -1,0 +1,1 @@
+CREATE ROLE regress_createrole CREATEROLE NOINHERIT;

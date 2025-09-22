@@ -1,0 +1,1 @@
+SET SESSION AUTHORIZATION regress_alter_generic_user2;

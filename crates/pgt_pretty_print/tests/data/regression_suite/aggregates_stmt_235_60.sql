@@ -1,0 +1,1 @@
+reset enable_presorted_aggregate;

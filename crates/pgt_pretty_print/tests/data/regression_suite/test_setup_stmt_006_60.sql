@@ -1,0 +1,1 @@
+VACUUM CHAR_TBL;

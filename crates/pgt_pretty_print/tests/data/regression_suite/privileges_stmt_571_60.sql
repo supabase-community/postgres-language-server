@@ -1,0 +1,1 @@
+REVOKE USAGE on DOMAIN priv_testdomain1 FROM PUBLIC;

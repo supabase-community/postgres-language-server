@@ -1,0 +1,1 @@
+SELECT 'nan'::float4;

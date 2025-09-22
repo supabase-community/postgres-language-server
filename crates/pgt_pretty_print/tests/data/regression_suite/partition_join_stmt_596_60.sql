@@ -1,0 +1,1 @@
+ANALYZE fract_t;

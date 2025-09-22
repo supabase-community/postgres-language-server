@@ -1,0 +1,1 @@
+REINDEX INDEX CONCURRENTLY pg_class_oid_index;

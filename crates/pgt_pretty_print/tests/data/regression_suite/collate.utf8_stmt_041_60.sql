@@ -1,0 +1,1 @@
+SELECT lower('0Î£' COLLATE PG_UNICODE_FAST);

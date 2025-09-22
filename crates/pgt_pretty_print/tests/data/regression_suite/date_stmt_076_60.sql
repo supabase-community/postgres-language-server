@@ -1,0 +1,1 @@
+SELECT date '990108';

@@ -1,0 +1,1 @@
+RESET default_table_access_method;

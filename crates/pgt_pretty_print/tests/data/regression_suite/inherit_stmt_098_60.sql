@@ -1,0 +1,1 @@
+table some_tab;

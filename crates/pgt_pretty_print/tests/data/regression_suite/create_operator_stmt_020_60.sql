@@ -1,0 +1,1 @@
+SELECT true<>-1 BETWEEN 1 AND 1;

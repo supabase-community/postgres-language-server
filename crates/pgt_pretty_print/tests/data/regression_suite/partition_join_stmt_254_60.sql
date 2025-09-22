@@ -1,0 +1,1 @@
+analyze prtx1;

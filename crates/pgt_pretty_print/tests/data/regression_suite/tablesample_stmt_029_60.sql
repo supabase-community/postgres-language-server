@@ -1,0 +1,1 @@
+SELECT id FROM test_tablesample TABLESAMPLE SYSTEM (50) REPEATABLE (2);

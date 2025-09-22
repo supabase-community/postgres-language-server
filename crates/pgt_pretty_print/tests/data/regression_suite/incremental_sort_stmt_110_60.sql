@@ -1,0 +1,1 @@
+reset enable_incremental_sort;

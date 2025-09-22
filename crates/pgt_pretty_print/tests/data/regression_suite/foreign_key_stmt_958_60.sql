@@ -1,0 +1,1 @@
+CREATE TABLE fk4 (LIKE fk);

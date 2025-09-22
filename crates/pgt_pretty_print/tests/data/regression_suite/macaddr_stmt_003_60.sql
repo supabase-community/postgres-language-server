@@ -1,0 +1,1 @@
+INSERT INTO macaddr_data VALUES (3, '08002b:010203');

@@ -1,0 +1,17 @@
+CREATE FUNCTION rw_view1_trig_fn()
+RETURNS trigger AS
+$$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO base_tbl VALUES (NEW.a, 10);
+    RETURN NEW;
+  ELSIF TG_OP = 'UPDATE' THEN
+    UPDATE base_tbl SET a=NEW.a WHERE a=OLD.a;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    DELETE FROM base_tbl WHERE a=OLD.a;
+    RETURN OLD;
+  END IF;
+END;
+$$
+LANGUAGE plpgsql;

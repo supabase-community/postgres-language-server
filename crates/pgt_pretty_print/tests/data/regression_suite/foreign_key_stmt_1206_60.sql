@@ -1,0 +1,1 @@
+ALTER TABLE fkpart11.fk DROP CONSTRAINT fkey;

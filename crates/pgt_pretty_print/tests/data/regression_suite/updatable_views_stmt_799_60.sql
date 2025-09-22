@@ -1,0 +1,1 @@
+UPDATE v2 SET c = 30 WHERE a = 1;

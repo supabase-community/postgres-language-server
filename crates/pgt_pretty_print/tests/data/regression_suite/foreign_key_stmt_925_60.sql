@@ -1,0 +1,1 @@
+ALTER TABLE droppk2 DETACH PARTITION droppk21;

@@ -1,0 +1,1 @@
+SELECT to_date('2147483647 01', 'CC YY');

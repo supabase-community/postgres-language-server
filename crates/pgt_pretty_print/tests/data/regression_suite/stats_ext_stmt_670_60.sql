@@ -1,0 +1,1 @@
+ANALYZE expr_stats;

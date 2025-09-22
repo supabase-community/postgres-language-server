@@ -1,0 +1,1 @@
+CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler;

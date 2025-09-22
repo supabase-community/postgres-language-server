@@ -1,0 +1,1 @@
+INSERT INTO test23 VALUES (2, 'DEF');

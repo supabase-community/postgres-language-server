@@ -1,0 +1,1 @@
+DROP COLLATION mycoll1;

@@ -1,0 +1,2 @@
+DECLARE foo21 CURSOR FOR
+   SELECT * FROM onek WHERE unique1 = 58;

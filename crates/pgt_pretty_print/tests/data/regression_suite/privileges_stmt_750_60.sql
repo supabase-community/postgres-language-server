@@ -1,0 +1,2 @@
+CREATE OR REPLACE FUNCTION mv_action() RETURNS bool LANGUAGE sql AS
+	'INSERT INTO public.sro_trojan_table DEFAULT VALUES; SELECT true';

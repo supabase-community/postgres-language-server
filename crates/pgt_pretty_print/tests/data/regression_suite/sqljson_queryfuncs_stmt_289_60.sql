@@ -1,0 +1,1 @@
+SELECT JSON_QUERY(jsonb '1', '$' TRUE ON ERROR);

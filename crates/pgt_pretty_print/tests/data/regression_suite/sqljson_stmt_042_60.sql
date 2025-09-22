@@ -1,0 +1,1 @@
+SELECT pg_typeof(JSON_SERIALIZE(NULL));

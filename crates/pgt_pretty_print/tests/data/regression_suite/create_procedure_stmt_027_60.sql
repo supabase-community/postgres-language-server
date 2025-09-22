@@ -1,0 +1,5 @@
+CREATE PROCEDURE ptest4c(INOUT comp int8_tbl)
+LANGUAGE SQL
+AS $$
+SELECT ROW(1, 2);
+$$;

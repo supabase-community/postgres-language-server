@@ -1,0 +1,1 @@
+SELECT xml '<abc/>' IS NOT DOCUMENT;

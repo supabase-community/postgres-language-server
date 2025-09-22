@@ -1,0 +1,1 @@
+CREATE SERVER fs_heap2 FOREIGN DATA WRAPPER fdw_heap2 ;

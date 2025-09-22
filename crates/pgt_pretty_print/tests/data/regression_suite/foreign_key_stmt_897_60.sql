@@ -1,0 +1,1 @@
+UPDATE pk SET a = 2002 WHERE a = 2000;

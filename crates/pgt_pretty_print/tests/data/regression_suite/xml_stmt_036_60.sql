@@ -1,0 +1,1 @@
+SET xmlbinary TO hex;

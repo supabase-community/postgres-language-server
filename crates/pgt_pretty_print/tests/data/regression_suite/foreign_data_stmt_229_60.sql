@@ -1,0 +1,1 @@
+CREATE INDEX ON lt1 (a);
