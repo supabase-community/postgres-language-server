@@ -702,6 +702,22 @@ impl ToTokens for pgt_query::protobuf::SelectStmt {
                 e.space();
                 having.to_tokens(e);
             }
+
+            if !self.sort_clause.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::ORDER_KW);
+                e.space();
+                e.token(TokenKind::BY_KW);
+                e.indent_start();
+                for (i, sort_by) in self.sort_clause.iter().enumerate() {
+                    if i > 0 {
+                        e.token(TokenKind::COMMA);
+                    }
+                    e.line(LineType::SoftOrSpace);
+                    sort_by.to_tokens(e);
+                }
+                e.indent_end();
+            }
         }
 
         if e.is_top_level() {
@@ -1149,7 +1165,9 @@ impl ToTokens for pgt_query::protobuf::IntList {
 
 impl ToTokens for pgt_query::protobuf::AConst {
     fn to_tokens(&self, e: &mut EventEmitter) {
-        if let Some(ref val) = self.val {
+        if self.isnull {
+            e.token(TokenKind::NULL_KW);
+        } else if let Some(ref val) = self.val {
             match val {
                 pgt_query::protobuf::a_const::Val::Ival(ival) => {
                     e.token(TokenKind::IDENT(ival.ival.to_string()));
@@ -1433,6 +1451,31 @@ impl ToTokens for pgt_query::protobuf::TypeName {
                 e.token(TokenKind::DOT);
             }
             name.to_tokens(e);
+        }
+
+        // Handle type modifiers (e.g., VARCHAR(10), NUMERIC(10,2))
+        if !self.typmods.is_empty() {
+            e.token(TokenKind::L_PAREN);
+            for (i, typmod) in self.typmods.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.space();
+                }
+                typmod.to_tokens(e);
+            }
+            e.token(TokenKind::R_PAREN);
+        }
+
+        // Handle array types (e.g., INT[], TEXT[][])
+        for bound in &self.array_bounds {
+            e.token(TokenKind::L_BRACK);
+            // PostgreSQL uses -1 for unbounded arrays, which renders as []
+            if let Some(pgt_query::protobuf::node::Node::Integer(i)) = &bound.node {
+                if i.ival != -1 {
+                    bound.to_tokens(e);
+                }
+            }
+            e.token(TokenKind::R_BRACK);
         }
 
         e.group_end();
@@ -2673,6 +2716,19 @@ impl ToTokens for pgt_query::protobuf::DefElem {
                     e.space();
                     arg.to_tokens(e);
                 }
+            } else if self.defname == "volatility" && self.arg.is_some() {
+                if let Some(ref arg) = self.arg {
+                    if let Some(pgt_query::protobuf::node::Node::String(s)) = &arg.node {
+                        match s.sval.as_str() {
+                            "i" => e.token(TokenKind::IMMUTABLE_KW),
+                            "s" => e.token(TokenKind::STABLE_KW),
+                            "v" => e.token(TokenKind::VOLATILE_KW),
+                            _ => e.token(TokenKind::IDENT(s.sval.to_uppercase())),
+                        }
+                    }
+                }
+            } else if self.defname == "strict" && self.arg.is_some() {
+                e.token(TokenKind::STRICT_KW);
             } else {
                 e.token(TokenKind::IDENT(self.defname.to_uppercase()));
                 if let Some(ref arg) = self.arg {
@@ -2739,8 +2795,117 @@ impl ToTokens for pgt_query::protobuf::DefElem {
                         arg.to_tokens(e);
                     }
                 }
+            } else if self.defname == "leftarg" {
+                e.token(TokenKind::IDENT("LEFTARG".to_string()));
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            } else if self.defname == "rightarg" {
+                e.token(TokenKind::IDENT("RIGHTARG".to_string()));
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            } else if self.defname == "procedure" {
+                e.token(TokenKind::PROCEDURE_KW);
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            } else if self.defname == "commutator" {
+                e.token(TokenKind::IDENT("COMMUTATOR".to_string()));
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    if let Some(pgt_query::protobuf::node::Node::List(list)) = &arg.node {
+                        // Operator names are stored in a list but don't need parentheses in output
+                        for (i, item) in list.items.iter().enumerate() {
+                            if i > 0 {
+                                e.token(TokenKind::DOT);
+                            }
+                            item.to_tokens(e);
+                        }
+                    } else {
+                        arg.to_tokens(e);
+                    }
+                }
+            } else if self.defname == "negator" {
+                e.token(TokenKind::IDENT("NEGATOR".to_string()));
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    if let Some(pgt_query::protobuf::node::Node::List(list)) = &arg.node {
+                        // Operator names are stored in a list but don't need parentheses in output
+                        for (i, item) in list.items.iter().enumerate() {
+                            if i > 0 {
+                                e.token(TokenKind::DOT);
+                            }
+                            item.to_tokens(e);
+                        }
+                    } else {
+                        arg.to_tokens(e);
+                    }
+                }
+            } else if self.defname == "restrict" {
+                e.token(TokenKind::RESTRICT_KW);
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            } else if self.defname == "join" {
+                e.token(TokenKind::JOIN_KW);
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            } else if self.defname == "hashes" {
+                e.token(TokenKind::IDENT("HASHES".to_string()));
+            } else if self.defname == "merges" {
+                e.token(TokenKind::IDENT("MERGES".to_string()));
             } else {
                 e.token(TokenKind::IDENT(self.defname.clone()));
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            }
+        } else if e.is_within_group(GroupKind::AlterOperatorStmt) {
+            // Handle both quoted and unquoted parameter names
+            let defname_lower = self.defname.to_lowercase();
+            if defname_lower == "restrict"
+                || defname_lower == "join"
+                || defname_lower == "commutator"
+                || defname_lower == "negator"
+                || defname_lower == "leftarg"
+                || defname_lower == "rightarg"
+            {
+                // Check if defname needs quoting (contains mixed case or special chars)
+                if self.defname == self.defname.to_uppercase() {
+                    e.token(TokenKind::IDENT(self.defname.clone()));
+                } else {
+                    e.token(TokenKind::IDENT(format!("\"{}\"", self.defname)));
+                }
+                if let Some(ref arg) = self.arg {
+                    e.space();
+                    e.token(TokenKind::IDENT("=".to_string()));
+                    e.space();
+                    arg.to_tokens(e);
+                }
+            } else {
+                e.token(TokenKind::IDENT(self.defname.to_uppercase()));
                 if let Some(ref arg) = self.arg {
                     e.space();
                     arg.to_tokens(e);
@@ -4186,13 +4351,16 @@ impl ToTokens for pgt_query::protobuf::DefineStmt {
                 self.definition[0].to_tokens(e);
             } else {
                 e.token(TokenKind::L_PAREN);
+                e.indent_start();
                 for (i, def) in self.definition.iter().enumerate() {
                     if i > 0 {
                         e.token(TokenKind::COMMA);
-                        e.space();
                     }
+                    e.line(LineType::SoftOrSpace);
                     def.to_tokens(e);
                 }
+                e.indent_end();
+                e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
             }
         }
@@ -5729,12 +5897,20 @@ impl ToTokens for pgt_query::protobuf::AlterOperatorStmt {
 
         if !self.options.is_empty() {
             e.space();
+            e.token(TokenKind::SET_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.indent_start();
             for (i, option) in self.options.iter().enumerate() {
                 if i > 0 {
-                    e.space();
+                    e.token(TokenKind::COMMA);
                 }
+                e.line(LineType::SoftOrSpace);
                 option.to_tokens(e);
             }
+            e.indent_end();
+            e.line(LineType::Soft);
+            e.token(TokenKind::R_PAREN);
         }
 
         if e.is_top_level() {
@@ -6825,12 +7001,23 @@ impl ToTokens for pgt_query::protobuf::AlterSystemStmt {
 
 impl ToTokens for pgt_query::protobuf::BitString {
     fn to_tokens(&self, e: &mut EventEmitter) {
+        // The bsval contains the bit string value including any prefix
+        // For binary strings: "b..." or "B..."
+        // For hex strings: "x..." or "X..."
         if self.bsval.starts_with("b'") || self.bsval.starts_with("B'") {
             e.token(TokenKind::STRING(self.bsval.to_uppercase()));
+        } else if self.bsval.starts_with("x'") || self.bsval.starts_with("X'") {
+            e.token(TokenKind::STRING(self.bsval.to_uppercase()));
         } else if self.bsval.starts_with('b') || self.bsval.starts_with('B') {
+            // Handle binary without quotes
             let digits = &self.bsval[1..];
             e.token(TokenKind::STRING(format!("B'{}'", digits)));
+        } else if self.bsval.starts_with('x') || self.bsval.starts_with('X') {
+            // Handle hex without quotes
+            let digits = &self.bsval[1..];
+            e.token(TokenKind::STRING(format!("X'{}'", digits)));
         } else {
+            // Default to binary if no prefix
             e.token(TokenKind::STRING(format!("B'{}'", self.bsval)));
         }
     }

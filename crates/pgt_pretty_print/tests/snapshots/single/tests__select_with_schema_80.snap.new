@@ -1,6 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/select_with_schema_80.sql
----
-SELECT public.t.a, t.b, c FROM public.t;

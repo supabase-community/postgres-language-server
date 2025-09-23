@@ -1,7 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/alter_tsdictionary_stmt_0_60.sql
----
-ALTER TEXT SEARCH DICTIONARY my_dict
-  (stopwords = 'russian', language = 'russian');

@@ -1,7 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/prepare_stmt_0_60.sql
----
-PREPARE my_insert (pg_catalog.int4, text) AS
-  INSERT INTO users (id, name) VALUES ($1, $2);

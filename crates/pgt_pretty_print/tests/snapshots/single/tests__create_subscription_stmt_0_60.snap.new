@@ -1,8 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/create_subscription_stmt_0_60.sql
----
-CREATE SUBSCRIPTION mysub
-CONNECTION 'host=localhost dbname=postgres'
-PUBLICATION mypub;

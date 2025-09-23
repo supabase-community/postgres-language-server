@@ -1,7 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/create_op_class_stmt_0_60.sql
----
-CREATE OPERATOR CLASS myopclass FOR TYPE int4 USING btree
-  AS OPERATOR 1 <;

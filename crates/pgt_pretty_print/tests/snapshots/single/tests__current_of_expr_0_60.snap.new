@@ -1,6 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/current_of_expr_0_60.sql
----
-DELETE FROM table_name WHERE CURRENT OF cursor_name;

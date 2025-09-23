@@ -1,8 +1,0 @@
----
-source: crates/pgt_pretty_print/tests/tests.rs
-assertion_line: 72
-input_file: crates/pgt_pretty_print/tests/data/single/alter_foreign_server_stmt_0_60.sql
----
-ALTER SERVER myserver
-  VERSION '1.2'
-  OPTIONS (host 'new.example.com');
