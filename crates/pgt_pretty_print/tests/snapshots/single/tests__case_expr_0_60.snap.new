@@ -1,0 +1,6 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/case_expr_0_60.sql
+---
+SELECT CASE WHEN x = 1 THEN 'one' ELSE 'other' END;

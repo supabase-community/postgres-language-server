@@ -22,13 +22,14 @@ pub enum LayoutEvent {
     IndentEnd,
 }
 
+#[derive(Debug, Default)]
 pub struct EventEmitter {
     pub events: Vec<LayoutEvent>,
 }
 
 impl EventEmitter {
     pub fn new() -> Self {
-        Self { events: Vec::new() }
+        Self::default()
     }
 
     pub fn token(&mut self, token: TokenKind) {

@@ -1,0 +1,45 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/complex_select_part_7_60.sql
+---
+SELECT
+  sch.nspname AS table_schema,
+  tbl.relname AS table_name,
+  rep.view_schema,
+  rep.view_name,
+  pks_fks.conname AS constraint_name,
+  pks_fks.contype AS constraint_type,
+  jsonb_agg(
+    jsonb_build_object(
+      'table_column',
+      col.attname,
+      'view_columns',
+      view_columns
+    ) ORDER BY pks_fks.ord
+  ) AS column_dependencies
+FROM
+  repeated_references rep
+  INNER JOIN
+    pks_fks USING (resorigtbl, resorigcol)
+  INNER JOIN
+    pg_class tbl ON tbl.oid = rep.resorigtbl
+  INNER JOIN
+    pg_attribute col ON col.attrelid = tbl.oid
+      AND col.attnum = rep.resorigcol
+  INNER JOIN
+    pg_namespace sch ON sch.oid = tbl.relnamespace
+GROUP BY
+  sch.nspname,
+  tbl.relname,
+  rep.view_schema,
+  rep.view_name,
+  pks_fks.conname,
+  pks_fks.contype,
+  pks_fks.ncol
+HAVING ncol = array_length(
+  array_agg(
+    ROW(col.attname, view_columns) ORDER BY pks_fks.ord
+  ),
+  1
+);

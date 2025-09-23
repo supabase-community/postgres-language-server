@@ -1,0 +1,6 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/boolean_test_0_60.sql
+---
+SELECT * FROM users WHERE active IS TRUE;

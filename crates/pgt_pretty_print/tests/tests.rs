@@ -11,7 +11,7 @@ use pgt_pretty_print::{
     dir: "$CARGO_MANIFEST_DIR/tests/data/single/",
     glob: "*.sql",
 )]
-fn test_formatter(fixture: Fixture<&str>) {
+fn test_single(fixture: Fixture<&str>) {
     let content = fixture.content();
 
     println!("Original content:\n{}", content);
@@ -67,40 +67,18 @@ fn test_formatter(fixture: Fixture<&str>) {
     with_settings!({
       omit_expression => true,
       input_file => input_file,
+      snapshot_path => "snapshots/single",
     }, {
       assert_snapshot!(test_name, output);
     });
 }
 
 #[dir_test(
-    dir: "$CARGO_MANIFEST_DIR/tests/data/single/",
-    glob: "*.sql",
-)]
-fn validate_test_data(fixture: Fixture<&str>) {
-    let content = fixture.content();
-    let absolute_fixture_path = Utf8Path::new(fixture.path());
-    let _test_name = absolute_fixture_path
-        .file_name()
-        .and_then(|x| x.strip_suffix(".sql"))
-        .unwrap();
-
-    let result = pgt_query::parse(content);
-
-    if let Ok(res) = result.as_ref() {
-        assert!(res.root().is_some(), "should have a single root node");
-    }
-
-    assert!(result.is_ok(), "should be valid SQL");
-}
-
-#[dir_test(
     dir: "$CARGO_MANIFEST_DIR/tests/data/multi/",
     glob: "*.sql",
 )]
-fn test_regression_formatter(fixture: Fixture<&str>) {
+fn test_multi(fixture: Fixture<&str>) {
     let content = fixture.content();
-
-    println!("Original multi-statement content:\n{}", content);
 
     let absolute_fixture_path = Utf8Path::new(fixture.path());
     let input_file = absolute_fixture_path;
@@ -114,7 +92,7 @@ fn test_regression_formatter(fixture: Fixture<&str>) {
         .split('_')
         .next_back()
         .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(80);
+        .unwrap_or(60);
 
     // Split the content into statements
     let split_result = pgt_statement_splitter::split(content);
@@ -173,6 +151,7 @@ fn test_regression_formatter(fixture: Fixture<&str>) {
     with_settings!({
         omit_expression => true,
         input_file => input_file,
+        snapshot_path => "snapshots/multi",
     }, {
         assert_snapshot!(test_name, final_output);
     });

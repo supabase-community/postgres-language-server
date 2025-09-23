@@ -1,0 +1,6 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/alter_stats_stmt_0_60.sql
+---
+ALTER STATISTICS myschema.mystat SET STATISTICS 100;

@@ -1,0 +1,14 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/long_select_0_60.sql
+---
+SELECT
+  first_name,
+  last_name,
+  email,
+  phone_number,
+  address
+FROM
+  customers
+WHERE city = 'New York';

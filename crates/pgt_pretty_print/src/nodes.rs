@@ -5166,19 +5166,21 @@ impl ToTokens for pgt_query::protobuf::CreateFunctionStmt {
 
         e.space();
         e.token(TokenKind::L_PAREN);
-        e.line(LineType::Soft);
-        e.indent_start();
-
-        for (i, param) in self.parameters.iter().enumerate() {
-            if i > 0 {
-                e.token(TokenKind::COMMA);
-                e.line(LineType::SoftOrSpace);
+        if !self.parameters.is_empty() {
+            e.line(LineType::Soft);
+            e.indent_start();
+            for (i, param) in self.parameters.iter().enumerate() {
+                if i > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::SoftOrSpace);
+                }
+                param.to_tokens(e);
             }
-            param.to_tokens(e);
+
+            e.line(LineType::Soft);
+            e.indent_end();
         }
 
-        e.line(LineType::Soft);
-        e.indent_end();
         e.token(TokenKind::R_PAREN);
 
         if let Some(ref return_type) = self.return_type {

@@ -1,0 +1,43 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/complex_select_part_0_60.sql
+---
+SELECT
+  contype::text AS contype,
+  conname,
+  array_length(
+    conkey,
+    1
+  ) AS ncol,
+  conrelid AS resorigtbl,
+  col AS resorigcol,
+  ord
+FROM
+  pg_constraint
+  LEFT JOIN
+    LATERAL unnest(
+      conkey
+    ) WITH ORDINALITY AS _(col, ord) ON TRUE
+WHERE contype IN ('p', 'f')
+UNION
+SELECT
+  concat(
+    contype,
+    '_ref'
+  ) AS contype,
+  conname,
+  array_length(
+    confkey,
+    1
+  ) AS ncol,
+  confrelid,
+  col,
+  ord
+FROM
+  pg_constraint
+  LEFT JOIN
+    LATERAL unnest(
+      confkey
+    ) WITH ORDINALITY AS _(col, ord) ON TRUE
+WHERE contype = 'f';

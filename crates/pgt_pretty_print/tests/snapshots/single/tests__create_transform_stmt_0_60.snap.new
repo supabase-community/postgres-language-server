@@ -1,0 +1,10 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/create_transform_stmt_0_60.sql
+---
+CREATE TRANSFORM FOR hstore LANGUAGE sql
+  (
+    FROM SQL WITH FUNCTION hstore_to_sql(internal),
+    TO SQL WITH FUNCTION sql_to_hstore(internal)
+  );

@@ -1,0 +1,6 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 72
+input_file: crates/pgt_pretty_print/tests/data/single/json_is_predicate_0_60.sql
+---
+SELECT * WHERE data IS JSON;
