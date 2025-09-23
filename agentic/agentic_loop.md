@@ -38,7 +38,13 @@ Create and update a STATE.md file with:
 TASK COMPLETE
 ```
 
-This enables automated systems to detect completion. Do NOT vary this phrase.
+This enables automated systems to detect completion.
+
+If there is still work left to do, output:
+```
+CONTINUE
+```
+
 
 ### 3. Work Systematically
 
@@ -193,7 +199,8 @@ cargo insta accept
 - ❌ Making changes without testing
 - ❌ Vague TODO descriptions
 - ❌ Not documenting learnings
-- ❌ Forgetting to output "TASK COMPLETE"
+- ❌ Forgetting to output "TASK COMPLETE" after everything is completed
+- ❌ Forgetting to output "CONTINUE" when there is still work left to do
 
 ## Your Success Metrics
 
@@ -201,6 +208,5 @@ cargo insta accept
 - ✅ STATE.md fully updated
 - ✅ All tests passing
 - ✅ Learnings documented
-- ✅ "TASK COMPLETE" output
 
 Follow this guide to execute tasks successfully across multiple sessions while maintaining perfect state tracking.

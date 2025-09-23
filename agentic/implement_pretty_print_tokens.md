@@ -254,10 +254,12 @@ e.indent_end();    // End level 1
 
 ## Completion Signal Requirements
 
-**CRITICAL**: When all tests pass and formatting is complete, output this exact phrase:
+**CRITICAL**: ONLY when ALL tests pass and formatting is complete, output this exact phrase:
 
 `TASK COMPLETE`
 
 This allows automated scripts to detect task completion reliably.
+
+If not ALL tests pass or there is formatting work left to do, output `CONTINUE` instead.
 
 Continue this loop indefinitely until all tests pass with properly formatted output.
