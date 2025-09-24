@@ -1,0 +1,12 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\nDO $doblock$\nend\n$doblock$;\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "DO" @ Ident,
+    " " @ Space,
+    "$doblock$\nend\n$doblock$" @ Literal { kind: DollarQuotedString { terminated: true } },
+    ";" @ Semi,
+]
