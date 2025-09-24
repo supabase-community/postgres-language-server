@@ -1,0 +1,27 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_text_edit"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_text_size = { workspace = true }
+schemars       = { workspace = true, optional = true }
+serde          = { workspace = true, features = ["derive"], optional = true }
+similar        = { workspace = true, features = ["unicode"] }
+
+[features]
+schema = ["dep:schemars", "pgls_text_size/schema"]
+serde  = ["dep:serde", "pgls_text_size/serde"]
+
+[dev-dependencies]
+
+[lib]
+doctest = false

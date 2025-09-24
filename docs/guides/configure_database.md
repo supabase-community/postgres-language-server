@@ -13,7 +13,7 @@ The language server requires a database connection for schema-dependent features
 
 ## Configuration
 
-Configure database connection details in your `postgrestools.jsonc` file:
+Configure database connection details in your `postgres-language-server.jsonc` file:
 
 ```json
 {
@@ -79,7 +79,7 @@ If you prefer to work without a database connection, you can disable all databas
 Or use the command line flag:
 
 ```bash
-postgrestools check sql/ --disable-db
+pgls check sql/ --disable-db
 ```
 
 When disabled, you'll still get:

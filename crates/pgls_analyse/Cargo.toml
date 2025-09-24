@@ -1,0 +1,31 @@
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_analyse"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_console.workspace      = true
+pgls_diagnostics.workspace  = true
+pgls_query.workspace        = true
+pgls_schema_cache.workspace = true
+rustc-hash                  = { workspace = true }
+
+biome_deserialize        = { workspace = true, optional = true }
+biome_deserialize_macros = { workspace = true, optional = true }
+enumflags2.workspace     = true
+pgls_text_size.workspace = true
+schemars                 = { workspace = true, optional = true }
+serde                    = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+schema = ["dep:schemars"]
+serde  = ["dep:serde", "dep:biome_deserialize", "dep:biome_deserialize_macros"]

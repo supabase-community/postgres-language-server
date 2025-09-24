@@ -12,10 +12,10 @@ biome_js_syntax    = { workspace = true }
 biome_rowan        = { workspace = true }
 biome_string_case  = { workspace = true }
 bpaf               = { workspace = true, features = ["derive"] }
-pgt_analyse        = { workspace = true }
-pgt_analyser       = { workspace = true }
-pgt_diagnostics    = { workspace = true }
-pgt_workspace      = { workspace = true, features = ["schema"] }
+pgls_analyse       = { workspace = true }
+pgls_analyser      = { workspace = true }
+pgls_diagnostics   = { workspace = true }
+pgls_workspace     = { workspace = true, features = ["schema"] }
 proc-macro2        = { workspace = true, features = ["span-locations"] }
 pulldown-cmark     = { version = "0.12.2" }
 quote              = "1.0.36"

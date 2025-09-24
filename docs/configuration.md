@@ -2,7 +2,7 @@
 
 This guide will help you to understand how to configure the Postgres Language Server. It explains the structure of the configuration file and how the configuration is resolved.
 
-The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named `postgrestools.jsonc`. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.
+The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named `postgres-language-server.jsonc`. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.
 
 ## Configuration file structure
 
@@ -10,7 +10,7 @@ A configuration file is usually placed in your project’s root folder. It is or
 
 ```json
 {
-  "$schema": "https://pgtools.dev/latest/schema.json",
+  "$schema": "https://pg-language-server.com/latest/schema.json",
   "linter": {
     "enabled": true,
     "rules": {
@@ -32,7 +32,7 @@ Some tools that the Postgres Language Server provides are implemented as mere in
 
 ```json
 {
-  "$schema": "https://pgtools.dev/latest/schema.json",
+  "$schema": "https://pg-language-server.com/latest/schema.json",
   "db": {
     "host": "127.0.0.1",
     "port": 5432,
@@ -54,7 +54,7 @@ You can control the files/folders to process using different strategies, either 
 The first way to control which files and folders are processed is to list them in the CLI. In the following command, we only check `file1.sql` and all the files in the `src` folder, because folders are recursively traversed.
 
 ```shell
-postgrestools check file1.js src/
+pgls check file1.js src/
 ```
 
 ### Control files via configuration

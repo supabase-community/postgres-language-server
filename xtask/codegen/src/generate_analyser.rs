@@ -13,7 +13,7 @@ pub fn generate_analyser() -> Result<()> {
 }
 
 fn generate_linter() -> Result<()> {
-    let base_path = project_root().join("crates/pgt_analyser/src");
+    let base_path = project_root().join("crates/pgls_analyser/src");
     let mut analysers = BTreeMap::new();
     generate_category("lint", &mut analysers, &base_path)?;
 
@@ -39,7 +39,7 @@ fn generate_options(base_path: &Path) -> Result<()> {
                 let rule_module_name = format_ident!("{}", rule_filename);
                 let rule_name = format_ident!("{}", rule_name);
                 rules_options.insert(rule_filename.to_string(), quote! {
-                    pub type #rule_name = <#category_name::#group_name::#rule_module_name::#rule_name as pgt_analyse::Rule>::Options;
+                    pub type #rule_name = <#category_name::#group_name::#rule_module_name::#rule_name as pgls_analyse::Rule>::Options;
                 });
             }
         }
@@ -120,7 +120,7 @@ fn generate_category(
     let (modules, paths): (Vec<_>, Vec<_>) = groups.into_values().unzip();
     let tokens = xtask::reformat(quote! {
         #( #modules )*
-        ::pgt_analyse::declare_category! {
+        ::pgls_analyse::declare_category! {
             pub #category_name {
                 kind: #kind,
                 groups: [
@@ -173,7 +173,7 @@ fn generate_group(category: &'static str, group: &str, base_path: &Path) -> Resu
     let (import_macro, use_macro) = match category {
         "lint" => (
             quote!(
-                use pgt_analyse::declare_lint_group;
+                use pgls_analyse::declare_lint_group;
             ),
             quote!(declare_lint_group),
         ),
@@ -200,12 +200,12 @@ fn generate_group(category: &'static str, group: &str, base_path: &Path) -> Resu
 }
 
 fn update_linter_registry_builder(rules: BTreeMap<&'static str, TokenStream>) -> Result<()> {
-    let path = project_root().join("crates/pgt_analyser/src/registry.rs");
+    let path = project_root().join("crates/pgls_analyser/src/registry.rs");
 
     let categories = rules.into_values();
 
     let tokens = xtask::reformat(quote! {
-        use pgt_analyse::RegistryVisitor;
+        use pgls_analyse::RegistryVisitor;
 
         pub fn visit_registry<V: RegistryVisitor>(registry: &mut V) {
             #( #categories )*

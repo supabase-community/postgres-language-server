@@ -333,7 +333,7 @@
           ]
         },
         "recommended": {
-          "description": "It enables the lint rules recommended by Postgres Tools. `true` by default.",
+          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
           "type": [
             "boolean",
             "null"
@@ -754,7 +754,7 @@
           ]
         },
         "root": {
-          "description": "The folder where we should check for VCS files. By default, we will use the same folder where `postgrestools.jsonc` was found.\n\nIf we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted",
+          "description": "The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.\n\nIf we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted",
           "type": [
             "string",
             "null"

@@ -1,7 +1,7 @@
 use biome_string_case::Case;
-use pgt_analyse::RuleMetadata;
-use pgt_console::fmt::{Formatter, HTML};
-use pgt_console::{Markup, markup};
+use pgls_analyse::RuleMetadata;
+use pgls_console::fmt::{Formatter, HTML};
+use pgls_console::{Markup, markup};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use std::{
     collections::BTreeMap,
@@ -20,7 +20,7 @@ pub fn generate_rules_index(docs_dir: &Path) -> anyhow::Result<()> {
     let index_file = docs_dir.join("reference/rules.md");
 
     let mut visitor = crate::utils::LintRulesVisitor::default();
-    pgt_analyser::visit_registry(&mut visitor);
+    pgls_analyser::visit_registry(&mut visitor);
 
     let crate::utils::LintRulesVisitor { groups } = visitor;
 
