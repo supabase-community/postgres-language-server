@@ -425,7 +425,7 @@ export interface Rules {
 	 */
 	all?: boolean;
 	/**
-	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+	 * It enables the lint rules recommended by Postgres Tools. `true` by default.
 	 */
 	recommended?: boolean;
 	safety?: Safety;
