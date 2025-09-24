@@ -1,0 +1,199 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/dbsize_60.sql
+snapshot_kind: text
+---
+SELECT
+  size,
+  pg_size_pretty(
+    size
+  ),
+  pg_size_pretty(
+    -1 * size
+  )
+FROM
+  (VALUES
+    (10::pg_catalog.int8),
+    (1000::pg_catalog.int8),
+    (1000000::pg_catalog.int8),
+    (1000000000::pg_catalog.int8),
+    (1000000000000::pg_catalog.int8),
+    (1000000000000000::pg_catalog.int8)) AS x(size);
+
+SELECT
+  size,
+  pg_size_pretty(
+    size
+  ),
+  pg_size_pretty(
+    -1 * size
+  )
+FROM
+  (VALUES
+    (10::pg_catalog.numeric),
+    (1000::pg_catalog.numeric),
+    (1000000::pg_catalog.numeric),
+    (1000000000::pg_catalog.numeric),
+    (1000000000000::pg_catalog.numeric),
+    (1000000000000000::pg_catalog.numeric),
+    (10.5::pg_catalog.numeric),
+    (1000.5::pg_catalog.numeric),
+    (1000000.5::pg_catalog.numeric),
+    (1000000000.5::pg_catalog.numeric),
+    (1000000000000.5::pg_catalog.numeric),
+    (1000000000000000.5::pg_catalog.numeric)) AS x(size);
+
+SELECT
+  size,
+  pg_size_pretty(
+    size
+  ),
+  pg_size_pretty(
+    -1 * size
+  )
+FROM
+  (VALUES
+    (10239::pg_catalog.int8),
+    (10240::pg_catalog.int8),
+    (10485247::pg_catalog.int8),
+    (10485248::pg_catalog.int8),
+    (10736893951::pg_catalog.int8),
+    (10736893952::pg_catalog.int8),
+    (10994579406847::pg_catalog.int8),
+    (10994579406848::pg_catalog.int8),
+    (11258449312612351::pg_catalog.int8),
+    (11258449312612352::pg_catalog.int8)) AS x(size);
+
+SELECT
+  size,
+  pg_size_pretty(
+    size
+  ),
+  pg_size_pretty(
+    -1 * size
+  )
+FROM
+  (VALUES
+    (10239::pg_catalog.numeric),
+    (10240::pg_catalog.numeric),
+    (10485247::pg_catalog.numeric),
+    (10485248::pg_catalog.numeric),
+    (10736893951::pg_catalog.numeric),
+    (10736893952::pg_catalog.numeric),
+    (10994579406847::pg_catalog.numeric),
+    (10994579406848::pg_catalog.numeric),
+    (11258449312612351::pg_catalog.numeric),
+    (11258449312612352::pg_catalog.numeric),
+    (11528652096115048447::pg_catalog.numeric),
+    (11528652096115048448::pg_catalog.numeric)) AS x(size);
+
+SELECT
+  pg_size_pretty(
+    '-9223372036854775808'::pg_catalog.int8
+  ),
+  pg_size_pretty(
+    '9223372036854775807'::pg_catalog.int8
+  );
+
+SELECT
+  size,
+  pg_size_bytes(
+    size
+  )
+FROM
+  (VALUES
+    ('1'),
+    ('123bytes'),
+    ('256 B'),
+    ('1kB'),
+    ('1MB'),
+    (' 1 GB'),
+    ('1.5 GB '),
+    ('1TB'),
+    ('3000 TB'),
+    ('1e6 MB'),
+    ('99 PB')) AS x(size);
+
+SELECT
+  size,
+  pg_size_bytes(
+    size
+  )
+FROM
+  (VALUES
+    ('1'),
+    ('123bYteS'),
+    ('1kb'),
+    ('1mb'),
+    (' 1 Gb'),
+    ('1.5 gB '),
+    ('1tb'),
+    ('3000 tb'),
+    ('1e6 mb'),
+    ('99 pb')) AS x(size);
+
+SELECT
+  size,
+  pg_size_bytes(
+    size
+  )
+FROM
+  (VALUES
+    ('-1'),
+    ('-123bytes'),
+    ('-1kb'),
+    ('-1mb'),
+    (' -1 Gb'),
+    ('-1.5 gB '),
+    ('-1tb'),
+    ('-3000 TB'),
+    ('-10e-1 MB'),
+    ('-99 PB')) AS x(size);
+
+SELECT
+  size,
+  pg_size_bytes(
+    size
+  )
+FROM
+  (VALUES
+    ('-1.'),
+    ('-1.kb'),
+    ('-1. kb'),
+    ('-0. gb'),
+    ('-.1'),
+    ('-.1kb'),
+    ('-.1 kb'),
+    ('-.0 gb')) AS x(size);
+
+SELECT pg_size_bytes('1 AB');
+
+SELECT pg_size_bytes('1 AB A');
+
+SELECT pg_size_bytes('1 AB A    ');
+
+SELECT pg_size_bytes('9223372036854775807.9');
+
+SELECT pg_size_bytes('1e100');
+
+SELECT pg_size_bytes('1e1000000000000000000');
+
+SELECT pg_size_bytes('1 byte');
+
+SELECT pg_size_bytes('');
+
+SELECT pg_size_bytes('kb');
+
+SELECT pg_size_bytes('..');
+
+SELECT pg_size_bytes('-.');
+
+SELECT pg_size_bytes('-.kb');
+
+SELECT pg_size_bytes('-. kb');
+
+SELECT pg_size_bytes('.+912');
+
+SELECT pg_size_bytes('+912+ kB');
+
+SELECT pg_size_bytes('++123 kB');

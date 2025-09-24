@@ -132,7 +132,12 @@ fn test_multi(fixture: Fixture<&str>) {
         }
 
         // Verify AST equality
-        let parsed_output = pgt_query::parse(&output).expect("Failed to parse formatted SQL");
+        let parsed_output = pgt_query::parse(&output).unwrap_or_else(|e| {
+            eprintln!("Failed to parse formatted SQL. Error: {:?}", e);
+            eprintln!("Statement index: {}", range.start());
+            eprintln!("Formatted SQL:\n{}", output);
+            panic!("Failed to parse formatted SQL: {:?}", e);
+        });
         let mut parsed_ast = parsed_output.into_root().expect("No root node found");
 
         clear_location(&mut parsed_ast);
@@ -242,6 +247,21 @@ fn clear_location(node: &mut pgt_query::NodeEnum) {
                 (*n).location = 0;
             }
             pgt_query::NodeMut::CommonTableExpr(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::SubLink(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::NullTest(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::Constraint(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::CaseWhen(n) => {
+                (*n).location = 0;
+            }
+            pgt_query::NodeMut::CaseExpr(n) => {
                 (*n).location = 0;
             }
             _ => {}

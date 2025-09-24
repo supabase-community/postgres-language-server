@@ -13,16 +13,17 @@ INSERT INTO lseg_tbl VALUES ('10,-10 ,-3,-4');
 
 INSERT INTO lseg_tbl VALUES ('[-1e6,2e2,3e5, -4e1]');
 
-INSERT INTO lseg_tbl VALUES (lseg(
-  point(
-    11,
-    22
-  ),
-  point(
-    33,
-    44
-  )
-));
+INSERT INTO lseg_tbl VALUES
+  (lseg(
+    point(
+      11,
+      22
+    ),
+    point(
+      33,
+      44
+    )
+  ));
 
 INSERT INTO lseg_tbl VALUES ('[(-10,2),(-10,3)]');
 

@@ -145,12 +145,59 @@ match e.parent_group() {
 #### ❌ NEVER DO THESE:
 1. **NEVER modify the renderer** - only change `nodes.rs`
 2. **NEVER create random groups** - only use existing `GroupKind` variants
+3. **NEVER use length-based formatting** - DO NOT change formatting based on number of items (e.g., `if items.len() > 3`). Always use consistent formatting that lets the renderer decide line breaks
+4. **NEVER manually parse child nodes** - DO NOT use patterns like `if let Some(pgt_query::protobuf::node::Node::List(list)) = &node`. ALWAYS call `node.to_tokens(e)` and let the child node handle its own formatting using context from the EventEmitter
 
 #### ✅ ALWAYS DO THESE:
 1. **Run pgFormatter** - leverage `pg_format file.sql` and try to achieve a similarly formatted output with our pretty printer
 1. **Use existing group contexts** - leverage `GroupKind::SelectStmt`, `GroupKind::InsertStmt`, etc.
 2. **Add breaks at clause boundaries** - before `WHERE`, `ORDER BY`, `GROUP BY`, etc.
 3. **Use proper indentation** - wrap subordinate clauses with `indent_start()/indent_end()`
+
+### Manual Child Node Parsing - FORBIDDEN PATTERN
+
+**❌ NEVER DO THIS:**
+```rust
+// BAD: Parent node manually parsing child nodes
+if let Some(pgt_query::protobuf::node::Node::List(list)) = &arg.node {
+    for (i, item) in list.items.iter().enumerate() {
+        if i > 0 {
+            e.token(TokenKind::COMMA);
+            e.space();
+        }
+        item.to_tokens(e);
+    }
+} else {
+    arg.to_tokens(e);
+}
+```
+
+**✅ ALWAYS DO THIS:**
+```rust
+// GOOD: Let the child node handle its own formatting
+arg.to_tokens(e);
+```
+
+The child node's `to_tokens` implementation should use the EventEmitter's context functions to determine how to format itself based on its parent context.
+
+### String Formatting Helpers
+
+Use the provided EventEmitter helper methods for common string formatting patterns:
+
+```rust
+// Good: Use helpers for string formatting
+e.emit_quoted_string_or_fallback(arg);           // 'quoted string' or fallback
+e.emit_string_as_ident_or_fallback(node);        // identifier or fallback
+e.emit_string_as_upper_ident(node);              // UPPERCASE identifier
+e.emit_quoted_string_if_string(node);            // 'quoted' or nothing
+
+// Bad: Manual string node inspection
+if let Some(pgt_query::protobuf::node::Node::String(s)) = &arg.node {
+    e.token(TokenKind::STRING(format!("'{}'", s.sval)));
+} else {
+    arg.to_tokens(e);
+}
+```
 
 ## Common Formatting Patterns
 
@@ -288,6 +335,25 @@ WHEN NOT MATCHED THEN
 
 ## Testing and Validation
 
+### Code Quality Checks
+```bash
+# Run clippy to catch warnings and potential issues
+cargo clippy
+
+# Run clippy for specific package
+cargo clippy -p pgt_pretty_print
+
+# Run clippy with additional checks
+cargo clippy -- -W clippy::all
+```
+
+**CRITICAL**: Always run `cargo clippy` after making changes to catch:
+- Unused code and imports
+- Collapsible if/else blocks  
+- Performance improvements
+- Code style issues
+- Potential bugs
+
 ### Running Tests
 ```bash
 # Run all pretty printer tests
@@ -358,7 +424,12 @@ cargo insta test
    cargo test -p pgt_pretty_print test_formatter__create_function_stmt_0_60 -- --show-output
    ```
 
-7. **Iterate until the formatting is correct**
+7. **Run code quality checks**:
+   ```bash
+   cargo clippy -p pgt_pretty_print
+   ```
+
+8. **Iterate until the formatting is correct**
 
 ## Examples of Good Formatting
 

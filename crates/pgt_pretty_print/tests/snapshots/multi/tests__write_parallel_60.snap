@@ -1,0 +1,112 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/write_parallel_60.sql
+snapshot_kind: text
+---
+BEGIN;
+
+SET parallel_setup_cost TO 0;
+
+SET parallel_tuple_cost TO 0;
+
+SET min_parallel_table_scan_size TO 0;
+
+SET max_parallel_workers_per_gather TO 4;
+
+CREATE TABLE parallel_write AS SELECT
+  length(
+    stringu1
+  )
+FROM
+  tenk1
+GROUP BY
+  length(
+    stringu1
+  );
+
+CREATE TABLE parallel_write AS SELECT
+  length(
+    stringu1
+  )
+FROM
+  tenk1
+GROUP BY
+  length(
+    stringu1
+  );
+
+DROP TABLE parallel_write;
+
+SELECT
+  length(
+    stringu1
+  ) INTO parallel_write
+FROM
+  tenk1
+GROUP BY
+  length(
+    stringu1
+  );
+
+SELECT
+  length(
+    stringu1
+  ) INTO parallel_write
+FROM
+  tenk1
+GROUP BY
+  length(
+    stringu1
+  );
+
+DROP TABLE parallel_write;
+
+CREATE MATERIALIZED VIEW parallel_mat_view AS SELECT
+  length(
+    stringu1
+  )
+FROM
+  tenk1
+GROUP BY
+  length(
+    stringu1
+  );
+
+CREATE MATERIALIZED VIEW parallel_mat_view AS SELECT
+  length(
+    stringu1
+  )
+FROM
+  tenk1
+GROUP BY
+  length(
+    stringu1
+  );
+
+CREATE UNIQUE INDEX ON parallel_mat_view (length);
+
+REFRESH MATERIALIZED VIEW parallel_mat_view;
+
+REFRESH MATERIALIZED VIEW CONCURRENTLY parallel_mat_view;
+
+DROP MATERIALIZED VIEW parallel_mat_view;
+
+PREPARE prep_stmt AS
+  SELECT
+    length(
+      stringu1
+    )
+  FROM
+    tenk1
+  GROUP BY
+    length(
+      stringu1
+    );
+
+CREATE TABLE parallel_write AS EXECUTE prep_stmt;
+
+CREATE TABLE parallel_write AS EXECUTE prep_stmt;
+
+DROP TABLE parallel_write;
+
+ROLLBACK;

@@ -179,7 +179,7 @@ agentic name:
     unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read agentic/{{name}}.md and follow the instructions closely"
 
 # Run agentic loop that breaks when task is complete
-agentic-loop name:
+agentic-loop-forever name:
     #!/usr/bin/env bash
     while true; do
         echo "$(date): Calling Claude..."
@@ -193,6 +193,23 @@ agentic-loop name:
             continue
         fi
 
+        if echo "$output" | grep -q "TASK COMPLETE"; then
+            echo "$(date): Task completed!"
+            break
+        fi
+    done
+
+agentic-loop name:
+    #!/usr/bin/env bash
+    while true; do
+        echo "$(date): Calling Claude..."
+        output=$(just agentic {{name}} 2>&1)
+        exit_code=$?
+        echo "$output"
+        if [ $exit_code -ne 0 ]; then
+            echo "$(date): Error occurred, exiting..."
+            exit $exit_code
+        fi
         if echo "$output" | grep -q "TASK COMPLETE"; then
             echo "$(date): Task completed!"
             break
