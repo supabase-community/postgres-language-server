@@ -1,5 +1,5 @@
 {
-  "name": "@postgrestools/monorepo",
+  "name": "@pgls/monorepo",
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
@@ -10,8 +10,8 @@
     "typescript": "^5"
   },
   "workspaces": [
-    "packages/@postgrestools/postgrestools",
-    "packages/@postgrestools/backend-jsonrpc"
+    "packages/@pgls/cli",
+    "packages/@pgls/backend-jsonrpc"
   ],
   "keywords": [],
   "author": "Supabase Community",
