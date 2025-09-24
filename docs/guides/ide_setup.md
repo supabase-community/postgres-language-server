@@ -46,7 +46,7 @@ postgrestools start
 Then, every command needs to add the `--use-server` options, e.g.:
 
 ```shell
-postgrestools check --use-server --stdin-file-path=dummy.sql
+pgls check --use-server --stdin-file-path=dummy.sql
 ```
 
 

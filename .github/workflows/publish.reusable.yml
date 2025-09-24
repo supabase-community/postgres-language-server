@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate Packages
         id: generate-packages
-        run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
+        run: node packages/@pgls/cli/scripts/generate-packages.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.release-tag }}
@@ -44,7 +44,7 @@ jobs:
       - name: Publish npm packages as nightly
         if: inputs.is-prerelease == 'true'
         run: |
-          for package in packages/@postgrestools/*; do
+          for package in packages/@pgls/*; do
             npm publish "$package" --tag nightly --access public --provenance
           done
         env:
@@ -53,7 +53,7 @@ jobs:
       - name: Publish npm packages as latest
         if: inputs.is-prerelease != 'true'
         run: |
-          for package in packages/@postgrestools/*; do
+          for package in packages/@pgls/*; do
             version="${{ inputs.release-tag }}"
             npm_package_name=$(jq -r ".name" "$package/package.json")
 

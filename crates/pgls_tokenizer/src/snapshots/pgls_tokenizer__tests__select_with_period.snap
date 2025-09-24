@@ -1,0 +1,15 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\nselect public.users;\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "select" @ Ident,
+    " " @ Space,
+    "public" @ Ident,
+    "." @ Dot,
+    "users" @ Ident,
+    ";" @ Semi,
+    "\n" @ LineEnding { count: 1 },
+]

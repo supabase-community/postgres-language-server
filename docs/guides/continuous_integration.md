@@ -15,7 +15,7 @@ jobs:
       - uses: supabase-community/pglt-cli-action@main
         with:
           version: latest
-      - run: postgrestools check --skip-db sql/
+      - run: pgls check --skip-db sql/
 ```
 
 You likely want to setup Postgres to enable more advanced checks:
@@ -38,7 +38,7 @@ jobs:
       - uses: supabase-community/pglt-cli-action@main
         with:
           version: latest
-      - run: postgrestools check sql/
+      - run: pgls check sql/
 ```
 
 A common use-case is to check your migration files. Check out [the dedicated guide](./checking_migrations.md) for details.

@@ -10,12 +10,11 @@ use biome_js_syntax::{
 };
 use biome_rowan::AstNode;
 use biome_string_case::Case;
-use pgt_workspace::workspace_types::{generate_type, methods, ModuleQueue};
+use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
 use xtask::{project_root, Mode, Result};
 
 pub fn generate_bindings(mode: Mode) -> Result<()> {
-    let bindings_path =
-        project_root().join("packages/@postgrestools/backend-jsonrpc/src/workspace.ts");
+    let bindings_path = project_root().join("packages/@pgls/backend-jsonrpc/src/workspace.ts");
     let methods = methods();
 
     let mut declarations = Vec::new();

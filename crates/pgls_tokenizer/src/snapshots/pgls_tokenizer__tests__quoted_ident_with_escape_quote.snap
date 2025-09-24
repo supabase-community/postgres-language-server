@@ -1,0 +1,10 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\n\"foo \"\" bar\"\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "\"foo \"\" bar\"" @ QuotedIdent { terminated: true },
+    "\n" @ LineEnding { count: 1 },
+]

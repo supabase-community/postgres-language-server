@@ -1,0 +1,22 @@
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_test_macros"
+repository.workspace = true
+version              = "0.0.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+globwalk         = { version = "0.9.1" }
+proc-macro-error = { version = "1.0.4" }
+proc-macro2      = { version = '1.0.93' }
+quote            = { workspace = true }
+syn              = { workspace = true }

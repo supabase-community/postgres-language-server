@@ -1,0 +1,32 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_console"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_markup    = { workspace = true }
+pgls_text_size = { workspace = true }
+
+schemars             = { workspace = true, optional = true }
+serde                = { workspace = true, optional = true, features = ["derive"] }
+termcolor            = { workspace = true }
+unicode-segmentation = "1.12.0"
+unicode-width        = { workspace = true }
+
+[dev-dependencies]
+trybuild = "1.0.99"
+
+[features]
+schema = ["dep:schemars", "pgls_text_size/schema"]
+serde  = ["dep:serde"]
+
+[lib]
+doctest = false

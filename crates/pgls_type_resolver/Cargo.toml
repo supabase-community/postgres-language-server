@@ -1,0 +1,21 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_type_resolver"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_query.workspace        = true
+pgls_schema_cache.workspace = true
+
+[dev-dependencies]
+
+[lib]
+doctest = false

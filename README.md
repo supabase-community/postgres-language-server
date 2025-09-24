@@ -4,9 +4,9 @@
 
 A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.
 
-Docs: [pgtools.dev](https://pgtools.dev/)
+Docs: [pg-language-server.com](https://pg-language-server.com/)
 
-Install: [instructions](https://pgtools.dev/#installation)
+Install: [instructions](https://pg-language-server.com/#installation)
 
 - [CLI releases](https://github.com/supabase-community/postgres-language-server/releases)
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools)

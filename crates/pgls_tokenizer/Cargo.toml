@@ -1,0 +1,19 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_tokenizer"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+
+[dev-dependencies]
+insta.workspace = true
+
+[lib]

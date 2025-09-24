@@ -1,5 +1,5 @@
 site_name: Postgres Language Server
-site_url: https://pgtools.dev
+site_url: https://pg-language-server.com
 site_description: A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.
 
 repo_name: supabase-community/postgres-language-server

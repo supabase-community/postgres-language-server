@@ -1,0 +1,20 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\nE'foo'\n\ne'bar'\n\ne'\\b\\f\\n\\r\\t'\n\ne'\\0\\11\\777'\n\ne'\\x0\\x11\\xFF'\n\ne'\\uAAAA \\UFFFFFFFF'\n\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "E'foo'" @ Literal { kind: EscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "e'bar'" @ Literal { kind: EscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "e'\\b\\f\\n\\r\\t'" @ Literal { kind: EscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "e'\\0\\11\\777'" @ Literal { kind: EscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "e'\\x0\\x11\\xFF'" @ Literal { kind: EscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "e'\\uAAAA \\UFFFFFFFF'" @ Literal { kind: EscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+]

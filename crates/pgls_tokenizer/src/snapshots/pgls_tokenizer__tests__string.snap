@@ -1,0 +1,26 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\n'Dianne''s horse'\n\nselect 'foo ''\nbar';\n\nselect 'foooo'\n   'bar';\n\n\n'foo \\\\ \\n \\tbar'\n\n'forgot to close the string\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "'Dianne''s horse'" @ Literal { kind: Str { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "select" @ Ident,
+    " " @ Space,
+    "'foo ''\nbar'" @ Literal { kind: Str { terminated: true } },
+    ";" @ Semi,
+    "\n\n" @ LineEnding { count: 2 },
+    "select" @ Ident,
+    " " @ Space,
+    "'foooo'" @ Literal { kind: Str { terminated: true } },
+    "\n" @ LineEnding { count: 1 },
+    "   " @ Space,
+    "'bar'" @ Literal { kind: Str { terminated: true } },
+    ";" @ Semi,
+    "\n\n\n" @ LineEnding { count: 3 },
+    "'foo \\\\ \\n \\tbar'" @ Literal { kind: Str { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "'forgot to close the string\n" @ Literal { kind: Str { terminated: false } },
+]

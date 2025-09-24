@@ -62,11 +62,11 @@ just new-crate <name>
 ```
 
 ### CLI Usage
-The main CLI binary is `postgrestools`:
+The main CLI binary is `pgls`:
 ```bash
 cargo run -p pgt_cli -- check file.sql
 # or after building:
-./target/release/postgrestools check file.sql
+./target/release/pgls check file.sql
 ```
 
 ## Architecture

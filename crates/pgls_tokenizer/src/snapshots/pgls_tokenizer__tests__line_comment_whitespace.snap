@@ -1,0 +1,16 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\nselect 'Hello' -- This is a comment\n' World';\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "select" @ Ident,
+    " " @ Space,
+    "'Hello'" @ Literal { kind: Str { terminated: true } },
+    " " @ Space,
+    "-- This is a comment" @ LineComment,
+    "\n" @ LineEnding { count: 1 },
+    "' World'" @ Literal { kind: Str { terminated: true } },
+    ";" @ Semi,
+]

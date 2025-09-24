@@ -4,20 +4,20 @@
 
 # Command summary
 
-- [`postgrestools`↴](#postgrestools)  
-- [`postgrestools version`↴](#postgrestools-version)  
-- [`postgrestools check`↴](#postgrestools-check)  
+- [`pgls`↴](#postgrestools)  
+- [`pgls version`↴](#postgrestools-version)  
+- [`pgls check`↴](#postgrestools-check)  
 - [`postgrestools start`↴](#postgrestools-start)  
 - [`postgrestools stop`↴](#postgrestools-stop)  
-- [`postgrestools init`↴](#postgrestools-init)  
+- [`pgls init`↴](#postgrestools-init)  
 - [`postgrestools lsp-proxy`↴](#postgrestools-lsp-proxy)  
-- [`postgrestools clean`↴](#postgrestools-clean)  
+- [`pgls clean`↴](#postgrestools-clean)  
 
 ## postgrestools
 
-PostgresTools official CLI. Use it to check the health of your project or run it to check single files.
+Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
 
-**Usage**: **`postgrestools`** _`COMMAND ...`_
+**Usage**: **`pgls`** _`COMMAND ...`_
 
 **Available options:**
 
@@ -43,11 +43,11 @@ PostgresTools official CLI. Use it to check the health of your project or run it
 - **`clean`** &mdash;  
   Cleans the logs emitted by the daemon.
 
-## postgrestools version
+## pgls version
 
 Shows the version information and quit.
 
-**Usage**: **`postgrestools`** **`version`**
+**Usage**: **`pgls`** **`version`**
 
 **Global options applied to all commands**
 
@@ -60,7 +60,7 @@ Shows the version information and quit.
 - **`    --verbose`** &mdash;  
   Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
 - **`    --config-path`**=_`PATH`_ &mdash;  
-  Set the file path to the configuration file, or the directory path to find `postgrestools.jsonc`. If used, it disables the default configuration file resolution.
+  Set the file path to the configuration file, or the directory path to find `postgres-language-server.jsonc`. If used, it disables the default configuration file resolution.
 - **`    --max-diagnostics`**=_`<none|<NUMBER>>`_ &mdash;  
   Cap the amount of diagnostics displayed. When `none` is provided, the limit is lifted.
   [default: 20]
@@ -69,7 +69,7 @@ Shows the version information and quit.
 - **`    --no-errors-on-unmatched`** &mdash;  
   Silence errors that would be emitted in case no files were processed during the execution of the command.
 - **`    --error-on-warnings`** &mdash;  
-  Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash;  
   Allows to change how diagnostics and summary are reported.
 - **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash;  
@@ -83,7 +83,7 @@ Shows the version information and quit.
   How the log should look like.
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash;  
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
   [default: info]
 
 **Available options:**
@@ -91,11 +91,11 @@ Shows the version information and quit.
 - **`-h`**, **`--help`** &mdash;  
   Prints help information
 
-## postgrestools check
+## pgls check
 
 Runs everything to the requested files.
 
-**Usage**: **`postgrestools`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[_`PATH`_\]...
+**Usage**: **`pgls`** **`check`** \[**`--staged`**\] \[**`--changed`**\] \[**`--since`**=_`REF`_\] \[_`PATH`_\]...
 
 **The configuration that is contained inside the configuration file.**
 
@@ -106,7 +106,7 @@ Runs everything to the requested files.
 - **`    --vcs-use-ignore-file`**=_`<true|false>`_ &mdash;  
   Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.
 - **`    --vcs-root`**=_`PATH`_ &mdash;  
-  The folder where we should check for VCS files. By default, we will use the same folder where `postgrestools.jsonc` was found.
+  The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
 
   If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
 
@@ -143,7 +143,7 @@ Runs everything to the requested files.
 - **`    --verbose`** &mdash;  
   Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.
 - **`    --config-path`**=_`PATH`_ &mdash;  
-  Set the file path to the configuration file, or the directory path to find `postgrestools.jsonc`. If used, it disables the default configuration file resolution.
+  Set the file path to the configuration file, or the directory path to find `postgres-language-server.jsonc`. If used, it disables the default configuration file resolution.
 - **`    --max-diagnostics`**=_`<none|<NUMBER>>`_ &mdash;  
   Cap the amount of diagnostics displayed. When `none` is provided, the limit is lifted.
   [default: 20]
@@ -152,7 +152,7 @@ Runs everything to the requested files.
 - **`    --no-errors-on-unmatched`** &mdash;  
   Silence errors that would be emitted in case no files were processed during the execution of the command.
 - **`    --error-on-warnings`** &mdash;  
-  Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash;  
   Allows to change how diagnostics and summary are reported.
 - **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash;  
@@ -166,7 +166,7 @@ Runs everything to the requested files.
   How the log should look like.
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash;  
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
   [default: info]
 
 **Available positional items:**
@@ -188,7 +188,7 @@ Runs everything to the requested files.
 - **`    --changed`** &mdash;  
   When set to true, only the files that have been changed compared to your `defaultBranch` configuration will be linted. This option should be used in CI environments.
 - **`    --since`**=_`REF`_ &mdash;  
-  Use this to specify the base branch to compare against when you're using the --changed flag and the `defaultBranch` is not set in your `postgrestools.jsonc`
+  Use this to specify the base branch to compare against when you're using the --changed flag and the `defaultBranch` is not set in your `postgres-language-server.jsonc`
 - **`-h`**, **`--help`** &mdash;  
   Prints help information
 
@@ -196,7 +196,7 @@ Runs everything to the requested files.
 
 Starts the daemon server process.
 
-**Usage**: **`postgrestools`** **`start`** \[**`--config-path`**=_`PATH`_\]
+**Usage**: **`pgls`** **`start`** \[**`--config-path`**=_`PATH`_\]
 
 **Available options:**
 
@@ -208,7 +208,7 @@ Starts the daemon server process.
   Allows to change the folder where logs are stored.
   Uses environment variable **`PGT_LOG_PATH`**
 - **`    --config-path`**=_`PATH`_ &mdash;  
-  Allows to set a custom file path to the configuration file, or a custom directory path to find `postgrestools.jsonc`
+  Allows to set a custom file path to the configuration file, or a custom directory path to find `postgres-language-server.jsonc`
   Uses environment variable **`PGT_LOG_PREFIX_NAME`**
 - **`-h`**, **`--help`** &mdash;  
   Prints help information
@@ -217,18 +217,18 @@ Starts the daemon server process.
 
 Stops the daemon server process.
 
-**Usage**: **`postgrestools`** **`stop`**
+**Usage**: **`pgls`** **`stop`**
 
 **Available options:**
 
 - **`-h`**, **`--help`** &mdash;  
   Prints help information
 
-## postgrestools init
+## pgls init
 
 Bootstraps a new project. Creates a configuration file with some defaults.
 
-**Usage**: **`postgrestools`** **`init`**
+**Usage**: **`pgls`** **`init`**
 
 **Available options:**
 
@@ -239,7 +239,7 @@ Bootstraps a new project. Creates a configuration file with some defaults.
 
 Acts as a server for the Language Server Protocol over stdin/stdout.
 
-**Usage**: **`postgrestools`** **`lsp-proxy`** \[**`--config-path`**=_`PATH`_\]
+**Usage**: **`pgls`** **`lsp-proxy`** \[**`--config-path`**=_`PATH`_\]
 
 **Available options:**
 
@@ -251,16 +251,16 @@ Acts as a server for the Language Server Protocol over stdin/stdout.
   Allows to change the folder where logs are stored.
   Uses environment variable **`PGT_LOG_PATH`**
 - **`    --config-path`**=_`PATH`_ &mdash;  
-  Allows to set a custom file path to the configuration file, or a custom directory path to find `postgrestools.jsonc`
+  Allows to set a custom file path to the configuration file, or a custom directory path to find `postgres-language-server.jsonc`
   Uses environment variable **`PGT_CONFIG_PATH`**
 - **`-h`**, **`--help`** &mdash;  
   Prints help information
 
-## postgrestools clean
+## pgls clean
 
 Cleans the logs emitted by the daemon.
 
-**Usage**: **`postgrestools`** **`clean`**
+**Usage**: **`pgls`** **`clean`**
 
 **Available options:**
 

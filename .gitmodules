@@ -1,4 +1,4 @@
-[submodule "crates/pgt_query/vendor/libpg_query"]
-	path = crates/pgt_query/vendor/libpg_query
+[submodule "crates/pgls_query/vendor/libpg_query"]
+	path = crates/pgls_query/vendor/libpg_query
 	url = https://github.com/pganalyze/libpg_query.git
 	branch = 17-latest

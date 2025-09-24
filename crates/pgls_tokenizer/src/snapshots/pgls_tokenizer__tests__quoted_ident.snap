@@ -1,0 +1,12 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\n\"hello &1 -world\";\n\n\n\"hello-world\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "\"hello &1 -world\"" @ QuotedIdent { terminated: true },
+    ";" @ Semi,
+    "\n\n\n" @ LineEnding { count: 3 },
+    "\"hello-world\n" @ QuotedIdent { terminated: false },
+]

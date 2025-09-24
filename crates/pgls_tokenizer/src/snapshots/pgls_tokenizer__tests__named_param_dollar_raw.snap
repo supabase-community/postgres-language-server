@@ -1,0 +1,23 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: result
+snapshot_kind: text
+---
+[
+    "select" @ Ident,
+    " " @ Space,
+    "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    " " @ Space,
+    "from" @ Ident,
+    " " @ Space,
+    "c" @ Ident,
+    " " @ Space,
+    "where" @ Ident,
+    " " @ Space,
+    "id" @ Ident,
+    " " @ Space,
+    "=" @ Eq,
+    " " @ Space,
+    "$id" @ NamedParam { kind: DollarRaw },
+    ";" @ Semi,
+]

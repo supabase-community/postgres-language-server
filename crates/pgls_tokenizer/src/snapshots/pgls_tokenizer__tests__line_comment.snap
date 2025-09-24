@@ -1,0 +1,10 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: result
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "-- foooooooooooo bar buzz" @ LineComment,
+    "\n" @ LineEnding { count: 1 },
+]

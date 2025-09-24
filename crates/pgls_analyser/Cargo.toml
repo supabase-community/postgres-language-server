@@ -1,0 +1,29 @@
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_analyser"
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+pgls_analyse      = { workspace = true }
+pgls_console      = { workspace = true }
+pgls_diagnostics  = { workspace = true }
+pgls_query        = { workspace = true }
+pgls_query_ext    = { workspace = true }
+pgls_schema_cache = { workspace = true }
+pgls_text_size    = { workspace = true }
+serde             = { workspace = true }
+
+[dev-dependencies]
+insta                   = { version = "1.42.1" }
+pgls_diagnostics        = { workspace = true }
+pgls_statement_splitter = { workspace = true }
+pgls_test_macros        = { workspace = true }
+termcolor               = { workspace = true }
