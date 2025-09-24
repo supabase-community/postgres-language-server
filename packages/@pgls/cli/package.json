@@ -40,5 +40,8 @@
     "@pgls/cli-x86_64-linux-gnu": "<placeholder>",
     "@pgls/cli-aarch64-linux-gnu": "<placeholder>",
     "@pgls/cli-x86_64-linux-musl": "<placeholder>"
+  },
+  "scripts": {
+    "test": "bun test"
   }
 }
