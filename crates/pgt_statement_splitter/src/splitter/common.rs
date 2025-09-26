@@ -120,11 +120,17 @@ pub(crate) fn case(p: &mut Splitter) {
 }
 
 pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
+    let mut in_atomic = false;
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {
+                if in_atomic {
+                    // only end the statement if the next non-trivia token is not END
+                    // this is to handle cases like BEGIN ATOMIC SELECT ...; END;
+                    p.advance();
+                    break;
+                }
                 p.advance();
-                break;
             }
             SyntaxKind::EOF => {
                 break;
@@ -257,7 +263,6 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                     }
                     p.advance();
                 }
-
                 Some(SyntaxKind::CREATE_KW) => {
                     let prev = p.look_back(true);
                     if [
@@ -273,6 +278,17 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         break;
                     }
 
+                    p.advance();
+                }
+                Some(SyntaxKind::ATOMIC_KW) => {
+                    if p.look_back(true) == Some(SyntaxKind::BEGIN_KW) {
+                        // BEGIN ATOMIC ... END;
+                        in_atomic = true;
+                    }
+                    p.advance();
+                }
+                Some(SyntaxKind::END_KW) => {
+                    in_atomic = false;
                     p.advance();
                 }
                 Some(_) => {

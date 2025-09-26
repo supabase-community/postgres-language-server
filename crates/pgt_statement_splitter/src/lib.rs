@@ -92,7 +92,7 @@ mod tests {
             assert_eq!(
                 self.result.ranges.len(),
                 expected.len(),
-                "Expected {} statements for input {}, got {}: {:?}",
+                "Expected {} statements for input\n{}\ngot {}:\n{:?}",
                 expected.len(),
                 self.input,
                 self.result.ranges.len(),
