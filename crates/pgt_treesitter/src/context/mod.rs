@@ -756,6 +756,22 @@ impl<'a> TreesitterContext<'a> {
             })
     }
 
+    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
+    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
+    ///
+    /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
+    /// you need to pass `&["relation", "object_reference"]`.
+    pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => node
+                    .parent()
+                    .is_some_and(|p| expected_ancestors.contains(&p.kind())),
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
+
     /// Checks whether the Node under the cursor is the nth child of the parent.
     ///
     /// ```

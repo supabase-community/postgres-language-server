@@ -126,6 +126,9 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { .. } if !has_mentioned_schema => 15,
                 WrappingClause::Update if !has_mentioned_schema => 15,
                 WrappingClause::Delete if !has_mentioned_schema => 15,
+                WrappingClause::AlterPolicy if !has_mentioned_schema => 15,
+                WrappingClause::DropPolicy if !has_mentioned_schema => 15,
+                WrappingClause::CreatePolicy if !has_mentioned_schema => 15,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => match clause_type {

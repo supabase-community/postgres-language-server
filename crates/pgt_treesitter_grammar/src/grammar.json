@@ -7126,72 +7126,8 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "keyword_to"
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "identifier"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "keyword_public"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "keyword_current_user"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "keyword_current_role"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "REPEAT",
-                      "content": {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "STRING",
-                            "value": ","
-                          },
-                          {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SYMBOL",
-                                "name": "identifier"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "keyword_public"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "keyword_current_user"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "keyword_current_role"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "policy_to_role"
             },
             {
               "type": "BLANK"
@@ -7216,24 +7152,21 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "keyword_alter"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_policy"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_on"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "object_reference"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "keyword_alter"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "keyword_policy"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -7243,21 +7176,12 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "keyword_rename"
+                  "name": "keyword_on"
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "keyword_to"
+                  "name": "object_reference"
                 },
-                {
-                  "type": "SYMBOL",
-                  "name": "identifier"
-                }
-              ]
-            },
-            {
-              "type": "SEQ",
-              "members": [
                 {
                   "type": "CHOICE",
                   "members": [
@@ -7266,53 +7190,116 @@
                       "members": [
                         {
                           "type": "SYMBOL",
+                          "name": "keyword_rename"
+                        },
+                        {
+                          "type": "SYMBOL",
                           "name": "keyword_to"
                         },
                         {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "identifier"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "keyword_public"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "keyword_current_role"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "keyword_current_user"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "keyword_session_user"
-                            }
-                          ]
+                          "type": "SYMBOL",
+                          "name": "identifier"
                         }
                       ]
                     },
                     {
-                      "type": "BLANK"
-                    }
-                  ]
-                },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
                       "type": "SYMBOL",
-                      "name": "check_or_using_clause"
+                      "name": "policy_to_role"
                     },
                     {
-                      "type": "BLANK"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "check_or_using_clause"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
                     }
                   ]
                 }
               ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "policy_to_role": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_to"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_public"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_current_user"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_current_role"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_session_user"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ","
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "keyword_public"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "keyword_current_user"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "keyword_current_role"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "keyword_session_user"
+                      }
+                    ]
+                  }
+                ]
+              }
             }
           ]
         }
@@ -7322,50 +7309,68 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "keyword_drop"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_policy"
-        },
-        {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_if_exists"
+              "name": "keyword_drop"
             },
             {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_on"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "object_reference"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
+              "type": "SYMBOL",
+              "name": "keyword_policy"
+            },
             {
               "type": "CHOICE",
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "keyword_cascade"
+                  "name": "_if_exists"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_on"
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "keyword_restrict"
+                  "name": "object_reference"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "keyword_cascade"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "keyword_restrict"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
                 }
               ]
             },

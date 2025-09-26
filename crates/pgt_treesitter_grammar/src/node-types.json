@@ -657,14 +657,6 @@
           "named": true
         },
         {
-          "type": "keyword_current_role",
-          "named": true
-        },
-        {
-          "type": "keyword_current_user",
-          "named": true
-        },
-        {
           "type": "keyword_on",
           "named": true
         },
@@ -673,15 +665,7 @@
           "named": true
         },
         {
-          "type": "keyword_public",
-          "named": true
-        },
-        {
           "type": "keyword_rename",
-          "named": true
-        },
-        {
-          "type": "keyword_session_user",
           "named": true
         },
         {
@@ -690,6 +674,10 @@
         },
         {
           "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "policy_to_role",
           "named": true
         }
       ]
@@ -4760,14 +4748,6 @@
           "named": true
         },
         {
-          "type": "keyword_current_role",
-          "named": true
-        },
-        {
-          "type": "keyword_current_user",
-          "named": true
-        },
-        {
           "type": "keyword_delete",
           "named": true
         },
@@ -4792,10 +4772,6 @@
           "named": true
         },
         {
-          "type": "keyword_public",
-          "named": true
-        },
-        {
           "type": "keyword_restrictive",
           "named": true
         },
@@ -4804,15 +4780,15 @@
           "named": true
         },
         {
-          "type": "keyword_to",
-          "named": true
-        },
-        {
           "type": "keyword_update",
           "named": true
         },
         {
           "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "policy_to_role",
           "named": true
         }
       ]
@@ -9888,6 +9864,41 @@
         },
         {
           "type": "window_function",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "policy_to_role",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_current_role",
+          "named": true
+        },
+        {
+          "type": "keyword_current_user",
+          "named": true
+        },
+        {
+          "type": "keyword_public",
+          "named": true
+        },
+        {
+          "type": "keyword_session_user",
+          "named": true
+        },
+        {
+          "type": "keyword_to",
           "named": true
         }
       ]

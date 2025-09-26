@@ -86,7 +86,7 @@ impl HoveredNode {
                     )))
                 }
             }
-            "identifier" if ctx.matches_ancestor_history(&["alter_role"]) => {
+            "identifier" if ctx.matches_one_of_ancestors(&["alter_role", "policy_to_role"]) => {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
             }
 

@@ -1034,59 +1034,56 @@ module.exports = grammar({
             )
           )
         ),
-        optional(
-          seq(
-            $.keyword_to,
-            comma_list(
-              choice(
-                $.identifier,
-                $.keyword_public,
-                $.keyword_current_user,
-                $.keyword_current_role
-              ),
-              true
-            )
-          )
-        ),
+        optional($.policy_to_role),
         optional($.check_or_using_clause)
       ),
 
     alter_policy: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_policy,
-        $.identifier,
-        $.keyword_on,
-        $.object_reference,
-        choice(
-          seq($.keyword_rename, $.keyword_to, $.identifier),
+        seq($.keyword_alter, $.keyword_policy, $.identifier),
+        optional(
           seq(
-            optional(
-              seq(
-                $.keyword_to,
-                choice(
-                  $.identifier,
-                  $.keyword_public,
-                  $.keyword_current_role,
-                  $.keyword_current_user,
-                  $.keyword_session_user
-                )
-              )
-            ),
-            optional($.check_or_using_clause)
+            $.keyword_on,
+            $.object_reference,
+            choice(
+              seq($.keyword_rename, $.keyword_to, $.identifier),
+              $.policy_to_role,
+              optional($.check_or_using_clause)
+            )
           )
+        )
+      ),
+
+    policy_to_role: ($) =>
+      seq(
+        $.keyword_to,
+        comma_list(
+          choice(
+            $.identifier,
+            $.keyword_public,
+            $.keyword_current_user,
+            $.keyword_current_role,
+            $.keyword_session_user
+          ),
+          true
         )
       ),
 
     drop_policy: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_policy,
-        optional($._if_exists),
-        $.identifier,
-        $.keyword_on,
-        $.object_reference,
-        optional(choice($.keyword_cascade, $.keyword_restrict))
+        seq(
+          $.keyword_drop,
+          $.keyword_policy,
+          optional($._if_exists),
+          $.identifier
+        ),
+        optional(
+          seq(
+            $.keyword_on,
+            $.object_reference,
+            optional(choice($.keyword_cascade, $.keyword_restrict))
+          )
+        )
       ),
 
     check_or_using_clause: ($) =>

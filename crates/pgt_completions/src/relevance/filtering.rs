@@ -233,8 +233,8 @@ impl CompletionFilter<'_> {
                         matches!(
                             clause,
                             // not CREATE – there can't be existing policies.
-                            WrappingClause::DropPolicy | WrappingClause::AlterPolicy
-                        )
+                            WrappingClause::AlterPolicy | WrappingClause::DropPolicy
+                        ) && ctx.before_cursor_matches_kind(&["keyword_policy", "keyword_exists"])
                     }
 
                     CompletionRelevanceData::Role(_) => match clause {
@@ -247,6 +247,7 @@ impl CompletionFilter<'_> {
 
                         WrappingClause::AlterPolicy | WrappingClause::CreatePolicy => {
                             ctx.before_cursor_matches_kind(&["keyword_to"])
+                                && ctx.matches_ancestor_history(&["policy_to_role"])
                         }
 
                         _ => false,
