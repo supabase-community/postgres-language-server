@@ -92,7 +92,7 @@ mod tests {
             assert_eq!(
                 self.result.ranges.len(),
                 expected.len(),
-                "Expected {} statements for input {}, got {}: {:?}",
+                "Expected {} statements for input\n{}\ngot {}:\n{:?}",
                 expected.len(),
                 self.input,
                 self.result.ranges.len(),
@@ -131,6 +131,40 @@ mod tests {
 
             self
         }
+    }
+
+    #[test]
+    fn begin_commit() {
+        Tester::from(
+            "BEGIN;
+SELECT 1;
+COMMIT;",
+        )
+        .expect_statements(vec!["BEGIN;", "SELECT 1;", "COMMIT;"]);
+    }
+
+    #[test]
+    fn begin_atomic() {
+        Tester::from(
+            "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;",
+        )
+        .expect_statements(vec![
+            "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;",
+        ]);
     }
 
     #[test]
