@@ -134,6 +134,16 @@ mod tests {
     }
 
     #[test]
+    fn begin_commit() {
+        Tester::from(
+            "BEGIN;
+SELECT 1;
+COMMIT;",
+        )
+        .expect_statements(vec!["BEGIN;", "SELECT 1;", "COMMIT;"]);
+    }
+
+    #[test]
     fn begin_atomic() {
         Tester::from(
             "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)

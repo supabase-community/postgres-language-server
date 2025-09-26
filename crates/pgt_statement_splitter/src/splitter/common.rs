@@ -58,6 +58,33 @@ pub(crate) fn statement(p: &mut Splitter) {
     p.close_stmt();
 }
 
+pub(crate) fn begin_end(p: &mut Splitter) {
+    p.expect(SyntaxKind::BEGIN_KW);
+
+    let mut depth = 1;
+
+    loop {
+        match p.current() {
+            SyntaxKind::BEGIN_KW => {
+                p.advance();
+                depth += 1;
+            }
+            SyntaxKind::END_KW | SyntaxKind::EOF => {
+                if p.current() == SyntaxKind::END_KW {
+                    p.advance();
+                }
+                depth -= 1;
+                if depth == 0 {
+                    break;
+                }
+            }
+            _ => {
+                p.advance();
+            }
+        }
+    }
+}
+
 pub(crate) fn parenthesis(p: &mut Splitter) {
     p.expect(SyntaxKind::L_PAREN);
 
@@ -123,13 +150,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {
-                if p.look_ahead(true) != SyntaxKind::END_KW {
-                    // only end the statement if the next non-trivia token is not END
-                    // this is to handle cases like BEGIN ATOMIC SELECT ...; END;
-                    p.advance();
-                    break;
-                }
                 p.advance();
+                break;
             }
             SyntaxKind::EOF => {
                 break;
@@ -167,6 +189,14 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
             }
             SyntaxKind::L_PAREN => {
                 parenthesis(p);
+            }
+            SyntaxKind::BEGIN_KW => {
+                if p.look_ahead(true) != SyntaxKind::SEMICOLON {
+                    // BEGIN; should be treated as a statement terminator
+                    begin_end(p);
+                } else {
+                    p.advance();
+                }
             }
             t => match at_statement_start(t, exclude) {
                 Some(SyntaxKind::SELECT_KW) => {
