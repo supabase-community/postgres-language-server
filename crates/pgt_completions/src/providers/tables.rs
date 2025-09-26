@@ -656,4 +656,57 @@ mod tests {
         )
         .await;
     }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn completes_tables_in_policies(pool: PgPool) {
+        let setup = r#"
+            create schema auth;
+
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        assert_complete_results(
+            format!(
+                r#"create policy "my cool pol" on {}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                r#"create policy "my cool pol" on auth.{}"#,
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
 }

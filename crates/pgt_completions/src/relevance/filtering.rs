@@ -124,10 +124,9 @@ impl CompletionFilter<'_> {
                         WrappingClause::CreatePolicy
                         | WrappingClause::AlterPolicy
                         | WrappingClause::DropPolicy => {
-                            ctx.before_cursor_matches_kind(&["keyword_on"])
+                            ctx.matches_ancestor_history(&["object_reference"])
+                                && ctx.before_cursor_matches_kind(&["keyword_on", "."])
                         }
-
-                        WrappingClause::AlterPolicy | WrappingClause::DropPolicy | WrappingClause::CreatePolicy => ctx.
 
                         _ => false,
                     },
