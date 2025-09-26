@@ -134,6 +134,30 @@ mod tests {
     }
 
     #[test]
+    fn begin_atomic() {
+        Tester::from(
+            "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;",
+        )
+        .expect_statements(vec![
+            "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;",
+        ]);
+    }
+
+    #[test]
     fn ts_with_timezone() {
         Tester::from("alter table foo add column bar timestamp with time zone;").expect_statements(
             vec!["alter table foo add column bar timestamp with time zone;"],

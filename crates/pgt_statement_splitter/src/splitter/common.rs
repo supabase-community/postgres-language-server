@@ -188,6 +188,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         // for revoke
                         SyntaxKind::REVOKE_KW,
                         SyntaxKind::COMMA,
+                        // for BEGIN ATOMIC
+                        SyntaxKind::ATOMIC_KW,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
