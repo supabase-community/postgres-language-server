@@ -92,7 +92,7 @@ impl Lexed<'_> {
     }
 
     pub(crate) fn text_range(&self, i: usize) -> TextRange {
-        assert!(i < self.len());
+        assert!(i < self.len() - 1);
         let lo = self.start[i];
         let hi = self.start[i + 1];
         TextRange::new(lo.into(), hi.into())
