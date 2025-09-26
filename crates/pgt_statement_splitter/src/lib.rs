@@ -553,4 +553,12 @@ values ('insert', new.id, now());",
             "select\n            email,\n\n\n        from\n            auth.users;",
         ]);
     }
+
+    #[test]
+    fn does_not_panic_on_eof_expectation() {
+        Tester::from("insert").expect_errors(vec![SplitDiagnostic::new(
+            "Expected INTO_KW".to_string(),
+            TextRange::new(0.into(), 6.into()),
+        )]);
+    }
 }
