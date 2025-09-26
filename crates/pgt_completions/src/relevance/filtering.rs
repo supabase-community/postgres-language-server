@@ -121,6 +121,14 @@ impl CompletionFilter<'_> {
                                 "keyword_table",
                             ]),
 
+                        WrappingClause::CreatePolicy
+                        | WrappingClause::AlterPolicy
+                        | WrappingClause::DropPolicy => {
+                            ctx.before_cursor_matches_kind(&["keyword_on"])
+                        }
+
+                        WrappingClause::AlterPolicy | WrappingClause::DropPolicy | WrappingClause::CreatePolicy => ctx.
+
                         _ => false,
                     },
 
@@ -211,6 +219,12 @@ impl CompletionFilter<'_> {
                                 .as_ref()
                                 .is_none_or(|n| n != &WrappingNode::List)
                                 && ctx.before_cursor_matches_kind(&["keyword_into"])
+                        }
+
+                        WrappingClause::CreatePolicy
+                        | WrappingClause::AlterPolicy
+                        | WrappingClause::DropPolicy => {
+                            ctx.before_cursor_matches_kind(&["keyword_on"])
                         }
 
                         _ => false,
