@@ -35,6 +35,7 @@ where
 group by
   c.oid,
   c.relname,
+  c.relkind,
   c.relrowsecurity,
   c.relforcerowsecurity,
   c.relreplident,

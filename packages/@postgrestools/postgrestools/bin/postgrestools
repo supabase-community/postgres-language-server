@@ -21,9 +21,9 @@ const PLATFORMS = {
 };
 
 function isMusl() {
-  let stderr;
+  let stdout;
   try {
-    stderr = execSync("ldd --version", {
+    stdout = execSync("ldd --version", {
       stdio: [
         "ignore", // stdin
         "pipe", // stdout – glibc systems print here
@@ -31,9 +31,9 @@ function isMusl() {
       ],
     });
   } catch (err) {
-    stderr = err.stderr;
+    stdout = err.stderr;
   }
-  if (stderr.indexOf("musl") > -1) {
+  if (typeof stdout === 'string' && stdout.indexOf("musl") > -1) {
     return true;
   }
   return false;
