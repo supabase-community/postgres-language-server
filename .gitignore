@@ -26,3 +26,8 @@ node_modules/
 .claude-session-id
 
 squawk/
+
+# Auto generated treesitter files
+crates/pgt_treesitter_grammar/src/grammar.json
+crates/pgt_treesitter_grammar/src/node-types.json
+crates/pgt_treesitter_grammar/src/parser.c
