@@ -523,7 +523,7 @@ values ('insert', new.id, now());",
     #[test]
     fn does_not_panic_on_eof_expectation() {
         Tester::from("insert").expect_errors(vec![SplitDiagnostic::new(
-            format!("Expected INTO_KW"),
+            "Expected INTO_KW".to_string(),
             TextRange::new(0.into(), 6.into()),
         )]);
     }
