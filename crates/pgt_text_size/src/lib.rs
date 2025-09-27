@@ -20,8 +20,8 @@
 #![warn(missing_debug_implementations, missing_docs)]
 
 mod range;
-mod range_adjustment_tracker;
 mod size;
+mod text_range_replacement;
 mod traits;
 
 #[cfg(feature = "serde")]
@@ -32,8 +32,8 @@ mod schemars_impls;
 
 pub use crate::{
     range::TextRange,
-    range_adjustment_tracker::{RangeAdjustmentsTracker, RangeAdjustmentsTrackerBuilder},
     size::TextSize,
+    text_range_replacement::{TextRangeReplacement, TextRangeReplacementBuilder},
     traits::TextLen,
 };
 

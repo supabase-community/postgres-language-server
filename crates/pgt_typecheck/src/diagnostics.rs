@@ -2,7 +2,7 @@ use std::io;
 
 use pgt_console::markup;
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
-use pgt_text_size::{RangeAdjustmentsTracker, TextRange, TextSize};
+use pgt_text_size::{TextRange, TextRangeReplacement, TextSize};
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
 
 /// A specialized diagnostic for the typechecker.
@@ -97,7 +97,7 @@ impl Advices for TypecheckAdvices {
 pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
-    range_adjustments: RangeAdjustmentsTracker,
+    txt_replacement: TextRangeReplacement,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
         sqlx::postgres::PgErrorPosition::Original(pos) => Some(pos - 1),
@@ -105,8 +105,7 @@ pub(crate) fn create_type_error(
     });
 
     let range = position.and_then(|pos| {
-        let adjusted =
-            range_adjustments.to_original_position(TextSize::new(pos.try_into().unwrap()));
+        let adjusted = txt_replacement.to_original_position(TextSize::new(pos.try_into().unwrap()));
 
         ts.root_node()
             .named_descendant_for_byte_range(adjusted.into(), adjusted.into())

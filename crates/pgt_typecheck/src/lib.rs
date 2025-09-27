@@ -48,7 +48,7 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let (prepared, range_adjustments) = apply_identifiers(
+    let replacement = apply_identifiers(
         params.identifiers,
         params.schema_cache,
         params.tree,
@@ -68,17 +68,13 @@ pub async fn check_sql(
         conn.execute(&*search_path_query).await?;
     }
 
-    let res = conn.prepare(&prepared).await;
+    let res = conn.prepare(&replacement.text()).await;
 
     match res {
         Ok(_) => Ok(None),
         Err(sqlx::Error::Database(err)) => {
             let pg_err = err.downcast_ref::<PgDatabaseError>();
-            Ok(Some(create_type_error(
-                pg_err,
-                params.tree,
-                range_adjustments,
-            )))
+            Ok(Some(create_type_error(pg_err, params.tree, replacement)))
         }
         Err(err) => Err(err),
     }

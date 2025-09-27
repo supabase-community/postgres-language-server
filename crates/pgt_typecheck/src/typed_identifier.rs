@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use pgt_schema_cache::PostgresType;
-use pgt_text_size::{RangeAdjustmentsTracker, RangeAdjustmentsTrackerBuilder, TextRange};
+use pgt_text_size::{TextRange, TextRangeReplacement, TextRangeReplacementBuilder};
 use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
 /// It is used to replace parameters within the SQL string.
@@ -28,7 +28,7 @@ pub fn apply_identifiers<'a>(
     schema_cache: &'a pgt_schema_cache::SchemaCache,
     cst: &'a tree_sitter::Tree,
     sql: &'a str,
-) -> (String, RangeAdjustmentsTracker) {
+) -> TextRangeReplacement {
     let mut executor = TreeSitterQueriesExecutor::new(cst.root_node(), sql);
 
     executor.add_query_results::<ParameterMatch>();
@@ -51,8 +51,7 @@ pub fn apply_identifiers<'a>(
         })
         .collect();
 
-    let mut result = sql.to_string();
-    let mut range_adjustments = RangeAdjustmentsTrackerBuilder::new();
+    let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
 
     for (range, type_, is_array) in replacements
         .into_iter()
@@ -62,23 +61,19 @@ pub fn apply_identifiers<'a>(
         let default_value = get_formatted_default_value(type_, is_array);
 
         let range_size = range.end - range.start;
-        let as_txt_range: TextRange = range.clone().try_into().unwrap();
 
         // if the default_value is shorter than "range", fill it up with spaces
         let default_value = if default_value.len() < range_size {
             format!("{:<range_size$}", default_value)
-        } else if default_value.len() > range_size {
-            range_adjustments.register_adjustment(as_txt_range, default_value.as_str());
-
-            default_value
         } else {
             default_value
         };
 
-        result.replace_range(range, &default_value);
+        text_range_replacement_builder
+            .replace_range(range.clone().try_into().unwrap(), &default_value);
     }
 
-    (result, range_adjustments.build())
+    text_range_replacement_builder.build()
 }
 
 /// Format the default value based on the type and whether it's an array
@@ -323,10 +318,10 @@ mod tests {
 
         let tree = parser.parse(input, None).unwrap();
 
-        let (sql_out, _) = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
         assert_eq!(
-            sql_out,
+            replacement.text(),
             // the numeric parameters are filled with 0;
             // all values of the enums are longer than `NULL`, so we use `NULL` instead
             "select 0      + 0                           + 0  + 0                   + 0               + NULL     "
@@ -374,10 +369,10 @@ mod tests {
 
         let tree = parser.parse(input, None).unwrap();
 
-        let (sql_out, _) = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
         assert_eq!(
-            sql_out,
+            replacement.text(),
             // two spaces at the end because mail is longer than ''
             r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = ''  ;"#
         );

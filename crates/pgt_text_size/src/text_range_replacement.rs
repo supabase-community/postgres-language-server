@@ -11,6 +11,7 @@ struct AdjustmentMarker {
     #[allow(dead_code)]
     original_range: TextRange,
     adjusted_range: TextRange,
+    replacement_txt: String,
     registered_offset_at_start: TextSize,
 
     #[allow(dead_code)]
@@ -38,6 +39,7 @@ impl AdjustmentMarker {
         AdjustmentMarker {
             original_range,
             adjustment_direction,
+            replacement_txt: replacement_txt.into(),
             range_size_difference: TextSize::new(range_size_difference.try_into().unwrap()),
 
             // will be calculated during `.build()`
@@ -65,20 +67,18 @@ impl AdjustmentMarker {
 /// This builder allows you to register multiple text replacements and their effects on ranges,
 /// then build a tracker that can map positions between the original and adjusted text.
 #[derive(Debug)]
-pub struct RangeAdjustmentsTrackerBuilder {
+pub struct TextRangeReplacementBuilder {
     markers: Vec<AdjustmentMarker>,
+    text: String,
 }
 
-impl Default for RangeAdjustmentsTrackerBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RangeAdjustmentsTrackerBuilder {
+impl TextRangeReplacementBuilder {
     /// Creates a new empty builder for range adjustments tracking.
-    pub fn new() -> Self {
-        Self { markers: vec![] }
+    pub fn new(text: &str) -> Self {
+        Self {
+            markers: vec![],
+            text: text.to_string(),
+        }
     }
 
     /// Registers a text replacement that affects range positions.
@@ -87,7 +87,7 @@ impl RangeAdjustmentsTrackerBuilder {
     ///
     /// * `original_range` - The range in the original text that will be replaced
     /// * `replacement_text` - The text that will replace the content in the original range
-    pub fn register_adjustment(&mut self, original_range: TextRange, replacement_text: &str) {
+    pub fn replace_range(&mut self, original_range: TextRange, replacement_text: &str) {
         if usize::from(original_range.len()) == replacement_text.len() {
             return;
         }
@@ -105,7 +105,7 @@ impl RangeAdjustmentsTrackerBuilder {
     /// # Panics
     ///
     /// Panics if any adjustment involves shortening the text, as this is not yet implemented.
-    pub fn build(mut self) -> RangeAdjustmentsTracker {
+    pub fn build(mut self) -> TextRangeReplacement {
         self.markers.sort_by_key(|r| r.original_range.start());
 
         let mut total_offset: usize = 0;
@@ -132,8 +132,15 @@ impl RangeAdjustmentsTrackerBuilder {
             }
         }
 
-        RangeAdjustmentsTracker {
+        for marker in self.markers.iter().rev() {
+            let std_range: std::ops::Range<usize> = marker.original_range.into();
+            self.text
+                .replace_range(std_range, marker.replacement_txt.as_str());
+        }
+
+        TextRangeReplacement {
             markers: self.markers,
+            text: self.text,
         }
     }
 }
@@ -150,11 +157,17 @@ impl RangeAdjustmentsTrackerBuilder {
 /// `$2` with `auth.users`, this tracker can map positions in the adjusted text
 /// `"select email from auth.users"` back to positions in the original text.
 #[derive(Debug)]
-pub struct RangeAdjustmentsTracker {
+pub struct TextRangeReplacement {
     markers: Vec<AdjustmentMarker>,
+    text: String,
 }
 
-impl RangeAdjustmentsTracker {
+impl TextRangeReplacement {
+    /// Returns the adjusted text.
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
     /// Maps a position in the adjusted text back to its corresponding position in the original text.
     ///
     ///
@@ -208,20 +221,11 @@ impl RangeAdjustmentsTracker {
 mod tests {
     use crate::TextSize;
 
-    use crate::range_adjustment_tracker::RangeAdjustmentsTrackerBuilder;
-
-    fn range_of_substr(full_str: &str, sub_str: &str) -> Option<std::ops::Range<usize>> {
-        for (i, _) in full_str.char_indices() {
-            if &full_str[i..i + sub_str.len()] == sub_str {
-                return Some(i..i + sub_str.len());
-            }
-        }
-        None
-    }
+    use crate::text_range_replacement::TextRangeReplacementBuilder;
 
     #[test]
     fn tracks_adjustments() {
-        let mut sql = "select $1 from $2 where $3 = $4 limit 5;".to_string();
+        let sql = "select $1 from $2 where $3 = $4 limit 5;";
 
         let range_1: std::ops::Range<usize> = 7..9;
         let range_2: std::ops::Range<usize> = 15..17;
@@ -229,39 +233,30 @@ mod tests {
         let range_4: std::ops::Range<usize> = 29..31;
         let og_end = sql.len();
 
-        let mut adjustment_tracker_builder = RangeAdjustmentsTrackerBuilder::new();
+        let mut replacement_builder = TextRangeReplacementBuilder::new(sql);
 
         let replacement_4 = "'00000000-0000-0000-0000-000000000000'";
-        adjustment_tracker_builder
-            .register_adjustment(range_4.clone().try_into().unwrap(), replacement_4);
-        sql.replace_range(range_4.clone(), replacement_4);
-
         let replacement_3 = "id";
-        adjustment_tracker_builder
-            .register_adjustment(range_3.clone().try_into().unwrap(), replacement_3);
-        sql.replace_range(range_3.clone(), replacement_3);
-
         let replacement_2 = "auth.users";
-        adjustment_tracker_builder
-            .register_adjustment(range_2.clone().try_into().unwrap(), replacement_2);
-        sql.replace_range(range_2.clone(), replacement_2);
-
         let replacement_1 = "email";
-        adjustment_tracker_builder
-            .register_adjustment(range_1.clone().try_into().unwrap(), replacement_1);
-        sql.replace_range(range_1.clone(), replacement_1);
+
+        // start in the middle – the tracker builder can deal with unordered registers
+        replacement_builder.replace_range(range_2.clone().try_into().unwrap(), replacement_2);
+        replacement_builder.replace_range(range_4.clone().try_into().unwrap(), replacement_4);
+        replacement_builder.replace_range(range_1.clone().try_into().unwrap(), replacement_1);
+        replacement_builder.replace_range(range_3.clone().try_into().unwrap(), replacement_3);
+
+        let text_replacement = replacement_builder.build();
 
         assert_eq!(
-            sql.as_str(),
+            text_replacement.text(),
             "select email from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;"
         );
 
-        let adjustment_tracker = adjustment_tracker_builder.build();
-
-        let repl_range_1 = range_of_substr(sql.as_str(), replacement_1).unwrap();
-        let repl_range_2 = range_of_substr(sql.as_str(), replacement_2).unwrap();
-        let repl_range_3 = range_of_substr(sql.as_str(), replacement_3).unwrap();
-        let repl_range_4 = range_of_substr(sql.as_str(), replacement_4).unwrap();
+        let repl_range_1 = 7..12;
+        let repl_range_2 = 18..28;
+        let repl_range_3 = 35..37;
+        let repl_range_4 = 40..78;
 
         // |select |email from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;
         // maps to
@@ -269,7 +264,7 @@ mod tests {
         for i in 0..repl_range_1.clone().start {
             let between_og_0_1 = 0..range_1.start;
             let adjusted =
-                adjustment_tracker.to_original_position(TextSize::new(i.try_into().unwrap()));
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
             assert!(between_og_0_1.contains(&usize::from(adjusted)));
         }
 
@@ -278,7 +273,7 @@ mod tests {
         // select |$1| from $2 where $3 = $4 limit 5;
         for i in repl_range_1.clone() {
             let pos = TextSize::new(i.try_into().unwrap());
-            let og_pos = adjustment_tracker.to_original_position(pos);
+            let og_pos = text_replacement.to_original_position(pos);
             assert!(range_1.contains(&usize::from(og_pos)));
         }
 
@@ -288,7 +283,7 @@ mod tests {
         for i in repl_range_1.end..repl_range_2.clone().start {
             let between_og_1_2 = range_1.end..range_2.start;
             let adjusted =
-                adjustment_tracker.to_original_position(TextSize::new(i.try_into().unwrap()));
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
             assert!(between_og_1_2.contains(&usize::from(adjusted)));
         }
 
@@ -297,7 +292,7 @@ mod tests {
         // select $1 from |$2| where $3 = $4 limit 5;
         for i in repl_range_2.clone() {
             let pos = TextSize::new(i.try_into().unwrap());
-            let og_pos = adjustment_tracker.to_original_position(pos);
+            let og_pos = text_replacement.to_original_position(pos);
             assert!(range_2.contains(&usize::from(og_pos)));
         }
 
@@ -307,7 +302,7 @@ mod tests {
         for i in repl_range_2.end..repl_range_3.clone().start {
             let between_og_2_3 = range_2.end..range_3.start;
             let adjusted =
-                adjustment_tracker.to_original_position(TextSize::new(i.try_into().unwrap()));
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
             assert!(between_og_2_3.contains(&usize::from(adjusted)));
         }
 
@@ -318,7 +313,7 @@ mod tests {
         // NOTE: this isn't even hanlded by the tracker, since `id` has the same length as `$3`
         for i in repl_range_3.clone() {
             let pos = TextSize::new(i.try_into().unwrap());
-            let og_pos = adjustment_tracker.to_original_position(pos);
+            let og_pos = text_replacement.to_original_position(pos);
             assert!(range_3.contains(&usize::from(og_pos)));
         }
 
@@ -328,7 +323,7 @@ mod tests {
         for i in repl_range_3.end..repl_range_4.clone().start {
             let between_og_3_4 = range_3.end..range_4.start;
             let adjusted =
-                adjustment_tracker.to_original_position(TextSize::new(i.try_into().unwrap()));
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
             assert!(between_og_3_4.contains(&usize::from(adjusted)));
         }
 
@@ -337,7 +332,7 @@ mod tests {
         // select $1 from $2 where $3 = |$4| limit 5;
         for i in repl_range_4.clone() {
             let pos = TextSize::new(i.try_into().unwrap());
-            let og_pos = adjustment_tracker.to_original_position(pos);
+            let og_pos = text_replacement.to_original_position(pos);
             assert!(range_4.contains(&usize::from(og_pos)));
         }
 
@@ -347,7 +342,7 @@ mod tests {
         for i in repl_range_4.end..sql.len() {
             let between_og_4_end = range_4.end..og_end;
             let adjusted =
-                adjustment_tracker.to_original_position(TextSize::new(i.try_into().unwrap()));
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
             assert!(between_og_4_end.contains(&usize::from(adjusted)));
         }
     }
