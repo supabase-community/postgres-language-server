@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use pgt_schema_cache::PostgresType;
 use pgt_text_size::{TextRangeReplacement, TextRangeReplacementBuilder};
 use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
@@ -53,11 +52,7 @@ pub fn apply_identifiers<'a>(
 
     let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
 
-    for (range, type_, is_array) in replacements
-        .into_iter()
-        .sorted_by_key(|tpl| tpl.0.start)
-        .rev()
-    {
+    for (range, type_, is_array) in replacements {
         let default_value = get_formatted_default_value(type_, is_array);
 
         let range_size = range.end - range.start;
