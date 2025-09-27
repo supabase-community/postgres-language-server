@@ -62,7 +62,7 @@ impl AdjustmentMarker {
     }
 }
 
-/// Builder for creating a `RangeAdjustmentsTracker` that tracks text range adjustments.
+/// Builder for creating a `TextRangeReplacement` that tracks text range adjustments.
 ///
 /// This builder allows you to register multiple text replacements and their effects on ranges,
 /// then build a tracker that can map positions between the original and adjusted text.
