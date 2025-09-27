@@ -89,6 +89,10 @@ impl TextRangeReplacementBuilder {
     /// * `replacement_text` - The text that will replace the content in the original range
     pub fn replace_range(&mut self, original_range: TextRange, replacement_text: &str) {
         if usize::from(original_range.len()) == replacement_text.len() {
+            // if the replacement text is the same length as the to-replace range,
+            // we can just immediately apply the replacement.
+            let range: std::ops::Range<usize> = original_range.try_into().unwrap();
+            self.text.replace_range(range, replacement_text);
             return;
         }
 
