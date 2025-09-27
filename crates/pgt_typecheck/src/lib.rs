@@ -48,7 +48,7 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let (prepared, positions_valid) = apply_identifiers(
+    let (prepared, range_adjustments) = apply_identifiers(
         params.identifiers,
         params.schema_cache,
         params.tree,
@@ -77,7 +77,7 @@ pub async fn check_sql(
             Ok(Some(create_type_error(
                 pg_err,
                 params.tree,
-                positions_valid,
+                range_adjustments,
             )))
         }
         Err(err) => Err(err),

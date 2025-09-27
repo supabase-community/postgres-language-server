@@ -20,6 +20,7 @@
 #![warn(missing_debug_implementations, missing_docs)]
 
 mod range;
+mod range_adjustment_tracker;
 mod size;
 mod traits;
 
@@ -29,7 +30,12 @@ mod serde_impls;
 #[cfg(feature = "schema")]
 mod schemars_impls;
 
-pub use crate::{range::TextRange, size::TextSize, traits::TextLen};
+pub use crate::{
+    range::TextRange,
+    range_adjustment_tracker::{RangeAdjustmentsTracker, RangeAdjustmentsTrackerBuilder},
+    size::TextSize,
+    traits::TextLen,
+};
 
 #[cfg(target_pointer_width = "16")]
 compile_error!("text-size assumes usize >= u32 and does not work on 16-bit targets");

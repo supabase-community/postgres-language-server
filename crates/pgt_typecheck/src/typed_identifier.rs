@@ -1,16 +1,17 @@
+use itertools::Itertools;
 use pgt_schema_cache::PostgresType;
+use pgt_text_size::{RangeAdjustmentsTracker, RangeAdjustmentsTrackerBuilder, TextRange};
 use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
-/// A typed identifier is a parameter that has a type associated with it.
 /// It is used to replace parameters within the SQL string.
 #[derive(Debug)]
 pub struct TypedIdentifier {
     /// The path of the parameter, usually the name of the function.
     /// This is because `fn_name.arg_name` is a valid reference within a SQL function.
     pub path: String,
-    /// The name of the argument
+    /// The name of the parameter
     pub name: Option<String>,
-    /// The type of the argument with schema and name
+    /// The type of the parameter with schema and name
     pub type_: IdentifierType,
 }
 
@@ -27,7 +28,7 @@ pub fn apply_identifiers<'a>(
     schema_cache: &'a pgt_schema_cache::SchemaCache,
     cst: &'a tree_sitter::Tree,
     sql: &'a str,
-) -> (String, bool) {
+) -> (String, RangeAdjustmentsTracker) {
     let mut executor = TreeSitterQueriesExecutor::new(cst.root_node(), sql);
 
     executor.add_query_results::<ParameterMatch>();
@@ -46,48 +47,46 @@ pub fn apply_identifiers<'a>(
             // Resolve the type based on whether we're accessing a field of a composite type
             let type_ = resolve_type(identifier, position, &parts, schema_cache)?;
 
+            tracing::warn!("resolved type: {:#?}", type_);
+
             Some((m.get_byte_range(), type_, identifier.type_.is_array))
         })
         .collect();
 
     let mut result = sql.to_string();
+    let mut range_adjustments = RangeAdjustmentsTrackerBuilder::new();
 
-    let mut valid_positions = true;
-
-    // Apply replacements in reverse order to maintain correct byte offsets
-    for (range, type_, is_array) in replacements.into_iter().rev() {
+    for (range, type_, is_array) in replacements
+        .into_iter()
+        .sorted_by_key(|tpl| tpl.0.start)
+        .rev()
+    {
         let default_value = get_formatted_default_value(type_, is_array);
 
+        let range_size = range.end - range.start;
+        let as_txt_range: TextRange = range.clone().try_into().unwrap();
+
         // if the default_value is shorter than "range", fill it up with spaces
-        let default_value = if default_value.len() < range.end - range.start {
-            format!("{:<width$}", default_value, width = range.end - range.start)
+        let default_value = if default_value.len() < range_size {
+            format!("{:<range_size$}", default_value)
+        } else if default_value.len() > range_size {
+            range_adjustments.register_adjustment(as_txt_range, default_value.as_str());
+
+            default_value
         } else {
             default_value
         };
 
-        // check if we can maintain a valid position
-        if default_value.len() > range.end - range.start {
-            valid_positions = false;
-        }
-
         result.replace_range(range, &default_value);
     }
 
-    (result, valid_positions)
+    (result, range_adjustments.build())
 }
 
 /// Format the default value based on the type and whether it's an array
 fn get_formatted_default_value(pg_type: &PostgresType, is_array: bool) -> String {
     // Get the base default value for this type
     let default = resolve_default_value(pg_type);
-
-    let default = if default.len() > "NULL".len() {
-        // If the default value is longer than "NULL", use "NULL" instead
-        "NULL".to_string()
-    } else {
-        // Otherwise, use the default value
-        default
-    };
 
     // For arrays, wrap the default in array syntax
     if is_array {
@@ -231,6 +230,7 @@ fn resolve_type<'a>(
 
 #[cfg(test)]
 mod tests {
+    use pgt_schema_cache::SchemaCache;
     use sqlx::{Executor, PgPool};
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
@@ -325,15 +325,63 @@ mod tests {
 
         let tree = parser.parse(input, None).unwrap();
 
-        let (sql_out, valid_pos) =
-            super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+        let (sql_out, _) = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
-        assert!(valid_pos);
         assert_eq!(
             sql_out,
             // the numeric parameters are filled with 0;
             // all values of the enums are longer than `NULL`, so we use `NULL` instead
             "select 0      + 0                           + 0  + 0                   + 0               + NULL     "
+        );
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn test_longer_identifiers(pool: PgPool) {
+        // create or replace function retrieve(uid uuid, mail text)
+        // returns uuid
+        // as $$
+        //   select id from auth.users where email_change_confirm_status = uid and email = mail;
+        // $$
+        // language sql immutable;
+
+        let input = r#"select id from auth.users where email_change_confirm_status = uid and email = mail;"#;
+
+        let identifiers = vec![
+            super::TypedIdentifier {
+                path: "retrieve".to_string(),
+                name: Some("uid".to_string()),
+                type_: super::IdentifierType {
+                    schema: None,
+                    name: "uuid".to_string(),
+                    is_array: false,
+                },
+            },
+            super::TypedIdentifier {
+                path: "retrieve".to_string(),
+                name: Some("mail".to_string()),
+                type_: super::IdentifierType {
+                    schema: None,
+                    name: "text".to_string(),
+                    is_array: false,
+                },
+            },
+        ];
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .expect("Error loading sql language");
+
+        let schema_cache = SchemaCache::load(&pool).await.unwrap();
+
+        let tree = parser.parse(input, None).unwrap();
+
+        let (sql_out, _) = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
+
+        assert_eq!(
+            sql_out,
+            // two spaces at the end because mail is longer than ''
+            r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = ''  ;"#
         );
     }
 }
