@@ -463,7 +463,7 @@ impl Workspace for WorkspaceServer {
                 // Combined async context for both typecheck and plpgsql_check
                 let async_results = run_async(async move {
                     stream::iter(input)
-                        .map(|(id, range, ast, cst, sign)| {
+                        .map(|(id, range, ast, cst, fn_sig)| {
                             let pool = pool.clone();
                             let path = path_clone.clone();
                             let schema_cache = Arc::clone(&schema_cache);
@@ -484,7 +484,7 @@ impl Workspace for WorkspaceServer {
                                                 tree: &cst,
                                                 schema_cache: schema_cache.as_ref(),
                                                 search_path_patterns,
-                                                identifiers: sign
+                                                identifiers: fn_sig
                                                     .map(|s| {
                                                         s.args
                                                             .iter()

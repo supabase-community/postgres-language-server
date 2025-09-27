@@ -2,7 +2,7 @@ use std::io;
 
 use pgt_console::markup;
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
-use pgt_text_size::TextRange;
+use pgt_text_size::{TextRange, TextRangeReplacement, TextSize};
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
 
 /// A specialized diagnostic for the typechecker.
@@ -97,7 +97,7 @@ impl Advices for TypecheckAdvices {
 pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
-    positions_valid: bool,
+    txt_replacement: TextRangeReplacement,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
         sqlx::postgres::PgErrorPosition::Original(pos) => Some(pos - 1),
@@ -105,18 +105,16 @@ pub(crate) fn create_type_error(
     });
 
     let range = position.and_then(|pos| {
-        if positions_valid {
-            ts.root_node()
-                .named_descendant_for_byte_range(pos, pos)
-                .map(|node| {
-                    TextRange::new(
-                        node.start_byte().try_into().unwrap(),
-                        node.end_byte().try_into().unwrap(),
-                    )
-                })
-        } else {
-            None
-        }
+        let adjusted = txt_replacement.to_original_position(TextSize::new(pos.try_into().unwrap()));
+
+        ts.root_node()
+            .named_descendant_for_byte_range(adjusted.into(), adjusted.into())
+            .map(|node| {
+                TextRange::new(
+                    node.start_byte().try_into().unwrap(),
+                    node.end_byte().try_into().unwrap(),
+                )
+            })
     });
 
     let severity = match pg_err.severity() {
