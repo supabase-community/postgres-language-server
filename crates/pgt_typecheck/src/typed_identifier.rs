@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use pgt_schema_cache::PostgresType;
-use pgt_text_size::{TextRange, TextRangeReplacement, TextRangeReplacementBuilder};
+use pgt_text_size::{TextRangeReplacement, TextRangeReplacementBuilder};
 use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
 /// It is used to replace parameters within the SQL string.
@@ -63,11 +63,7 @@ pub fn apply_identifiers<'a>(
         let range_size = range.end - range.start;
 
         // if the default_value is shorter than "range", fill it up with spaces
-        let default_value = if default_value.len() < range_size {
-            format!("{:<range_size$}", default_value)
-        } else {
-            default_value
-        };
+        let default_value = format!("{:<range_size$}", default_value);
 
         text_range_replacement_builder
             .replace_range(range.clone().try_into().unwrap(), &default_value);
@@ -323,8 +319,7 @@ mod tests {
         assert_eq!(
             replacement.text(),
             // the numeric parameters are filled with 0;
-            // all values of the enums are longer than `NULL`, so we use `NULL` instead
-            "select 0      + 0                           + 0  + 0                   + 0               + NULL     "
+            "select 0      + 0                           + 0  + 0                   + 0               + 'critical'"
         );
     }
 
