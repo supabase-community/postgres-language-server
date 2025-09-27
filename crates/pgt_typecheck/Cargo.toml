@@ -25,7 +25,6 @@ sqlx.workspace                   = true
 tokio.workspace                  = true
 tree-sitter.workspace            = true
 uuid                             = { version = "1.18.1", features = ["v4"] }
-tracing.workspace                = true
 
 [dev-dependencies]
 insta.workspace          = true

@@ -3213,7 +3213,6 @@ dependencies = [
  "pgt_treesitter_grammar",
  "sqlx",
  "tokio",
- "tracing",
  "tree-sitter",
  "uuid",
 ]

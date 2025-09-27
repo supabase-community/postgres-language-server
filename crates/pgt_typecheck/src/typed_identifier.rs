@@ -47,8 +47,6 @@ pub fn apply_identifiers<'a>(
             // Resolve the type based on whether we're accessing a field of a composite type
             let type_ = resolve_type(identifier, position, &parts, schema_cache)?;
 
-            tracing::warn!("resolved type: {:#?}", type_);
-
             Some((m.get_byte_range(), type_, identifier.type_.is_array))
         })
         .collect();

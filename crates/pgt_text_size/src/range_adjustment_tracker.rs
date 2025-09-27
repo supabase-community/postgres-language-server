@@ -69,6 +69,12 @@ pub struct RangeAdjustmentsTrackerBuilder {
     markers: Vec<AdjustmentMarker>,
 }
 
+impl Default for RangeAdjustmentsTrackerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RangeAdjustmentsTrackerBuilder {
     /// Creates a new empty builder for range adjustments tracking.
     pub fn new() -> Self {
