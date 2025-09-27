@@ -91,7 +91,7 @@ impl TextRangeReplacementBuilder {
         if usize::from(original_range.len()) == replacement_text.len() {
             // if the replacement text is the same length as the to-replace range,
             // we can just immediately apply the replacement.
-            let range: std::ops::Range<usize> = original_range.try_into().unwrap();
+            let range: std::ops::Range<usize> = original_range.into();
             self.text.replace_range(range, replacement_text);
             return;
         }

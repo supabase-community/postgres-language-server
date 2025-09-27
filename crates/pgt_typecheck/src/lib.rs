@@ -68,7 +68,7 @@ pub async fn check_sql(
         conn.execute(&*search_path_query).await?;
     }
 
-    let res = conn.prepare(&replacement.text()).await;
+    let res = conn.prepare(replacement.text()).await;
 
     match res {
         Ok(_) => Ok(None),
