@@ -130,7 +130,7 @@ impl TextRangeReplacementBuilder {
                 }
                 AdjustmentDirection::Shortened => {
                     unimplemented!(
-                        "So far, we've only ever lenghtened TextRanges. Consider filling up your range with spaces"
+                        "So far, we've only ever lengthened TextRanges. Consider filling up your range with spaces"
                     )
                 }
             }
