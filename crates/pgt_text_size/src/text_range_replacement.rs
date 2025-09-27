@@ -231,10 +231,10 @@ mod tests {
     fn tracks_adjustments() {
         let sql = "select $1 from $2 where $3 = $4 limit 5;";
 
-        let range_1: std::ops::Range<usize> = 7..9;
-        let range_2: std::ops::Range<usize> = 15..17;
-        let range_3: std::ops::Range<usize> = 24..26;
-        let range_4: std::ops::Range<usize> = 29..31;
+        let range_1: std::ops::Range<usize> = 7..9; // $1
+        let range_2: std::ops::Range<usize> = 15..17; // $2
+        let range_3: std::ops::Range<usize> = 24..26; // $3
+        let range_4: std::ops::Range<usize> = 29..31; // $4
         let og_end = sql.len();
 
         let mut replacement_builder = TextRangeReplacementBuilder::new(sql);
@@ -244,7 +244,7 @@ mod tests {
         let replacement_2 = "auth.users";
         let replacement_1 = "email";
 
-        // start in the middle – the tracker builder can deal with unordered registers
+        // start in the middle – the builder can deal with unordered replacements
         replacement_builder.replace_range(range_2.clone().try_into().unwrap(), replacement_2);
         replacement_builder.replace_range(range_4.clone().try_into().unwrap(), replacement_4);
         replacement_builder.replace_range(range_1.clone().try_into().unwrap(), replacement_1);
@@ -257,10 +257,10 @@ mod tests {
             "select email from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;"
         );
 
-        let repl_range_1 = 7..12;
-        let repl_range_2 = 18..28;
-        let repl_range_3 = 35..37;
-        let repl_range_4 = 40..78;
+        let repl_range_1 = 7..12; // email
+        let repl_range_2 = 18..28; // auth.users
+        let repl_range_3 = 35..37; // id
+        let repl_range_4 = 40..78; // '00000000-0000-0000-0000-000000000000'
 
         // |select |email from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;
         // maps to
