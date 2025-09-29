@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select\n  c.oid :: int8 as \"id!\",\n  nc.nspname as schema,\n  c.relname as name,\n  c.relkind as table_kind,\n  c.relrowsecurity as rls_enabled,\n  c.relforcerowsecurity as rls_forced,\n  case\n    when c.relreplident = 'd' then 'DEFAULT'\n    when c.relreplident = 'i' then 'INDEX'\n    when c.relreplident = 'f' then 'FULL'\n    else 'NOTHING'\n  end as \"replica_identity!\",\n  pg_total_relation_size(format('%I.%I', nc.nspname, c.relname)) :: int8 as \"bytes!\",\n  pg_size_pretty(\n    pg_total_relation_size(format('%I.%I', nc.nspname, c.relname))\n  ) as \"size!\",\n  pg_stat_get_live_tuples(c.oid) as \"live_rows_estimate!\",\n  pg_stat_get_dead_tuples(c.oid) as \"dead_rows_estimate!\",\n  obj_description(c.oid) as comment\nfrom\n  pg_namespace nc\n  join pg_class c on nc.oid = c.relnamespace\nwhere\n  c.relkind in ('r', 'p', 'v', 'm')\n  and not pg_is_other_temp_schema(nc.oid)\n  and (\n    pg_has_role(c.relowner, 'USAGE')\n    or has_table_privilege(\n      c.oid,\n      'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'\n    )\n    or has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')\n  )\ngroup by\n  c.oid,\n  c.relname,\n  c.relkind,\n  c.relrowsecurity,\n  c.relforcerowsecurity,\n  c.relreplident,\n  nc.nspname;\n",
+  "query": "select\n  c.oid :: int8 as \"id!\",\n  nc.nspname as schema,\n  c.relname as name,\n  c.relkind as table_kind,\n  c.relrowsecurity as rls_enabled,\n  c.relforcerowsecurity as rls_forced,\n  case\n    when c.relreplident = 'd' then 'DEFAULT'\n    when c.relreplident = 'i' then 'INDEX'\n    when c.relreplident = 'f' then 'FULL'\n    else 'NOTHING'\n  end as \"replica_identity!\",\n  relation_size:: int8 as \"bytes!\",\n  pg_size_pretty(relation_size) as \"size!\",\n  pg_stat_get_live_tuples(c.oid) as \"live_rows_estimate!\",\n  pg_stat_get_dead_tuples(c.oid) as \"dead_rows_estimate!\",\n  obj_description(c.oid) as comment\nfrom\n  pg_namespace nc\n  join pg_class c on nc.oid = c.relnamespace\n  cross join lateral pg_total_relation_size(c.oid) relation_size\nwhere\n  c.relkind in ('r', 'p', 'v', 'm')\n  and not pg_is_other_temp_schema(nc.oid)\n  and (\n    pg_has_role(c.relowner, 'USAGE')\n    or has_table_privilege(\n      c.oid,\n      'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'\n    )\n    or has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')\n  )\n",
   "describe": {
     "columns": [
       {
@@ -82,5 +82,5 @@
       null
     ]
   },
-  "hash": "aced4382cedbfc359bb1c1ab71cf2472fa8afc0b24bf02ee1bfdfdbf111acfc8"
+  "hash": "2b27b190ecaed2d961577fcaaf5875a1842ca09da63a7fe68996409e21e7f779"
 }
