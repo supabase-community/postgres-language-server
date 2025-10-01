@@ -11,7 +11,7 @@ fn command_name() -> String {
     current_exe()
         .ok()
         .and_then(|path| Some(path.file_name()?.to_str()?.to_string()))
-        .unwrap_or_else(|| String::from("postgrestools"))
+        .unwrap_or_else(|| String::from("postgres-language-server"))
 }
 
 /// A diagnostic that is emitted when running Postgres Tools via CLI.
@@ -47,7 +47,7 @@ pub enum CliDiagnostic {
     IoError(IoDiagnostic),
     /// The daemon is not running
     ServerNotRunning(ServerNotRunning),
-    /// The end configuration (`postgrestools.jsonc` + other options) is incompatible with the command
+    /// The end configuration (`postgres-language-server.jsonc` + other options) is incompatible with the command
     IncompatibleEndConfiguration(IncompatibleEndConfiguration),
     /// No files processed during the file system traversal
     NoFilesWereProcessed(NoFilesWereProcessed),
@@ -390,7 +390,7 @@ impl CliDiagnostic {
         Self::ServerNotRunning(ServerNotRunning)
     }
 
-    /// Emitted when the end configuration (`postgrestools.jsonc` file + CLI arguments + LSP configuration)
+    /// Emitted when the end configuration (`postgres-language-server.jsonc` file + CLI arguments + LSP configuration)
     /// results in a combination of options that doesn't allow to run the command correctly.
     ///
     /// A reason needs to be provided

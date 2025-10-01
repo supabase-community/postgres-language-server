@@ -164,7 +164,7 @@ impl WorkspaceServer {
     fn is_ignored(&self, path: &Path) -> bool {
         let file_name = path.file_name().and_then(|s| s.to_str());
         // Never ignore Postgres Tools's config file regardless `include`/`ignore`
-        (file_name != Some(ConfigName::pgt_jsonc())) &&
+        file_name != Some(ConfigName::pgt_jsonc()) && file_name != Some(ConfigName::pgls_jsonc()) &&
             // Apply top-level `include`/`ignore
             (self.is_ignored_by_top_level_config(path) || self.is_ignored_by_migration_config(path))
     }

@@ -34,7 +34,7 @@ pub(crate) struct JunitReporterVisitor<'a>(pub(crate) Report, pub(crate) &'a mut
 
 impl<'a> JunitReporterVisitor<'a> {
     pub(crate) fn new(console: &'a mut dyn Console) -> Self {
-        let report = Report::new("PostgresTools");
+        let report = Report::new("Postgres Language Server");
         Self(report, console)
     }
 }

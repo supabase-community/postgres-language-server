@@ -4,7 +4,7 @@ Th Postgres Language Server has first-class [LSP](https://microsoft.github.io/la
 
 ## VSCode
 
-The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgrestools-vscode).
+The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgres-language-server). It's published from [this repo](https://github.com/supabase-community/postgres-language-server-vscode).
 
 ## Neovim
 
@@ -40,13 +40,13 @@ Using the binary via CLI is very efficient, although you will not be able to pro
 If order to do so, you first need to start a daemon process with the start command:
 
 ```shell
-postgrestools start
+postgres-language-server start
 ```
 
 Then, every command needs to add the `--use-server` options, e.g.:
 
 ```shell
-postgrestools check --use-server --stdin-file-path=dummy.sql
+postgres-language-server check --use-server --stdin-file-path=dummy.sql
 ```
 
 

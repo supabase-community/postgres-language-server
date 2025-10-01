@@ -19,14 +19,21 @@ mod os;
 pub struct ConfigName;
 
 impl ConfigName {
-    const PGT_JSONC: [&'static str; 1] = ["postgrestools.jsonc"];
+    const CONFIG_FILES: [&'static str; 2] = [
+        "postgres-language-server.jsonc",
+        "postgres-language-server.jsonc",
+    ];
 
     pub const fn pgt_jsonc() -> &'static str {
-        Self::PGT_JSONC[0]
+        Self::CONFIG_FILES[1]
     }
 
-    pub const fn file_names() -> [&'static str; 1] {
-        Self::PGT_JSONC
+    pub const fn pgls_jsonc() -> &'static str {
+        Self::CONFIG_FILES[0]
+    }
+
+    pub const fn file_names() -> [&'static str; 2] {
+        Self::CONFIG_FILES
     }
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "@postgrestools/monorepo",
+  "name": "@postgres-language-server/monorepo",
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
@@ -11,7 +11,9 @@
   },
   "workspaces": [
     "packages/@postgrestools/postgrestools",
-    "packages/@postgrestools/backend-jsonrpc"
+    "packages/@postgrestools/backend-jsonrpc",
+    "packages/@postgres-language-server/postgrestools",
+    "packages/@postgres-language-server/backend-jsonrpc"
   ],
   "keywords": [],
   "author": "Supabase Community",

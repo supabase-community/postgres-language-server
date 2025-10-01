@@ -1,4 +1,4 @@
-//! This module contains the configuration of `postgrestools.jsonc`
+//! This module contains the configuration of `postgres-language-server.jsonc`
 //!
 //! The configuration is divided by "tool", and then it's possible to further customise it
 //! by language. The language might further options divided by tool.
@@ -44,7 +44,7 @@ pub use typecheck::{
 };
 use vcs::VcsClientKind;
 
-pub const VERSION: &str = match option_env!("PGT_VERSION") {
+pub const VERSION: &str = match option_env!("PGLS_VERSION") {
     Some(version) => version,
     None => "0.0.0",
 };

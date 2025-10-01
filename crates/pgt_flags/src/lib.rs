@@ -8,32 +8,47 @@ use std::sync::{LazyLock, OnceLock};
 
 /// Returns `true` if this is an unstable build of Postgres Tools
 pub fn is_unstable() -> bool {
-    PGT_VERSION.deref().is_none()
+    PGLS_VERSION.deref().is_none()
 }
 
 /// The internal version of Postgres Tools. This is usually supplied during the CI build
-pub static PGT_VERSION: LazyLock<Option<&str>> = LazyLock::new(|| option_env!("PGT_VERSION"));
+pub static PGLS_VERSION: LazyLock<Option<&str>> = LazyLock::new(|| option_env!("PGLS_VERSION"));
 
-pub struct PgTEnv {
-    pub pgt_log_path: PgTEnvVariable,
-    pub pgt_log_prefix: PgTEnvVariable,
-    pub pgt_config_path: PgTEnvVariable,
+pub struct PgLSEnv {
+    pub pgls_log_path: PgLSEnvVariable,
+    pub pgt_log_path: PgLSEnvVariable,
+    pub pgls_log_prefix: PgLSEnvVariable,
+    pub pgt_log_prefix: PgLSEnvVariable,
+    pub pgls_config_path: PgLSEnvVariable,
+    pub pgt_config_path: PgLSEnvVariable,
 }
 
-pub static PGT_ENV: OnceLock<PgTEnv> = OnceLock::new();
+pub static PGLS_ENV: OnceLock<PgLSEnv> = OnceLock::new();
 
-impl PgTEnv {
+impl PgLSEnv {
     fn new() -> Self {
         Self {
-            pgt_log_path: PgTEnvVariable::new(
+            pgls_log_path: PgLSEnvVariable::new(
+                "PGLS_LOG_PATH",
+                "The directory where the Daemon logs will be saved.",
+            ),
+            pgt_log_path: PgLSEnvVariable::new(
                 "PGT_LOG_PATH",
                 "The directory where the Daemon logs will be saved.",
             ),
-            pgt_log_prefix: PgTEnvVariable::new(
+            pgls_log_prefix: PgLSEnvVariable::new(
+                "PGLS_LOG_PREFIX_NAME",
+                "A prefix that's added to the name of the log. Default: `server.log.`",
+            ),
+            pgt_log_prefix: PgLSEnvVariable::new(
                 "PGT_LOG_PREFIX_NAME",
                 "A prefix that's added to the name of the log. Default: `server.log.`",
             ),
-            pgt_config_path: PgTEnvVariable::new(
+            pgls_config_path: PgLSEnvVariable::new(
+                "PGLS_CONFIG_PATH",
+                "A path to the configuration file",
+            ),
+            pgt_config_path: PgLSEnvVariable::new(
                 "PGT_CONFIG_PATH",
                 "A path to the configuration file",
             ),
@@ -41,7 +56,7 @@ impl PgTEnv {
     }
 }
 
-pub struct PgTEnvVariable {
+pub struct PgLSEnvVariable {
     /// The name of the environment variable
     name: &'static str,
     /// The description of the variable.
@@ -49,7 +64,7 @@ pub struct PgTEnvVariable {
     description: &'static str,
 }
 
-impl PgTEnvVariable {
+impl PgLSEnvVariable {
     fn new(name: &'static str, description: &'static str) -> Self {
         Self { name, description }
     }
@@ -70,11 +85,11 @@ impl PgTEnvVariable {
     }
 }
 
-pub fn pgt_env() -> &'static PgTEnv {
-    PGT_ENV.get_or_init(PgTEnv::new)
+pub fn pgls_env() -> &'static PgLSEnv {
+    PGLS_ENV.get_or_init(PgLSEnv::new)
 }
 
-impl Display for PgTEnv {
+impl Display for PgLSEnv {
     fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
         match self.pgt_log_path.value() {
             None => {
@@ -84,12 +99,30 @@ impl Display for PgTEnv {
                 KeyValuePair(self.pgt_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
             }
         };
+        match self.pgls_log_path.value() {
+            None => {
+                KeyValuePair(self.pgls_log_path.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+            }
+            Some(value) => {
+                KeyValuePair(self.pgls_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
+            }
+        };
+
         match self.pgt_log_prefix.value() {
             None => {
                 KeyValuePair(self.pgt_log_prefix.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
             }
             Some(value) => {
                 KeyValuePair(self.pgt_log_prefix.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
+            }
+        };
+        match self.pgls_log_prefix.value() {
+            None => {
+                KeyValuePair(self.pgls_log_prefix.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+            }
+            Some(value) => {
+                KeyValuePair(self.pgls_log_prefix.name, markup! {{DebugDisplay(value)}})
+                    .fmt(fmt)?;
             }
         };
 
@@ -99,6 +132,16 @@ impl Display for PgTEnv {
             }
             Some(value) => {
                 KeyValuePair(self.pgt_config_path.name, markup! {{DebugDisplay(value)}})
+                    .fmt(fmt)?;
+            }
+        };
+        match self.pgls_config_path.value() {
+            None => {
+                KeyValuePair(self.pgls_config_path.name, markup! { <Dim>"unset"</Dim> })
+                    .fmt(fmt)?;
+            }
+            Some(value) => {
+                KeyValuePair(self.pgls_config_path.name, markup! {{DebugDisplay(value)}})
                     .fmt(fmt)?;
             }
         };

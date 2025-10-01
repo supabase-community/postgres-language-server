@@ -15,7 +15,7 @@ use xtask::{project_root, Mode, Result};
 
 pub fn generate_bindings(mode: Mode) -> Result<()> {
     let bindings_path =
-        project_root().join("packages/@postgrestools/backend-jsonrpc/src/workspace.ts");
+        project_root().join("packages/@postgres-language-server/backend-jsonrpc/src/workspace.ts");
     let methods = methods();
 
     let mut declarations = Vec::new();

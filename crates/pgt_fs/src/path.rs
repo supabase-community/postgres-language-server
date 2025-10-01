@@ -21,7 +21,7 @@ use crate::ConfigName;
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 // NOTE: The order of the variants is important, the one on the top has the highest priority
 pub enum FileKind {
-    /// A configuration file has the highest priority. It's usually `postgrestools.jsonc`
+    /// A configuration file has the highest priority. It's usually `postgres-language-server.jsonc`
     ///
     /// Other third-party configuration files might be added in the future
     Config,
@@ -173,10 +173,10 @@ impl PgTPath {
     }
 
     /// The priority of the file.
-    /// - `postgrestools.jsonc` has the highest priority
+    /// - `postgres-language-server.jsonc` has the highest priority
     /// - Other files are considered as files to handle
     fn priority(file_name: &OsStr) -> FileKinds {
-        if file_name == ConfigName::pgt_jsonc() {
+        if file_name == ConfigName::pgt_jsonc() || file_name == ConfigName::pgls_jsonc() {
             FileKind::Config.into()
         } else {
             FileKind::Handleable.into()

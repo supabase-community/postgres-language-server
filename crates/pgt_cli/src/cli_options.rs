@@ -22,7 +22,8 @@ pub struct CliOptions {
     #[bpaf(long("verbose"), switch, fallback(false))]
     pub verbose: bool,
 
-    /// Set the file path to the configuration file, or the directory path to find `postgrestools.jsonc`.
+    /// Set the file path to the configuration file, or the directory path to find
+    /// `postgres-language-server.jsonc`.
     /// If used, it disables the default configuration file resolution.
     #[bpaf(long("config-path"), argument("PATH"), optional)]
     pub config_path: Option<String>,
@@ -58,6 +59,7 @@ pub struct CliOptions {
 
     #[bpaf(
         env("PGT_LOG_LEVEL"),
+        env("PGLS_LOG_LEVEL"),
         long("log-level"),
         argument("none|debug|info|warn|error"),
         fallback(LoggingLevel::default()),

@@ -233,15 +233,15 @@ fn setup_tracing_subscriber(
     }
 }
 
-pub fn default_pgt_log_path() -> PathBuf {
-    match env::var_os("PGT_LOG_PATH") {
+pub fn default_pgls_log_path() -> PathBuf {
+    match env::var_os("PGLS_LOG_PATH") {
         Some(directory) => PathBuf::from(directory),
-        None => pgt_fs::ensure_cache_dir().join("pgt-logs"),
+        None => pgt_fs::ensure_cache_dir().join("pgls-logs"),
     }
 }
 
 /// Tracing Filter with two rules:
-/// For all crates starting with pgt*, use `PGT_LOG_LEVEL` or CLI option or "info" as default
+/// For all crates starting with pgt*, use `PGLS_LOG_LEVEL` or CLI option or "info" as default
 /// For all other crates, use "info"
 struct PgtLoggingFilter(LevelFilter);
 

@@ -89,6 +89,8 @@ jobs:
           # Strip all debug symbols from the resulting binaries
           RUSTFLAGS: "-C strip=symbols -C codegen-units=1"
           # Inline the version in the CLI binary
+          PGLS_VERSION: ${{ needs.extract_version.outputs.version }}
+          # Inline the version in the CLI binary (deprecated)
           PGT_VERSION: ${{ needs.extract_version.outputs.version }}
 
       # windows is a special snowflake too, it saves binaries as .exe

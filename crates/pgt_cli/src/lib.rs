@@ -32,7 +32,7 @@ pub use panic::setup_panic_handler;
 pub use reporter::{DiagnosticsPayload, Reporter, ReporterVisitor, TraversalSummary};
 pub use service::{SocketTransport, open_transport};
 
-pub(crate) const VERSION: &str = match option_env!("PGT_VERSION") {
+pub(crate) const VERSION: &str = match option_env!("PGLS_VERSION") {
     Some(version) => version,
     None => env!("CARGO_PKG_VERSION"),
 };
