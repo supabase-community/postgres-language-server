@@ -12,6 +12,7 @@ version              = "0.0.0"
 
 
 [dependencies]
+pgt_env  = { workspace = true }
 schemars = { workspace = true, optional = true }
 serde    = { workspace = true, optional = true }
 

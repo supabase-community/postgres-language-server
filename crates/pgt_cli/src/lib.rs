@@ -10,7 +10,6 @@ use commands::check::CheckCommandPayload;
 use pgt_console::{ColorMode, Console};
 use pgt_fs::OsFileSystem;
 use pgt_workspace::{App, DynRef, Workspace, WorkspaceRef};
-use std::env;
 
 mod changed;
 mod cli_options;
@@ -32,10 +31,7 @@ pub use panic::setup_panic_handler;
 pub use reporter::{DiagnosticsPayload, Reporter, ReporterVisitor, TraversalSummary};
 pub use service::{SocketTransport, open_transport};
 
-pub(crate) const VERSION: &str = match option_env!("PGT_VERSION") {
-    Some(version) => version,
-    None => env!("CARGO_PKG_VERSION"),
-};
+pub(crate) use pgt_env::VERSION;
 
 /// Global context for an execution of the CLI
 pub struct CliSession<'app> {

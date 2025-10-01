@@ -1,7 +1,6 @@
 //! This module contains the configuration of `postgrestools.jsonc`
 //!
-//! The configuration is divided by "tool", and then it's possible to further customise it
-//! by language. The language might further options divided by tool.
+//! The configuration is divided by "tool".
 
 pub mod analyser;
 pub mod database;
@@ -34,6 +33,7 @@ use files::{FilesConfiguration, PartialFilesConfiguration, partial_files_configu
 use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
 };
+use pgt_env::PGT_WEBSITE;
 use plpgsql_check::{
     PartialPlPgSqlCheckConfiguration, PlPgSqlCheckConfiguration,
     partial_pl_pg_sql_check_configuration,
@@ -44,10 +44,7 @@ pub use typecheck::{
 };
 use vcs::VcsClientKind;
 
-pub const VERSION: &str = match option_env!("PGT_VERSION") {
-    Some(version) => version,
-    None => "0.0.0",
-};
+pub use pgt_env::VERSION;
 
 /// The configuration that is contained inside the configuration file.
 #[derive(Clone, Debug, Default, Deserialize, Eq, Partial, PartialEq, Serialize)]
@@ -106,7 +103,7 @@ impl PartialConfiguration {
     /// Returns the initial configuration.
     pub fn init() -> Self {
         Self {
-            schema: Some(format!("https://pgtools.dev/schemas/{VERSION}/schema.json")),
+            schema: Some(format!("{}/schemas/{VERSION}/schema.json", PGT_WEBSITE)),
             extends: Some(StringSet::default()),
             files: Some(PartialFilesConfiguration {
                 ignore: Some(Default::default()),
