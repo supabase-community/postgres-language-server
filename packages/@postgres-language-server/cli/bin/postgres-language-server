@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+const { platform, arch, env } = process;
+
+const PLATFORMS = {
+  win32: {
+    x64: "@postgres-language-server/cli-x86_64-windows-msvc/postgres-language-server.exe",
+    arm64: "@postgres-language-server/cli-aarch64-windows-msvc/postgres-language-server.exe",
+  },
+  darwin: {
+    x64: "@postgres-language-server/cli-x86_64-apple-darwin/postgres-language-server",
+    arm64: "@postgres-language-server/cli-aarch64-apple-darwin/postgres-language-server",
+  },
+  linux: {
+    x64: "@postgres-language-server/cli-x86_64-linux-gnu/postgres-language-server",
+    arm64: "@postgres-language-server/cli-aarch64-linux-gnu/postgres-language-server",
+  },
+  "linux-musl": {
+    x64: "@postgres-language-server/cli-x86_64-linux-musl/postgres-language-server",
+    // no arm64 build for musl
+  },
+};
+
+function isMusl() {
+  let stdout;
+  try {
+    stdout = execSync("ldd --version", {
+      stdio: [
+        "ignore", // stdin
+        "pipe", // stdout – glibc systems print here
+        "pipe", // stderr – musl systems print here
+      ],
+    });
+  } catch (err) {
+    stdout = err.stderr;
+  }
+  if (typeof stdout === 'string' && stdout.indexOf("musl") > -1) {
+    return true;
+  }
+  return false;
+}
+
+function getPlatform() {
+  if (platform === "linux") {
+    return isMusl() ? "linux-musl" : "linux";
+  }
+
+  return platform;
+}
+
+const binPath = env.PGLS_BINARY || PLATFORMS?.[getPlatform()]?.[arch];
+
+if (binPath) {
+  const result = require("child_process").spawnSync(
+    require.resolve(binPath),
+    process.argv.slice(2),
+    {
+      shell: false,
+      stdio: "inherit",
+      env,
+    }
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  process.exitCode = result.status;
+} else {
+  console.error(
+    "The Postgres Language Server CLI package doesn't ship with prebuilt binaries for your platform yet. Please file an issue in the main repository."
+  );
+  process.exitCode = 1;
+}

@@ -96,12 +96,31 @@ jobs:
         if: matrix.config.os == 'windows-2022'
         run: |
           mkdir dist
+          # deprecated
           cp target/${{ matrix.config.target }}/release/postgrestools.exe ./dist/postgrestools_${{ matrix.config.target }}
+          cp target/${{ matrix.config.target }}/release/postgres-language-server.exe ./dist/postgres-language-server_${{ matrix.config.target }}
+
       - name: 👦 Name the Binary
         if: matrix.config.os != 'windows-2022'
         run: |
           mkdir dist
+          # deprecated
           cp target/${{ matrix.config.target }}/release/postgrestools ./dist/postgrestools_${{ matrix.config.target }}
+          cp target/${{ matrix.config.target }}/release/postgres-language-server ./dist/postgres-language-server_${{ matrix.config.target }}
+
+      # It is not possible to return the artifacts from the matrix jobs individually: Matrix outputs overwrite each other.
+      # A common workaround is to upload and download the resulting artifacts.
+      - name: 👆 Upload Artifacts (deprecated)
+        id: upload-artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgrestools_${{ matrix.config.target }}
+          path: ./dist/postgrestools_*
+          # The default compression level is 6; this took the binary down from 350 to 330MB.
+          # It is recommended to use a lower level for binaries, since the compressed result is not much smaller,
+          # and the higher levels of compression take much longer.
+          compression-level: 2
+          if-no-files-found: error
 
       # It is not possible to return the artifacts from the matrix jobs individually: Matrix outputs overwrite each other.
       # A common workaround is to upload and download the resulting artifacts.
@@ -109,8 +128,8 @@ jobs:
         id: upload-artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: postgrestools_${{ matrix.config.target }}
-          path: ./dist/postgrestools_*
+          name: postgres-language-server_${{ matrix.config.target }}
+          path: ./dist/postgres-language-server_*
           # The default compression level is 6; this took the binary down from 350 to 330MB.
           # It is recommended to use a lower level for binaries, since the compressed result is not much smaller,
           # and the higher levels of compression take much longer.
@@ -142,12 +161,19 @@ jobs:
           echo "Tag does not match: ${{ steps.create_changelog.outputs.version }} vs ${{ needs.extract_version.outputs.version }}"
           exit 1
 
-      - name: 👇 Download Artifacts
+      - name: 👇 Download Artifacts (deprecated)
         uses: actions/download-artifact@v4
         id: download
         with:
           merge-multiple: true
           pattern: postgrestools_*
+
+      - name: 👇 Download Artifacts
+        uses: actions/download-artifact@v4
+        id: download
+        with:
+          merge-multiple: true
+          pattern: postgres-language-server_*
 
       - name: 📂 Create Release
         uses: softprops/action-gh-release@v2

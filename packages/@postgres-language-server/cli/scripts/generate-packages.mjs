@@ -7,8 +7,8 @@ import { promisify } from "node:util";
 const streamPipeline = promisify(pipeline);
 
 const CLI_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
-const PACKAGES_POSTGRESTOOLS_ROOT = resolve(CLI_ROOT, "..");
-const POSTGRESTOOLS_ROOT = resolve(PACKAGES_POSTGRESTOOLS_ROOT, "../..");
+const PACKAGES_PGLS_ROOT = resolve(CLI_ROOT, "..");
+const PGLS_ROOT = resolve(PACKAGES_PGLS_ROOT, "../..");
 const MANIFEST_PATH = resolve(CLI_ROOT, "package.json");
 
 function platformArchCombinations() {
@@ -54,7 +54,7 @@ async function downloadSchema(releaseTag, githubToken) {
 
 	// download to root.
 	const fileStream = fs.createWriteStream(
-		resolve(POSTGRESTOOLS_ROOT, "schema.json")
+		resolve(PGLS_ROOT, "schema.json")
 	);
 
 	await streamPipeline(response.body, fileStream);
@@ -93,7 +93,7 @@ async function downloadBinary(platform, arch, os, releaseTag, githubToken) {
 
 async function writeManifest(packagePath, version) {
 	const manifestPath = resolve(
-		PACKAGES_POSTGRESTOOLS_ROOT,
+		PACKAGES_PGLS_ROOT,
 		packagePath,
 		"package.json"
 	);
@@ -122,7 +122,7 @@ async function writeManifest(packagePath, version) {
 
 async function makePackageDir(platform, arch) {
 	const buildName = getBuildName(platform, arch);
-	const packageRoot = resolve(PACKAGES_POSTGRESTOOLS_ROOT, buildName);
+	const packageRoot = resolve(PACKAGES_PGLS_ROOT, buildName);
 
 	await new Promise((res, rej) => {
 		fs.mkdir(packageRoot, {}, (e) => (e ? rej(e) : res()));
@@ -132,7 +132,7 @@ async function makePackageDir(platform, arch) {
 function copyBinaryToNativePackage(platform, arch, os) {
 	// Update the package.json manifest
 	const buildName = getBuildName(platform, arch);
-	const packageRoot = resolve(PACKAGES_POSTGRESTOOLS_ROOT, buildName);
+	const packageRoot = resolve(PACKAGES_PGLS_ROOT, buildName);
 	const packageName = getPackageName(platform, arch);
 
 	const { version, license, repository, engines } = rootManifest();
@@ -188,7 +188,7 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 	// Copy the CLI binary
 	const binarySource = getBinarySource(platform, arch, os);
-	const binaryTarget = resolve(packageRoot, `postgrestools${ext}`);
+	const binaryTarget = resolve(packageRoot, `postgres-language-server${ext}`);
 
 	if (!fs.existsSync(binarySource)) {
 		console.error(
@@ -204,9 +204,9 @@ function copyBinaryToNativePackage(platform, arch, os) {
 
 function copySchemaToNativePackage(platform, arch) {
 	const buildName = getBuildName(platform, arch);
-	const packageRoot = resolve(PACKAGES_POSTGRESTOOLS_ROOT, buildName);
+	const packageRoot = resolve(PACKAGES_PGLS_ROOT, buildName);
 
-	const schemaSrc = resolve(POSTGRESTOOLS_ROOT, "schema.json");
+	const schemaSrc = resolve(PGLS_ROOT, "schema.json");
 	const schemaTarget = resolve(packageRoot, "schema.json");
 
 	if (!fs.existsSync(schemaSrc)) {
@@ -220,8 +220,8 @@ function copySchemaToNativePackage(platform, arch) {
 }
 
 function copyReadmeToPackage(packagePath) {
-	const packageRoot = resolve(PACKAGES_POSTGRESTOOLS_ROOT, packagePath);
-	const readmeSrc = resolve(POSTGRESTOOLS_ROOT, "README.md");
+	const packageRoot = resolve(PACKAGES_PGLS_ROOT, packagePath);
+	const readmeSrc = resolve(PGLS_ROOT, "README.md");
 	const readmeTarget = resolve(packageRoot, "README.md");
 
 	if (!fs.existsSync(readmeSrc)) {
@@ -230,21 +230,7 @@ function copyReadmeToPackage(packagePath) {
 	}
 
 	console.info(`Copying README.md to ${packagePath}`);
-	
-	// Read the original README content
-	const originalReadme = fs.readFileSync(readmeSrc, 'utf-8');
-	
-	// Add deprecation notice for @postgrestools packages
-	const deprecationNotice = `> [!WARNING]
-> **This package is deprecated.** Please use [\`@postgres-language-server/cli\`](https://www.npmjs.com/package/@postgres-language-server/cli) instead.
->
-> The \`@postgrestools\` namespace is being phased out in favor of \`@postgres-language-server\`. All future updates and development will happen in the new package.
-
-`;
-
-	const modifiedReadme = deprecationNotice + originalReadme;
-	
-	fs.writeFileSync(readmeTarget, modifiedReadme, 'utf-8');
+	fs.copyFileSync(readmeSrc, readmeTarget);
 	fs.chmodSync(readmeTarget, 0o666);
 }
 
@@ -257,17 +243,17 @@ function getBinaryExt(os) {
 
 function getBinarySource(platform, arch, os) {
 	const ext = getBinaryExt(os);
-	return resolve(POSTGRESTOOLS_ROOT, `${getBuildName(platform, arch)}${ext}`);
+	return resolve(PGLS_ROOT, `${getBuildName(platform, arch)}${ext}`);
 }
 
 function getBuildName(platform, arch) {
-	return `postgrestools_${arch}-${platform}`;
+	return `postgres-language-server_${arch}-${platform}`;
 }
 
 function getPackageName(platform, arch) {
 	// trim the "unknown" from linux and the "pc" from windows
 	const platformName = platform.split("-").slice(-2).join("-");
-	return `@postgrestools/cli-${arch}-${platformName}`;
+	return `@postgres-language-server/cli-${arch}-${platformName}`;
 }
 
 function getOs(platform) {
@@ -288,11 +274,11 @@ function getVersion(releaseTag, isPrerelease) {
 
 	await downloadSchema(releaseTag, githubToken);
 	const version = getVersion(releaseTag, isPrerelease);
-	await writeManifest("postgrestools", version);
+	await writeManifest("cli", version);
 	await writeManifest("backend-jsonrpc", version);
 
 	// Copy README to main packages
-	copyReadmeToPackage("postgrestools");
+	copyReadmeToPackage("cli");
 	copyReadmeToPackage("backend-jsonrpc");
 
 	for (const { platform, arch } of platformArchCombinations()) {
