@@ -1,6 +1,6 @@
 use crate::{TextRange, TextSize};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum AdjustmentDirection {
     Lengthened,
     Shortened,
@@ -12,9 +12,7 @@ struct AdjustmentMarker {
     original_range: TextRange,
     adjusted_range: TextRange,
     replacement_txt: String,
-    registered_offset_at_start: TextSize,
-
-    #[allow(dead_code)]
+    registered_offset_at_start: isize,
     adjustment_direction: AdjustmentDirection,
     range_size_difference: TextSize,
 }
@@ -44,7 +42,7 @@ impl AdjustmentMarker {
 
             // will be calculated during `.build()`
             adjusted_range: original_range,
-            registered_offset_at_start: 0.into(),
+            registered_offset_at_start: 0,
         }
     }
 
@@ -105,33 +103,50 @@ impl TextRangeReplacementBuilder {
     /// The adjustments are processed in order of their starting positions in the original text.
     /// Currently only supports lengthening adjustments (where replacement text is longer
     /// than the original range).
-    ///
-    /// # Panics
-    ///
-    /// Panics if any adjustment involves shortening the text, as this is not yet implemented.
     pub fn build(mut self) -> TextRangeReplacement {
         self.markers.sort_by_key(|r| r.original_range.start());
 
-        let mut total_offset: usize = 0;
+        let mut total_offset: isize = 0;
 
         for marker in self.markers.iter_mut() {
             match marker.adjustment_direction {
                 AdjustmentDirection::Lengthened => {
-                    marker.registered_offset_at_start = total_offset.try_into().unwrap();
+                    marker.adjusted_range = if total_offset >= 0 {
+                        let to_add = TextSize::new(total_offset.abs().try_into().unwrap());
+                        TextRange::new(
+                            marker.original_range.start() + to_add,
+                            marker.original_range.end() + to_add + marker.range_size_difference,
+                        )
+                    } else {
+                        let to_sub = TextSize::new(total_offset.abs().try_into().unwrap());
+                        TextRange::new(
+                            marker.original_range.start().checked_sub(to_sub).unwrap(),
+                            marker.original_range.end().checked_sub(to_sub).unwrap()
+                                + marker.range_size_difference,
+                        )
+                    };
 
-                    marker.adjusted_range = TextRange::new(
-                        marker.original_range.start() + marker.registered_offset_at_start,
-                        marker.original_range.end()
-                            + marker.registered_offset_at_start
-                            + marker.range_size_difference,
-                    );
-
-                    total_offset += usize::from(marker.range_size_difference);
+                    marker.registered_offset_at_start = total_offset;
+                    total_offset += isize::from(marker.range_size_difference);
                 }
                 AdjustmentDirection::Shortened => {
-                    unimplemented!(
-                        "So far, we've only ever lengthened TextRanges. Consider filling up your range with spaces"
-                    )
+                    marker.adjusted_range = if total_offset >= 0 {
+                        let to_add = TextSize::new(total_offset.abs().try_into().unwrap());
+                        TextRange::new(
+                            marker.original_range.start() + to_add,
+                            marker.original_range.end() + to_add - marker.range_size_difference,
+                        )
+                    } else {
+                        let to_sub = TextSize::new(total_offset.abs().try_into().unwrap());
+                        TextRange::new(
+                            marker.original_range.start().checked_sub(to_sub).unwrap(),
+                            marker.original_range.end().checked_sub(to_sub).unwrap()
+                                - marker.range_size_difference,
+                        )
+                    };
+
+                    marker.registered_offset_at_start = total_offset;
+                    total_offset -= isize::from(marker.range_size_difference);
                 }
             }
         }
@@ -193,17 +208,23 @@ impl TextRangeReplacement {
             .rev()
             .find(|marker| adjusted_position >= marker.adjusted_range.start())
         {
-            if adjusted_position >= marker.adjusted_range.end() {
-                adjusted_position
-                    .checked_sub(marker.registered_offset_at_start)
-                    .unwrap()
-                    .checked_sub(marker.range_size_difference)
-                    .unwrap()
+            if marker.adjustment_direction == AdjustmentDirection::Lengthened {
+                if adjusted_position >= marker.adjusted_range.end() {
+                    offset_reverted(adjusted_position, marker.registered_offset_at_start)
+                        .checked_sub(marker.range_size_difference)
+                        .unwrap()
+                } else {
+                    let clamped = marker.adjusted_end_within_clamped_range(adjusted_position);
+                    offset_reverted(clamped, marker.registered_offset_at_start)
+                }
             } else {
-                let clamped = marker.adjusted_end_within_clamped_range(adjusted_position);
-                clamped
-                    .checked_sub(marker.registered_offset_at_start)
-                    .unwrap()
+                if adjusted_position < marker.adjusted_range.end() {
+                    offset_reverted(adjusted_position, marker.registered_offset_at_start)
+                } else {
+                    offset_reverted(adjusted_position, marker.registered_offset_at_start)
+                        .checked_add(marker.range_size_difference)
+                        .unwrap()
+                }
             }
         } else {
             adjusted_position
@@ -221,6 +242,15 @@ impl TextRangeReplacement {
     }
 }
 
+fn offset_reverted(position: TextSize, offset: isize) -> TextSize {
+    let absolute = TextSize::new(offset.abs().try_into().unwrap());
+    if offset >= 0 {
+        position.checked_sub(absolute).unwrap()
+    } else {
+        position.checked_add(absolute).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::TextSize;
@@ -228,7 +258,7 @@ mod tests {
     use crate::text_range_replacement::TextRangeReplacementBuilder;
 
     #[test]
-    fn tracks_adjustments() {
+    fn tracks_lengthening_adjustments() {
         let sql = "select $1 from $2 where $3 = $4 limit 5;";
 
         let range_1: std::ops::Range<usize> = 7..9; // $1
@@ -343,6 +373,250 @@ mod tests {
         // select email from auth.users where id = '00000000-0000-0000-0000-000000000000'| limit 5;|
         // maps to
         // select $1 from $2 where $3 = $4| limit 5;|
+        for i in repl_range_4.end..text_replacement.text.len() {
+            let between_og_4_end = range_4.end..og_end;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_4_end.contains(&usize::from(adjusted)));
+        }
+    }
+
+    #[test]
+    fn tracks_shortening_adjustments() {
+        let sql = "select :my_param1 from :my_param2 where :my_param3 = :my_param4 limit 5;";
+
+        let range_1: std::ops::Range<usize> = 7..17; // :my_param1
+        let range_2: std::ops::Range<usize> = 23..33; // :my_param2
+        let range_3: std::ops::Range<usize> = 40..50; // :my_param3
+        let range_4: std::ops::Range<usize> = 53..63; // :my_param4
+        let og_end = sql.len();
+
+        let mut replacement_builder = TextRangeReplacementBuilder::new(sql);
+
+        let replacement_1 = /* select */ "email";
+        let replacement_2 = /* from */ "auth.users"; // (same length)
+        let replacement_3 = /* where */ "name";
+        let replacement_4 = /* = */ "timo"; /* limit 5; */
+
+        // start in the middle – the builder can deal with unordered replacements
+        replacement_builder.replace_range(range_2.clone().try_into().unwrap(), replacement_2);
+        replacement_builder.replace_range(range_4.clone().try_into().unwrap(), replacement_4);
+        replacement_builder.replace_range(range_1.clone().try_into().unwrap(), replacement_1);
+        replacement_builder.replace_range(range_3.clone().try_into().unwrap(), replacement_3);
+
+        let text_replacement = replacement_builder.build();
+
+        assert_eq!(
+            text_replacement.text(),
+            "select email from auth.users where name = timo limit 5;"
+        );
+
+        let repl_range_1 = 7..12; // email
+        let repl_range_2 = 18..28; // auth.users
+        let repl_range_3 = 35..39; // name
+        let repl_range_4 = 42..46; // timo
+
+        // |select |email from auth.users where name = timo limit 5;
+        // maps to
+        // |select |:my_param1 from :my_param2 where :my_param3 = :my_param4 limit 5;
+        for i in 0..repl_range_1.clone().start {
+            let between_og_0_1 = 0..range_1.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_0_1.contains(&usize::from(adjusted)));
+        }
+
+        // select |email| from auth.users where name = timo limit 5;
+        // maps to
+        // select |:my_param1| from :my_param2 where :my_param3 = :my_param4 limit 5;
+        for i in repl_range_1.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_1.contains(&usize::from(og_pos)));
+        }
+
+        // select email| from |auth.users where name = timo limit 5;
+        // maps to
+        // select :my_param1| from |:my_param2 where :my_param3 = :my_param4 limit 5;
+        for i in repl_range_1.end..repl_range_2.clone().start {
+            let between_og_1_2 = range_1.end..range_2.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_1_2.contains(&usize::from(adjusted)));
+        }
+
+        // select email from |auth.users| where name = timo limit 5;
+        // maps to
+        // select :my_param1 from |:my_param2| where :my_param3 = :my_param4 limit 5;
+        for i in repl_range_2.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_2.contains(&usize::from(og_pos)));
+        }
+
+        // select email from auth.users| where |name = timo limit 5;
+        // maps to
+        // select :my_param1 from :my_param2| where |:my_param3 = :my_param4 limit 5;
+        for i in repl_range_2.end..repl_range_3.clone().start {
+            let between_og_2_3 = range_2.end..range_3.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_2_3.contains(&usize::from(adjusted)));
+        }
+
+        // select email from auth.users where |name| = timo limit 5;
+        // maps to
+        // select :my_param1 from :my_param2 where |:my_param3| = :my_param4 limit 5;
+        for i in repl_range_3.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_3.contains(&usize::from(og_pos)));
+        }
+
+        // select email from auth.users where name| = |timo limit 5;
+        // maps to
+        // select :my_param1 from :my_param2 where :my_param3| = |:my_param4 limit 5;
+        for i in repl_range_3.end..repl_range_4.clone().start {
+            let between_og_3_4 = range_3.end..range_4.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_3_4.contains(&usize::from(adjusted)));
+        }
+
+        // select email from auth.users where name = |timo| limit 5;
+        // maps to
+        // select :my_param1 from :my_param2 where :my_param3 = |:my_param4| limit 5;
+        for i in repl_range_4.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_4.contains(&usize::from(og_pos)));
+        }
+
+        // select email from auth.users where name = timo| limit 5;|
+        // maps to
+        // select :my_param1 from :my_param2 where :my_param3 = :my_param4| limit 5;|
+        for i in repl_range_4.end..text_replacement.text.len() {
+            let between_og_4_end = range_4.end..og_end;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_4_end.contains(&usize::from(adjusted)));
+        }
+    }
+
+    #[test]
+    fn tracks_mixed_adjustments() {
+        let sql = "select :my_param1 from $2 where $3 = :my_param4 limit 5;";
+
+        let range_1: std::ops::Range<usize> = 7..17; // :my_param1
+        let range_2: std::ops::Range<usize> = 23..25; // $2
+        let range_3: std::ops::Range<usize> = 32..34; // $3
+        let range_4: std::ops::Range<usize> = 37..47; // :my_param4
+        let og_end = sql.len();
+
+        let mut replacement_builder = TextRangeReplacementBuilder::new(sql);
+
+        let replacement_1 = "email"; // replacement is shorter
+        let replacement_2 = "auth.users"; // replacement is longer
+        let replacement_3 = "id"; // replacement is same length
+        let replacement_4 = "'00000000-0000-0000-0000-000000000000'"; // replacement is longer
+
+        // start in the middle – the builder can deal with unordered replacements
+        replacement_builder.replace_range(range_2.clone().try_into().unwrap(), replacement_2);
+        replacement_builder.replace_range(range_4.clone().try_into().unwrap(), replacement_4);
+        replacement_builder.replace_range(range_1.clone().try_into().unwrap(), replacement_1);
+        replacement_builder.replace_range(range_3.clone().try_into().unwrap(), replacement_3);
+
+        let text_replacement = replacement_builder.build();
+
+        assert_eq!(
+            text_replacement.text(),
+            "select email from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;"
+        );
+
+        let repl_range_1 = 7..12; // email
+        let repl_range_2 = 18..28; // auth.users
+        let repl_range_3 = 35..37; // id
+        let repl_range_4 = 40..78; // '00000000-0000-0000-0000-000000000000'
+
+        // |select |email from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // |select |:my_param1 from $2 where $3 = :my_param4 limit 5;
+        for i in 0..repl_range_1.clone().start {
+            let between_og_0_1 = 0..range_1.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_0_1.contains(&usize::from(adjusted)));
+        }
+
+        // select |email| from auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // select |:my_param1| from $2 where $3 = :my_param4 limit 5;
+        for i in repl_range_1.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_1.contains(&usize::from(og_pos)));
+        }
+
+        // select email| from |auth.users where id = '00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // select :my_param1| from |$2 where $3 = :my_param4 limit 5;
+        for i in repl_range_1.end..repl_range_2.clone().start {
+            let between_og_1_2 = range_1.end..range_2.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_1_2.contains(&usize::from(adjusted)));
+        }
+
+        // select email from |auth.users| where id = '00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // select :my_param1 from |$2| where $3 = :my_param4 limit 5;
+        for i in repl_range_2.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_2.contains(&usize::from(og_pos)));
+        }
+
+        // select email from auth.users| where |id = '00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // select :my_param1 from $2| where |$3 = :my_param4 limit 5;
+        for i in repl_range_2.end..repl_range_3.clone().start {
+            let between_og_2_3 = range_2.end..range_3.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_2_3.contains(&usize::from(adjusted)));
+        }
+
+        // select email from auth.users where |id| = '00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // select :my_param1 from $2 where |$3| = :my_param4 limit 5;
+        for i in repl_range_3.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_3.contains(&usize::from(og_pos)));
+        }
+
+        // select email from auth.users where id| = |'00000000-0000-0000-0000-000000000000' limit 5;
+        // maps to
+        // select :my_param1 from $2 where $3| = |:my_param4 limit 5;
+        for i in repl_range_3.end..repl_range_4.clone().start {
+            let between_og_3_4 = range_3.end..range_4.start;
+            let adjusted =
+                text_replacement.to_original_position(TextSize::new(i.try_into().unwrap()));
+            assert!(between_og_3_4.contains(&usize::from(adjusted)));
+        }
+
+        // select email from auth.users where id = |'00000000-0000-0000-0000-000000000000'| limit 5;
+        // maps to
+        // select :my_param1 from $2 where $3 = |:my_param4| limit 5;
+        for i in repl_range_4.clone() {
+            let pos = TextSize::new(i.try_into().unwrap());
+            let og_pos = text_replacement.to_original_position(pos);
+            assert!(range_4.contains(&usize::from(og_pos)));
+        }
+
+        // select email from auth.users where id = '00000000-0000-0000-0000-000000000000'| limit 5;|
+        // maps to
+        // select :my_param1 from $2 where $3 = :my_param4| limit 5;|
         for i in repl_range_4.end..sql.len() {
             let between_og_4_end = range_4.end..og_end;
             let adjusted =

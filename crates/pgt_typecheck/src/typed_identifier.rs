@@ -55,11 +55,6 @@ pub fn apply_identifiers<'a>(
     for (range, type_, is_array) in replacements {
         let default_value = get_formatted_default_value(type_, is_array);
 
-        let range_size = range.end - range.start;
-
-        // if the default_value is shorter than "range", fill it up with spaces
-        let default_value = format!("{:<range_size$}", default_value);
-
         text_range_replacement_builder
             .replace_range(range.clone().try_into().unwrap(), &default_value);
     }
