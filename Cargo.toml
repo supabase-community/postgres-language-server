@@ -69,7 +69,7 @@ pgt_console                = { path = "./crates/pgt_console", version = "0.0.0" 
 pgt_diagnostics            = { path = "./crates/pgt_diagnostics", version = "0.0.0" }
 pgt_diagnostics_categories = { path = "./crates/pgt_diagnostics_categories", version = "0.0.0" }
 pgt_diagnostics_macros     = { path = "./crates/pgt_diagnostics_macros", version = "0.0.0" }
-pgt_flags                  = { path = "./crates/pgt_flags", version = "0.0.0" }
+pgt_env                    = { path = "./crates/pgt_env", version = "0.0.0" }
 pgt_fs                     = { path = "./crates/pgt_fs", version = "0.0.0" }
 pgt_hover                  = { path = "./crates/pgt_hover", version = "0.0.0" }
 pgt_lexer                  = { path = "./crates/pgt_lexer", version = "0.0.0" }
