@@ -21,7 +21,7 @@ serde_json       = { workspace = true }
 pulldown-cmark          = "0.12.2"
 
 pgt_configuration = { workspace = true, features = ["schema"] }
-pgt_flags = { workspace = true }
+pgt_env = { workspace = true }
 pgt_cli = { workspace = true }
 pgt_analyse = { workspace = true }
 pgt_analyser = { workspace = true }
