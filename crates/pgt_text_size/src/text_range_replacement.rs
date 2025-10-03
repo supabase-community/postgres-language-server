@@ -217,14 +217,12 @@ impl TextRangeReplacement {
                     let clamped = marker.adjusted_end_within_clamped_range(adjusted_position);
                     offset_reverted(clamped, marker.registered_offset_at_start)
                 }
+            } else if adjusted_position < marker.adjusted_range.end() {
+                offset_reverted(adjusted_position, marker.registered_offset_at_start)
             } else {
-                if adjusted_position < marker.adjusted_range.end() {
-                    offset_reverted(adjusted_position, marker.registered_offset_at_start)
-                } else {
-                    offset_reverted(adjusted_position, marker.registered_offset_at_start)
-                        .checked_add(marker.range_size_difference)
-                        .unwrap()
-                }
+                offset_reverted(adjusted_position, marker.registered_offset_at_start)
+                    .checked_add(marker.range_size_difference)
+                    .unwrap()
             }
         } else {
             adjusted_position
