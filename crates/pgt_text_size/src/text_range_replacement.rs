@@ -8,7 +8,6 @@ enum AdjustmentDirection {
 
 #[derive(Debug)]
 struct AdjustmentMarker {
-    #[allow(dead_code)]
     original_range: TextRange,
     adjusted_range: TextRange,
     replacement_txt: String,
