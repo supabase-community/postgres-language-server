@@ -12,7 +12,7 @@ struct TestSetup<'a> {
     typed_identifiers: Vec<TypedIdentifier>,
 }
 
-impl<'a> TestSetup<'a> {
+impl TestSetup<'_> {
     async fn test(self) {
         if let Some(setup) = self.setup {
             self.test_db
@@ -26,7 +26,7 @@ impl<'a> TestSetup<'a> {
             .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let schema_cache = pgt_schema_cache::SchemaCache::load(&self.test_db)
+        let schema_cache = pgt_schema_cache::SchemaCache::load(self.test_db)
             .await
             .expect("Failed to load Schema Cache");
 
