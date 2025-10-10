@@ -156,7 +156,7 @@ async fn invalid_type_in_function(test_db: PgPool) {
     .test()
     .await;
 
-    /* NOTE: The replaced type default value is *longer* than the param name. */
+    /* NOTE: The replaced type default value is *shorter* than the param name. */
     TestSetup {
         name: "invalid_type_in_function_shorter_default",
         setup: None,
