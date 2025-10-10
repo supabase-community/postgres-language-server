@@ -19,14 +19,15 @@ with
   available_indexes as (
     select
       unnest (ix.indkey) as attnum,
-      ix.indisprimary as is_primary,
-      ix.indisunique as is_unique,
+      bool_or(ix.indisprimary) as is_primary,
+      bool_or(ix.indisunique) as is_unique,
       ix.indrelid as table_oid
     from
       pg_catalog.pg_class c
       join pg_catalog.pg_index ix on c.oid = ix.indexrelid
     where
       c.relkind = 'i'
+    group by table_oid, attnum
   )
 select
   atts.attname as name,
