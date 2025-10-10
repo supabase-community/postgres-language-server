@@ -1,18 +1,33 @@
-//! A simple implementation of feature flags.
+//! Environment variables and configuration constants for Postgres Tools.
+//!
+//! This module provides:
+//! - Environment variable definitions for runtime configuration
+//! - Static constants like version information and website URL
+//! - Helper functions for checking build status
 
 use pgt_console::fmt::{Display, Formatter};
 use pgt_console::{DebugDisplay, KeyValuePair, markup};
 use std::env;
-use std::ops::Deref;
 use std::sync::{LazyLock, OnceLock};
 
 /// Returns `true` if this is an unstable build of Postgres Tools
 pub fn is_unstable() -> bool {
-    PGT_VERSION.deref().is_none()
+    VERSION == "0.0.0"
 }
 
 /// The internal version of Postgres Tools. This is usually supplied during the CI build
 pub static PGT_VERSION: LazyLock<Option<&str>> = LazyLock::new(|| option_env!("PGT_VERSION"));
+
+/// The version of Postgres Tools with fallback logic
+pub const VERSION: &str = match option_env!("PGT_VERSION") {
+    Some(version) => version,
+    None => match option_env!("CARGO_PKG_VERSION") {
+        Some(pkg_version) => pkg_version,
+        None => "0.0.0",
+    },
+};
+
+pub static PGT_WEBSITE: &str = "https://pgtools.dev";
 
 pub struct PgTEnv {
     pub pgt_log_path: PgTEnvVariable,

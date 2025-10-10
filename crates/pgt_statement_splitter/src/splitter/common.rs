@@ -263,6 +263,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         SyntaxKind::DO_KW,
                         // FOR NO KEY UPDATE
                         SyntaxKind::KEY_KW,
+                        // WHEN MATCHED THEN
+                        SyntaxKind::THEN_KW,
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())

@@ -1298,7 +1298,7 @@ dependencies = [
  "pgt_configuration",
  "pgt_console",
  "pgt_diagnostics",
- "pgt_flags",
+ "pgt_env",
  "pgt_query",
  "pgt_query_ext",
  "pgt_statement_splitter",
@@ -2798,7 +2798,7 @@ dependencies = [
  "pgt_configuration",
  "pgt_console",
  "pgt_diagnostics",
- "pgt_flags",
+ "pgt_env",
  "pgt_fs",
  "pgt_lsp",
  "pgt_text_edit",
@@ -2852,6 +2852,7 @@ dependencies = [
  "pgt_analyser",
  "pgt_console",
  "pgt_diagnostics",
+ "pgt_env",
  "pgt_text_size",
  "rustc-hash 2.1.0",
  "schemars",
@@ -2897,6 +2898,7 @@ dependencies = [
 name = "pgt_diagnostics_categories"
 version = "0.0.0"
 dependencies = [
+ "pgt_env",
  "quote",
  "schemars",
  "serde",
@@ -2913,7 +2915,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_flags"
+name = "pgt_env"
 version = "0.0.0"
 dependencies = [
  "pgt_console",
@@ -3235,6 +3237,7 @@ dependencies = [
  "pgt_configuration",
  "pgt_console",
  "pgt_diagnostics",
+ "pgt_env",
  "pgt_fs",
  "pgt_hover",
  "pgt_lexer",
@@ -5712,6 +5715,7 @@ dependencies = [
  "pgt_analyse",
  "pgt_analyser",
  "pgt_diagnostics",
+ "pgt_env",
  "pgt_workspace",
  "proc-macro2",
  "pulldown-cmark",
