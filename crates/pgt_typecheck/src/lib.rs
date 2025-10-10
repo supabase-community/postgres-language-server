@@ -10,7 +10,7 @@ use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
 use typed_identifier::apply_identifiers;
-pub use typed_identifier::{IdentifierType, TypedIdentifier};
+pub use typed_identifier::{IdentifierType, TypedIdentifier, TypedReplacement};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
@@ -48,7 +48,7 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let replacement = apply_identifiers(
+    let typed_replacement = apply_identifiers(
         params.identifiers,
         params.schema_cache,
         params.tree,
@@ -68,13 +68,13 @@ pub async fn check_sql(
         conn.execute(&*search_path_query).await?;
     }
 
-    let res = conn.prepare(replacement.text()).await;
+    let res = conn.prepare(typed_replacement.replacement.text()).await;
 
     match res {
         Ok(_) => Ok(None),
         Err(sqlx::Error::Database(err)) => {
             let pg_err = err.downcast_ref::<PgDatabaseError>();
-            Ok(Some(create_type_error(pg_err, params.tree, replacement)))
+            Ok(Some(create_type_error(pg_err, params.tree, typed_replacement)))
         }
         Err(err) => Err(err),
     }

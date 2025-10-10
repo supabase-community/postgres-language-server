@@ -2,8 +2,10 @@ use std::io;
 
 use pgt_console::markup;
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
-use pgt_text_size::{TextRange, TextRangeReplacement, TextSize};
+use pgt_text_size::{TextRange, TextSize};
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
+
+use crate::{IdentifierType, TypedReplacement};
 
 /// A specialized diagnostic for the typechecker.
 ///
@@ -94,10 +96,42 @@ impl Advices for TypecheckAdvices {
     }
 }
 
+/// Finds the original type at the given position in the adjusted text
+fn find_type_at_position(
+    adjusted_position: TextSize,
+    type_info: &[(TextRange, IdentifierType)],
+) -> Option<&IdentifierType> {
+    type_info
+        .iter()
+        .find(|(range, _)| range.contains(adjusted_position))
+        .map(|(_, type_)| type_)
+}
+
+/// Rewrites error messages to show the original type name instead of the replaced literal value
+fn rewrite_error_message(original_message: &str, identifier_type: &IdentifierType) -> String {
+    // pattern: invalid input syntax for type X: "literal_value"
+    // we want to replace "literal_value" with the type name
+
+    if let Some(colon_pos) = original_message.rfind(": ") {
+        let before_value = &original_message[..colon_pos];
+
+        // build the type name, including schema if present
+        let type_name = if let Some(schema) = &identifier_type.schema {
+            format!("{}.{}", schema, identifier_type.name)
+        } else {
+            identifier_type.name.clone()
+        };
+
+        format!("{}: {}", before_value, type_name)
+    } else {
+        original_message.to_string()
+    }
+}
+
 pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
-    txt_replacement: TextRangeReplacement,
+    typed_replacement: TypedReplacement,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
         sqlx::postgres::PgErrorPosition::Original(pos) => Some(pos - 1),
@@ -105,7 +139,7 @@ pub(crate) fn create_type_error(
     });
 
     let range = position.and_then(|pos| {
-        let adjusted = txt_replacement.to_original_position(TextSize::new(pos.try_into().unwrap()));
+        let adjusted = typed_replacement.replacement.to_original_position(TextSize::new(pos.try_into().unwrap()));
 
         ts.root_node()
             .named_descendant_for_byte_range(adjusted.into(), adjusted.into())
@@ -128,8 +162,20 @@ pub(crate) fn create_type_error(
         PgSeverity::Log => Severity::Information,
     };
 
+    // check if the error position corresponds to a replaced parameter
+    let message = if let Some(pos) = position {
+        let adjusted_pos = TextSize::new(pos.try_into().unwrap());
+        if let Some(original_type) = find_type_at_position(adjusted_pos, &typed_replacement.type_info) {
+            rewrite_error_message(pg_err.message(), original_type)
+        } else {
+            pg_err.to_string()
+        }
+    } else {
+        pg_err.to_string()
+    };
+
     TypecheckDiagnostic {
-        message: pg_err.to_string().into(),
+        message: message.into(),
         severity,
         span: range,
         advices: TypecheckAdvices {

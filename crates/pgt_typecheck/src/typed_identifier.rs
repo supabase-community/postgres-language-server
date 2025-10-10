@@ -1,5 +1,5 @@
 use pgt_schema_cache::PostgresType;
-use pgt_text_size::{TextRangeReplacement, TextRangeReplacementBuilder};
+use pgt_text_size::{TextRange, TextRangeReplacement, TextRangeReplacementBuilder};
 use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
 /// It is used to replace parameters within the SQL string.
@@ -21,13 +21,20 @@ pub struct IdentifierType {
     pub is_array: bool,
 }
 
+/// Contains the text replacement along with metadata about which ranges correspond to which types.
+#[derive(Debug)]
+pub struct TypedReplacement {
+    pub replacement: TextRangeReplacement,
+    pub type_info: Vec<(TextRange, IdentifierType)>,
+}
+
 /// Applies the identifiers to the SQL string by replacing them with their default values.
 pub fn apply_identifiers<'a>(
     identifiers: Vec<TypedIdentifier>,
     schema_cache: &'a pgt_schema_cache::SchemaCache,
     cst: &'a tree_sitter::Tree,
     sql: &'a str,
-) -> TextRangeReplacement {
+) -> TypedReplacement {
     let mut executor = TreeSitterQueriesExecutor::new(cst.root_node(), sql);
 
     executor.add_query_results::<ParameterMatch>();
@@ -46,20 +53,26 @@ pub fn apply_identifiers<'a>(
             // Resolve the type based on whether we're accessing a field of a composite type
             let type_ = resolve_type(identifier, position, &parts, schema_cache)?;
 
-            Some((m.get_byte_range(), type_, identifier.type_.is_array))
+            Some((m.get_byte_range(), type_, identifier.type_.clone()))
         })
         .collect();
 
     let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
+    let mut type_info = vec![];
 
-    for (range, type_, is_array) in replacements {
-        let default_value = get_formatted_default_value(type_, is_array);
+    for (range, type_, original_type) in replacements {
+        let default_value = get_formatted_default_value(type_, original_type.is_array);
 
         text_range_replacement_builder
             .replace_range(range.clone().try_into().unwrap(), &default_value);
+
+        type_info.push((range.try_into().unwrap(), original_type));
     }
 
-    text_range_replacement_builder.build()
+    TypedReplacement {
+        replacement: text_range_replacement_builder.build(),
+        type_info,
+    }
 }
 
 /// Format the default value based on the type and whether it's an array
@@ -307,7 +320,7 @@ mod tests {
         let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
         assert_eq!(
-            replacement.text(),
+            replacement.replacement.text(),
             // the numeric parameters are filled with 0;
             "select 0 + 0 + 0 + 0 + 0 + 'critical'"
         );
@@ -357,7 +370,7 @@ mod tests {
         let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
         assert_eq!(
-            replacement.text(),
+            replacement.replacement.text(),
             r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = '';"#
         );
     }
