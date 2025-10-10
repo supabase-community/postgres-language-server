@@ -109,6 +109,13 @@ impl TryFrom<usize> for TextSize {
     }
 }
 
+impl From<TextSize> for isize {
+    #[inline]
+    fn from(value: TextSize) -> Self {
+        value.raw as isize
+    }
+}
+
 impl From<TextSize> for usize {
     #[inline]
     fn from(value: TextSize) -> Self {

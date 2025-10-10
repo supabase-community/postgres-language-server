@@ -92,7 +92,7 @@ mod tests {
             assert_eq!(
                 self.result.ranges.len(),
                 expected.len(),
-                "Expected {} statements for input {}, got {}: {:?}",
+                "Expected {} statements for input\n{}\ngot {}:\n{:?}",
                 expected.len(),
                 self.input,
                 self.result.ranges.len(),
@@ -131,6 +131,40 @@ mod tests {
 
             self
         }
+    }
+
+    #[test]
+    fn begin_commit() {
+        Tester::from(
+            "BEGIN;
+SELECT 1;
+COMMIT;",
+        )
+        .expect_statements(vec!["BEGIN;", "SELECT 1;", "COMMIT;"]);
+    }
+
+    #[test]
+    fn begin_atomic() {
+        Tester::from(
+            "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;",
+        )
+        .expect_statements(vec![
+            "CREATE OR REPLACE FUNCTION public.test_fn(some_in TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+STRICT
+BEGIN ATOMIC
+  SELECT $1 || 'foo';
+END;",
+        ]);
     }
 
     #[test]
@@ -504,6 +538,32 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn merge_into() {
+        Tester::from(
+            "MERGE INTO course_permissions AS cp
+USING (SELECT 1 AS user_id, 2 AS course_id, 'Owner'::enum_course_role AS course_role) AS data
+ON (cp.course_id = data.course_id AND cp.user_id = data.user_id)
+WHEN MATCHED THEN UPDATE SET course_role = data.course_role
+WHEN NOT MATCHED THEN
+INSERT
+  (user_id, course_id, course_role)
+VALUES
+  (data.user_id, data.course_id, data.course_role);",
+        )
+        .expect_statements(vec![
+            "MERGE INTO course_permissions AS cp
+USING (SELECT 1 AS user_id, 2 AS course_id, 'Owner'::enum_course_role AS course_role) AS data
+ON (cp.course_id = data.course_id AND cp.user_id = data.user_id)
+WHEN MATCHED THEN UPDATE SET course_role = data.course_role
+WHEN NOT MATCHED THEN
+INSERT
+  (user_id, course_id, course_role)
+VALUES
+  (data.user_id, data.course_id, data.course_role);",
+        ]);
+    }
+
+    #[test]
     fn commas_and_newlines() {
         Tester::from(
             "
@@ -518,5 +578,13 @@ values ('insert', new.id, now());",
         .expect_statements(vec![
             "select\n            email,\n\n\n        from\n            auth.users;",
         ]);
+    }
+
+    #[test]
+    fn does_not_panic_on_eof_expectation() {
+        Tester::from("insert").expect_errors(vec![SplitDiagnostic::new(
+            "Expected INTO_KW".to_string(),
+            TextRange::new(0.into(), 6.into()),
+        )]);
     }
 }

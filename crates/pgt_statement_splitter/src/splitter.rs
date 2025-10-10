@@ -168,9 +168,15 @@ impl<'a> Splitter<'a> {
         if self.current() == kind {
             self.advance();
         } else {
+            let token = if self.current() == SyntaxKind::EOF {
+                self.current_pos - 1
+            } else {
+                self.current_pos
+            };
+
             self.errors.push(SplitError {
                 msg: format!("Expected {:#?}", kind),
-                token: self.current_pos,
+                token,
             });
         }
     }

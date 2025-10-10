@@ -11,16 +11,15 @@ select
     when c.relreplident = 'f' then 'FULL'
     else 'NOTHING'
   end as "replica_identity!",
-  pg_total_relation_size(format('%I.%I', nc.nspname, c.relname)) :: int8 as "bytes!",
-  pg_size_pretty(
-    pg_total_relation_size(format('%I.%I', nc.nspname, c.relname))
-  ) as "size!",
+  relation_size:: int8 as "bytes!",
+  pg_size_pretty(relation_size) as "size!",
   pg_stat_get_live_tuples(c.oid) as "live_rows_estimate!",
   pg_stat_get_dead_tuples(c.oid) as "dead_rows_estimate!",
   obj_description(c.oid) as comment
 from
   pg_namespace nc
   join pg_class c on nc.oid = c.relnamespace
+  cross join lateral pg_total_relation_size(c.oid) relation_size
 where
   c.relkind in ('r', 'p', 'v', 'm')
   and not pg_is_other_temp_schema(nc.oid)
@@ -32,10 +31,3 @@ where
     )
     or has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')
   )
-group by
-  c.oid,
-  c.relname,
-  c.relrowsecurity,
-  c.relforcerowsecurity,
-  c.relreplident,
-  nc.nspname;
