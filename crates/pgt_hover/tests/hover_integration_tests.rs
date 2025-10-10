@@ -518,3 +518,44 @@ async fn test_grant_table_hover(test_db: PgPool) {
 
     test_hover_at_cursor("grant_select", query, None, &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn no_hover_results_over_params(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    {
+        let query = format!(
+            "select * from users where name = $n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("$-param", query, None, &test_db).await;
+    }
+    {
+        let query = format!(
+            "select * from users where name = :n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor(":-param", query, None, &test_db).await;
+    }
+    {
+        let query = format!(
+            "select * from users where name = @n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("@-param", query, None, &test_db).await;
+    }
+    {
+        let query = format!(
+            "select * from users where name = ?n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("?-param", query, None, &test_db).await;
+    }
+}

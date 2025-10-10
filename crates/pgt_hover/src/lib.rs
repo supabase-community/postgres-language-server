@@ -25,11 +25,15 @@ pub struct OnHoverParams<'a> {
     position = params.position.to_string()
 ))]
 pub fn on_hover(params: OnHoverParams) -> Vec<String> {
+    println!("on hover!");
+
     let ctx = pgt_treesitter::context::TreesitterContext::new(TreeSitterContextParams {
         position: params.position,
         text: params.stmt_sql,
         tree: params.ts_tree,
     });
+
+    println!("ctx {:#?}", ctx);
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
         let items: Vec<Hoverable> = match hovered_node {

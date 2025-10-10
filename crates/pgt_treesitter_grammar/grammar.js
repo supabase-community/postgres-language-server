@@ -3378,10 +3378,10 @@ module.exports = grammar({
       choice(
         $._identifier,
         $._double_quote_string,
-        $._tsql_parameter,
+        $._sql_parameter,
         seq("`", $._identifier, "`")
       ),
-    _tsql_parameter: ($) => seq("@", $._identifier),
+    _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]*/,
     _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]*/,
   },
 });
