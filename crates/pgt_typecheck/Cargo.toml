@@ -29,8 +29,13 @@ tree-sitter.workspace            = true
 uuid                             = { version = "1.18.1", features = ["v4"] }
 
 [dev-dependencies]
+criterion.workspace      = true
 insta.workspace          = true
 pgt_test_utils.workspace = true
+
+[[bench]]
+harness = false
+name    = "error_rewriting"
 
 [lib]
 doctest = false

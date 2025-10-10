@@ -1,5 +1,5 @@
-mod diagnostics;
-mod typed_identifier;
+pub mod diagnostics;
+pub mod typed_identifier;
 
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
@@ -10,7 +10,7 @@ use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
 use typed_identifier::apply_identifiers;
-pub use typed_identifier::{IdentifierType, TypedIdentifier};
+pub use typed_identifier::{IdentifierReplacement, IdentifierType, TypedIdentifier};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {

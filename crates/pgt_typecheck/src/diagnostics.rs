@@ -117,20 +117,6 @@ static ERROR_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
             },
         },
         ErrorRewriteRule {
-            pattern: Regex::new(
-                r#"column "([^"]*)" is of type (\w+) but expression is of type (\w+)"#,
-            )
-            .unwrap(),
-            rewrite: |caps, replacement| {
-                let column = &caps[1];
-                let expected_type = &caps[2];
-                format!(
-                    "column `{}` expects {}, but `{}` is of type {}",
-                    column, expected_type, replacement.original_name, replacement.type_name
-                )
-            },
-        },
-        ErrorRewriteRule {
             pattern: Regex::new(r#"operator does not exist: (.+)"#).unwrap(),
             rewrite: |caps, replacement| {
                 let operator_expr = &caps[1];
@@ -144,7 +130,7 @@ static ERROR_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
 });
 
 /// Rewrites Postgres error messages to be more user-friendly
-fn rewrite_error_message(pg_error_message: &str, replacement: &IdentifierReplacement) -> String {
+pub fn rewrite_error_message(pg_error_message: &str, replacement: &IdentifierReplacement) -> String {
     // try each rule
     for rule in ERROR_RULES.iter() {
         if let Some(caps) = rule.pattern.captures(pg_error_message) {

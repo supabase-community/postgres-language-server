@@ -22,7 +22,7 @@ pub struct IdentifierType {
 }
 
 #[derive(Debug)]
-pub(crate) struct IdentifierReplacement {
+pub struct IdentifierReplacement {
     pub original_name: String,
     pub original_range: std::ops::Range<usize>,
     /// The default value with which the identifier was replaced, e.g. `''` for a TEXT param.
@@ -32,7 +32,7 @@ pub(crate) struct IdentifierReplacement {
 
 /// Contains the text replacement along with metadata about which ranges correspond to which types.
 #[derive(Debug)]
-pub(crate) struct TypedReplacement {
+pub struct TypedReplacement {
     text_replacement: TextRangeReplacement,
     identifier_replacements: Vec<IdentifierReplacement>,
 }

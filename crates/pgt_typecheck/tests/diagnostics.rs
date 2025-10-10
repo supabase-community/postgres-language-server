@@ -177,3 +177,34 @@ async fn invalid_type_in_function(test_db: PgPool) {
     .test()
     .await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn operator_does_not_exist(test_db: PgPool) {
+    // tests the pattern: operator does not exist: X + Y
+    // use boolean type which doesn't have + operator with text
+    let setup = r#"
+        create table public.products (
+            id serial primary key,
+            is_active boolean not null,
+            product_name text not null
+        );
+    "#;
+
+    TestSetup {
+        name: "operator_does_not_exist",
+        setup: Some(setup),
+        query: r#"select is_active + product_name from public.products;"#,
+        test_db: &test_db,
+        typed_identifiers: vec![TypedIdentifier {
+            path: "calculate_total".to_string(),
+            name: Some("product_name".to_string()),
+            type_: IdentifierType {
+                schema: None,
+                name: "text".to_string(),
+                is_array: false,
+            },
+        }],
+    }
+    .test()
+    .await;
+}
