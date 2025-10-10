@@ -134,7 +134,6 @@ pub fn rewrite_error_message(
     pg_error_message: &str,
     replacement: &IdentifierReplacement,
 ) -> String {
-    tracing::debug!("Rewriting error message: {}", pg_error_message);
     for rule in ERROR_REWRITE_RULES.iter() {
         if let Some(caps) = rule.pattern.captures(pg_error_message) {
             return (rule.rewrite)(&caps, replacement);

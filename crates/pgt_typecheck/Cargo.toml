@@ -22,7 +22,6 @@ pgt_schema_cache.workspace       = true
 pgt_text_size.workspace          = true
 pgt_treesitter.workspace         = true
 pgt_treesitter_grammar.workspace = true
-tracing.workspace                = true
 regex                            = "1.11.1"
 sqlx.workspace                   = true
 tokio.workspace                  = true
