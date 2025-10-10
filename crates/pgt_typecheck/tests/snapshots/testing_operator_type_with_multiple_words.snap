@@ -1,6 +1,5 @@
 ---
 source: crates/pgt_typecheck/tests/diagnostics.rs
-assertion_line: 96
 expression: content
 ---
 delete from public.products where ~~~released > pid~~~;
