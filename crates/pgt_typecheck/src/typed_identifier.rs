@@ -55,11 +55,6 @@ pub fn apply_identifiers<'a>(
     for (range, type_, is_array) in replacements {
         let default_value = get_formatted_default_value(type_, is_array);
 
-        let range_size = range.end - range.start;
-
-        // if the default_value is shorter than "range", fill it up with spaces
-        let default_value = format!("{:<range_size$}", default_value);
-
         text_range_replacement_builder
             .replace_range(range.clone().try_into().unwrap(), &default_value);
     }
@@ -314,7 +309,7 @@ mod tests {
         assert_eq!(
             replacement.text(),
             // the numeric parameters are filled with 0;
-            "select 0      + 0                           + 0  + 0                   + 0               + 'critical'"
+            "select 0 + 0 + 0 + 0 + 0 + 'critical'"
         );
     }
 
@@ -363,8 +358,7 @@ mod tests {
 
         assert_eq!(
             replacement.text(),
-            // two spaces at the end because mail is longer than ''
-            r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = ''  ;"#
+            r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = '';"#
         );
     }
 }
