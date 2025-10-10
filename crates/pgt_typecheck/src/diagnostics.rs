@@ -1,11 +1,13 @@
 use std::io;
 
+use once_cell::sync::Lazy;
 use pgt_console::markup;
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
 use pgt_text_size::{TextRange, TextSize};
+use regex::Regex;
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
 
-use crate::{IdentifierType, TypedReplacement};
+use crate::typed_identifier::{IdentifierReplacement, TypedReplacement};
 
 /// A specialized diagnostic for the typechecker.
 ///
@@ -96,36 +98,65 @@ impl Advices for TypecheckAdvices {
     }
 }
 
-/// Finds the original type at the given position in the adjusted text
-fn find_type_at_position(
-    adjusted_position: TextSize,
-    type_info: &[(TextRange, IdentifierType)],
-) -> Option<&IdentifierType> {
-    type_info
-        .iter()
-        .find(|(range, _)| range.contains(adjusted_position))
-        .map(|(_, type_)| type_)
+/// Pattern and rewrite rule for error messages
+struct ErrorRewriteRule {
+    pattern: Regex,
+    rewrite: fn(&regex::Captures, &IdentifierReplacement) -> String,
 }
 
-/// Rewrites error messages to show the original type name instead of the replaced literal value
-fn rewrite_error_message(original_message: &str, identifier_type: &IdentifierType) -> String {
-    // pattern: invalid input syntax for type X: "literal_value"
-    // we want to replace "literal_value" with the type name
+static ERROR_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
+    vec![
+        ErrorRewriteRule {
+            pattern: Regex::new(r#"invalid input syntax for type (\w+): "([^"]*)""#).unwrap(),
+            rewrite: |caps, replacement| {
+                let expected_type = &caps[1];
+                format!(
+                    "`{}` is of type {}, not {}",
+                    replacement.original_name, replacement.type_name, expected_type
+                )
+            },
+        },
+        ErrorRewriteRule {
+            pattern: Regex::new(
+                r#"column "([^"]*)" is of type (\w+) but expression is of type (\w+)"#,
+            )
+            .unwrap(),
+            rewrite: |caps, replacement| {
+                let column = &caps[1];
+                let expected_type = &caps[2];
+                format!(
+                    "column `{}` expects {}, but `{}` is of type {}",
+                    column, expected_type, replacement.original_name, replacement.type_name
+                )
+            },
+        },
+        ErrorRewriteRule {
+            pattern: Regex::new(r#"operator does not exist: (.+)"#).unwrap(),
+            rewrite: |caps, replacement| {
+                let operator_expr = &caps[1];
+                format!(
+                    "operator does not exist: {} (parameter `{}` is of type {})",
+                    operator_expr, replacement.original_name, replacement.type_name
+                )
+            },
+        },
+    ]
+});
 
-    if let Some(colon_pos) = original_message.rfind(": ") {
-        let before_value = &original_message[..colon_pos];
-
-        // build the type name, including schema if present
-        let type_name = if let Some(schema) = &identifier_type.schema {
-            format!("{}.{}", schema, identifier_type.name)
-        } else {
-            identifier_type.name.clone()
-        };
-
-        format!("{}: {}", before_value, type_name)
-    } else {
-        original_message.to_string()
+/// Rewrites Postgres error messages to be more user-friendly
+fn rewrite_error_message(pg_error_message: &str, replacement: &IdentifierReplacement) -> String {
+    // try each rule
+    for rule in ERROR_RULES.iter() {
+        if let Some(caps) = rule.pattern.captures(pg_error_message) {
+            return (rule.rewrite)(&caps, replacement);
+        }
     }
+
+    // fallback: generic value replacement
+    let unquoted_default = replacement.default_value.trim_matches('\'');
+    pg_error_message
+        .replace(&format!("\"{}\"", unquoted_default), &replacement.type_name)
+        .replace(&format!("'{}'", unquoted_default), &replacement.type_name)
 }
 
 pub(crate) fn create_type_error(
@@ -138,11 +169,17 @@ pub(crate) fn create_type_error(
         _ => None,
     });
 
-    let range = position.and_then(|pos| {
-        let adjusted = typed_replacement.replacement.to_original_position(TextSize::new(pos.try_into().unwrap()));
+    let original_position = position.map(|p| {
+        let pos = TextSize::new(p.try_into().unwrap());
 
+        typed_replacement
+            .text_replacement()
+            .to_original_position(pos)
+    });
+
+    let range = original_position.and_then(|pos| {
         ts.root_node()
-            .named_descendant_for_byte_range(adjusted.into(), adjusted.into())
+            .named_descendant_for_byte_range(pos.into(), pos.into())
             .map(|node| {
                 TextRange::new(
                     node.start_byte().try_into().unwrap(),
@@ -162,11 +199,9 @@ pub(crate) fn create_type_error(
         PgSeverity::Log => Severity::Information,
     };
 
-    // check if the error position corresponds to a replaced parameter
-    let message = if let Some(pos) = position {
-        let adjusted_pos = TextSize::new(pos.try_into().unwrap());
-        if let Some(original_type) = find_type_at_position(adjusted_pos, &typed_replacement.type_info) {
-            rewrite_error_message(pg_err.message(), original_type)
+    let message = if let Some(pos) = original_position {
+        if let Some(replacement) = typed_replacement.find_type_at_position(pos) {
+            rewrite_error_message(pg_err.message(), replacement)
         } else {
             pg_err.to_string()
         }

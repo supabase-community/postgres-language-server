@@ -14,6 +14,7 @@ version              = "0.0.0"
 [dependencies]
 globset                          = "0.4.16"
 itertools                        = { version = "0.14.0" }
+once_cell                        = "1.20.2"
 pgt_console.workspace            = true
 pgt_diagnostics.workspace        = true
 pgt_query.workspace              = true
@@ -21,6 +22,7 @@ pgt_schema_cache.workspace       = true
 pgt_text_size.workspace          = true
 pgt_treesitter.workspace         = true
 pgt_treesitter_grammar.workspace = true
+regex                            = "1.11.1"
 sqlx.workspace                   = true
 tokio.workspace                  = true
 tree-sitter.workspace            = true

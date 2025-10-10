@@ -1,5 +1,5 @@
 use pgt_schema_cache::PostgresType;
-use pgt_text_size::{TextRange, TextRangeReplacement, TextRangeReplacementBuilder};
+use pgt_text_size::{TextRange, TextRangeReplacement, TextRangeReplacementBuilder, TextSize};
 use pgt_treesitter::queries::{ParameterMatch, TreeSitterQueriesExecutor};
 
 /// It is used to replace parameters within the SQL string.
@@ -21,11 +21,52 @@ pub struct IdentifierType {
     pub is_array: bool,
 }
 
+#[derive(Debug)]
+pub(crate) struct IdentifierReplacement {
+    pub original_name: String,
+    pub original_range: std::ops::Range<usize>,
+    /// The default value with which the identifier was replaced, e.g. `''` for a TEXT param.
+    pub default_value: String,
+    pub type_name: String,
+}
+
 /// Contains the text replacement along with metadata about which ranges correspond to which types.
 #[derive(Debug)]
-pub struct TypedReplacement {
-    pub replacement: TextRangeReplacement,
-    pub type_info: Vec<(TextRange, IdentifierType)>,
+pub(crate) struct TypedReplacement {
+    text_replacement: TextRangeReplacement,
+    identifier_replacements: Vec<IdentifierReplacement>,
+}
+
+impl TypedReplacement {
+    pub fn new(sql: &str, replacements: Vec<IdentifierReplacement>) -> Self {
+        let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
+
+        for replacement in &replacements {
+            let text_range: TextRange = replacement.original_range.clone().try_into().unwrap();
+            text_range_replacement_builder.replace_range(text_range, &replacement.default_value);
+        }
+
+        Self {
+            identifier_replacements: replacements,
+            text_replacement: text_range_replacement_builder.build(),
+        }
+    }
+
+    /// Finds the original type at the given position in the adjusted text
+    pub(crate) fn find_type_at_position(
+        &self,
+        original_position: TextSize,
+    ) -> Option<&IdentifierReplacement> {
+        self.identifier_replacements.iter().find(|replacement| {
+            replacement
+                .original_range
+                .contains(&original_position.try_into().unwrap())
+        })
+    }
+
+    pub(crate) fn text_replacement(&self) -> &TextRangeReplacement {
+        &self.text_replacement
+    }
 }
 
 /// Applies the identifiers to the SQL string by replacing them with their default values.
@@ -40,7 +81,7 @@ pub fn apply_identifiers<'a>(
     executor.add_query_results::<ParameterMatch>();
 
     // Collect all replacements first to avoid modifying the string while iterating
-    let replacements: Vec<_> = executor
+    let replacements: Vec<IdentifierReplacement> = executor
         .get_iter(None)
         .filter_map(|q| {
             let m: &ParameterMatch = q.try_into().ok()?;
@@ -51,28 +92,23 @@ pub fn apply_identifiers<'a>(
             let (identifier, position) = find_matching_identifier(&parts, &identifiers)?;
 
             // Resolve the type based on whether we're accessing a field of a composite type
-            let type_ = resolve_type(identifier, position, &parts, schema_cache)?;
+            let postgres_type = resolve_type(identifier, position, &parts, schema_cache)?;
 
-            Some((m.get_byte_range(), type_, identifier.type_.clone()))
+            let default_value =
+                get_formatted_default_value(postgres_type, identifier.type_.is_array);
+
+            let replacement = IdentifierReplacement {
+                default_value,
+                original_name: identifier.name.clone().unwrap_or("".into()),
+                original_range: m.get_byte_range(),
+                type_name: identifier.type_.name.clone(),
+            };
+
+            Some(replacement)
         })
         .collect();
 
-    let mut text_range_replacement_builder = TextRangeReplacementBuilder::new(sql);
-    let mut type_info = vec![];
-
-    for (range, type_, original_type) in replacements {
-        let default_value = get_formatted_default_value(type_, original_type.is_array);
-
-        text_range_replacement_builder
-            .replace_range(range.clone().try_into().unwrap(), &default_value);
-
-        type_info.push((range.try_into().unwrap(), original_type));
-    }
-
-    TypedReplacement {
-        replacement: text_range_replacement_builder.build(),
-        type_info,
-    }
+    TypedReplacement::new(sql, replacements)
 }
 
 /// Format the default value based on the type and whether it's an array
@@ -320,7 +356,7 @@ mod tests {
         let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
         assert_eq!(
-            replacement.replacement.text(),
+            replacement.text_replacement.text(),
             // the numeric parameters are filled with 0;
             "select 0 + 0 + 0 + 0 + 0 + 'critical'"
         );
@@ -370,7 +406,7 @@ mod tests {
         let replacement = super::apply_identifiers(identifiers, &schema_cache, &tree, input);
 
         assert_eq!(
-            replacement.replacement.text(),
+            replacement.text_replacement.text(),
             r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = '';"#
         );
     }
