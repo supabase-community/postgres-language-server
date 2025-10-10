@@ -24,6 +24,10 @@ impl HoveredNode {
     pub(crate) fn get(ctx: &pgt_treesitter::context::TreesitterContext) -> Option<Self> {
         let node_content = ctx.get_node_under_cursor_content()?;
 
+        if looks_like_sql_param(node_content.as_str()) {
+            return None;
+        }
+
         let under_cursor = ctx.node_under_cursor.as_ref()?;
 
         match under_cursor.kind() {
@@ -113,4 +117,11 @@ impl HoveredNode {
             _ => None,
         }
     }
+}
+
+fn looks_like_sql_param(content: &str) -> bool {
+    (content.starts_with("$") && !content.starts_with("$$"))
+        || (content.starts_with(":") && !content.starts_with("::"))
+        || (content.starts_with("@"))
+        || content.starts_with("?")
 }
