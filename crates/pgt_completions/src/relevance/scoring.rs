@@ -35,6 +35,7 @@ impl CompletionScore<'_> {
         self.check_matching_wrapping_node(ctx);
         self.check_relations_in_stmt(ctx);
         self.check_columns_in_stmt(ctx);
+        self.check_is_not_wellknown_migration(ctx);
     }
 
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
@@ -100,12 +101,14 @@ impl CompletionScore<'_> {
                 WrappingClause::Select if !has_mentioned_tables => 15,
                 WrappingClause::Select if has_mentioned_tables => 0,
                 WrappingClause::From => 0,
+                WrappingClause::CheckOrUsingClause => 0,
                 _ => -50,
             },
             CompletionRelevanceData::Column(col) => match clause_type {
                 WrappingClause::Select if has_mentioned_tables => 10,
                 WrappingClause::Select if !has_mentioned_tables => 0,
                 WrappingClause::Where => 10,
+                WrappingClause::CheckOrUsingClause => 0,
                 WrappingClause::Join { on_node }
                     if on_node.is_some_and(|on| {
                         ctx.node_under_cursor
@@ -123,10 +126,13 @@ impl CompletionScore<'_> {
                 WrappingClause::Join { .. } if !has_mentioned_schema => 15,
                 WrappingClause::Update if !has_mentioned_schema => 15,
                 WrappingClause::Delete if !has_mentioned_schema => 15,
+                WrappingClause::AlterPolicy if !has_mentioned_schema => 15,
+                WrappingClause::DropPolicy if !has_mentioned_schema => 15,
+                WrappingClause::CreatePolicy if !has_mentioned_schema => 15,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => match clause_type {
-                WrappingClause::PolicyName => 25,
+                WrappingClause::AlterPolicy | WrappingClause::DropPolicy => 25,
                 _ => -50,
             },
 
@@ -156,6 +162,7 @@ impl CompletionScore<'_> {
                 _ => -50,
             },
             CompletionRelevanceData::Function(_) => match wrapping_node {
+                WrappingNode::BinaryExpression => 15,
                 WrappingNode::Relation => 10,
                 _ => -50,
             },
@@ -184,7 +191,6 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
-        // TODO
         let schema_name = match ctx.schema_or_alias_name.as_ref() {
             None => return,
             Some(n) => n.replace('"', ""),
@@ -345,6 +351,20 @@ impl CompletionScore<'_> {
                     })
                 })
             {
+                self.score -= 10;
+            }
+        }
+    }
+
+    fn check_is_not_wellknown_migration(&mut self, _ctx: &TreesitterContext) {
+        if let Some(table_name) = self.get_table_name() {
+            if ["_sqlx_migrations"].contains(&table_name) {
+                self.score -= 10;
+            }
+        }
+
+        if let Some(schema_name) = self.get_schema_name() {
+            if ["supabase_migrations"].contains(&schema_name) {
                 self.score -= 10;
             }
         }

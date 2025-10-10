@@ -112,6 +112,9 @@ jobs:
             sleep 1
           done
 
+      - name: Install tree-sitter-cli
+        run: cargo install tree-sitter-cli
+
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
 
@@ -167,12 +170,15 @@ jobs:
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
+      - name: Install tree-sitter-cli
+        run: cargo install tree-sitter-cli
+
       - name: Run tests
         run: cargo test --workspace
 
   test-js-bindings:
     name:
-      Test JS Bindings
+      Test JS Packages
       # use the same image we use for compiling
     runs-on: ubuntu-22.04
     services:
@@ -195,17 +201,22 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
+      - name: Install tree-sitter-cli
+        run: cargo install tree-sitter-cli
       - name: Build main binary
         run: cargo build -p pgt_cli --release
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Install JS dependencies
         run: bun install
-      - name: Build TypeScript code
+      - name: Build backend-jsonrpc
         working-directory: packages/@postgrestools/backend-jsonrpc
         run: bun run build
-      - name: Run JS tests
+      - name: Run backend-jsonrpc test
         working-directory: packages/@postgrestools/backend-jsonrpc
+        run: bun run test
+      - name: Run cli test
+        working-directory: packages/@postgrestools/postgrestools
         run: bun run test
 
   codegen:
@@ -233,6 +244,8 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install tree-sitter-cli
+        run: cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain

@@ -48,7 +48,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .map(Hoverable::from)
                     .collect(),
 
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Column(node_identification) => match node_identification {
@@ -74,7 +74,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                         .collect()
                 }
 
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Function(node_identification) => match node_identification {
@@ -92,7 +92,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .map(Hoverable::from)
                     .collect(),
 
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Role(node_identification) => match node_identification {
@@ -103,8 +103,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .map(Hoverable::from)
                     .collect(),
 
-                hovered_node::NodeIdentification::SchemaAndName(_) => vec![],
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Schema(node_identification) => match node_identification {

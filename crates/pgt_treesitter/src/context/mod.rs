@@ -4,17 +4,13 @@ use std::{
 };
 mod base_parser;
 mod grant_parser;
-mod policy_parser;
 mod revoke_parser;
 
 use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
 use pgt_text_size::{TextRange, TextSize};
 
 use crate::context::{
-    base_parser::CompletionStatementParser,
-    grant_parser::GrantParser,
-    policy_parser::{PolicyParser, PolicyStmtKind},
-    revoke_parser::RevokeParser,
+    base_parser::CompletionStatementParser, grant_parser::GrantParser, revoke_parser::RevokeParser,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -34,20 +30,15 @@ pub enum WrappingClause<'a> {
     DropColumn,
     AlterColumn,
     RenameColumn,
-    PolicyName,
     ToRoleAssignment,
     SetStatement,
     AlterRole,
     DropRole,
 
-    /// `PolicyCheck` refers to either the `WITH CHECK` or the `USING` clause
-    /// in a policy statement.
-    /// ```sql
-    /// CREATE POLICY "my pol" ON PUBLIC.USERS
-    /// FOR SELECT
-    /// USING (...) -- this one!
-    /// ```
-    PolicyCheck,
+    CreatePolicy,
+    AlterPolicy,
+    DropPolicy,
+    CheckOrUsingClause,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -205,12 +196,7 @@ impl<'a> TreesitterContext<'a> {
             mentioned_columns: HashMap::new(),
         };
 
-        // policy handling is important to Supabase, but they are a PostgreSQL specific extension,
-        // so the pgt_treesitter_grammar language does not support it.
-        // We infer the context manually.
-        if PolicyParser::looks_like_matching_stmt(params.text) {
-            ctx.gather_policy_context();
-        } else if GrantParser::looks_like_matching_stmt(params.text) {
+        if GrantParser::looks_like_matching_stmt(params.text) {
             ctx.gather_grant_context();
         } else if RevokeParser::looks_like_matching_stmt(params.text) {
             ctx.gather_revoke_context();
@@ -275,43 +261,6 @@ impl<'a> TreesitterContext<'a> {
             "grant_role" => Some(WrappingClause::ToRoleAssignment),
             "grant_table" => Some(WrappingClause::From),
             _ => None,
-        };
-    }
-
-    fn gather_policy_context(&mut self) {
-        let policy_context = PolicyParser::get_context(self.text, self.position);
-
-        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: policy_context.node_text,
-            range: policy_context.node_range,
-            kind: policy_context.node_kind.clone(),
-            previous_node_kind: Some(policy_context.previous_node_kind),
-        });
-
-        if policy_context.node_kind == "policy_table" {
-            self.schema_or_alias_name = policy_context.schema_name.clone();
-        }
-
-        if policy_context.table_name.is_some() {
-            let mut new = HashSet::new();
-            new.insert(policy_context.table_name.unwrap());
-            self.mentioned_relations
-                .insert(policy_context.schema_name, new);
-        }
-
-        self.wrapping_clause_type = match policy_context.node_kind.as_str() {
-            "policy_name" if policy_context.statement_kind != PolicyStmtKind::Create => {
-                Some(WrappingClause::PolicyName)
-            }
-            "policy_role" => Some(WrappingClause::ToRoleAssignment),
-            "policy_table" => Some(WrappingClause::From),
-            _ => {
-                if policy_context.in_check_or_using_clause {
-                    Some(WrappingClause::PolicyCheck)
-                } else {
-                    None
-                }
-            }
         };
     }
 
@@ -498,13 +447,6 @@ impl<'a> TreesitterContext<'a> {
                 }
             }
 
-            "where" | "update" | "select" | "delete" | "from" | "join" | "column_definitions"
-            | "alter_role" | "drop_role" | "set_statement" | "drop_table" | "alter_table"
-            | "drop_column" | "alter_column" | "rename_column" => {
-                self.wrapping_clause_type =
-                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
-            }
-
             "relation" | "binary_expression" | "assignment" => {
                 self.wrapping_node_kind = current_node_kind.try_into().ok();
             }
@@ -518,7 +460,13 @@ impl<'a> TreesitterContext<'a> {
                 }
             }
 
-            _ => {}
+            _ => {
+                if let Some(clause_type) =
+                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor)
+                {
+                    self.wrapping_clause_type = Some(clause_type);
+                }
+            }
         }
 
         // We have arrived at the leaf node
@@ -734,6 +682,10 @@ impl<'a> TreesitterContext<'a> {
             "alter_table" => Some(WrappingClause::AlterTable),
             "set_statement" => Some(WrappingClause::SetStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
+            "create_policy" => Some(WrappingClause::CreatePolicy),
+            "alter_policy" => Some(WrappingClause::AlterPolicy),
+            "drop_policy" => Some(WrappingClause::DropPolicy),
+            "check_or_using_clause" => Some(WrappingClause::CheckOrUsingClause),
             "insert" => Some(WrappingClause::Insert),
             "join" => {
                 // sadly, we need to manually iterate over the children –
@@ -800,6 +752,22 @@ impl<'a> TreesitterContext<'a> {
 
                     true
                 }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+    }
+
+    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
+    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
+    ///
+    /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
+    /// you need to pass `&["relation", "object_reference"]`.
+    pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .is_some_and(|under_cursor| match under_cursor {
+                NodeUnderCursor::TsNode(node) => node
+                    .parent()
+                    .is_some_and(|p| expected_ancestors.contains(&p.kind())),
                 NodeUnderCursor::CustomNode { .. } => false,
             })
     }

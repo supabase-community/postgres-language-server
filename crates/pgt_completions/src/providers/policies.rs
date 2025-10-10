@@ -82,6 +82,21 @@ mod tests {
 
         assert_complete_results(
             format!(
+                "alter policy \"{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("read for public users disallowed".into()),
+                CompletionAssertion::Label("write for public users allowed".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
                 "alter policy \"{}\" on private.users;",
                 QueryWithCursorPosition::cursor_marker()
             )
