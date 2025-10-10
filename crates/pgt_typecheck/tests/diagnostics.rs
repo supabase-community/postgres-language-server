@@ -1,6 +1,6 @@
 use pgt_console::fmt::{Formatter, HTML};
 use pgt_diagnostics::Diagnostic;
-use pgt_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier, check_sql};
+use pgt_typecheck::{TypecheckParams, TypedIdentifier, check_sql};
 use sqlx::{Executor, PgPool};
 use std::fmt::Write;
 
