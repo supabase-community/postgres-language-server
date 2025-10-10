@@ -535,27 +535,27 @@ async fn no_hover_results_over_params(test_db: PgPool) {
             "select * from users where name = $n{}ame;",
             QueryWithCursorPosition::cursor_marker()
         );
-        test_hover_at_cursor("$-param", query, None, &test_db).await;
+        test_hover_at_cursor("dollar-param", query, None, &test_db).await;
     }
     {
         let query = format!(
             "select * from users where name = :n{}ame;",
             QueryWithCursorPosition::cursor_marker()
         );
-        test_hover_at_cursor(":-param", query, None, &test_db).await;
+        test_hover_at_cursor("colon-param", query, None, &test_db).await;
     }
     {
         let query = format!(
             "select * from users where name = @n{}ame;",
             QueryWithCursorPosition::cursor_marker()
         );
-        test_hover_at_cursor("@-param", query, None, &test_db).await;
+        test_hover_at_cursor("at-param", query, None, &test_db).await;
     }
     {
         let query = format!(
             "select * from users where name = ?n{}ame;",
             QueryWithCursorPosition::cursor_marker()
         );
-        test_hover_at_cursor("?-param", query, None, &test_db).await;
+        test_hover_at_cursor("questionmark-param", query, None, &test_db).await;
     }
 }
