@@ -1,6 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pgt_typecheck::diagnostics::rewrite_error_message;
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use pgt_typecheck::IdentifierReplacement;
+use pgt_typecheck::diagnostics::rewrite_error_message;
 
 fn benchmark_error_rewriting(c: &mut Criterion) {
     let replacement = IdentifierReplacement {

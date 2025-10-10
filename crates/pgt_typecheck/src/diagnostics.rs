@@ -130,7 +130,10 @@ static ERROR_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
 });
 
 /// Rewrites Postgres error messages to be more user-friendly
-pub fn rewrite_error_message(pg_error_message: &str, replacement: &IdentifierReplacement) -> String {
+pub fn rewrite_error_message(
+    pg_error_message: &str,
+    replacement: &IdentifierReplacement,
+) -> String {
     // try each rule
     for rule in ERROR_RULES.iter() {
         if let Some(caps) = rule.pattern.captures(pg_error_message) {

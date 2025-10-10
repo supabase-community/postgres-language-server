@@ -60,7 +60,7 @@ impl TypedReplacement {
         self.identifier_replacements.iter().find(|replacement| {
             replacement
                 .original_range
-                .contains(&original_position.try_into().unwrap())
+                .contains(&original_position.into())
         })
     }
 
