@@ -3124,6 +3124,7 @@ dependencies = [
  "regex",
  "sqlx",
  "tokio",
+ "tracing",
  "tree-sitter",
  "uuid",
 ]
