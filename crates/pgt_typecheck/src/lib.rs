@@ -48,6 +48,7 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
+    tracing::debug!("replacing types with {:#?}", params.identifiers);
     let typed_replacement = apply_identifiers(
         params.identifiers,
         params.schema_cache,

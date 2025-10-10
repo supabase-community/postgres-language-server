@@ -104,10 +104,10 @@ struct ErrorRewriteRule {
     rewrite: fn(&regex::Captures, &IdentifierReplacement) -> String,
 }
 
-static ERROR_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
+static ERROR_REWRITE_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
     vec![
         ErrorRewriteRule {
-            pattern: Regex::new(r#"invalid input syntax for type (\w+): "([^"]*)""#).unwrap(),
+            pattern: Regex::new(r#"invalid input syntax for type ([\w\s]+): "([^"]*)""#).unwrap(),
             rewrite: |caps, replacement| {
                 let expected_type = &caps[1];
                 format!(
@@ -134,14 +134,16 @@ pub fn rewrite_error_message(
     pg_error_message: &str,
     replacement: &IdentifierReplacement,
 ) -> String {
-    // try each rule
-    for rule in ERROR_RULES.iter() {
+    tracing::debug!("Rewriting error message: {}", pg_error_message);
+    for rule in ERROR_REWRITE_RULES.iter() {
         if let Some(caps) = rule.pattern.captures(pg_error_message) {
             return (rule.rewrite)(&caps, replacement);
         }
     }
 
-    // fallback: generic value replacement
+    // if we don't have a matching error-rewrite-rule,
+    // we'll fallback to replacing default values with their types,
+    // e.g. `""` is replaced with `text`.
     let unquoted_default = replacement.default_value.trim_matches('\'');
     pg_error_message
         .replace(&format!("\"{}\"", unquoted_default), &replacement.type_name)
