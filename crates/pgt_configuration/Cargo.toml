@@ -21,6 +21,7 @@ pgt_analyse              = { workspace = true }
 pgt_analyser             = { workspace = true }
 pgt_console              = { workspace = true }
 pgt_diagnostics          = { workspace = true }
+pgt_env                  = { workspace = true }
 pgt_text_size            = { workspace = true }
 rustc-hash               = { workspace = true }
 schemars                 = { workspace = true, features = ["indexmap1"], optional = true }
