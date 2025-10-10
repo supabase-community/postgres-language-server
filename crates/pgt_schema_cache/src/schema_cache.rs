@@ -185,7 +185,6 @@ mod tests {
         let setup = r#"
         CREATE TABLE public.mfa_factors (
             id uuid PRIMARY KEY,
-            user_id uuid NOT NULL,
             factor_name text NOT NULL
         );
 
