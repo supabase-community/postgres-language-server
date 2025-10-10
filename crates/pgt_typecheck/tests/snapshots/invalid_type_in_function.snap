@@ -1,0 +1,7 @@
+---
+source: crates/pgt_typecheck/tests/diagnostics.rs
+expression: content
+---
+delete from public.contacts where id = ~~~uid~~~;
+
+invalid input syntax for type integer: &quot;00000000-0000-0000-0000-000000000000&quot;
