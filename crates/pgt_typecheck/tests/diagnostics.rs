@@ -70,7 +70,9 @@ impl<'a> TestSetup<'a> {
                         result.push(c);
                     }
                 } else {
+                    result.push_str("~~~");
                     result.push_str(self.query);
+                    result.push_str("~~~");
                 }
 
                 writeln!(&mut result).unwrap();
