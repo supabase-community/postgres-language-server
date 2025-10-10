@@ -309,7 +309,7 @@ mod tests {
         assert_eq!(
             replacement.text(),
             // the numeric parameters are filled with 0;
-            "select 0      + 0                           + 0  + 0                   + 0               + 'critical'"
+            "select 0 + 0 + 0 + 0 + 0 + 'critical'"
         );
     }
 
@@ -358,8 +358,7 @@ mod tests {
 
         assert_eq!(
             replacement.text(),
-            // two spaces at the end because mail is longer than ''
-            r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = ''  ;"#
+            r#"select id from auth.users where email_change_confirm_status = '00000000-0000-0000-0000-000000000000' and email = '';"#
         );
     }
 }
