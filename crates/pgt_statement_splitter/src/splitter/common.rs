@@ -46,7 +46,10 @@ pub fn source(p: &mut Splitter) -> Result<(), SplitterException> {
 pub(crate) fn statement(p: &mut Splitter) -> Result<(), SplitterException> {
     p.start_stmt();
 
-    let result = match p.current() {
+    // Currently, Err means that we reached EOF.
+    // Regardless of whether we reach EOF or we complete the statement, we want to close it.
+    // We might want to handle other kinds of errors differently in the future.
+    let _ = match p.current() {
         SyntaxKind::WITH_KW => cte(p),
         SyntaxKind::SELECT_KW => select(p),
         SyntaxKind::INSERT_KW => insert(p),
@@ -57,12 +60,7 @@ pub(crate) fn statement(p: &mut Splitter) -> Result<(), SplitterException> {
         _ => unknown(p, &[]),
     };
 
-    // Currently, Err means that we reached EOF.
-    // Regardless of whether we reach EOF or we complete the statement, we want to close it.
-    // We might want to handle other kinds of errors differently in the future.
-    match result {
-        _ => p.close_stmt(),
-    };
+    p.close_stmt();
 
     Ok(())
 }
