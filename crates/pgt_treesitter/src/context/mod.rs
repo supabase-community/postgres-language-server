@@ -826,6 +826,42 @@ impl<'a> TreesitterContext<'a> {
             .unwrap_or(0)
     }
 
+    /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
+    pub fn node_under_cursor_is_within_field_name(&self, name: &str) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .map(|n| match n {
+                NodeUnderCursor::TsNode(node) => {
+                    // It might seem weird that we have to check for the field_name from the parent,
+                    // but TreeSitter wants it this way, since nodes often can only be named in
+                    // the context of their parents.
+                    let root_node = self.tree.root_node();
+                    let mut cursor = node.walk();
+                    let mut parent = node.parent();
+
+                    while let Some(p) = parent {
+                        if p == root_node {
+                            break;
+                        }
+
+                        if p.children_by_field_name(name, &mut cursor).any(|c| {
+                            let r = c.range();
+                            // if the parent range contains the node range, the node is of the field_name.
+                            r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
+                        }) {
+                            return true;
+                        } else {
+                            parent = p.parent();
+                        }
+                    }
+
+                    return false;
+                }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+            .unwrap_or(false)
+    }
+
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
         if let Some(key) = key.as_ref() {
             let sanitized_key = key.replace('"', "");
@@ -1213,5 +1249,27 @@ mod tests {
             }
             _ => unreachable!(),
         }
+    }
+
+    #[test]
+    fn tryout_node_field() {
+        let query = format!(
+            r#"create table foo (id int not null, compfoo som{}e_type);"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
+
+        let tree = get_tree(text.as_str());
+
+        let params = TreeSitterContextParams {
+            position: (position as u32).into(),
+            text: &text,
+            tree: &tree,
+        };
+
+        let ctx = TreesitterContext::new(params);
+
+        assert!(ctx.node_under_cursor_is_within_field_name("custom_type"));
     }
 }
