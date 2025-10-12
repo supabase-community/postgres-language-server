@@ -470,7 +470,9 @@ impl<'a> TreesitterContext<'a> {
         }
 
         // We have arrived at the leaf node
-        if current_node.child_count() == 0 {
+        if current_node.child_count() == 0
+            || current_node.first_child_for_byte(self.position).is_none()
+        {
             self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
@@ -1213,5 +1215,46 @@ mod tests {
             }
             _ => unreachable!(),
         }
+    }
+
+    #[test]
+    fn does_not_overflow_callstack_on_smaller_treesitter_child() {
+        //  Instead of autocompleting "FROM", we'll assume that the user
+        // is selecting a certain column name, such as `frozen_account`.
+        let query = format!(
+            r#"select * from persons where id = @i{}d;"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        /*
+            The query (currently) yields the following treesitter tree for the WHERE clause:
+
+            where [29..43] 'where id = @id'
+                keyword_where [29..34] 'where'
+                binary_expression [35..43] 'id = @id'
+                field [35..37] 'id'
+                    identifier [35..37] 'id'
+                = [38..39] '='
+                field [40..43] '@id'
+                    identifier [40..43] '@id'
+                        @ [40..41] '@'
+
+            You can see that the '@' is a child of the "identifier" but has a range smaller than its parent's.
+            This would crash our context parsing because, at position 42, we weren't at the leaf node but also couldn't
+            go to a child on that position.
+        */
+
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
+
+        let tree = get_tree(text.as_str());
+
+        let params = TreeSitterContextParams {
+            position: (position as u32).into(),
+            text: &text,
+            tree: &tree,
+        };
+
+        // should simply not panic
+        let _ = TreesitterContext::new(params);
     }
 }
