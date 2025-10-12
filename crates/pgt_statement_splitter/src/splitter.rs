@@ -8,6 +8,8 @@ pub use common::source;
 use pgt_lexer::{Lexed, SyntaxKind};
 use pgt_text_size::TextRange;
 
+use crate::splitter::common::SplitterException;
+
 pub struct SplitResult {
     pub ranges: Vec<TextRange>,
     pub errors: Vec<SplitError>,
@@ -29,6 +31,7 @@ pub struct SplitError {
     pub token: usize,
 }
 
+#[derive(Debug)]
 pub struct Splitter<'a> {
     lexed: &'a Lexed<'a>,
     current_pos: usize,
@@ -102,12 +105,12 @@ impl<'a> Splitter<'a> {
         self.lexed.kind(self.current_pos)
     }
 
-    fn eat(&mut self, kind: SyntaxKind) -> bool {
+    fn eat(&mut self, kind: SyntaxKind) -> Result<bool, SplitterException> {
         if self.current() == kind {
-            self.advance();
-            true
+            self.advance()?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
@@ -118,13 +121,17 @@ impl<'a> Splitter<'a> {
     /// Advances the parser to the next relevant token and returns it.
     ///
     /// NOTE: This will skip trivia tokens.
-    fn advance(&mut self) -> SyntaxKind {
+    fn advance(&mut self) -> Result<SyntaxKind, SplitterException> {
+        if self.current() == SyntaxKind::EOF {
+            return Err(SplitterException);
+        }
+
         let pos = (self.current_pos + 1..self.lexed.len())
             .find(|&idx| !self.is_trivia(idx))
-            .expect("lexed should have non-trivia eof token");
+            .unwrap();
 
         self.current_pos = pos;
-        self.lexed.kind(pos)
+        Ok(self.lexed.kind(pos))
     }
 
     fn look_ahead(&self, ignore_trivia: bool) -> SyntaxKind {
@@ -164,9 +171,9 @@ impl<'a> Splitter<'a> {
 
     /// Will advance if the `kind` matches the current token.
     /// Otherwise, will add a diagnostic to the internal `errors`.
-    fn expect(&mut self, kind: SyntaxKind) {
+    fn expect(&mut self, kind: SyntaxKind) -> Result<(), SplitterException> {
         if self.current() == kind {
-            self.advance();
+            self.advance()?;
         } else {
             let token = if self.current() == SyntaxKind::EOF {
                 self.current_pos - 1
@@ -178,6 +185,8 @@ impl<'a> Splitter<'a> {
                 msg: format!("Expected {:#?}", kind),
                 token,
             });
-        }
+        };
+
+        Ok(())
     }
 }

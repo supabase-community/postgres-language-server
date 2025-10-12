@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use super::TRIVIA_TOKENS;
 use pgt_lexer::SyntaxKind;
 
@@ -8,70 +10,77 @@ use super::{
     dml::{cte, delete, insert, select, update},
 };
 
-pub fn source(p: &mut Splitter) {
+#[derive(Debug)]
+pub struct SplitterException;
+
+impl std::fmt::Display for SplitterException {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // todo
+        write!(f, "SplitterException")
+    }
+}
+
+impl Error for SplitterException {}
+
+pub fn source(p: &mut Splitter) -> Result<(), SplitterException> {
     loop {
         match p.current() {
             SyntaxKind::EOF => {
                 break;
             }
             kind if TRIVIA_TOKENS.contains(&kind) || kind == SyntaxKind::LINE_ENDING => {
-                p.advance();
+                p.advance()?;
             }
             SyntaxKind::BACKSLASH => {
-                plpgsql_command(p);
+                plpgsql_command(p)?;
             }
             _ => {
-                statement(p);
+                statement(p)?;
             }
         }
     }
+
+    Ok(())
 }
 
-pub(crate) fn statement(p: &mut Splitter) {
+pub(crate) fn statement(p: &mut Splitter) -> Result<(), SplitterException> {
     p.start_stmt();
-    match p.current() {
-        SyntaxKind::WITH_KW => {
-            cte(p);
-        }
-        SyntaxKind::SELECT_KW => {
-            select(p);
-        }
-        SyntaxKind::INSERT_KW => {
-            insert(p);
-        }
-        SyntaxKind::UPDATE_KW => {
-            update(p);
-        }
-        SyntaxKind::DELETE_KW => {
-            delete(p);
-        }
-        SyntaxKind::CREATE_KW => {
-            create(p);
-        }
-        SyntaxKind::ALTER_KW => {
-            alter(p);
-        }
-        _ => {
-            unknown(p, &[]);
-        }
-    }
-    p.close_stmt();
+
+    let result = match p.current() {
+        SyntaxKind::WITH_KW => cte(p),
+        SyntaxKind::SELECT_KW => select(p),
+        SyntaxKind::INSERT_KW => insert(p),
+        SyntaxKind::UPDATE_KW => update(p),
+        SyntaxKind::DELETE_KW => delete(p),
+        SyntaxKind::CREATE_KW => create(p),
+        SyntaxKind::ALTER_KW => alter(p),
+        _ => unknown(p, &[]),
+    };
+
+    // Currently, Err means that we reached EOF.
+    // Regardless of whether we reach EOF or we complete the statement, we want to close it.
+    // We might want to handle other kinds of errors differently in the future.
+    match result {
+        _ => p.close_stmt(),
+    };
+
+    Ok(())
 }
 
-pub(crate) fn begin_end(p: &mut Splitter) {
-    p.expect(SyntaxKind::BEGIN_KW);
+pub(crate) fn begin_end(p: &mut Splitter) -> Result<(), SplitterException> {
+    p.expect(SyntaxKind::BEGIN_KW)?;
 
     let mut depth = 1;
 
     loop {
         match p.current() {
             SyntaxKind::BEGIN_KW => {
-                p.advance();
+                p.advance()?;
                 depth += 1;
             }
-            SyntaxKind::END_KW | SyntaxKind::EOF => {
+            SyntaxKind::END_KW => {
                 if p.current() == SyntaxKind::END_KW {
-                    p.advance();
+                    p.advance()?;
                 }
                 depth -= 1;
                 if depth == 0 {
@@ -79,26 +88,28 @@ pub(crate) fn begin_end(p: &mut Splitter) {
                 }
             }
             _ => {
-                p.advance();
+                p.advance()?;
             }
         }
     }
+
+    Ok(())
 }
 
-pub(crate) fn parenthesis(p: &mut Splitter) {
-    p.expect(SyntaxKind::L_PAREN);
+pub(crate) fn parenthesis(p: &mut Splitter) -> Result<(), SplitterException> {
+    p.expect(SyntaxKind::L_PAREN)?;
 
     let mut depth = 1;
 
     loop {
         match p.current() {
             SyntaxKind::L_PAREN => {
-                p.advance();
+                p.advance()?;
                 depth += 1;
             }
-            SyntaxKind::R_PAREN | SyntaxKind::EOF => {
+            SyntaxKind::R_PAREN => {
                 if p.current() == SyntaxKind::R_PAREN {
-                    p.advance();
+                    p.advance()?;
                 }
                 depth -= 1;
                 if depth == 0 {
@@ -106,19 +117,21 @@ pub(crate) fn parenthesis(p: &mut Splitter) {
                 }
             }
             _ => {
-                p.advance();
+                p.advance()?;
             }
         }
     }
+
+    Ok(())
 }
 
-pub(crate) fn plpgsql_command(p: &mut Splitter) {
-    p.expect(SyntaxKind::BACKSLASH);
+pub(crate) fn plpgsql_command(p: &mut Splitter) -> Result<(), SplitterException> {
+    p.expect(SyntaxKind::BACKSLASH)?;
 
     loop {
         match p.current() {
             SyntaxKind::LINE_ENDING => {
-                p.advance();
+                p.advance()?;
                 break;
             }
             _ => {
@@ -128,43 +141,44 @@ pub(crate) fn plpgsql_command(p: &mut Splitter) {
             }
         }
     }
+
+    Ok(())
 }
 
-pub(crate) fn case(p: &mut Splitter) {
-    p.expect(SyntaxKind::CASE_KW);
+pub(crate) fn case(p: &mut Splitter) -> Result<(), SplitterException> {
+    p.expect(SyntaxKind::CASE_KW)?;
 
     loop {
         match p.current() {
             SyntaxKind::END_KW => {
-                p.advance();
+                p.advance()?;
                 break;
             }
             _ => {
-                p.advance();
+                p.advance()?;
             }
         }
     }
+
+    Ok(())
 }
 
-pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
+pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> Result<(), SplitterException> {
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {
-                p.advance();
-                break;
-            }
-            SyntaxKind::EOF => {
+                p.advance()?;
                 break;
             }
             SyntaxKind::LINE_ENDING => {
                 if p.look_back(true).is_some_and(|t| t == SyntaxKind::COMMA) {
-                    p.advance();
+                    p.advance()?;
                 } else {
                     break;
                 }
             }
             SyntaxKind::CASE_KW => {
-                case(p);
+                case(p)?;
             }
             SyntaxKind::BACKSLASH => {
                 // pgsql commands
@@ -185,17 +199,17 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                 {
                     break;
                 }
-                p.advance();
+                p.advance()?;
             }
             SyntaxKind::L_PAREN => {
-                parenthesis(p);
+                parenthesis(p)?;
             }
             SyntaxKind::BEGIN_KW => {
                 if p.look_ahead(true) != SyntaxKind::SEMICOLON {
                     // BEGIN; should be treated as a statement terminator
-                    begin_end(p);
+                    begin_end(p)?;
                 } else {
-                    p.advance();
+                    p.advance()?;
                 }
             }
             t => match at_statement_start(t, exclude) {
@@ -232,7 +246,7 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         break;
                     }
 
-                    p.advance();
+                    p.advance()?;
                 }
                 Some(SyntaxKind::INSERT_KW)
                 | Some(SyntaxKind::UPDATE_KW)
@@ -271,7 +285,7 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                     {
                         break;
                     }
-                    p.advance();
+                    p.advance()?;
                 }
                 Some(SyntaxKind::WITH_KW) => {
                     let next = p.look_ahead(true);
@@ -292,7 +306,7 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                     {
                         break;
                     }
-                    p.advance();
+                    p.advance()?;
                 }
                 Some(SyntaxKind::CREATE_KW) => {
                     let prev = p.look_back(true);
@@ -309,15 +323,16 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) {
                         break;
                     }
 
-                    p.advance();
+                    p.advance()?;
                 }
                 Some(_) => {
                     break;
                 }
                 None => {
-                    p.advance();
+                    p.advance()?;
                 }
             },
         }
     }
+    Ok(())
 }
