@@ -518,3 +518,21 @@ async fn test_grant_table_hover(test_db: PgPool) {
 
     test_hover_at_cursor("grant_select", query, None, &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn hover_on_types(test_db: PgPool) {
+    let setup = r#"create type compfoo as (f1 int, f2 text);"#;
+
+    let query = format!(
+        "create function getfoo() returns setof comp{}foo as $$ select fooid, fooname from foo $$ language sql;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "hover_custom_type_with_properties",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
