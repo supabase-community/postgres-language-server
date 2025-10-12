@@ -117,6 +117,24 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 _ => vec![],
             },
 
+            HoveredNode::PostgresType(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(type_name) => params
+                    .schema_cache
+                    .find_type(&type_name, None)
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+
+                hovered_node::NodeIdentification::SchemaAndName((schema, type_name)) => params
+                    .schema_cache
+                    .find_type(&type_name, Some(schema.as_str()))
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+
+                _ => vec![],
+            },
+
             _ => todo!(),
         };
 

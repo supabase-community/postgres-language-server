@@ -18,6 +18,7 @@ pub(crate) enum HoveredNode {
     Policy(NodeIdentification),
     Trigger(NodeIdentification),
     Role(NodeIdentification),
+    PostgresType(NodeIdentification),
 }
 
 impl HoveredNode {
@@ -74,6 +75,7 @@ impl HoveredNode {
                     Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
                 }
             }
+
             "identifier" if ctx.matches_ancestor_history(&["invocation", "object_reference"]) => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Function(NodeIdentification::SchemaAndName((
@@ -86,8 +88,24 @@ impl HoveredNode {
                     )))
                 }
             }
+
             "identifier" if ctx.matches_one_of_ancestors(&["alter_role", "policy_to_role"]) => {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+            }
+
+            "identifier"
+                if ctx.matches_ancestor_history(&["type", "object_reference"])
+                    && ctx.node_under_cursor_is_within_field_name("custom_type") =>
+            {
+                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::PostgresType(
+                        NodeIdentification::SchemaAndName((schema.clone(), node_content)),
+                    ))
+                } else {
+                    Some(HoveredNode::PostgresType(NodeIdentification::Name(
+                        node_content,
+                    )))
+                }
             }
 
             "revoke_role" | "grant_role" | "policy_role" => {
