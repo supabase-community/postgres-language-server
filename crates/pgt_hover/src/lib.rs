@@ -140,7 +140,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
 
         prioritize_by_context(items, &ctx)
             .into_iter()
-            .map(|item| format_hover_markdown(&item))
+            .map(|item| format_hover_markdown(&item, params.schema_cache))
             .filter_map(Result::ok)
             .collect()
     } else {

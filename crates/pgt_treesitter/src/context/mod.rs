@@ -1252,7 +1252,7 @@ mod tests {
     }
 
     #[test]
-    fn tryout_node_field() {
+    fn verifies_node_has_field_name() {
         let query = format!(
             r#"create table foo (id int not null, compfoo som{}e_type);"#,
             QueryWithCursorPosition::cursor_marker()

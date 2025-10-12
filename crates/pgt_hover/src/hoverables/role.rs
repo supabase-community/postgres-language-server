@@ -1,18 +1,18 @@
 use std::fmt::Write;
 
-use pgt_schema_cache::Role;
+use pgt_schema_cache::{Role, SchemaCache};
 use pgt_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
 impl ToHoverMarkdown for pgt_schema_cache::Role {
-    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+    fn hover_headline<W: Write>(&self, writer: &mut W, _schema_cache: &SchemaCache) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}`", self.name)?;
 
         Ok(())
     }
 
-    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+    fn hover_body<W: Write>(&self, writer: &mut W, _schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error> {
         if let Some(comm) = self.comment.as_ref() {
             write!(writer, "Comment: '{}'", comm)?;
             writeln!(writer)?;
@@ -81,7 +81,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
         Ok(true)
     }
 
-    fn hover_footer<W: Write>(&self, _writer: &mut W) -> Result<bool, std::fmt::Error> {
+    fn hover_footer<W: Write>(&self, _writer: &mut W, _schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error> {
         Ok(false)
     }
 }
