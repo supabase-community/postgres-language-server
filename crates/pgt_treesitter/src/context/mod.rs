@@ -1219,8 +1219,6 @@ mod tests {
 
     #[test]
     fn does_not_overflow_callstack_on_smaller_treesitter_child() {
-        //  Instead of autocompleting "FROM", we'll assume that the user
-        // is selecting a certain column name, such as `frozen_account`.
         let query = format!(
             r#"select * from persons where id = @i{}d;"#,
             QueryWithCursorPosition::cursor_marker()
