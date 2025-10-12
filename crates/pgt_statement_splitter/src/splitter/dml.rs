@@ -1,13 +1,13 @@
 use pgt_lexer::SyntaxKind;
 
-use crate::splitter::common::SplitterException;
+use crate::splitter::common::ReachedEOFException;
 
 use super::{
     Splitter,
     common::{parenthesis, unknown},
 };
 
-pub(crate) fn cte(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn cte(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::WITH_KW)?;
     p.eat(SyntaxKind::RECURSIVE_KW)?;
 
@@ -36,26 +36,26 @@ pub(crate) fn cte(p: &mut Splitter) -> Result<(), SplitterException> {
     Ok(())
 }
 
-pub(crate) fn select(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn select(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::SELECT_KW)?;
 
     unknown(p, &[])
 }
 
-pub(crate) fn insert(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn insert(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::INSERT_KW)?;
     p.expect(SyntaxKind::INTO_KW)?;
 
     unknown(p, &[SyntaxKind::SELECT_KW])
 }
 
-pub(crate) fn update(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn update(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::UPDATE_KW)?;
 
     unknown(p, &[])
 }
 
-pub(crate) fn delete(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn delete(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::DELETE_KW)?;
     p.expect(SyntaxKind::FROM_KW)?;
 

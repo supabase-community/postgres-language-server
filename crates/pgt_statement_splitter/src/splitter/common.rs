@@ -11,18 +11,17 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct SplitterException;
+pub struct ReachedEOFException;
 
-impl std::fmt::Display for SplitterException {
+impl std::fmt::Display for ReachedEOFException {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // todo
-        write!(f, "SplitterException")
+        write!(f, "ReachedEOFException")
     }
 }
 
-impl Error for SplitterException {}
+impl Error for ReachedEOFException {}
 
-pub fn source(p: &mut Splitter) -> Result<(), SplitterException> {
+pub fn source(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     loop {
         match p.current() {
             SyntaxKind::EOF => {
@@ -43,7 +42,7 @@ pub fn source(p: &mut Splitter) -> Result<(), SplitterException> {
     Ok(())
 }
 
-pub(crate) fn statement(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn statement(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.start_stmt();
 
     // Currently, Err means that we reached EOF.
@@ -65,7 +64,7 @@ pub(crate) fn statement(p: &mut Splitter) -> Result<(), SplitterException> {
     Ok(())
 }
 
-pub(crate) fn begin_end(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn begin_end(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::BEGIN_KW)?;
 
     let mut depth = 1;
@@ -94,7 +93,7 @@ pub(crate) fn begin_end(p: &mut Splitter) -> Result<(), SplitterException> {
     Ok(())
 }
 
-pub(crate) fn parenthesis(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn parenthesis(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::L_PAREN)?;
 
     let mut depth = 1;
@@ -123,7 +122,7 @@ pub(crate) fn parenthesis(p: &mut Splitter) -> Result<(), SplitterException> {
     Ok(())
 }
 
-pub(crate) fn plpgsql_command(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn plpgsql_command(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::BACKSLASH)?;
 
     loop {
@@ -143,7 +142,7 @@ pub(crate) fn plpgsql_command(p: &mut Splitter) -> Result<(), SplitterException>
     Ok(())
 }
 
-pub(crate) fn case(p: &mut Splitter) -> Result<(), SplitterException> {
+pub(crate) fn case(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     p.expect(SyntaxKind::CASE_KW)?;
 
     loop {
@@ -161,7 +160,7 @@ pub(crate) fn case(p: &mut Splitter) -> Result<(), SplitterException> {
     Ok(())
 }
 
-pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> Result<(), SplitterException> {
+pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> Result<(), ReachedEOFException> {
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {

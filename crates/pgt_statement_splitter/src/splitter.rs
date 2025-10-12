@@ -8,7 +8,7 @@ pub use common::source;
 use pgt_lexer::{Lexed, SyntaxKind};
 use pgt_text_size::TextRange;
 
-use crate::splitter::common::SplitterException;
+use crate::splitter::common::ReachedEOFException;
 
 pub struct SplitResult {
     pub ranges: Vec<TextRange>,
@@ -105,7 +105,7 @@ impl<'a> Splitter<'a> {
         self.lexed.kind(self.current_pos)
     }
 
-    fn eat(&mut self, kind: SyntaxKind) -> Result<bool, SplitterException> {
+    fn eat(&mut self, kind: SyntaxKind) -> Result<bool, ReachedEOFException> {
         if self.current() == kind {
             self.advance()?;
             Ok(true)
@@ -121,9 +121,9 @@ impl<'a> Splitter<'a> {
     /// Advances the parser to the next relevant token and returns it.
     ///
     /// NOTE: This will skip trivia tokens.
-    fn advance(&mut self) -> Result<SyntaxKind, SplitterException> {
+    fn advance(&mut self) -> Result<SyntaxKind, ReachedEOFException> {
         if self.current() == SyntaxKind::EOF {
-            return Err(SplitterException);
+            return Err(ReachedEOFException);
         }
 
         let pos = (self.current_pos + 1..self.lexed.len())
@@ -171,7 +171,7 @@ impl<'a> Splitter<'a> {
 
     /// Will advance if the `kind` matches the current token.
     /// Otherwise, will add a diagnostic to the internal `errors`.
-    fn expect(&mut self, kind: SyntaxKind) -> Result<(), SplitterException> {
+    fn expect(&mut self, kind: SyntaxKind) -> Result<(), ReachedEOFException> {
         if self.current() == kind {
             self.advance()?;
         } else {
