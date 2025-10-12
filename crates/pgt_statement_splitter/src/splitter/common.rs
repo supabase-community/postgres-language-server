@@ -15,7 +15,11 @@ pub struct ReachedEOFException;
 
 impl std::fmt::Display for ReachedEOFException {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+<<<<<<< HEAD
         write!(f, "ReachedEOFException")
+=======
+        write!(f, "SplitterException")
+>>>>>>> 44dc9893d66aeb13f31305902572a891aaf8b60c
     }
 }
 
