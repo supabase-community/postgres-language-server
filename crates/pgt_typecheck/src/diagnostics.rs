@@ -1,9 +1,13 @@
 use std::io;
 
+use once_cell::sync::Lazy;
 use pgt_console::markup;
 use pgt_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
-use pgt_text_size::{TextRange, TextRangeReplacement, TextSize};
+use pgt_text_size::{TextRange, TextSize};
+use regex::Regex;
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
+
+use crate::typed_identifier::{IdentifierReplacement, TypedReplacement};
 
 /// A specialized diagnostic for the typechecker.
 ///
@@ -94,21 +98,78 @@ impl Advices for TypecheckAdvices {
     }
 }
 
+/// Pattern and rewrite rule for error messages
+struct ErrorRewriteRule {
+    pattern: Regex,
+    rewrite: fn(&regex::Captures, &IdentifierReplacement) -> String,
+}
+
+static ERROR_REWRITE_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
+    vec![
+        ErrorRewriteRule {
+            pattern: Regex::new(r#"invalid input syntax for type ([\w\s]+): "([^"]*)""#).unwrap(),
+            rewrite: |caps, replacement| {
+                let expected_type = &caps[1];
+                format!(
+                    "`{}` is of type {}, not {}",
+                    replacement.original_name, replacement.type_name, expected_type
+                )
+            },
+        },
+        ErrorRewriteRule {
+            pattern: Regex::new(r#"operator does not exist: (.+)"#).unwrap(),
+            rewrite: |caps, replacement| {
+                let operator_expr = &caps[1];
+                format!(
+                    "operator does not exist: {} (parameter `{}` is of type {})",
+                    operator_expr, replacement.original_name, replacement.type_name
+                )
+            },
+        },
+    ]
+});
+
+/// Rewrites Postgres error messages to be more user-friendly
+pub fn rewrite_error_message(
+    pg_error_message: &str,
+    replacement: &IdentifierReplacement,
+) -> String {
+    for rule in ERROR_REWRITE_RULES.iter() {
+        if let Some(caps) = rule.pattern.captures(pg_error_message) {
+            return (rule.rewrite)(&caps, replacement);
+        }
+    }
+
+    // if we don't have a matching error-rewrite-rule,
+    // we'll fallback to replacing default values with their types,
+    // e.g. `""` is replaced with `text`.
+    let unquoted_default = replacement.default_value.trim_matches('\'');
+    pg_error_message
+        .replace(&format!("\"{}\"", unquoted_default), &replacement.type_name)
+        .replace(&format!("'{}'", unquoted_default), &replacement.type_name)
+}
+
 pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
-    txt_replacement: TextRangeReplacement,
+    typed_replacement: TypedReplacement,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
         sqlx::postgres::PgErrorPosition::Original(pos) => Some(pos - 1),
         _ => None,
     });
 
-    let range = position.and_then(|pos| {
-        let adjusted = txt_replacement.to_original_position(TextSize::new(pos.try_into().unwrap()));
+    let original_position = position.map(|p| {
+        let pos = TextSize::new(p.try_into().unwrap());
 
+        typed_replacement
+            .text_replacement()
+            .to_original_position(pos)
+    });
+
+    let range = original_position.and_then(|pos| {
         ts.root_node()
-            .named_descendant_for_byte_range(adjusted.into(), adjusted.into())
+            .named_descendant_for_byte_range(pos.into(), pos.into())
             .map(|node| {
                 TextRange::new(
                     node.start_byte().try_into().unwrap(),
@@ -128,8 +189,18 @@ pub(crate) fn create_type_error(
         PgSeverity::Log => Severity::Information,
     };
 
+    let message = if let Some(pos) = original_position {
+        if let Some(replacement) = typed_replacement.find_type_at_position(pos) {
+            rewrite_error_message(pg_err.message(), replacement)
+        } else {
+            pg_err.to_string()
+        }
+    } else {
+        pg_err.to_string()
+    };
+
     TypecheckDiagnostic {
-        message: pg_err.to_string().into(),
+        message: message.into(),
         severity,
         span: range,
         advices: TypecheckAdvices {

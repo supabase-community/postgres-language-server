@@ -4,4 +4,4 @@ expression: content
 ---
 delete from public.contacts where id = ~~~contact_name~~~;
 
-invalid input syntax for type integer: &quot;&quot;
+`contact_name` is of type text, not integer
