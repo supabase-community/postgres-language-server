@@ -528,22 +528,22 @@ mod tests {
         )
         .await;
 
-        // assert_complete_results(
-        //     format!(
-        //         "select u.id, p.content from auth.users u join auth.posts p on p.user_id = u.{}",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::KindNotExists(CompletionItemKind::Table),
-        //         CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
-        //         CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
-        //         CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                "select u.id, p.content from auth.users u join auth.posts p on p.user_id = u.{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
+                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
+                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
+            ],
+            None,
+            &pool,
+        )
+        .await;
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
