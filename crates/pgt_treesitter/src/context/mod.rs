@@ -1272,4 +1272,27 @@ mod tests {
 
         assert!(ctx.node_under_cursor_is_within_field_name("custom_type"));
     }
+
+    #[test]
+    fn parses_custom_type_accesses_correctly() {
+        let query = format!(
+            r#"select (com{}pfoo).f1 from with_comp where (compfoo).f1 = 24;"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
+
+        let tree = get_tree(text.as_str());
+
+        let params = TreeSitterContextParams {
+            position: (position as u32).into(),
+            text: &text,
+            tree: &tree,
+        };
+
+        let ctx = TreesitterContext::new(params);
+
+        println!("{:#?}", ctx);
+        println!("{:#?}", ctx.get_node_under_cursor_content())
+    }
 }
