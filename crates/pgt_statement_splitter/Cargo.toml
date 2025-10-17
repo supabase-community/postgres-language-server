@@ -19,8 +19,8 @@ pgt_text_size.workspace = true
 regex.workspace         = true
 
 [dev-dependencies]
-criterion = "0.3"
-ntest     = "0.9.3"
+criterion.workspace = true
+ntest               = "0.9.3"
 
 [[bench]]
 harness = false
