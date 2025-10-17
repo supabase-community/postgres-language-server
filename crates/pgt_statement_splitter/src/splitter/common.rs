@@ -21,7 +21,7 @@ impl std::fmt::Display for ReachedEOFException {
 
 impl Error for ReachedEOFException {}
 
-pub(crate) type SplitterResult = Result<(), ReachedEOFException>;
+pub(crate) type SplitterResult = std::result::Result<(), ReachedEOFException>;
 
 pub fn source(p: &mut Splitter) -> SplitterResult {
     loop {
