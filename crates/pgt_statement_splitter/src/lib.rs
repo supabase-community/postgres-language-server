@@ -19,7 +19,7 @@ pub fn split(sql: &str) -> SplitResult {
 
     let mut splitter = Splitter::new(&lexed);
 
-    source(&mut splitter);
+    let _ = source(&mut splitter);
 
     let split_result = splitter.finish();
 
@@ -586,5 +586,11 @@ VALUES
             "Expected INTO_KW".to_string(),
             TextRange::new(0.into(), 6.into()),
         )]);
+    }
+
+    #[test]
+    fn does_not_panic_on_incomplete_statements() {
+        // does not panic
+        let _ = Tester::from("select case ");
     }
 }

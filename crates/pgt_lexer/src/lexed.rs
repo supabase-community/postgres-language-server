@@ -23,6 +23,7 @@ pub struct LexDiagnostic {
 }
 
 /// Result of lexing a string, providing access to tokens and diagnostics
+#[derive(Debug)]
 pub struct Lexed<'a> {
     pub(crate) text: &'a str,
     pub(crate) kind: Vec<SyntaxKind>,
