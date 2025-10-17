@@ -1,0 +1,12 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select * from users where name = @name;
+                                   ↑ hovered here
+```
+
+# Hover Results
+No hover information found.

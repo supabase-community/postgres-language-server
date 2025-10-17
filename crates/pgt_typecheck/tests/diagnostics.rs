@@ -177,3 +177,81 @@ async fn invalid_type_in_function(test_db: PgPool) {
     .test()
     .await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn operator_does_not_exist(test_db: PgPool) {
+    // tests the pattern: operator does not exist: X + Y
+    // use boolean type which doesn't have + operator with text
+    let setup = r#"
+        create table public.products (
+            id serial primary key,
+            is_active boolean not null,
+            product_name text not null
+        );
+    "#;
+
+    TestSetup {
+        name: "operator_does_not_exist",
+        setup: Some(setup),
+        query: r#"select is_active + product_name from public.products;"#,
+        test_db: &test_db,
+        typed_identifiers: vec![TypedIdentifier {
+            path: "calculate_total".to_string(),
+            name: Some("product_name".to_string()),
+            type_: IdentifierType {
+                schema: None,
+                name: "text".to_string(),
+                is_array: false,
+            },
+        }],
+    }
+    .test()
+    .await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
+    // the type "timestamp with time zone" has multiple words
+    let setup = r#"
+        create table public.products (
+            id serial primary key,
+            released timestamp with time zone not null
+        );
+    "#;
+
+    TestSetup {
+        name: "testing_type_with_multiple_words",
+        setup: Some(setup),
+        query: r#"select * from public.products where released = pid;"#,
+        test_db: &test_db,
+        typed_identifiers: vec![TypedIdentifier {
+            path: "delete_product".to_string(),
+            name: Some("pid".to_string()),
+            type_: IdentifierType {
+                schema: None,
+                name: "uuid".to_string(),
+                is_array: false,
+            },
+        }],
+    }
+    .test()
+    .await;
+
+    TestSetup {
+        name: "testing_operator_type_with_multiple_words",
+        setup: None,
+        query: r#"delete from public.products where released > pid;"#,
+        test_db: &test_db,
+        typed_identifiers: vec![TypedIdentifier {
+            path: "delete_product".to_string(),
+            name: Some("pid".to_string()),
+            type_: IdentifierType {
+                schema: None,
+                name: "numeric".to_string(),
+                is_array: false,
+            },
+        }],
+    }
+    .test()
+    .await;
+}
