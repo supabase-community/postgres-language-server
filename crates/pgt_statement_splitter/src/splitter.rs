@@ -8,7 +8,7 @@ pub use common::source;
 use pgt_lexer::{Lexed, SyntaxKind};
 use pgt_text_size::TextRange;
 
-use crate::splitter::common::ReachedEOFException;
+use crate::splitter::common::{ReachedEOFException, SplitterResult};
 
 pub struct SplitResult {
     pub ranges: Vec<TextRange>,
@@ -171,7 +171,7 @@ impl<'a> Splitter<'a> {
 
     /// Will advance if the `kind` matches the current token.
     /// Otherwise, will add a diagnostic to the internal `errors`.
-    fn expect(&mut self, kind: SyntaxKind) -> Result<(), ReachedEOFException> {
+    fn expect(&mut self, kind: SyntaxKind) -> SplitterResult {
         if self.current() == kind {
             self.advance()?;
         } else {

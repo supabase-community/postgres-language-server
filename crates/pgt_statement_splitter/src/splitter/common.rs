@@ -21,7 +21,9 @@ impl std::fmt::Display for ReachedEOFException {
 
 impl Error for ReachedEOFException {}
 
-pub fn source(p: &mut Splitter) -> Result<(), ReachedEOFException> {
+pub(crate) type SplitterResult = Result<(), ReachedEOFException>;
+
+pub fn source(p: &mut Splitter) -> SplitterResult {
     loop {
         match p.current() {
             SyntaxKind::EOF => {
@@ -42,7 +44,7 @@ pub fn source(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     Ok(())
 }
 
-pub(crate) fn statement(p: &mut Splitter) -> Result<(), ReachedEOFException> {
+pub(crate) fn statement(p: &mut Splitter) -> SplitterResult {
     p.start_stmt();
 
     // Currently, Err means that we reached EOF.
@@ -64,7 +66,7 @@ pub(crate) fn statement(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     Ok(())
 }
 
-pub(crate) fn begin_end(p: &mut Splitter) -> Result<(), ReachedEOFException> {
+pub(crate) fn begin_end(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::BEGIN_KW)?;
 
     let mut depth = 1;
@@ -93,7 +95,7 @@ pub(crate) fn begin_end(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     Ok(())
 }
 
-pub(crate) fn parenthesis(p: &mut Splitter) -> Result<(), ReachedEOFException> {
+pub(crate) fn parenthesis(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::L_PAREN)?;
 
     let mut depth = 1;
@@ -122,7 +124,7 @@ pub(crate) fn parenthesis(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     Ok(())
 }
 
-pub(crate) fn plpgsql_command(p: &mut Splitter) -> Result<(), ReachedEOFException> {
+pub(crate) fn plpgsql_command(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::BACKSLASH)?;
 
     loop {
@@ -142,7 +144,7 @@ pub(crate) fn plpgsql_command(p: &mut Splitter) -> Result<(), ReachedEOFExceptio
     Ok(())
 }
 
-pub(crate) fn case(p: &mut Splitter) -> Result<(), ReachedEOFException> {
+pub(crate) fn case(p: &mut Splitter) -> SplitterResult {
     p.expect(SyntaxKind::CASE_KW)?;
 
     loop {
@@ -160,7 +162,7 @@ pub(crate) fn case(p: &mut Splitter) -> Result<(), ReachedEOFException> {
     Ok(())
 }
 
-pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> Result<(), ReachedEOFException> {
+pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResult {
     loop {
         match p.current() {
             SyntaxKind::SEMICOLON => {
