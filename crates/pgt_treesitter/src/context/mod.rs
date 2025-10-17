@@ -445,7 +445,7 @@ impl<'a> TreesitterContext<'a> {
                 if let Some(txt) = content {
                     let parts: Vec<&str> = txt.split('.').collect();
                     // we do not want to set it if we're on the schema or alias node itself
-                    let is_on_schema_node = start + parts[0].len() < self.position;
+                    let is_on_schema_node = start + parts[0].len() >= self.position;
                     if parts.len() == 2 && !is_on_schema_node {
                         self.schema_or_alias_name = Some(parts[0].to_string());
                     }
