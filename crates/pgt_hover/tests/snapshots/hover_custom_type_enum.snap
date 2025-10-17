@@ -1,0 +1,24 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+create function getfoo() returns setof compfoo as $$ select fooid, fooname from foo $$ language sql;
+                                           ↑ hovered here
+```
+
+# Hover Results
+### `public.compfoo` (Custom Type)  
+```plain  
+Enum Permutations:
+- yes
+- no
+
+  
+```  
+---    
+```plain  
+
+  
+```

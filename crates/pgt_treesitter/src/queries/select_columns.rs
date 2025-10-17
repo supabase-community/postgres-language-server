@@ -10,8 +10,10 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     (select_expression
         (term
             (field
-                (object_reference)? @alias
-                "."?
+                (field_qualifier
+                    (object_reference) @alias
+                    "."
+                )?
                 (identifier) @column
             )
         )

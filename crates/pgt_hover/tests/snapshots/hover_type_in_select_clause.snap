@@ -1,0 +1,24 @@
+---
+source: crates/pgt_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select (compfoo).f1 from some_table s;
+          ↑ hovered here
+```
+
+# Hover Results
+### `public.compfoo` (Custom Type)  
+```plain  
+Attributes:
+- f1: int4
+- f2: text
+
+  
+```  
+---    
+```plain  
+
+  
+```
