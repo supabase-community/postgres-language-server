@@ -99,11 +99,11 @@ impl HoveredNode {
 
             "identifier"
                 if (
-                    // hover over custom type in create table, returns…
+                    // hover over custom type in `create table` or `returns`
                     (ctx.matches_ancestor_history(&["type", "object_reference"])
                     && ctx.node_under_cursor_is_within_field_name("custom_type"))
 
-                    // hover over type in select clause etc…                    
+                    // hover over type in `select` clause etc…                    
                     || (ctx
                         .matches_ancestor_history(&["field_qualifier", "object_reference"])
                         && ctx.before_cursor_matches_kind(&["("])))
