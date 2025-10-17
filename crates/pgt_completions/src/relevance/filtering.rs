@@ -163,7 +163,7 @@ impl CompletionFilter<'_> {
                             // only autocomplete left side of binary expression
                             WrappingClause::Where => {
                                 ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
-                                    || (ctx.before_cursor_matches_kind(&["."])
+                                    || (ctx.before_cursor_matches_kind(&["field_qualifier"])
                                         && ctx.matches_ancestor_history(&["field"]))
                             }
 

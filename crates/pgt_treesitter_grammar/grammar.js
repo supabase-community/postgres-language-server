@@ -21,6 +21,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.all_fields, $.field_qualifier],
     [$.object_reference, $._qualified_field],
     [$.object_reference],
     [$.between_expression, $.binary_expression],
@@ -2805,10 +2806,10 @@ module.exports = grammar({
     field: ($) => field("name", $.identifier),
 
     _qualified_field: ($) =>
-      seq(
-        optional(seq(optional_parenthesis($.object_reference), ".")),
-        field("name", $.identifier)
-      ),
+      seq(optional($.field_qualifier), field("name", $.identifier)),
+
+    field_qualifier: ($) =>
+      seq(prec.left(optional_parenthesis($.object_reference)), "."),
 
     implicit_cast: ($) => seq($._expression, "::", $.type),
 
