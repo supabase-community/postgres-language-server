@@ -89,6 +89,8 @@ impl SchemaCache {
 
     pub fn find_type(&self, name: &str, schema: Option<&str>) -> Option<&PostgresType> {
         let sanitized_name = Self::sanitize_identifier(name);
+        println!("findng type… {}", sanitized_name);
+        println!("findng schema… {:#?}", schema);
         self.types.iter().find(|t| {
             t.name == sanitized_name
                 && schema

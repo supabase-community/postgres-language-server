@@ -94,16 +94,31 @@ impl HoveredNode {
             }
 
             "identifier"
-                if ctx.matches_ancestor_history(&["type", "object_reference"])
-                    && ctx.node_under_cursor_is_within_field_name("custom_type") =>
+                if (
+                    // hover over custom type in create table, returns…
+                    (ctx.matches_ancestor_history(&["type", "object_reference"])
+                    && ctx.node_under_cursor_is_within_field_name("custom_type"))
+
+                    // hover over type in select clause etc…                    
+                    || (ctx
+                        .matches_ancestor_history(&["field_qualifier", "object_reference"])
+                        && ctx.before_cursor_matches_kind(&["("])))
+
+                    // make sure we're not checking against an alias
+                    && ctx
+                        .get_mentioned_table_for_alias(
+                            node_content.replace('(', "").replace(')', "").as_str(),
+                        )
+                        .is_none() =>
             {
+                let sanitized = node_content.replace('(', "").replace(')', "");
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::PostgresType(
-                        NodeIdentification::SchemaAndName((schema.clone(), node_content)),
+                        NodeIdentification::SchemaAndName((schema.clone(), sanitized)),
                     ))
                 } else {
                     Some(HoveredNode::PostgresType(NodeIdentification::Name(
-                        node_content,
+                        sanitized,
                     )))
                 }
             }

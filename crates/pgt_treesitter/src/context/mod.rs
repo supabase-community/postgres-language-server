@@ -205,6 +205,8 @@ impl<'a> TreesitterContext<'a> {
             ctx.gather_info_from_ts_queries();
         }
 
+        println!("{:#?}", ctx);
+
         ctx
     }
 
@@ -438,10 +440,13 @@ impl<'a> TreesitterContext<'a> {
 
         match current_node_kind {
             "object_reference" | "field" => {
+                let start = current_node.start_byte();
                 let content = self.get_ts_node_content(&current_node);
                 if let Some(txt) = content {
                     let parts: Vec<&str> = txt.split('.').collect();
-                    if parts.len() == 2 {
+                    // we do not want to set it if we're on the schema or alias node itself
+                    let is_on_schema_node = start + parts[0].len() < self.position;
+                    if parts.len() == 2 && !is_on_schema_node {
                         self.schema_or_alias_name = Some(parts[0].to_string());
                     }
                 }
