@@ -8,10 +8,10 @@ pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
     let fs = &mut session.app.fs;
     let config = &mut PartialConfiguration::init();
     create_config(fs, config)?;
-    let file_created = ConfigName::pgt_jsonc();
+    let file_created = ConfigName::pgls_jsonc();
     session.app.console.log(markup! {
 "
-Welcome to the Postgres Language Tools! Let's get you started...
+Welcome to the Postgres Language Server! Let's get you started...
 
 "<Info><Emphasis>"Files created "</Emphasis></Info>"
 

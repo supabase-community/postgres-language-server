@@ -69,18 +69,23 @@ impl LSPServer {
             "pgt_did_change_workspace_settings",
             "workspace/didChangeWatchedFiles",
             match self.session.base_path() {
-                Some(base_path) => CapabilityStatus::Enable(Some(json!(
-                    DidChangeWatchedFilesRegistrationOptions {
-                        watchers: vec![FileSystemWatcher {
+                Some(base_path) => {
+                    let watchers = ConfigName::file_names()
+                        .iter()
+                        .map(|config_name| FileSystemWatcher {
                             glob_pattern: GlobPattern::String(format!(
                                 "{}/{}",
                                 base_path.display(),
-                                ConfigName::pgt_jsonc()
+                                config_name
                             )),
                             kind: Some(WatchKind::all()),
-                        },],
-                    }
-                ))),
+                        })
+                        .collect();
+
+                    CapabilityStatus::Enable(Some(json!(
+                        DidChangeWatchedFilesRegistrationOptions { watchers }
+                    )))
+                }
                 _ => CapabilityStatus::Disable,
             },
         );
@@ -134,10 +139,7 @@ impl LanguageServer for LSPServer {
     async fn initialized(&self, params: InitializedParams) {
         let _ = params;
 
-        info!(
-            "Attempting to load the configuration from '{}' file",
-            ConfigName::pgt_jsonc()
-        );
+        info!("Attempting to load the configuration",);
 
         futures::join!(self.session.load_workspace_settings(None));
 

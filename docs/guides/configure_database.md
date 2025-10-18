@@ -13,7 +13,7 @@ The language server requires a database connection for schema-dependent features
 
 ## Configuration
 
-Configure database connection details in your `postgrestools.jsonc` file:
+Configure database connection details in your `postgres-language-server.jsonc` file:
 
 ```json
 {

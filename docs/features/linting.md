@@ -10,7 +10,7 @@ See the [Rules Reference](../reference/rules.md) for the complete list of availa
 
 ## Configuration
 
-Configure linting behavior in your `postgrestools.jsonc`:
+Configure linting behavior in your `postgres-language-server.jsonc`:
 
 ```json
 {

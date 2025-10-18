@@ -162,11 +162,24 @@ impl WorkspaceServer {
 
     /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`
     fn is_ignored(&self, path: &Path) -> bool {
-        let file_name = path.file_name().and_then(|s| s.to_str());
-        // Never ignore Postgres Tools's config file regardless `include`/`ignore`
-        (file_name != Some(ConfigName::pgt_jsonc())) &&
-            // Apply top-level `include`/`ignore
-            (self.is_ignored_by_top_level_config(path) || self.is_ignored_by_migration_config(path))
+        // Never ignore config files regardless `include`/`ignore`
+        if self.is_config_file(path) {
+            return false;
+        }
+
+        // Apply top-level `include`/`ignore`
+        self.is_ignored_by_top_level_config(path) || self.is_ignored_by_migration_config(path)
+    }
+
+    /// Check whether a file is a configuration file
+    fn is_config_file(&self, path: &Path) -> bool {
+        path.file_name()
+            .and_then(|s| s.to_str())
+            .is_some_and(|file_name| {
+                ConfigName::file_names()
+                    .iter()
+                    .any(|config_name| file_name == *config_name)
+            })
     }
 
     /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`

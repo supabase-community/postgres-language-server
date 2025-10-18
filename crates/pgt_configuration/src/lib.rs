@@ -1,4 +1,4 @@
-//! This module contains the configuration of `postgrestools.jsonc`
+//! This module contains the configuration of `postgres-language-server.jsonc`
 //!
 //! The configuration is divided by "tool".
 

@@ -131,7 +131,7 @@ fn load_config(
         ConfigurationPathHint::None => file_system.working_directory().unwrap_or_default(),
     };
 
-    // We first search for `postgrestools.jsonc` files
+    // We first search for `postgres-language-server.jsonc` files
     if let Some(auto_search_result) = file_system.auto_search(
         &configuration_directory,
         ConfigName::file_names().as_slice(),
@@ -164,7 +164,7 @@ pub fn create_config(
     fs: &mut DynRef<dyn FileSystem>,
     configuration: &mut PartialConfiguration,
 ) -> Result<(), WorkspaceError> {
-    let path = PathBuf::from(ConfigName::pgt_jsonc());
+    let path = PathBuf::from(ConfigName::pgls_jsonc());
 
     if fs.path_exists(&path) {
         return Err(ConfigurationDiagnostic::new_already_exists().into());
@@ -180,11 +180,24 @@ pub fn create_config(
         }
     })?;
 
-    // we now check if postgrestools is installed inside `node_modules` and if so, we use the schema from there
-    let node_schema_path = Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
-    let options = OpenOptions::default().read(true);
-    if fs.open_with_options(node_schema_path, options).is_ok() {
-        configuration.schema = node_schema_path.to_str().map(String::from);
+    // we now check if postgres-language-server or postgrestools is installed inside `node_modules` and if so, we use the schema from there
+    let postgrestools_node_schema_path =
+        Path::new("./node_modules/@postgrestools/postgrestools/schema.json");
+    let pgls_node_schema_path =
+        Path::new("./node_modules/@postgres-language-server/cli/schema.json");
+    if fs
+        .open_with_options(pgls_node_schema_path, OpenOptions::default().read(true))
+        .is_ok()
+    {
+        configuration.schema = pgls_node_schema_path.to_str().map(String::from);
+    } else if fs
+        .open_with_options(
+            postgrestools_node_schema_path,
+            OpenOptions::default().read(true),
+        )
+        .is_ok()
+    {
+        configuration.schema = postgrestools_node_schema_path.to_str().map(String::from);
     } else if VERSION == "0.0.0" {
         // VERSION is 0.0.0 if it has not been explicitly set (e.g local dev, as fallback)
         configuration.schema = Some(format!("{}/latest/schema.json", PGT_WEBSITE));
@@ -521,20 +534,23 @@ mod tests {
     #[test]
     fn test_normalize_path_windows_drive() {
         if cfg!(windows) {
-            let path = Path::new(r"z:\workspace\test_one\..\postgrestools.jsonc");
+            let path = Path::new(r"z:\workspace\test_one\..\postgres-language-server.jsonc");
             let normalized = normalize_path(path);
             assert_eq!(
                 normalized,
-                PathBuf::from(r"z:\workspace\postgrestools.jsonc")
+                PathBuf::from(r"z:\workspace\postgres-language-server.jsonc")
             );
         }
     }
 
     #[test]
     fn test_normalize_path_relative() {
-        let path = Path::new("workspace/test_one/../postgrestools.jsonc");
+        let path = Path::new("workspace/test_one/../postgres-language-server.jsonc");
         let normalized = normalize_path(path);
-        assert_eq!(normalized, PathBuf::from("workspace/postgrestools.jsonc"));
+        assert_eq!(
+            normalized,
+            PathBuf::from("workspace/postgres-language-server.jsonc")
+        );
     }
 
     #[test]
