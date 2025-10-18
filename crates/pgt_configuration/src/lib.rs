@@ -33,7 +33,7 @@ use files::{FilesConfiguration, PartialFilesConfiguration, partial_files_configu
 use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
 };
-use pgt_env::PGT_WEBSITE;
+use pgt_env::PGLS_WEBSITE;
 use plpgsql_check::{
     PartialPlPgSqlCheckConfiguration, PlPgSqlCheckConfiguration,
     partial_pl_pg_sql_check_configuration,
@@ -103,7 +103,7 @@ impl PartialConfiguration {
     /// Returns the initial configuration.
     pub fn init() -> Self {
         Self {
-            schema: Some(format!("{}/schemas/{VERSION}/schema.json", PGT_WEBSITE)),
+            schema: Some(format!("{}/schemas/{VERSION}/schema.json", PGLS_WEBSITE)),
             extends: Some(StringSet::default()),
             files: Some(PartialFilesConfiguration {
                 ignore: Some(Default::default()),
