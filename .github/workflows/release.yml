@@ -47,9 +47,6 @@ jobs:
 
     runs-on: ${{ matrix.config.os }}
 
-    outputs:
-      artifact_url: ${{ steps.upload-artifacts.outputs.artifact-url }}
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,7 +108,7 @@ jobs:
       # It is not possible to return the artifacts from the matrix jobs individually: Matrix outputs overwrite each other.
       # A common workaround is to upload and download the resulting artifacts.
       - name: 👆 Upload Artifacts (deprecated)
-        id: upload-artifacts
+        id: upload-artifacts-deprecated
         uses: actions/upload-artifact@v4
         with:
           name: postgrestools_${{ matrix.config.target }}
@@ -163,7 +160,7 @@ jobs:
 
       - name: 👇 Download Artifacts (deprecated)
         uses: actions/download-artifact@v4
-        id: download
+        id: download-deprecated
         with:
           merge-multiple: true
           pattern: postgrestools_*

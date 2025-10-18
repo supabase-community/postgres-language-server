@@ -34,7 +34,7 @@ jobs:
           fi
 
       - name: Generate Packages (deprecated)
-        id: generate-packages
+        id: generate-packages-deprecated
         run: node packages/@postgres-language-server/cli/scripts/generate-packages.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
