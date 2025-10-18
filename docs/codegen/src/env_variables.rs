@@ -32,6 +32,24 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
         env.pgls_config_path.name(),
         env.pgls_config_path.description()
     )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgt_log_path.name(),
+        env.pgt_log_path.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgt_log_prefix.name(),
+        env.pgt_log_prefix.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgt_config_path.name(),
+        env.pgt_config_path.description()
+    )?;
 
     let data = fs::read_to_string(&file_path)?;
 
