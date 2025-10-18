@@ -4,13 +4,13 @@ The Postgres Language Server can be installed as a development dependency of you
 
 ## Configuration
 
-We recommend creating a `postgrestools.jsonc` configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the `postgrestools.jsonc` file, run the `init` command in the root folder of your project:
+We recommend creating a `postgres-language-server.jsonc` configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the `postgres-language-server.jsonc` file, run the `init` command in the root folder of your project:
 
 ```sh
 postgrestools init
 ```
 
-You’ll now have a `postgrestools.jsonc` file in your directory:
+You’ll now have a `postgres-language-server.jsonc` file in your directory:
 
 [//]: # "BEGIN DEFAULT_CONFIGURATION"
 
@@ -65,15 +65,15 @@ postgrestools check myfile.sql
 postgrestools check supabase/migrations
 ```
 
-Run `postgrestools --help` for all options. The CLI options take precedence over what is loaded from `postgrestools.jsonc`.
+Run `postgrestools --help` for all options. The CLI options take precedence over what is loaded from `postgres-language-server.jsonc`.
 
 ### Editor Integrations
 
 The Postgres Language Server is available as an extension in your favorite editors.
 
-- VSCode: The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgrestools-vscode).  
-- Neovim: You will have to install `nvim-lspconfig`, and follow the [instructions](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp).  
-- Emacs: The language client is available through [lsp-mode](https://github.com/emacs-lsp/lsp-mode). For more details, refer to their [manual page](https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/).  
+- VSCode: The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgrestools-vscode).
+- Neovim: You will have to install `nvim-lspconfig`, and follow the [instructions](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp).
+- Emacs: The language client is available through [lsp-mode](https://github.com/emacs-lsp/lsp-mode). For more details, refer to their [manual page](https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/).
 - Zed: The language server is available as an Extension. It's published from [this repo](https://github.com/LoamStudios/zed-postgres-language-server).
 
 ### Continuous Integration
