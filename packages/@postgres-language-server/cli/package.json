@@ -1,13 +1,13 @@
 {
-  "name": "@postgrestools/postgrestools",
+  "name": "@postgres-language-server/cli",
   "version": "<placeholder>",
   "bin": {
-    "postgrestools": "bin/postgrestools"
+    "postgres-language-server": "bin/postgres-language-server"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/supabase-community/postgres-language-server.git",
-    "directory": "packages/@postgrestools/postgrestools"
+    "directory": "packages/@postgres-language-server/cli"
   },
   "author": "Supabase Community",
   "contributors": [
@@ -23,7 +23,7 @@
   "license": "MIT or Apache-2.0",
   "description": "A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling.",
   "files": [
-    "bin/postgrestools",
+    "bin/postgres-language-server",
     "schema.json",
     "README.md"
   ],
@@ -34,13 +34,13 @@
     "provenance": true
   },
   "optionalDependencies": {
-    "@postgrestools/cli-x86_64-windows-msvc": "<placeholder>",
-    "@postgrestools/cli-aarch64-windows-msvc": "<placeholder>",
-    "@postgrestools/cli-x86_64-apple-darwin": "<placeholder>",
-    "@postgrestools/cli-aarch64-apple-darwin": "<placeholder>",
-    "@postgrestools/cli-x86_64-linux-gnu": "<placeholder>",
-    "@postgrestools/cli-aarch64-linux-gnu": "<placeholder>",
-    "@postgrestools/cli-x86_64-linux-musl": "<placeholder>"
+    "@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>",
+    "@postgres-language-server/cli-aarch64-windows-msvc": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-apple-darwin": "<placeholder>",
+    "@postgres-language-server/cli-aarch64-apple-darwin": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-linux-gnu": "<placeholder>",
+    "@postgres-language-server/cli-aarch64-linux-gnu": "<placeholder>",
+    "@postgres-language-server/cli-x86_64-linux-musl": "<placeholder>"
   },
   "scripts": {
     "test": "bun test"

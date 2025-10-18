@@ -1,0 +1,32 @@
+{
+	"name": "@postgres-language-server/backend-jsonrpc",
+	"version": "<placeholder>",
+	"main": "dist/index.js",
+	"scripts": {
+		"test": "bun test",
+		"test:ci": "bun build && bun test",
+		"build": "bun build ./src/index.ts --outdir ./dist --target node"
+	},
+	"files": ["dist/", "README.md"],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/supabase-community/postgres-language-server.git",
+		"directory": "packages/@postgres-language-server/backend-jsonrpc"
+	},
+	"author": "Supabase Community",
+	"bugs": "ttps://github.com/supabase-community/postgres-language-server/issues",
+	"description": "Bindings to the JSON-RPC Workspace API of the Postgres Language Tools daemon",
+	"keywords": ["TypeScript", "Postgres"],
+	"license": "MIT",
+	"publishConfig": {
+		"provenance": true
+	},
+	"optionalDependencies": {
+		"@postgres-language-server/cli-win32-x64": "<placeholder>",
+		"@postgres-language-server/cli-win32-arm64": "<placeholder>",
+		"@postgres-language-server/cli-darwin-x64": "<placeholder>",
+		"@postgres-language-server/cli-darwin-arm64": "<placeholder>",
+		"@postgres-language-server/cli-linux-x64": "<placeholder>",
+		"@postgres-language-server/cli-linux-arm64": "<placeholder>"
+	}
+}
