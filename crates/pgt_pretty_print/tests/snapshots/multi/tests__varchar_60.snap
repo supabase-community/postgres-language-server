@@ -1,0 +1,48 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/varchar_60.sql
+snapshot_kind: text
+---
+CREATE TEMPORARY TABLE varchar_tbl ( f1 VARCHAR(1) );
+
+INSERT INTO varchar_tbl (f1) VALUES ('a');
+
+INSERT INTO varchar_tbl (f1) VALUES ('A');
+
+INSERT INTO varchar_tbl (f1) VALUES ('1');
+
+INSERT INTO varchar_tbl (f1) VALUES (2);
+
+INSERT INTO varchar_tbl (f1) VALUES ('3');
+
+INSERT INTO varchar_tbl (f1) VALUES ('');
+
+INSERT INTO varchar_tbl (f1) VALUES ('cd');
+
+INSERT INTO varchar_tbl (f1) VALUES ('c     ');
+
+SELECT * FROM varchar_tbl;
+
+SELECT c.* FROM varchar_tbl AS c WHERE c.f1 <> 'a';
+
+SELECT c.* FROM varchar_tbl AS c WHERE c.f1 = 'a';
+
+SELECT c.* FROM varchar_tbl AS c WHERE c.f1 < 'a';
+
+SELECT c.* FROM varchar_tbl AS c WHERE c.f1 <= 'a';
+
+SELECT c.* FROM varchar_tbl AS c WHERE c.f1 > 'a';
+
+SELECT c.* FROM varchar_tbl AS c WHERE c.f1 >= 'a';
+
+DROP TABLE "varchar_tbl"
+
+INSERT INTO varchar_tbl (f1) VALUES ('abcde');
+
+SELECT * FROM varchar_tbl;
+
+SELECT pg_input_is_valid('abcd  ', 'varchar(4)');
+
+SELECT pg_input_is_valid('abcde', 'varchar(4)');
+
+SELECT * FROM pg_input_error_info('abcde', 'varchar(4)');

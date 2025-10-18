@@ -1,0 +1,23 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 174
+input_file: crates/pgt_pretty_print/tests/data/multi/create_function_c_60.sql
+---
+LOAD 'regresslib';
+
+CREATE FUNCTION test1(
+  pg_catalog.int4
+) RETURNS pg_catalog.int4 LANGUAGE "c" AS 'nosuchfile';
+
+CREATE FUNCTION test1(
+  pg_catalog.int4
+) RETURNS pg_catalog.int4 LANGUAGE "c" AS 'regresslib', 'nosuchsymbol';
+
+SELECT
+  regexp_replace('LAST_ERROR_MESSAGE',
+  'file ".*"',
+  'file "..."');
+
+CREATE FUNCTION test1(
+  pg_catalog.int4
+) RETURNS pg_catalog.int4 LANGUAGE "internal" AS 'nosuch';

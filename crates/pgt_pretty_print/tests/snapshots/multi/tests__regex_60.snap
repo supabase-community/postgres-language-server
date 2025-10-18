@@ -1,0 +1,222 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/regex_60.sql
+snapshot_kind: text
+---
+SET standard_conforming_strings = on;
+
+SELECT 'bbbbb' ~ '^([bc])\1*$' AS "t";
+
+SELECT 'ccc' ~ '^([bc])\1*$' AS "t";
+
+SELECT 'xxx' ~ '^([bc])\1*$' AS "f";
+
+SELECT 'bbc' ~ '^([bc])\1*$' AS "f";
+
+SELECT 'b' ~ '^([bc])\1*$' AS "t";
+
+SELECT 'abc abc abc' ~ '^(\w+)( \1)+$' AS "t";
+
+SELECT 'abc abd abc' ~ '^(\w+)( \1)+$' AS "f";
+
+SELECT 'abc abc abd' ~ '^(\w+)( \1)+$' AS "f";
+
+SELECT 'abc abc abc' ~ '^(.+)( \1)+$' AS "t";
+
+SELECT 'abc abd abc' ~ '^(.+)( \1)+$' AS "f";
+
+SELECT 'abc abc abd' ~ '^(.+)( \1)+$' AS "f";
+
+SELECT
+  SUBSTRING('asd TO foo' FROM ' TO (([a-z0-9._]+|"([^"]+|"")+")+)');
+
+SELECT SUBSTRING('a' FROM '((a))+');
+
+SELECT SUBSTRING('a' FROM '((a)+)');
+
+SELECT regexp_match('abc', '');
+
+SELECT regexp_match('abc', 'bc');
+
+SELECT regexp_match('abc', 'd') IS NULL;
+
+SELECT regexp_match('abc', '(B)(c)', 'i');
+
+SELECT regexp_match('abc', 'Bd', 'ig');
+
+SELECT regexp_matches('ab', 'a(?=b)b*');
+
+SELECT regexp_matches('a', 'a(?=b)b*');
+
+SELECT regexp_matches('abc', 'a(?=b)b*(?=c)c*');
+
+SELECT regexp_matches('ab', 'a(?=b)b*(?=c)c*');
+
+SELECT regexp_matches('ab', 'a(?!b)b*');
+
+SELECT regexp_matches('a', 'a(?!b)b*');
+
+SELECT regexp_matches('b', '(?=b)b');
+
+SELECT regexp_matches('a', '(?=b)b');
+
+SELECT regexp_matches('abb', '(?<=a)b*');
+
+SELECT regexp_matches('a', 'a(?<=a)b*');
+
+SELECT regexp_matches('abc', 'a(?<=a)b*(?<=b)c*');
+
+SELECT regexp_matches('ab', 'a(?<=a)b*(?<=b)c*');
+
+SELECT regexp_matches('ab', 'a*(?<!a)b*');
+
+SELECT regexp_matches('ab', 'a*(?<!a)b+');
+
+SELECT regexp_matches('b', 'a*(?<!a)b+');
+
+SELECT regexp_matches('a', 'a(?<!a)b*');
+
+SELECT regexp_matches('b', '(?<=b)b');
+
+SELECT regexp_matches('foobar', '(?<=f)b+');
+
+SELECT regexp_matches('foobar', '(?<=foo)b+');
+
+SELECT regexp_matches('foobar', '(?<=oo)b+');
+
+SELECT 'xz' ~ 'x(?=[xy])';
+
+SELECT 'xy' ~ 'x(?=[xy])';
+
+SELECT 'xz' ~ 'x(?![xy])';
+
+SELECT 'xy' ~ 'x(?![xy])';
+
+SELECT 'x' ~ 'x(?![xy])';
+
+SELECT 'xyy' ~ '(?<=[xy])yy+';
+
+SELECT 'zyy' ~ '(?<=[xy])yy+';
+
+SELECT 'xyy' ~ '(?<![xy])yy+';
+
+SELECT 'zyy' ~ '(?<![xy])yy+';
+
+SELECT * FROM pg_proc WHERE proname ~ 'abc';
+
+SELECT * FROM pg_proc WHERE proname ~ '^abc';
+
+SELECT * FROM pg_proc WHERE proname ~ '^abc$';
+
+SELECT * FROM pg_proc WHERE proname ~ '^abcd*e';
+
+SELECT * FROM pg_proc WHERE proname ~ '^abc+d';
+
+SELECT * FROM pg_proc WHERE proname ~ '^(abc)(def)';
+
+SELECT * FROM pg_proc WHERE proname ~ '^(abc)$';
+
+SELECT * FROM pg_proc WHERE proname ~ '^(abc)?d';
+
+SELECT * FROM pg_proc WHERE proname ~ '^abcd(x|(?=\w\w)q)';
+
+SELECT 'a' ~ '($|^)*';
+
+SELECT 'a' ~ '(^)+^';
+
+SELECT 'a' ~ '$($$)+';
+
+SELECT 'a' ~ '($^)+';
+
+SELECT 'a' ~ '(^$)*';
+
+SELECT 'aa bb cc' ~ '(^(?!aa))+';
+
+SELECT 'aa x' ~ '(^(?!aa)(?!bb)(?!cc))+';
+
+SELECT 'bb x' ~ '(^(?!aa)(?!bb)(?!cc))+';
+
+SELECT 'cc x' ~ '(^(?!aa)(?!bb)(?!cc))+';
+
+SELECT 'dd x' ~ '(^(?!aa)(?!bb)(?!cc))+';
+
+SELECT 'a' ~ '((((((a)*)*)*)*)*)*';
+
+SELECT 'a' ~ '((((((a+|)+|)+|)+|)+|)+|)';
+
+SELECT 'x' ~ 'abcd(\m)+xyz';
+
+SELECT 'a' ~ '^abcd*(((((^(a c(e?d)a+|)+|)+|)+|)+|a)+|)';
+
+SELECT 'x' ~ 'a^(^)bcd*xy(((((($a+|)+|)+|)+$|)+|)+|)^$';
+
+SELECT 'x' ~ 'xyz(\Y\Y)+';
+
+SELECT 'x' ~ 'x|(?:\M)+';
+
+SELECT 'x' ~ repeat('x*y*z*', 1000);
+
+SELECT 'Programmer' ~ '(\w).*?\1' AS "t";
+
+SELECT regexp_matches('Programmer', '(\w)(.*?\1)', 'g');
+
+SELECT
+  regexp_matches('foo/bar/baz',
+  '^([^/]+?)(?:/([^/]+?))(?:/([^/]+?))?$',
+  '');
+
+SELECT regexp_matches('llmmmfff', '^(l*)(.*)(f*)$');
+
+SELECT regexp_matches('llmmmfff', '^(l*){1,1}(.*)(f*)$');
+
+SELECT regexp_matches('llmmmfff', '^(l*){1,1}?(.*)(f*)$');
+
+SELECT
+  regexp_matches('llmmmfff',
+  '^(l*){1,1}?(.*){1,1}?(f*)$');
+
+SELECT regexp_matches('llmmmfff', '^(l*?)(.*)(f*)$');
+
+SELECT regexp_matches('llmmmfff', '^(l*?){1,1}(.*)(f*)$');
+
+SELECT regexp_matches('llmmmfff', '^(l*?){1,1}?(.*)(f*)$');
+
+SELECT
+  regexp_matches('llmmmfff',
+  '^(l*?){1,1}?(.*){1,1}?(f*)$');
+
+SELECT 'a' ~ '$()|^\1';
+
+SELECT 'a' ~ '.. ()|\1';
+
+SELECT 'a' ~ '()*\1';
+
+SELECT 'a' ~ '()+\1';
+
+SELECT 'xxx' ~ '(.){0}(\1)' AS "f";
+
+SELECT 'xxx' ~ '((.)){0}(\2)' AS "f";
+
+SELECT 'xyz' ~ '((.)){0}(\2){0}' AS "t";
+
+SELECT 'abcdef' ~ '^(.)\1|\1.' AS "f";
+
+SELECT 'abadef' ~ '^((.)\2|..)\2' AS "f";
+
+SELECT regexp_match('xy', '.|...');
+
+SELECT regexp_match('xyz', '.|...');
+
+SELECT regexp_match('xy', '.*');
+
+SELECT regexp_match('fooba', '(?:..)*');
+
+SELECT regexp_match('xyz', repeat('.', 260));
+
+SELECT regexp_match('foo', '(?:.|){99}');
+
+SELECT 'xyz' ~ 'x(\w)(?=\1)';
+
+SELECT 'xyz' ~ 'x(\w)(?=(\1))';
+
+SELECT 'a' ~ '\x7fffffff';

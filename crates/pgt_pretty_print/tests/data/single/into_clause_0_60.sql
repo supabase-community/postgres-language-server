@@ -1,0 +1,1 @@
+SELECT * INTO new_table FROM old_table

@@ -1,0 +1,81 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/drop_operator_60.sql
+snapshot_kind: text
+---
+CREATE OPERATOR === (procedure = int8eq,
+leftarg = BIGINT,
+rightarg = BIGINT,
+commutator = ===);
+
+CREATE OPERATOR !== (procedure = int8ne,
+leftarg = BIGINT,
+rightarg = BIGINT,
+negator = ===,
+commutator = !==);
+
+DROP OPERATOR !==(BIGINT, BIGINT)
+
+SELECT
+  ctid,
+  oprcom
+FROM
+  pg_catalog.pg_operator AS fk
+WHERE oprcom <> 0 AND
+NOT EXISTS (SELECT
+  1
+FROM
+  pg_catalog.pg_operator AS pk
+WHERE pk.oid = fk.oprcom);
+
+SELECT
+  ctid,
+  oprnegate
+FROM
+  pg_catalog.pg_operator AS fk
+WHERE oprnegate <> 0 AND
+NOT EXISTS (SELECT
+  1
+FROM
+  pg_catalog.pg_operator AS pk
+WHERE pk.oid = fk.oprnegate);
+
+DROP OPERATOR ===(BIGINT, BIGINT)
+
+CREATE OPERATOR <| (procedure = int8lt,
+leftarg = BIGINT,
+rightarg = BIGINT);
+
+CREATE OPERATOR |> (procedure = int8gt,
+leftarg = BIGINT,
+rightarg = BIGINT,
+negator = <|,
+commutator = <|);
+
+DROP OPERATOR |>(BIGINT, BIGINT)
+
+SELECT
+  ctid,
+  oprcom
+FROM
+  pg_catalog.pg_operator AS fk
+WHERE oprcom <> 0 AND
+NOT EXISTS (SELECT
+  1
+FROM
+  pg_catalog.pg_operator AS pk
+WHERE pk.oid = fk.oprcom);
+
+SELECT
+  ctid,
+  oprnegate
+FROM
+  pg_catalog.pg_operator AS fk
+WHERE oprnegate <> 0 AND
+NOT EXISTS (SELECT
+  1
+FROM
+  pg_catalog.pg_operator AS pk
+WHERE pk.oid = fk.oprnegate);
+
+DROP OPERATOR <|(BIGINT, BIGINT)

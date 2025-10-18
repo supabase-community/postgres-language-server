@@ -1,0 +1,1 @@
+LISTEN mytable_updated;

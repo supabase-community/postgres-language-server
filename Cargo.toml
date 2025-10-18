@@ -44,7 +44,9 @@ slotmap                  = "1.0.7"
 smallvec                 = { version = "1.13.2", features = ["union", "const_new", "serde"] }
 strum                    = { version = "0.27.1", features = ["derive"] }
 # this will use tokio if available, otherwise async-std
+camino                   = "1.1.9"
 convert_case             = "0.6.0"
+dir-test                 = "0.4.1"
 prost                    = "0.13.5"
 prost-reflect            = "0.15.3"
 protox                   = "0.8.0"
@@ -78,6 +80,8 @@ pgt_lexer_codegen          = { path = "./crates/pgt_lexer_codegen", version = "0
 pgt_lsp                    = { path = "./crates/pgt_lsp", version = "0.0.0" }
 pgt_markup                 = { path = "./crates/pgt_markup", version = "0.0.0" }
 pgt_plpgsql_check          = { path = "./crates/pgt_plpgsql_check", version = "0.0.0" }
+pgt_pretty_print           = { path = "./crates/pgt_pretty_print", version = "0.0.0" }
+pgt_pretty_print_codegen   = { path = "./crates/pgt_pretty_print_codegen", version = "0.0.0" }
 pgt_query                  = { path = "./crates/pgt_query", version = "0.0.0" }
 pgt_query_ext              = { path = "./crates/pgt_query_ext", version = "0.0.0" }
 pgt_query_macros           = { path = "./crates/pgt_query_macros", version = "0.0.0" }

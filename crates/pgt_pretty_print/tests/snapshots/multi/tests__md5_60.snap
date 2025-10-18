@@ -1,0 +1,46 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/md5_60.sql
+snapshot_kind: text
+---
+SELECT
+  md5('') = 'd41d8cd98f00b204e9800998ecf8427e' AS "TRUE";
+
+SELECT
+  md5('a') = '0cc175b9c0f1b6a831c399e269772661' AS "TRUE";
+
+SELECT
+  md5('abc') = '900150983cd24fb0d6963f7d28e17f72' AS "TRUE";
+
+SELECT
+  md5('message digest') = 'f96b697d7cb7938d525a2f31aaf161d0' AS "TRUE";
+
+SELECT
+  md5('abcdefghijklmnopqrstuvwxyz') = 'c3fcd3d76192e4007dfb496cca67e13b' AS "TRUE";
+
+SELECT
+  md5('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') = 'd174ab98d277d9f5a5611c2c9f419d9f' AS "TRUE";
+
+SELECT
+  md5('12345678901234567890123456789012345678901234567890123456789012345678901234567890') = '57edf4a22be3c955ac49da2e2107b67a' AS "TRUE";
+
+SELECT
+  md5(CAST('' AS BYTEA)) = 'd41d8cd98f00b204e9800998ecf8427e' AS "TRUE";
+
+SELECT
+  md5(CAST('a' AS BYTEA)) = '0cc175b9c0f1b6a831c399e269772661' AS "TRUE";
+
+SELECT
+  md5(CAST('abc' AS BYTEA)) = '900150983cd24fb0d6963f7d28e17f72' AS "TRUE";
+
+SELECT
+  md5(CAST('message digest' AS BYTEA)) = 'f96b697d7cb7938d525a2f31aaf161d0' AS "TRUE";
+
+SELECT
+  md5(CAST('abcdefghijklmnopqrstuvwxyz' AS BYTEA)) = 'c3fcd3d76192e4007dfb496cca67e13b' AS "TRUE";
+
+SELECT
+  md5(CAST('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' AS BYTEA)) = 'd174ab98d277d9f5a5611c2c9f419d9f' AS "TRUE";
+
+SELECT
+  md5(CAST('12345678901234567890123456789012345678901234567890123456789012345678901234567890' AS BYTEA)) = '57edf4a22be3c955ac49da2e2107b67a' AS "TRUE";

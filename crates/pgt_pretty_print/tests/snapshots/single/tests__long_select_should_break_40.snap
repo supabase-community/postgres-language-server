@@ -1,0 +1,10 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/single/long_select_should_break_40.sql
+snapshot_kind: text
+---
+SELECT
+  very_long_column_name_one,
+  very_long_column_name_two
+FROM
+  long_table_name;

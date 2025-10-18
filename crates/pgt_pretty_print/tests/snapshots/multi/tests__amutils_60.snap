@@ -1,0 +1,221 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/amutils_60.sql
+snapshot_kind: text
+---
+SELECT
+  prop,
+  pg_indexam_has_property(a.oid,
+  prop) AS "AM",
+  pg_index_has_property(CAST('onek_hundred' AS regclass),
+  prop) AS "Index",
+  pg_index_column_has_property(CAST('onek_hundred' AS regclass),
+  1,
+  prop) AS "Column"
+FROM
+  pg_am AS a,
+  unnest(CAST(ARRAY['asc',
+  'desc',
+  'nulls_first',
+  'nulls_last',
+  'orderable',
+  'distance_orderable',
+  'returnable',
+  'search_array',
+  'search_nulls',
+  'clusterable',
+  'index_scan',
+  'bitmap_scan',
+  'backward_scan',
+  'can_order',
+  'can_unique',
+  'can_multi_col',
+  'can_exclude',
+  'can_include',
+  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  ord)
+WHERE a.amname = 'btree'
+ORDER BY ord;
+
+SELECT
+  prop,
+  pg_indexam_has_property(a.oid,
+  prop) AS "AM",
+  pg_index_has_property(CAST('gcircleind' AS regclass),
+  prop) AS "Index",
+  pg_index_column_has_property(CAST('gcircleind' AS regclass),
+  1,
+  prop) AS "Column"
+FROM
+  pg_am AS a,
+  unnest(CAST(ARRAY['asc',
+  'desc',
+  'nulls_first',
+  'nulls_last',
+  'orderable',
+  'distance_orderable',
+  'returnable',
+  'search_array',
+  'search_nulls',
+  'clusterable',
+  'index_scan',
+  'bitmap_scan',
+  'backward_scan',
+  'can_order',
+  'can_unique',
+  'can_multi_col',
+  'can_exclude',
+  'can_include',
+  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  ord)
+WHERE a.amname = 'gist'
+ORDER BY ord;
+
+SELECT
+  prop,
+  pg_index_column_has_property(CAST('onek_hundred' AS regclass),
+  1,
+  prop) AS "btree",
+  pg_index_column_has_property(CAST('hash_i4_index' AS regclass),
+  1,
+  prop) AS "hash",
+  pg_index_column_has_property(CAST('gcircleind' AS regclass),
+  1,
+  prop) AS "gist",
+  pg_index_column_has_property(CAST('sp_radix_ind' AS regclass),
+  1,
+  prop) AS "spgist_radix",
+  pg_index_column_has_property(CAST('sp_quad_ind' AS regclass),
+  1,
+  prop) AS "spgist_quad",
+  pg_index_column_has_property(CAST('botharrayidx' AS regclass),
+  1,
+  prop) AS "gin",
+  pg_index_column_has_property(CAST('brinidx' AS regclass),
+  1,
+  prop) AS "brin"
+FROM
+  unnest(CAST(ARRAY['asc',
+  'desc',
+  'nulls_first',
+  'nulls_last',
+  'orderable',
+  'distance_orderable',
+  'returnable',
+  'search_array',
+  'search_nulls',
+  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  ord)
+ORDER BY ord;
+
+SELECT
+  prop,
+  pg_index_has_property(CAST('onek_hundred' AS regclass),
+  prop) AS "btree",
+  pg_index_has_property(CAST('hash_i4_index' AS regclass),
+  prop) AS "hash",
+  pg_index_has_property(CAST('gcircleind' AS regclass),
+  prop) AS "gist",
+  pg_index_has_property(CAST('sp_radix_ind' AS regclass),
+  prop) AS "spgist",
+  pg_index_has_property(CAST('botharrayidx' AS regclass),
+  prop) AS "gin",
+  pg_index_has_property(CAST('brinidx' AS regclass),
+  prop) AS "brin"
+FROM
+  unnest(CAST(ARRAY['clusterable',
+  'index_scan',
+  'bitmap_scan',
+  'backward_scan',
+  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  ord)
+ORDER BY ord;
+
+SELECT
+  amname,
+  prop,
+  pg_indexam_has_property(a.oid,
+  prop) AS "p"
+FROM
+  pg_am AS a,
+  unnest(CAST(ARRAY['can_order',
+  'can_unique',
+  'can_multi_col',
+  'can_exclude',
+  'can_include',
+  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  ord)
+WHERE amtype = 'i'
+ORDER BY amname,
+  ord;
+
+CREATE TEMPORARY TABLE foo (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  f4 INT
+);
+
+CREATE INDEX "fooindex" ON foo USING btree (f1 DESC,
+f2 ASC,
+f3 NULLS FIRST,
+f4 NULLS LAST);
+
+SELECT
+  col,
+  prop,
+  pg_index_column_has_property(o,
+  col,
+  prop)
+FROM
+  (VALUES (CAST('fooindex' AS regclass))) AS v1 (o),
+  (VALUES (1,
+  'orderable'),
+  (2,
+  'asc'),
+  (3,
+  'desc'),
+  (4,
+  'nulls_first'),
+  (5,
+  'nulls_last'),
+  (6,
+  'bogus')) AS v2 (idx,
+  prop),
+  generate_series(1,
+  4) AS col
+ORDER BY col,
+  idx;
+
+CREATE INDEX "foocover" ON foo USING btree (f1) INCLUDE (f2,
+f3);
+
+SELECT
+  col,
+  prop,
+  pg_index_column_has_property(o,
+  col,
+  prop)
+FROM
+  (VALUES (CAST('foocover' AS regclass))) AS v1 (o),
+  (VALUES (1,
+  'orderable'),
+  (2,
+  'asc'),
+  (3,
+  'desc'),
+  (4,
+  'nulls_first'),
+  (5,
+  'nulls_last'),
+  (6,
+  'distance_orderable'),
+  (7,
+  'returnable'),
+  (8,
+  'bogus')) AS v2 (idx,
+  prop),
+  generate_series(1,
+  3) AS col
+ORDER BY col,
+  idx;

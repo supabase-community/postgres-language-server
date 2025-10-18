@@ -1,0 +1,60 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/security_label_60.sql
+snapshot_kind: text
+---
+SET client_min_messages = warning;
+
+DROP ROLE IF EXISTS regress_seclabel_user1;
+
+DROP ROLE IF EXISTS regress_seclabel_user2;
+
+RESET client_min_messages;
+
+CREATE USER regress_seclabel_user1 CREATEROLE;
+
+CREATE USER regress_seclabel_user2;
+
+CREATE TABLE seclabel_tbl1 ( a INT, b TEXT );
+
+CREATE TABLE seclabel_tbl2 ( x INT, y TEXT );
+
+CREATE VIEW seclabel_view1 AS SELECT * FROM seclabel_tbl2;;
+
+CREATE FUNCTION seclabel_four() RETURNS INT AS 'SELECT 4' LANGUAGE "sql";
+
+CREATE DOMAIN seclabel_domain AS TEXT;
+
+ALTER TABLE seclabel_tbl1 OWNER TO regress_seclabel_user1;
+
+ALTER TABLE seclabel_tbl2 OWNER TO regress_seclabel_user2;
+
+SECURITY LABEL ON TABLE seclabel_tbl1 IS 'classified';
+
+SECURITY LABEL FOR dummy ON TABLE seclabel_tbl1 IS 'classified';
+
+SECURITY LABEL ON TABLE seclabel_tbl1 IS '...invalid label...';
+
+SECURITY LABEL ON TABLE seclabel_tbl3 IS 'unclassified';
+
+SECURITY LABEL ON ROLE regress_seclabel_user1 IS 'classified';
+
+SECURITY LABEL FOR dummy ON ROLE regress_seclabel_user1 IS 'classified';
+
+SECURITY LABEL ON ROLE regress_seclabel_user1 IS '...invalid label...';
+
+SECURITY LABEL ON ROLE regress_seclabel_user3 IS 'unclassified';
+
+DROP FUNCTION seclabel_four()
+
+DROP DOMAIN seclabel_domain
+
+DROP VIEW "seclabel_view1"
+
+DROP TABLE "seclabel_tbl1"
+
+DROP TABLE "seclabel_tbl2"
+
+DROP ROLE regress_seclabel_user1;
+
+DROP ROLE regress_seclabel_user2;

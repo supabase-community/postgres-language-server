@@ -1,0 +1,1 @@
+ALTER POLICY mypolicy ON mytable TO PUBLIC;

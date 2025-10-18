@@ -1,0 +1,35 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/event_trigger_login_60.sql
+snapshot_kind: text
+---
+CREATE TABLE user_logins ( id serial, who TEXT );
+
+GRANT SELECT ON TABLE user_logins TO PUBLIC;
+
+CREATE FUNCTION on_login_proc() RETURNS event_trigger AS '
+BEGIN
+  INSERT INTO user_logins (who) VALUES (SESSION_USER);
+  RAISE NOTICE ''You are welcome!'';
+END;
+' LANGUAGE "plpgsql";
+
+CREATE EVENT TRIGGER "on_login_trigger" ON login EXECUTE FUNCTION on_login_proc();
+
+ALTER EVENT TRIGGER on_login_trigger ENABLE ALWAYS;
+
+SELECT COUNT(*) FROM user_logins;
+
+SELECT COUNT(*) FROM user_logins;
+
+SELECT
+  dathasloginevt
+FROM
+  pg_database
+WHERE datname = 'DBNAME';
+
+DROP TABLE "user_logins"
+
+DROP EVENT TRIGGER on_login_trigger
+
+DROP FUNCTION on_login_proc()

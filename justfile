@@ -156,23 +156,23 @@ quick-modify:
 show-logs:
     tail -f $(ls $PGT_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
 
-# Run a claude agent with the given agentic prompt file.
+# Run a codex agent with the given agentic prompt file.
 # Commented out by default to avoid accidental usage that may incur costs.
-# agentic name:
-#     unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read agentic/{{name}}.md and follow the instructions closely"
-#
-# agentic-loop name:
-#     #!/usr/bin/env bash
-#     echo "Starting agentic loop until error..."
-#     iteration=1
-#     while true; do
-#         echo "$(date): Starting iteration $iteration..."
-#         if just agentic {{name}}; then
-#             echo "$(date): Iteration $iteration completed successfully!"
-#             iteration=$((iteration + 1))
-#         else
-#             echo "$(date): Iteration $iteration failed - stopping loop"
-#             break
-#         fi
-#     done
+agentic name:
+    codex exec --yolo "please read agentic/{{name}}.md and follow the instructions closely while continueing the described task. Make sure to understand recent Session History, Implementation Learnings and read all instructions. Continue until the task is complete."
+
+agentic-loop name:
+    #!/usr/bin/env bash
+    echo "Starting agentic loop until error..."
+    iteration=1
+    while true; do
+        echo "$(date): Starting iteration $iteration..."
+        if just agentic {{name}}; then
+            echo "$(date): Iteration $iteration completed successfully!"
+            iteration=$((iteration + 1))
+        else
+            echo "$(date): Iteration $iteration failed - stopping loop"
+            break
+        fi
+    done
 

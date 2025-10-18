@@ -1,0 +1,489 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/jsonpath_60.sql
+snapshot_kind: text
+---
+SELECT CAST('' AS jsonpath);
+
+SELECT CAST('$' AS jsonpath);
+
+SELECT CAST('strict $' AS jsonpath);
+
+SELECT CAST('lax $' AS jsonpath);
+
+SELECT CAST('$.a' AS jsonpath);
+
+SELECT CAST('$.a.v' AS jsonpath);
+
+SELECT CAST('$.a.*' AS jsonpath);
+
+SELECT CAST('$.*[*]' AS jsonpath);
+
+SELECT CAST('$.a[*]' AS jsonpath);
+
+SELECT CAST('$.a[*][*]' AS jsonpath);
+
+SELECT CAST('$[*]' AS jsonpath);
+
+SELECT CAST('$[0]' AS jsonpath);
+
+SELECT CAST('$[*][0]' AS jsonpath);
+
+SELECT CAST('$[*].a' AS jsonpath);
+
+SELECT CAST('$[*][0].a.b' AS jsonpath);
+
+SELECT CAST('$.a.**.b' AS jsonpath);
+
+SELECT CAST('$.a.**{2}.b' AS jsonpath);
+
+SELECT CAST('$.a.**{2 to 2}.b' AS jsonpath);
+
+SELECT CAST('$.a.**{2 to 5}.b' AS jsonpath);
+
+SELECT CAST('$.a.**{0 to 5}.b' AS jsonpath);
+
+SELECT CAST('$.a.**{5 to last}.b' AS jsonpath);
+
+SELECT CAST('$.a.**{last}.b' AS jsonpath);
+
+SELECT CAST('$.a.**{last to 5}.b' AS jsonpath);
+
+SELECT CAST('$+1' AS jsonpath);
+
+SELECT CAST('$-1' AS jsonpath);
+
+SELECT CAST('$--+1' AS jsonpath);
+
+SELECT CAST('$.a/+-1' AS jsonpath);
+
+SELECT CAST('1 * 2 + 4 % -3 != false' AS jsonpath);
+
+SELECT CAST('"\b\f\r\n\t\v\"\''\\"' AS jsonpath);
+
+SELECT
+  CAST('"\x50\u0067\u{53}\u{051}\u{00004C}"' AS jsonpath);
+
+SELECT
+  CAST('$.foo\x50\u0067\u{53}\u{051}\u{00004C}\t\"bar' AS jsonpath);
+
+SELECT CAST('"\z"' AS jsonpath);
+
+SELECT CAST('$.g ? ($.a == 1)' AS jsonpath);
+
+SELECT CAST('$.g ? (@ == 1)' AS jsonpath);
+
+SELECT CAST('$.g ? (@.a == 1)' AS jsonpath);
+
+SELECT CAST('$.g ? (@.a == 1 || @.a == 4)' AS jsonpath);
+
+SELECT CAST('$.g ? (@.a == 1 && @.a == 4)' AS jsonpath);
+
+SELECT
+  CAST('$.g ? (@.a == 1 || @.a == 4 && @.b == 7)' AS jsonpath);
+
+SELECT
+  CAST('$.g ? (@.a == 1 || !(@.a == 4) && @.b == 7)' AS jsonpath);
+
+SELECT
+  CAST('$.g ? (@.a == 1 || !(@.x >= 123 || @.a == 4) && @.b == 7)' AS jsonpath);
+
+SELECT
+  CAST('$.g ? (@.x >= @[*]?(@.a > "abc"))' AS jsonpath);
+
+SELECT
+  CAST('$.g ? ((@.x >= 123 || @.a == 4) is unknown)' AS jsonpath);
+
+SELECT CAST('$.g ? (exists (@.x))' AS jsonpath);
+
+SELECT CAST('$.g ? (exists (@.x ? (@ == 14)))' AS jsonpath);
+
+SELECT
+  CAST('$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))' AS jsonpath);
+
+SELECT CAST('$.g ? (+@.x >= +-(+@.a + 2))' AS jsonpath);
+
+SELECT CAST('$a' AS jsonpath);
+
+SELECT CAST('$a.b' AS jsonpath);
+
+SELECT CAST('$a[*]' AS jsonpath);
+
+SELECT CAST('$.g ? (@.zip == $zip)' AS jsonpath);
+
+SELECT CAST('$.a[1,2, 3 to 16]' AS jsonpath);
+
+SELECT
+  CAST('$.a[$a + 1, ($b[*]) to -($[0] * 2)]' AS jsonpath);
+
+SELECT CAST('$.a[$.a.size() - 3]' AS jsonpath);
+
+SELECT CAST('last' AS jsonpath);
+
+SELECT CAST('"last"' AS jsonpath);
+
+SELECT CAST('$.last' AS jsonpath);
+
+SELECT CAST('$ ? (last > 0)' AS jsonpath);
+
+SELECT CAST('$[last]' AS jsonpath);
+
+SELECT CAST('$[$[0] ? (last > 0)]' AS jsonpath);
+
+SELECT CAST('null.type()' AS jsonpath);
+
+SELECT CAST('1.type()' AS jsonpath);
+
+SELECT CAST('(1).type()' AS jsonpath);
+
+SELECT CAST('1.2.type()' AS jsonpath);
+
+SELECT CAST('"aaa".type()' AS jsonpath);
+
+SELECT CAST('true.type()' AS jsonpath);
+
+SELECT
+  CAST('$.double().floor().ceiling().abs()' AS jsonpath);
+
+SELECT CAST('$.keyvalue().key' AS jsonpath);
+
+SELECT CAST('$.datetime()' AS jsonpath);
+
+SELECT CAST('$.datetime("datetime template")' AS jsonpath);
+
+SELECT
+  CAST('$.bigint().integer().number().decimal()' AS jsonpath);
+
+SELECT CAST('$.boolean()' AS jsonpath);
+
+SELECT CAST('$.date()' AS jsonpath);
+
+SELECT CAST('$.decimal(4,2)' AS jsonpath);
+
+SELECT CAST('$.string()' AS jsonpath);
+
+SELECT CAST('$.time()' AS jsonpath);
+
+SELECT CAST('$.time(6)' AS jsonpath);
+
+SELECT CAST('$.time_tz()' AS jsonpath);
+
+SELECT CAST('$.time_tz(4)' AS jsonpath);
+
+SELECT CAST('$.timestamp()' AS jsonpath);
+
+SELECT CAST('$.timestamp(2)' AS jsonpath);
+
+SELECT CAST('$.timestamp_tz()' AS jsonpath);
+
+SELECT CAST('$.timestamp_tz(0)' AS jsonpath);
+
+SELECT CAST('$ ? (@ starts with "abc")' AS jsonpath);
+
+SELECT CAST('$ ? (@ starts with $var)' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "(invalid pattern")' AS jsonpath);
+
+SELECT CAST('$ ? (@ like_regex "pattern")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "i")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "is")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "isim")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "xsms")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "q")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "iq")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "smixq")' AS jsonpath);
+
+SELECT
+  CAST('$ ? (@ like_regex "pattern" flag "a")' AS jsonpath);
+
+SELECT CAST('$ < 1' AS jsonpath);
+
+SELECT CAST('($ < 1) || $.a.b <= $x' AS jsonpath);
+
+SELECT CAST('@ + 1' AS jsonpath);
+
+SELECT CAST('($).a.b' AS jsonpath);
+
+SELECT CAST('($.a.b).c.d' AS jsonpath);
+
+SELECT CAST('($.a.b + -$.x.y).c.d' AS jsonpath);
+
+SELECT CAST('(-+$.a.b).c.d' AS jsonpath);
+
+SELECT CAST('1 + ($.a.b + 2).c.d' AS jsonpath);
+
+SELECT CAST('1 + ($.a.b > 2).c.d' AS jsonpath);
+
+SELECT CAST('($)' AS jsonpath);
+
+SELECT CAST('(($))' AS jsonpath);
+
+SELECT
+  CAST('((($ + 1)).a + ((2)).b ? ((((@ > 1)) || (exists(@.c)))))' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < .1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 0.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -0.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +0.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 10.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -10.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +10.1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < .1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 0.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -0.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +0.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 10.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -10.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +10.1e1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < .1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 0.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -0.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +0.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 10.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -10.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +10.1e-1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < .1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 0.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -0.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +0.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < 10.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < -10.1e+1)' AS jsonpath);
+
+SELECT CAST('$ ? (@.a < +10.1e+1)' AS jsonpath);
+
+SELECT CAST('0' AS jsonpath);
+
+SELECT CAST('00' AS jsonpath);
+
+SELECT CAST('0755' AS jsonpath);
+
+SELECT CAST('0.0' AS jsonpath);
+
+SELECT CAST('0.000' AS jsonpath);
+
+SELECT CAST('0.000e1' AS jsonpath);
+
+SELECT CAST('0.000e2' AS jsonpath);
+
+SELECT CAST('0.000e3' AS jsonpath);
+
+SELECT CAST('0.0010' AS jsonpath);
+
+SELECT CAST('0.0010e-1' AS jsonpath);
+
+SELECT CAST('0.0010e+1' AS jsonpath);
+
+SELECT CAST('0.0010e+2' AS jsonpath);
+
+SELECT CAST('.001' AS jsonpath);
+
+SELECT CAST('.001e1' AS jsonpath);
+
+SELECT CAST('1.' AS jsonpath);
+
+SELECT CAST('1.e1' AS jsonpath);
+
+SELECT CAST('1a' AS jsonpath);
+
+SELECT CAST('1e' AS jsonpath);
+
+SELECT CAST('1.e' AS jsonpath);
+
+SELECT CAST('1.2a' AS jsonpath);
+
+SELECT CAST('1.2e' AS jsonpath);
+
+SELECT CAST('1.2.e' AS jsonpath);
+
+SELECT CAST('(1.2).e' AS jsonpath);
+
+SELECT CAST('1e3' AS jsonpath);
+
+SELECT CAST('1.e3' AS jsonpath);
+
+SELECT CAST('1.e3.e' AS jsonpath);
+
+SELECT CAST('1.e3.e4' AS jsonpath);
+
+SELECT CAST('1.2e3' AS jsonpath);
+
+SELECT CAST('1.2e3a' AS jsonpath);
+
+SELECT CAST('1.2.e3' AS jsonpath);
+
+SELECT CAST('(1.2).e3' AS jsonpath);
+
+SELECT CAST('1..e' AS jsonpath);
+
+SELECT CAST('1..e3' AS jsonpath);
+
+SELECT CAST('(1.).e' AS jsonpath);
+
+SELECT CAST('(1.).e3' AS jsonpath);
+
+SELECT CAST('1?(2>3)' AS jsonpath);
+
+SELECT CAST('0b100101' AS jsonpath);
+
+SELECT CAST('0o273' AS jsonpath);
+
+SELECT CAST('0x42F' AS jsonpath);
+
+SELECT CAST('0b' AS jsonpath);
+
+SELECT CAST('1b' AS jsonpath);
+
+SELECT CAST('0b0x' AS jsonpath);
+
+SELECT CAST('0o' AS jsonpath);
+
+SELECT CAST('1o' AS jsonpath);
+
+SELECT CAST('0o0x' AS jsonpath);
+
+SELECT CAST('0x' AS jsonpath);
+
+SELECT CAST('1x' AS jsonpath);
+
+SELECT CAST('0x0y' AS jsonpath);
+
+SELECT CAST('1_000_000' AS jsonpath);
+
+SELECT CAST('1_2_3' AS jsonpath);
+
+SELECT CAST('0x1EEE_FFFF' AS jsonpath);
+
+SELECT CAST('0o2_73' AS jsonpath);
+
+SELECT CAST('0b10_0101' AS jsonpath);
+
+SELECT CAST('1_000.000_005' AS jsonpath);
+
+SELECT CAST('1_000.' AS jsonpath);
+
+SELECT CAST('.000_005' AS jsonpath);
+
+SELECT CAST('1_000.5e0_1' AS jsonpath);
+
+SELECT CAST('_100' AS jsonpath);
+
+SELECT CAST('100_' AS jsonpath);
+
+SELECT CAST('100__000' AS jsonpath);
+
+SELECT CAST('_1_000.5' AS jsonpath);
+
+SELECT CAST('1_000_.5' AS jsonpath);
+
+SELECT CAST('1_000._5' AS jsonpath);
+
+SELECT CAST('1_000.5_' AS jsonpath);
+
+SELECT CAST('1_000.5e_1' AS jsonpath);
+
+SELECT CAST('0b_10_0101' AS jsonpath);
+
+SELECT CAST('0o_273' AS jsonpath);
+
+SELECT CAST('0x_42F' AS jsonpath);
+
+SELECT
+  str AS "jsonpath",
+  pg_input_is_valid(str,
+  'jsonpath') AS "ok",
+  errinfo.sql_error_code,
+  errinfo.message,
+  errinfo.detail,
+  errinfo.hint
+FROM
+  unnest(ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")' AS TEXT),
+  '$ ? (@ like_regex "pattern" flag "a")',
+  '@ + 1',
+  '00',
+  '1a']) AS str,
+  LATERAL pg_input_error_info(str,
+  'jsonpath') AS errinfo;
