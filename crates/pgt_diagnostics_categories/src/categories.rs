@@ -24,6 +24,7 @@ define_categories! {
     "lint/safety/banDropDatabase": "https://pgtools.dev/latest/rules/ban-drop-database",
     "lint/safety/banDropNotNull": "https://pgtools.dev/latest/rules/ban-drop-not-null",
     "lint/safety/banDropTable": "https://pgtools.dev/latest/rules/ban-drop-table",
+    "lint/safety/addSerialColumn": "https://pgtools.dev/latest/rules/add-serial-column",
     "lint/safety/banTruncateCascade": "https://pgtools.dev/latest/rules/ban-truncate-cascade",
     "lint/safety/changingColumnType": "https://pgtools.dev/latest/rules/changing-column-type",
     "lint/safety/constraintMissingNotValid": "https://pgtools.dev/latest/rules/constraint-missing-not-valid",

@@ -141,6 +141,9 @@ pub struct Safety {
     #[doc = r" It enables ALL rules for this group."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all: Option<bool>,
+    #[doc = "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub add_serial_column: Option<RuleConfiguration<pgt_analyser::options::AddSerialColumn>>,
     #[doc = "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adding_field_with_default:
@@ -240,6 +243,7 @@ pub struct Safety {
 impl Safety {
     const GROUP_NAME: &'static str = "safety";
     pub(crate) const GROUP_RULES: &'static [&'static str] = &[
+        "addSerialColumn",
         "addingFieldWithDefault",
         "addingForeignKeyConstraint",
         "addingNotNullField",
@@ -274,10 +278,11 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -308,6 +313,7 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[28]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -324,288 +330,298 @@ impl Safety {
     }
     pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.adding_field_with_default.as_ref() {
+        if let Some(rule) = self.add_serial_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
             }
         }
-        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
+        if let Some(rule) = self.adding_field_with_default.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.adding_not_null_field.as_ref() {
+        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
+        if let Some(rule) = self.adding_not_null_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
             }
         }
-        if let Some(rule) = self.adding_required_field.as_ref() {
+        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
-        if let Some(rule) = self.ban_char_field.as_ref() {
+        if let Some(rule) = self.adding_required_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
-        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
+        if let Some(rule) = self.ban_char_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_drop_table.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
             }
         }
-        if let Some(rule) = self.changing_column_type.as_ref() {
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
             }
         }
-        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
+        if let Some(rule) = self.changing_column_type.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
             }
         }
-        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
+        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
             }
         }
-        if let Some(rule) = self.prefer_big_int.as_ref() {
+        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
-        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
+        if let Some(rule) = self.prefer_big_int.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
             }
         }
-        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
+        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
             }
         }
-        if let Some(rule) = self.prefer_identity.as_ref() {
+        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.prefer_jsonb.as_ref() {
+        if let Some(rule) = self.prefer_identity.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
+        if let Some(rule) = self.prefer_jsonb.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
-        if let Some(rule) = self.prefer_text_field.as_ref() {
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
             }
         }
-        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+        if let Some(rule) = self.prefer_text_field.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
             }
         }
-        if let Some(rule) = self.renaming_column.as_ref() {
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
             }
         }
-        if let Some(rule) = self.renaming_table.as_ref() {
+        if let Some(rule) = self.renaming_column.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+        if let Some(rule) = self.renaming_table.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
             }
         }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[28]));
             }
         }
         index_set
     }
     pub(crate) fn get_disabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
         let mut index_set = FxHashSet::default();
-        if let Some(rule) = self.adding_field_with_default.as_ref() {
+        if let Some(rule) = self.add_serial_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
             }
         }
-        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
+        if let Some(rule) = self.adding_field_with_default.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
             }
         }
-        if let Some(rule) = self.adding_not_null_field.as_ref() {
+        if let Some(rule) = self.adding_foreign_key_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
             }
         }
-        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
+        if let Some(rule) = self.adding_not_null_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
             }
         }
-        if let Some(rule) = self.adding_required_field.as_ref() {
+        if let Some(rule) = self.adding_primary_key_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
             }
         }
-        if let Some(rule) = self.ban_char_field.as_ref() {
+        if let Some(rule) = self.adding_required_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
             }
         }
-        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
+        if let Some(rule) = self.ban_char_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
             }
         }
-        if let Some(rule) = self.ban_drop_column.as_ref() {
+        if let Some(rule) = self.ban_concurrent_index_creation_in_transaction.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
             }
         }
-        if let Some(rule) = self.ban_drop_database.as_ref() {
+        if let Some(rule) = self.ban_drop_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
             }
         }
-        if let Some(rule) = self.ban_drop_not_null.as_ref() {
+        if let Some(rule) = self.ban_drop_database.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
             }
         }
-        if let Some(rule) = self.ban_drop_table.as_ref() {
+        if let Some(rule) = self.ban_drop_not_null.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
             }
         }
-        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
+        if let Some(rule) = self.ban_drop_table.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
             }
         }
-        if let Some(rule) = self.changing_column_type.as_ref() {
+        if let Some(rule) = self.ban_truncate_cascade.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
             }
         }
-        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
+        if let Some(rule) = self.changing_column_type.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
             }
         }
-        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
+        if let Some(rule) = self.constraint_missing_not_valid.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
             }
         }
-        if let Some(rule) = self.prefer_big_int.as_ref() {
+        if let Some(rule) = self.disallow_unique_constraint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
-        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
+        if let Some(rule) = self.prefer_big_int.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
             }
         }
-        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
+        if let Some(rule) = self.prefer_bigint_over_int.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
             }
         }
-        if let Some(rule) = self.prefer_identity.as_ref() {
+        if let Some(rule) = self.prefer_bigint_over_smallint.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
-        if let Some(rule) = self.prefer_jsonb.as_ref() {
+        if let Some(rule) = self.prefer_identity.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[19]));
             }
         }
-        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
+        if let Some(rule) = self.prefer_jsonb.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[20]));
             }
         }
-        if let Some(rule) = self.prefer_text_field.as_ref() {
+        if let Some(rule) = self.prefer_robust_stmts.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[21]));
             }
         }
-        if let Some(rule) = self.prefer_timestamptz.as_ref() {
+        if let Some(rule) = self.prefer_text_field.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[22]));
             }
         }
-        if let Some(rule) = self.renaming_column.as_ref() {
+        if let Some(rule) = self.prefer_timestamptz.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[23]));
             }
         }
-        if let Some(rule) = self.renaming_table.as_ref() {
+        if let Some(rule) = self.renaming_column.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[24]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
+        if let Some(rule) = self.renaming_table.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[25]));
             }
         }
-        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_creation.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[26]));
             }
         }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
+        if let Some(rule) = self.require_concurrent_index_deletion.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[27]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[28]));
             }
         }
         index_set
@@ -637,6 +653,7 @@ impl Safety {
     }
     pub(crate) fn severity(rule_name: &str) -> Severity {
         match rule_name {
+            "addSerialColumn" => Severity::Error,
             "addingFieldWithDefault" => Severity::Warning,
             "addingForeignKeyConstraint" => Severity::Warning,
             "addingNotNullField" => Severity::Warning,
@@ -673,6 +690,10 @@ impl Safety {
         rule_name: &str,
     ) -> Option<(RulePlainConfiguration, Option<RuleOptions>)> {
         match rule_name {
+            "addSerialColumn" => self
+                .add_serial_column
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
             "addingFieldWithDefault" => self
                 .adding_field_with_default
                 .as_ref()

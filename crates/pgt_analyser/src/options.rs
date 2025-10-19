@@ -1,6 +1,8 @@
 //! Generated file, do not edit by hand, see `xtask/codegen`
 
 use crate::lint;
+pub type AddSerialColumn =
+    <lint::safety::add_serial_column::AddSerialColumn as pgt_analyse::Rule>::Options;
 pub type AddingFieldWithDefault =
     <lint::safety::adding_field_with_default::AddingFieldWithDefault as pgt_analyse::Rule>::Options;
 pub type AddingForeignKeyConstraint = < lint :: safety :: adding_foreign_key_constraint :: AddingForeignKeyConstraint as pgt_analyse :: Rule > :: Options ;

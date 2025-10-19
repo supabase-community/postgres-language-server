@@ -26,6 +26,7 @@ node_modules/
 .claude-session-id
 
 squawk/
+eugene/
 
 # Auto generated treesitter files
 crates/pgt_treesitter_grammar/src/grammar.json

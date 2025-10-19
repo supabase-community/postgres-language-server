@@ -6,6 +6,7 @@ _No exclusive rules available._
 ### Eugene
 | Eugene Rule Name | Rule Name |
 | ---- | ---- |
+| [E11](https://kaveland.no/eugene/hints/E11/index.html) |[addSerialColumn](../rules/add-serial-column) |
 | [E3](https://kaveland.no/eugene/hints/E3/index.html) |[preferJsonb](../rules/prefer-jsonb) |
 ### Squawk
 | Squawk Rule Name | Rule Name |

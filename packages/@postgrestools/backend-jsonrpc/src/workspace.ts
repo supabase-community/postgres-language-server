@@ -74,6 +74,7 @@ export type Category =
 	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
+	| "lint/safety/addSerialColumn"
 	| "lint/safety/banTruncateCascade"
 	| "lint/safety/changingColumnType"
 	| "lint/safety/constraintMissingNotValid"
@@ -122,7 +123,7 @@ export type DiagnosticTags = DiagnosticTag[];
 /**
 	* Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
-See the [Visitor] trait for additional documentation on all the supported advice types.
+See the [Visitor] trait for additional documentation on all the supported advice types. 
 	 */
 export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
@@ -227,7 +228,7 @@ export interface CompletionItem {
 /**
 	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
 
-label: "users", description: "Schema: auth", completion_text: "auth.users".
+label: "users", description: "Schema: auth", completion_text: "auth.users". 
 	 */
 export interface CompletionText {
 	is_snippet: boolean;
@@ -411,7 +412,7 @@ export interface PartialVcsConfiguration {
 	/**
 	* The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
 
-If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
 	 */
 	root?: string;
 	/**
@@ -435,6 +436,10 @@ export type VcsClientKind = "git";
  * A list of rules that belong to this group
  */
 export interface Safety {
+	/**
+	 * Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
+	 */
+	addSerialColumn?: RuleConfiguration_for_Null;
 	/**
 	 * Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
 	 */

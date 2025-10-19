@@ -12,6 +12,7 @@ Rules that detect potential safety issues in your code.
 
 | Rule name | Description | Properties |
 | --- | --- | --- |
+| [addSerialColumn](./add-serial-column) | Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite. | ✅ |
 | [addingFieldWithDefault](./adding-field-with-default) | Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock. | ✅ |
 | [addingForeignKeyConstraint](./adding-foreign-key-constraint) | Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes. | ✅ |
 | [addingNotNullField](./adding-not-null-field) | Setting a column NOT NULL blocks reads while the table is scanned. | ✅ |

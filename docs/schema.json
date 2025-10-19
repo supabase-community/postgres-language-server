@@ -356,6 +356,17 @@
       "description": "A list of rules that belong to this group",
       "type": "object",
       "properties": {
+        "addSerialColumn": {
+          "description": "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "addingFieldWithDefault": {
           "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
           "anyOf": [
