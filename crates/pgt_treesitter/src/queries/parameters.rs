@@ -10,10 +10,10 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
 [
   (field
-    (identifier)) @reference
-  (field
-    (object_reference)
-    "." (identifier)) @reference
+    (field_qualifier)?
+    (identifier)
+  ) @reference
+
   (parameter) @parameter
 ]
 "#;
