@@ -30,6 +30,7 @@ define_categories! {
     "lint/safety/constraintMissingNotValid": "https://pgtools.dev/latest/rules/constraint-missing-not-valid",
     "lint/safety/creatingEnum": "https://pgtools.dev/latest/rules/creating-enum",
     "lint/safety/disallowUniqueConstraint": "https://pgtools.dev/latest/rules/disallow-unique-constraint",
+    "lint/safety/lockTimeoutWarning": "https://pgtools.dev/latest/rules/lock-timeout-warning",
     "lint/safety/multipleAlterTable": "https://pgtools.dev/latest/rules/multiple-alter-table",
     "lint/safety/preferBigInt": "https://pgtools.dev/latest/rules/prefer-big-int",
     "lint/safety/preferBigintOverInt": "https://pgtools.dev/latest/rules/prefer-bigint-over-int",

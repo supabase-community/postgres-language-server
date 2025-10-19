@@ -550,6 +550,17 @@
             }
           ]
         },
+        "lockTimeoutWarning": {
+          "description": "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "multipleAlterTable": {
           "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
           "anyOf": [

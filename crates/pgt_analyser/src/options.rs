@@ -27,6 +27,8 @@ pub type ChangingColumnType =
 pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as pgt_analyse :: Rule > :: Options ;
 pub type CreatingEnum = <lint::safety::creating_enum::CreatingEnum as pgt_analyse::Rule>::Options;
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as pgt_analyse :: Rule > :: Options ;
+pub type LockTimeoutWarning =
+    <lint::safety::lock_timeout_warning::LockTimeoutWarning as pgt_analyse::Rule>::Options;
 pub type MultipleAlterTable =
     <lint::safety::multiple_alter_table::MultipleAlterTable as pgt_analyse::Rule>::Options;
 pub type PreferBigInt = <lint::safety::prefer_big_int::PreferBigInt as pgt_analyse::Rule>::Options;

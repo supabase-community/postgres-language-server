@@ -80,6 +80,7 @@ export type Category =
 	| "lint/safety/constraintMissingNotValid"
 	| "lint/safety/creatingEnum"
 	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/lockTimeoutWarning"
 	| "lint/safety/multipleAlterTable"
 	| "lint/safety/preferBigInt"
 	| "lint/safety/preferBigintOverInt"
@@ -510,6 +511,10 @@ export interface Safety {
 	 * Disallow adding a UNIQUE constraint without using an existing index.
 	 */
 	disallowUniqueConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
+	 */
+	lockTimeoutWarning?: RuleConfiguration_for_Null;
 	/**
 	 * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
 	 */

@@ -29,6 +29,7 @@ Rules that detect potential safety issues in your code.
 | [constraintMissingNotValid](./constraint-missing-not-valid) | Adding constraints without NOT VALID blocks all reads and writes. |  |
 | [creatingEnum](./creating-enum) | Creating enum types is not recommended for new applications. |  |
 | [disallowUniqueConstraint](./disallow-unique-constraint) | Disallow adding a UNIQUE constraint without using an existing index. |  |
+| [lockTimeoutWarning](./lock-timeout-warning) | Taking a dangerous lock without setting a lock timeout can cause indefinite blocking. |  |
 | [multipleAlterTable](./multiple-alter-table) | Multiple ALTER TABLE statements on the same table should be combined into a single statement. | ✅ |
 | [preferBigInt](./prefer-big-int) | Prefer BIGINT over smaller integer types. |  |
 | [preferBigintOverInt](./prefer-bigint-over-int) | Prefer BIGINT over INT/INTEGER types. |  |
