@@ -427,7 +427,9 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -538,7 +540,9 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -638,7 +642,9 @@ async fn test_issue_271(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -830,7 +836,9 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     });
 
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -977,7 +985,9 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1060,7 +1070,9 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1192,7 +1204,9 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("test_one/postgrestools.jsonc").to_file_path().unwrap(),
+        url!("test_one/postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
@@ -1206,7 +1220,9 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("test_two/postgrestools.jsonc").to_file_path().unwrap(),
+        url!("test_two/postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf_without_db).unwrap(),
     );
 
@@ -1357,14 +1373,16 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     // shared config with default db connection
     let conf_with_db = PartialConfiguration::init();
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
     let relative_path = if cfg!(windows) {
-        "..\\postgrestools.jsonc"
+        "..\\postgres-language-server.jsonc"
     } else {
-        "../postgrestools.jsonc"
+        "../postgres-language-server.jsonc"
     };
 
     // test_one extends the shared config but sets our test db
@@ -1385,7 +1403,9 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     });
 
     fs.insert(
-        url!("test_one/postgrestools.jsonc").to_file_path().unwrap(),
+        url!("test_one/postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf_with_db).unwrap(),
     );
 
@@ -1396,7 +1416,9 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("test_two/postgrestools.jsonc").to_file_path().unwrap(),
+        url!("test_two/postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf_without_db).unwrap(),
     );
 
@@ -1585,7 +1607,9 @@ async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
@@ -1712,7 +1736,9 @@ async fn test_plpgsql(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgrestools.jsonc").to_file_path().unwrap(),
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 

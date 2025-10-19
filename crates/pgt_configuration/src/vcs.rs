@@ -28,7 +28,7 @@ pub struct VcsConfiguration {
     pub use_ignore_file: bool,
 
     /// The folder where we should check for VCS files. By default, we will use the same
-    /// folder where `postgrestools.jsonc` was found.
+    /// folder where `postgres-language-server.jsonc` was found.
     ///
     /// If we can't find the configuration, it will attempt to use the current working directory.
     /// If no current working directory can't be found, we won't use the VCS integration, and a diagnostic

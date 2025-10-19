@@ -162,11 +162,24 @@ impl WorkspaceServer {
 
     /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`
     fn is_ignored(&self, path: &Path) -> bool {
-        let file_name = path.file_name().and_then(|s| s.to_str());
-        // Never ignore Postgres Tools's config file regardless `include`/`ignore`
-        (file_name != Some(ConfigName::pgt_jsonc())) &&
-            // Apply top-level `include`/`ignore
-            (self.is_ignored_by_top_level_config(path) || self.is_ignored_by_migration_config(path))
+        // Never ignore config files regardless `include`/`ignore`
+        if self.is_config_file(path) {
+            return false;
+        }
+
+        // Apply top-level `include`/`ignore`
+        self.is_ignored_by_top_level_config(path) || self.is_ignored_by_migration_config(path)
+    }
+
+    /// Check whether a file is a configuration file
+    fn is_config_file(&self, path: &Path) -> bool {
+        path.file_name()
+            .and_then(|s| s.to_str())
+            .is_some_and(|file_name| {
+                ConfigName::file_names()
+                    .iter()
+                    .any(|config_name| file_name == *config_name)
+            })
     }
 
     /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`
@@ -463,7 +476,7 @@ impl Workspace for WorkspaceServer {
                 // Combined async context for both typecheck and plpgsql_check
                 let async_results = run_async(async move {
                     stream::iter(input)
-                        .map(|(id, range, ast, cst, sign)| {
+                        .map(|(id, range, ast, cst, fn_sig)| {
                             let pool = pool.clone();
                             let path = path_clone.clone();
                             let schema_cache = Arc::clone(&schema_cache);
@@ -484,7 +497,7 @@ impl Workspace for WorkspaceServer {
                                                 tree: &cst,
                                                 schema_cache: schema_cache.as_ref(),
                                                 search_path_patterns,
-                                                identifiers: sign
+                                                identifiers: fn_sig
                                                     .map(|s| {
                                                         s.args
                                                             .iter()

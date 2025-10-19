@@ -24,7 +24,7 @@ pgt_analyse              = { workspace = true }
 pgt_configuration        = { workspace = true }
 pgt_console              = { workspace = true }
 pgt_diagnostics          = { workspace = true }
-pgt_flags                = { workspace = true }
+pgt_env                  = { workspace = true }
 pgt_fs                   = { workspace = true }
 pgt_lsp                  = { workspace = true }
 pgt_text_edit            = { workspace = true }

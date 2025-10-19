@@ -1,10 +1,7 @@
 ---
 source: crates/pgt_typecheck/tests/diagnostics.rs
-expression: normalized
-snapshot_kind: text
+expression: content
 ---
-typecheck ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+select id, ~~~unknown~~~ from contacts;
 
-  <strong><span style="color: Tomato;">✖</span></strong> <span style="color: Tomato;">column &quot;unknown&quot; does not exist</span>
-  
-  <strong><span style="color: Tomato;">✖</span></strong> <span style="color: Tomato;">Error Code: </span><span style="color: Tomato;"><strong>42703</strong></span>
+column &quot;unknown&quot; does not exist

@@ -21,6 +21,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.all_fields, $.field_qualifier],
     [$.object_reference, $._qualified_field],
     [$.object_reference],
     [$.between_expression, $.binary_expression],
@@ -484,7 +485,7 @@ module.exports = grammar({
 
     keyword_array: (_) => make_keyword("array"), // not included in _type since it's a constructor literal
 
-    _type: ($) =>
+    type: ($) =>
       prec.left(
         seq(
           choice(
@@ -857,7 +858,7 @@ module.exports = grammar({
       seq(
         optional($._argmode),
         optional($.identifier),
-        $._type,
+        $.type,
         optional(seq(choice($.keyword_default, "="), $.literal))
       ),
 
@@ -1234,8 +1235,8 @@ module.exports = grammar({
         $.function_arguments,
         $.keyword_returns,
         choice(
-          $._type,
-          seq($.keyword_setof, $._type),
+          $.type,
+          seq($.keyword_setof, $.type),
           seq($.keyword_table, $.column_definitions),
           $.keyword_trigger
         ),
@@ -1275,7 +1276,7 @@ module.exports = grammar({
     function_declaration: ($) =>
       seq(
         $.identifier,
-        $._type,
+        $.type,
         optional(
           seq(
             ":=",
@@ -1523,7 +1524,7 @@ module.exports = grammar({
         $.object_reference,
         repeat(
           choice(
-            seq($.keyword_as, $._type),
+            seq($.keyword_as, $.type),
             seq(
               $.keyword_increment,
               optional($.keyword_by),
@@ -1781,7 +1782,7 @@ module.exports = grammar({
           seq(
             optional(seq($.keyword_set, $.keyword_data)),
             $.keyword_type,
-            field("type", $._type)
+            field("type", $.type)
           ),
           seq(
             $.keyword_set,
@@ -1975,7 +1976,7 @@ module.exports = grammar({
         choice(
           repeat1(
             choice(
-              seq($.keyword_as, $._type),
+              seq($.keyword_as, $.type),
               seq($.keyword_increment, optional($.keyword_by), $.literal),
               seq(
                 $.keyword_minvalue,
@@ -2057,7 +2058,7 @@ module.exports = grammar({
           ),
           seq(
             choice(
-              seq($.keyword_add, $.keyword_attribute, $.identifier, $._type),
+              seq($.keyword_add, $.keyword_attribute, $.identifier, $.type),
               seq(
                 $.keyword_drop,
                 $.keyword_attribute,
@@ -2070,7 +2071,7 @@ module.exports = grammar({
                 $.identifier,
                 optional(seq($.keyword_set, $.keyword_data)),
                 $.keyword_type,
-                $._type
+                $.type
               )
             ),
             optional(seq($.keyword_collate, $.identifier)),
@@ -2624,7 +2625,7 @@ module.exports = grammar({
     column_definition: ($) =>
       seq(
         field("name", $._column),
-        field("type", $._type),
+        field("type", $.type),
         repeat($._column_constraint)
       ),
 
@@ -2805,12 +2806,12 @@ module.exports = grammar({
     field: ($) => field("name", $.identifier),
 
     _qualified_field: ($) =>
-      seq(
-        optional(seq(optional_parenthesis($.object_reference), ".")),
-        field("name", $.identifier)
-      ),
+      seq(optional($.field_qualifier), field("name", $.identifier)),
 
-    implicit_cast: ($) => seq($._expression, "::", $._type),
+    field_qualifier: ($) =>
+      seq(prec.left(optional_parenthesis($.object_reference)), "."),
+
+    implicit_cast: ($) => seq($._expression, "::", $.type),
 
     // Postgres syntax for intervals
     interval: ($) => seq($.keyword_interval, $._literal_string),
@@ -2819,7 +2820,7 @@ module.exports = grammar({
       seq(
         field("name", $.keyword_cast),
         wrapped_in_parenthesis(
-          seq(field("parameter", $._expression), $.keyword_as, $._type)
+          seq(field("parameter", $._expression), $.keyword_as, $.type)
         )
       ),
 
@@ -3378,10 +3379,10 @@ module.exports = grammar({
       choice(
         $._identifier,
         $._double_quote_string,
-        $._tsql_parameter,
+        $._sql_parameter,
         seq("`", $._identifier, "`")
       ),
-    _tsql_parameter: ($) => seq("@", $._identifier),
+    _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]*/,
     _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]*/,
   },
 });

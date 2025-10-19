@@ -518,3 +518,86 @@ async fn test_grant_table_hover(test_db: PgPool) {
 
     test_hover_at_cursor("grant_select", query, None, &test_db).await;
 }
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn hover_on_composite_type(test_db: PgPool) {
+    let setup = r#"create type compfoo as (f1 int, f2 text);"#;
+
+    let query = format!(
+        "create function getfoo() returns setof comp{}foo as $$ select fooid, fooname from foo $$ language sql;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor(
+        "hover_custom_type_with_properties",
+        query,
+        Some(setup),
+        &test_db,
+    )
+    .await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn hover_on_enum_type(test_db: PgPool) {
+    let setup = r#"create type compfoo as ENUM ('yes', 'no');"#;
+
+    let query = format!(
+        "create function getfoo() returns setof comp{}foo as $$ select fooid, fooname from foo $$ language sql;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("hover_custom_type_enum", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn hover_type_in_select_clause(test_db: PgPool) {
+    let setup = r#"create type compfoo as (f1 int, f2 text);"#;
+
+    let query = format!(
+        "select (co{}mpfoo).f1 from some_table s;",
+        QueryWithCursorPosition::cursor_marker()
+    );
+
+    test_hover_at_cursor("hover_type_in_select_clause", query, Some(setup), &test_db).await;
+}
+
+#[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+async fn no_hover_results_over_params(test_db: PgPool) {
+    let setup = r#"
+        create table users (
+            id serial primary key,
+            name text
+        );
+    "#;
+
+    test_db.execute(setup).await.unwrap();
+
+    {
+        let query = format!(
+            "select * from users where name = $n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("dollar-param", query, None, &test_db).await;
+    }
+    {
+        let query = format!(
+            "select * from users where name = :n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("colon-param", query, None, &test_db).await;
+    }
+    {
+        let query = format!(
+            "select * from users where name = @n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("at-param", query, None, &test_db).await;
+    }
+    {
+        let query = format!(
+            "select * from users where name = ?n{}ame;",
+            QueryWithCursorPosition::cursor_marker()
+        );
+        test_hover_at_cursor("questionmark-param", query, None, &test_db).await;
+    }
+}

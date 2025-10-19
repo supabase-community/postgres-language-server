@@ -48,7 +48,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .map(Hoverable::from)
                     .collect(),
 
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Column(node_identification) => match node_identification {
@@ -74,7 +74,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                         .collect()
                 }
 
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Function(node_identification) => match node_identification {
@@ -92,7 +92,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .map(Hoverable::from)
                     .collect(),
 
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Role(node_identification) => match node_identification {
@@ -103,8 +103,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .map(Hoverable::from)
                     .collect(),
 
-                hovered_node::NodeIdentification::SchemaAndName(_) => vec![],
-                hovered_node::NodeIdentification::SchemaAndTableAndName(_) => vec![],
+                _ => vec![],
             },
 
             HoveredNode::Schema(node_identification) => match node_identification {
@@ -118,12 +117,30 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 _ => vec![],
             },
 
+            HoveredNode::PostgresType(node_identification) => match node_identification {
+                hovered_node::NodeIdentification::Name(type_name) => params
+                    .schema_cache
+                    .find_type(&type_name, None)
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+
+                hovered_node::NodeIdentification::SchemaAndName((schema, type_name)) => params
+                    .schema_cache
+                    .find_type(&type_name, Some(schema.as_str()))
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+
+                _ => vec![],
+            },
+
             _ => todo!(),
         };
 
         prioritize_by_context(items, &ctx)
             .into_iter()
-            .map(|item| format_hover_markdown(&item))
+            .map(|item| format_hover_markdown(&item, params.schema_cache))
             .filter_map(Result::ok)
             .collect()
     } else {

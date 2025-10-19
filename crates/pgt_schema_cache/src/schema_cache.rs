@@ -98,6 +98,10 @@ impl SchemaCache {
         })
     }
 
+    pub fn find_type_by_id(&self, id: i64) -> Option<&PostgresType> {
+        self.types.iter().find(|t| t.id == id)
+    }
+
     pub fn find_cols(&self, name: &str, table: Option<&str>, schema: Option<&str>) -> Vec<&Column> {
         let sanitized_name = Self::sanitize_identifier(name);
         self.columns
@@ -165,7 +169,9 @@ pub trait SchemaCacheItem {
 
 #[cfg(test)]
 mod tests {
-    use sqlx::PgPool;
+    use std::collections::HashSet;
+
+    use sqlx::{Executor, PgPool};
 
     use crate::SchemaCache;
 
@@ -174,5 +180,34 @@ mod tests {
         SchemaCache::load(&test_db)
             .await
             .expect("Couldnt' load Schema Cache");
+    }
+
+    #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
+    async fn it_does_not_have_duplicate_entries(test_db: PgPool) {
+        // we had some duplicate columns in the schema_cache because of indices including the same column multiple times.
+        // the columns were unnested as duplicates in the query
+        let setup = r#"
+        CREATE TABLE public.mfa_factors (
+            id uuid PRIMARY KEY,
+            factor_name text NOT NULL
+        );
+
+        -- a second index on id!
+        CREATE INDEX idx_mfa_user_factor ON public.mfa_factors(id, factor_name);
+        "#;
+
+        test_db.execute(setup).await.unwrap();
+
+        let cache = SchemaCache::load(&test_db)
+            .await
+            .expect("Couldn't load Schema Cache");
+
+        let set: HashSet<String> = cache
+            .columns
+            .iter()
+            .map(|c| format!("{}.{}.{}", c.schema_name, c.table_name, c.name))
+            .collect();
+
+        assert_eq!(set.len(), cache.columns.len());
     }
 }

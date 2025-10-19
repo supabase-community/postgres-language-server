@@ -31,7 +31,7 @@ sqlx.workspace = true
 tokio = { version = "1.41.1", features = ["full"] }
 
 [dev-dependencies]
-criterion                = "0.5.1"
+criterion.workspace      = true
 pgt_test_utils.workspace = true
 
 [lib]

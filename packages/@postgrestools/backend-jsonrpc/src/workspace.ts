@@ -409,7 +409,7 @@ export interface PartialVcsConfiguration {
 	 */
 	enabled?: boolean;
 	/**
-	* The folder where we should check for VCS files. By default, we will use the same folder where `postgrestools.jsonc` was found.
+	* The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
 
 If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
 	 */

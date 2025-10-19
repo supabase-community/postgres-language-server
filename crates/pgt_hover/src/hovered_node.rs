@@ -18,11 +18,16 @@ pub(crate) enum HoveredNode {
     Policy(NodeIdentification),
     Trigger(NodeIdentification),
     Role(NodeIdentification),
+    PostgresType(NodeIdentification),
 }
 
 impl HoveredNode {
     pub(crate) fn get(ctx: &pgt_treesitter::context::TreesitterContext) -> Option<Self> {
         let node_content = ctx.get_node_under_cursor_content()?;
+
+        if looks_like_sql_param(node_content.as_str()) {
+            return None;
+        }
 
         let under_cursor = ctx.node_under_cursor.as_ref()?;
 
@@ -74,6 +79,7 @@ impl HoveredNode {
                     Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
                 }
             }
+
             "identifier" if ctx.matches_ancestor_history(&["invocation", "object_reference"]) => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Function(NodeIdentification::SchemaAndName((
@@ -86,8 +92,39 @@ impl HoveredNode {
                     )))
                 }
             }
+
             "identifier" if ctx.matches_one_of_ancestors(&["alter_role", "policy_to_role"]) => {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+            }
+
+            "identifier"
+                if (
+                    // hover over custom type in `create table` or `returns`
+                    (ctx.matches_ancestor_history(&["type", "object_reference"])
+                    && ctx.node_under_cursor_is_within_field_name("custom_type"))
+
+                    // hover over type in `select` clause etc…                    
+                    || (ctx
+                        .matches_ancestor_history(&["field_qualifier", "object_reference"])
+                        && ctx.before_cursor_matches_kind(&["("])))
+
+                    // make sure we're not checking against an alias
+                    && ctx
+                        .get_mentioned_table_for_alias(
+                            node_content.replace(['(', ')'], "").as_str(),
+                        )
+                        .is_none() =>
+            {
+                let sanitized = node_content.replace(['(', ')'], "");
+                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::PostgresType(
+                        NodeIdentification::SchemaAndName((schema.clone(), sanitized)),
+                    ))
+                } else {
+                    Some(HoveredNode::PostgresType(NodeIdentification::Name(
+                        sanitized,
+                    )))
+                }
             }
 
             "revoke_role" | "grant_role" | "policy_role" => {
@@ -113,4 +150,11 @@ impl HoveredNode {
             _ => None,
         }
     }
+}
+
+fn looks_like_sql_param(content: &str) -> bool {
+    (content.starts_with("$") && !content.starts_with("$$"))
+        || (content.starts_with(":") && !content.starts_with("::"))
+        || (content.starts_with("@"))
+        || content.starts_with("?")
 }

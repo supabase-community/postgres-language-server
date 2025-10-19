@@ -438,10 +438,13 @@ impl<'a> TreesitterContext<'a> {
 
         match current_node_kind {
             "object_reference" | "field" => {
+                let start = current_node.start_byte();
                 let content = self.get_ts_node_content(&current_node);
                 if let Some(txt) = content {
                     let parts: Vec<&str> = txt.split('.').collect();
-                    if parts.len() == 2 {
+                    // we do not want to set it if we're on the schema or alias node itself
+                    let is_on_schema_node = start + parts[0].len() >= self.position;
+                    if parts.len() == 2 && !is_on_schema_node {
                         self.schema_or_alias_name = Some(parts[0].to_string());
                     }
                 }
@@ -470,7 +473,9 @@ impl<'a> TreesitterContext<'a> {
         }
 
         // We have arrived at the leaf node
-        if current_node.child_count() == 0 {
+        if current_node.child_count() == 0
+            || current_node.first_child_for_byte(self.position).is_none()
+        {
             self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
             return;
         }
@@ -824,6 +829,42 @@ impl<'a> TreesitterContext<'a> {
                 NodeUnderCursor::CustomNode { .. } => 0,
             })
             .unwrap_or(0)
+    }
+
+    /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
+    pub fn node_under_cursor_is_within_field_name(&self, name: &str) -> bool {
+        self.node_under_cursor
+            .as_ref()
+            .map(|n| match n {
+                NodeUnderCursor::TsNode(node) => {
+                    // It might seem weird that we have to check for the field_name from the parent,
+                    // but TreeSitter wants it this way, since nodes often can only be named in
+                    // the context of their parents.
+                    let root_node = self.tree.root_node();
+                    let mut cursor = node.walk();
+                    let mut parent = node.parent();
+
+                    while let Some(p) = parent {
+                        if p == root_node {
+                            break;
+                        }
+
+                        if p.children_by_field_name(name, &mut cursor).any(|c| {
+                            let r = c.range();
+                            // if the parent range contains the node range, the node is of the field_name.
+                            r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
+                        }) {
+                            return true;
+                        } else {
+                            parent = p.parent();
+                        }
+                    }
+
+                    false
+                }
+                NodeUnderCursor::CustomNode { .. } => false,
+            })
+            .unwrap_or(false)
     }
 
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
@@ -1213,5 +1254,65 @@ mod tests {
             }
             _ => unreachable!(),
         }
+    }
+
+    #[test]
+    fn verifies_node_has_field_name() {
+        let query = format!(
+            r#"create table foo (id int not null, compfoo som{}e_type);"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
+
+        let tree = get_tree(text.as_str());
+
+        let params = TreeSitterContextParams {
+            position: (position as u32).into(),
+            text: &text,
+            tree: &tree,
+        };
+
+        let ctx = TreesitterContext::new(params);
+
+        assert!(ctx.node_under_cursor_is_within_field_name("custom_type"));
+    }
+
+    #[test]
+    fn does_not_overflow_callstack_on_smaller_treesitter_child() {
+        let query = format!(
+            r#"select * from persons where id = @i{}d;"#,
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        /*
+            The query (currently) yields the following treesitter tree for the WHERE clause:
+
+            where [29..43] 'where id = @id'
+                keyword_where [29..34] 'where'
+                binary_expression [35..43] 'id = @id'
+                field [35..37] 'id'
+                    identifier [35..37] 'id'
+                = [38..39] '='
+                field [40..43] '@id'
+                    identifier [40..43] '@id'
+                        @ [40..41] '@'
+
+            You can see that the '@' is a child of the "identifier" but has a range smaller than its parent's.
+            This would crash our context parsing because, at position 42, we weren't at the leaf node but also couldn't
+            go to a child on that position.
+        */
+
+        let (position, text) = QueryWithCursorPosition::from(query).get_text_and_position();
+
+        let tree = get_tree(text.as_str());
+
+        let params = TreeSitterContextParams {
+            position: (position as u32).into(),
+            text: &text,
+            tree: &tree,
+        };
+
+        // should simply not panic
+        let _ = TreesitterContext::new(params);
     }
 }

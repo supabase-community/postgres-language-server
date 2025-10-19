@@ -1,0 +1,7 @@
+---
+source: crates/pgt_typecheck/tests/diagnostics.rs
+expression: content
+---
+delete from public.contacts where id = ~~~uid~~~;
+
+`uid` is of type uuid, not integer
