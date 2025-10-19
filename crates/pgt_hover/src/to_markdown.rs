@@ -11,11 +11,23 @@ pub(crate) trait ToHoverMarkdown {
         "plain"
     }
 
-    fn hover_headline<W: Write>(&self, writer: &mut W, schema_cache: &SchemaCache) -> Result<(), std::fmt::Error>;
+    fn hover_headline<W: Write>(
+        &self,
+        writer: &mut W,
+        schema_cache: &SchemaCache,
+    ) -> Result<(), std::fmt::Error>;
 
-    fn hover_body<W: Write>(&self, writer: &mut W, schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error>; // returns true if something was written
+    fn hover_body<W: Write>(
+        &self,
+        writer: &mut W,
+        schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error>; // returns true if something was written
 
-    fn hover_footer<W: Write>(&self, writer: &mut W, schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error>; // returns true if something was written
+    fn hover_footer<W: Write>(
+        &self,
+        writer: &mut W,
+        schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error>; // returns true if something was written
 }
 
 pub(crate) fn format_hover_markdown<T: ToHoverMarkdown>(

@@ -111,11 +111,11 @@ impl HoveredNode {
                     // make sure we're not checking against an alias
                     && ctx
                         .get_mentioned_table_for_alias(
-                            node_content.replace('(', "").replace(')', "").as_str(),
+                            node_content.replace(['(', ')'], "").as_str(),
                         )
                         .is_none() =>
             {
-                let sanitized = node_content.replace('(', "").replace(')', "");
+                let sanitized = node_content.replace(['(', ')'], "");
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::PostgresType(
                         NodeIdentification::SchemaAndName((schema.clone(), sanitized)),

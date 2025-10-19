@@ -7,7 +7,11 @@ use pgt_treesitter::TreesitterContext;
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
 
 impl ToHoverMarkdown for Table {
-    fn hover_headline<W: Write>(&self, writer: &mut W, _schema_cache: &SchemaCache) -> Result<(), std::fmt::Error> {
+    fn hover_headline<W: Write>(
+        &self,
+        writer: &mut W,
+        _schema_cache: &SchemaCache,
+    ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}.{}`", self.schema, self.name)?;
 
         let table_kind = match self.table_kind {
@@ -30,7 +34,11 @@ impl ToHoverMarkdown for Table {
         Ok(())
     }
 
-    fn hover_body<W: Write>(&self, writer: &mut W, _schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error> {
+    fn hover_body<W: Write>(
+        &self,
+        writer: &mut W,
+        _schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
             write!(writer, "Comment: '{}'", comment)?;
             writeln!(writer)?;
@@ -40,7 +48,11 @@ impl ToHoverMarkdown for Table {
         }
     }
 
-    fn hover_footer<W: Write>(&self, writer: &mut W, _schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error> {
+    fn hover_footer<W: Write>(
+        &self,
+        writer: &mut W,
+        _schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error> {
         writeln!(writer)?;
         write!(
             writer,

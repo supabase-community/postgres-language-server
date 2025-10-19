@@ -862,7 +862,7 @@ impl<'a> TreesitterContext<'a> {
                         }
                     }
 
-                    return false;
+                    false
                 }
                 NodeUnderCursor::CustomNode { .. } => false,
             })

@@ -72,36 +72,70 @@ impl ContextualPriority for Hoverable<'_> {
 }
 
 impl ToHoverMarkdown for Hoverable<'_> {
-    fn hover_headline<W: std::fmt::Write>(&self, writer: &mut W, schema_cache: &SchemaCache) -> Result<(), std::fmt::Error> {
+    fn hover_headline<W: std::fmt::Write>(
+        &self,
+        writer: &mut W,
+        schema_cache: &SchemaCache,
+    ) -> Result<(), std::fmt::Error> {
         match self {
-            Hoverable::Table(table) => ToHoverMarkdown::hover_headline(*table, writer, schema_cache),
-            Hoverable::Column(column) => ToHoverMarkdown::hover_headline(*column, writer, schema_cache),
-            Hoverable::Function(function) => ToHoverMarkdown::hover_headline(*function, writer, schema_cache),
+            Hoverable::Table(table) => {
+                ToHoverMarkdown::hover_headline(*table, writer, schema_cache)
+            }
+            Hoverable::Column(column) => {
+                ToHoverMarkdown::hover_headline(*column, writer, schema_cache)
+            }
+            Hoverable::Function(function) => {
+                ToHoverMarkdown::hover_headline(*function, writer, schema_cache)
+            }
             Hoverable::Role(role) => ToHoverMarkdown::hover_headline(*role, writer, schema_cache),
-            Hoverable::Schema(schema) => ToHoverMarkdown::hover_headline(*schema, writer, schema_cache),
-            Hoverable::PostgresType(type_) => ToHoverMarkdown::hover_headline(*type_, writer, schema_cache),
+            Hoverable::Schema(schema) => {
+                ToHoverMarkdown::hover_headline(*schema, writer, schema_cache)
+            }
+            Hoverable::PostgresType(type_) => {
+                ToHoverMarkdown::hover_headline(*type_, writer, schema_cache)
+            }
         }
     }
 
-    fn hover_body<W: std::fmt::Write>(&self, writer: &mut W, schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error> {
+    fn hover_body<W: std::fmt::Write>(
+        &self,
+        writer: &mut W,
+        schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error> {
         match self {
             Hoverable::Table(table) => ToHoverMarkdown::hover_body(*table, writer, schema_cache),
             Hoverable::Column(column) => ToHoverMarkdown::hover_body(*column, writer, schema_cache),
-            Hoverable::Function(function) => ToHoverMarkdown::hover_body(*function, writer, schema_cache),
+            Hoverable::Function(function) => {
+                ToHoverMarkdown::hover_body(*function, writer, schema_cache)
+            }
             Hoverable::Role(role) => ToHoverMarkdown::hover_body(*role, writer, schema_cache),
             Hoverable::Schema(schema) => ToHoverMarkdown::hover_body(*schema, writer, schema_cache),
-            Hoverable::PostgresType(type_) => ToHoverMarkdown::hover_body(*type_, writer, schema_cache),
+            Hoverable::PostgresType(type_) => {
+                ToHoverMarkdown::hover_body(*type_, writer, schema_cache)
+            }
         }
     }
 
-    fn hover_footer<W: std::fmt::Write>(&self, writer: &mut W, schema_cache: &SchemaCache) -> Result<bool, std::fmt::Error> {
+    fn hover_footer<W: std::fmt::Write>(
+        &self,
+        writer: &mut W,
+        schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error> {
         match self {
             Hoverable::Table(table) => ToHoverMarkdown::hover_footer(*table, writer, schema_cache),
-            Hoverable::Column(column) => ToHoverMarkdown::hover_footer(*column, writer, schema_cache),
-            Hoverable::Function(function) => ToHoverMarkdown::hover_footer(*function, writer, schema_cache),
+            Hoverable::Column(column) => {
+                ToHoverMarkdown::hover_footer(*column, writer, schema_cache)
+            }
+            Hoverable::Function(function) => {
+                ToHoverMarkdown::hover_footer(*function, writer, schema_cache)
+            }
             Hoverable::Role(role) => ToHoverMarkdown::hover_footer(*role, writer, schema_cache),
-            Hoverable::Schema(schema) => ToHoverMarkdown::hover_footer(*schema, writer, schema_cache),
-            Hoverable::PostgresType(type_) => ToHoverMarkdown::hover_footer(*type_, writer, schema_cache),
+            Hoverable::Schema(schema) => {
+                ToHoverMarkdown::hover_footer(*schema, writer, schema_cache)
+            }
+            Hoverable::PostgresType(type_) => {
+                ToHoverMarkdown::hover_footer(*type_, writer, schema_cache)
+            }
         }
     }
 
