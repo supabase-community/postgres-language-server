@@ -1,7 +1,7 @@
 use biome_string_case::Case;
 use bpaf::Bpaf;
 use pgt_diagnostics::Severity;
-use pgt_env::PGT_WEBSITE;
+use pgt_env::PGLS_WEBSITE;
 use std::str::FromStr;
 use xtask::project_root;
 
@@ -130,7 +130,7 @@ pub fn generate_new_analyser_rule(
         let rule_line = match category {
             Category::Lint => format!(
                 r#"    "lint/{group}/{rule_name_camel}": "{}/latest/rules/{kebab_case_rule}","#,
-                PGT_WEBSITE
+                PGLS_WEBSITE
             ),
         };
         let lint_start = match category {
