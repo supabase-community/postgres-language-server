@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
-        run: node packages/@postgres-language-server/postgrestools/scripts/generate-packages.mjs
+        run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.release-tag }}
