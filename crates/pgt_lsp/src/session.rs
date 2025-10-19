@@ -9,7 +9,7 @@ use futures::stream::FuturesUnordered;
 use pgt_analyse::RuleCategoriesBuilder;
 use pgt_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgt_diagnostics::{DiagnosticExt, Error};
-use pgt_fs::{FileSystem, PgTPath};
+use pgt_fs::{ConfigName, FileSystem, PgTPath};
 use pgt_workspace::PartialConfigurationExt;
 use pgt_workspace::Workspace;
 use pgt_workspace::configuration::{LoadedConfiguration, load_configuration};
@@ -63,6 +63,9 @@ pub(crate) struct Session {
     /// A flag to notify a message to the user when the configuration is broken, and the LSP attempts
     /// to update the diagnostics
     notified_broken_configuration: AtomicBool,
+
+    /// A flag to notify a message to the user when they are using the deprecated config filename
+    notified_deprecated_config: AtomicBool,
 
     /// File system to read files inside the workspace
     pub(crate) fs: DynRef<'static, dyn FileSystem>,
@@ -165,6 +168,7 @@ impl Session {
             cancellation,
             config_path: None,
             notified_broken_configuration: AtomicBool::new(false),
+            notified_deprecated_config: AtomicBool::new(false),
         }
     }
 
@@ -398,7 +402,7 @@ impl Session {
             .map(|params| &params.client_capabilities)
     }
 
-    /// This function attempts to read the `postgrestools.jsonc` configuration file from
+    /// This function attempts to read the `postgres-language-server.jsonc` configuration file from
     /// the root URI and update the workspace settings accordingly
     #[tracing::instrument(level = "trace", skip(self))]
     pub(crate) async fn load_workspace_settings(&self, extra_config: Option<PartialConfiguration>) {
@@ -413,7 +417,10 @@ impl Session {
             info!("Detected workspace folder.");
             self.set_configuration_status(ConfigurationStatus::Loading);
             for folder in folders {
-                info!("Attempt to load the configuration file in {:?}", folder.uri);
+                info!(
+                    "Attempt to load the configuration file in {:?}",
+                    folder.uri.to_string()
+                );
                 let base_path = folder.uri.to_file_path();
                 match base_path {
                     Ok(base_path) => {
@@ -455,9 +462,37 @@ impl Session {
                 let LoadedConfiguration {
                     configuration: mut fs_configuration,
                     directory_path: configuration_path,
+                    file_path: configuration_file_path,
                     ..
                 } = loaded_configuration;
-                info!("Configuration loaded successfully from disk.");
+
+                info!(
+                    "Configuration loaded successfully from disk at {}",
+                    configuration_file_path
+                        .as_ref()
+                        .map_or("<unknown>".to_string(), |p| p.display().to_string())
+                );
+
+                // Check if using deprecated config filename and notify user (once)
+                if !self.notified_deprecated_config.load(Ordering::Relaxed) {
+                    if let Some(config_path) = &configuration_file_path {
+                        if let Some(file_name) = config_path.file_name().and_then(|n| n.to_str()) {
+                            if ConfigName::is_deprecated(file_name) {
+                                self.client
+                                    .show_message(
+                                        MessageType::WARNING,
+                                        "You are using the deprecated config filename 'postgrestools.jsonc'. \
+                                        Please rename it to 'postgres-language-server.jsonc'. \
+                                        Support for the old filename will be removed in a future version."
+                                    )
+                                    .await;
+                                self.notified_deprecated_config
+                                    .store(true, Ordering::Relaxed);
+                            }
+                        }
+                    }
+                }
+
                 info!("Update workspace settings.");
 
                 let fs = &self.fs;
