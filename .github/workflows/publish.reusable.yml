@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate Packages (deprecated)
         id: generate-packages-deprecated
-        run: node packages/@postgres-language-server/cli/scripts/generate-packages.mjs
+        run: node packages/@postgres-language-server/postgrestools/scripts/generate-packages.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.release-tag }}
@@ -58,7 +58,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
 
-      - name: Publish npm packages as nightly (deprecated)
+      - name: Publish npm packages as nightly
         if: inputs.is-prerelease == 'true'
         run: |
           for package in packages/@postgres-language-server/*; do
