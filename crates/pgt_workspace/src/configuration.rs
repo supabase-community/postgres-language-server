@@ -12,7 +12,7 @@ use pgt_configuration::{
     VERSION, diagnostics::CantLoadExtendFile, push_to_analyser_rules,
 };
 use pgt_console::markup;
-use pgt_env::PGT_WEBSITE;
+use pgt_env::PGLS_WEBSITE;
 use pgt_fs::{AutoSearchResult, ConfigName, FileSystem, OpenOptions};
 
 use crate::{DynRef, WorkspaceError, settings::Settings};
@@ -200,9 +200,9 @@ pub fn create_config(
         configuration.schema = postgrestools_node_schema_path.to_str().map(String::from);
     } else if VERSION == "0.0.0" {
         // VERSION is 0.0.0 if it has not been explicitly set (e.g local dev, as fallback)
-        configuration.schema = Some(format!("{}/latest/schema.json", PGT_WEBSITE));
+        configuration.schema = Some(format!("{}/latest/schema.json", PGLS_WEBSITE));
     } else {
-        configuration.schema = Some(format!("{}/{VERSION}/schema.json", PGT_WEBSITE));
+        configuration.schema = Some(format!("{}/{VERSION}/schema.json", PGLS_WEBSITE));
     }
 
     let contents = serde_json::to_string_pretty(&configuration)
