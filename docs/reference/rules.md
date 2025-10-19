@@ -27,6 +27,7 @@ Rules that detect potential safety issues in your code.
 | [banTruncateCascade](./ban-truncate-cascade) | Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables. |  |
 | [changingColumnType](./changing-column-type) | Changing a column type may break existing clients. |  |
 | [constraintMissingNotValid](./constraint-missing-not-valid) | Adding constraints without NOT VALID blocks all reads and writes. |  |
+| [creatingEnum](./creating-enum) | Creating enum types is not recommended for new applications. |  |
 | [disallowUniqueConstraint](./disallow-unique-constraint) | Disallow adding a UNIQUE constraint without using an existing index. |  |
 | [multipleAlterTable](./multiple-alter-table) | Multiple ALTER TABLE statements on the same table should be combined into a single statement. | ✅ |
 | [preferBigInt](./prefer-big-int) | Prefer BIGINT over smaller integer types. |  |

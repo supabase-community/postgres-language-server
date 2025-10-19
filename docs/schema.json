@@ -528,6 +528,17 @@
             }
           ]
         },
+        "creatingEnum": {
+          "description": "Creating enum types is not recommended for new applications.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "disallowUniqueConstraint": {
           "description": "Disallow adding a UNIQUE constraint without using an existing index.",
           "anyOf": [

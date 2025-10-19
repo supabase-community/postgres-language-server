@@ -78,6 +78,7 @@ export type Category =
 	| "lint/safety/banTruncateCascade"
 	| "lint/safety/changingColumnType"
 	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/creatingEnum"
 	| "lint/safety/disallowUniqueConstraint"
 	| "lint/safety/multipleAlterTable"
 	| "lint/safety/preferBigInt"
@@ -501,6 +502,10 @@ export interface Safety {
 	 * Adding constraints without NOT VALID blocks all reads and writes.
 	 */
 	constraintMissingNotValid?: RuleConfiguration_for_Null;
+	/**
+	 * Creating enum types is not recommended for new applications.
+	 */
+	creatingEnum?: RuleConfiguration_for_Null;
 	/**
 	 * Disallow adding a UNIQUE constraint without using an existing index.
 	 */

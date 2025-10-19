@@ -25,6 +25,7 @@ pub type BanTruncateCascade =
 pub type ChangingColumnType =
     <lint::safety::changing_column_type::ChangingColumnType as pgt_analyse::Rule>::Options;
 pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as pgt_analyse :: Rule > :: Options ;
+pub type CreatingEnum = <lint::safety::creating_enum::CreatingEnum as pgt_analyse::Rule>::Options;
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as pgt_analyse :: Rule > :: Options ;
 pub type MultipleAlterTable =
     <lint::safety::multiple_alter_table::MultipleAlterTable as pgt_analyse::Rule>::Options;
