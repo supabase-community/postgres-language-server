@@ -38,6 +38,7 @@ pub struct PgLSEnv {
 
     // DEPRECATED
     pub pgt_log_path: PgLSEnvVariable,
+    pub pgt_log_level: PgLSEnvVariable,
     pub pgt_log_prefix: PgLSEnvVariable,
     pub pgt_config_path: PgLSEnvVariable,
 }
@@ -67,6 +68,10 @@ impl PgLSEnv {
             pgt_log_path: PgLSEnvVariable::new(
                 "PGT_LOG_PATH",
                 "The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.",
+            ),
+            pgt_log_level: PgLSEnvVariable::new(
+                "PGT_LOG_LEVEL",
+                "Allows to change the log level. Default is debug. This will only affect \"pgt*\" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.",
             ),
             pgt_log_prefix: PgLSEnvVariable::new(
                 "PGT_LOG_PREFIX_NAME",
@@ -123,6 +128,14 @@ impl Display for PgLSEnv {
                 KeyValuePair(self.pgls_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
             }
         };
+        match self.pgls_log_level.value() {
+            None => {
+                KeyValuePair(self.pgls_log_level.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+            }
+            Some(value) => {
+                KeyValuePair(self.pgls_log_level.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
+            }
+        };
         match self.pgls_log_prefix.value() {
             None => {
                 KeyValuePair(self.pgls_log_prefix.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
@@ -150,6 +163,14 @@ impl Display for PgLSEnv {
             }
             Some(value) => {
                 KeyValuePair(self.pgt_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
+            }
+        };
+        match self.pgt_log_level.value() {
+            None => {
+                KeyValuePair(self.pgt_log_level.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
+            }
+            Some(value) => {
+                KeyValuePair(self.pgt_log_level.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
             }
         };
         match self.pgt_log_prefix.value() {

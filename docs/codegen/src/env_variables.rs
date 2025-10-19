@@ -23,6 +23,12 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
     writeln!(
         content,
         "### `{}`\n\n {}\n",
+        env.pgls_log_level.name(),
+        env.pgls_log_level.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
         env.pgls_log_prefix.name(),
         env.pgls_log_prefix.description()
     )?;
@@ -37,6 +43,12 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
         "### `{}`\n\n {}\n",
         env.pgt_log_path.name(),
         env.pgt_log_path.description()
+    )?;
+    writeln!(
+        content,
+        "### `{}`\n\n {}\n",
+        env.pgt_log_level.name(),
+        env.pgt_log_level.description()
     )?;
     writeln!(
         content,
