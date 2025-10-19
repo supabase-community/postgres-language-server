@@ -1,0 +1,7 @@
+---
+source: crates/pgt_typecheck/tests/diagnostics.rs
+expression: content
+---
+select * from public.products where released = ~~~pid~~~;
+
+`pid` is of type uuid, not timestamp with time zone

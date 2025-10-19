@@ -19,7 +19,7 @@ pub fn split(sql: &str) -> SplitResult {
 
     let mut splitter = Splitter::new(&lexed);
 
-    source(&mut splitter);
+    let _ = source(&mut splitter);
 
     let split_result = splitter.finish();
 
@@ -538,6 +538,32 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn merge_into() {
+        Tester::from(
+            "MERGE INTO course_permissions AS cp
+USING (SELECT 1 AS user_id, 2 AS course_id, 'Owner'::enum_course_role AS course_role) AS data
+ON (cp.course_id = data.course_id AND cp.user_id = data.user_id)
+WHEN MATCHED THEN UPDATE SET course_role = data.course_role
+WHEN NOT MATCHED THEN
+INSERT
+  (user_id, course_id, course_role)
+VALUES
+  (data.user_id, data.course_id, data.course_role);",
+        )
+        .expect_statements(vec![
+            "MERGE INTO course_permissions AS cp
+USING (SELECT 1 AS user_id, 2 AS course_id, 'Owner'::enum_course_role AS course_role) AS data
+ON (cp.course_id = data.course_id AND cp.user_id = data.user_id)
+WHEN MATCHED THEN UPDATE SET course_role = data.course_role
+WHEN NOT MATCHED THEN
+INSERT
+  (user_id, course_id, course_role)
+VALUES
+  (data.user_id, data.course_id, data.course_role);",
+        ]);
+    }
+
+    #[test]
     fn commas_and_newlines() {
         Tester::from(
             "
@@ -560,5 +586,11 @@ values ('insert', new.id, now());",
             "Expected INTO_KW".to_string(),
             TextRange::new(0.into(), 6.into()),
         )]);
+    }
+
+    #[test]
+    fn does_not_panic_on_incomplete_statements() {
+        // does not panic
+        let _ = Tester::from("select case ");
     }
 }

@@ -1,0 +1,7 @@
+---
+source: crates/pgt_typecheck/tests/diagnostics.rs
+expression: content
+---
+select ~~~is_active + product_name~~~ from public.products;
+
+operator does not exist: boolean + unknown

@@ -7,8 +7,8 @@ use crate::{
 };
 use bpaf::Bpaf;
 use pgt_configuration::{PartialConfiguration, partial_configuration};
-use pgt_console::Console;
-use pgt_fs::FileSystem;
+use pgt_console::{Console, ConsoleExt, markup};
+use pgt_fs::{ConfigName, FileSystem};
 use pgt_workspace::PartialConfigurationExt;
 use pgt_workspace::configuration::{LoadedConfiguration, load_configuration};
 use pgt_workspace::workspace::{RegisterProjectFolderParams, UpdateSettingsParams};
@@ -58,7 +58,7 @@ pub enum PgtCommand {
         changed: bool,
 
         /// Use this to specify the base branch to compare against when you're using the --changed
-        /// flag and the `defaultBranch` is not set in your `postgrestools.jsonc`
+        /// flag and the `defaultBranch` is not set in your `postgres-language-server.jsonc`
         #[bpaf(long("since"), argument("REF"))]
         since: Option<String>,
 
@@ -93,7 +93,7 @@ pub enum PgtCommand {
         )]
         log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
-        /// or a custom directory path to find `postgrestools.jsonc`
+        /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
             env("PGT_LOG_PREFIX_NAME"),
             env("PGLS_LOG_PREFIX_NAME"),
@@ -136,7 +136,7 @@ pub enum PgtCommand {
         )]
         log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
-        /// or a custom directory path to find `postgrestools.jsonc`
+        /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
             env("PGT_CONFIG_PATH"),
             env("PGLS_CONFIG_PATH"),
@@ -201,7 +201,7 @@ pub enum PgtCommand {
         #[bpaf(long("stop-on-disconnect"), hide_usage)]
         stop_on_disconnect: bool,
         /// Allows to set a custom file path to the configuration file,
-        /// or a custom directory path to find `postgrestools.jsonc`
+        /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
             env("PGT_CONFIG_PATH"),
             env("PGLS_CONFIG_PATH"),
@@ -317,6 +317,19 @@ pub(crate) trait CommandRunner: Sized {
     ) -> Result<(Execution, Vec<OsString>), CliDiagnostic> {
         let loaded_configuration =
             load_configuration(fs, cli_options.as_configuration_path_hint())?;
+
+        // Check for deprecated config filename
+        if let Some(config_path) = &loaded_configuration.file_path {
+            if let Some(file_name) = config_path.file_name().and_then(|n| n.to_str()) {
+                if ConfigName::is_deprecated(file_name) {
+                    console.log(markup! {
+                        <Warn>"Warning: "</Warn>"You are using the deprecated config filename '"<Emphasis>"postgrestools.jsonc"</Emphasis>"'. \
+                        Please rename it to '"<Emphasis>"postgres-language-server.jsonc"</Emphasis>"'. \
+                        Support for the old filename will be removed in a future version.\n"
+                    });
+                }
+            }
+        }
 
         let configuration_path = loaded_configuration.directory_path.clone();
         let configuration = self.merge_configuration(loaded_configuration, fs, console)?;

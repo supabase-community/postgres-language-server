@@ -1,0 +1,7 @@
+---
+source: crates/pgt_typecheck/tests/diagnostics.rs
+expression: content
+---
+delete from public.products where ~~~released > pid~~~;
+
+operator does not exist: timestamp with time zone &gt; integer
