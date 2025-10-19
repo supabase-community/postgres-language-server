@@ -135,7 +135,7 @@
               
                 <h1 id="configuration">Configuration</h1>
 <p>This guide will help you to understand how to configure the Postgres Language Server. It explains the structure of the configuration file and how the configuration is resolved.</p>
-<p>The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named <code>postgrestools.jsonc</code>. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.</p>
+<p>The Postgres Language Server allows you to customize its behavior using CLI options or a configuration file named <code>postgres-language-server.jsonc</code>. We recommend that you create a configuration file for each project. This ensures that each team member has the same configuration in the CLI and in any editor that allows Biome integration. Many of the options available in a configuration file are also available in the CLI.</p>
 <h2 id="configuration-file-structure">Configuration file structure</h2>
 <p>A configuration file is usually placed in your project’s root folder. It is organized around the tools that are provided. All tools are enabled by default, but some require additional setup like a database connection or the <code>plpgsql_check</code> extension.</p>
 <pre><code class="language-json">{

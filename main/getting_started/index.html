@@ -128,10 +128,10 @@
                 <h1 id="getting-started">Getting Started</h1>
 <p>The Postgres Language Server can be installed as a development dependency of your project, a standalone executable, or as an extension of your favorite editor.</p>
 <h2 id="configuration">Configuration</h2>
-<p>We recommend creating a <code>postgrestools.jsonc</code> configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the <code>postgrestools.jsonc</code> file, run the <code>init</code> command in the root folder of your project:</p>
+<p>We recommend creating a <code>postgres-language-server.jsonc</code> configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the <code>postgres-language-server.jsonc</code> file, run the <code>init</code> command in the root folder of your project:</p>
 <pre><code class="language-sh">postgrestools init
 </code></pre>
-<p>You’ll now have a <code>postgrestools.jsonc</code> file in your directory:</p>
+<p>You’ll now have a <code>postgres-language-server.jsonc</code> file in your directory:</p>
 <pre><code class="language-json">{
   &quot;$schema&quot;: &quot;https://pgtools.dev/latest/schema.json&quot;,
   &quot;vcs&quot;: {
@@ -171,13 +171,13 @@ postgrestools check myfile.sql
 # check a directory
 postgrestools check supabase/migrations
 </code></pre>
-<p>Run <code>postgrestools --help</code> for all options. The CLI options take precedence over what is loaded from <code>postgrestools.jsonc</code>.</p>
+<p>Run <code>postgrestools --help</code> for all options. The CLI options take precedence over what is loaded from <code>postgres-language-server.jsonc</code>.</p>
 <h3 id="editor-integrations">Editor Integrations</h3>
 <p>The Postgres Language Server is available as an extension in your favorite editors.</p>
 <ul>
-<li>VSCode: The language server is available on the <a href="https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools">VSCode Marketplace</a>. It's published from <a href="https://github.com/supabase-community/postgrestools-vscode">this repo</a>.  </li>
-<li>Neovim: You will have to install <code>nvim-lspconfig</code>, and follow the <a href="https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp">instructions</a>.  </li>
-<li>Emacs: The language client is available through <a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a>. For more details, refer to their <a href="https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/">manual page</a>.  </li>
+<li>VSCode: The language server is available on the <a href="https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools">VSCode Marketplace</a>. It's published from <a href="https://github.com/supabase-community/postgrestools-vscode">this repo</a>.</li>
+<li>Neovim: You will have to install <code>nvim-lspconfig</code>, and follow the <a href="https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp">instructions</a>.</li>
+<li>Emacs: The language client is available through <a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a>. For more details, refer to their <a href="https://emacs-lsp.github.io/lsp-mode/page/lsp-postgres/">manual page</a>.</li>
 <li>Zed: The language server is available as an Extension. It's published from <a href="https://github.com/LoamStudios/zed-postgres-language-server">this repo</a>.</li>
 </ul>
 <h3 id="continuous-integration">Continuous Integration</h3>

@@ -117,40 +117,40 @@
                 <h1 id="cli-reference">CLI Reference</h1>
 <h1 id="command-summary">Command summary</h1>
 <ul>
-<li><a href="#postgrestools"><code>postgrestools</code>↴</a>  </li>
-<li><a href="#postgrestools-version"><code>postgrestools version</code>↴</a>  </li>
-<li><a href="#postgrestools-check"><code>postgrestools check</code>↴</a>  </li>
-<li><a href="#postgrestools-start"><code>postgrestools start</code>↴</a>  </li>
-<li><a href="#postgrestools-stop"><code>postgrestools stop</code>↴</a>  </li>
-<li><a href="#postgrestools-init"><code>postgrestools init</code>↴</a>  </li>
-<li><a href="#postgrestools-lsp-proxy"><code>postgrestools lsp-proxy</code>↴</a>  </li>
-<li><a href="#postgrestools-clean"><code>postgrestools clean</code>↴</a>  </li>
+<li><a href="#postgrestools"><code>postgrestools</code>↴</a></li>
+<li><a href="#postgrestools-version"><code>postgrestools version</code>↴</a></li>
+<li><a href="#postgrestools-check"><code>postgrestools check</code>↴</a></li>
+<li><a href="#postgrestools-start"><code>postgrestools start</code>↴</a></li>
+<li><a href="#postgrestools-stop"><code>postgrestools stop</code>↴</a></li>
+<li><a href="#postgrestools-init"><code>postgrestools init</code>↴</a></li>
+<li><a href="#postgrestools-lsp-proxy"><code>postgrestools lsp-proxy</code>↴</a></li>
+<li><a href="#postgrestools-clean"><code>postgrestools clean</code>↴</a></li>
 </ul>
 <h2 id="postgrestools">postgrestools</h2>
 <p>PostgresTools official CLI. Use it to check the health of your project or run it to check single files.</p>
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <em><code>COMMAND ...</code></em></p>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
-<li><strong><code>-V</code></strong>, <strong><code>--version</code></strong> &mdash;<br />
+<li><strong><code>-V</code></strong>, <strong><code>--version</code></strong> &mdash;
   Prints version information</li>
 </ul>
 <p><strong>Available commands:</strong></p>
 <ul>
-<li><strong><code>version</code></strong> &mdash;<br />
+<li><strong><code>version</code></strong> &mdash;
   Shows the version information and quit.</li>
-<li><strong><code>check</code></strong> &mdash;<br />
+<li><strong><code>check</code></strong> &mdash;
   Runs everything to the requested files.</li>
-<li><strong><code>start</code></strong> &mdash;<br />
+<li><strong><code>start</code></strong> &mdash;
   Starts the daemon server process.</li>
-<li><strong><code>stop</code></strong> &mdash;<br />
+<li><strong><code>stop</code></strong> &mdash;
   Stops the daemon server process.</li>
-<li><strong><code>init</code></strong> &mdash;<br />
+<li><strong><code>init</code></strong> &mdash;
   Bootstraps a new project. Creates a configuration file with some defaults.</li>
-<li><strong><code>lsp-proxy</code></strong> &mdash;<br />
+<li><strong><code>lsp-proxy</code></strong> &mdash;
   Acts as a server for the Language Server Protocol over stdin/stdout.</li>
-<li><strong><code>clean</code></strong> &mdash;<br />
+<li><strong><code>clean</code></strong> &mdash;
   Cleans the logs emitted by the daemon.</li>
 </ul>
 <h2 id="postgrestools-version">postgrestools version</h2>
@@ -158,43 +158,43 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>version</code></strong></p>
 <p><strong>Global options applied to all commands</strong></p>
 <ul>
-<li><strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash;<br />
+<li><strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash;
   Set the formatting mode for markup: "off" prints everything as plain text, "force" forces the formatting of markup using ANSI even if the console output is determined to be incompatible</li>
-<li><strong><code>--use-server</code></strong> &mdash;<br />
+<li><strong><code>--use-server</code></strong> &mdash;
   Connect to a running instance of the daemon server.</li>
-<li><strong><code>--skip-db</code></strong> &mdash;<br />
+<li><strong><code>--skip-db</code></strong> &mdash;
   Skip connecting to the database and only run checks that don't require a database connection.</li>
-<li><strong><code>--verbose</code></strong> &mdash;<br />
+<li><strong><code>--verbose</code></strong> &mdash;
   Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.</li>
-<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
+<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;
   Set the file path to the configuration file, or the directory path to find <code>postgrestools.jsonc</code>. If used, it disables the default configuration file resolution.</li>
-<li><strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash;<br />
+<li><strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash;
   Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.
   [default: 20]</li>
-<li><strong><code>--skip-errors</code></strong> &mdash;<br />
+<li><strong><code>--skip-errors</code></strong> &mdash;
   Skip over files containing syntax errors instead of emitting an error diagnostic.</li>
-<li><strong><code>--no-errors-on-unmatched</code></strong> &mdash;<br />
+<li><strong><code>--no-errors-on-unmatched</code></strong> &mdash;
   Silence errors that would be emitted in case no files were processed during the execution of the command.</li>
-<li><strong><code>--error-on-warnings</code></strong> &mdash;<br />
+<li><strong><code>--error-on-warnings</code></strong> &mdash;
   Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.</li>
-<li><strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash;<br />
+<li><strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash;
   Allows to change how diagnostics and summary are reported.</li>
-<li><strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash;<br />
+<li><strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash;
   The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.</li>
 </ul>
 <p>The value <code>none</code> won't show any logging.</p>
 <p>[default: none]</p>
 <ul>
-<li><strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash;<br />
+<li><strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash;
   How the log should look like.
   [default: pretty]</li>
-<li><strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash;<br />
+<li><strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash;
   The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing <code>--diagnostic-level=error</code> will cause Postgres Tools to print only diagnostics that contain only errors.
   [default: info]</li>
 </ul>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
 <h2 id="postgrestools-check">postgrestools check</h2>
@@ -202,95 +202,95 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>check</code></strong> [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<em><code>PATH</code></em>]...</p>
 <p><strong>The configuration that is contained inside the configuration file.</strong></p>
 <ul>
-<li><strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash;<br />
+<li><strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash;
   Whether we should integrate itself with the VCS client</li>
-<li><strong><code>--vcs-client-kind</code></strong>=<em><code>&lt;git&gt;</code></em> &mdash;<br />
+<li><strong><code>--vcs-client-kind</code></strong>=<em><code>&lt;git&gt;</code></em> &mdash;
   The kind of client.</li>
-<li><strong><code>--vcs-use-ignore-file</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash;<br />
+<li><strong><code>--vcs-use-ignore-file</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash;
   Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.</li>
-<li><strong><code>--vcs-root</code></strong>=<em><code>PATH</code></em> &mdash;<br />
+<li><strong><code>--vcs-root</code></strong>=<em><code>PATH</code></em> &mdash;
   The folder where we should check for VCS files. By default, we will use the same folder where <code>postgrestools.jsonc</code> was found.</li>
 </ul>
 <p>If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted</p>
 <ul>
-<li><strong><code>--vcs-default-branch</code></strong>=<em><code>BRANCH</code></em> &mdash;<br />
+<li><strong><code>--vcs-default-branch</code></strong>=<em><code>BRANCH</code></em> &mdash;
   The main branch of the project</li>
-<li><strong><code>--files-max-size</code></strong>=<em><code>NUMBER</code></em> &mdash;<br />
+<li><strong><code>--files-max-size</code></strong>=<em><code>NUMBER</code></em> &mdash;
   The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB</li>
-<li><strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--migrations-dir</code></strong>=<em><code>ARG</code></em> &mdash;
   The directory where the migration files are stored</li>
-<li><strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--after</code></strong>=<em><code>ARG</code></em> &mdash;
   Ignore any migrations before this timestamp</li>
-<li><strong><code>--host</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--host</code></strong>=<em><code>ARG</code></em> &mdash;
   The host of the database.</li>
-<li><strong><code>--port</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--port</code></strong>=<em><code>ARG</code></em> &mdash;
   The port of the database.</li>
-<li><strong><code>--username</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--username</code></strong>=<em><code>ARG</code></em> &mdash;
   The username to connect to the database.</li>
-<li><strong><code>--password</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--password</code></strong>=<em><code>ARG</code></em> &mdash;
   The password to connect to the database.</li>
-<li><strong><code>--database</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--database</code></strong>=<em><code>ARG</code></em> &mdash;
   The name of the database.</li>
-<li><strong><code>--conn_timeout_secs</code></strong>=<em><code>ARG</code></em> &mdash;<br />
+<li><strong><code>--conn_timeout_secs</code></strong>=<em><code>ARG</code></em> &mdash;
   The connection timeout in seconds.
   [default: Some(10)]</li>
 </ul>
 <p><strong>Global options applied to all commands</strong></p>
 <ul>
-<li><strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash;<br />
+<li><strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash;
   Set the formatting mode for markup: "off" prints everything as plain text, "force" forces the formatting of markup using ANSI even if the console output is determined to be incompatible</li>
-<li><strong><code>--use-server</code></strong> &mdash;<br />
+<li><strong><code>--use-server</code></strong> &mdash;
   Connect to a running instance of the daemon server.</li>
-<li><strong><code>--skip-db</code></strong> &mdash;<br />
+<li><strong><code>--skip-db</code></strong> &mdash;
   Skip connecting to the database and only run checks that don't require a database connection.</li>
-<li><strong><code>--verbose</code></strong> &mdash;<br />
+<li><strong><code>--verbose</code></strong> &mdash;
   Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.</li>
-<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
-  Set the file path to the configuration file, or the directory path to find <code>postgrestools.jsonc</code>. If used, it disables the default configuration file resolution.</li>
-<li><strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash;<br />
+<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. If used, it disables the default configuration file resolution.</li>
+<li><strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash;
   Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.
   [default: 20]</li>
-<li><strong><code>--skip-errors</code></strong> &mdash;<br />
+<li><strong><code>--skip-errors</code></strong> &mdash;
   Skip over files containing syntax errors instead of emitting an error diagnostic.</li>
-<li><strong><code>--no-errors-on-unmatched</code></strong> &mdash;<br />
+<li><strong><code>--no-errors-on-unmatched</code></strong> &mdash;
   Silence errors that would be emitted in case no files were processed during the execution of the command.</li>
-<li><strong><code>--error-on-warnings</code></strong> &mdash;<br />
+<li><strong><code>--error-on-warnings</code></strong> &mdash;
   Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.</li>
-<li><strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash;<br />
+<li><strong><code>--reporter</code></strong>=<em><code>&lt;json|json-pretty|github|junit|summary|gitlab&gt;</code></em> &mdash;
   Allows to change how diagnostics and summary are reported.</li>
-<li><strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash;<br />
+<li><strong><code>--log-level</code></strong>=<em><code>&lt;none|debug|info|warn|error&gt;</code></em> &mdash;
   The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.</li>
 </ul>
 <p>The value <code>none</code> won't show any logging.</p>
 <p>[default: none]</p>
 <ul>
-<li><strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash;<br />
+<li><strong><code>--log-kind</code></strong>=<em><code>&lt;pretty|compact|json&gt;</code></em> &mdash;
   How the log should look like.
   [default: pretty]</li>
-<li><strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash;<br />
+<li><strong><code>--diagnostic-level</code></strong>=<em><code>&lt;info|warn|error&gt;</code></em> &mdash;
   The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing <code>--diagnostic-level=error</code> will cause Postgres Tools to print only diagnostics that contain only errors.
   [default: info]</li>
 </ul>
 <p><strong>Available positional items:</strong></p>
 <ul>
-<li><em><code>PATH</code></em> &mdash;<br />
+<li><em><code>PATH</code></em> &mdash;
   Single file, single path or list of paths</li>
 </ul>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>--stdin-file-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
+<li><strong><code>--stdin-file-path</code></strong>=<em><code>PATH</code></em> &mdash;
   Use this option when you want to format code piped from <code>stdin</code>, and print the output to <code>stdout</code>.</li>
 </ul>
 <p>The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.</p>
 <p>Example: <code>echo 'let a;' | pgt_cli check --stdin-file-path=test.sql</code></p>
 <ul>
-<li><strong><code>--staged</code></strong> &mdash;<br />
+<li><strong><code>--staged</code></strong> &mdash;
   When set to true, only the files that have been staged (the ones prepared to be committed) will be linted. This option should be used when working locally.</li>
-<li><strong><code>--changed</code></strong> &mdash;<br />
+<li><strong><code>--changed</code></strong> &mdash;
   When set to true, only the files that have been changed compared to your <code>defaultBranch</code> configuration will be linted. This option should be used in CI environments.</li>
-<li><strong><code>--since</code></strong>=<em><code>REF</code></em> &mdash;<br />
-  Use this to specify the base branch to compare against when you're using the --changed flag and the <code>defaultBranch</code> is not set in your <code>postgrestools.jsonc</code></li>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>--since</code></strong>=<em><code>REF</code></em> &mdash;
+  Use this to specify the base branch to compare against when you're using the --changed flag and the <code>defaultBranch</code> is not set in your <code>postgres-language-server.jsonc</code></li>
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
 <h2 id="postgrestools-start">postgrestools start</h2>
@@ -298,17 +298,17 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>start</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash;<br />
+<li><strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash;
   Allows to change the prefix applied to the file name of the logs.
   Uses environment variable <strong><code>PGT_LOG_PREFIX_NAME</code></strong>
   [default: server.log]</li>
-<li><strong><code>--log-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
+<li><strong><code>--log-path</code></strong>=<em><code>PATH</code></em> &mdash;
   Allows to change the folder where logs are stored.
   Uses environment variable <strong><code>PGT_LOG_PATH</code></strong></li>
-<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
-  Allows to set a custom file path to the configuration file, or a custom directory path to find <code>postgrestools.jsonc</code>
+<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;
+  Allows to set a custom file path to the configuration file, or a custom directory path to find <code>postgres-language-server.jsonc</code>
   Uses environment variable <strong><code>PGT_LOG_PREFIX_NAME</code></strong></li>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
 <h2 id="postgrestools-stop">postgrestools stop</h2>
@@ -316,7 +316,7 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>stop</code></strong></p>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
 <h2 id="postgrestools-init">postgrestools init</h2>
@@ -324,7 +324,7 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>init</code></strong></p>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
 <h2 id="postgrestools-lsp-proxy">postgrestools lsp-proxy</h2>
@@ -332,17 +332,17 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>lsp-proxy</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash;<br />
+<li><strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash;
   Allows to change the prefix applied to the file name of the logs.
   Uses environment variable <strong><code>PGT_LOG_PREFIX_NAME</code></strong>
   [default: server.log]</li>
-<li><strong><code>--log-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
+<li><strong><code>--log-path</code></strong>=<em><code>PATH</code></em> &mdash;
   Allows to change the folder where logs are stored.
   Uses environment variable <strong><code>PGT_LOG_PATH</code></strong></li>
-<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;<br />
-  Allows to set a custom file path to the configuration file, or a custom directory path to find <code>postgrestools.jsonc</code>
+<li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;
+  Allows to set a custom file path to the configuration file, or a custom directory path to find <code>postgres-language-server.jsonc</code>
   Uses environment variable <strong><code>PGT_CONFIG_PATH</code></strong></li>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
 <h2 id="postgrestools-clean">postgrestools clean</h2>
@@ -350,7 +350,7 @@
 <p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>clean</code></strong></p>
 <p><strong>Available options:</strong></p>
 <ul>
-<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;<br />
+<li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
               

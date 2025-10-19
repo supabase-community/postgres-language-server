@@ -119,7 +119,7 @@
 <p>To run it, simply point at your migrations directory.</p>
 <pre><code class="language-sh">postgrestools check supabase/migrations
 </code></pre>
-<p>When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add <code>migrationsDir</code> and <code>after</code> to your <code>postgrestools.jsonc</code> file</p>
+<p>When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add <code>migrationsDir</code> and <code>after</code> to your <code>postgres-language-server.jsonc</code> file</p>
 <pre><code class="language-json">{
     &quot;migrations&quot;: {
         &quot;migrationsDir&quot;: &quot;supabase/migrations&quot;,
@@ -131,7 +131,7 @@
 <pre><code>postgrestools check supabase/migrations --migrations-dir=&quot;supabase/migrations&quot; --after=1740868021
 </code></pre>
 <p>This will only check migrations after the specified timestamp.</p>
-<p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgrestools.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>
+<p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgres-language-server.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>
               
             </div>
           </div><footer>
