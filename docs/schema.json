@@ -539,6 +539,17 @@
             }
           ]
         },
+        "multipleAlterTable": {
+          "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "preferBigInt": {
           "description": "Prefer BIGINT over smaller integer types.",
           "anyOf": [

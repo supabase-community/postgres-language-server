@@ -8,6 +8,7 @@ _No exclusive rules available._
 | ---- | ---- |
 | [E11](https://kaveland.no/eugene/hints/E11/index.html) |[addSerialColumn](../rules/add-serial-column) |
 | [E3](https://kaveland.no/eugene/hints/E3/index.html) |[preferJsonb](../rules/prefer-jsonb) |
+| [W12](https://kaveland.no/eugene/hints/W12/index.html) |[multipleAlterTable](../rules/multiple-alter-table) |
 ### Squawk
 | Squawk Rule Name | Rule Name |
 | ---- | ---- |

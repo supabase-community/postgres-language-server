@@ -1,0 +1,13 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- Test ALTER TABLE on different tables (should be safe)
+-- expect_no_diagnostics
+ALTER TABLE authors ADD COLUMN bio text;
+ALTER TABLE posts ADD COLUMN published_at timestamp;
+
+```

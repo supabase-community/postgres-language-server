@@ -28,6 +28,7 @@ Rules that detect potential safety issues in your code.
 | [changingColumnType](./changing-column-type) | Changing a column type may break existing clients. |  |
 | [constraintMissingNotValid](./constraint-missing-not-valid) | Adding constraints without NOT VALID blocks all reads and writes. |  |
 | [disallowUniqueConstraint](./disallow-unique-constraint) | Disallow adding a UNIQUE constraint without using an existing index. |  |
+| [multipleAlterTable](./multiple-alter-table) | Multiple ALTER TABLE statements on the same table should be combined into a single statement. | ✅ |
 | [preferBigInt](./prefer-big-int) | Prefer BIGINT over smaller integer types. |  |
 | [preferBigintOverInt](./prefer-bigint-over-int) | Prefer BIGINT over INT/INTEGER types. |  |
 | [preferBigintOverSmallint](./prefer-bigint-over-smallint) | Prefer BIGINT over SMALLINT types. |  |

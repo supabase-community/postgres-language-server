@@ -63,6 +63,7 @@ export interface Advices {
 	advices: Advice[];
 }
 export type Category =
+	| "lint/safety/addSerialColumn"
 	| "lint/safety/addingFieldWithDefault"
 	| "lint/safety/addingForeignKeyConstraint"
 	| "lint/safety/addingNotNullField"
@@ -74,11 +75,11 @@ export type Category =
 	| "lint/safety/banDropDatabase"
 	| "lint/safety/banDropNotNull"
 	| "lint/safety/banDropTable"
-	| "lint/safety/addSerialColumn"
 	| "lint/safety/banTruncateCascade"
 	| "lint/safety/changingColumnType"
 	| "lint/safety/constraintMissingNotValid"
 	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/multipleAlterTable"
 	| "lint/safety/preferBigInt"
 	| "lint/safety/preferBigintOverInt"
 	| "lint/safety/preferBigintOverSmallint"
@@ -504,6 +505,10 @@ export interface Safety {
 	 * Disallow adding a UNIQUE constraint without using an existing index.
 	 */
 	disallowUniqueConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
+	 */
+	multipleAlterTable?: RuleConfiguration_for_Null;
 	/**
 	 * Prefer BIGINT over smaller integer types.
 	 */
