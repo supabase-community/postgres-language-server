@@ -86,7 +86,17 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Environment Variables</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_log_path">PGLS_LOG_PATH</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_log_level">PGLS_LOG_LEVEL</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_log_prefix_name">PGLS_LOG_PREFIX_NAME</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgls_config_path">PGLS_CONFIG_PATH</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#pgt_log_path">PGT_LOG_PATH</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pgt_log_level">PGT_LOG_LEVEL</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pgt_log_prefix_name">PGT_LOG_PREFIX_NAME</a>
     </li>
@@ -121,12 +131,22 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="environment-variables">Environment Variables</h1>
-<h3 id="pgt_log_path"><code>PGT_LOG_PATH</code></h3>
+<h3 id="pgls_log_path"><code>PGLS_LOG_PATH</code></h3>
 <p>The directory where the Daemon logs will be saved.</p>
-<h3 id="pgt_log_prefix_name"><code>PGT_LOG_PREFIX_NAME</code></h3>
+<h3 id="pgls_log_level"><code>PGLS_LOG_LEVEL</code></h3>
+<p>Allows to change the log level. Default is debug. This will only affect "pgt*" crates. All others are logged with info level.</p>
+<h3 id="pgls_log_prefix_name"><code>PGLS_LOG_PREFIX_NAME</code></h3>
 <p>A prefix that's added to the name of the log. Default: <code>server.log.</code></p>
-<h3 id="pgt_config_path"><code>PGT_CONFIG_PATH</code></h3>
+<h3 id="pgls_config_path"><code>PGLS_CONFIG_PATH</code></h3>
 <p>A path to the configuration file</p>
+<h3 id="pgt_log_path"><code>PGT_LOG_PATH</code></h3>
+<p>The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.</p>
+<h3 id="pgt_log_level"><code>PGT_LOG_LEVEL</code></h3>
+<p>Allows to change the log level. Default is debug. This will only affect "pgt*" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.</p>
+<h3 id="pgt_log_prefix_name"><code>PGT_LOG_PREFIX_NAME</code></h3>
+<p>A prefix that's added to the name of the log. Default: <code>server.log</code>. Deprecated, use PGLS_LOG_PREFIX_NAME instead.</p>
+<h3 id="pgt_config_path"><code>PGT_CONFIG_PATH</code></h3>
+<p>A path to the configuration file. Deprecated, use PGLS_CONFIG_PATH instead.</p>
               
             </div>
           </div><footer>
