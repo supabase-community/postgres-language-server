@@ -31,7 +31,7 @@ declare_lint_rule! {
     pub AddSerialColumn {
         version: "next",
         name: "addSerialColumn",
-        severity: Severity::Error,
+        severity: Severity::Warning,
         recommended: true,
         sources: &[RuleSource::Eugene("E11")],
     }

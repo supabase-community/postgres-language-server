@@ -37,7 +37,7 @@ declare_lint_rule! {
     pub LockTimeoutWarning {
         version: "next",
         name: "lockTimeoutWarning",
-        severity: Severity::Error,
+        severity: Severity::Warning,
         recommended: true,
         sources: &[RuleSource::Eugene("E9")],
     }
