@@ -98,6 +98,10 @@ impl SchemaCache {
         })
     }
 
+    pub fn find_type_by_id(&self, id: i64) -> Option<&PostgresType> {
+        self.types.iter().find(|t| t.id == id)
+    }
+
     pub fn find_cols(&self, name: &str, table: Option<&str>, schema: Option<&str>) -> Vec<&Column> {
         let sanitized_name = Self::sanitize_identifier(name);
         self.columns

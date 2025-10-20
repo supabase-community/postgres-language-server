@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use pgt_schema_cache::Function;
+use pgt_schema_cache::{Function, SchemaCache};
 use pgt_treesitter::TreesitterContext;
 
 use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdown};
@@ -10,7 +10,11 @@ impl ToHoverMarkdown for Function {
         "sql"
     }
 
-    fn hover_headline<W: Write>(&self, writer: &mut W) -> Result<(), std::fmt::Error> {
+    fn hover_headline<W: Write>(
+        &self,
+        writer: &mut W,
+        _schema_cache: &SchemaCache,
+    ) -> Result<(), std::fmt::Error> {
         write!(writer, "`{}.{}", self.schema, self.name)?;
 
         if let Some(args) = &self.argument_types {
@@ -28,7 +32,11 @@ impl ToHoverMarkdown for Function {
         Ok(())
     }
 
-    fn hover_body<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+    fn hover_body<W: Write>(
+        &self,
+        writer: &mut W,
+        _schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error> {
         let kind_text = match self.kind {
             pgt_schema_cache::ProcKind::Function => "Function",
             pgt_schema_cache::ProcKind::Procedure => "Procedure",
@@ -55,7 +63,11 @@ impl ToHoverMarkdown for Function {
         Ok(true)
     }
 
-    fn hover_footer<W: Write>(&self, writer: &mut W) -> Result<bool, std::fmt::Error> {
+    fn hover_footer<W: Write>(
+        &self,
+        writer: &mut W,
+        _schema_cache: &SchemaCache,
+    ) -> Result<bool, std::fmt::Error> {
         if let Some(def) = self.definition.as_ref() {
             /*
              * We don't want to show 250 lines of functions to the user.

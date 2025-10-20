@@ -5,7 +5,7 @@ use crate::{
 use pgt_console::{ConsoleExt, markup};
 use pgt_lsp::ServerFactory;
 use pgt_workspace::{TransportError, WorkspaceError, workspace::WorkspaceClient};
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 use tokio::io;
 use tokio::runtime::Runtime;
 use tracing::subscriber::Interest;
@@ -234,7 +234,12 @@ fn setup_tracing_subscriber(
 }
 
 pub fn default_pgt_log_path() -> PathBuf {
-    match env::var_os("PGT_LOG_PATH") {
+    let env = pgt_env::pgls_env();
+    match env
+        .pgls_log_path
+        .value()
+        .or_else(|| env.pgt_log_path.value())
+    {
         Some(directory) => PathBuf::from(directory),
         None => pgt_fs::ensure_cache_dir().join("pgt-logs"),
     }
