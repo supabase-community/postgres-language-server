@@ -44,6 +44,7 @@ define_categories! {
     "lint/safety/renamingTable": "https://pgtools.dev/latest/rules/renaming-table",
     "lint/safety/requireConcurrentIndexCreation": "https://pgtools.dev/latest/rules/require-concurrent-index-creation",
     "lint/safety/requireConcurrentIndexDeletion": "https://pgtools.dev/latest/rules/require-concurrent-index-deletion",
+    "lint/safety/runningStatementWhileHoldingAccessExclusive": "https://pgtools.dev/latest/rules/running-statement-while-holding-access-exclusive",
     "lint/safety/transactionNesting": "https://pgtools.dev/latest/rules/transaction-nesting",
     // end lint rules
     ;

@@ -94,6 +94,7 @@ export type Category =
 	| "lint/safety/renamingTable"
 	| "lint/safety/requireConcurrentIndexCreation"
 	| "lint/safety/requireConcurrentIndexDeletion"
+	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
 	| "stdin"
 	| "check"
@@ -571,6 +572,10 @@ export interface Safety {
 	 * Dropping indexes non-concurrently can lock the table for reads.
 	 */
 	requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+	/**
+	 * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
+	 */
+	runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
 	/**
 	 * Detects problematic transaction nesting that could lead to unexpected behavior.
 	 */

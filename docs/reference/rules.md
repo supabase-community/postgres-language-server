@@ -29,7 +29,7 @@ Rules that detect potential safety issues in your code.
 | [constraintMissingNotValid](./constraint-missing-not-valid) | Adding constraints without NOT VALID blocks all reads and writes. |  |
 | [creatingEnum](./creating-enum) | Creating enum types is not recommended for new applications. |  |
 | [disallowUniqueConstraint](./disallow-unique-constraint) | Disallow adding a UNIQUE constraint without using an existing index. |  |
-| [lockTimeoutWarning](./lock-timeout-warning) | Taking a dangerous lock without setting a lock timeout can cause indefinite blocking. |  |
+| [lockTimeoutWarning](./lock-timeout-warning) | Taking a dangerous lock without setting a lock timeout can cause indefinite blocking. | ✅ |
 | [multipleAlterTable](./multiple-alter-table) | Multiple ALTER TABLE statements on the same table should be combined into a single statement. | ✅ |
 | [preferBigInt](./prefer-big-int) | Prefer BIGINT over smaller integer types. |  |
 | [preferBigintOverInt](./prefer-bigint-over-int) | Prefer BIGINT over INT/INTEGER types. |  |
@@ -43,6 +43,7 @@ Rules that detect potential safety issues in your code.
 | [renamingTable](./renaming-table) | Renaming tables may break existing queries and application code. |  |
 | [requireConcurrentIndexCreation](./require-concurrent-index-creation) | Creating indexes non-concurrently can lock the table for writes. |  |
 | [requireConcurrentIndexDeletion](./require-concurrent-index-deletion) | Dropping indexes non-concurrently can lock the table for reads. |  |
+| [runningStatementWhileHoldingAccessExclusive](./running-statement-while-holding-access-exclusive) | Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access. | ✅ |
 | [transactionNesting](./transaction-nesting) | Detects problematic transaction nesting that could lead to unexpected behavior. |  |
 
 [//]: # (END RULES_INDEX)

@@ -711,6 +711,17 @@
             }
           ]
         },
+        "runningStatementWhileHoldingAccessExclusive": {
+          "description": "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "transactionNesting": {
           "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
           "anyOf": [

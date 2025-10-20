@@ -245,6 +245,11 @@ pub struct Safety {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_concurrent_index_deletion:
         Option<RuleConfiguration<pgt_analyser::options::RequireConcurrentIndexDeletion>>,
+    #[doc = "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub running_statement_while_holding_access_exclusive: Option<
+        RuleConfiguration<pgt_analyser::options::RunningStatementWhileHoldingAccessExclusive>,
+    >,
     #[doc = "Detects problematic transaction nesting that could lead to unexpected behavior."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_nesting: Option<RuleConfiguration<pgt_analyser::options::TransactionNesting>>,
@@ -283,6 +288,7 @@ impl Safety {
         "renamingTable",
         "requireConcurrentIndexCreation",
         "requireConcurrentIndexDeletion",
+        "runningStatementWhileHoldingAccessExclusive",
         "transactionNesting",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
@@ -295,7 +301,9 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
@@ -330,6 +338,7 @@ impl Safety {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[29]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[32]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -501,9 +510,17 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]));
             }
         }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
+        if let Some(rule) = self
+            .running_statement_while_holding_access_exclusive
+            .as_ref()
+        {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[32]));
             }
         }
         index_set
@@ -665,9 +682,17 @@ impl Safety {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[30]));
             }
         }
-        if let Some(rule) = self.transaction_nesting.as_ref() {
+        if let Some(rule) = self
+            .running_statement_while_holding_access_exclusive
+            .as_ref()
+        {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[31]));
+            }
+        }
+        if let Some(rule) = self.transaction_nesting.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[32]));
             }
         }
         index_set
@@ -730,6 +755,7 @@ impl Safety {
             "renamingTable" => Severity::Warning,
             "requireConcurrentIndexCreation" => Severity::Warning,
             "requireConcurrentIndexDeletion" => Severity::Warning,
+            "runningStatementWhileHoldingAccessExclusive" => Severity::Error,
             "transactionNesting" => Severity::Warning,
             _ => unreachable!(),
         }
@@ -861,6 +887,10 @@ impl Safety {
                 .map(|conf| (conf.level(), conf.get_options())),
             "requireConcurrentIndexDeletion" => self
                 .require_concurrent_index_deletion
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "runningStatementWhileHoldingAccessExclusive" => self
+                .running_statement_while_holding_access_exclusive
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "transactionNesting" => self

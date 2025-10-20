@@ -1,0 +1,22 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_only_lint/safety/runningStatementWhileHoldingAccessExclusive
+-- CREATE INDEX after ALTER TABLE should trigger
+ALTER TABLE orders ADD COLUMN total DECIMAL(10, 2);
+CREATE INDEX orders_total_idx ON orders(total);
+
+```
+
+# Diagnostics
+lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.

@@ -50,5 +50,6 @@ pub type RenamingTable =
     <lint::safety::renaming_table::RenamingTable as pgt_analyse::Rule>::Options;
 pub type RequireConcurrentIndexCreation = < lint :: safety :: require_concurrent_index_creation :: RequireConcurrentIndexCreation as pgt_analyse :: Rule > :: Options ;
 pub type RequireConcurrentIndexDeletion = < lint :: safety :: require_concurrent_index_deletion :: RequireConcurrentIndexDeletion as pgt_analyse :: Rule > :: Options ;
+pub type RunningStatementWhileHoldingAccessExclusive = < lint :: safety :: running_statement_while_holding_access_exclusive :: RunningStatementWhileHoldingAccessExclusive as pgt_analyse :: Rule > :: Options ;
 pub type TransactionNesting =
     <lint::safety::transaction_nesting::TransactionNesting as pgt_analyse::Rule>::Options;

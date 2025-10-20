@@ -41,6 +41,7 @@ impl<'a> AnalysedFileContext<'a> {
 /// This tracks properties that span multiple statements, such as:
 /// - Whether a lock timeout has been set
 /// - Which objects have been created in this transaction
+/// - Whether an ACCESS EXCLUSIVE lock is currently being held
 #[derive(Debug, Default)]
 pub struct TransactionState {
     /// Whether `SET lock_timeout` has been called in this transaction
@@ -48,6 +49,9 @@ pub struct TransactionState {
     /// Objects (schema, name) created in this transaction
     /// Schema names are normalized: empty string is stored as "public"
     created_objects: Vec<(String, String)>,
+    /// Whether an ACCESS EXCLUSIVE lock is currently being held
+    /// This is set when an ALTER TABLE is executed on an existing table
+    holding_access_exclusive: bool,
 }
 
 impl TransactionState {
@@ -64,6 +68,11 @@ impl TransactionState {
         self.created_objects
             .iter()
             .any(|(s, n)| normalized_schema.eq_ignore_ascii_case(s) && name.eq_ignore_ascii_case(n))
+    }
+
+    /// Returns true if the transaction is currently holding an ACCESS EXCLUSIVE lock
+    pub fn is_holding_access_exclusive(&self) -> bool {
+        self.holding_access_exclusive
     }
 
     /// Record that an object was created, normalizing the schema name
@@ -115,6 +124,19 @@ impl TransactionState {
                 }
             }
             _ => {}
+        }
+
+        // Track ACCESS EXCLUSIVE lock acquisition
+        // ALTER TABLE on an existing table acquires ACCESS EXCLUSIVE lock
+        if let pgt_query::NodeEnum::AlterTableStmt(alter_stmt) = stmt {
+            if let Some(relation) = &alter_stmt.relation {
+                let schema = &relation.schemaname;
+                let name = &relation.relname;
+                // Only set the flag if altering an existing table (not one created in this transaction)
+                if !self.has_created_object(schema, name) {
+                    self.holding_access_exclusive = true;
+                }
+            }
         }
     }
 }

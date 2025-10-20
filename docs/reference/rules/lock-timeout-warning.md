@@ -3,6 +3,8 @@
 
 **Since**: `vnext`
 
+> [!NOTE]
+> This rule is recommended. A diagnostic error will appear when linting your code.
 
 **Sources**: 
 - Inspired from: <a href="https://kaveland.no/eugene/hints/E9/index.html" target="_blank"><code>eugene/E9</code></a>
