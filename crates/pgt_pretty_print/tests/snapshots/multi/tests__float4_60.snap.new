@@ -1,0 +1,538 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 174
+input_file: crates/pgt_pretty_print/tests/data/multi/float4_60.sql
+---
+CREATE TABLE float4_tbl ( f1 REAL );
+
+INSERT INTO float4_tbl (f1) VALUES ('    0.0');
+
+INSERT INTO float4_tbl (f1) VALUES ('1004.30   ');
+
+INSERT INTO float4_tbl (f1) VALUES ('     -34.84    ');
+
+INSERT INTO float4_tbl (f1) VALUES ('1.2345678901234e+20');
+
+INSERT INTO float4_tbl (f1) VALUES ('1.2345678901234e-20');
+
+INSERT INTO float4_tbl (f1) VALUES ('10e70');
+
+INSERT INTO float4_tbl (f1) VALUES ('-10e70');
+
+INSERT INTO float4_tbl (f1) VALUES ('10e-70');
+
+INSERT INTO float4_tbl (f1) VALUES ('-10e-70');
+
+INSERT INTO float4_tbl (f1)
+VALUES (CAST('10e70' AS DOUBLE PRECISION));
+
+INSERT INTO float4_tbl (f1)
+VALUES (CAST('-10e70' AS DOUBLE PRECISION));
+
+INSERT INTO float4_tbl (f1)
+VALUES (CAST('10e-70' AS DOUBLE PRECISION));
+
+INSERT INTO float4_tbl (f1)
+VALUES (CAST('-10e-70' AS DOUBLE PRECISION));
+
+INSERT INTO float4_tbl (f1) VALUES ('10e400');
+
+INSERT INTO float4_tbl (f1) VALUES ('-10e400');
+
+INSERT INTO float4_tbl (f1) VALUES ('10e-400');
+
+INSERT INTO float4_tbl (f1) VALUES ('-10e-400');
+
+INSERT INTO float4_tbl (f1) VALUES ('');
+
+INSERT INTO float4_tbl (f1) VALUES ('       ');
+
+INSERT INTO float4_tbl (f1) VALUES ('xyz');
+
+INSERT INTO float4_tbl (f1) VALUES ('5.0.0');
+
+INSERT INTO float4_tbl (f1) VALUES ('5 . 0');
+
+INSERT INTO float4_tbl (f1) VALUES ('5.   0');
+
+INSERT INTO float4_tbl (f1) VALUES ('     - 3.0');
+
+INSERT INTO float4_tbl (f1) VALUES ('123            5');
+
+SELECT pg_input_is_valid('34.5', 'float4');
+
+SELECT pg_input_is_valid('xyz', 'float4');
+
+SELECT pg_input_is_valid('1e400', 'float4');
+
+SELECT * FROM pg_input_error_info('1e400', 'float4');
+
+SELECT CAST('NaN' AS REAL);
+
+SELECT CAST('nan' AS REAL);
+
+SELECT CAST('   NAN  ' AS REAL);
+
+SELECT CAST('infinity' AS REAL);
+
+SELECT CAST('          -INFINiTY   ' AS REAL);
+
+SELECT CAST('N A N' AS REAL);
+
+SELECT CAST('NaN x' AS REAL);
+
+SELECT CAST(' INFINITY    x' AS REAL);
+
+SELECT CAST('Infinity' AS REAL) + 100.0;
+
+SELECT CAST('Infinity' AS REAL) / CAST('Infinity' AS REAL);
+
+SELECT CAST('42' AS REAL) / CAST('Infinity' AS REAL);
+
+SELECT CAST('nan' AS REAL) / CAST('nan' AS REAL);
+
+SELECT CAST('nan' AS REAL) / CAST('0' AS REAL);
+
+SELECT CAST(CAST('nan' AS NUMERIC) AS REAL);
+
+SELECT * FROM float4_tbl;
+
+SELECT f.* FROM float4_tbl AS f WHERE f.f1 <> '1004.3';
+
+SELECT f.* FROM float4_tbl AS f WHERE f.f1 = '1004.3';
+
+SELECT f.* FROM float4_tbl AS f WHERE '1004.3' > f.f1;
+
+SELECT f.* FROM float4_tbl AS f WHERE f.f1 < '1004.3';
+
+SELECT f.* FROM float4_tbl AS f WHERE '1004.3' >= f.f1;
+
+SELECT f.* FROM float4_tbl AS f WHERE f.f1 <= '1004.3';
+
+SELECT
+  f.f1,
+  f.f1 * '-10' AS "x"
+FROM
+  float4_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1,
+  f.f1 + '-10' AS "x"
+FROM
+  float4_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1,
+  f.f1 / '-10' AS "x"
+FROM
+  float4_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1,
+  f.f1 - '-10' AS "x"
+FROM
+  float4_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT f.f1 / '0.0' FROM float4_tbl AS f;
+
+SELECT * FROM float4_tbl;
+
+SELECT f.f1, @f.f1 AS "abs_f1" FROM float4_tbl AS f;
+
+UPDATE float4_tbl
+SET f1 = float4_tbl.f1 * '-1'
+WHERE float4_tbl.f1 > '0.0';
+
+SELECT * FROM float4_tbl ORDER BY 1;
+
+SELECT CAST(CAST('32767.4' AS REAL) AS SMALLINT);
+
+SELECT CAST(CAST('32767.6' AS REAL) AS SMALLINT);
+
+SELECT CAST(CAST('-32768.4' AS REAL) AS SMALLINT);
+
+SELECT CAST(CAST('-32768.6' AS REAL) AS SMALLINT);
+
+SELECT CAST(CAST('2147483520' AS REAL) AS INT);
+
+SELECT CAST(CAST('2147483647' AS REAL) AS INT);
+
+SELECT CAST(CAST('-2147483648.5' AS REAL) AS INT);
+
+SELECT CAST(CAST('-2147483900' AS REAL) AS INT);
+
+SELECT CAST(CAST('9223369837831520256' AS REAL) AS BIGINT);
+
+SELECT CAST(CAST('9223372036854775807' AS REAL) AS BIGINT);
+
+SELECT
+  CAST(CAST('-9223372036854775808.5' AS REAL) AS BIGINT);
+
+SELECT CAST(CAST('-9223380000000000000' AS REAL) AS BIGINT);
+
+SELECT float4send(CAST('5e-20' AS REAL));
+
+SELECT float4send(CAST('67e14' AS REAL));
+
+SELECT float4send(CAST('985e15' AS REAL));
+
+SELECT float4send(CAST('55895e-16' AS REAL));
+
+SELECT float4send(CAST('7038531e-32' AS REAL));
+
+SELECT float4send(CAST('702990899e-20' AS REAL));
+
+SELECT float4send(CAST('3e-23' AS REAL));
+
+SELECT float4send(CAST('57e18' AS REAL));
+
+SELECT float4send(CAST('789e-35' AS REAL));
+
+SELECT float4send(CAST('2539e-18' AS REAL));
+
+SELECT float4send(CAST('76173e28' AS REAL));
+
+SELECT float4send(CAST('887745e-11' AS REAL));
+
+SELECT float4send(CAST('5382571e-37' AS REAL));
+
+SELECT float4send(CAST('82381273e-35' AS REAL));
+
+SELECT float4send(CAST('750486563e-38' AS REAL));
+
+SELECT float4send(CAST('1.17549435e-38' AS REAL));
+
+SELECT float4send(CAST('1.1754944e-38' AS REAL));
+
+CREATE TYPE xfloat4;
+
+CREATE FUNCTION xfloat4in(
+  cstring
+) RETURNS xfloat4 IMMUTABLE STRICT LANGUAGE "internal" AS 'int4in';
+
+CREATE FUNCTION xfloat4out(
+  xfloat4
+) RETURNS cstring IMMUTABLE STRICT LANGUAGE "internal" AS 'int4out';
+
+CREATE TYPE xfloat4 (input = xfloat4in,
+output = xfloat4out,
+like = REAL);
+
+CREATE CAST (xfloat4 AS REAL) WITHOUT FUNCTION;
+
+CREATE CAST (REAL AS xfloat4) WITHOUT FUNCTION;
+
+CREATE CAST (xfloat4 AS INT) WITHOUT FUNCTION;
+
+CREATE CAST (INT AS xfloat4) WITHOUT FUNCTION;
+
+WITH testdata (bits) AS (VALUES (X'00000001'),
+(X'00000002'),
+(X'00000003'),
+(X'00000010'),
+(X'00000011'),
+(X'00000100'),
+(X'00000101'),
+(X'00004000'),
+(X'00004001'),
+(X'00080000'),
+(X'00080001'),
+(X'0053c4f4'),
+(X'006c85c4'),
+(X'0041ca76'),
+(X'004b7678'),
+(X'00000007'),
+(X'00424fe2'),
+(X'007ffff0'),
+(X'007ffff1'),
+(X'007ffffe'),
+(X'007fffff'))
+SELECT
+  float4send(flt) AS "ibits",
+  flt
+FROM
+  (SELECT
+    CAST(CAST(CAST(bits AS INT) AS xfloat4) AS REAL) AS "flt"
+  FROM
+    testdata
+  OFFSET 0) AS s;
+
+WITH testdata (bits) AS (VALUES (X'00000000'),
+(X'00800000'),
+(X'00800001'),
+(X'00800004'),
+(X'00800005'),
+(X'00800006'),
+(X'008002f1'),
+(X'008002f2'),
+(X'008002f3'),
+(X'00800e17'),
+(X'00800e18'),
+(X'00800e19'),
+(X'01000001'),
+(X'01102843'),
+(X'01a52c98'),
+(X'0219c229'),
+(X'02e4464d'),
+(X'037343c1'),
+(X'03a91b36'),
+(X'047ada65'),
+(X'0496fe87'),
+(X'0550844f'),
+(X'05999da3'),
+(X'060ea5e2'),
+(X'06e63c45'),
+(X'07f1e548'),
+(X'0fc5282b'),
+(X'1f850283'),
+(X'2874a9d6'),
+(X'3356bf94'),
+(X'3356bf95'),
+(X'3356bf96'),
+(X'33d6bf94'),
+(X'33d6bf95'),
+(X'33d6bf96'),
+(X'34a10faf'),
+(X'34a10fb0'),
+(X'34a10fb1'),
+(X'350637bc'),
+(X'350637bd'),
+(X'350637be'),
+(X'35719786'),
+(X'35719787'),
+(X'35719788'),
+(X'358637bc'),
+(X'358637bd'),
+(X'358637be'),
+(X'36a7c5ab'),
+(X'36a7c5ac'),
+(X'36a7c5ad'),
+(X'3727c5ab'),
+(X'3727c5ac'),
+(X'3727c5ad'),
+(X'38d1b714'),
+(X'38d1b715'),
+(X'38d1b716'),
+(X'38d1b717'),
+(X'38d1b718'),
+(X'38d1b719'),
+(X'38d1b71a'),
+(X'38d1b71b'),
+(X'38d1b71c'),
+(X'38d1b71d'),
+(X'38dffffe'),
+(X'38dfffff'),
+(X'38e00000'),
+(X'38efffff'),
+(X'38f00000'),
+(X'38f00001'),
+(X'3a83126e'),
+(X'3a83126f'),
+(X'3a831270'),
+(X'3c23d709'),
+(X'3c23d70a'),
+(X'3c23d70b'),
+(X'3dcccccc'),
+(X'3dcccccd'),
+(X'3dccccce'),
+(X'3dcccd6f'),
+(X'3dcccd70'),
+(X'3dcccd71'),
+(X'3effffff'),
+(X'3f000000'),
+(X'3f000001'),
+(X'3f333332'),
+(X'3f333333'),
+(X'3f333334'),
+(X'3f666665'),
+(X'3f666666'),
+(X'3f666667'),
+(X'3f7d70a3'),
+(X'3f7d70a4'),
+(X'3f7d70a5'),
+(X'3f7fbe76'),
+(X'3f7fbe77'),
+(X'3f7fbe78'),
+(X'3f7ff971'),
+(X'3f7ff972'),
+(X'3f7ff973'),
+(X'3f7fff57'),
+(X'3f7fff58'),
+(X'3f7fff59'),
+(X'3f7fffee'),
+(X'3f7fffef'),
+(X'3f7ffff0'),
+(X'3f7ffff1'),
+(X'3f7ffff2'),
+(X'3f7ffff3'),
+(X'3f7ffff4'),
+(X'3f7ffff5'),
+(X'3f7ffff6'),
+(X'3f7ffff7'),
+(X'3f7ffff8'),
+(X'3f7ffff9'),
+(X'3f7ffffa'),
+(X'3f7ffffb'),
+(X'3f7ffffc'),
+(X'3f7ffffd'),
+(X'3f7ffffe'),
+(X'3f7fffff'),
+(X'3f800000'),
+(X'3f800001'),
+(X'3f800002'),
+(X'3f800003'),
+(X'3f800004'),
+(X'3f800005'),
+(X'3f800006'),
+(X'3f800007'),
+(X'3f800008'),
+(X'3f800009'),
+(X'3f80000f'),
+(X'3f800010'),
+(X'3f800011'),
+(X'3f800012'),
+(X'3f800013'),
+(X'3f800014'),
+(X'3f800017'),
+(X'3f800018'),
+(X'3f800019'),
+(X'3f80001a'),
+(X'3f80001b'),
+(X'3f80001c'),
+(X'3f800029'),
+(X'3f80002a'),
+(X'3f80002b'),
+(X'3f800053'),
+(X'3f800054'),
+(X'3f800055'),
+(X'3f800346'),
+(X'3f800347'),
+(X'3f800348'),
+(X'3f8020c4'),
+(X'3f8020c5'),
+(X'3f8020c6'),
+(X'3f8147ad'),
+(X'3f8147ae'),
+(X'3f8147af'),
+(X'3f8ccccc'),
+(X'3f8ccccd'),
+(X'3f8cccce'),
+(X'3fc90fdb'),
+(X'402df854'),
+(X'40490fdb'),
+(X'409fffff'),
+(X'40a00000'),
+(X'40a00001'),
+(X'40afffff'),
+(X'40b00000'),
+(X'40b00001'),
+(X'411fffff'),
+(X'41200000'),
+(X'41200001'),
+(X'42c7ffff'),
+(X'42c80000'),
+(X'42c80001'),
+(X'4479ffff'),
+(X'447a0000'),
+(X'447a0001'),
+(X'461c3fff'),
+(X'461c4000'),
+(X'461c4001'),
+(X'47c34fff'),
+(X'47c35000'),
+(X'47c35001'),
+(X'497423ff'),
+(X'49742400'),
+(X'49742401'),
+(X'4b18967f'),
+(X'4b189680'),
+(X'4b189681'),
+(X'4cbebc1f'),
+(X'4cbebc20'),
+(X'4cbebc21'),
+(X'4e6e6b27'),
+(X'4e6e6b28'),
+(X'4e6e6b29'),
+(X'501502f8'),
+(X'501502f9'),
+(X'501502fa'),
+(X'51ba43b6'),
+(X'51ba43b7'),
+(X'51ba43b8'),
+(X'1f6c1e4a'),
+(X'59be6cea'),
+(X'5d5ab6c4'),
+(X'2cc4a9bd'),
+(X'15ae43fd'),
+(X'2cf757ca'),
+(X'665ba998'),
+(X'743c3324'),
+(X'47f1205a'),
+(X'4640e6ae'),
+(X'449a5225'),
+(X'42f6e9d5'),
+(X'414587dd'),
+(X'3f9e064b'),
+(X'4c000004'),
+(X'50061c46'),
+(X'510006a8'),
+(X'48951f84'),
+(X'45fd1840'),
+(X'39800000'),
+(X'3b200000'),
+(X'3b900000'),
+(X'3bd00000'),
+(X'63800000'),
+(X'4b000000'),
+(X'4b800000'),
+(X'4c000001'),
+(X'4c800b0d'),
+(X'00d24584'),
+(X'00d90b88'),
+(X'45803f34'),
+(X'4f9f24f7'),
+(X'3a8722c3'),
+(X'5c800041'),
+(X'15ae43fd'),
+(X'5d4cccfb'),
+(X'4c800001'),
+(X'57800ed8'),
+(X'5f000000'),
+(X'700000f0'),
+(X'5f23e9ac'),
+(X'5e9502f9'),
+(X'5e8012b1'),
+(X'3c000028'),
+(X'60cde861'),
+(X'03aa2a50'),
+(X'43480000'),
+(X'4c000000'),
+(X'5D1502F9'),
+(X'5D9502F9'),
+(X'5E1502F9'),
+(X'3f99999a'),
+(X'3f9d70a4'),
+(X'3f9df3b6'),
+(X'3f9e0419'),
+(X'3f9e0610'),
+(X'3f9e064b'),
+(X'3f9e0651'),
+(X'03d20cfe'))
+SELECT
+  float4send(flt) AS "ibits",
+  flt,
+  CAST(CAST(flt AS TEXT) AS REAL) AS "r_flt",
+  float4send(CAST(CAST(flt AS TEXT) AS REAL)) AS "obits",
+  float4send(CAST(CAST(flt AS TEXT) AS REAL)) = float4send(flt) AS "correct"
+FROM
+  (SELECT
+    CAST(CAST(CAST(bits AS INT) AS xfloat4) AS REAL) AS "flt"
+  FROM
+    testdata
+  OFFSET 0) AS s;
+
+DROP TYPE xfloat4 CASCADE;

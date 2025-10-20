@@ -1,0 +1,16 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 75
+input_file: crates/pgt_pretty_print/tests/data/single/table_func_0_60.sql
+---
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"employees":[{"name":"Al","age":1}]}' AS JSONB),
+    '$.employees[*]'
+    COLUMNS (
+      name TEXT PATH '$.name',
+      age INT PATH '$.age'
+    )
+  ) AS jt;

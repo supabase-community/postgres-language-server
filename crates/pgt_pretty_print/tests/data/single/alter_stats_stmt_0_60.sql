@@ -1,0 +1,1 @@
+ALTER STATISTICS myschema.mystat SET STATISTICS 100;

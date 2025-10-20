@@ -1,0 +1,6 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/single/json_scalar_expr_0_60.sql
+snapshot_kind: text
+---
+SELECT JSON_SCALAR(123);

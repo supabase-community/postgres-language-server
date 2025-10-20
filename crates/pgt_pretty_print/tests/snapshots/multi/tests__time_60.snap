@@ -1,0 +1,120 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/time_60.sql
+snapshot_kind: text
+---
+CREATE TABLE time_tbl ( f1 TIME(2) );
+
+INSERT INTO time_tbl VALUES ('00:00');
+
+INSERT INTO time_tbl VALUES ('01:00');
+
+INSERT INTO time_tbl VALUES ('02:03 PST');
+
+INSERT INTO time_tbl VALUES ('11:59 EDT');
+
+INSERT INTO time_tbl VALUES ('12:00');
+
+INSERT INTO time_tbl VALUES ('12:01');
+
+INSERT INTO time_tbl VALUES ('23:59');
+
+INSERT INTO time_tbl VALUES ('11:59:59.99 PM');
+
+INSERT INTO time_tbl
+VALUES ('2003-03-07 15:36:39 America/New_York');
+
+INSERT INTO time_tbl
+VALUES ('2003-07-07 15:36:39 America/New_York');
+
+INSERT INTO time_tbl VALUES ('15:36:39 America/New_York');
+
+SELECT f1 AS "Time" FROM time_tbl;
+
+SELECT f1 AS "Three" FROM time_tbl WHERE f1 < '05:06:07';
+
+SELECT f1 AS "Five" FROM time_tbl WHERE f1 > '05:06:07';
+
+SELECT f1 AS "None" FROM time_tbl WHERE f1 < '00:00';
+
+SELECT f1 AS "Eight" FROM time_tbl WHERE f1 >= '00:00';
+
+SELECT CAST('23:59:59.999999' AS TIME);
+
+SELECT CAST('23:59:59.9999999' AS TIME);
+
+SELECT CAST('23:59:60' AS TIME);
+
+SELECT CAST('24:00:00' AS TIME);
+
+SELECT CAST('24:00:00.01' AS TIME);
+
+SELECT CAST('23:59:60.01' AS TIME);
+
+SELECT CAST('24:01:00' AS TIME);
+
+SELECT CAST('25:00:00' AS TIME);
+
+SELECT pg_input_is_valid('12:00:00', 'time');
+
+SELECT pg_input_is_valid('25:00:00', 'time');
+
+SELECT
+  pg_input_is_valid('15:36:39 America/New_York',
+  'time');
+
+SELECT * FROM pg_input_error_info('25:00:00', 'time');
+
+SELECT
+  *
+FROM
+  pg_input_error_info('15:36:39 America/New_York',
+  'time');
+
+SELECT
+  f1 + CAST('00:01' AS TIME) AS "Illegal"
+FROM
+  time_tbl;
+
+SELECT
+  EXTRACT('microsecond' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('millisecond' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('second' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('minute' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('hour' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('day' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('fortnight' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('timezone' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  EXTRACT('epoch' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  date_part('microsecond',
+  CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  date_part('millisecond',
+  CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  date_part('second',
+  CAST('2020-05-26 13:30:25.575401' AS TIME));
+
+SELECT
+  date_part('epoch',
+  CAST('2020-05-26 13:30:25.575401' AS TIME));

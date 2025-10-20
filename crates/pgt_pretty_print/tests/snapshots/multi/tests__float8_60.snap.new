@@ -1,0 +1,895 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 174
+input_file: crates/pgt_pretty_print/tests/data/multi/float8_60.sql
+---
+CREATE TEMPORARY TABLE float8_tbl ( f1 DOUBLE PRECISION );
+
+INSERT INTO float8_tbl (f1) VALUES ('    0.0   ');
+
+INSERT INTO float8_tbl (f1) VALUES ('1004.30  ');
+
+INSERT INTO float8_tbl (f1) VALUES ('   -34.84');
+
+INSERT INTO float8_tbl (f1) VALUES ('1.2345678901234e+200');
+
+INSERT INTO float8_tbl (f1) VALUES ('1.2345678901234e-200');
+
+SELECT CAST('10e400' AS DOUBLE PRECISION);
+
+SELECT CAST('-10e400' AS DOUBLE PRECISION);
+
+SELECT CAST('10e-400' AS DOUBLE PRECISION);
+
+SELECT CAST('-10e-400' AS DOUBLE PRECISION);
+
+SELECT
+  float8send(CAST('2.2250738585072014E-308' AS DOUBLE PRECISION));
+
+INSERT INTO float8_tbl (f1) VALUES ('');
+
+INSERT INTO float8_tbl (f1) VALUES ('     ');
+
+INSERT INTO float8_tbl (f1) VALUES ('xyz');
+
+INSERT INTO float8_tbl (f1) VALUES ('5.0.0');
+
+INSERT INTO float8_tbl (f1) VALUES ('5 . 0');
+
+INSERT INTO float8_tbl (f1) VALUES ('5.   0');
+
+INSERT INTO float8_tbl (f1) VALUES ('    - 3');
+
+INSERT INTO float8_tbl (f1) VALUES ('123           5');
+
+SELECT pg_input_is_valid('34.5', 'float8');
+
+SELECT pg_input_is_valid('xyz', 'float8');
+
+SELECT pg_input_is_valid('1e4000', 'float8');
+
+SELECT * FROM pg_input_error_info('1e4000', 'float8');
+
+SELECT CAST('NaN' AS DOUBLE PRECISION);
+
+SELECT CAST('nan' AS DOUBLE PRECISION);
+
+SELECT CAST('   NAN  ' AS DOUBLE PRECISION);
+
+SELECT CAST('infinity' AS DOUBLE PRECISION);
+
+SELECT CAST('          -INFINiTY   ' AS DOUBLE PRECISION);
+
+SELECT CAST('N A N' AS DOUBLE PRECISION);
+
+SELECT CAST('NaN x' AS DOUBLE PRECISION);
+
+SELECT CAST(' INFINITY    x' AS DOUBLE PRECISION);
+
+SELECT CAST('Infinity' AS DOUBLE PRECISION) + 100.0;
+
+SELECT
+  CAST('Infinity' AS DOUBLE PRECISION) / CAST('Infinity' AS DOUBLE PRECISION);
+
+SELECT
+  CAST('42' AS DOUBLE PRECISION) / CAST('Infinity' AS DOUBLE PRECISION);
+
+SELECT
+  CAST('nan' AS DOUBLE PRECISION) / CAST('nan' AS DOUBLE PRECISION);
+
+SELECT
+  CAST('nan' AS DOUBLE PRECISION) / CAST('0' AS DOUBLE PRECISION);
+
+SELECT CAST(CAST('nan' AS NUMERIC) AS DOUBLE PRECISION);
+
+SELECT * FROM float8_tbl;
+
+SELECT f.* FROM float8_tbl AS f WHERE f.f1 <> '1004.3';
+
+SELECT f.* FROM float8_tbl AS f WHERE f.f1 = '1004.3';
+
+SELECT f.* FROM float8_tbl AS f WHERE '1004.3' > f.f1;
+
+SELECT f.* FROM float8_tbl AS f WHERE f.f1 < '1004.3';
+
+SELECT f.* FROM float8_tbl AS f WHERE '1004.3' >= f.f1;
+
+SELECT f.* FROM float8_tbl AS f WHERE f.f1 <= '1004.3';
+
+SELECT
+  f.f1,
+  f.f1 * '-10' AS "x"
+FROM
+  float8_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1,
+  f.f1 + '-10' AS "x"
+FROM
+  float8_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1,
+  f.f1 / '-10' AS "x"
+FROM
+  float8_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1,
+  f.f1 - '-10' AS "x"
+FROM
+  float8_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  f.f1 ^ '2.0' AS "square_f1"
+FROM
+  float8_tbl AS f
+WHERE f.f1 = '1004.3';
+
+SELECT f.f1, @f.f1 AS "abs_f1" FROM float8_tbl AS f;
+
+SELECT f.f1, trunc(f.f1) AS "trunc_f1" FROM float8_tbl AS f;
+
+SELECT f.f1, round(f.f1) AS "round_f1" FROM float8_tbl AS f;
+
+SELECT ceil(f1) AS "ceil_f1" FROM float8_tbl AS f;
+
+SELECT ceiling(f1) AS "ceiling_f1" FROM float8_tbl AS f;
+
+SELECT floor(f1) AS "floor_f1" FROM float8_tbl AS f;
+
+SELECT sign(f1) AS "sign_f1" FROM float8_tbl AS f;
+
+SET extra_float_digits = 0;
+
+SELECT sqrt(CAST('64' AS DOUBLE PRECISION)) AS "eight";
+
+SELECT |/CAST('64' AS DOUBLE PRECISION) AS "eight";
+
+SELECT
+  f.f1,
+  |/f.f1 AS "sqrt_f1"
+FROM
+  float8_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  power(CAST('144' AS DOUBLE PRECISION),
+  CAST('0.5' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('NaN' AS DOUBLE PRECISION),
+  CAST('0.5' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('144' AS DOUBLE PRECISION),
+  CAST('NaN' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('NaN' AS DOUBLE PRECISION),
+  CAST('NaN' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-1' AS DOUBLE PRECISION),
+  CAST('NaN' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('1' AS DOUBLE PRECISION),
+  CAST('NaN' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('NaN' AS DOUBLE PRECISION),
+  CAST('0' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('inf' AS DOUBLE PRECISION),
+  CAST('0' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('0' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('0' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('0' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('1' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('1' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-1' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-1' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('0.1' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-0.1' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('1.1' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-1.1' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('0.1' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-0.1' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('1.1' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-1.1' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('inf' AS DOUBLE PRECISION),
+  CAST('-2' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('inf' AS DOUBLE PRECISION),
+  CAST('2' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('inf' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('inf' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('-2' AS DOUBLE PRECISION)) = '0';
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('-3' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('2' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('3' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('3.5' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('inf' AS DOUBLE PRECISION));
+
+SELECT
+  power(CAST('-inf' AS DOUBLE PRECISION),
+  CAST('-inf' AS DOUBLE PRECISION));
+
+SELECT
+  f.f1,
+  exp(ln(f.f1)) AS "exp_ln_f1"
+FROM
+  float8_tbl AS f
+WHERE f.f1 > '0.0';
+
+SELECT
+  exp(CAST('inf' AS DOUBLE PRECISION)),
+  exp(CAST('-inf' AS DOUBLE PRECISION)),
+  exp(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT ||/CAST('27' AS DOUBLE PRECISION) AS "three";
+
+SELECT f.f1, ||/f.f1 AS "cbrt_f1" FROM float8_tbl AS f;
+
+SELECT * FROM float8_tbl;
+
+UPDATE float8_tbl
+SET f1 = float8_tbl.f1 * '-1'
+WHERE float8_tbl.f1 > '0.0';
+
+SELECT f.f1 * '1e200' FROM float8_tbl AS f;
+
+SELECT f.f1 ^ '1e200' FROM float8_tbl AS f;
+
+SELECT 0 ^ 0 + 0 ^ 1 + 0 ^ 0.0 + 0 ^ 0.5;
+
+SELECT ln(f.f1) FROM float8_tbl AS f WHERE f.f1 = '0.0';
+
+SELECT ln(f.f1) FROM float8_tbl AS f WHERE f.f1 < '0.0';
+
+SELECT exp(f.f1) FROM float8_tbl AS f;
+
+SELECT f.f1 / '0.0' FROM float8_tbl AS f;
+
+SELECT * FROM float8_tbl ORDER BY 1;
+
+SELECT sinh(CAST('1' AS DOUBLE PRECISION));
+
+SELECT cosh(CAST('1' AS DOUBLE PRECISION));
+
+SELECT tanh(CAST('1' AS DOUBLE PRECISION));
+
+SELECT asinh(CAST('1' AS DOUBLE PRECISION));
+
+SELECT acosh(CAST('2' AS DOUBLE PRECISION));
+
+SELECT atanh(CAST('0.5' AS DOUBLE PRECISION));
+
+SELECT sinh(CAST('infinity' AS DOUBLE PRECISION));
+
+SELECT sinh(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT sinh(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT cosh(CAST('infinity' AS DOUBLE PRECISION));
+
+SELECT cosh(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT cosh(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT tanh(CAST('infinity' AS DOUBLE PRECISION));
+
+SELECT tanh(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT tanh(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT asinh(CAST('infinity' AS DOUBLE PRECISION));
+
+SELECT asinh(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT asinh(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT acosh(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT acosh(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT atanh(CAST('infinity' AS DOUBLE PRECISION));
+
+SELECT atanh(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT atanh(CAST('nan' AS DOUBLE PRECISION));
+
+SET extra_float_digits = -1;
+
+SELECT
+  x,
+  erf(x),
+  erfc(x)
+FROM
+  (VALUES (CAST('-infinity' AS DOUBLE PRECISION)),
+  (-28),
+  (-6),
+  (-3.4),
+  (-2.1),
+  (-1.1),
+  (-0.45),
+  (-1.2e-9),
+  (-2.3e-13),
+  (-1.2e-17),
+  (0),
+  (1.2e-17),
+  (2.3e-13),
+  (1.2e-9),
+  (0.45),
+  (1.1),
+  (2.1),
+  (3.4),
+  (6),
+  (28),
+  (CAST('infinity' AS DOUBLE PRECISION)),
+  (CAST('nan' AS DOUBLE PRECISION))) AS t (x);
+
+RESET extra_float_digits;
+
+SET extra_float_digits = -1;
+
+SELECT
+  x,
+  gamma(x),
+  lgamma(x)
+FROM
+  (VALUES (0.5),
+  (1),
+  (2),
+  (3),
+  (4),
+  (5),
+  (CAST('infinity' AS DOUBLE PRECISION)),
+  (CAST('nan' AS DOUBLE PRECISION))) AS t (x);
+
+SELECT gamma(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT lgamma(CAST('-infinity' AS DOUBLE PRECISION));
+
+SELECT gamma(CAST('-1000.5' AS DOUBLE PRECISION));
+
+SELECT lgamma(CAST('-1000.5' AS DOUBLE PRECISION));
+
+SELECT gamma(CAST('-1' AS DOUBLE PRECISION));
+
+SELECT lgamma(CAST('-1' AS DOUBLE PRECISION));
+
+SELECT gamma(CAST('0' AS DOUBLE PRECISION));
+
+SELECT lgamma(CAST('0' AS DOUBLE PRECISION));
+
+SELECT gamma(CAST('1000' AS DOUBLE PRECISION));
+
+SELECT lgamma(CAST('1000' AS DOUBLE PRECISION));
+
+SELECT lgamma(CAST('1e308' AS DOUBLE PRECISION));
+
+RESET extra_float_digits;
+
+INSERT INTO float8_tbl (f1) VALUES ('10e400');
+
+INSERT INTO float8_tbl (f1) VALUES ('-10e400');
+
+INSERT INTO float8_tbl (f1) VALUES ('10e-400');
+
+INSERT INTO float8_tbl (f1) VALUES ('-10e-400');
+
+DROP TABLE "float8_tbl";
+
+SELECT * FROM float8_tbl;
+
+SELECT
+  CAST(CAST('32767.4' AS DOUBLE PRECISION) AS SMALLINT);
+
+SELECT
+  CAST(CAST('32767.6' AS DOUBLE PRECISION) AS SMALLINT);
+
+SELECT
+  CAST(CAST('-32768.4' AS DOUBLE PRECISION) AS SMALLINT);
+
+SELECT
+  CAST(CAST('-32768.6' AS DOUBLE PRECISION) AS SMALLINT);
+
+SELECT
+  CAST(CAST('2147483647.4' AS DOUBLE PRECISION) AS INT);
+
+SELECT
+  CAST(CAST('2147483647.6' AS DOUBLE PRECISION) AS INT);
+
+SELECT
+  CAST(CAST('-2147483648.4' AS DOUBLE PRECISION) AS INT);
+
+SELECT
+  CAST(CAST('-2147483648.6' AS DOUBLE PRECISION) AS INT);
+
+SELECT
+  CAST(CAST('9223372036854773760' AS DOUBLE PRECISION) AS BIGINT);
+
+SELECT
+  CAST(CAST('9223372036854775807' AS DOUBLE PRECISION) AS BIGINT);
+
+SELECT
+  CAST(CAST('-9223372036854775808.5' AS DOUBLE PRECISION) AS BIGINT);
+
+SELECT
+  CAST(CAST('-9223372036854780000' AS DOUBLE PRECISION) AS BIGINT);
+
+SELECT
+  x,
+  sind(x),
+  sind(x) IN (-1,
+  -0.5,
+  0,
+  0.5,
+  1) AS "sind_exact"
+FROM
+  (VALUES (0),
+  (30),
+  (90),
+  (150),
+  (180),
+  (210),
+  (270),
+  (330),
+  (360)) AS t (x);
+
+SELECT
+  x,
+  cosd(x),
+  cosd(x) IN (-1,
+  -0.5,
+  0,
+  0.5,
+  1) AS "cosd_exact"
+FROM
+  (VALUES (0),
+  (60),
+  (90),
+  (120),
+  (180),
+  (240),
+  (270),
+  (300),
+  (360)) AS t (x);
+
+SELECT
+  x,
+  tand(x),
+  tand(x) IN (CAST('-Infinity' AS DOUBLE PRECISION),
+  -1,
+  0,
+  1,
+  CAST('Infinity' AS DOUBLE PRECISION)) AS "tand_exact",
+  cotd(x),
+  cotd(x) IN (CAST('-Infinity' AS DOUBLE PRECISION),
+  -1,
+  0,
+  1,
+  CAST('Infinity' AS DOUBLE PRECISION)) AS "cotd_exact"
+FROM
+  (VALUES (0),
+  (45),
+  (90),
+  (135),
+  (180),
+  (225),
+  (270),
+  (315),
+  (360)) AS t (x);
+
+SELECT
+  x,
+  asind(x),
+  asind(x) IN (-90,
+  -30,
+  0,
+  30,
+  90) AS "asind_exact",
+  acosd(x),
+  acosd(x) IN (0,
+  60,
+  90,
+  120,
+  180) AS "acosd_exact"
+FROM
+  (VALUES (-1),
+  (-0.5),
+  (0),
+  (0.5),
+  (1)) AS t (x);
+
+SELECT
+  x,
+  atand(x),
+  atand(x) IN (-90,
+  -45,
+  0,
+  45,
+  90) AS "atand_exact"
+FROM
+  (VALUES (CAST('-Infinity' AS DOUBLE PRECISION)),
+  (-1),
+  (0),
+  (1),
+  (CAST('Infinity' AS DOUBLE PRECISION))) AS t (x);
+
+SELECT
+  x,
+  y,
+  atan2d(y,
+  x),
+  atan2d(y,
+  x) IN (-90,
+  0,
+  90,
+  180) AS "atan2d_exact"
+FROM
+  (SELECT
+    10 * cosd(a),
+    10 * sind(a)
+  FROM
+    generate_series(0,
+    360,
+    90) AS t (a)) AS t (x,
+  y);
+
+CREATE TYPE xfloat8;
+
+CREATE FUNCTION xfloat8in(
+  cstring
+) RETURNS xfloat8 IMMUTABLE STRICT LANGUAGE "internal" AS 'int8in';
+
+CREATE FUNCTION xfloat8out(
+  xfloat8
+) RETURNS cstring IMMUTABLE STRICT LANGUAGE "internal" AS 'int8out';
+
+CREATE TYPE xfloat8 (input = xfloat8in,
+output = xfloat8out,
+like = no_such_type);
+
+CREATE TYPE xfloat8 (input = xfloat8in,
+output = xfloat8out,
+like = DOUBLE PRECISION);
+
+CREATE CAST (xfloat8 AS DOUBLE PRECISION) WITHOUT FUNCTION;
+
+CREATE CAST (DOUBLE PRECISION AS xfloat8) WITHOUT FUNCTION;
+
+CREATE CAST (xfloat8 AS BIGINT) WITHOUT FUNCTION;
+
+CREATE CAST (BIGINT AS xfloat8) WITHOUT FUNCTION;
+
+WITH testdata (bits) AS (VALUES (X'0000000000000001'),
+(X'0000000000000002'),
+(X'0000000000000003'),
+(X'0000000000001000'),
+(X'0000000100000000'),
+(X'0000010000000000'),
+(X'0000010100000000'),
+(X'0000400000000000'),
+(X'0000400100000000'),
+(X'0000800000000000'),
+(X'0000800000000001'),
+(X'00000000000f4240'),
+(X'00000000016e3600'),
+(X'0000008cdcdea440'),
+(X'000ffffffffffff0'),
+(X'000ffffffffffff1'),
+(X'000ffffffffffffe'),
+(X'000fffffffffffff'))
+SELECT
+  float8send(flt) AS "ibits",
+  flt
+FROM
+  (SELECT
+    CAST(CAST(CAST(bits AS BIGINT) AS xfloat8) AS DOUBLE PRECISION) AS "flt"
+  FROM
+    testdata
+  OFFSET 0) AS s;
+
+WITH testdata (bits) AS (VALUES (X'0000000000000000'),
+(X'0010000000000000'),
+(X'0010000000000001'),
+(X'0010000000000002'),
+(X'0018000000000000'),
+(X'3ddb7cdfd9d7bdba'),
+(X'3ddb7cdfd9d7bdbb'),
+(X'3ddb7cdfd9d7bdbc'),
+(X'3e112e0be826d694'),
+(X'3e112e0be826d695'),
+(X'3e112e0be826d696'),
+(X'3e45798ee2308c39'),
+(X'3e45798ee2308c3a'),
+(X'3e45798ee2308c3b'),
+(X'3e7ad7f29abcaf47'),
+(X'3e7ad7f29abcaf48'),
+(X'3e7ad7f29abcaf49'),
+(X'3eb0c6f7a0b5ed8c'),
+(X'3eb0c6f7a0b5ed8d'),
+(X'3eb0c6f7a0b5ed8e'),
+(X'3ee4f8b588e368ef'),
+(X'3ee4f8b588e368f0'),
+(X'3ee4f8b588e368f1'),
+(X'3f1a36e2eb1c432c'),
+(X'3f1a36e2eb1c432d'),
+(X'3f1a36e2eb1c432e'),
+(X'3f50624dd2f1a9fb'),
+(X'3f50624dd2f1a9fc'),
+(X'3f50624dd2f1a9fd'),
+(X'3f847ae147ae147a'),
+(X'3f847ae147ae147b'),
+(X'3f847ae147ae147c'),
+(X'3fb9999999999999'),
+(X'3fb999999999999a'),
+(X'3fb999999999999b'),
+(X'3feffffffffffff0'),
+(X'3feffffffffffff1'),
+(X'3feffffffffffff2'),
+(X'3feffffffffffff3'),
+(X'3feffffffffffff4'),
+(X'3feffffffffffff5'),
+(X'3feffffffffffff6'),
+(X'3feffffffffffff7'),
+(X'3feffffffffffff8'),
+(X'3feffffffffffff9'),
+(X'3feffffffffffffa'),
+(X'3feffffffffffffb'),
+(X'3feffffffffffffc'),
+(X'3feffffffffffffd'),
+(X'3feffffffffffffe'),
+(X'3fefffffffffffff'),
+(X'3ff0000000000000'),
+(X'3ff0000000000001'),
+(X'3ff0000000000002'),
+(X'3ff0000000000003'),
+(X'3ff0000000000004'),
+(X'3ff0000000000005'),
+(X'3ff0000000000006'),
+(X'3ff0000000000007'),
+(X'3ff0000000000008'),
+(X'3ff0000000000009'),
+(X'3ff921fb54442d18'),
+(X'4005bf0a8b14576a'),
+(X'400921fb54442d18'),
+(X'4023ffffffffffff'),
+(X'4024000000000000'),
+(X'4024000000000001'),
+(X'4058ffffffffffff'),
+(X'4059000000000000'),
+(X'4059000000000001'),
+(X'408f3fffffffffff'),
+(X'408f400000000000'),
+(X'408f400000000001'),
+(X'40c387ffffffffff'),
+(X'40c3880000000000'),
+(X'40c3880000000001'),
+(X'40f869ffffffffff'),
+(X'40f86a0000000000'),
+(X'40f86a0000000001'),
+(X'412e847fffffffff'),
+(X'412e848000000000'),
+(X'412e848000000001'),
+(X'416312cfffffffff'),
+(X'416312d000000000'),
+(X'416312d000000001'),
+(X'4197d783ffffffff'),
+(X'4197d78400000000'),
+(X'4197d78400000001'),
+(X'41cdcd64ffffffff'),
+(X'41cdcd6500000000'),
+(X'41cdcd6500000001'),
+(X'4202a05f1fffffff'),
+(X'4202a05f20000000'),
+(X'4202a05f20000001'),
+(X'42374876e7ffffff'),
+(X'42374876e8000000'),
+(X'42374876e8000001'),
+(X'426d1a94a1ffffff'),
+(X'426d1a94a2000000'),
+(X'426d1a94a2000001'),
+(X'42a2309ce53fffff'),
+(X'42a2309ce5400000'),
+(X'42a2309ce5400001'),
+(X'42d6bcc41e8fffff'),
+(X'42d6bcc41e900000'),
+(X'42d6bcc41e900001'),
+(X'430c6bf52633ffff'),
+(X'430c6bf526340000'),
+(X'430c6bf526340001'),
+(X'4341c37937e07fff'),
+(X'4341c37937e08000'),
+(X'4341c37937e08001'),
+(X'4376345785d89fff'),
+(X'4376345785d8a000'),
+(X'4376345785d8a001'),
+(X'43abc16d674ec7ff'),
+(X'43abc16d674ec800'),
+(X'43abc16d674ec801'),
+(X'43e158e460913cff'),
+(X'43e158e460913d00'),
+(X'43e158e460913d01'),
+(X'4415af1d78b58c3f'),
+(X'4415af1d78b58c40'),
+(X'4415af1d78b58c41'),
+(X'444b1ae4d6e2ef4f'),
+(X'444b1ae4d6e2ef50'),
+(X'444b1ae4d6e2ef51'),
+(X'4480f0cf064dd591'),
+(X'4480f0cf064dd592'),
+(X'4480f0cf064dd593'),
+(X'44b52d02c7e14af5'),
+(X'44b52d02c7e14af6'),
+(X'44b52d02c7e14af7'),
+(X'44ea784379d99db3'),
+(X'44ea784379d99db4'),
+(X'44ea784379d99db5'),
+(X'45208b2a2c280290'),
+(X'45208b2a2c280291'),
+(X'45208b2a2c280292'),
+(X'7feffffffffffffe'),
+(X'7fefffffffffffff'),
+(X'4350000000000002'),
+(X'4350000000002e06'),
+(X'4352000000000003'),
+(X'4352000000000004'),
+(X'4358000000000003'),
+(X'4358000000000004'),
+(X'435f000000000020'),
+(X'c350000000000002'),
+(X'c350000000002e06'),
+(X'c352000000000003'),
+(X'c352000000000004'),
+(X'c358000000000003'),
+(X'c358000000000004'),
+(X'c35f000000000020'),
+(X'42dc12218377de66'),
+(X'42a674e79c5fe51f'),
+(X'4271f71fb04cb74c'),
+(X'423cbe991a145879'),
+(X'4206fee0e1a9e061'),
+(X'41d26580b487e6b4'),
+(X'419d6f34540ca453'),
+(X'41678c29dcd6e9dc'),
+(X'4132d687e3df217d'),
+(X'40fe240c9fcb68c8'),
+(X'40c81cd6e63c53d3'),
+(X'40934a4584fd0fdc'),
+(X'405edd3c07fb4c93'),
+(X'4028b0fcd32f7076'),
+(X'3ff3c0ca428c59f8'),
+(X'3e60000000000000'),
+(X'c352bd2668e077c4'),
+(X'434018601510c000'),
+(X'43d055dc36f24000'),
+(X'43e052961c6f8000'),
+(X'3ff3c0ca2a5b1d5d'),
+(X'4830f0cf064dd592'),
+(X'4840f0cf064dd592'),
+(X'4850f0cf064dd592'),
+(X'3ff3333333333333'),
+(X'3ff3ae147ae147ae'),
+(X'3ff3be76c8b43958'),
+(X'3ff3c083126e978d'),
+(X'3ff3c0c1fc8f3238'),
+(X'3ff3c0c9539b8887'),
+(X'3ff3c0ca2a5b1d5d'),
+(X'3ff3c0ca4283de1b'),
+(X'3ff3c0ca43db770a'),
+(X'3ff3c0ca428abd53'),
+(X'3ff3c0ca428c1d2b'),
+(X'3ff3c0ca428c51f2'),
+(X'3ff3c0ca428c58fc'),
+(X'3ff3c0ca428c59dd'),
+(X'3ff3c0ca428c59f8'),
+(X'3ff3c0ca428c59fb'),
+(X'40112e0be8047a7d'),
+(X'40112e0be815a889'),
+(X'40112e0be826d695'),
+(X'40112e0be83804a1'),
+(X'40112e0be84932ad'),
+(X'0040000000000000'),
+(X'007fffffffffffff'),
+(X'0290000000000000'),
+(X'029fffffffffffff'),
+(X'4350000000000000'),
+(X'435fffffffffffff'),
+(X'1330000000000000'),
+(X'133fffffffffffff'),
+(X'3a6fa7161a4d6e0c'))
+SELECT
+  float8send(flt) AS "ibits",
+  flt,
+  CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION) AS "r_flt",
+  float8send(CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)) AS "obits",
+  float8send(CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)) = float8send(flt) AS "correct"
+FROM
+  (SELECT
+    CAST(CAST(CAST(bits AS BIGINT) AS xfloat8) AS DOUBLE PRECISION) AS "flt"
+  FROM
+    testdata
+  OFFSET 0) AS s;
+
+DROP TYPE xfloat8 CASCADE;

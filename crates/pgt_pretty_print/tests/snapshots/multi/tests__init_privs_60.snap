@@ -1,0 +1,13 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/init_privs_60.sql
+snapshot_kind: text
+---
+SELECT COUNT(*) > 0 FROM pg_init_privs;
+
+GRANT SELECT ON TABLE pg_proc TO CURRENT_USER;
+
+GRANT SELECT (prosrc) ON TABLE pg_proc TO CURRENT_USER;
+
+GRANT SELECT (rolname,
+rolsuper) ON TABLE pg_authid TO CURRENT_USER;

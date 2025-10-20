@@ -1,0 +1,1 @@
+ALTER FUNCTION my_function(integer) IMMUTABLE;

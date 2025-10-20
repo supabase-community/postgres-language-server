@@ -1,0 +1,23 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 75
+input_file: crates/pgt_pretty_print/tests/data/single/json_table_nested_0_80.sql
+---
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"outer": [{"items": [1, null]}]}' AS JSONB),
+    '$.outer[*]'
+    COLUMNS (
+      outer_row_id FOR ORDINALITY,
+      NESTED PATH '$.items[*]'
+      COLUMNS (
+        idx FOR ORDINALITY,
+        value INT PATH '$' DEFAULT 0 ON EMPTY,
+        raw JSON PATH '$' WITH UNCONDITIONAL WRAPPER KEEP QUOTES,
+        cond text PATH '$' DEFAULT 'err' ON ERROR
+      )
+    )
+    EMPTY ARRAY ON ERROR
+  );

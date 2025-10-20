@@ -1,0 +1,10 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/single/sql_value_function_0_60.sql
+snapshot_kind: text
+---
+SELECT
+  CURRENT_DATE,
+  CURRENT_TIME,
+  CURRENT_TIMESTAMP,
+  CURRENT_USER;

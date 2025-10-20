@@ -1,0 +1,163 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/dbsize_60.sql
+snapshot_kind: text
+---
+SELECT
+  size,
+  pg_size_pretty(size),
+  pg_size_pretty(-1 * size)
+FROM
+  (VALUES (CAST(10 AS BIGINT)),
+  (CAST(1000 AS BIGINT)),
+  (CAST(1000000 AS BIGINT)),
+  (CAST(1000000000 AS BIGINT)),
+  (CAST(1000000000000 AS BIGINT)),
+  (CAST(1000000000000000 AS BIGINT))) AS x (size);
+
+SELECT
+  size,
+  pg_size_pretty(size),
+  pg_size_pretty(-1 * size)
+FROM
+  (VALUES (CAST(10 AS NUMERIC)),
+  (CAST(1000 AS NUMERIC)),
+  (CAST(1000000 AS NUMERIC)),
+  (CAST(1000000000 AS NUMERIC)),
+  (CAST(1000000000000 AS NUMERIC)),
+  (CAST(1000000000000000 AS NUMERIC)),
+  (CAST(10.5 AS NUMERIC)),
+  (CAST(1000.5 AS NUMERIC)),
+  (CAST(1000000.5 AS NUMERIC)),
+  (CAST(1000000000.5 AS NUMERIC)),
+  (CAST(1000000000000.5 AS NUMERIC)),
+  (CAST(1000000000000000.5 AS NUMERIC))) AS x (size);
+
+SELECT
+  size,
+  pg_size_pretty(size),
+  pg_size_pretty(-1 * size)
+FROM
+  (VALUES (CAST(10239 AS BIGINT)),
+  (CAST(10240 AS BIGINT)),
+  (CAST(10485247 AS BIGINT)),
+  (CAST(10485248 AS BIGINT)),
+  (CAST(10736893951 AS BIGINT)),
+  (CAST(10736893952 AS BIGINT)),
+  (CAST(10994579406847 AS BIGINT)),
+  (CAST(10994579406848 AS BIGINT)),
+  (CAST(11258449312612351 AS BIGINT)),
+  (CAST(11258449312612352 AS BIGINT))) AS x (size);
+
+SELECT
+  size,
+  pg_size_pretty(size),
+  pg_size_pretty(-1 * size)
+FROM
+  (VALUES (CAST(10239 AS NUMERIC)),
+  (CAST(10240 AS NUMERIC)),
+  (CAST(10485247 AS NUMERIC)),
+  (CAST(10485248 AS NUMERIC)),
+  (CAST(10736893951 AS NUMERIC)),
+  (CAST(10736893952 AS NUMERIC)),
+  (CAST(10994579406847 AS NUMERIC)),
+  (CAST(10994579406848 AS NUMERIC)),
+  (CAST(11258449312612351 AS NUMERIC)),
+  (CAST(11258449312612352 AS NUMERIC)),
+  (CAST(11528652096115048447 AS NUMERIC)),
+  (CAST(11528652096115048448 AS NUMERIC))) AS x (size);
+
+SELECT
+  pg_size_pretty(CAST('-9223372036854775808' AS BIGINT)),
+  pg_size_pretty(CAST('9223372036854775807' AS BIGINT));
+
+SELECT
+  size,
+  pg_size_bytes(size)
+FROM
+  (VALUES ('1'),
+  ('123bytes'),
+  ('256 B'),
+  ('1kB'),
+  ('1MB'),
+  (' 1 GB'),
+  ('1.5 GB '),
+  ('1TB'),
+  ('3000 TB'),
+  ('1e6 MB'),
+  ('99 PB')) AS x (size);
+
+SELECT
+  size,
+  pg_size_bytes(size)
+FROM
+  (VALUES ('1'),
+  ('123bYteS'),
+  ('1kb'),
+  ('1mb'),
+  (' 1 Gb'),
+  ('1.5 gB '),
+  ('1tb'),
+  ('3000 tb'),
+  ('1e6 mb'),
+  ('99 pb')) AS x (size);
+
+SELECT
+  size,
+  pg_size_bytes(size)
+FROM
+  (VALUES ('-1'),
+  ('-123bytes'),
+  ('-1kb'),
+  ('-1mb'),
+  (' -1 Gb'),
+  ('-1.5 gB '),
+  ('-1tb'),
+  ('-3000 TB'),
+  ('-10e-1 MB'),
+  ('-99 PB')) AS x (size);
+
+SELECT
+  size,
+  pg_size_bytes(size)
+FROM
+  (VALUES ('-1.'),
+  ('-1.kb'),
+  ('-1. kb'),
+  ('-0. gb'),
+  ('-.1'),
+  ('-.1kb'),
+  ('-.1 kb'),
+  ('-.0 gb')) AS x (size);
+
+SELECT pg_size_bytes('1 AB');
+
+SELECT pg_size_bytes('1 AB A');
+
+SELECT pg_size_bytes('1 AB A    ');
+
+SELECT pg_size_bytes('9223372036854775807.9');
+
+SELECT pg_size_bytes('1e100');
+
+SELECT pg_size_bytes('1e1000000000000000000');
+
+SELECT pg_size_bytes('1 byte');
+
+SELECT pg_size_bytes('');
+
+SELECT pg_size_bytes('kb');
+
+SELECT pg_size_bytes('..');
+
+SELECT pg_size_bytes('-.');
+
+SELECT pg_size_bytes('-.kb');
+
+SELECT pg_size_bytes('-. kb');
+
+SELECT pg_size_bytes('.+912');
+
+SELECT pg_size_bytes('+912+ kB');
+
+SELECT pg_size_bytes('++123 kB');

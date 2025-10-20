@@ -1,0 +1,1 @@
+SELECT very_long_column_name_one, very_long_column_name_two, very_long_column_name_three FROM long_table_name

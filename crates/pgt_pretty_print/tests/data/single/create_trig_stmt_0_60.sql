@@ -1,0 +1,4 @@
+CREATE TRIGGER my_trigger
+AFTER INSERT ON my_table
+FOR EACH ROW
+EXECUTE FUNCTION my_function();

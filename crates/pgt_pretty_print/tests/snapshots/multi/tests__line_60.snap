@@ -1,0 +1,84 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/line_60.sql
+snapshot_kind: text
+---
+CREATE TABLE line_tbl ( s line );
+
+INSERT INTO line_tbl VALUES ('{0,-1,5}');
+
+INSERT INTO line_tbl VALUES ('{1,0,5}');
+
+INSERT INTO line_tbl VALUES ('{0,3,0}');
+
+INSERT INTO line_tbl VALUES (' (0,0), (6,6)');
+
+INSERT INTO line_tbl VALUES ('10,-10 ,-5,-4');
+
+INSERT INTO line_tbl VALUES ('[-1e6,2e2,3e5, -4e1]');
+
+INSERT INTO line_tbl VALUES ('{3,NaN,5}');
+
+INSERT INTO line_tbl VALUES ('{NaN,NaN,NaN}');
+
+INSERT INTO line_tbl VALUES ('[(1,3),(2,3)]');
+
+INSERT INTO line_tbl
+VALUES (line(CAST('(3,1)' AS point),
+CAST('(3,2)' AS point)));
+
+INSERT INTO line_tbl VALUES ('{}');
+
+INSERT INTO line_tbl VALUES ('{0');
+
+INSERT INTO line_tbl VALUES ('{0,0}');
+
+INSERT INTO line_tbl VALUES ('{0,0,1');
+
+INSERT INTO line_tbl VALUES ('{0,0,1}');
+
+INSERT INTO line_tbl VALUES ('{0,0,1} x');
+
+INSERT INTO line_tbl VALUES ('(3asdf,2 ,3,4r2)');
+
+INSERT INTO line_tbl VALUES ('[1,2,3, 4');
+
+INSERT INTO line_tbl VALUES ('[(,2),(3,4)]');
+
+INSERT INTO line_tbl VALUES ('[(1,2),(3,4)');
+
+INSERT INTO line_tbl VALUES ('[(1,2),(1,2)]');
+
+INSERT INTO line_tbl
+VALUES (line(CAST('(1,0)' AS point),
+CAST('(1,0)' AS point)));
+
+SELECT * FROM line_tbl;
+
+SELECT
+  CAST('{nan, 1, nan}' AS line) = CAST('{nan, 1, nan}' AS line) AS "true",
+  CAST('{nan, 1, nan}' AS line) = CAST('{nan, 2, nan}' AS line) AS "false";
+
+SELECT pg_input_is_valid('{1, 1}', 'line');
+
+SELECT * FROM pg_input_error_info('{1, 1}', 'line');
+
+SELECT pg_input_is_valid('{0, 0, 0}', 'line');
+
+SELECT * FROM pg_input_error_info('{0, 0, 0}', 'line');
+
+SELECT pg_input_is_valid('{1, 1, a}', 'line');
+
+SELECT * FROM pg_input_error_info('{1, 1, a}', 'line');
+
+SELECT pg_input_is_valid('{1, 1, 1e400}', 'line');
+
+SELECT * FROM pg_input_error_info('{1, 1, 1e400}', 'line');
+
+SELECT pg_input_is_valid('(1, 1), (1, 1e400)', 'line');
+
+SELECT
+  *
+FROM
+  pg_input_error_info('(1, 1), (1, 1e400)',
+  'line');

@@ -1,0 +1,334 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/alter_operator_60.sql
+snapshot_kind: text
+---
+CREATE FUNCTION alter_op_test_fn(
+  pg_catalog.bool,
+  pg_catalog.bool
+) RETURNS pg_catalog.bool AS ' SELECT NULL::BOOLEAN; ' LANGUAGE "sql" IMMUTABLE;
+
+CREATE FUNCTION customcontsel(
+  internal,
+  oid,
+  internal,
+  pg_catalog.int4
+) RETURNS float8 AS 'contsel' LANGUAGE "internal" STABLE STRICT;
+
+CREATE OPERATOR === (LEFTARG = pg_catalog.bool,
+RIGHTARG = pg_catalog.bool,
+PROCEDURE = alter_op_test_fn,
+COMMUTATOR = ===,
+NEGATOR = !==,
+RESTRICT = customcontsel,
+JOIN = contjoinsel,
+HASHES,
+MERGES);
+
+SELECT
+  pg_describe_object(refclassid,
+  refobjid,
+  refobjsubid) AS "ref",
+  deptype
+FROM
+  pg_depend
+WHERE classid = CAST('pg_operator' AS regclass) AND
+objid = CAST('===(bool,bool)' AS regoperator)
+ORDER BY 1;
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (restrict = NONE);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (join = NONE);
+
+SELECT
+  oprrest,
+  oprjoin
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('boolean' AS regtype);
+
+SELECT
+  pg_describe_object(refclassid,
+  refobjid,
+  refobjsubid) AS "ref",
+  deptype
+FROM
+  pg_depend
+WHERE classid = CAST('pg_operator' AS regclass) AND
+objid = CAST('===(bool,bool)' AS regoperator)
+ORDER BY 1;
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (restrict = contsel);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (join = contjoinsel);
+
+SELECT
+  oprrest,
+  oprjoin
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('boolean' AS regtype);
+
+SELECT
+  pg_describe_object(refclassid,
+  refobjid,
+  refobjsubid) AS "ref",
+  deptype
+FROM
+  pg_depend
+WHERE classid = CAST('pg_operator' AS regclass) AND
+objid = CAST('===(bool,bool)' AS regoperator)
+ORDER BY 1;
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (restrict = NONE,
+join = NONE);
+
+SELECT
+  oprrest,
+  oprjoin
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('boolean' AS regtype);
+
+SELECT
+  pg_describe_object(refclassid,
+  refobjid,
+  refobjsubid) AS "ref",
+  deptype
+FROM
+  pg_depend
+WHERE classid = CAST('pg_operator' AS regclass) AND
+objid = CAST('===(bool,bool)' AS regoperator)
+ORDER BY 1;
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (restrict = customcontsel,
+join = contjoinsel);
+
+SELECT
+  oprrest,
+  oprjoin
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('boolean' AS regtype);
+
+SELECT
+  pg_describe_object(refclassid,
+  refobjid,
+  refobjsubid) AS "ref",
+  deptype
+FROM
+  pg_depend
+WHERE classid = CAST('pg_operator' AS regclass) AND
+objid = CAST('===(bool,bool)' AS regoperator)
+ORDER BY 1;
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (restrict = non_existent_func);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (join = non_existent_func);
+
+ALTER OPERATOR & (pg_catalog.bit(1),
+pg_catalog.bit(1)) SET ("Restrict" = _int_contsel,
+"Join" = _int_contjoinsel);
+
+CREATE USER regress_alter_op_user;
+
+SET SESSION AUTHORIZATION regress_alter_op_user;
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.bool) SET (restrict = NONE);
+
+RESET session_authorization;
+
+CREATE FUNCTION alter_op_test_fn_bool_real(
+  pg_catalog.bool,
+  pg_catalog.float4
+) RETURNS pg_catalog.bool AS ' SELECT NULL::BOOLEAN; ' LANGUAGE "sql" IMMUTABLE;
+
+CREATE FUNCTION alter_op_test_fn_real_bool(
+  pg_catalog.float4,
+  pg_catalog.bool
+) RETURNS pg_catalog.bool AS ' SELECT NULL::BOOLEAN; ' LANGUAGE "sql" IMMUTABLE;
+
+CREATE OPERATOR === (LEFTARG = pg_catalog.bool,
+RIGHTARG = pg_catalog.float4,
+PROCEDURE = alter_op_test_fn_bool_real);
+
+CREATE OPERATOR ==== (LEFTARG = pg_catalog.float4,
+RIGHTARG = pg_catalog.bool,
+PROCEDURE = alter_op_test_fn_real_bool);
+
+CREATE OPERATOR !==== (LEFTARG = pg_catalog.bool,
+RIGHTARG = pg_catalog.float4,
+PROCEDURE = alter_op_test_fn_bool_real);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (merges = 'false');
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (hashes = 'false');
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (merges);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (hashes);
+
+SELECT
+  oprcanmerge,
+  oprcanhash
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('real' AS regtype);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (commutator = ====);
+
+SELECT
+  op.oprname AS "operator_name",
+  com.oprname AS "commutator_name",
+  com.oprcode AS "commutator_func"
+FROM
+  pg_operator AS op
+  INNER JOIN pg_operator AS com
+  ON op.oid = com.oprcom AND
+    op.oprcom = com.oid
+WHERE op.oprname = '===' AND
+op.oprleft = CAST('boolean' AS regtype) AND
+op.oprright = CAST('real' AS regtype);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (negator = ===);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (negator = !====);
+
+SELECT
+  op.oprname AS "operator_name",
+  neg.oprname AS "negator_name",
+  neg.oprcode AS "negator_func"
+FROM
+  pg_operator AS op
+  INNER JOIN pg_operator AS neg
+  ON op.oid = neg.oprnegate AND
+    op.oprnegate = neg.oid
+WHERE op.oprname = '===' AND
+op.oprleft = CAST('boolean' AS regtype) AND
+op.oprright = CAST('real' AS regtype);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (negator = !====);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (commutator = ====);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (merges);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (hashes);
+
+SELECT
+  oprcanmerge,
+  oprcanhash,
+  pg_describe_object(CAST('pg_operator' AS regclass),
+  oprcom,
+  0) AS "commutator",
+  pg_describe_object(CAST('pg_operator' AS regclass),
+  oprnegate,
+  0) AS "negator"
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('real' AS regtype);
+
+CREATE OPERATOR @= (LEFTARG = pg_catalog.float4,
+RIGHTARG = pg_catalog.bool,
+PROCEDURE = alter_op_test_fn_real_bool);
+
+CREATE OPERATOR @!= (LEFTARG = pg_catalog.bool,
+RIGHTARG = pg_catalog.float4,
+PROCEDURE = alter_op_test_fn_bool_real);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (commutator = @=);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (negator = @!=);
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (merges = 'false');
+
+ALTER OPERATOR === (pg_catalog.bool,
+pg_catalog.float4) SET (hashes = 'false');
+
+ALTER OPERATOR @= (pg_catalog.float4,
+pg_catalog.bool) SET (commutator = ===);
+
+ALTER OPERATOR @!= (pg_catalog.bool,
+pg_catalog.float4) SET (negator = ===);
+
+SELECT
+  oprcanmerge,
+  oprcanhash,
+  pg_describe_object(CAST('pg_operator' AS regclass),
+  oprcom,
+  0) AS "commutator",
+  pg_describe_object(CAST('pg_operator' AS regclass),
+  oprnegate,
+  0) AS "negator"
+FROM
+  pg_operator
+WHERE oprname = '===' AND
+oprleft = CAST('boolean' AS regtype) AND
+oprright = CAST('real' AS regtype);
+
+DROP ROLE regress_alter_op_user;
+
+DROP OPERATOR === (pg_catalog.bool, pg_catalog.bool);
+
+DROP OPERATOR === (pg_catalog.bool, pg_catalog.float4);
+
+DROP OPERATOR ==== (pg_catalog.float4, pg_catalog.bool);
+
+DROP OPERATOR !==== (pg_catalog.bool, pg_catalog.float4);
+
+DROP OPERATOR @= (pg_catalog.float4, pg_catalog.bool);
+
+DROP OPERATOR @!= (pg_catalog.bool, pg_catalog.float4);
+
+DROP FUNCTION customcontsel(
+  internal,
+  oid,
+  internal,
+  pg_catalog.int4);
+
+DROP FUNCTION alter_op_test_fn(
+  pg_catalog.bool,
+  pg_catalog.bool);
+
+DROP FUNCTION alter_op_test_fn_bool_real(
+  pg_catalog.bool,
+  pg_catalog.float4);
+
+DROP FUNCTION alter_op_test_fn_real_bool(
+  pg_catalog.float4,
+  pg_catalog.bool);

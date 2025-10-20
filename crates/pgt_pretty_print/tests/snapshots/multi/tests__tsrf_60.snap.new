@@ -1,0 +1,565 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 174
+input_file: crates/pgt_pretty_print/tests/data/multi/tsrf_60.sql
+---
+SELECT generate_series(1, 3);
+
+SELECT generate_series(1, 3), generate_series(3, 5);
+
+SELECT generate_series(1, 2), generate_series(1, 4);
+
+SELECT generate_series(1, generate_series(1, 3));
+
+SELECT * FROM generate_series(1, generate_series(1, 3));
+
+SELECT
+  generate_series(generate_series(1,
+  3),
+  generate_series(2,
+  4));
+
+SELECT
+  generate_series(1,
+  generate_series(1,
+  3)),
+  generate_series(2,
+  4);
+
+SELECT
+  generate_series(1,
+  generate_series(1,
+  3)),
+  generate_series(2,
+  4);
+
+CREATE TABLE few ( id INT, dataa TEXT, datab TEXT );
+
+INSERT INTO few
+VALUES (1,
+'a',
+'foo'),
+(2,
+'a',
+'bar'),
+(3,
+'b',
+'bar');
+
+SELECT unnest(ARRAY[1, 2]) FROM few WHERE FALSE;
+
+SELECT unnest(ARRAY[1, 2]) FROM few WHERE FALSE;
+
+SELECT
+  *
+FROM
+  few AS f1,
+  (SELECT
+    unnest(ARRAY[1,
+    2])
+  FROM
+    few AS f2
+  WHERE FALSE
+  OFFSET 0) AS ss;
+
+SELECT
+  *
+FROM
+  few AS f1,
+  (SELECT
+    unnest(ARRAY[1,
+    2])
+  FROM
+    few AS f2
+  WHERE FALSE
+  OFFSET 0) AS ss;
+
+SELECT
+  few.id,
+  generate_series(1,
+  3) AS "g"
+FROM
+  few
+ORDER BY id DESC;
+
+SELECT
+  few.id,
+  generate_series(1,
+  3) AS "g"
+FROM
+  few
+ORDER BY id,
+  g DESC;
+
+SELECT
+  few.id,
+  generate_series(1,
+  3) AS "g"
+FROM
+  few
+ORDER BY id,
+  generate_series(1,
+  3) DESC;
+
+SELECT
+  few.id
+FROM
+  few
+ORDER BY id,
+  generate_series(1,
+  3) DESC;
+
+SET enable_hashagg = 0;
+
+SELECT
+  few.dataa,
+  COUNT(*),
+  MIN(id),
+  MAX(id),
+  unnest(CAST('{1,1,3}' AS INT[]))
+FROM
+  few
+WHERE few.id = 1
+GROUP BY few.dataa;
+
+SELECT
+  few.dataa,
+  COUNT(*),
+  MIN(id),
+  MAX(id),
+  unnest(CAST('{1,1,3}' AS INT[]))
+FROM
+  few
+WHERE few.id = 1
+GROUP BY few.dataa,
+  unnest(CAST('{1,1,3}' AS INT[]));
+
+SELECT
+  few.dataa,
+  COUNT(*),
+  MIN(id),
+  MAX(id),
+  unnest(CAST('{1,1,3}' AS INT[]))
+FROM
+  few
+WHERE few.id = 1
+GROUP BY few.dataa,
+  5;
+
+RESET enable_hashagg;
+
+SELECT
+  dataa,
+  generate_series(1,
+  1),
+  COUNT(*)
+FROM
+  few
+GROUP BY 1
+HAVING COUNT(*) > 1;
+
+SELECT
+  dataa,
+  generate_series(1,
+  1),
+  COUNT(*)
+FROM
+  few
+GROUP BY 1,
+  2
+HAVING COUNT(*) > 1;
+
+SELECT
+  few.dataa,
+  COUNT(*)
+FROM
+  few
+WHERE dataa = 'a'
+GROUP BY few.dataa
+ORDER BY 2;
+
+SELECT
+  few.dataa,
+  COUNT(*)
+FROM
+  few
+WHERE dataa = 'a'
+GROUP BY few.dataa,
+  unnest(CAST('{1,1,3}' AS INT[]))
+ORDER BY 2;
+
+SELECT
+  q1,
+  CASE
+  WHEN q1 > 0 THEN generate_series(1,
+  3)
+  ELSE 0
+  END
+FROM
+  int8_tbl;
+
+SELECT q1, COALESCE(generate_series(1, 3), 0) FROM int8_tbl;
+
+SELECT MIN(generate_series(1, 3)) FROM few;
+
+SELECT
+  SUM(CAST(3 = ANY (SELECT
+    generate_series(1,
+    4)) AS INT));
+
+SELECT
+  SUM(CAST(3 = ANY (SELECT
+    LAG(x)
+    OVER (
+    ORDER BY x)
+  FROM
+    generate_series(1,
+    4) AS x) AS INT));
+
+SELECT MIN(generate_series(1, 3)) OVER () FROM few;
+
+SELECT
+  id,
+  LAG(id)
+  OVER (),
+  COUNT(*)
+  OVER (),
+  generate_series(1,
+  3)
+FROM
+  few;
+
+SELECT
+  SUM(COUNT(*))
+  OVER (
+  PARTITION BY generate_series(1,
+  3)
+  ORDER BY generate_series(1,
+  3)),
+  generate_series(1,
+  3) AS "g"
+FROM
+  few
+GROUP BY g;
+
+SELECT
+  few.dataa,
+  COUNT(*),
+  MIN(id),
+  MAX(id),
+  generate_series(1,
+  3)
+FROM
+  few
+GROUP BY few.dataa
+ORDER BY 5,
+  1;
+
+SET enable_hashagg = false;
+
+SELECT
+  dataa,
+  datab AS "b",
+  generate_series(1,
+  2) AS "g",
+  COUNT(*)
+FROM
+  few
+GROUP BY CUBE (dataa,
+  datab);
+
+SELECT
+  dataa,
+  datab AS "b",
+  generate_series(1,
+  2) AS "g",
+  COUNT(*)
+FROM
+  few
+GROUP BY CUBE (dataa,
+  datab)
+ORDER BY dataa;
+
+SELECT
+  dataa,
+  datab AS "b",
+  generate_series(1,
+  2) AS "g",
+  COUNT(*)
+FROM
+  few
+GROUP BY CUBE (dataa,
+  datab)
+ORDER BY g;
+
+SELECT
+  dataa,
+  datab AS "b",
+  generate_series(1,
+  2) AS "g",
+  COUNT(*)
+FROM
+  few
+GROUP BY CUBE (dataa,
+  datab,
+  g);
+
+SELECT
+  dataa,
+  datab AS "b",
+  generate_series(1,
+  2) AS "g",
+  COUNT(*)
+FROM
+  few
+GROUP BY CUBE (dataa,
+  datab,
+  g)
+ORDER BY dataa;
+
+SELECT
+  dataa,
+  datab AS "b",
+  generate_series(1,
+  2) AS "g",
+  COUNT(*)
+FROM
+  few
+GROUP BY CUBE (dataa,
+  datab,
+  g)
+ORDER BY g;
+
+RESET enable_hashagg;
+
+SELECT
+  'foo' AS "f",
+  generate_series(1,
+  2) AS "g"
+FROM
+  few
+ORDER BY 1;
+
+SELECT
+  'foo' AS "f",
+  generate_series(1,
+  2) AS "g"
+FROM
+  few
+ORDER BY 1;
+
+CREATE TABLE fewmore AS
+  SELECT
+    generate_series(1,
+    3) AS "data";
+
+INSERT INTO fewmore VALUES (generate_series(4, 5));
+
+SELECT * FROM fewmore;
+
+UPDATE fewmore SET data = generate_series(4, 9);
+
+INSERT INTO fewmore
+VALUES (1)
+RETURNING generate_series(1,
+3);
+
+VALUES (1, generate_series(1, 2));
+
+SELECT int4mul(generate_series(1, 2), 10);
+
+SELECT generate_series(1, 3) IS DISTINCT FROM 2;
+
+SELECT * FROM int4mul(generate_series(1, 2), 10);
+
+SELECT DISTINCT ON (
+  a)
+  a,
+  b,
+  generate_series(1,
+  3) AS "g"
+FROM
+  (VALUES (3,
+  2),
+  (3,
+  1),
+  (1,
+  1),
+  (1,
+  4),
+  (5,
+  3),
+  (5,
+  1)) AS t (a,
+  b);
+
+SELECT DISTINCT ON (
+  a)
+  a,
+  b,
+  generate_series(1,
+  3) AS "g"
+FROM
+  (VALUES (3,
+  2),
+  (3,
+  1),
+  (1,
+  1),
+  (1,
+  4),
+  (5,
+  3),
+  (5,
+  1)) AS t (a,
+  b)
+ORDER BY a,
+  b DESC;
+
+SELECT DISTINCT ON (
+  a)
+  a,
+  b,
+  generate_series(1,
+  3) AS "g"
+FROM
+  (VALUES (3,
+  2),
+  (3,
+  1),
+  (1,
+  1),
+  (1,
+  4),
+  (5,
+  3),
+  (5,
+  1)) AS t (a,
+  b)
+ORDER BY a,
+  b DESC,
+  g DESC;
+
+SELECT DISTINCT ON (
+  a,
+  b,
+  g)
+  a,
+  b,
+  generate_series(1,
+  3) AS "g"
+FROM
+  (VALUES (3,
+  2),
+  (3,
+  1),
+  (1,
+  1),
+  (1,
+  4),
+  (5,
+  3),
+  (5,
+  1)) AS t (a,
+  b)
+ORDER BY a,
+  b DESC,
+  g DESC;
+
+SELECT DISTINCT ON (
+  g)
+  a,
+  b,
+  generate_series(1,
+  3) AS "g"
+FROM
+  (VALUES (3,
+  2),
+  (3,
+  1),
+  (1,
+  1),
+  (1,
+  4),
+  (5,
+  3),
+  (5,
+  1)) AS t (a,
+  b);
+
+SELECT
+  a,
+  generate_series(1,
+  2)
+FROM
+  (VALUES (1),
+  (2),
+  (3)) AS r (a)
+LIMIT 2
+OFFSET 2;
+
+SELECT 1 LIMIT generate_series(1, 3);
+
+SELECT
+  (SELECT
+    generate_series(1,
+    3)
+  LIMIT 1
+  OFFSET few.id)
+FROM
+  few;
+
+SELECT
+  (SELECT
+    generate_series(1,
+    3)
+  LIMIT 1
+  OFFSET g.i)
+FROM
+  generate_series(0,
+  3) AS g (i);
+
+CREATE OPERATOR |@| (PROCEDURE = unnest,
+RIGHTARG = ANYARRAY);
+
+SELECT |@|ARRAY[1, 2, 3];
+
+SELECT
+  generate_series(1,
+  3) AS "x",
+  generate_series(1,
+  3) + 1 AS "xp1";
+
+SELECT
+  generate_series(1,
+  3) AS "x",
+  generate_series(1,
+  3) + 1 AS "xp1";
+
+SELECT
+  generate_series(1,
+  3) + 1
+ORDER BY generate_series(1,
+  3);
+
+SELECT
+  generate_series(1,
+  3) + 1
+ORDER BY generate_series(1,
+  3);
+
+SELECT
+  generate_series(1,
+  3) AS "x",
+  generate_series(3,
+  6) + 1 AS "y";
+
+SELECT
+  generate_series(1,
+  3) AS "x",
+  generate_series(3,
+  6) + 1 AS "y";
+
+DROP TABLE "few";
+
+DROP TABLE "fewmore";

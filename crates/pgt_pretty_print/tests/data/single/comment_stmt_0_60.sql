@@ -1,0 +1,1 @@
+COMMENT ON TABLE customers IS 'Customer information';

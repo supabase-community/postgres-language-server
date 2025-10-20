@@ -1,0 +1,121 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/json_encoding_60.sql
+snapshot_kind: text
+---
+SELECT
+  getdatabaseencoding() NOT IN ('UTF8',
+  'SQL_ASCII') AS "skip_test";
+
+SELECT getdatabaseencoding();
+
+SELECT CAST('"\u"' AS JSON);
+
+SELECT CAST('"\u00"' AS JSON);
+
+SELECT CAST('"\u000g"' AS JSON);
+
+SELECT CAST('"\u0000"' AS JSON);
+
+SELECT CAST('"\uaBcD"' AS JSON);
+
+SELECT
+  CAST('{ "a":  "\ud83d\ude04\ud83d\udc36" }' AS JSON) -> 'a' AS "correct_in_utf8";
+
+SELECT CAST('{ "a":  "\ud83d\ud83d" }' AS JSON) -> 'a';
+
+SELECT CAST('{ "a":  "\ude04\ud83d" }' AS JSON) -> 'a';
+
+SELECT CAST('{ "a":  "\ud83dX" }' AS JSON) -> 'a';
+
+SELECT CAST('{ "a":  "\ude04X" }' AS JSON) -> 'a';
+
+SELECT
+  CAST('{ "a":  "the Copyright \u00a9 sign" }' AS JSON) AS "correct_in_utf8";
+
+SELECT
+  CAST('{ "a":  "dollar \u0024 character" }' AS JSON) AS "correct_everywhere";
+
+SELECT
+  CAST('{ "a":  "dollar \\u0024 character" }' AS JSON) AS "not_an_escape";
+
+SELECT
+  CAST('{ "a":  "null \u0000 escape" }' AS JSON) AS "not_unescaped";
+
+SELECT
+  CAST('{ "a":  "null \\u0000 escape" }' AS JSON) AS "not_an_escape";
+
+SELECT
+  CAST('{ "a":  "the Copyright \u00a9 sign" }' AS JSON) ->> 'a' AS "correct_in_utf8";
+
+SELECT
+  CAST('{ "a":  "dollar \u0024 character" }' AS JSON) ->> 'a' AS "correct_everywhere";
+
+SELECT
+  CAST('{ "a":  "dollar \\u0024 character" }' AS JSON) ->> 'a' AS "not_an_escape";
+
+SELECT
+  CAST('{ "a":  "null \u0000 escape" }' AS JSON) ->> 'a' AS "fails";
+
+SELECT
+  CAST('{ "a":  "null \\u0000 escape" }' AS JSON) ->> 'a' AS "not_an_escape";
+
+SELECT CAST('"\u"' AS JSONB);
+
+SELECT CAST('"\u00"' AS JSONB);
+
+SELECT CAST('"\u000g"' AS JSONB);
+
+SELECT CAST('"\u0045"' AS JSONB);
+
+SELECT CAST('"\u0000"' AS JSONB);
+
+SELECT
+  octet_length(CAST(CAST('"\uaBcD"' AS JSONB) AS TEXT));
+
+SELECT
+  octet_length(CAST(CAST('{ "a":  "\ud83d\ude04\ud83d\udc36" }' AS JSONB) -> 'a' AS TEXT)) AS "correct_in_utf8";
+
+SELECT CAST('{ "a":  "\ud83d\ud83d" }' AS JSONB) -> 'a';
+
+SELECT CAST('{ "a":  "\ude04\ud83d" }' AS JSONB) -> 'a';
+
+SELECT CAST('{ "a":  "\ud83dX" }' AS JSONB) -> 'a';
+
+SELECT CAST('{ "a":  "\ude04X" }' AS JSONB) -> 'a';
+
+SELECT
+  CAST('{ "a":  "the Copyright \u00a9 sign" }' AS JSONB) AS "correct_in_utf8";
+
+SELECT
+  CAST('{ "a":  "dollar \u0024 character" }' AS JSONB) AS "correct_everywhere";
+
+SELECT
+  CAST('{ "a":  "dollar \\u0024 character" }' AS JSONB) AS "not_an_escape";
+
+SELECT
+  CAST('{ "a":  "null \u0000 escape" }' AS JSONB) AS "fails";
+
+SELECT
+  CAST('{ "a":  "null \\u0000 escape" }' AS JSONB) AS "not_an_escape";
+
+SELECT
+  CAST('{ "a":  "the Copyright \u00a9 sign" }' AS JSONB) ->> 'a' AS "correct_in_utf8";
+
+SELECT
+  CAST('{ "a":  "dollar \u0024 character" }' AS JSONB) ->> 'a' AS "correct_everywhere";
+
+SELECT
+  CAST('{ "a":  "dollar \\u0024 character" }' AS JSONB) ->> 'a' AS "not_an_escape";
+
+SELECT
+  CAST('{ "a":  "null \u0000 escape" }' AS JSONB) ->> 'a' AS "fails";
+
+SELECT
+  CAST('{ "a":  "null \\u0000 escape" }' AS JSONB) ->> 'a' AS "not_an_escape";
+
+SELECT
+  *
+FROM
+  pg_input_error_info('{ "a":  "\ud83d\ude04\ud83d\udc36" }',
+  'jsonb');

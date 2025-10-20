@@ -1,0 +1,89 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 174
+input_file: crates/pgt_pretty_print/tests/data/multi/create_cast_60.sql
+---
+CREATE TYPE casttesttype;
+
+CREATE FUNCTION casttesttype_in(
+  cstring
+) RETURNS casttesttype AS 'textin' LANGUAGE "internal" STRICT IMMUTABLE;
+
+CREATE FUNCTION casttesttype_out(
+  casttesttype
+) RETURNS cstring AS 'textout' LANGUAGE "internal" STRICT IMMUTABLE;
+
+CREATE TYPE casttesttype (internallength = variable,
+input = casttesttype_in,
+output = casttesttype_out,
+alignment = INT);
+
+CREATE FUNCTION casttestfunc(
+  casttesttype
+) RETURNS INT LANGUAGE "sql" AS ' SELECT 1; ';
+
+SELECT casttestfunc(CAST('foo' AS TEXT));
+
+CREATE CAST (TEXT AS casttesttype) WITHOUT FUNCTION;
+
+SELECT casttestfunc(CAST('foo' AS TEXT));
+
+SELECT
+  casttestfunc(CAST(CAST('foo' AS TEXT) AS casttesttype));
+
+DROP CAST (TEXT AS casttesttype);
+
+CREATE CAST (TEXT AS casttesttype)
+WITHOUT FUNCTION
+AS IMPLICIT;
+
+SELECT casttestfunc(CAST('foo' AS TEXT));
+
+SELECT CAST(CAST(1234 AS INT) AS casttesttype);
+
+CREATE CAST (INT AS casttesttype) WITH INOUT;
+
+SELECT CAST(CAST(1234 AS INT) AS casttesttype);
+
+DROP CAST (INT AS casttesttype);
+
+CREATE FUNCTION int4_casttesttype(
+  INT
+) RETURNS casttesttype LANGUAGE "sql" AS ' SELECT (''foo''::text || $1::text)::casttesttype; ';
+
+CREATE CAST (INT AS casttesttype)
+WITH FUNCTION int4_casttesttype(INT)
+AS IMPLICIT;
+
+SELECT CAST(CAST(1234 AS INT) AS casttesttype);
+
+DROP FUNCTION int4_casttesttype(INT) CASCADE;
+
+CREATE FUNCTION bar_int4_text(
+  INT
+) RETURNS TEXT LANGUAGE "sql" AS ' SELECT (''bar''::text || $1::text); ';
+
+CREATE CAST (INT AS casttesttype)
+WITH FUNCTION bar_int4_text(INT)
+AS IMPLICIT;
+
+SELECT CAST(CAST(1234 AS INT) AS casttesttype);
+
+SELECT
+  pg_describe_object(classid,
+  objid,
+  objsubid) AS "obj",
+  pg_describe_object(refclassid,
+  refobjid,
+  refobjsubid) AS "objref",
+  deptype
+FROM
+  pg_depend
+WHERE classid = CAST('pg_cast' AS REGCLASS) AND
+objid = (SELECT
+  oid
+FROM
+  pg_cast
+WHERE castsource = CAST('int4' AS REGTYPE) AND
+casttarget = CAST('casttesttype' AS REGTYPE))
+ORDER BY refclassid;

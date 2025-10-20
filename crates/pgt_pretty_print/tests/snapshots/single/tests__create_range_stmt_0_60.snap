@@ -1,0 +1,7 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/single/create_range_stmt_0_60.sql
+snapshot_kind: text
+---
+CREATE TYPE float8_range AS RANGE (subtype = float8,
+subtype_diff = float8mi);

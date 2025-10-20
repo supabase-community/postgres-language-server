@@ -1,0 +1,82 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/jsonpath_encoding_60.sql
+snapshot_kind: text
+---
+SELECT
+  getdatabaseencoding() NOT IN ('UTF8',
+  'SQL_ASCII') AS "skip_test";
+
+SELECT getdatabaseencoding();
+
+SELECT CAST('"\u"' AS jsonpath);
+
+SELECT CAST('"\u00"' AS jsonpath);
+
+SELECT CAST('"\u000g"' AS jsonpath);
+
+SELECT CAST('"\u0000"' AS jsonpath);
+
+SELECT CAST('"\uaBcD"' AS jsonpath);
+
+SELECT
+  CAST('"\ud83d\ude04\ud83d\udc36"' AS jsonpath) AS "correct_in_utf8";
+
+SELECT CAST('"\ud83d\ud83d"' AS jsonpath);
+
+SELECT CAST('"\ude04\ud83d"' AS jsonpath);
+
+SELECT CAST('"\ud83dX"' AS jsonpath);
+
+SELECT CAST('"\ude04X"' AS jsonpath);
+
+SELECT
+  CAST('"the Copyright \u00a9 sign"' AS jsonpath) AS "correct_in_utf8";
+
+SELECT
+  CAST('"dollar \u0024 character"' AS jsonpath) AS "correct_everywhere";
+
+SELECT
+  CAST('"dollar \\u0024 character"' AS jsonpath) AS "not_an_escape";
+
+SELECT
+  CAST('"null \u0000 escape"' AS jsonpath) AS "not_unescaped";
+
+SELECT
+  CAST('"null \\u0000 escape"' AS jsonpath) AS "not_an_escape";
+
+SELECT CAST('$."\u"' AS jsonpath);
+
+SELECT CAST('$."\u00"' AS jsonpath);
+
+SELECT CAST('$."\u000g"' AS jsonpath);
+
+SELECT CAST('$."\u0000"' AS jsonpath);
+
+SELECT CAST('$."\uaBcD"' AS jsonpath);
+
+SELECT
+  CAST('$."\ud83d\ude04\ud83d\udc36"' AS jsonpath) AS "correct_in_utf8";
+
+SELECT CAST('$."\ud83d\ud83d"' AS jsonpath);
+
+SELECT CAST('$."\ude04\ud83d"' AS jsonpath);
+
+SELECT CAST('$."\ud83dX"' AS jsonpath);
+
+SELECT CAST('$."\ude04X"' AS jsonpath);
+
+SELECT
+  CAST('$."the Copyright \u00a9 sign"' AS jsonpath) AS "correct_in_utf8";
+
+SELECT
+  CAST('$."dollar \u0024 character"' AS jsonpath) AS "correct_everywhere";
+
+SELECT
+  CAST('$."dollar \\u0024 character"' AS jsonpath) AS "not_an_escape";
+
+SELECT
+  CAST('$."null \u0000 escape"' AS jsonpath) AS "not_unescaped";
+
+SELECT
+  CAST('$."null \\u0000 escape"' AS jsonpath) AS "not_an_escape";

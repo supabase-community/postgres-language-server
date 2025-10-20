@@ -1,0 +1,739 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/timestamp_60.sql
+snapshot_kind: text
+---
+CREATE TABLE timestamp_tbl ( d1 TIMESTAMP(2) );
+
+BEGIN;
+
+INSERT INTO timestamp_tbl VALUES ('today');
+
+INSERT INTO timestamp_tbl VALUES ('yesterday');
+
+INSERT INTO timestamp_tbl VALUES ('tomorrow');
+
+INSERT INTO timestamp_tbl VALUES ('tomorrow EST');
+
+INSERT INTO timestamp_tbl VALUES ('tomorrow zulu');
+
+SELECT
+  COUNT(*) AS "one"
+FROM
+  timestamp_tbl
+WHERE d1 = CAST('today' AS TIMESTAMP);
+
+SELECT
+  COUNT(*) AS "three"
+FROM
+  timestamp_tbl
+WHERE d1 = CAST('tomorrow' AS TIMESTAMP);
+
+SELECT
+  COUNT(*) AS "one"
+FROM
+  timestamp_tbl
+WHERE d1 = CAST('yesterday' AS TIMESTAMP);
+
+COMMIT;
+
+DELETE FROM timestamp_tbl;
+
+INSERT INTO timestamp_tbl VALUES ('now');
+
+SELECT pg_sleep(0.1);
+
+BEGIN;
+
+INSERT INTO timestamp_tbl VALUES ('now');
+
+SELECT pg_sleep(0.1);
+
+INSERT INTO timestamp_tbl VALUES ('now');
+
+SELECT pg_sleep(0.1);
+
+SELECT
+  COUNT(*) AS "two"
+FROM
+  timestamp_tbl
+WHERE d1 = CAST('now' AS TIMESTAMP(2));
+
+SELECT
+  COUNT(d1) AS "three",
+  COUNT(DISTINCT d1) AS "two"
+FROM
+  timestamp_tbl;
+
+COMMIT;
+
+TRUNCATE timestamp_tbl;
+
+INSERT INTO timestamp_tbl VALUES ('-infinity');
+
+INSERT INTO timestamp_tbl VALUES ('infinity');
+
+INSERT INTO timestamp_tbl VALUES ('epoch');
+
+SELECT
+  CAST('infinity' AS TIMESTAMP) = CAST('+infinity' AS TIMESTAMP) AS "t";
+
+INSERT INTO timestamp_tbl
+VALUES ('Mon Feb 10 17:32:01 1997 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('Mon Feb 10 17:32:01.000001 1997 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('Mon Feb 10 17:32:01.999999 1997 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('Mon Feb 10 17:32:01.4 1997 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('Mon Feb 10 17:32:01.5 1997 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('Mon Feb 10 17:32:01.6 1997 PST');
+
+INSERT INTO timestamp_tbl VALUES ('1997-01-02');
+
+INSERT INTO timestamp_tbl VALUES ('1997-01-02 03:04:05');
+
+INSERT INTO timestamp_tbl VALUES ('1997-02-10 17:32:01-08');
+
+INSERT INTO timestamp_tbl
+VALUES ('1997-02-10 17:32:01-0800');
+
+INSERT INTO timestamp_tbl
+VALUES ('1997-02-10 17:32:01 -08:00');
+
+INSERT INTO timestamp_tbl VALUES ('19970210 173201 -0800');
+
+INSERT INTO timestamp_tbl
+VALUES ('1997-06-10 17:32:01 -07:00');
+
+INSERT INTO timestamp_tbl VALUES ('2001-09-22T18:19:20');
+
+INSERT INTO timestamp_tbl
+VALUES ('2000-03-15 08:14:01 GMT+8');
+
+INSERT INTO timestamp_tbl
+VALUES ('2000-03-15 13:14:02 GMT-1');
+
+INSERT INTO timestamp_tbl
+VALUES ('2000-03-15 12:14:03 GMT-2');
+
+INSERT INTO timestamp_tbl
+VALUES ('2000-03-15 03:14:04 PST+8');
+
+INSERT INTO timestamp_tbl
+VALUES ('2000-03-15 02:14:05 MST+7:00');
+
+INSERT INTO timestamp_tbl
+VALUES ('Feb 10 17:32:01 1997 -0800');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 10 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 10 5:32PM 1997');
+
+INSERT INTO timestamp_tbl
+VALUES ('1997/02/10 17:32:01-0800');
+
+INSERT INTO timestamp_tbl
+VALUES ('1997-02-10 17:32:01 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('Feb-10-1997 17:32:01 PST');
+
+INSERT INTO timestamp_tbl
+VALUES ('02-10-1997 17:32:01 PST');
+
+INSERT INTO timestamp_tbl VALUES ('19970210 173201 PST');
+
+SET datestyle = ymd;
+
+INSERT INTO timestamp_tbl VALUES ('97FEB10 5:32:01PM UTC');
+
+INSERT INTO timestamp_tbl VALUES ('97/02/10 17:32:01 UTC');
+
+RESET datestyle;
+
+INSERT INTO timestamp_tbl VALUES ('1997.041 17:32:01 UTC');
+
+INSERT INTO timestamp_tbl
+VALUES ('19970210 173201 America/New_York');
+
+INSERT INTO timestamp_tbl
+VALUES ('19970710 173201 America/Does_not_exist');
+
+SELECT pg_input_is_valid('now', 'timestamp');
+
+SELECT pg_input_is_valid('garbage', 'timestamp');
+
+SELECT
+  pg_input_is_valid('2001-01-01 00:00 Nehwon/Lankhmar',
+  'timestamp');
+
+SELECT * FROM pg_input_error_info('garbage', 'timestamp');
+
+SELECT
+  *
+FROM
+  pg_input_error_info('2001-01-01 00:00 Nehwon/Lankhmar',
+  'timestamp');
+
+INSERT INTO timestamp_tbl
+VALUES ('1997-06-10 18:32:01 PDT');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 10 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 11 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 12 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 13 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 14 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 15 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 1997');
+
+INSERT INTO timestamp_tbl
+VALUES ('Feb 16 17:32:01 0097 BC');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 0097');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 0597');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 1097');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 1697');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 1797');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 1897');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 2097');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 28 17:32:01 1996');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 29 17:32:01 1996');
+
+INSERT INTO timestamp_tbl VALUES ('Mar 01 17:32:01 1996');
+
+INSERT INTO timestamp_tbl VALUES ('Dec 30 17:32:01 1996');
+
+INSERT INTO timestamp_tbl VALUES ('Dec 31 17:32:01 1996');
+
+INSERT INTO timestamp_tbl VALUES ('Jan 01 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 28 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 29 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Mar 01 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Dec 30 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Dec 31 17:32:01 1997');
+
+INSERT INTO timestamp_tbl VALUES ('Dec 31 17:32:01 1999');
+
+INSERT INTO timestamp_tbl VALUES ('Jan 01 17:32:01 2000');
+
+INSERT INTO timestamp_tbl VALUES ('Dec 31 17:32:01 2000');
+
+INSERT INTO timestamp_tbl VALUES ('Jan 01 17:32:01 2001');
+
+INSERT INTO timestamp_tbl VALUES ('Feb 16 17:32:01 -0097');
+
+INSERT INTO timestamp_tbl
+VALUES ('Feb 16 17:32:01 5097 BC');
+
+SELECT d1 FROM timestamp_tbl;
+
+SELECT CAST('4714-11-24 00:00:00 BC' AS TIMESTAMP);
+
+SELECT CAST('4714-11-23 23:59:59 BC' AS TIMESTAMP);
+
+SELECT CAST('294276-12-31 23:59:59' AS TIMESTAMP);
+
+SELECT CAST('294277-01-01 00:00:00' AS TIMESTAMP);
+
+SELECT
+  d1
+FROM
+  timestamp_tbl
+WHERE d1 > CAST('1997-01-02' AS TIMESTAMP);
+
+SELECT
+  d1
+FROM
+  timestamp_tbl
+WHERE d1 < CAST('1997-01-02' AS TIMESTAMP);
+
+SELECT
+  d1
+FROM
+  timestamp_tbl
+WHERE d1 = CAST('1997-01-02' AS TIMESTAMP);
+
+SELECT
+  d1
+FROM
+  timestamp_tbl
+WHERE d1 <> CAST('1997-01-02' AS TIMESTAMP);
+
+SELECT
+  d1
+FROM
+  timestamp_tbl
+WHERE d1 <= CAST('1997-01-02' AS TIMESTAMP);
+
+SELECT
+  d1
+FROM
+  timestamp_tbl
+WHERE d1 >= CAST('1997-01-02' AS TIMESTAMP);
+
+SELECT
+  d1 - CAST('1997-01-02' AS TIMESTAMP) AS "diff"
+FROM
+  timestamp_tbl
+WHERE d1 BETWEEN '1902-01-01' AND '2038-01-01';
+
+SELECT
+  date_trunc('week',
+  CAST('2004-02-29 15:44:17.71393' AS TIMESTAMP)) AS "week_trunc";
+
+SELECT
+  date_trunc('week',
+  CAST('infinity' AS TIMESTAMP)) AS "inf_trunc";
+
+SELECT
+  date_trunc('timezone',
+  CAST('2004-02-29 15:44:17.71393' AS TIMESTAMP)) AS "notsupp_trunc";
+
+SELECT
+  date_trunc('timezone',
+  CAST('infinity' AS TIMESTAMP)) AS "notsupp_inf_trunc";
+
+SELECT
+  date_trunc('ago',
+  CAST('infinity' AS TIMESTAMP)) AS "invalid_trunc";
+
+SELECT
+  str,
+  interval,
+  date_trunc(str,
+  ts) = date_bin(CAST(interval AS INTERVAL),
+  ts,
+  CAST('2001-01-01' AS TIMESTAMP)) AS "equal"
+FROM
+  (VALUES ('week',
+  '7 d'),
+  ('day',
+  '1 d'),
+  ('hour',
+  '1 h'),
+  ('minute',
+  '1 m'),
+  ('second',
+  '1 s'),
+  ('millisecond',
+  '1 ms'),
+  ('microsecond',
+  '1 us')) AS intervals (str,
+  interval),
+  (VALUES (CAST('2020-02-29 15:44:17.71393' AS TIMESTAMP))) AS ts (ts);
+
+SELECT
+  str,
+  interval,
+  date_trunc(str,
+  ts) = date_bin(CAST(interval AS INTERVAL),
+  ts,
+  CAST('2000-01-01 BC' AS TIMESTAMP)) AS "equal"
+FROM
+  (VALUES ('week',
+  '7 d'),
+  ('day',
+  '1 d'),
+  ('hour',
+  '1 h'),
+  ('minute',
+  '1 m'),
+  ('second',
+  '1 s'),
+  ('millisecond',
+  '1 ms'),
+  ('microsecond',
+  '1 us')) AS intervals (str,
+  interval),
+  (VALUES (CAST('0055-6-10 15:44:17.71393 BC' AS TIMESTAMP))) AS ts (ts);
+
+SELECT
+  str,
+  interval,
+  date_trunc(str,
+  ts) = date_bin(CAST(interval AS INTERVAL),
+  ts,
+  CAST('2020-03-02' AS TIMESTAMP)) AS "equal"
+FROM
+  (VALUES ('week',
+  '7 d'),
+  ('day',
+  '1 d'),
+  ('hour',
+  '1 h'),
+  ('minute',
+  '1 m'),
+  ('second',
+  '1 s'),
+  ('millisecond',
+  '1 ms'),
+  ('microsecond',
+  '1 us')) AS intervals (str,
+  interval),
+  (VALUES (CAST('2020-02-29 15:44:17.71393' AS TIMESTAMP))) AS ts (ts);
+
+SELECT
+  str,
+  interval,
+  date_trunc(str,
+  ts) = date_bin(CAST(interval AS INTERVAL),
+  ts,
+  CAST('0055-06-17 BC' AS TIMESTAMP)) AS "equal"
+FROM
+  (VALUES ('week',
+  '7 d'),
+  ('day',
+  '1 d'),
+  ('hour',
+  '1 h'),
+  ('minute',
+  '1 m'),
+  ('second',
+  '1 s'),
+  ('millisecond',
+  '1 ms'),
+  ('microsecond',
+  '1 us')) AS intervals (str,
+  interval),
+  (VALUES (CAST('0055-6-10 15:44:17.71393 BC' AS TIMESTAMP))) AS ts (ts);
+
+SELECT
+  interval,
+  ts,
+  origin,
+  date_bin(CAST(interval AS INTERVAL),
+  ts,
+  origin)
+FROM
+  (VALUES ('15 days'),
+  ('2 hours'),
+  ('1 hour 30 minutes'),
+  ('15 minutes'),
+  ('10 seconds'),
+  ('100 milliseconds'),
+  ('250 microseconds')) AS intervals (interval),
+  (VALUES (CAST('2020-02-11 15:44:17.71393' AS TIMESTAMP))) AS ts (ts),
+  (VALUES (CAST('2001-01-01' AS TIMESTAMP))) AS origin (origin);
+
+SELECT
+  date_bin(CAST('5 min' AS INTERVAL),
+  CAST('2020-02-01 01:01:01' AS TIMESTAMP),
+  CAST('2020-02-01 00:02:30' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('30 minutes' AS INTERVAL),
+  CAST('2024-02-01 15:00:00' AS TIMESTAMP),
+  CAST('2024-02-01 17:00:00' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('5 months' AS INTERVAL),
+  CAST('2020-02-01 01:01:01' AS TIMESTAMP),
+  CAST('2001-01-01' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('5 years' AS INTERVAL),
+  CAST('2020-02-01 01:01:01' AS TIMESTAMP),
+  CAST('2001-01-01' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('0 days' AS INTERVAL),
+  CAST('1970-01-01 01:00:00' AS TIMESTAMP),
+  CAST('1970-01-01 00:00:00' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('-2 days' AS INTERVAL),
+  CAST('1970-01-01 01:00:00' AS TIMESTAMP),
+  CAST('1970-01-01 00:00:00' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('15 minutes' AS INTERVAL),
+  CAST('294276-12-30' AS TIMESTAMP),
+  CAST('4000-12-20 BC' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('200000000 days' AS INTERVAL),
+  CAST('2024-02-01' AS TIMESTAMP),
+  CAST('2024-01-01' AS TIMESTAMP));
+
+SELECT
+  date_bin(CAST('365000 days' AS INTERVAL),
+  CAST('4400-01-01 BC' AS TIMESTAMP),
+  CAST('4000-01-01 BC' AS TIMESTAMP));
+
+SELECT
+  d1 - CAST('1997-01-02' AS TIMESTAMP) AS "diff"
+FROM
+  timestamp_tbl
+WHERE d1 BETWEEN CAST('1902-01-01' AS TIMESTAMP) AND CAST('2038-01-01' AS TIMESTAMP);
+
+SELECT
+  d1 AS "timestamp",
+  date_part('year',
+  d1) AS "year",
+  date_part('month',
+  d1) AS "month",
+  date_part('day',
+  d1) AS "day",
+  date_part('hour',
+  d1) AS "hour",
+  date_part('minute',
+  d1) AS "minute",
+  date_part('second',
+  d1) AS "second"
+FROM
+  timestamp_tbl;
+
+SELECT
+  d1 AS "timestamp",
+  date_part('quarter',
+  d1) AS "quarter",
+  date_part('msec',
+  d1) AS "msec",
+  date_part('usec',
+  d1) AS "usec"
+FROM
+  timestamp_tbl;
+
+SELECT
+  d1 AS "timestamp",
+  date_part('isoyear',
+  d1) AS "isoyear",
+  date_part('week',
+  d1) AS "week",
+  date_part('isodow',
+  d1) AS "isodow",
+  date_part('dow',
+  d1) AS "dow",
+  date_part('doy',
+  d1) AS "doy"
+FROM
+  timestamp_tbl;
+
+SELECT
+  d1 AS "timestamp",
+  date_part('decade',
+  d1) AS "decade",
+  date_part('century',
+  d1) AS "century",
+  date_part('millennium',
+  d1) AS "millennium",
+  round(date_part('julian',
+  d1)) AS "julian",
+  date_part('epoch',
+  d1) AS "epoch"
+FROM
+  timestamp_tbl;
+
+SELECT
+  d1 AS "timestamp",
+  EXTRACT('microseconds' FROM d1) AS "microseconds",
+  EXTRACT('milliseconds' FROM d1) AS "milliseconds",
+  EXTRACT('seconds' FROM d1) AS "seconds",
+  round(EXTRACT('julian' FROM d1)) AS "julian",
+  EXTRACT('epoch' FROM d1) AS "epoch"
+FROM
+  timestamp_tbl;
+
+SELECT
+  date_part('epoch',
+  CAST('294270-01-01 00:00:00' AS TIMESTAMP));
+
+SELECT
+  EXTRACT('epoch' FROM CAST('294270-01-01 00:00:00' AS TIMESTAMP));
+
+SELECT
+  EXTRACT('epoch' FROM CAST('5000-01-01 00:00:00' AS TIMESTAMP));
+
+SELECT
+  CAST('294276-12-31 23:59:59' AS TIMESTAMP) - CAST('1999-12-23 19:59:04.224193' AS TIMESTAMP) AS "ok";
+
+SELECT
+  CAST('294276-12-31 23:59:59' AS TIMESTAMP) - CAST('1999-12-23 19:59:04.224192' AS TIMESTAMP) AS "overflows";
+
+SELECT
+  to_char(d1,
+  'DAY Day day DY Dy dy MONTH Month month RM MON Mon mon')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'FMDAY FMDay FMday FMMONTH FMMonth FMmonth FMRM')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'Y,YYY YYYY YYY YY Y CC Q MM WW DDD DD D J')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'FMY,YYY FMYYYY FMYYY FMYY FMY FMCC FMQ FMMM FMWW FMDDD FMDD FMD FMJ')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'HH HH12 HH24 MI SS SSSS')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  '"HH:MI:SS is" HH:MI:SS "\"text between quote marks\""')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'HH24--text--MI--text--SS')
+FROM
+  timestamp_tbl;
+
+SELECT to_char(d1, 'YYYYTH YYYYth Jth') FROM timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'YYYY A.D. YYYY a.d. YYYY bc HH:MI:SS P.M. HH:MI:SS p.m. HH:MI:SS pm')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'IYYY IYY IY I IW IDDD ID')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d1,
+  'FMIYYY FMIYY FMIY FMI FMIW FMIDDD FMID')
+FROM
+  timestamp_tbl;
+
+SELECT
+  to_char(d,
+  'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US')
+FROM
+  (VALUES (CAST('2018-11-02 12:34:56' AS TIMESTAMP)),
+  ('2018-11-02 12:34:56.78'),
+  ('2018-11-02 12:34:56.78901'),
+  ('2018-11-02 12:34:56.78901234')) AS d (d);
+
+SELECT
+  i,
+  to_char(i * CAST('1mon' AS INTERVAL),
+  'rm'),
+  to_char(i * CAST('1mon' AS INTERVAL),
+  'RM')
+FROM
+  generate_series(-13,
+  13) AS i;
+
+SELECT make_timestamp(2014, 12, 28, 6, 30, 45.887);
+
+SELECT make_timestamp(-44, 3, 15, 12, 30, 15);
+
+SELECT make_timestamp(0, 7, 15, 12, 30, 15);
+
+SELECT
+  *
+FROM
+  generate_series(CAST('2020-01-01 00:00' AS TIMESTAMP),
+  CAST('2020-01-02 03:00' AS TIMESTAMP),
+  CAST('1 hour' AS INTERVAL));
+
+SELECT
+  generate_series(CAST('2022-01-01 00:00' AS TIMESTAMP),
+  CAST('infinity' AS TIMESTAMP),
+  CAST('1 month' AS INTERVAL))
+LIMIT 10;
+
+SELECT
+  *
+FROM
+  generate_series(CAST('2020-01-01 00:00' AS TIMESTAMP),
+  CAST('2020-01-02 03:00' AS TIMESTAMP),
+  CAST('0 hour' AS INTERVAL));
+
+SELECT
+  generate_series(CAST('1995-08-06 12:12:12' AS TIMESTAMP),
+  CAST('1996-08-06 12:12:12' AS TIMESTAMP),
+  CAST('infinity' AS INTERVAL));
+
+SELECT
+  generate_series(CAST('1995-08-06 12:12:12' AS TIMESTAMP),
+  CAST('1996-08-06 12:12:12' AS TIMESTAMP),
+  CAST('-infinity' AS INTERVAL));
+
+SELECT
+  CAST('infinity' AS TIMESTAMP) - CAST('infinity' AS TIMESTAMP);
+
+SELECT
+  CAST('infinity' AS TIMESTAMP) - CAST('-infinity' AS TIMESTAMP);
+
+SELECT
+  CAST('-infinity' AS TIMESTAMP) - CAST('infinity' AS TIMESTAMP);
+
+SELECT
+  CAST('-infinity' AS TIMESTAMP) - CAST('-infinity' AS TIMESTAMP);
+
+SELECT
+  CAST('infinity' AS TIMESTAMP) - CAST('1995-08-06 12:12:12' AS TIMESTAMP);
+
+SELECT
+  CAST('-infinity' AS TIMESTAMP) - CAST('1995-08-06 12:12:12' AS TIMESTAMP);
+
+SELECT age(CAST('infinity' AS TIMESTAMP));
+
+SELECT age(CAST('-infinity' AS TIMESTAMP));
+
+SELECT
+  age(CAST('infinity' AS TIMESTAMP),
+  CAST('infinity' AS TIMESTAMP));
+
+SELECT
+  age(CAST('infinity' AS TIMESTAMP),
+  CAST('-infinity' AS TIMESTAMP));
+
+SELECT
+  age(CAST('-infinity' AS TIMESTAMP),
+  CAST('infinity' AS TIMESTAMP));
+
+SELECT
+  age(CAST('-infinity' AS TIMESTAMP),
+  CAST('-infinity' AS TIMESTAMP));
+
+SELECT CAST('1999-12-31 24:00:00' AS TIMESTAMP);
+
+SELECT make_timestamp(1999, 12, 31, 24, 0, 0);

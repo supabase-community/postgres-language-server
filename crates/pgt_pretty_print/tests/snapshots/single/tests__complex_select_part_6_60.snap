@@ -1,0 +1,22 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/single/complex_select_part_6_60.sql
+snapshot_kind: text
+---
+SELECT
+  view_id,
+  view_schema,
+  view_name,
+  resorigtbl,
+  resorigcol,
+  array_agg(attname) AS "view_columns"
+FROM
+  recursion
+  INNER JOIN pg_attribute AS vcol
+  ON vcol.attrelid = view_id AND
+    vcol.attnum = view_column
+GROUP BY view_id,
+  view_schema,
+  view_name,
+  resorigtbl,
+  resorigcol;

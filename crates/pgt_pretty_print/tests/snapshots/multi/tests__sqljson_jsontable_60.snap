@@ -1,0 +1,1347 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/multi/sqljson_jsontable_60.sql
+snapshot_kind: text
+---
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '[]',
+    'strict $.a'
+    COLUMNS (
+      js2 INT PATH '$'
+    )
+    DEFAULT 1 ON ERROR
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '[]',
+    'strict $.a'
+    COLUMNS (
+      js2 INT PATH '$'
+    )
+    NULL ON ERROR
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '[]',
+    'strict $.a'
+    COLUMNS (
+      js2 INT PATH '$'
+    )
+    EMPTY ARRAY ON ERROR
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '[]',
+    'strict $.a'
+    COLUMNS (
+      js2 INT PATH '$'
+    )
+    ERROR ON ERROR
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"1.23"' AS JSONB),
+    '$.a' AS js2
+    COLUMNS (
+      js2 INT PATH '$'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST(NULL AS JSONB),
+    '$'
+    COLUMNS (
+      v1 TIMESTAMP
+    )
+  ) AS f (v1,
+  v2);
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"1.23"' AS JSONB),
+    '$.a'
+    COLUMNS (
+      js2 INT PATH '$',
+      js2 INT PATH '$'
+    )
+  );
+
+CREATE TYPE comp AS ( a INT, b INT );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"rec": "(1,2)"}' AS JSONB),
+    '$'
+    COLUMNS (
+      id FOR ORDINALITY,
+      comp comp PATH '$.rec' OMIT QUOTES
+    )
+  ) AS jt;
+
+DROP TYPE comp;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST(NULL AS JSONB),
+    '$'
+    COLUMNS (
+      foo INT
+    )
+  ) AS bar;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"1.23"' AS JSONB),
+    'strict $.a'
+    COLUMNS (
+      js2 INT PATH '$'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('123' AS JSONB),
+    '$'
+    COLUMNS (
+      item INT PATH '$',
+      foo INT
+    )
+  ) AS bar;
+
+CREATE DOMAIN jsonb_test_domain AS TEXT CHECK (value <> 'foo');
+
+CREATE TEMPORARY TABLE json_table_test (js) AS
+  VALUES ('1'),
+  ('[]'),
+  ('{}'),
+  ('[1, 1.23, "2", "aaaaaaa", "foo", null, false, true, {"aaa": 123}, "[1,2]", "\"str\""]');
+
+SELECT
+  *
+FROM
+  json_table_test AS vals
+  LEFT OUTER JOIN JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    'lax $[*]'
+    COLUMNS (
+      id FOR ORDINALITY,
+      int INT PATH '$',
+      text text PATH '$',
+      "char(4)" CHAR(4) PATH '$',
+      bool bool PATH '$',
+      numeric NUMERIC PATH '$',
+      domain jsonb_test_domain PATH '$',
+      js JSON PATH '$',
+      jb jsonb PATH '$'
+    )
+  ) AS jt
+  ON TRUE;
+
+SELECT
+  *
+FROM
+  json_table_test AS vals
+  LEFT OUTER JOIN JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    'lax $[*]'
+    COLUMNS (
+      id FOR ORDINALITY,
+      jst text FORMAT JSON PATH '$',
+      jsc CHAR(4) FORMAT JSON PATH '$',
+      jsv VARCHAR(4) FORMAT JSON PATH '$',
+      jsb jsonb FORMAT JSON PATH '$',
+      jsbq jsonb FORMAT JSON PATH '$' OMIT QUOTES
+    )
+  ) AS jt
+  ON TRUE;
+
+SELECT
+  *
+FROM
+  json_table_test AS vals
+  LEFT OUTER JOIN JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    'lax $[*]'
+    COLUMNS (
+      id FOR ORDINALITY,
+      exists1 bool EXISTS PATH '$.aaa',
+      exists2 INT EXISTS PATH '$.aaa',
+      exists3 INT EXISTS PATH 'strict $.aaa' UNKNOWN ON ERROR,
+      exists4 text EXISTS PATH 'strict $.aaa' FALSE ON ERROR
+    )
+  ) AS jt
+  ON TRUE;
+
+SELECT
+  *
+FROM
+  json_table_test AS vals
+  LEFT OUTER JOIN JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    'lax $[*]'
+    COLUMNS (
+      id FOR ORDINALITY,
+      aaa INT,
+      aaa1 INT PATH '$.aaa',
+      js2 JSON PATH '$',
+      jsb2w jsonb PATH '$' WITH UNCONDITIONAL WRAPPER,
+      jsb2q jsonb PATH '$' OMIT QUOTES,
+      ia INT[] PATH '$',
+      ta TEXT[] PATH '$',
+      jba JSONB[] PATH '$'
+    )
+  ) AS jt
+  ON TRUE;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"d1": "H"}' AS JSONB),
+    '$'
+    COLUMNS (
+      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST(CAST('"foo1"' AS JSONB) AS TEXT) ON EMPTY
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"d1": "H"}' AS JSONB),
+    '$'
+    COLUMNS (
+      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST('foo' AS jsonb_test_domain) ON EMPTY
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"d1": "H"}' AS JSONB),
+    '$'
+    COLUMNS (
+      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST('foo1' AS jsonb_test_domain) ON EMPTY
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"d1": "foo"}' AS JSONB),
+    '$'
+    COLUMNS (
+      js1 jsonb_test_domain PATH '$.d1' DEFAULT CAST('foo2' AS jsonb_test_domain) ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('{"d1": "foo"}' AS JSONB),
+    '$'
+    COLUMNS (
+      js1 OID[] PATH '$.d2' DEFAULT CAST(CAST('{1}' AS INT[]) AS OID[]) ON EMPTY
+    )
+  );
+
+CREATE VIEW jsonb_table_view2 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      int INT PATH '$',
+      text text PATH '$',
+      "char(4)" CHAR(4) PATH '$',
+      bool bool PATH '$',
+      numeric NUMERIC PATH '$',
+      domain jsonb_test_domain PATH '$'
+    )
+  );
+
+CREATE VIEW jsonb_table_view3 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      js JSON PATH '$',
+      jb jsonb PATH '$',
+      jst text FORMAT JSON PATH '$',
+      jsc CHAR(4) FORMAT JSON PATH '$',
+      jsv VARCHAR(4) FORMAT JSON PATH '$'
+    )
+  );
+
+CREATE VIEW jsonb_table_view4 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      jsb jsonb FORMAT JSON PATH '$',
+      jsbq jsonb FORMAT JSON PATH '$' OMIT QUOTES,
+      aaa INT,
+      aaa1 INT PATH '$.aaa'
+    )
+  );
+
+CREATE VIEW jsonb_table_view5 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      exists1 bool EXISTS PATH '$.aaa',
+      exists2 INT EXISTS PATH '$.aaa' TRUE ON ERROR,
+      exists3 text EXISTS PATH 'strict $.aaa' UNKNOWN ON ERROR
+    )
+  );
+
+CREATE VIEW jsonb_table_view6 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      js2 JSON PATH '$',
+      jsb2w jsonb PATH '$' WITH UNCONDITIONAL WRAPPER,
+      jsb2q jsonb PATH '$' OMIT QUOTES,
+      ia INT[] PATH '$',
+      ta TEXT[] PATH '$',
+      jba JSONB[] PATH '$'
+    )
+  );
+
+SELECT * FROM jsonb_table_view2;
+
+SELECT * FROM jsonb_table_view3;
+
+SELECT * FROM jsonb_table_view4;
+
+SELECT * FROM jsonb_table_view5;
+
+SELECT * FROM jsonb_table_view6;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      id FOR ORDINALITY,
+      int INT PATH '$',
+      text text PATH '$'
+    )
+  ) AS json_table_func;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      id FOR ORDINALITY,
+      int INT PATH '$',
+      text text PATH '$'
+    )
+  ) AS json_table_func;
+
+DROP VIEW "jsonb_table_view2";
+
+DROP VIEW "jsonb_table_view3";
+
+DROP VIEW "jsonb_table_view4";
+
+DROP VIEW "jsonb_table_view5";
+
+DROP VIEW "jsonb_table_view6";
+
+DROP DOMAIN jsonb_test_domain;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      id FOR ORDINALITY,
+      id2 FOR ORDINALITY,
+      a INT PATH '$.a' ERROR ON EMPTY
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      id FOR ORDINALITY,
+      a INT PATH '$' ERROR ON EMPTY
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  (VALUES ('1'),
+  ('"err"')) AS vals (js),
+  JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH '$'
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  (VALUES ('1'),
+  ('"err"')) AS vals (js)
+  LEFT OUTER JOIN JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH '$' ERROR ON ERROR
+    )
+  ) AS jt
+  ON TRUE;
+
+SELECT
+  *
+FROM
+  (VALUES ('1'),
+  ('"err"')) AS vals (js)
+  LEFT OUTER JOIN JSON_TABLE(
+    CAST(vals.js AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH '$' ERROR ON ERROR
+    )
+  ) AS jt
+  ON TRUE;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH '$.a' ERROR ON EMPTY
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH 'strict $.a' ERROR ON ERROR
+    )
+    ERROR ON ERROR
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH 'lax $.a' ERROR ON EMPTY
+    )
+    ERROR ON ERROR
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH '$' DEFAULT 1 ON EMPTY DEFAULT 2 ON ERROR
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH 'strict $.a' DEFAULT 1 ON EMPTY DEFAULT 2 ON ERROR
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT PATH 'lax $.a' DEFAULT 1 ON EMPTY DEFAULT 2 ON ERROR
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a int4 EXISTS PATH '$.a' ERROR ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a int4 EXISTS PATH '$' ERROR ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a int2 EXISTS PATH '$.a'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a int8 EXISTS PATH '$.a'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a float4 EXISTS PATH '$.a'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a CHAR(3) EXISTS PATH '$.a'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a CHAR(3) EXISTS PATH '$.a' ERROR ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a CHAR(5) EXISTS PATH '$.a' ERROR ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a JSON EXISTS PATH '$.a'
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a jsonb EXISTS PATH '$.a'
+    )
+  );
+
+CREATE DOMAIN dint4 AS INT;
+
+CREATE DOMAIN dint4_0 AS INT CHECK (value <> 0);
+
+SELECT
+  a,
+  CAST(a AS BOOLEAN)
+FROM
+  JSON_TABLE(
+    CAST('"a"' AS JSONB),
+    '$'
+    COLUMNS (
+      a dint4 EXISTS PATH '$.a'
+    )
+  );
+
+SELECT
+  a,
+  CAST(a AS BOOLEAN)
+FROM
+  JSON_TABLE(
+    CAST('{"a":1}' AS JSONB),
+    '$'
+    COLUMNS (
+      a dint4_0 EXISTS PATH '$.b'
+    )
+  );
+
+SELECT
+  a,
+  CAST(a AS BOOLEAN)
+FROM
+  JSON_TABLE(
+    CAST('{"a":1}' AS JSONB),
+    '$'
+    COLUMNS (
+      a dint4_0 EXISTS PATH '$.b' ERROR ON ERROR
+    )
+  );
+
+SELECT
+  a,
+  CAST(a AS BOOLEAN)
+FROM
+  JSON_TABLE(
+    CAST('{"a":1}' AS JSONB),
+    '$'
+    COLUMNS (
+      a dint4_0 EXISTS PATH '$.b' FALSE ON ERROR
+    )
+  );
+
+SELECT
+  a,
+  CAST(a AS BOOLEAN)
+FROM
+  JSON_TABLE(
+    CAST('{"a":1}' AS JSONB),
+    '$'
+    COLUMNS (
+      a dint4_0 EXISTS PATH '$.b' TRUE ON ERROR
+    )
+  );
+
+DROP DOMAIN dint4, dint4_0;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text PATH '$' KEEP QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text PATH '$' OMIT QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text FORMAT JSON PATH '$' KEEP QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text FORMAT JSON PATH '$' OMIT QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text FORMAT JSON PATH '$' WITHOUT WRAPPER KEEP QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text PATH '$' WITHOUT WRAPPER OMIT QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text FORMAT JSON PATH '$' WITH UNCONDITIONAL WRAPPER
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text PATH '$' WITH UNCONDITIONAL WRAPPER OMIT QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('"world"' AS JSONB),
+    '$'
+    COLUMNS (
+      item text FORMAT JSON PATH '$' WITH UNCONDITIONAL WRAPPER KEEP QUOTES
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('[1,2,3]' AS JSONB),
+    '$[*] ? (@ < $x)'
+    PASSING 3 AS x
+    COLUMNS (
+      y text FORMAT JSON PATH '$'
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('[1,2,3]' AS JSONB),
+    '$[*] ? (@ < $x)'
+    PASSING 10 AS x,
+    3 AS y
+    COLUMNS (
+      a text FORMAT JSON PATH '$ ? (@ < $y)'
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '{"a": [{"b": "1"}, {"b": "2"}]}',
+    '$'
+    COLUMNS (
+      b JSON PATH '$.a[*].b' ERROR ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('[]' AS JSONB),
+    '$' AS a
+    COLUMNS (
+      b INT,
+      NESTED PATH '$' AS a
+      COLUMNS (
+        c INT
+      )
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('[]' AS JSONB),
+    '$' AS a
+    COLUMNS (
+      b INT,
+      NESTED PATH '$' AS n_a
+      COLUMNS (
+        c INT
+      )
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('[]' AS JSONB),
+    '$'
+    COLUMNS (
+      b INT,
+      NESTED PATH '$' AS b
+      COLUMNS (
+        c INT
+      )
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('[]' AS JSONB),
+    '$'
+    COLUMNS (
+      NESTED PATH '$' AS a
+      COLUMNS (
+        b INT
+      ),
+      NESTED PATH '$'
+      COLUMNS (
+        NESTED PATH '$' AS a
+        COLUMNS (
+          c INT
+        )
+      )
+    )
+  ) AS jt;
+
+CREATE TEMPORARY TABLE jsonb_table_test ( js JSONB );
+
+INSERT INTO jsonb_table_test
+VALUES ('[
+		{"a":  1,  "b": [], "c": []},
+		{"a":  2,  "b": [1, 2, 3], "c": [10, null, 20]},
+		{"a":  3,  "b": [1, 2], "c": []},
+		{"x": "4", "b": [1, 2], "c": 123}
+	 ]');
+
+SELECT
+  jt.*
+FROM
+  jsonb_table_test AS jtt,
+  JSON_TABLE(
+    jtt.js,
+    'strict $[*]' AS p
+    COLUMNS (
+      n FOR ORDINALITY,
+      a INT PATH 'lax $.a' DEFAULT -1 ON EMPTY,
+      NESTED PATH 'strict $.b[*]' AS pb
+      COLUMNS (
+        b_id FOR ORDINALITY,
+        b INT PATH '$'
+      ),
+      NESTED PATH 'strict $.c[*]' AS pc
+      COLUMNS (
+        c_id FOR ORDINALITY,
+        c INT PATH '$'
+      )
+    )
+  ) AS jt;
+
+SELECT
+  *
+FROM
+  generate_series(1,
+  3) AS x,
+  generate_series(1,
+  3) AS y,
+  JSON_TABLE(
+    CAST('[[1,2,3],[2,3,4,5],[3,4,5,6]]' AS JSONB),
+    'strict $[*] ? (@[*] <= $x)'
+    PASSING x AS x,
+    y AS y
+    COLUMNS (
+      y text FORMAT JSON PATH '$',
+      NESTED PATH 'strict $[*] ? (@ == $y)'
+      COLUMNS (
+        z INT PATH '$'
+      )
+    )
+  ) AS jt;
+
+CREATE VIEW jsonb_table_view_nested AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      id FOR ORDINALITY,
+      NESTED PATH '$[1]' AS p1
+      COLUMNS (
+        a1 INT,
+        NESTED PATH '$[*]' AS "p1 1"
+        COLUMNS (
+          a11 text
+        ),
+        b1 text
+      ),
+      NESTED PATH '$[2]' AS p2
+      COLUMNS (
+        NESTED PATH '$[*]' AS "p2:1"
+        COLUMNS (
+          a21 text
+        ),
+        NESTED PATH '$[*]' AS p22
+        COLUMNS (
+          a22 text
+        )
+      )
+    )
+  );
+
+DROP VIEW "jsonb_table_view_nested";
+
+CREATE TABLE s ( js JSONB );
+
+INSERT INTO s
+VALUES ('{"a":{"za":[{"z1": [11,2222]},{"z21": [22, 234,2345]},{"z22": [32, 204,145]}]},"c": 3}'),
+('{"a":{"za":[{"z1": [21,4222]},{"z21": [32, 134,1345]}]},"c": 10}');
+
+SELECT
+  sub.*
+FROM
+  s,
+  JSON_TABLE(
+    js,
+    '$'
+    PASSING 32 AS x,
+    13 AS y
+    COLUMNS (
+      xx INT PATH '$.c',
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        NESTED PATH '$.z21[*]'
+        COLUMNS (
+          z21 INT PATH '$?(@ >= $"x")' ERROR ON ERROR
+        )
+      )
+    )
+  ) AS sub;
+
+SELECT
+  sub.*
+FROM
+  s,
+  (VALUES (23)) AS x (x),
+  generate_series(13,
+  13) AS y,
+  JSON_TABLE(
+    js,
+    '$' AS c1
+    PASSING x AS x,
+    y AS y
+    COLUMNS (
+      NESTED PATH '$.a.za[2]'
+      COLUMNS (
+        NESTED PATH '$.z22[*]' AS z22
+        COLUMNS (
+          c INT PATH '$'
+        )
+      ),
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        d INT[] PATH '$.z21'
+      ),
+      NESTED PATH '$.a.za[0]'
+      COLUMNS (
+        NESTED PATH '$.z1[*]' AS z1
+        COLUMNS (
+          a INT PATH '$'
+        )
+      ),
+      xx1 INT PATH '$.c',
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        NESTED PATH '$.z21[*]' AS z21
+        COLUMNS (
+          b INT PATH '$'
+        )
+      ),
+      xx INT PATH '$.c'
+    )
+  ) AS sub;
+
+SELECT
+  sub.*
+FROM
+  s,
+  (VALUES (23)) AS x (x),
+  generate_series(13,
+  13) AS y,
+  JSON_TABLE(
+    js,
+    '$' AS c1
+    PASSING x AS x,
+    y AS y
+    COLUMNS (
+      xx1 INT PATH '$.c',
+      NESTED PATH '$.a.za[0].z1[*]'
+      COLUMNS (
+        NESTED PATH '$ ?(@ >= ($"x" -2))'
+        COLUMNS (
+          a INT PATH '$'
+        )
+      ),
+      NESTED PATH '$.a.za[0]'
+      COLUMNS (
+        NESTED PATH '$.z1[*] ? (@ >= ($"x" -2))'
+        COLUMNS (
+          b INT PATH '$'
+        )
+      )
+    )
+  ) AS sub;
+
+SELECT
+  sub.*
+FROM
+  s,
+  (VALUES (23)) AS x (x),
+  generate_series(13,
+  13) AS y,
+  JSON_TABLE(
+    js,
+    '$' AS c1
+    PASSING x AS x,
+    y AS y
+    COLUMNS (
+      xx1 INT PATH '$.c',
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        NESTED PATH '$.z21[*]'
+        COLUMNS (
+          b INT PATH '$'
+        )
+      ),
+      NESTED PATH '$.a.za[1] ? (@.z21[*] >= ($"x"-1))'
+      COLUMNS (
+        NESTED PATH '$.z21[*] ? (@ >= ($"y" + 3))' AS z22
+        COLUMNS (
+          a INT PATH '$ ? (@ >= ($"y" + 12))'
+        )
+      ),
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        NESTED PATH '$.z21[*] ? (@ >= ($"y" +121))' AS z21
+        COLUMNS (
+          c INT PATH '$ ? (@ > ($"x" +111))'
+        )
+      )
+    )
+  ) AS sub;
+
+SELECT
+  sub.*
+FROM
+  s,
+  (VALUES (23)) AS x (x),
+  generate_series(13,
+  13) AS y,
+  JSON_TABLE(
+    js,
+    '$' AS c1
+    PASSING x AS x,
+    y AS y
+    COLUMNS (
+      xx1 INT PATH '$.c',
+      NESTED PATH '$.a.za[2]'
+      COLUMNS (
+        NESTED PATH '$.z22[*]' AS z22
+        COLUMNS (
+          c INT PATH '$'
+        )
+      ),
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        d JSON PATH '$ ? (@.z21[*] == ($"x" -1))'
+      ),
+      NESTED PATH '$.a.za[0]'
+      COLUMNS (
+        NESTED PATH '$.z1[*] ? (@ >= ($"x" -2))' AS z1
+        COLUMNS (
+          a INT PATH '$'
+        )
+      ),
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        NESTED PATH '$.z21[*] ? (@ >= ($"y" +121))' AS z21
+        COLUMNS (
+          b INT PATH '$ ? (@ > ($"x" +111))' DEFAULT 0 ON EMPTY
+        )
+      )
+    )
+  ) AS sub;
+
+CREATE OR REPLACE VIEW jsonb_table_view7 AS
+SELECT
+  sub.*
+FROM
+  s,
+  (VALUES (23)) AS x (x),
+  generate_series(13,
+  13) AS y,
+  JSON_TABLE(
+    js,
+    '$' AS c1
+    PASSING x AS x,
+    y AS y
+    COLUMNS (
+      xx1 INT PATH '$.c',
+      NESTED PATH '$.a.za[2]'
+      COLUMNS (
+        NESTED PATH '$.z22[*]' AS z22
+        COLUMNS (
+          c INT PATH '$' WITHOUT WRAPPER OMIT QUOTES
+        )
+      ),
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        d JSON PATH '$ ? (@.z21[*] == ($"x" -1))' WITH UNCONDITIONAL WRAPPER
+      ),
+      NESTED PATH '$.a.za[0]'
+      COLUMNS (
+        NESTED PATH '$.z1[*] ? (@ >= ($"x" -2))' AS z1
+        COLUMNS (
+          a INT PATH '$' KEEP QUOTES
+        )
+      ),
+      NESTED PATH '$.a.za[1]'
+      COLUMNS (
+        NESTED PATH '$.z21[*] ? (@ >= ($"y" +121))' AS z21
+        COLUMNS (
+          b INT PATH '$ ? (@ > ($"x" +111))' DEFAULT 0 ON EMPTY
+        )
+      )
+    )
+  ) AS sub;
+
+DROP VIEW "jsonb_table_view7";
+
+DROP TABLE "s";
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT
+    )
+    NULL ON ERROR
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT TRUE ON EMPTY
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT OMIT QUOTES TRUE ON ERROR
+    )
+  );
+
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('1' AS JSONB),
+    '$'
+    COLUMNS (
+      a INT EXISTS EMPTY OBJECT ON ERROR
+    )
+  );
+
+CREATE VIEW json_table_view8 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '"a"',
+    '$'
+    COLUMNS (
+      a text PATH '$'
+    )
+  );
+
+CREATE VIEW json_table_view9 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '"a"',
+    '$'
+    COLUMNS (
+      a text PATH '$'
+    )
+    ERROR ON ERROR
+  );
+
+DROP VIEW "json_table_view8", "json_table_view9";
+
+CREATE VIEW json_table_view8 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '"a"',
+    '$'
+    COLUMNS (
+      a text PATH '$'
+    )
+    EMPTY ARRAY ON ERROR
+  );
+
+CREATE VIEW json_table_view9 AS
+SELECT
+  *
+FROM
+  JSON_TABLE(
+    '"a"',
+    '$'
+    COLUMNS (
+      a text PATH '$'
+    )
+    EMPTY ARRAY ON ERROR
+  );
+
+DROP VIEW "json_table_view8", "json_table_view9";
