@@ -724,7 +724,7 @@ impl Safety {
     }
     pub(crate) fn severity(rule_name: &str) -> Severity {
         match rule_name {
-            "addSerialColumn" => Severity::Error,
+            "addSerialColumn" => Severity::Warning,
             "addingFieldWithDefault" => Severity::Warning,
             "addingForeignKeyConstraint" => Severity::Warning,
             "addingNotNullField" => Severity::Warning,
@@ -741,7 +741,7 @@ impl Safety {
             "constraintMissingNotValid" => Severity::Warning,
             "creatingEnum" => Severity::Warning,
             "disallowUniqueConstraint" => Severity::Error,
-            "lockTimeoutWarning" => Severity::Error,
+            "lockTimeoutWarning" => Severity::Warning,
             "multipleAlterTable" => Severity::Warning,
             "preferBigInt" => Severity::Warning,
             "preferBigintOverInt" => Severity::Warning,
@@ -755,7 +755,7 @@ impl Safety {
             "renamingTable" => Severity::Warning,
             "requireConcurrentIndexCreation" => Severity::Warning,
             "requireConcurrentIndexDeletion" => Severity::Warning,
-            "runningStatementWhileHoldingAccessExclusive" => Severity::Error,
+            "runningStatementWhileHoldingAccessExclusive" => Severity::Warning,
             "transactionNesting" => Severity::Warning,
             _ => unreachable!(),
         }

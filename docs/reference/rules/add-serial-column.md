@@ -30,7 +30,7 @@ ALTER TABLE prices ADD COLUMN id serial;
 ```sh
 code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Adding a column with type serial requires a table rewrite.
+  ! Adding a column with type serial requires a table rewrite.
   
   > 1 │ ALTER TABLE prices ADD COLUMN id serial;
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -50,7 +50,7 @@ ALTER TABLE prices ADD COLUMN id bigserial;
 ```sh
 code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Adding a column with type bigserial requires a table rewrite.
+  ! Adding a column with type bigserial requires a table rewrite.
   
   > 1 │ ALTER TABLE prices ADD COLUMN id bigserial;
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +70,7 @@ ALTER TABLE prices ADD COLUMN total int GENERATED ALWAYS AS (price * quantity) S
 ```sh
 code-block.sql:1:1 lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Adding a column with GENERATED ALWAYS AS ... STORED requires a table rewrite.
+  ! Adding a column with GENERATED ALWAYS AS ... STORED requires a table rewrite.
   
   > 1 │ ALTER TABLE prices ADD COLUMN total int GENERATED ALWAYS AS (price * quantity) STORED;
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

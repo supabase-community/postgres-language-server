@@ -33,7 +33,7 @@ ALTER TABLE users ADD COLUMN email TEXT;
 ```sh
 code-block.sql:1:1 lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Statement takes ACCESS EXCLUSIVE lock on public.users without lock timeout set.
+  ! Statement takes ACCESS EXCLUSIVE lock on public.users without lock timeout set.
   
   > 1 │ ALTER TABLE users ADD COLUMN email TEXT;
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,7 +53,7 @@ CREATE INDEX users_email_idx ON users(email);
 ```sh
 code-block.sql:1:1 lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  × Statement takes SHARE lock on public.users while creating index users_email_idx without lock timeout set.
+  ! Statement takes SHARE lock on public.users while creating index users_email_idx without lock timeout set.
   
   > 1 │ CREATE INDEX users_email_idx ON users(email);
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
