@@ -127,7 +127,7 @@ impl HoveredNode {
                 }
             }
 
-            "revoke_role" | "grant_role" | "policy_role" => {
+            "grant_role" | "policy_role" => {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
             }
 
@@ -136,7 +136,7 @@ impl HoveredNode {
                 Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
             }
 
-            "revoke_table" | "grant_table" => {
+            "grant_table" => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
                         schema.clone(),
