@@ -93,7 +93,16 @@ impl HoveredNode {
                 }
             }
 
-            "identifier" if ctx.matches_one_of_ancestors(&["alter_role", "policy_to_role"]) => {
+            "identifier"
+                if ctx.matches_one_of_ancestors(&[
+                    "alter_role",
+                    "policy_to_role",
+                    "role_specification",
+                ]) || ctx.before_cursor_matches_kind(&["keyword_revoke"]) =>
+            {
+                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+            }
+            "grant_role" | "policy_role" => {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
             }
 
@@ -125,10 +134,6 @@ impl HoveredNode {
                         sanitized,
                     )))
                 }
-            }
-
-            "grant_role" | "policy_role" => {
-                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
             }
 
             // quoted columns
