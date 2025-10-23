@@ -99,6 +99,10 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Table(_) => match clause {
                         WrappingClause::From | WrappingClause::Update => true,
 
+                        WrappingClause::RevokeStatement => {
+                            ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"])
+                        }
+
                         WrappingClause::Join { on_node: None } => true,
                         WrappingClause::Join { on_node: Some(on) } => ctx
                             .node_under_cursor
@@ -202,6 +206,12 @@ impl CompletionFilter<'_> {
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
 
+                        WrappingClause::RevokeStatement => {
+                            (ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"])
+                                && ctx.schema_or_alias_name.is_none())
+                                || ctx.matches_ancestor_history(&["revoke_on_all"])
+                        }
+
                         WrappingClause::Where => {
                             ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
                         }
@@ -244,6 +254,17 @@ impl CompletionFilter<'_> {
 
                         WrappingClause::SetStatement => ctx
                             .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+
+                        WrappingClause::RevokeStatement => {
+                            ctx.matches_ancestor_history(&["role_specification"])
+                                || ctx.node_under_cursor.as_ref().is_some_and(|k| {
+                                    k.kind() == "identifier"
+                                        && ctx.before_cursor_matches_kind(&[
+                                            "keyword_revoke",
+                                            "keyword_for",
+                                        ])
+                                })
+                        }
 
                         WrappingClause::AlterPolicy | WrappingClause::CreatePolicy => {
                             ctx.before_cursor_matches_kind(&["keyword_to"])

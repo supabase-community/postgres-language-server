@@ -32,7 +32,10 @@ impl HoveredNode {
         let under_cursor = ctx.node_under_cursor.as_ref()?;
 
         match under_cursor.kind() {
-            "identifier" if ctx.matches_ancestor_history(&["relation", "object_reference"]) => {
+            "identifier"
+                if ctx.matches_ancestor_history(&["relation", "object_reference"])
+                    || ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"]) =>
+            {
                 let num_sibs = ctx.num_siblings();
                 if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {
                     return Some(HoveredNode::Schema(NodeIdentification::Name(node_content)));
@@ -93,7 +96,16 @@ impl HoveredNode {
                 }
             }
 
-            "identifier" if ctx.matches_one_of_ancestors(&["alter_role", "policy_to_role"]) => {
+            "identifier"
+                if ctx.matches_one_of_ancestors(&[
+                    "alter_role",
+                    "policy_to_role",
+                    "role_specification",
+                ]) || ctx.before_cursor_matches_kind(&["keyword_revoke"]) =>
+            {
+                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+            }
+            "grant_role" | "policy_role" => {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
             }
 
@@ -127,16 +139,12 @@ impl HoveredNode {
                 }
             }
 
-            "revoke_role" | "grant_role" | "policy_role" => {
-                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
-            }
-
             // quoted columns
             "literal" if ctx.matches_ancestor_history(&["select_expression", "term"]) => {
                 Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
             }
 
-            "revoke_table" | "grant_table" => {
+            "grant_table" => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
                         schema.clone(),
