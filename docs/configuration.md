@@ -54,7 +54,7 @@ You can control the files/folders to process using different strategies, either 
 The first way to control which files and folders are processed is to list them in the CLI. In the following command, we only check `file1.sql` and all the files in the `src` folder, because folders are recursively traversed.
 
 ```shell
-postgrestools check file1.js src/
+postgres-language-server check file1.js src/
 ```
 
 ### Control files via configuration

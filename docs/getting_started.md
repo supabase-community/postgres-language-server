@@ -7,7 +7,7 @@ The Postgres Language Server can be installed as a development dependency of you
 We recommend creating a `postgres-language-server.jsonc` configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the `postgres-language-server.jsonc` file, run the `init` command in the root folder of your project:
 
 ```sh
-postgrestools init
+postgres-language-server init
 ```
 
 You’ll now have a `postgres-language-server.jsonc` file in your directory:
@@ -45,9 +45,9 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
 
 [//]: # "END DEFAULT_CONFIGURATION"
 
-Make sure to edit the database connection settings to connect to your local development database. To see all options, run `postgrestools --help`.
+Make sure to edit the database connection settings to connect to your local development database. To see all options, run `postgres-language-server --help`.
 
-You can use your current `postgrestools` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/0.8.1/schema.json`.
+You can use your current `postgres-language-server` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/0.8.1/schema.json`.
 
 ## Usage
 
@@ -59,13 +59,13 @@ The CLI exposes a `check` command that will run all checks on the given files or
 
 ```sh
 # check a specific file
-postgrestools check myfile.sql
+postgres-language-server check myfile.sql
 
 # check a directory
-postgrestools check supabase/migrations
+postgres-language-server check supabase/migrations
 ```
 
-Run `postgrestools --help` for all options. The CLI options take precedence over what is loaded from `postgres-language-server.jsonc`.
+Run `postgres-language-server --help` for all options. The CLI options take precedence over what is loaded from `postgres-language-server.jsonc`.
 
 ### Editor Integrations
 
@@ -78,7 +78,7 @@ The Postgres Language Server is available as an extension in your favorite edito
 
 ### Continuous Integration
 
-Run `postgrestools check` in your CI pipeline to lint your schema changes and enforce code quality across your team. We provide a [GitHub Action](https://github.com/supabase-community/postgrestools-cli-action) to setup the Postgres Language Server in your runner.
+Run `postgres-language-server check` in your CI pipeline to lint your schema changes and enforce code quality across your team. We provide a [GitHub Action](https://github.com/supabase-community/postgrestools-cli-action) to setup the Postgres Language Server in your runner.
 
 See the [Continuous Integration](/guides/continuous_integration) guide for an example.
 
