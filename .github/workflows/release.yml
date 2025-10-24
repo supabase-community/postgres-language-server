@@ -187,6 +187,7 @@ jobs:
           tag_name: ${{ steps.create_changelog.outputs.version }}
           files: |
             postgrestools_*
+            postgres-language-server_*
             docs/schema.json
           fail_on_unmatched_files: true
           draft: true
