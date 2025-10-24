@@ -34,7 +34,8 @@ impl HoveredNode {
         match under_cursor.kind() {
             "identifier"
                 if ctx.matches_ancestor_history(&["relation", "object_reference"])
-                    || ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"]) =>
+                    || ctx
+                        .matches_ancestor_history(&["grantable_on_table", "object_reference"]) =>
             {
                 let num_sibs = ctx.num_siblings();
                 if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {

@@ -27,7 +27,7 @@ module.exports = grammar({
     [$.between_expression, $.binary_expression],
     [$.time],
     [$.timestamp],
-    [$.revoke_on_function, $.revoke_on_table],
+    [$.grantable_on_function, $.grantable_on_table],
   ],
 
   precedences: ($) => [
@@ -3118,6 +3118,16 @@ module.exports = grammar({
 
     returning: ($) => seq($.keyword_returning, $.select_expression),
 
+    grant_statement: ($) =>
+      seq(
+        $.keyword_grant,
+        $._grantable_target_on,
+        $.keyword_to,
+        comma_list($.role_specification, true),
+        optional(seq($.keyword_with, $.keyword_grant, $.keyword_option)),
+        optional(seq($.keyword_granted, $.keyword_by, $.role_specification))
+      ),
+
     // todo: add support for various other revoke statements
     revoke_statement: ($) =>
       seq(
@@ -3134,26 +3144,33 @@ module.exports = grammar({
             )
           )
         ),
-        choice(
-          seq(
-            $.revoke_targets,
-            choice($.revoke_on_table, $.revoke_on_function, $.revoke_on_all)
-          ),
-          $.identifier
-        ),
+        $._grantable_target_on,
         $.keyword_from,
         comma_list($.role_specification, true),
         optional(seq($.keyword_granted, $.keyword_by, $.role_specification)),
         optional(choice($.keyword_cascade, $.keyword_restrict))
       ),
 
-    revoke_targets: ($) =>
+    _grantable_target_on: ($) =>
       choice(
-        seq($._revoke_keyword, comma_list($.identifier, false)),
+        seq(
+          $.grantable_targets,
+          choice(
+            $.grantable_on_table,
+            $.grantable_on_function,
+            $.grantable_on_all
+          )
+        ),
+        $.identifier
+      ),
+
+    grantable_targets: ($) =>
+      choice(
+        seq($._grantable, comma_list($.identifier, false)),
         comma_list($.identifier, true)
       ),
 
-    _revoke_keyword: ($) =>
+    _grantable: ($) =>
       choice(
         comma_list(
           choice(
@@ -3165,14 +3182,15 @@ module.exports = grammar({
             $.keyword_references,
             $.keyword_trigger,
             $.keyword_maintain,
-            $.keyword_execute
+            $.keyword_execute,
+            $.keyword_references
           ),
           true
         ),
         seq($.keyword_all, optional($.keyword_privileges))
       ),
 
-    revoke_on_function: ($) =>
+    grantable_on_function: ($) =>
       seq(
         $.keyword_on,
         optional(
@@ -3184,7 +3202,7 @@ module.exports = grammar({
         )
       ),
 
-    revoke_on_table: ($) =>
+    grantable_on_table: ($) =>
       prec(
         1,
         seq(
@@ -3194,7 +3212,7 @@ module.exports = grammar({
         )
       ),
 
-    revoke_on_all: ($) =>
+    grantable_on_all: ($) =>
       seq(
         $.keyword_on,
         $.keyword_all,

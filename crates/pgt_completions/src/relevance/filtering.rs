@@ -99,9 +99,8 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Table(_) => match clause {
                         WrappingClause::From | WrappingClause::Update => true,
 
-                        WrappingClause::RevokeStatement => {
-                            ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"])
-                        }
+                        WrappingClause::RevokeStatement => ctx
+                            .matches_ancestor_history(&["grantable_on_table", "object_reference"]),
 
                         WrappingClause::Join { on_node: None } => true,
                         WrappingClause::Join { on_node: Some(on) } => ctx
@@ -207,9 +206,11 @@ impl CompletionFilter<'_> {
                         | WrappingClause::Delete => true,
 
                         WrappingClause::RevokeStatement => {
-                            (ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"])
-                                && ctx.schema_or_alias_name.is_none())
-                                || ctx.matches_ancestor_history(&["revoke_on_all"])
+                            (ctx.matches_ancestor_history(&[
+                                "grantable_on_table",
+                                "object_reference",
+                            ]) && ctx.schema_or_alias_name.is_none())
+                                || ctx.matches_ancestor_history(&["grantable_on_all"])
                         }
 
                         WrappingClause::Where => {
