@@ -2,13 +2,9 @@ use std::{
     cmp,
     collections::{HashMap, HashSet},
 };
-mod base_parser;
-mod grant_parser;
 
 use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
 use pgt_text_size::{TextRange, TextSize};
-
-use crate::context::{base_parser::CompletionStatementParser, grant_parser::GrantParser};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum WrappingClause<'a> {
@@ -27,11 +23,11 @@ pub enum WrappingClause<'a> {
     DropColumn,
     AlterColumn,
     RenameColumn,
-    ToRoleAssignment,
     SetStatement,
     AlterRole,
     DropRole,
     RevokeStatement,
+    GrantStatement,
 
     CreatePolicy,
     AlterPolicy,
@@ -194,42 +190,10 @@ impl<'a> TreesitterContext<'a> {
             mentioned_columns: HashMap::new(),
         };
 
-        if GrantParser::looks_like_matching_stmt(params.text) {
-            ctx.gather_grant_context();
-        } else {
-            ctx.gather_tree_context();
-            ctx.gather_info_from_ts_queries();
-        }
+        ctx.gather_tree_context();
+        ctx.gather_info_from_ts_queries();
 
         ctx
-    }
-
-    fn gather_grant_context(&mut self) {
-        let grant_context = GrantParser::get_context(self.text, self.position);
-
-        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: grant_context.node_text,
-            range: grant_context.node_range,
-            kind: grant_context.node_kind.clone(),
-            previous_node_kind: None,
-        });
-
-        if grant_context.node_kind == "grant_table" {
-            self.schema_or_alias_name = grant_context.schema_name.clone();
-        }
-
-        if grant_context.table_name.is_some() {
-            let mut new = HashSet::new();
-            new.insert(grant_context.table_name.unwrap());
-            self.mentioned_relations
-                .insert(grant_context.schema_name, new);
-        }
-
-        self.wrapping_clause_type = match grant_context.node_kind.as_str() {
-            "grant_role" => Some(WrappingClause::ToRoleAssignment),
-            "grant_table" => Some(WrappingClause::From),
-            _ => None,
-        };
     }
 
     fn gather_info_from_ts_queries(&mut self) {
@@ -655,6 +619,7 @@ impl<'a> TreesitterContext<'a> {
             "alter_table" => Some(WrappingClause::AlterTable),
             "set_statement" => Some(WrappingClause::SetStatement),
             "revoke_statement" => Some(WrappingClause::RevokeStatement),
+            "grant_statement" => Some(WrappingClause::RevokeStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),

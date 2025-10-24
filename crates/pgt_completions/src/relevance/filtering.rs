@@ -99,9 +99,8 @@ impl CompletionFilter<'_> {
                     CompletionRelevanceData::Table(_) => match clause {
                         WrappingClause::From | WrappingClause::Update => true,
 
-                        WrappingClause::RevokeStatement => {
-                            ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"])
-                        }
+                        WrappingClause::RevokeStatement | WrappingClause::GrantStatement => ctx
+                            .matches_ancestor_history(&["grantable_on_table", "object_reference"]),
 
                         WrappingClause::Join { on_node: None } => true,
                         WrappingClause::Join { on_node: Some(on) } => ctx
@@ -206,10 +205,12 @@ impl CompletionFilter<'_> {
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
 
-                        WrappingClause::RevokeStatement => {
-                            (ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"])
-                                && ctx.schema_or_alias_name.is_none())
-                                || ctx.matches_ancestor_history(&["revoke_on_all"])
+                        WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
+                            (ctx.matches_ancestor_history(&[
+                                "grantable_on_table",
+                                "object_reference",
+                            ]) && ctx.schema_or_alias_name.is_none())
+                                || ctx.matches_ancestor_history(&["grantable_on_all"])
                         }
 
                         WrappingClause::Where => {
@@ -248,18 +249,17 @@ impl CompletionFilter<'_> {
                     }
 
                     CompletionRelevanceData::Role(_) => match clause {
-                        WrappingClause::DropRole
-                        | WrappingClause::AlterRole
-                        | WrappingClause::ToRoleAssignment => true,
+                        WrappingClause::DropRole | WrappingClause::AlterRole => true,
 
                         WrappingClause::SetStatement => ctx
                             .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
 
-                        WrappingClause::RevokeStatement => {
+                        WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
                             ctx.matches_ancestor_history(&["role_specification"])
                                 || ctx.node_under_cursor.as_ref().is_some_and(|k| {
                                     k.kind() == "identifier"
                                         && ctx.before_cursor_matches_kind(&[
+                                            "keyword_grant",
                                             "keyword_revoke",
                                             "keyword_for",
                                         ])
