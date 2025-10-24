@@ -26,6 +26,10 @@ jobs:
           node-version: lts/*
           registry-url: "https://registry.npmjs.org"
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Verify `jq` is installed
         run: |
           if ! jq --version 2>/dev/null; then
@@ -55,14 +59,14 @@ jobs:
           for package in packages/@postgrestools/*; do
             npm publish "$package" --tag nightly --access public --provenance
           done
-        
+
       - name: Publish npm packages as nightly
         if: inputs.is-prerelease == 'true'
         run: |
           for package in packages/@postgres-language-server/*; do
             npm publish "$package" --tag nightly --access public --provenance
           done
-        
+
       - name: Publish npm packages as latest (deprecated)
         if: inputs.is-prerelease != 'true'
         run: |
@@ -77,7 +81,7 @@ jobs:
               npm publish "$package" --tag latest --access public --provenance
             fi
           done
-        
+
       - name: Publish npm packages as latest
         if: inputs.is-prerelease != 'true'
         run: |
@@ -92,4 +96,4 @@ jobs:
               npm publish "$package" --tag latest --access public --provenance
             fi
           done
-        
+
