@@ -173,7 +173,7 @@
 <p>You can control the files/folders to process using different strategies, either CLI, configuration and VCS.</p>
 <h3 id="include-files-via-cli">Include files via CLI</h3>
 <p>The first way to control which files and folders are processed is to list them in the CLI. In the following command, we only check <code>file1.sql</code> and all the files in the <code>src</code> folder, because folders are recursively traversed.</p>
-<pre><code class="language-shell">postgrestools check file1.js src/
+<pre><code class="language-shell">postgres-language-server check file1.js src/
 </code></pre>
 <h3 id="control-files-via-configuration">Control files via configuration</h3>
 <p>The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the <code>files.includes</code> field. <code>files.includes</code> accepts glob patterns such as sql/*<em>/</em>.sql. Negated patterns starting with <code>!</code> can be used to exclude files.</p>

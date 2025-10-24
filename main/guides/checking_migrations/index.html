@@ -117,7 +117,7 @@
                 <h1 id="linting-migrations">Linting Migrations</h1>
 <p>Postgres Language Tools comes with a <code>check</code> command that can be integrated into your development workflow to catch problematic schema changes and encourage best practices.</p>
 <p>To run it, simply point at your migrations directory.</p>
-<pre><code class="language-sh">postgrestools check supabase/migrations
+<pre><code class="language-sh">postgres-language-server check supabase/migrations
 </code></pre>
 <p>When you are setting it up in an existing project, you might want to ignore all migrations that are already applied. To do so, add <code>migrationsDir</code> and <code>after</code> to your <code>postgres-language-server.jsonc</code> file</p>
 <pre><code class="language-json">{
@@ -128,7 +128,7 @@
 }
 </code></pre>
 <p>Alternatively, pass them directly.</p>
-<pre><code>postgrestools check supabase/migrations --migrations-dir=&quot;supabase/migrations&quot; --after=1740868021
+<pre><code>postgres-language-server check supabase/migrations --migrations-dir=&quot;supabase/migrations&quot; --after=1740868021
 </code></pre>
 <p>This will only check migrations after the specified timestamp.</p>
 <p>For pre-commit hooks and when working locally, use <code>--staged</code> to only lint files that have been staged. In CI environments, you most likely want to use <code>--changed</code> to only lint files that have been changed compared to your <code>vcs.default_branch</code> configuration. If <code>default_branch</code> is not set in your <code>postgres-language-server.jsonc</code>, use <code>--since=REF</code> to specify the base branch to compare against.</p>

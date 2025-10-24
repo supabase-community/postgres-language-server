@@ -117,18 +117,18 @@
                 <h1 id="cli-reference">CLI Reference</h1>
 <h1 id="command-summary">Command summary</h1>
 <ul>
-<li><a href="#postgrestools"><code>postgrestools</code>↴</a></li>
-<li><a href="#postgrestools-version"><code>postgrestools version</code>↴</a></li>
-<li><a href="#postgrestools-check"><code>postgrestools check</code>↴</a></li>
-<li><a href="#postgrestools-start"><code>postgrestools start</code>↴</a></li>
-<li><a href="#postgrestools-stop"><code>postgrestools stop</code>↴</a></li>
-<li><a href="#postgrestools-init"><code>postgrestools init</code>↴</a></li>
-<li><a href="#postgrestools-lsp-proxy"><code>postgrestools lsp-proxy</code>↴</a></li>
-<li><a href="#postgrestools-clean"><code>postgrestools clean</code>↴</a></li>
+<li><a href="#postgres-language-server"><code>postgres-language-server</code>↴</a></li>
+<li><a href="#postgres-language-server-version"><code>postgres-language-server version</code>↴</a></li>
+<li><a href="#postgres-language-server-check"><code>postgres-language-server check</code>↴</a></li>
+<li><a href="#postgres-language-server-start"><code>postgres-language-server start</code>↴</a></li>
+<li><a href="#postgres-language-server-stop"><code>postgres-language-server stop</code>↴</a></li>
+<li><a href="#postgres-language-server-init"><code>postgres-language-server init</code>↴</a></li>
+<li><a href="#postgres-language-server-lsp-proxy"><code>postgres-language-server lsp-proxy</code>↴</a></li>
+<li><a href="#postgres-language-server-clean"><code>postgres-language-server clean</code>↴</a></li>
 </ul>
-<h2 id="postgrestools">postgrestools</h2>
+<h2 id="postgres-language-server">postgres-language-server</h2>
 <p>PostgresTools official CLI. Use it to check the health of your project or run it to check single files.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <em><code>COMMAND ...</code></em></p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <em><code>COMMAND ...</code></em></p>
 <p><strong>Available options:</strong></p>
 <ul>
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
@@ -153,9 +153,9 @@
 <li><strong><code>clean</code></strong> &mdash;
   Cleans the logs emitted by the daemon.</li>
 </ul>
-<h2 id="postgrestools-version">postgrestools version</h2>
+<h2 id="postgres-language-server-version">postgres-language-server version</h2>
 <p>Shows the version information and quit.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>version</code></strong></p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>version</code></strong></p>
 <p><strong>Global options applied to all commands</strong></p>
 <ul>
 <li><strong><code>--colors</code></strong>=<em><code>&lt;off|force&gt;</code></em> &mdash;
@@ -167,7 +167,7 @@
 <li><strong><code>--verbose</code></strong> &mdash;
   Print additional diagnostics, and some diagnostics show more information. Also, print out what files were processed and which ones were modified.</li>
 <li><strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash;
-  Set the file path to the configuration file, or the directory path to find <code>postgrestools.jsonc</code>. If used, it disables the default configuration file resolution.</li>
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. If used, it disables the default configuration file resolution.</li>
 <li><strong><code>--max-diagnostics</code></strong>=<em><code>&lt;none|&lt;NUMBER&gt;&gt;</code></em> &mdash;
   Cap the amount of diagnostics displayed. When <code>none</code> is provided, the limit is lifted.
   [default: 20]</li>
@@ -197,9 +197,9 @@
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
-<h2 id="postgrestools-check">postgrestools check</h2>
+<h2 id="postgres-language-server-check">postgres-language-server check</h2>
 <p>Runs everything to the requested files.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>check</code></strong> [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<em><code>PATH</code></em>]...</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>check</code></strong> [<strong><code>--staged</code></strong>] [<strong><code>--changed</code></strong>] [<strong><code>--since</code></strong>=<em><code>REF</code></em>] [<em><code>PATH</code></em>]...</p>
 <p><strong>The configuration that is contained inside the configuration file.</strong></p>
 <ul>
 <li><strong><code>--vcs-enabled</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash;
@@ -209,7 +209,7 @@
 <li><strong><code>--vcs-use-ignore-file</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash;
   Whether we should use the VCS ignore file. When [true], we will ignore the files specified in the ignore file.</li>
 <li><strong><code>--vcs-root</code></strong>=<em><code>PATH</code></em> &mdash;
-  The folder where we should check for VCS files. By default, we will use the same folder where <code>postgrestools.jsonc</code> was found.</li>
+  The folder where we should check for VCS files. By default, we will use the same folder where <code>postgres-language-server.jsonc</code> was found.</li>
 </ul>
 <p>If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted</p>
 <ul>
@@ -293,9 +293,9 @@
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
-<h2 id="postgrestools-start">postgrestools start</h2>
+<h2 id="postgres-language-server-start">postgres-language-server start</h2>
 <p>Starts the daemon server process.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>start</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>start</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
 <p><strong>Available options:</strong></p>
 <ul>
 <li><strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash;
@@ -311,25 +311,25 @@
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
-<h2 id="postgrestools-stop">postgrestools stop</h2>
+<h2 id="postgres-language-server-stop">postgres-language-server stop</h2>
 <p>Stops the daemon server process.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>stop</code></strong></p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>stop</code></strong></p>
 <p><strong>Available options:</strong></p>
 <ul>
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
-<h2 id="postgrestools-init">postgrestools init</h2>
+<h2 id="postgres-language-server-init">postgres-language-server init</h2>
 <p>Bootstraps a new project. Creates a configuration file with some defaults.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>init</code></strong></p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>init</code></strong></p>
 <p><strong>Available options:</strong></p>
 <ul>
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
-<h2 id="postgrestools-lsp-proxy">postgrestools lsp-proxy</h2>
+<h2 id="postgres-language-server-lsp-proxy">postgres-language-server lsp-proxy</h2>
 <p>Acts as a server for the Language Server Protocol over stdin/stdout.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>lsp-proxy</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>lsp-proxy</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>]</p>
 <p><strong>Available options:</strong></p>
 <ul>
 <li><strong><code>--log-prefix-name</code></strong>=<em><code>STRING</code></em> &mdash;
@@ -345,9 +345,9 @@
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;
   Prints help information</li>
 </ul>
-<h2 id="postgrestools-clean">postgrestools clean</h2>
+<h2 id="postgres-language-server-clean">postgres-language-server clean</h2>
 <p>Cleans the logs emitted by the daemon.</p>
-<p><strong>Usage</strong>: <strong><code>postgrestools</code></strong> <strong><code>clean</code></strong></p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>clean</code></strong></p>
 <p><strong>Available options:</strong></p>
 <ul>
 <li><strong><code>-h</code></strong>, <strong><code>--help</code></strong> &mdash;

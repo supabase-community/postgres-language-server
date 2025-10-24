@@ -119,7 +119,7 @@
                 <h1 id="continuous-integration">Continuous Integration</h1>
 <p>Running the Postgres Language Server in a CI environment can boost your teams confidence by linting your schema changes and catching errors early.</p>
 <h3 id="github-actions">GitHub Actions</h3>
-<p>We provide a first-party <a href="https://github.com/supabase-community/postgrestools-cli-action">GitHub Action</a> to setup the CLI in your runner. Here’s what a simple workflow might look like:</p>
+<p>We provide a first-party <a href="https://github.com/supabase-community/postgrestools-cli-action">GitHub Action</a> to setup the CLI in your runner. Here's what a simple workflow might look like:</p>
 <pre><code class="language-yaml">jobs:
   lint:
     runs-on: ubuntu-latest
@@ -128,7 +128,7 @@
       - uses: supabase-community/pglt-cli-action@main
         with:
           version: latest
-      - run: postgrestools check --skip-db sql/
+      - run: postgres-language-server check --skip-db sql/
 </code></pre>
 <p>You likely want to setup Postgres to enable more advanced checks:</p>
 <pre><code class="language-yaml">jobs:
@@ -148,7 +148,7 @@
       - uses: supabase-community/pglt-cli-action@main
         with:
           version: latest
-      - run: postgrestools check sql/
+      - run: postgres-language-server check sql/
 </code></pre>
 <p>A common use-case is to check your migration files. Check out <a href="../checking_migrations/">the dedicated guide</a> for details.</p>
               

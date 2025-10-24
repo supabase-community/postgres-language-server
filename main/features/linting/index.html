@@ -161,13 +161,13 @@ DROP TABLE temp_migration_table;
 <h2 id="cli-usage">CLI Usage</h2>
 <p>The linter can also be used via the CLI for CI integration:</p>
 <pre><code class="language-bash"># Lint specific files
-postgrestools check migrations/
+postgres-language-server check migrations/
 
 # With specific rules
-postgrestools check migrations/ --only safety/banDropColumn
+postgres-language-server check migrations/ --only safety/banDropColumn
 
 # Skip certain rules
-postgrestools check migrations/ --skip safety/banDropTable
+postgres-language-server check migrations/ --skip safety/banDropTable
 </code></pre>
 <p>See the <a href="../../reference/cli/">CLI Reference</a> for more options, and check the guide on <a href="" title="../guides/checking_migrations.md">linting migrations</a>.</p>
               

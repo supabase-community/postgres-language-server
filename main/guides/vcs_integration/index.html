@@ -154,14 +154,14 @@ First, you have to update your configuration file with the default branch via th
 }
 </code></pre>
 <p>Add the <code>--changed</code> option to your command to process only those files that your VCS acknowledged as “changed”. The language server will determine the changed files from the branch <code>main</code> and your current revision:</p>
-<pre><code class="language-shell">postgrestools check --changed
+<pre><code class="language-shell">postgres-language-server check --changed
 </code></pre>
 <p>Alternatively, you can use the option <code>--since</code> to specify an arbitrary branch. This option takes precedence over the option <code>vcs.defaultBranch</code>. For example, you might want to check your changes against the <code>next</code> branch:</p>
-<pre><code class="language-shell">postgrestools check --changed --since=next
+<pre><code class="language-shell">postgres-language-server check --changed --since=next
 </code></pre>
 <h2 id="process-only-staged-files">Process only staged files</h2>
 <p>Before committing your changes, you may want to check the files that have been added to the index, also known as staged files. Add the <code>--staged</code> option to process only those files:</p>
-<pre><code class="language-shell">postgrestools check --staged
+<pre><code class="language-shell">postgres-language-server check --staged
 </code></pre>
               
             </div>

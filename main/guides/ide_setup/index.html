@@ -158,10 +158,10 @@
 <h3 id="use-the-daemon-with-the-binary">Use the daemon with the binary</h3>
 <p>Using the binary via CLI is very efficient, although you will not be able to provide logs to your users. The CLI allows you to bootstrap a daemon and then use the CLI commands through the daemon itself.</p>
 <p>If order to do so, you first need to start a daemon process with the start command:</p>
-<pre><code class="language-shell">postgrestools start
+<pre><code class="language-shell">postgres-language-server start
 </code></pre>
 <p>Then, every command needs to add the <code>--use-server</code> options, e.g.:</p>
-<pre><code class="language-shell">postgrestools check --use-server --stdin-file-path=dummy.sql
+<pre><code class="language-shell">postgres-language-server check --use-server --stdin-file-path=dummy.sql
 </code></pre>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

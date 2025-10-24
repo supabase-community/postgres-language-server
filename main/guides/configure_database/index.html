@@ -165,12 +165,12 @@
 <h2 id="security-considerations">Security Considerations</h2>
 <h3 id="read-only-access">Read-Only Access</h3>
 <p>The language server primarily needs read access to your database schema. Consider creating a dedicated user with limited permissions:</p>
-<pre><code class="language-sql">CREATE USER postgrestools_lsp WITH PASSWORD 'secure_password';
-GRANT CONNECT ON DATABASE your_database TO postgrestools_lsp;
-GRANT USAGE ON SCHEMA public TO postgrestools_lsp;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO postgrestools_lsp;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO postgrestools_lsp;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgrestools_lsp;
+<pre><code class="language-sql">CREATE USER postgres_language_server WITH PASSWORD 'secure_password';
+GRANT CONNECT ON DATABASE your_database TO postgres_language_server;
+GRANT USAGE ON SCHEMA public TO postgres_language_server;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO postgres_language_server;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO postgres_language_server;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgres_language_server;
 </code></pre>
 <h3 id="statement-execution-control">Statement Execution Control</h3>
 <p>You can control which schemas allow code action statement execution (executing statements under the cursor):</p>
@@ -189,7 +189,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgrestools_lsp;
 }
 </code></pre>
 <p>Or use the command line flag:</p>
-<pre><code class="language-bash">postgrestools check sql/ --disable-db
+<pre><code class="language-bash">postgres-language-server check sql/ --disable-db
 </code></pre>
 <p>When disabled, you'll still get:</p>
 <ul>

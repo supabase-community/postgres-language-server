@@ -129,7 +129,7 @@
 <p>The Postgres Language Server can be installed as a development dependency of your project, a standalone executable, or as an extension of your favorite editor.</p>
 <h2 id="configuration">Configuration</h2>
 <p>We recommend creating a <code>postgres-language-server.jsonc</code> configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the <code>postgres-language-server.jsonc</code> file, run the <code>init</code> command in the root folder of your project:</p>
-<pre><code class="language-sh">postgrestools init
+<pre><code class="language-sh">postgres-language-server init
 </code></pre>
 <p>You’ll now have a <code>postgres-language-server.jsonc</code> file in your directory:</p>
 <pre><code class="language-json">{
@@ -159,19 +159,19 @@
   }
 }
 </code></pre>
-<p>Make sure to edit the database connection settings to connect to your local development database. To see all options, run <code>postgrestools --help</code>.</p>
-<p>You can use your current <code>postgrestools</code> version instead of "latest" in the <code>$schema</code> URL, e.g. <code>https://pgtools.dev/0.8.1/schema.json</code>.</p>
+<p>Make sure to edit the database connection settings to connect to your local development database. To see all options, run <code>postgres-language-server --help</code>.</p>
+<p>You can use your current <code>postgres-language-server</code> version instead of "latest" in the <code>$schema</code> URL, e.g. <code>https://pg-language-server.com/0.8.1/schema.json</code>.</p>
 <h2 id="usage">Usage</h2>
 <p>Lets get a quick overview of how to use the Postgres Language Server in your project.</p>
 <h3 id="command-line-interface">Command-line interface</h3>
 <p>The CLI exposes a <code>check</code> command that will run all checks on the given files or paths.</p>
 <pre><code class="language-sh"># check a specific file
-postgrestools check myfile.sql
+postgres-language-server check myfile.sql
 
 # check a directory
-postgrestools check supabase/migrations
+postgres-language-server check supabase/migrations
 </code></pre>
-<p>Run <code>postgrestools --help</code> for all options. The CLI options take precedence over what is loaded from <code>postgres-language-server.jsonc</code>.</p>
+<p>Run <code>postgres-language-server --help</code> for all options. The CLI options take precedence over what is loaded from <code>postgres-language-server.jsonc</code>.</p>
 <h3 id="editor-integrations">Editor Integrations</h3>
 <p>The Postgres Language Server is available as an extension in your favorite editors.</p>
 <ul>
@@ -181,7 +181,7 @@ postgrestools check supabase/migrations
 <li>Zed: The language server is available as an Extension. It's published from <a href="https://github.com/LoamStudios/zed-postgres-language-server">this repo</a>.</li>
 </ul>
 <h3 id="continuous-integration">Continuous Integration</h3>
-<p>Run <code>postgrestools check</code> in your CI pipeline to lint your schema changes and enforce code quality across your team. We provide a <a href="https://github.com/supabase-community/postgrestools-cli-action">GitHub Action</a> to setup the Postgres Language Server in your runner.</p>
+<p>Run <code>postgres-language-server check</code> in your CI pipeline to lint your schema changes and enforce code quality across your team. We provide a <a href="https://github.com/supabase-community/postgrestools-cli-action">GitHub Action</a> to setup the Postgres Language Server in your runner.</p>
 <p>See the <a href="/guides/continuous_integration">Continuous Integration</a> guide for an example.</p>
               
             </div>
