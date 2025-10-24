@@ -10,7 +10,7 @@ A configuration file is usually placed in your project’s root folder. It is or
 
 ```json
 {
-  "$schema": "https://pgtools.dev/latest/schema.json",
+  "$schema": "https://pg-language-server.com/latest/schema.json",
   "linter": {
     "enabled": true,
     "rules": {
@@ -32,7 +32,7 @@ Some tools that the Postgres Language Server provides are implemented as mere in
 
 ```json
 {
-  "$schema": "https://pgtools.dev/latest/schema.json",
+  "$schema": "https://pg-language-server.com/latest/schema.json",
   "db": {
     "host": "127.0.0.1",
     "port": 5432,

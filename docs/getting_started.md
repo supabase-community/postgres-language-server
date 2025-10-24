@@ -16,7 +16,7 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
 
 ```json
 {
-  "$schema": "https://pgtools.dev/latest/schema.json",
+  "$schema": "https://pg-language-server.com/latest/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
