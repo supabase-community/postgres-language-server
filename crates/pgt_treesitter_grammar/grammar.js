@@ -27,6 +27,7 @@ module.exports = grammar({
     [$.between_expression, $.binary_expression],
     [$.time],
     [$.timestamp],
+    [$.revoke_on_function, $.revoke_on_table],
   ],
 
   precedences: ($) => [
@@ -270,6 +271,16 @@ module.exports = grammar({
     keyword_current_user: (_) => make_keyword("current_user"),
     keyword_session_user: (_) => make_keyword("session_user"),
 
+    keyword_grant: (_) => make_keyword("grant"),
+    keyword_revoke: (_) => make_keyword("revoke"),
+    keyword_granted: (_) => make_keyword("granted"),
+    keyword_privileges: (_) => make_keyword("privileges"),
+    keyword_inherit: (_) => make_keyword("inherit"),
+    keyword_maintain: (_) => make_keyword("maintain"),
+    keyword_functions: (_) => make_keyword("functions"),
+    keyword_routines: (_) => make_keyword("routines"),
+    keyword_procedures: (_) => make_keyword("procedures"),
+
     keyword_trigger: (_) => make_keyword("trigger"),
     keyword_function: (_) => make_keyword("function"),
     keyword_returns: (_) => make_keyword("returns"),
@@ -329,6 +340,7 @@ module.exports = grammar({
     keyword_statement: (_) => make_keyword("statement"),
     keyword_execute: (_) => make_keyword("execute"),
     keyword_procedure: (_) => make_keyword("procedure"),
+    keyword_routine: (_) => make_keyword("routine"),
     keyword_object_id: (_) => make_keyword("object_id"),
 
     // Hive Keywords
@@ -716,7 +728,8 @@ module.exports = grammar({
         $._merge_statement,
         $.comment_statement,
         $.set_statement,
-        $.reset_statement
+        $.reset_statement,
+        $.revoke_statement
       ),
 
     _cte: ($) =>
@@ -3104,6 +3117,106 @@ module.exports = grammar({
     offset: ($) => seq($.keyword_offset, $.literal),
 
     returning: ($) => seq($.keyword_returning, $.select_expression),
+
+    // todo: add support for various other revoke statements
+    revoke_statement: ($) =>
+      seq(
+        $.keyword_revoke,
+        optional(
+          choice(
+            seq($.keyword_grant, $.keyword_option, $.keyword_for),
+            seq(
+              optional(
+                choice($.keyword_admin, $.keyword_inherit, $.keyword_set)
+              ),
+              $.keyword_option,
+              $.keyword_for
+            )
+          )
+        ),
+        choice(
+          seq(
+            $.revoke_targets,
+            choice($.revoke_on_table, $.revoke_on_function, $.revoke_on_all)
+          ),
+          $.identifier
+        ),
+        $.keyword_from,
+        comma_list($.role_specification, true),
+        optional(seq($.keyword_granted, $.keyword_by, $.role_specification)),
+        optional(choice($.keyword_cascade, $.keyword_restrict))
+      ),
+
+    revoke_targets: ($) =>
+      choice(
+        seq($._revoke_keyword, comma_list($.identifier, false)),
+        comma_list($.identifier, true)
+      ),
+
+    _revoke_keyword: ($) =>
+      choice(
+        comma_list(
+          choice(
+            $.keyword_select,
+            $.keyword_insert,
+            $.keyword_update,
+            $.keyword_delete,
+            $.keyword_truncate,
+            $.keyword_references,
+            $.keyword_trigger,
+            $.keyword_maintain,
+            $.keyword_execute
+          ),
+          true
+        ),
+        seq($.keyword_all, optional($.keyword_privileges))
+      ),
+
+    revoke_on_function: ($) =>
+      seq(
+        $.keyword_on,
+        optional(
+          choice($.keyword_function, $.keyword_procedure, $.keyword_routine)
+        ),
+        comma_list(
+          seq($.object_reference, optional($.function_arguments)),
+          true
+        )
+      ),
+
+    revoke_on_table: ($) =>
+      prec(
+        1,
+        seq(
+          $.keyword_on,
+          optional($.keyword_table),
+          comma_list($.object_reference, true)
+        )
+      ),
+
+    revoke_on_all: ($) =>
+      seq(
+        $.keyword_on,
+        $.keyword_all,
+        choice(
+          $.keyword_tables,
+          $.keyword_functions,
+          $.keyword_procedures,
+          $.keyword_routines
+        ),
+        $.keyword_in,
+        $.keyword_schema,
+        comma_list($.identifier, true)
+      ),
+
+    role_specification: ($) =>
+      choice(
+        seq(optional($.keyword_group), $.identifier),
+        $.keyword_public,
+        $.keyword_current_role,
+        $.keyword_current_user,
+        $.keyword_session_user
+      ),
 
     _expression: ($) =>
       prec(
