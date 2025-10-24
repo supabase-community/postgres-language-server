@@ -8,8 +8,7 @@ pub(crate) fn replace_section(
     replacement: &str,
 ) -> String {
     let pattern = format!(
-        r"(\[//\]: # \(BEGIN {}\)\n)(?s).*?(\n\[//\]: # \(END {}\))",
-        section_identifier, section_identifier
+        r"(\[//\]: # \(BEGIN {section_identifier}\)\n)(?s).*?(\n\[//\]: # \(END {section_identifier}\))"
     );
     let re = Regex::new(&pattern).unwrap();
 
