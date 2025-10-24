@@ -1,6 +1,8 @@
 //! Generated file, do not edit by hand, see `xtask/codegen`
 
 use crate::lint;
+pub type AddSerialColumn =
+    <lint::safety::add_serial_column::AddSerialColumn as pgt_analyse::Rule>::Options;
 pub type AddingFieldWithDefault =
     <lint::safety::adding_field_with_default::AddingFieldWithDefault as pgt_analyse::Rule>::Options;
 pub type AddingForeignKeyConstraint = < lint :: safety :: adding_foreign_key_constraint :: AddingForeignKeyConstraint as pgt_analyse :: Rule > :: Options ;
@@ -23,7 +25,12 @@ pub type BanTruncateCascade =
 pub type ChangingColumnType =
     <lint::safety::changing_column_type::ChangingColumnType as pgt_analyse::Rule>::Options;
 pub type ConstraintMissingNotValid = < lint :: safety :: constraint_missing_not_valid :: ConstraintMissingNotValid as pgt_analyse :: Rule > :: Options ;
+pub type CreatingEnum = <lint::safety::creating_enum::CreatingEnum as pgt_analyse::Rule>::Options;
 pub type DisallowUniqueConstraint = < lint :: safety :: disallow_unique_constraint :: DisallowUniqueConstraint as pgt_analyse :: Rule > :: Options ;
+pub type LockTimeoutWarning =
+    <lint::safety::lock_timeout_warning::LockTimeoutWarning as pgt_analyse::Rule>::Options;
+pub type MultipleAlterTable =
+    <lint::safety::multiple_alter_table::MultipleAlterTable as pgt_analyse::Rule>::Options;
 pub type PreferBigInt = <lint::safety::prefer_big_int::PreferBigInt as pgt_analyse::Rule>::Options;
 pub type PreferBigintOverInt =
     <lint::safety::prefer_bigint_over_int::PreferBigintOverInt as pgt_analyse::Rule>::Options;
@@ -43,5 +50,6 @@ pub type RenamingTable =
     <lint::safety::renaming_table::RenamingTable as pgt_analyse::Rule>::Options;
 pub type RequireConcurrentIndexCreation = < lint :: safety :: require_concurrent_index_creation :: RequireConcurrentIndexCreation as pgt_analyse :: Rule > :: Options ;
 pub type RequireConcurrentIndexDeletion = < lint :: safety :: require_concurrent_index_deletion :: RequireConcurrentIndexDeletion as pgt_analyse :: Rule > :: Options ;
+pub type RunningStatementWhileHoldingAccessExclusive = < lint :: safety :: running_statement_while_holding_access_exclusive :: RunningStatementWhileHoldingAccessExclusive as pgt_analyse :: Rule > :: Options ;
 pub type TransactionNesting =
     <lint::safety::transaction_nesting::TransactionNesting as pgt_analyse::Rule>::Options;

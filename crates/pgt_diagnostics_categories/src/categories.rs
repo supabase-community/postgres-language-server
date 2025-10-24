@@ -13,6 +13,7 @@
 // must be between `define_categories! {\n` and `\n    ;\n`.
 
 define_categories! {
+    "lint/safety/addSerialColumn": "https://pgtools.dev/latest/rules/add-serial-column",
     "lint/safety/addingFieldWithDefault": "https://pgtools.dev/latest/rules/adding-field-with-default",
     "lint/safety/addingForeignKeyConstraint": "https://pgtools.dev/latest/rules/adding-foreign-key-constraint",
     "lint/safety/addingNotNullField": "https://pgtools.dev/latest/rules/adding-not-null-field",
@@ -27,7 +28,10 @@ define_categories! {
     "lint/safety/banTruncateCascade": "https://pgtools.dev/latest/rules/ban-truncate-cascade",
     "lint/safety/changingColumnType": "https://pgtools.dev/latest/rules/changing-column-type",
     "lint/safety/constraintMissingNotValid": "https://pgtools.dev/latest/rules/constraint-missing-not-valid",
+    "lint/safety/creatingEnum": "https://pgtools.dev/latest/rules/creating-enum",
     "lint/safety/disallowUniqueConstraint": "https://pgtools.dev/latest/rules/disallow-unique-constraint",
+    "lint/safety/lockTimeoutWarning": "https://pgtools.dev/latest/rules/lock-timeout-warning",
+    "lint/safety/multipleAlterTable": "https://pgtools.dev/latest/rules/multiple-alter-table",
     "lint/safety/preferBigInt": "https://pgtools.dev/latest/rules/prefer-big-int",
     "lint/safety/preferBigintOverInt": "https://pgtools.dev/latest/rules/prefer-bigint-over-int",
     "lint/safety/preferBigintOverSmallint": "https://pgtools.dev/latest/rules/prefer-bigint-over-smallint",
@@ -40,6 +44,7 @@ define_categories! {
     "lint/safety/renamingTable": "https://pgtools.dev/latest/rules/renaming-table",
     "lint/safety/requireConcurrentIndexCreation": "https://pgtools.dev/latest/rules/require-concurrent-index-creation",
     "lint/safety/requireConcurrentIndexDeletion": "https://pgtools.dev/latest/rules/require-concurrent-index-deletion",
+    "lint/safety/runningStatementWhileHoldingAccessExclusive": "https://pgtools.dev/latest/rules/running-statement-while-holding-access-exclusive",
     "lint/safety/transactionNesting": "https://pgtools.dev/latest/rules/transaction-nesting",
     // end lint rules
     ;

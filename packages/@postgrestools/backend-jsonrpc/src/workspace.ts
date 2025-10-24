@@ -63,6 +63,7 @@ export interface Advices {
 	advices: Advice[];
 }
 export type Category =
+	| "lint/safety/addSerialColumn"
 	| "lint/safety/addingFieldWithDefault"
 	| "lint/safety/addingForeignKeyConstraint"
 	| "lint/safety/addingNotNullField"
@@ -77,7 +78,10 @@ export type Category =
 	| "lint/safety/banTruncateCascade"
 	| "lint/safety/changingColumnType"
 	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/creatingEnum"
 	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/lockTimeoutWarning"
+	| "lint/safety/multipleAlterTable"
 	| "lint/safety/preferBigInt"
 	| "lint/safety/preferBigintOverInt"
 	| "lint/safety/preferBigintOverSmallint"
@@ -90,6 +94,7 @@ export type Category =
 	| "lint/safety/renamingTable"
 	| "lint/safety/requireConcurrentIndexCreation"
 	| "lint/safety/requireConcurrentIndexDeletion"
+	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
 	| "stdin"
 	| "check"
@@ -436,6 +441,10 @@ export type VcsClientKind = "git";
  */
 export interface Safety {
 	/**
+	 * Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
+	 */
+	addSerialColumn?: RuleConfiguration_for_Null;
+	/**
 	 * Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
 	 */
 	addingFieldWithDefault?: RuleConfiguration_for_Null;
@@ -496,9 +505,21 @@ export interface Safety {
 	 */
 	constraintMissingNotValid?: RuleConfiguration_for_Null;
 	/**
+	 * Creating enum types is not recommended for new applications.
+	 */
+	creatingEnum?: RuleConfiguration_for_Null;
+	/**
 	 * Disallow adding a UNIQUE constraint without using an existing index.
 	 */
 	disallowUniqueConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
+	 */
+	lockTimeoutWarning?: RuleConfiguration_for_Null;
+	/**
+	 * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
+	 */
+	multipleAlterTable?: RuleConfiguration_for_Null;
 	/**
 	 * Prefer BIGINT over smaller integer types.
 	 */
@@ -551,6 +572,10 @@ export interface Safety {
 	 * Dropping indexes non-concurrently can lock the table for reads.
 	 */
 	requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
+	/**
+	 * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
+	 */
+	runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
 	/**
 	 * Detects problematic transaction nesting that could lead to unexpected behavior.
 	 */

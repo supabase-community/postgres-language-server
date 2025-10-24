@@ -6,7 +6,12 @@ _No exclusive rules available._
 ### Eugene
 | Eugene Rule Name | Rule Name |
 | ---- | ---- |
+| [E11](https://kaveland.no/eugene/hints/E11/index.html) |[addSerialColumn](../rules/add-serial-column) |
 | [E3](https://kaveland.no/eugene/hints/E3/index.html) |[preferJsonb](../rules/prefer-jsonb) |
+| [E4](https://kaveland.no/eugene/hints/E4/index.html) |[runningStatementWhileHoldingAccessExclusive](../rules/running-statement-while-holding-access-exclusive) |
+| [E9](https://kaveland.no/eugene/hints/E9/index.html) |[lockTimeoutWarning](../rules/lock-timeout-warning) |
+| [W12](https://kaveland.no/eugene/hints/W12/index.html) |[multipleAlterTable](../rules/multiple-alter-table) |
+| [W13](https://kaveland.no/eugene/hints/W13/index.html) |[creatingEnum](../rules/creating-enum) |
 ### Squawk
 | Squawk Rule Name | Rule Name |
 | ---- | ---- |

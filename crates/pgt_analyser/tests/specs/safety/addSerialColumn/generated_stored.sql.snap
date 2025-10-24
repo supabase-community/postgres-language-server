@@ -1,0 +1,21 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/addSerialColumn
+-- Test adding GENERATED ALWAYS AS ... STORED column to existing table
+ALTER TABLE prices ADD COLUMN total integer GENERATED ALWAYS AS (price * quantity) STORED;
+
+```
+
+# Diagnostics
+lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with GENERATED ALWAYS AS ... STORED requires a table rewrite.
+  
+  i GENERATED ... STORED columns require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.
+  
+  i GENERATED ... STORED columns cannot be added to existing tables without a full table rewrite.

@@ -1,0 +1,22 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/multipleAlterTable
+-- Test multiple ALTER TABLE statements on the same table
+ALTER TABLE authors ALTER COLUMN name SET NOT NULL;
+ALTER TABLE authors ALTER COLUMN email SET NOT NULL;
+
+```
+
+# Diagnostics
+lint/safety/multipleAlterTable ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Multiple ALTER TABLE statements found for table public.authors.
+  
+  i Multiple ALTER TABLE statements on the same table require scanning and potentially rewriting the table multiple times.
+  
+  i Combine the ALTER TABLE statements into a single statement with comma-separated actions to scan the table only once.

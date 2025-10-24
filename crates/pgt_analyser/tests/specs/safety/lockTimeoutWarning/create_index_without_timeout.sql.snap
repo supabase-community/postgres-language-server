@@ -1,0 +1,21 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_only_lint/safety/lockTimeoutWarning
+-- CREATE INDEX without CONCURRENTLY or lock timeout should trigger the rule
+CREATE INDEX books_title_idx ON books(title);
+
+```
+
+# Diagnostics
+lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes SHARE lock on public.books while creating index books_title_idx without lock timeout set.
+  
+  i This blocks writes to the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement, or use CREATE INDEX CONCURRENTLY to avoid blocking writes.

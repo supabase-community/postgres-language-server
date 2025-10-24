@@ -356,6 +356,17 @@
       "description": "A list of rules that belong to this group",
       "type": "object",
       "properties": {
+        "addSerialColumn": {
+          "description": "Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "addingFieldWithDefault": {
           "description": "Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.",
           "anyOf": [
@@ -517,8 +528,41 @@
             }
           ]
         },
+        "creatingEnum": {
+          "description": "Creating enum types is not recommended for new applications.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "disallowUniqueConstraint": {
           "description": "Disallow adding a UNIQUE constraint without using an existing index.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lockTimeoutWarning": {
+          "description": "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "multipleAlterTable": {
+          "description": "Multiple ALTER TABLE statements on the same table should be combined into a single statement.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -658,6 +702,17 @@
         },
         "requireConcurrentIndexDeletion": {
           "description": "Dropping indexes non-concurrently can lock the table for reads.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runningStatementWhileHoldingAccessExclusive": {
+          "description": "Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

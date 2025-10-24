@@ -1,0 +1,36 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- All statements after ALTER TABLE should trigger
+ALTER TABLE users ADD COLUMN age INT;
+
+-- expect_lint/safety/runningStatementWhileHoldingAccessExclusive
+UPDATE users SET age = 30;
+
+-- expect_lint/safety/runningStatementWhileHoldingAccessExclusive
+SELECT * FROM users;
+
+```
+
+# Diagnostics
+lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.
+  
+
+
+lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.

@@ -1,0 +1,34 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- Both statements should trigger the rule
+-- expect_lint/safety/lockTimeoutWarning
+CREATE INDEX orders_user_idx ON orders(user_id);
+
+-- expect_lint/safety/lockTimeoutWarning
+ALTER TABLE orders ADD COLUMN total DECIMAL(10, 2);
+
+```
+
+# Diagnostics
+lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes SHARE lock on public.orders while creating index orders_user_idx without lock timeout set.
+  
+  i This blocks writes to the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement, or use CREATE INDEX CONCURRENTLY to avoid blocking writes.
+  
+
+
+lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes ACCESS EXCLUSIVE lock on public.orders without lock timeout set.
+  
+  i This can block all operations on the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out.

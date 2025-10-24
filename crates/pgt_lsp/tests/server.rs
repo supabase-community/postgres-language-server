@@ -1690,9 +1690,7 @@ ALTER TABLE ONLY "public"."campaign_contact_list"
                         .filter(|d| {
                             d.code.as_ref().is_none_or(|c| match c {
                                 lsp::NumberOrString::Number(_) => true,
-                                lsp::NumberOrString::String(s) => {
-                                    s != "lint/safety/addingForeignKeyConstraint"
-                                }
+                                lsp::NumberOrString::String(s) => !s.starts_with("lint/safety"),
                             })
                         })
                         .count()

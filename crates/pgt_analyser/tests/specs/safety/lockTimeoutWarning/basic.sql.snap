@@ -1,0 +1,20 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_only_lint/safety/lockTimeoutWarning
+-- ALTER TABLE without lock timeout should trigger the rule
+ALTER TABLE authors ADD COLUMN email TEXT;
+```
+
+# Diagnostics
+lint/safety/lockTimeoutWarning ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Statement takes ACCESS EXCLUSIVE lock on public.authors without lock timeout set.
+  
+  i This can block all operations on the table indefinitely if another transaction holds a conflicting lock.
+  
+  i Run 'SET LOCAL lock_timeout = '2s';' before this statement and retry the migration if it times out.

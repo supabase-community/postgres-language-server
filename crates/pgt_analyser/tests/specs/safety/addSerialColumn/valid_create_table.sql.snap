@@ -1,0 +1,16 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- Test CREATE TABLE with serial column (should be safe, rule only applies to ALTER TABLE)
+-- expect_no_diagnostics
+CREATE TABLE products (
+    id serial PRIMARY KEY,
+    name text NOT NULL,
+    price numeric
+);
+
+```
