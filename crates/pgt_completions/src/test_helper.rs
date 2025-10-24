@@ -106,15 +106,13 @@ impl CompletionAssertion {
             CompletionAssertion::LabelNotExists(label) => {
                 assert_ne!(
                     &item.label, label,
-                    "Expected label {} not to exist, but found it",
-                    label
+                    "Expected label {label} not to exist, but found it"
                 );
             }
             CompletionAssertion::KindNotExists(kind) => {
                 assert_ne!(
                     &item.kind, kind,
-                    "Expected kind {:?} not to exist, but found it",
-                    kind
+                    "Expected kind {kind:?} not to exist, but found it"
                 );
             }
             CompletionAssertion::LabelAndDesc(label, desc) => {

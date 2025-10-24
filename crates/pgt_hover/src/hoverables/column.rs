@@ -24,14 +24,14 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
         _schema_cache: &SchemaCache,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
-            write!(writer, "Comment: '{}'", comment)?;
+            write!(writer, "Comment: '{comment}'")?;
             writeln!(writer)?;
         }
 
         if let Some(tname) = self.type_name.as_ref() {
-            write!(writer, "{}", tname)?;
+            write!(writer, "{tname}")?;
             if let Some(l) = self.varchar_length {
-                write!(writer, "({})", l)?;
+                write!(writer, "({l})")?;
             }
         } else {
             write!(writer, "typeid: {}", self.type_id)?;
@@ -61,7 +61,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Column {
     ) -> Result<bool, std::fmt::Error> {
         if let Some(default) = &self.default_expr {
             writeln!(writer)?;
-            write!(writer, "Default: {}", default)?;
+            write!(writer, "Default: {default}")?;
             Ok(true)
         } else {
             Ok(false)

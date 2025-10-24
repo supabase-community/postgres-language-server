@@ -23,7 +23,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     };
 
     let query =
-        read_to_string(full_path).unwrap_or_else(|_| panic!("Failed to read file: {} ", full_path));
+        read_to_string(full_path).unwrap_or_else(|_| panic!("Failed to read file: {full_path} "));
 
     let options = AnalyserOptions::default();
     let analyser = Analyser::new(AnalyserConfig {

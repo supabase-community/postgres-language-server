@@ -22,7 +22,7 @@ impl ToHoverMarkdown for Schema {
         _schema_cache: &SchemaCache,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
-            write!(writer, "Comment: '{}'", comment)?;
+            write!(writer, "Comment: '{comment}'")?;
             writeln!(writer)?;
             writeln!(writer)?;
         }
@@ -32,7 +32,7 @@ impl ToHoverMarkdown for Schema {
             writeln!(writer)?;
 
             for creator in &self.allowed_creators {
-                write!(writer, "- {}", creator)?;
+                write!(writer, "- {creator}")?;
                 writeln!(writer)?;
             }
 
@@ -44,7 +44,7 @@ impl ToHoverMarkdown for Schema {
             writeln!(writer)?;
 
             for user in &self.allowed_users {
-                write!(writer, "- {}", user)?;
+                write!(writer, "- {user}")?;
                 writeln!(writer)?;
             }
 
