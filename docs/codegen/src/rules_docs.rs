@@ -36,7 +36,7 @@ pub fn generate_rules_docs(docs_dir: &Path) -> anyhow::Result<()> {
         for (rule, metadata) in rules {
             let content = generate_rule_doc(group, rule, metadata)?;
             let dashed_rule = Case::Kebab.convert(rule);
-            fs::write(rules_dir.join(format!("{}.md", dashed_rule)), content)?;
+            fs::write(rules_dir.join(format!("{dashed_rule}.md")), content)?;
         }
     }
 
@@ -52,11 +52,7 @@ fn generate_rule_doc(
 
     writeln!(content, "# {rule}")?;
 
-    writeln!(
-        content,
-        "**Diagnostic Category: `lint/{}/{}`**",
-        group, rule
-    )?;
+    writeln!(content, "**Diagnostic Category: `lint/{group}/{rule}`**")?;
 
     let is_recommended = meta.recommended;
 
@@ -128,7 +124,7 @@ fn write_how_to_configure(
     );
 
     writeln!(content, "```json")?;
-    writeln!(content, "{}", json)?;
+    writeln!(content, "{json}")?;
     writeln!(content, "```")?;
 
     Ok(())

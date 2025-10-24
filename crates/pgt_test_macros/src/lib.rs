@@ -211,7 +211,7 @@ impl TryFrom<PathBuf> for Variables {
             .to_str()
             .ok_or("Cannot convert extension to string.")?
             .into();
-        assert_eq!(ext, "sql", "Expected .sql extension but received: {}", ext);
+        assert_eq!(ext, "sql", "Expected .sql extension but received: {ext}");
 
         let test_dir: String = path
             .parent()
@@ -234,7 +234,7 @@ impl TryFrom<PathBuf> for Variables {
             .ok_or("Cannot convert file stem to string.")?
             .into();
 
-        let test_expected_fullpath = format!("{}.expected.{}", without_ext, ext);
+        let test_expected_fullpath = format!("{without_ext}.expected.{ext}");
 
         Ok(Variables {
             test_name,

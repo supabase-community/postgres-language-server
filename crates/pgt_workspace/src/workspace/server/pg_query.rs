@@ -165,7 +165,7 @@ pub fn convert_to_positional_params(text: &str) -> String {
 
             let replacement = match prev_token {
                 Some(k) if IDENTIFIER_CONTEXT.contains(&k) => deterministic_identifier(idx - 1),
-                _ => format!("${}", idx),
+                _ => format!("${idx}"),
             };
             let original_len = token_text.len();
             let replacement_len = replacement.len();

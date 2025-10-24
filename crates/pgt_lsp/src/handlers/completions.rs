@@ -43,7 +43,7 @@ pub fn get_completions(
                 description: Some(i.description),
                 detail: i
                     .detail
-                    .map(|s| format!(" {}", s))
+                    .map(|s| format!(" {s}"))
                     .or(Some(format!(" {}", i.kind))),
             }),
             preselect: Some(i.preselected),
