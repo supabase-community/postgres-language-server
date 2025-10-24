@@ -72,8 +72,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Install tree-sitter-cli
-        run: cargo install tree-sitter-cli
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
