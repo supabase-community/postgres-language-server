@@ -249,18 +249,17 @@ impl CompletionFilter<'_> {
                     }
 
                     CompletionRelevanceData::Role(_) => match clause {
-                        WrappingClause::DropRole
-                        | WrappingClause::AlterRole
-                        | WrappingClause::ToRoleAssignment => true,
+                        WrappingClause::DropRole | WrappingClause::AlterRole => true,
 
                         WrappingClause::SetStatement => ctx
                             .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
 
-                        WrappingClause::RevokeStatement => {
+                        WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
                             ctx.matches_ancestor_history(&["role_specification"])
                                 || ctx.node_under_cursor.as_ref().is_some_and(|k| {
                                     k.kind() == "identifier"
                                         && ctx.before_cursor_matches_kind(&[
+                                            "keyword_grant",
                                             "keyword_revoke",
                                             "keyword_for",
                                         ])

@@ -729,7 +729,8 @@ module.exports = grammar({
         $.comment_statement,
         $.set_statement,
         $.reset_statement,
-        $.revoke_statement
+        $.revoke_statement,
+        $.grant_statement
       ),
 
     _cte: ($) =>
