@@ -76,7 +76,7 @@ impl<'a> CompletionBuilder<'a> {
                     detail: item.detail,
 
                     // wonderous Rust syntax ftw
-                    sort_text: format!("{:0>padding$}", idx, padding = max_padding),
+                    sort_text: format!("{idx:0>max_padding$}"),
                     completion_text: item.completion_text,
                 }
             })

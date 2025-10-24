@@ -21,7 +21,7 @@ impl ToHoverMarkdown for Table {
             pgt_schema_cache::TableKind::Ordinary => "",
         };
 
-        write!(writer, "{}", table_kind)?;
+        write!(writer, "{table_kind}")?;
 
         let locked_txt = if self.rls_enabled {
             " - 🔒 RLS enabled"
@@ -29,7 +29,7 @@ impl ToHoverMarkdown for Table {
             " - 🔓 RLS disabled"
         };
 
-        write!(writer, "{}", locked_txt)?;
+        write!(writer, "{locked_txt}")?;
 
         Ok(())
     }
@@ -40,7 +40,7 @@ impl ToHoverMarkdown for Table {
         _schema_cache: &SchemaCache,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
-            write!(writer, "Comment: '{}'", comment)?;
+            write!(writer, "Comment: '{comment}'")?;
             writeln!(writer)?;
             Ok(true)
         } else {

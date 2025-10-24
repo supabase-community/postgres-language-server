@@ -118,7 +118,7 @@ fn get_formatted_default_value(pg_type: &PostgresType, is_array: bool) -> String
 
     // For arrays, wrap the default in array syntax
     if is_array {
-        format!("'{{{}}}'", default)
+        format!("'{{{default}}}'")
     } else {
         default
     }

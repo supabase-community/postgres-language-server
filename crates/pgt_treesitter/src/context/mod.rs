@@ -113,7 +113,7 @@ impl TryFrom<&str> for WrappingNode {
             "binary_expression" => Ok(Self::BinaryExpression),
             "list" => Ok(Self::List),
             _ => {
-                let message = format!("Unimplemented Relation: {}", value);
+                let message = format!("Unimplemented Relation: {value}");
 
                 // Err on tests, so we notice that we're lacking an implementation immediately.
                 if cfg!(test) {
@@ -875,7 +875,7 @@ impl<'a> TreesitterContext<'a> {
                 .get(&Some(sanitized_key.clone()))
                 .or(self
                     .mentioned_relations
-                    .get(&Some(format!(r#""{}""#, sanitized_key))))
+                    .get(&Some(format!(r#""{sanitized_key}""#))))
         } else {
             self.mentioned_relations.get(&None)
         }
@@ -886,7 +886,7 @@ impl<'a> TreesitterContext<'a> {
 
         self.mentioned_table_aliases.get(&sanitized_key).or(self
             .mentioned_table_aliases
-            .get(&format!(r#""{}""#, sanitized_key)))
+            .get(&format!(r#""{sanitized_key}""#)))
     }
 
     pub fn get_used_alias_for_table(&self, table_name: &str) -> Option<String> {

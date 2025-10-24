@@ -145,8 +145,8 @@ pub fn rewrite_error_message(
     // e.g. `""` is replaced with `text`.
     let unquoted_default = replacement.default_value.trim_matches('\'');
     pg_error_message
-        .replace(&format!("\"{}\"", unquoted_default), &replacement.type_name)
-        .replace(&format!("'{}'", unquoted_default), &replacement.type_name)
+        .replace(&format!("\"{unquoted_default}\""), &replacement.type_name)
+        .replace(&format!("'{unquoted_default}'"), &replacement.type_name)
 }
 
 pub(crate) fn create_type_error(

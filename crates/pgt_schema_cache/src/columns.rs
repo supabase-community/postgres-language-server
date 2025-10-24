@@ -18,8 +18,7 @@ impl From<&str> for ColumnClassKind {
             "f" => ColumnClassKind::ForeignTable,
             "p" => ColumnClassKind::PartitionedTable,
             _ => panic!(
-                "Columns belonging to a class with pg_class.relkind = '{}' should be filtered out in the query.",
-                value
+                "Columns belonging to a class with pg_class.relkind = '{value}' should be filtered out in the query."
             ),
         }
     }

@@ -1,0 +1,154 @@
+name: Publish NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        type: string
+        required: true
+        description: Release Tag to Publish
+  release:
+    types: [released, prereleased]
+
+jobs:
+  validate_tag:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      is-prerelease: ${{ steps.validate-release.outputs.is-prerelease }}
+    steps:
+      - uses: actions/github-script@v7
+        id: validate-release
+        with:
+          script: |
+            /** the "core" module does not have access to workflow_dispatch inputs */
+            const tag = '${{ inputs.release_tag }}';
+
+            /** Releases don't have a guaranteed order, so we'll have to paginate */
+            let exhausted = false;
+            let page = 1;
+            while (!exhausted) {
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                page,
+                per_page: 100,
+              }).then(r => r.data);
+
+              const matchingRelease = releases.find(r => r.tag_name === tag);
+              if (matchingRelease) {
+                core.setOutput('has-release', 'true');
+                core.setOutput('is-prerelease', matchingRelease.prerelease.toString());
+                return;
+              }
+
+              if (releases.length < 100) {
+                exhausted = true;
+              } else if (page >= 10) {
+                throw new Error("We iterated over 10 pages. Does the script work?");
+              } else {
+                page++
+              }
+
+            }
+
+            core.setOutput('has-release', 'false');
+            core.setOutput('is-prerelease', 'false');
+
+      - name: Abort
+        if: steps.validate-release.outputs.has-release != 'true'
+        run: |
+          {
+            echo "Tag ${{ github.event.inputs.release_tag }} not found."
+            exit 1
+          }
+
+  publish:
+    name: Publish All the Things
+    needs: [validate_tag]
+    if: |
+      always() &&
+      (needs.validate_tag.result == 'success' || needs.validate_tag.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: "https://registry.npmjs.org"
+
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Verify `jq` is installed
+        run: |
+          if ! jq --version 2>/dev/null; then
+            echo "jq not installed, required for extracting package names."
+            exit 1
+          fi
+
+      - name: Generate Packages (deprecated)
+        id: generate-packages-deprecated
+        run: node packages/@postgrestools/postgrestools/scripts/generate-packages.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease || github.event.release.prerelease }}
+
+      - name: Generate Packages
+        id: generate-packages
+        run: node packages/@postgres-language-server/cli/scripts/generate-packages.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease || github.event.release.prerelease }}
+
+      - name: Publish npm packages as nightly (deprecated)
+        if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)
+        run: |
+          for package in packages/@postgrestools/*; do
+            npm publish "$package" --tag nightly --access public --provenance
+          done
+
+      - name: Publish npm packages as nightly
+        if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease == 'true') || (github.event_name == 'release' && github.event.release.prerelease)
+        run: |
+          for package in packages/@postgres-language-server/*; do
+            npm publish "$package" --tag nightly --access public --provenance
+          done
+
+      - name: Publish npm packages as latest (deprecated)
+        if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease != 'true') || (github.event_name == 'release' && !github.event.release.prerelease)
+        run: |
+          for package in packages/@postgrestools/*; do
+            version="${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}"
+            npm_package_name=$(jq -r ".name" "$package/package.json")
+
+            if npm view "$npm_package_name@$version" version 2>/dev/null; then
+              echo "Package $npm_package_name@$version already exists, skipping..."
+            else
+              echo "Publishing $npm_package_name@$version..."
+              npm publish "$package" --tag latest --access public --provenance
+            fi
+          done
+
+      - name: Publish npm packages as latest
+        if: (github.event_name == 'workflow_dispatch' && needs.validate_tag.outputs.is-prerelease != 'true') || (github.event_name == 'release' && !github.event.release.prerelease)
+        run: |
+          for package in packages/@postgres-language-server/*; do
+            version="${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}"
+            npm_package_name=$(jq -r ".name" "$package/package.json")
+
+            if npm view "$npm_package_name@$version" version 2>/dev/null; then
+              echo "Package $npm_package_name@$version already exists, skipping..."
+            else
+              echo "Publishing $npm_package_name@$version..."
+              npm publish "$package" --tag latest --access public --provenance
+            fi
+          done

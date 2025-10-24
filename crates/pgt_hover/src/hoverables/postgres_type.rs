@@ -21,7 +21,7 @@ impl ToHoverMarkdown for PostgresType {
         schema_cache: &SchemaCache,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comment) = &self.comment {
-            write!(writer, "Comment: '{}'", comment)?;
+            write!(writer, "Comment: '{comment}'")?;
             writeln!(writer)?;
             writeln!(writer)?;
         }
@@ -56,7 +56,7 @@ impl ToHoverMarkdown for PostgresType {
             writeln!(writer)?;
 
             for kind in &self.enums.values {
-                write!(writer, "- {}", kind)?;
+                write!(writer, "- {kind}")?;
                 writeln!(writer)?;
             }
 

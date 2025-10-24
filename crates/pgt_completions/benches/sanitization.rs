@@ -35,7 +35,7 @@ fn to_params<'a>(
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("small sql, adjusted", |b| {
-        let content = format!("select {} from users;", CURSOR_POS);
+        let content = format!("select {CURSOR_POS} from users;");
 
         let cache = SchemaCache::default();
         let (sql, pos) = sql_and_pos(content.as_str());
@@ -52,7 +52,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
   u.rolname as "owner!"
 from
   pg_namespace n,
-        {}
+        {CURSOR_POS}
 where
   n.nspowner = u.oid
   and (
@@ -60,8 +60,7 @@ where
     or has_schema_privilege(n.oid, 'CREATE, USAGE')
   )
   and not pg_catalog.starts_with(n.nspname, 'pg_temp_')
-  and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#,
-            CURSOR_POS
+  and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#
         );
 
         let cache = SchemaCache::default();
@@ -98,7 +97,7 @@ where
       ix.indisunique as is_unique,
       ix.indrelid as table_oid
     from
-        {}
+        {CURSOR_POS}
     where
       c.relkind = 'i'
   )
@@ -128,8 +127,7 @@ from
 where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
   atts.attnum >= 0;
-"#,
-            CURSOR_POS
+"#
         );
 
         let cache = SchemaCache::default();
@@ -140,7 +138,7 @@ where
     });
 
     c.bench_function("small sql, unadjusted", |b| {
-        let content = format!("select e{} from users;", CURSOR_POS);
+        let content = format!("select e{CURSOR_POS} from users;");
 
         let cache = SchemaCache::default();
         let (sql, pos) = sql_and_pos(content.as_str());
@@ -157,7 +155,7 @@ where
   u.rolname as "owner!"
 from
   pg_namespace n,
-  pg_r{}
+  pg_r{CURSOR_POS}
 where
   n.nspowner = u.oid
   and (
@@ -165,8 +163,7 @@ where
     or has_schema_privilege(n.oid, 'CREATE, USAGE')
   )
   and not pg_catalog.starts_with(n.nspname, 'pg_temp_')
-  and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#,
-            CURSOR_POS
+  and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_');"#
         );
 
         let cache = SchemaCache::default();
@@ -235,8 +232,7 @@ where
   -- system columns, such as `cmax` or `tableoid`, have negative `attnum`s
   atts.attnum >= 0
 order by
-  sch{} "#,
-            CURSOR_POS
+  sch{CURSOR_POS} "#
         );
 
         let cache = SchemaCache::default();

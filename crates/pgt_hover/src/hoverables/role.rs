@@ -22,7 +22,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
         _schema_cache: &SchemaCache,
     ) -> Result<bool, std::fmt::Error> {
         if let Some(comm) = self.comment.as_ref() {
-            write!(writer, "Comment: '{}'", comm)?;
+            write!(writer, "Comment: '{comm}'")?;
             writeln!(writer)?;
             writeln!(writer)?;
         }
@@ -54,7 +54,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
             writeln!(writer)?;
 
             for perm in permissions {
-                write!(writer, "- {}", perm)?;
+                write!(writer, "- {perm}")?;
                 writeln!(writer)?;
             }
             writeln!(writer)?;
@@ -69,7 +69,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
             writeln!(writer)?;
 
             for mem in &self.member_of {
-                write!(writer, "- {}", mem)?;
+                write!(writer, "- {mem}")?;
                 writeln!(writer)?;
             }
 
@@ -81,7 +81,7 @@ impl ToHoverMarkdown for pgt_schema_cache::Role {
             writeln!(writer)?;
 
             for mem in &self.has_member {
-                write!(writer, "- {}", mem)?;
+                write!(writer, "- {mem}")?;
                 writeln!(writer)?;
             }
         }
