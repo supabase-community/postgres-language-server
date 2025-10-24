@@ -55,18 +55,14 @@ jobs:
           for package in packages/@postgrestools/*; do
             npm publish "$package" --tag nightly --access public --provenance
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
-
+        
       - name: Publish npm packages as nightly
         if: inputs.is-prerelease == 'true'
         run: |
           for package in packages/@postgres-language-server/*; do
             npm publish "$package" --tag nightly --access public --provenance
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} #
-
+        
       - name: Publish npm packages as latest (deprecated)
         if: inputs.is-prerelease != 'true'
         run: |
@@ -81,9 +77,7 @@ jobs:
               npm publish "$package" --tag latest --access public --provenance
             fi
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+        
       - name: Publish npm packages as latest
         if: inputs.is-prerelease != 'true'
         run: |
@@ -98,5 +92,4 @@ jobs:
               npm publish "$package" --tag latest --access public --provenance
             fi
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        
