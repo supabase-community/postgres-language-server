@@ -102,14 +102,14 @@ fn build_function_identifier(
             let type_name_node = node.arg_type.as_ref()?;
             let type_name = match pgt_query_ext::utils::parse_name(&type_name_node.names) {
                 Some((schema, name)) => match schema {
-                    Some(s) => format!("{}.{}", s, name),
+                    Some(s) => format!("{s}.{name}"),
                     None => name,
                 },
                 None => return None,
             };
 
             if !type_name_node.array_bounds.is_empty() {
-                Some(format!("{}[]", type_name))
+                Some(format!("{type_name}[]"))
             } else {
                 Some(type_name)
             }
@@ -117,7 +117,7 @@ fn build_function_identifier(
         .collect::<Vec<_>>();
 
     let fn_qualified_name = match fn_schema {
-        Some(schema) => format!("{}.{}", schema, fn_name),
+        Some(schema) => format!("{schema}.{fn_name}"),
         None => fn_name.to_string(),
     };
 
@@ -184,8 +184,7 @@ pub async fn check_plpgsql(
                 let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
 
                 let result: Option<String> = sqlx::query_scalar(&format!(
-                    "select plpgsql_check_function('{}', '{}', format := 'json')",
-                    fn_identifier, relation
+                    "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json')"
                 ))
                 .fetch_optional(&mut *tx)
                 .await?
@@ -200,8 +199,7 @@ pub async fn check_plpgsql(
         results
     } else {
         let result: Option<String> = sqlx::query_scalar(&format!(
-            "select plpgsql_check_function('{}', format := 'json')",
-            fn_identifier
+            "select plpgsql_check_function('{fn_identifier}', format := 'json')"
         ))
         .fetch_optional(&mut *tx)
         .await?
@@ -220,7 +218,7 @@ pub async fn check_plpgsql(
     let mut diagnostics = Vec::new();
     for (result_json, relation) in results_with_relations {
         let check_result: PlpgSqlCheckResult = serde_json::from_str(&result_json).map_err(|e| {
-            sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {}", e))
+            sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {e}"))
         })?;
 
         let mut result_diagnostics =

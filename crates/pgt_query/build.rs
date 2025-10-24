@@ -137,8 +137,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // First try to use EMSDK environment variable (set in CI and when sourcing emsdk_env.sh)
         if let Ok(emsdk) = env::var("EMSDK") {
             bindgen_builder = bindgen_builder.clang_arg(format!(
-                "-I{}/upstream/emscripten/cache/sysroot/include",
-                emsdk
+                "-I{emsdk}/upstream/emscripten/cache/sysroot/include"
             ));
         } else {
             // Fallback to the default path if EMSDK is not set
