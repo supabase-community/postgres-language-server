@@ -17,7 +17,7 @@ fn main() {
             .iter()
             .filter(|n| matches!(n, NodeRef::SelectStmt(_)))
             .count();
-        println!("Number of SELECT statements: {}", select_count);
+        println!("Number of SELECT statements: {select_count}");
     }
 
     // Mutable access - no cloning needed!

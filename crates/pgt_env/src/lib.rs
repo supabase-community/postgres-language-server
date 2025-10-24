@@ -28,7 +28,7 @@ pub const VERSION: &str = match option_env!("PGT_VERSION") {
     },
 };
 
-pub static PGLS_WEBSITE: &str = "https://pgtools.dev";
+pub static PGLS_WEBSITE: &str = "https://pg-language-server.com";
 
 pub struct PgLSEnv {
     pub pgls_log_path: PgLSEnvVariable,

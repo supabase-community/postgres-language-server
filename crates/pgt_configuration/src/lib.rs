@@ -103,7 +103,7 @@ impl PartialConfiguration {
     /// Returns the initial configuration.
     pub fn init() -> Self {
         Self {
-            schema: Some(format!("{}/schemas/{VERSION}/schema.json", PGLS_WEBSITE)),
+            schema: Some(format!("{PGLS_WEBSITE}/schemas/{VERSION}/schema.json")),
             extends: Some(StringSet::default()),
             files: Some(PartialFilesConfiguration {
                 ignore: Some(Default::default()),

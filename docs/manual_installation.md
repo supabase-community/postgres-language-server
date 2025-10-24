@@ -8,12 +8,12 @@ You have to pick the correct binary for your platform. The following table shoul
 
 | CPU Architecture | Operating System | Binary name |
 |------------------|------------------|-------------|
-| x86_64 | Linux | `postgrestools-x86_64-unknown-linux-gnu` |
-| aarch64 | Linux | `postgrestools-aarch64-unknown-linux-gnu` |
-| x86_64 | macOS | `postgrestools-x86_64-apple-darwin` |
-| aarch64 (M1/M2) | macOS | `postgrestools-aarch64-apple-darwin` |
-| x86_64 | Windows | `postgrestools-x86_64-pc-windows-msvc.exe` |
-| aarch64 | Windows | `postgrestools-aarch64-pc-windows-msvc.exe` |
+| x86_64 | Linux | `postgres-language-server_x86_64-unknown-linux-gnu` |
+| aarch64 | Linux | `postgres-language-server_aarch64-unknown-linux-gnu` |
+| x86_64 | macOS | `postgres-language-server_x86_64-apple-darwin` |
+| aarch64 (M1/M2) | macOS | `postgres-language-server_aarch64-apple-darwin` |
+| x86_64 | Windows | `postgres-language-server_x86_64-pc-windows-msvc.exe` |
+| aarch64 | Windows | `postgres-language-server_aarch64-pc-windows-msvc.exe` |
 
 > **Note**: Use the Linux variant for Windows Subsystem for Linux (WSL).
 
@@ -24,30 +24,30 @@ We were not able to publish to Homebrew yet due to naming conflicts. We are acti
 
 ### Using a published binary
 
-To install postgrestools, grab the executable for your platform from the latest CLI release on GitHub and give it execution permission.
+To install postgres-language-server, grab the executable for your platform from the latest CLI release on GitHub and give it execution permission.
 
 ```bash
 # macOS arm (M1 or newer)
-curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgrestools-aarch64-apple-darwin -o postgrestools
-chmod +x postgrestools
+curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgres-language-server_aarch64-apple-darwin -o postgres-language-server
+chmod +x postgres-language-server
 
 # macOS x86_64
-curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgrestools-x86_64-apple-darwin -o postgrestools
-chmod +x postgrestools
+curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgres-language-server_x86_64-apple-darwin -o postgres-language-server
+chmod +x postgres-language-server
 
 # Linux (x86_64)
-curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgrestools-x86_64-unknown-linux-gnu -o postgrestools
-chmod +x postgrestools
+curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgres-language-server_x86_64-unknown-linux-gnu -o postgres-language-server
+chmod +x postgres-language-server
 
 # Linux (aarch64)
-curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgrestools-aarch64-unknown-linux-gnu -o postgrestools
-chmod +x postgrestools
+curl -L https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgres-language-server_aarch64-unknown-linux-gnu -o postgres-language-server
+chmod +x postgres-language-server
 
 # Windows (x86_64, PowerShell)
-Invoke-WebRequest -Uri "https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgrestools-x86_64-pc-windows-msvc.exe" -OutFile "postgrestools.exe"
+Invoke-WebRequest -Uri "https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgres-language-server_x86_64-pc-windows-msvc.exe" -OutFile "postgres-language-server.exe"
 
 # Windows (aarch64, PowerShell)
-Invoke-WebRequest -Uri "https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgrestools-aarch64-pc-windows-msvc.exe" -OutFile "postgrestools.exe"
+Invoke-WebRequest -Uri "https://github.com/supabase-community/postgres-language-server/releases/latest/download/postgres-language-server_aarch64-pc-windows-msvc.exe" -OutFile "postgres-language-server.exe"
 ```
 
-Now you can use the Postgres Language Server by simply running `./postgrestools`.
+Now you can use the Postgres Language Server by simply running `./postgres-language-server`.

@@ -200,9 +200,9 @@ pub fn create_config(
         configuration.schema = postgrestools_node_schema_path.to_str().map(String::from);
     } else if VERSION == "0.0.0" {
         // VERSION is 0.0.0 if it has not been explicitly set (e.g local dev, as fallback)
-        configuration.schema = Some(format!("{}/latest/schema.json", PGLS_WEBSITE));
+        configuration.schema = Some(format!("{PGLS_WEBSITE}/latest/schema.json"));
     } else {
-        configuration.schema = Some(format!("{}/{VERSION}/schema.json", PGLS_WEBSITE));
+        configuration.schema = Some(format!("{PGLS_WEBSITE}/{VERSION}/schema.json"));
     }
 
     let contents = serde_json::to_string_pretty(&configuration)
