@@ -11,7 +11,7 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
 [
   (field
     (field_qualifier)?
-    (any_identifier)
+    (column_identifier)
   ) @reference
 
   (parameter) @parameter

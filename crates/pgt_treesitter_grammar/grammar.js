@@ -28,6 +28,7 @@ module.exports = grammar({
     [$.time],
     [$.timestamp],
     [$.grantable_on_function, $.grantable_on_table],
+    [$.any_identifier, $.column_identifier],
   ],
 
   precedences: ($) => [
@@ -779,21 +780,7 @@ module.exports = grammar({
       ),
 
     _show_statement: ($) =>
-      seq(
-        $.keyword_show,
-        choice(
-          $._show_create,
-          $.keyword_all, // Postgres
-          $._show_tables // trino/presto
-        )
-      ),
-
-    _show_tables: ($) =>
-      seq(
-        $.keyword_tables,
-        optional(seq($.keyword_from, $._qualified_field)),
-        optional(seq($.keyword_like, $._expression))
-      ),
+      seq($.keyword_show, choice($._show_create, $.keyword_all)),
 
     _show_create: ($) =>
       seq(
@@ -2363,7 +2350,7 @@ module.exports = grammar({
 
     _column_list: ($) => paren_list(alias($._column, $.column), true),
     _column: ($) =>
-      choice($.any_identifier, alias($._literal_string, $.literal)),
+      choice($.column_identifier, alias($._literal_string, $.literal)),
 
     _update_statement: ($) => seq($.update, optional($.returning)),
 
@@ -2834,10 +2821,10 @@ module.exports = grammar({
         $.keyword_end
       ),
 
-    field: ($) => field("name", $.any_identifier),
+    field: ($) => field("name", $.column_identifier),
 
     _qualified_field: ($) =>
-      seq(optional($.field_qualifier), field("name", $.any_identifier)),
+      seq(optional($.field_qualifier), $.column_identifier),
 
     field_qualifier: ($) =>
       seq(prec.left(optional_parenthesis($.object_reference)), "."),
@@ -3531,6 +3518,8 @@ module.exports = grammar({
     bang: (_) => "!",
 
     any_identifier: ($) => $._any_identifier,
+    column_identifier: ($) => $._any_identifier,
+
     _any_identifier: ($) =>
       choice(
         $._identifier,
