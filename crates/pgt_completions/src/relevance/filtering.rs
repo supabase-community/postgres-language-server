@@ -96,7 +96,10 @@ impl CompletionFilter<'_> {
         let kind = ctx.node_under_cursor.as_ref().map(|n| n.kind())?;
 
         let is_allowed = match kind {
-            "column_identifier" => matches!(self.data, CompletionRelevanceData::Column(_)),
+            "column_identifier" => {
+                matches!(self.data, CompletionRelevanceData::Column(_))
+                    && !ctx.matches_ancestor_history(&["insert_values", "field"])
+            }
             _ => false,
         };
 

@@ -403,7 +403,7 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        // test in SELECT clause
+        // // test in SELECT clause
         assert_complete_results(
             format!(
                 "select u.id, p.{} from auth.users u join auth.posts p on u.id = p.user_id;",

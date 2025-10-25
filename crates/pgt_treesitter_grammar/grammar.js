@@ -264,6 +264,8 @@ module.exports = grammar({
     keyword_storage: (_) => make_keyword("storage"),
     keyword_compression: (_) => make_keyword("compression"),
 
+    keyword_overriding: () => make_keyword("overriding"),
+    keyword_system: () => make_keyword("system"),
     keyword_policy: (_) => make_keyword("policy"),
     keyword_permissive: (_) => make_keyword("permissive"),
     keyword_restrictive: (_) => make_keyword("restrictive"),
@@ -2269,33 +2271,40 @@ module.exports = grammar({
 
     insert: ($) =>
       seq(
-        choice($.keyword_insert, $.keyword_replace),
-        optional(
-          choice(
-            $.keyword_low_priority,
-            $.keyword_delayed,
-            $.keyword_high_priority
-          )
-        ),
-        optional($.keyword_ignore),
-        optional(
-          choice(
-            $.keyword_into,
-            $.keyword_overwrite // Spark SQL
-          )
-        ),
+        $.keyword_insert,
+        $.keyword_into,
         $.object_reference,
-        optional($.table_partition), // Spark SQL
-        optional(seq($.keyword_as, field("alias", $.any_identifier))),
-        // TODO we need a test for `insert...set`
-        choice($._insert_values, $._set_values),
-        optional(choice($._on_conflict, $._on_duplicate_key_update))
+        optional($._alias),
+        optional(paren_list($.column_identifier, true)),
+        optional(
+          seq(
+            $.keyword_overriding,
+            choice($.keyword_user, $.keyword_system),
+            $.keyword_value
+          )
+        ),
+        choice(
+          seq($.keyword_default, $.keyword_values),
+          $.insert_values,
+          $._select_statement
+        ),
+        optional($._on_conflict)
+      ),
+
+    insert_values: ($) =>
+      comma_list(
+        seq(
+          $.keyword_values,
+          paren_list(choice($._expression, $.keyword_default), true)
+        ),
+        true
       ),
 
     _on_conflict: ($) =>
       seq(
         $.keyword_on,
         $.keyword_conflict,
+        // todo: conflict target
         seq(
           $.keyword_do,
           choice(
@@ -2305,22 +2314,7 @@ module.exports = grammar({
         )
       ),
 
-    _on_duplicate_key_update: ($) =>
-      seq(
-        $.keyword_on,
-        $.keyword_duplicate,
-        $.keyword_key,
-        $.keyword_update,
-        $.assignment_list
-      ),
-
     assignment_list: ($) => seq($.assignment, repeat(seq(",", $.assignment))),
-
-    _insert_values: ($) =>
-      seq(
-        optional(alias($._column_list, $.list)),
-        choice(seq($.keyword_values, comma_list($.list, true)), $._dml_read)
-      ),
 
     _set_values: ($) => seq($.keyword_set, comma_list($.assignment, true)),
 
@@ -2357,10 +2351,31 @@ module.exports = grammar({
         ),
         $.keyword_then,
         choice(
-          $.keyword_delete,
+          // merge_insert
+          seq(
+            $.keyword_insert,
+            optional(paren_list($.column_identifier, true)),
+            optional(
+              seq(
+                $.keyword_overriding,
+                choice($.keyword_system, $.keyword_user),
+                $.keyword_value
+              )
+            ),
+            choice(
+              seq($.keyword_default, $.keyword_values),
+              seq(
+                $.keyword_values,
+                paren_list(choice($._expression, $.keyword_default), true)
+              )
+            )
+          ),
+          // merge_update
           seq($.keyword_update, $._set_values),
-          seq($.keyword_insert, $._insert_values),
-          optional($.where)
+          // merge_delete
+          $.keyword_delete,
+
+          seq($.keyword_do, $.keyword_nothing)
         )
       ),
 
