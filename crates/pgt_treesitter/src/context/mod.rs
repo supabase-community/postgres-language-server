@@ -57,7 +57,6 @@ pub enum WrappingNode {
     List,
 }
 
-
 impl TryFrom<&str> for WrappingNode {
     type Error = String;
 
@@ -646,9 +645,10 @@ impl<'a> TreesitterContext<'a> {
     /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
     pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .is_some_and(|node| node.parent().is_some_and(|p| expected_ancestors.contains(&p.kind())))
+        self.node_under_cursor.as_ref().is_some_and(|node| {
+            node.parent()
+                .is_some_and(|p| expected_ancestors.contains(&p.kind()))
+        })
     }
 
     /// Checks whether the Node under the cursor is the nth child of the parent.
@@ -786,7 +786,6 @@ mod tests {
     use crate::context::{TreeSitterContextParams, TreesitterContext, WrappingClause};
 
     use pgt_test_utils::QueryWithCursorPosition;
-
 
     fn get_tree(input: &str) -> tree_sitter::Tree {
         let mut parser = tree_sitter::Parser::new();
