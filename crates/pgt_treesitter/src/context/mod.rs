@@ -246,7 +246,7 @@ impl<'a> TreesitterContext<'a> {
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
         self.node_under_cursor
             .as_ref()
-            .and_then(|n| self.get_ts_node_content(n))
+            .and_then(|node| self.get_ts_node_content(node))
     }
 
     fn gather_tree_context(&mut self) {
