@@ -16,7 +16,7 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
                         (object_reference) @alias
                         "."
                     )?
-                    (any_identifier) @column
+                    (column_identifier) @column
                 )
             )
         )

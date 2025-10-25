@@ -73,7 +73,7 @@ impl HoveredNode {
                 }
             }
 
-            "any_identifier" if ctx.matches_ancestor_history(&["field"]) => {
+            "column_identifier" => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
                         table_or_alias.clone(),
