@@ -1643,7 +1643,7 @@ module.exports = grammar({
         $.keyword_insert,
         seq(
           $.keyword_update,
-          optional(seq($.keyword_of, comma_list($.any_identifier, true)))
+          optional(seq($.keyword_of, comma_list($.column_identifier, true)))
         ),
         $.keyword_delete,
         $.keyword_truncate
@@ -1781,7 +1781,7 @@ module.exports = grammar({
         // TODO constraint management
         $.keyword_alter,
         optional($.keyword_column),
-        field("name", $.any_identifier),
+        $.column_identifier,
         choice(
           seq(
             choice($.keyword_set, $.keyword_drop),
@@ -1833,30 +1833,27 @@ module.exports = grammar({
         $.keyword_change,
         optional($.keyword_column),
         optional($._if_exists),
-        field("old_name", $.any_identifier),
+        $.column_identifier,
         $.column_definition,
         optional($.column_position)
       ),
 
     column_position: ($) =>
-      choice(
-        $.keyword_first,
-        seq($.keyword_after, field("col_name", $.any_identifier))
-      ),
+      choice($.keyword_first, seq($.keyword_after, $.column_identifier)),
 
     drop_column: ($) =>
       seq(
         $.keyword_drop,
         optional($.keyword_column),
         optional($._if_exists),
-        field("name", $.any_identifier)
+        $.column_identifier
       ),
 
     rename_column: ($) =>
       seq(
         $.keyword_rename,
         optional($.keyword_column),
-        field("old_name", $.any_identifier),
+        $.column_identifier,
         $.keyword_to,
         field("new_name", $.any_identifier)
       ),
@@ -2558,6 +2555,7 @@ module.exports = grammar({
         )
       ),
 
+    // todo(@juleswritescode): does this exist in postgresql?
     table_sort: ($) =>
       seq($.keyword_sort, $.keyword_by, paren_list($.any_identifier, true)),
 
@@ -2657,7 +2655,7 @@ module.exports = grammar({
           seq(
             $.keyword_references,
             $.object_reference,
-            paren_list($.any_identifier, true),
+            paren_list($.column_identifier, true),
             repeat(
               seq(
                 $.keyword_on,
@@ -2669,6 +2667,7 @@ module.exports = grammar({
                   seq(
                     $.keyword_set,
                     choice($.keyword_null, $.keyword_default),
+                    // todo(@juleswritescode): are these columns?
                     optional(paren_list($.any_identifier, true))
                   )
                 )
@@ -2762,6 +2761,7 @@ module.exports = grammar({
           seq(
             $.keyword_references,
             $.object_reference,
+            // todo(@juleswritescode): are these columns?
             paren_list($.any_identifier, true),
             repeat(
               seq(
@@ -2774,6 +2774,7 @@ module.exports = grammar({
                   seq(
                     $.keyword_set,
                     choice($.keyword_null, $.keyword_default),
+                    // todo(@juleswritescode): are these columns?
                     optional(paren_list($.any_identifier, true))
                   )
                 )
@@ -3045,6 +3046,7 @@ module.exports = grammar({
                 seq(
                   $.keyword_as,
                   field("alias", $.any_identifier),
+                  // todo(@juleswritescode): are these columns?
                   paren_list($.any_identifier, false)
                 )
               )
