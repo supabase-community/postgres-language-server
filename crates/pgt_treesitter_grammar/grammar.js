@@ -1739,8 +1739,6 @@ module.exports = grammar({
         $.add_constraint,
         $.drop_constraint,
         $.alter_column,
-        $.modify_column,
-        $.change_column,
         $.drop_column,
         $.rename_object,
         $.rename_column,
@@ -1817,25 +1815,6 @@ module.exports = grammar({
           ),
           seq($.keyword_drop, $.keyword_default)
         )
-      ),
-
-    modify_column: ($) =>
-      seq(
-        $.keyword_modify,
-        optional($.keyword_column),
-        optional($._if_exists),
-        $.column_definition,
-        optional($.column_position)
-      ),
-
-    change_column: ($) =>
-      seq(
-        $.keyword_change,
-        optional($.keyword_column),
-        optional($._if_exists),
-        $.column_identifier,
-        $.column_definition,
-        optional($.column_position)
       ),
 
     column_position: ($) =>
@@ -2640,7 +2619,7 @@ module.exports = grammar({
 
     column_definition: ($) =>
       seq(
-        field("name", $._column),
+        $.any_identifier,
         field("type", $.type),
         repeat($._column_constraint)
       ),

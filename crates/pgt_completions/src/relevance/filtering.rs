@@ -17,7 +17,11 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 impl CompletionFilter<'_> {
     pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         self.completable_context(ctx)?;
-        self.check_clause(ctx)?;
+
+        self.check_node_type(ctx)
+            // we want to rely on treesitter more, so checking the clause is a fallback
+            .or_else(|| self.check_clause(ctx))?;
+
         self.check_invocation(ctx)?;
         self.check_mentioned_schema_or_alias(ctx)?;
 
@@ -86,6 +90,17 @@ impl CompletionFilter<'_> {
         }
 
         Some(())
+    }
+
+    fn check_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
+        let kind = ctx.node_under_cursor.as_ref().map(|n| n.kind())?;
+
+        let is_allowed = match kind {
+            "column_identifier" => matches!(self.data, CompletionRelevanceData::Column(_)),
+            _ => false,
+        };
+
+        if is_allowed { Some(()) } else { None }
     }
 
     fn check_clause(&self, ctx: &TreesitterContext) -> Option<()> {
