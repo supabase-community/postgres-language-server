@@ -403,7 +403,7 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        // // test in SELECT clause
+        // test in SELECT clause
         assert_complete_results(
             format!(
                 "select u.id, p.{} from auth.users u join auth.posts p on u.id = p.user_id;",
@@ -750,22 +750,22 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        // assert_complete_results(
-        //     format!(
-        //         "select name from instruments where {} ",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("created_at".into()),
-        //         CompletionAssertion::Label("id".into()),
-        //         CompletionAssertion::Label("name".into()),
-        //         CompletionAssertion::Label("z".into()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                "select name from instruments where {} ",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("created_at".into()),
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+                CompletionAssertion::Label("z".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
         assert_complete_results(
             format!(
@@ -783,39 +783,39 @@ mod tests {
         )
         .await;
 
-        // // prefers not mentioned columns
-        // assert_complete_results(
-        //     format!(
-        //         "select name from instruments where id = 'something' and {}",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("created_at".into()),
-        //         CompletionAssertion::Label("name".into()),
-        //         CompletionAssertion::Label("z".into()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        // prefers not mentioned columns
+        assert_complete_results(
+            format!(
+                "select name from instruments where id = 'something' and {}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("created_at".into()),
+                CompletionAssertion::Label("name".into()),
+                CompletionAssertion::Label("z".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
-        // // // uses aliases
-        // assert_complete_results(
-        //     format!(
-        //         "select name from instruments i join others o on i.z = o.a where i.{}",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("created_at".into()),
-        //         CompletionAssertion::Label("id".into()),
-        //         CompletionAssertion::Label("name".into()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        // // uses aliases
+        assert_complete_results(
+            format!(
+                "select name from instruments i join others o on i.z = o.a where i.{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("created_at".into()),
+                CompletionAssertion::Label("id".into()),
+                CompletionAssertion::Label("name".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
     }
 
     #[sqlx::test(migrator = "pgt_test_utils::MIGRATIONS")]
