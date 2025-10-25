@@ -1,8 +1,5 @@
 use pgt_schema_cache::ProcKind;
-use pgt_treesitter::{
-    MentionedColumn,
-    context::{TreesitterContext, WrappingClause, WrappingNode},
-};
+use pgt_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
