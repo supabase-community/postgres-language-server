@@ -1,5 +1,5 @@
 use pgt_schema_cache::ProcKind;
-use pgt_treesitter::context::{NodeUnderCursor, TreesitterContext, WrappingClause, WrappingNode};
+use pgt_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
 
 use super::CompletionRelevanceData;
 
@@ -67,23 +67,20 @@ impl CompletionFilter<'_> {
         }
 
         // No autocompletions if there are two identifiers without a separator.
-        if ctx.node_under_cursor.as_ref().is_some_and(|n| match n {
-            NodeUnderCursor::TsNode(node) => node.prev_sibling().is_some_and(|p| {
+        if ctx.node_under_cursor.as_ref().is_some_and(|node| {
+            node.prev_sibling().is_some_and(|p| {
                 (p.kind() == "identifier" || p.kind() == "object_reference")
-                    && n.kind() == "identifier"
-            }),
-            NodeUnderCursor::CustomNode { .. } => false,
+                    && node.kind() == "identifier"
+            })
         }) {
             return None;
         }
 
         // no completions if we're right after an asterisk:
         // `select * {}`
-        if ctx.node_under_cursor.as_ref().is_some_and(|n| match n {
-            NodeUnderCursor::TsNode(node) => node
-                .prev_sibling()
-                .is_some_and(|p| (p.kind() == "all_fields") && n.kind() == "identifier"),
-            NodeUnderCursor::CustomNode { .. } => false,
+        if ctx.node_under_cursor.as_ref().is_some_and(|node| {
+            node.prev_sibling()
+                .is_some_and(|p| (p.kind() == "all_fields") && node.kind() == "identifier")
         }) {
             return None;
         }
