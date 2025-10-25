@@ -2275,7 +2275,7 @@ module.exports = grammar({
         $.keyword_into,
         $.object_reference,
         optional($._alias),
-        optional(paren_list($.column_identifier, true)),
+        optional($.insert_columns),
         optional(
           seq(
             $.keyword_overriding,
@@ -2299,6 +2299,8 @@ module.exports = grammar({
         ),
         true
       ),
+
+    insert_columns: ($) => paren_list($.column_identifier, true),
 
     _on_conflict: ($) =>
       seq(
@@ -3382,9 +3384,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("right", $._expression)
+              field("binary_expr_left", $._expression),
+              field("binary_expr_operator", operator),
+              field("binary_expr_right", $._expression)
             )
           )
         ),
@@ -3392,9 +3394,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("right", $._expression)
+              field("binary_expr_left", $._expression),
+              field("binary_expr_operator", operator),
+              field("binary_expr_right", $._expression)
             )
           )
         ),
@@ -3402,9 +3404,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("right", choice($.list, $.subquery))
+              field("binary_expr_left", $._expression),
+              field("binary_expr_operator", operator),
+              field("binary_expr_right", choice($.list, $.subquery))
             )
           )
         )

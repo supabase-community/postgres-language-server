@@ -153,8 +153,6 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
-        println!("{:#?}", ctx);
-
         ctx
     }
 

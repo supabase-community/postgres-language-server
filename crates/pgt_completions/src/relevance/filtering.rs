@@ -99,6 +99,7 @@ impl CompletionFilter<'_> {
             "column_identifier" => {
                 matches!(self.data, CompletionRelevanceData::Column(_))
                     && !ctx.matches_ancestor_history(&["insert_values", "field"])
+                    && !ctx.node_under_cursor_is_within_field_name("binary_expr_right")
             }
             _ => false,
         };
