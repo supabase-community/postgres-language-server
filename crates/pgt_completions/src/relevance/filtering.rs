@@ -69,8 +69,8 @@ impl CompletionFilter<'_> {
         // No autocompletions if there are two identifiers without a separator.
         if ctx.node_under_cursor.as_ref().is_some_and(|node| {
             node.prev_sibling().is_some_and(|p| {
-                (p.kind() == "identifier" || p.kind() == "object_reference")
-                    && node.kind() == "identifier"
+                (p.kind() == "any_identifier" || p.kind() == "object_reference")
+                    && node.kind() == "any_identifier"
             })
         }) {
             return None;
@@ -80,7 +80,7 @@ impl CompletionFilter<'_> {
         // `select * {}`
         if ctx.node_under_cursor.as_ref().is_some_and(|node| {
             node.prev_sibling()
-                .is_some_and(|p| (p.kind() == "all_fields") && node.kind() == "identifier")
+                .is_some_and(|p| (p.kind() == "all_fields") && node.kind() == "any_identifier")
         }) {
             return None;
         }
@@ -254,7 +254,7 @@ impl CompletionFilter<'_> {
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
                             ctx.matches_ancestor_history(&["role_specification"])
                                 || ctx.node_under_cursor.as_ref().is_some_and(|k| {
-                                    k.kind() == "identifier"
+                                    k.kind() == "any_identifier"
                                         && ctx.before_cursor_matches_kind(&[
                                             "keyword_grant",
                                             "keyword_revoke",
