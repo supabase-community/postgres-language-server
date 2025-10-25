@@ -979,7 +979,6 @@ module.exports = grammar({
         $.table_partition,
         $.stored_as,
         $.storage_location,
-        $.table_sort,
         $.row_format,
         seq($.keyword_tblproperties, paren_list($.table_option, true)),
         seq($.keyword_without, $.keyword_oids),
@@ -2551,10 +2550,6 @@ module.exports = grammar({
         )
       ),
 
-    // todo(@juleswritescode): does this exist in postgresql?
-    table_sort: ($) =>
-      seq($.keyword_sort, $.keyword_by, paren_list($.any_identifier, true)),
-
     table_partition: ($) =>
       seq(
         choice(
@@ -2627,12 +2622,7 @@ module.exports = grammar({
       ),
 
     column_definitions: ($) =>
-      seq(
-        "(",
-        comma_list($.column_definition, true),
-        optional($.constraints),
-        ")"
-      ),
+      seq("(", comma_list($.column_definition, true), ")"),
 
     column_definition: ($) =>
       seq(
@@ -2663,8 +2653,7 @@ module.exports = grammar({
                   seq(
                     $.keyword_set,
                     choice($.keyword_null, $.keyword_default),
-                    // todo(@juleswritescode): are these columns?
-                    optional(paren_list($.any_identifier, true))
+                    optional(paren_list($.mentioned_column_identifier, true))
                   )
                 )
               )
@@ -2708,16 +2697,6 @@ module.exports = grammar({
         alias($.implicit_cast, $.cast)
       ),
 
-    constraints: ($) => seq(",", $.constraint, repeat(seq(",", $.constraint))),
-
-    constraint: ($) =>
-      choice(
-        $._constraint_literal,
-        $._key_constraint,
-        $._primary_key_constraint,
-        $._check_constraint
-      ),
-
     _constraint_literal: ($) =>
       seq(
         $.keyword_constraint,
@@ -2726,59 +2705,6 @@ module.exports = grammar({
       ),
 
     _primary_key_constraint: ($) => seq($._primary_key, $.ordered_columns),
-
-    _key_constraint: ($) =>
-      seq(
-        choice(
-          seq(
-            $.keyword_unique,
-            optional(
-              choice(
-                $.keyword_index,
-                $.keyword_key,
-                seq(
-                  $.keyword_nulls,
-                  optional($.keyword_not),
-                  $.keyword_distinct
-                )
-              )
-            )
-          ),
-          seq(
-            optional($.keyword_foreign),
-            $.keyword_key,
-            optional($._if_not_exists)
-          ),
-          $.keyword_index
-        ),
-        optional(field("name", $.any_identifier)),
-        $.ordered_columns,
-        optional(
-          seq(
-            $.keyword_references,
-            $.object_reference,
-            // todo(@juleswritescode): are these columns?
-            paren_list($.any_identifier, true),
-            repeat(
-              seq(
-                $.keyword_on,
-                choice($.keyword_delete, $.keyword_update),
-                choice(
-                  seq($.keyword_no, $.keyword_action),
-                  $.keyword_restrict,
-                  $.keyword_cascade,
-                  seq(
-                    $.keyword_set,
-                    choice($.keyword_null, $.keyword_default),
-                    // todo(@juleswritescode): are these columns?
-                    optional(paren_list($.any_identifier, true))
-                  )
-                )
-              )
-            )
-          )
-        )
-      ),
 
     ordered_columns: ($) => paren_list(alias($.ordered_column, $.column), true),
 
@@ -3042,7 +2968,6 @@ module.exports = grammar({
                 seq(
                   $.keyword_as,
                   field("alias", $.any_identifier),
-                  // todo(@juleswritescode): are these columns?
                   paren_list($.any_identifier, false)
                 )
               )
@@ -3517,6 +3442,7 @@ module.exports = grammar({
 
     any_identifier: ($) => $._any_identifier,
     column_identifier: ($) => $._any_identifier,
+    mentioned_column_identifier: ($) => $._any_identifier,
 
     _any_identifier: ($) =>
       choice(
