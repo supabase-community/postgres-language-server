@@ -2622,7 +2622,12 @@ module.exports = grammar({
       ),
 
     column_definitions: ($) =>
-      seq("(", comma_list($.column_definition, true), ")"),
+      seq(
+        "(",
+        comma_list($.column_definition, true),
+        optional($.constraints),
+        ")"
+      ),
 
     column_definition: ($) =>
       seq(
@@ -2697,6 +2702,16 @@ module.exports = grammar({
         alias($.implicit_cast, $.cast)
       ),
 
+    constraints: ($) => seq(",", $.constraint, repeat(seq(",", $.constraint))),
+
+    constraint: ($) =>
+      choice(
+        $._constraint_literal,
+        $._key_constraint,
+        $._primary_key_constraint,
+        $._check_constraint
+      ),
+
     _constraint_literal: ($) =>
       seq(
         $.keyword_constraint,
@@ -2705,6 +2720,57 @@ module.exports = grammar({
       ),
 
     _primary_key_constraint: ($) => seq($._primary_key, $.ordered_columns),
+
+    _key_constraint: ($) =>
+      seq(
+        choice(
+          seq(
+            $.keyword_unique,
+            optional(
+              choice(
+                $.keyword_index,
+                $.keyword_key,
+                seq(
+                  $.keyword_nulls,
+                  optional($.keyword_not),
+                  $.keyword_distinct
+                )
+              )
+            )
+          ),
+          seq(
+            optional($.keyword_foreign),
+            $.keyword_key,
+            optional($._if_not_exists)
+          ),
+          $.keyword_index
+        ),
+        optional(field("name", $.any_identifier)),
+        $.ordered_columns,
+        optional(
+          seq(
+            $.keyword_references,
+            $.object_reference,
+            paren_list($.column_identifier, true),
+            repeat(
+              seq(
+                $.keyword_on,
+                choice($.keyword_delete, $.keyword_update),
+                choice(
+                  seq($.keyword_no, $.keyword_action),
+                  $.keyword_restrict,
+                  $.keyword_cascade,
+                  seq(
+                    $.keyword_set,
+                    choice($.keyword_null, $.keyword_default),
+                    optional(paren_list($.any_identifier, true))
+                  )
+                )
+              )
+            )
+          )
+        )
+      ),
 
     ordered_columns: ($) => paren_list(alias($.ordered_column, $.column), true),
 
