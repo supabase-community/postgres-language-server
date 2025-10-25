@@ -620,7 +620,7 @@ impl<'a> TreesitterContext<'a> {
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
-    /// If the tree shows `relation > object_reference > any_any_identifier` and the "any_any_identifier" is a leaf node,
+    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
     pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|node| {
@@ -642,7 +642,7 @@ impl<'a> TreesitterContext<'a> {
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
-    /// If the tree shows `relation > object_reference > any_any_identifier` and the "any_any_identifier" is a leaf node,
+    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
     pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|node| {
@@ -663,9 +663,9 @@ impl<'a> TreesitterContext<'a> {
     ///  *   keyword_from [9..13] 'from'
     ///  *   relation [14..28] '"auth"."users"'
     ///  *     object_reference [14..28] '"auth"."users"'
-    ///  *       any_any_identifier [14..20] '"auth"'
+    ///  *       any_identifier [14..20] '"auth"'
     ///  *         . [20..21] '.'
-    ///  *       any_any_identifier [21..28] '"users"'
+    ///  *       any_identifier [21..28] '"users"'
     ///  */
     ///
     /// if node_under_cursor_is_nth_child(1) {
@@ -1138,7 +1138,7 @@ mod tests {
                     any_identifier [40..43] '@id'
                         @ [40..41] '@'
 
-            You can see that the '@' is a child of the "any_any_identifier" but has a range smaller than its parent's.
+            You can see that the '@' is a child of the "any_identifier" but has a range smaller than its parent's.
             This would crash our context parsing because, at position 42, we weren't at the leaf node but also couldn't
             go to a child on that position.
         */
