@@ -96,5 +96,8 @@ pgt_workspace_macros       = { path = "./crates/pgt_workspace_macros", version =
 pgt_test_macros = { path = "./crates/pgt_test_macros" }
 pgt_test_utils  = { path = "./crates/pgt_test_utils" }
 
+[workspace.dev-dependencies]
+pgt_test_utils              = { path = "./crates/pgt_test_utils", version = "0.0.0" }
+
 [profile.dev.package]
 insta.opt-level = 3

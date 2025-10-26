@@ -21,14 +21,15 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
-    [$.all_fields, $.field_qualifier],
-    [$.object_reference, $._qualified_field],
     [$.object_reference],
     [$.between_expression, $.binary_expression],
     [$.time],
     [$.timestamp],
     [$.grantable_on_function, $.grantable_on_table],
     [$.any_identifier, $.column_identifier],
+    [$.any_identifier, $.schema_identifier, $.table_identifier],
+    [$.schema_identifier, $.table_identifier],
+    [$.table_reference, $.column_reference],
   ],
 
   precedences: ($) => [
@@ -873,7 +874,7 @@ module.exports = grammar({
         // TODO: aggregate
         $.cast,
         // TODO: collation
-        seq($.keyword_column, alias($._qualified_field, $.object_reference)),
+        seq($.keyword_column, $.column_reference),
         // TODO: constraint (on domain)
         // TODO: conversion
         seq($.keyword_database, $.any_identifier),
@@ -1557,7 +1558,7 @@ module.exports = grammar({
             seq(
               $.keyword_owned,
               $.keyword_by,
-              choice($.keyword_none, $.object_reference)
+              choice($.keyword_none, $.column_reference)
             )
           )
         )
@@ -1993,7 +1994,7 @@ module.exports = grammar({
               seq(
                 $.keyword_owned,
                 $.keyword_by,
-                choice($.keyword_none, $.object_reference)
+                choice($.keyword_none, $.column_reference)
               )
             )
           ),
@@ -2158,8 +2159,7 @@ module.exports = grammar({
         optional($.keyword_concurrently),
         optional($._if_exists),
         field("name", $.any_identifier),
-        optional($._drop_behavior),
-        optional(seq($.keyword_on, $.object_reference))
+        optional($._drop_behavior)
       ),
 
     drop_extension: ($) =>
@@ -2198,23 +2198,6 @@ module.exports = grammar({
             optional(seq(",", alias($._literal_string, $.literal)))
           )
         )
-      ),
-
-    object_reference: ($) =>
-      choice(
-        seq(
-          field("database", $.any_identifier),
-          ".",
-          field("schema", $.any_identifier),
-          ".",
-          field("name", $.any_identifier)
-        ),
-        seq(
-          field("schema", $.any_identifier),
-          ".",
-          field("name", $.any_identifier)
-        ),
-        field("name", $.any_identifier)
       ),
 
     _copy_statement: ($) =>
@@ -2305,12 +2288,15 @@ module.exports = grammar({
       seq(
         $.keyword_on,
         $.keyword_conflict,
-        // todo: conflict target
-        seq(
-          $.keyword_do,
-          choice(
-            $.keyword_nothing,
-            seq($.keyword_update, $._set_values, optional($.where))
+        // todo(@juleswritescode): support column identifiers in conflict_target
+        unknown_until(
+          $,
+          seq(
+            $.keyword_do,
+            choice(
+              $.keyword_nothing,
+              seq($.keyword_update, $._set_values, optional($.where))
+            )
           )
         )
       ),
@@ -2596,7 +2582,7 @@ module.exports = grammar({
 
     assignment: ($) =>
       seq(
-        field("left", alias($._qualified_field, $.field)),
+        field("left", $.column_reference),
         "=",
         field("right", $._expression)
       ),
@@ -2776,7 +2762,7 @@ module.exports = grammar({
 
     ordered_column: ($) => seq(field("name", $._column), optional($.direction)),
 
-    all_fields: ($) => seq(optional(seq($.object_reference, ".")), "*"),
+    all_fields: ($) => seq(optional(seq($.table_reference, ".")), "*"),
 
     parameter: ($) => /\?|(\$[0-9]+)/,
 
@@ -2811,12 +2797,6 @@ module.exports = grammar({
       ),
 
     field: ($) => field("name", $.column_identifier),
-
-    _qualified_field: ($) =>
-      seq(optional($.field_qualifier), $.column_identifier),
-
-    field_qualifier: ($) =>
-      seq(prec.left(optional_parenthesis($.object_reference)), "."),
 
     implicit_cast: ($) => seq($._expression, "::", $.type),
 
@@ -3241,7 +3221,7 @@ module.exports = grammar({
         1,
         choice(
           $.literal,
-          alias($._qualified_field, $.field),
+          $.column_reference,
           $.parameter,
           $.list,
           $.case,
@@ -3506,8 +3486,65 @@ module.exports = grammar({
 
     bang: (_) => "!",
 
+    // todo: handle (table).col vs. (type).attribute
+    // todo: handle "schema"."table".column etc.
+    // todo: handle alias.col vs. table.col
+    // todo: handle table.column::type
+    // todo: handle schema.function(arg1, arg2)
+    // function_reference: $ => {},
+
+    // table_reference: $ => {},
+    // type_reference: $ => {},
+    // column_reference: $ => {},
+
+    object_reference: ($) =>
+      choice(
+        seq(
+          field("first", $.any_identifier),
+          ".",
+          field("second", $.any_identifier),
+          ".",
+          field("third", $.any_identifier)
+        ),
+        seq(
+          field("first", $.any_identifier),
+          ".",
+          field("second", $.any_identifier)
+        ),
+        field("first", $.any_identifier)
+      ),
+
+    type_reference: ($) =>
+      choice(
+        seq($.schema_identifier, ".", $.type_identifier),
+        field("first", $.type_identifier)
+      ),
+
+    table_reference: ($) =>
+      choice(
+        seq($.schema_identifier, ".", $.table_identifier),
+        field("first", $.table_identifier)
+      ),
+
+    column_reference: ($) =>
+      choice(
+        seq(
+          $.schema_identifier,
+          ".",
+          $.table_identifier,
+          ".",
+          $.column_identifier
+        ),
+        seq($.table_identifier, ".", field("second", $.column_identifier)),
+        field("first", $.column_identifier)
+      ),
+
     any_identifier: ($) => $._any_identifier,
     column_identifier: ($) => $._any_identifier,
+    schema_identifier: ($) => $._any_identifier,
+    table_identifier: ($) => $._any_identifier,
+    function_identifier: ($) => $._any_identifier,
+    type_identifier: ($) => $._any_identifier,
 
     _any_identifier: ($) =>
       choice(
@@ -3516,8 +3553,10 @@ module.exports = grammar({
         $._sql_parameter,
         seq("`", $._identifier, "`")
       ),
-    _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]*/,
-    _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]*/,
+    _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]+/,
+    _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]+/,
+
+    _anything: (_) => /\S+/,
   },
 });
 
@@ -3632,4 +3671,18 @@ function make_keyword(word) {
       "]";
   }
   return new RegExp(str);
+}
+
+/**
+ * @param {RuleRecord} $
+ * @param {Rule} rule
+ * @param {number} [maxLength]
+ * @returns {PrecLeftRule}
+ */
+function unknown_until($, rule, maxLength) {
+  const unknowns = maxLength
+    ? seq(...Array.from({ length: maxLength }).map(() => optional($._anything)))
+    : repeat($._anything);
+
+  return prec.left(seq(unknowns, rule));
 }
