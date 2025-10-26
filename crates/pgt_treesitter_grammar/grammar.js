@@ -2658,7 +2658,7 @@ module.exports = grammar({
                   seq(
                     $.keyword_set,
                     choice($.keyword_null, $.keyword_default),
-                    optional(paren_list($.mentioned_column_identifier, true))
+                    optional(paren_list($.any_identifier, true))
                   )
                 )
               )
@@ -3508,7 +3508,6 @@ module.exports = grammar({
 
     any_identifier: ($) => $._any_identifier,
     column_identifier: ($) => $._any_identifier,
-    mentioned_column_identifier: ($) => $._any_identifier,
 
     _any_identifier: ($) =>
       choice(
