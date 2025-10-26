@@ -227,7 +227,7 @@ fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
         }
     }
 
-    println!("cargo:rustc-link-lib=static={}", LIB_NAME);
+    println!("cargo:rustc-link-lib=static={LIB_NAME}");
     cc.compile(LIB_NAME);
 }
 
@@ -241,7 +241,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rustc-link-search=native={}", out_dir.display());
 
     let layout = if let Ok(p) = env::var("LIBPG_QUERY_PATH") {
-        println!("using system libpg_query at {}", p);
+        println!("using system libpg_query at {p}");
         system_layout(Path::new(&p))?
     } else {
         println!("using vendored libpg_query (submodule)");
@@ -251,7 +251,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(lib_dir) = &layout.lib_dir {
         println!("cargo:rustc-link-search=native={}", lib_dir.display());
-        println!("cargo:rustc-link-lib={}", LIB_NAME);
+        println!("cargo:rustc-link-lib={LIB_NAME}");
     }
 
     compile_c_if_needed(&layout, is_emscripten, &target);
