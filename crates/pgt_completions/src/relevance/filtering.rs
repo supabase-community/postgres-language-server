@@ -101,13 +101,6 @@ impl CompletionFilter<'_> {
                     && !ctx.matches_ancestor_history(&["insert_values", "field"])
                     && !ctx.node_under_cursor_is_within_field_name("binary_expr_right")
             }
-            "mentioned_column_identifier" => match self.data {
-                CompletionRelevanceData::Column(column) => ctx
-                    // todo(juleswritescode): collect mentioned columns from more clauses
-                    .get_mentioned_columns(&None)
-                    .is_some_and(|cols| cols.iter().any(|c| c.column == column.name)),
-                _ => false,
-            },
             _ => false,
         };
 
