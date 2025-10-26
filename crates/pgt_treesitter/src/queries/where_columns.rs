@@ -11,11 +11,9 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     (where
         (binary_expression
             (binary_expression 
-                (field
-                    (field_qualifier
-                        (object_reference) @alias
-                        "."
-                    )?
+                (column_reference
+                    (schema_identifier)? @schema
+                    (table_identifier)? @table
                     (column_identifier) @column
                 )
             )
@@ -28,6 +26,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
 
 #[derive(Debug)]
 pub struct WhereColumnMatch<'a> {
+    #[allow(unused)]
+    pub(crate) schema: Option<tree_sitter::Node<'a>>,
     pub(crate) alias: Option<tree_sitter::Node<'a>>,
     pub(crate) column: tree_sitter::Node<'a>,
 }
@@ -80,6 +80,7 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
                 to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
+                    schema: None,
                     alias: None,
                     column: capture,
                 }));
@@ -90,6 +91,19 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
                 let column = m.captures[1].node;
 
                 to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
+                    schema: None,
+                    alias: Some(alias),
+                    column,
+                }));
+            }
+
+            if m.captures.len() == 2 {
+                let schema = m.captures[0].node;
+                let alias = m.captures[1].node;
+                let column = m.captures[2].node;
+
+                to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
+                    schema: Some(schema),
                     alias: Some(alias),
                     column,
                 }));

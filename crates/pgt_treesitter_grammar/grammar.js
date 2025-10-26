@@ -2383,16 +2383,6 @@ module.exports = grammar({
           optional(seq($.keyword_for, $.keyword_columns)),
           optional(seq($.keyword_cache, $.keyword_metadata)),
           optional($.keyword_noscan)
-        ),
-        // Impala
-        seq(
-          $.keyword_compute,
-          optional($.keyword_incremental),
-          $.keyword_stats,
-          $.object_reference,
-          optional(
-            choice(paren_list(repeat1($.field), false), $._partition_spec)
-          )
         )
       ),
 
@@ -3221,7 +3211,7 @@ module.exports = grammar({
         1,
         choice(
           $.literal,
-          $.column_reference,
+          $.object_reference,
           $.parameter,
           $.list,
           $.case,
@@ -3553,8 +3543,8 @@ module.exports = grammar({
         $._sql_parameter,
         seq("`", $._identifier, "`")
       ),
-    _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]+/,
-    _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]+/,
+    _sql_parameter: (_) => /[:$@?][a-zA-Z_][0-9a-zA-Z_]*/,
+    _identifier: (_) => /[a-zA-Z_][0-9a-zA-Z_]*/,
 
     _anything: (_) => /\S+/,
   },

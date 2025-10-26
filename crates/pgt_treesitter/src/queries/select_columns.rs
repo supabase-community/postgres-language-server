@@ -9,12 +9,10 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (select_expression
         (term
-            (field
-                (field_qualifier
-                    (object_reference) @alias
-                    "."
-                )?
-                (column_identifier) @column
+            (object_reference
+                first: (any_identifier) @first
+                second: (any_identifier)? @second
+                third: (any_identifier)? @third
             )
         )
         ","?
@@ -26,6 +24,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
 
 #[derive(Debug)]
 pub struct SelectColumnMatch<'a> {
+    #[allow(unused)]
+    pub(crate) schema: Option<tree_sitter::Node<'a>>,
     pub(crate) alias: Option<tree_sitter::Node<'a>>,
     pub(crate) column: tree_sitter::Node<'a>,
 }
@@ -78,6 +78,7 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
             if m.captures.len() == 1 {
                 let capture = m.captures[0].node;
                 to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
+                    schema: None,
                     alias: None,
                     column: capture,
                 }));
@@ -88,6 +89,19 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
                 let column = m.captures[1].node;
 
                 to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
+                    schema: None,
+                    alias: Some(alias),
+                    column,
+                }));
+            }
+
+            if m.captures.len() == 3 {
+                let schema = m.captures[0].node;
+                let alias = m.captures[1].node;
+                let column = m.captures[2].node;
+
+                to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
+                    schema: Some(schema),
                     alias: Some(alias),
                     column,
                 }));
@@ -141,7 +155,8 @@ select
     u.id,
     u.email,
     cs.user_settings,
-    cs.client_id
+    cs.client_id,
+    public.client_settings.id
 from 
     auth.users u
     join public.client_settings cs
@@ -176,5 +191,8 @@ from
 
         assert_eq!(results[3].get_alias(sql), Some("cs".into()));
         assert_eq!(results[3].get_column(sql), "client_id");
+
+        assert_eq!(results[4].get_alias(sql), Some("client_settings".into()));
+        assert_eq!(results[4].get_column(sql), "id");
     }
 }
