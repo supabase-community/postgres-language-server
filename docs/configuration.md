@@ -45,6 +45,19 @@ Some tools that the Postgres Language Server provides are implemented as mere in
 }
 ```
 
+When you need to pass additional Postgres settings (e.g. `sslmode`, `options`,
+`application_name`) you can provide a connection string instead of the
+individual fields. The URI takes precedence over any other connection fields.
+
+```json
+{
+  "db": {
+    "connectionString": "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
+    "allowStatementExecutionsAgainst": ["localhost/*"]
+  }
+}
+```
+
 
 ## Specifying files to process
 
@@ -91,6 +104,4 @@ In the following example, we include all files, except those in any test/ folder
 
 #### Control files via VCS
 You can ignore files ignored by your [VCS](/guides/vcs_integration.md).
-
-
 
