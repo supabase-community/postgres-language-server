@@ -32,6 +32,16 @@ pub enum PgtCommand {
 
     /// Runs everything to the requested files.
     #[bpaf(command)]
+    Dblint {
+        #[bpaf(external(partial_configuration), hide_usage, optional)]
+        configuration: Option<PartialConfiguration>,
+
+        #[bpaf(external, hide_usage)]
+        cli_options: CliOptions,
+    },
+
+    /// Runs everything to the requested files.
+    #[bpaf(command)]
     Check {
         #[bpaf(external(partial_configuration), hide_usage, optional)]
         configuration: Option<PartialConfiguration>,
@@ -217,9 +227,9 @@ pub enum PgtCommand {
 impl PgtCommand {
     const fn cli_options(&self) -> Option<&CliOptions> {
         match self {
-            PgtCommand::Version(cli_options) | PgtCommand::Check { cli_options, .. } => {
-                Some(cli_options)
-            }
+            PgtCommand::Version(cli_options)
+            | PgtCommand::Check { cli_options, .. }
+            | PgtCommand::Dblint { cli_options, .. } => Some(cli_options),
             PgtCommand::LspProxy { .. }
             | PgtCommand::Start { .. }
             | PgtCommand::Stop
