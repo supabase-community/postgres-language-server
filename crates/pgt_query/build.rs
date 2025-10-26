@@ -1,103 +1,96 @@
 use fs_extra::dir::CopyOptions;
 use glob::glob;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
-static LIBRARY_NAME: &str = "pg_query";
+static LIB_NAME: &str = "pg_query";
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-    let libpg_query_submodule = manifest_dir.join("vendor").join("libpg_query");
+struct Layout {
+    include_dir: PathBuf,
+    lib_dir: Option<PathBuf>, // Some => system/dynamic; None => vendored/static
+    header: PathBuf,
+    proto: Option<PathBuf>,
+    c_src_roots: Vec<PathBuf>,
+    extra_includes: Vec<PathBuf>,
+    build_root: PathBuf, // base where vendor/protobuf live
+}
 
-    let src_dir = manifest_dir.join("src");
-    let target = env::var("TARGET").unwrap();
-    let is_emscripten = target.contains("emscripten");
+fn system_layout(prefix: &Path) -> Result<Layout, String> {
+    let include = prefix.join("include");
+    let lib = prefix.join("lib");
+    let header = include.join(format!("{LIB_NAME}.h"));
+    if !header.exists() {
+        return Err(format!(
+            "LIBPG_QUERY_PATH set, but header not found: {}",
+            header.display()
+        ));
+    }
+    let sys_proto = prefix.join("protobuf").join(format!("{LIB_NAME}.proto"));
+    Ok(Layout {
+        include_dir: include,
+        lib_dir: Some(lib),
+        header,
+        proto: sys_proto.exists().then_some(sys_proto),
+        c_src_roots: vec![],
+        extra_includes: vec![],
+        build_root: prefix.to_path_buf(),
+    })
+}
 
-    println!("cargo:rustc-link-search=native={}", out_dir.display());
-    println!("cargo:rustc-link-lib=static={LIBRARY_NAME}");
-
-    // Check if submodule exists
-    if !libpg_query_submodule.join(".git").exists() && !libpg_query_submodule.join("src").exists() {
+fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String> {
+    // Ensure submodule content exists
+    if !vendor_root.join("src").exists() {
         return Err(
-            "libpg_query submodule not found. Please run: git submodule update --init --recursive"
-                .into(),
+            "libpg_query submodule not found. Run: git submodule update --init --recursive".into(),
         );
     }
 
-    // Tell cargo to rerun if the submodule changes
-    println!(
-        "cargo:rerun-if-changed={}",
-        libpg_query_submodule.join("src").display()
-    );
-
-    // copy necessary files to out_dir for compilation
-    let out_header_path = out_dir.join(LIBRARY_NAME).with_extension("h");
-    let out_protobuf_path = out_dir.join("protobuf");
-
-    let source_paths = vec![
-        libpg_query_submodule.join(LIBRARY_NAME).with_extension("h"),
-        libpg_query_submodule.join("postgres_deparse.h"),
-        libpg_query_submodule.join("Makefile"),
-        libpg_query_submodule.join("src"),
-        libpg_query_submodule.join("protobuf"),
-        libpg_query_submodule.join("vendor"),
-    ];
-
-    let copy_options = CopyOptions {
+    // Copy vendored tree into OUT_DIR (mirrors original script)
+    let copy_opts = CopyOptions {
         overwrite: true,
         ..CopyOptions::default()
     };
+    let items = vec![
+        vendor_root.join(format!("{LIB_NAME}.h")),
+        vendor_root.join("postgres_deparse.h"),
+        vendor_root.join("Makefile"),
+        vendor_root.join("src"),
+        vendor_root.join("protobuf"),
+        vendor_root.join("vendor"),
+    ];
+    fs_extra::copy_items(&items, out_dir, &copy_opts).map_err(|e| e.to_string())?;
 
-    fs_extra::copy_items(&source_paths, &out_dir, &copy_options)?;
+    let root = out_dir.to_path_buf();
+    let out_header = root.join(format!("{LIB_NAME}.h"));
+    let out_proto = root.join("protobuf").join(format!("{LIB_NAME}.proto"));
 
-    // compile the c library.
-    let mut build = cc::Build::new();
+    let extra_includes = vec![
+        root.join("."),
+        root.join("vendor"),
+        root.join("src/postgres/include"),
+        root.join("src/include"),
+    ];
 
-    // configure for emscripten if needed
-    if is_emscripten {
-        // use emcc as the compiler instead of gcc/clang
-        build.compiler("emcc");
-        // use emar as the archiver instead of ar
-        build.archiver("emar");
-        // note: we don't add wasm-specific flags here as this creates a static library
-        // the final linking flags should be added when building the final wasm module
-    }
+    Ok(Layout {
+        include_dir: root.clone(),
+        lib_dir: None,
+        header: out_header,
+        proto: out_proto.exists().then_some(out_proto),
+        c_src_roots: vec![root.join("src"), root.join("src/postgres")],
+        extra_includes,
+        build_root: root,
+    })
+}
 
-    build
-        .files(
-            glob(out_dir.join("src/*.c").to_str().unwrap())
-                .unwrap()
-                .map(|p| p.unwrap()),
-        )
-        .files(
-            glob(out_dir.join("src/postgres/*.c").to_str().unwrap())
-                .unwrap()
-                .map(|p| p.unwrap()),
-        )
-        .file(out_dir.join("vendor/protobuf-c/protobuf-c.c"))
-        .file(out_dir.join("vendor/xxhash/xxhash.c"))
-        .file(out_dir.join("protobuf/pg_query.pb-c.c"))
-        .include(out_dir.join("."))
-        .include(out_dir.join("./vendor"))
-        .include(out_dir.join("./src/postgres/include"))
-        .include(out_dir.join("./src/include"))
-        .warnings(false); // avoid unnecessary warnings, as they are already considered as part of libpg_query development
-    if env::var("PROFILE").unwrap() == "debug" || env::var("DEBUG").unwrap() == "1" {
-        build.define("USE_ASSERT_CHECKING", None);
-    }
-    if target.contains("windows") && !is_emscripten {
-        build.include(out_dir.join("./src/postgres/include/port/win32"));
-        if target.contains("msvc") {
-            build.include(out_dir.join("./src/postgres/include/port/win32_msvc"));
-        }
-    }
-    build.compile(LIBRARY_NAME);
-
-    // Generate bindings for Rust
-    let mut bindgen_builder = bindgen::Builder::default()
-        .header(out_header_path.to_str().ok_or("Invalid header path")?)
+fn run_bindgen(
+    header: &Path,
+    include_dirs: &[PathBuf],
+    is_emscripten: bool,
+    out_bindings: &Path,
+) -> Result<(), String> {
+    let mut b = bindgen::Builder::default()
+        .header(header.to_str().unwrap())
         // Allowlist only the functions we need
         .allowlist_function("pg_query_parse_protobuf")
         .allowlist_function("pg_query_scan")
@@ -128,47 +121,149 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allowlist_type("size_t")
         .allowlist_var("PG_VERSION_NUM");
 
-    // Configure bindgen for Emscripten target
+    for inc in include_dirs {
+        b = b.clang_arg(format!("-I{}", inc.display()));
+    }
+
     if is_emscripten {
-        // Tell bindgen to generate bindings for the wasm32 target
-        bindgen_builder = bindgen_builder.clang_arg("--target=wasm32-unknown-emscripten");
+        b = b.clang_arg("--target=wasm32-unknown-emscripten");
 
         // Add emscripten sysroot includes
-        // First try to use EMSDK environment variable (set in CI and when sourcing emsdk_env.sh)
         if let Ok(emsdk) = env::var("EMSDK") {
-            bindgen_builder = bindgen_builder.clang_arg(format!(
+            b = b.clang_arg(format!(
                 "-I{emsdk}/upstream/emscripten/cache/sysroot/include"
             ));
         } else {
-            // Fallback to the default path if EMSDK is not set
-            bindgen_builder =
-                bindgen_builder.clang_arg("-I/emsdk/upstream/emscripten/cache/sysroot/include");
+            b = b.clang_arg("-I/emsdk/upstream/emscripten/cache/sysroot/include");
         }
 
-        // Ensure we have the basic C standard library headers
-        bindgen_builder = bindgen_builder.clang_arg("-D__EMSCRIPTEN__");
+        b = b.clang_arg("-D__EMSCRIPTEN__");
 
-        // Use environment variable if set (from our justfile)
-        if let Ok(extra_args) = env::var("BINDGEN_EXTRA_CLANG_ARGS") {
-            for arg in extra_args.split_whitespace() {
-                bindgen_builder = bindgen_builder.clang_arg(arg);
+        if let Ok(extra) = env::var("BINDGEN_EXTRA_CLANG_ARGS") {
+            for arg in extra.split_whitespace() {
+                b = b.clang_arg(arg);
             }
         }
     }
 
-    let bindings = bindgen_builder
-        .generate()
-        .map_err(|_| "Unable to generate bindings")?;
+    b.generate()
+        .map_err(|_| "bindgen failed".to_string())?
+        .write_to_file(out_bindings)
+        .map_err(|e| e.to_string())
+}
 
+fn maybe_generate_prost(proto_candidates: &[PathBuf], out_dir_src: &Path, out_dir_real: &Path) {
+    let protoc_ok = Command::new("protoc")
+        .arg("--version")
+        .status()
+        .ok()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if !protoc_ok {
+        println!("skipping protobuf generation (no protoc)");
+        return;
+    }
+    let proto = proto_candidates.iter().find(|p| p.exists());
+    if let Some(p) = proto {
+        println!("generating protobuf from {}", p.display());
+        unsafe {
+            env::set_var("OUT_DIR", out_dir_src);
+        }
+        let inc = p.parent().unwrap();
+        prost_build::compile_protos(&[p], &[inc]).expect("prost_build failed");
+        std::fs::rename(
+            out_dir_src.join("pg_query.rs"),
+            out_dir_src.join("protobuf.rs"),
+        )
+        .ok();
+        unsafe {
+            env::set_var("OUT_DIR", out_dir_real);
+        }
+    } else {
+        println!("skipping protobuf generation (no .proto found)");
+    }
+}
+
+fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
+    if layout.lib_dir.is_some() {
+        return;
+    } // System lib, nothing to compile.
+
+    let mut cc = cc::Build::new();
+    if is_emscripten {
+        cc.compiler("emcc").archiver("emar");
+    }
+
+    for root in &layout.c_src_roots {
+        let pattern = root.join("*.c");
+        for p in glob(pattern.to_str().unwrap()).unwrap().flatten() {
+            cc.file(p);
+        }
+    }
+
+    // Add vendor files from copied tree
+    cc.file(layout.build_root.join("vendor/protobuf-c/protobuf-c.c"));
+    cc.file(layout.build_root.join("vendor/xxhash/xxhash.c"));
+    cc.file(layout.build_root.join("protobuf/pg_query.pb-c.c"));
+
+    for inc in &layout.extra_includes {
+        cc.include(inc);
+    }
+    cc.warnings(false);
+
+    let is_debug = env::var("PROFILE").ok().as_deref() == Some("debug")
+        || env::var("DEBUG").ok().as_deref() == Some("1");
+    if is_debug {
+        cc.define("USE_ASSERT_CHECKING", None);
+    }
+    if target.contains("windows") && !is_emscripten {
+        cc.include(layout.include_dir.join("src/postgres/include/port/win32"));
+        if target.contains("msvc") {
+            cc.include(
+                layout
+                    .include_dir
+                    .join("src/postgres/include/port/win32_msvc"),
+            );
+        }
+    }
+
+    println!("cargo:rustc-link-lib=static={}", LIB_NAME);
+    cc.compile(LIB_NAME);
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let out_dir = PathBuf::from(env::var("OUT_DIR")?);
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
+    let src_dir = manifest_dir.join("src");
+    let target = env::var("TARGET").unwrap();
+    let is_emscripten = target.contains("emscripten");
+
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+
+    let layout = if let Ok(p) = env::var("LIBPG_QUERY_PATH") {
+        println!("using system libpg_query at {}", p);
+        system_layout(Path::new(&p))?
+    } else {
+        println!("using vendored libpg_query (submodule)");
+        let vendor_root = manifest_dir.join("vendor").join("libpg_query");
+        vendored_layout(&vendor_root, &out_dir)?
+    };
+
+    if let Some(lib_dir) = &layout.lib_dir {
+        println!("cargo:rustc-link-search=native={}", lib_dir.display());
+        println!("cargo:rustc-link-lib={}", LIB_NAME);
+    }
+
+    compile_c_if_needed(&layout, is_emscripten, &target);
+
+    let mut include_dirs = vec![layout.include_dir.clone()];
+    include_dirs.extend(layout.extra_includes.clone());
     let bindings_path = out_dir.join("bindings.rs");
-    bindings.write_to_file(&bindings_path)?;
+    run_bindgen(&layout.header, &include_dirs, is_emscripten, &bindings_path)?;
 
-    // For WASM/emscripten builds, manually add the function declarations
-    // since bindgen sometimes misses them due to preprocessor conditions
+    // Emscripten-specific post-processing
     if is_emscripten {
         let mut bindings_content = std::fs::read_to_string(&bindings_path)?;
-
-        // Check if we need to add the extern "C" block
         if !bindings_content.contains("extern \"C\"") {
             bindings_content.push_str("\nextern \"C\" {\n");
             bindings_content.push_str("    pub fn pg_query_scan(input: *const ::std::os::raw::c_char) -> PgQueryScanResult;\n");
@@ -195,33 +290,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bindings_content
                 .push_str("    pub fn pg_query_free_split_result(result: PgQuerySplitResult);\n");
             bindings_content.push_str("}\n");
-
             std::fs::write(&bindings_path, bindings_content)?;
         }
     }
 
-    let protoc_exists = Command::new("protoc").arg("--version").status().is_ok();
-    if protoc_exists {
-        println!("generating protobuf bindings");
-        // HACK: Set OUT_DIR to src/ so that the generated protobuf file is copied to src/protobuf.rs
-        unsafe {
-            env::set_var("OUT_DIR", &src_dir);
-        }
-
-        prost_build::compile_protos(
-            &[&out_protobuf_path.join(LIBRARY_NAME).with_extension("proto")],
-            &[&out_protobuf_path],
-        )?;
-
-        std::fs::rename(src_dir.join("pg_query.rs"), src_dir.join("protobuf.rs"))?;
-
-        // Reset OUT_DIR to the original value
-        unsafe {
-            env::set_var("OUT_DIR", &out_dir);
-        }
-    } else {
-        println!("skipping protobuf generation");
-    }
+    // Protobuf generation (optional, uses pre-generated file as fallback)
+    let candidates = layout.proto.into_iter().collect::<Vec<_>>();
+    maybe_generate_prost(&candidates, &src_dir, &out_dir);
 
     Ok(())
 }
