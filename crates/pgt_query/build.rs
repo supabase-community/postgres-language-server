@@ -46,7 +46,7 @@ fn vendored_layout(vendor_root: &Path, out_dir: &Path) -> Result<Layout, String>
         );
     }
 
-    // Copy vendored tree into OUT_DIR (mirrors original script)
+    // Copy vendored tree into OUT_DIR
     let copy_opts = CopyOptions {
         overwrite: true,
         ..CopyOptions::default()
