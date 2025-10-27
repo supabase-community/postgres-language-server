@@ -83,8 +83,8 @@ fn normalize_output(status: ExitStatus, stdout: &str, stderr: &str) -> String {
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn check_default_reporter_snapshot() {
     assert_snapshot!(run_check(&["tests/fixtures/test.sql"]));
@@ -92,8 +92,8 @@ fn check_default_reporter_snapshot() {
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn check_github_reporter_snapshot() {
     assert_snapshot!(run_check(&[
@@ -105,8 +105,8 @@ fn check_github_reporter_snapshot() {
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn check_gitlab_reporter_snapshot() {
     assert_snapshot!(run_check(&[
@@ -118,8 +118,8 @@ fn check_gitlab_reporter_snapshot() {
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn check_junit_reporter_snapshot() {
     assert_snapshot!(run_check(&[
@@ -131,8 +131,8 @@ fn check_junit_reporter_snapshot() {
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn check_stdin_snapshot() {
     assert_snapshot!(run_check_with(
@@ -150,8 +150,8 @@ fn check_stdin_snapshot() {
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn check_directory_traversal_snapshot() {
     let project_dir = Path::new("tests/fixtures/traversal");

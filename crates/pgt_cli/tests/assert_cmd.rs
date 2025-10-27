@@ -9,8 +9,8 @@ const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
 
 #[test]
 #[cfg_attr(
-    not(target_os = "linux"),
-    ignore = "snapshot expectations only validated on Linux"
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
 )]
 fn test_cli_check_command() {
     let output = Command::cargo_bin(BIN)
