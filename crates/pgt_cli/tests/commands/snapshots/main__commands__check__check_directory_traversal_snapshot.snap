@@ -8,21 +8,21 @@ stdout:
 Checked 2 files in <duration>. No fixes applied.
 Found 2 errors.
 stderr:
-./bad.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  × Invalid statement: syntax error at or near "tqjable"
-  
-  > 1 │ alter tqjable bad drop column id;
-      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    2 │ 
-  
-
 ./another_bad.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   × Invalid statement: syntax error at or near "tqjable"
   
   > 1 │ alter tqjable another drop column id;
       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+
+./bad.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid statement: syntax error at or near "tqjable"
+  
+  > 1 │ alter tqjable bad drop column id;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     2 │ 
   
 
