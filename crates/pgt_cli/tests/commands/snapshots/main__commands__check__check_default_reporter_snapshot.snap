@@ -1,9 +1,22 @@
 ---
 source: crates/pgt_cli/tests/commands/check.rs
-expression: "run_check(&[])"
+expression: "run_check(&[\"tests/fixtures/test.sql\"])"
 snapshot_kind: text
 ---
-Warning: You are using the deprecated config filename 'postgrestools.jsonc'. Please rename it to 'postgres-language-server.jsonc'. Support for the old filename will be removed in a future version.
-
+status: failure
+stdout:
 Checked 1 file in <duration>. No fixes applied.
 Found 1 error.
+stderr:
+tests/fixtures/test.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid statement: syntax error at or near "tqjable"
+  
+  > 1 │ alter tqjable test drop column id;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
