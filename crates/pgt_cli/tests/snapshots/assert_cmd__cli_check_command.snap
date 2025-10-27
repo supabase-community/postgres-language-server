@@ -1,0 +1,9 @@
+---
+source: crates/pgt_cli/tests/assert_cmd.rs
+expression: normalize_durations(&stdout)
+snapshot_kind: text
+---
+Warning: You are using the deprecated config filename 'postgrestools.jsonc'. Please rename it to 'postgres-language-server.jsonc'. Support for the old filename will be removed in a future version.
+
+Checked 1 file in <duration>. No fixes applied.
+Found 1 error.

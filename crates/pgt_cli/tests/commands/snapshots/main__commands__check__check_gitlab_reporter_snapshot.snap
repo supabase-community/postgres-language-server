@@ -1,0 +1,21 @@
+---
+source: crates/pgt_cli/tests/commands/check.rs
+expression: "run_check(&[\"--reporter\", \"gitlab\"])"
+snapshot_kind: text
+---
+Warning: You are using the deprecated config filename 'postgrestools.jsonc'. Please rename it to 'postgres-language-server.jsonc'. Support for the old filename will be removed in a future version.
+
+[
+  {
+    "description": "Invalid statement: syntax error at or near \"tqjable\"",
+    "check_name": "syntax",
+    "fingerprint": "15806099827984337215",
+    "severity": "critical",
+    "location": {
+      "path": "tests/fixtures/test.sql",
+      "lines": {
+        "begin": 1
+      }
+    }
+  }
+]
