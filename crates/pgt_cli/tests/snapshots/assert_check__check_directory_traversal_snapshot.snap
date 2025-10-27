@@ -1,6 +1,6 @@
 ---
-source: crates/pgt_cli/tests/commands/check.rs
-expression: "run_check_with(&[\"check\", \"--diagnostic-level\", \"info\", \".\"], None,\nSome(project_dir))"
+source: crates/pgt_cli/tests/assert_check.rs
+expression: "run_check_with(&[\"--diagnostic-level\", \"info\", \".\"], None, Some(project_dir))"
 snapshot_kind: text
 ---
 status: failure

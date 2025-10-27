@@ -6,8 +6,88 @@ use std::process::ExitStatus;
 const BIN: &str = "postgres-language-server";
 const CONFIG_PATH: &str = "tests/fixtures/postgres-language-server.jsonc";
 
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_default_reporter_snapshot() {
+    assert_snapshot!(run_check(&["tests/fixtures/test.sql"]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_github_reporter_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "github",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_gitlab_reporter_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "gitlab",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_junit_reporter_snapshot() {
+    assert_snapshot!(run_check(&[
+        "--reporter",
+        "junit",
+        "tests/fixtures/test.sql"
+    ]));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_stdin_snapshot() {
+    assert_snapshot!(run_check_with(
+        &[
+            "--config-path",
+            CONFIG_PATH,
+            "--stdin-file-path",
+            "virtual.sql"
+        ],
+        Some("alter tqjable stdin drop column id;\n"),
+        None
+    ));
+}
+
+#[test]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+fn check_directory_traversal_snapshot() {
+    let project_dir = Path::new("tests/fixtures/traversal");
+    assert_snapshot!(run_check_with(
+        &["--diagnostic-level", "info", "."],
+        None,
+        Some(project_dir)
+    ));
+}
+
 fn run_check(args: &[&str]) -> String {
-    let mut full_args = vec!["check", "--config-path", CONFIG_PATH];
+    let mut full_args = vec!["--config-path", CONFIG_PATH];
     full_args.extend_from_slice(args);
     run_check_with(&full_args, None, None)
 }
@@ -21,7 +101,9 @@ fn run_check_with(args: &[&str], stdin: Option<&str>, cwd: Option<&Path>) -> Str
         cmd.write_stdin(input);
     }
 
-    let output = cmd.args(args).output().expect("failed to run CLI");
+    let mut full_args = vec!["check"];
+    full_args.extend_from_slice(args);
+    let output = cmd.args(full_args).output().expect("failed to run CLI");
 
     normalize_output(
         output.status,
@@ -134,85 +216,4 @@ fn trim_trailing_newlines(mut value: String) -> String {
         value.pop();
     }
     value
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn check_default_reporter_snapshot() {
-    assert_snapshot!(run_check(&["tests/fixtures/test.sql"]));
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn check_github_reporter_snapshot() {
-    assert_snapshot!(run_check(&[
-        "--reporter",
-        "github",
-        "tests/fixtures/test.sql"
-    ]));
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn check_gitlab_reporter_snapshot() {
-    assert_snapshot!(run_check(&[
-        "--reporter",
-        "gitlab",
-        "tests/fixtures/test.sql"
-    ]));
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn check_junit_reporter_snapshot() {
-    assert_snapshot!(run_check(&[
-        "--reporter",
-        "junit",
-        "tests/fixtures/test.sql"
-    ]));
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn check_stdin_snapshot() {
-    assert_snapshot!(run_check_with(
-        &[
-            "check",
-            "--config-path",
-            CONFIG_PATH,
-            "--stdin-file-path",
-            "virtual.sql"
-        ],
-        Some("alter tqjable stdin drop column id;\n"),
-        None
-    ));
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn check_directory_traversal_snapshot() {
-    let project_dir = Path::new("tests/fixtures/traversal");
-    assert_snapshot!(run_check_with(
-        &["check", "--diagnostic-level", "info", "."],
-        None,
-        Some(project_dir)
-    ));
 }

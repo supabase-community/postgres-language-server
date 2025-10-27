@@ -1,6 +1,6 @@
 ---
-source: crates/pgt_cli/tests/assert_cmd.rs
-expression: "normalize_output(output.status, &stdout, &stderr)"
+source: crates/pgt_cli/tests/assert_check.rs
+expression: "run_check(&[\"tests/fixtures/test.sql\"])"
 snapshot_kind: text
 ---
 status: failure

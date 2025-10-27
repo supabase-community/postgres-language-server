@@ -1,5 +1,5 @@
 ---
-source: crates/pgt_cli/tests/commands/check.rs
+source: crates/pgt_cli/tests/assert_check.rs
 expression: "run_check(&[\"--reporter\", \"gitlab\", \"tests/fixtures/test.sql\"])"
 snapshot_kind: text
 ---
