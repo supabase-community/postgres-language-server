@@ -53,7 +53,7 @@ tikv-jemallocator = "0.6.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
-insta      = { version = "1.40.0", features = ["yaml"] }
+insta      = { workspace = true, features = ["yaml"] }
 
 [lib]
 doctest = false
