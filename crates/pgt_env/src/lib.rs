@@ -8,19 +8,22 @@
 use pgt_console::fmt::{Display, Formatter};
 use pgt_console::{DebugDisplay, KeyValuePair, markup};
 use std::env;
-use std::sync::{LazyLock, OnceLock};
+use std::sync::OnceLock;
 
 /// Returns `true` if this is an unstable build of Postgres Language Server
 pub fn is_unstable() -> bool {
     VERSION == "0.0.0"
 }
 
-/// The version of Postgres Language Server. This is usually supplied during the CI build
-pub const VERSION: &str = match option_env!("PGLS_VERSION").or(option_env!("PGT_VERSION")) {
+/// The version of Postgres Language Server. This is usually supplied during the CI build.
+pub const VERSION: &str = match option_env!("PGLS_VERSION") {
     Some(version) => version,
-    None => match option_env!("CARGO_PKG_VERSION") {
-        Some(pkg_version) => pkg_version,
-        None => "0.0.0",
+    None => match option_env!("PGT_VERSION") {
+        Some(version) => version,
+        None => match option_env!("CARGO_PKG_VERSION") {
+            Some(pkg_version) => pkg_version,
+            None => "0.0.0",
+        },
     },
 };
 
