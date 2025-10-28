@@ -18,7 +18,7 @@ impl CompletionFilter<'_> {
     pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         self.completable_context(ctx)?;
 
-        self.check_node_type(ctx)
+        self.check_specific_node_type(ctx)
             // we want to rely on treesitter more, so checking the clause is a fallback
             .or_else(|| self.check_clause(ctx))?;
 
@@ -92,15 +92,32 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
+    fn check_specific_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
         let kind = ctx.node_under_cursor.as_ref().map(|n| n.kind())?;
 
         let is_allowed = match kind {
             "column_identifier" => {
                 matches!(self.data, CompletionRelevanceData::Column(_))
                     && !ctx.matches_ancestor_history(&["insert_values", "field"])
-                    && !ctx.node_under_cursor_is_within_field_name("binary_expr_right")
+                    && !ctx.node_under_cursor_is_within_field_name(&["binary_expr_right"])
             }
+
+            "any_identifier" => match self.data {
+                CompletionRelevanceData::Column(_) => {
+                    if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Where)) {
+                        ctx.node_under_cursor_is_within_field_name(&[
+                            "object_reference_first",
+                            "object_reference_second",
+                            "object_reference_third",
+                        ])
+                    } else {
+                        false
+                    }
+                }
+
+                _ => false,
+            },
+
             _ => false,
         };
 

@@ -697,7 +697,7 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
-    pub fn node_under_cursor_is_within_field_name(&self, name: &str) -> bool {
+    pub fn node_under_cursor_is_within_field_name(&self, names: &[&'static str]) -> bool {
         self.node_under_cursor
             .as_ref()
             .map(|node| {
@@ -713,15 +713,17 @@ impl<'a> TreesitterContext<'a> {
                         break;
                     }
 
-                    if p.children_by_field_name(name, &mut cursor).any(|c| {
-                        let r = c.range();
-                        // if the parent range contains the node range, the node is of the field_name.
-                        r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
-                    }) {
-                        return true;
-                    } else {
-                        parent = p.parent();
+                    for name in names {
+                        if p.children_by_field_name(name, &mut cursor).any(|c| {
+                            let r = c.range();
+                            // if the parent range contains the node range, the node is of the field_name.
+                            r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
+                        }) {
+                            return true;
+                        }
                     }
+
+                    parent = p.parent();
                 }
 
                 false
@@ -1114,7 +1116,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        assert!(ctx.node_under_cursor_is_within_field_name("custom_type"));
+        assert!(ctx.node_under_cursor_is_within_field_name(&["custom_type"]));
     }
 
     #[test]

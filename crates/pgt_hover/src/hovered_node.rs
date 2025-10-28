@@ -73,6 +73,19 @@ impl HoveredNode {
                 }
             }
 
+            "any_identifier"
+                if ctx.matches_ancestor_history(&["binary_expression", "object_reference"]) =>
+            {
+                if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
+                    Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
+                        table_or_alias.clone(),
+                        node_content,
+                    ))))
+                } else {
+                    Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
+                }
+            }
+
             "column_identifier" => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
@@ -116,7 +129,7 @@ impl HoveredNode {
                 if (
                     // hover over custom type in `create table` or `returns`
                     (ctx.matches_ancestor_history(&["type", "object_reference"])
-                    && ctx.node_under_cursor_is_within_field_name("custom_type"))
+                    && ctx.node_under_cursor_is_within_field_name(&["custom_type"]))
 
                     // hover over type in `select` clause etc…                    
                     || (ctx

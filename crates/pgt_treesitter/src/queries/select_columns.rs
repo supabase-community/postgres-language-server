@@ -10,9 +10,9 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     (select_expression
         (term
             (object_reference
-                first: (any_identifier) @first
-                second: (any_identifier)? @second
-                third: (any_identifier)? @third
+object_reference_first: (any_identifier) @first
+object_reference_second: (any_identifier)? @second
+object_reference_third: (any_identifier)? @third
             )
         )
         ","?

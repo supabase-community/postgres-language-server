@@ -9,7 +9,7 @@ use super::QueryTryFrom;
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
 [
-  (column_reference) @reference
+  (object_reference) @reference
 
   (parameter) @parameter
 ]

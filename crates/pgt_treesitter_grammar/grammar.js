@@ -3490,30 +3490,30 @@ module.exports = grammar({
     object_reference: ($) =>
       choice(
         seq(
-          field("first", $.any_identifier),
+          field("object_reference_first", $.any_identifier),
           ".",
-          field("second", $.any_identifier),
+          field("object_reference_second", $.any_identifier),
           ".",
-          field("third", $.any_identifier)
+          field("object_reference_third", $.any_identifier)
         ),
         seq(
-          field("first", $.any_identifier),
+          field("object_reference_first", $.any_identifier),
           ".",
-          field("second", $.any_identifier)
+          field("object_reference_second", $.any_identifier)
         ),
-        field("first", $.any_identifier)
+        field("object_reference_first", $.any_identifier)
       ),
 
     type_reference: ($) =>
       choice(
         seq($.schema_identifier, ".", $.type_identifier),
-        field("first", $.type_identifier)
+        field("type_reference_first", $.type_identifier)
       ),
 
     table_reference: ($) =>
       choice(
         seq($.schema_identifier, ".", $.table_identifier),
-        field("first", $.table_identifier)
+        field("table_reference_first", $.table_identifier)
       ),
 
     column_reference: ($) =>
@@ -3525,8 +3525,12 @@ module.exports = grammar({
           ".",
           $.column_identifier
         ),
-        seq($.table_identifier, ".", field("second", $.column_identifier)),
-        field("first", $.column_identifier)
+        seq(
+          $.table_identifier,
+          ".",
+          field("column_reference_second", $.column_identifier)
+        ),
+        field("column_reference_first", $.column_identifier)
       ),
 
     any_identifier: ($) => $._any_identifier,

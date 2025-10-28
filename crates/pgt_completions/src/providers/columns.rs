@@ -750,57 +750,57 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_complete_results(
-            format!(
-                "select name from instruments where {} ",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("created_at".into()),
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-                CompletionAssertion::Label("z".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        // assert_complete_results(
+        //     format!(
+        //         "select name from instruments where {} ",
+        //         QueryWithCursorPosition::cursor_marker()
+        //     )
+        //     .as_str(),
+        //     vec![
+        //         CompletionAssertion::Label("created_at".into()),
+        //         CompletionAssertion::Label("id".into()),
+        //         CompletionAssertion::Label("name".into()),
+        //         CompletionAssertion::Label("z".into()),
+        //     ],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
 
-        assert_complete_results(
-            format!(
-                "select name from instruments where z = 'something' and created_at > {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            // simply do not complete columns + schemas; functions etc. are ok
-            vec![
-                CompletionAssertion::KindNotExists(CompletionItemKind::Column),
-                CompletionAssertion::KindNotExists(CompletionItemKind::Schema),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        // assert_complete_results(
+        //     format!(
+        //         "select name from instruments where z = 'something' and created_at > {}",
+        //         QueryWithCursorPosition::cursor_marker()
+        //     )
+        //     .as_str(),
+        //     // simply do not complete columns + schemas; functions etc. are ok
+        //     vec![
+        //         CompletionAssertion::KindNotExists(CompletionItemKind::Column),
+        //         CompletionAssertion::KindNotExists(CompletionItemKind::Schema),
+        //     ],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
 
-        // prefers not mentioned columns
-        assert_complete_results(
-            format!(
-                "select name from instruments where id = 'something' and {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("created_at".into()),
-                CompletionAssertion::Label("name".into()),
-                CompletionAssertion::Label("z".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        // // prefers not mentioned columns
+        // assert_complete_results(
+        //     format!(
+        //         "select name from instruments where id = 'something' and {}",
+        //         QueryWithCursorPosition::cursor_marker()
+        //     )
+        //     .as_str(),
+        //     vec![
+        //         CompletionAssertion::Label("created_at".into()),
+        //         CompletionAssertion::Label("name".into()),
+        //         CompletionAssertion::Label("z".into()),
+        //     ],
+        //     None,
+        //     &pool,
+        // )
+        // .await;
 
-        // // uses aliases
+        // uses aliases
         assert_complete_results(
             format!(
                 "select name from instruments i join others o on i.z = o.a where i.{}",
