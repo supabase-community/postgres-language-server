@@ -2,16 +2,9 @@ use std::{
     cmp,
     collections::{HashMap, HashSet},
 };
-mod base_parser;
-mod grant_parser;
-mod revoke_parser;
 
 use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
-use pgt_text_size::{TextRange, TextSize};
-
-use crate::context::{
-    base_parser::CompletionStatementParser, grant_parser::GrantParser, revoke_parser::RevokeParser,
-};
+use pgt_text_size::TextSize;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum WrappingClause<'a> {
@@ -30,10 +23,11 @@ pub enum WrappingClause<'a> {
     DropColumn,
     AlterColumn,
     RenameColumn,
-    ToRoleAssignment,
     SetStatement,
     AlterRole,
     DropRole,
+    RevokeStatement,
+    GrantStatement,
 
     CreatePolicy,
     AlterPolicy,
@@ -61,46 +55,6 @@ pub enum WrappingNode {
     BinaryExpression,
     Assignment,
     List,
-}
-
-#[derive(Debug)]
-pub enum NodeUnderCursor<'a> {
-    TsNode(tree_sitter::Node<'a>),
-    CustomNode {
-        text: String,
-        range: TextRange,
-        kind: String,
-        previous_node_kind: Option<String>,
-    },
-}
-
-impl NodeUnderCursor<'_> {
-    pub fn start_byte(&self) -> usize {
-        match self {
-            NodeUnderCursor::TsNode(node) => node.start_byte(),
-            NodeUnderCursor::CustomNode { range, .. } => range.start().into(),
-        }
-    }
-
-    pub fn end_byte(&self) -> usize {
-        match self {
-            NodeUnderCursor::TsNode(node) => node.end_byte(),
-            NodeUnderCursor::CustomNode { range, .. } => range.end().into(),
-        }
-    }
-
-    pub fn kind(&self) -> &str {
-        match self {
-            NodeUnderCursor::TsNode(node) => node.kind(),
-            NodeUnderCursor::CustomNode { kind, .. } => kind.as_str(),
-        }
-    }
-}
-
-impl<'a> From<tree_sitter::Node<'a>> for NodeUnderCursor<'a> {
-    fn from(node: tree_sitter::Node<'a>) -> Self {
-        NodeUnderCursor::TsNode(node)
-    }
 }
 
 impl TryFrom<&str> for WrappingNode {
@@ -141,7 +95,7 @@ pub struct TreeSitterContextParams<'a> {
 
 #[derive(Debug)]
 pub struct TreesitterContext<'a> {
-    pub node_under_cursor: Option<NodeUnderCursor<'a>>,
+    pub node_under_cursor: Option<tree_sitter::Node<'a>>,
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
@@ -196,72 +150,10 @@ impl<'a> TreesitterContext<'a> {
             mentioned_columns: HashMap::new(),
         };
 
-        if GrantParser::looks_like_matching_stmt(params.text) {
-            ctx.gather_grant_context();
-        } else if RevokeParser::looks_like_matching_stmt(params.text) {
-            ctx.gather_revoke_context();
-        } else {
-            ctx.gather_tree_context();
-            ctx.gather_info_from_ts_queries();
-        }
+        ctx.gather_tree_context();
+        ctx.gather_info_from_ts_queries();
 
         ctx
-    }
-
-    fn gather_revoke_context(&mut self) {
-        let revoke_context = RevokeParser::get_context(self.text, self.position);
-
-        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: revoke_context.node_text,
-            range: revoke_context.node_range,
-            kind: revoke_context.node_kind.clone(),
-            previous_node_kind: None,
-        });
-
-        if revoke_context.node_kind == "revoke_table" {
-            self.schema_or_alias_name = revoke_context.schema_name.clone();
-        }
-
-        if revoke_context.table_name.is_some() {
-            let mut new = HashSet::new();
-            new.insert(revoke_context.table_name.unwrap());
-            self.mentioned_relations
-                .insert(revoke_context.schema_name, new);
-        }
-
-        self.wrapping_clause_type = match revoke_context.node_kind.as_str() {
-            "revoke_role" => Some(WrappingClause::ToRoleAssignment),
-            "revoke_table" => Some(WrappingClause::From),
-            _ => None,
-        };
-    }
-
-    fn gather_grant_context(&mut self) {
-        let grant_context = GrantParser::get_context(self.text, self.position);
-
-        self.node_under_cursor = Some(NodeUnderCursor::CustomNode {
-            text: grant_context.node_text,
-            range: grant_context.node_range,
-            kind: grant_context.node_kind.clone(),
-            previous_node_kind: None,
-        });
-
-        if grant_context.node_kind == "grant_table" {
-            self.schema_or_alias_name = grant_context.schema_name.clone();
-        }
-
-        if grant_context.table_name.is_some() {
-            let mut new = HashSet::new();
-            new.insert(grant_context.table_name.unwrap());
-            self.mentioned_relations
-                .insert(grant_context.schema_name, new);
-        }
-
-        self.wrapping_clause_type = match grant_context.node_kind.as_str() {
-            "grant_role" => Some(WrappingClause::ToRoleAssignment),
-            "grant_table" => Some(WrappingClause::From),
-            _ => None,
-        };
     }
 
     fn gather_info_from_ts_queries(&mut self) {
@@ -352,10 +244,9 @@ impl<'a> TreesitterContext<'a> {
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
-        match self.node_under_cursor.as_ref()? {
-            NodeUnderCursor::TsNode(node) => self.get_ts_node_content(node),
-            NodeUnderCursor::CustomNode { text, .. } => Some(text.clone()),
-        }
+        self.node_under_cursor
+            .as_ref()
+            .and_then(|node| self.get_ts_node_content(node))
     }
 
     fn gather_tree_context(&mut self) {
@@ -407,7 +298,7 @@ impl<'a> TreesitterContext<'a> {
         // prevent infinite recursion – this can happen with ERROR nodes
         if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
         {
-            self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
+            self.node_under_cursor = Some(current_node);
             return;
         }
 
@@ -476,7 +367,7 @@ impl<'a> TreesitterContext<'a> {
         if current_node.child_count() == 0
             || current_node.first_child_for_byte(self.position).is_none()
         {
-            self.node_under_cursor = Some(NodeUnderCursor::from(current_node));
+            self.node_under_cursor = Some(current_node);
             return;
         }
 
@@ -686,6 +577,8 @@ impl<'a> TreesitterContext<'a> {
             "rename_column" => Some(WrappingClause::RenameColumn),
             "alter_table" => Some(WrappingClause::AlterTable),
             "set_statement" => Some(WrappingClause::SetStatement),
+            "revoke_statement" => Some(WrappingClause::RevokeStatement),
+            "grant_statement" => Some(WrappingClause::RevokeStatement),
             "column_definitions" => Some(WrappingClause::ColumnDefinitions),
             "create_policy" => Some(WrappingClause::CreatePolicy),
             "alter_policy" => Some(WrappingClause::AlterPolicy),
@@ -697,8 +590,7 @@ impl<'a> TreesitterContext<'a> {
                 // `node.child_by_field_id(..)` does not work as expected
                 let mut on_node = None;
                 for child in node.children(cursor) {
-                    // 28 is the id for "keyword_on"
-                    if child.kind_id() == 28 {
+                    if child.kind() == "keyword_on" {
                         on_node = Some(child);
                     }
                 }
@@ -710,71 +602,52 @@ impl<'a> TreesitterContext<'a> {
     }
 
     pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|under_cursor| {
-            match under_cursor {
-                NodeUnderCursor::TsNode(node) => {
-                    let mut current = *node;
+        self.node_under_cursor.as_ref().is_some_and(|node| {
+            let mut current = *node;
 
-                    // move up to the parent until we're at top OR we have a prev sibling
-                    while current.prev_sibling().is_none() && current.parent().is_some() {
-                        current = current.parent().unwrap();
-                    }
-
-                    current
-                        .prev_sibling()
-                        .is_some_and(|sib| kinds.contains(&sib.kind()))
-                }
-
-                NodeUnderCursor::CustomNode {
-                    previous_node_kind, ..
-                } => previous_node_kind
-                    .as_ref()
-                    .is_some_and(|k| kinds.contains(&k.as_str())),
+            // move up to the parent until we're at top OR we have a prev sibling
+            while current.prev_sibling().is_none() && current.parent().is_some() {
+                current = current.parent().unwrap();
             }
+
+            current
+                .prev_sibling()
+                .is_some_and(|sib| kinds.contains(&sib.kind()))
         })
     }
 
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
-    /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
+    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
     pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .is_some_and(|under_cursor| match under_cursor {
-                NodeUnderCursor::TsNode(node) => {
-                    let mut current = Some(*node);
+        self.node_under_cursor.as_ref().is_some_and(|node| {
+            let mut current = Some(*node);
 
-                    for &expected_kind in expected_ancestors.iter().rev() {
-                        current = current.and_then(|n| n.parent());
+            for &expected_kind in expected_ancestors.iter().rev() {
+                current = current.and_then(|n| n.parent());
 
-                        match current {
-                            Some(ancestor) if ancestor.kind() == expected_kind => continue,
-                            _ => return false,
-                        }
-                    }
-
-                    true
+                match current {
+                    Some(ancestor) if ancestor.kind() == expected_kind => continue,
+                    _ => return false,
                 }
-                NodeUnderCursor::CustomNode { .. } => false,
-            })
+            }
+
+            true
+        })
     }
 
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
-    /// If the tree shows `relation > object_reference > identifier` and the "identifier" is a leaf node,
+    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
     pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .is_some_and(|under_cursor| match under_cursor {
-                NodeUnderCursor::TsNode(node) => node
-                    .parent()
-                    .is_some_and(|p| expected_ancestors.contains(&p.kind())),
-                NodeUnderCursor::CustomNode { .. } => false,
-            })
+        self.node_under_cursor.as_ref().is_some_and(|node| {
+            node.parent()
+                .is_some_and(|p| expected_ancestors.contains(&p.kind()))
+        })
     }
 
     /// Checks whether the Node under the cursor is the nth child of the parent.
@@ -789,9 +662,9 @@ impl<'a> TreesitterContext<'a> {
     ///  *   keyword_from [9..13] 'from'
     ///  *   relation [14..28] '"auth"."users"'
     ///  *     object_reference [14..28] '"auth"."users"'
-    ///  *       identifier [14..20] '"auth"'
+    ///  *       any_identifier [14..20] '"auth"'
     ///  *         . [20..21] '.'
-    ///  *       identifier [21..28] '"users"'
+    ///  *       any_identifier [21..28] '"users"'
     ///  */
     ///
     /// if node_under_cursor_is_nth_child(1) {
@@ -801,32 +674,24 @@ impl<'a> TreesitterContext<'a> {
     /// }
     /// ```
     pub fn node_under_cursor_is_nth_child(&self, nth: usize) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .is_some_and(|under_cursor| match under_cursor {
-                NodeUnderCursor::TsNode(node) => {
-                    let mut cursor = node.walk();
-                    node.parent().is_some_and(|p| {
-                        p.children(&mut cursor)
-                            .nth(nth - 1)
-                            .is_some_and(|n| n.id() == node.id())
-                    })
-                }
-                NodeUnderCursor::CustomNode { .. } => false,
+        self.node_under_cursor.as_ref().is_some_and(|node| {
+            let mut cursor = node.walk();
+            node.parent().is_some_and(|p| {
+                p.children(&mut cursor)
+                    .nth(nth - 1)
+                    .is_some_and(|n| n.id() == node.id())
             })
+        })
     }
 
     /// Returns the number of siblings of the node under the cursor.
     pub fn num_siblings(&self) -> usize {
         self.node_under_cursor
             .as_ref()
-            .map(|n| match n {
-                NodeUnderCursor::TsNode(node) => {
-                    // if there's no parent, we're on the top of the tree,
-                    // where we have 0 siblings.
-                    node.parent().map(|p| p.child_count() - 1).unwrap_or(0)
-                }
-                NodeUnderCursor::CustomNode { .. } => 0,
+            .map(|node| {
+                // if there's no parent, we're on the top of the tree,
+                // where we have 0 siblings.
+                node.parent().map(|p| p.child_count() - 1).unwrap_or(0)
             })
             .unwrap_or(0)
     }
@@ -835,34 +700,31 @@ impl<'a> TreesitterContext<'a> {
     pub fn node_under_cursor_is_within_field_name(&self, name: &str) -> bool {
         self.node_under_cursor
             .as_ref()
-            .map(|n| match n {
-                NodeUnderCursor::TsNode(node) => {
-                    // It might seem weird that we have to check for the field_name from the parent,
-                    // but TreeSitter wants it this way, since nodes often can only be named in
-                    // the context of their parents.
-                    let root_node = self.tree.root_node();
-                    let mut cursor = node.walk();
-                    let mut parent = node.parent();
+            .map(|node| {
+                // It might seem weird that we have to check for the field_name from the parent,
+                // but TreeSitter wants it this way, since nodes often can only be named in
+                // the context of their parents.
+                let root_node = self.tree.root_node();
+                let mut cursor = node.walk();
+                let mut parent = node.parent();
 
-                    while let Some(p) = parent {
-                        if p == root_node {
-                            break;
-                        }
-
-                        if p.children_by_field_name(name, &mut cursor).any(|c| {
-                            let r = c.range();
-                            // if the parent range contains the node range, the node is of the field_name.
-                            r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
-                        }) {
-                            return true;
-                        } else {
-                            parent = p.parent();
-                        }
+                while let Some(p) = parent {
+                    if p == root_node {
+                        break;
                     }
 
-                    false
+                    if p.children_by_field_name(name, &mut cursor).any(|c| {
+                        let r = c.range();
+                        // if the parent range contains the node range, the node is of the field_name.
+                        r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
+                    }) {
+                        return true;
+                    } else {
+                        parent = p.parent();
+                    }
                 }
-                NodeUnderCursor::CustomNode { .. } => false,
+
+                false
             })
             .unwrap_or(false)
     }
@@ -923,8 +785,6 @@ mod tests {
     use crate::context::{TreeSitterContextParams, TreesitterContext, WrappingClause};
 
     use pgt_test_utils::QueryWithCursorPosition;
-
-    use super::NodeUnderCursor;
 
     fn get_tree(input: &str) -> tree_sitter::Tree {
         let mut parser = tree_sitter::Parser::new();
@@ -1157,17 +1017,12 @@ mod tests {
 
             let node = ctx.node_under_cursor.as_ref().unwrap();
 
-            match node {
-                NodeUnderCursor::TsNode(node) => {
-                    assert_eq!(ctx.get_ts_node_content(node), Some("select".into()));
+            assert_eq!(ctx.get_ts_node_content(node), Some("select".into()));
 
-                    assert_eq!(
-                        ctx.wrapping_clause_type,
-                        Some(crate::context::WrappingClause::Select)
-                    );
-                }
-                _ => unreachable!(),
-            }
+            assert_eq!(
+                ctx.wrapping_clause_type,
+                Some(crate::context::WrappingClause::Select)
+            );
         }
     }
 
@@ -1192,12 +1047,7 @@ mod tests {
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
-        match node {
-            NodeUnderCursor::TsNode(node) => {
-                assert_eq!(ctx.get_ts_node_content(node), Some("from".into()));
-            }
-            _ => unreachable!(),
-        }
+        assert_eq!(ctx.get_ts_node_content(node), Some("from".into()));
     }
 
     #[test]
@@ -1218,13 +1068,8 @@ mod tests {
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
-        match node {
-            NodeUnderCursor::TsNode(node) => {
-                assert_eq!(ctx.get_ts_node_content(node), Some("".into()));
-                assert_eq!(ctx.wrapping_clause_type, None);
-            }
-            _ => unreachable!(),
-        }
+        assert_eq!(ctx.get_ts_node_content(node), Some("".into()));
+        assert_eq!(ctx.wrapping_clause_type, None);
     }
 
     #[test]
@@ -1247,13 +1092,8 @@ mod tests {
 
         let node = ctx.node_under_cursor.as_ref().unwrap();
 
-        match node {
-            NodeUnderCursor::TsNode(node) => {
-                assert_eq!(ctx.get_ts_node_content(node), Some("fro".into()));
-                assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
-            }
-            _ => unreachable!(),
-        }
+        assert_eq!(ctx.get_ts_node_content(node), Some("fro".into()));
+        assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
     }
 
     #[test]
@@ -1291,13 +1131,13 @@ mod tests {
                 keyword_where [29..34] 'where'
                 binary_expression [35..43] 'id = @id'
                 field [35..37] 'id'
-                    identifier [35..37] 'id'
+                    any_identifier [35..37] 'id'
                 = [38..39] '='
                 field [40..43] '@id'
-                    identifier [40..43] '@id'
+                    any_identifier [40..43] '@id'
                         @ [40..41] '@'
 
-            You can see that the '@' is a child of the "identifier" but has a range smaller than its parent's.
+            You can see that the '@' is a child of the "any_identifier" but has a range smaller than its parent's.
             This would crash our context parsing because, at position 42, we weren't at the leaf node but also couldn't
             go to a child on that position.
         */
