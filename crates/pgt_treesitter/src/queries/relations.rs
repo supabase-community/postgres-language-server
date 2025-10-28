@@ -11,17 +11,17 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     (relation
         (object_reference
             .
-            (identifier) @schema_or_table
+            (any_identifier) @schema_or_table
             "."?
-            (identifier)? @table
+            (any_identifier)? @table
         )+
     )
     (insert
         (object_reference
             .
-            (identifier) @schema_or_table
+            (any_identifier) @schema_or_table
             "."?
-            (identifier)? @table
+            (any_identifier)? @table
         )+
     )
     (alter_table
@@ -29,9 +29,9 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         (keyword_table)
         (object_reference
             .
-            (identifier) @schema_or_table
+            (any_identifier) @schema_or_table
             "."?
-            (identifier)? @table
+            (any_identifier)? @table
         )+
     )
 "#;
