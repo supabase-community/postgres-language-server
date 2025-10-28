@@ -887,7 +887,7 @@ module.exports = grammar({
         seq($.keyword_role, $.role_identifier),
         // TODO: routine
         // TODO: rule
-        seq($.keyword_schema, $.any_identifier),
+        seq($.keyword_schema, $.schema_identifier),
         seq($.keyword_sequence, $.object_reference),
         // TODO: server
         // TODO: statistics
@@ -1051,20 +1051,7 @@ module.exports = grammar({
         )
       ),
 
-    policy_to_role: ($) =>
-      seq(
-        $.keyword_to,
-        comma_list(
-          choice(
-            $.any_identifier,
-            $.keyword_public,
-            $.keyword_current_user,
-            $.keyword_current_role,
-            $.keyword_session_user
-          ),
-          true
-        )
-      ),
+    policy_to_role: ($) => seq($.keyword_to, $.role_specification),
 
     drop_policy: ($) =>
       seq(
@@ -1434,20 +1421,27 @@ module.exports = grammar({
             seq(
               optional($._if_not_exists),
               $.any_identifier,
-              optional(seq($.keyword_authorization, $.any_identifier))
+              optional(seq($.keyword_authorization, $.role_specification))
             ),
-            seq($.keyword_authorization, $.any_identifier)
+            seq($.keyword_authorization, $.role_specification)
           )
         )
       ),
 
     _with_settings: ($) =>
-      seq(
-        field("name", $.any_identifier),
-        optional("="),
-        field(
-          "value",
-          choice($.any_identifier, alias($._single_quote_string, $.literal))
+      choice(
+        seq(
+          $.keyword_owner,
+          optional("="),
+          choice($.role_identifier, $.keyword_default)
+        ),
+        seq(
+          field("name", $.any_identifier),
+          optional("="),
+          field(
+            "value",
+            choice($.any_identifier, alias($._single_quote_string, $.literal))
+          )
         )
       ),
 
@@ -1495,13 +1489,8 @@ module.exports = grammar({
 
     _user_access_role_config: ($) =>
       seq(
-        choice(
-          seq(optional($.keyword_in), $.keyword_role),
-          seq($.keyword_in, $.keyword_group),
-          $.keyword_admin,
-          $.keyword_user
-        ),
-        comma_list($.any_identifier, true)
+        choice(seq(optional($.keyword_in), $.keyword_role), $.keyword_admin),
+        comma_list($.role_identifier, true)
       ),
 
     create_sequence: ($) =>
@@ -1558,7 +1547,7 @@ module.exports = grammar({
         optional($._if_not_exists),
         $.any_identifier,
         optional($.keyword_with),
-        optional(seq($.keyword_schema, $.any_identifier)),
+        optional(seq($.keyword_schema, $.schema_identifier)),
         optional(
           seq(
             $.keyword_version,
@@ -1603,14 +1592,7 @@ module.exports = grammar({
             seq(
               $.keyword_for,
               optional($.keyword_each),
-              choice($.keyword_row, $.keyword_statement),
-              // mariadb
-              optional(
-                seq(
-                  choice($.keyword_follows, $.keyword_precedes),
-                  $.any_identifier
-                )
-              )
+              choice($.keyword_row, $.keyword_statement)
             ),
             seq($.keyword_when, wrapped_in_parenthesis($._expression))
           )
@@ -1817,7 +1799,7 @@ module.exports = grammar({
       seq(
         $.keyword_alter,
         $.keyword_schema,
-        $.any_identifier,
+        $.schema_identifier,
         choice($.keyword_rename, $.keyword_owner),
         $.keyword_to,
         $.any_identifier
@@ -1853,7 +1835,7 @@ module.exports = grammar({
       seq(
         $.keyword_alter,
         choice($.keyword_role, $.keyword_group, $.keyword_user),
-        choice($.any_identifier, $.keyword_all),
+        choice($.role_identifier, $.keyword_all),
         choice(
           $.rename_object,
           seq(optional($.keyword_with), repeat($._role_options)),
@@ -1963,7 +1945,7 @@ module.exports = grammar({
             $.keyword_set,
             choice(
               choice($.keyword_logged, $.keyword_unlogged),
-              seq($.keyword_schema, $.any_identifier)
+              seq($.keyword_schema, $.schema_identifier)
             )
           )
         )
@@ -1973,7 +1955,7 @@ module.exports = grammar({
       seq(
         $.keyword_alter,
         $.keyword_type,
-        $.any_identifier,
+        $.type_identifier,
         choice(
           $.change_ownership,
           $.set_schema,
@@ -2071,7 +2053,7 @@ module.exports = grammar({
         $.keyword_drop,
         $.keyword_schema,
         optional($._if_exists),
-        $.any_identifier,
+        $.schema_identifier,
         optional($._drop_behavior)
       ),
 
@@ -2090,7 +2072,7 @@ module.exports = grammar({
         $.keyword_drop,
         choice($.keyword_group, $.keyword_role, $.keyword_user),
         optional($._if_exists),
-        $.any_identifier
+        $.role_identifier
       ),
 
     drop_type: ($) =>
@@ -2145,7 +2127,7 @@ module.exports = grammar({
       seq($.keyword_set, $.keyword_schema, $.schema_identifier),
 
     change_ownership: ($) =>
-      seq($.keyword_owner, $.keyword_to, $.any_identifier),
+      seq($.keyword_owner, $.keyword_to, $.role_specification),
 
     object_id: ($) =>
       seq(
@@ -2452,11 +2434,7 @@ module.exports = grammar({
           // Spark SQL
           $.keyword_partition
         ),
-        choice(
-          paren_list($.any_identifier, false), // postgres & Impala (CTAS)
-          $.column_definitions, // impala/hive external tables
-          paren_list($._key_value_pair, true) // Spark SQL
-        )
+        paren_list($.any_identifier, false)
       ),
 
     _key_value_pair: ($) =>
@@ -3038,18 +3016,17 @@ module.exports = grammar({
         seq(
           $.grantable_targets,
           choice(
-            $.grantable_on_table,
-            $.grantable_on_function,
+            seq($.grantable_on_table, $.table_identifier),
+            seq($.grantable_on_function, $.function_identifier),
             $.grantable_on_all
           )
-        ),
-        $.any_identifier
+        )
       ),
 
     grantable_targets: ($) =>
       choice(
-        seq($._grantable, comma_list($.any_identifier, false)),
-        comma_list($.any_identifier, true)
+        seq($._grantable, comma_list($.column_identifier, false)),
+        comma_list($.role_identifier, true)
       ),
 
     _grantable: ($) =>
@@ -3106,12 +3083,12 @@ module.exports = grammar({
         ),
         $.keyword_in,
         $.keyword_schema,
-        comma_list($.any_identifier, true)
+        comma_list($.schema_identifier, true)
       ),
 
     role_specification: ($) =>
       choice(
-        seq(optional($.keyword_group), $.any_identifier),
+        seq(optional($.keyword_group), $.role_identifier),
         $.keyword_public,
         $.keyword_current_role,
         $.keyword_current_user,
