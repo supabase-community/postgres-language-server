@@ -1,0 +1,27 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_statement_splitter"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_diagnostics         = { workspace = true }
+pgls_lexer.workspace     = true
+pgls_query.workspace     = true
+pgls_text_size.workspace = true
+regex.workspace          = true
+
+[dev-dependencies]
+criterion.workspace = true
+ntest               = "0.9.3"
+
+[[bench]]
+harness = false
+name    = "splitter"

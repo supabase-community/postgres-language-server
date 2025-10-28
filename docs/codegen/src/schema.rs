@@ -1,4 +1,4 @@
-use pgt_configuration::PartialConfiguration;
+use pgls_configuration::PartialConfiguration;
 use schemars::{
     schema::{RootSchema, Schema, SchemaObject},
     schema_for,

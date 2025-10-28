@@ -1,15 +1,15 @@
 The goal is to port all missing rules from Squawk to our analyser.
 
-Our analyser lives in the `pgt_analyser` crate. There is a `CONTRIBUTING.md` guide in that crate which explains how to add new rules. Please also read existing rules to see how it all works.
+Our analyser lives in the `pgls_analyser` crate. There is a `CONTRIBUTING.md` guide in that crate which explains how to add new rules. Please also read existing rules to see how it all works.
 
 Then, I want you to check the rules in the squawk project which I copied here for convenience. The rules are in `squawk/linter/src/rules`. The implementation should be very similar to what we have, and porting them straightforward. Here a few things to watch out for though:
 
-- although both libraries are using `libpg_query` to parse the SQL, the bindings can be different. Ours is in the `pgt_query` crate of you need a reference. The `protobuf.rs` file contains the full thing.
+- although both libraries are using `libpg_query` to parse the SQL, the bindings can be different. Ours is in the `pgls_query` crate of you need a reference. The `protobuf.rs` file contains the full thing.
 - the context for each rule is different, but you can get the same information out of it:
 ```rust
 pub struct RuleContext<'a, R: Rule> {
     // the ast of the target statement
-    stmt: &'a pgt_query::NodeEnum,
+    stmt: &'a pgls_query::NodeEnum,
     // options for that specific rule
     options: &'a R::Options,
     // the schema cache - also includes the postgres version
@@ -21,18 +21,18 @@ pub struct RuleContext<'a, R: Rule> {
 
 pub struct AnalysedFileContext<'a> {
     // all statements in this file
-    pub stmts: &'a Vec<pgt_query::NodeEnum>,
+    pub stmts: &'a Vec<pgls_query::NodeEnum>,
 
     pos: usize,
 }
 
 impl<'a> AnalysedFileContext<'a> {
-    pub fn new(stmts: &'a Vec<pgt_query::NodeEnum>) -> Self {
+    pub fn new(stmts: &'a Vec<pgls_query::NodeEnum>) -> Self {
         Self { stmts, pos: 0 }
     }
 
     // all statements before the currently analysed one
-    pub fn previous_stmts(&self) -> &[pgt_query::NodeEnum] {
+    pub fn previous_stmts(&self) -> &[pgls_query::NodeEnum] {
         &self.stmts[0..self.pos]
     }
 
@@ -79,15 +79,15 @@ DONE:
 - adding_foreign_key_constraint ✓ (ported from Squawk)
 - adding_not_null_field ✓ (ported from Squawk)
 - adding_primary_key_constraint ✓ (ported from Squawk)
-- adding_required_field (already exists in pgt_analyser)
+- adding_required_field (already exists in pgls_analyser)
 - ban_char_field ✓ (ported from Squawk)
 - ban_concurrent_index_creation_in_transaction ✓ (ported from Squawk)
-- ban_drop_column (already exists in pgt_analyser)
+- ban_drop_column (already exists in pgls_analyser)
 - changing_column_type ✓ (ported from Squawk)
 - constraint_missing_not_valid ✓ (ported from Squawk)
-- ban_drop_database (already exists in pgt_analyser, as bad_drop_database in squawk)
-- ban_drop_not_null (already exists in pgt_analyser)
-- ban_drop_table (already exists in pgt_analyser)
+- ban_drop_database (already exists in pgls_analyser, as bad_drop_database in squawk)
+- ban_drop_not_null (already exists in pgls_analyser)
+- ban_drop_table (already exists in pgls_analyser)
 - prefer_big_int ✓ (ported from Squawk)
 - prefer_bigint_over_int ✓ (ported from Squawk)
 - prefer_bigint_over_smallint ✓ (ported from Squawk)

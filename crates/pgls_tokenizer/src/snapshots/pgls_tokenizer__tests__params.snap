@@ -1,0 +1,27 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\nselect $1 + $2;\n\nselect $1123123123123;\n\nselect $;\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "select" @ Ident,
+    " " @ Space,
+    "$1" @ PositionalParam,
+    " " @ Space,
+    "+" @ Plus,
+    " " @ Space,
+    "$2" @ PositionalParam,
+    ";" @ Semi,
+    "\n\n" @ LineEnding { count: 2 },
+    "select" @ Ident,
+    " " @ Space,
+    "$1123123123123" @ PositionalParam,
+    ";" @ Semi,
+    "\n\n" @ LineEnding { count: 2 },
+    "select" @ Ident,
+    " " @ Space,
+    "$" @ PositionalParam,
+    ";" @ Semi,
+    "\n" @ LineEnding { count: 1 },
+]

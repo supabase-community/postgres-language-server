@@ -1,0 +1,24 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_diagnostics_categories"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_env = { workspace = true }
+schemars = { workspace = true, optional = true }
+serde    = { workspace = true, optional = true }
+
+[features]
+schema = ["dep:schemars"]
+serde  = ["dep:serde"]
+
+[build-dependencies]
+quote = "1.0.14"

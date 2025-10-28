@@ -65,7 +65,7 @@ _touch file:
 test:
 	cargo test run --no-fail-fast
 
-# Run tests for the crate passed as argument e.g. just test-create pgt_cli
+# Run tests for the crate passed as argument e.g. just test-create pgls_cli
 test-crate name:
 	cargo test run -p {{name}} --no-fail-fast
 

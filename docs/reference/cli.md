@@ -183,7 +183,7 @@ Runs everything to the requested files.
 
   The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.
 
-  Example: `echo 'let a;' | pgt_cli check --stdin-file-path=test.sql`
+  Example: `echo 'let a;' | pgls_cli check --stdin-file-path=test.sql`
 
 - **`    --staged`** &mdash;
   When set to true, only the files that have been staged (the ones prepared to be committed) will be linted. This option should be used when working locally.

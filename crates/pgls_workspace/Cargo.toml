@@ -1,0 +1,77 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_workspace"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+biome_deserialize = "0.6.0"
+futures           = "0.3.31"
+globset           = "0.4.16"
+lru               = "0.12"
+
+ignore                            = { workspace = true }
+pgls_analyse                      = { workspace = true, features = ["serde"] }
+pgls_analyser                     = { workspace = true }
+pgls_completions                  = { workspace = true }
+pgls_configuration                = { workspace = true }
+pgls_console                      = { workspace = true }
+pgls_diagnostics                  = { workspace = true }
+pgls_env                          = { workspace = true }
+pgls_fs                           = { workspace = true, features = ["serde"] }
+pgls_hover                        = { workspace = true }
+pgls_lexer                        = { workspace = true }
+pgls_plpgsql_check                = { workspace = true }
+pgls_query                        = { workspace = true }
+pgls_query_ext                    = { workspace = true }
+pgls_schema_cache                 = { workspace = true }
+pgls_statement_splitter           = { workspace = true }
+pgls_suppressions                 = { workspace = true }
+pgls_text_size.workspace          = true
+pgls_tokenizer                    = { workspace = true }
+pgls_treesitter_grammar.workspace = true
+pgls_typecheck                    = { workspace = true }
+pgls_workspace_macros             = { workspace = true }
+regex                             = { workspace = true }
+rustc-hash                        = { workspace = true }
+schemars                          = { workspace = true, optional = true }
+serde                             = { workspace = true, features = ["derive"] }
+serde_json                        = { workspace = true, features = ["raw_value"] }
+slotmap                           = { workspace = true, features = ["serde"] }
+sqlx.workspace                    = true
+strum                             = { workspace = true }
+tokio                             = { workspace = true, features = ["rt", "rt-multi-thread"] }
+tracing                           = { workspace = true, features = ["attributes", "log"] }
+tree-sitter.workspace             = true
+
+biome_js_factory = { workspace = true, optional = true }
+biome_js_syntax  = { workspace = true, optional = true }
+biome_rowan      = { workspace = true, optional = true }
+
+[features]
+schema = [
+  "dep:schemars",
+  "dep:biome_rowan",
+  "dep:biome_js_syntax",
+  "dep:biome_js_factory",
+  "pgls_configuration/schema",
+  "pgls_diagnostics/schema",
+  "pgls_fs/schema",
+  "pgls_analyse/schema",
+  "pgls_completions/schema",
+]
+
+[dev-dependencies]
+pgls_test_utils = { workspace = true }
+sqlx            = { workspace = true }
+tempfile        = "3.15.0"
+
+[lib]
+doctest = false

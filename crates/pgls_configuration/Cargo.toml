@@ -1,0 +1,35 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_configuration"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+biome_deserialize        = { workspace = true, features = ["schema"] }
+biome_deserialize_macros = { workspace = true }
+bpaf                     = { workspace = true }
+indexmap                 = { workspace = true }
+oxc_resolver             = { workspace = true }
+pgls_analyse             = { workspace = true }
+pgls_analyser            = { workspace = true }
+pgls_console             = { workspace = true }
+pgls_diagnostics         = { workspace = true }
+pgls_env                 = { workspace = true }
+pgls_text_size           = { workspace = true }
+rustc-hash               = { workspace = true }
+schemars                 = { workspace = true, features = ["indexmap1"], optional = true }
+serde                    = { workspace = true, features = ["derive"] }
+serde_json               = { workspace = true, features = ["raw_value"] }
+
+[lib]
+doctest = false
+
+[features]
+schema = ["dep:schemars", "schemars/indexmap"]

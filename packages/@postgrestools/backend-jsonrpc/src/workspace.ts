@@ -1,7 +1,7 @@
 // Generated file, do not edit by hand, see `xtask/codegen`
 import type { Transport } from "./transport";
 export interface IsPathIgnoredParams {
-	pgt_path: PgTPath;
+	pgls_path: PgTPath;
 }
 export interface PgTPath {
 	/**
@@ -305,6 +305,10 @@ export interface PartialDatabaseConfiguration {
 	 * The connection timeout in seconds.
 	 */
 	connTimeoutSecs?: number;
+	/**
+	 * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.
+	 */
+	connectionString?: string;
 	/**
 	 * The name of the database.
 	 */

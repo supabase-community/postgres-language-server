@@ -85,7 +85,7 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
       - name: 🛠️ Run Build
-        run: cargo build -p pgt_cli --release --target ${{ matrix.config.target }}
+        run: cargo build -p pgls_cli --release --target ${{ matrix.config.target }}
         env:
           # Strip all debug symbols from the resulting binaries
           RUSTFLAGS: "-C strip=symbols -C codegen-units=1"
