@@ -284,7 +284,7 @@
   Use this option when you want to format code piped from <code>stdin</code>, and print the output to <code>stdout</code>.</li>
 </ul>
 <p>The file doesn't need to exist on disk, what matters is the extension of the file. Based on the extension, we know how to check the code.</p>
-<p>Example: <code>echo 'let a;' | pgt_cli check --stdin-file-path=test.sql</code></p>
+<p>Example: <code>echo 'let a;' | pgls_cli check --stdin-file-path=test.sql</code></p>
 <ul>
 <li><strong><code>--staged</code></strong> &mdash;
   When set to true, only the files that have been staged (the ones prepared to be committed) will be linted. This option should be used when working locally.</li>

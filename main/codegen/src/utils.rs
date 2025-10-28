@@ -1,4 +1,4 @@
-use pgt_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleGroup, RuleMetadata};
+use pgls_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleGroup, RuleMetadata};
 use regex::Regex;
 use std::collections::BTreeMap;
 
