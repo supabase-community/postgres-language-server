@@ -102,21 +102,26 @@ impl CompletionFilter<'_> {
                     && !ctx.node_under_cursor_is_within_field_name(&["binary_expr_right"])
             }
 
+            "any_identifier" => match self.data {
                 CompletionRelevanceData::Column(_) => {
-                    if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Where)) {
-                        ctx.node_under_cursor_is_within_field_name(&[
-                            "object_reference_first",
-                            "object_reference_second",
-                            "object_reference_third",
+                    matches!(ctx.wrapping_clause_type, Some(WrappingClause::Where))
+                        && ctx.node_under_cursor_is_within_field_name(&[
+                            "object_reference_1of1",
+                            "object_reference_2of2",
+                            "object_reference_3of3",
+                            "column_reference_1of1",
+                            "column_reference_2of2",
+                            "column_reference_3of3",
                         ])
-                    } else {
-                        false
-                    }
                 }
 
                 _ => false,
             },
 
+            _ => false,
+        };
+
+        if is_allowed { Some(()) } else { None }
     }
 
     fn check_clause(&self, ctx: &TreesitterContext) -> Option<()> {
