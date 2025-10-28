@@ -1,11 +1,11 @@
 // Generated file, do not edit by hand, see `xtask/codegen`
 import type { Transport } from "./transport";
 export interface IsPathIgnoredParams {
-	pgls_path: PgTPath;
+	pgls_path: PgLSPath;
 }
-export interface PgTPath {
+export interface PgLSPath {
 	/**
-	 * Determines the kind of the file inside Postgres Tools. Some files are considered as configuration files, others as manifest files, and others as files to handle
+	 * Determines the kind of the file inside Postgres Language Server. Some files are considered as configuration files, others as manifest files, and others as files to handle
 	 */
 	kind: FileKind;
 	path: string;
@@ -25,13 +25,13 @@ export interface RegisterProjectFolderParams {
 }
 export type ProjectKey = string;
 export interface GetFileContentParams {
-	path: PgTPath;
+	path: PgLSPath;
 }
 export interface PullDiagnosticsParams {
 	categories: RuleCategories;
 	max_diagnostics: number;
 	only: RuleCode[];
-	path: PgTPath;
+	path: PgLSPath;
 	skip: RuleCode[];
 }
 export type RuleCategories = RuleCategory[];
@@ -208,7 +208,7 @@ export interface GetCompletionsParams {
 	/**
 	 * The File for which a completion is requested.
 	 */
-	path: PgTPath;
+	path: PgLSPath;
 	/**
 	 * The Cursor position in the file for which a completion is requested.
 	 */
@@ -434,7 +434,7 @@ export interface Rules {
 	 */
 	all?: boolean;
 	/**
-	 * It enables the lint rules recommended by Postgres Tools. `true` by default.
+	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
 	 */
 	recommended?: boolean;
 	safety?: Safety;
@@ -601,16 +601,16 @@ export interface RuleWithOptions_for_Null {
 }
 export interface OpenFileParams {
 	content: string;
-	path: PgTPath;
+	path: PgLSPath;
 	version: number;
 }
 export interface ChangeFileParams {
 	content: string;
-	path: PgTPath;
+	path: PgLSPath;
 	version: number;
 }
 export interface CloseFileParams {
-	path: PgTPath;
+	path: PgLSPath;
 }
 export type Configuration = PartialConfiguration;
 export interface Workspace {

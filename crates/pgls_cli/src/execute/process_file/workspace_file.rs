@@ -1,7 +1,7 @@
 use crate::execute::diagnostics::{ResultExt, ResultIoExt};
 use crate::execute::process_file::SharedTraversalOptions;
 use pgls_diagnostics::{Error, category};
-use pgls_fs::{File, OpenOptions, PgTPath};
+use pgls_fs::{File, OpenOptions, PgLSPath};
 use pgls_workspace::workspace::{FileGuard, OpenFileParams};
 use pgls_workspace::{Workspace, WorkspaceError};
 use std::path::{Path, PathBuf};
@@ -24,7 +24,7 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
         ctx: &SharedTraversalOptions<'ctx, 'app>,
         path: &Path,
     ) -> Result<Self, Error> {
-        let pgls_path = PgTPath::new(path);
+        let pgls_path = PgLSPath::new(path);
         let open_options = OpenOptions::default()
             .read(true)
             .write(ctx.config.allows_writes());

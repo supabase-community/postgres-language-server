@@ -1,12 +1,12 @@
 use crate::workspace::StatementId;
 use pgls_configuration::RuleSelector;
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CodeActionsParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
     pub cursor_position: TextSize,
     pub only: Vec<RuleSelector>,
     pub skip: Vec<RuleSelector>,
@@ -54,7 +54,7 @@ pub enum CommandActionCategory {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExecuteStatementParams {
     pub statement_id: StatementId,
-    pub path: PgTPath,
+    pub path: PgLSPath,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default, PartialEq, Eq)]

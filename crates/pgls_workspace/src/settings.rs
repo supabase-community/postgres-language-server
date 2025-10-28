@@ -20,7 +20,7 @@ use pgls_configuration::{
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
     plpgsql_check::PlPgSqlCheckConfiguration,
 };
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use sqlx::postgres::PgConnectOptions;
 
 use crate::{
@@ -33,7 +33,7 @@ use crate::{
 /// The information tracked for each project
 pub struct ProjectData {
     /// The root path of the project. This path should be **absolute**.
-    path: PgTPath,
+    path: PgLSPath,
     /// The settings of the project, usually inferred from the configuration file e.g. `biome.json`.
     settings: Settings,
 }
@@ -52,7 +52,7 @@ impl WorkspaceSettings {
         self.current_project
     }
 
-    pub fn get_current_project_path(&self) -> Option<&PgTPath> {
+    pub fn get_current_project_path(&self) -> Option<&PgLSPath> {
         trace!("Current key {:?}", self.current_project);
         self.data
             .get(self.current_project)
@@ -94,7 +94,7 @@ impl WorkspaceSettings {
     /// Insert a new project using its folder. Use [WorkspaceSettings::get_current_settings_mut] to retrieve
     /// a mutable reference to its [Settings] and manipulate them.
     pub fn insert_project(&mut self, workspace_path: impl Into<PathBuf>) -> ProjectKey {
-        let path = PgTPath::new(workspace_path.into());
+        let path = PgLSPath::new(workspace_path.into());
         trace!("Insert workspace folder: {:?}", path);
         self.data.insert(ProjectData {
             path,
@@ -125,7 +125,7 @@ impl WorkspaceSettings {
     /// Checks if the current path belongs to a registered project.
     ///
     /// If there's a match, and the match **isn't** the current project, it returns the new key.
-    pub fn path_belongs_to_current_workspace(&self, path: &PgTPath) -> Option<ProjectKey> {
+    pub fn path_belongs_to_current_workspace(&self, path: &PgLSPath) -> Option<ProjectKey> {
         if self.data.is_empty() {
             return None;
         }
@@ -172,7 +172,7 @@ impl<'a> WorkspaceSettingsHandle<'a> {
         self.inner.get_current_settings()
     }
 
-    pub(crate) fn path(&self) -> Option<&PgTPath> {
+    pub(crate) fn path(&self) -> Option<&PgLSPath> {
         self.inner.get_current_project_path()
     }
 }

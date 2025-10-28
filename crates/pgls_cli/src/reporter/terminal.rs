@@ -4,7 +4,7 @@ use pgls_console::fmt::Formatter;
 use pgls_console::{Console, ConsoleExt, fmt, markup};
 use pgls_diagnostics::advice::ListAdvice;
 use pgls_diagnostics::{Diagnostic, Error, PrintDiagnostic};
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 
@@ -51,7 +51,7 @@ fn log_diagnostics(console: &mut dyn Console, config: &ReportConfig, diagnostics
     }
 }
 
-fn log_evaluated_paths(console: &mut dyn Console, evaluated_paths: &BTreeSet<PgTPath>) {
+fn log_evaluated_paths(console: &mut dyn Console, evaluated_paths: &BTreeSet<PgLSPath>) {
     let evaluated_paths_diagnostic = EvaluatedPathsDiagnostic {
         advice: ListAdvice {
             list: evaluated_paths

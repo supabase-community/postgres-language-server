@@ -31,7 +31,7 @@ impl syn::parse::Parse for IgnoredPath {
 /// is ignored by the user's settings.
 ///
 /// This will work for any function where &self is in scope and that returns `Result<T, E>`, `Result<(), E>`, or `T`, where `T: Default`.
-/// `path` needs to point at a `&PgTPath`.
+/// `path` needs to point at a `&PgLSPath`.
 ///
 /// ### Usage
 ///

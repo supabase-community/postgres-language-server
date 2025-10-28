@@ -1,10 +1,10 @@
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OnHoverParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
     pub position: TextSize,
 }
 

@@ -19,7 +19,7 @@ pub(crate) mod version;
 #[bpaf(options, version(VERSION))]
 #[allow(clippy::large_enum_variant)]
 /// Postgres Tools official CLI. Use it to check the health of your project or run it to check single files.
-pub enum PgtCommand {
+pub enum PgLSCommand {
     /// Shows the version information and quit.
     #[bpaf(command)]
     Version(#[bpaf(external(cli_options), hide_usage)] CliOptions),
@@ -218,19 +218,19 @@ pub enum PgtCommand {
     PrintSocket,
 }
 
-impl PgtCommand {
+impl PgLSCommand {
     const fn cli_options(&self) -> Option<&CliOptions> {
         match self {
-            PgtCommand::Version(cli_options)
-            | PgtCommand::Check { cli_options, .. }
-            | PgtCommand::Dblint { cli_options, .. } => Some(cli_options),
-            PgtCommand::LspProxy { .. }
-            | PgtCommand::Start { .. }
-            | PgtCommand::Stop
-            | PgtCommand::Init
-            | PgtCommand::RunServer { .. }
-            | PgtCommand::Clean
-            | PgtCommand::PrintSocket => None,
+            PgLSCommand::Version(cli_options)
+            | PgLSCommand::Check { cli_options, .. }
+            | PgLSCommand::Dblint { cli_options, .. } => Some(cli_options),
+            PgLSCommand::LspProxy { .. }
+            | PgLSCommand::Start { .. }
+            | PgLSCommand::Stop
+            | PgLSCommand::Init
+            | PgLSCommand::RunServer { .. }
+            | PgLSCommand::Clean
+            | PgLSCommand::PrintSocket => None,
         }
     }
 
@@ -315,6 +315,6 @@ mod tests {
     /// Tests that all CLI options adhere to the invariants expected by `bpaf`.
     #[test]
     fn check_options() {
-        pgt_command().check_invariants(false);
+        pg_l_s_command().check_invariants(false);
     }
 }

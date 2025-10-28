@@ -62,11 +62,11 @@ just new-crate <name>
 ```
 
 ### CLI Usage
-The main CLI binary is `postgrestools`:
+The main CLI binary is `postgres-language-server` (legacy name: `postgrestools`):
 ```bash
 cargo run -p pgls_cli -- check file.sql
 # or after building:
-./target/release/postgrestools check file.sql
+./target/release/postgres-language-server check file.sql
 ```
 
 ## Architecture
@@ -103,8 +103,8 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 ### TypeScript Packages
 Located in `packages/` and `editors/`:
 - VSCode extension in `editors/code/`
-- Backend JSON-RPC bridge in `packages/@postgrestools/backend-jsonrpc/`
-- Main TypeScript package in `packages/@postgrestools/postgrestools/`
+- Backend JSON-RPC bridge in `packages/@postgres-language-server/backend-jsonrpc/` (legacy: `packages/@postgrestools/backend-jsonrpc/`)
+- Main TypeScript package in `packages/@postgres-language-server/postgres-language-server/` (legacy: `packages/@postgrestools/postgrestools/`)
 
 ### Database Integration
 The server connects to a Postgres database to build an in-memory schema cache containing tables, columns, functions, and type information. This enables accurate autocompletion and type checking.
@@ -150,6 +150,21 @@ Many parser structures are generated from PostgreSQL's protobuf definitions usin
 ### Database Schema
 The `pgls_schema_cache` crate contains SQL queries in `src/queries/` that introspect the database schema to build the in-memory cache.
 
-### Multi-Platform Support  
+### Code Refactoring Tools
+The project has `ast-grep` available for advanced code search and refactoring tasks. ast-grep is a structural search/replace tool that understands code syntax, making it useful for:
+- Renaming types, functions, or variables across the codebase
+- Finding and replacing code patterns
+- Performing structural code transformations
+
+Example usage:
+```bash
+# Search for a pattern
+ast-grep --pattern 'struct $NAME { $$$FIELDS }'
+
+# Replace a pattern across files
+ast-grep --pattern 'OldType' --rewrite 'NewType' --update-all
+```
+
+### Multi-Platform Support
 The project includes platform-specific allocators and build configurations for Windows, macOS, and Linux.
 - Seeing the Treesitter tree for an SQL query can be helpful to debug and implement features. To do this, create a file with an SQL query, and run `just tree-print <file.sql>`.

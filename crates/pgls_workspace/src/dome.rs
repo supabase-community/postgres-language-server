@@ -1,4 +1,4 @@
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use std::collections::BTreeSet;
 use std::collections::btree_set::Iter;
 use std::iter::{FusedIterator, Peekable};
@@ -7,16 +7,16 @@ use std::iter::{FusedIterator, Peekable};
 /// specific paths like configuration files, manifests and more.
 #[derive(Debug, Default)]
 pub struct Dome {
-    paths: BTreeSet<PgTPath>,
+    paths: BTreeSet<PgLSPath>,
 }
 
 impl Dome {
-    pub fn with_path(mut self, path: impl Into<PgTPath>) -> Self {
+    pub fn with_path(mut self, path: impl Into<PgLSPath>) -> Self {
         self.paths.insert(path.into());
         self
     }
 
-    pub fn new(paths: BTreeSet<PgTPath>) -> Self {
+    pub fn new(paths: BTreeSet<PgLSPath>) -> Self {
         Self { paths }
     }
 
@@ -26,17 +26,17 @@ impl Dome {
         }
     }
 
-    pub fn to_paths(self) -> BTreeSet<PgTPath> {
+    pub fn to_paths(self) -> BTreeSet<PgLSPath> {
         self.paths
     }
 }
 
 pub struct DomeIterator<'a> {
-    iter: Peekable<Iter<'a, PgTPath>>,
+    iter: Peekable<Iter<'a, PgLSPath>>,
 }
 
 impl<'a> DomeIterator<'a> {
-    pub fn next_config(&mut self) -> Option<&'a PgTPath> {
+    pub fn next_config(&mut self) -> Option<&'a PgLSPath> {
         if let Some(path) = self.iter.peek() {
             if path.is_config() {
                 self.iter.next()
@@ -48,7 +48,7 @@ impl<'a> DomeIterator<'a> {
         }
     }
 
-    pub fn next_ignore(&mut self) -> Option<&'a PgTPath> {
+    pub fn next_ignore(&mut self) -> Option<&'a PgLSPath> {
         if let Some(path) = self.iter.peek() {
             if path.is_ignore() {
                 self.iter.next()
@@ -62,7 +62,7 @@ impl<'a> DomeIterator<'a> {
 }
 
 impl<'a> Iterator for DomeIterator<'a> {
-    type Item = &'a PgTPath;
+    type Item = &'a PgLSPath;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()

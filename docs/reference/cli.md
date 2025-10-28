@@ -15,7 +15,7 @@
 
 ## postgres-language-server
 
-PostgresTools official CLI. Use it to check the health of your project or run it to check single files.
+Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
 
 **Usage**: **`postgres-language-server`** _`COMMAND ...`_
 
@@ -69,7 +69,7 @@ Shows the version information and quit.
 - **`    --no-errors-on-unmatched`** &mdash;
   Silence errors that would be emitted in case no files were processed during the execution of the command.
 - **`    --error-on-warnings`** &mdash;
-  Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash;
   Allows to change how diagnostics and summary are reported.
 - **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash;
@@ -83,7 +83,7 @@ Shows the version information and quit.
   How the log should look like.
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash;
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
   [default: info]
 
 **Available options:**
@@ -154,7 +154,7 @@ Runs everything to the requested files.
 - **`    --no-errors-on-unmatched`** &mdash;
   Silence errors that would be emitted in case no files were processed during the execution of the command.
 - **`    --error-on-warnings`** &mdash;
-  Tell Postgres Tools to exit with an error code if some diagnostics emit warnings.
+  Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash;
   Allows to change how diagnostics and summary are reported.
 - **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash;
@@ -168,7 +168,7 @@ Runs everything to the requested files.
   How the log should look like.
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash;
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
   [default: info]
 
 **Available positional items:**
