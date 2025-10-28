@@ -32,9 +32,10 @@ impl HoveredNode {
         let under_cursor = ctx.node_under_cursor.as_ref()?;
 
         match under_cursor.kind() {
-            "identifier"
+            "any_identifier"
                 if ctx.matches_ancestor_history(&["relation", "object_reference"])
-                    || ctx.matches_ancestor_history(&["revoke_on_table", "object_reference"]) =>
+                    || ctx
+                        .matches_ancestor_history(&["grantable_on_table", "object_reference"]) =>
             {
                 let num_sibs = ctx.num_siblings();
                 if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {
@@ -51,7 +52,7 @@ impl HoveredNode {
                 }
             }
 
-            "identifier"
+            "any_identifier"
                 if ctx.matches_ancestor_history(&["object_reference"])
                     && ctx.wrapping_clause_type.as_ref().is_some_and(|clause| {
                         matches!(
@@ -72,7 +73,7 @@ impl HoveredNode {
                 }
             }
 
-            "identifier" if ctx.matches_ancestor_history(&["field"]) => {
+            "column_identifier" => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
                         table_or_alias.clone(),
@@ -83,7 +84,9 @@ impl HoveredNode {
                 }
             }
 
-            "identifier" if ctx.matches_ancestor_history(&["invocation", "object_reference"]) => {
+            "any_identifier"
+                if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
+            {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
                     Some(HoveredNode::Function(NodeIdentification::SchemaAndName((
                         schema.clone(),
@@ -96,7 +99,7 @@ impl HoveredNode {
                 }
             }
 
-            "identifier"
+            "any_identifier"
                 if ctx.matches_one_of_ancestors(&[
                     "alter_role",
                     "policy_to_role",
@@ -109,7 +112,7 @@ impl HoveredNode {
                 Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
             }
 
-            "identifier"
+            "any_identifier"
                 if (
                     // hover over custom type in `create table` or `returns`
                     (ctx.matches_ancestor_history(&["type", "object_reference"])

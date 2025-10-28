@@ -10,12 +10,12 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     (relation
         (object_reference
             .
-            (identifier) @schema_or_table        
+            (any_identifier) @schema_or_table        
             "."?
-            (identifier)? @table
+            (any_identifier)? @table
         ) 
         (keyword_as)?
-        (identifier) @alias
+        (any_identifier) @alias
     )
 "#;
     tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
