@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.17.0/features/type_checking/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Type Checking - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Type Checking";
+        var mkdocs_page_input_path = "features/type_checking.md";
+        var mkdocs_page_url = "/0.17.0/features/type_checking/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Type Checking</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#how-it-works">How it Works</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#supported-statements">Supported Statements</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#what-gets-checked">What Gets Checked</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/rules/">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/rule_sources/">Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../reference/env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Features</li>
+      <li class="breadcrumb-item active">Type Checking</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/features/type_checking.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="type-checking">Type Checking</h1>
+<p>The Postgres Language Server validates your SQL queries against your actual database schema. As you type, it checks that your tables exist, columns are spelled correctly, and data types match - just like Postgres would when executing the query.</p>
+<h2 id="how-it-works">How it Works</h2>
+<p>When you write a SQL query, the language server:</p>
+<ol>
+<li>Connects to your database</li>
+<li>Asks Postgres to validate your query without running it</li>
+<li>Shows any errors directly in your editor</li>
+</ol>
+<p>Since it uses your actual database, you get the same validation that happens at runtime - as soon as you type.</p>
+<h2 id="supported-statements">Supported Statements</h2>
+<p>Since we are using <code>EXPLAIN</code>, type checking is only available for DML statements:
+- <code>SELECT</code> statements
+- <code>INSERT</code> statements
+- <code>UPDATE</code> statements
+- <code>DELETE</code> statements
+- Common Table Expressions (CTEs)</p>
+<h2 id="configuration">Configuration</h2>
+<p>You can configure the schemas included in the search path for type checking:</p>
+<pre><code class="language-json">{
+  &quot;typecheck&quot;: {
+    &quot;searchPath&quot;: [&quot;public&quot;, &quot;app_*&quot;, &quot;auth&quot;]
+  }
+}
+</code></pre>
+<p>The <code>searchPath</code> supports:
+- Exact schema names (e.g., <code>"public"</code>)
+- Glob patterns (e.g., <code>"app_*"</code> to match <code>app_users</code>, <code>app_products</code>, etc.)
+- The order matters - schemas are searched in the order specified</p>
+<p>Even if not specified, the LSP will always search<code>"public"</code> in last position.</p>
+<h2 id="what-gets-checked">What Gets Checked</h2>
+<p>The type checker catches common SQL mistakes:</p>
+<ul>
+<li><strong>Typos in table and column names</strong>: <code>SELECT user_naem FROM users</code> → "column 'user_naem' does not exist"</li>
+<li><strong>Type mismatches</strong>: <code>WHERE user_id = 'abc'</code> when <code>user_id</code> is an integer</li>
+<li><strong>Missing tables</strong>: <code>SELECT * FROM user</code> when the table is named <code>users</code></li>
+<li><strong>Wrong number of columns</strong>: <code>INSERT INTO users VALUES (1)</code> when the table has multiple required columns</li>
+</ul>
+<h2 id="requirements">Requirements</h2>
+<p>Type checking requires:</p>
+<ul>
+<li>An active database connection</li>
+<li>Appropriate permissions to prepare statements in your database</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../linting/" class="btn btn-neutral float-left" title="Linting"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../plpgsql/" class="btn btn-neutral float-right" title="PL/pgSQL Support">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+      <span><a href="../linting/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../plpgsql/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
