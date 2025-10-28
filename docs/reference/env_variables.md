@@ -9,7 +9,7 @@
 
 ### `PGLS_LOG_LEVEL`
 
- Allows to change the log level. Default is debug. This will only affect "pgt*" crates. All others are logged with info level.
+ Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level.
 
 ### `PGLS_LOG_PREFIX_NAME`
 
@@ -25,7 +25,7 @@
 
 ### `PGT_LOG_LEVEL`
 
- Allows to change the log level. Default is debug. This will only affect "pgt*" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.
+ Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.
 
 ### `PGT_LOG_PREFIX_NAME`
 
