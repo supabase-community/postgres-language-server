@@ -7,14 +7,8 @@ use super::QueryTryFrom;
 
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
-    (insert
-        (object_reference)
-        (list
-            "("?
-            (column) @column
-            ","?
-            ")"?
-        )
+    (insert_columns
+        (column_identifier) @column
     )
 "#;
     tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)

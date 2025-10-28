@@ -17,7 +17,11 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 impl CompletionFilter<'_> {
     pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         self.completable_context(ctx)?;
-        self.check_clause(ctx)?;
+
+        self.check_node_type(ctx)
+            // we want to rely on treesitter more, so checking the clause is a fallback
+            .or_else(|| self.check_clause(ctx))?;
+
         self.check_invocation(ctx)?;
         self.check_mentioned_schema_or_alias(ctx)?;
 
@@ -69,8 +73,8 @@ impl CompletionFilter<'_> {
         // No autocompletions if there are two identifiers without a separator.
         if ctx.node_under_cursor.as_ref().is_some_and(|node| {
             node.prev_sibling().is_some_and(|p| {
-                (p.kind() == "identifier" || p.kind() == "object_reference")
-                    && node.kind() == "identifier"
+                (p.kind() == "any_identifier" || p.kind() == "object_reference")
+                    && node.kind() == "any_identifier"
             })
         }) {
             return None;
@@ -80,12 +84,27 @@ impl CompletionFilter<'_> {
         // `select * {}`
         if ctx.node_under_cursor.as_ref().is_some_and(|node| {
             node.prev_sibling()
-                .is_some_and(|p| (p.kind() == "all_fields") && node.kind() == "identifier")
+                .is_some_and(|p| (p.kind() == "all_fields") && node.kind() == "any_identifier")
         }) {
             return None;
         }
 
         Some(())
+    }
+
+    fn check_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
+        let kind = ctx.node_under_cursor.as_ref().map(|n| n.kind())?;
+
+        let is_allowed = match kind {
+            "column_identifier" => {
+                matches!(self.data, CompletionRelevanceData::Column(_))
+                    && !ctx.matches_ancestor_history(&["insert_values", "field"])
+                    && !ctx.node_under_cursor_is_within_field_name("binary_expr_right")
+            }
+            _ => false,
+        };
+
+        if is_allowed { Some(()) } else { None }
     }
 
     fn check_clause(&self, ctx: &TreesitterContext) -> Option<()> {
@@ -254,7 +273,7 @@ impl CompletionFilter<'_> {
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
                             ctx.matches_ancestor_history(&["role_specification"])
                                 || ctx.node_under_cursor.as_ref().is_some_and(|k| {
-                                    k.kind() == "identifier"
+                                    k.kind() == "any_identifier"
                                         && ctx.before_cursor_matches_kind(&[
                                             "keyword_grant",
                                             "keyword_revoke",
