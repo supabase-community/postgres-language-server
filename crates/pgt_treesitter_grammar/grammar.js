@@ -28,6 +28,7 @@ module.exports = grammar({
     [$.time],
     [$.timestamp],
     [$.grantable_on_function, $.grantable_on_table],
+    [$.any_identifier, $.column_identifier],
   ],
 
   precedences: ($) => [
@@ -263,6 +264,8 @@ module.exports = grammar({
     keyword_storage: (_) => make_keyword("storage"),
     keyword_compression: (_) => make_keyword("compression"),
 
+    keyword_overriding: () => make_keyword("overriding"),
+    keyword_system: () => make_keyword("system"),
     keyword_policy: (_) => make_keyword("policy"),
     keyword_permissive: (_) => make_keyword("permissive"),
     keyword_restrictive: (_) => make_keyword("restrictive"),
@@ -779,21 +782,7 @@ module.exports = grammar({
       ),
 
     _show_statement: ($) =>
-      seq(
-        $.keyword_show,
-        choice(
-          $._show_create,
-          $.keyword_all, // Postgres
-          $._show_tables // trino/presto
-        )
-      ),
-
-    _show_tables: ($) =>
-      seq(
-        $.keyword_tables,
-        optional(seq($.keyword_from, $._qualified_field)),
-        optional(seq($.keyword_like, $._expression))
-      ),
+      seq($.keyword_show, choice($._show_create, $.keyword_all)),
 
     _show_create: ($) =>
       seq(
@@ -990,7 +979,6 @@ module.exports = grammar({
         $.table_partition,
         $.stored_as,
         $.storage_location,
-        $.table_sort,
         $.row_format,
         seq($.keyword_tblproperties, paren_list($.table_option, true)),
         seq($.keyword_without, $.keyword_oids),
@@ -1656,7 +1644,7 @@ module.exports = grammar({
         $.keyword_insert,
         seq(
           $.keyword_update,
-          optional(seq($.keyword_of, comma_list($.any_identifier, true)))
+          optional(seq($.keyword_of, comma_list($.column_identifier, true)))
         ),
         $.keyword_delete,
         $.keyword_truncate
@@ -1752,8 +1740,6 @@ module.exports = grammar({
         $.add_constraint,
         $.drop_constraint,
         $.alter_column,
-        $.modify_column,
-        $.change_column,
         $.drop_column,
         $.rename_object,
         $.rename_column,
@@ -1794,7 +1780,7 @@ module.exports = grammar({
         // TODO constraint management
         $.keyword_alter,
         optional($.keyword_column),
-        field("name", $.any_identifier),
+        $.column_identifier,
         choice(
           seq(
             choice($.keyword_set, $.keyword_drop),
@@ -1832,44 +1818,22 @@ module.exports = grammar({
         )
       ),
 
-    modify_column: ($) =>
-      seq(
-        $.keyword_modify,
-        optional($.keyword_column),
-        optional($._if_exists),
-        $.column_definition,
-        optional($.column_position)
-      ),
-
-    change_column: ($) =>
-      seq(
-        $.keyword_change,
-        optional($.keyword_column),
-        optional($._if_exists),
-        field("old_name", $.any_identifier),
-        $.column_definition,
-        optional($.column_position)
-      ),
-
     column_position: ($) =>
-      choice(
-        $.keyword_first,
-        seq($.keyword_after, field("col_name", $.any_identifier))
-      ),
+      choice($.keyword_first, seq($.keyword_after, $.column_identifier)),
 
     drop_column: ($) =>
       seq(
         $.keyword_drop,
         optional($.keyword_column),
         optional($._if_exists),
-        field("name", $.any_identifier)
+        $.column_identifier
       ),
 
     rename_column: ($) =>
       seq(
         $.keyword_rename,
         optional($.keyword_column),
-        field("old_name", $.any_identifier),
+        $.column_identifier,
         $.keyword_to,
         field("new_name", $.any_identifier)
       ),
@@ -2306,33 +2270,42 @@ module.exports = grammar({
 
     insert: ($) =>
       seq(
-        choice($.keyword_insert, $.keyword_replace),
-        optional(
-          choice(
-            $.keyword_low_priority,
-            $.keyword_delayed,
-            $.keyword_high_priority
-          )
-        ),
-        optional($.keyword_ignore),
-        optional(
-          choice(
-            $.keyword_into,
-            $.keyword_overwrite // Spark SQL
-          )
-        ),
+        $.keyword_insert,
+        $.keyword_into,
         $.object_reference,
-        optional($.table_partition), // Spark SQL
-        optional(seq($.keyword_as, field("alias", $.any_identifier))),
-        // TODO we need a test for `insert...set`
-        choice($._insert_values, $._set_values),
-        optional(choice($._on_conflict, $._on_duplicate_key_update))
+        optional($._alias),
+        optional($.insert_columns),
+        optional(
+          seq(
+            $.keyword_overriding,
+            choice($.keyword_user, $.keyword_system),
+            $.keyword_value
+          )
+        ),
+        choice(
+          seq($.keyword_default, $.keyword_values),
+          $.insert_values,
+          $._select_statement
+        ),
+        optional($._on_conflict)
       ),
+
+    insert_values: ($) =>
+      comma_list(
+        seq(
+          $.keyword_values,
+          paren_list(choice($._expression, $.keyword_default), true)
+        ),
+        true
+      ),
+
+    insert_columns: ($) => paren_list($.column_identifier, true),
 
     _on_conflict: ($) =>
       seq(
         $.keyword_on,
         $.keyword_conflict,
+        // todo: conflict target
         seq(
           $.keyword_do,
           choice(
@@ -2342,28 +2315,13 @@ module.exports = grammar({
         )
       ),
 
-    _on_duplicate_key_update: ($) =>
-      seq(
-        $.keyword_on,
-        $.keyword_duplicate,
-        $.keyword_key,
-        $.keyword_update,
-        $.assignment_list
-      ),
-
     assignment_list: ($) => seq($.assignment, repeat(seq(",", $.assignment))),
-
-    _insert_values: ($) =>
-      seq(
-        optional(alias($._column_list, $.list)),
-        choice(seq($.keyword_values, comma_list($.list, true)), $._dml_read)
-      ),
 
     _set_values: ($) => seq($.keyword_set, comma_list($.assignment, true)),
 
     _column_list: ($) => paren_list(alias($._column, $.column), true),
     _column: ($) =>
-      choice($.any_identifier, alias($._literal_string, $.literal)),
+      choice($.column_identifier, alias($._literal_string, $.literal)),
 
     _update_statement: ($) => seq($.update, optional($.returning)),
 
@@ -2394,10 +2352,31 @@ module.exports = grammar({
         ),
         $.keyword_then,
         choice(
-          $.keyword_delete,
+          // merge_insert
+          seq(
+            $.keyword_insert,
+            optional(paren_list($.column_identifier, true)),
+            optional(
+              seq(
+                $.keyword_overriding,
+                choice($.keyword_system, $.keyword_user),
+                $.keyword_value
+              )
+            ),
+            choice(
+              seq($.keyword_default, $.keyword_values),
+              seq(
+                $.keyword_values,
+                paren_list(choice($._expression, $.keyword_default), true)
+              )
+            )
+          ),
+          // merge_update
           seq($.keyword_update, $._set_values),
-          seq($.keyword_insert, $._insert_values),
-          optional($.where)
+          // merge_delete
+          $.keyword_delete,
+
+          seq($.keyword_do, $.keyword_nothing)
         )
       ),
 
@@ -2571,9 +2550,6 @@ module.exports = grammar({
         )
       ),
 
-    table_sort: ($) =>
-      seq($.keyword_sort, $.keyword_by, paren_list($.any_identifier, true)),
-
     table_partition: ($) =>
       seq(
         choice(
@@ -2655,7 +2631,7 @@ module.exports = grammar({
 
     column_definition: ($) =>
       seq(
-        field("name", $._column),
+        $.any_identifier,
         field("type", $.type),
         repeat($._column_constraint)
       ),
@@ -2670,7 +2646,7 @@ module.exports = grammar({
           seq(
             $.keyword_references,
             $.object_reference,
-            paren_list($.any_identifier, true),
+            paren_list($.column_identifier, true),
             repeat(
               seq(
                 $.keyword_on,
@@ -2775,7 +2751,7 @@ module.exports = grammar({
           seq(
             $.keyword_references,
             $.object_reference,
-            paren_list($.any_identifier, true),
+            paren_list($.column_identifier, true),
             repeat(
               seq(
                 $.keyword_on,
@@ -2834,10 +2810,10 @@ module.exports = grammar({
         $.keyword_end
       ),
 
-    field: ($) => field("name", $.any_identifier),
+    field: ($) => field("name", $.column_identifier),
 
     _qualified_field: ($) =>
-      seq(optional($.field_qualifier), field("name", $.any_identifier)),
+      seq(optional($.field_qualifier), $.column_identifier),
 
     field_qualifier: ($) =>
       seq(prec.left(optional_parenthesis($.object_reference)), "."),
@@ -3399,9 +3375,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("right", $._expression)
+              field("binary_expr_left", $._expression),
+              field("binary_expr_operator", operator),
+              field("binary_expr_right", $._expression)
             )
           )
         ),
@@ -3409,9 +3385,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("right", $._expression)
+              field("binary_expr_left", $._expression),
+              field("binary_expr_operator", operator),
+              field("binary_expr_right", $._expression)
             )
           )
         ),
@@ -3419,9 +3395,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $._expression),
-              field("operator", operator),
-              field("right", choice($.list, $.subquery))
+              field("binary_expr_left", $._expression),
+              field("binary_expr_operator", operator),
+              field("binary_expr_right", choice($.list, $.subquery))
             )
           )
         )
@@ -3531,6 +3507,8 @@ module.exports = grammar({
     bang: (_) => "!",
 
     any_identifier: ($) => $._any_identifier,
+    column_identifier: ($) => $._any_identifier,
+
     _any_identifier: ($) =>
       choice(
         $._identifier,

@@ -590,8 +590,7 @@ impl<'a> TreesitterContext<'a> {
                 // `node.child_by_field_id(..)` does not work as expected
                 let mut on_node = None;
                 for child in node.children(cursor) {
-                    // 28 is the id for "keyword_on"
-                    if child.kind_id() == 28 {
+                    if child.kind() == "keyword_on" {
                         on_node = Some(child);
                     }
                 }
