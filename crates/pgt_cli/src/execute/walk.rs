@@ -161,8 +161,10 @@ fn traverse_inputs(
 
 struct DiagnosticsPrinter<'ctx> {
     _config: &'ctx ExecutionConfig,
+    /// The maximum number of diagnostics the console thread is allowed to print
     max_diagnostics: u32,
     remaining_diagnostics: AtomicU32,
+    /// Count of diagnostics that exceeded max_diagnostics and weren't printed
     not_printed_diagnostics: AtomicU32,
     printed_diagnostics: AtomicU32,
     total_skipped_suggested_fixes: AtomicU32,

@@ -11,7 +11,6 @@ use pgt_fs::FileSystem;
 use pgt_workspace::DynRef;
 use std::ffi::OsString;
 
-#[allow(dead_code)]
 pub struct CheckArgs {
     pub configuration: Option<PartialConfiguration>,
     pub paths: Vec<OsString>,
@@ -19,8 +18,6 @@ pub struct CheckArgs {
     pub staged: bool,
     pub changed: bool,
     pub since: Option<String>,
-    pub apply: bool,
-    pub apply_unsafe: bool,
 }
 
 pub fn check(

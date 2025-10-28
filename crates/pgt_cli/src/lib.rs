@@ -87,8 +87,6 @@ impl<'app> CliSession<'app> {
                     staged,
                     changed,
                     since,
-                    apply: false,
-                    apply_unsafe: false,
                 },
             ),
             PgtCommand::Clean => commands::clean::clean(self),

@@ -139,12 +139,19 @@ impl Display for GitLabDiagnostics<'_> {
     }
 }
 
+/// An entry in the GitLab Code Quality report.
+/// See https://docs.gitlab.com/ee/ci/testing/code_quality.html#implement-a-custom-tool
 #[derive(Serialize)]
 pub struct GitLabDiagnostic<'a> {
+    /// A description of the code quality violation.
     description: String,
+    /// A unique name representing the static analysis check that emitted this issue.
     check_name: &'a str,
+    /// A unique fingerprint to identify the code quality violation. For example, an MD5 hash.
     fingerprint: String,
+    /// A severity string (can be info, minor, major, critical, or blocker).
     severity: &'a str,
+    /// The location where the code quality violation occurred.
     location: Location,
 }
 

@@ -9,8 +9,11 @@ use std::path::{Path, PathBuf};
 /// Small wrapper that holds information and operations around the current processed file
 pub(crate) struct WorkspaceFile<'ctx, 'app> {
     guard: FileGuard<'app, dyn Workspace + 'ctx>,
+    /// File handle for the underlying filesystem entry, if backed by a real file.
+    /// Not present for stdin execution where content is provided as a temporary buffer.
+    /// Currently unused but will be needed when autofix/write operations are implemented.
     #[allow(dead_code)]
-    file: Option<Box<dyn File>>, // only present when backed by a real fs entry
+    file: Option<Box<dyn File>>,
     pub(crate) path: PathBuf,
 }
 
