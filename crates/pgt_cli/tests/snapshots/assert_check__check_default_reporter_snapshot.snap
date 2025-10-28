@@ -1,0 +1,22 @@
+---
+source: crates/pgt_cli/tests/assert_check.rs
+expression: "run_check(&[\"tests/fixtures/test.sql\"])"
+snapshot_kind: text
+---
+status: failure
+stdout:
+Checked 1 file in <duration>. No fixes applied.
+Found 1 error.
+stderr:
+tests/fixtures/test.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid statement: syntax error at or near "tqjable"
+  
+  > 1 │ alter tqjable test drop column id;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

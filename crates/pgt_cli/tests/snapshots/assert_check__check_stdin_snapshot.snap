@@ -1,0 +1,9 @@
+---
+source: crates/pgt_cli/tests/assert_check.rs
+expression: "run_check_with(&[\"--config-path\", CONFIG_PATH, \"--stdin-file-path\",\n\"virtual.sql\"], Some(\"alter tqjable stdin drop column id;\\n\"), None)"
+snapshot_kind: text
+---
+status: success
+stdout:
+alter tqjable stdin drop column id;
+stderr:
