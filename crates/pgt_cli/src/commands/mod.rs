@@ -1,23 +1,17 @@
 use crate::changed::{get_changed_files, get_staged_files};
 use crate::cli_options::{CliOptions, CliReporter, ColorsArg, cli_options};
-use crate::execute::Stdin;
 use crate::logging::LoggingKind;
-use crate::{
-    CliDiagnostic, CliSession, Execution, LoggingLevel, VERSION, execute_mode, setup_cli_subscriber,
-};
+use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
 use pgt_configuration::{PartialConfiguration, partial_configuration};
-use pgt_console::{Console, ConsoleExt, markup};
-use pgt_fs::{ConfigName, FileSystem};
-use pgt_workspace::PartialConfigurationExt;
-use pgt_workspace::configuration::{LoadedConfiguration, load_configuration};
-use pgt_workspace::workspace::{RegisterProjectFolderParams, UpdateSettingsParams};
-use pgt_workspace::{DynRef, Workspace, WorkspaceError};
+use pgt_fs::FileSystem;
+use pgt_workspace::DynRef;
 use std::ffi::OsString;
 use std::path::PathBuf;
 pub(crate) mod check;
 pub(crate) mod clean;
 pub(crate) mod daemon;
+pub(crate) mod dblint;
 pub(crate) mod init;
 pub(crate) mod version;
 
@@ -29,6 +23,16 @@ pub enum PgtCommand {
     /// Shows the version information and quit.
     #[bpaf(command)]
     Version(#[bpaf(external(cli_options), hide_usage)] CliOptions),
+
+    /// Runs everything to the requested files.
+    #[bpaf(command)]
+    Dblint {
+        #[bpaf(external(partial_configuration), hide_usage, optional)]
+        configuration: Option<PartialConfiguration>,
+
+        #[bpaf(external, hide_usage)]
+        cli_options: CliOptions,
+    },
 
     /// Runs everything to the requested files.
     #[bpaf(command)]
@@ -217,9 +221,9 @@ pub enum PgtCommand {
 impl PgtCommand {
     const fn cli_options(&self) -> Option<&CliOptions> {
         match self {
-            PgtCommand::Version(cli_options) | PgtCommand::Check { cli_options, .. } => {
-                Some(cli_options)
-            }
+            PgtCommand::Version(cli_options)
+            | PgtCommand::Check { cli_options, .. }
+            | PgtCommand::Dblint { cli_options, .. } => Some(cli_options),
             PgtCommand::LspProxy { .. }
             | PgtCommand::Start { .. }
             | PgtCommand::Stop
@@ -276,145 +280,7 @@ impl PgtCommand {
     }
 }
 
-/// Generic interface for executing commands.
-///
-/// Consumers must implement the following methods:
-///
-/// - [CommandRunner::merge_configuration]
-/// - [CommandRunner::get_files_to_process]
-/// - [CommandRunner::get_stdin_file_path]
-/// - [CommandRunner::should_write]
-/// - [CommandRunner::get_execution]
-///
-/// Optional methods:
-/// - [CommandRunner::check_incompatible_arguments]
-pub(crate) trait CommandRunner: Sized {
-    const COMMAND_NAME: &'static str;
-
-    /// The main command to use.
-    fn run(&mut self, session: CliSession, cli_options: &CliOptions) -> Result<(), CliDiagnostic> {
-        setup_cli_subscriber(cli_options.log_level, cli_options.log_kind);
-        let fs = &session.app.fs;
-        let console = &mut *session.app.console;
-        let workspace = &*session.app.workspace;
-        self.check_incompatible_arguments()?;
-        let (execution, paths) = self.configure_workspace(fs, console, workspace, cli_options)?;
-        execute_mode(execution, session, cli_options, paths)
-    }
-
-    /// This function prepares the workspace with the following:
-    /// - Loading the configuration file.
-    /// - Configure the VCS integration
-    /// - Computes the paths to traverse/handle. This changes based on the VCS arguments that were passed.
-    /// - Register a project folder using the working directory.
-    /// - Updates the settings that belong to the project registered
-    fn configure_workspace(
-        &mut self,
-        fs: &DynRef<'_, dyn FileSystem>,
-        console: &mut dyn Console,
-        workspace: &dyn Workspace,
-        cli_options: &CliOptions,
-    ) -> Result<(Execution, Vec<OsString>), CliDiagnostic> {
-        let loaded_configuration =
-            load_configuration(fs, cli_options.as_configuration_path_hint())?;
-
-        // Check for deprecated config filename
-        if let Some(config_path) = &loaded_configuration.file_path {
-            if let Some(file_name) = config_path.file_name().and_then(|n| n.to_str()) {
-                if ConfigName::is_deprecated(file_name) {
-                    console.log(markup! {
-                        <Warn>"Warning: "</Warn>"You are using the deprecated config filename '"<Emphasis>"postgrestools.jsonc"</Emphasis>"'. \
-                        Please rename it to '"<Emphasis>"postgres-language-server.jsonc"</Emphasis>"'. \
-                        Support for the old filename will be removed in a future version.\n"
-                    });
-                }
-            }
-        }
-
-        let configuration_path = loaded_configuration.directory_path.clone();
-        let configuration = self.merge_configuration(loaded_configuration, fs, console)?;
-        let vcs_base_path = configuration_path.or(fs.working_directory());
-        let (vcs_base_path, gitignore_matches) =
-            configuration.retrieve_gitignore_matches(fs, vcs_base_path.as_deref())?;
-        let paths = self.get_files_to_process(fs, &configuration)?;
-        workspace.register_project_folder(RegisterProjectFolderParams {
-            path: fs.working_directory(),
-            set_as_current_workspace: true,
-        })?;
-
-        workspace.update_settings(UpdateSettingsParams {
-            workspace_directory: fs.working_directory(),
-            configuration,
-            vcs_base_path,
-            gitignore_matches,
-        })?;
-
-        let execution = self.get_execution(cli_options, console, workspace)?;
-        Ok((execution, paths))
-    }
-
-    /// Computes [Stdin] if the CLI has the necessary information.
-    ///
-    /// ## Errors
-    /// - If the user didn't provide anything via `stdin` but the option `--stdin-file-path` is passed.
-    fn get_stdin(&self, console: &mut dyn Console) -> Result<Option<Stdin>, CliDiagnostic> {
-        let stdin = if let Some(stdin_file_path) = self.get_stdin_file_path() {
-            let input_code = console.read();
-            if let Some(input_code) = input_code {
-                let path = PathBuf::from(stdin_file_path);
-                Some((path, input_code).into())
-            } else {
-                // we provided the argument without a piped stdin, we bail
-                return Err(CliDiagnostic::missing_argument("stdin", Self::COMMAND_NAME));
-            }
-        } else {
-            None
-        };
-
-        Ok(stdin)
-    }
-
-    // Below, the methods that consumers must implement.
-
-    /// Implements this method if you need to merge CLI arguments to the loaded configuration.
-    ///
-    /// The CLI arguments take precedence over the option configured in the configuration file.
-    fn merge_configuration(
-        &mut self,
-        loaded_configuration: LoadedConfiguration,
-        fs: &DynRef<'_, dyn FileSystem>,
-        console: &mut dyn Console,
-    ) -> Result<PartialConfiguration, WorkspaceError>;
-
-    /// It returns the paths that need to be handled/traversed.
-    fn get_files_to_process(
-        &self,
-        fs: &DynRef<'_, dyn FileSystem>,
-        configuration: &PartialConfiguration,
-    ) -> Result<Vec<OsString>, CliDiagnostic>;
-
-    /// It returns the file path to use in `stdin` mode.
-    fn get_stdin_file_path(&self) -> Option<&str>;
-
-    /// Returns the [Execution] mode.
-    fn get_execution(
-        &self,
-        cli_options: &CliOptions,
-        console: &mut dyn Console,
-        workspace: &dyn Workspace,
-    ) -> Result<Execution, CliDiagnostic>;
-
-    // Below, methods that consumers can implement
-
-    /// Optional method that can be implemented to check if some CLI arguments aren't compatible.
-    ///
-    /// The method is called before loading the configuration from disk.
-    fn check_incompatible_arguments(&self) -> Result<(), CliDiagnostic> {
-        Ok(())
-    }
-}
-
-fn get_files_to_process_with_cli_options(
+pub(crate) fn get_files_to_process_with_cli_options(
     since: Option<&str>,
     changed: bool,
     staged: bool,

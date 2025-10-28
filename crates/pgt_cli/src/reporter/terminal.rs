@@ -1,32 +1,82 @@
-use crate::Reporter;
-use crate::execute::{Execution, TraversalMode};
-use crate::reporter::{DiagnosticsPayload, ReporterVisitor, TraversalSummary};
+use crate::diagnostics::CliDiagnostic;
+use crate::reporter::{Report, ReportConfig, ReportWriter, TraversalData};
 use pgt_console::fmt::Formatter;
 use pgt_console::{Console, ConsoleExt, fmt, markup};
 use pgt_diagnostics::advice::ListAdvice;
-use pgt_diagnostics::{Diagnostic, PrintDiagnostic};
+use pgt_diagnostics::{Diagnostic, Error, PrintDiagnostic};
 use pgt_fs::PgTPath;
+use std::borrow::Cow;
 use std::collections::BTreeSet;
-use std::io;
-use std::time::Duration;
 
-pub(crate) struct ConsoleReporter {
-    pub(crate) summary: TraversalSummary,
-    pub(crate) diagnostics_payload: DiagnosticsPayload,
-    pub(crate) execution: Execution,
-    pub(crate) evaluated_paths: BTreeSet<PgTPath>,
-}
+pub(crate) struct TerminalReportWriter;
 
-impl Reporter for ConsoleReporter {
-    fn write(self, visitor: &mut dyn ReporterVisitor) -> io::Result<()> {
-        let verbose = self.diagnostics_payload.verbose;
-        visitor.report_diagnostics(&self.execution, self.diagnostics_payload)?;
-        visitor.report_summary(&self.execution, self.summary)?;
-        if verbose {
-            visitor.report_handled_paths(self.evaluated_paths)?;
+impl ReportWriter for TerminalReportWriter {
+    fn write(
+        &mut self,
+        console: &mut dyn Console,
+        command_name: &str,
+        report: &Report,
+        config: &ReportConfig,
+    ) -> Result<(), CliDiagnostic> {
+        log_diagnostics(console, config, &report.diagnostics);
+
+        if let Some(traversal) = &report.traversal {
+            console.log(markup! {
+                {ConsoleTraversalSummary(command_name, report, traversal)}
+            });
+            if config.verbose {
+                log_evaluated_paths(console, &traversal.evaluated_paths);
+            }
+        } else {
+            console.log(markup! {
+                {ConsoleDiagnosticSummary(command_name, report)}
+            });
         }
+
         Ok(())
     }
+}
+
+fn log_diagnostics(console: &mut dyn Console, config: &ReportConfig, diagnostics: &[Error]) {
+    for diagnostic in diagnostics {
+        if diagnostic.severity() < config.diagnostic_level {
+            continue;
+        }
+
+        if diagnostic.tags().is_verbose() && config.verbose {
+            console.error(markup! {{PrintDiagnostic::verbose(diagnostic)}});
+        } else if !diagnostic.tags().is_verbose() {
+            console.error(markup! {{PrintDiagnostic::simple(diagnostic)}});
+        }
+    }
+}
+
+fn log_evaluated_paths(console: &mut dyn Console, evaluated_paths: &BTreeSet<PgTPath>) {
+    let evaluated_paths_diagnostic = EvaluatedPathsDiagnostic {
+        advice: ListAdvice {
+            list: evaluated_paths
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect(),
+        },
+    };
+
+    let fixed_paths_diagnostic = FixedPathsDiagnostic {
+        advice: ListAdvice {
+            list: evaluated_paths
+                .iter()
+                .filter(|p| p.was_written())
+                .map(|p| p.display().to_string())
+                .collect(),
+        },
+    };
+
+    console.log(markup! {
+        {PrintDiagnostic::verbose(&evaluated_paths_diagnostic)}
+    });
+    console.log(markup! {
+        {PrintDiagnostic::verbose(&fixed_paths_diagnostic)}
+    });
 }
 
 #[derive(Debug, Diagnostic)]
@@ -51,76 +101,10 @@ struct FixedPathsDiagnostic {
     advice: ListAdvice<String>,
 }
 
-pub(crate) struct ConsoleReporterVisitor<'a>(pub(crate) &'a mut dyn Console);
-
-impl ReporterVisitor for ConsoleReporterVisitor<'_> {
-    fn report_summary(
-        &mut self,
-        execution: &Execution,
-        summary: TraversalSummary,
-    ) -> io::Result<()> {
-        self.0.log(markup! {
-            {ConsoleTraversalSummary(execution.traversal_mode(), &summary)}
-        });
-
-        Ok(())
-    }
-
-    fn report_handled_paths(&mut self, evaluated_paths: BTreeSet<PgTPath>) -> io::Result<()> {
-        let evaluated_paths_diagnostic = EvaluatedPathsDiagnostic {
-            advice: ListAdvice {
-                list: evaluated_paths
-                    .iter()
-                    .map(|p| p.display().to_string())
-                    .collect(),
-            },
-        };
-
-        let fixed_paths_diagnostic = FixedPathsDiagnostic {
-            advice: ListAdvice {
-                list: evaluated_paths
-                    .iter()
-                    .filter(|p| p.was_written())
-                    .map(|p| p.display().to_string())
-                    .collect(),
-            },
-        };
-
-        self.0.log(markup! {
-            {PrintDiagnostic::verbose(&evaluated_paths_diagnostic)}
-        });
-        self.0.log(markup! {
-            {PrintDiagnostic::verbose(&fixed_paths_diagnostic)}
-        });
-
-        Ok(())
-    }
-
-    fn report_diagnostics(
-        &mut self,
-        _execution: &Execution,
-        diagnostics_payload: DiagnosticsPayload,
-    ) -> io::Result<()> {
-        for diagnostic in &diagnostics_payload.diagnostics {
-            if diagnostic.severity() >= diagnostics_payload.diagnostic_level {
-                if diagnostic.tags().is_verbose() && diagnostics_payload.verbose {
-                    self.0
-                        .error(markup! {{PrintDiagnostic::verbose(diagnostic)}});
-                } else {
-                    self.0
-                        .error(markup! {{PrintDiagnostic::simple(diagnostic)}});
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
-
 struct Files(usize);
 
 impl fmt::Display for Files {
-    fn fmt(&self, fmt: &mut Formatter) -> io::Result<()> {
+    fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
         fmt.write_markup(markup!({self.0} " "))?;
         if self.0 == 1 {
             fmt.write_str("file")
@@ -133,7 +117,7 @@ impl fmt::Display for Files {
 struct SummaryDetail(usize);
 
 impl fmt::Display for SummaryDetail {
-    fn fmt(&self, fmt: &mut Formatter) -> io::Result<()> {
+    fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
         if self.0 > 0 {
             fmt.write_markup(markup! {
                 " Fixed "{Files(self.0)}"."
@@ -145,46 +129,81 @@ impl fmt::Display for SummaryDetail {
         }
     }
 }
-struct SummaryTotal<'a>(&'a TraversalMode, usize, &'a Duration);
 
-impl fmt::Display for SummaryTotal<'_> {
-    fn fmt(&self, fmt: &mut Formatter) -> io::Result<()> {
-        let files = Files(self.1);
-        match self.0 {
-            TraversalMode::Dummy => fmt.write_markup(markup! {
-                "Dummy "{files}" in "{self.2}"."
-            }),
-            TraversalMode::Check { .. } => fmt.write_markup(markup! {
-                "Checked "{files}" in "{self.2}"."
-            }),
-        }
-    }
-}
+struct ConsoleTraversalSummary<'a>(&'a str, &'a Report, &'a TraversalData);
 
-pub(crate) struct ConsoleTraversalSummary<'a>(
-    pub(crate) &'a TraversalMode,
-    pub(crate) &'a TraversalSummary,
-);
 impl fmt::Display for ConsoleTraversalSummary<'_> {
-    fn fmt(&self, fmt: &mut Formatter) -> io::Result<()> {
-        let summary = SummaryTotal(self.0, self.1.changed + self.1.unchanged, &self.1.duration);
-        let detail = SummaryDetail(self.1.changed);
-        fmt.write_markup(markup!(<Info>{summary}{detail}</Info>))?;
+    fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
+        let action = traversal_action(self.0);
+        let files = Files(self.2.changed + self.2.unchanged);
+        fmt.write_markup(markup!(
+            <Info>
+                {action} " "{files}" in "{self.1.duration}"." {SummaryDetail(self.2.changed)}
+            </Info>
+        ))?;
 
         if self.1.errors > 0 {
             if self.1.errors == 1 {
-                fmt.write_markup(markup!("\n"<Error>"Found "{self.1.errors}" error."</Error>))?;
+                fmt.write_markup(markup!(
+                    "\n"<Error>"Found "{self.1.errors}" error."</Error>
+                ))?;
             } else {
-                fmt.write_markup(markup!("\n"<Error>"Found "{self.1.errors}" errors."</Error>))?;
+                fmt.write_markup(markup!(
+                    "\n"<Error>"Found "{self.1.errors}" errors."</Error>
+                ))?;
             }
         }
         if self.1.warnings > 0 {
             if self.1.warnings == 1 {
-                fmt.write_markup(markup!("\n"<Warn>"Found "{self.1.warnings}" warning."</Warn>))?;
+                fmt.write_markup(markup!(
+                    "\n"<Warn>"Found "{self.1.warnings}" warning."</Warn>
+                ))?;
             } else {
-                fmt.write_markup(markup!("\n"<Warn>"Found "{self.1.warnings}" warnings."</Warn>))?;
+                fmt.write_markup(markup!(
+                    "\n"<Warn>"Found "{self.1.warnings}" warnings."</Warn>
+                ))?;
             }
         }
         Ok(())
+    }
+}
+
+struct ConsoleDiagnosticSummary<'a>(&'a str, &'a Report);
+
+impl fmt::Display for ConsoleDiagnosticSummary<'_> {
+    fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
+        let action = diagnostic_action(self.0);
+        fmt.write_markup(markup! {
+            <Info>
+                {action} " completed in "{self.1.duration}"."
+            </Info>
+        })?;
+
+        if self.1.errors > 0 {
+            fmt.write_markup(markup!(
+                "\n"<Error>"Found "{self.1.errors}" error(s)."</Error>
+            ))?;
+        }
+
+        if self.1.warnings > 0 {
+            fmt.write_markup(markup!(
+                "\n"<Warn>"Found "{self.1.warnings}" warning(s)."</Warn>
+            ))?;
+        }
+        Ok(())
+    }
+}
+
+fn traversal_action(command: &str) -> Cow<'static, str> {
+    match command {
+        "check" => Cow::Borrowed("Checked"),
+        _ => Cow::Borrowed("Processed"),
+    }
+}
+
+fn diagnostic_action(command: &str) -> Cow<'static, str> {
+    match command {
+        "check" => Cow::Borrowed("Check"),
+        _ => Cow::Borrowed("Command"),
     }
 }

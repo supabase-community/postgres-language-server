@@ -5,22 +5,28 @@ use pgt_workspace::workspace::ServerInfo;
 use crate::{CliDiagnostic, CliSession, VERSION};
 
 /// Handle of the `version` command. Prints a more in detail version.
-pub(crate) fn full_version(session: CliSession) -> Result<(), CliDiagnostic> {
-    session.app.console.log(markup! {
-    "CLI:        "{VERSION}
-    });
+pub(crate) fn version(mut session: CliSession) -> Result<(), CliDiagnostic> {
+    {
+        let console = session.console();
+        console.log(markup! {
+            "CLI:        "{VERSION}
+        });
+    }
 
-    match session.app.workspace.server_info() {
+    let server_info = session.workspace().server_info().cloned();
+    let console = session.console();
+
+    match server_info {
         None => {
-            session.app.console.log(markup! {
+            console.log(markup! {
                 "Server:     "<Dim>"not connected"</Dim>
             });
         }
         Some(info) => {
-            session.app.console.log(markup! {
+            console.log(markup! {
 "Server:
   Name:     "{info.name}"
-  Version:  "{DisplayServerVersion(info)}
+  Version:  "{DisplayServerVersion(&info)}
             });
         }
     };

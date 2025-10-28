@@ -1,8 +1,8 @@
 mod check;
 pub(crate) mod workspace_file;
 
-use crate::execute::TraversalMode;
-use crate::execute::traverse::TraversalOptions;
+use crate::execute::config::ExecutionMode;
+use crate::execute::walk::TraversalOptions;
 use check::check_file;
 use pgt_diagnostics::Error;
 use pgt_fs::PgTPath;
@@ -107,11 +107,8 @@ pub(crate) fn process_file(ctx: &TraversalOptions, pgt_path: &PgTPath) -> FileRe
     tracing::trace_span!("process_file", path = ?pgt_path).in_scope(move || {
         let shared_context = &SharedTraversalOptions::new(ctx);
 
-        match ctx.execution.traversal_mode {
-            TraversalMode::Dummy => {
-                unreachable!("The dummy mode should not be called for this file")
-            }
-            TraversalMode::Check { .. } => check_file(shared_context, pgt_path),
+        match ctx.config.mode {
+            ExecutionMode::Check { .. } => check_file(shared_context, pgt_path),
         }
     })
 }
