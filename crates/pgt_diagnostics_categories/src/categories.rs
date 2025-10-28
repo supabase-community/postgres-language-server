@@ -13,6 +13,7 @@
 // must be between `define_categories! {\n` and `\n    ;\n`.
 
 define_categories! {
+    "lint/safety/addSerialColumn": "https://pg-language-server.com/latest/rules/add-serial-column",
     "lint/safety/addingFieldWithDefault": "https://pg-language-server.com/latest/rules/adding-field-with-default",
     "lint/safety/addingForeignKeyConstraint": "https://pg-language-server.com/latest/rules/adding-foreign-key-constraint",
     "lint/safety/addingNotNullField": "https://pg-language-server.com/latest/rules/adding-not-null-field",
@@ -27,7 +28,10 @@ define_categories! {
     "lint/safety/banTruncateCascade": "https://pg-language-server.com/latest/rules/ban-truncate-cascade",
     "lint/safety/changingColumnType": "https://pg-language-server.com/latest/rules/changing-column-type",
     "lint/safety/constraintMissingNotValid": "https://pg-language-server.com/latest/rules/constraint-missing-not-valid",
+    "lint/safety/creatingEnum": "https://pg-language-server.com/latest/rules/creating-enum",
     "lint/safety/disallowUniqueConstraint": "https://pg-language-server.com/latest/rules/disallow-unique-constraint",
+    "lint/safety/lockTimeoutWarning": "https://pg-language-server.com/latest/rules/lock-timeout-warning",
+    "lint/safety/multipleAlterTable": "https://pg-language-server.com/latest/rules/multiple-alter-table",
     "lint/safety/preferBigInt": "https://pg-language-server.com/latest/rules/prefer-big-int",
     "lint/safety/preferBigintOverInt": "https://pg-language-server.com/latest/rules/prefer-bigint-over-int",
     "lint/safety/preferBigintOverSmallint": "https://pg-language-server.com/latest/rules/prefer-bigint-over-smallint",
@@ -40,6 +44,7 @@ define_categories! {
     "lint/safety/renamingTable": "https://pg-language-server.com/latest/rules/renaming-table",
     "lint/safety/requireConcurrentIndexCreation": "https://pg-language-server.com/latest/rules/require-concurrent-index-creation",
     "lint/safety/requireConcurrentIndexDeletion": "https://pg-language-server.com/latest/rules/require-concurrent-index-deletion",
+    "lint/safety/runningStatementWhileHoldingAccessExclusive": "https://pg-language-server.com/latest/rules/running-statement-while-holding-access-exclusive",
     "lint/safety/transactionNesting": "https://pg-language-server.com/latest/rules/transaction-nesting",
     // end lint rules
     ;

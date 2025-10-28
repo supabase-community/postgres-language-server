@@ -1,0 +1,8 @@
+-- Valid: CREATE INDEX on a table created in the same transaction doesn't need timeout
+-- expect_no_diagnostics
+CREATE TABLE products (
+    id INT PRIMARY KEY,
+    name TEXT
+);
+
+CREATE INDEX products_name_idx ON products(name);
