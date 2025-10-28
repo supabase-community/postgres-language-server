@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult};
+use crate::queries::{Query, QueryResult, helper::object_reference_query};
 use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
@@ -74,17 +74,6 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 1 {
-                let obj_ref = m.captures[0].node;
-                if let Some((_, schema, table)) = object_reference_query(obj_ref, stmt) {
-                    to_return.push(QueryResult::TableAliases(TableAliasMatch {
-                        schema,
-                        table,
-                        alias: None,
-                    }));
-                }
-            }
-
             if m.captures.len() == 2 {
                 let obj_ref = m.captures[0].node;
                 let alias = m.captures[1].node;

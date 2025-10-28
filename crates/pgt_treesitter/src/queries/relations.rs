@@ -77,7 +77,7 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         matches.for_each(|m| {
             m.captures.iter().for_each(|capture| {
                 if let Some((_, schema, table)) = object_reference_query(capture.node, stmt) {
-                    to_return.push(RelationMatch { schema, table })
+                    to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
                 }
             });
         });

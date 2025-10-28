@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult};
+use crate::queries::{Query, QueryResult, helper::object_reference_query};
 
 use tree_sitter::StreamingIterator;
 
@@ -14,14 +14,14 @@ static WHERE_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
         .expect("Invalid TS Query")
 });
 
+/**
+ * The binary expressions can be nested inside a @where clause, e.g. (where user_id = 1 or (email = 2 and user_id = 3));
+ * We'll need a separate query to find all nested binary expressions.
+ */
 static BINARY_EXPR_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (binary_expression 
-binary_expr_left: (object_reference
-    object_reference_first: (any_identifier) @first
-    object_reference_second: (any_identifier)? @second
-    object_reference_third: (any_identifier)? @third
-        )
+        binary_expr_left: (object_reference) @ref
     )
 "#;
     tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
@@ -92,34 +92,14 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
             binary_expr_matches.for_each(|m| {
                 if m.captures.len() == 1 {
                     let capture = m.captures[0].node;
-                    to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
-                        schema: None,
-                        alias: None,
-                        column: capture,
-                    }));
-                }
 
-                if m.captures.len() == 2 {
-                    let alias = m.captures[0].node;
-                    let column = m.captures[1].node;
-
-                    to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
-                        schema: None,
-                        alias: Some(alias),
-                        column,
-                    }));
-                }
-
-                if m.captures.len() == 3 {
-                    let schema = m.captures[0].node;
-                    let alias = m.captures[1].node;
-                    let column = m.captures[2].node;
-
-                    to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
-                        schema: Some(schema),
-                        alias: Some(alias),
-                        column,
-                    }));
+                    if let Some((schema, alias, column)) = object_reference_query(capture, stmt) {
+                        to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
+                            schema,
+                            alias,
+                            column,
+                        }));
+                    }
                 }
             })
         });

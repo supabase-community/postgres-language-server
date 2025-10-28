@@ -73,11 +73,11 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
         matches.for_each(|m| {
             m.captures.iter().for_each(|capture| {
                 if let Some((schema, alias, column)) = object_reference_query(capture.node, stmt) {
-                    to_return.push(SelectColumnMatch {
+                    to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
                         schema,
                         alias,
                         column,
-                    });
+                    }));
                 }
             });
         });
