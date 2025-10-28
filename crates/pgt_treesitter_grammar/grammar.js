@@ -3490,18 +3490,18 @@ module.exports = grammar({
     object_reference: ($) =>
       choice(
         seq(
-          field("object_reference_first", $.any_identifier),
+          field("object_reference_1of3", $.any_identifier),
           ".",
-          field("object_reference_second", $.any_identifier),
+          field("object_reference_2of3", $.any_identifier),
           ".",
-          field("object_reference_third", $.any_identifier)
+          field("object_reference_3of3", $.any_identifier)
         ),
         seq(
-          field("object_reference_first", $.any_identifier),
+          field("object_reference_1of2", $.any_identifier),
           ".",
-          field("object_reference_second", $.any_identifier)
+          field("object_reference_2of2", $.any_identifier)
         ),
-        field("object_reference_first", $.any_identifier)
+        field("object_reference_1of1", $.any_identifier)
       ),
 
     type_reference: ($) =>

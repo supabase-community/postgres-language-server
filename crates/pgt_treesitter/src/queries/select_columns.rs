@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult};
+use crate::queries::{Query, QueryResult, helper::object_reference_query};
 use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
@@ -9,11 +9,7 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (select_expression
         (term
-            (object_reference
-object_reference_first: (any_identifier) @first
-object_reference_second: (any_identifier)? @second
-object_reference_third: (any_identifier)? @third
-            )
+            (object_reference) @ref
         )
         ","?
     )
@@ -75,37 +71,15 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 1 {
-                let capture = m.captures[0].node;
-                to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
-                    schema: None,
-                    alias: None,
-                    column: capture,
-                }));
-            }
-
-            if m.captures.len() == 2 {
-                let alias = m.captures[0].node;
-                let column = m.captures[1].node;
-
-                to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
-                    schema: None,
-                    alias: Some(alias),
-                    column,
-                }));
-            }
-
-            if m.captures.len() == 3 {
-                let schema = m.captures[0].node;
-                let alias = m.captures[1].node;
-                let column = m.captures[2].node;
-
-                to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
-                    schema: Some(schema),
-                    alias: Some(alias),
-                    column,
-                }));
-            }
+            m.captures.iter().for_each(|capture| {
+                if let Some((schema, alias, column)) = object_reference_query(capture.node, stmt) {
+                    to_return.push(SelectColumnMatch {
+                        schema,
+                        alias,
+                        column,
+                    });
+                }
+            });
         });
 
         to_return

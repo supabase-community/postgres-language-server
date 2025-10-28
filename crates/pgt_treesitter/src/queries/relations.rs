@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult};
+use crate::queries::{Query, QueryResult, helper::object_reference_query};
 
 use tree_sitter::StreamingIterator;
 
@@ -9,27 +9,15 @@ use super::QueryTryFrom;
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (relation
-        (object_reference
-object_reference_first: (any_identifier) @first
-object_reference_second: (any_identifier)? @second
-object_reference_third: (any_identifier)? @third
-        )
+        (object_reference) @ref
     )
     (insert
-        (object_reference
-object_reference_first: (any_identifier) @first
-object_reference_second: (any_identifier)? @second
-object_reference_third: (any_identifier)? @third
-        )
+        (object_reference) @ref
     )
     (alter_table
         (keyword_alter)
         (keyword_table)
-        (object_reference
-object_reference_first: (any_identifier) @first
-object_reference_second: (any_identifier)? @second
-object_reference_third: (any_identifier)? @third
-        )
+        (object_reference) @ref
     )
 "#;
     tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
@@ -87,23 +75,11 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 1 {
-                let capture = m.captures[0].node;
-                to_return.push(QueryResult::Relation(RelationMatch {
-                    schema: None,
-                    table: capture,
-                }));
-            }
-
-            if m.captures.len() == 2 {
-                let schema = m.captures[0].node;
-                let table = m.captures[1].node;
-
-                to_return.push(QueryResult::Relation(RelationMatch {
-                    schema: Some(schema),
-                    table,
-                }));
-            }
+            m.captures.iter().for_each(|capture| {
+                if let Some((_, schema, table)) = object_reference_query(capture.node, stmt) {
+                    to_return.push(RelationMatch { schema, table })
+                }
+            });
         });
 
         to_return

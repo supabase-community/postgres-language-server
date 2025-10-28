@@ -8,10 +8,7 @@ use super::QueryTryFrom;
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (relation
-        (object_reference
-object_reference_first: (any_identifier) @first
-object_reference_second: (any_identifier)? @second
-        )
+        (object_reference) @ref
         (keyword_as)?
         (any_identifier) @alias
     )
@@ -77,27 +74,27 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 3 {
-                let schema = m.captures[0].node;
-                let table = m.captures[1].node;
-                let alias = m.captures[2].node;
-
-                to_return.push(QueryResult::TableAliases(TableAliasMatch {
-                    table,
-                    alias,
-                    schema: Some(schema),
-                }));
+            if m.captures.len() == 1 {
+                let obj_ref = m.captures[0].node;
+                if let Some((_, schema, table)) = object_reference_query(obj_ref, stmt) {
+                    to_return.push(QueryResult::TableAliases(TableAliasMatch {
+                        schema,
+                        table,
+                        alias: None,
+                    }));
+                }
             }
 
             if m.captures.len() == 2 {
-                let table = m.captures[0].node;
+                let obj_ref = m.captures[0].node;
                 let alias = m.captures[1].node;
-
-                to_return.push(QueryResult::TableAliases(TableAliasMatch {
-                    table,
-                    alias,
-                    schema: None,
-                }));
+                if let Some((_, schema, table)) = object_reference_query(obj_ref, stmt) {
+                    to_return.push(QueryResult::TableAliases(TableAliasMatch {
+                        schema,
+                        table,
+                        alias,
+                    }));
+                }
             }
         });
 
