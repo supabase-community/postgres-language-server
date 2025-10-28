@@ -1,0 +1,9 @@
+-- Valid: ALTER TABLE on newly created table doesn't hold ACCESS EXCLUSIVE
+-- expect_no_diagnostics
+CREATE TABLE products (
+    id INT PRIMARY KEY,
+    name TEXT
+);
+
+ALTER TABLE products ADD COLUMN price DECIMAL(10, 2);
+SELECT COUNT(*) FROM products;

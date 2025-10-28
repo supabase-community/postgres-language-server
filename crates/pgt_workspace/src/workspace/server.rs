@@ -408,13 +408,11 @@ impl Workspace for WorkspaceServer {
             });
         };
 
-        let pool = self.get_current_connection();
-        if pool.is_none() {
+        let Some(pool) = self.get_current_connection() else {
             return Ok(ExecuteStatementResult {
                 message: "No database connection available.".into(),
             });
-        }
-        let pool = pool.unwrap();
+        };
 
         let result = run_async(async move { pool.execute(sqlx::query(&content)).await })??;
 
@@ -699,14 +697,12 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let pool = self.get_current_connection();
-        if pool.is_none() {
+        let Some(pool) = self.get_current_connection() else {
             tracing::debug!("No database connection available. Skipping completions.");
             return Ok(CompletionsResult::default());
-        }
-        let pool = pool.unwrap();
+        };
 
-        let schema_cache = self.schema_cache.load(pool)?;
+        let schema_cache = self.schema_cache.load(pool.clone())?;
 
         match get_statement_for_completions(parsed_doc, params.position) {
             None => {
@@ -739,14 +735,12 @@ impl Workspace for WorkspaceServer {
             .get(&params.path)
             .ok_or(WorkspaceError::not_found())?;
 
-        let pool = self.get_current_connection();
-        if pool.is_none() {
+        let Some(pool) = self.get_current_connection() else {
             tracing::debug!("No database connection available. Skipping completions.");
             return Ok(OnHoverResult::default());
-        }
-        let pool = pool.unwrap();
+        };
 
-        let schema_cache = self.schema_cache.load(pool)?;
+        let schema_cache = self.schema_cache.load(pool.clone())?;
 
         match doc
             .iter_with_filter(

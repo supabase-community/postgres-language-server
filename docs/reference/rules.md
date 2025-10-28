@@ -12,6 +12,7 @@ Rules that detect potential safety issues in your code.
 
 | Rule name | Description | Properties |
 | --- | --- | --- |
+| [addSerialColumn](./add-serial-column) | Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite. | ✅ |
 | [addingFieldWithDefault](./adding-field-with-default) | Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock. | ✅ |
 | [addingForeignKeyConstraint](./adding-foreign-key-constraint) | Adding a foreign key constraint requires a table scan and a SHARE ROW EXCLUSIVE lock on both tables, which blocks writes. | ✅ |
 | [addingNotNullField](./adding-not-null-field) | Setting a column NOT NULL blocks reads while the table is scanned. | ✅ |
@@ -26,7 +27,10 @@ Rules that detect potential safety issues in your code.
 | [banTruncateCascade](./ban-truncate-cascade) | Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables. |  |
 | [changingColumnType](./changing-column-type) | Changing a column type may break existing clients. |  |
 | [constraintMissingNotValid](./constraint-missing-not-valid) | Adding constraints without NOT VALID blocks all reads and writes. |  |
+| [creatingEnum](./creating-enum) | Creating enum types is not recommended for new applications. |  |
 | [disallowUniqueConstraint](./disallow-unique-constraint) | Disallow adding a UNIQUE constraint without using an existing index. |  |
+| [lockTimeoutWarning](./lock-timeout-warning) | Taking a dangerous lock without setting a lock timeout can cause indefinite blocking. | ✅ |
+| [multipleAlterTable](./multiple-alter-table) | Multiple ALTER TABLE statements on the same table should be combined into a single statement. | ✅ |
 | [preferBigInt](./prefer-big-int) | Prefer BIGINT over smaller integer types. |  |
 | [preferBigintOverInt](./prefer-bigint-over-int) | Prefer BIGINT over INT/INTEGER types. |  |
 | [preferBigintOverSmallint](./prefer-bigint-over-smallint) | Prefer BIGINT over SMALLINT types. |  |
@@ -39,6 +43,7 @@ Rules that detect potential safety issues in your code.
 | [renamingTable](./renaming-table) | Renaming tables may break existing queries and application code. |  |
 | [requireConcurrentIndexCreation](./require-concurrent-index-creation) | Creating indexes non-concurrently can lock the table for writes. |  |
 | [requireConcurrentIndexDeletion](./require-concurrent-index-deletion) | Dropping indexes non-concurrently can lock the table for reads. |  |
+| [runningStatementWhileHoldingAccessExclusive](./running-statement-while-holding-access-exclusive) | Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access. | ✅ |
 | [transactionNesting](./transaction-nesting) | Detects problematic transaction nesting that could lead to unexpected behavior. |  |
 
 [//]: # (END RULES_INDEX)

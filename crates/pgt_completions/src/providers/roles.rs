@@ -292,7 +292,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             ),
             format!(
-                "revoke all on table userse from owner, {}",
+                "revoke all on table users from owner, {}",
                 QueryWithCursorPosition::cursor_marker()
             ),
         ];

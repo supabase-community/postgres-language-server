@@ -1,0 +1,21 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_lint/safety/addSerialColumn
+-- Test adding bigserial column to existing table
+ALTER TABLE prices ADD COLUMN big_id bigserial;
+
+```
+
+# Diagnostics
+lint/safety/addSerialColumn ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding a column with type bigserial requires a table rewrite.
+  
+  i SERIAL types require rewriting the entire table with an ACCESS EXCLUSIVE lock, blocking all reads and writes.
+  
+  i SERIAL types cannot be added to existing tables without a full table rewrite. Consider using a non-serial type with a sequence instead.

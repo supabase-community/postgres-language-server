@@ -118,6 +118,8 @@ Runs everything to the requested files.
   The directory where the migration files are stored
 - **`    --after`**=_`ARG`_ &mdash;
   Ignore any migrations before this timestamp
+- **`    --connection-string`**=_`ARG`_ &mdash;
+  Provide a libpq-compatible connection string. When set, it overrides the individual connection flags below.
 - **`    --host`**=_`ARG`_ &mdash;
   The host of the database.
 - **`    --port`**=_`ARG`_ &mdash;
