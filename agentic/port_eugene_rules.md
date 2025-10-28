@@ -39,21 +39,21 @@ just new-lintrule safety addSerialColumn error
 ```
 
 This generates:
-- `crates/pgt_analyser/src/lint/safety/<rule_name>.rs`
-- `crates/pgt_analyser/tests/specs/safety/<ruleName>/basic.sql`
+- `crates/pgls_analyser/src/lint/safety/<rule_name>.rs`
+- `crates/pgls_analyser/tests/specs/safety/<ruleName>/basic.sql`
 - Updates to configuration files
 - Diagnostic category registration
 
 ### 3. Implement the Rule
 
-**File**: `crates/pgt_analyser/src/lint/safety/<rule_name>.rs`
+**File**: `crates/pgls_analyser/src/lint/safety/<rule_name>.rs`
 
 #### Key Components:
 
 ```rust
-use pgt_analyse::{context::RuleContext, declare_lint_rule, Rule, RuleDiagnostic, RuleSource};
-use pgt_console::markup;
-use pgt_diagnostics::Severity;
+use pgls_analyse::{context::RuleContext, declare_lint_rule, Rule, RuleDiagnostic, RuleSource};
+use pgls_console::markup;
+use pgls_diagnostics::Severity;
 
 declare_lint_rule! {
     /// Brief one-line description (shown in lists).
@@ -93,7 +93,7 @@ impl Rule for RuleName {
         let mut diagnostics = Vec::new();
 
         // Pattern match on the statement type
-        if let pgt_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
+        if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             // Rule logic here
 
             if /* condition */ {
@@ -136,8 +136,8 @@ let schema_normalized = if schema.is_empty() {
 **Checking for specific ALTER TABLE actions**:
 ```rust
 for cmd in &stmt.cmds {
-    if let Some(pgt_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
-        if cmd.subtype() == pgt_query::protobuf::AlterTableType::AtAddColumn {
+    if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
+        if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn {
             // Handle ADD COLUMN
         }
     }
@@ -146,18 +146,18 @@ for cmd in &stmt.cmds {
 
 **Extracting column type**:
 ```rust
-if let Some(pgt_query::NodeEnum::ColumnDef(col_def)) = &cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
+if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = &cmd.def.as_ref().and_then(|d| d.node.as_ref()) {
     if let Some(type_name) = &col_def.type_name {
         let type_str = get_type_name(type_name);
     }
 }
 
-fn get_type_name(type_name: &pgt_query::protobuf::TypeName) -> String {
+fn get_type_name(type_name: &pgls_query::protobuf::TypeName) -> String {
     type_name
         .names
         .iter()
         .filter_map(|n| {
-            if let Some(pgt_query::NodeEnum::String(s)) = &n.node {
+            if let Some(pgls_query::NodeEnum::String(s)) = &n.node {
                 Some(s.sval.as_str())
             } else {
                 None
@@ -170,7 +170,7 @@ fn get_type_name(type_name: &pgt_query::protobuf::TypeName) -> String {
 
 ### 4. Create Comprehensive Tests
 
-**Directory**: `crates/pgt_analyser/tests/specs/safety/<ruleName>/`
+**Directory**: `crates/pgls_analyser/tests/specs/safety/<ruleName>/`
 
 Create multiple test files covering:
 
@@ -200,7 +200,7 @@ tests/specs/safety/addSerialColumn/
 
 **Run tests and accept snapshots**:
 ```bash
-cargo insta test -p pgt_analyser --accept
+cargo insta test -p pgls_analyser --accept
 ```
 
 ### 5. Verify and Generate Code
@@ -213,7 +213,7 @@ cargo check
 just gen-lint
 
 # Run all tests
-cargo test -p pgt_analyser --test rules_tests
+cargo test -p pgls_analyser --test rules_tests
 
 # Final verification
 just ready
@@ -229,7 +229,7 @@ ALTER TABLE users ADD COLUMN id serial;
 
 Run the CLI:
 ```bash
-cargo run -p pgt_cli -- check /path/to/test.sql
+cargo run -p pgls_cli -- check /path/to/test.sql
 ```
 
 ## Common Pitfalls and Solutions
@@ -328,11 +328,11 @@ enum AlterTableAction {
 }
 ```
 
-### PostgreSQL AST (pgt_query)
+### PostgreSQL AST (pgls_query)
 
 We use the full PostgreSQL protobuf AST:
 ```rust
-pgt_query::NodeEnum::AlterTableStmt(stmt)
+pgls_query::NodeEnum::AlterTableStmt(stmt)
   -> stmt.cmds: Vec<Node>
     -> NodeEnum::AlterTableCmd(cmd)
       -> cmd.subtype: AlterTableType
@@ -344,15 +344,15 @@ pgt_query::NodeEnum::AlterTableStmt(stmt)
 1. Look at Eugene's simplified logic
 2. Map to corresponding PostgreSQL AST nodes
 3. Use existing pgt rules as references
-4. Check `pgt_query::protobuf` for available types/enums
+4. Check `pgls_query::protobuf` for available types/enums
 
 ## Useful References
 
 - **Eugene source**: `eugene/eugene/src/lints/rules.rs`
-- **Existing pgt rules**: `crates/pgt_analyser/src/lint/safety/`
-- **Contributing guide**: `crates/pgt_analyser/CONTRIBUTING.md`
-- **AST types**: `crates/pgt_query/src/lib.rs`
-- **PostgreSQL protobuf**: `pgt_query::protobuf` module
+- **Existing pgt rules**: `crates/pgls_analyser/src/lint/safety/`
+- **Contributing guide**: `crates/pgls_analyser/CONTRIBUTING.md`
+- **AST types**: `crates/pgls_query/src/lib.rs`
+- **PostgreSQL protobuf**: `pgls_query::protobuf` module
 
 ## Next Steps
 
@@ -371,7 +371,7 @@ When porting a new rule, ensure:
 - [ ] `sources: &[RuleSource::Eugene("<ID>")]` attribution
 - [ ] At least 3-5 test files (mix of invalid and valid)
 - [ ] Snapshot tests accepted with `cargo insta test --accept`
-- [ ] All tests pass: `cargo test -p pgt_analyser --test rules_tests`
+- [ ] All tests pass: `cargo test -p pgls_analyser --test rules_tests`
 - [ ] Compilation clean: `cargo check`
 - [ ] Code generation: `just gen-lint`
 - [ ] Manual CLI test with sample SQL

@@ -1,0 +1,30 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_plpgsql_check"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_console      = { workspace = true }
+pgls_diagnostics  = { workspace = true }
+pgls_query        = { workspace = true }
+pgls_query_ext    = { workspace = true }
+pgls_schema_cache = { workspace = true }
+pgls_text_size    = { workspace = true }
+regex             = { workspace = true }
+serde             = { workspace = true }
+serde_json        = { workspace = true }
+sqlx              = { workspace = true }
+tree-sitter       = { workspace = true }
+
+[dev-dependencies]
+pgls_test_utils = { workspace = true }
+
+[lib]

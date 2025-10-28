@@ -1,0 +1,26 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_test_utils"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[[bin]]
+name = "tree_print"
+path = "src/bin/tree_print.rs"
+
+[dependencies]
+anyhow = "1.0.81"
+clap   = { version = "4.5.23", features = ["derive"] }
+dotenv = "0.15.0"
+uuid   = { version = "1.11.0", features = ["v4"] }
+
+pgls_treesitter_grammar.workspace = true
+sqlx.workspace                    = true
+tree-sitter.workspace             = true

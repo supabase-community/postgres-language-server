@@ -1,0 +1,23 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_lexer"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_diagnostics.workspace   = true
+pgls_lexer_codegen.workspace = true
+pgls_text_size.workspace     = true
+pgls_tokenizer.workspace     = true
+
+[dev-dependencies]
+insta.workspace = true
+
+[lib]

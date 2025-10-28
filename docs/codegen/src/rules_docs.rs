@@ -1,11 +1,11 @@
 use anyhow::{Result, bail};
 use biome_string_case::Case;
-use pgt_analyse::{AnalyserOptions, AnalysisFilter, RuleFilter, RuleMetadata};
-use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
-use pgt_console::StdDisplay;
-use pgt_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
-use pgt_query_ext::diagnostics::SyntaxDiagnostic;
-use pgt_workspace::settings::Settings;
+use pgls_analyse::{AnalyserOptions, AnalysisFilter, RuleFilter, RuleMetadata};
+use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
+use pgls_console::StdDisplay;
+use pgls_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
+use pgls_query_ext::diagnostics::SyntaxDiagnostic;
+use pgls_workspace::settings::Settings;
 use pulldown_cmark::{CodeBlockKind, Event, LinkType, Parser, Tag, TagEnd};
 use std::{
     fmt::Write as _,
@@ -28,7 +28,7 @@ pub fn generate_rules_docs(docs_dir: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(&rules_dir)?;
 
     let mut visitor = crate::utils::LintRulesVisitor::default();
-    pgt_analyser::visit_registry(&mut visitor);
+    pgls_analyser::visit_registry(&mut visitor);
 
     let crate::utils::LintRulesVisitor { groups } = visitor;
 
@@ -415,7 +415,7 @@ fn print_diagnostics(
 ) -> Result<()> {
     let file_path = format!("code-block.{}", test.tag);
 
-    let mut write_diagnostic = |_: &str, diag: pgt_diagnostics::Error| -> Result<()> {
+    let mut write_diagnostic = |_: &str, diag: pgls_diagnostics::Error| -> Result<()> {
         let printer = PrintDiagnostic::simple(&diag);
         writeln!(content, "{}", StdDisplay(printer)).unwrap();
 
@@ -438,19 +438,19 @@ fn print_diagnostics(
     });
 
     // split and parse each statement
-    let stmts = pgt_statement_splitter::split(code);
+    let stmts = pgls_statement_splitter::split(code);
     for stmt_range in stmts.ranges {
-        match pgt_query::parse(&code[stmt_range]) {
+        match pgls_query::parse(&code[stmt_range]) {
             Ok(ast) => {
                 if let Some(root) = ast.into_root() {
-                    for rule_diag in analyser.run(pgt_analyser::AnalyserParams {
+                    for rule_diag in analyser.run(pgls_analyser::AnalyserParams {
                         schema_cache: None,
                         stmts: vec![AnalysableStatement {
                             range: stmt_range,
                             root,
                         }],
                     }) {
-                        let diag = pgt_diagnostics::serde::Diagnostic::new(rule_diag);
+                        let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 
                         let category = diag.category().expect("linter diagnostic has no code");
                         let severity = settings.get_severity_from_rule_code(category).expect(

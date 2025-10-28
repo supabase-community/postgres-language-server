@@ -1,0 +1,30 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_schema_cache"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+anyhow.workspace           = true
+async-std                  = { version = "1.12.0" }
+futures-util               = "0.3.31"
+pgls_console.workspace     = true
+pgls_diagnostics.workspace = true
+serde.workspace            = true
+serde_json.workspace       = true
+sqlx.workspace             = true
+strum                      = { workspace = true }
+tokio.workspace            = true
+
+[dev-dependencies]
+pgls_test_utils.workspace = true
+
+[lib]
+doctest = false

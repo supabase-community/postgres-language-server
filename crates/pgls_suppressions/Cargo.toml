@@ -1,0 +1,18 @@
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Provides an API that parses suppressions from SQL files, and provides a way to check if a diagnostic is suppressed."
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_suppressions"
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+pgls_analyse     = { workspace = true }
+pgls_diagnostics = { workspace = true }
+pgls_text_size   = { workspace = true }
+tracing          = { workspace = true }

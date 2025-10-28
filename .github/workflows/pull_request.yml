@@ -207,7 +207,7 @@ jobs:
         with:
           install-lib: false
       - name: Build main binary
-        run: cargo build -p pgt_cli --release
+        run: cargo build -p pgls_cli --release
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Install JS dependencies

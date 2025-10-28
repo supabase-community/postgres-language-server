@@ -1,7 +1,7 @@
 use biome_string_case::Case;
 use bpaf::Bpaf;
-use pgt_diagnostics::Severity;
-use pgt_env::PGLS_WEBSITE;
+use pgls_diagnostics::Severity;
+use pgls_env::PGLS_WEBSITE;
 use std::str::FromStr;
 use xtask::project_root;
 
@@ -41,12 +41,12 @@ fn generate_rule_template(
     };
 
     format!(
-        r#"use pgt_analyse::{{
+        r#"use pgls_analyse::{{
     AnalysedFileContext, context::RuleContext, {macro_name}, Rule, RuleDiagnostic,
 }};
-use pgt_console::markup;
-use pgt_diagnostics::Severity;
-use pgt_schema_cache::SchemaCache;
+use pgls_console::markup;
+use pgls_diagnostics::Severity;
+use pgls_schema_cache::SchemaCache;
 
 {macro_name}! {{
     /// Succinct description of the rule.
@@ -99,7 +99,7 @@ pub fn generate_new_analyser_rule(
     severity: Severity,
 ) {
     let rule_name_camel = Case::Camel.convert(rule_name);
-    let crate_folder = project_root().join("crates/pgt_analyser");
+    let crate_folder = project_root().join("crates/pgls_analyser");
     let rule_folder = match &category {
         Category::Lint => crate_folder.join(format!("src/lint/{group}")),
     };
@@ -121,7 +121,7 @@ pub fn generate_new_analyser_rule(
     );
     std::fs::write(file_name.clone(), code).unwrap_or_else(|_| panic!("To write {}", &file_name));
 
-    let categories_path = "crates/pgt_diagnostics_categories/src/categories.rs";
+    let categories_path = "crates/pgls_diagnostics_categories/src/categories.rs";
     let mut categories = std::fs::read_to_string(categories_path).unwrap();
 
     if !categories.contains(&rule_name_camel) {
