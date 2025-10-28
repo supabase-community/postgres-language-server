@@ -9,6 +9,11 @@ use serde::{Deserialize, Serialize};
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct DatabaseConfiguration {
+    /// A connection string that encodes the full connection setup.
+    /// When provided, it takes precedence over the individual fields.
+    #[partial(bpaf(long("connection-string")))]
+    pub connection_string: Option<String>,
+
     /// The host of the database.
     /// Required if you want database-related features.
     /// All else falls back to sensible defaults.
@@ -47,6 +52,7 @@ pub struct DatabaseConfiguration {
 impl Default for DatabaseConfiguration {
     fn default() -> Self {
         Self {
+            connection_string: None,
             disable_connection: false,
             host: "127.0.0.1".to_string(),
             port: 5432,

@@ -125,6 +125,13 @@
           "format": "uint16",
           "minimum": 0.0
         },
+        "connectionString": {
+          "description": "A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "database": {
           "description": "The name of the database.",
           "type": [

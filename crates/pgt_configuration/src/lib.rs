@@ -131,6 +131,7 @@ impl PartialConfiguration {
                 ..Default::default()
             }),
             db: Some(PartialDatabaseConfiguration {
+                connection_string: None,
                 host: Some("127.0.0.1".to_string()),
                 port: Some(5432),
                 username: Some("postgres".to_string()),

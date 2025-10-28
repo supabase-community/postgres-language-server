@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
@@ -71,12 +72,22 @@ impl ConnectionManager {
         });
 
         // Create a new pool
-        let config = PgConnectOptions::new()
-            .host(&settings.host)
-            .port(settings.port)
-            .username(&settings.username)
-            .password(&settings.password)
-            .database(&settings.database);
+        let config = if let Some(uri) = settings.connection_string.as_ref() {
+            match PgConnectOptions::from_str(uri) {
+                Ok(options) => options,
+                Err(err) => {
+                    tracing::error!("Failed to parse database connection URI: {err}");
+                    return None;
+                }
+            }
+        } else {
+            PgConnectOptions::new()
+                .host(&settings.host)
+                .port(settings.port)
+                .username(&settings.username)
+                .password(&settings.password)
+                .database(&settings.database)
+        };
 
         let timeout = settings.conn_timeout_secs;
 

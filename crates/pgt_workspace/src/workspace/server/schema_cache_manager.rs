@@ -22,7 +22,6 @@ impl SchemaCacheManager {
 
     pub fn load(&self, pool: PgPool) -> Result<Arc<SchemaCache>, WorkspaceError> {
         let key: ConnectionKey = (&pool).into();
-
         // Try read lock first for cache hit
         if let Ok(schemas) = self.schemas.read() {
             if let Some(cache) = schemas.get(&key) {
