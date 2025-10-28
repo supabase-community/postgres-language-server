@@ -112,8 +112,9 @@ jobs:
             sleep 1
           done
 
-      - name: Install tree-sitter-cli
-        run: cargo install tree-sitter-cli
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
 
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
@@ -170,8 +171,9 @@ jobs:
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
-      - name: Install tree-sitter-cli
-        run: cargo install tree-sitter-cli
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
 
       - name: Run tests
         run: cargo test --workspace
@@ -201,8 +203,9 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-      - name: Install tree-sitter-cli
-        run: cargo install tree-sitter-cli
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
       - name: Build main binary
         run: cargo build -p pgt_cli --release
       - name: Setup Bun
@@ -244,8 +247,9 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install tree-sitter-cli
-        run: cargo install tree-sitter-cli
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain

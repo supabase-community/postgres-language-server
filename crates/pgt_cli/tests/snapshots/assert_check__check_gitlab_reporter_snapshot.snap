@@ -1,0 +1,25 @@
+---
+source: crates/pgt_cli/tests/assert_check.rs
+expression: "run_check(&[\"--reporter\", \"gitlab\", \"tests/fixtures/test.sql\"])"
+snapshot_kind: text
+---
+status: failure
+stdout:
+[
+  {
+    "description": "Invalid statement: syntax error at or near \"tqjable\"",
+    "check_name": "syntax",
+    "fingerprint": "15806099827984337215",
+    "severity": "critical",
+    "location": {
+      "path": "tests/fixtures/test.sql",
+      "lines": {
+        "begin": 1
+      }
+    }
+  }
+]
+stderr:
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

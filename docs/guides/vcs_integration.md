@@ -50,13 +50,13 @@ First, you have to update your configuration file with the default branch via th
 Add the `--changed` option to your command to process only those files that your VCS acknowledged as “changed”. The language server will determine the changed files from the branch `main` and your current revision:
 
 ```shell
-postgrestools check --changed
+postgres-language-server check --changed
 ```
 
 Alternatively, you can use the option `--since` to specify an arbitrary branch. This option takes precedence over the option `vcs.defaultBranch`. For example, you might want to check your changes against the `next` branch:
 
 ```shell
-postgrestools check --changed --since=next
+postgres-language-server check --changed --since=next
 ```
 
 ## Process only staged files
@@ -64,6 +64,6 @@ postgrestools check --changed --since=next
 Before committing your changes, you may want to check the files that have been added to the index, also known as staged files. Add the `--staged` option to process only those files:
 
 ```shell
-postgrestools check --staged
+postgres-language-server check --staged
 ```
 

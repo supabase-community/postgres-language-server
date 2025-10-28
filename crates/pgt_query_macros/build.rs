@@ -13,15 +13,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Download proto file if not already present in source directory
     if !proto_path.exists() {
         println!(
-            "cargo:warning=Downloading pg_query.proto for libpg_query {} to source directory",
-            LIBPG_QUERY_TAG
+            "cargo:warning=Downloading pg_query.proto for libpg_query {LIBPG_QUERY_TAG} to source directory"
         );
 
         fs::create_dir_all(&vendor_dir)?;
 
         let proto_url = format!(
-            "https://raw.githubusercontent.com/pganalyze/libpg_query/{}/protobuf/pg_query.proto",
-            LIBPG_QUERY_TAG
+            "https://raw.githubusercontent.com/pganalyze/libpg_query/{LIBPG_QUERY_TAG}/protobuf/pg_query.proto"
         );
 
         let response = ureq::get(&proto_url).call()?;

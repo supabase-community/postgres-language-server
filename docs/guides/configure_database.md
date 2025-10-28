@@ -45,12 +45,12 @@ Configure database connection details in your `postgres-language-server.jsonc` f
 The language server primarily needs read access to your database schema. Consider creating a dedicated user with limited permissions:
 
 ```sql
-CREATE USER postgrestools_lsp WITH PASSWORD 'secure_password';
-GRANT CONNECT ON DATABASE your_database TO postgrestools_lsp;
-GRANT USAGE ON SCHEMA public TO postgrestools_lsp;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO postgrestools_lsp;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO postgrestools_lsp;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgrestools_lsp;
+CREATE USER postgres_language_server WITH PASSWORD 'secure_password';
+GRANT CONNECT ON DATABASE your_database TO postgres_language_server;
+GRANT USAGE ON SCHEMA public TO postgres_language_server;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO postgres_language_server;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO postgres_language_server;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgres_language_server;
 ```
 
 ### Statement Execution Control
@@ -79,7 +79,7 @@ If you prefer to work without a database connection, you can disable all databas
 Or use the command line flag:
 
 ```bash
-postgrestools check sql/ --disable-db
+postgres-language-server check sql/ --disable-db
 ```
 
 When disabled, you'll still get:

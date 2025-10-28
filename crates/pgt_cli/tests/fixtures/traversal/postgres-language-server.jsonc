@@ -1,0 +1,9 @@
+{
+  "$schema": "https://pg-language-server.com/schema/postgres-language-server.schema.json",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  }
+}

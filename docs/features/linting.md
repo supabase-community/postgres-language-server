@@ -54,13 +54,13 @@ The linter can also be used via the CLI for CI integration:
 
 ```bash
 # Lint specific files
-postgrestools check migrations/
+postgres-language-server check migrations/
 
 # With specific rules
-postgrestools check migrations/ --only safety/banDropColumn
+postgres-language-server check migrations/ --only safety/banDropColumn
 
 # Skip certain rules
-postgrestools check migrations/ --skip safety/banDropTable
+postgres-language-server check migrations/ --skip safety/banDropTable
 ```
 
 See the [CLI Reference](../reference/cli.md) for more options, and check the guide on [linting migrations]('../guides/checking_migrations.md').

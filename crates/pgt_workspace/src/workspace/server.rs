@@ -175,11 +175,7 @@ impl WorkspaceServer {
     fn is_config_file(&self, path: &Path) -> bool {
         path.file_name()
             .and_then(|s| s.to_str())
-            .is_some_and(|file_name| {
-                ConfigName::file_names()
-                    .iter()
-                    .any(|config_name| file_name == *config_name)
-            })
+            .is_some_and(|file_name| ConfigName::file_names().contains(&file_name))
     }
 
     /// Check whether a file is ignored in the top-level config `files.ignore`/`files.include`

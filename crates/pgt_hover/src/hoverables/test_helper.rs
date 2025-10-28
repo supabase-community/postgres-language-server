@@ -22,11 +22,9 @@ pub(crate) fn create_test_context(query: QueryWithCursorPosition) -> TreesitterC
 
     let position = TextSize::new(pos.try_into().unwrap());
 
-    let ctx = pgt_treesitter::context::TreesitterContext::new(TreeSitterContextParams {
+    pgt_treesitter::context::TreesitterContext::new(TreeSitterContextParams {
         position,
         text: leaked_sql,
         tree: leaked_tree,
-    });
-
-    ctx
+    })
 }

@@ -18,7 +18,7 @@ impl ToHoverMarkdown for Function {
         write!(writer, "`{}.{}", self.schema, self.name)?;
 
         if let Some(args) = &self.argument_types {
-            write!(writer, "({})", args)?;
+            write!(writer, "({args})")?;
         } else {
             write!(writer, "()")?;
         }
@@ -44,7 +44,7 @@ impl ToHoverMarkdown for Function {
             pgt_schema_cache::ProcKind::Window => "Window",
         };
 
-        write!(writer, "{}", kind_text)?;
+        write!(writer, "{kind_text}")?;
 
         let behavior_text = match self.behavior {
             pgt_schema_cache::Behavior::Immutable => " - Immutable",
@@ -52,7 +52,7 @@ impl ToHoverMarkdown for Function {
             pgt_schema_cache::Behavior::Volatile => "",
         };
 
-        write!(writer, "{}", behavior_text)?;
+        write!(writer, "{behavior_text}")?;
 
         if self.security_definer {
             write!(writer, " - Security DEFINER")?;
@@ -100,12 +100,12 @@ impl ToHoverMarkdown for Function {
                         }
 
                         _ => {
-                            write!(writer, "{}", char)?;
+                            write!(writer, "{char}")?;
                         }
                     }
                 }
             } else {
-                write!(writer, "\n{}\n", def)?;
+                write!(writer, "\n{def}\n")?;
             }
 
             Ok(true)
