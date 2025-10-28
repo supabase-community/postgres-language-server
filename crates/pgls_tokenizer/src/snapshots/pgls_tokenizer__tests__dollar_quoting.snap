@@ -1,0 +1,15 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\n$$Dianne's horse$$\n$SomeTag$Dianne's horse$SomeTag$\n\n-- with dollar inside and matching tags\n$foo$hello$world$bar$\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "$$Dianne's horse$$" @ Literal { kind: DollarQuotedString { terminated: true } },
+    "\n" @ LineEnding { count: 1 },
+    "$SomeTag$Dianne's horse$SomeTag$" @ Literal { kind: DollarQuotedString { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "-- with dollar inside and matching tags" @ LineComment,
+    "\n" @ LineEnding { count: 1 },
+    "$foo$hello$world$bar$\n" @ Literal { kind: DollarQuotedString { terminated: false } },
+]

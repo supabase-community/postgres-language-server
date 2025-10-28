@@ -3,15 +3,15 @@ use std::str::FromStr;
 use std::{fmt::Write, slice};
 
 use anyhow::bail;
-use pgt_analyse::{
+use pgls_analyse::{
     AnalyserOptions, AnalysisFilter, GroupCategory, RegistryVisitor, Rule, RuleCategory,
     RuleFilter, RuleGroup, RuleMetadata,
 };
-use pgt_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
-use pgt_console::{markup, Console};
-use pgt_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
-use pgt_query_ext::diagnostics::SyntaxDiagnostic;
-use pgt_workspace::settings::Settings;
+use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
+use pgls_console::{markup, Console};
+use pgls_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
+use pgls_query_ext::diagnostics::SyntaxDiagnostic;
+use pgls_workspace::settings::Settings;
 use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 
 pub fn check_rules() -> anyhow::Result<()> {
@@ -48,7 +48,7 @@ pub fn check_rules() -> anyhow::Result<()> {
     }
 
     let mut visitor = LintRulesVisitor::default();
-    pgt_analyser::visit_registry(&mut visitor);
+    pgls_analyser::visit_registry(&mut visitor);
 
     let LintRulesVisitor { groups } = visitor;
 
@@ -74,16 +74,16 @@ fn assert_lint(
     let mut diagnostic_count = 0;
     let mut all_diagnostics = vec![];
     let mut has_error = false;
-    let mut write_diagnostic = |code: &str, diag: pgt_diagnostics::Error| {
+    let mut write_diagnostic = |code: &str, diag: pgls_diagnostics::Error| {
         all_diagnostics.push(diag);
         // Fail the test if the analysis returns more diagnostics than expected
         if test.expect_diagnostic {
             // Print all diagnostics to help the user
             if all_diagnostics.len() > 1 {
-                let mut console = pgt_console::EnvConsole::default();
+                let mut console = pgls_console::EnvConsole::default();
                 for diag in all_diagnostics.iter() {
                     console.println(
-                        pgt_console::LogLevel::Error,
+                        pgls_console::LogLevel::Error,
                         markup! {
                             {PrintDiagnostic::verbose(diag)}
                         },
@@ -94,10 +94,10 @@ fn assert_lint(
             }
         } else {
             // Print all diagnostics to help the user
-            let mut console = pgt_console::EnvConsole::default();
+            let mut console = pgls_console::EnvConsole::default();
             for diag in all_diagnostics.iter() {
                 console.println(
-                    pgt_console::LogLevel::Error,
+                    pgls_console::LogLevel::Error,
                     markup! {
                         {PrintDiagnostic::verbose(diag)}
                     },
@@ -126,19 +126,19 @@ fn assert_lint(
         filter,
     });
 
-    let result = pgt_statement_splitter::split(code);
+    let result = pgls_statement_splitter::split(code);
     for stmt_range in result.ranges {
-        match pgt_query::parse(&code[stmt_range]) {
+        match pgls_query::parse(&code[stmt_range]) {
             Ok(ast) => {
                 if let Some(root) = ast.into_root() {
-                    for rule_diag in analyser.run(pgt_analyser::AnalyserParams {
+                    for rule_diag in analyser.run(pgls_analyser::AnalyserParams {
                         schema_cache: None,
                         stmts: vec![AnalysableStatement {
                             range: stmt_range,
                             root,
                         }],
                     }) {
-                        let diag = pgt_diagnostics::serde::Diagnostic::new(rule_diag);
+                        let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 
                         let category = diag.category().expect("linter diagnostic has no code");
                         let severity = settings.get_severity_from_rule_code(category).expect(
@@ -164,10 +164,10 @@ fn assert_lint(
     }
     if !result.errors.is_empty() {
         // Print all diagnostics to help the user
-        let mut console = pgt_console::EnvConsole::default();
+        let mut console = pgls_console::EnvConsole::default();
         for err in result.errors {
             console.println(
-                pgt_console::LogLevel::Error,
+                pgls_console::LogLevel::Error,
                 markup! {
                     {PrintDiagnostic::verbose(&err)}
                 },

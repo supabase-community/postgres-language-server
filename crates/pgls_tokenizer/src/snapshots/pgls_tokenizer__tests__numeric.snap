@@ -1,0 +1,30 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\n42\n3.5\n4.\n.001\n.123e10\n5e2\n1.925e-3\n1e-10\n1e+10\n1e10\n4664.E+5\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "42" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    "\n" @ LineEnding { count: 1 },
+    "3.5" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "4." @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    ".001" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    "\n" @ LineEnding { count: 1 },
+    ".123e10" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "5e2" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "1.925e-3" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "1e-10" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "1e+10" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "1e10" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+    "4664.E+5" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+    "\n" @ LineEnding { count: 1 },
+]
