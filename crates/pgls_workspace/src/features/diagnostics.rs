@@ -1,11 +1,11 @@
 use pgls_analyse::RuleCategories;
 use pgls_configuration::RuleSelector;
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullDiagnosticsParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
     pub categories: RuleCategories,
     pub max_diagnostics: u64,
     pub only: Vec<RuleSelector>,

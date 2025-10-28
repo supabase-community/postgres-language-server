@@ -10,7 +10,7 @@ use pgls_configuration::{
 #[cfg(not(target_os = "windows"))]
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::Diagnostic;
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use pgls_text_size::TextRange;
 use sqlx::{Executor, PgPool};
 
@@ -62,7 +62,7 @@ async fn test_diagnostics(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
     let content = r#"
       create table users (
           id serial primary key,
@@ -127,7 +127,7 @@ async fn test_syntax_error(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
     let content = r#"
       seect 1;
     "#;
@@ -176,7 +176,7 @@ async fn correctly_ignores_files() {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
     let content = r#"
       seect 1;
     "#;
@@ -231,7 +231,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let setup_sql = "CREATE EXTENSION IF NOT EXISTS plpgsql_check;";
     test_db.execute(setup_sql).await.expect("setup sql failed");
@@ -288,7 +288,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let setup_sql = r"
         create table if not exists _fetch_cycle_continuation_data (
@@ -354,7 +354,7 @@ async fn test_positional_params(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let setup_sql = r"
       create table users (
@@ -409,7 +409,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let setup_sql = "CREATE EXTENSION IF NOT EXISTS plpgsql_check;";
     test_db.execute(setup_sql).await.expect("setup sql failed");
@@ -508,7 +508,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let setup_sql = r"
       create table users (
@@ -588,7 +588,7 @@ async fn test_named_params(_test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let content = r#"
 SELECT
@@ -648,7 +648,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
 
     let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
 
-    let path = PgTPath::new("test.sql");
+    let path = PgLSPath::new("test.sql");
 
     let content = r#"
         /*
@@ -695,7 +695,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
     "#;
     test_db.execute(setup_sql).await.expect("setup sql failed");
 
-    let path_glob = PgTPath::new("test_glob.sql");
+    let path_glob = PgLSPath::new("test_glob.sql");
     let file_content = r#"
         select get_user_id();  -- on private schema
     "#;

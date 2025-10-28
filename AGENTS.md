@@ -150,6 +150,21 @@ Many parser structures are generated from PostgreSQL's protobuf definitions usin
 ### Database Schema
 The `pgls_schema_cache` crate contains SQL queries in `src/queries/` that introspect the database schema to build the in-memory cache.
 
-### Multi-Platform Support  
+### Code Refactoring Tools
+The project has `ast-grep` available for advanced code search and refactoring tasks. ast-grep is a structural search/replace tool that understands code syntax, making it useful for:
+- Renaming types, functions, or variables across the codebase
+- Finding and replacing code patterns
+- Performing structural code transformations
+
+Example usage:
+```bash
+# Search for a pattern
+ast-grep --pattern 'struct $NAME { $$$FIELDS }'
+
+# Replace a pattern across files
+ast-grep --pattern 'OldType' --rewrite 'NewType' --update-all
+```
+
+### Multi-Platform Support
 The project includes platform-specific allocators and build configurations for Windows, macOS, and Linux.
 - Seeing the Treesitter tree for an SQL query can be helpful to debug and implement features. To do this, create a file with an SQL query, and run `just tree-print <file.sql>`.
