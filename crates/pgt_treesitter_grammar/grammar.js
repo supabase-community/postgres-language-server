@@ -27,9 +27,12 @@ module.exports = grammar({
     [$.timestamp],
     [$.grantable_on_function, $.grantable_on_table],
     [$.any_identifier, $.column_identifier],
+<<<<<<< HEAD
     [$.any_identifier, $.schema_identifier, $.table_identifier],
     [$.schema_identifier, $.table_identifier],
     [$.table_reference, $.column_reference],
+=======
+>>>>>>> 79cd1c34953adb0a0e59e5d2dd0fd9b13a252c30
   ],
 
   precedences: ($) => [

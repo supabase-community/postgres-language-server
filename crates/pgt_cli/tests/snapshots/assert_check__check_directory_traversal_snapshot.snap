@@ -1,0 +1,31 @@
+---
+source: crates/pgt_cli/tests/assert_check.rs
+expression: "run_check_with(&[\"--diagnostic-level\", \"info\", \".\"], None, Some(project_dir))"
+snapshot_kind: text
+---
+status: failure
+stdout:
+Checked 2 files in <duration>. No fixes applied.
+Found 2 errors.
+stderr:
+./another_bad.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid statement: syntax error at or near "tqjable"
+  
+  > 1 │ alter tqjable another drop column id;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+
+./bad.sql:1:1 syntax ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Invalid statement: syntax error at or near "tqjable"
+  
+  > 1 │ alter tqjable bad drop column id;
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.

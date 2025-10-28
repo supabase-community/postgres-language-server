@@ -102,7 +102,6 @@ impl CompletionFilter<'_> {
                     && !ctx.node_under_cursor_is_within_field_name(&["binary_expr_right"])
             }
 
-            "any_identifier" => match self.data {
                 CompletionRelevanceData::Column(_) => {
                     if matches!(ctx.wrapping_clause_type, Some(WrappingClause::Where)) {
                         ctx.node_under_cursor_is_within_field_name(&[
@@ -118,10 +117,6 @@ impl CompletionFilter<'_> {
                 _ => false,
             },
 
-            _ => false,
-        };
-
-        if is_allowed { Some(()) } else { None }
     }
 
     fn check_clause(&self, ctx: &TreesitterContext) -> Option<()> {
