@@ -5,6 +5,7 @@ use std::{
     borrow::Cow,
     num::NonZeroU64,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
     time::Duration,
 };
@@ -20,6 +21,7 @@ use pgt_configuration::{
     plpgsql_check::PlPgSqlCheckConfiguration,
 };
 use pgt_fs::PgTPath;
+use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
@@ -467,6 +469,7 @@ impl Default for TypecheckSettings {
 #[derive(Debug)]
 pub struct DatabaseSettings {
     pub enable_connection: bool,
+    pub connection_string: Option<String>,
     pub host: String,
     pub port: u16,
     pub username: String,
@@ -480,6 +483,7 @@ impl Default for DatabaseSettings {
     fn default() -> Self {
         Self {
             enable_connection: false,
+            connection_string: None,
             host: "127.0.0.1".to_string(),
             port: 5432,
             username: "postgres".to_string(),
@@ -495,15 +499,38 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
     fn from(value: PartialDatabaseConfiguration) -> Self {
         let d = DatabaseSettings::default();
 
-        // "host" is the minimum required setting for database features
-        // to be enabled.
-        let enable_connection = value
-            .host
-            .as_ref()
-            .is_some_and(|_| value.disable_connection.is_none_or(|disabled| !disabled));
+        let connection_string = value.connection_string.and_then(|uri| {
+            let trimmed = uri.trim().to_string();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
+        });
 
-        let database = value.database.unwrap_or(d.database);
-        let host = value.host.unwrap_or(d.host);
+        // "host" OR "connectionString" is the minimum required setting for database features
+        // to be enabled.
+        let disable_connection = value.disable_connection.is_some_and(|disabled| disabled);
+        let enable_connection =
+            (connection_string.is_some() || value.host.as_ref().is_some()) && !disable_connection;
+
+        let mut database = value.database.unwrap_or(d.database);
+        let mut host = value.host.unwrap_or(d.host);
+        let mut port = value.port.unwrap_or(d.port);
+        let mut username = value.username.unwrap_or(d.username);
+
+        if let Some(uri) = connection_string.as_ref() {
+            let opts = PgConnectOptions::from_str(uri)
+                .unwrap_or_else(|err| panic!("Invalid db.connectionString provided: {err}"));
+
+            // we only extract the values we need for statement execution checks and connection key
+            host = opts.get_host().to_string();
+            port = opts.get_port();
+            username = opts.get_username().to_string();
+            if let Some(db) = opts.get_database() {
+                database = db.to_string();
+            }
+        }
 
         let allow_statement_executions = value
             .allow_statement_executions_against
@@ -520,9 +547,10 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
 
         Self {
             enable_connection,
+            connection_string,
 
-            port: value.port.unwrap_or(d.port),
-            username: value.username.unwrap_or(d.username),
+            port,
+            username,
             password: value.password.unwrap_or(d.password),
             database,
             host,
@@ -626,6 +654,41 @@ mod tests {
             )])),
             host: Some("production".into()),
             database: Some("test-db".into()),
+            ..Default::default()
+        };
+
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(!config.allow_statement_executions)
+    }
+
+    #[test]
+    fn connection_string_enables_statement_executions_matching_host() {
+        let partial_config = PartialDatabaseConfiguration {
+            connection_string: Some(
+                "postgres://postgres:postgres@localhost:5432/test-db".to_string(),
+            ),
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "localhost/*",
+            )])),
+            ..Default::default()
+        };
+
+        let config = DatabaseSettings::from(partial_config);
+
+        assert!(config.enable_connection);
+        assert!(config.allow_statement_executions)
+    }
+
+    #[test]
+    fn connection_string_respects_statement_execution_filters() {
+        let partial_config = PartialDatabaseConfiguration {
+            connection_string: Some(
+                "postgres://postgres:postgres@prod-host:5432/prod-db".to_string(),
+            ),
+            allow_statement_executions_against: Some(StringSet::from_iter(vec![String::from(
+                "localhost/*",
+            )])),
             ..Default::default()
         };
 

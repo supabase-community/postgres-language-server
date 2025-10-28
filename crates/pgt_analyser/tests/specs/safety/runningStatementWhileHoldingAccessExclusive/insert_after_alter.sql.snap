@@ -1,0 +1,22 @@
+---
+source: crates/pgt_analyser/tests/rules_tests.rs
+expression: snapshot
+snapshot_kind: text
+---
+# Input
+```
+-- expect_only_lint/safety/runningStatementWhileHoldingAccessExclusive
+-- INSERT after ALTER TABLE should trigger
+ALTER TABLE books ADD COLUMN isbn TEXT;
+INSERT INTO books (title, isbn) VALUES ('Database Systems', '978-0-1234567-8-9');
+
+```
+
+# Diagnostics
+lint/safety/runningStatementWhileHoldingAccessExclusive ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Running statement while holding ACCESS EXCLUSIVE lock.
+  
+  i This blocks all access to the table for the duration of this statement.
+  
+  i Run this statement in a separate transaction to minimize lock duration.

@@ -309,6 +309,58 @@ You should:
 
 If you run the test, you'll see any diagnostics your rule created in your console.
 
+#### Snapshot Tests
+
+After implementing your rule, you must create snapshot tests in the `tests/specs/<group>/<ruleName>/` directory.
+
+Each test file should:
+1. Start with a comment describing what the test is checking
+2. Include either `-- expect_lint/<group>/<ruleName>` or `-- expect_no_diagnostics` on the first line
+3. Contain valid SQL that should either trigger or not trigger your rule
+
+**Example test structure for `addSerialColumn` rule:**
+
+```
+tests/specs/safety/addSerialColumn/
+├── basic.sql                      # Basic case that triggers the rule
+├── basic.sql.snap                 # Auto-generated snapshot
+├── bigserial.sql                  # Test bigserial type
+├── bigserial.sql.snap
+├── generated_stored.sql           # Test GENERATED ... STORED
+├── generated_stored.sql.snap
+├── valid_regular_column.sql       # Valid case - should NOT trigger
+└── valid_regular_column.sql.snap
+```
+
+**Invalid test example (should trigger diagnostic):**
+```sql
+-- expect_lint/safety/addSerialColumn
+-- Test adding serial column to existing table
+ALTER TABLE prices ADD COLUMN id serial;
+```
+
+**Valid test example (should NOT trigger diagnostic):**
+```sql
+-- Test adding regular column (should be safe)
+-- expect_no_diagnostics
+ALTER TABLE prices ADD COLUMN name text;
+```
+
+**Running and updating tests:**
+
+```shell
+# Run tests and generate snapshots
+cargo test -p pgt_analyser --test rules_tests
+
+# Review and accept new/changed snapshots
+cargo insta test --accept
+
+# Or review snapshots interactively
+cargo insta review
+```
+
+The snapshot files (`.sql.snap`) are auto-generated and should be committed to the repository. They capture the expected diagnostic output for each test case.
+
 ### Code generation
 
 For simplicity, use `just` to run all the commands with:

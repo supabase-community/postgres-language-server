@@ -9,8 +9,11 @@ use std::path::{Path, PathBuf};
 /// Small wrapper that holds information and operations around the current processed file
 pub(crate) struct WorkspaceFile<'ctx, 'app> {
     guard: FileGuard<'app, dyn Workspace + 'ctx>,
+    /// File handle for the underlying filesystem entry, if backed by a real file.
+    /// Not present for stdin execution where content is provided as a temporary buffer.
+    /// Currently unused but will be needed when autofix/write operations are implemented.
     #[allow(dead_code)]
-    file: Box<dyn File>,
+    file: Option<Box<dyn File>>,
     pub(crate) path: PathBuf,
 }
 
@@ -24,7 +27,7 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
         let pgt_path = PgTPath::new(path);
         let open_options = OpenOptions::default()
             .read(true)
-            .write(ctx.execution.requires_write_access());
+            .write(ctx.config.allows_writes());
         let mut file = ctx
             .fs
             .open_with_options(path, open_options)
@@ -45,7 +48,7 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
         .with_file_path_and_code(path.display().to_string(), category!("internalError/fs"))?;
 
         Ok(Self {
-            file,
+            file: Some(file),
             guard,
             path: PathBuf::from(path),
         })
