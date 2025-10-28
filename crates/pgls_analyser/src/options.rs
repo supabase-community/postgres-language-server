@@ -3,8 +3,7 @@
 use crate::lint;
 pub type AddSerialColumn =
     <lint::safety::add_serial_column::AddSerialColumn as pgls_analyse::Rule>::Options;
-pub type AddingFieldWithDefault =
-    <lint::safety::adding_field_with_default::AddingFieldWithDefault as pgls_analyse::Rule>::Options;
+pub type AddingFieldWithDefault = < lint :: safety :: adding_field_with_default :: AddingFieldWithDefault as pgls_analyse :: Rule > :: Options ;
 pub type AddingForeignKeyConstraint = < lint :: safety :: adding_foreign_key_constraint :: AddingForeignKeyConstraint as pgls_analyse :: Rule > :: Options ;
 pub type AddingNotNullField =
     <lint::safety::adding_not_null_field::AddingNotNullField as pgls_analyse::Rule>::Options;
