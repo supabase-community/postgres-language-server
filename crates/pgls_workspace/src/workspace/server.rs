@@ -20,7 +20,7 @@ use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams};
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
-use pgls_fs::{ConfigName, PgTPath};
+use pgls_fs::{ConfigName, PgLSPath};
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier};
 use pgls_workspace_macros::ignored_path;
 use schema_cache_manager::SchemaCacheManager;
@@ -71,7 +71,7 @@ pub(super) struct WorkspaceServer {
     /// Stores the schema cache for this workspace
     schema_cache: SchemaCacheManager,
 
-    documents: RwLock<HashMap<PgTPath, Document>>,
+    documents: RwLock<HashMap<PgLSPath, Document>>,
 
     connection: ConnectionManager,
 }
@@ -122,7 +122,7 @@ impl WorkspaceServer {
     }
 
     /// Retrieves the current project path
-    fn get_current_project_path(&self) -> Option<PgTPath> {
+    fn get_current_project_path(&self) -> Option<PgLSPath> {
         self.workspaces().path().cloned()
     }
 
@@ -136,7 +136,7 @@ impl WorkspaceServer {
     /// Checks whether the current path belongs to the current project.
     ///
     /// If there's a match, and the match **isn't** the current project, it returns the new key.
-    fn path_belongs_to_current_workspace(&self, path: &PgTPath) -> Option<ProjectKey> {
+    fn path_belongs_to_current_workspace(&self, path: &PgLSPath) -> Option<ProjectKey> {
         let workspaces = self.workspaces();
         workspaces.as_ref().path_belongs_to_current_workspace(path)
     }

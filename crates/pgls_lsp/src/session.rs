@@ -9,7 +9,7 @@ use futures::stream::FuturesUnordered;
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
-use pgls_fs::{ConfigName, FileSystem, PgTPath};
+use pgls_fs::{ConfigName, FileSystem, PgLSPath};
 use pgls_workspace::PartialConfigurationExt;
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{LoadedConfiguration, load_configuration};
@@ -349,7 +349,7 @@ impl Session {
         self.documents.write().unwrap().remove(url);
     }
 
-    pub(crate) fn file_path(&self, url: &lsp_types::Url) -> Result<PgTPath> {
+    pub(crate) fn file_path(&self, url: &lsp_types::Url) -> Result<PgLSPath> {
         let path_to_file = match url.to_file_path() {
             Err(_) => {
                 // If we can't create a path, it's probably because the file doesn't exist.
@@ -359,7 +359,7 @@ impl Session {
             Ok(path) => path,
         };
 
-        Ok(PgTPath::new(path_to_file))
+        Ok(PgLSPath::new(path_to_file))
     }
 
     /// True if the client supports dynamic registration of "workspace/didChangeConfiguration" requests

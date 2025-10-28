@@ -1,4 +1,4 @@
-use crate::{PathInterner, PgTPath};
+use crate::{PathInterner, PgLSPath};
 pub use memory::{ErrorEntry, MemoryFileSystem};
 pub use os::OsFileSystem;
 use oxc_resolver::{Resolution, ResolveError};
@@ -313,18 +313,18 @@ pub trait TraversalContext: Sync {
     /// Checks if the traversal context can handle a particular path, used as
     /// an optimization to bail out of scheduling a file handler if it wouldn't
     /// be able to process the file anyway
-    fn can_handle(&self, path: &PgTPath) -> bool;
+    fn can_handle(&self, path: &PgLSPath) -> bool;
 
     /// This method will be called by the traversal for each file it finds
     /// where [TraversalContext::can_handle] returned true
-    fn handle_path(&self, path: PgTPath);
+    fn handle_path(&self, path: PgLSPath);
 
     /// This method will be called by the traversal for each file it finds
     /// where [TraversalContext::store_path] returned true
-    fn store_path(&self, path: PgTPath);
+    fn store_path(&self, path: PgLSPath);
 
     /// Returns the paths that should be handled
-    fn evaluated_paths(&self) -> BTreeSet<PgTPath>;
+    fn evaluated_paths(&self) -> BTreeSet<PgLSPath>;
 }
 
 impl<T> FileSystem for Arc<T>

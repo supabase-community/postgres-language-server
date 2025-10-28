@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use pgls_completions::CompletionItem;
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::workspace::{Document, GetCompletionsFilter, StatementId, WithCSTMapper};
@@ -10,7 +10,7 @@ use crate::workspace::{Document, GetCompletionsFilter, StatementId, WithCSTMappe
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct GetCompletionsParams {
     /// The File for which a completion is requested.
-    pub path: PgTPath,
+    pub path: PgLSPath,
     /// The Cursor position in the file for which a completion is requested.
     pub position: TextSize,
 }

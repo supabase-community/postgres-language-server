@@ -4,7 +4,7 @@ Th Postgres Language Server has first-class [LSP](https://microsoft.github.io/la
 
 ## VSCode
 
-The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgrestools-vscode).
+The language server is available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools). It's published from [this repo](https://github.com/supabase-community/postgres-language-server-vscode).
 
 ## Neovim
 

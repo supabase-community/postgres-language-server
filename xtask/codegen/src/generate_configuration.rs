@@ -311,7 +311,7 @@ fn generate_for_groups(
             #[cfg_attr(feature = "schema", derive(JsonSchema))]
             #[serde(rename_all = "camelCase", deny_unknown_fields)]
             pub struct Rules {
-                /// It enables the lint rules recommended by Postgres Tools. `true` by default.
+                /// It enables the lint rules recommended by Postgres Language Server. `true` by default.
                 #[serde(skip_serializing_if = "Option::is_none")]
                 pub recommended: Option<bool>,
 
