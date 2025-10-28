@@ -149,8 +149,7 @@ impl Suppression {
                 return Err(SuppressionDiagnostic {
                     span,
                     message: MessageAndDescription::from(format!(
-                        "'{}' is not a valid suppression tag.",
-                        k,
+                        "'{k}' is not a valid suppression tag.",
                     )),
                 });
             }
@@ -375,7 +374,7 @@ mod tests {
         let offset = &TextSize::new(0);
         for line in lines {
             let result = Suppression::from_line(line, offset);
-            assert!(result.is_err(), "Expected error for line: {}", line);
+            assert!(result.is_err(), "Expected error for line: {line}");
         }
     }
 
@@ -414,10 +413,7 @@ mod tests {
             assert_eq!(
                 suppression.matches(&specifier),
                 expected,
-                "Suppression line '{}' vs specifier '{}' should be {}",
-                suppr_line,
-                specifier_str,
-                expected
+                "Suppression line '{suppr_line}' vs specifier '{specifier_str}' should be {expected}"
             );
         }
     }

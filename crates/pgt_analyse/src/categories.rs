@@ -32,7 +32,7 @@ impl TryFrom<&str> for RuleCategory {
             "lint" => Ok(Self::Lint),
             "action" => Ok(Self::Action),
             "transformation" => Ok(Self::Transformation),
-            _ => Err(format!("Invalid Rule Category: {}", value)),
+            _ => Err(format!("Invalid Rule Category: {value}")),
         }
     }
 }

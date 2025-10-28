@@ -150,7 +150,7 @@ mod tests {
             let text = markup_to_string(markup! {
                 {PrintDiagnostic::simple(result)}
             });
-            eprintln!("{}", text);
+            eprintln!("{text}");
         }
         println!("*******************");
 

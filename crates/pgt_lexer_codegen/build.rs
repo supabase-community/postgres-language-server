@@ -13,15 +13,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Download kwlist.h if not already present in source directory
     if !kwlist_path.exists() {
         println!(
-            "cargo:warning=Downloading kwlist.h for libpg_query {} to source directory",
-            LIBPG_QUERY_TAG
+            "cargo:warning=Downloading kwlist.h for libpg_query {LIBPG_QUERY_TAG} to source directory"
         );
 
         fs::create_dir_all(&vendor_dir)?;
 
         let kwlist_url = format!(
-            "https://raw.githubusercontent.com/pganalyze/libpg_query/{}/src/postgres/include/parser/kwlist.h",
-            LIBPG_QUERY_TAG
+            "https://raw.githubusercontent.com/pganalyze/libpg_query/{LIBPG_QUERY_TAG}/src/postgres/include/parser/kwlist.h"
         );
 
         let response = ureq::get(&kwlist_url).call()?;

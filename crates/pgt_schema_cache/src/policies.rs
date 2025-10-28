@@ -17,7 +17,7 @@ impl From<&str> for PolicyCommand {
             "UPDATE" => PolicyCommand::Update,
             "DELETE" => PolicyCommand::Delete,
             "ALL" => PolicyCommand::All,
-            _ => panic!("Invalid Policy Command {}", value),
+            _ => panic!("Invalid Policy Command {value}"),
         }
     }
 }

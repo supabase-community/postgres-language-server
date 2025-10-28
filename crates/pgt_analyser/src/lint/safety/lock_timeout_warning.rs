@@ -69,7 +69,7 @@ impl Rule for LockTimeoutWarning {
 
                     // Only warn if the table wasn't created in this transaction
                     if !tx_state.has_created_object(schema, table) {
-                        let full_name = format!("{}.{}", schema, table);
+                        let full_name = format!("{schema}.{table}");
                         diagnostics.push(
                             RuleDiagnostic::new(
                                 rule_category!(),
@@ -98,7 +98,7 @@ impl Rule for LockTimeoutWarning {
 
                         // Only warn if the table wasn't created in this transaction
                         if !tx_state.has_created_object(schema, table) {
-                            let full_name = format!("{}.{}", schema, table);
+                            let full_name = format!("{schema}.{table}");
                             let index_name = &stmt.idxname;
                             diagnostics.push(
                                 RuleDiagnostic::new(

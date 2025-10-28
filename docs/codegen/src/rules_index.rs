@@ -112,7 +112,7 @@ fn generate_rule_summary(docs: &'static str) -> io::Result<String> {
                 buffer.push_str(&text);
             }
             Event::Code(code) => {
-                buffer.push_str(format!("`{}`", code).as_str());
+                buffer.push_str(format!("`{code}`").as_str());
             }
             Event::End(TagEnd::Paragraph) => {
                 return Ok(buffer);

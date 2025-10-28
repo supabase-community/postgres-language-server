@@ -72,6 +72,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
@@ -183,6 +187,7 @@ jobs:
           tag_name: ${{ steps.create_changelog.outputs.version }}
           files: |
             postgrestools_*
+            postgres-language-server_*
             docs/schema.json
           fail_on_unmatched_files: true
           draft: true

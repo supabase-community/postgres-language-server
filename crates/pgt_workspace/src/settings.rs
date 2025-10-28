@@ -510,10 +510,10 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
             .map(|stringset| {
                 stringset.iter().any(|pattern| {
                     let glob = Glob::new(pattern)
-                        .unwrap_or_else(|_| panic!("Invalid pattern: {}", pattern))
+                        .unwrap_or_else(|_| panic!("Invalid pattern: {pattern}"))
                         .compile_matcher();
 
-                    glob.is_match(format!("{}/{}", host, database))
+                    glob.is_match(format!("{host}/{database}"))
                 })
             })
             .unwrap_or(false);

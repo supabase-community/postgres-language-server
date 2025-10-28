@@ -52,7 +52,7 @@ pub(crate) fn with_schema_or_alias(
 
     if schema_or_alias_name.is_none_or(|s| s == "public") || is_already_prefixed_with_schema_name {
         if single_leading_quote {
-            format!(r#"{}""#, item_name)
+            format!(r#"{item_name}""#)
         } else {
             item_name.to_string()
         }
@@ -64,7 +64,7 @@ pub(crate) fn with_schema_or_alias(
         } else if with_quotes {
             format!(r#"{}"."{}"#, schema_or_als.replace('"', ""), item_name)
         } else {
-            format!("{}.{}", schema_or_als, item_name)
+            format!("{schema_or_als}.{item_name}")
         }
     }
 }

@@ -14,12 +14,6 @@ impl TokenNavigator {
             .is_some_and(|c| options.contains(&c.get_word_without_quotes().as_str()))
     }
 
-    pub(crate) fn prev_matches(&self, options: &[&str]) -> bool {
-        self.previous_token
-            .as_ref()
-            .is_some_and(|t| options.contains(&t.get_word_without_quotes().as_str()))
-    }
-
     pub(crate) fn advance(&mut self) -> Option<WordWithIndex> {
         // we can't peek back n an iterator, so we'll have to keep track manually.
         self.previous_token = self.current_token.take();
