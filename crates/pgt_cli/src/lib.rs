@@ -4,11 +4,12 @@
 //! to parse commands and arguments, redirect the execution of the commands and
 //! execute the traversal of directory and files, based on the command that was passed.
 
+use biome_deserialize::Merge;
 use cli_options::CliOptions;
-use commands::CommandRunner;
-use commands::check::CheckCommandPayload;
-use pgt_console::{ColorMode, Console};
-use pgt_fs::OsFileSystem;
+use commands::check::{self, CheckArgs};
+use pgt_configuration::PartialConfiguration;
+use pgt_console::{ColorMode, Console, ConsoleExt, markup};
+use pgt_fs::{ConfigName, FileSystem, OsFileSystem};
 use pgt_workspace::{App, DynRef, Workspace, WorkspaceRef};
 
 mod changed;
@@ -21,14 +22,16 @@ mod metrics;
 mod panic;
 mod reporter;
 mod service;
+mod workspace;
 
 use crate::cli_options::ColorsArg;
 pub use crate::commands::{PgtCommand, pgt_command};
 pub use crate::logging::{LoggingLevel, setup_cli_subscriber};
+use crate::reporter::Report;
 pub use diagnostics::CliDiagnostic;
-pub use execute::{Execution, TraversalMode, VcsTargeted, execute_mode};
+pub use execute::{ExecutionConfig, ExecutionMode, VcsTargeting};
 pub use panic::setup_panic_handler;
-pub use reporter::{DiagnosticsPayload, Reporter, ReporterVisitor, TraversalSummary};
+pub use reporter::{ReportConfig, Reporter, TraversalData};
 pub use service::{SocketTransport, open_transport};
 
 pub(crate) use pgt_env::VERSION;
@@ -61,7 +64,11 @@ impl<'app> CliSession<'app> {
         }
 
         let result = match command {
-            PgtCommand::Version(_) => commands::version::full_version(self),
+            PgtCommand::Version(_) => commands::version::version(self),
+            PgtCommand::Dblint {
+                cli_options,
+                configuration,
+            } => commands::dblint::dblint(self, &cli_options, configuration),
             PgtCommand::Check {
                 cli_options,
                 configuration,
@@ -70,16 +77,18 @@ impl<'app> CliSession<'app> {
                 staged,
                 changed,
                 since,
-            } => run_command(
+            } => check::check(
                 self,
                 &cli_options,
-                CheckCommandPayload {
+                CheckArgs {
                     configuration,
                     paths,
                     stdin_file_path,
                     staged,
                     changed,
                     since,
+                    apply: false,
+                    apply_unsafe: false,
                 },
             ),
             PgtCommand::Clean => commands::clean::clean(self),
@@ -120,6 +129,72 @@ impl<'app> CliSession<'app> {
 
         result
     }
+
+    pub fn fs(&self) -> &DynRef<'app, dyn FileSystem> {
+        &self.app.fs
+    }
+
+    pub fn console(&mut self) -> &mut (dyn Console + 'app) {
+        &mut *self.app.console
+    }
+
+    pub fn workspace(&self) -> &(dyn Workspace + 'app) {
+        &*self.app.workspace
+    }
+
+    pub fn prepare_with_config(
+        &mut self,
+        cli_options: &CliOptions,
+        cli_configuration: Option<PartialConfiguration>,
+    ) -> Result<PartialConfiguration, CliDiagnostic> {
+        setup_cli_subscriber(cli_options.log_level, cli_options.log_kind);
+
+        let fs = self.fs();
+        let loaded_configuration =
+            workspace::load_config(fs, cli_options.as_configuration_path_hint())?;
+
+        if let Some(config_path) = &loaded_configuration.file_path {
+            if let Some(file_name) = config_path.file_name().and_then(|name| name.to_str()) {
+                if ConfigName::is_deprecated(file_name) {
+                    self.console().log(markup! {
+                        <Warn>"Warning: "</Warn>
+                        "Deprecated config filename detected. Use 'postgres-language-server.jsonc'.\n"
+                    });
+                }
+            }
+        }
+
+        let mut configuration = loaded_configuration.configuration;
+        if let Some(cli_config) = cli_configuration {
+            configuration.merge_with(cli_config);
+        }
+
+        Ok(configuration)
+    }
+
+    pub fn setup_workspace(
+        &mut self,
+        configuration: PartialConfiguration,
+        vcs: VcsIntegration,
+    ) -> Result<(), CliDiagnostic> {
+        workspace::setup_workspace(self.workspace(), self.fs(), configuration, vcs)
+    }
+
+    pub fn report(
+        &mut self,
+        command_name: &str,
+        cli_options: &CliOptions,
+        payload: &Report,
+    ) -> Result<(), CliDiagnostic> {
+        let mut reporter = Reporter::from_cli_options(cli_options);
+        reporter.report(self.console(), command_name, payload)
+    }
+}
+
+/// Controls whether workspace setup should include VCS integration details.
+pub enum VcsIntegration {
+    Enabled,
+    Disabled,
 }
 
 pub fn to_color_mode(color: Option<&ColorsArg>) -> ColorMode {
@@ -128,13 +203,4 @@ pub fn to_color_mode(color: Option<&ColorsArg>) -> ColorMode {
         Some(ColorsArg::Force) => ColorMode::Enabled,
         None => ColorMode::Auto,
     }
-}
-
-pub(crate) fn run_command(
-    session: CliSession,
-    cli_options: &CliOptions,
-    mut command: impl CommandRunner,
-) -> Result<(), CliDiagnostic> {
-    let command = &mut command;
-    command.run(session, cli_options)
 }

@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 pub(crate) struct WorkspaceFile<'ctx, 'app> {
     guard: FileGuard<'app, dyn Workspace + 'ctx>,
     #[allow(dead_code)]
-    file: Box<dyn File>,
+    file: Option<Box<dyn File>>, // only present when backed by a real fs entry
     pub(crate) path: PathBuf,
 }
 
@@ -24,7 +24,7 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
         let pgt_path = PgTPath::new(path);
         let open_options = OpenOptions::default()
             .read(true)
-            .write(ctx.execution.requires_write_access());
+            .write(ctx.config.allows_writes());
         let mut file = ctx
             .fs
             .open_with_options(path, open_options)
@@ -45,7 +45,7 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
         .with_file_path_and_code(path.display().to_string(), category!("internalError/fs"))?;
 
         Ok(Self {
-            file,
+            file: Some(file),
             guard,
             path: PathBuf::from(path),
         })

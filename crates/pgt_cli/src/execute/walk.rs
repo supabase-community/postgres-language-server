@@ -1,12 +1,10 @@
+use super::config::ExecutionConfig;
 use super::process_file::{FileStatus, Message, process_file};
-use super::{Execution, TraversalMode};
-use crate::cli_options::CliOptions;
 use crate::execute::diagnostics::PanicDiagnostic;
-use crate::reporter::TraversalSummary;
+use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgt_diagnostics::DiagnosticTags;
-use pgt_diagnostics::{DiagnosticExt, Error, Resource, Severity};
+use pgt_diagnostics::{DiagnosticExt, Error, Resource};
 use pgt_fs::{FileSystem, PathInterner, PgTPath};
 use pgt_fs::{TraversalContext, TraversalScope};
 use pgt_workspace::dome::Dome;
@@ -29,39 +27,17 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub(crate) struct TraverseResult {
-    pub(crate) summary: TraversalSummary,
-    pub(crate) evaluated_paths: BTreeSet<PgTPath>,
-    pub(crate) diagnostics: Vec<Error>,
-}
-
 pub(crate) fn traverse(
-    execution: &Execution,
     session: &mut CliSession,
-    cli_options: &CliOptions,
+    config: &ExecutionConfig,
     mut inputs: Vec<OsString>,
-) -> Result<TraverseResult, CliDiagnostic> {
+) -> Result<Report, CliDiagnostic> {
     init_thread_pool();
 
-    if inputs.is_empty() {
-        match &execution.traversal_mode {
-            TraversalMode::Dummy => {
-                // If `--staged` or `--changed` is specified, it's acceptable for them to be empty, so ignore it.
-                if !execution.is_vcs_targeted() {
-                    match current_dir() {
-                        Ok(current_dir) => inputs.push(current_dir.into_os_string()),
-                        Err(err) => return Err(CliDiagnostic::io_error(err)),
-                    }
-                }
-            }
-            _ => {
-                if execution.as_stdin_file().is_none() && !cli_options.no_errors_on_unmatched {
-                    return Err(CliDiagnostic::missing_argument(
-                        "<INPUT>",
-                        format!("{}", execution.traversal_mode),
-                    ));
-                }
-            }
+    if inputs.is_empty() && !config.mode.vcs().changed && !config.mode.vcs().staged {
+        match current_dir() {
+            Ok(current_dir) => inputs.push(current_dir.into_os_string()),
+            Err(err) => return Err(CliDiagnostic::io_error(err)),
         }
     }
 
@@ -73,16 +49,13 @@ pub(crate) fn traverse(
     let matches = AtomicUsize::new(0);
     let skipped = AtomicUsize::new(0);
 
-    let fs = &*session.app.fs;
-    let workspace = &*session.app.workspace;
+    let fs = &**session.fs();
+    let workspace = session.workspace();
 
-    let max_diagnostics = execution.get_max_diagnostics();
+    let max_diagnostics = config.max_diagnostics();
     let remaining_diagnostics = AtomicU32::new(max_diagnostics);
 
-    let printer = DiagnosticsPrinter::new(execution)
-        .with_verbose(cli_options.verbose)
-        .with_diagnostic_level(cli_options.diagnostic_level)
-        .with_max_diagnostics(max_diagnostics);
+    let printer = DiagnosticsPrinter::new(config).with_max_diagnostics(max_diagnostics);
 
     let (duration, evaluated_paths, diagnostics) = thread::scope(|s| {
         let handler = thread::Builder::new()
@@ -98,7 +71,7 @@ pub(crate) fn traverse(
             &TraversalOptions {
                 fs,
                 workspace,
-                execution,
+                config,
                 interner,
                 matches: &matches,
                 changed: &changed,
@@ -115,8 +88,6 @@ pub(crate) fn traverse(
         (elapsed, evaluated_paths, diagnostics)
     });
 
-    let errors = printer.errors();
-    let warnings = printer.warnings();
     let changed = changed.load(Ordering::Relaxed);
     let unchanged = unchanged.load(Ordering::Relaxed);
     let matches = matches.load(Ordering::Relaxed);
@@ -124,21 +95,23 @@ pub(crate) fn traverse(
     let suggested_fixes_skipped = printer.skipped_fixes();
     let diagnostics_not_printed = printer.not_printed_diagnostics();
 
-    Ok(TraverseResult {
-        summary: TraversalSummary {
-            changed,
-            unchanged,
-            duration,
-            errors,
-            matches,
-            warnings,
-            skipped,
-            suggested_fixes_skipped,
-            diagnostics_not_printed,
-        },
+    let traversal = TraversalData {
         evaluated_paths,
+        changed,
+        unchanged,
+        matches,
+        skipped,
+        suggested_fixes_skipped,
+        diagnostics_not_printed,
+        workspace_root: session.fs().working_directory(),
+    };
+
+    Ok(Report::new(
         diagnostics,
-    })
+        duration,
+        diagnostics_not_printed,
+        Some(traversal),
+    ))
 }
 
 /// This function will setup the global Rayon thread pool the first time it's called
@@ -187,67 +160,29 @@ fn traverse_inputs(
 // struct DiagnosticsReporter<'ctx> {}
 
 struct DiagnosticsPrinter<'ctx> {
-    ///  Execution of the traversal
-    #[allow(dead_code)]
-    execution: &'ctx Execution,
-    /// The maximum number of diagnostics the console thread is allowed to print
+    _config: &'ctx ExecutionConfig,
     max_diagnostics: u32,
-    /// The approximate number of diagnostics the console will print before
-    /// folding the rest into the "skipped diagnostics" counter
     remaining_diagnostics: AtomicU32,
-    /// Mutable reference to a boolean flag tracking whether the console thread
-    /// printed any error-level message
-    errors: AtomicU32,
-    /// Mutable reference to a boolean flag tracking whether the console thread
-    /// printed any warnings-level message
-    warnings: AtomicU32,
-    /// Whether the console thread should print diagnostics in verbose mode
-    verbose: bool,
-    /// The diagnostic level the console thread should print
-    diagnostic_level: Severity,
-
     not_printed_diagnostics: AtomicU32,
     printed_diagnostics: AtomicU32,
     total_skipped_suggested_fixes: AtomicU32,
 }
 
 impl<'ctx> DiagnosticsPrinter<'ctx> {
-    fn new(execution: &'ctx Execution) -> Self {
+    fn new(config: &'ctx ExecutionConfig) -> Self {
         Self {
-            errors: AtomicU32::new(0),
-            warnings: AtomicU32::new(0),
-            remaining_diagnostics: AtomicU32::new(0),
-            execution,
-            diagnostic_level: Severity::Hint,
-            verbose: false,
+            _config: config,
             max_diagnostics: 20,
+            remaining_diagnostics: AtomicU32::new(0),
             not_printed_diagnostics: AtomicU32::new(0),
             printed_diagnostics: AtomicU32::new(0),
             total_skipped_suggested_fixes: AtomicU32::new(0),
         }
     }
 
-    fn with_verbose(mut self, verbose: bool) -> Self {
-        self.verbose = verbose;
-        self
-    }
-
     fn with_max_diagnostics(mut self, value: u32) -> Self {
         self.max_diagnostics = value;
         self
-    }
-
-    fn with_diagnostic_level(mut self, value: Severity) -> Self {
-        self.diagnostic_level = value;
-        self
-    }
-
-    fn errors(&self) -> u32 {
-        self.errors.load(Ordering::Relaxed)
-    }
-
-    fn warnings(&self) -> u32 {
-        self.warnings.load(Ordering::Relaxed)
     }
 
     fn not_printed_diagnostics(&self) -> u32 {
@@ -258,23 +193,8 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         self.total_skipped_suggested_fixes.load(Ordering::Relaxed)
     }
 
-    /// Checks if the diagnostic we received from the thread should be considered or not. Logic:
-    /// - it should not be considered if its severity level is lower than the one provided via CLI;
-    /// - it should not be considered if it's a verbose diagnostic and the CLI **didn't** request a `--verbose` option.
-    fn should_skip_diagnostic(&self, severity: Severity, diagnostic_tags: DiagnosticTags) -> bool {
-        if severity < self.diagnostic_level {
-            return true;
-        }
-
-        if diagnostic_tags.is_verbose() && !self.verbose {
-            return true;
-        }
-
-        false
-    }
-
     /// Count the diagnostic, and then returns a boolean that tells if it should be printed
-    fn should_print(&self) -> bool {
+    fn should_store(&self) -> bool {
         let printed_diagnostics = self.printed_diagnostics.load(Ordering::Relaxed);
         let should_print = printed_diagnostics < self.max_diagnostics;
         if should_print {
@@ -292,8 +212,7 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
 
     fn run(&self, receiver: Receiver<Message>, interner: Receiver<PathBuf>) -> Vec<Error> {
         let mut paths: FxHashSet<String> = FxHashSet::default();
-
-        let mut diagnostics_to_print = vec![];
+        let mut diagnostics = vec![];
 
         while let Ok(msg) = receiver.recv() {
             match msg {
@@ -303,24 +222,9 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.total_skipped_suggested_fixes
                         .fetch_add(skipped_suggested_fixes, Ordering::Relaxed);
                 }
-
-                Message::Failure => {
-                    self.errors.fetch_add(1, Ordering::Relaxed);
-                }
-
+                Message::Failure => {}
                 Message::Error(mut err) => {
-                    let location = err.location();
-                    if self.should_skip_diagnostic(err.severity(), err.tags()) {
-                        continue;
-                    }
-                    if err.severity() == Severity::Warning {
-                        // *warnings += 1;
-                        self.warnings.fetch_add(1, Ordering::Relaxed);
-                        // self.warnings.set(self.warnings.get() + 1)
-                    }
-                    if let Some(Resource::File(file_path)) = location.resource.as_ref() {
-                        // Retrieves the file name from the file ID cache, if it's a miss
-                        // flush entries from the interner channel until it's found
+                    if let Some(Resource::File(file_path)) = err.location().resource.as_ref() {
                         let file_name = match paths.get(*file_path) {
                             Some(path) => Some(path),
                             None => loop {
@@ -331,9 +235,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                                             break paths.get(&path.display().to_string());
                                         }
                                     }
-                                    // In case the channel disconnected without sending
-                                    // the path we need, print the error without a file
-                                    // name (normally this should never happen)
                                     Err(_) => break None,
                                 }
                             },
@@ -344,47 +245,30 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                         }
                     }
 
-                    let should_print = self.should_print();
-
-                    if should_print {
-                        diagnostics_to_print.push(err);
+                    if self.should_store() {
+                        diagnostics.push(err);
                     }
                 }
-
                 Message::Diagnostics {
                     name,
                     content,
-                    diagnostics,
+                    diagnostics: diag_list,
                     skipped_diagnostics,
                 } => {
                     self.not_printed_diagnostics
                         .fetch_add(skipped_diagnostics, Ordering::Relaxed);
 
-                    // is CI mode we want to print all the diagnostics
-                    for diag in diagnostics {
-                        let severity = diag.severity();
-                        if self.should_skip_diagnostic(severity, diag.tags()) {
-                            continue;
-                        }
-                        if severity == Severity::Error {
-                            self.errors.fetch_add(1, Ordering::Relaxed);
-                        }
-                        if severity == Severity::Warning {
-                            self.warnings.fetch_add(1, Ordering::Relaxed);
-                        }
-
-                        let should_print = self.should_print();
-
-                        if should_print {
+                    for diag in diag_list {
+                        if self.should_store() {
                             let diag = diag.with_file_path(&name).with_file_source_code(&content);
-                            diagnostics_to_print.push(diag)
+                            diagnostics.push(diag);
                         }
                     }
                 }
             }
         }
 
-        diagnostics_to_print
+        diagnostics
     }
 }
 
@@ -395,7 +279,7 @@ pub(crate) struct TraversalOptions<'ctx, 'app> {
     /// Instance of [Workspace] used by this instance of the CLI
     pub(crate) workspace: &'ctx dyn Workspace,
     /// Determines how the files should be processed
-    pub(crate) execution: &'ctx Execution,
+    pub(crate) config: &'ctx ExecutionConfig,
     /// File paths interner cache used by the filesystem traversal
     interner: PathInterner,
     /// Shared atomic counter storing the number of changed files
@@ -483,10 +367,7 @@ impl TraversalContext for TraversalOptions<'_, '_> {
             return false;
         }
 
-        match self.execution.traversal_mode() {
-            TraversalMode::Dummy => true,
-            TraversalMode::Check { .. } => true,
-        }
+        true
     }
 
     fn handle_path(&self, path: PgTPath) {

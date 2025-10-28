@@ -1,42 +1,29 @@
-use crate::{DiagnosticsPayload, Execution, Reporter, ReporterVisitor, TraversalSummary};
+use crate::diagnostics::CliDiagnostic;
+use crate::reporter::{Report, ReportConfig, ReportWriter};
 use pgt_console::{Console, ConsoleExt, markup};
 use pgt_diagnostics::PrintGitHubDiagnostic;
-use std::io;
 
-pub(crate) struct GithubReporter {
-    pub(crate) diagnostics_payload: DiagnosticsPayload,
-    pub(crate) execution: Execution,
-}
+pub(crate) struct GithubReportWriter;
 
-impl Reporter for GithubReporter {
-    fn write(self, visitor: &mut dyn ReporterVisitor) -> io::Result<()> {
-        visitor.report_diagnostics(&self.execution, self.diagnostics_payload)?;
-        Ok(())
-    }
-}
-pub(crate) struct GithubReporterVisitor<'a>(pub(crate) &'a mut dyn Console);
-
-impl ReporterVisitor for GithubReporterVisitor<'_> {
-    fn report_summary(
+impl ReportWriter for GithubReportWriter {
+    fn write(
         &mut self,
-        _execution: &Execution,
-        _summary: TraversalSummary,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+        console: &mut dyn Console,
+        _command_name: &str,
+        report: &Report,
+        config: &ReportConfig,
+    ) -> Result<(), CliDiagnostic> {
+        for diagnostic in &report.diagnostics {
+            if diagnostic.severity() < config.diagnostic_level {
+                continue;
+            }
 
-    fn report_diagnostics(
-        &mut self,
-        _execution: &Execution,
-        diagnostics_payload: DiagnosticsPayload,
-    ) -> io::Result<()> {
-        for diagnostic in &diagnostics_payload.diagnostics {
-            if diagnostic.severity() >= diagnostics_payload.diagnostic_level {
-                if diagnostic.tags().is_verbose() && diagnostics_payload.verbose {
-                    self.0.log(markup! {{PrintGitHubDiagnostic(diagnostic)}});
-                } else if !diagnostics_payload.verbose {
-                    self.0.log(markup! {{PrintGitHubDiagnostic(diagnostic)}});
+            if diagnostic.tags().is_verbose() {
+                if config.verbose {
+                    console.log(markup! {{PrintGitHubDiagnostic(diagnostic)}});
                 }
+            } else if !config.verbose {
+                console.log(markup! {{PrintGitHubDiagnostic(diagnostic)}});
             }
         }
 

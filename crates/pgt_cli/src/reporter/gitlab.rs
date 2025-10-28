@@ -1,4 +1,5 @@
-use crate::{DiagnosticsPayload, Execution, Reporter, ReporterVisitor, TraversalSummary};
+use crate::diagnostics::CliDiagnostic;
+use crate::reporter::{Report, ReportConfig, ReportWriter};
 use path_absolutize::Absolutize;
 use pgt_console::fmt::{Display, Formatter};
 use pgt_console::{Console, ConsoleExt, markup};
@@ -12,29 +13,37 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub struct GitLabReporter {
-    pub(crate) execution: Execution,
-    pub(crate) diagnostics: DiagnosticsPayload,
-}
+pub(crate) struct GitLabReportWriter;
 
-impl Reporter for GitLabReporter {
-    fn write(self, visitor: &mut dyn ReporterVisitor) -> std::io::Result<()> {
-        visitor.report_diagnostics(&self.execution, self.diagnostics)?;
+impl ReportWriter for GitLabReportWriter {
+    fn write(
+        &mut self,
+        console: &mut dyn Console,
+        _command_name: &str,
+        report: &Report,
+        config: &ReportConfig,
+    ) -> Result<(), CliDiagnostic> {
+        let repository_root = report
+            .traversal
+            .as_ref()
+            .and_then(|traversal| traversal.workspace_root.clone());
+
+        let hasher = RwLock::default();
+        let diagnostics = GitLabDiagnostics {
+            report,
+            config,
+            hasher: &hasher,
+            repository_root: repository_root.as_deref(),
+        };
+        console.log(markup!({ diagnostics }));
         Ok(())
     }
-}
-
-pub(crate) struct GitLabReporterVisitor<'a> {
-    console: &'a mut dyn Console,
-    repository_root: Option<PathBuf>,
 }
 
 #[derive(Default)]
 struct GitLabHasher(HashSet<u64>);
 
 impl GitLabHasher {
-    /// Enforces uniqueness of generated fingerprints in the context of a
-    /// single report.
     fn rehash_until_unique(&mut self, fingerprint: u64) -> u64 {
         let mut current = fingerprint;
         while self.0.contains(&current) {
@@ -48,45 +57,20 @@ impl GitLabHasher {
     }
 }
 
-impl<'a> GitLabReporterVisitor<'a> {
-    pub fn new(console: &'a mut dyn Console, repository_root: Option<PathBuf>) -> Self {
-        Self {
-            console,
-            repository_root,
-        }
-    }
+struct GitLabDiagnostics<'a> {
+    report: &'a Report,
+    config: &'a ReportConfig,
+    hasher: &'a RwLock<GitLabHasher>,
+    repository_root: Option<&'a Path>,
 }
 
-impl ReporterVisitor for GitLabReporterVisitor<'_> {
-    fn report_summary(&mut self, _: &Execution, _: TraversalSummary) -> std::io::Result<()> {
-        Ok(())
-    }
-
-    fn report_diagnostics(
-        &mut self,
-        _execution: &Execution,
-        payload: DiagnosticsPayload,
-    ) -> std::io::Result<()> {
-        let hasher = RwLock::default();
-        let diagnostics = GitLabDiagnostics(payload, &hasher, self.repository_root.as_deref());
-        self.console.log(markup!({ diagnostics }));
-        Ok(())
-    }
-}
-
-struct GitLabDiagnostics<'a>(
-    DiagnosticsPayload,
-    &'a RwLock<GitLabHasher>,
-    Option<&'a Path>,
-);
-
-impl GitLabDiagnostics<'_> {
+impl<'a> GitLabDiagnostics<'a> {
     fn attempt_to_relativize(&self, subject: &str) -> Option<PathBuf> {
         let Ok(resolved) = Path::new(subject).absolutize() else {
             return None;
         };
 
-        let Ok(relativized) = resolved.strip_prefix(self.2?) else {
+        let Ok(relativized) = resolved.strip_prefix(self.repository_root?) else {
             return None;
         };
 
@@ -118,14 +102,14 @@ impl GitLabDiagnostics<'_> {
 
 impl Display for GitLabDiagnostics<'_> {
     fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
-        let mut hasher = self.1.write().unwrap();
+        let mut hasher = self.hasher.write().unwrap();
         let gitlab_diagnostics: Vec<_> = self
-            .0
+            .report
             .diagnostics
             .iter()
-            .filter(|d| d.severity() >= self.0.diagnostic_level)
+            .filter(|d| d.severity() >= self.config.diagnostic_level)
             .filter(|d| {
-                if self.0.verbose {
+                if self.config.verbose {
                     d.tags().is_verbose()
                 } else {
                     true
@@ -155,19 +139,12 @@ impl Display for GitLabDiagnostics<'_> {
     }
 }
 
-/// An entry in the GitLab Code Quality report.
-/// See https://docs.gitlab.com/ee/ci/testing/code_quality.html#implement-a-custom-tool
 #[derive(Serialize)]
 pub struct GitLabDiagnostic<'a> {
-    /// A description of the code quality violation.
     description: String,
-    /// A unique name representing the static analysis check that emitted this issue.
     check_name: &'a str,
-    /// A unique fingerprint to identify the code quality violation. For example, an MD5 hash.
     fingerprint: String,
-    /// A severity string (can be info, minor, major, critical, or blocker).
     severity: &'a str,
-    /// The location where the code quality violation occurred.
     location: Location,
 }
 
@@ -200,42 +177,35 @@ impl<'a> GitLabDiagnostic<'a> {
             },
             description,
             check_name,
-            // A u64 does not fit into a JSON number, so we serialize this as a
-            // string
             fingerprint: fingerprint.to_string(),
             location: Location {
                 path,
-                lines: Lines { begin },
+                lines: GitLabLines { begin },
             },
         })
     }
 }
 
 #[derive(Serialize)]
-struct Location {
-    /// The relative path to the file containing the code quality violation.
+pub struct Location {
     path: String,
-    lines: Lines,
+    lines: GitLabLines,
 }
 
 #[derive(Serialize)]
-struct Lines {
-    /// The line on which the code quality violation occurred.
+pub struct GitLabLines {
     begin: usize,
 }
 
-#[derive(Hash)]
-struct Fingerprint<'a> {
-    // Including the source code in our hash leads to more stable
-    // fingerprints. If you instead rely on e.g. the line number and change
-    // the first line of a file, all of its fingerprint would change.
+#[derive(Hash, Serialize)]
+pub struct Fingerprint<'a> {
     code: &'a str,
     check_name: &'a str,
     path: &'a str,
 }
 
 fn calculate_hash<T: Hash>(t: &T) -> u64 {
-    let mut s = DefaultHasher::new();
-    t.hash(&mut s);
-    s.finish()
+    let mut hasher = DefaultHasher::new();
+    t.hash(&mut hasher);
+    hasher.finish()
 }
