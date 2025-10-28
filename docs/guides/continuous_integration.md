@@ -4,7 +4,7 @@ Running the Postgres Language Server in a CI environment can boost your teams co
 
 ### GitHub Actions
 
-We provide a first-party [GitHub Action](https://github.com/supabase-community/postgrestools-cli-action) to setup the CLI in your runner. Here's what a simple workflow might look like:
+We provide a first-party [GitHub Action](https://github.com/supabase-community/postgres-language-server-cli-action) to setup the CLI in your runner. Here's what a simple workflow might look like:
 
 ```yaml
 jobs:

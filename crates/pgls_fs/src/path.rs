@@ -87,7 +87,7 @@ impl From<FileKind> for FileKinds {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PgLSPath {
     path: PathBuf,
-    /// Determines the kind of the file inside Postgres Tools. Some files are considered as configuration files, others as manifest files, and others as files to handle
+    /// Determines the kind of the file inside Postgres Language Server. Some files are considered as configuration files, others as manifest files, and others as files to handle
     kind: FileKinds,
     /// Whether this path (usually a file) was fixed as a result of a format/lint/check command with the `--write` filag.
     was_written: bool,

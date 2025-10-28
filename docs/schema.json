@@ -340,7 +340,7 @@
           ]
         },
         "recommended": {
-          "description": "It enables the lint rules recommended by Postgres Tools. `true` by default.",
+          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
           "type": [
             "boolean",
             "null"

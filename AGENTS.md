@@ -62,11 +62,11 @@ just new-crate <name>
 ```
 
 ### CLI Usage
-The main CLI binary is `postgrestools`:
+The main CLI binary is `postgres-language-server` (legacy name: `postgrestools`):
 ```bash
 cargo run -p pgls_cli -- check file.sql
 # or after building:
-./target/release/postgrestools check file.sql
+./target/release/postgres-language-server check file.sql
 ```
 
 ## Architecture
@@ -103,8 +103,8 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 ### TypeScript Packages
 Located in `packages/` and `editors/`:
 - VSCode extension in `editors/code/`
-- Backend JSON-RPC bridge in `packages/@postgrestools/backend-jsonrpc/`
-- Main TypeScript package in `packages/@postgrestools/postgrestools/`
+- Backend JSON-RPC bridge in `packages/@postgres-language-server/backend-jsonrpc/` (legacy: `packages/@postgrestools/backend-jsonrpc/`)
+- Main TypeScript package in `packages/@postgres-language-server/postgres-language-server/` (legacy: `packages/@postgrestools/postgrestools/`)
 
 ### Database Integration
 The server connects to a Postgres database to build an in-memory schema cache containing tables, columns, functions, and type information. This enables accurate autocompletion and type checking.

@@ -5,7 +5,7 @@ export interface IsPathIgnoredParams {
 }
 export interface PgLSPath {
 	/**
-	 * Determines the kind of the file inside Postgres Tools. Some files are considered as configuration files, others as manifest files, and others as files to handle
+	 * Determines the kind of the file inside Postgres Language Server. Some files are considered as configuration files, others as manifest files, and others as files to handle
 	 */
 	kind: FileKind;
 	path: string;
@@ -434,7 +434,7 @@ export interface Rules {
 	 */
 	all?: boolean;
 	/**
-	 * It enables the lint rules recommended by Postgres Tools. `true` by default.
+	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
 	 */
 	recommended?: boolean;
 	safety?: Safety;
