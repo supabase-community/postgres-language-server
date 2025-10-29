@@ -50,14 +50,14 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
             },
 
             HoveredNode::Column(node_identification) => match node_identification {
-                (None, column_name) => params
+                (None, None, column_name) => params
                     .schema_cache
                     .find_cols(&column_name, None, None)
                     .into_iter()
                     .map(Hoverable::from)
                     .collect(),
 
-                (Some(table_or_alias), column_name) => {
+                (None, Some(table_or_alias), column_name) => {
                     // resolve alias to actual table name if needed
                     let actual_table = ctx
                         .get_mentioned_table_for_alias(table_or_alias.as_str())
@@ -71,6 +71,16 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                         .map(Hoverable::from)
                         .collect()
                 }
+
+                (Some(schema), Some(table), column_name) => params
+                    // no need to resolve table; there can't be both schema qualification and an alias.
+                    .schema_cache
+                    .find_cols(&column_name, Some(&table), Some(&schema))
+                    .into_iter()
+                    .map(Hoverable::from)
+                    .collect(),
+
+                _ => vec![],
             },
 
             HoveredNode::Function(node_identification) => match node_identification {

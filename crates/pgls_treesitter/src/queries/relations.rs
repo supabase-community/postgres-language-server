@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult, helper::object_reference_query};
+use crate::queries::{Query, QueryResult, object_references::parts_of_reference_query};
 
 use tree_sitter::StreamingIterator;
 
@@ -8,13 +8,7 @@ use super::QueryTryFrom;
 
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
-    (table_reference
-        (schema_identifier) @schema 
-        (table_identifier) @table
-    )
-    (table_reference
-        (any_identifier) @table
-    )
+    (table_reference) @ref
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
         .expect("Invalid TS Query")
@@ -71,19 +65,11 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 2 {
-                let schema = Some(m.captures[0].node);
-                let table = m.captures[1].node;
-                to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
-            }
-
-            if m.captures.len() == 1 {
-                let table = m.captures[0].node;
-                to_return.push(QueryResult::Relation(RelationMatch {
-                    schema: None,
-                    table,
-                }));
-            }
+            m.captures.iter().for_each(|capture| {
+                if let Some((_, schema, table)) = parts_of_reference_query(capture.node, stmt) {
+                    to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
+                }
+            });
         });
 
         to_return

@@ -8,7 +8,7 @@ pub(crate) enum HoveredNode {
     Schema(String),
     Table(NodeIdentification),
     Function(NodeIdentification),
-    Column(NodeIdentification),
+    Column((Option<String>, Option<String>, String)),
     Policy(NodeIdentification),
     Trigger(NodeIdentification),
     Role(String),
@@ -27,19 +27,20 @@ impl HoveredNode {
 
         match under_cursor.kind() {
             "column_identifier" => Some(HoveredNode::Column((
-                ctx.schema_or_alias_name.clone(),
+                ctx.identifier_qualifiers.0.clone(),
+                ctx.identifier_qualifiers.1.clone(),
                 node_content,
             ))),
             "function_identifier" => Some(HoveredNode::Function((
-                ctx.schema_or_alias_name.clone(),
+                ctx.identifier_qualifiers.1.clone(),
                 node_content,
             ))),
             "policy_identifier" => Some(HoveredNode::Policy((
-                ctx.schema_or_alias_name.clone(),
+                ctx.identifier_qualifiers.1.clone(),
                 node_content,
             ))),
             "table_identifier" => Some(HoveredNode::Table((
-                ctx.schema_or_alias_name.clone(),
+                ctx.identifier_qualifiers.1.clone(),
                 node_content,
             ))),
 
@@ -57,7 +58,7 @@ impl HoveredNode {
                 }
 
                 Some(HoveredNode::Table((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
@@ -74,7 +75,7 @@ impl HoveredNode {
                     }) =>
             {
                 Some(HoveredNode::Table((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
@@ -83,7 +84,8 @@ impl HoveredNode {
                 if ctx.matches_ancestor_history(&["binary_expression", "object_reference"]) =>
             {
                 Some(HoveredNode::Column((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.0.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
@@ -92,7 +94,7 @@ impl HoveredNode {
                 if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
             {
                 Some(HoveredNode::Function((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
@@ -128,14 +130,18 @@ impl HoveredNode {
                 let sanitized = node_content.replace(['(', ')'], "");
 
                 Some(HoveredNode::PostgresType((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     sanitized,
                 )))
             }
 
             // quoted columns
             "literal" if ctx.matches_ancestor_history(&["select_expression", "term"]) => {
-                Some(HoveredNode::Column((None, node_content)))
+                Some(HoveredNode::Column((
+                    ctx.identifier_qualifiers.0.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
+                    node_content,
+                )))
             }
 
             _ => None,

@@ -3,7 +3,10 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
+use crate::{
+    parts_of_reference_query,
+    queries::{self, QueryResult, TreeSitterQueriesExecutor},
+};
 use pgls_text_size::TextSize;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -101,25 +104,13 @@ pub struct TreesitterContext<'a> {
     pub text: &'a str,
     pub position: usize,
 
-    /// If the cursor is on a node that uses dot notation
-    /// to specify an alias or schema, this will hold the schema's or
-    /// alias's name.
+    /// Identifiers can have additional qualifiers; e.g. a table can be `schema.table`, and a
+    /// column can be `schema.table.column`. The `identifier_qualifiers` are those additional qualifiers in order.
     ///
-    /// Here, `auth` is a schema name:
-    /// ```sql
-    /// select * from auth.users;
-    /// ```
+    /// For a column: `(Some(schema), Some(table))`
     ///
-    /// Here, `u` is an alias name:
-    /// ```sql
-    /// select
-    ///     *
-    /// from
-    ///     auth.users u
-    ///     left join identities i
-    ///     on u.id = i.user_id;
-    /// ```
-    pub schema_or_alias_name: Option<String>,
+    /// For a table: `(None, Some(schema))` – the first entry will always be None.
+    pub identifier_qualifiers: (Option<String>, Option<String>),
 
     pub wrapping_clause_type: Option<WrappingClause<'a>>,
 
@@ -140,7 +131,7 @@ impl<'a> TreesitterContext<'a> {
             text: params.text,
             position: usize::from(params.position),
             node_under_cursor: None,
-            schema_or_alias_name: None,
+            identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
             wrapping_node_kind: None,
             wrapping_statement_range: None,
@@ -152,6 +143,8 @@ impl<'a> TreesitterContext<'a> {
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+
+        println!("{:#?}", ctx);
 
         ctx
     }
@@ -328,16 +321,19 @@ impl<'a> TreesitterContext<'a> {
         }
 
         match current_node_kind {
-            "object_reference" | "field" => {
-                let start = current_node.start_byte();
-                let content = self.get_ts_node_content(&current_node);
-                if let Some(txt) = content {
-                    let parts: Vec<&str> = txt.split('.').collect();
-                    // we do not want to set it if we're on the schema or alias node itself
-                    let is_on_schema_node = start + parts[0].len() >= self.position;
-                    if parts.len() == 2 && !is_on_schema_node {
-                        self.schema_or_alias_name = Some(parts[0].to_string());
-                    }
+            "object_reference" | "column_reference" => {
+                if let Some((head, middle, _)) = parts_of_reference_query(current_node, self.text) {
+                    self.identifier_qualifiers = (
+                        head.and_then(|h| self.get_ts_node_content(&h)),
+                        middle.and_then(|m| self.get_ts_node_content(&m)),
+                    );
+                }
+            }
+
+            "table_reference" | "type_reference" | "function_reference" => {
+                if let Some((_, middle, _)) = parts_of_reference_query(current_node, self.text) {
+                    self.identifier_qualifiers =
+                        (None, middle.and_then(|m| self.get_ts_node_content(&m)));
                 }
             }
 
@@ -928,7 +924,7 @@ mod tests {
             let ctx = TreesitterContext::new(params);
 
             assert_eq!(
-                ctx.schema_or_alias_name,
+                ctx.identifier_qualifiers.1,
                 expected_schema.map(|f| f.to_string())
             );
         }

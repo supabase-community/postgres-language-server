@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult, helper::object_reference_query};
+use crate::queries::{Query, QueryResult, object_references::parts_of_reference_query};
 use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
@@ -72,7 +72,8 @@ impl<'a> Query<'a> for SelectColumnMatch<'a> {
 
         matches.for_each(|m| {
             m.captures.iter().for_each(|capture| {
-                if let Some((schema, alias, column)) = object_reference_query(capture.node, stmt) {
+                if let Some((schema, alias, column)) = parts_of_reference_query(capture.node, stmt)
+                {
                     to_return.push(QueryResult::SelectClauseColumns(SelectColumnMatch {
                         schema,
                         alias,

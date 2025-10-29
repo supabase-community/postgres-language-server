@@ -1,5 +1,5 @@
-mod helper;
 mod insert_columns;
+mod object_references;
 mod parameters;
 mod relations;
 mod select_columns;
@@ -9,6 +9,7 @@ mod where_columns;
 use std::slice::Iter;
 
 pub use insert_columns::*;
+pub use object_references::*;
 pub use parameters::*;
 pub use relations::*;
 pub use select_columns::*;

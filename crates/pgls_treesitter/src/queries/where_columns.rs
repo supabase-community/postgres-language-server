@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult, helper::object_reference_query};
+use crate::queries::{Query, QueryResult, object_references::parts_of_reference_query};
 
 use tree_sitter::StreamingIterator;
 
@@ -93,7 +93,7 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
                 if m.captures.len() == 1 {
                     let capture = m.captures[0].node;
 
-                    if let Some((schema, alias, column)) = object_reference_query(capture, stmt) {
+                    if let Some((schema, alias, column)) = parts_of_reference_query(capture, stmt) {
                         to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
                             schema,
                             alias,

@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult, helper::object_reference_query};
+use crate::queries::{Query, QueryResult, object_references::parts_of_reference_query};
 use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
@@ -8,7 +8,7 @@ use super::QueryTryFrom;
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (relation
-        (object_reference) @ref
+        (table_reference) @ref
         (keyword_as)?
         (any_identifier) @alias
     )
@@ -77,7 +77,7 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
             if m.captures.len() == 2 {
                 let obj_ref = m.captures[0].node;
                 let alias = m.captures[1].node;
-                if let Some((_, schema, table)) = object_reference_query(obj_ref, stmt) {
+                if let Some((_, schema, table)) = parts_of_reference_query(obj_ref, stmt) {
                     to_return.push(QueryResult::TableAliases(TableAliasMatch {
                         schema,
                         table,

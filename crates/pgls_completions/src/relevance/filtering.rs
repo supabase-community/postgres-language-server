@@ -264,7 +264,6 @@ impl CompletionFilter<'_> {
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
-                        | WrappingClause::From
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
@@ -273,7 +272,7 @@ impl CompletionFilter<'_> {
                             (ctx.matches_ancestor_history(&[
                                 "grantable_on_table",
                                 "object_reference",
-                            ]) && ctx.schema_or_alias_name.is_none())
+                            ]) && ctx.identifier_qualifiers.1.is_none())
                                 || ctx.matches_ancestor_history(&["grantable_on_all"])
                         }
 
@@ -356,18 +355,34 @@ impl CompletionFilter<'_> {
     }
 
     fn check_mentioned_schema_or_alias(&self, ctx: &TreesitterContext) -> Option<()> {
-        if ctx.schema_or_alias_name.is_none() {
+        if ctx.identifier_qualifiers.1.is_none() {
             return Some(());
         }
 
-        let schema_or_alias = ctx.schema_or_alias_name.as_ref().unwrap().replace('"', "");
+        let first_qualifier = ctx
+            .identifier_qualifiers
+            .0
+            .as_ref()
+            .map(|n| n.replace('"', ""));
+
+        let second_qualifier = ctx
+            .identifier_qualifiers
+            .1
+            .as_ref()
+            .unwrap()
+            .replace('"', "");
 
         let matches = match self.data {
-            CompletionRelevanceData::Table(table) => table.schema == schema_or_alias,
-            CompletionRelevanceData::Function(f) => f.schema == schema_or_alias,
-            CompletionRelevanceData::Column(col) => ctx
-                .get_mentioned_table_for_alias(&schema_or_alias)
-                .is_some_and(|t| t == &col.table_name),
+            CompletionRelevanceData::Table(table) => table.schema == second_qualifier,
+            CompletionRelevanceData::Function(f) => f.schema == second_qualifier,
+            CompletionRelevanceData::Column(col) => {
+                let table = ctx
+                    .get_mentioned_table_for_alias(second_qualifier.as_str())
+                    .unwrap_or(&second_qualifier);
+
+                &col.table_name == table
+                    && first_qualifier.is_none_or(|schema| schema == col.schema_name)
+            }
 
             // we should never allow schema suggestions if there already was one.
             CompletionRelevanceData::Schema(_) => false,
