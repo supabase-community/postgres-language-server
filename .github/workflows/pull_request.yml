@@ -212,14 +212,25 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Install JS dependencies
         run: bun install
-      - name: Build backend-jsonrpc
+
+      - name: Build backend-jsonrpc (deprecated)
         working-directory: packages/@postgrestools/backend-jsonrpc
         run: bun run build
-      - name: Run backend-jsonrpc test
+      - name: Run backend-jsonrpc test (deprecated)
         working-directory: packages/@postgrestools/backend-jsonrpc
         run: bun run test
-      - name: Run cli test
+      - name: Run cli test (deprecated)
         working-directory: packages/@postgrestools/postgrestools
+        run: bun run test
+
+      - name: Build backend-jsonrpc
+        working-directory: packages/@postgres-language-server/backend-jsonrpc
+        run: bun run build
+      - name: Run backend-jsonrpc test
+        working-directory: packages/@postgres-language-server/backend-jsonrpc
+        run: bun run test
+      - name: Run cli test
+        working-directory: packages/@postgres-language-server/cli
         run: bun run test
 
   codegen:
@@ -258,6 +269,8 @@ jobs:
         run: cargo run -p xtask_codegen -- analyser
       - name: Run the configuration codegen
         run: cargo run -p xtask_codegen -- configuration
+      - name: Run the bindings codegen
+        run: cargo run -p xtask_codegen -- bindings
       - name: Run the docs codegen
         run: cargo run -p docs_codegen
       - name: Check for git diff -- run "just ready" if you see an error
