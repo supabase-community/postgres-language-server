@@ -11,6 +11,32 @@
         "typescript": "^5",
       },
     },
+    "packages/@postgres-language-server/backend-jsonrpc": {
+      "name": "@postgres-language-server/backend-jsonrpc",
+      "optionalDependencies": {
+        "@postgres-language-server/cli-darwin-arm64": "<placeholder>",
+        "@postgres-language-server/cli-darwin-x64": "<placeholder>",
+        "@postgres-language-server/cli-linux-arm64": "<placeholder>",
+        "@postgres-language-server/cli-linux-x64": "<placeholder>",
+        "@postgres-language-server/cli-win32-arm64": "<placeholder>",
+        "@postgres-language-server/cli-win32-x64": "<placeholder>",
+      },
+    },
+    "packages/@postgres-language-server/cli": {
+      "name": "@postgres-language-server/cli",
+      "bin": {
+        "postgres-language-server": "bin/postgres-language-server",
+      },
+      "optionalDependencies": {
+        "@postgres-language-server/cli-aarch64-apple-darwin": "<placeholder>",
+        "@postgres-language-server/cli-aarch64-linux-gnu": "<placeholder>",
+        "@postgres-language-server/cli-aarch64-windows-msvc": "<placeholder>",
+        "@postgres-language-server/cli-x86_64-apple-darwin": "<placeholder>",
+        "@postgres-language-server/cli-x86_64-linux-gnu": "<placeholder>",
+        "@postgres-language-server/cli-x86_64-linux-musl": "<placeholder>",
+        "@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>",
+      },
+    },
     "packages/@postgrestools/backend-jsonrpc": {
       "name": "@postgrestools/backend-jsonrpc",
       "optionalDependencies": {
@@ -56,6 +82,24 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@1.9.4", "", { "os": "win32", "cpu": "arm64" }, "sha512-tlbhLk+WXZmgwoIKwHIHEBZUwxml7bRJgk0X2sPyNR3S93cdRq6XulAZRQJ17FYGGzWne0fgrXBKpl7l4M87Hg=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@1.9.4", "", { "os": "win32", "cpu": "x64" }, "sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA=="],
+
+    "@postgres-language-server/backend-jsonrpc": ["@postgres-language-server/backend-jsonrpc@workspace:packages/@postgres-language-server/backend-jsonrpc"],
+
+    "@postgres-language-server/cli": ["@postgres-language-server/cli@workspace:packages/@postgres-language-server/cli"],
+
+    "@postgres-language-server/cli-aarch64-apple-darwin": ["@postgres-language-server/cli-aarch64-apple-darwin@0.17.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-0Umsb4yuHyI8D9oZkkpa6H4aZXMAAMLa7qbOrHRP9IMML4mKp5B9wkCiyvgd1ZKRP82UQBZnVjh53AGXky4Jdw=="],
+
+    "@postgres-language-server/cli-aarch64-linux-gnu": ["@postgres-language-server/cli-aarch64-linux-gnu@0.17.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-ye8IQLNLyJK4hR5tx8rKh1tEO1Sb+Dw574cbBG++K46LTZAdRq5/IQrNkIfDzFdgU+HMK3QYfm54cgudYeVVlQ=="],
+
+    "@postgres-language-server/cli-aarch64-windows-msvc": ["@postgres-language-server/cli-aarch64-windows-msvc@0.17.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-FkOjgvN7+vq0RvwVD/effFjKgH1mrAVMnV+3eO9bdZ6jCXpPesGOyCvyhf59IzoqmvIMyEeKJzjOUcXxWPmdZg=="],
+
+    "@postgres-language-server/cli-x86_64-apple-darwin": ["@postgres-language-server/cli-x86_64-apple-darwin@0.17.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-B79kZ9tz8fvGihv4W/cyCFzw5Wz95HlqF1hnNTBocJtf8Nvo9h6RDWoUEYliBjRp37gcdV945ZjV2RHHxdKMTw=="],
+
+    "@postgres-language-server/cli-x86_64-linux-gnu": ["@postgres-language-server/cli-x86_64-linux-gnu@0.17.1", "", { "os": "linux", "cpu": "x64" }, "sha512-lh5Lg/Cc18+232NRd1OZqdpJzuJMW6lrwkC6RKYiiTzxUfRq7uRV8qI0NNnp5cyKiyDO90cpQQ8fjepTaMzh9A=="],
+
+    "@postgres-language-server/cli-x86_64-linux-musl": ["@postgres-language-server/cli-x86_64-linux-musl@0.17.1", "", { "os": "linux", "cpu": "x64" }, "sha512-YH5Znq0urRUxtdsbyDu6Dcg5x9qhgDqTl7gCVY/LmVrPnHfP2I6gU/TJT21B5sDTSadjwZ73AbXimLmlwG6HPA=="],
+
+    "@postgres-language-server/cli-x86_64-windows-msvc": ["@postgres-language-server/cli-x86_64-windows-msvc@0.17.1", "", { "os": "win32", "cpu": "x64" }, "sha512-o2uIx0Vi3iEBFKKnz024JicgovJZWpM9G4WbQxf3r9IQlZPWvDXknlX7rNPQDnQTFRIUg8bpjZpjEvDFHMmuGg=="],
 
     "@postgrestools/backend-jsonrpc": ["@postgrestools/backend-jsonrpc@workspace:packages/@postgrestools/backend-jsonrpc"],
 
