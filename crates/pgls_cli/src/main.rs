@@ -1,7 +1,7 @@
 //! This is the main binary
 
 use pgls_cli::{
-    CliDiagnostic, CliSession, PgtCommand, open_transport, pgt_command, setup_panic_handler,
+    CliDiagnostic, CliSession, PgLSCommand, open_transport, pg_l_s_command, setup_panic_handler,
     to_color_mode,
 };
 use pgls_console::{ConsoleExt, EnvConsole, markup};
@@ -31,7 +31,7 @@ fn main() -> ExitCode {
     set_bottom_frame(main as usize);
 
     let mut console = EnvConsole::default();
-    let command = pgt_command().fallback_to_usage().run();
+    let command = pg_l_s_command().fallback_to_usage().run();
 
     console.set_color(to_color_mode(command.get_color()));
 
@@ -50,7 +50,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn run_workspace(console: &mut EnvConsole, command: PgtCommand) -> Result<(), CliDiagnostic> {
+fn run_workspace(console: &mut EnvConsole, command: PgLSCommand) -> Result<(), CliDiagnostic> {
     // If the `--use-server` CLI flag is set, try to open a connection to an
     // existing server socket
     let workspace = if command.should_use_server() {

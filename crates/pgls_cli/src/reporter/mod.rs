@@ -7,7 +7,7 @@ use crate::cli_options::{CliOptions, CliReporter};
 use crate::diagnostics::CliDiagnostic;
 use pgls_console::Console;
 use pgls_diagnostics::{Error, Severity};
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -54,7 +54,7 @@ impl From<CliReporter> for ReportMode {
 
 #[derive(Debug)]
 pub struct TraversalData {
-    pub evaluated_paths: BTreeSet<PgTPath>,
+    pub evaluated_paths: BTreeSet<PgLSPath>,
     pub changed: usize,
     pub unchanged: usize,
     pub matches: usize,

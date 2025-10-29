@@ -25,7 +25,7 @@ mod service;
 mod workspace;
 
 use crate::cli_options::ColorsArg;
-pub use crate::commands::{PgtCommand, pgt_command};
+pub use crate::commands::{PgLSCommand, pg_l_s_command};
 pub use crate::logging::{LoggingLevel, setup_cli_subscriber};
 use crate::reporter::Report;
 pub use diagnostics::CliDiagnostic;
@@ -57,19 +57,19 @@ impl<'app> CliSession<'app> {
     }
 
     /// Main function to run the CLI
-    pub fn run(self, command: PgtCommand) -> Result<(), CliDiagnostic> {
+    pub fn run(self, command: PgLSCommand) -> Result<(), CliDiagnostic> {
         let has_metrics = command.has_metrics();
         if has_metrics {
             crate::metrics::init_metrics();
         }
 
         let result = match command {
-            PgtCommand::Version(_) => commands::version::version(self),
-            PgtCommand::Dblint {
+            PgLSCommand::Version(_) => commands::version::version(self),
+            PgLSCommand::Dblint {
                 cli_options,
                 configuration,
             } => commands::dblint::dblint(self, &cli_options, configuration),
-            PgtCommand::Check {
+            PgLSCommand::Check {
                 cli_options,
                 configuration,
                 paths,
@@ -89,21 +89,21 @@ impl<'app> CliSession<'app> {
                     since,
                 },
             ),
-            PgtCommand::Clean => commands::clean::clean(self),
-            PgtCommand::Start {
+            PgLSCommand::Clean => commands::clean::clean(self),
+            PgLSCommand::Start {
                 config_path,
                 log_path,
                 log_prefix_name,
             } => commands::daemon::start(self, config_path, Some(log_path), Some(log_prefix_name)),
-            PgtCommand::Stop => commands::daemon::stop(self),
-            PgtCommand::Init => commands::init::init(self),
-            PgtCommand::LspProxy {
+            PgLSCommand::Stop => commands::daemon::stop(self),
+            PgLSCommand::Init => commands::init::init(self),
+            PgLSCommand::LspProxy {
                 config_path,
                 log_path,
                 log_prefix_name,
                 ..
             } => commands::daemon::lsp_proxy(config_path, Some(log_path), Some(log_prefix_name)),
-            PgtCommand::RunServer {
+            PgLSCommand::RunServer {
                 stop_on_disconnect,
                 config_path,
                 log_path,
@@ -118,7 +118,7 @@ impl<'app> CliSession<'app> {
                 Some(log_level),
                 Some(log_kind),
             ),
-            PgtCommand::PrintSocket => commands::daemon::print_socket(),
+            PgLSCommand::PrintSocket => commands::daemon::print_socket(),
         };
 
         if has_metrics {

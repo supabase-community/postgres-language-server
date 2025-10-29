@@ -46,7 +46,7 @@ impl std::str::FromStr for RuleGroup {
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rules {
-    #[doc = r" It enables the lint rules recommended by Postgres Tools. `true` by default."]
+    #[doc = r" It enables the lint rules recommended by Postgres Language Server. `true` by default."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recommended: Option<bool>,
     #[doc = r" It enables ALL rules. The rules that belong to `nursery` won't be enabled."]

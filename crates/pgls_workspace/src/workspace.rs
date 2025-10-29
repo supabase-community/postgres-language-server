@@ -3,7 +3,7 @@ use std::{panic::RefUnwindSafe, path::PathBuf, sync::Arc};
 pub use self::client::{TransportRequest, WorkspaceClient, WorkspaceTransport};
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{PartialConfiguration, RuleSelector};
-use pgls_fs::PgTPath;
+use pgls_fs::PgLSPath;
 #[cfg(feature = "schema")]
 use schemars::{JsonSchema, SchemaGenerator, schema::Schema};
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ pub(crate) use server::document::*;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OpenFileParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
     pub content: String,
     pub version: i32,
 }
@@ -40,13 +40,13 @@ pub struct OpenFileParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct CloseFileParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ChangeFileParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
     pub version: i32,
     pub content: String,
 }
@@ -54,7 +54,7 @@ pub struct ChangeFileParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct IsPathIgnoredParams {
-    pub pgls_path: PgTPath,
+    pub pgls_path: PgLSPath,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -69,7 +69,7 @@ pub struct UpdateSettingsParams {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct GetFileContentParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
@@ -95,7 +95,7 @@ pub struct RegisterProjectFolderParams {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct UnregisterProjectFolderParams {
-    pub path: PgTPath,
+    pub path: PgLSPath,
 }
 
 pub trait Workspace: Send + Sync + RefUnwindSafe {
@@ -191,7 +191,7 @@ where
 /// automatically on drop
 pub struct FileGuard<'app, W: Workspace + ?Sized> {
     workspace: &'app W,
-    path: PgTPath,
+    path: PgLSPath,
 }
 
 impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
