@@ -8,16 +8,12 @@ use super::QueryTryFrom;
 
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
-    (relation
-        (object_reference) @ref
+    (table_reference
+        (schema_identifier) @schema 
+        (table_identifier) @table
     )
-    (insert
-        (object_reference) @ref
-    )
-    (alter_table
-        (keyword_alter)
-        (keyword_table)
-        (object_reference) @ref
+    (table_reference
+        (any_identifier) @table
     )
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
@@ -75,11 +71,19 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            m.captures.iter().for_each(|capture| {
-                if let Some((_, schema, table)) = object_reference_query(capture.node, stmt) {
-                    to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
-                }
-            });
+            if m.captures.len() == 2 {
+                let schema = Some(m.captures[0].node);
+                let table = m.captures[1].node;
+                to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
+            }
+
+            if m.captures.len() == 1 {
+                let table = m.captures[0].node;
+                to_return.push(QueryResult::Relation(RelationMatch {
+                    schema: None,
+                    table,
+                }));
+            }
         });
 
         to_return

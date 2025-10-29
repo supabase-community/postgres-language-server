@@ -17320,7 +17320,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "object_reference"
+                "name": "table_reference"
               },
               {
                 "type": "SEQ",

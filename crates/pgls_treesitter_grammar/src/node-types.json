@@ -8014,11 +8014,11 @@
           "named": true
         },
         {
-          "type": "object_reference",
+          "type": "subquery",
           "named": true
         },
         {
-          "type": "subquery",
+          "type": "table_reference",
           "named": true
         },
         {

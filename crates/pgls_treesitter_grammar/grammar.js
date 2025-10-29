@@ -2838,7 +2838,7 @@ module.exports = grammar({
           choice(
             $.subquery,
             $.invocation,
-            $.object_reference,
+            $.table_reference,
             wrapped_in_parenthesis($.values)
           ),
           optional(seq($._alias, optional(alias($._column_list, $.list))))
