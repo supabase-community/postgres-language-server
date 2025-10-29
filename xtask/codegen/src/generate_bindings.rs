@@ -14,8 +14,18 @@ use pgls_workspace::workspace_types::{generate_type, methods, ModuleQueue};
 use xtask::{project_root, Mode, Result};
 
 pub fn generate_bindings(mode: Mode) -> Result<()> {
-    let bindings_path =
+    let postgrestools_path =
         project_root().join("packages/@postgrestools/backend-jsonrpc/src/workspace.ts");
+    let postgres_language_server_path =
+        project_root().join("packages/@postgres-language-server/backend-jsonrpc/src/workspace.ts");
+
+    generate_bindings_for_path(&postgrestools_path, &mode)?;
+    generate_bindings_for_path(&postgres_language_server_path, &mode)?;
+
+    Ok(())
+}
+
+fn generate_bindings_for_path(bindings_path: &std::path::Path, mode: &Mode) -> Result<()> {
     let methods = methods();
 
     let mut declarations = Vec::new();
@@ -429,7 +439,7 @@ pub fn generate_bindings(mode: Mode) -> Result<()> {
     let printed = formatted.print().unwrap();
     let code = printed.into_code();
 
-    update(&bindings_path, &code, &mode)?;
+    update(bindings_path, &code, mode)?;
 
     Ok(())
 }

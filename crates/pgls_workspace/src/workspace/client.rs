@@ -148,11 +148,18 @@ where
         self.request("pgt/get_file_content", params)
     }
 
-    fn pull_diagnostics(
+    fn pull_file_diagnostics(
         &self,
-        params: crate::features::diagnostics::PullDiagnosticsParams,
+        params: crate::features::diagnostics::PullFileDiagnosticsParams,
     ) -> Result<crate::features::diagnostics::PullDiagnosticsResult, WorkspaceError> {
         self.request("pgt/pull_diagnostics", params)
+    }
+
+    fn pull_db_diagnostics(
+        &self,
+        params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
+    ) -> Result<crate::features::diagnostics::PullDiagnosticsResult, WorkspaceError> {
+        self.request("pgt/pull_db_diagnostics", params)
     }
 
     fn get_completions(

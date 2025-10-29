@@ -27,7 +27,7 @@ export type ProjectKey = string;
 export interface GetFileContentParams {
 	path: PgTPath;
 }
-export interface PullDiagnosticsParams {
+export interface PullFileDiagnosticsParams {
 	categories: RuleCategories;
 	max_diagnostics: number;
 	only: RuleCode[];
@@ -39,7 +39,6 @@ export type RuleCode = string;
 export type RuleCategory = "Lint" | "Action" | "Transformation";
 export interface PullDiagnosticsResult {
 	diagnostics: Diagnostic[];
-	errors: number;
 	skipped_diagnostics: number;
 }
 /**
@@ -619,8 +618,8 @@ export interface Workspace {
 		params: RegisterProjectFolderParams,
 	): Promise<ProjectKey>;
 	getFileContent(params: GetFileContentParams): Promise<string>;
-	pullDiagnostics(
-		params: PullDiagnosticsParams,
+	pullFileDiagnostics(
+		params: PullFileDiagnosticsParams,
 	): Promise<PullDiagnosticsResult>;
 	getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
 	updateSettings(params: UpdateSettingsParams): Promise<void>;
@@ -640,8 +639,8 @@ export function createWorkspace(transport: Transport): Workspace {
 		getFileContent(params) {
 			return transport.request("pgt/get_file_content", params);
 		},
-		pullDiagnostics(params) {
-			return transport.request("pgt/pull_diagnostics", params);
+		pullFileDiagnostics(params) {
+			return transport.request("pgt/pull_file_diagnostics", params);
 		},
 		getCompletions(params) {
 			return transport.request("pgt/get_completions", params);

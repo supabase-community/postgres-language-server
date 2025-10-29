@@ -36,7 +36,7 @@ use crate::{
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
-        diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
+        diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
         on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
@@ -425,9 +425,9 @@ impl Workspace for WorkspaceServer {
     }
 
     #[ignored_path(path=&params.path)]
-    fn pull_diagnostics(
+    fn pull_file_diagnostics(
         &self,
-        params: PullDiagnosticsParams,
+        params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         let settings = self.workspaces();
 
@@ -438,7 +438,6 @@ impl Workspace for WorkspaceServer {
                 // we might want to return an error here in the future
                 return Ok(PullDiagnosticsResult {
                     diagnostics: Vec::new(),
-                    errors: 0,
                     skipped_diagnostics: 0,
                 });
             }
@@ -670,17 +669,18 @@ impl Workspace for WorkspaceServer {
         diagnostics.retain(|d| !suppressions.is_suppressed(d));
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
-        let errors = diagnostics
-            .iter()
-            .filter(|d| d.severity() == Severity::Error || d.severity() == Severity::Fatal)
-            .count();
-
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
         Ok(PullDiagnosticsResult {
             diagnostics,
-            errors,
             skipped_diagnostics: 0,
         })
+    }
+
+    fn pull_db_diagnostics(
+        &self,
+        _params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
+    ) -> Result<PullDiagnosticsResult, WorkspaceError> {
+        Ok(PullDiagnosticsResult::default())
     }
 
     #[ignored_path(path=&params.path)]

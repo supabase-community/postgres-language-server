@@ -4,10 +4,10 @@ use pgls_fs::PgTPath;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct PullDiagnosticsParams {
+pub struct PullFileDiagnosticsParams {
     pub path: PgTPath,
     pub categories: RuleCategories,
-    pub max_diagnostics: u64,
+    pub max_diagnostics: u32,
     pub only: Vec<RuleSelector>,
     pub skip: Vec<RuleSelector>,
 }
@@ -16,6 +16,11 @@ pub struct PullDiagnosticsParams {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PullDiagnosticsResult {
     pub diagnostics: Vec<pgls_diagnostics::serde::Diagnostic>,
-    pub errors: usize,
-    pub skipped_diagnostics: u64,
+    pub skipped_diagnostics: u32,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PullDatabaseDiagnosticsParams {
+    pub max_diagnostics: u32,
 }

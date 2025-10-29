@@ -1,7 +1,7 @@
 // Generated file, do not edit by hand, see `xtask/codegen`
 import type { Transport } from "./transport";
 export interface IsPathIgnoredParams {
-	pgt_path: PgTPath;
+	pgls_path: PgTPath;
 }
 export interface PgTPath {
 	/**
@@ -27,7 +27,7 @@ export type ProjectKey = string;
 export interface GetFileContentParams {
 	path: PgTPath;
 }
-export interface PullDiagnosticsParams {
+export interface PullFileDiagnosticsParams {
 	categories: RuleCategories;
 	max_diagnostics: number;
 	only: RuleCode[];
@@ -39,7 +39,6 @@ export type RuleCode = string;
 export type RuleCategory = "Lint" | "Action" | "Transformation";
 export interface PullDiagnosticsResult {
 	diagnostics: Diagnostic[];
-	errors: number;
 	skipped_diagnostics: number;
 }
 /**
@@ -63,6 +62,7 @@ export interface Advices {
 	advices: Advice[];
 }
 export type Category =
+	| "lint/safety/addSerialColumn"
 	| "lint/safety/addingFieldWithDefault"
 	| "lint/safety/addingForeignKeyConstraint"
 	| "lint/safety/addingNotNullField"
@@ -77,7 +77,10 @@ export type Category =
 	| "lint/safety/banTruncateCascade"
 	| "lint/safety/changingColumnType"
 	| "lint/safety/constraintMissingNotValid"
+	| "lint/safety/creatingEnum"
 	| "lint/safety/disallowUniqueConstraint"
+	| "lint/safety/lockTimeoutWarning"
+	| "lint/safety/multipleAlterTable"
 	| "lint/safety/preferBigInt"
 	| "lint/safety/preferBigintOverInt"
 	| "lint/safety/preferBigintOverSmallint"
@@ -90,6 +93,7 @@ export type Category =
 	| "lint/safety/renamingTable"
 	| "lint/safety/requireConcurrentIndexCreation"
 	| "lint/safety/requireConcurrentIndexDeletion"
+	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
 	| "stdin"
 	| "check"
@@ -122,7 +126,7 @@ export type DiagnosticTags = DiagnosticTag[];
 /**
 	* Serializable representation of a [Diagnostic](super::Diagnostic) advice
 
-See the [Visitor] trait for additional documentation on all the supported advice types.
+See the [Visitor] trait for additional documentation on all the supported advice types. 
 	 */
 export type Advice =
 	| { log: [LogCategory, MarkupBuf] }
@@ -227,7 +231,7 @@ export interface CompletionItem {
 /**
 	* The text that the editor should fill in. If `None`, the `label` should be used. Tables, for example, might have different completion_texts:
 
-label: "users", description: "Schema: auth", completion_text: "auth.users".
+label: "users", description: "Schema: auth", completion_text: "auth.users". 
 	 */
 export interface CompletionText {
 	is_snippet: boolean;
@@ -300,6 +304,10 @@ export interface PartialDatabaseConfiguration {
 	 * The connection timeout in seconds.
 	 */
 	connTimeoutSecs?: number;
+	/**
+	 * A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields.
+	 */
+	connectionString?: string;
 	/**
 	 * The name of the database.
 	 */
@@ -411,7 +419,7 @@ export interface PartialVcsConfiguration {
 	/**
 	* The folder where we should check for VCS files. By default, we will use the same folder where `postgres-language-server.jsonc` was found.
 
-If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted
+If we can't find the configuration, it will attempt to use the current working directory. If no current working directory can't be found, we won't use the VCS integration, and a diagnostic will be emitted 
 	 */
 	root?: string;
 	/**
@@ -435,6 +443,10 @@ export type VcsClientKind = "git";
  * A list of rules that belong to this group
  */
 export interface Safety {
+	/**
+	 * Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
+	 */
+	addSerialColumn?: RuleConfiguration_for_Null;
 	/**
 	 * Adding a column with a DEFAULT value may lead to a table rewrite while holding an ACCESS EXCLUSIVE lock.
 	 */
@@ -496,9 +508,21 @@ export interface Safety {
 	 */
 	constraintMissingNotValid?: RuleConfiguration_for_Null;
 	/**
+	 * Creating enum types is not recommended for new applications.
+	 */
+	creatingEnum?: RuleConfiguration_for_Null;
+	/**
 	 * Disallow adding a UNIQUE constraint without using an existing index.
 	 */
 	disallowUniqueConstraint?: RuleConfiguration_for_Null;
+	/**
+	 * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
+	 */
+	lockTimeoutWarning?: RuleConfiguration_for_Null;
+	/**
+	 * Multiple ALTER TABLE statements on the same table should be combined into a single statement.
+	 */
+	multipleAlterTable?: RuleConfiguration_for_Null;
 	/**
 	 * Prefer BIGINT over smaller integer types.
 	 */
@@ -552,6 +576,10 @@ export interface Safety {
 	 */
 	requireConcurrentIndexDeletion?: RuleConfiguration_for_Null;
 	/**
+	 * Running additional statements while holding an ACCESS EXCLUSIVE lock blocks all table access.
+	 */
+	runningStatementWhileHoldingAccessExclusive?: RuleConfiguration_for_Null;
+	/**
 	 * Detects problematic transaction nesting that could lead to unexpected behavior.
 	 */
 	transactionNesting?: RuleConfiguration_for_Null;
@@ -590,8 +618,8 @@ export interface Workspace {
 		params: RegisterProjectFolderParams,
 	): Promise<ProjectKey>;
 	getFileContent(params: GetFileContentParams): Promise<string>;
-	pullDiagnostics(
-		params: PullDiagnosticsParams,
+	pullFileDiagnostics(
+		params: PullFileDiagnosticsParams,
 	): Promise<PullDiagnosticsResult>;
 	getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
 	updateSettings(params: UpdateSettingsParams): Promise<void>;
@@ -611,8 +639,8 @@ export function createWorkspace(transport: Transport): Workspace {
 		getFileContent(params) {
 			return transport.request("pgt/get_file_content", params);
 		},
-		pullDiagnostics(params) {
-			return transport.request("pgt/pull_diagnostics", params);
+		pullFileDiagnostics(params) {
+			return transport.request("pgt/pull_file_diagnostics", params);
 		},
 		getCompletions(params) {
 			return transport.request("pgt/get_completions", params);
