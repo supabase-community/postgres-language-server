@@ -84,7 +84,7 @@ where
     }
 
     pub fn shutdown(self) -> Result<(), WorkspaceError> {
-        self.request("pgt/shutdown", ())
+        self.request("pgls/shutdown", ())
     }
 }
 
@@ -96,48 +96,48 @@ where
         &self,
         params: crate::features::code_actions::CodeActionsParams,
     ) -> Result<crate::features::code_actions::CodeActionsResult, WorkspaceError> {
-        self.request("pgt/code_actions", params)
+        self.request("pgls/code_actions", params)
     }
 
     fn execute_statement(
         &self,
         params: crate::features::code_actions::ExecuteStatementParams,
     ) -> Result<crate::features::code_actions::ExecuteStatementResult, WorkspaceError> {
-        self.request("pgt/execute_statement", params)
+        self.request("pgls/execute_statement", params)
     }
 
     fn register_project_folder(
         &self,
         params: RegisterProjectFolderParams,
     ) -> Result<ProjectKey, WorkspaceError> {
-        self.request("pgt/register_project_folder", params)
+        self.request("pgls/register_project_folder", params)
     }
 
     fn unregister_project_folder(
         &self,
         params: UnregisterProjectFolderParams,
     ) -> Result<(), WorkspaceError> {
-        self.request("pgt/unregister_project_folder", params)
+        self.request("pgls/unregister_project_folder", params)
     }
 
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.request("pgt/open_file", params)
+        self.request("pgls/open_file", params)
     }
 
     fn close_file(&self, params: CloseFileParams) -> Result<(), WorkspaceError> {
-        self.request("pgt/close_file", params)
+        self.request("pgls/close_file", params)
     }
 
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        self.request("pgt/change_file", params)
+        self.request("pgls/change_file", params)
     }
 
     fn update_settings(&self, params: super::UpdateSettingsParams) -> Result<(), WorkspaceError> {
-        self.request("pgt/update_settings", params)
+        self.request("pgls/update_settings", params)
     }
 
     fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {
-        self.request("pgt/is_path_ignored", params)
+        self.request("pgls/is_path_ignored", params)
     }
 
     fn server_info(&self) -> Option<&ServerInfo> {
@@ -145,34 +145,34 @@ where
     }
 
     fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        self.request("pgt/get_file_content", params)
+        self.request("pgls/get_file_content", params)
     }
 
     fn pull_file_diagnostics(
         &self,
         params: crate::features::diagnostics::PullFileDiagnosticsParams,
     ) -> Result<crate::features::diagnostics::PullDiagnosticsResult, WorkspaceError> {
-        self.request("pgt/pull_diagnostics", params)
+        self.request("pgls/pull_diagnostics", params)
     }
 
     fn pull_db_diagnostics(
         &self,
         params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
     ) -> Result<crate::features::diagnostics::PullDiagnosticsResult, WorkspaceError> {
-        self.request("pgt/pull_db_diagnostics", params)
+        self.request("pgls/pull_db_diagnostics", params)
     }
 
     fn get_completions(
         &self,
         params: super::GetCompletionsParams,
     ) -> Result<crate::features::completions::CompletionsResult, WorkspaceError> {
-        self.request("pgt/get_completions", params)
+        self.request("pgls/get_completions", params)
     }
 
     fn on_hover(
         &self,
         params: crate::features::on_hover::OnHoverParams,
     ) -> Result<crate::features::on_hover::OnHoverResult, WorkspaceError> {
-        self.request("pgt/on_hover", params)
+        self.request("pgls/on_hover", params)
     }
 }

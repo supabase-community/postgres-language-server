@@ -128,7 +128,7 @@ pub fn generate_bindings(mode: Mode) -> Result<()> {
                                             [
                                                 AnyJsCallArgument::AnyJsExpression(
                                                     AnyJsExpression::AnyJsLiteralExpression(
-                                                        AnyJsLiteralExpression::JsStringLiteralExpression(make::js_string_literal_expression(make::js_string_literal(&format!("pgt/{}", method.name)))),
+                                                        AnyJsLiteralExpression::JsStringLiteralExpression(make::js_string_literal_expression(make::js_string_literal(&format!("pgls/{}", method.name)))),
                                                     ),
                                                 ),
                                                 AnyJsCallArgument::AnyJsExpression(
