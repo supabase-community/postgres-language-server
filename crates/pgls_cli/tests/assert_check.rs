@@ -65,7 +65,9 @@ fn check_stdin_snapshot() {
             "--config-path",
             CONFIG_PATH,
             "--stdin-file-path",
-            "virtual.sql"
+            "virtual.sql",
+            "--log-level",
+            "none"
         ],
         Some("alter tqjable stdin drop column id;\n"),
         None
@@ -87,7 +89,7 @@ fn check_directory_traversal_snapshot() {
 }
 
 fn run_check(args: &[&str]) -> String {
-    let mut full_args = vec!["--config-path", CONFIG_PATH];
+    let mut full_args = vec!["--config-path", CONFIG_PATH, "--log-level", "none"];
     full_args.extend_from_slice(args);
     run_check_with(&full_args, None, None)
 }
