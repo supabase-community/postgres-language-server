@@ -1,3 +1,3 @@
 {
-  "postgrestools.bin": "./target/debug/postgrestools"
+  "postgres-language-server.bin": "./target/debug/postgres-language-server"
 }

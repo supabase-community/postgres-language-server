@@ -1,0 +1,11 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\n-- dollar quoting with mismatched tags\n$foo$hello world$bar$\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "-- dollar quoting with mismatched tags" @ LineComment,
+    "\n" @ LineEnding { count: 1 },
+    "$foo$hello world$bar$\n" @ Literal { kind: DollarQuotedString { terminated: false } },
+]

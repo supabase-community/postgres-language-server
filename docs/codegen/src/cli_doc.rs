@@ -1,4 +1,4 @@
-use pgt_cli::pgt_command;
+use pgls_cli::pg_l_s_command;
 use std::{fs, path::Path};
 
 use crate::utils;
@@ -11,7 +11,7 @@ pub fn generate_cli_doc(docs_dir: &Path) -> anyhow::Result<()> {
     let new_content = utils::replace_section(
         &content,
         "CLI_REF",
-        &pgt_command().render_markdown("postgres-language-server"),
+        &pg_l_s_command().render_markdown("postgres-language-server"),
     );
 
     fs::write(file_path, &new_content)?;

@@ -1,0 +1,17 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Environment variables and configuration for Postgres Tools"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_env"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_console = { workspace = true }
+
+[dev-dependencies]

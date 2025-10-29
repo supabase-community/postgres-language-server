@@ -1,0 +1,27 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: result
+snapshot_kind: text
+---
+[
+    "grant" @ Ident,
+    " " @ Space,
+    "usage" @ Ident,
+    " " @ Space,
+    "on" @ Ident,
+    " " @ Space,
+    "schema" @ Ident,
+    " " @ Space,
+    "public" @ Ident,
+    "," @ Comma,
+    " " @ Space,
+    "app_public" @ Ident,
+    "," @ Comma,
+    " " @ Space,
+    "app_hidden" @ Ident,
+    " " @ Space,
+    "to" @ Ident,
+    " " @ Space,
+    ":DATABASE_VISITOR" @ NamedParam { kind: ColonRaw },
+    ";" @ Semi,
+]

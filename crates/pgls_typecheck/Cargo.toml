@@ -1,0 +1,41 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_typecheck"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+globset                           = "0.4.16"
+itertools                         = { version = "0.14.0" }
+once_cell                         = "1.20.2"
+pgls_console.workspace            = true
+pgls_diagnostics.workspace        = true
+pgls_query.workspace              = true
+pgls_schema_cache.workspace       = true
+pgls_text_size.workspace          = true
+pgls_treesitter.workspace         = true
+pgls_treesitter_grammar.workspace = true
+regex                             = "1.11.1"
+sqlx.workspace                    = true
+tokio.workspace                   = true
+tree-sitter.workspace             = true
+uuid                              = { version = "1.18.1", features = ["v4"] }
+
+[dev-dependencies]
+criterion.workspace       = true
+insta.workspace           = true
+pgls_test_utils.workspace = true
+
+[[bench]]
+harness = false
+name    = "error_rewriting"
+
+[lib]
+doctest = false

@@ -1,5 +1,5 @@
 [project]
-name = "postgrestools"
+name = "postgres-language-server"
 version = "0.1.0"
 description = "A collection of language tools and a Language Server Protocol (LSP) implementation for Postgres, focusing on developer experience and reliable SQL tooling."
 readme = "README.md"

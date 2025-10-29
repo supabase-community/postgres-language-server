@@ -1213,17 +1213,17 @@ dependencies = [
  "anyhow",
  "biome_string_case",
  "bpaf",
- "pgt_analyse",
- "pgt_analyser",
- "pgt_cli",
- "pgt_configuration",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_env",
- "pgt_query",
- "pgt_query_ext",
- "pgt_statement_splitter",
- "pgt_workspace",
+ "pgls_analyse",
+ "pgls_analyser",
+ "pgls_cli",
+ "pgls_configuration",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_env",
+ "pgls_query",
+ "pgls_query_ext",
+ "pgls_statement_splitter",
+ "pgls_workspace",
  "pulldown-cmark",
  "regex",
  "schemars",
@@ -2637,42 +2637,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_analyse"
+name = "pgls_analyse"
 version = "0.0.0"
 dependencies = [
  "biome_deserialize 0.6.0",
  "biome_deserialize_macros 0.6.0",
  "enumflags2",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_query",
- "pgt_schema_cache",
- "pgt_text_size",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_query",
+ "pgls_schema_cache",
+ "pgls_text_size",
  "rustc-hash 2.1.0",
  "schemars",
  "serde",
 ]
 
 [[package]]
-name = "pgt_analyser"
+name = "pgls_analyser"
 version = "0.0.0"
 dependencies = [
  "insta",
- "pgt_analyse",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_query",
- "pgt_query_ext",
- "pgt_schema_cache",
- "pgt_statement_splitter",
- "pgt_test_macros",
- "pgt_text_size",
+ "pgls_analyse",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_query",
+ "pgls_query_ext",
+ "pgls_schema_cache",
+ "pgls_statement_splitter",
+ "pgls_test_macros",
+ "pgls_text_size",
  "serde",
  "termcolor",
 ]
 
 [[package]]
-name = "pgt_cli"
+name = "pgls_cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
@@ -2687,15 +2687,15 @@ dependencies = [
  "libc",
  "mimalloc",
  "path-absolutize",
- "pgt_analyse",
- "pgt_configuration",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_env",
- "pgt_fs",
- "pgt_lsp",
- "pgt_text_edit",
- "pgt_workspace",
+ "pgls_analyse",
+ "pgls_configuration",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_env",
+ "pgls_fs",
+ "pgls_lsp",
+ "pgls_text_edit",
+ "pgls_workspace",
  "quick-junit",
  "rayon",
  "rustc-hash 2.1.0",
@@ -2711,17 +2711,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_completions"
+name = "pgls_completions"
 version = "0.0.0"
 dependencies = [
  "async-std",
  "criterion",
  "fuzzy-matcher",
- "pgt_schema_cache",
- "pgt_test_utils",
- "pgt_text_size",
- "pgt_treesitter",
- "pgt_treesitter_grammar",
+ "pgls_schema_cache",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "pgls_treesitter",
+ "pgls_treesitter_grammar",
  "schemars",
  "serde",
  "serde_json",
@@ -2732,7 +2732,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_configuration"
+name = "pgls_configuration"
 version = "0.0.0"
 dependencies = [
  "biome_deserialize 0.6.0",
@@ -2740,12 +2740,12 @@ dependencies = [
  "bpaf",
  "indexmap 2.7.0",
  "oxc_resolver",
- "pgt_analyse",
- "pgt_analyser",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_env",
- "pgt_text_size",
+ "pgls_analyse",
+ "pgls_analyser",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_env",
+ "pgls_text_size",
  "rustc-hash 2.1.0",
  "schemars",
  "serde",
@@ -2753,11 +2753,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_console"
+name = "pgls_console"
 version = "0.0.0"
 dependencies = [
- "pgt_markup",
- "pgt_text_size",
+ "pgls_markup",
+ "pgls_text_size",
  "schemars",
  "serde",
  "termcolor",
@@ -2767,18 +2767,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_diagnostics"
+name = "pgls_diagnostics"
 version = "0.0.0"
 dependencies = [
  "backtrace",
  "bpaf",
  "enumflags2",
  "oxc_resolver",
- "pgt_console",
- "pgt_diagnostics_categories",
- "pgt_diagnostics_macros",
- "pgt_text_edit",
- "pgt_text_size",
+ "pgls_console",
+ "pgls_diagnostics_categories",
+ "pgls_diagnostics_macros",
+ "pgls_text_edit",
+ "pgls_text_size",
  "schemars",
  "serde",
  "serde_json",
@@ -2787,17 +2787,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_diagnostics_categories"
+name = "pgls_diagnostics_categories"
 version = "0.0.0"
 dependencies = [
- "pgt_env",
+ "pgls_env",
  "quote",
  "schemars",
  "serde",
 ]
 
 [[package]]
-name = "pgt_diagnostics_macros"
+name = "pgls_diagnostics_macros"
 version = "0.0.0"
 dependencies = [
  "proc-macro-error",
@@ -2807,14 +2807,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_env"
+name = "pgls_env"
 version = "0.0.0"
 dependencies = [
- "pgt_console",
+ "pgls_console",
 ]
 
 [[package]]
-name = "pgt_fs"
+name = "pgls_fs"
 version = "0.0.0"
 dependencies = [
  "crossbeam",
@@ -2822,7 +2822,7 @@ dependencies = [
  "enumflags2",
  "oxc_resolver",
  "parking_lot",
- "pgt_diagnostics",
+ "pgls_diagnostics",
  "rayon",
  "rustc-hash 2.1.0",
  "schemars",
@@ -2832,17 +2832,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_hover"
+name = "pgls_hover"
 version = "0.0.0"
 dependencies = [
  "humansize",
  "insta",
- "pgt_query",
- "pgt_schema_cache",
- "pgt_test_utils",
- "pgt_text_size",
- "pgt_treesitter",
- "pgt_treesitter_grammar",
+ "pgls_query",
+ "pgls_schema_cache",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "pgls_treesitter",
+ "pgls_treesitter_grammar",
  "schemars",
  "serde",
  "serde_json",
@@ -2853,18 +2853,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_lexer"
+name = "pgls_lexer"
 version = "0.0.0"
 dependencies = [
  "insta",
- "pgt_diagnostics",
- "pgt_lexer_codegen",
- "pgt_text_size",
- "pgt_tokenizer",
+ "pgls_diagnostics",
+ "pgls_lexer_codegen",
+ "pgls_text_size",
+ "pgls_tokenizer",
 ]
 
 [[package]]
-name = "pgt_lexer_codegen"
+name = "pgls_lexer_codegen"
 version = "0.0.0"
 dependencies = [
  "anyhow",
@@ -2877,22 +2877,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_lsp"
+name = "pgls_lsp"
 version = "0.0.0"
 dependencies = [
  "anyhow",
  "biome_deserialize 0.6.0",
  "futures",
- "pgt_analyse",
- "pgt_completions",
- "pgt_configuration",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_fs",
- "pgt_test_utils",
- "pgt_text_edit",
- "pgt_text_size",
- "pgt_workspace",
+ "pgls_analyse",
+ "pgls_completions",
+ "pgls_configuration",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_fs",
+ "pgls_test_utils",
+ "pgls_text_edit",
+ "pgls_text_size",
+ "pgls_workspace",
  "rustc-hash 2.1.0",
  "serde",
  "serde_json",
@@ -2906,7 +2906,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_markup"
+name = "pgls_markup"
 version = "0.0.0"
 dependencies = [
  "proc-macro-error",
@@ -2915,16 +2915,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_plpgsql_check"
+name = "pgls_plpgsql_check"
 version = "0.0.0"
 dependencies = [
- "pgt_console",
- "pgt_diagnostics",
- "pgt_query",
- "pgt_query_ext",
- "pgt_schema_cache",
- "pgt_test_utils",
- "pgt_text_size",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_query",
+ "pgls_query_ext",
+ "pgls_schema_cache",
+ "pgls_test_utils",
+ "pgls_text_size",
  "regex",
  "serde",
  "serde_json",
@@ -2933,7 +2933,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_query"
+name = "pgls_query"
 version = "0.0.0"
 dependencies = [
  "bindgen",
@@ -2942,7 +2942,7 @@ dependencies = [
  "easy-parallel",
  "fs_extra",
  "glob",
- "pgt_query_macros",
+ "pgls_query_macros",
  "prost",
  "prost-build",
  "thiserror 1.0.69",
@@ -2950,16 +2950,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_query_ext"
+name = "pgls_query_ext"
 version = "0.0.0"
 dependencies = [
- "pgt_diagnostics",
- "pgt_query",
- "pgt_text_size",
+ "pgls_diagnostics",
+ "pgls_query",
+ "pgls_text_size",
 ]
 
 [[package]]
-name = "pgt_query_macros"
+name = "pgls_query_macros"
 version = "0.0.0"
 dependencies = [
  "convert_case",
@@ -2971,15 +2971,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_schema_cache"
+name = "pgls_schema_cache"
 version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-std",
  "futures-util",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_test_utils",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_test_utils",
  "serde",
  "serde_json",
  "sqlx",
@@ -2988,30 +2988,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_statement_splitter"
+name = "pgls_statement_splitter"
 version = "0.0.0"
 dependencies = [
  "criterion",
  "ntest",
- "pgt_diagnostics",
- "pgt_lexer",
- "pgt_query",
- "pgt_text_size",
+ "pgls_diagnostics",
+ "pgls_lexer",
+ "pgls_query",
+ "pgls_text_size",
  "regex",
 ]
 
 [[package]]
-name = "pgt_suppressions"
+name = "pgls_suppressions"
 version = "0.0.0"
 dependencies = [
- "pgt_analyse",
- "pgt_diagnostics",
- "pgt_text_size",
+ "pgls_analyse",
+ "pgls_diagnostics",
+ "pgls_text_size",
  "tracing",
 ]
 
 [[package]]
-name = "pgt_test_macros"
+name = "pgls_test_macros"
 version = "0.0.0"
 dependencies = [
  "globwalk",
@@ -3022,30 +3022,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_test_utils"
+name = "pgls_test_utils"
 version = "0.0.0"
 dependencies = [
  "anyhow",
  "clap",
  "dotenv",
- "pgt_treesitter_grammar",
+ "pgls_treesitter_grammar",
  "sqlx",
  "tree-sitter",
  "uuid",
 ]
 
 [[package]]
-name = "pgt_text_edit"
+name = "pgls_text_edit"
 version = "0.0.0"
 dependencies = [
- "pgt_text_size",
+ "pgls_text_size",
  "schemars",
  "serde",
  "similar",
 ]
 
 [[package]]
-name = "pgt_text_size"
+name = "pgls_text_size"
 version = "0.0.0"
 dependencies = [
  "schemars",
@@ -3055,26 +3055,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_tokenizer"
+name = "pgls_tokenizer"
 version = "0.0.0"
 dependencies = [
  "insta",
 ]
 
 [[package]]
-name = "pgt_treesitter"
+name = "pgls_treesitter"
 version = "0.0.0"
 dependencies = [
  "clap",
- "pgt_schema_cache",
- "pgt_test_utils",
- "pgt_text_size",
- "pgt_treesitter_grammar",
+ "pgls_schema_cache",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "pgls_treesitter_grammar",
  "tree-sitter",
 ]
 
 [[package]]
-name = "pgt_treesitter_grammar"
+name = "pgls_treesitter_grammar"
 version = "0.0.0"
 dependencies = [
  "cc",
@@ -3085,15 +3085,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_type_resolver"
+name = "pgls_type_resolver"
 version = "0.0.0"
 dependencies = [
- "pgt_query",
- "pgt_schema_cache",
+ "pgls_query",
+ "pgls_schema_cache",
 ]
 
 [[package]]
-name = "pgt_typecheck"
+name = "pgls_typecheck"
 version = "0.0.0"
 dependencies = [
  "criterion",
@@ -3101,14 +3101,14 @@ dependencies = [
  "insta",
  "itertools 0.14.0",
  "once_cell",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_query",
- "pgt_schema_cache",
- "pgt_test_utils",
- "pgt_text_size",
- "pgt_treesitter",
- "pgt_treesitter_grammar",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_query",
+ "pgls_schema_cache",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "pgls_treesitter",
+ "pgls_treesitter_grammar",
  "regex",
  "sqlx",
  "tokio",
@@ -3117,7 +3117,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_workspace"
+name = "pgls_workspace"
 version = "0.0.0"
 dependencies = [
  "biome_deserialize 0.6.0",
@@ -3128,28 +3128,28 @@ dependencies = [
  "globset",
  "ignore",
  "lru",
- "pgt_analyse",
- "pgt_analyser",
- "pgt_completions",
- "pgt_configuration",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_env",
- "pgt_fs",
- "pgt_hover",
- "pgt_lexer",
- "pgt_plpgsql_check",
- "pgt_query",
- "pgt_query_ext",
- "pgt_schema_cache",
- "pgt_statement_splitter",
- "pgt_suppressions",
- "pgt_test_utils",
- "pgt_text_size",
- "pgt_tokenizer",
- "pgt_treesitter_grammar",
- "pgt_typecheck",
- "pgt_workspace_macros",
+ "pgls_analyse",
+ "pgls_analyser",
+ "pgls_completions",
+ "pgls_configuration",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_env",
+ "pgls_fs",
+ "pgls_hover",
+ "pgls_lexer",
+ "pgls_plpgsql_check",
+ "pgls_query",
+ "pgls_query_ext",
+ "pgls_schema_cache",
+ "pgls_statement_splitter",
+ "pgls_suppressions",
+ "pgls_test_utils",
+ "pgls_text_size",
+ "pgls_tokenizer",
+ "pgls_treesitter_grammar",
+ "pgls_typecheck",
+ "pgls_workspace_macros",
  "regex",
  "rustc-hash 2.1.0",
  "schemars",
@@ -3165,7 +3165,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pgt_workspace_macros"
+name = "pgls_workspace_macros"
 version = "0.0.0"
 dependencies = [
  "proc-macro2",
@@ -3715,14 +3715,14 @@ name = "rules_check"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "pgt_analyse",
- "pgt_analyser",
- "pgt_console",
- "pgt_diagnostics",
- "pgt_query",
- "pgt_query_ext",
- "pgt_statement_splitter",
- "pgt_workspace",
+ "pgls_analyse",
+ "pgls_analyser",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_query",
+ "pgls_query_ext",
+ "pgls_statement_splitter",
+ "pgls_workspace",
  "pulldown-cmark",
 ]
 
@@ -5587,11 +5587,11 @@ dependencies = [
  "biome_rowan",
  "biome_string_case",
  "bpaf",
- "pgt_analyse",
- "pgt_analyser",
- "pgt_diagnostics",
- "pgt_env",
- "pgt_workspace",
+ "pgls_analyse",
+ "pgls_analyser",
+ "pgls_diagnostics",
+ "pgls_env",
+ "pgls_workspace",
  "proc-macro2",
  "pulldown-cmark",
  "quote",

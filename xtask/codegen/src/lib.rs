@@ -13,7 +13,7 @@ pub use self::generate_crate::generate_crate;
 pub use self::generate_new_analyser_rule::generate_new_analyser_rule;
 use bpaf::Bpaf;
 use generate_new_analyser_rule::Category;
-use pgt_diagnostics::Severity;
+use pgls_diagnostics::Severity;
 use std::path::Path;
 use xtask::{glue::fs2, Mode, Result};
 

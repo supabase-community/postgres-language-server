@@ -1,0 +1,20 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(r#\"\nU&\"d\\0061t\\+000061\"\n\nU&\"\\0441\\043B\\043E\\043D\"\n\nu&'\\0441\\043B'\n\nU&\"d!0061t!+000061\" UESCAPE '!'\n\"#)"
+snapshot_kind: text
+---
+[
+    "\n" @ LineEnding { count: 1 },
+    "U&\"d\\0061t\\+000061\"" @ QuotedIdent { terminated: true },
+    "\n\n" @ LineEnding { count: 2 },
+    "U&\"\\0441\\043B\\043E\\043D\"" @ QuotedIdent { terminated: true },
+    "\n\n" @ LineEnding { count: 2 },
+    "u&'\\0441\\043B'" @ Literal { kind: UnicodeEscStr { terminated: true } },
+    "\n\n" @ LineEnding { count: 2 },
+    "U&\"d!0061t!+000061\"" @ QuotedIdent { terminated: true },
+    " " @ Space,
+    "UESCAPE" @ Ident,
+    " " @ Space,
+    "'!'" @ Literal { kind: Str { terminated: true } },
+    "\n" @ LineEnding { count: 1 },
+]
