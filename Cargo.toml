@@ -94,10 +94,8 @@ pgls_workspace              = { path = "./crates/pgls_workspace", version = "0.0
 pgls_workspace_macros       = { path = "./crates/pgls_workspace_macros", version = "0.0.0" }
 
 pgls_test_macros = { path = "./crates/pgls_test_macros" }
-pgls_test_utils  = { path = "./crates/pgls_test_utils" }
+pgls_test_utils  = { path = "./crates/pgls_test_utils", version = "0.0.0" }
 
-[workspace.dev-dependencies]
-pgt_test_utils              = { path = "./crates/pgt_test_utils", version = "0.0.0" }
 
 [profile.dev.package]
 insta.opt-level = 3
