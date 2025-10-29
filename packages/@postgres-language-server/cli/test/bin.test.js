@@ -57,6 +57,7 @@ describe("postgres-language-server bin", () => {
       });
     });
 
+    console.log(result);
     expect(result.code).not.toBe(0);
   });
 });
