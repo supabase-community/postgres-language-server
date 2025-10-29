@@ -103,7 +103,7 @@ mod tests {
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
@@ -129,7 +129,7 @@ mod tests {
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
@@ -164,7 +164,7 @@ from
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
@@ -195,7 +195,7 @@ from
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();

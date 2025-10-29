@@ -18,7 +18,7 @@ pub(crate) static OBJECT_REFERENCE_QUERY: LazyLock<tree_sitter::Query> = LazyLoc
         object_reference_3of3: (any_identifier) @tail
     )
 "#;
-    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
+    tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
         .expect("Invalid TS Query")
 });
 

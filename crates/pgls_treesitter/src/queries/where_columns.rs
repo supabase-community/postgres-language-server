@@ -10,7 +10,7 @@ static WHERE_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (where) @where
 "#;
-    tree_sitter::Query::new(&pgt_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
+    tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
         .expect("Invalid TS Query")
 });
 
@@ -120,7 +120,7 @@ mod tests {
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
@@ -145,7 +145,7 @@ mod tests {
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
@@ -174,7 +174,7 @@ where u.email = 'test@example.com' and p.published = true;
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
@@ -206,7 +206,7 @@ where u.active = true and (u.role = 'admin' or u.role = 'moderator');
 
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&pgt_treesitter_grammar::LANGUAGE.into())
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .unwrap();
 
         let tree = parser.parse(sql, None).unwrap();
