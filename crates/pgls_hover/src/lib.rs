@@ -91,27 +91,19 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .collect(),
             },
 
-            HoveredNode::Role(node_identification) => match node_identification {
-                (None, role_name) => params
-                    .schema_cache
-                    .find_roles(&role_name)
-                    .into_iter()
-                    .map(Hoverable::from)
-                    .collect(),
+            HoveredNode::Role(role_name) => params
+                .schema_cache
+                .find_roles(&role_name)
+                .into_iter()
+                .map(Hoverable::from)
+                .collect(),
 
-                _ => vec![],
-            },
-
-            HoveredNode::Schema(node_identification) => match node_identification {
-                (None, schema_name) => params
-                    .schema_cache
-                    .find_schema(&schema_name)
-                    .map(Hoverable::from)
-                    .map(|s| vec![s])
-                    .unwrap_or_default(),
-
-                _ => vec![],
-            },
+            HoveredNode::Schema(schema_name) => params
+                .schema_cache
+                .find_schema(&schema_name)
+                .map(Hoverable::from)
+                .map(|s| vec![s])
+                .unwrap_or_default(),
 
             HoveredNode::PostgresType(node_identification) => match node_identification {
                 (None, type_name) => params
