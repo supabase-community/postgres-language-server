@@ -226,7 +226,7 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
             .pull_file_diagnostics(PullFileDiagnosticsParams {
                 path: self.path.clone(),
                 categories,
-                max_diagnostics: max_diagnostics.into(),
+                max_diagnostics,
                 only,
                 skip,
             })
