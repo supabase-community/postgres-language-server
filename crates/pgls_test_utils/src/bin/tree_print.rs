@@ -1,5 +1,5 @@
 use clap::*;
-use pgt_test_utils::print_ts_tree;
+use pgls_test_utils::print_ts_tree;
 
 #[derive(Parser)]
 #[command(

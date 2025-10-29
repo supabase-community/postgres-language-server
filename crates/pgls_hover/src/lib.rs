@@ -47,8 +47,6 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     .into_iter()
                     .map(Hoverable::from)
                     .collect(),
-
-                _ => vec![],
             },
 
             HoveredNode::Column(node_identification) => match node_identification {
