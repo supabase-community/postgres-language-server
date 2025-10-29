@@ -20,6 +20,6 @@ tree-sitter-language = "0.1"
 cc = "1.2"
 
 [dev-dependencies]
-pgt_test_utils.workspace = true
+pgls_test_utils.workspace = true
 tree-sitter = "0.25.5"
 insta                    = { version = "1.42.1" }

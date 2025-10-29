@@ -1037,7 +1037,7 @@ module.exports = grammar({
 
     alter_policy: ($) =>
       seq(
-        seq($.keyword_alter, $.keyword_policy, $.any_identifier),
+        seq($.keyword_alter, $.keyword_policy, $.policy_identifier),
         optional(
           seq(
             $.keyword_on,
@@ -1059,7 +1059,7 @@ module.exports = grammar({
           $.keyword_drop,
           $.keyword_policy,
           optional($._if_exists),
-          $.any_identifier
+          $.policy_identifier
         ),
         optional(
           seq(
@@ -3422,7 +3422,7 @@ module.exports = grammar({
           field("column_reference_2of2", $.any_identifier)
         ),
 
-        field("column_reference_1of1", $.column_identifier)
+        field("column_reference_1of1", $.any_identifier)
       ),
 
     function_reference: ($) =>
@@ -3442,6 +3442,7 @@ module.exports = grammar({
     function_identifier: ($) => $._any_identifier,
     type_identifier: ($) => $._any_identifier,
     role_identifier: ($) => $._any_identifier,
+    policy_identifier: ($) => $._any_identifier,
 
     _any_identifier: ($) =>
       choice(

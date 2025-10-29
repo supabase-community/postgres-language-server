@@ -95,31 +95,62 @@ impl CompletionFilter<'_> {
     fn check_specific_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
         let kind = ctx.node_under_cursor.as_ref().map(|n| n.kind())?;
 
-        let is_allowed = match kind {
-            "column_identifier" => {
-                matches!(self.data, CompletionRelevanceData::Column(_))
-                    && !ctx.matches_ancestor_history(&["insert_values", "field"])
-                    && !ctx.node_under_cursor_is_within_field_name(&["binary_expr_right"])
-            }
+        let is_allowed =
+            match kind {
+                "column_identifier" => matches!(self.data, CompletionRelevanceData::Column(_)),
+                "role_identifier" => matches!(self.data, CompletionRelevanceData::Role(_)),
+                "function_identifier" => matches!(self.data, CompletionRelevanceData::Function(_)),
+                "schema_identifier" => matches!(self.data, CompletionRelevanceData::Schema(_)),
+                "table_identifier" => matches!(self.data, CompletionRelevanceData::Table(_)),
+                "policy_identifier" => matches!(self.data, CompletionRelevanceData::Policy(_)),
 
-            "any_identifier" => match self.data {
-                CompletionRelevanceData::Column(_) => {
-                    matches!(ctx.wrapping_clause_type, Some(WrappingClause::Where))
-                        && ctx.node_under_cursor_is_within_field_name(&[
+                "any_identifier" => match self.data {
+                    CompletionRelevanceData::Column(_) => ctx
+                        .node_under_cursor_is_within_field_name(&[
                             "object_reference_1of1",
                             "object_reference_2of2",
                             "object_reference_3of3",
                             "column_reference_1of1",
                             "column_reference_2of2",
                             "column_reference_3of3",
-                        ])
-                }
+                        ]),
+
+                    CompletionRelevanceData::Schema(_) => ctx
+                        .node_under_cursor_is_within_field_name(&[
+                            "object_reference_1of1",
+                            "object_reference_1of2",
+                            "object_reference_1of3",
+                            "type_reference_1of1",
+                            "table_reference_1of1",
+                            "column_reference_1of1",
+                            "column_reference_1of2",
+                            "function_reference_1of1",
+                        ]),
+
+                    CompletionRelevanceData::Function(_) => ctx
+                        .node_under_cursor_is_within_field_name(&[
+                            "object_reference_1of1",
+                            "object_reference_2of2",
+                            "function_reference_1of1",
+                        ]),
+
+                    CompletionRelevanceData::Table(_) => ctx
+                        .node_under_cursor_is_within_field_name(&[
+                            "object_reference_1of1",
+                            "object_reference_1of2",
+                            "object_reference_2of2",
+                            "object_reference_2of3",
+                            "table_reference_1of1",
+                            "column_reference_1of1",
+                            "column_reference_1of2",
+                            "column_reference_2of2",
+                        ]),
+
+                    _ => false,
+                },
 
                 _ => false,
-            },
-
-            _ => false,
-        };
+            };
 
         if is_allowed { Some(()) } else { None }
     }

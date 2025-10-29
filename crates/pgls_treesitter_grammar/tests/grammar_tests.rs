@@ -4,9 +4,9 @@ fn printed_tree(sql: &str) -> String {
     let sql = sql.trim();
     let mut result = String::new();
     let mut parser = tree_sitter::Parser::new();
-    let _ = parser.set_language(&pgt_treesitter_grammar::LANGUAGE.into());
+    let _ = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into());
     let tree = parser.parse(sql, None).expect("Unable to parse!");
-    pgt_test_utils::print_ts_tree(&tree.root_node(), sql, 0, &mut result);
+    pgls_test_utils::print_ts_tree(&tree.root_node(), sql, 0, &mut result);
     result
 }
 

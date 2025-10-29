@@ -1,12 +1,6 @@
 use pgls_treesitter::WrappingClause;
 
-#[derive(Debug)]
-pub(crate) enum NodeIdentification {
-    Name(String),
-    SchemaAndName((String, String)),
-    #[allow(unused)]
-    SchemaAndTableAndName((String, String, String)),
-}
+type NodeIdentification = (Option<String>, String);
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -39,16 +33,13 @@ impl HoveredNode {
             {
                 let num_sibs = ctx.num_siblings();
                 if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {
-                    return Some(HoveredNode::Schema(NodeIdentification::Name(node_content)));
+                    return Some(HoveredNode::Schema((None, node_content)));
                 }
 
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
+                    Some(HoveredNode::Table((Some(schema.clone()), node_content)))
                 } else {
-                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
+                    Some(HoveredNode::Table((None, node_content)))
                 }
             }
 
@@ -77,23 +68,23 @@ impl HoveredNode {
                 if ctx.matches_ancestor_history(&["binary_expression", "object_reference"]) =>
             {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
-                        table_or_alias.clone(),
+                    Some(HoveredNode::Column((
+                        Some(table_or_alias.clone()),
                         node_content,
-                    ))))
+                    )))
                 } else {
-                    Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
+                    Some(HoveredNode::Column((None, node_content)))
                 }
             }
 
             "column_identifier" => {
                 if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
-                        table_or_alias.clone(),
+                    Some(HoveredNode::Column((
+                        Some(table_or_alias.clone()),
                         node_content,
-                    ))))
+                    )))
                 } else {
-                    Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
+                    Some(HoveredNode::Column((None, node_content)))
                 }
             }
 
@@ -101,14 +92,9 @@ impl HoveredNode {
                 if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
             {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Function(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
+                    Some(HoveredNode::Function((Some(schema.clone()), node_content)))
                 } else {
-                    Some(HoveredNode::Function(NodeIdentification::Name(
-                        node_content,
-                    )))
+                    Some(HoveredNode::Function((None, node_content)))
                 }
             }
 
@@ -119,11 +105,9 @@ impl HoveredNode {
                     "role_specification",
                 ]) || ctx.before_cursor_matches_kind(&["keyword_revoke"]) =>
             {
-                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+                Some(HoveredNode::Role((None, node_content)))
             }
-            "grant_role" | "policy_role" => {
-                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
-            }
+            "grant_role" | "policy_role" => Some(HoveredNode::Role((None, node_content))),
 
             "any_identifier"
                 if (
@@ -145,29 +129,22 @@ impl HoveredNode {
             {
                 let sanitized = node_content.replace(['(', ')'], "");
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::PostgresType(
-                        NodeIdentification::SchemaAndName((schema.clone(), sanitized)),
-                    ))
+                    Some(HoveredNode::PostgresType((Some(schema.clone()), sanitized)))
                 } else {
-                    Some(HoveredNode::PostgresType(NodeIdentification::Name(
-                        sanitized,
-                    )))
+                    Some(HoveredNode::PostgresType((None, sanitized)))
                 }
             }
 
             // quoted columns
             "literal" if ctx.matches_ancestor_history(&["select_expression", "term"]) => {
-                Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
+                Some(HoveredNode::Column((None, node_content)))
             }
 
             "grant_table" => {
                 if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
+                    Some(HoveredNode::Table((Some(schema.clone()), node_content)))
                 } else {
-                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
+                    Some(HoveredNode::Table((None, node_content)))
                 }
             }
 
