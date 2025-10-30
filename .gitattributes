@@ -1,0 +1,3 @@
+# Ensure consistent line endings for SQL files across all platforms
+# This is required for sqlx offline mode to generate consistent query hashes
+*.sql text eol=lf
