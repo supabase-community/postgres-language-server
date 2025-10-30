@@ -379,19 +379,18 @@ impl Workspace for WorkspaceServer {
             })
             .collect();
 
-        // Add reload schema cache action
-        let reload_disabled_reason = if self.get_current_connection().is_some() {
+        let invalidate_disabled_reason = if self.get_current_connection().is_some() {
             None
         } else {
             Some("No database connection available.".into())
         };
 
         actions.push(CodeAction {
-            title: "Reload Schema Cache".into(),
+            title: "Invalidate Schema Cache".into(),
             kind: CodeActionKind::Command(CommandAction {
                 category: CommandActionCategory::InvalidateSchemaCache,
             }),
-            disabled_reason: reload_disabled_reason,
+            disabled_reason: invalidate_disabled_reason,
         });
 
         Ok(CodeActionsResult { actions })

@@ -122,7 +122,7 @@ pub async fn execute_command(
             Ok(None)
         }
         "pgls.invalidateSchemaCache" => {
-            session.workspace.invalidate_schema_cache(true)?;
+            session.workspace.invalidate_schema_cache(false)?;
 
             session
                 .client
