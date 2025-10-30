@@ -1000,7 +1000,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let (sender, _receiver) = channel(CHANNEL_BUFFER_SIZE);
     let reader = tokio::spawn(client_handler(stream, sink, sender));
 
     server.initialize().await?;
@@ -1008,33 +1008,46 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
 
     server.load_configuration().await?;
 
-    // Open a document that references a non-existent 'name' column
-    let doc_content = "select name from public.users;";
+    // Open a document to get completions from
+    let doc_content = "select  from public.users;";
     server.open_document(doc_content).await?;
 
-    // Wait for typecheck diagnostics showing column doesn't exist
-    let got_error = tokio::time::timeout(Duration::from_secs(5), async {
-        loop {
-            match receiver.next().await {
-                Some(ServerNotification::PublishDiagnostics(msg)) => {
-                    if msg
-                        .diagnostics
-                        .iter()
-                        .any(|d| d.message.contains("column \"name\" does not exist"))
-                    {
-                        return true;
-                    }
-                }
-                _ => continue,
-            }
-        }
-    })
-    .await
-    .is_ok();
+    // Get completions before adding the column - 'name' should NOT be present
+    let completions_before = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 7,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    let items_before = match completions_before {
+        CompletionResponse::Array(ref a) => a,
+        CompletionResponse::List(ref l) => &l.items,
+    };
+
+    let has_name_before = items_before.iter().any(|item| {
+        item.label == "name"
+            && item.label_details.as_ref().is_some_and(|d| {
+                d.description
+                    .as_ref()
+                    .is_some_and(|desc| desc.contains("public.users"))
+            })
+    });
 
     assert!(
-        got_error,
-        "Expected typecheck error for non-existent column 'name'"
+        !has_name_before,
+        "Column 'name' should not be in completions before it's added to the table"
     );
 
     // Add the missing column to the database
@@ -1053,51 +1066,42 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
         .request::<bool, ()>("pgt/invalidate_schema_cache", "_invalidate_cache", false)
         .await?;
 
-    // Change the document slightly to trigger re-analysis
-    server
-        .change_document(
-            1,
-            vec![TextDocumentContentChangeEvent {
-                range: Some(Range {
-                    start: Position {
-                        line: 0,
-                        character: 30,
-                    },
-                    end: Position {
-                        line: 0,
-                        character: 30,
-                    },
-                }),
-                range_length: Some(0),
-                text: " ".to_string(),
-            }],
-        )
-        .await?;
+    // Get completions after invalidating cache - 'name' should NOW be present
+    let completions_after = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 7,
+                },
+            },
+        })
+        .await?
+        .unwrap();
 
-    // Wait for diagnostics to clear (no typecheck error anymore)
-    let error_cleared = tokio::time::timeout(Duration::from_secs(5), async {
-        loop {
-            match receiver.next().await {
-                Some(ServerNotification::PublishDiagnostics(msg)) => {
-                    // Check that there's no typecheck error for the column
-                    let has_column_error = msg
-                        .diagnostics
-                        .iter()
-                        .any(|d| d.message.contains("column \"name\" does not exist"));
-                    if !has_column_error {
-                        return true;
-                    }
-                }
-                _ => continue,
-            }
-        }
-    })
-    .await
-    .is_ok();
+    let items_after = match completions_after {
+        CompletionResponse::Array(ref a) => a,
+        CompletionResponse::List(ref l) => &l.items,
+    };
+
+    let has_name_after = items_after.iter().any(|item| {
+        item.label == "name"
+            && item.label_details.as_ref().is_some_and(|d| {
+                d.description
+                    .as_ref()
+                    .is_some_and(|desc| desc.contains("public.users"))
+            })
+    });
 
     assert!(
-        error_cleared,
-        "Expected typecheck error to be cleared after schema cache invalidation"
+        has_name_after,
+        "Column 'name' should be in completions after schema cache invalidation"
     );
 
     server.shutdown().await?;
