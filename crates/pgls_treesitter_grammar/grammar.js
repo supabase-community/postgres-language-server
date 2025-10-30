@@ -917,7 +917,7 @@ module.exports = grammar({
     term: ($) =>
       seq(
         field("value", choice($.all_fields, $._expression)),
-        optional($._alias)
+        optional($.alias)
       ),
 
     _truncate_statement: ($) =>
@@ -2196,7 +2196,7 @@ module.exports = grammar({
         $.keyword_insert,
         $.keyword_into,
         $.table_reference,
-        optional($._alias),
+        optional($.alias),
         optional($.insert_columns),
         optional(
           seq(
@@ -2256,10 +2256,10 @@ module.exports = grammar({
         $.keyword_merge,
         $.keyword_into,
         $.table_reference,
-        optional($._alias),
+        optional($.alias),
         $.keyword_using,
         choice($.subquery, $.table_reference),
-        optional($._alias),
+        optional($.alias),
         $.keyword_on,
         optional_parenthesis(field("predicate", $._expression)),
         repeat1($.when_clause)
@@ -2341,25 +2341,16 @@ module.exports = grammar({
       seq($.keyword_partition, paren_list($.table_option, true)),
 
     update: ($) =>
-      seq(
-        $.keyword_update,
-        optional($.keyword_only),
-        choice($._mysql_update_statement, $._postgres_update_statement)
-      ),
-
-    _mysql_update_statement: ($) =>
-      prec(
-        0,
+      prec.left(
         seq(
-          comma_list($.relation, true),
-          repeat($.join),
+          $.keyword_update,
+          optional($.keyword_only),
+          $.relation,
           $._set_values,
+          // optional($.from),
           optional($.where)
         )
       ),
-
-    _postgres_update_statement: ($) =>
-      prec(1, seq($.relation, $._set_values, optional($.from))),
 
     storage_location: ($) =>
       prec.right(
@@ -2461,7 +2452,7 @@ module.exports = grammar({
       ),
 
     assignment: ($) =>
-      seq(
+      partial(
         field("left", $.column_reference),
         "=",
         field("right", $._expression)
@@ -2813,8 +2804,7 @@ module.exports = grammar({
         choice($.any_identifier, $.window_specification)
       ),
 
-    _alias: ($) =>
-      seq(optional($.keyword_as), field("alias", $.any_identifier)),
+    alias: ($) => seq(optional($.keyword_as), field("alias", $.any_identifier)),
 
     from: ($) =>
       seq(
@@ -2841,7 +2831,7 @@ module.exports = grammar({
             $.table_reference,
             wrapped_in_parenthesis($.values)
           ),
-          optional(seq($._alias, optional(alias($._column_list, $.list))))
+          optional(seq($.alias, optional(alias($._column_list, $.list))))
         )
       ),
 
@@ -2979,53 +2969,52 @@ module.exports = grammar({
     returning: ($) => seq($.keyword_returning, $.select_expression),
 
     grant_statement: ($) =>
-      seq(
-        $.keyword_grant,
-        $._grantable_target_on,
-        $.keyword_to,
-        comma_list($.role_specification, true),
-        optional(seq($.keyword_with, $.keyword_grant, $.keyword_option)),
-        optional(seq($.keyword_granted, $.keyword_by, $.role_specification))
+      prec.left(
+        seq(
+          $.keyword_grant,
+          $.grantables,
+          $.keyword_to,
+          comma_list($.role_specification, true),
+          optional(seq($.keyword_with, $.keyword_grant, $.keyword_option)),
+          optional(seq($.keyword_granted, $.keyword_by, $.role_specification))
+        )
       ),
 
     // todo: add support for various other revoke statements
     revoke_statement: ($) =>
-      seq(
-        $.keyword_revoke,
-        optional(
-          choice(
-            seq($.keyword_grant, $.keyword_option, $.keyword_for),
-            seq(
-              optional(
-                choice($.keyword_admin, $.keyword_inherit, $.keyword_set)
-              ),
-              $.keyword_option,
-              $.keyword_for
-            )
-          )
-        ),
-        $._grantable_target_on,
-        $.keyword_from,
-        comma_list($.role_specification, true),
-        optional(seq($.keyword_granted, $.keyword_by, $.role_specification)),
-        optional(choice($.keyword_cascade, $.keyword_restrict))
-      ),
-
-    _grantable_target_on: ($) =>
-      choice(
+      prec.left(
         seq(
-          $.grantable_targets,
-          choice(
-            seq($.grantable_on_table, $.table_identifier),
-            seq($.grantable_on_function, $.function_identifier),
-            $.grantable_on_all
-          )
+          $.keyword_revoke,
+          optional(
+            choice(
+              seq($.keyword_grant, $.keyword_option, $.keyword_for),
+              seq(
+                optional(
+                  choice($.keyword_admin, $.keyword_inherit, $.keyword_set)
+                ),
+                $.keyword_option,
+                $.keyword_for
+              )
+            )
+          ),
+          $.grantables,
+          $.keyword_from,
+          comma_list($.role_specification, true),
+          optional(seq($.keyword_granted, $.keyword_by, $.role_specification)),
+          optional(choice($.keyword_cascade, $.keyword_restrict))
         )
       ),
 
-    grantable_targets: ($) =>
+    grantables: ($) =>
       choice(
-        seq($._grantable, comma_list($.column_identifier, false)),
+        seq(
+          seq($._grantable, comma_list($.column_identifier, false)),
+          choice(
+            $.grantable_on_table,
+            $.grantable_on_function,
+            $.grantable_on_all
+          )
+        ),
         comma_list($.role_identifier, true)
       ),
 
@@ -3583,4 +3572,22 @@ function unknown_until($, rule, maxLength) {
     : repeat($._anything);
 
   return prec.left(seq(unknowns, rule));
+}
+
+/**
+ *
+ * @param  {...(RuleOrLiteral)} rules
+ * @returns {PrecLeftRule}
+ */
+function partial(...rules) {
+  const lastIdx = rules.length - 1;
+
+  /** @type {RuleOrLiteral} */
+  let finishedRule = optional(rules[lastIdx]);
+
+  for (let i = lastIdx - 1; i >= 0; i--) {
+    finishedRule = seq(rules[i], optional(finishedRule));
+  }
+
+  return prec.left(finishedRule);
 }

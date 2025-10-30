@@ -59,7 +59,7 @@ fn get_completion_text(ctx: &TreesitterContext, table: &Table) -> CompletionText
 mod tests {
 
     use pgls_text_size::TextRange;
-    use sqlx::{Executor, PgPool, query::Query};
+    use sqlx::{Executor, PgPool};
 
     use crate::{
         CompletionItem, CompletionItemKind, complete,

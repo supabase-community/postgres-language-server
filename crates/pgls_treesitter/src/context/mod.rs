@@ -144,8 +144,6 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
-        println!("{:#?}", ctx);
-
         ctx
     }
 
@@ -634,11 +632,7 @@ impl<'a> TreesitterContext<'a> {
         })
     }
 
-    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
-    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
-    ///
-    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
-    /// you need to pass `&["relation", "object_reference"]`.
+    /// Verifies if the node has one of the named direct ancestors.
     pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|node| {
             node.parent()

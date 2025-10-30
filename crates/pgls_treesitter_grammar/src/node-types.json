@@ -66,6 +66,32 @@
     }
   },
   {
+    "type": "alias",
+    "named": true,
+    "fields": {
+      "alias": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "any_identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "keyword_as",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "all_fields",
     "named": true,
     "fields": {},
@@ -1211,7 +1237,7 @@
       },
       "right": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "array",
@@ -6059,23 +6085,7 @@
       "required": true,
       "types": [
         {
-          "type": "function_identifier",
-          "named": true
-        },
-        {
-          "type": "grantable_on_all",
-          "named": true
-        },
-        {
-          "type": "grantable_on_function",
-          "named": true
-        },
-        {
-          "type": "grantable_on_table",
-          "named": true
-        },
-        {
-          "type": "grantable_targets",
+          "type": "grantables",
           "named": true
         },
         {
@@ -6104,10 +6114,6 @@
         },
         {
           "type": "role_specification",
-          "named": true
-        },
-        {
-          "type": "table_identifier",
           "named": true
         }
       ]
@@ -6219,7 +6225,7 @@
     }
   },
   {
-    "type": "grantable_targets",
+    "type": "grantables",
     "named": true,
     "fields": {},
     "children": {
@@ -6228,6 +6234,18 @@
       "types": [
         {
           "type": "column_identifier",
+          "named": true
+        },
+        {
+          "type": "grantable_on_all",
+          "named": true
+        },
+        {
+          "type": "grantable_on_function",
+          "named": true
+        },
+        {
+          "type": "grantable_on_table",
           "named": true
         },
         {
@@ -6440,22 +6458,15 @@
   {
     "type": "insert",
     "named": true,
-    "fields": {
-      "alias": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "any_identifier",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "alias",
+          "named": true
+        },
         {
           "type": "assignment",
           "named": true
@@ -6470,10 +6481,6 @@
         },
         {
           "type": "insert_values",
-          "named": true
-        },
-        {
-          "type": "keyword_as",
           "named": true
         },
         {
@@ -7985,28 +7992,17 @@
   {
     "type": "relation",
     "named": true,
-    "fields": {
-      "alias": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "any_identifier",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "invocation",
+          "type": "alias",
           "named": true
         },
         {
-          "type": "keyword_as",
+          "type": "invocation",
           "named": true
         },
         {
@@ -8140,23 +8136,7 @@
       "required": true,
       "types": [
         {
-          "type": "function_identifier",
-          "named": true
-        },
-        {
-          "type": "grantable_on_all",
-          "named": true
-        },
-        {
-          "type": "grantable_on_function",
-          "named": true
-        },
-        {
-          "type": "grantable_on_table",
-          "named": true
-        },
-        {
-          "type": "grantable_targets",
+          "type": "grantables",
           "named": true
         },
         {
@@ -8209,10 +8189,6 @@
         },
         {
           "type": "role_specification",
-          "named": true
-        },
-        {
-          "type": "table_identifier",
           "named": true
         }
       ]
@@ -8712,16 +8688,6 @@
     "type": "statement",
     "named": true,
     "fields": {
-      "alias": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "any_identifier",
-            "named": true
-          }
-        ]
-      },
       "predicate": {
         "multiple": false,
         "required": false,
@@ -8805,6 +8771,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "alias",
+          "named": true
+        },
         {
           "type": "alter_database",
           "named": true
@@ -8979,10 +8949,6 @@
         },
         {
           "type": "keyword_analyze",
-          "named": true
-        },
-        {
-          "type": "keyword_as",
           "named": true
         },
         {
@@ -9873,16 +9839,6 @@
     "type": "term",
     "named": true,
     "fields": {
-      "alias": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "any_identifier",
-            "named": true
-          }
-        ]
-      },
       "value": {
         "multiple": false,
         "required": true,
@@ -9971,7 +9927,7 @@
       "required": false,
       "types": [
         {
-          "type": "keyword_as",
+          "type": "alias",
           "named": true
         }
       ]
@@ -10517,14 +10473,6 @@
       "types": [
         {
           "type": "assignment",
-          "named": true
-        },
-        {
-          "type": "from",
-          "named": true
-        },
-        {
-          "type": "join",
           "named": true
         },
         {

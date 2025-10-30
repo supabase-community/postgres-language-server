@@ -194,9 +194,7 @@ mod tests {
 
         assert_complete_results(
             format!(
-                r#"grant select
-                    on table public.users
-                    to {}"#,
+                r#"grant select on table public.users to {}"#,
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
