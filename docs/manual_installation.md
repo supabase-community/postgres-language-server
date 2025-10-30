@@ -20,7 +20,11 @@ You have to pick the correct binary for your platform. The following table shoul
 
 ### Homebrew
 
-We were not able to publish to Homebrew yet due to naming conflicts. We are actively working to resolve this.
+Postgres Language Server is available as a [Homebrew formula](https://formulae.brew.sh/formula/postgres-language-server) for macOS and Linux users.
+
+```sh
+brew install postgres-language-server
+```
 
 ### Using a published binary
 
