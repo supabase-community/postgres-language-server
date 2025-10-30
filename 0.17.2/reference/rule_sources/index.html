@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.17.2/reference/rule_sources/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Rule Sources - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Rule Sources";
+        var mkdocs_page_input_path = "reference/rule_sources.md";
+        var mkdocs_page_url = "/0.17.2/reference/rule_sources/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../rules/">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Rule Sources</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#exclusive-rules">Exclusive rules</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rules-from-other-sources">Rules from other sources</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#eugene">Eugene</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Rule Sources</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rule_sources.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="rule-sources">Rule Sources</h1>
+<p>Many rules are inspired by or directly ported from other tools. This page lists the sources of each rule.</p>
+<h2 id="exclusive-rules">Exclusive rules</h2>
+<p><em>No exclusive rules available.</em></p>
+<h2 id="rules-from-other-sources">Rules from other sources</h2>
+<h3 id="eugene">Eugene</h3>
+<table>
+<thead>
+<tr>
+<th>Eugene Rule Name</th>
+<th>Rule Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://kaveland.no/eugene/hints/E11/index.html">E11</a></td>
+<td><a href="../rules/add-serial-column">addSerialColumn</a></td>
+</tr>
+<tr>
+<td><a href="https://kaveland.no/eugene/hints/E3/index.html">E3</a></td>
+<td><a href="../rules/prefer-jsonb">preferJsonb</a></td>
+</tr>
+<tr>
+<td><a href="https://kaveland.no/eugene/hints/E4/index.html">E4</a></td>
+<td><a href="../rules/running-statement-while-holding-access-exclusive">runningStatementWhileHoldingAccessExclusive</a></td>
+</tr>
+<tr>
+<td><a href="https://kaveland.no/eugene/hints/E9/index.html">E9</a></td>
+<td><a href="../rules/lock-timeout-warning">lockTimeoutWarning</a></td>
+</tr>
+<tr>
+<td><a href="https://kaveland.no/eugene/hints/W12/index.html">W12</a></td>
+<td><a href="../rules/multiple-alter-table">multipleAlterTable</a></td>
+</tr>
+<tr>
+<td><a href="https://kaveland.no/eugene/hints/W13/index.html">W13</a></td>
+<td><a href="../rules/creating-enum">creatingEnum</a></td>
+</tr>
+<tr>
+<td>### Squawk</td>
+<td></td>
+</tr>
+<tr>
+<td>Squawk Rule Name</td>
+<td>Rule Name</td>
+</tr>
+<tr>
+<td>----</td>
+<td>----</td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/adding-field-with-default">adding-field-with-default</a></td>
+<td><a href="../rules/adding-field-with-default">addingFieldWithDefault</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/adding-foreign-key-constraint">adding-foreign-key-constraint</a></td>
+<td><a href="../rules/adding-foreign-key-constraint">addingForeignKeyConstraint</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/adding-not-null-field">adding-not-null-field</a></td>
+<td><a href="../rules/adding-not-null-field">addingNotNullField</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/adding-required-field">adding-required-field</a></td>
+<td><a href="../rules/adding-required-field">addingRequiredField</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/adding-serial-primary-key-field">adding-serial-primary-key-field</a></td>
+<td><a href="../rules/adding-primary-key-constraint">addingPrimaryKeyConstraint</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-char-field">ban-char-field</a></td>
+<td><a href="../rules/ban-char-field">banCharField</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction">ban-concurrent-index-creation-in-transaction</a></td>
+<td><a href="../rules/ban-concurrent-index-creation-in-transaction">banConcurrentIndexCreationInTransaction</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-drop-column">ban-drop-column</a></td>
+<td><a href="../rules/ban-drop-column">banDropColumn</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-drop-database">ban-drop-database</a></td>
+<td><a href="../rules/ban-drop-database">banDropDatabase</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-drop-not-null">ban-drop-not-null</a></td>
+<td><a href="../rules/ban-drop-not-null">banDropNotNull</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-drop-table">ban-drop-table</a></td>
+<td><a href="../rules/ban-drop-table">banDropTable</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/ban-truncate-cascade">ban-truncate-cascade</a></td>
+<td><a href="../rules/ban-truncate-cascade">banTruncateCascade</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/changing-column-type">changing-column-type</a></td>
+<td><a href="../rules/changing-column-type">changingColumnType</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/constraint-missing-not-valid">constraint-missing-not-valid</a></td>
+<td><a href="../rules/constraint-missing-not-valid">constraintMissingNotValid</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/disallow-unique-constraint">disallow-unique-constraint</a></td>
+<td><a href="../rules/disallow-unique-constraint">disallowUniqueConstraint</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-big-int">prefer-big-int</a></td>
+<td><a href="../rules/prefer-big-int">preferBigInt</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-bigint-over-int">prefer-bigint-over-int</a></td>
+<td><a href="../rules/prefer-bigint-over-int">preferBigintOverInt</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-bigint-over-smallint">prefer-bigint-over-smallint</a></td>
+<td><a href="../rules/prefer-bigint-over-smallint">preferBigintOverSmallint</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-identity">prefer-identity</a></td>
+<td><a href="../rules/prefer-identity">preferIdentity</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-robust-stmts">prefer-robust-stmts</a></td>
+<td><a href="../rules/prefer-robust-stmts">preferRobustStmts</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-text-field">prefer-text-field</a></td>
+<td><a href="../rules/prefer-text-field">preferTextField</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/prefer-timestamptz">prefer-timestamptz</a></td>
+<td><a href="../rules/prefer-timestamptz">preferTimestamptz</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/renaming-column">renaming-column</a></td>
+<td><a href="../rules/renaming-column">renamingColumn</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/renaming-table">renaming-table</a></td>
+<td><a href="../rules/renaming-table">renamingTable</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/require-concurrent-index-creation">require-concurrent-index-creation</a></td>
+<td><a href="../rules/require-concurrent-index-creation">requireConcurrentIndexCreation</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/require-concurrent-index-deletion">require-concurrent-index-deletion</a></td>
+<td><a href="../rules/require-concurrent-index-deletion">requireConcurrentIndexDeletion</a></td>
+</tr>
+<tr>
+<td><a href="https://squawkhq.com/docs/transaction-nesting">transaction-nesting</a></td>
+<td><a href="../rules/transaction-nesting">transactionNesting</a></td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../rules/" class="btn btn-neutral float-left" title="Linter Rules"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../env_variables/" class="btn btn-neutral float-right" title="Environment Variables">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+      <span><a href="../rules/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../env_variables/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
