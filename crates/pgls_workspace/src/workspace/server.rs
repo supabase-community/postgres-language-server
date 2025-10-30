@@ -358,7 +358,7 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let actions = parser
+        let mut actions: Vec<CodeAction> = parser
             .iter_with_filter(
                 DefaultMapper,
                 CursorPositionFilter::new(params.cursor_position),
@@ -378,6 +378,21 @@ impl Workspace for WorkspaceServer {
                 }
             })
             .collect();
+
+        // Add reload schema cache action
+        let reload_disabled_reason = if self.get_current_connection().is_some() {
+            None
+        } else {
+            Some("No database connection available.".into())
+        };
+
+        actions.push(CodeAction {
+            title: "Reload Schema Cache".into(),
+            kind: CodeActionKind::Command(CommandAction {
+                category: CommandActionCategory::InvalidateSchemaCache,
+            }),
+            disabled_reason: reload_disabled_reason,
+        });
 
         Ok(CodeActionsResult { actions })
     }
