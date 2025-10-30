@@ -916,7 +916,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
         .find_map(|action_or_cmd| match action_or_cmd {
             lsp::CodeActionOrCommand::CodeAction(code_action) => {
                 let command = code_action.command.as_ref();
-                if command.is_some_and(|cmd| &cmd.command == "pgt.executeStatement") {
+                if command.is_some_and(|cmd| &cmd.command == "pgls.executeStatement") {
                     let command = command.unwrap();
                     let arguments = command.arguments.as_ref().unwrap().clone();
                     Some((command.command.clone(), arguments))
@@ -944,6 +944,160 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     assert!(
         users_tbl_exists().await,
         "Users table did not exists even though it should've been created by the workspace/executeStatement command."
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    let host = test_db.connect_options().get_host().to_string();
+
+    // Setup: Create a table with only id column (no name column yet)
+    let setup = r#"
+        create table public.users (
+            id serial primary key
+        );
+    "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(database),
+            host: Some(host),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    // Open a document that references a non-existent 'name' column
+    let doc_content = "select name from public.users;";
+    server.open_document(doc_content).await?;
+
+    // Wait for typecheck diagnostics showing column doesn't exist
+    let got_error = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(msg)) => {
+                    if msg
+                        .diagnostics
+                        .iter()
+                        .any(|d| d.message.contains("column \"name\" does not exist"))
+                    {
+                        return true;
+                    }
+                }
+                _ => continue,
+            }
+        }
+    })
+    .await
+    .is_ok();
+
+    assert!(
+        got_error,
+        "Expected typecheck error for non-existent column 'name'"
+    );
+
+    // Add the missing column to the database
+    let alter_table = r#"
+        alter table public.users
+        add column name text;
+    "#;
+
+    test_db
+        .execute(alter_table)
+        .await
+        .expect("Failed to add column to table");
+
+    // Invalidate the schema cache (all = false for current connection only)
+    server
+        .request::<bool, ()>("pgt/invalidate_schema_cache", "_invalidate_cache", false)
+        .await?;
+
+    // Change the document slightly to trigger re-analysis
+    server
+        .change_document(
+            1,
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 30,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 30,
+                    },
+                }),
+                range_length: Some(0),
+                text: " ".to_string(),
+            }],
+        )
+        .await?;
+
+    // Wait for diagnostics to clear (no typecheck error anymore)
+    let error_cleared = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match receiver.next().await {
+                Some(ServerNotification::PublishDiagnostics(msg)) => {
+                    // Check that there's no typecheck error for the column
+                    let has_column_error = msg
+                        .diagnostics
+                        .iter()
+                        .any(|d| d.message.contains("column \"name\" does not exist"));
+                    if !has_column_error {
+                        return true;
+                    }
+                }
+                _ => continue,
+            }
+        }
+    })
+    .await
+    .is_ok();
+
+    assert!(
+        error_cleared,
+        "Expected typecheck error to be cleared after schema cache invalidation"
     );
 
     server.shutdown().await?;

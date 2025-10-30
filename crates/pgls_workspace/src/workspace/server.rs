@@ -424,6 +424,19 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
+        if all {
+            self.schema_cache.clear_all();
+        } else {
+            // Only clear current connection if one exists
+            if let Some(pool) = self.get_current_connection() {
+                self.schema_cache.clear(&pool);
+            }
+            // If no connection, nothing to clear - just return Ok
+        }
+        Ok(())
+    }
+
     #[ignored_path(path=&params.path)]
     fn pull_diagnostics(
         &self,
