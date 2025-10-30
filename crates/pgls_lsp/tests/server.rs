@@ -858,19 +858,18 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     server.load_configuration().await?;
 
     let users_tbl_exists = async || {
-        let result = sqlx::query!(
+        sqlx::query_scalar::<_, bool>(
             r#"
             select exists (
-                select 1 as exists
+                select 1
                 from pg_catalog.pg_tables
                 where tablename = 'users'
-            );
-        "#
+            )
+        "#,
         )
         .fetch_one(&test_db.clone())
-        .await;
-
-        result.unwrap().exists.unwrap()
+        .await
+        .unwrap()
     };
 
     assert!(
