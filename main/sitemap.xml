@@ -2,210 +2,210 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://pg-language-server.com/main/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/configuration/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/getting_started/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/manual_installation/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/features/editor_features/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/features/linting/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/features/plpgsql/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/features/syntax_diagnostics/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/features/type_checking/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/guides/checking_migrations/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/guides/configure_database/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/guides/continuous_integration/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/guides/ide_setup/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/guides/suppressions/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/guides/vcs_integration/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/cli/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/env_variables/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rule_sources/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/add-serial-column/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/adding-field-with-default/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/adding-foreign-key-constraint/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/adding-not-null-field/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/adding-primary-key-constraint/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/adding-required-field/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-char-field/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-concurrent-index-creation-in-transaction/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-drop-column/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-drop-database/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-drop-not-null/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-drop-table/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-truncate-cascade/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/changing-column-type/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/constraint-missing-not-valid/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/creating-enum/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/disallow-unique-constraint/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/lock-timeout-warning/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/multiple-alter-table/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-big-int/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-bigint-over-int/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-bigint-over-smallint/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-identity/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-jsonb/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-robust-stmts/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-text-field/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/prefer-timestamptz/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/renaming-column/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/renaming-table/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-index-creation/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/require-concurrent-index-deletion/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/running-statement-while-holding-access-exclusive/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
     <url>
          <loc>https://pg-language-server.com/main/reference/rules/transaction-nesting/</loc>
-         <lastmod>2025-10-29</lastmod>
+         <lastmod>2025-10-30</lastmod>
     </url>
 </urlset>
