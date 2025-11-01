@@ -29,5 +29,5 @@ fn main() {
     let mut result = String::new();
     print_ts_tree(&tree.root_node(), &query, 0, &mut result);
 
-    print!("{}", result)
+    print!("{result}")
 }
