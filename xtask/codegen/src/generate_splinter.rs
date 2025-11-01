@@ -204,7 +204,7 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
 
     let mut group_entries = vec!["    \"splinter\",".to_string()];
     for group in groups {
-        group_entries.push(format!("    \"splinter/{}\",", group));
+        group_entries.push(format!("    \"splinter/{group}\","));
     }
     let groups_content = group_entries.join("\n");
 
