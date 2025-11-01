@@ -101,16 +101,14 @@ pub struct TreesitterContext<'a> {
     pub text: &'a str,
     pub position: usize,
 
-    /// Tuple containing up to two qualifiers for identifier-node under the cursor.
+    /// Tuple containing up to two qualifiers for identifier-node under the cursor: (head, tail)
     ///
     /// The qualifiers represent different "parents" based on the context, for example:
+    /// - `column` -> (None, None)
     /// - `table.column` -> (None, Some("table"))
     /// - `alias.column` -> (None, Some("alias"))
     /// - `schema.table` -> (None, Some("schema"))
     /// - `schema.table.column` -> (Some("schema"), Some("table"))
-    ///
-    /// Without any qualifiers:
-    /// - `column` -> (None, None)
     /// - `table` -> (None, None)
     pub identifier_qualifiers: (Option<String>, Option<String>),
 
@@ -780,6 +778,36 @@ impl<'a> TreesitterContext<'a> {
 
     pub fn has_mentioned_columns(&self) -> bool {
         !self.mentioned_columns.is_empty()
+    }
+
+    /// Returns the head qualifier (leftmost), sanitized (quotes removed)
+    /// For `schema.table.column`: returns `Some("schema")`
+    /// For `table.column`: returns `None`
+    pub fn head_qualifier_sanitized(&self) -> Option<String> {
+        self.identifier_qualifiers
+            .0
+            .as_ref()
+            .map(|s| s.replace('"', ""))
+    }
+
+    /// Returns the tail qualifier (rightmost), sanitized (quotes removed)
+    /// For `schema.table.column`: returns `Some("table")`
+    /// For `table.column`: returns `Some("table")`
+    pub fn tail_qualifier_sanitized(&self) -> Option<String> {
+        self.identifier_qualifiers
+            .1
+            .as_ref()
+            .map(|s| s.replace('"', ""))
+    }
+
+    /// Returns true if there is at least one qualifier present
+    pub fn has_any_qualifier(&self) -> bool {
+        self.identifier_qualifiers.1.is_some()
+    }
+
+    /// Returns true if there is exactly one qualifier (tail only, no head)
+    pub fn has_single_qualifier(&self) -> bool {
+        matches!(self.identifier_qualifiers, (None, Some(_)))
     }
 }
 

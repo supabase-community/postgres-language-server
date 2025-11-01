@@ -79,7 +79,7 @@ impl CompletionScore<'_> {
         };
 
         let has_mentioned_tables = ctx.has_any_mentioned_relations();
-        let has_qualifier = ctx.identifier_qualifiers.1.is_some();
+        let has_qualifier = ctx.has_any_qualifier();
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
@@ -149,7 +149,7 @@ impl CompletionScore<'_> {
             Some(wn) => wn,
         };
 
-        let has_single_qualifier = matches!(ctx.identifier_qualifiers, (None, Some(_)));
+        let has_single_qualifier = ctx.has_single_qualifier();
         let has_node_text = ctx
             .get_node_under_cursor_content()
             .is_some_and(|txt| !sanitization::is_sanitized_token(txt.as_str()));
@@ -191,27 +191,20 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
-        if matches!(ctx.identifier_qualifiers, (None, None)) {
-            return;
-        }
-
-        let schema_from_qualifier = ctx
-            .identifier_qualifiers
-            .1
-            .as_ref()
-            .map(|n| n.replace('"', ""));
+        let schema_from_qualifier = match ctx.tail_qualifier_sanitized() {
+            Some(s) => s,
+            None => return,
+        };
 
         let data_schema = match self.get_schema_name() {
             Some(s) => s,
             None => return,
         };
 
-        if let Some(schema_name) = schema_from_qualifier {
-            if schema_name == data_schema {
-                self.score += 25;
-            } else {
-                self.score -= 10;
-            }
+        if schema_from_qualifier == data_schema {
+            self.score += 25;
+        } else {
+            self.score -= 10;
         }
     }
 

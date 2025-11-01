@@ -225,7 +225,7 @@ impl CompletionFilter<'_> {
                             (ctx.matches_ancestor_history(&[
                                 "grantable_on_table",
                                 "object_reference",
-                            ]) && ctx.identifier_qualifiers.1.is_none())
+                            ]) && !ctx.has_any_qualifier())
                                 || ctx.matches_ancestor_history(&["grantable_on_all"])
                         }
 
@@ -308,16 +308,10 @@ impl CompletionFilter<'_> {
     }
 
     fn check_mentioned_schema_or_alias(&self, ctx: &TreesitterContext) -> Option<()> {
-        if ctx.identifier_qualifiers.1.is_none() {
-            return Some(());
-        }
-
-        let second_qualifier = ctx
-            .identifier_qualifiers
-            .1
-            .as_ref()
-            .unwrap()
-            .replace('"', "");
+        let second_qualifier = match ctx.tail_qualifier_sanitized() {
+            Some(q) => q,
+            None => return Some(()), // no qualifier = this check passes
+        };
 
         let matches = match self.data {
             CompletionRelevanceData::Table(table) => table.schema == second_qualifier,
