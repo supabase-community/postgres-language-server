@@ -79,7 +79,7 @@ impl CompletionScore<'_> {
         };
 
         let has_mentioned_tables = ctx.has_any_mentioned_relations();
-        let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
+        let has_qualifier = ctx.identifier_qualifiers.1.is_some();
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
@@ -122,13 +122,13 @@ impl CompletionScore<'_> {
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match clause_type {
-                WrappingClause::From if !has_mentioned_schema => 15,
-                WrappingClause::Join { .. } if !has_mentioned_schema => 15,
-                WrappingClause::Update if !has_mentioned_schema => 15,
-                WrappingClause::Delete if !has_mentioned_schema => 15,
-                WrappingClause::AlterPolicy if !has_mentioned_schema => 15,
-                WrappingClause::DropPolicy if !has_mentioned_schema => 15,
-                WrappingClause::CreatePolicy if !has_mentioned_schema => 15,
+                WrappingClause::From if !has_qualifier => 15,
+                WrappingClause::Join { .. } if !has_qualifier => 15,
+                WrappingClause::Update if !has_qualifier => 15,
+                WrappingClause::Delete if !has_qualifier => 15,
+                WrappingClause::AlterPolicy if !has_qualifier => 15,
+                WrappingClause::DropPolicy if !has_qualifier => 15,
+                WrappingClause::CreatePolicy if !has_qualifier => 15,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => match clause_type {
@@ -149,15 +149,15 @@ impl CompletionScore<'_> {
             Some(wn) => wn,
         };
 
-        let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
+        let has_single_qualifier = matches!(ctx.identifier_qualifiers, (None, Some(_)));
         let has_node_text = ctx
             .get_node_under_cursor_content()
             .is_some_and(|txt| !sanitization::is_sanitized_token(txt.as_str()));
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match wrapping_node {
-                WrappingNode::Relation if has_mentioned_schema => 15,
-                WrappingNode::Relation if !has_mentioned_schema => 10,
+                WrappingNode::Relation if has_single_qualifier => 15,
+                WrappingNode::Relation if !has_single_qualifier => 10,
                 WrappingNode::BinaryExpression => 5,
                 _ => -50,
             },
@@ -172,8 +172,8 @@ impl CompletionScore<'_> {
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match wrapping_node {
-                WrappingNode::Relation if !has_mentioned_schema && !has_node_text => 15,
-                WrappingNode::Relation if !has_mentioned_schema && has_node_text => 0,
+                WrappingNode::Relation if !has_single_qualifier && !has_node_text => 15,
+                WrappingNode::Relation if !has_single_qualifier && has_node_text => 0,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => 0,
@@ -191,20 +191,27 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
-        let schema_name = match ctx.schema_or_alias_name.as_ref() {
-            None => return,
-            Some(n) => n.replace('"', ""),
-        };
+        if matches!(ctx.identifier_qualifiers, (None, None)) {
+            return;
+        }
+
+        let schema_from_qualifier = ctx
+            .identifier_qualifiers
+            .1
+            .as_ref()
+            .map(|n| n.replace('"', ""));
 
         let data_schema = match self.get_schema_name() {
             Some(s) => s,
             None => return,
         };
 
-        if schema_name == data_schema {
-            self.score += 25;
-        } else {
-            self.score -= 10;
+        if let Some(schema_name) = schema_from_qualifier {
+            if schema_name == data_schema {
+                self.score += 25;
+            } else {
+                self.score -= 10;
+            }
         }
     }
 
