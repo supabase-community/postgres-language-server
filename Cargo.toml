@@ -96,6 +96,5 @@ pgls_workspace_macros       = { path = "./crates/pgls_workspace_macros", version
 pgls_test_macros = { path = "./crates/pgls_test_macros" }
 pgls_test_utils  = { path = "./crates/pgls_test_utils" }
 
-
 [profile.dev.package]
 insta.opt-level = 3
