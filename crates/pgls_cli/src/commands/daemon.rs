@@ -181,7 +181,7 @@ async fn start_lsp_proxy(
 /// The events received by the subscriber are filtered at the `info` level,
 /// then printed using the [HierarchicalLayer] layer, and the resulting text
 /// is written to log files rotated on a hourly basis (in
-/// `pgt-logs/server.log.yyyy-MM-dd-HH` files inside the system temporary
+/// `pgls-logs/server.log.yyyy-MM-dd-HH` files inside the system temporary
 /// directory)
 fn setup_tracing_subscriber(
     log_path: Option<PathBuf>,
@@ -189,7 +189,7 @@ fn setup_tracing_subscriber(
     log_level: Option<String>,
     log_kind: Option<String>,
 ) {
-    let pgls_log_path = log_path.unwrap_or(pgls_fs::ensure_cache_dir().join("pgt-logs"));
+    let pgls_log_path = log_path.unwrap_or(pgls_fs::ensure_cache_dir().join("pgls-logs"));
 
     let appender_builder = tracing_appender::rolling::RollingFileAppender::builder();
 
@@ -200,7 +200,7 @@ fn setup_tracing_subscriber(
         .build(pgls_log_path)
         .expect("Failed to start the logger for the daemon.");
 
-    let filter = PgtLoggingFilter::from(log_level);
+    let filter = PgLSLoggingFilter::from(log_level);
 
     let log_kind = log_kind.unwrap_or("hierarchical".into());
 
@@ -241,16 +241,16 @@ pub fn default_pgls_log_path() -> PathBuf {
         .or_else(|| env.pgls_log_path.value())
     {
         Some(directory) => PathBuf::from(directory),
-        None => pgls_fs::ensure_cache_dir().join("pgt-logs"),
+        None => pgls_fs::ensure_cache_dir().join("pgls-logs"),
     }
 }
 
 /// Tracing Filter with two rules:
-/// For all crates starting with pgt*, use `PGT_LOG_LEVEL` or CLI option or "info" as default
+/// For all crates starting with pgls*, use `PGLS_LOG_LEVEL` or CLI option or "info" as default
 /// For all other crates, use "info"
-struct PgtLoggingFilter(LevelFilter);
+struct PgLSLoggingFilter(LevelFilter);
 
-impl From<Option<String>> for PgtLoggingFilter {
+impl From<Option<String>> for PgLSLoggingFilter {
     fn from(value: Option<String>) -> Self {
         Self(
             value
@@ -269,9 +269,9 @@ impl From<Option<String>> for PgtLoggingFilter {
     }
 }
 
-impl PgtLoggingFilter {
+impl PgLSLoggingFilter {
     fn is_enabled(&self, meta: &Metadata<'_>) -> bool {
-        let filter = if meta.target().starts_with("pgt") {
+        let filter = if meta.target().starts_with("pgls") {
             self.0
         } else {
             LevelFilter::INFO
@@ -281,7 +281,7 @@ impl PgtLoggingFilter {
     }
 }
 
-impl<S> Filter<S> for PgtLoggingFilter {
+impl<S> Filter<S> for PgLSLoggingFilter {
     fn enabled(&self, meta: &Metadata<'_>, _cx: &Context<'_, S>) -> bool {
         self.is_enabled(meta)
     }

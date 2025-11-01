@@ -323,11 +323,11 @@ impl Server {
         .await
     }
 
-    /// Basic implementation of the `pgt/shutdown` request for tests
+    /// Basic implementation of the `pgls/shutdown` request for tests
     async fn pgls_shutdown(&mut self) -> Result<()> {
-        self.request::<_, ()>("pgt/shutdown", "_pgls_shutdown", ())
+        self.request::<_, ()>("pgls/shutdown", "_pgls_shutdown", ())
             .await?
-            .context("pgt/shutdown returned None")?;
+            .context("pgls/shutdown returned None")?;
         Ok(())
     }
 }
@@ -1063,7 +1063,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
 
     // Invalidate the schema cache (all = false for current connection only)
     server
-        .request::<bool, ()>("pgt/invalidate_schema_cache", "_invalidate_cache", false)
+        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
         .await?;
 
     // Get completions after invalidating cache - 'name' should NOW be present

@@ -270,15 +270,15 @@ impl Session {
         let categories = RuleCategoriesBuilder::default().all();
 
         let diagnostics: Vec<lsp_types::Diagnostic> = {
-            let result =
-                self.workspace
-                    .pull_diagnostics(features::diagnostics::PullDiagnosticsParams {
-                        path: pgls_path.clone(),
-                        max_diagnostics: u64::MAX,
-                        categories: categories.build(),
-                        only: Vec::new(),
-                        skip: Vec::new(),
-                    })?;
+            let result = self.workspace.pull_file_diagnostics(
+                features::diagnostics::PullFileDiagnosticsParams {
+                    path: pgls_path.clone(),
+                    max_diagnostics: u32::MAX,
+                    categories: categories.build(),
+                    only: Vec::new(),
+                    skip: Vec::new(),
+                },
+            )?;
 
             result
                 .diagnostics

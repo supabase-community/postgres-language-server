@@ -16,7 +16,9 @@ use crate::{
             CodeActionsParams, CodeActionsResult, ExecuteStatementParams, ExecuteStatementResult,
         },
         completions::{CompletionsResult, GetCompletionsParams},
-        diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
+        diagnostics::{
+            PullDatabaseDiagnosticsParams, PullDiagnosticsResult, PullFileDiagnosticsParams,
+        },
         on_hover::{OnHoverParams, OnHoverResult},
     },
 };
@@ -98,9 +100,15 @@ pub struct UnregisterProjectFolderParams {
 
 pub trait Workspace: Send + Sync + RefUnwindSafe {
     /// Retrieves the list of diagnostics associated to a file
-    fn pull_diagnostics(
+    fn pull_file_diagnostics(
         &self,
-        params: PullDiagnosticsParams,
+        params: PullFileDiagnosticsParams,
+    ) -> Result<PullDiagnosticsResult, WorkspaceError>;
+
+    /// Retrieves the list of diagnostics associated to a database schema
+    fn pull_db_diagnostics(
+        &self,
+        params: PullDatabaseDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError>;
 
     /// Retrieves a list of available code_actions for a file/cursor_position
@@ -222,13 +230,14 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
         only: Vec<RuleSelector>,
         skip: Vec<RuleSelector>,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
-        self.workspace.pull_diagnostics(PullDiagnosticsParams {
-            path: self.path.clone(),
-            categories,
-            max_diagnostics: max_diagnostics.into(),
-            only,
-            skip,
-        })
+        self.workspace
+            .pull_file_diagnostics(PullFileDiagnosticsParams {
+                path: self.path.clone(),
+                categories,
+                max_diagnostics,
+                only,
+                skip,
+            })
     }
 }
 
