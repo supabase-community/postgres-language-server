@@ -274,6 +274,7 @@ impl super::Advices for Advice {
             Advice::Frame(location) => visitor.record_frame(super::Location {
                 resource: location.path.as_ref().map(super::Resource::as_deref),
                 span: location.span,
+                database_object: None,
                 source_code: location.source_code.as_deref().map(|text| SourceCode {
                     text,
                     line_starts: None,

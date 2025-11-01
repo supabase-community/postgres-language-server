@@ -790,6 +790,7 @@ mod tests {
             visitor.record_frame(Location {
                 resource: Some(Resource::File("other_path")),
                 span: Some(TextRange::new(TextSize::from(8), TextSize::from(16))),
+                database_object: None,
                 source_code: Some(SourceCode {
                     text: "context location context",
                     line_starts: None,
