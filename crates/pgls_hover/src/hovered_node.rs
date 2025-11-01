@@ -118,21 +118,19 @@ impl HoveredNode {
 
                     // hover over type in `select` clause etc…                    
                     || (ctx
-                        .matches_ancestor_history(&["field_qualifier", "object_reference"])
-                        && ctx.before_cursor_matches_kind(&["("])))
+                        .matches_ancestor_history(&["field_selection","composite_reference","object_reference"])
+                        && ctx.node_under_cursor_is_within_field_name(&["object_reference_1of1", "object_reference_2of2"])))
 
                     // make sure we're not checking against an alias
                     && ctx
                         .get_mentioned_table_for_alias(
-                            node_content.replace(['(', ')'], "").as_str(),
+                            node_content.as_str(),
                         )
                         .is_none() =>
             {
-                let sanitized = node_content.replace(['(', ')'], "");
-
                 Some(HoveredNode::PostgresType((
                     ctx.identifier_qualifiers.1.clone(),
-                    sanitized,
+                    node_content,
                 )))
             }
 

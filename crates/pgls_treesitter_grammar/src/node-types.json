@@ -188,6 +188,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -1093,6 +1097,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "from",
           "named": true
         },
@@ -1264,6 +1272,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -1348,6 +1360,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -1426,6 +1442,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -1501,6 +1521,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {
@@ -1669,6 +1693,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {
@@ -1860,6 +1888,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -1997,6 +2029,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -2110,6 +2146,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -2186,6 +2226,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -2326,6 +2370,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -2482,6 +2530,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -2879,6 +2931,21 @@
         },
         {
           "type": "type_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "composite_reference",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "object_reference",
           "named": true
         }
       ]
@@ -4039,6 +4106,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -5296,6 +5367,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -5424,6 +5499,29 @@
         },
         {
           "type": "keyword_nulls",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "field_selection",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "any_identifier",
+          "named": true
+        },
+        {
+          "type": "composite_reference",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
           "named": true
         }
       ]
@@ -5724,6 +5822,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -6120,6 +6222,61 @@
     }
   },
   {
+    "type": "grantable",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_all",
+          "named": true
+        },
+        {
+          "type": "keyword_delete",
+          "named": true
+        },
+        {
+          "type": "keyword_execute",
+          "named": true
+        },
+        {
+          "type": "keyword_insert",
+          "named": true
+        },
+        {
+          "type": "keyword_maintain",
+          "named": true
+        },
+        {
+          "type": "keyword_privileges",
+          "named": true
+        },
+        {
+          "type": "keyword_references",
+          "named": true
+        },
+        {
+          "type": "keyword_select",
+          "named": true
+        },
+        {
+          "type": "keyword_trigger",
+          "named": true
+        },
+        {
+          "type": "keyword_truncate",
+          "named": true
+        },
+        {
+          "type": "keyword_update",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "grantable_on_all",
     "named": true,
     "fields": {},
@@ -6237,6 +6394,10 @@
           "named": true
         },
         {
+          "type": "grantable",
+          "named": true
+        },
+        {
           "type": "grantable_on_all",
           "named": true
         },
@@ -6246,50 +6407,6 @@
         },
         {
           "type": "grantable_on_table",
-          "named": true
-        },
-        {
-          "type": "keyword_all",
-          "named": true
-        },
-        {
-          "type": "keyword_delete",
-          "named": true
-        },
-        {
-          "type": "keyword_execute",
-          "named": true
-        },
-        {
-          "type": "keyword_insert",
-          "named": true
-        },
-        {
-          "type": "keyword_maintain",
-          "named": true
-        },
-        {
-          "type": "keyword_privileges",
-          "named": true
-        },
-        {
-          "type": "keyword_references",
-          "named": true
-        },
-        {
-          "type": "keyword_select",
-          "named": true
-        },
-        {
-          "type": "keyword_trigger",
-          "named": true
-        },
-        {
-          "type": "keyword_truncate",
-          "named": true
-        },
-        {
-          "type": "keyword_update",
           "named": true
         },
         {
@@ -6329,6 +6446,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -6606,6 +6727,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -6812,6 +6937,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {
@@ -7089,6 +7218,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -7232,6 +7365,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -7686,6 +7823,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -7800,6 +7941,10 @@
           "named": true
         },
         {
+          "type": "field_selection",
+          "named": true
+        },
+        {
           "type": "interval",
           "named": true
         },
@@ -7880,6 +8025,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -8717,6 +8866,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -9414,6 +9567,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -9489,6 +9646,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {
@@ -9570,6 +9731,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -9645,6 +9810,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {
@@ -9869,6 +10038,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {
@@ -10382,6 +10555,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -10602,6 +10779,10 @@
             "named": true
           },
           {
+            "type": "field_selection",
+            "named": true
+          },
+          {
             "type": "interval",
             "named": true
           },
@@ -10686,6 +10867,10 @@
         },
         {
           "type": "exists",
+          "named": true
+        },
+        {
+          "type": "field_selection",
           "named": true
         },
         {
@@ -10837,6 +11022,10 @@
           },
           {
             "type": "exists",
+            "named": true
+          },
+          {
+            "type": "field_selection",
             "named": true
           },
           {

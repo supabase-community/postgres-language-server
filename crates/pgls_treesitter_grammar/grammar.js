@@ -3008,7 +3008,7 @@ module.exports = grammar({
     grantables: ($) =>
       choice(
         seq(
-          seq($._grantable, comma_list($.column_identifier, false)),
+          seq($.grantable, comma_list($.column_identifier, false)),
           choice(
             $.grantable_on_table,
             $.grantable_on_function,
@@ -3018,7 +3018,7 @@ module.exports = grammar({
         comma_list($.role_identifier, true)
       ),
 
-    _grantable: ($) =>
+    grantable: ($) =>
       choice(
         comma_list(
           choice(
@@ -3041,9 +3041,7 @@ module.exports = grammar({
     grantable_on_function: ($) =>
       seq(
         $.keyword_on,
-        optional(
-          choice($.keyword_function, $.keyword_procedure, $.keyword_routine)
-        ),
+        choice($.keyword_function, $.keyword_procedure, $.keyword_routine),
         comma_list(
           seq($.function_reference, optional($.function_arguments)),
           true
@@ -3105,10 +3103,21 @@ module.exports = grammar({
           $.array,
           $.interval,
           $.between_expression,
+          $.field_selection,
           $.parenthesized_expression,
           $.object_id
         )
       ),
+
+    field_selection: ($) =>
+      seq(
+        choice($.composite_reference, $.parenthesized_expression),
+        ".",
+        $.any_identifier
+      ),
+
+    composite_reference: ($) =>
+      prec(3, wrapped_in_parenthesis($.object_reference)),
 
     parenthesized_expression: ($) =>
       prec(2, wrapped_in_parenthesis($._expression)),

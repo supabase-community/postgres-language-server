@@ -18429,7 +18429,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_grantable"
+                  "name": "grantable"
                 },
                 {
                   "type": "CHOICE",
@@ -18512,7 +18512,7 @@
         }
       ]
     },
-    "_grantable": {
+    "grantable": {
       "type": "CHOICE",
       "members": [
         {
@@ -18656,24 +18656,16 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "keyword_function"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "keyword_procedure"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "keyword_routine"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "keyword_function"
             },
             {
-              "type": "BLANK"
+              "type": "SYMBOL",
+              "name": "keyword_procedure"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "keyword_routine"
             }
           ]
         },
@@ -18978,11 +18970,62 @@
           },
           {
             "type": "SYMBOL",
+            "name": "field_selection"
+          },
+          {
+            "type": "SYMBOL",
             "name": "parenthesized_expression"
           },
           {
             "type": "SYMBOL",
             "name": "object_id"
+          }
+        ]
+      }
+    },
+    "field_selection": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "composite_reference"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "parenthesized_expression"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "."
+        },
+        {
+          "type": "SYMBOL",
+          "name": "any_identifier"
+        }
+      ]
+    },
+    "composite_reference": {
+      "type": "PREC",
+      "value": 3,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "("
+          },
+          {
+            "type": "SYMBOL",
+            "name": "object_reference"
+          },
+          {
+            "type": "STRING",
+            "value": ")"
           }
         ]
       }
