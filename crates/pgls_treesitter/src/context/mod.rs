@@ -101,11 +101,17 @@ pub struct TreesitterContext<'a> {
     pub text: &'a str,
     pub position: usize,
 
-    /// Tuple containing up to two qualifier identifiers from dot notation.
-    /// For example:
+    /// Tuple containing up to two qualifiers for identifier-node under the cursor.
+    ///
+    /// The qualifiers represent different "parents" based on the context, for example:
     /// - `table.column` -> (None, Some("table"))
+    /// - `alias.column` -> (None, Some("alias"))
+    /// - `schema.table` -> (None, Some("schema"))
     /// - `schema.table.column` -> (Some("schema"), Some("table"))
+    ///
+    /// Without any qualifiers:
     /// - `column` -> (None, None)
+    /// - `table` -> (None, None)
     pub identifier_qualifiers: (Option<String>, Option<String>),
 
     pub wrapping_clause_type: Option<WrappingClause<'a>>,
