@@ -133,7 +133,11 @@ export type Category =
 	| "dummy"
 	| "lint"
 	| "lint/performance"
-	| "lint/safety";
+	| "lint/safety"
+	| "splinter"
+	| "splinter/performance"
+	| "splinter/security"
+	| "splinter/unknown";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
