@@ -101,25 +101,16 @@ pub struct TreesitterContext<'a> {
     pub text: &'a str,
     pub position: usize,
 
-    /// If the cursor is on a node that uses dot notation
-    /// to specify an alias or schema, this will hold the schema's or
-    /// alias's name.
+    /// Tuple containing up to two qualifiers for identifier-node under the cursor: (head, tail)
     ///
-    /// Here, `auth` is a schema name:
-    /// ```sql
-    /// select * from auth.users;
-    /// ```
-    ///
-    /// Here, `u` is an alias name:
-    /// ```sql
-    /// select
-    ///     *
-    /// from
-    ///     auth.users u
-    ///     left join identities i
-    ///     on u.id = i.user_id;
-    /// ```
-    pub schema_or_alias_name: Option<String>,
+    /// The qualifiers represent different "parents" based on the context, for example:
+    /// - `column` -> (None, None)
+    /// - `table.column` -> (None, Some("table"))
+    /// - `alias.column` -> (None, Some("alias"))
+    /// - `schema.table` -> (None, Some("schema"))
+    /// - `schema.table.column` -> (Some("schema"), Some("table"))
+    /// - `table` -> (None, None)
+    pub identifier_qualifiers: (Option<String>, Option<String>),
 
     pub wrapping_clause_type: Option<WrappingClause<'a>>,
 
@@ -140,7 +131,7 @@ impl<'a> TreesitterContext<'a> {
             text: params.text,
             position: usize::from(params.position),
             node_under_cursor: None,
-            schema_or_alias_name: None,
+            identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
             wrapping_node_kind: None,
             wrapping_statement_range: None,
@@ -333,10 +324,20 @@ impl<'a> TreesitterContext<'a> {
                 let content = self.get_ts_node_content(&current_node);
                 if let Some(txt) = content {
                     let parts: Vec<&str> = txt.split('.').collect();
-                    // we do not want to set it if we're on the schema or alias node itself
-                    let is_on_schema_node = start + parts[0].len() >= self.position;
-                    if parts.len() == 2 && !is_on_schema_node {
-                        self.schema_or_alias_name = Some(parts[0].to_string());
+                    // we do not want to set it if we're on the first qualifier itself
+                    let is_on_first_part = start + parts[0].len() >= self.position;
+
+                    if parts.len() == 2 && !is_on_first_part {
+                        self.identifier_qualifiers = (None, Some(parts[0].to_string()));
+                    } else if parts.len() == 3 && !is_on_first_part {
+                        let is_on_second_part =
+                            start + parts[0].len() + 1 + parts[1].len() >= self.position;
+                        if !is_on_second_part {
+                            self.identifier_qualifiers =
+                                (Some(parts[0].to_string()), Some(parts[1].to_string()));
+                        } else {
+                            self.identifier_qualifiers = (None, Some(parts[0].to_string()));
+                        }
                     }
                 }
             }
@@ -778,6 +779,37 @@ impl<'a> TreesitterContext<'a> {
     pub fn has_mentioned_columns(&self) -> bool {
         !self.mentioned_columns.is_empty()
     }
+
+    /// Returns the head qualifier (leftmost), sanitized (quotes removed)
+    /// For `schema.table.<column>`: returns `Some("schema")`
+    /// For `table.<column>`: returns `None`
+    pub fn head_qualifier_sanitized(&self) -> Option<String> {
+        self.identifier_qualifiers
+            .0
+            .as_ref()
+            .map(|s| s.replace('"', ""))
+    }
+
+    /// Returns the tail qualifier (rightmost), sanitized (quotes removed)
+    /// For `schema.table.<column>`: returns `Some("table")`
+    /// For `table.<column>`: returns `Some("table")`
+    pub fn tail_qualifier_sanitized(&self) -> Option<String> {
+        self.identifier_qualifiers
+            .1
+            .as_ref()
+            .map(|s| s.replace('"', ""))
+    }
+
+    /// Returns true if there is at least one qualifier present
+    pub fn has_any_qualifier(&self) -> bool {
+        match self.identifier_qualifiers {
+            (Some(_), Some(_)) => true,
+            (None, Some(_)) => true,
+            (None, None) => false,
+
+            (Some(_), None) => unreachable!(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -926,7 +958,7 @@ mod tests {
             let ctx = TreesitterContext::new(params);
 
             assert_eq!(
-                ctx.schema_or_alias_name,
+                ctx.identifier_qualifiers.1,
                 expected_schema.map(|f| f.to_string())
             );
         }

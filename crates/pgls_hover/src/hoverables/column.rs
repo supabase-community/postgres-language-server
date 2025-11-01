@@ -74,12 +74,19 @@ impl ContextualPriority for Column {
         let mut score = 0.0;
 
         // high score if we match the specific alias or table being referenced in the cursor context
-        if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
-            if table_or_alias.replace('"', "") == self.table_name.as_str() {
+
+        if let Some(table_or_alias) = ctx.tail_qualifier_sanitized() {
+            let table = ctx
+                .get_mentioned_table_for_alias(&table_or_alias)
+                .unwrap_or(&table_or_alias);
+
+            if table == self.table_name.as_str() {
                 score += 250.0;
-            } else if let Some(table_name) = ctx.get_mentioned_table_for_alias(table_or_alias) {
-                if table_name == self.table_name.as_str() {
-                    score += 250.0;
+            }
+
+            if let Some(schema) = ctx.head_qualifier_sanitized() {
+                if schema == self.schema_name.as_str() {
+                    score += 50.0;
                 }
             }
         }
