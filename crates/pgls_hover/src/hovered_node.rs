@@ -1,18 +1,16 @@
 use pgls_treesitter::WrappingClause;
 
-type NodeIdentification = (Option<String>, String);
-
 #[allow(unused)]
 #[derive(Debug)]
 pub(crate) enum HoveredNode {
     Schema(String),
-    Table(NodeIdentification),
-    Function(NodeIdentification),
+    Table((Option<String>, String)),
+    Function((Option<String>, String)),
     Column((Option<String>, Option<String>, String)),
-    Policy(NodeIdentification),
-    Trigger(NodeIdentification),
+    Policy((Option<String>, String)),
+    Trigger((Option<String>, String)),
     Role(String),
-    PostgresType(NodeIdentification),
+    PostgresType((Option<String>, String)),
 }
 
 impl HoveredNode {
