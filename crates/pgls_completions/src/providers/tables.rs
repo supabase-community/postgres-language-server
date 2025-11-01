@@ -182,13 +182,13 @@ mod tests {
         pool.execute(setup).await.unwrap();
 
         let test_cases = vec![
-            // (
-            //     format!(
-            //         "select * from u{}",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     "user_y",
-            // ), // user_y is preferred alphanumerically
+            (
+                format!(
+                    "select * from u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "user_y",
+            ), // user_y is preferred alphanumerically
             (
                 format!(
                     "select * from private.u{}",
@@ -196,13 +196,13 @@ mod tests {
                 ),
                 "user_z",
             ),
-            // (
-            //     format!(
-            //         "select * from customer_support.u{}",
-            //         QueryWithCursorPosition::cursor_marker()
-            //     ),
-            //     "user_y",
-            // ),
+            (
+                format!(
+                    "select * from customer_support.u{}",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                "user_y",
+            ),
         ];
 
         for (query, expected_label) in test_cases {

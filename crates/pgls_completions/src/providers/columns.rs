@@ -800,7 +800,7 @@ mod tests {
         )
         .await;
 
-        // uses aliases
+        // // uses aliases
         assert_complete_results(
             format!(
                 "select name from instruments i join others o on i.z = o.a where i.{}",
