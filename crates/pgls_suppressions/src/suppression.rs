@@ -114,7 +114,7 @@ pub(crate) struct Suppression {
 
 impl Suppression {
     /// Creates a suppression from a suppression comment line.
-    /// The line start must match `-- pgt-ignore`, otherwise, this will panic.
+    /// The line start must match `-- pgt-ignore` or `-- pgls-ignore`, otherwise, this will panic.
     /// Leading whitespace is ignored.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
         let start_trimmed = line.trim_ascii_start();
@@ -122,8 +122,9 @@ impl Suppression {
         let trimmed = start_trimmed.trim_ascii_end();
 
         assert!(
-            start_trimmed.starts_with("-- pgt-ignore"),
-            "Only try parsing suppressions from lines starting with `-- pgt-ignore`."
+            start_trimmed.starts_with("-- pgt-ignore")
+                || start_trimmed.starts_with("-- pgls-ignore"),
+            "Only try parsing suppressions from lines starting with `-- pgt-ignore` or `-- pgls-ignore`."
         );
 
         let full_offset = *offset + TextSize::new(leading_whitespace_offset.try_into().unwrap());
@@ -141,10 +142,10 @@ impl Suppression {
 
         let _ = parts.next();
         let kind = match parts.next().unwrap() {
-            "pgt-ignore-all" => SuppressionKind::File,
-            "pgt-ignore-start" => SuppressionKind::Start,
-            "pgt-ignore-end" => SuppressionKind::End,
-            "pgt-ignore" => SuppressionKind::Line,
+            "pgt-ignore-all" | "pgls-ignore-all" => SuppressionKind::File,
+            "pgt-ignore-start" | "pgls-ignore-start" => SuppressionKind::Start,
+            "pgt-ignore-end" | "pgls-ignore-end" => SuppressionKind::End,
+            "pgt-ignore" | "pgls-ignore" => SuppressionKind::Line,
             k => {
                 return Err(SuppressionDiagnostic {
                     span,
@@ -451,5 +452,58 @@ mod tests {
             RuleFilter::Rule("safety", "banDropColumn"),
         ];
         assert!(spec.is_disabled(&disabled5));
+    }
+
+    #[test]
+    fn test_pgls_prefix_line_suppressions() {
+        let line = "-- pgls-ignore lint/safety/banDropColumn: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                "lint".to_string(),
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_pgls_prefix_file_kind() {
+        let line = "-- pgls-ignore-all lint/safety: explanation";
+        let offset = &TextSize::new(0);
+        let suppression = Suppression::from_line(line, offset).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::File);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Group("lint".to_string(), "safety".to_string())
+        );
+        assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_pgls_prefix_start_and_end_kind() {
+        let start_line = "-- pgls-ignore-start typecheck";
+        let end_line = "-- pgls-ignore-end typecheck";
+        let offset = &TextSize::new(0);
+
+        let start_suppression = Suppression::from_line(start_line, offset).unwrap();
+        assert_eq!(start_suppression.kind, SuppressionKind::Start);
+        assert_eq!(
+            start_suppression.rule_specifier,
+            RuleSpecifier::Category("typecheck".to_string())
+        );
+
+        let end_suppression = Suppression::from_line(end_line, offset).unwrap();
+        assert_eq!(end_suppression.kind, SuppressionKind::End);
+        assert_eq!(
+            end_suppression.rule_specifier,
+            RuleSpecifier::Category("typecheck".to_string())
+        );
     }
 }
