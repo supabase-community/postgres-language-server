@@ -1,6 +1,6 @@
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
-use pgls_splinter::{SplinterParams, run_splinter};
+use pgls_splinter::{run_splinter, SplinterParams};
 use sqlx::PgPool;
 use std::fmt::Write;
 use std::io;
@@ -52,26 +52,19 @@ struct TestSetup<'a> {
 impl TestSetup<'_> {
     async fn test(self) {
         // Create Supabase-specific roles that splinter expects
-        sqlx::raw_sql(
-            r#"
-            do $$
-            begin
-                if not exists (select from pg_roles where rolname = 'anon') then
-                    create role anon nologin;
-                end if;
-                if not exists (select from pg_roles where rolname = 'authenticated') then
-                    create role authenticated nologin;
-                end if;
-                if not exists (select from pg_roles where rolname = 'service_role') then
-                    create role service_role nologin;
-                end if;
-            end
-            $$;
-            "#,
-        )
-        .execute(self.test_db)
-        .await
-        .expect("Failed to create Supabase roles");
+        for role in ["anon", "authenticated", "service_role"] {
+            let result = sqlx::query(&format!("CREATE ROLE {role} NOLOGIN"))
+                .execute(self.test_db)
+                .await;
+
+            // Ignore duplicate role errors
+            if let Err(sqlx::Error::Database(db_err)) = &result {
+                let code = db_err.code();
+                if code.as_deref() != Some("23505") && code.as_deref() != Some("42710") {
+                    result.expect("Failed to create Supabase roles");
+                }
+            }
+        }
 
         // Run setup SQL
         sqlx::raw_sql(self.setup)
