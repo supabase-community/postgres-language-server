@@ -62,7 +62,7 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                     let actual_table = ctx
                         .get_mentioned_table_for_alias(table_or_alias.as_str())
                         .map(|s| s.as_str())
-                        .unwrap_or(table_or_alias.as_str());
+                        .unwrap_or(&table_or_alias);
 
                     params
                         .schema_cache
@@ -84,16 +84,9 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
             },
 
             HoveredNode::Function(node_identification) => match node_identification {
-                (None, function_name) => params
+                (maybe_schema, function_name) => params
                     .schema_cache
-                    .find_functions(&function_name, None)
-                    .into_iter()
-                    .map(Hoverable::from)
-                    .collect(),
-
-                (Some(schema), function_name) => params
-                    .schema_cache
-                    .find_functions(&function_name, Some(&schema))
+                    .find_functions(&function_name, maybe_schema.as_deref())
                     .into_iter()
                     .map(Hoverable::from)
                     .collect(),

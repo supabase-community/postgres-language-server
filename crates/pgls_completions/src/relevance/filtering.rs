@@ -297,7 +297,7 @@ impl CompletionFilter<'_> {
                             (ctx.matches_ancestor_history(&[
                                 "grantable_on_table",
                                 "object_reference",
-                            ]) && ctx.identifier_qualifiers.1.is_none())
+                            ]) && !ctx.has_any_qualifier())
                                 || ctx.matches_ancestor_history(&["grantable_on_all"])
                         }
 
@@ -380,33 +380,23 @@ impl CompletionFilter<'_> {
     }
 
     fn check_mentioned_schema_or_alias(&self, ctx: &TreesitterContext) -> Option<()> {
-        if ctx.identifier_qualifiers.1.is_none() {
-            return Some(());
-        }
-
-        let first_qualifier = ctx
-            .identifier_qualifiers
-            .0
-            .as_ref()
-            .map(|n| n.replace('"', ""));
-
-        let second_qualifier = ctx
-            .identifier_qualifiers
-            .1
-            .as_ref()
-            .unwrap()
-            .replace('"', "");
+        let tail_qualifier = match ctx.tail_qualifier_sanitized() {
+            Some(q) => q,
+            None => return Some(()), // no qualifier = this check passes
+        };
 
         let matches = match self.data {
-            CompletionRelevanceData::Table(table) => table.schema == second_qualifier,
-            CompletionRelevanceData::Function(f) => f.schema == second_qualifier,
+            CompletionRelevanceData::Table(table) => table.schema == tail_qualifier,
+            CompletionRelevanceData::Function(f) => f.schema == tail_qualifier,
             CompletionRelevanceData::Column(col) => {
                 let table = ctx
-                    .get_mentioned_table_for_alias(second_qualifier.as_str())
-                    .unwrap_or(&second_qualifier);
+                    .get_mentioned_table_for_alias(&tail_qualifier)
+                    .unwrap_or(&tail_qualifier);
 
-                &col.table_name == table
-                    && first_qualifier.is_none_or(|schema| schema == col.schema_name)
+                col.table_name == table.as_str()
+                    && ctx
+                        .head_qualifier_sanitized()
+                        .is_none_or(|schema| col.schema_name == schema.as_str())
             }
 
             // we should never allow schema suggestions if there already was one.

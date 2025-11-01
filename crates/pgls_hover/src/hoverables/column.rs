@@ -73,38 +73,24 @@ impl ContextualPriority for Column {
     fn relevance_score(&self, ctx: &TreesitterContext) -> f32 {
         let mut score = 0.0;
 
-        let first_qualifier = ctx
-            .identifier_qualifiers
-            .0
-            .as_ref()
-            .map(|s| s.replace('"', ""));
+        // high score if we match the specific alias or table being referenced in the cursor context
 
-        let second_qualifier = ctx
-            .identifier_qualifiers
-            .1
-            .as_ref()
-            .map(|s| s.replace('"', ""));
+        if let Some(table_or_alias) = ctx.tail_qualifier_sanitized() {
+            let table = ctx
+                .get_mentioned_table_for_alias(&table_or_alias)
+                .unwrap_or(&table_or_alias);
 
-        match (first_qualifier, second_qualifier) {
-            (Some(schema), Some(table_or_alias)) => {
-                let table = ctx
-                    .get_mentioned_table_for_alias(&table_or_alias)
-                    .unwrap_or(&table_or_alias);
+            if table == self.table_name.as_str()
+                && ctx
+                    .head_qualifier_sanitized()
+                    .is_none_or(|s| self.schema_name == s.as_str())
+            {
+                score += 250.0;
 
-                if self.schema_name == schema && &self.table_name == table {
-                    score += 300.0;
+                if ctx.head_qualifier_sanitized().is_some() {
+                    score += 50.0;
                 }
             }
-            (None, Some(table_or_alias)) => {
-                let table = ctx
-                    .get_mentioned_table_for_alias(&table_or_alias)
-                    .unwrap_or(&table_or_alias);
-
-                if &self.table_name == table {
-                    score += 250.0;
-                }
-            }
-            _ => {}
         }
 
         if ctx

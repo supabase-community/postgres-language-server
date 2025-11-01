@@ -104,12 +104,15 @@ pub struct TreesitterContext<'a> {
     pub text: &'a str,
     pub position: usize,
 
-    /// Identifiers can have additional qualifiers; e.g. a table can be `schema.table`, and a
-    /// column can be `schema.table.column`. The `identifier_qualifiers` are those additional qualifiers in order.
+    /// Tuple containing up to two qualifiers for identifier-node under the cursor: (head, tail)
     ///
-    /// For a column: `(Some(schema), Some(table))`
-    ///
-    /// For a table: `(None, Some(schema))` – the first entry will always be None.
+    /// The qualifiers represent different "parents" based on the context, for example:
+    /// - `column` -> (None, None)
+    /// - `table.column` -> (None, Some("table"))
+    /// - `alias.column` -> (None, Some("alias"))
+    /// - `schema.table` -> (None, Some("schema"))
+    /// - `schema.table.column` -> (Some("schema"), Some("table"))
+    /// - `table` -> (None, None)
     pub identifier_qualifiers: (Option<String>, Option<String>),
 
     pub wrapping_clause_type: Option<WrappingClause<'a>>,
@@ -769,6 +772,37 @@ impl<'a> TreesitterContext<'a> {
 
     pub fn has_mentioned_columns(&self) -> bool {
         !self.mentioned_columns.is_empty()
+    }
+
+    /// Returns the head qualifier (leftmost), sanitized (quotes removed)
+    /// For `schema.table.<column>`: returns `Some("schema")`
+    /// For `table.<column>`: returns `None`
+    pub fn head_qualifier_sanitized(&self) -> Option<String> {
+        self.identifier_qualifiers
+            .0
+            .as_ref()
+            .map(|s| s.replace('"', ""))
+    }
+
+    /// Returns the tail qualifier (rightmost), sanitized (quotes removed)
+    /// For `schema.table.<column>`: returns `Some("table")`
+    /// For `table.<column>`: returns `Some("table")`
+    pub fn tail_qualifier_sanitized(&self) -> Option<String> {
+        self.identifier_qualifiers
+            .1
+            .as_ref()
+            .map(|s| s.replace('"', ""))
+    }
+
+    /// Returns true if there is at least one qualifier present
+    pub fn has_any_qualifier(&self) -> bool {
+        match self.identifier_qualifiers {
+            (Some(_), Some(_)) => true,
+            (None, Some(_)) => true,
+            (None, None) => false,
+
+            (Some(_), None) => unreachable!(),
+        }
     }
 }
 

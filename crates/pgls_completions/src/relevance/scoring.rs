@@ -79,7 +79,7 @@ impl CompletionScore<'_> {
         };
 
         let has_mentioned_tables = ctx.has_any_mentioned_relations();
-        let has_qualifier = ctx.identifier_qualifiers.1.is_some();
+        let has_qualifier = ctx.has_any_qualifier();
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
@@ -149,15 +149,15 @@ impl CompletionScore<'_> {
             Some(wn) => wn,
         };
 
-        let has_single_qualifier = matches!(ctx.identifier_qualifiers, (None, Some(_)));
+        let has_qualifier = ctx.has_any_qualifier();
         let has_node_text = ctx
             .get_node_under_cursor_content()
             .is_some_and(|txt| !sanitization::is_sanitized_token(txt.as_str()));
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match wrapping_node {
-                WrappingNode::Relation if has_single_qualifier => 15,
-                WrappingNode::Relation if !has_single_qualifier => 10,
+                WrappingNode::Relation if has_qualifier => 15,
+                WrappingNode::Relation if !has_qualifier => 10,
                 WrappingNode::BinaryExpression => 5,
                 _ => -50,
             },
@@ -172,8 +172,8 @@ impl CompletionScore<'_> {
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match wrapping_node {
-                WrappingNode::Relation if !has_single_qualifier && !has_node_text => 15,
-                WrappingNode::Relation if !has_single_qualifier && has_node_text => 0,
+                WrappingNode::Relation if !has_qualifier && !has_node_text => 15,
+                WrappingNode::Relation if !has_qualifier && has_node_text => 0,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => 0,
@@ -191,35 +191,30 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
-        if matches!(ctx.identifier_qualifiers, (None, None)) {
+        let schema_from_qualifier = match self.data {
+            CompletionRelevanceData::Table(_) | CompletionRelevanceData::Function(_) => {
+                ctx.tail_qualifier_sanitized()
+            }
+
+            CompletionRelevanceData::Column(_) | CompletionRelevanceData::Policy(_) => {
+                ctx.head_qualifier_sanitized()
+            }
+
+            CompletionRelevanceData::Schema(_) | CompletionRelevanceData::Role(_) => None,
+        };
+
+        if schema_from_qualifier.is_none() {
             return;
         }
 
-        let first_qualifier = ctx
-            .identifier_qualifiers
-            .0
-            .as_ref()
-            .map(|f| f.replace('"', ""));
+        let schema_from_qualifier = schema_from_qualifier.unwrap();
 
-        let second_qualifier = ctx
-            .identifier_qualifiers
-            .1
-            .as_ref()
-            .unwrap()
-            .replace('"', "");
-
-        let is_match = match self.data {
-            CompletionRelevanceData::Table(table) => table.schema == second_qualifier,
-            CompletionRelevanceData::Function(function) => function.schema == second_qualifier,
-            CompletionRelevanceData::Column(column) => {
-                first_qualifier.is_some_and(|s| s == column.schema_name)
-            }
-            CompletionRelevanceData::Schema(_)
-            | CompletionRelevanceData::Policy(_)
-            | CompletionRelevanceData::Role(_) => false,
+        let data_schema = match self.get_schema_name() {
+            Some(s) => s,
+            None => return,
         };
 
-        if is_match {
+        if schema_from_qualifier == data_schema {
             self.score += 25;
         } else {
             self.score -= 10;
