@@ -1,0 +1,292 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/predicate_60.sql
+---
+CREATE TABLE pred_tab (
+  a INT NOT NULL,
+  b INT,
+  c INT NOT NULL
+);
+
+SELECT * FROM pred_tab AS t WHERE t.a IS NOT NULL;
+
+SELECT * FROM pred_tab AS t WHERE t.b IS NOT NULL;
+
+SELECT * FROM pred_tab AS t WHERE t.a IS NULL;
+
+SELECT * FROM pred_tab AS t WHERE t.b IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t
+WHERE
+  t.a IS NOT NULL OR
+  t.b =
+  1;
+
+SELECT
+  *
+FROM
+  pred_tab AS t
+WHERE
+  t.b IS NOT NULL OR
+  t.a =
+  1;
+
+SELECT
+  *
+FROM
+  pred_tab AS t
+WHERE
+  t.a IS NULL OR
+  t.c IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t
+WHERE
+  t.b IS NULL OR
+  t.c IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON t1.a IS NOT NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  FULL OUTER JOIN pred_tab AS t2
+  ON t1.a =
+    t2.a
+  LEFT OUTER JOIN pred_tab AS t3
+  ON t2.a IS NOT NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON t1.a IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON t1.a =
+    1
+  LEFT OUTER JOIN pred_tab AS t3
+  ON t2.a IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON t1.a IS NOT NULL OR
+    t2.b =
+    1;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  FULL OUTER JOIN pred_tab AS t2
+  ON t1.a =
+    t2.a
+  LEFT OUTER JOIN pred_tab AS t3
+  ON t2.a IS NOT NULL OR
+    t2.b =
+    1;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON t1.a IS NULL OR
+    t1.c IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON t1.a =
+    1
+  LEFT OUTER JOIN pred_tab AS t3
+  ON t2.a IS NULL OR
+    t2.c IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON EXISTS (SELECT
+      1
+    FROM
+      pred_tab AS t3,
+      pred_tab AS t4,
+      pred_tab AS t5,
+      pred_tab AS t6
+    WHERE
+      t1.a =
+      t3.a AND
+      t6.a IS NOT NULL);
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON EXISTS (SELECT
+      1
+    FROM
+      pred_tab AS t3,
+      pred_tab AS t4,
+      pred_tab AS t5,
+      pred_tab AS t6
+    WHERE
+      t1.a =
+      t3.a AND
+      t6.a IS NULL);
+
+DROP TABLE "pred_tab";
+
+CREATE TABLE pred_parent ( a INT );
+
+CREATE TABLE pred_child () INHERITS (pred_parent);
+
+ALTER TABLE ONLY pred_parent ALTER COLUMN a SET NOT NULL;
+
+SELECT * FROM pred_parent WHERE a IS NOT NULL;
+
+SELECT * FROM pred_parent WHERE a IS NULL;
+
+ALTER TABLE pred_parent ALTER COLUMN a DROP NOT NULL;
+
+ALTER TABLE pred_child ALTER COLUMN a SET NOT NULL;
+
+SELECT * FROM pred_parent WHERE a IS NOT NULL;
+
+SELECT * FROM pred_parent WHERE a IS NULL;
+
+DROP TABLE "pred_parent", "pred_child";
+
+CREATE TABLE pred_tab ( a INT, b INT );
+
+CREATE TABLE pred_tab_notnull ( a INT, b INT NOT NULL );
+
+INSERT INTO pred_tab VALUES (1, 1);
+
+INSERT INTO pred_tab VALUES (2, 2);
+
+INSERT INTO pred_tab_notnull VALUES (2, 2);
+
+INSERT INTO pred_tab_notnull VALUES (3, 3);
+
+ANALYZE pred_tab;
+
+ANALYZE pred_tab_notnull;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON TRUE
+  LEFT OUTER JOIN pred_tab_notnull AS t3
+  ON t2.a =
+    t3.a
+  LEFT OUTER JOIN pred_tab AS t4
+  ON t3.b IS NOT NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON TRUE
+  LEFT OUTER JOIN pred_tab_notnull AS t3
+  ON t2.a =
+    t3.a
+  LEFT OUTER JOIN pred_tab AS t4
+  ON t3.b IS NOT NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON TRUE
+  LEFT OUTER JOIN pred_tab_notnull AS t3
+  ON t2.a =
+    t3.a
+  LEFT OUTER JOIN pred_tab AS t4
+  ON t3.b IS NULL AND
+    t3.a IS NOT NULL;
+
+SELECT
+  *
+FROM
+  pred_tab AS t1
+  LEFT OUTER JOIN pred_tab AS t2
+  ON TRUE
+  LEFT OUTER JOIN pred_tab_notnull AS t3
+  ON t2.a =
+    t3.a
+  LEFT OUTER JOIN pred_tab AS t4
+  ON t3.b IS NULL AND
+    t3.a IS NOT NULL;
+
+DROP TABLE "pred_tab";
+
+DROP TABLE "pred_tab_notnull";
+
+CREATE TABLE pred_tab1 (
+  a INT NOT NULL,
+  b INT,
+  CONSTRAINT "check_tab1" CHECK (a IS NULL OR
+  b >
+  2)
+);
+
+CREATE TABLE pred_tab2 (
+  a INT,
+  b INT,
+  CONSTRAINT "check_a" CHECK (a IS NOT NULL)
+);
+
+SET constraint_exclusion = on;
+
+SELECT
+  *
+FROM
+  pred_tab1,
+  pred_tab2
+WHERE
+  pred_tab2.a IS NULL;
+
+SELECT
+  *
+FROM
+  pred_tab2,
+  pred_tab1
+WHERE
+  pred_tab1.a IS NULL OR
+  pred_tab1.b <
+  2;
+
+RESET constraint_exclusion;
+
+DROP TABLE "pred_tab1";
+
+DROP TABLE "pred_tab2";

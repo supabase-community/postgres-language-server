@@ -1,0 +1,409 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/create_misc_60.sql
+---
+CREATE TABLE a_star ( class CHAR(1), a INT );
+
+CREATE TABLE b_star ( b TEXT ) INHERITS (a_star);
+
+CREATE TABLE c_star ( c NAME ) INHERITS (a_star);
+
+CREATE TABLE d_star (
+  d DOUBLE PRECISION
+)
+INHERITS (b_star,
+c_star);
+
+CREATE TABLE e_star ( e SMALLINT ) INHERITS (c_star);
+
+CREATE TABLE f_star ( f polygon ) INHERITS (e_star);
+
+INSERT INTO a_star (class, a) VALUES ('a', 1);
+
+INSERT INTO a_star (class, a) VALUES ('a', 2);
+
+INSERT INTO a_star (class) VALUES ('a');
+
+INSERT INTO b_star (class,
+a,
+b)
+VALUES ('b',
+3,
+CAST('mumble' AS TEXT));
+
+INSERT INTO b_star (class, a) VALUES ('b', 4);
+
+INSERT INTO b_star (class,
+b)
+VALUES ('b',
+CAST('bumble' AS TEXT));
+
+INSERT INTO b_star (class) VALUES ('b');
+
+INSERT INTO c_star (class,
+a,
+c)
+VALUES ('c',
+5,
+CAST('hi mom' AS NAME));
+
+INSERT INTO c_star (class, a) VALUES ('c', 6);
+
+INSERT INTO c_star (class,
+c)
+VALUES ('c',
+CAST('hi paul' AS NAME));
+
+INSERT INTO c_star (class) VALUES ('c');
+
+INSERT INTO d_star (class,
+a,
+b,
+c,
+d)
+VALUES ('d',
+7,
+CAST('grumble' AS TEXT),
+CAST('hi sunita' AS NAME),
+CAST('0.0' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class,
+a,
+b,
+c)
+VALUES ('d',
+8,
+CAST('stumble' AS TEXT),
+CAST('hi koko' AS NAME));
+
+INSERT INTO d_star (class,
+a,
+b,
+d)
+VALUES ('d',
+9,
+CAST('rumble' AS TEXT),
+CAST('1.1' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class,
+a,
+c,
+d)
+VALUES ('d',
+10,
+CAST('hi kristin' AS NAME),
+CAST('10.01' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class,
+b,
+c,
+d)
+VALUES ('d',
+CAST('crumble' AS TEXT),
+CAST('hi boris' AS NAME),
+CAST('100.001' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class,
+a,
+b)
+VALUES ('d',
+11,
+CAST('fumble' AS TEXT));
+
+INSERT INTO d_star (class,
+a,
+c)
+VALUES ('d',
+12,
+CAST('hi avi' AS NAME));
+
+INSERT INTO d_star (class,
+a,
+d)
+VALUES ('d',
+13,
+CAST('1000.0001' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class,
+b,
+c)
+VALUES ('d',
+CAST('tumble' AS TEXT),
+CAST('hi andrew' AS NAME));
+
+INSERT INTO d_star (class,
+b,
+d)
+VALUES ('d',
+CAST('humble' AS TEXT),
+CAST('10000.00001' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class,
+c,
+d)
+VALUES ('d',
+CAST('hi ginger' AS NAME),
+CAST('100000.000001' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class, a) VALUES ('d', 14);
+
+INSERT INTO d_star (class,
+b)
+VALUES ('d',
+CAST('jumble' AS TEXT));
+
+INSERT INTO d_star (class,
+c)
+VALUES ('d',
+CAST('hi jolly' AS NAME));
+
+INSERT INTO d_star (class,
+d)
+VALUES ('d',
+CAST('1000000.0000001' AS DOUBLE PRECISION));
+
+INSERT INTO d_star (class) VALUES ('d');
+
+INSERT INTO e_star (class,
+a,
+c,
+e)
+VALUES ('e',
+15,
+CAST('hi carol' AS NAME),
+CAST('-1' AS SMALLINT));
+
+INSERT INTO e_star (class,
+a,
+c)
+VALUES ('e',
+16,
+CAST('hi bob' AS NAME));
+
+INSERT INTO e_star (class,
+a,
+e)
+VALUES ('e',
+17,
+CAST('-2' AS SMALLINT));
+
+INSERT INTO e_star (class,
+c,
+e)
+VALUES ('e',
+CAST('hi michelle' AS NAME),
+CAST('-3' AS SMALLINT));
+
+INSERT INTO e_star (class, a) VALUES ('e', 18);
+
+INSERT INTO e_star (class,
+c)
+VALUES ('e',
+CAST('hi elisa' AS NAME));
+
+INSERT INTO e_star (class,
+e)
+VALUES ('e',
+CAST('-4' AS SMALLINT));
+
+INSERT INTO f_star (class,
+a,
+c,
+e,
+f)
+VALUES ('f',
+19,
+CAST('hi claire' AS NAME),
+CAST('-5' AS SMALLINT),
+CAST('(1,3),(2,4)' AS polygon));
+
+INSERT INTO f_star (class,
+a,
+c,
+e)
+VALUES ('f',
+20,
+CAST('hi mike' AS NAME),
+CAST('-6' AS SMALLINT));
+
+INSERT INTO f_star (class,
+a,
+c,
+f)
+VALUES ('f',
+21,
+CAST('hi marcel' AS NAME),
+CAST('(11,44),(22,55),(33,66)' AS polygon));
+
+INSERT INTO f_star (class,
+a,
+e,
+f)
+VALUES ('f',
+22,
+CAST('-7' AS SMALLINT),
+CAST('(111,555),(222,666),(333,777),(444,888)' AS polygon));
+
+INSERT INTO f_star (class,
+c,
+e,
+f)
+VALUES ('f',
+CAST('hi keith' AS NAME),
+CAST('-8' AS SMALLINT),
+CAST('(1111,3333),(2222,4444)' AS polygon));
+
+INSERT INTO f_star (class,
+a,
+c)
+VALUES ('f',
+24,
+CAST('hi marc' AS NAME));
+
+INSERT INTO f_star (class,
+a,
+e)
+VALUES ('f',
+25,
+CAST('-9' AS SMALLINT));
+
+INSERT INTO f_star (class,
+a,
+f)
+VALUES ('f',
+26,
+CAST('(11111,33333),(22222,44444)' AS polygon));
+
+INSERT INTO f_star (class,
+c,
+e)
+VALUES ('f',
+CAST('hi allison' AS NAME),
+CAST('-10' AS SMALLINT));
+
+INSERT INTO f_star (class,
+c,
+f)
+VALUES ('f',
+CAST('hi jeff' AS NAME),
+CAST('(111111,333333),(222222,444444)' AS polygon));
+
+INSERT INTO f_star (class,
+e,
+f)
+VALUES ('f',
+CAST('-11' AS SMALLINT),
+CAST('(1111111,3333333),(2222222,4444444)' AS polygon));
+
+INSERT INTO f_star (class, a) VALUES ('f', 27);
+
+INSERT INTO f_star (class,
+c)
+VALUES ('f',
+CAST('hi carl' AS NAME));
+
+INSERT INTO f_star (class,
+e)
+VALUES ('f',
+CAST('-12' AS SMALLINT));
+
+INSERT INTO f_star (class,
+f)
+VALUES ('f',
+CAST('(11111111,33333333),(22222222,44444444)' AS polygon));
+
+INSERT INTO f_star (class) VALUES ('f');
+
+ANALYZE a_star;
+
+ANALYZE b_star;
+
+ANALYZE c_star;
+
+ANALYZE d_star;
+
+ANALYZE e_star;
+
+ANALYZE f_star;
+
+SELECT * FROM a_star;
+
+SELECT
+  *
+FROM
+  b_star AS x
+WHERE
+  x.b =
+  CAST('bumble' AS TEXT) OR
+  x.a <
+  3;
+
+SELECT
+  class,
+  a
+FROM
+  c_star AS x
+WHERE
+  x.c ~ CAST('hi' AS TEXT);
+
+SELECT class, b, c FROM d_star AS x WHERE x.a < 100;
+
+SELECT class, c FROM e_star AS x WHERE x.c IS NOT NULL;
+
+SELECT * FROM f_star AS x WHERE x.c IS NULL;
+
+SELECT SUM(a) FROM a_star;
+
+SELECT
+  class,
+  SUM(a)
+FROM
+  a_star
+GROUP BY class
+ORDER BY class;
+
+ALTER TABLE f_star RENAME COLUMN f TO ff;
+
+ALTER TABLE e_star RENAME COLUMN e TO ee;
+
+ALTER TABLE d_star RENAME COLUMN d TO dd;
+
+ALTER TABLE c_star RENAME COLUMN c TO cc;
+
+ALTER TABLE b_star RENAME COLUMN b TO bb;
+
+ALTER TABLE a_star RENAME COLUMN a TO aa;
+
+SELECT class, aa FROM a_star AS x WHERE aa IS NULL;
+
+ALTER TABLE a_star RENAME COLUMN aa TO foo;
+
+SELECT class, foo FROM a_star AS x WHERE x.foo >= 2;
+
+ALTER TABLE a_star RENAME COLUMN foo TO aa;
+
+SELECT * FROM a_star WHERE aa < 1000;
+
+ALTER TABLE f_star ADD COLUMN f INT;
+
+UPDATE f_star SET f = 10;
+
+ALTER TABLE e_star ADD COLUMN e INT;
+
+SELECT * FROM e_star;
+
+ALTER TABLE a_star ADD COLUMN a TEXT;
+
+SELECT
+  relname,
+  reltoastrelid <>
+  0 AS has_toast_table
+FROM
+  pg_class
+WHERE
+  CAST(oid AS REGCLASS) IN ('a_star',
+  'c_star')
+ORDER BY 1;
+
+SELECT class, aa, a FROM a_star;

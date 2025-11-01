@@ -1,0 +1,1 @@
+SELECT city FROM weather FETCH FIRST 5 ROWS ONLY;

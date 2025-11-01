@@ -1,0 +1,17 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 76
+input_file: crates/pgls_pretty_print/tests/data/single/select_window_clause_0_60.sql
+---
+SELECT
+  total,
+  running_total
+FROM
+  metrics
+WHERE
+  total >
+  0
+WINDOW
+  w AS (
+  PARTITION BY series_id
+  ORDER BY captured_at);

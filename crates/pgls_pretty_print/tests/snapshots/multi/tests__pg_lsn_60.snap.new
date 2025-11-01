@@ -1,0 +1,104 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/pg_lsn_60.sql
+---
+CREATE TABLE pg_lsn_tbl ( f1 PG_LSN );
+
+INSERT INTO pg_lsn_tbl VALUES ('0/0');
+
+INSERT INTO pg_lsn_tbl VALUES ('FFFFFFFF/FFFFFFFF');
+
+INSERT INTO pg_lsn_tbl VALUES ('G/0');
+
+INSERT INTO pg_lsn_tbl VALUES ('-1/0');
+
+INSERT INTO pg_lsn_tbl VALUES (' 0/12345678');
+
+INSERT INTO pg_lsn_tbl VALUES ('ABCD/');
+
+INSERT INTO pg_lsn_tbl VALUES ('/ABCD');
+
+SELECT pg_input_is_valid('16AE7F7', 'pg_lsn');
+
+SELECT * FROM pg_input_error_info('16AE7F7', 'pg_lsn');
+
+SELECT MIN(f1), MAX(f1) FROM pg_lsn_tbl;
+
+DROP TABLE "pg_lsn_tbl";
+
+SELECT '0/16AE7F8' = CAST('0/16AE7F8' AS PG_LSN);
+
+SELECT CAST('0/16AE7F8' AS PG_LSN) <> '0/16AE7F7';
+
+SELECT '0/16AE7F7' < CAST('0/16AE7F8' AS PG_LSN);
+
+SELECT '0/16AE7F8' > CAST('0/16AE7F7' AS PG_LSN);
+
+SELECT
+  CAST('0/16AE7F7' AS PG_LSN) - CAST('0/16AE7F8' AS PG_LSN);
+
+SELECT
+  CAST('0/16AE7F8' AS PG_LSN) - CAST('0/16AE7F7' AS PG_LSN);
+
+SELECT CAST('0/16AE7F7' AS PG_LSN) + CAST(16 AS NUMERIC);
+
+SELECT CAST(16 AS NUMERIC) + CAST('0/16AE7F7' AS PG_LSN);
+
+SELECT CAST('0/16AE7F7' AS PG_LSN) - CAST(16 AS NUMERIC);
+
+SELECT
+  CAST('FFFFFFFF/FFFFFFFE' AS PG_LSN) + CAST(1 AS NUMERIC);
+
+SELECT
+  CAST('FFFFFFFF/FFFFFFFE' AS PG_LSN) + CAST(2 AS NUMERIC);
+
+SELECT CAST('0/1' AS PG_LSN) - CAST(1 AS NUMERIC);
+
+SELECT CAST('0/1' AS PG_LSN) - CAST(2 AS NUMERIC);
+
+SELECT
+  CAST('0/0' AS PG_LSN) + (CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) - CAST('0/0' AS PG_LSN));
+
+SELECT
+  CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) - (CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) - CAST('0/0' AS PG_LSN));
+
+SELECT CAST('0/16AE7F7' AS PG_LSN) + CAST('NaN' AS NUMERIC);
+
+SELECT CAST('0/16AE7F7' AS PG_LSN) - CAST('NaN' AS NUMERIC);
+
+SELECT DISTINCT
+  CAST(i || '/' || j AS PG_LSN) AS f
+FROM
+  generate_series(1,
+  10) AS i,
+  generate_series(1,
+  10) AS j,
+  generate_series(1,
+  5) AS k
+WHERE
+  i <=
+  10 AND
+  j >
+  0 AND
+  j <=
+  10
+ORDER BY f;
+
+SELECT DISTINCT
+  CAST(i || '/' || j AS PG_LSN) AS f
+FROM
+  generate_series(1,
+  10) AS i,
+  generate_series(1,
+  10) AS j,
+  generate_series(1,
+  5) AS k
+WHERE
+  i <=
+  10 AND
+  j >
+  0 AND
+  j <=
+  10
+ORDER BY f;

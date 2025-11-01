@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 76
+input_file: crates/pgls_pretty_print/tests/data/single/create_function_stmt_0_60.sql
+---
+CREATE FUNCTION add(
+  "a" INT,
+  "b" INT
+)
+RETURNS INT
+AS 'SELECT $1 + $2'
+LANGUAGE "sql";

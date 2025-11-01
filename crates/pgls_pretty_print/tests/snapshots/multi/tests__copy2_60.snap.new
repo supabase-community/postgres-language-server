@@ -1,0 +1,54 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/copy2_60.sql
+---
+CREATE TEMPORARY TABLE x (
+  a serial,
+  b INT,
+  c TEXT NOT NULL DEFAULT 'stuff',
+  d TEXT,
+  e TEXT
+);
+
+CREATE FUNCTION fn_x_before()
+RETURNS trigger
+AS '
+  BEGIN
+		NEW.e := ''before trigger fired''::text;
+		return NEW;
+	END;
+'
+LANGUAGE "plpgsql";
+
+CREATE FUNCTION fn_x_after()
+RETURNS trigger
+AS '
+  BEGIN
+		UPDATE x set e=''after trigger fired'' where c=''stuff'';
+		return NULL;
+	END;
+'
+LANGUAGE "plpgsql";
+
+CREATE TRIGGER trg_x_after
+AFTER
+INSERT
+ON x
+FOR EACH ROW
+EXECUTE FUNCTION fn_x_after();
+
+CREATE TRIGGER trg_x_before
+BEFORE
+INSERT
+ON x
+FOR EACH ROW
+EXECUTE FUNCTION fn_x_before();
+
+SELECT * FROM x;
+
+COPY x TO STDOUT;
+
+COPY x (c, e) TO STDOUT;
+
+COPY x (b, e) TO STDOUT;

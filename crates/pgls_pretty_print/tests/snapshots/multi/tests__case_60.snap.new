@@ -1,0 +1,353 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/case_60.sql
+---
+CREATE TABLE case_tbl ( i INT, f DOUBLE PRECISION );
+
+CREATE TABLE case2_tbl ( i INT, j INT );
+
+INSERT INTO case_tbl VALUES (1, 10.1);
+
+INSERT INTO case_tbl VALUES (2, 20.2);
+
+INSERT INTO case_tbl VALUES (3, -30.3);
+
+INSERT INTO case_tbl VALUES (4, NULL);
+
+INSERT INTO case2_tbl VALUES (1, -1);
+
+INSERT INTO case2_tbl VALUES (2, -2);
+
+INSERT INTO case2_tbl VALUES (3, -3);
+
+INSERT INTO case2_tbl VALUES (2, -4);
+
+INSERT INTO case2_tbl VALUES (1, NULL);
+
+INSERT INTO case2_tbl VALUES (NULL, -6);
+
+SELECT
+  '3' AS "One",
+  CASE
+  WHEN 1 <
+  2 THEN 3
+  END AS "Simple WHEN";
+
+SELECT
+  '<NULL>' AS "One",
+  CASE
+  WHEN 1 >
+  2 THEN 3
+  END AS "Simple default";
+
+SELECT
+  '3' AS "One",
+  CASE
+  WHEN 1 <
+  2 THEN 3
+  ELSE 4
+  END AS "Simple ELSE";
+
+SELECT
+  '4' AS "One",
+  CASE
+  WHEN 1 >
+  2 THEN 3
+  ELSE 4
+  END AS "ELSE default";
+
+SELECT
+  '6' AS "One",
+  CASE
+  WHEN 1 >
+  2 THEN 3
+  WHEN 4 <
+  5 THEN 6
+  ELSE 7
+  END AS "Two WHEN with default";
+
+SELECT
+  '7' AS "None",
+  CASE
+  WHEN random() <
+  0 THEN 1
+  END AS "NULL on no matches";
+
+SELECT
+  CASE
+  WHEN 1 =
+  0 THEN 1 / 0
+  WHEN 1 =
+  1 THEN 1
+  ELSE 2 / 0
+  END;
+
+SELECT
+  CASE 1
+  WHEN 0 THEN 1 / 0
+  WHEN 1 THEN 1
+  ELSE 2 / 0
+  END;
+
+SELECT
+  CASE
+  WHEN i >
+  100 THEN 1 / 0
+  ELSE 0
+  END
+FROM
+  case_tbl;
+
+SELECT CASE 'a' WHEN 'a' THEN 1 ELSE 2 END;
+
+SELECT
+  CASE
+  WHEN i >=
+  3 THEN i
+  END AS ">= 3 or Null"
+FROM
+  case_tbl;
+
+SELECT
+  CASE
+  WHEN i >=
+  3 THEN i + i
+  ELSE i
+  END AS "Simplest Math"
+FROM
+  case_tbl;
+
+SELECT
+  i AS "Value",
+  CASE
+  WHEN i <
+  0 THEN 'small'
+  WHEN i =
+  0 THEN 'zero'
+  WHEN i =
+  1 THEN 'one'
+  WHEN i =
+  2 THEN 'two'
+  ELSE 'big'
+  END AS "Category"
+FROM
+  case_tbl;
+
+SELECT
+  CASE
+  WHEN i <
+  0 OR
+  i <
+  0 THEN 'small'
+  WHEN i =
+  0 OR
+  i =
+  0 THEN 'zero'
+  WHEN i =
+  1 OR
+  i =
+  1 THEN 'one'
+  WHEN i =
+  2 OR
+  i =
+  2 THEN 'two'
+  ELSE 'big'
+  END AS "Category"
+FROM
+  case_tbl;
+
+SELECT * FROM case_tbl WHERE COALESCE(f, i) = 4;
+
+SELECT * FROM case_tbl WHERE NULLIF(f, i) = 2;
+
+SELECT
+  COALESCE(a.f,
+  b.i,
+  b.j)
+FROM
+  case_tbl AS a,
+  case2_tbl AS b;
+
+SELECT
+  *
+FROM
+  case_tbl AS a,
+  case2_tbl AS b
+WHERE
+  COALESCE(a.f,
+  b.i,
+  b.j) =
+  2;
+
+SELECT
+  NULLIF(a.i, b.i) AS "NULLIF(a.i,b.i)",
+  NULLIF(b.i, 4) AS "NULLIF(b.i,4)"
+FROM
+  case_tbl AS a,
+  case2_tbl AS b;
+
+SELECT
+  *
+FROM
+  case_tbl AS a,
+  case2_tbl AS b
+WHERE
+  COALESCE(f,
+  b.i) =
+  2;
+
+SELECT * FROM case_tbl WHERE NULLIF(1, 2) = 2;
+
+SELECT * FROM case_tbl WHERE NULLIF(1, 1) IS NOT NULL;
+
+SELECT * FROM case_tbl WHERE NULLIF(1, NULL) = 2;
+
+UPDATE case_tbl
+SET i = CASE
+WHEN i >=
+3 THEN -i
+ELSE 2 * i
+END;
+
+SELECT * FROM case_tbl;
+
+UPDATE case_tbl
+SET i = CASE
+WHEN i >=
+2 THEN 2 * i
+ELSE 3 * i
+END;
+
+SELECT * FROM case_tbl;
+
+UPDATE case_tbl
+SET i = CASE
+WHEN b.i >=
+2 THEN 2 * j
+ELSE 3 * j
+END
+FROM case2_tbl AS b
+WHERE
+  j =
+  -case_tbl.i;
+
+SELECT * FROM case_tbl;
+
+BEGIN;
+
+CREATE FUNCTION vol(
+  TEXT
+)
+RETURNS TEXT
+AS 'begin return $1; end'
+LANGUAGE "plpgsql"
+VOLATILE;
+
+SELECT
+  CASE CASE vol('bar')
+  WHEN 'foo' THEN 'it was foo!'
+  WHEN vol(NULL) THEN 'null input'
+  WHEN 'bar' THEN 'it was bar!'
+  END
+  WHEN 'it was foo!' THEN 'foo recognized'
+  WHEN 'it was bar!' THEN 'bar recognized'
+  ELSE 'unrecognized'
+  END;
+
+CREATE DOMAIN foodomain AS TEXT;
+
+CREATE FUNCTION volfoo(
+  TEXT
+)
+RETURNS foodomain
+AS 'begin return $1::foodomain; end'
+LANGUAGE "plpgsql"
+VOLATILE;
+
+CREATE FUNCTION inline_eq(
+  foodomain,
+  foodomain
+)
+RETURNS BOOLEAN
+AS 'SELECT CASE $2::text WHEN $1::text THEN true ELSE false END'
+LANGUAGE "sql";
+
+CREATE OPERATOR = (PROCEDURE = inline_eq,
+LEFTARG = foodomain,
+RIGHTARG = foodomain);
+
+SELECT
+  CASE volfoo('bar')
+  WHEN CAST('foo' AS foodomain) THEN 'is foo'
+  ELSE 'is not foo'
+  END;
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE DOMAIN arrdomain AS INT[];
+
+CREATE FUNCTION make_ad(
+  INT,
+  INT
+)
+RETURNS arrdomain
+AS 'declare x arrdomain;
+   begin
+     x := array[$1,$2];
+     return x;
+   end'
+LANGUAGE "plpgsql"
+VOLATILE;
+
+CREATE FUNCTION ad_eq(
+  arrdomain,
+  arrdomain
+)
+RETURNS BOOLEAN
+AS 'begin return array_eq($1, $2); end'
+LANGUAGE "plpgsql";
+
+CREATE OPERATOR = (PROCEDURE = ad_eq,
+LEFTARG = arrdomain,
+RIGHTARG = arrdomain);
+
+SELECT
+  CASE make_ad(1,
+  2)
+  WHEN CAST(ARRAY[2,
+  4] AS arrdomain) THEN 'wrong'
+  WHEN CAST(ARRAY[2,
+  5] AS arrdomain) THEN 'still wrong'
+  WHEN CAST(ARRAY[1,
+  2] AS arrdomain) THEN 'right'
+  END;
+
+SELECT
+  NULLIF(make_ad(1,
+  2), CAST(ARRAY[2,
+  3] AS arrdomain));
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE TYPE casetestenum AS ENUM ('e', 'f', 'g');
+
+SELECT
+  CASE CAST('foo' AS TEXT)
+  WHEN 'foo' THEN ARRAY['a',
+  'b',
+  'c',
+  'd'] || CAST(enum_range(CAST(NULL AS casetestenum)) AS TEXT[])
+  ELSE ARRAY['x',
+  'y']
+  END;
+
+ROLLBACK;
+
+DROP TABLE "case_tbl";
+
+DROP TABLE "case2_tbl";

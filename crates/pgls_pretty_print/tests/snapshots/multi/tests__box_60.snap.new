@@ -1,0 +1,486 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/box_60.sql
+---
+CREATE TABLE box_tbl ( f1 box );
+
+INSERT INTO box_tbl (f1) VALUES ('(2.0,2.0,0.0,0.0)');
+
+INSERT INTO box_tbl (f1) VALUES ('(1.0,1.0,3.0,3.0)');
+
+INSERT INTO box_tbl (f1) VALUES ('((-8, 2), (-2, -10))');
+
+INSERT INTO box_tbl (f1) VALUES ('(2.5, 2.5, 2.5,3.5)');
+
+INSERT INTO box_tbl (f1) VALUES ('(3.0, 3.0,3.0,3.0)');
+
+INSERT INTO box_tbl (f1) VALUES ('(2.3, 4.5)');
+
+INSERT INTO box_tbl (f1) VALUES ('[1, 2, 3, 4)');
+
+INSERT INTO box_tbl (f1) VALUES ('(1, 2, 3, 4]');
+
+INSERT INTO box_tbl (f1) VALUES ('(1, 2, 3, 4) x');
+
+INSERT INTO box_tbl (f1) VALUES ('asdfasdf(ad');
+
+SELECT * FROM box_tbl;
+
+SELECT b.*, area(b.f1) AS barea FROM box_tbl AS b;
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 && CAST('(2.5,2.5,1.0,1.0)' AS box);
+
+SELECT
+  b1.*
+FROM
+  box_tbl AS b1
+WHERE
+  b1.f1 &< CAST('(2.0,2.0,2.5,2.5)' AS box);
+
+SELECT
+  b1.*
+FROM
+  box_tbl AS b1
+WHERE
+  b1.f1 &> CAST('(2.0,2.0,2.5,2.5)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 << CAST('(3.0,3.0,5.0,5.0)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 <=
+  CAST('(3.0,3.0,5.0,5.0)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 <
+  CAST('(3.0,3.0,5.0,5.0)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 =
+  CAST('(3.0,3.0,5.0,5.0)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 >
+  CAST('(3.5,3.0,4.5,3.0)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 >=
+  CAST('(3.5,3.0,4.5,3.0)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  CAST('(3.0,3.0,5.0,5.0)' AS box) >> b.f1;
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  b.f1 <@ CAST('(0,0,3,3)' AS box);
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  CAST('(0,0,3,3)' AS box) @> b.f1;
+
+SELECT
+  b.f1
+FROM
+  box_tbl AS b
+WHERE
+  CAST('(1,1,3,3)' AS box) ~= b.f1;
+
+SELECT @@b1.f1 AS p FROM box_tbl AS b1;
+
+SELECT
+  b1.*,
+  b2.*
+FROM
+  box_tbl AS b1,
+  box_tbl AS b2
+WHERE
+  b1.f1 @> b2.f1 AND
+  NOT b1.f1 ~= b2.f1;
+
+SELECT height(f1), width(f1) FROM box_tbl;
+
+CREATE TEMPORARY TABLE box_temp ( f1 box );
+
+INSERT INTO box_temp
+SELECT
+  box(point(i,
+  i),
+  point(i * 2,
+  i * 2))
+FROM
+  generate_series(1,
+  50) AS i;
+
+CREATE INDEX "box_spgist" ON box_temp USING spgist (f1);
+
+INSERT INTO box_temp
+VALUES (NULL),
+('(0,0)(0,100)'),
+('(-3,4.3333333333)(40,1)'),
+('(0,100)(0,infinity)'),
+('(-infinity,0)(0,infinity)'),
+('(-infinity,-infinity)(infinity,infinity)');
+
+SET enable_seqscan = false;
+
+SELECT * FROM box_temp WHERE f1 << '(10,20),(30,40)';
+
+SELECT * FROM box_temp WHERE f1 << '(10,20),(30,40)';
+
+SELECT * FROM box_temp WHERE f1 &< '(10,4.333334),(5,100)';
+
+SELECT * FROM box_temp WHERE f1 &< '(10,4.333334),(5,100)';
+
+SELECT * FROM box_temp WHERE f1 && '(15,20),(25,30)';
+
+SELECT * FROM box_temp WHERE f1 && '(15,20),(25,30)';
+
+SELECT * FROM box_temp WHERE f1 &> '(40,30),(45,50)';
+
+SELECT * FROM box_temp WHERE f1 &> '(40,30),(45,50)';
+
+SELECT * FROM box_temp WHERE f1 >> '(30,40),(40,30)';
+
+SELECT * FROM box_temp WHERE f1 >> '(30,40),(40,30)';
+
+SELECT * FROM box_temp WHERE f1 <<| '(10,4.33334),(5,100)';
+
+SELECT * FROM box_temp WHERE f1 <<| '(10,4.33334),(5,100)';
+
+SELECT * FROM box_temp WHERE f1 &<| '(10,4.3333334),(5,1)';
+
+SELECT * FROM box_temp WHERE f1 &<| '(10,4.3333334),(5,1)';
+
+SELECT
+  *
+FROM
+  box_temp
+WHERE
+  f1 |&> '(49.99,49.99),(49.99,49.99)';
+
+SELECT
+  *
+FROM
+  box_temp
+WHERE
+  f1 |&> '(49.99,49.99),(49.99,49.99)';
+
+SELECT * FROM box_temp WHERE f1 |>> '(37,38),(39,40)';
+
+SELECT * FROM box_temp WHERE f1 |>> '(37,38),(39,40)';
+
+SELECT * FROM box_temp WHERE f1 @> '(10,11),(15,16)';
+
+SELECT * FROM box_temp WHERE f1 @> '(10,11),(15,15)';
+
+SELECT * FROM box_temp WHERE f1 <@ '(10,15),(30,35)';
+
+SELECT * FROM box_temp WHERE f1 <@ '(10,15),(30,35)';
+
+SELECT * FROM box_temp WHERE f1 ~= '(20,20),(40,40)';
+
+SELECT * FROM box_temp WHERE f1 ~= '(20,20),(40,40)';
+
+RESET enable_seqscan;
+
+DROP INDEX "box_spgist";
+
+CREATE TABLE quad_box_tbl ( id INT, b box );
+
+INSERT INTO quad_box_tbl
+SELECT
+  (x - 1) * 100 + y,
+  box(point(x * 10,
+  y * 10),
+  point(x * 10 + 5,
+  y * 10 + 5))
+FROM
+  generate_series(1,
+  100) AS x,
+  generate_series(1,
+  100) AS y;
+
+INSERT INTO quad_box_tbl
+SELECT
+  i,
+  '((200, 300),(210, 310))'
+FROM
+  generate_series(10001,
+  11000) AS i;
+
+INSERT INTO quad_box_tbl
+VALUES (11001,
+NULL),
+(11002,
+NULL),
+(11003,
+'((-infinity,-infinity),(infinity,infinity))'),
+(11004,
+'((-infinity,100),(-infinity,500))'),
+(11005,
+'((-infinity,-infinity),(700,infinity))');
+
+CREATE INDEX "quad_box_tbl_idx" ON quad_box_tbl USING spgist (b);
+
+SET enable_seqscan = on;
+
+SET enable_indexscan = off;
+
+SET enable_bitmapscan = off;
+
+CREATE TABLE quad_box_tbl_ord_seq1 AS
+  SELECT
+    RANK()
+    OVER (
+    ORDER BY b <-> CAST('123,456' AS point)) AS n,
+    b <-> CAST('123,456' AS point) AS dist,
+    id
+  FROM
+    quad_box_tbl;
+
+CREATE TABLE quad_box_tbl_ord_seq2 AS
+  SELECT
+    RANK()
+    OVER (
+    ORDER BY b <-> CAST('123,456' AS point)) AS n,
+    b <-> CAST('123,456' AS point) AS dist,
+    id
+  FROM
+    quad_box_tbl
+  WHERE
+    b <@ CAST('((200,300),(500,600))' AS box);
+
+SET enable_seqscan = off;
+
+SET enable_indexscan = on;
+
+SET enable_bitmapscan = on;
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b << CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b &< CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b && CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b &> CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b >> CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b >> CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b <<| CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b &<| CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b |&> CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b |>> CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b @> CAST('((201,301),(202,303))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b <@ CAST('((100,200),(300,500))' AS box);
+
+SELECT
+  COUNT(*)
+FROM
+  quad_box_tbl
+WHERE
+  b ~= CAST('((200,300),(205,305))' AS box);
+
+SET enable_indexscan = on;
+
+SET enable_bitmapscan = off;
+
+SELECT
+  RANK()
+  OVER (
+  ORDER BY b <-> CAST('123,456' AS point)) AS n,
+  b <-> CAST('123,456' AS point) AS dist,
+  id
+FROM
+  quad_box_tbl;
+
+CREATE TEMPORARY TABLE quad_box_tbl_ord_idx1 AS
+  SELECT
+    RANK()
+    OVER (
+    ORDER BY b <-> CAST('123,456' AS point)) AS n,
+    b <-> CAST('123,456' AS point) AS dist,
+    id
+  FROM
+    quad_box_tbl;
+
+SELECT
+  *
+FROM
+  quad_box_tbl_ord_seq1 AS seq
+  FULL OUTER JOIN quad_box_tbl_ord_idx1 AS idx
+  ON seq.n =
+    idx.n AND
+    seq.id =
+    idx.id AND
+    (seq.dist =
+    idx.dist OR
+    seq.dist IS NULL AND
+    idx.dist IS NULL)
+WHERE
+  seq.id IS NULL OR
+  idx.id IS NULL;
+
+SELECT
+  RANK()
+  OVER (
+  ORDER BY b <-> CAST('123,456' AS point)) AS n,
+  b <-> CAST('123,456' AS point) AS dist,
+  id
+FROM
+  quad_box_tbl
+WHERE
+  b <@ CAST('((200,300),(500,600))' AS box);
+
+CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2 AS
+  SELECT
+    RANK()
+    OVER (
+    ORDER BY b <-> CAST('123,456' AS point)) AS n,
+    b <-> CAST('123,456' AS point) AS dist,
+    id
+  FROM
+    quad_box_tbl
+  WHERE
+    b <@ CAST('((200,300),(500,600))' AS box);
+
+SELECT
+  *
+FROM
+  quad_box_tbl_ord_seq2 AS seq
+  FULL OUTER JOIN quad_box_tbl_ord_idx2 AS idx
+  ON seq.n =
+    idx.n AND
+    seq.id =
+    idx.id AND
+    (seq.dist =
+    idx.dist OR
+    seq.dist IS NULL AND
+    idx.dist IS NULL)
+WHERE
+  seq.id IS NULL OR
+  idx.id IS NULL;
+
+RESET enable_seqscan;
+
+RESET enable_indexscan;
+
+RESET enable_bitmapscan;
+
+SELECT pg_input_is_valid('200', 'box');
+
+SELECT * FROM pg_input_error_info('200', 'box');
+
+SELECT pg_input_is_valid('((200,300),(500, xyz))', 'box');
+
+SELECT
+  *
+FROM
+  pg_input_error_info('((200,300),(500, xyz))',
+  'box');

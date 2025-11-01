@@ -156,23 +156,47 @@ quick-modify:
 show-logs:
     tail -f $(ls $PGLS_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
 
-# Run a claude agent with the given agentic prompt file.
+# Run a codex agent with the given agentic prompt file.
 # Commented out by default to avoid accidental usage that may incur costs.
-# agentic name:
-#     unset ANTHROPIC_API_KEY && claude --dangerously-skip-permissions -p "please read agentic/{{name}}.md and follow the instructions closely"
-#
-# agentic-loop name:
-#     #!/usr/bin/env bash
-#     echo "Starting agentic loop until error..."
-#     iteration=1
-#     while true; do
-#         echo "$(date): Starting iteration $iteration..."
-#         if just agentic {{name}}; then
-#             echo "$(date): Iteration $iteration completed successfully!"
-#             iteration=$((iteration + 1))
-#         else
-#             echo "$(date): Iteration $iteration failed - stopping loop"
-#             break
-#         fi
-#     done
+agentic name:
+    codex exec --yolo "please read agentic/{{name}}.md and follow the instructions closely while continueing the described task. Make sure to understand recent Session History, Implementation Learnings and read all instructions. Continue until the task is complete."
+
+agentic-loop name:
+    #!/usr/bin/env bash
+    set +e  # Don't exit on error
+    echo "Starting agentic loop - will retry on rate limits..."
+    echo "Stop keyword: ===AGENTIC_TASK_COMPLETE==="
+    iteration=1
+    output_file=$(mktemp)
+    trap "rm -f $output_file" EXIT
+
+    while true; do
+        echo "$(date): Starting iteration $iteration..."
+
+        # Run agentic and capture output
+        just agentic {{name}} 2>&1 | tee "$output_file"
+        exit_code=${PIPESTATUS[0]}
+
+        # Check for completion keyword in last 10 lines only
+        if tail -n 10 "$output_file" | grep -q "===AGENTIC_TASK_COMPLETE==="; then
+            echo "$(date): ✓ Task complete keyword detected - stopping loop"
+            break
+        fi
+
+        # Handle exit codes
+        if [ $exit_code -eq 0 ]; then
+            echo "$(date): Iteration $iteration completed successfully!"
+            iteration=$((iteration + 1))
+        elif [ $exit_code -eq 1 ]; then
+            echo "$(date): Rate limit hit (exit code 1) - waiting 3 hours before retry..."
+            sleep 10800  # 3 hours = 10800 seconds
+            echo "$(date): Resuming after 3-hour wait..."
+        else
+            echo "$(date): Unexpected error (exit code $exit_code) - stopping loop"
+            break
+        fi
+    done
+
+    rm -f "$output_file"
+    echo "$(date): Agentic loop finished after $iteration iterations"
 

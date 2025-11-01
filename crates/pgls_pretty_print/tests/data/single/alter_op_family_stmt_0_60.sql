@@ -1,0 +1,1 @@
+ALTER OPERATOR FAMILY myopfamily USING btree ADD OPERATOR 1 < (int4, int4);

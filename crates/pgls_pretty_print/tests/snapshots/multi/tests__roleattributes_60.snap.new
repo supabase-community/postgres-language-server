@@ -1,0 +1,46 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/roleattributes_60.sql
+---
+CREATE ROLE regress_test_def_superuser;
+
+SELECT
+  rolname,
+  rolsuper,
+  rolinherit,
+  rolcreaterole,
+  rolcreatedb,
+  rolcanlogin,
+  rolreplication,
+  rolbypassrls,
+  rolconnlimit,
+  rolpassword,
+  rolvaliduntil
+FROM
+  pg_authid
+WHERE
+  rolname =
+  'regress_test_def_superuser';
+
+CREATE ROLE regress_test_superuser SUPERUSER;
+
+SELECT
+  rolname,
+  rolsuper,
+  rolinherit,
+  rolcreaterole,
+  rolcreatedb,
+  rolcanlogin,
+  rolreplication,
+  rolbypassrls,
+  rolconnlimit,
+  rolpassword,
+  rolvaliduntil
+FROM
+  pg_authid
+WHERE
+  rolname =
+  'regress_test_superuser';
+
+ALTER ROLE regress_test_superuser;

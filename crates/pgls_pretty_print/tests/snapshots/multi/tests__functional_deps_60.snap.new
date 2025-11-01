@@ -1,0 +1,374 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps_60.sql
+---
+CREATE TEMPORARY TABLE articles (
+  id INT CONSTRAINT "articles_pkey" PRIMARY KEY,
+  keywords TEXT,
+  title TEXT UNIQUE NOT NULL,
+  body TEXT UNIQUE,
+  created DATE
+);
+
+CREATE TEMPORARY TABLE articles_in_category (
+  article_id INT,
+  category_id INT,
+  changed DATE,
+  PRIMARY KEY (article_id,
+  category_id)
+);
+
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY id;
+
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY title;
+
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY body;
+
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY keywords;
+
+SELECT
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+FROM
+  articles AS a,
+  articles_in_category AS aic
+WHERE
+  a.id =
+  aic.article_id AND
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY a.id;
+
+SELECT
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+FROM
+  articles AS a,
+  articles_in_category AS aic
+WHERE
+  a.id =
+  aic.article_id AND
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY aic.article_id,
+  aic.category_id;
+
+SELECT
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+FROM
+  articles AS a
+  INNER JOIN articles_in_category AS aic
+  ON a.id =
+    aic.article_id
+WHERE
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY a.id;
+
+SELECT
+  a.id,
+  a.keywords,
+  a.title,
+  a.body,
+  a.created
+FROM
+  articles AS a
+  INNER JOIN articles_in_category AS aic
+  ON a.id =
+    aic.article_id
+WHERE
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY aic.article_id,
+  aic.category_id;
+
+SELECT
+  aic.changed
+FROM
+  articles AS a
+  INNER JOIN articles_in_category AS aic
+  ON a.id =
+    aic.article_id
+WHERE
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY aic.category_id,
+  aic.article_id;
+
+SELECT
+  aic.changed
+FROM
+  articles AS a
+  INNER JOIN articles_in_category AS aic
+  ON a.id =
+    aic.article_id
+WHERE
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY aic.article_id;
+
+CREATE TEMPORARY TABLE products (
+  product_id INT,
+  name TEXT,
+  price NUMERIC
+);
+
+CREATE TEMPORARY TABLE sales ( product_id INT, units INT );
+
+SELECT
+  product_id,
+  p.name,
+  SUM(s.units) * p.price AS sales
+FROM
+  products AS p
+  LEFT OUTER JOIN sales AS s
+  USING ("product_id")
+GROUP BY product_id,
+  p.name,
+  p.price;
+
+SELECT
+  product_id,
+  p.name,
+  SUM(s.units) * p.price AS sales
+FROM
+  products AS p
+  LEFT OUTER JOIN sales AS s
+  USING ("product_id")
+GROUP BY product_id;
+
+ALTER TABLE products ADD PRIMARY KEY (product_id);
+
+SELECT
+  product_id,
+  p.name,
+  SUM(s.units) * p.price AS sales
+FROM
+  products AS p
+  LEFT OUTER JOIN sales AS s
+  USING ("product_id")
+GROUP BY product_id;
+
+CREATE TEMPORARY TABLE node (
+  nid serial,
+  vid INT NOT NULL DEFAULT '0',
+  type VARCHAR(32) NOT NULL DEFAULT '',
+  title VARCHAR(128) NOT NULL DEFAULT '',
+  uid INT NOT NULL DEFAULT '0',
+  status INT NOT NULL DEFAULT '1',
+  created INT NOT NULL DEFAULT '0',
+  PRIMARY KEY (nid,
+  vid)
+);
+
+CREATE TEMPORARY TABLE users (
+  uid INT NOT NULL DEFAULT '0',
+  name VARCHAR(60) NOT NULL DEFAULT '',
+  pass VARCHAR(32) NOT NULL DEFAULT '',
+  PRIMARY KEY (uid),
+  UNIQUE (name)
+);
+
+SELECT
+  u.uid,
+  u.name
+FROM
+  node AS n
+  INNER JOIN users AS u
+  ON u.uid =
+    n.uid
+WHERE
+  n.type =
+  'blog' AND
+  n.status =
+  1
+GROUP BY u.uid,
+  u.name;
+
+SELECT
+  u.uid,
+  u.name
+FROM
+  node AS n
+  INNER JOIN users AS u
+  ON u.uid =
+    n.uid
+WHERE
+  n.type =
+  'blog' AND
+  n.status =
+  1
+GROUP BY u.uid;
+
+CREATE TEMPORARY VIEW fdv1 AS
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY body;
+
+CREATE TEMPORARY VIEW fdv1 AS
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY id;
+
+ALTER TABLE articles DROP CONSTRAINT articles_pkey;
+
+DROP VIEW "fdv1";
+
+CREATE TEMPORARY VIEW fdv2 AS
+SELECT
+  a.id,
+  a.keywords,
+  a.title,
+  aic.category_id,
+  aic.changed
+FROM
+  articles AS a
+  INNER JOIN articles_in_category AS aic
+  ON a.id =
+    aic.article_id
+WHERE
+  aic.category_id IN (14,
+  62,
+  70,
+  53,
+  138)
+GROUP BY a.id,
+  aic.category_id,
+  aic.article_id;
+
+ALTER TABLE articles DROP CONSTRAINT articles_pkey;
+
+ALTER TABLE articles_in_category
+  DROP CONSTRAINT articles_in_category_pkey;
+
+DROP VIEW "fdv2";
+
+CREATE TEMPORARY VIEW fdv3 AS
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY id
+UNION
+SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY id;
+
+ALTER TABLE articles DROP CONSTRAINT articles_pkey;
+
+DROP VIEW "fdv3";
+
+CREATE TEMPORARY VIEW fdv4 AS
+SELECT
+  *
+FROM
+  articles
+WHERE
+  title IN (SELECT
+    title
+  FROM
+    articles
+  GROUP BY id);
+
+ALTER TABLE articles DROP CONSTRAINT articles_pkey;
+
+DROP VIEW "fdv4";
+
+PREPARE foo AS SELECT
+  id,
+  keywords,
+  title,
+  body,
+  created
+FROM
+  articles
+GROUP BY id;;
+
+EXECUTE foo;
+
+ALTER TABLE articles DROP CONSTRAINT articles_pkey;
+
+EXECUTE foo;

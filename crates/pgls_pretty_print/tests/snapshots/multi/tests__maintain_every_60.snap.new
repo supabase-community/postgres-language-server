@@ -1,0 +1,49 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/maintain_every_60.sql
+---
+CREATE ROLE regress_maintain;
+
+SET ROLE TO regress_maintain;
+
+CREATE TEMPORARY TABLE past_inh_db_other ();
+
+CREATE TEMPORARY TABLE past_inh_db_child ()
+INHERITS (past_inh_db_parent);
+
+CREATE INDEX ON past_inh_db_parent USING btree ((1));
+
+ANALYZE past_inh_db_parent;
+
+SELECT
+  reltuples,
+  relhassubclass
+FROM
+  pg_class
+WHERE
+  oid =
+  CAST('past_inh_db_parent' AS REGCLASS);
+
+DROP TABLE "past_inh_db_child";
+
+SET client_min_messages = error;
+
+ANALYZE;
+
+RESET client_min_messages;
+
+SELECT
+  reltuples,
+  relhassubclass
+FROM
+  pg_class
+WHERE
+  oid =
+  CAST('past_inh_db_parent' AS REGCLASS);
+
+DROP TABLE "past_inh_db_parent", "past_inh_db_other";
+
+RESET role;
+
+DROP ROLE regress_maintain;

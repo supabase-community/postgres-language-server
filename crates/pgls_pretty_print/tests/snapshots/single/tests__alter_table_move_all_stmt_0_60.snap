@@ -1,0 +1,7 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+input_file: crates/pgt_pretty_print/tests/data/single/alter_table_move_all_stmt_0_60.sql
+snapshot_kind: text
+---
+ALTER TABLE ALL IN TABLESPACE myspace
+SET TABLESPACE newspace;

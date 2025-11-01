@@ -1,0 +1,284 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/gin_60.sql
+---
+CREATE TABLE gin_test_tbl (
+  i INT[]
+) WITH (autovacuum_enabled = off);
+
+CREATE INDEX "gin_test_idx" ON gin_test_tbl USING gin (i) WITH (fastupdate = 'on',
+gin_pending_list_limit = 4096);
+
+INSERT INTO gin_test_tbl
+SELECT
+  ARRAY[1,
+  2,
+  g]
+FROM
+  generate_series(1,
+  20000) AS g;
+
+INSERT INTO gin_test_tbl
+SELECT
+  ARRAY[1,
+  3,
+  g]
+FROM
+  generate_series(1,
+  1000) AS g;
+
+SELECT gin_clean_pending_list('gin_test_idx') > 10 AS many;
+
+INSERT INTO gin_test_tbl
+SELECT
+  ARRAY[3,
+  1,
+  g]
+FROM
+  generate_series(1,
+  1000) AS g;
+
+VACUUM gin_test_tbl;
+
+SELECT gin_clean_pending_list('gin_test_idx');
+
+DELETE FROM gin_test_tbl WHERE i @> ARRAY[2];
+
+VACUUM gin_test_tbl;
+
+ALTER INDEX gin_test_idx SET (fastupdate = off);
+
+INSERT INTO gin_test_tbl
+SELECT
+  ARRAY[1,
+  2,
+  g]
+FROM
+  generate_series(1,
+  1000) AS g;
+
+INSERT INTO gin_test_tbl
+SELECT
+  ARRAY[1,
+  3,
+  g]
+FROM
+  generate_series(1,
+  1000) AS g;
+
+DELETE FROM gin_test_tbl WHERE i @> ARRAY[2];
+
+VACUUM gin_test_tbl;
+
+SELECT COUNT(*) FROM gin_test_tbl WHERE i @> ARRAY[1, 999];
+
+SELECT COUNT(*) FROM gin_test_tbl WHERE i @> ARRAY[1, 999];
+
+SET gin_fuzzy_search_limit = 1000;
+
+SELECT
+  COUNT(*) >
+  0 AS ok
+FROM
+  gin_test_tbl
+WHERE
+  i @> ARRAY[1];
+
+SELECT
+  COUNT(*) >
+  0 AS ok
+FROM
+  gin_test_tbl
+WHERE
+  i @> ARRAY[1];
+
+RESET gin_fuzzy_search_limit;
+
+CREATE TEMPORARY TABLE t_gin_test_tbl ( i INT[], j INT[] );
+
+CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
+
+INSERT INTO t_gin_test_tbl
+VALUES (NULL,
+NULL),
+('{}',
+NULL),
+('{1}',
+NULL),
+('{1,2}',
+NULL),
+(NULL,
+'{}'),
+(NULL,
+'{10}'),
+('{1,2}',
+'{10}'),
+('{2}',
+'{10}'),
+('{1,3}',
+'{}'),
+('{1,1}',
+'{10}');
+
+SET enable_seqscan = off;
+
+SELECT * FROM t_gin_test_tbl WHERE ARRAY[0] <@ i;
+
+SELECT * FROM t_gin_test_tbl WHERE ARRAY[0] <@ i;
+
+SELECT
+  *
+FROM
+  t_gin_test_tbl
+WHERE
+  ARRAY[0] <@ i AND
+  CAST('{}' AS INT[]) <@ j;
+
+SELECT * FROM t_gin_test_tbl WHERE i @> '{}';
+
+SELECT * FROM t_gin_test_tbl WHERE i @> '{}';
+
+CREATE FUNCTION explain_query_json(
+  "query_sql" TEXT
+)
+RETURNS TABLE (
+  "explain_line" JSON
+)
+LANGUAGE "plpgsql"
+AS '
+begin
+  set enable_seqscan = off;
+  set enable_bitmapscan = on;
+  return query execute ''EXPLAIN (ANALYZE, FORMAT json) '' || query_sql;
+end;
+';
+
+CREATE FUNCTION execute_text_query_index(
+  "query_sql" TEXT
+)
+RETURNS SETOF TEXT
+LANGUAGE "plpgsql"
+AS '
+begin
+  set enable_seqscan = off;
+  set enable_bitmapscan = on;
+  return query execute query_sql;
+end;
+';
+
+CREATE FUNCTION execute_text_query_heap(
+  "query_sql" TEXT
+)
+RETURNS SETOF TEXT
+LANGUAGE "plpgsql"
+AS '
+begin
+  set enable_seqscan = on;
+  set enable_bitmapscan = off;
+  return query execute query_sql;
+end;
+';
+
+SELECT
+  query,
+  js -> 0 -> 'Plan' -> 'Plans' -> 0 -> 'Actual Rows' AS "return by index",
+  js -> 0 -> 'Plan' -> 'Rows Removed by Index Recheck' AS "removed by recheck",
+  res_index =
+  res_heap AS match
+FROM
+  (VALUES (' i @> ''{}'' '),
+  (' j @> ''{}'' '),
+  (' i @> ''{}'' and j @> ''{}'' '),
+  (' i @> ''{1}'' '),
+  (' i @> ''{1}'' and j @> ''{}'' '),
+  (' i @> ''{1}'' and i @> ''{}'' and j @> ''{}'' '),
+  (' j @> ''{10}'' '),
+  (' j @> ''{10}'' and i @> ''{}'' '),
+  (' j @> ''{10}'' and j @> ''{}'' and i @> ''{}'' '),
+  (' i @> ''{1}'' and j @> ''{10}'' ')) AS q (query),
+  LATERAL explain_query_json('select * from t_gin_test_tbl where ' || query) AS js,
+  LATERAL execute_text_query_index('select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' || query) AS res_index,
+  LATERAL execute_text_query_heap('select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' || query) AS res_heap;
+
+RESET enable_seqscan;
+
+RESET enable_bitmapscan;
+
+INSERT INTO t_gin_test_tbl
+SELECT
+  ARRAY[1,
+  g,
+  g / 10],
+  ARRAY[2,
+  g,
+  g / 10]
+FROM
+  generate_series(1,
+  20000) AS g;
+
+SELECT
+  gin_clean_pending_list('t_gin_test_tbl_i_j_idx') IS NOT NULL;
+
+ANALYZE t_gin_test_tbl;
+
+SET enable_seqscan = off;
+
+SET enable_bitmapscan = on;
+
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
+
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
+
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+
+SELECT
+  COUNT(*)
+FROM
+  t_gin_test_tbl
+WHERE
+  j @> CAST('{}' AS INT[]);
+
+SELECT
+  COUNT(*)
+FROM
+  t_gin_test_tbl
+WHERE
+  j @> CAST('{}' AS INT[]);
+
+DELETE FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+
+VACUUM t_gin_test_tbl;
+
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
+
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+
+SELECT
+  COUNT(*)
+FROM
+  t_gin_test_tbl
+WHERE
+  j @> CAST('{}' AS INT[]);
+
+RESET enable_seqscan;
+
+RESET enable_bitmapscan;
+
+DROP TABLE "t_gin_test_tbl";
+
+CREATE UNLOGGED TABLE t_gin_test_tbl ( i INT[], j INT[] );
+
+CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
+
+INSERT INTO t_gin_test_tbl
+VALUES (NULL,
+NULL),
+('{}',
+NULL),
+('{1}',
+'{2,3}');
+
+DROP TABLE "t_gin_test_tbl";
