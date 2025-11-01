@@ -1,16 +1,18 @@
 use pgls_treesitter::WrappingClause;
 
-#[allow(unused)]
 #[derive(Debug)]
 pub(crate) enum HoveredNode {
     Schema(String),
     Table((Option<String>, String)),
     Function((Option<String>, String)),
     Column((Option<String>, Option<String>, String)),
-    Policy((Option<String>, String)),
-    Trigger((Option<String>, String)),
     Role(String),
     PostgresType((Option<String>, String)),
+
+    #[allow(unused)]
+    Trigger((Option<String>, String)),
+    #[allow(dead_code)]
+    Policy((Option<String>, String)),
 }
 
 impl HoveredNode {
@@ -24,8 +26,29 @@ impl HoveredNode {
         let under_cursor = ctx.node_under_cursor.as_ref()?;
 
         match under_cursor.kind() {
+            "column_identifier" => Some(HoveredNode::Column((
+                ctx.head_qualifier_sanitized(),
+                ctx.tail_qualifier_sanitized(),
+                node_content,
+            ))),
+            "function_identifier" => Some(HoveredNode::Function((
+                ctx.tail_qualifier_sanitized(),
+                node_content,
+            ))),
+            "policy_identifier" => Some(HoveredNode::Policy((
+                ctx.tail_qualifier_sanitized(),
+                node_content,
+            ))),
+            "table_identifier" => Some(HoveredNode::Table((
+                ctx.tail_qualifier_sanitized(),
+                node_content,
+            ))),
+
+            "schema_identifier" => Some(HoveredNode::Schema(node_content)),
+            "role_identifier" => Some(HoveredNode::Role(node_content)),
+
             "any_identifier"
-                if ctx.matches_ancestor_history(&["relation", "object_reference"])
+                if ctx.matches_ancestor_history(&["table_reference"])
                     || ctx
                         .matches_ancestor_history(&["grantable_on_table", "object_reference"]) =>
             {
@@ -35,7 +58,7 @@ impl HoveredNode {
                 }
 
                 Some(HoveredNode::Table((
-                    ctx.identifier_qualifiers.1.clone(),
+                    ctx.tail_qualifier_sanitized(),
                     node_content,
                 )))
             }
@@ -52,22 +75,27 @@ impl HoveredNode {
                     }) =>
             {
                 Some(HoveredNode::Table((
-                    ctx.identifier_qualifiers.1.clone(),
+                    ctx.tail_qualifier_sanitized(),
                     node_content,
                 )))
             }
 
-            "column_identifier" => Some(HoveredNode::Column((
-                None,
-                ctx.identifier_qualifiers.1.clone(),
-                node_content,
-            ))),
+            "any_identifier"
+                if ctx.matches_ancestor_history(&["binary_expression", "object_reference"])
+                    || ctx.matches_ancestor_history(&["term", "object_reference"]) =>
+            {
+                Some(HoveredNode::Column((
+                    ctx.head_qualifier_sanitized(),
+                    ctx.tail_qualifier_sanitized(),
+                    node_content,
+                )))
+            }
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
+                if ctx.matches_ancestor_history(&["invocation", "function_reference"]) =>
             {
                 Some(HoveredNode::Function((
-                    ctx.identifier_qualifiers.1.clone(),
+                    ctx.tail_qualifier_sanitized(),
                     node_content,
                 )))
             }
@@ -87,36 +115,34 @@ impl HoveredNode {
                 if (
                     // hover over custom type in `create table` or `returns`
                     (ctx.matches_ancestor_history(&["type", "object_reference"])
-                    && ctx.node_under_cursor_is_within_field_name("custom_type"))
+                    && ctx.node_under_cursor_is_within_field_name(&["custom_type"]))
 
                     // hover over type in `select` clause etc…
                     || (ctx
-                        .matches_ancestor_history(&["field_qualifier", "object_reference"])
-                        && ctx.before_cursor_matches_kind(&["("])))
+                        .matches_ancestor_history(&["field_selection","composite_reference","object_reference"])
+                        && ctx.node_under_cursor_is_within_field_name(&["object_reference_1of1", "object_reference_2of2"])))
 
                     // make sure we're not checking against an alias
                     && ctx
                         .get_mentioned_table_for_alias(
-                            node_content.replace(['(', ')'], "").as_str(),
+                            node_content.as_str(),
                         )
                         .is_none() =>
             {
-                let sanitized = node_content.replace(['(', ')'], "");
                 Some(HoveredNode::PostgresType((
-                    ctx.identifier_qualifiers.1.clone(),
-                    sanitized,
+                    ctx.tail_qualifier_sanitized(),
+                    node_content,
                 )))
             }
 
             // quoted columns
             "literal" if ctx.matches_ancestor_history(&["select_expression", "term"]) => {
-                Some(HoveredNode::Column((None, None, node_content)))
+                Some(HoveredNode::Column((
+                    ctx.head_qualifier_sanitized(),
+                    ctx.tail_qualifier_sanitized(),
+                    node_content,
+                )))
             }
-
-            "grant_table" => Some(HoveredNode::Table((
-                ctx.identifier_qualifiers.1.clone(),
-                node_content,
-            ))),
 
             _ => None,
         }

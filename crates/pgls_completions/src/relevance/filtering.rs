@@ -18,7 +18,7 @@ impl CompletionFilter<'_> {
     pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         self.completable_context(ctx)?;
 
-        self.check_node_type(ctx)
+        self.check_specific_node_type(ctx)
             // we want to rely on treesitter more, so checking the clause is a fallback
             .or_else(|| self.check_clause(ctx))?;
 
@@ -70,6 +70,15 @@ impl CompletionFilter<'_> {
             }
         }
 
+        if ctx
+            .node_under_cursor
+            .as_ref()
+            .is_some_and(|n| n.kind() == "any_identifier")
+            && ctx.matches_ancestor_history(&["alias"])
+        {
+            return None;
+        }
+
         // No autocompletions if there are two identifiers without a separator.
         if ctx.node_under_cursor.as_ref().is_some_and(|node| {
             node.prev_sibling().is_some_and(|p| {
@@ -92,15 +101,79 @@ impl CompletionFilter<'_> {
         Some(())
     }
 
-    fn check_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
+    fn check_specific_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
         let kind = ctx.node_under_cursor.as_ref().map(|n| n.kind())?;
 
         let is_allowed = match kind {
-            "column_identifier" => {
-                matches!(self.data, CompletionRelevanceData::Column(_))
-                    && !ctx.matches_ancestor_history(&["insert_values", "field"])
-                    && !ctx.node_under_cursor_is_within_field_name("binary_expr_right")
+            "column_identifier" => matches!(self.data, CompletionRelevanceData::Column(_)),
+            "role_identifier" => matches!(self.data, CompletionRelevanceData::Role(_)),
+            "function_identifier" => matches!(self.data, CompletionRelevanceData::Function(_)),
+            "schema_identifier" => matches!(self.data, CompletionRelevanceData::Schema(_)),
+            "table_identifier" => matches!(self.data, CompletionRelevanceData::Table(_)),
+            "policy_identifier" => matches!(self.data, CompletionRelevanceData::Policy(_)),
+
+            "any_identifier" => {
+                if false || ctx.matches_ancestor_history(&["insert_values", "object_reference"]) {
+                    false
+                } else {
+                    match self.data {
+                        CompletionRelevanceData::Column(_) => {
+                            ctx.node_under_cursor_is_within_field_name(&[
+                                "object_reference_1of1",
+                                "object_reference_2of2",
+                                "object_reference_3of3",
+                                "column_reference_1of1",
+                                "column_reference_2of2",
+                                "column_reference_3of3",
+                            ]) && !ctx
+                                .node_under_cursor_is_within_field_name(&["binary_expr_right"])
+                                && !ctx.matches_ancestor_history(&[
+                                    "insert_values",
+                                    "object_reference",
+                                ])
+                        }
+
+                        CompletionRelevanceData::Schema(_) => ctx
+                            .node_under_cursor_is_within_field_name(&[
+                                "object_reference_1of1",
+                                "object_reference_1of2",
+                                "object_reference_1of3",
+                                "type_reference_1of1",
+                                "table_reference_1of1",
+                                "column_reference_1of1",
+                                "column_reference_1of2",
+                                "function_reference_1of1",
+                            ]),
+
+                        CompletionRelevanceData::Function(f) => {
+                            ctx.node_under_cursor_is_within_field_name(&[
+                                "object_reference_1of1",
+                                "object_reference_2of2",
+                                "function_reference_1of1",
+                            ]) && !(ctx.matches_ancestor_history(&[
+                                "check_or_using_clause",
+                                "binary_expression",
+                                "object_reference",
+                            ]) && matches!(f.kind, ProcKind::Aggregate))
+                        }
+
+                        CompletionRelevanceData::Table(_) => ctx
+                            .node_under_cursor_is_within_field_name(&[
+                                "object_reference_1of1",
+                                "object_reference_1of2",
+                                "object_reference_2of2",
+                                "object_reference_2of3",
+                                "table_reference_1of1",
+                                "column_reference_1of1",
+                                "column_reference_1of2",
+                                "column_reference_2of2",
+                            ]),
+
+                        _ => false,
+                    }
+                }
             }
+
             _ => false,
         };
 
@@ -216,7 +289,6 @@ impl CompletionFilter<'_> {
 
                     CompletionRelevanceData::Schema(_) => match clause {
                         WrappingClause::Select
-                        | WrappingClause::From
                         | WrappingClause::Join { .. }
                         | WrappingClause::Update
                         | WrappingClause::Delete => true,
@@ -321,11 +393,10 @@ impl CompletionFilter<'_> {
                     .get_mentioned_table_for_alias(&tail_qualifier)
                     .unwrap_or(&tail_qualifier);
 
-                if let Some(schema) = ctx.head_qualifier_sanitized() {
-                    col.schema_name == schema.as_str() && col.table_name == table.as_str()
-                } else {
-                    col.table_name == table.as_str()
-                }
+                col.table_name == table.as_str()
+                    && ctx
+                        .head_qualifier_sanitized()
+                        .is_none_or(|schema| col.schema_name == schema.as_str())
             }
 
             // we should never allow schema suggestions if there already was one.

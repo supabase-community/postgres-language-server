@@ -80,12 +80,14 @@ impl ContextualPriority for Column {
                 .get_mentioned_table_for_alias(&table_or_alias)
                 .unwrap_or(&table_or_alias);
 
-            if table == self.table_name.as_str() {
+            if table == self.table_name.as_str()
+                && ctx
+                    .head_qualifier_sanitized()
+                    .is_none_or(|s| self.schema_name == s.as_str())
+            {
                 score += 250.0;
-            }
 
-            if let Some(schema) = ctx.head_qualifier_sanitized() {
-                if schema == self.schema_name.as_str() {
+                if ctx.head_qualifier_sanitized().is_some() {
                     score += 50.0;
                 }
             }

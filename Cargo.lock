@@ -3078,6 +3078,8 @@ name = "pgls_treesitter_grammar"
 version = "0.0.0"
 dependencies = [
  "cc",
+ "insta",
+ "pgls_test_utils",
  "tree-sitter",
  "tree-sitter-language",
 ]

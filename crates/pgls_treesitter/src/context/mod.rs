@@ -3,7 +3,10 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
+use crate::{
+    parts_of_reference_query,
+    queries::{self, QueryResult, TreeSitterQueriesExecutor},
+};
 use pgls_text_size::TextSize;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -319,26 +322,19 @@ impl<'a> TreesitterContext<'a> {
         }
 
         match current_node_kind {
-            "object_reference" | "field" => {
-                let start = current_node.start_byte();
-                let content = self.get_ts_node_content(&current_node);
-                if let Some(txt) = content {
-                    let parts: Vec<&str> = txt.split('.').collect();
-                    // we do not want to set it if we're on the first qualifier itself
-                    let is_on_first_part = start + parts[0].len() >= self.position;
+            "object_reference" | "column_reference" => {
+                if let Some((head, middle, _)) = parts_of_reference_query(current_node, self.text) {
+                    self.identifier_qualifiers = (
+                        head.and_then(|h| self.get_ts_node_content(&h)),
+                        middle.and_then(|m| self.get_ts_node_content(&m)),
+                    );
+                }
+            }
 
-                    if parts.len() == 2 && !is_on_first_part {
-                        self.identifier_qualifiers = (None, Some(parts[0].to_string()));
-                    } else if parts.len() == 3 && !is_on_first_part {
-                        let is_on_second_part =
-                            start + parts[0].len() + 1 + parts[1].len() >= self.position;
-                        if !is_on_second_part {
-                            self.identifier_qualifiers =
-                                (Some(parts[0].to_string()), Some(parts[1].to_string()));
-                        } else {
-                            self.identifier_qualifiers = (None, Some(parts[0].to_string()));
-                        }
-                    }
+            "table_reference" | "type_reference" | "function_reference" => {
+                if let Some((_, middle, _)) = parts_of_reference_query(current_node, self.text) {
+                    self.identifier_qualifiers =
+                        (None, middle.and_then(|m| self.get_ts_node_content(&m)));
                 }
             }
 
@@ -639,11 +635,7 @@ impl<'a> TreesitterContext<'a> {
         })
     }
 
-    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
-    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
-    ///
-    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
-    /// you need to pass `&["relation", "object_reference"]`.
+    /// Verifies if the node has one of the named direct ancestors.
     pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
         self.node_under_cursor.as_ref().is_some_and(|node| {
             node.parent()
@@ -698,7 +690,7 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
-    pub fn node_under_cursor_is_within_field_name(&self, name: &str) -> bool {
+    pub fn node_under_cursor_is_within_field_name(&self, names: &[&'static str]) -> bool {
         self.node_under_cursor
             .as_ref()
             .map(|node| {
@@ -714,15 +706,17 @@ impl<'a> TreesitterContext<'a> {
                         break;
                     }
 
-                    if p.children_by_field_name(name, &mut cursor).any(|c| {
-                        let r = c.range();
-                        // if the parent range contains the node range, the node is of the field_name.
-                        r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
-                    }) {
-                        return true;
-                    } else {
-                        parent = p.parent();
+                    for name in names {
+                        if p.children_by_field_name(name, &mut cursor).any(|c| {
+                            let r = c.range();
+                            // if the parent range contains the node range, the node is of the field_name.
+                            r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
+                        }) {
+                            return true;
+                        }
                     }
+
+                    parent = p.parent();
                 }
 
                 false
@@ -1146,7 +1140,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        assert!(ctx.node_under_cursor_is_within_field_name("custom_type"));
+        assert!(ctx.node_under_cursor_is_within_field_name(&["custom_type"]));
     }
 
     #[test]
