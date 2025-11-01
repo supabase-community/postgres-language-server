@@ -1,0 +1,1 @@
+- implement ignore / include and config. try to refactor existing analyser infrastructure to be re-used.

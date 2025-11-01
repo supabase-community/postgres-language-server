@@ -82,6 +82,7 @@ pgls_query                  = { path = "./crates/pgls_query", version = "0.0.0" 
 pgls_query_ext              = { path = "./crates/pgls_query_ext", version = "0.0.0" }
 pgls_query_macros           = { path = "./crates/pgls_query_macros", version = "0.0.0" }
 pgls_schema_cache           = { path = "./crates/pgls_schema_cache", version = "0.0.0" }
+pgls_splinter               = { path = "./crates/pgls_splinter", version = "0.0.0" }
 pgls_statement_splitter     = { path = "./crates/pgls_statement_splitter", version = "0.0.0" }
 pgls_suppressions           = { path = "./crates/pgls_suppressions", version = "0.0.0" }
 pgls_text_edit              = { path = "./crates/pgls_text_edit", version = "0.0.0" }
