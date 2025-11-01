@@ -12,6 +12,7 @@ on:
       - "Cargo.lock"
       - "rust-toolchain.toml"
       - "rustfmt.toml"
+      - ".env"
       # or in js packages
       - "packages/**"
       # or in workflows
