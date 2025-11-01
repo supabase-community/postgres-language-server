@@ -128,15 +128,6 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
         &format!("\n{}\n    ", splinter_entries),
     )?;
 
-    // Replace content between splinter groups markers
-    let groups_start = "// splinter groups start";
-    let groups_end = "// splinter groups end";
-
-    let groups_content = "\n    \"dblint\",\n    \"dblint/splinter\",\n    ";
-
-    let new_content =
-        replace_between_markers(&new_content, groups_start, groups_end, groups_content)?;
-
     fs2::write(categories_path, new_content)?;
 
     Ok(())
