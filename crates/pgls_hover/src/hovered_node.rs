@@ -48,7 +48,7 @@ impl HoveredNode {
             "role_identifier" => Some(HoveredNode::Role(node_content)),
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["relation", "object_reference"])
+                if ctx.matches_ancestor_history(&["table_reference"])
                     || ctx
                         .matches_ancestor_history(&["grantable_on_table", "object_reference"]) =>
             {
@@ -81,7 +81,8 @@ impl HoveredNode {
             }
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["binary_expression", "object_reference"]) =>
+                if ctx.matches_ancestor_history(&["binary_expression", "object_reference"])
+                    || ctx.matches_ancestor_history(&["term", "object_reference"]) =>
             {
                 Some(HoveredNode::Column((
                     ctx.identifier_qualifiers.0.clone(),
@@ -91,7 +92,7 @@ impl HoveredNode {
             }
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
+                if ctx.matches_ancestor_history(&["invocation", "function_reference"]) =>
             {
                 Some(HoveredNode::Function((
                     ctx.identifier_qualifiers.1.clone(),
