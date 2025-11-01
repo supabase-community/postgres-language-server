@@ -133,9 +133,7 @@ export type Category =
 	| "dummy"
 	| "lint"
 	| "lint/performance"
-	| "lint/safety"
-	| "dblint"
-	| "dblint/splinter";
+	| "lint/safety";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
