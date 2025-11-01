@@ -130,19 +130,19 @@
 <p>You can suppress specific diagnostics or rules in your code using suppression comments. This is useful when you want to ignore a particular rule for an entire file, a line or a block of code.</p>
 <h2 id="how-to-suppress-a-rule">How to Suppress a Rule</h2>
 <p>To suppress a rule, add a comment above the line causing the diagnostic with the following format:</p>
-<pre><code class="language-sql">-- pgt-ignore lint/safety/banDropTable
+<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropTable
 drop table users;
 </code></pre>
 <p>You can suppress single rules, groups of rules, or entire categories. The format of the rule to suppress is:</p>
 <p><code>category(/group(/specific-rule))</code></p>
 <p>Where group and specific rule are optional.</p>
 <p>So, to suppress the <code>lint/safety/banDropTable</code> diagnostic, all of these would work:</p>
-<pre><code class="language-sql">-- pgt-ignore lint
--- pgt-ignore lint/safety
--- pgt-ignore lint/safety/banDropTable
+<pre><code class="language-sql">-- pgls-ignore lint
+-- pgls-ignore lint/safety
+-- pgls-ignore lint/safety/banDropTable
 </code></pre>
 <p>You can also add an explanation to the suppression by adding a <code>:</code> and the explanation text:</p>
-<pre><code class="language-sql">-- pgt-ignore lint/safety/banDropTable: My startup never had any users.
+<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropTable: My startup never had any users.
 drop table users;
 </code></pre>
 <h3 id="suppressing-rules-for-block-of-code">Suppressing Rules for Block of Code</h3>
@@ -151,26 +151,26 @@ drop table users;
   -- ...
 );
 
--- pgt-ignore-start typecheck: The `users` table will be created with this migration.
+-- pgls-ignore-start typecheck: The `users` table will be created with this migration.
 alter table users drop constraint users_pkey;
 
 alter table users add primary key (user_id);
--- pgt-ignore-end typecheck
+-- pgls-ignore-end typecheck
 </code></pre>
-<p>Every <code>pgt-ignore-start</code> needs a <code>pgt-ignore-end</code> suppression comment, and the suppressed rules must match exactly.</p>
+<p>Every <code>pgls-ignore-start</code> needs a <code>pgls-ignore-end</code> suppression comment, and the suppressed rules must match exactly.</p>
 <p>This <em>won't</em> work, because the start tag suppresses a different diagnostic:</p>
-<pre><code class="language-sql">-- pgt-ignore-start lint/safety/banDropColumn
--- pgt-ignore-end lint/safety
+<pre><code class="language-sql">-- pgls-ignore-start lint/safety/banDropColumn
+-- pgls-ignore-end lint/safety
 </code></pre>
 <p>Nesting is allowed, so this works fine:</p>
-<pre><code class="language-sql">-- pgt-ignore-start typecheck: outer
--- pgt-ignore-start lint/safety: inner
--- pgt-ignore-end lint/safety: inner
--- pgt-ignore-end typecheck: outer
+<pre><code class="language-sql">-- pgls-ignore-start typecheck: outer
+-- pgls-ignore-start lint/safety: inner
+-- pgls-ignore-end lint/safety: inner
+-- pgls-ignore-end typecheck: outer
 </code></pre>
 <h3 id="suppressing-rules-for-entire-files">Suppressing Rules for Entire Files</h3>
 <p>Instead of repeating the same suppression on multiple lines, you can suppress for an entire file.</p>
-<pre><code class="language-sql">-- pgt-ignore-all lint/safety/banDropTable
+<pre><code class="language-sql">-- pgls-ignore-all lint/safety/banDropTable
 
 drop table tasks;
 drop table projects;
@@ -178,14 +178,14 @@ drop table users;
 </code></pre>
 <h2 id="suppressing-multiple-rules">Suppressing Multiple Rules</h2>
 <p>You can suppress multiple rules by adding multiple suppression comments above a statement:</p>
-<pre><code class="language-sql">-- pgt-ignore lint/safety/banDropColumn
--- pgt-ignore typecheck
+<pre><code class="language-sql">-- pgls-ignore lint/safety/banDropColumn
+-- pgls-ignore typecheck
 alter table tasks drop column created_at;
 </code></pre>
 <h2 id="notes">Notes</h2>
 <ul>
-<li>Trying to suppress diagnostics that have already been disabled in your <a href="/#configuration">configuration file</a> will show a warning.  </li>
-<li>Trying to suppress diagnostics that don't haven't been raised will also show a warning.  </li>
+<li>Trying to suppress diagnostics that have already been disabled in your <a href="/#configuration">configuration file</a> will show a warning.</li>
+<li>Trying to suppress diagnostics that don't haven't been raised will also show a warning.</li>
 </ul>
               
             </div>
