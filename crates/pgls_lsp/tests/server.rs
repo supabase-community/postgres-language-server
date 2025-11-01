@@ -1063,7 +1063,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
 
     // Invalidate the schema cache (all = false for current connection only)
     server
-        .request::<bool, ()>("pgt/invalidate_schema_cache", "_invalidate_cache", false)
+        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
         .await?;
 
     // Get completions after invalidating cache - 'name' should NOW be present

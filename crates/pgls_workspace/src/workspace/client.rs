@@ -177,6 +177,6 @@ where
     }
 
     fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
-        self.request("pgt/invalidate_schema_cache", all)
+        self.request("pgls/invalidate_schema_cache", all)
     }
 }
