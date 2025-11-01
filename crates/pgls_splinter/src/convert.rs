@@ -1,4 +1,4 @@
-use pgls_diagnostics::{category, Category, Severity};
+use pgls_diagnostics::{Category, Severity, category};
 use serde_json::Value;
 
 use crate::{SplinterAdvices, SplinterDiagnostic, SplinterQueryResult};
