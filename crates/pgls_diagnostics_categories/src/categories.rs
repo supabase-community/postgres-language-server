@@ -93,5 +93,11 @@ define_categories! {
     "lint/performance",
     "lint/safety",
     // Lint groups end
-}
 
+    // Splinter groups start
+    "splinter",
+    "splinter/performance",
+    "splinter/security",
+    "splinter/unknown",
+    // Splinter groups end
+}

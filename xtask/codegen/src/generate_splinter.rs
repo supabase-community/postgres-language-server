@@ -152,7 +152,7 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
     let categories_path =
         project_root().join("crates/pgls_diagnostics_categories/src/categories.rs");
 
-    let content = fs2::read_to_string(&categories_path)?;
+    let mut content = fs2::read_to_string(&categories_path)?;
 
     // Generate splinter rule entries grouped by category
     let mut splinter_rules: Vec<(String, String)> = rules
@@ -187,14 +187,39 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
     let rules_start = "// splinter rules start";
     let rules_end = "// splinter rules end";
 
-    let new_content = replace_between_markers(
+    content = replace_between_markers(
         &content,
         rules_start,
         rules_end,
         &format!("\n{splinter_entries}\n    "),
     )?;
 
-    fs2::write(categories_path, new_content)?;
+    // Generate splinter group entries
+    let mut groups: Vec<String> = splinter_rules
+        .iter()
+        .map(|(group, _)| group.clone())
+        .collect();
+    groups.sort();
+    groups.dedup();
+
+    let mut group_entries = vec!["    \"splinter\",".to_string()];
+    for group in groups {
+        group_entries.push(format!("    \"splinter/{}\",", group));
+    }
+    let groups_content = group_entries.join("\n");
+
+    // Replace content between splinter groups markers
+    let groups_start = "// Splinter groups start";
+    let groups_end = "// Splinter groups end";
+
+    content = replace_between_markers(
+        &content,
+        groups_start,
+        groups_end,
+        &format!("\n{groups_content}\n    "),
+    )?;
+
+    fs2::write(categories_path, content)?;
 
     Ok(())
 }
