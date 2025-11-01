@@ -358,7 +358,7 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let actions = parser
+        let mut actions: Vec<CodeAction> = parser
             .iter_with_filter(
                 DefaultMapper,
                 CursorPositionFilter::new(params.cursor_position),
@@ -378,6 +378,20 @@ impl Workspace for WorkspaceServer {
                 }
             })
             .collect();
+
+        let invalidate_disabled_reason = if self.get_current_connection().is_some() {
+            None
+        } else {
+            Some("No database connection available.".into())
+        };
+
+        actions.push(CodeAction {
+            title: "Invalidate Schema Cache".into(),
+            kind: CodeActionKind::Command(CommandAction {
+                category: CommandActionCategory::InvalidateSchemaCache,
+            }),
+            disabled_reason: invalidate_disabled_reason,
+        });
 
         Ok(CodeActionsResult { actions })
     }
@@ -422,6 +436,19 @@ impl Workspace for WorkspaceServer {
                 result.rows_affected()
             ),
         })
+    }
+
+    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
+        if all {
+            self.schema_cache.clear_all();
+        } else {
+            // Only clear current connection if one exists
+            if let Some(pool) = self.get_current_connection() {
+                self.schema_cache.clear(&pool);
+            }
+            // If no connection, nothing to clear - just return Ok
+        }
+        Ok(())
     }
 
     #[ignored_path(path=&params.path)]

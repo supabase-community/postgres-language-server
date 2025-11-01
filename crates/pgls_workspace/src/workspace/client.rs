@@ -175,4 +175,8 @@ where
     ) -> Result<crate::features::on_hover::OnHoverResult, WorkspaceError> {
         self.request("pgls/on_hover", params)
     }
+
+    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
+        self.request("pgt/invalidate_schema_cache", all)
+    }
 }
