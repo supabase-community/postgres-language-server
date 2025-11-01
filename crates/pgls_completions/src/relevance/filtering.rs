@@ -308,17 +308,25 @@ impl CompletionFilter<'_> {
     }
 
     fn check_mentioned_schema_or_alias(&self, ctx: &TreesitterContext) -> Option<()> {
-        let second_qualifier = match ctx.tail_qualifier_sanitized() {
+        let tail_qualifier = match ctx.tail_qualifier_sanitized() {
             Some(q) => q,
             None => return Some(()), // no qualifier = this check passes
         };
 
         let matches = match self.data {
-            CompletionRelevanceData::Table(table) => table.schema == second_qualifier,
-            CompletionRelevanceData::Function(f) => f.schema == second_qualifier,
-            CompletionRelevanceData::Column(col) => ctx
-                .get_mentioned_table_for_alias(&second_qualifier)
-                .is_some_and(|t| t == &col.table_name),
+            CompletionRelevanceData::Table(table) => table.schema == tail_qualifier,
+            CompletionRelevanceData::Function(f) => f.schema == tail_qualifier,
+            CompletionRelevanceData::Column(col) => {
+                let table = ctx
+                    .get_mentioned_table_for_alias(&tail_qualifier)
+                    .unwrap_or(&tail_qualifier);
+
+                if let Some(schema) = ctx.head_qualifier_sanitized() {
+                    col.schema_name == schema.as_str() && col.table_name == table.as_str()
+                } else {
+                    col.table_name == table.as_str()
+                }
+            }
 
             // we should never allow schema suggestions if there already was one.
             CompletionRelevanceData::Schema(_) => false,

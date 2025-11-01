@@ -781,8 +781,8 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// Returns the head qualifier (leftmost), sanitized (quotes removed)
-    /// For `schema.table.column`: returns `Some("schema")`
-    /// For `table.column`: returns `None`
+    /// For `schema.table.<column>`: returns `Some("schema")`
+    /// For `table.<column>`: returns `None`
     pub fn head_qualifier_sanitized(&self) -> Option<String> {
         self.identifier_qualifiers
             .0
@@ -791,8 +791,8 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// Returns the tail qualifier (rightmost), sanitized (quotes removed)
-    /// For `schema.table.column`: returns `Some("table")`
-    /// For `table.column`: returns `Some("table")`
+    /// For `schema.table.<column>`: returns `Some("table")`
+    /// For `table.<column>`: returns `Some("table")`
     pub fn tail_qualifier_sanitized(&self) -> Option<String> {
         self.identifier_qualifiers
             .1
@@ -802,12 +802,13 @@ impl<'a> TreesitterContext<'a> {
 
     /// Returns true if there is at least one qualifier present
     pub fn has_any_qualifier(&self) -> bool {
-        self.identifier_qualifiers.1.is_some()
-    }
+        match self.identifier_qualifiers {
+            (Some(_), Some(_)) => true,
+            (None, Some(_)) => true,
+            (None, None) => false,
 
-    /// Returns true if there is exactly one qualifier (tail only, no head)
-    pub fn has_single_qualifier(&self) -> bool {
-        matches!(self.identifier_qualifiers, (None, Some(_)))
+            (Some(_), None) => unreachable!(),
+        }
     }
 }
 
