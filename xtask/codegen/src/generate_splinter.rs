@@ -8,7 +8,7 @@ use xtask::{glue::fs2, project_root};
 pub fn generate_splinter() -> Result<()> {
     let sql_path = project_root().join("crates/pgls_splinter/vendor/splinter.sql");
     let sql_content = fs::read_to_string(&sql_path)
-        .with_context(|| format!("Failed to read SQL file at {:?}", sql_path))?;
+        .with_context(|| format!("Failed to read SQL file at {sql_path:?}"))?;
 
     let rules = extract_rules_from_sql(&sql_content)?;
 
@@ -40,9 +40,8 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                     }
                 }
 
-                let url = remediation_url.with_context(|| {
-                    format!("Failed to find remediation URL for rule '{}'", name)
-                })?;
+                let url = remediation_url
+                    .with_context(|| format!("Failed to find remediation URL for rule '{name}'"))?;
 
                 rules.insert(
                     name.clone(),
@@ -125,7 +124,7 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
         &content,
         rules_start,
         rules_end,
-        &format!("\n{}\n    ", splinter_entries),
+        &format!("\n{splinter_entries}\n    "),
     )?;
 
     fs2::write(categories_path, new_content)?;
@@ -142,11 +141,11 @@ fn replace_between_markers(
 ) -> Result<String> {
     let start_pos = content
         .find(start_marker)
-        .with_context(|| format!("Could not find '{}' marker", start_marker))?;
+        .with_context(|| format!("Could not find '{start_marker}' marker"))?;
 
     let end_pos = content
         .find(end_marker)
-        .with_context(|| format!("Could not find '{}' marker", end_marker))?;
+        .with_context(|| format!("Could not find '{end_marker}' marker"))?;
 
     let mut result = String::new();
     result.push_str(&content[..start_pos + start_marker.len()]);
