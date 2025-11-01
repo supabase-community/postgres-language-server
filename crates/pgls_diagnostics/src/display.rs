@@ -139,6 +139,23 @@ impl<D: Diagnostic + ?Sized> fmt::Display for PrintHeader<'_, D> {
             fmt.write_str(" ")?;
         }
 
+        // Print the database object if present (e.g., "table public.contacts")
+        if let Some(db_obj) = location.database_object {
+            if let Some(obj_type) = db_obj.object_type {
+                fmt.write_markup(markup! {
+                    <Dim>{obj_type}" "</Dim>
+                })?;
+            }
+            if let Some(schema) = db_obj.schema {
+                fmt.write_markup(markup! {
+                    <Emphasis>{schema}"."</Emphasis>
+                })?;
+            }
+            fmt.write_markup(markup! {
+                <Emphasis>{db_obj.name}</Emphasis>" "
+            })?;
+        }
+
         // Print the category of the diagnostic, with a hyperlink if
         // the category has an associated link
         if let Some(category) = diagnostic.category() {

@@ -4,6 +4,28 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::{borrow::Borrow, ops::Deref};
 
+/// Represents a database object (table, function, etc.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DatabaseObject<'a> {
+    /// Optional schema name
+    pub schema: Option<&'a str>,
+    /// Object name (required)
+    pub name: &'a str,
+    /// Optional object type (e.g., "table", "function", "view")
+    pub object_type: Option<&'a str>,
+}
+
+/// Owned version of DatabaseObject for use in diagnostic structs
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DatabaseObjectOwned {
+    /// Optional schema name
+    pub schema: Option<String>,
+    /// Object name (required)
+    pub name: String,
+    /// Optional object type (e.g., "table", "function", "view")
+    pub object_type: Option<String>,
+}
+
 /// Represents the location of a diagnostic in a resource.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Location<'a> {
@@ -12,8 +34,8 @@ pub struct Location<'a> {
     /// An optional range of text within the resource associated with the
     /// diagnostic.
     pub span: Option<TextRange>,
-    /// An optional tuple identifying a database object
-    pub database_object: Option<(Option<&'a str>, &'a str)>,
+    /// An optional database object reference
+    pub database_object: Option<DatabaseObject<'a>>,
     /// The optional source code of the resource.
     pub source_code: Option<BorrowedSourceCode<'a>>,
 }
@@ -201,7 +223,7 @@ pub struct LocationBuilder<'a> {
     resource: Option<Resource<&'a str>>,
     span: Option<TextRange>,
     source_code: Option<BorrowedSourceCode<'a>>,
-    database_object: Option<(Option<&'a str>, &'a str)>,
+    database_object: Option<DatabaseObject<'a>>,
 }
 
 impl<'a> LocationBuilder<'a> {
@@ -358,30 +380,34 @@ impl AsSourceCode for String {
 
 /// Utility trait for types that can be converted into a database object reference
 pub trait AsDatabaseObject {
-    fn as_database_object(&self) -> Option<(Option<&'_ str>, &'_ str)>;
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>>;
 }
 
 impl<T: AsDatabaseObject> AsDatabaseObject for Option<T> {
-    fn as_database_object(&self) -> Option<(Option<&'_ str>, &'_ str)> {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
         self.as_ref().and_then(T::as_database_object)
     }
 }
 
 impl<T: AsDatabaseObject + ?Sized> AsDatabaseObject for &'_ T {
-    fn as_database_object(&self) -> Option<(Option<&'_ str>, &'_ str)> {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
         T::as_database_object(*self)
     }
 }
 
-impl AsDatabaseObject for (Option<&str>, &str) {
-    fn as_database_object(&self) -> Option<(Option<&'_ str>, &'_ str)> {
-        Some((self.0, self.1))
+impl<'a> AsDatabaseObject for DatabaseObject<'a> {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
+        Some(*self)
     }
 }
 
-impl AsDatabaseObject for (Option<String>, String) {
-    fn as_database_object(&self) -> Option<(Option<&'_ str>, &'_ str)> {
-        Some((self.0.as_deref(), self.1.as_str()))
+impl AsDatabaseObject for DatabaseObjectOwned {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
+        Some(DatabaseObject {
+            schema: self.schema.as_deref(),
+            name: &self.name,
+            object_type: self.object_type.as_deref(),
+        })
     }
 }
 
