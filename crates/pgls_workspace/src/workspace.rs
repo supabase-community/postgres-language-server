@@ -158,6 +158,14 @@ pub trait Workspace: Send + Sync + RefUnwindSafe {
         &self,
         params: ExecuteStatementParams,
     ) -> Result<ExecuteStatementResult, WorkspaceError>;
+
+    /// Invalidate the schema cache.
+    ///
+    /// # Arguments
+    /// * `all` - If true, clears all cached schemas. If false, clears only the current connection's cache.
+    ///
+    /// The schema will be reloaded lazily on the next operation that requires it.
+    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError>;
 }
 
 /// Convenience function for constructing a server instance of [Workspace]
