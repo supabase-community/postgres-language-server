@@ -1,0 +1,13 @@
+---
+source: crates/pgls_splinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: dblint/splinter/unindexedForeignKeys
+Severity: Information
+Message: Table \`public.posts\` has a foreign key \`posts_user_id_fkey\` without a covering index. This can lead to suboptimal query performance.
+Advices:
+Identifies foreign key constraints without a covering index, which can impact database performance.
+[Info] table: public.posts
+{&quot;fkey_name&quot;:&quot;posts_user_id_fkey&quot;,&quot;fkey_columns&quot;:[2]}
+[Info] Documentation: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys

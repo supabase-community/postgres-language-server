@@ -47,6 +47,30 @@ define_categories! {
     "lint/safety/runningStatementWhileHoldingAccessExclusive": "https://pg-language-server.com/latest/rules/running-statement-while-holding-access-exclusive",
     "lint/safety/transactionNesting": "https://pg-language-server.com/latest/rules/transaction-nesting",
     // end lint rules
+    // splinter rules start
+    "dblint/splinter/authRlsInitplan": "https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan",
+    "dblint/splinter/authUsersExposed": "https://supabase.com/docs/guides/database/database-linter?lint=0002_auth_users_exposed",
+    "dblint/splinter/duplicateIndex": "https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index",
+    "dblint/splinter/extensionInPublic": "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public",
+    "dblint/splinter/extensionVersionsOutdated": "https://supabase.com/docs/guides/database/database-linter?lint=0022_extension_versions_outdated",
+    "dblint/splinter/fkeyToAuthUnique": "https://supabase.com/docs/guides/database/database-linter?lint=0021_fkey_to_auth_unique",
+    "dblint/splinter/foreignTableInApi": "https://supabase.com/docs/guides/database/database-linter?lint=0017_foreign_table_in_api",
+    "dblint/splinter/functionSearchPathMutable": "https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable",
+    "dblint/splinter/insecureQueueExposedInApi": "https://supabase.com/docs/guides/database/database-linter?lint=0019_insecure_queue_exposed_in_api",
+    "dblint/splinter/materializedViewInApi": "https://supabase.com/docs/guides/database/database-linter?lint=0016_materialized_view_in_api",
+    "dblint/splinter/multiplePermissivePolicies": "https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies",
+    "dblint/splinter/noPrimaryKey": "https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key",
+    "dblint/splinter/policyExistsRlsDisabled": "https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled",
+    "dblint/splinter/rlsDisabledInPublic": "https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public",
+    "dblint/splinter/rlsEnabledNoPolicy": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+    "dblint/splinter/rlsReferencesUserMetadata": "https://supabase.com/docs/guides/database/database-linter?lint=0015_rls_references_user_metadata",
+    "dblint/splinter/securityDefinerView": "https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view",
+    "dblint/splinter/tableBloat": "https://supabase.com/docs/guides/database/database-linter?lint=0020_table_bloat",
+    "dblint/splinter/unindexedForeignKeys": "https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys",
+    "dblint/splinter/unknown": "https://pg-language-server.com/latest",
+    "dblint/splinter/unsupportedRegTypes": "https://supabase.com/docs/guides/database/database-linter?lint=unsupported_reg_types",
+    "dblint/splinter/unusedIndex": "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index",
+    // splinter rules end
     ;
     // General categories
     "stdin",
@@ -68,5 +92,9 @@ define_categories! {
     "lint",
     "lint/performance",
     "lint/safety",
+    // splinter groups start
+    "dblint",
+    "dblint/splinter",
+    // splinter groups end
     // Lint groups end
 }

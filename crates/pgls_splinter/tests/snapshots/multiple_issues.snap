@@ -1,0 +1,23 @@
+---
+source: crates/pgls_splinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: dblint/splinter/unindexedForeignKeys
+Severity: Information
+Message: Table \`public.child_table\` has a foreign key \`child_table_parent_id_fkey\` without a covering index. This can lead to suboptimal query performance.
+Advices:
+Identifies foreign key constraints without a covering index, which can impact database performance.
+[Info] table: public.child_table
+{&quot;fkey_name&quot;:&quot;child_table_parent_id_fkey&quot;,&quot;fkey_columns&quot;:[2]}
+[Info] Documentation: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
+
+---
+
+Category: dblint/splinter/noPrimaryKey
+Severity: Information
+Message: Table \`public.no_pk_table\` does not have a primary key
+Advices:
+Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
+[Info] table: public.no_pk_table
+[Info] Documentation: https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key
