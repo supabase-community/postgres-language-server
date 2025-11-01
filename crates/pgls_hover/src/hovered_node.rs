@@ -1,23 +1,17 @@
 use pgls_treesitter::WrappingClause;
 
-#[derive(Debug)]
-pub(crate) enum NodeIdentification {
-    Name(String),
-    SchemaAndName((String, String)),
-    #[allow(unused)]
-    SchemaAndTableAndName((String, String, String)),
-}
+type NodeIdentification = (Option<String>, String);
 
 #[allow(unused)]
 #[derive(Debug)]
 pub(crate) enum HoveredNode {
-    Schema(NodeIdentification),
+    Schema(String),
     Table(NodeIdentification),
     Function(NodeIdentification),
-    Column(NodeIdentification),
+    Column((Option<String>, Option<String>, String)),
     Policy(NodeIdentification),
     Trigger(NodeIdentification),
-    Role(NodeIdentification),
+    Role(String),
     PostgresType(NodeIdentification),
 }
 
@@ -39,17 +33,13 @@ impl HoveredNode {
             {
                 let num_sibs = ctx.num_siblings();
                 if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {
-                    return Some(HoveredNode::Schema(NodeIdentification::Name(node_content)));
+                    return Some(HoveredNode::Schema(node_content));
                 }
 
-                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
-                } else {
-                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
-                }
+                Some(HoveredNode::Table((
+                    ctx.schema_or_alias_name.clone(),
+                    node_content,
+                )))
             }
 
             "any_identifier"
@@ -63,40 +53,25 @@ impl HoveredNode {
                         )
                     }) =>
             {
-                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
-                } else {
-                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
-                }
+                Some(HoveredNode::Table((
+                    ctx.schema_or_alias_name.clone(),
+                    node_content,
+                )))
             }
 
-            "column_identifier" => {
-                if let Some(table_or_alias) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Column(NodeIdentification::SchemaAndName((
-                        table_or_alias.clone(),
-                        node_content,
-                    ))))
-                } else {
-                    Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
-                }
-            }
+            "column_identifier" => Some(HoveredNode::Column((
+                None,
+                ctx.schema_or_alias_name.clone(),
+                node_content,
+            ))),
 
             "any_identifier"
                 if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
             {
-                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Function(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
-                } else {
-                    Some(HoveredNode::Function(NodeIdentification::Name(
-                        node_content,
-                    )))
-                }
+                Some(HoveredNode::Function((
+                    ctx.schema_or_alias_name.clone(),
+                    node_content,
+                )))
             }
 
             "any_identifier"
@@ -106,11 +81,9 @@ impl HoveredNode {
                     "role_specification",
                 ]) || ctx.before_cursor_matches_kind(&["keyword_revoke"]) =>
             {
-                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
+                Some(HoveredNode::Role(node_content))
             }
-            "grant_role" | "policy_role" => {
-                Some(HoveredNode::Role(NodeIdentification::Name(node_content)))
-            }
+            "grant_role" | "policy_role" => Some(HoveredNode::Role(node_content)),
 
             "any_identifier"
                 if (
@@ -118,7 +91,7 @@ impl HoveredNode {
                     (ctx.matches_ancestor_history(&["type", "object_reference"])
                     && ctx.node_under_cursor_is_within_field_name("custom_type"))
 
-                    // hover over type in `select` clause etc…                    
+                    // hover over type in `select` clause etc…
                     || (ctx
                         .matches_ancestor_history(&["field_qualifier", "object_reference"])
                         && ctx.before_cursor_matches_kind(&["("])))
@@ -131,32 +104,21 @@ impl HoveredNode {
                         .is_none() =>
             {
                 let sanitized = node_content.replace(['(', ')'], "");
-                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::PostgresType(
-                        NodeIdentification::SchemaAndName((schema.clone(), sanitized)),
-                    ))
-                } else {
-                    Some(HoveredNode::PostgresType(NodeIdentification::Name(
-                        sanitized,
-                    )))
-                }
+                Some(HoveredNode::PostgresType((
+                    ctx.schema_or_alias_name.clone(),
+                    sanitized,
+                )))
             }
 
             // quoted columns
             "literal" if ctx.matches_ancestor_history(&["select_expression", "term"]) => {
-                Some(HoveredNode::Column(NodeIdentification::Name(node_content)))
+                Some(HoveredNode::Column((None, None, node_content)))
             }
 
-            "grant_table" => {
-                if let Some(schema) = ctx.schema_or_alias_name.as_ref() {
-                    Some(HoveredNode::Table(NodeIdentification::SchemaAndName((
-                        schema.clone(),
-                        node_content,
-                    ))))
-                } else {
-                    Some(HoveredNode::Table(NodeIdentification::Name(node_content)))
-                }
-            }
+            "grant_table" => Some(HoveredNode::Table((
+                ctx.schema_or_alias_name.clone(),
+                node_content,
+            ))),
 
             _ => None,
         }
