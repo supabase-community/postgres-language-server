@@ -3,7 +3,7 @@ source: crates/pgls_splinter/tests/diagnostics.rs
 expression: content
 snapshot_kind: text
 ---
-Category: dblint/splinter/unindexedForeignKeys
+Category: splinter/performance/unindexedForeignKeys
 Severity: Information
 Message: Table \`public.posts\` has a foreign key \`posts_user_id_fkey\` without a covering index. This can lead to suboptimal query performance.
 Advices:

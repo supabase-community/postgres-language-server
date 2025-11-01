@@ -1,4 +1,4 @@
-use pgls_diagnostics::{Category, Severity, category};
+use pgls_diagnostics::{category, Category, Severity};
 use serde_json::Value;
 
 use crate::{SplinterAdvices, SplinterDiagnostic, SplinterQueryResult};
@@ -11,8 +11,15 @@ impl From<SplinterQueryResult> for SplinterDiagnostic {
         let (schema, object_name, object_type, additional_metadata) =
             extract_metadata_fields(&result.metadata);
 
+        // for now, we just take the first category as the group
+        let group = result
+            .categories
+            .first()
+            .map(|s| s.to_lowercase())
+            .unwrap_or_else(|| "unknown".to_string());
+
         SplinterDiagnostic {
-            category: rule_name_to_category(&result.name),
+            category: rule_name_to_category(&result.name, &group),
             message: result.detail.into(),
             severity,
             advices: SplinterAdvices {
@@ -37,32 +44,60 @@ fn parse_severity(level: &str) -> Severity {
     }
 }
 
-/// Convert rule name to a Category
+/// Convert rule name and group to a Category
 /// Note: Rule names use snake_case, but categories use camelCase
-fn rule_name_to_category(name: &str) -> &'static Category {
-    match name {
-        "unindexed_foreign_keys" => category!("dblint/splinter/unindexedForeignKeys"),
-        "auth_users_exposed" => category!("dblint/splinter/authUsersExposed"),
-        "auth_rls_initplan" => category!("dblint/splinter/authRlsInitplan"),
-        "no_primary_key" => category!("dblint/splinter/noPrimaryKey"),
-        "unused_index" => category!("dblint/splinter/unusedIndex"),
-        "multiple_permissive_policies" => category!("dblint/splinter/multiplePermissivePolicies"),
-        "policy_exists_rls_disabled" => category!("dblint/splinter/policyExistsRlsDisabled"),
-        "rls_enabled_no_policy" => category!("dblint/splinter/rlsEnabledNoPolicy"),
-        "duplicate_index" => category!("dblint/splinter/duplicateIndex"),
-        "security_definer_view" => category!("dblint/splinter/securityDefinerView"),
-        "function_search_path_mutable" => category!("dblint/splinter/functionSearchPathMutable"),
-        "rls_disabled_in_public" => category!("dblint/splinter/rlsDisabledInPublic"),
-        "extension_in_public" => category!("dblint/splinter/extensionInPublic"),
-        "rls_references_user_metadata" => category!("dblint/splinter/rlsReferencesUserMetadata"),
-        "materialized_view_in_api" => category!("dblint/splinter/materializedViewInApi"),
-        "foreign_table_in_api" => category!("dblint/splinter/foreignTableInApi"),
-        "unsupported_reg_types" => category!("dblint/splinter/unsupportedRegTypes"),
-        "insecure_queue_exposed_in_api" => category!("dblint/splinter/insecureQueueExposedInApi"),
-        "table_bloat" => category!("dblint/splinter/tableBloat"),
-        "fkey_to_auth_unique" => category!("dblint/splinter/fkeyToAuthUnique"),
-        "extension_versions_outdated" => category!("dblint/splinter/extensionVersionsOutdated"),
-        _ => category!("dblint/splinter/unknown"),
+fn rule_name_to_category(name: &str, group: &str) -> &'static Category {
+    match (group, name) {
+        ("performance", "unindexed_foreign_keys") => {
+            category!("splinter/performance/unindexedForeignKeys")
+        }
+        ("performance", "auth_rls_initplan") => {
+            category!("splinter/performance/authRlsInitplan")
+        }
+        ("performance", "no_primary_key") => category!("splinter/performance/noPrimaryKey"),
+        ("performance", "unused_index") => category!("splinter/performance/unusedIndex"),
+        ("performance", "duplicate_index") => category!("splinter/performance/duplicateIndex"),
+        ("performance", "table_bloat") => category!("splinter/performance/tableBloat"),
+        ("performance", "multiple_permissive_policies") => {
+            category!("splinter/performance/multiplePermissivePolicies")
+        }
+        ("security", "auth_users_exposed") => category!("splinter/security/authUsersExposed"),
+        ("security", "extension_versions_outdated") => {
+            category!("splinter/security/extensionVersionsOutdated")
+        }
+        ("security", "policy_exists_rls_disabled") => {
+            category!("splinter/security/policyExistsRlsDisabled")
+        }
+        ("security", "rls_enabled_no_policy") => {
+            category!("splinter/security/rlsEnabledNoPolicy")
+        }
+        ("security", "security_definer_view") => {
+            category!("splinter/security/securityDefinerView")
+        }
+        ("security", "function_search_path_mutable") => {
+            category!("splinter/security/functionSearchPathMutable")
+        }
+        ("security", "rls_disabled_in_public") => {
+            category!("splinter/security/rlsDisabledInPublic")
+        }
+        ("security", "extension_in_public") => category!("splinter/security/extensionInPublic"),
+        ("security", "rls_references_user_metadata") => {
+            category!("splinter/security/rlsReferencesUserMetadata")
+        }
+        ("security", "materialized_view_in_api") => {
+            category!("splinter/security/materializedViewInApi")
+        }
+        ("security", "foreign_table_in_api") => {
+            category!("splinter/security/foreignTableInApi")
+        }
+        ("security", "unsupported_reg_types") => {
+            category!("splinter/security/unsupportedRegTypes")
+        }
+        ("security", "insecure_queue_exposed_in_api") => {
+            category!("splinter/security/insecureQueueExposedInApi")
+        }
+        ("security", "fkey_to_auth_unique") => category!("splinter/security/fkeyToAuthUnique"),
+        _ => category!("splinter/unknown/unknown"),
     }
 }
 

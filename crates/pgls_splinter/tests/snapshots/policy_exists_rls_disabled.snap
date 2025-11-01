@@ -3,7 +3,7 @@ source: crates/pgls_splinter/tests/diagnostics.rs
 expression: content
 snapshot_kind: text
 ---
-Category: dblint/splinter/policyExistsRlsDisabled
+Category: splinter/security/policyExistsRlsDisabled
 Severity: Error
 Message: Table \`public.documents\` has RLS policies but RLS is not enabled on the table. Policies include {documents_policy}.
 Advices:

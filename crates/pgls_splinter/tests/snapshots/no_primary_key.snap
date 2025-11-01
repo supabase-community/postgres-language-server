@@ -3,7 +3,7 @@ source: crates/pgls_splinter/tests/diagnostics.rs
 expression: content
 snapshot_kind: text
 ---
-Category: dblint/splinter/noPrimaryKey
+Category: splinter/performance/noPrimaryKey
 Severity: Information
 Message: Table \`public.articles\` does not have a primary key
 Advices:

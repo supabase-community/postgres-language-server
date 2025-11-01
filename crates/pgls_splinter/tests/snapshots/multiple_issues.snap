@@ -3,7 +3,7 @@ source: crates/pgls_splinter/tests/diagnostics.rs
 expression: content
 snapshot_kind: text
 ---
-Category: dblint/splinter/unindexedForeignKeys
+Category: splinter/performance/unindexedForeignKeys
 Severity: Information
 Message: Table \`public.child_table\` has a foreign key \`child_table_parent_id_fkey\` without a covering index. This can lead to suboptimal query performance.
 Advices:
@@ -14,7 +14,7 @@ Identifies foreign key constraints without a covering index, which can impact da
 
 ---
 
-Category: dblint/splinter/noPrimaryKey
+Category: splinter/performance/noPrimaryKey
 Severity: Information
 Message: Table \`public.no_pk_table\` does not have a primary key
 Advices:
