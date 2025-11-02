@@ -659,64 +659,64 @@ mod tests {
         // We should prefer the instrument columns, even though they
         // are lower in the alphabet
 
-        // assert_complete_results(
-        //     format!(
-        //         "insert into instruments ({})",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("id".to_string()),
-        //         CompletionAssertion::Label("name".to_string()),
-        //         CompletionAssertion::Label("z".to_string()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                "insert into instruments ({})",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
-        // assert_complete_results(
-        //     format!(
-        //         "insert into instruments (id, {})",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("name".to_string()),
-        //         CompletionAssertion::Label("z".to_string()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                "insert into instruments (id, {})",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("name".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
-        // assert_complete_results(
-        //     format!(
-        //         "insert into instruments (id, {}, name)",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![CompletionAssertion::Label("z".to_string())],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        assert_complete_results(
+            format!(
+                "insert into instruments (id, {}, name)",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::Label("z".to_string())],
+            None,
+            &pool,
+        )
+        .await;
 
-        // // works with completed statement
-        // assert_complete_results(
-        //     format!(
-        //         "insert into instruments (name, {}) values ('my_bass');",
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     vec![
-        //         CompletionAssertion::Label("id".to_string()),
-        //         CompletionAssertion::Label("z".to_string()),
-        //     ],
-        //     None,
-        //     &pool,
-        // )
-        // .await;
+        // works with completed statement
+        assert_complete_results(
+            format!(
+                "insert into instruments (name, {}) values ('my_bass');",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label("id".to_string()),
+                CompletionAssertion::Label("z".to_string()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
 
         // no completions in the values list!
         assert_no_complete_results(
