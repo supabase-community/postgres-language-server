@@ -199,7 +199,5 @@ pub(crate) async fn assert_no_complete_results(query: &str, setup: Option<&str>,
     let params = get_test_params(&tree, &cache, query.into());
     let items = complete(params);
 
-    println!("{items:#?}");
-
     assert_eq!(items.len(), 0)
 }
