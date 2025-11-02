@@ -631,75 +631,6 @@ impl<'a> TreesitterContext<'a> {
             .current()
             .ancestors
             .matches_history(expected_ancestors)
-
-        // self.node_under_cursor.as_ref().is_some_and(|node| {
-        //     let mut current = Some(*node);
-
-        //     for &expected_kind in expected_ancestors.iter().rev() {
-        //         current = current.and_then(|n| n.parent());
-
-        //         match current {
-        //             Some(ancestor) if ancestor.kind() == expected_kind => continue,
-        //             _ => return false,
-        //         }
-        //     }
-
-        //     true
-        // })
-    }
-
-    /// Verifies if the node has one of the named direct ancestors.
-    pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            node.parent()
-                .is_some_and(|p| expected_ancestors.contains(&p.kind()))
-        })
-    }
-
-    /// Checks whether the Node under the cursor is the nth child of the parent.
-    ///
-    /// ```
-    /// /*
-    ///  * Given `select * from "a|uth"."users";`
-    ///  * The node under the cursor is "auth".
-    ///  *
-    ///  * [...] redacted
-    ///  * from [9..28] 'from "auth"."users"'
-    ///  *   keyword_from [9..13] 'from'
-    ///  *   relation [14..28] '"auth"."users"'
-    ///  *     object_reference [14..28] '"auth"."users"'
-    ///  *       any_identifier [14..20] '"auth"'
-    ///  *         . [20..21] '.'
-    ///  *       any_identifier [21..28] '"users"'
-    ///  */
-    ///
-    /// if node_under_cursor_is_nth_child(1) {
-    ///     node_type = "schema";
-    /// } else if node_under_cursor_is_nth_child(3) {
-    ///     node_type = "table";
-    /// }
-    /// ```
-    pub fn node_under_cursor_is_nth_child(&self, nth: usize) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            let mut cursor = node.walk();
-            node.parent().is_some_and(|p| {
-                p.children(&mut cursor)
-                    .nth(nth - 1)
-                    .is_some_and(|n| n.id() == node.id())
-            })
-        })
-    }
-
-    /// Returns the number of siblings of the node under the cursor.
-    pub fn num_siblings(&self) -> usize {
-        self.node_under_cursor
-            .as_ref()
-            .map(|node| {
-                // if there's no parent, we're on the top of the tree,
-                // where we have 0 siblings.
-                node.parent().map(|p| p.child_count() - 1).unwrap_or(0)
-            })
-            .unwrap_or(0)
     }
 
     /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
@@ -708,37 +639,6 @@ impl<'a> TreesitterContext<'a> {
             .current()
             .ancestors
             .is_within_one_of_fields(names)
-        // self.node_under_cursor
-        //     .as_ref()
-        //     .map(|node| {
-        //         // It might seem weird that we have to check for the field_name from the parent,
-        //         // but TreeSitter wants it this way, since nodes often can only be named in
-        //         // the context of their parents.
-        //         let root_node = self.tree.root_node();
-        //         let mut cursor = node.walk();
-        //         let mut parent = node.parent();
-
-        //         while let Some(p) = parent {
-        //             if p == root_node {
-        //                 break;
-        //             }
-
-        //             for name in names {
-        //                 if p.children_by_field_name(name, &mut cursor).any(|c| {
-        //                     let r = c.range();
-        //                     // if the parent range contains the node range, the node is of the field_name.
-        //                     r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
-        //                 }) {
-        //                     return true;
-        //                 }
-        //             }
-
-        //             parent = p.parent();
-        //         }
-
-        //         false
-        //     })
-        //     .unwrap_or(false)
     }
 
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {

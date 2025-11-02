@@ -47,21 +47,9 @@ impl HoveredNode {
             "schema_identifier" => Some(HoveredNode::Schema(node_content)),
             "role_identifier" => Some(HoveredNode::Role(node_content)),
 
-            "any_identifier"
-                if ctx.matches_ancestor_history(&["table_reference"])
-                    || ctx
-                        .matches_ancestor_history(&["grantable_on_table", "object_reference"]) =>
-            {
-                let num_sibs = ctx.num_siblings();
-                if ctx.node_under_cursor_is_nth_child(1) && num_sibs > 0 {
-                    return Some(HoveredNode::Schema(node_content));
-                }
-
-                Some(HoveredNode::Table((
-                    ctx.tail_qualifier_sanitized(),
-                    node_content,
-                )))
-            }
+            "any_identifier" if ctx.matches_ancestor_history(&["table_reference"]) => Some(
+                HoveredNode::Table((ctx.tail_qualifier_sanitized(), node_content)),
+            ),
 
             "any_identifier"
                 if ctx.matches_ancestor_history(&["object_reference"])
@@ -99,17 +87,6 @@ impl HoveredNode {
                     node_content,
                 )))
             }
-
-            "any_identifier"
-                if ctx.matches_one_of_ancestors(&[
-                    "alter_role",
-                    "policy_to_role",
-                    "role_specification",
-                ]) || ctx.before_cursor_matches_kind(&["keyword_revoke"]) =>
-            {
-                Some(HoveredNode::Role(node_content))
-            }
-            "grant_role" | "policy_role" => Some(HoveredNode::Role(node_content)),
 
             "any_identifier"
                 if (
