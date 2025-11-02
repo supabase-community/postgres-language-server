@@ -35,7 +35,7 @@ impl HoveredNode {
                 }
 
                 Some(HoveredNode::Table((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
@@ -52,14 +52,14 @@ impl HoveredNode {
                     }) =>
             {
                 Some(HoveredNode::Table((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
 
             "column_identifier" => Some(HoveredNode::Column((
                 None,
-                ctx.schema_or_alias_name.clone(),
+                ctx.identifier_qualifiers.1.clone(),
                 node_content,
             ))),
 
@@ -67,7 +67,7 @@ impl HoveredNode {
                 if ctx.matches_ancestor_history(&["invocation", "object_reference"]) =>
             {
                 Some(HoveredNode::Function((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     node_content,
                 )))
             }
@@ -103,7 +103,7 @@ impl HoveredNode {
             {
                 let sanitized = node_content.replace(['(', ')'], "");
                 Some(HoveredNode::PostgresType((
-                    ctx.schema_or_alias_name.clone(),
+                    ctx.identifier_qualifiers.1.clone(),
                     sanitized,
                 )))
             }
@@ -114,7 +114,7 @@ impl HoveredNode {
             }
 
             "grant_table" => Some(HoveredNode::Table((
-                ctx.schema_or_alias_name.clone(),
+                ctx.identifier_qualifiers.1.clone(),
                 node_content,
             ))),
 

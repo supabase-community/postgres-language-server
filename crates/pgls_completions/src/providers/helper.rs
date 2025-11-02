@@ -45,7 +45,7 @@ pub(crate) fn with_schema_or_alias(
     item_name: &str,
     schema_or_alias_name: Option<&str>,
 ) -> String {
-    let is_already_prefixed_with_schema_name = ctx.schema_or_alias_name.is_some();
+    let is_already_prefixed_with_schema_name = ctx.has_any_qualifier();
 
     let with_quotes = node_text_surrounded_by_quotes(ctx);
     let single_leading_quote = only_leading_quote(ctx);
