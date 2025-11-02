@@ -1,9 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    process::Child,
-};
-
-use crate::TreesitterContext;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct Scope {
