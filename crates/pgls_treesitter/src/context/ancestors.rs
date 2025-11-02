@@ -3,7 +3,7 @@ pub struct Scope {
     pub ancestors: AncestorTracker,
 }
 
-static SCOPE_BOUNDARIES: &[&'static str] = &["statement", "ERROR", "program"];
+static SCOPE_BOUNDARIES: &[&str] = &["statement", "ERROR", "program"];
 
 #[derive(Debug)]
 pub struct ScopeTracker {
@@ -22,7 +22,7 @@ impl ScopeTracker {
 
         self.scopes
             .last_mut()
-            .expect(format!("Unhandled node kind: {}", node.kind()).as_str())
+            .unwrap_or_else(|| panic!("Unhandled node kind: {}", node.kind()))
             .ancestors
             .register(node, position);
     }
@@ -86,7 +86,7 @@ impl AncestorTracker {
     }
 
     pub fn history_ends_with(&self, matchers: &[&'static str]) -> bool {
-        assert!(matchers.len() > 0);
+        assert!(!matchers.is_empty());
 
         let mut tracking_idx = matchers.len() - 1;
 
