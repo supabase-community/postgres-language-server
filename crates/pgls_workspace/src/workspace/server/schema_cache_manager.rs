@@ -46,4 +46,17 @@ impl SchemaCacheManager {
         schemas.insert(key, schema_cache.clone());
         Ok(schema_cache)
     }
+
+    /// Clear the schema cache for a specific connection
+    pub fn clear(&self, pool: &PgPool) {
+        let key: ConnectionKey = pool.into();
+        let mut schemas = self.schemas.write().unwrap();
+        schemas.remove(&key);
+    }
+
+    /// Clear all schema caches
+    pub fn clear_all(&self) {
+        let mut schemas = self.schemas.write().unwrap();
+        schemas.clear();
+    }
 }

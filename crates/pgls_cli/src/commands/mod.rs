@@ -93,7 +93,7 @@ pub enum PgLSCommand {
             long("log-path"),
             argument("PATH"),
             hide_usage,
-            fallback(pgls_fs::ensure_cache_dir().join("pgt-logs")),
+            fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
         )]
         log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
@@ -136,7 +136,7 @@ pub enum PgLSCommand {
             long("log-path"),
             argument("PATH"),
             hide_usage,
-            fallback(pgls_fs::ensure_cache_dir().join("pgt-logs")),
+            fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
         )]
         log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
@@ -178,11 +178,11 @@ pub enum PgLSCommand {
             long("log-path"),
             argument("PATH"),
             hide_usage,
-            fallback(pgls_fs::ensure_cache_dir().join("pgt-logs")),
+            fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
         )]
         log_path: PathBuf,
 
-        /// Allows to change the log level. Default is debug. This will only affect "pgt*" crates. All others are logged with info level.
+        /// Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level.
         #[bpaf(
             env("PGT_LOG_LEVEL"),
             env("PGLS_LOG_LEVEL"),
