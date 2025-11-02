@@ -23,7 +23,7 @@ impl HoveredNode {
             return None;
         }
 
-        let under_cursor = ctx.node_under_cursor.as_ref()?;
+        let under_cursor = &ctx.node_under_cursor;
 
         match under_cursor.kind() {
             "column_identifier" => Some(HoveredNode::Column((
@@ -47,12 +47,15 @@ impl HoveredNode {
             "schema_identifier" => Some(HoveredNode::Schema(node_content)),
             "role_identifier" => Some(HoveredNode::Role(node_content)),
 
-            "any_identifier" if ctx.matches_ancestor_history(&["table_reference"]) => Some(
-                HoveredNode::Table((ctx.tail_qualifier_sanitized(), node_content)),
-            ),
+            "any_identifier" if ctx.history_ends_with(&["table_reference", "any_identifier"]) => {
+                Some(HoveredNode::Table((
+                    ctx.tail_qualifier_sanitized(),
+                    node_content,
+                )))
+            }
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["object_reference"])
+                if ctx.history_ends_with(&["object_reference", "any_identifier"])
                     && ctx.wrapping_clause_type.as_ref().is_some_and(|clause| {
                         matches!(
                             clause,
@@ -69,8 +72,11 @@ impl HoveredNode {
             }
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["binary_expression", "object_reference"])
-                    || ctx.matches_ancestor_history(&["term", "object_reference"]) =>
+                if ctx.history_ends_with(&[
+                    "binary_expression",
+                    "object_reference",
+                    "any_identifier",
+                ]) || ctx.history_ends_with(&["term", "object_reference", "any_identifier"]) =>
             {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),
@@ -80,7 +86,11 @@ impl HoveredNode {
             }
 
             "any_identifier"
-                if ctx.matches_ancestor_history(&["invocation", "function_reference"]) =>
+                if ctx.history_ends_with(&[
+                    "invocation",
+                    "function_reference",
+                    "any_identifier",
+                ]) =>
             {
                 Some(HoveredNode::Function((
                     ctx.tail_qualifier_sanitized(),
@@ -91,13 +101,13 @@ impl HoveredNode {
             "any_identifier"
                 if (
                     // hover over custom type in `create table` or `returns`
-                    (ctx.matches_ancestor_history(&["type", "object_reference"])
-                    && ctx.node_under_cursor_is_within_field_name(&["custom_type"]))
+                    (ctx.history_ends_with(&["type", "object_reference", "any_identifier"])
+                    && ctx.node_under_cursor_is_within_field(&["custom_type"]))
 
                     // hover over type in `select` clause etc…
                     || (ctx
-                        .matches_ancestor_history(&["field_selection","composite_reference","object_reference"])
-                        && ctx.node_under_cursor_is_within_field_name(&["object_reference_1of1", "object_reference_2of2"])))
+                        .history_ends_with(&["field_selection","composite_reference","object_reference", "any_identifier"])
+                        && ctx.node_under_cursor_is_within_field(&["object_reference_1of1", "object_reference_2of2"])))
 
                     // make sure we're not checking against an alias
                     && ctx
@@ -113,7 +123,7 @@ impl HoveredNode {
             }
 
             // quoted columns
-            "literal" if ctx.matches_ancestor_history(&["select_expression", "term"]) => {
+            "literal" if ctx.history_ends_with(&["select_expression", "term", "literal"]) => {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),
                     ctx.tail_qualifier_sanitized(),

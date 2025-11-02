@@ -1,10 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
 #[derive(Debug)]
 pub struct Scope {
-    pub mentioned_relations: HashMap<Option<String>, HashSet<String>>,
-    pub mentioned_table_aliases: HashMap<String, String>,
-    pub mentioned_columns: HashMap<Option<String>, HashSet<String>>,
     pub ancestors: AncestorTracker,
 }
 
@@ -35,9 +30,6 @@ impl ScopeTracker {
     fn add_new_scope(&mut self, _node: tree_sitter::Node<'_>) {
         self.scopes.push(Scope {
             ancestors: AncestorTracker::new(),
-            mentioned_relations: HashMap::new(),
-            mentioned_columns: HashMap::new(),
-            mentioned_table_aliases: HashMap::new(),
         })
     }
 
@@ -87,32 +79,13 @@ impl AncestorTracker {
         self.ancestors.push(ancestor_node);
     }
 
-    #[cfg(test)]
-    fn with_ancestors(ancestors: Vec<(&str, Option<&str>)>) -> Self {
-        Self {
-            ancestors: ancestors
-                .into_iter()
-                .map(|(kind, field)| AncestorNode {
-                    kind: kind.to_string(),
-                    field: field.map(|f| f.to_string()),
-                })
-                .collect(),
-            next_field: None,
-        }
-    }
-
     pub fn is_within_one_of_fields(&self, field_names: &[&'static str]) -> bool {
         self.ancestors
             .iter()
             .any(|n| n.field.as_deref().is_some_and(|f| field_names.contains(&f)))
-            // we're not collecting the leaf node in the ancestors vec, but its field tag is tracked in the `self.next_field` property.
-            || self
-                .next_field
-                .as_ref()
-                .is_some_and(|f| field_names.contains(&f.as_str()))
     }
 
-    pub fn matches_history(&self, matchers: &[&'static str]) -> bool {
+    pub fn history_ends_with(&self, matchers: &[&'static str]) -> bool {
         assert!(matchers.len() > 0);
 
         let mut tracking_idx = matchers.len() - 1;

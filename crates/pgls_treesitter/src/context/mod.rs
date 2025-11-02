@@ -101,7 +101,7 @@ pub struct TreeSitterContextParams<'a> {
 
 #[derive(Debug)]
 pub struct TreesitterContext<'a> {
-    pub node_under_cursor: Option<tree_sitter::Node<'a>>,
+    pub node_under_cursor: tree_sitter::Node<'a>,
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
@@ -138,7 +138,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
-            node_under_cursor: None,
+            node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
             wrapping_node_kind: None,
@@ -244,9 +244,7 @@ impl<'a> TreesitterContext<'a> {
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
-        self.node_under_cursor
-            .as_ref()
-            .and_then(|node| self.get_ts_node_content(node))
+        self.get_ts_node_content(&self.node_under_cursor)
     }
 
     fn gather_tree_context(&mut self) {
@@ -300,7 +298,7 @@ impl<'a> TreesitterContext<'a> {
         // prevent infinite recursion – this can happen with ERROR nodes
         if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
         {
-            self.node_under_cursor = Some(current_node);
+            self.node_under_cursor = current_node;
             return;
         }
 
@@ -372,7 +370,7 @@ impl<'a> TreesitterContext<'a> {
         if current_node.child_count() == 0
             || current_node.first_child_for_byte(self.position).is_none()
         {
-            self.node_under_cursor = Some(current_node);
+            self.node_under_cursor = current_node;
             return;
         }
 
@@ -607,18 +605,16 @@ impl<'a> TreesitterContext<'a> {
     }
 
     pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            let mut current = *node;
+        let mut current = self.node_under_cursor;
 
-            // move up to the parent until we're at top OR we have a prev sibling
-            while current.prev_sibling().is_none() && current.parent().is_some() {
-                current = current.parent().unwrap();
-            }
+        // move up to the parent until we're at top OR we have a prev sibling
+        while current.prev_sibling().is_none() && current.parent().is_some() {
+            current = current.parent().unwrap();
+        }
 
-            current
-                .prev_sibling()
-                .is_some_and(|sib| kinds.contains(&sib.kind()))
-        })
+        current
+            .prev_sibling()
+            .is_some_and(|sib| kinds.contains(&sib.kind()))
     }
 
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
@@ -626,15 +622,15 @@ impl<'a> TreesitterContext<'a> {
     ///
     /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
-    pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
+    pub fn history_ends_with(&self, expected_ancestors: &[&'static str]) -> bool {
         self.scope_tracker
             .current()
             .ancestors
-            .matches_history(expected_ancestors)
+            .history_ends_with(expected_ancestors)
     }
 
     /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
-    pub fn node_under_cursor_is_within_field_name(&self, names: &[&'static str]) -> bool {
+    pub fn node_under_cursor_is_within_field(&self, names: &[&'static str]) -> bool {
         self.scope_tracker
             .current()
             .ancestors
@@ -958,7 +954,7 @@ mod tests {
 
             let ctx = TreesitterContext::new(params);
 
-            let node = ctx.node_under_cursor.as_ref().unwrap();
+            let node = &ctx.node_under_cursor;
 
             assert_eq!(ctx.get_ts_node_content(node), Some("select".into()));
 
@@ -988,7 +984,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        let node = ctx.node_under_cursor.as_ref().unwrap();
+        let node = &ctx.node_under_cursor;
 
         assert_eq!(ctx.get_ts_node_content(node), Some("from".into()));
     }
@@ -1009,7 +1005,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        let node = ctx.node_under_cursor.as_ref().unwrap();
+        let node = &ctx.node_under_cursor;
 
         assert_eq!(ctx.get_ts_node_content(node), Some("".into()));
         assert_eq!(ctx.wrapping_clause_type, None);
@@ -1033,7 +1029,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        let node = ctx.node_under_cursor.as_ref().unwrap();
+        let node = &ctx.node_under_cursor;
 
         assert_eq!(ctx.get_ts_node_content(node), Some("fro".into()));
         assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
@@ -1057,7 +1053,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        assert!(ctx.node_under_cursor_is_within_field_name(&["custom_type"]));
+        assert!(ctx.node_under_cursor_is_within_field(&["custom_type"]));
     }
 
     #[test]
