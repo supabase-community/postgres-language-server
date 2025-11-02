@@ -4,10 +4,13 @@ use std::{
 };
 
 use crate::{
+    context::ancestors::ScopeTracker,
     parts_of_reference_query,
     queries::{self, QueryResult, TreeSitterQueriesExecutor},
 };
 use pgls_text_size::TextSize;
+
+mod ancestors;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum WrappingClause<'a> {
@@ -125,6 +128,8 @@ pub struct TreesitterContext<'a> {
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     mentioned_table_aliases: HashMap<String, String>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
+
+    scope_tracker: ScopeTracker,
 }
 
 impl<'a> TreesitterContext<'a> {
@@ -142,11 +147,13 @@ impl<'a> TreesitterContext<'a> {
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
+            scope_tracker: ScopeTracker::new(),
         };
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
+        println!("{:#?}", ctx);
         ctx
     }
 
@@ -368,6 +375,7 @@ impl<'a> TreesitterContext<'a> {
             return;
         }
 
+        self.scope_tracker.register(current_node, self.position);
         cursor.goto_first_child_for_byte(self.position);
         self.gather_context_from_node(cursor, current_node);
     }
@@ -619,20 +627,25 @@ impl<'a> TreesitterContext<'a> {
     /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
     pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            let mut current = Some(*node);
+        self.scope_tracker
+            .current()
+            .ancestors
+            .matches_history(expected_ancestors)
 
-            for &expected_kind in expected_ancestors.iter().rev() {
-                current = current.and_then(|n| n.parent());
+        // self.node_under_cursor.as_ref().is_some_and(|node| {
+        //     let mut current = Some(*node);
 
-                match current {
-                    Some(ancestor) if ancestor.kind() == expected_kind => continue,
-                    _ => return false,
-                }
-            }
+        //     for &expected_kind in expected_ancestors.iter().rev() {
+        //         current = current.and_then(|n| n.parent());
 
-            true
-        })
+        //         match current {
+        //             Some(ancestor) if ancestor.kind() == expected_kind => continue,
+        //             _ => return false,
+        //         }
+        //     }
+
+        //     true
+        // })
     }
 
     /// Verifies if the node has one of the named direct ancestors.
@@ -691,37 +704,41 @@ impl<'a> TreesitterContext<'a> {
 
     /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
     pub fn node_under_cursor_is_within_field_name(&self, names: &[&'static str]) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .map(|node| {
-                // It might seem weird that we have to check for the field_name from the parent,
-                // but TreeSitter wants it this way, since nodes often can only be named in
-                // the context of their parents.
-                let root_node = self.tree.root_node();
-                let mut cursor = node.walk();
-                let mut parent = node.parent();
+        self.scope_tracker
+            .current()
+            .ancestors
+            .is_within_one_of_fields(names)
+        // self.node_under_cursor
+        //     .as_ref()
+        //     .map(|node| {
+        //         // It might seem weird that we have to check for the field_name from the parent,
+        //         // but TreeSitter wants it this way, since nodes often can only be named in
+        //         // the context of their parents.
+        //         let root_node = self.tree.root_node();
+        //         let mut cursor = node.walk();
+        //         let mut parent = node.parent();
 
-                while let Some(p) = parent {
-                    if p == root_node {
-                        break;
-                    }
+        //         while let Some(p) = parent {
+        //             if p == root_node {
+        //                 break;
+        //             }
 
-                    for name in names {
-                        if p.children_by_field_name(name, &mut cursor).any(|c| {
-                            let r = c.range();
-                            // if the parent range contains the node range, the node is of the field_name.
-                            r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
-                        }) {
-                            return true;
-                        }
-                    }
+        //             for name in names {
+        //                 if p.children_by_field_name(name, &mut cursor).any(|c| {
+        //                     let r = c.range();
+        //                     // if the parent range contains the node range, the node is of the field_name.
+        //                     r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
+        //                 }) {
+        //                     return true;
+        //                 }
+        //             }
 
-                    parent = p.parent();
-                }
+        //             parent = p.parent();
+        //         }
 
-                false
-            })
-            .unwrap_or(false)
+        //         false
+        //     })
+        //     .unwrap_or(false)
     }
 
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
