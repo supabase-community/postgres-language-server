@@ -6,7 +6,6 @@ use proc_macro2::{Ident, Literal, Span, TokenStream};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use quote::quote;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 use xtask::*;
 
 /// Configuration for a tool that produces rules
@@ -26,11 +25,13 @@ impl ToolConfig {
     }
 
     /// Derived: Crate name that contains the rules
+    #[allow(dead_code)]
     fn crate_name(&self) -> String {
         format!("pgls_{}", self.name)
     }
 
     /// Derived: The main struct name (Rules, Actions, or Transformations)
+    #[allow(dead_code)]
     fn struct_name(&self) -> &str {
         match self.category {
             RuleCategory::Lint => "Rules",
@@ -230,7 +231,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
 
 /// Generate the rules.rs file for a Lint tool
 fn generate_lint_rules_file(
-    tool: &ToolConfig,
+    _tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<String> {
     let mut struct_groups = Vec::with_capacity(groups.len());
@@ -448,7 +449,7 @@ fn generate_lint_rules_file(
         }
     };
 
-    Ok(xtask::reformat(rules_struct_content.to_string())?)
+    xtask::reformat(rules_struct_content.to_string())
 }
 
 /// Generate a group struct for lint rules
@@ -664,13 +665,13 @@ fn extract_summary_from_docs(docs: &str) -> String {
             }
             Event::Start(tag) => match tag {
                 Tag::Strong | Tag::Paragraph => continue,
-                _ => panic!("Unimplemented tag {:?}", tag),
+                _ => panic!("Unimplemented tag {tag:?}"),
             },
             Event::End(tag) => match tag {
                 TagEnd::Strong | TagEnd::Paragraph => continue,
-                _ => panic!("Unimplemented tag {:?}", tag),
+                _ => panic!("Unimplemented tag {tag:?}"),
             },
-            _ => panic!("Unimplemented event {:?}", event),
+            _ => panic!("Unimplemented event {event:?}"),
         }
     }
 
@@ -756,7 +757,7 @@ fn generate_action_mod_file(tool: &ToolConfig) -> String {
 
 /// Generate the actions.rs file for an Action tool
 fn generate_action_actions_file(
-    tool: &ToolConfig,
+    _tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<String> {
     let mut struct_groups = Vec::with_capacity(groups.len());
@@ -905,7 +906,7 @@ fn generate_action_actions_file(
         }
     };
 
-    Ok(xtask::reformat(actions_struct_content.to_string())?)
+    xtask::reformat(actions_struct_content.to_string())
 }
 
 /// Generate a group struct for action rules
