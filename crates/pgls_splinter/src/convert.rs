@@ -60,7 +60,7 @@ fn build_remediation_url(name: &str) -> String {
         "table_bloat" => "0020_table_bloat",
         "fkey_to_auth_unique" => "0021_fkey_to_auth_unique",
         "extension_versions_outdated" => "0022_extension_versions_outdated",
-        _ => return format!("https://supabase.com/docs/guides/database/database-linter"),
+        _ => return "https://supabase.com/docs/guides/database/database-linter".to_string(),
     };
 
     format!("https://supabase.com/docs/guides/database/database-linter?lint={lint_id}")

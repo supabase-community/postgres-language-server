@@ -37,10 +37,9 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
     let mut rules = BTreeMap::new();
 
     let lines: Vec<&str> = content.lines().collect();
-    let mut i = 0;
 
-    while i < lines.len() {
-        let line = lines[i].trim();
+    for (i, line) in lines.iter().enumerate() {
+        let line = line.trim();
 
         // Look for pattern: 'rule_name' as "name!",
         if line.contains(" as \"name!\"") {
@@ -48,8 +47,8 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                 // Look ahead for categories
                 let mut categories = None;
 
-                for j in i..std::cmp::min(i + 30, lines.len()) {
-                    let next_line = lines[j].trim();
+                for next_line in lines[i..].iter().take(30) {
+                    let next_line = next_line.trim();
 
                     // Extract categories from pattern: array['CATEGORY'] as "categories!",
                     if next_line.contains(" as \"categories!\"") {
@@ -71,8 +70,6 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                 );
             }
         }
-
-        i += 1;
     }
 
     // Add the "unknown" fallback rule
