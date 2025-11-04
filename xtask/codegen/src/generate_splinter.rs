@@ -4,15 +4,30 @@ use std::collections::BTreeMap;
 use std::fs;
 use xtask::{glue::fs2, project_root};
 
-/// Generate splinter categories from the SQL file
+/// Generate splinter categories from the SQL files (both generic and Supabase-specific)
 pub fn generate_splinter() -> Result<()> {
-    let sql_path = project_root().join("crates/pgls_splinter/vendor/splinter.sql");
-    let sql_content = fs::read_to_string(&sql_path)
-        .with_context(|| format!("Failed to read SQL file at {sql_path:?}"))?;
+    let mut all_rules = BTreeMap::new();
 
-    let rules = extract_rules_from_sql(&sql_content)?;
+    // Process generic rules
+    let generic_sql_path = project_root().join("crates/pgls_splinter/vendor/splinter_generic.sql");
+    if generic_sql_path.exists() {
+        let sql_content = fs::read_to_string(&generic_sql_path)
+            .with_context(|| format!("Failed to read SQL file at {generic_sql_path:?}"))?;
+        let rules = extract_rules_from_sql(&sql_content)?;
+        all_rules.extend(rules);
+    }
 
-    update_categories_file(rules)?;
+    // Process Supabase-specific rules
+    let supabase_sql_path =
+        project_root().join("crates/pgls_splinter/vendor/splinter_supabase.sql");
+    if supabase_sql_path.exists() {
+        let sql_content = fs::read_to_string(&supabase_sql_path)
+            .with_context(|| format!("Failed to read SQL file at {supabase_sql_path:?}"))?;
+        let rules = extract_rules_from_sql(&sql_content)?;
+        all_rules.extend(rules);
+    }
+
+    update_categories_file(all_rules)?;
 
     Ok(())
 }
@@ -30,9 +45,8 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
         // Look for pattern: 'rule_name' as "name!",
         if line.contains(" as \"name!\"") {
             if let Some(name) = extract_string_literal(line) {
-                // Look ahead for categories and remediation URL
+                // Look ahead for categories
                 let mut categories = None;
-                let mut remediation_url = None;
 
                 for j in i..std::cmp::min(i + 30, lines.len()) {
                     let next_line = lines[j].trim();
@@ -40,20 +54,9 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                     // Extract categories from pattern: array['CATEGORY'] as "categories!",
                     if next_line.contains(" as \"categories!\"") {
                         categories = extract_categories(next_line);
-                    }
-
-                    if next_line.contains(" as \"remediation!\"") {
-                        remediation_url = extract_string_literal(next_line);
-                    }
-
-                    // Stop once we have both
-                    if categories.is_some() && remediation_url.is_some() {
-                        break;
+                        break; // Stop once we have categories
                     }
                 }
-
-                let url = remediation_url
-                    .with_context(|| format!("Failed to find remediation URL for rule '{name}'"))?;
 
                 let cats = categories
                     .with_context(|| format!("Failed to find categories for rule '{name}'"))?;
@@ -64,7 +67,6 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                         snake_case: name.clone(),
                         camel_case: snake_to_camel_case(&name),
                         categories: cats,
-                        url,
                     },
                 );
             }
@@ -80,7 +82,6 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
             snake_case: "unknown".to_string(),
             camel_case: "unknown".to_string(),
             categories: vec!["UNKNOWN".to_string()],
-            url: "https://pg-language-server.com/latest".to_string(),
         },
     );
 
@@ -144,7 +145,37 @@ struct RuleInfo {
     snake_case: String,
     camel_case: String,
     categories: Vec<String>,
-    url: String,
+}
+
+/// Build remediation URL from rule name
+/// Must match the logic in crates/pgls_splinter/src/convert.rs
+fn build_remediation_url(name: &str) -> String {
+    let lint_id = match name {
+        "unindexed_foreign_keys" => "0001_unindexed_foreign_keys",
+        "auth_users_exposed" => "0002_auth_users_exposed",
+        "auth_rls_initplan" => "0003_auth_rls_initplan",
+        "no_primary_key" => "0004_no_primary_key",
+        "unused_index" => "0005_unused_index",
+        "multiple_permissive_policies" => "0006_multiple_permissive_policies",
+        "policy_exists_rls_disabled" => "0007_policy_exists_rls_disabled",
+        "rls_enabled_no_policy" => "0008_rls_enabled_no_policy",
+        "duplicate_index" => "0009_duplicate_index",
+        "security_definer_view" => "0010_security_definer_view",
+        "function_search_path_mutable" => "0011_function_search_path_mutable",
+        "rls_disabled_in_public" => "0013_rls_disabled_in_public",
+        "extension_in_public" => "0014_extension_in_public",
+        "rls_references_user_metadata" => "0015_rls_references_user_metadata",
+        "materialized_view_in_api" => "0016_materialized_view_in_api",
+        "foreign_table_in_api" => "0017_foreign_table_in_api",
+        "unsupported_reg_types" => "unsupported_reg_types",
+        "insecure_queue_exposed_in_api" => "0019_insecure_queue_exposed_in_api",
+        "table_bloat" => "0020_table_bloat",
+        "fkey_to_auth_unique" => "0021_fkey_to_auth_unique",
+        "extension_versions_outdated" => "0022_extension_versions_outdated",
+        _ => return "https://supabase.com/docs/guides/database/database-linter".to_string(),
+    };
+
+    format!("https://supabase.com/docs/guides/database/database-linter?lint={lint_id}")
 }
 
 /// Update the categories.rs file with splinter rules
@@ -162,11 +193,12 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
             // In practice, splinter rules have only one category
             rule.categories.iter().map(|category| {
                 let group = category.to_lowercase();
+                let url = build_remediation_url(&rule.snake_case);
                 (
                     group.clone(),
                     format!(
                         "    \"splinter/{}/{}\": \"{}\",",
-                        group, rule.camel_case, rule.url
+                        group, rule.camel_case, url
                     ),
                 )
             })

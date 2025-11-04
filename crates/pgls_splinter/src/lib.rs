@@ -12,7 +12,7 @@ pub struct SplinterParams<'a> {
     pub conn: &'a PgPool,
 }
 
-async fn check_required_roles(conn: &PgPool) -> Result<bool, sqlx::Error> {
+async fn check_supabase_roles(conn: &PgPool) -> Result<bool, sqlx::Error> {
     let required_roles = ["anon", "authenticated", "service_role"];
 
     let existing_roles: Vec<String> =
@@ -32,17 +32,19 @@ async fn check_required_roles(conn: &PgPool) -> Result<bool, sqlx::Error> {
 pub async fn run_splinter(
     params: SplinterParams<'_>,
 ) -> Result<Vec<SplinterDiagnostic>, sqlx::Error> {
-    // check if required supabase roles exist
-    // if they don't exist, return empty diagnostics since splinter is supabase-specific
-    // opened an issue to make it less supabase-specific: https://github.com/supabase/splinter/issues/135
-    let has_roles = check_required_roles(params.conn).await?;
-    if !has_roles {
-        return Ok(Vec::new());
+    let mut all_results = Vec::new();
+
+    let generic_results = query::load_generic_splinter_results(params.conn).await?;
+    all_results.extend(generic_results);
+
+    // Only run Supabase-specific rules if the required roles exist
+    let has_supabase_roles = check_supabase_roles(params.conn).await?;
+    if has_supabase_roles {
+        let supabase_results = query::load_supabase_splinter_results(params.conn).await?;
+        all_results.extend(supabase_results);
     }
 
-    let results = query::load_splinter_results(params.conn).await?;
-
-    let diagnostics: Vec<SplinterDiagnostic> = results.into_iter().map(Into::into).collect();
+    let diagnostics: Vec<SplinterDiagnostic> = all_results.into_iter().map(Into::into).collect();
 
     Ok(diagnostics)
 }
