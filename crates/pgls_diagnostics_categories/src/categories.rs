@@ -69,7 +69,7 @@ define_categories! {
     "splinter/security/rlsReferencesUserMetadata": "https://supabase.com/docs/guides/database/database-linter?lint=0015_rls_references_user_metadata",
     "splinter/security/securityDefinerView": "https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view",
     "splinter/security/unsupportedRegTypes": "https://supabase.com/docs/guides/database/database-linter?lint=unsupported_reg_types",
-    "splinter/unknown/unknown": "https://pg-language-server.com/latest",
+    "splinter/unknown/unknown": "https://supabase.com/docs/guides/database/database-linter",
     // splinter rules end
     ;
     // General categories

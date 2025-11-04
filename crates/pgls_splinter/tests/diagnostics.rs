@@ -1,6 +1,6 @@
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
-use pgls_splinter::{run_splinter, SplinterParams};
+use pgls_splinter::{SplinterParams, run_splinter};
 use sqlx::PgPool;
 use std::fmt::Write;
 use std::io;
