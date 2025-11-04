@@ -282,7 +282,7 @@ impl Settings {
     }
 
     /// Returns linter rules.
-    pub fn as_linter_rules(&self) -> Option<Cow<pgls_configuration::analyser::linter::Rules>> {
+    pub fn as_linter_rules(&self) -> Option<Cow<pgls_configuration::linter::Rules>> {
         self.linter.rules.as_ref().map(Cow::Borrowed)
     }
 
@@ -414,7 +414,7 @@ pub struct LinterSettings {
     pub enabled: bool,
 
     /// List of rules
-    pub rules: Option<pgls_configuration::analyser::linter::Rules>,
+    pub rules: Option<pgls_configuration::linter::Rules>,
 
     /// List of ignored paths/files to match
     pub ignored_files: Matcher,
@@ -427,7 +427,7 @@ impl Default for LinterSettings {
     fn default() -> Self {
         Self {
             enabled: true,
-            rules: Some(pgls_configuration::analyser::linter::Rules::default()),
+            rules: Some(pgls_configuration::linter::Rules::default()),
             ignored_files: Matcher::empty(),
             included_files: Matcher::empty(),
         }
