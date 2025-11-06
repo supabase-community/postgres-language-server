@@ -58,10 +58,7 @@ mod tests {
                 "service_role".into(),
                 crate::CompletionItemKind::Role,
             ),
-            CompletionAssertion::LabelAndKind(
-                "test_login".into(),
-                crate::CompletionItemKind::Role,
-            ),
+            CompletionAssertion::LabelAndKind("test_login".into(), crate::CompletionItemKind::Role),
             CompletionAssertion::LabelAndKind(
                 "test_nologin".into(),
                 crate::CompletionItemKind::Role,
@@ -228,8 +225,7 @@ mod tests {
         ];
 
         for query in queries {
-            assert_complete_results(query.as_str(), expected_roles(), None, &pool)
-                .await;
+            assert_complete_results(query.as_str(), expected_roles(), None, &pool).await;
         }
     }
 }
