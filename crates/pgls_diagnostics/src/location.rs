@@ -4,6 +4,28 @@ use std::fmt::Debug;
 use std::ops::Range;
 use std::{borrow::Borrow, ops::Deref};
 
+/// Represents a database object (table, function, etc.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DatabaseObject<'a> {
+    /// Optional schema name
+    pub schema: Option<&'a str>,
+    /// Object name (required)
+    pub name: &'a str,
+    /// Optional object type (e.g., "table", "function", "view")
+    pub object_type: Option<&'a str>,
+}
+
+/// Owned version of DatabaseObject for use in diagnostic structs
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DatabaseObjectOwned {
+    /// Optional schema name
+    pub schema: Option<String>,
+    /// Object name (required)
+    pub name: String,
+    /// Optional object type (e.g., "table", "function", "view")
+    pub object_type: Option<String>,
+}
+
 /// Represents the location of a diagnostic in a resource.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Location<'a> {
@@ -12,6 +34,8 @@ pub struct Location<'a> {
     /// An optional range of text within the resource associated with the
     /// diagnostic.
     pub span: Option<TextRange>,
+    /// An optional database object reference
+    pub database_object: Option<DatabaseObject<'a>>,
     /// The optional source code of the resource.
     pub source_code: Option<BorrowedSourceCode<'a>>,
 }
@@ -23,6 +47,7 @@ impl<'a> Location<'a> {
             resource: None,
             span: None,
             source_code: None,
+            database_object: None,
         }
     }
 }
@@ -42,6 +67,8 @@ impl Eq for Location<'_> {}
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum Resource<Path> {
+    /// The diagnostic is related to the database and its schema.
+    Database,
     /// The diagnostic is related to the content of the command line arguments.
     Argv,
     /// The diagnostic is related to the content of a memory buffer.
@@ -70,6 +97,7 @@ impl<P> Resource<P> {
         P: Deref,
     {
         match self {
+            Resource::Database => Resource::Database,
             Resource::Argv => Resource::Argv,
             Resource::Memory => Resource::Memory,
             Resource::File(file) => Resource::File(file),
@@ -81,6 +109,7 @@ impl Resource<&'_ str> {
     /// Converts a `Path<&str>` to `Path<String>`.
     pub fn to_owned(self) -> Resource<String> {
         match self {
+            Resource::Database => Resource::Database,
             Resource::Argv => Resource::Argv,
             Resource::Memory => Resource::Memory,
             Resource::File(file) => Resource::File(file.to_owned()),
@@ -194,6 +223,7 @@ pub struct LocationBuilder<'a> {
     resource: Option<Resource<&'a str>>,
     span: Option<TextRange>,
     source_code: Option<BorrowedSourceCode<'a>>,
+    database_object: Option<DatabaseObject<'a>>,
 }
 
 impl<'a> LocationBuilder<'a> {
@@ -212,11 +242,17 @@ impl<'a> LocationBuilder<'a> {
         self
     }
 
+    pub fn database_object<D: AsDatabaseObject>(mut self, database_object: &'a D) -> Self {
+        self.database_object = database_object.as_database_object();
+        self
+    }
+
     pub fn build(self) -> Location<'a> {
         Location {
             resource: self.resource,
             span: self.span,
             source_code: self.source_code,
+            database_object: self.database_object,
         }
     }
 }
@@ -338,6 +374,39 @@ impl AsSourceCode for String {
         Some(SourceCode {
             text: self,
             line_starts: None,
+        })
+    }
+}
+
+/// Utility trait for types that can be converted into a database object reference
+pub trait AsDatabaseObject {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>>;
+}
+
+impl<T: AsDatabaseObject> AsDatabaseObject for Option<T> {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
+        self.as_ref().and_then(T::as_database_object)
+    }
+}
+
+impl<T: AsDatabaseObject + ?Sized> AsDatabaseObject for &'_ T {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
+        T::as_database_object(*self)
+    }
+}
+
+impl<'a> AsDatabaseObject for DatabaseObject<'a> {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
+        Some(*self)
+    }
+}
+
+impl AsDatabaseObject for DatabaseObjectOwned {
+    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
+        Some(DatabaseObject {
+            schema: self.schema.as_deref(),
+            name: &self.name,
+            object_type: self.object_type.as_deref(),
         })
     }
 }
