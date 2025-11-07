@@ -8,7 +8,7 @@ mod generate_new_analyser_rule;
 
 pub use self::generate_analyser::generate_analyser;
 pub use self::generate_bindings::generate_bindings;
-pub use self::generate_configuration::generate_rules_configuration;
+pub use self::generate_configuration::{generate_rules_configuration, generate_tool_configuration};
 pub use self::generate_crate::generate_crate;
 pub use self::generate_new_analyser_rule::generate_new_analyser_rule;
 use bpaf::Bpaf;

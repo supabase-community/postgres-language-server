@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "with \nnames_of_parents as (\n  select m.member, r.rolname\n  from pg_catalog.pg_auth_members m\n  join pg_catalog.pg_roles r\n  on r.oid = m.roleid\n),\nnames_of_children as (\n  select m.roleid, r.rolname\n  from pg_catalog.pg_auth_members m\n  join pg_catalog.pg_roles r\n  on r.oid = m.member\n)\nselect \n  r.rolname as \"name!\", \n  r.rolsuper as \"is_super_user!\", \n  r.rolcreatedb as \"can_create_db!\", \n  r.rolcanlogin  as \"can_login!\",\n  r.rolbypassrls as \"can_bypass_rls!\",\n  r.rolcreaterole as \"can_create_roles!\",\n  -- this works even if we don't have access to pg_authid; manually verified\n  shobj_description(r.oid, 'pg_authid') as \"comment\",\n  coalesce((\n    select array_agg(m.rolname)\n    from names_of_parents m\n    where m.member = r.oid\n  ), ARRAY[]::text[]) as \"member_of!\",\n  coalesce((\n    select array_agg(m.rolname)\n    from names_of_children m\n    where m.roleid = r.oid\n  ), ARRAY[]::text[]) as \"has_member!\"\nfrom pg_catalog.pg_roles r;",
+  "query": "with \nnames_of_parents as (\n  select m.member, r.rolname\n  from pg_catalog.pg_auth_members m\n  join pg_catalog.pg_roles r\n  on r.oid = m.roleid\n),\nnames_of_children as (\n  select m.roleid, r.rolname\n  from pg_catalog.pg_auth_members m\n  join pg_catalog.pg_roles r\n  on r.oid = m.member\n)\nselect \n  r.rolname as \"name!\", \n  r.rolsuper as \"is_super_user!\", \n  r.rolcreatedb as \"can_create_db!\", \n  r.rolcanlogin  as \"can_login!\",\n  r.rolbypassrls as \"can_bypass_rls!\",\n  r.rolcreaterole as \"can_create_roles!\",\n  -- this works even if we don't have access to pg_authid; manually verified\n  shobj_description(r.oid, 'pg_authid') as \"comment\",\n  coalesce((\n    select array_agg(m.rolname)\n    from names_of_parents m\n    where m.member = r.oid\n  ), ARRAY[]::text[]) as \"member_of!\",\n  coalesce((\n    select array_agg(m.rolname)\n    from names_of_children m\n    where m.roleid = r.oid\n  ), ARRAY[]::text[]) as \"has_member!\"\nfrom pg_catalog.pg_roles r\norder by r.rolname;",
   "describe": {
     "columns": [
       {
@@ -64,5 +64,5 @@
       null
     ]
   },
-  "hash": "d46da23daf6ae841c4cda6d0fad6772d19ebcab6f9033bce09a4b286024916d6"
+  "hash": "9c330708473ef3e53c145d20b86f6752dffcca3b7f4d5b112b0ebc51437e5302"
 }
