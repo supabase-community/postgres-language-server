@@ -139,7 +139,11 @@ export type Advice =
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = "argv" | "memory" | { file: string };
+export type Resource_for_String =
+	| "database"
+	| "argv"
+	| "memory"
+	| { file: string };
 export type TextRange = [TextSize, TextSize];
 export interface MarkupNodeBuf {
 	content: string;
