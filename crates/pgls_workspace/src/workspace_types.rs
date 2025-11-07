@@ -462,7 +462,7 @@ pub fn methods() -> [WorkspaceMethod; 9] {
         workspace_method!(is_path_ignored),
         workspace_method!(register_project_folder),
         workspace_method!(get_file_content),
-        workspace_method!(pull_diagnostics),
+        workspace_method!(pull_file_diagnostics),
         workspace_method!(get_completions),
         workspace_method!(update_settings),
         workspace_method!(open_file),

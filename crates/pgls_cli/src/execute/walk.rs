@@ -59,7 +59,7 @@ pub(crate) fn traverse(
 
     let (duration, evaluated_paths, diagnostics) = thread::scope(|s| {
         let handler = thread::Builder::new()
-            .name(String::from("pgt::console"))
+            .name(String::from("pgls::console"))
             .spawn_scoped(s, || printer.run(receiver, recv_files))
             .expect("failed to spawn console thread");
 
@@ -121,7 +121,7 @@ fn init_thread_pool() {
     static INIT_ONCE: Once = Once::new();
     INIT_ONCE.call_once(|| {
         rayon::ThreadPoolBuilder::new()
-            .thread_name(|index| format!("pgt::worker_{index}"))
+            .thread_name(|index| format!("pgls::worker_{index}"))
             .build_global()
             .expect("failed to initialize the global thread pool");
     });

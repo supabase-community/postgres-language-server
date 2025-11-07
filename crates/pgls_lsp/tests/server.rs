@@ -323,11 +323,11 @@ impl Server {
         .await
     }
 
-    /// Basic implementation of the `pgt/shutdown` request for tests
+    /// Basic implementation of the `pgls/shutdown` request for tests
     async fn pgls_shutdown(&mut self) -> Result<()> {
-        self.request::<_, ()>("pgt/shutdown", "_pgls_shutdown", ())
+        self.request::<_, ()>("pgls/shutdown", "_pgls_shutdown", ())
             .await?
-            .context("pgt/shutdown returned None")?;
+            .context("pgls/shutdown returned None")?;
         Ok(())
     }
 }
@@ -916,7 +916,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
         .find_map(|action_or_cmd| match action_or_cmd {
             lsp::CodeActionOrCommand::CodeAction(code_action) => {
                 let command = code_action.command.as_ref();
-                if command.is_some_and(|cmd| &cmd.command == "pgt.executeStatement") {
+                if command.is_some_and(|cmd| &cmd.command == "pgls.executeStatement") {
                     let command = command.unwrap();
                     let arguments = command.arguments.as_ref().unwrap().clone();
                     Some((command.command.clone(), arguments))
@@ -944,6 +944,164 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
     assert!(
         users_tbl_exists().await,
         "Users table did not exists even though it should've been created by the workspace/executeStatement command."
+    );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    let host = test_db.connect_options().get_host().to_string();
+
+    // Setup: Create a table with only id column (no name column yet)
+    let setup = r#"
+        create table public.users (
+            id serial primary key
+        );
+    "#;
+
+    test_db
+        .execute(setup)
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(database),
+            host: Some(host),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    // Open a document to get completions from
+    let doc_content = "select  from public.users;";
+    server.open_document(doc_content).await?;
+
+    // Get completions before adding the column - 'name' should NOT be present
+    let completions_before = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 7,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    let items_before = match completions_before {
+        CompletionResponse::Array(ref a) => a,
+        CompletionResponse::List(ref l) => &l.items,
+    };
+
+    let has_name_before = items_before.iter().any(|item| {
+        item.label == "name"
+            && item.label_details.as_ref().is_some_and(|d| {
+                d.description
+                    .as_ref()
+                    .is_some_and(|desc| desc.contains("public.users"))
+            })
+    });
+
+    assert!(
+        !has_name_before,
+        "Column 'name' should not be in completions before it's added to the table"
+    );
+
+    // Add the missing column to the database
+    let alter_table = r#"
+        alter table public.users
+        add column name text;
+    "#;
+
+    test_db
+        .execute(alter_table)
+        .await
+        .expect("Failed to add column to table");
+
+    // Invalidate the schema cache (all = false for current connection only)
+    server
+        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
+        .await?;
+
+    // Get completions after invalidating cache - 'name' should NOW be present
+    let completions_after = server
+        .get_completion(CompletionParams {
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                position: Position {
+                    line: 0,
+                    character: 7,
+                },
+            },
+        })
+        .await?
+        .unwrap();
+
+    let items_after = match completions_after {
+        CompletionResponse::Array(ref a) => a,
+        CompletionResponse::List(ref l) => &l.items,
+    };
+
+    let has_name_after = items_after.iter().any(|item| {
+        item.label == "name"
+            && item.label_details.as_ref().is_some_and(|d| {
+                d.description
+                    .as_ref()
+                    .is_some_and(|desc| desc.contains("public.users"))
+            })
+    });
+
+    assert!(
+        has_name_after,
+        "Column 'name' should be in completions after schema cache invalidation"
     );
 
     server.shutdown().await?;

@@ -58,13 +58,13 @@ Operations via the daemon are significantly slower than the CLI itself, so it’
 
 ### Daemon logs
 
-The daemon saves logs in your file system. Logs are stored in a folder called `pgt-logs`. The path of this folder changes based on your operative system:
+The daemon saves logs in your file system. Logs are stored in a folder called `pgls-logs`. The path of this folder changes based on your operative system:
 
-- Linux: `~/.cache/pgt;`
-- Windows: `C:\Users\<UserName>\AppData\Local\supabase-community\pgt\cache`
-- macOS: `/Users/<UserName>/Library/Caches/dev.supabase-community.pgt`
+- Linux: `~/.cache/pgls;`
+- Windows: `C:\Users\<UserName>\AppData\Local\supabase-community\pgls\cache`
+- macOS: `/Users/<UserName>/Library/Caches/dev.supabase-community.pgls`
 
 For other operative systems, you can find the folder in the system’s temporary directory.
 
-You can change the location of the `pgt-logs` folder via the `PGT_LOG_PATH` variable.
+You can change the location of the `pgls-logs` folder via the `PGLS_LOG_PATH` variable.
 
