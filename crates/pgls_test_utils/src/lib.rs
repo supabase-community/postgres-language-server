@@ -45,6 +45,34 @@ impl Display for QueryWithCursorPosition {
     }
 }
 
+pub fn print_ts_tree(node: &tree_sitter::Node, source: &str, level: usize, result: &mut String) {
+    let indent = "  ".repeat(level);
+
+    let node_text = node
+        .utf8_text(source.as_bytes())
+        .unwrap_or("NO_NAME")
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join(" ");
+
+    result.push_str(
+        format!(
+            "{}{} [{}..{}] '{}'\n",
+            indent,
+            node.kind(),
+            node.start_position().column,
+            node.end_position().column,
+            node_text
+        )
+        .as_str(),
+    );
+
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        print_ts_tree(&child, source, level + 1, result);
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
