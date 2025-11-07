@@ -5,6 +5,22 @@ use std::path::Path;
 // Update this commit SHA to pull in a new version of splinter.sql
 const SPLINTER_COMMIT_SHA: &str = "27ea2ece65464213e466cd969cc61b6940d16219";
 
+// Rules that work on any PostgreSQL database
+const GENERIC_RULES: &[&str] = &[
+    "unindexed_foreign_keys",
+    "no_primary_key",
+    "unused_index",
+    "multiple_permissive_policies",
+    "policy_exists_rls_disabled",
+    "rls_enabled_no_policy",
+    "duplicate_index",
+    "extension_in_public",
+    "table_bloat",
+    "extension_versions_outdated",
+    "function_search_path_mutable",
+    "unsupported_reg_types",
+];
+
 // Rules that require Supabase-specific infrastructure (auth schema, anon/authenticated roles, pgrst.db_schemas)
 const SUPABASE_ONLY_RULES: &[&str] = &[
     "auth_users_exposed",
@@ -76,7 +92,7 @@ fn download_and_process_sql(generic_dest: &Path, supabase_dest: &Path) {
     // Add "!" suffix to column aliases for sqlx non-null checking
     processed_content = add_not_null_markers(&processed_content);
 
-    // Split into generic and Supabase-specific queries
+    // Split into generic and Supabase-specific queries (validates categorization)
     let (generic_queries, supabase_queries) = split_queries(&processed_content);
 
     // Write to destination files
@@ -129,6 +145,21 @@ fn add_not_null_markers(content: &str) -> String {
     result
 }
 
+/// Extract rule name from a query fragment
+fn extract_rule_name_from_query(query: &str) -> String {
+    // Look for pattern 'rule_name' as "name!"
+    for line in query.lines() {
+        if line.contains(" as \"name!\"") {
+            if let Some(start) = line.rfind('\'') {
+                if let Some(prev_quote) = line[..start].rfind('\'') {
+                    return line[prev_quote + 1..start].to_string();
+                }
+            }
+        }
+    }
+    "unknown".to_string()
+}
+
 fn split_queries(content: &str) -> (String, String) {
     // Split the union all queries based on rule names
     let queries: Vec<&str> = content.split("union all").collect();
@@ -142,10 +173,27 @@ fn split_queries(content: &str) -> (String, String) {
             .iter()
             .any(|rule| query.contains(&format!("'{rule}' as \"name!\"")));
 
+        let is_generic = GENERIC_RULES
+            .iter()
+            .any(|rule| query.contains(&format!("'{rule}' as \"name!\"")));
+
         if is_supabase {
             supabase_queries.push(query);
-        } else {
+        } else if is_generic {
             generic_queries.push(query);
+        } else {
+            // Extract rule name for better error message
+            let rule_name = extract_rule_name_from_query(query);
+            panic!(
+                "Found unknown Splinter rule that is not categorized: {rule_name:?}\n\
+                Please add this rule to either GENERIC_RULES or SUPABASE_ONLY_RULES in build.rs.\n\
+                \n\
+                Guidelines:\n\
+                - GENERIC_RULES: Rules that work on any PostgreSQL database\n\
+                - SUPABASE_ONLY_RULES: Rules that require Supabase infrastructure (auth schema, roles, pgrst.db_schemas)\n\
+                \n\
+                This prevents new Supabase-specific rules from breaking linting on non-Supabase databases."
+            );
         }
     }
 

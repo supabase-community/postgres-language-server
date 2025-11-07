@@ -70,13 +70,20 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                 let cats = categories
                     .with_context(|| format!("Failed to find categories for rule '{name}'"))?;
 
+                // Convert old database-linter URLs to database-advisors
+                let updated_url = remediation_url
+                    .map(|url| url.replace("/database-linter", "/database-advisors"))
+                    .or(Some(
+                        "https://supabase.com/docs/guides/database/database-advisors".to_string(),
+                    ));
+
                 rules.insert(
                     name.clone(),
                     RuleInfo {
                         snake_case: name.clone(),
                         camel_case: snake_to_camel_case(&name),
                         categories: cats,
-                        url: remediation_url,
+                        url: updated_url,
                     },
                 );
             }
@@ -90,7 +97,7 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
             snake_case: "unknown".to_string(),
             camel_case: "unknown".to_string(),
             categories: vec!["UNKNOWN".to_string()],
-            url: None,
+            url: Some("https://supabase.com/docs/guides/database/database-advisors".to_string()),
         },
     );
 
@@ -184,7 +191,7 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
                     .as_ref()
                     .filter(|u| is_valid_url(u))
                     .map(|u| u.as_str())
-                    .unwrap_or("https://supabase.com/docs/guides/database/database-linter");
+                    .unwrap_or("https://supabase.com/docs/guides/database/database-advisors");
 
                 (
                     group.clone(),
