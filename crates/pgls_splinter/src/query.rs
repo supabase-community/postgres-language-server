@@ -39,19 +39,17 @@ pub struct SplinterQueryResult {
 }
 
 pub async fn load_splinter_results(pool: &PgPool) -> Result<Vec<SplinterQueryResult>, sqlx::Error> {
-    let mut tx = pool.begin().await?;
+    let mut conn = pool.acquire().await?;
 
     // this is done by the splinter.sql file normally, but we remove it so that sqlx can work with
     // the file properly.
     sqlx::query("set local search_path = ''")
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
 
     let results = sqlx::query_file_as!(SplinterQueryResult, "vendor/splinter.sql")
-        .fetch_all(&mut *tx)
+        .fetch_all(&mut *conn)
         .await?;
-
-    tx.commit().await?;
 
     Ok(results)
 }

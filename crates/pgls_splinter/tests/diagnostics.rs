@@ -51,21 +51,6 @@ struct TestSetup<'a> {
 
 impl TestSetup<'_> {
     async fn test(self) {
-        // Create Supabase-specific roles that splinter expects
-        for role in ["anon", "authenticated", "service_role"] {
-            let result = sqlx::query(&format!("CREATE ROLE {role} NOLOGIN"))
-                .execute(self.test_db)
-                .await;
-
-            // Ignore duplicate role errors
-            if let Err(sqlx::Error::Database(db_err)) = &result {
-                let code = db_err.code();
-                if code.as_deref() != Some("23505") && code.as_deref() != Some("42710") {
-                    result.expect("Failed to create Supabase roles");
-                }
-            }
-        }
-
         // Run setup SQL
         sqlx::raw_sql(self.setup)
             .execute(self.test_db)
