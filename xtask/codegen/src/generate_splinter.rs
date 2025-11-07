@@ -44,8 +44,9 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
         // Look for pattern: 'rule_name' as "name!",
         if line.contains(" as \"name!\"") {
             if let Some(name) = extract_string_literal(line) {
-                // Look ahead for categories
+                // Look ahead for categories and remediation URL
                 let mut categories = None;
+                let mut remediation_url = None;
 
                 for next_line in lines[i..].iter().take(30) {
                     let next_line = next_line.trim();
@@ -53,7 +54,16 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                     // Extract categories from pattern: array['CATEGORY'] as "categories!",
                     if next_line.contains(" as \"categories!\"") {
                         categories = extract_categories(next_line);
-                        break; // Stop once we have categories
+                    }
+
+                    // Extract remediation URL from pattern: 'url' as "remediation!",
+                    if next_line.contains(" as \"remediation!\"") {
+                        remediation_url = extract_string_literal(next_line);
+                    }
+
+                    // Stop once we have both
+                    if categories.is_some() && remediation_url.is_some() {
+                        break;
                     }
                 }
 
@@ -66,6 +76,7 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                         snake_case: name.clone(),
                         camel_case: snake_to_camel_case(&name),
                         categories: cats,
+                        url: remediation_url,
                     },
                 );
             }
@@ -79,6 +90,7 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
             snake_case: "unknown".to_string(),
             camel_case: "unknown".to_string(),
             categories: vec!["UNKNOWN".to_string()],
+            url: None,
         },
     );
 
@@ -137,42 +149,17 @@ fn snake_to_camel_case(s: &str) -> String {
     Case::Camel.convert(s)
 }
 
+/// Check if a string is a valid URL (simple check for http/https)
+fn is_valid_url(s: &str) -> bool {
+    s.starts_with("http://") || s.starts_with("https://")
+}
+
 struct RuleInfo {
     #[allow(dead_code)]
     snake_case: String,
     camel_case: String,
     categories: Vec<String>,
-}
-
-/// Build remediation URL from rule name
-/// Must match the logic in crates/pgls_splinter/src/convert.rs
-fn build_remediation_url(name: &str) -> String {
-    let lint_id = match name {
-        "unindexed_foreign_keys" => "0001_unindexed_foreign_keys",
-        "auth_users_exposed" => "0002_auth_users_exposed",
-        "auth_rls_initplan" => "0003_auth_rls_initplan",
-        "no_primary_key" => "0004_no_primary_key",
-        "unused_index" => "0005_unused_index",
-        "multiple_permissive_policies" => "0006_multiple_permissive_policies",
-        "policy_exists_rls_disabled" => "0007_policy_exists_rls_disabled",
-        "rls_enabled_no_policy" => "0008_rls_enabled_no_policy",
-        "duplicate_index" => "0009_duplicate_index",
-        "security_definer_view" => "0010_security_definer_view",
-        "function_search_path_mutable" => "0011_function_search_path_mutable",
-        "rls_disabled_in_public" => "0013_rls_disabled_in_public",
-        "extension_in_public" => "0014_extension_in_public",
-        "rls_references_user_metadata" => "0015_rls_references_user_metadata",
-        "materialized_view_in_api" => "0016_materialized_view_in_api",
-        "foreign_table_in_api" => "0017_foreign_table_in_api",
-        "unsupported_reg_types" => "unsupported_reg_types",
-        "insecure_queue_exposed_in_api" => "0019_insecure_queue_exposed_in_api",
-        "table_bloat" => "0020_table_bloat",
-        "fkey_to_auth_unique" => "0021_fkey_to_auth_unique",
-        "extension_versions_outdated" => "0022_extension_versions_outdated",
-        _ => return "https://supabase.com/docs/guides/database/database-linter".to_string(),
-    };
-
-    format!("https://supabase.com/docs/guides/database/database-linter?lint={lint_id}")
+    url: Option<String>,
 }
 
 /// Update the categories.rs file with splinter rules
@@ -190,7 +177,15 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
             // In practice, splinter rules have only one category
             rule.categories.iter().map(|category| {
                 let group = category.to_lowercase();
-                let url = build_remediation_url(&rule.snake_case);
+
+                // Use extracted URL if it's a valid URL, otherwise fallback to default
+                let url = rule
+                    .url
+                    .as_ref()
+                    .filter(|u| is_valid_url(u))
+                    .map(|u| u.as_str())
+                    .unwrap_or("https://supabase.com/docs/guides/database/database-linter");
+
                 (
                     group.clone(),
                     format!(

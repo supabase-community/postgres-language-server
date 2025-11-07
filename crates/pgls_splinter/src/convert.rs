@@ -27,43 +27,11 @@ impl From<SplinterQueryResult> for SplinterDiagnostic {
                 schema,
                 object_name,
                 object_type,
-                remediation_url: build_remediation_url(&result.name),
+                remediation: result.remediation,
                 additional_metadata,
             },
         }
     }
-}
-
-/// Build remediation URL from rule name
-/// Maps rule names to their Supabase linter documentation
-fn build_remediation_url(name: &str) -> String {
-    // Map rule names to their lint IDs
-    let lint_id = match name {
-        "unindexed_foreign_keys" => "0001_unindexed_foreign_keys",
-        "auth_users_exposed" => "0002_auth_users_exposed",
-        "auth_rls_initplan" => "0003_auth_rls_initplan",
-        "no_primary_key" => "0004_no_primary_key",
-        "unused_index" => "0005_unused_index",
-        "multiple_permissive_policies" => "0006_multiple_permissive_policies",
-        "policy_exists_rls_disabled" => "0007_policy_exists_rls_disabled",
-        "rls_enabled_no_policy" => "0008_rls_enabled_no_policy",
-        "duplicate_index" => "0009_duplicate_index",
-        "security_definer_view" => "0010_security_definer_view",
-        "function_search_path_mutable" => "0011_function_search_path_mutable",
-        "rls_disabled_in_public" => "0013_rls_disabled_in_public",
-        "extension_in_public" => "0014_extension_in_public",
-        "rls_references_user_metadata" => "0015_rls_references_user_metadata",
-        "materialized_view_in_api" => "0016_materialized_view_in_api",
-        "foreign_table_in_api" => "0017_foreign_table_in_api",
-        "unsupported_reg_types" => "unsupported_reg_types",
-        "insecure_queue_exposed_in_api" => "0019_insecure_queue_exposed_in_api",
-        "table_bloat" => "0020_table_bloat",
-        "fkey_to_auth_unique" => "0021_fkey_to_auth_unique",
-        "extension_versions_outdated" => "0022_extension_versions_outdated",
-        _ => return "https://supabase.com/docs/guides/database/database-linter".to_string(),
-    };
-
-    format!("https://supabase.com/docs/guides/database/database-linter?lint={lint_id}")
 }
 
 /// Parse severity level from the query result
@@ -79,6 +47,7 @@ fn parse_severity(level: &str) -> Severity {
 /// Convert rule name and group to a Category
 /// Note: Rule names use snake_case, but categories use camelCase
 fn rule_name_to_category(name: &str, group: &str) -> &'static Category {
+    // we cannot use convert_case here because category! macro requires a string literal
     match (group, name) {
         ("performance", "unindexed_foreign_keys") => {
             category!("splinter/performance/unindexedForeignKeys")

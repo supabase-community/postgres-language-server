@@ -10,4 +10,4 @@ Advices:
 Identifies foreign key constraints without a covering index, which can impact database performance.
 [Info] table: public.posts
 {&quot;fkey_name&quot;:&quot;posts_user_id_fkey&quot;,&quot;fkey_columns&quot;:[2]}
-[Info] Documentation: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
+[Info] Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys

@@ -41,7 +41,7 @@ pub struct SplinterAdvices {
     pub object_type: Option<String>,
 
     /// URL to documentation/remediation guide
-    pub remediation_url: String,
+    pub remediation: String,
 
     /// Additional rule-specific metadata (e.g., fkey_name, column, indexes)
     /// This contains fields that don't fit into the common structure
@@ -70,10 +70,10 @@ impl Advices for SplinterAdvices {
             }
         }
 
-        // Show remediation URL
+        // Show remediation
         visitor.record_log(
             LogCategory::Info,
-            &format!("Documentation: {}", &self.remediation_url),
+            &format!("Remediation: {}", &self.remediation),
         )?;
 
         Ok(())
