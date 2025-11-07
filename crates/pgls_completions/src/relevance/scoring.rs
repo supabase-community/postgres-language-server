@@ -87,11 +87,8 @@ impl CompletionScore<'_> {
                 WrappingClause::Delete => 10,
                 WrappingClause::From => 5,
                 WrappingClause::Join { on_node }
-                    if on_node.is_none_or(|on| {
-                        ctx.node_under_cursor
-                            .as_ref()
-                            .is_none_or(|n| n.end_byte() < on.start_byte())
-                    }) =>
+                    if on_node
+                        .is_none_or(|on| ctx.node_under_cursor.end_byte() < on.start_byte()) =>
                 {
                     5
                 }
@@ -110,11 +107,8 @@ impl CompletionScore<'_> {
                 WrappingClause::Where => 10,
                 WrappingClause::CheckOrUsingClause => 0,
                 WrappingClause::Join { on_node }
-                    if on_node.is_some_and(|on| {
-                        ctx.node_under_cursor
-                            .as_ref()
-                            .is_some_and(|n| n.start_byte() > on.end_byte())
-                    }) =>
+                    if on_node
+                        .is_some_and(|on| ctx.node_under_cursor.start_byte() > on.end_byte()) =>
                 {
                     // Users will probably join on primary keys
                     if col.is_primary_key { 20 } else { 10 }

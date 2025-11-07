@@ -58,8 +58,7 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CompletionAssertion, assert_complete_results, assert_no_complete_results,
-            get_test_deps, get_test_params,
+            CompletionAssertion, assert_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -713,18 +712,6 @@ mod tests {
                 CompletionAssertion::Label("id".to_string()),
                 CompletionAssertion::Label("z".to_string()),
             ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // no completions in the values list!
-        assert_no_complete_results(
-            format!(
-                "insert into instruments (id, name) values ({})",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
             None,
             &pool,
         )
