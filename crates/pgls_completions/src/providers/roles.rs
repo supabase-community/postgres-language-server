@@ -54,6 +54,10 @@ mod tests {
                 crate::CompletionItemKind::Role,
             ),
             CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+            CompletionAssertion::LabelAndKind(
+                "service_role".into(),
+                crate::CompletionItemKind::Role,
+            ),
             CompletionAssertion::LabelAndKind("test_login".into(), crate::CompletionItemKind::Role),
             CompletionAssertion::LabelAndKind(
                 "test_nologin".into(),
