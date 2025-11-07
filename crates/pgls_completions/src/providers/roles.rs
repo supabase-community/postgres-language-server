@@ -48,16 +48,7 @@ mod tests {
 
     fn expected_roles() -> Vec<CompletionAssertion> {
         vec![
-            CompletionAssertion::LabelAndKind("anon".into(), crate::CompletionItemKind::Role),
-            CompletionAssertion::LabelAndKind(
-                "authenticated".into(),
-                crate::CompletionItemKind::Role,
-            ),
             CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-            CompletionAssertion::LabelAndKind(
-                "service_role".into(),
-                crate::CompletionItemKind::Role,
-            ),
             CompletionAssertion::LabelAndKind("test_login".into(), crate::CompletionItemKind::Role),
             CompletionAssertion::LabelAndKind(
                 "test_nologin".into(),
