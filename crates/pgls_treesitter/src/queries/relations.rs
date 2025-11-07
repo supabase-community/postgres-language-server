@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::queries::{Query, QueryResult};
+use crate::queries::{Query, QueryResult, object_references::parts_of_reference_query};
 
 use tree_sitter::StreamingIterator;
 
@@ -8,32 +8,7 @@ use super::QueryTryFrom;
 
 static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
-    (relation
-        (object_reference
-            .
-            (any_identifier) @schema_or_table
-            "."?
-            (any_identifier)? @table
-        )+
-    )
-    (insert
-        (object_reference
-            .
-            (any_identifier) @schema_or_table
-            "."?
-            (any_identifier)? @table
-        )+
-    )
-    (alter_table
-        (keyword_alter)
-        (keyword_table)
-        (object_reference
-            .
-            (any_identifier) @schema_or_table
-            "."?
-            (any_identifier)? @table
-        )+
-    )
+    (table_reference) @ref
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
         .expect("Invalid TS Query")
@@ -90,23 +65,11 @@ impl<'a> Query<'a> for RelationMatch<'a> {
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 1 {
-                let capture = m.captures[0].node;
-                to_return.push(QueryResult::Relation(RelationMatch {
-                    schema: None,
-                    table: capture,
-                }));
-            }
-
-            if m.captures.len() == 2 {
-                let schema = m.captures[0].node;
-                let table = m.captures[1].node;
-
-                to_return.push(QueryResult::Relation(RelationMatch {
-                    schema: Some(schema),
-                    table,
-                }));
-            }
+            m.captures.iter().for_each(|capture| {
+                if let Some((_, schema, table)) = parts_of_reference_query(capture.node, stmt) {
+                    to_return.push(QueryResult::Relation(RelationMatch { schema, table }));
+                }
+            });
         });
 
         to_return

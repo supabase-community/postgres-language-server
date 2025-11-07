@@ -33,34 +33,64 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
 
     if let Some(hovered_node) = HoveredNode::get(&ctx) {
         let items: Vec<Hoverable> = match hovered_node {
-            HoveredNode::Table((schema, name)) => params
-                .schema_cache
-                .find_tables(name.as_str(), schema.as_deref())
-                .into_iter()
-                .map(Hoverable::from)
-                .collect(),
-
-            HoveredNode::Column((schema, table_or_alias, column_name)) => {
-                let table = table_or_alias.as_ref().and_then(|t| {
-                    ctx.get_mentioned_table_for_alias(t.as_str())
-                        .map(|s| s.as_str())
-                        .or(Some(t.as_str()))
-                });
-
-                params
+            HoveredNode::Table(node_identification) => match node_identification {
+                (None, n) => params
                     .schema_cache
-                    .find_cols(&column_name, table, schema.as_deref())
+                    .find_tables(n.as_str(), None)
                     .into_iter()
                     .map(Hoverable::from)
-                    .collect()
-            }
+                    .collect(),
 
-            HoveredNode::Function((schema, function_name)) => params
-                .schema_cache
-                .find_functions(&function_name, schema.as_deref())
-                .into_iter()
-                .map(Hoverable::from)
-                .collect(),
+                (Some(s), n) => params
+                    .schema_cache
+                    .find_tables(n.as_str(), Some(&s))
+                    .into_iter()
+                    .map(Hoverable::from)
+                    .collect(),
+            },
+
+            HoveredNode::Column(node_identification) => match node_identification {
+                (None, None, column_name) => params
+                    .schema_cache
+                    .find_cols(&column_name, None, None)
+                    .into_iter()
+                    .map(Hoverable::from)
+                    .collect(),
+
+                (None, Some(table_or_alias), column_name) => {
+                    // resolve alias to actual table name if needed
+                    let actual_table = ctx
+                        .get_mentioned_table_for_alias(table_or_alias.as_str())
+                        .map(|s| s.as_str())
+                        .unwrap_or(&table_or_alias);
+
+                    params
+                        .schema_cache
+                        .find_cols(&column_name, Some(actual_table), None)
+                        .into_iter()
+                        .map(Hoverable::from)
+                        .collect()
+                }
+
+                (Some(schema), Some(table), column_name) => params
+                    // no need to resolve table; there can't be both schema qualification and an alias.
+                    .schema_cache
+                    .find_cols(&column_name, Some(&table), Some(&schema))
+                    .into_iter()
+                    .map(Hoverable::from)
+                    .collect(),
+
+                _ => vec![],
+            },
+
+            HoveredNode::Function(node_identification) => match node_identification {
+                (maybe_schema, function_name) => params
+                    .schema_cache
+                    .find_functions(&function_name, maybe_schema.as_deref())
+                    .into_iter()
+                    .map(Hoverable::from)
+                    .collect(),
+            },
 
             HoveredNode::Role(role_name) => params
                 .schema_cache
@@ -76,12 +106,21 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 .map(|s| vec![s])
                 .unwrap_or_default(),
 
-            HoveredNode::PostgresType((schema, type_name)) => params
-                .schema_cache
-                .find_type(&type_name, schema.as_deref())
-                .map(Hoverable::from)
-                .map(|s| vec![s])
-                .unwrap_or_default(),
+            HoveredNode::PostgresType(node_identification) => match node_identification {
+                (None, type_name) => params
+                    .schema_cache
+                    .find_type(&type_name, None)
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+
+                (Some(schema), type_name) => params
+                    .schema_cache
+                    .find_type(&type_name, Some(schema.as_str()))
+                    .map(Hoverable::from)
+                    .map(|s| vec![s])
+                    .unwrap_or_default(),
+            },
 
             _ => todo!(),
         };

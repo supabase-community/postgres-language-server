@@ -3,8 +3,14 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use crate::queries::{self, QueryResult, TreeSitterQueriesExecutor};
+use crate::{
+    context::ancestors::ScopeTracker,
+    parts_of_reference_query,
+    queries::{self, QueryResult, TreeSitterQueriesExecutor},
+};
 use pgls_text_size::TextSize;
+
+mod ancestors;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum WrappingClause<'a> {
@@ -95,7 +101,7 @@ pub struct TreeSitterContextParams<'a> {
 
 #[derive(Debug)]
 pub struct TreesitterContext<'a> {
-    pub node_under_cursor: Option<tree_sitter::Node<'a>>,
+    pub node_under_cursor: tree_sitter::Node<'a>,
 
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
@@ -122,6 +128,8 @@ pub struct TreesitterContext<'a> {
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     mentioned_table_aliases: HashMap<String, String>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
+
+    scope_tracker: ScopeTracker,
 }
 
 impl<'a> TreesitterContext<'a> {
@@ -130,7 +138,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
-            node_under_cursor: None,
+            node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
             wrapping_clause_type: None,
             wrapping_node_kind: None,
@@ -139,6 +147,7 @@ impl<'a> TreesitterContext<'a> {
             mentioned_relations: HashMap::new(),
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
+            scope_tracker: ScopeTracker::new(),
         };
 
         ctx.gather_tree_context();
@@ -235,9 +244,7 @@ impl<'a> TreesitterContext<'a> {
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
-        self.node_under_cursor
-            .as_ref()
-            .and_then(|node| self.get_ts_node_content(node))
+        self.get_ts_node_content(&self.node_under_cursor)
     }
 
     fn gather_tree_context(&mut self) {
@@ -286,10 +293,12 @@ impl<'a> TreesitterContext<'a> {
         let parent_node_kind = parent_node.kind();
         let current_node_kind = current_node.kind();
 
+        self.scope_tracker.register(current_node, self.position);
+
         // prevent infinite recursion – this can happen with ERROR nodes
         if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
         {
-            self.node_under_cursor = Some(current_node);
+            self.node_under_cursor = current_node;
             return;
         }
 
@@ -319,26 +328,19 @@ impl<'a> TreesitterContext<'a> {
         }
 
         match current_node_kind {
-            "object_reference" | "field" => {
-                let start = current_node.start_byte();
-                let content = self.get_ts_node_content(&current_node);
-                if let Some(txt) = content {
-                    let parts: Vec<&str> = txt.split('.').collect();
-                    // we do not want to set it if we're on the first qualifier itself
-                    let is_on_first_part = start + parts[0].len() >= self.position;
+            "object_reference" | "column_reference" => {
+                if let Some((head, middle, _)) = parts_of_reference_query(current_node, self.text) {
+                    self.identifier_qualifiers = (
+                        head.and_then(|h| self.get_ts_node_content(&h)),
+                        middle.and_then(|m| self.get_ts_node_content(&m)),
+                    );
+                }
+            }
 
-                    if parts.len() == 2 && !is_on_first_part {
-                        self.identifier_qualifiers = (None, Some(parts[0].to_string()));
-                    } else if parts.len() == 3 && !is_on_first_part {
-                        let is_on_second_part =
-                            start + parts[0].len() + 1 + parts[1].len() >= self.position;
-                        if !is_on_second_part {
-                            self.identifier_qualifiers =
-                                (Some(parts[0].to_string()), Some(parts[1].to_string()));
-                        } else {
-                            self.identifier_qualifiers = (None, Some(parts[0].to_string()));
-                        }
-                    }
+            "table_reference" | "type_reference" | "function_reference" => {
+                if let Some((_, middle, _)) = parts_of_reference_query(current_node, self.text) {
+                    self.identifier_qualifiers =
+                        (None, middle.and_then(|m| self.get_ts_node_content(&m)));
                 }
             }
 
@@ -368,7 +370,7 @@ impl<'a> TreesitterContext<'a> {
         if current_node.child_count() == 0
             || current_node.first_child_for_byte(self.position).is_none()
         {
-            self.node_under_cursor = Some(current_node);
+            self.node_under_cursor = current_node;
             return;
         }
 
@@ -603,18 +605,16 @@ impl<'a> TreesitterContext<'a> {
     }
 
     pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            let mut current = *node;
+        let mut current = self.node_under_cursor;
 
-            // move up to the parent until we're at top OR we have a prev sibling
-            while current.prev_sibling().is_none() && current.parent().is_some() {
-                current = current.parent().unwrap();
-            }
+        // move up to the parent until we're at top OR we have a prev sibling
+        while current.prev_sibling().is_none() && current.parent().is_some() {
+            current = current.parent().unwrap();
+        }
 
-            current
-                .prev_sibling()
-                .is_some_and(|sib| kinds.contains(&sib.kind()))
-        })
+        current
+            .prev_sibling()
+            .is_some_and(|sib| kinds.contains(&sib.kind()))
     }
 
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
@@ -622,112 +622,19 @@ impl<'a> TreesitterContext<'a> {
     ///
     /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
     /// you need to pass `&["relation", "object_reference"]`.
-    pub fn matches_ancestor_history(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            let mut current = Some(*node);
-
-            for &expected_kind in expected_ancestors.iter().rev() {
-                current = current.and_then(|n| n.parent());
-
-                match current {
-                    Some(ancestor) if ancestor.kind() == expected_kind => continue,
-                    _ => return false,
-                }
-            }
-
-            true
-        })
-    }
-
-    /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
-    /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
-    ///
-    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
-    /// you need to pass `&["relation", "object_reference"]`.
-    pub fn matches_one_of_ancestors(&self, expected_ancestors: &[&'static str]) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            node.parent()
-                .is_some_and(|p| expected_ancestors.contains(&p.kind()))
-        })
-    }
-
-    /// Checks whether the Node under the cursor is the nth child of the parent.
-    ///
-    /// ```
-    /// /*
-    ///  * Given `select * from "a|uth"."users";`
-    ///  * The node under the cursor is "auth".
-    ///  *
-    ///  * [...] redacted
-    ///  * from [9..28] 'from "auth"."users"'
-    ///  *   keyword_from [9..13] 'from'
-    ///  *   relation [14..28] '"auth"."users"'
-    ///  *     object_reference [14..28] '"auth"."users"'
-    ///  *       any_identifier [14..20] '"auth"'
-    ///  *         . [20..21] '.'
-    ///  *       any_identifier [21..28] '"users"'
-    ///  */
-    ///
-    /// if node_under_cursor_is_nth_child(1) {
-    ///     node_type = "schema";
-    /// } else if node_under_cursor_is_nth_child(3) {
-    ///     node_type = "table";
-    /// }
-    /// ```
-    pub fn node_under_cursor_is_nth_child(&self, nth: usize) -> bool {
-        self.node_under_cursor.as_ref().is_some_and(|node| {
-            let mut cursor = node.walk();
-            node.parent().is_some_and(|p| {
-                p.children(&mut cursor)
-                    .nth(nth - 1)
-                    .is_some_and(|n| n.id() == node.id())
-            })
-        })
-    }
-
-    /// Returns the number of siblings of the node under the cursor.
-    pub fn num_siblings(&self) -> usize {
-        self.node_under_cursor
-            .as_ref()
-            .map(|node| {
-                // if there's no parent, we're on the top of the tree,
-                // where we have 0 siblings.
-                node.parent().map(|p| p.child_count() - 1).unwrap_or(0)
-            })
-            .unwrap_or(0)
+    pub fn history_ends_with(&self, expected_ancestors: &[&'static str]) -> bool {
+        self.scope_tracker
+            .current()
+            .ancestors
+            .history_ends_with(expected_ancestors)
     }
 
     /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
-    pub fn node_under_cursor_is_within_field_name(&self, name: &str) -> bool {
-        self.node_under_cursor
-            .as_ref()
-            .map(|node| {
-                // It might seem weird that we have to check for the field_name from the parent,
-                // but TreeSitter wants it this way, since nodes often can only be named in
-                // the context of their parents.
-                let root_node = self.tree.root_node();
-                let mut cursor = node.walk();
-                let mut parent = node.parent();
-
-                while let Some(p) = parent {
-                    if p == root_node {
-                        break;
-                    }
-
-                    if p.children_by_field_name(name, &mut cursor).any(|c| {
-                        let r = c.range();
-                        // if the parent range contains the node range, the node is of the field_name.
-                        r.start_byte <= node.start_byte() && r.end_byte >= node.end_byte()
-                    }) {
-                        return true;
-                    } else {
-                        parent = p.parent();
-                    }
-                }
-
-                false
-            })
-            .unwrap_or(false)
+    pub fn node_under_cursor_is_within_field(&self, names: &[&'static str]) -> bool {
+        self.scope_tracker
+            .current()
+            .ancestors
+            .is_within_one_of_fields(names)
     }
 
     pub fn get_mentioned_relations(&self, key: &Option<String>) -> Option<&HashSet<String>> {
@@ -1047,7 +954,7 @@ mod tests {
 
             let ctx = TreesitterContext::new(params);
 
-            let node = ctx.node_under_cursor.as_ref().unwrap();
+            let node = &ctx.node_under_cursor;
 
             assert_eq!(ctx.get_ts_node_content(node), Some("select".into()));
 
@@ -1077,7 +984,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        let node = ctx.node_under_cursor.as_ref().unwrap();
+        let node = &ctx.node_under_cursor;
 
         assert_eq!(ctx.get_ts_node_content(node), Some("from".into()));
     }
@@ -1098,7 +1005,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        let node = ctx.node_under_cursor.as_ref().unwrap();
+        let node = &ctx.node_under_cursor;
 
         assert_eq!(ctx.get_ts_node_content(node), Some("".into()));
         assert_eq!(ctx.wrapping_clause_type, None);
@@ -1122,7 +1029,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        let node = ctx.node_under_cursor.as_ref().unwrap();
+        let node = &ctx.node_under_cursor;
 
         assert_eq!(ctx.get_ts_node_content(node), Some("fro".into()));
         assert_eq!(ctx.wrapping_clause_type, Some(WrappingClause::Select));
@@ -1146,7 +1053,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        assert!(ctx.node_under_cursor_is_within_field_name("custom_type"));
+        assert!(ctx.node_under_cursor_is_within_field(&["custom_type"]));
     }
 
     #[test]
