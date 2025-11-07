@@ -46,21 +46,27 @@ mod tests {
             );
         "#;
 
+    fn expected_roles() -> Vec<CompletionAssertion> {
+        vec![
+            CompletionAssertion::LabelAndKind("anon".into(), crate::CompletionItemKind::Role),
+            CompletionAssertion::LabelAndKind(
+                "authenticated".into(),
+                crate::CompletionItemKind::Role,
+            ),
+            CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+            CompletionAssertion::LabelAndKind("test_login".into(), crate::CompletionItemKind::Role),
+            CompletionAssertion::LabelAndKind(
+                "test_nologin".into(),
+                crate::CompletionItemKind::Role,
+            ),
+        ]
+    }
+
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn works_in_drop_role(pool: PgPool) {
         assert_complete_results(
             format!("drop role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             Some(SETUP),
             &pool,
         )
@@ -71,17 +77,7 @@ mod tests {
     async fn works_in_alter_role(pool: PgPool) {
         assert_complete_results(
             format!("alter role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             Some(SETUP),
             &pool,
         )
@@ -94,17 +90,7 @@ mod tests {
 
         assert_complete_results(
             format!("set role {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -116,17 +102,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -140,24 +116,14 @@ mod tests {
         assert_complete_results(
             format!(
                 r#"create policy "my cool policy" on public.users
-            as restrictive 
+            as restrictive
             for all
             to {}
             using (true);"#,
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -171,17 +137,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -200,18 +156,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            vec![
-                // recognizing already mentioned roles is not supported for now
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -225,18 +170,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            vec![
-                // recognizing already mentioned roles is not supported for now
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -248,18 +182,7 @@ mod tests {
                 QueryWithCursorPosition::cursor_marker()
             )
             .as_str(),
-            vec![
-                // recognizing already mentioned roles is not supported for now
-                CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
-                CompletionAssertion::LabelAndKind(
-                    "test_login".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-                CompletionAssertion::LabelAndKind(
-                    "test_nologin".into(),
-                    crate::CompletionItemKind::Role,
-                ),
-            ],
+            expected_roles(),
             None,
             &pool,
         )
@@ -298,27 +221,7 @@ mod tests {
         ];
 
         for query in queries {
-            assert_complete_results(
-                query.as_str(),
-                vec![
-                    // recognizing already mentioned roles is not supported for now
-                    CompletionAssertion::LabelAndKind(
-                        "owner".into(),
-                        crate::CompletionItemKind::Role,
-                    ),
-                    CompletionAssertion::LabelAndKind(
-                        "test_login".into(),
-                        crate::CompletionItemKind::Role,
-                    ),
-                    CompletionAssertion::LabelAndKind(
-                        "test_nologin".into(),
-                        crate::CompletionItemKind::Role,
-                    ),
-                ],
-                None,
-                &pool,
-            )
-            .await;
+            assert_complete_results(query.as_str(), expected_roles(), None, &pool).await;
         }
     }
 }
