@@ -9,4 +9,4 @@ Message: Table \`public.documents\` has RLS policies but RLS is not enabled on t
 Advices:
 Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.
 [Info] table: public.documents
-[Info] Documentation: https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled
+[Info] Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled

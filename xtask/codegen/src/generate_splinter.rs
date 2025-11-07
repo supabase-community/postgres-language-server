@@ -4,15 +4,30 @@ use std::collections::BTreeMap;
 use std::fs;
 use xtask::{glue::fs2, project_root};
 
-/// Generate splinter categories from the SQL file
+/// Generate splinter categories from the SQL files (both generic and Supabase-specific)
 pub fn generate_splinter() -> Result<()> {
-    let sql_path = project_root().join("crates/pgls_splinter/vendor/splinter.sql");
-    let sql_content = fs::read_to_string(&sql_path)
-        .with_context(|| format!("Failed to read SQL file at {sql_path:?}"))?;
+    let mut all_rules = BTreeMap::new();
 
-    let rules = extract_rules_from_sql(&sql_content)?;
+    // Process generic rules
+    let generic_sql_path = project_root().join("crates/pgls_splinter/vendor/splinter_generic.sql");
+    if generic_sql_path.exists() {
+        let sql_content = fs::read_to_string(&generic_sql_path)
+            .with_context(|| format!("Failed to read SQL file at {generic_sql_path:?}"))?;
+        let rules = extract_rules_from_sql(&sql_content)?;
+        all_rules.extend(rules);
+    }
 
-    update_categories_file(rules)?;
+    // Process Supabase-specific rules
+    let supabase_sql_path =
+        project_root().join("crates/pgls_splinter/vendor/splinter_supabase.sql");
+    if supabase_sql_path.exists() {
+        let sql_content = fs::read_to_string(&supabase_sql_path)
+            .with_context(|| format!("Failed to read SQL file at {supabase_sql_path:?}"))?;
+        let rules = extract_rules_from_sql(&sql_content)?;
+        all_rules.extend(rules);
+    }
+
+    update_categories_file(all_rules)?;
 
     Ok(())
 }
@@ -22,10 +37,9 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
     let mut rules = BTreeMap::new();
 
     let lines: Vec<&str> = content.lines().collect();
-    let mut i = 0;
 
-    while i < lines.len() {
-        let line = lines[i].trim();
+    for (i, line) in lines.iter().enumerate() {
+        let line = line.trim();
 
         // Look for pattern: 'rule_name' as "name!",
         if line.contains(" as \"name!\"") {
@@ -34,14 +48,15 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                 let mut categories = None;
                 let mut remediation_url = None;
 
-                for j in i..std::cmp::min(i + 30, lines.len()) {
-                    let next_line = lines[j].trim();
+                for next_line in lines[i..].iter().take(30) {
+                    let next_line = next_line.trim();
 
                     // Extract categories from pattern: array['CATEGORY'] as "categories!",
                     if next_line.contains(" as \"categories!\"") {
                         categories = extract_categories(next_line);
                     }
 
+                    // Extract remediation URL from pattern: 'url' as "remediation!",
                     if next_line.contains(" as \"remediation!\"") {
                         remediation_url = extract_string_literal(next_line);
                     }
@@ -52,11 +67,15 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                     }
                 }
 
-                let url = remediation_url
-                    .with_context(|| format!("Failed to find remediation URL for rule '{name}'"))?;
-
                 let cats = categories
                     .with_context(|| format!("Failed to find categories for rule '{name}'"))?;
+
+                // Convert old database-linter URLs to database-advisors
+                let updated_url = remediation_url
+                    .map(|url| url.replace("/database-linter", "/database-advisors"))
+                    .or(Some(
+                        "https://supabase.com/docs/guides/database/database-advisors".to_string(),
+                    ));
 
                 rules.insert(
                     name.clone(),
@@ -64,13 +83,11 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
                         snake_case: name.clone(),
                         camel_case: snake_to_camel_case(&name),
                         categories: cats,
-                        url,
+                        url: updated_url,
                     },
                 );
             }
         }
-
-        i += 1;
     }
 
     // Add the "unknown" fallback rule
@@ -80,7 +97,7 @@ fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
             snake_case: "unknown".to_string(),
             camel_case: "unknown".to_string(),
             categories: vec!["UNKNOWN".to_string()],
-            url: "https://pg-language-server.com/latest".to_string(),
+            url: Some("https://supabase.com/docs/guides/database/database-advisors".to_string()),
         },
     );
 
@@ -139,12 +156,17 @@ fn snake_to_camel_case(s: &str) -> String {
     Case::Camel.convert(s)
 }
 
+/// Check if a string is a valid URL (simple check for http/https)
+fn is_valid_url(s: &str) -> bool {
+    s.starts_with("http://") || s.starts_with("https://")
+}
+
 struct RuleInfo {
     #[allow(dead_code)]
     snake_case: String,
     camel_case: String,
     categories: Vec<String>,
-    url: String,
+    url: Option<String>,
 }
 
 /// Update the categories.rs file with splinter rules
@@ -162,11 +184,20 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
             // In practice, splinter rules have only one category
             rule.categories.iter().map(|category| {
                 let group = category.to_lowercase();
+
+                // Use extracted URL if it's a valid URL, otherwise fallback to default
+                let url = rule
+                    .url
+                    .as_ref()
+                    .filter(|u| is_valid_url(u))
+                    .map(|u| u.as_str())
+                    .unwrap_or("https://supabase.com/docs/guides/database/database-advisors");
+
                 (
                     group.clone(),
                     format!(
                         "    \"splinter/{}/{}\": \"{}\",",
-                        group, rule.camel_case, rule.url
+                        group, rule.camel_case, url
                     ),
                 )
             })

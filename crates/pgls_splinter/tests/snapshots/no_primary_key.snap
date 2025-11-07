@@ -9,4 +9,4 @@ Message: Table \`public.articles\` does not have a primary key
 Advices:
 Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
 [Info] table: public.articles
-[Info] Documentation: https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key
+[Info] Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key

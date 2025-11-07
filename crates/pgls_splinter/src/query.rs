@@ -38,18 +38,42 @@ pub struct SplinterQueryResult {
     pub cache_key: String,
 }
 
-pub async fn load_splinter_results(pool: &PgPool) -> Result<Vec<SplinterQueryResult>, sqlx::Error> {
-    let mut conn = pool.acquire().await?;
+pub async fn load_generic_splinter_results(
+    pool: &PgPool,
+) -> Result<Vec<SplinterQueryResult>, sqlx::Error> {
+    let mut tx = pool.begin().await?;
 
     // this is done by the splinter.sql file normally, but we remove it so that sqlx can work with
     // the file properly.
     sqlx::query("set local search_path = ''")
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?;
 
-    let results = sqlx::query_file_as!(SplinterQueryResult, "vendor/splinter.sql")
-        .fetch_all(&mut *conn)
+    let results = sqlx::query_file_as!(SplinterQueryResult, "vendor/splinter_generic.sql")
+        .fetch_all(&mut *tx)
         .await?;
+
+    tx.commit().await?;
+
+    Ok(results)
+}
+
+pub async fn load_supabase_splinter_results(
+    pool: &PgPool,
+) -> Result<Vec<SplinterQueryResult>, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    // this is done by the splinter.sql file normally, but we remove it so that sqlx can work with
+    // the file properly.
+    sqlx::query("set local search_path = ''")
+        .execute(&mut *tx)
+        .await?;
+
+    let results = sqlx::query_file_as!(SplinterQueryResult, "vendor/splinter_supabase.sql")
+        .fetch_all(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
 
     Ok(results)
 }

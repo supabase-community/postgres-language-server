@@ -232,14 +232,31 @@ async fn multiple_issues(test_db: PgPool) {
 }
 
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-async fn missing_roles_returns_empty(test_db: PgPool) {
+async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
+    // Without Supabase roles, generic rules should still run
+    // but Supabase-specific rules should be skipped
     let diagnostics = run_splinter(SplinterParams { conn: &test_db })
         .await
-        .expect("Should not error when roles are missing");
+        .expect("Should not error when Supabase roles are missing");
 
     assert!(
         diagnostics.is_empty(),
-        "Expected empty diagnostics when Supabase roles are missing, but got {} diagnostics",
+        "Expected empty diagnostics for a clean database without Supabase roles, but got {} diagnostics",
         diagnostics.len()
+    );
+
+    // Now create a table with a generic issue (no primary key)
+    sqlx::raw_sql("CREATE TABLE public.test_table (name text)")
+        .execute(&test_db)
+        .await
+        .expect("Failed to create test table");
+
+    let diagnostics_with_issue = run_splinter(SplinterParams { conn: &test_db })
+        .await
+        .expect("Should not error when checking for issues");
+
+    assert!(
+        !diagnostics_with_issue.is_empty(),
+        "Expected to detect generic issues (no primary key) even without Supabase roles"
     );
 }

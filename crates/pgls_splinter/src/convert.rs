@@ -27,7 +27,7 @@ impl From<SplinterQueryResult> for SplinterDiagnostic {
                 schema,
                 object_name,
                 object_type,
-                remediation_url: result.remediation,
+                remediation: result.remediation,
                 additional_metadata,
             },
         }
@@ -47,6 +47,7 @@ fn parse_severity(level: &str) -> Severity {
 /// Convert rule name and group to a Category
 /// Note: Rule names use snake_case, but categories use camelCase
 fn rule_name_to_category(name: &str, group: &str) -> &'static Category {
+    // we cannot use convert_case here because category! macro requires a string literal
     match (group, name) {
         ("performance", "unindexed_foreign_keys") => {
             category!("splinter/performance/unindexedForeignKeys")
