@@ -1,0 +1,761 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/tstypes_60.sql
+---
+SET extra_float_digits = 0;
+
+SELECT CAST('1' AS TSVECTOR);
+
+SELECT CAST('1 ' AS TSVECTOR);
+
+SELECT CAST(' 1' AS TSVECTOR);
+
+SELECT CAST(' 1 ' AS TSVECTOR);
+
+SELECT CAST('1 2' AS TSVECTOR);
+
+SELECT CAST('''1 2''' AS TSVECTOR);
+
+SELECT CAST('''1 \''2''' AS TSVECTOR);
+
+SELECT CAST('''1 \''2''3' AS TSVECTOR);
+
+SELECT CAST('''1 \''2'' 3' AS TSVECTOR);
+
+SELECT CAST('''1 \''2'' '' 3'' 4 ' AS TSVECTOR);
+
+SELECT
+  CAST('''\\as'' ab\c ab\\c AB\\\c ab\\\\c' AS TSVECTOR);
+
+SELECT
+  tsvectorin(tsvectorout(CAST('''\\as'' ab\c ab\\c AB\\\c ab\\\\c' AS TSVECTOR)));
+
+SELECT '''w'':4A,3B,2C,1D,5 a:8';
+
+SELECT CAST('a:3A b:2a' AS TSVECTOR) || 'ba:1234 a:1B';
+
+SELECT CAST(''''' ''1'' ''2''' AS TSVECTOR);
+
+SELECT pg_input_is_valid('foo', 'tsvector');
+
+SELECT pg_input_is_valid('''''', 'tsvector');
+
+SELECT * FROM pg_input_error_info('''''', 'tsvector');
+
+SELECT CAST('1' AS TSQUERY);
+
+SELECT CAST('1 ' AS TSQUERY);
+
+SELECT CAST(' 1' AS TSQUERY);
+
+SELECT CAST(' 1 ' AS TSQUERY);
+
+SELECT CAST('''1 2''' AS TSQUERY);
+
+SELECT CAST('''1 \''2''' AS TSQUERY);
+
+SELECT CAST('!1' AS TSQUERY);
+
+SELECT CAST('1|2' AS TSQUERY);
+
+SELECT CAST('1|!2' AS TSQUERY);
+
+SELECT CAST('!1|2' AS TSQUERY);
+
+SELECT CAST('!1|!2' AS TSQUERY);
+
+SELECT CAST('!(!1|!2)' AS TSQUERY);
+
+SELECT CAST('!(!1|2)' AS TSQUERY);
+
+SELECT CAST('!(1|!2)' AS TSQUERY);
+
+SELECT CAST('!(1|2)' AS TSQUERY);
+
+SELECT CAST('1&2' AS TSQUERY);
+
+SELECT CAST('!1&2' AS TSQUERY);
+
+SELECT CAST('1&!2' AS TSQUERY);
+
+SELECT CAST('!1&!2' AS TSQUERY);
+
+SELECT CAST('(1&2)' AS TSQUERY);
+
+SELECT CAST('1&(2)' AS TSQUERY);
+
+SELECT CAST('!(1)&2' AS TSQUERY);
+
+SELECT CAST('!(1&2)' AS TSQUERY);
+
+SELECT CAST('1|2&3' AS TSQUERY);
+
+SELECT CAST('1|(2&3)' AS TSQUERY);
+
+SELECT CAST('(1|2)&3' AS TSQUERY);
+
+SELECT CAST('1|2&!3' AS TSQUERY);
+
+SELECT CAST('1|!2&3' AS TSQUERY);
+
+SELECT CAST('!1|2&3' AS TSQUERY);
+
+SELECT CAST('!1|(2&3)' AS TSQUERY);
+
+SELECT CAST('!(1|2)&3' AS TSQUERY);
+
+SELECT CAST('(!1|2)&3' AS TSQUERY);
+
+SELECT CAST('1|(2|(4|(5|6)))' AS TSQUERY);
+
+SELECT CAST('1|2|4|5|6' AS TSQUERY);
+
+SELECT CAST('1&(2&(4&(5&6)))' AS TSQUERY);
+
+SELECT CAST('1&2&4&5&6' AS TSQUERY);
+
+SELECT CAST('1&(2&(4&(5|6)))' AS TSQUERY);
+
+SELECT CAST('1&(2&(4&(5|!6)))' AS TSQUERY);
+
+SELECT
+  CAST('1&(''2''&('' 4''&(\|5 | ''6 \'' !|&'')))' AS TSQUERY);
+
+SELECT CAST('''\\as''' AS TSQUERY);
+
+SELECT CAST('a:* & nbb:*ac | doo:a* | goo' AS TSQUERY);
+
+SELECT CAST('!!b' AS TSQUERY);
+
+SELECT CAST('!!!b' AS TSQUERY);
+
+SELECT CAST('!(!b)' AS TSQUERY);
+
+SELECT CAST('a & !!b' AS TSQUERY);
+
+SELECT CAST('!!a & b' AS TSQUERY);
+
+SELECT CAST('!!a & !!b' AS TSQUERY);
+
+SELECT pg_input_is_valid('foo', 'tsquery');
+
+SELECT pg_input_is_valid('foo!', 'tsquery');
+
+SELECT * FROM pg_input_error_info('foo!', 'tsquery');
+
+SELECT
+  *
+FROM
+  pg_input_error_info('a <100000> b',
+  'tsquery');
+
+SELECT 'a' < CAST('b & c' AS TSQUERY) AS "true";
+
+SELECT 'a' > CAST('b & c' AS TSQUERY) AS "false";
+
+SELECT 'a | f' < CAST('b & c' AS TSQUERY) AS "false";
+
+SELECT 'a | ff' < CAST('b & c' AS TSQUERY) AS "false";
+
+SELECT 'a | f | g' < CAST('b & c' AS TSQUERY) AS "false";
+
+SELECT numnode(CAST('new' AS TSQUERY));
+
+SELECT numnode(CAST('new & york' AS TSQUERY));
+
+SELECT numnode(CAST('new & york | qwery' AS TSQUERY));
+
+SELECT CAST('foo & bar' AS TSQUERY) && 'asd';
+
+SELECT CAST('foo & bar' AS TSQUERY) || 'asd & fg';
+
+SELECT
+  CAST('foo & bar' AS TSQUERY) || (!!CAST('asd & fg' AS TSQUERY));
+
+SELECT CAST('foo & bar' AS TSQUERY) && 'asd | fg';
+
+SELECT 'a' <-> CAST('b & d' AS TSQUERY);
+
+SELECT 'a & g' <-> CAST('b & d' AS TSQUERY);
+
+SELECT 'a & g' <-> CAST('b | d' AS TSQUERY);
+
+SELECT 'a & g' <-> CAST('b <-> d' AS TSQUERY);
+
+SELECT tsquery_phrase('a <3> g', 'b & d', 10);
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & ca' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & ca:B' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & ca:A' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & ca:C' AS "false";
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & ca:CB' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & c:*C' AS "false";
+
+SELECT
+  CAST('a b:89  ca:23A,64b d:34c' AS TSVECTOR) @@ 'd:AC & c:*CB' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64b cb:80c d:34c' AS TSVECTOR) @@ 'd:AC & c:*C' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64c cb:80b d:34c' AS TSVECTOR) @@ 'd:AC & c:*C' AS "true";
+
+SELECT
+  CAST('a b:89  ca:23A,64c cb:80b d:34c' AS TSVECTOR) @@ 'd:AC & c:*B' AS "true";
+
+SELECT
+  CAST('wa:1D wb:2A' AS TSVECTOR) @@ CAST('w:*D & w:*A' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('wa:1D wb:2A' AS TSVECTOR) @@ CAST('w:*D <-> w:*A' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('wa:1A wb:2D' AS TSVECTOR) @@ CAST('w:*D <-> w:*A' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('wa:1A' AS TSVECTOR) @@ CAST('w:*A' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('wa:1A' AS TSVECTOR) @@ CAST('w:*D' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('wa:1A' AS TSVECTOR) @@ CAST('!w:*A' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('wa:1A' AS TSVECTOR) @@ CAST('!w:*D' AS TSQUERY) AS "true";
+
+SELECT
+  strip(CAST('wa:1A' AS TSVECTOR)) @@ CAST('w:*A' AS TSQUERY) AS "true";
+
+SELECT
+  strip(CAST('wa:1A' AS TSVECTOR)) @@ CAST('w:*D' AS TSQUERY) AS "true";
+
+SELECT
+  strip(CAST('wa:1A' AS TSVECTOR)) @@ CAST('!w:*A' AS TSQUERY) AS "false";
+
+SELECT
+  strip(CAST('wa:1A' AS TSVECTOR)) @@ CAST('!w:*D' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('supernova' AS TSVECTOR) @@ CAST('super' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('supeanova supernova' AS TSVECTOR) @@ CAST('super' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('supeznova supernova' AS TSVECTOR) @@ CAST('super' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('supernova' AS TSVECTOR) @@ CAST('super:*' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('supeanova supernova' AS TSVECTOR) @@ CAST('super:*' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('supeznova supernova' AS TSVECTOR) @@ CAST('super:*' AS TSQUERY) AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 1') @@ '1 <-> 2' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 1') @@ '1 <2> 2' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 1') @@ '1 <-> 3' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 1') @@ '1 <2> 3' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 1 2') @@ '1 <3> 2' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 11 3') @@ '1 <-> 3' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 11 3') @@ '1:* <-> 3' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 4') @@ '1 <-> 2 <-> 3' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 4') @@ '(1 <-> 2) <-> 3' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 4') @@ '1 <-> (2 <-> 3)' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 3 4') @@ '1 <2> (2 <-> 3)' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 1 2 3 4') @@ '(1 <-> 2) <-> 3' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  '1 2 1 2 3 4') @@ '1 <-> 2 <-> 3' AS "true";
+
+SELECT
+  strip(to_tsvector('simple',
+  '1 2 3 4')) @@ '1 <-> 2 <-> 3' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'q x q y') @@ 'q <-> (x & y)' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'q x') @@ 'q <-> (x | y <-> z)' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'q y') @@ 'q <-> (x | y <-> z)' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'q y z') @@ 'q <-> (x | y <-> z)' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'q y x') @@ 'q <-> (x | y <-> z)' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'q x y') @@ 'q <-> (x | y <-> z)' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'q x') @@ '(x | y <-> z) <-> q' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'x q') @@ '(x | y <-> z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q') @@ '(x | y <-> z) <-> q' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'x y z') @@ '(x | y <-> z) <-> q' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'x y z q') @@ '(x | y <-> z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'y z q') @@ '(x | y <-> z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'y y q') @@ '(x | y <-> z) <-> q' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'y y q') @@ '(!x | y <-> z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q') @@ '(!x | y <-> z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'y y q') @@ '(x | y <-> !z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x q') @@ '(x | y <-> !z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x q') @@ '(!x | y <-> z) <-> q' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'z q') @@ '(!x | y <-> z) <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q') @@ '(!x | y) <-> y <-> q' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'x y q') @@ '(!x | !y) <-> y <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q') @@ '(x | !y) <-> y <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q') @@ '(x | !!z) <-> y <-> q' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q y') @@ '!x <-> y' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q y') @@ '!x <-> !y' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q y') @@ '!x <-> !!y' AS "true";
+
+SELECT
+  to_tsvector('simple',
+  'x y q y') @@ '!(x <-> y)' AS "false";
+
+SELECT
+  to_tsvector('simple',
+  'x y q y') @@ '!(x <2> y)' AS "true";
+
+SELECT
+  strip(to_tsvector('simple',
+  'x y q y')) @@ '!x <-> y' AS "false";
+
+SELECT
+  strip(to_tsvector('simple',
+  'x y q y')) @@ '!x <-> !y' AS "false";
+
+SELECT
+  strip(to_tsvector('simple',
+  'x y q y')) @@ '!x <-> !!y' AS "false";
+
+SELECT
+  strip(to_tsvector('simple',
+  'x y q y')) @@ '!(x <-> y)' AS "true";
+
+SELECT
+  strip(to_tsvector('simple',
+  'x y q y')) @@ '!(x <2> y)' AS "true";
+
+SELECT to_tsvector('simple', 'x y q y') @@ '!foo' AS "true";
+
+SELECT to_tsvector('simple', '') @@ '!foo' AS "true";
+
+SELECT ts_rank(CAST(' a:1 s:2C d g' AS TSVECTOR), 'a | s');
+
+SELECT ts_rank(CAST(' a:1 sa:2C d g' AS TSVECTOR), 'a | s');
+
+SELECT
+  ts_rank(CAST(' a:1 sa:2C d g' AS TSVECTOR),
+  'a | s:*');
+
+SELECT
+  ts_rank(CAST(' a:1 sa:2C d g' AS TSVECTOR),
+  'a | sa:*');
+
+SELECT ts_rank(CAST(' a:1 s:2B d g' AS TSVECTOR), 'a | s');
+
+SELECT ts_rank(CAST(' a:1 s:2 d g' AS TSVECTOR), 'a | s');
+
+SELECT ts_rank(CAST(' a:1 s:2C d g' AS TSVECTOR), 'a & s');
+
+SELECT ts_rank(CAST(' a:1 s:2B d g' AS TSVECTOR), 'a & s');
+
+SELECT ts_rank(CAST(' a:1 s:2 d g' AS TSVECTOR), 'a & s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2C d g' AS TSVECTOR),
+  'a | s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2C d g' AS TSVECTOR),
+  'a | s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2C d g' AS TSVECTOR),
+  'a | s:*');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2C d g' AS TSVECTOR),
+  'a | sa:*');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:3C sab:2c d g' AS TSVECTOR),
+  'a | sa:*');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2B d g' AS TSVECTOR),
+  'a | s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2 d g' AS TSVECTOR),
+  'a | s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2C d g' AS TSVECTOR),
+  'a & s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2B d g' AS TSVECTOR),
+  'a & s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2 d g' AS TSVECTOR),
+  'a & s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2A d g' AS TSVECTOR),
+  'a <-> s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2C d g' AS TSVECTOR),
+  'a <-> s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2 d g' AS TSVECTOR),
+  'a <-> s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2 d:2A g' AS TSVECTOR),
+  'a <-> s');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 s:2,3A d:2A g' AS TSVECTOR),
+  'a <2> s:A');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 b:2 s:3A d:2A g' AS TSVECTOR),
+  'a <2> s:A');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2D sb:2A g' AS TSVECTOR),
+  'a <-> s:*');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2A sb:2D g' AS TSVECTOR),
+  'a <-> s:*');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2A sb:2D g' AS TSVECTOR),
+  'a <-> s:* <-> sa:A');
+
+SELECT
+  ts_rank_cd(CAST(' a:1 sa:2A sb:2D g' AS TSVECTOR),
+  'a <-> s:* <-> sa:B');
+
+SELECT
+  CAST('a:1 b:2' AS TSVECTOR) @@ CAST('a <-> b' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('a:1 b:2' AS TSVECTOR) @@ CAST('a <0> b' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('a:1 b:2' AS TSVECTOR) @@ CAST('a <1> b' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('a:1 b:2' AS TSVECTOR) @@ CAST('a <2> b' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('a:1 b:3' AS TSVECTOR) @@ CAST('a <-> b' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('a:1 b:3' AS TSVECTOR) @@ CAST('a <0> b' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('a:1 b:3' AS TSVECTOR) @@ CAST('a <1> b' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('a:1 b:3' AS TSVECTOR) @@ CAST('a <2> b' AS TSQUERY) AS "true";
+
+SELECT
+  CAST('a:1 b:3' AS TSVECTOR) @@ CAST('a <3> b' AS TSQUERY) AS "false";
+
+SELECT
+  CAST('a:1 b:3' AS TSVECTOR) @@ CAST('a <0> a:*' AS TSQUERY) AS "true";
+
+SELECT
+  strip(CAST('w:12B w:13* w:12,5,6 a:1,3* a:3 w asd:1dc asd' AS TSVECTOR));
+
+SELECT
+  strip(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR));
+
+SELECT
+  strip(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
+
+SELECT
+  ts_delete(to_tsvector('english',
+  'Rebel spaceships, striking from a hidden base'),
+  'spaceship');
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  'base');
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  'bas');
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  'bases');
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  'spaceship');
+
+SELECT
+  ts_delete(CAST('base hidden rebel spaceship strike' AS TSVECTOR),
+  'spaceship');
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  ARRAY['spaceship',
+  'rebel']);
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  ARRAY['spaceships',
+  'rebel']);
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  ARRAY['spaceshi',
+  'rebel']);
+
+SELECT
+  ts_delete(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR),
+  ARRAY['spaceship',
+  'leya',
+  'rebel']);
+
+SELECT
+  ts_delete(CAST('base hidden rebel spaceship strike' AS TSVECTOR),
+  ARRAY['spaceship',
+  'leya',
+  'rebel']);
+
+SELECT
+  ts_delete(CAST('base hidden rebel spaceship strike' AS TSVECTOR),
+  ARRAY['spaceship',
+  'leya',
+  'rebel',
+  'rebel']);
+
+SELECT
+  ts_delete(CAST('base hidden rebel spaceship strike' AS TSVECTOR),
+  ARRAY['spaceship',
+  'leya',
+  'rebel',
+  '',
+  NULL]);
+
+SELECT
+  unnest(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR));
+
+SELECT
+  unnest(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
+
+SELECT
+  *
+FROM
+  unnest(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR));
+
+SELECT
+  *
+FROM
+  unnest(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
+
+SELECT
+  lexeme,
+  positions[1]
+FROM
+  unnest(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR));
+
+SELECT
+  tsvector_to_array(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR));
+
+SELECT
+  tsvector_to_array(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
+
+SELECT
+  array_to_tsvector(ARRAY['base',
+  'hidden',
+  'rebel',
+  'spaceship',
+  'strike']);
+
+SELECT
+  array_to_tsvector(ARRAY['base',
+  'hidden',
+  'rebel',
+  'spaceship',
+  NULL]);
+
+SELECT
+  array_to_tsvector(ARRAY['base',
+  'hidden',
+  'rebel',
+  'spaceship',
+  '']);
+
+SELECT array_to_tsvector(ARRAY['foo', 'bar', 'baz', 'bar']);
+
+SELECT
+  setweight(CAST('w:12B w:13* w:12,5,6 a:1,3* a:3 w asd:1dc asd zxc:81,567,222A' AS TSVECTOR),
+  'c');
+
+SELECT
+  setweight(CAST('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' AS TSVECTOR),
+  'c');
+
+SELECT
+  setweight(CAST('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' AS TSVECTOR),
+  'c',
+  '{a}');
+
+SELECT
+  setweight(CAST('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' AS TSVECTOR),
+  'c',
+  '{a}');
+
+SELECT
+  setweight(CAST('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' AS TSVECTOR),
+  'c',
+  '{a,zxc}');
+
+SELECT
+  setweight(CAST('a asd w:5,6,12B,13A zxc' AS TSVECTOR),
+  'c',
+  ARRAY['a',
+  'zxc',
+  '',
+  NULL]);
+
+SELECT
+  ts_filter(CAST('base:7A empir:17 evil:15 first:11 galact:16 hidden:6A rebel:1A spaceship:2A strike:3A victori:12 won:9' AS TSVECTOR),
+  '{a}');
+
+SELECT
+  ts_filter(CAST('base hidden rebel spaceship strike' AS TSVECTOR),
+  '{a}');
+
+SELECT
+  ts_filter(CAST('base hidden rebel spaceship strike' AS TSVECTOR),
+  '{a,b,NULL}');

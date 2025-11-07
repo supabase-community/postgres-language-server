@@ -1,0 +1,32 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/create_function_c_60.sql
+---
+LOAD 'regresslib';
+
+CREATE FUNCTION test1(
+  INT
+)
+RETURNS INT
+LANGUAGE "c"
+AS 'nosuchfile';
+
+CREATE FUNCTION test1(
+  INT
+)
+RETURNS INT
+LANGUAGE "c"
+AS 'regresslib', 'nosuchsymbol';
+
+SELECT
+  regexp_replace('LAST_ERROR_MESSAGE',
+  'file ".*"',
+  'file "..."');
+
+CREATE FUNCTION test1(
+  INT
+)
+RETURNS INT
+LANGUAGE "internal"
+AS 'nosuch';

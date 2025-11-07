@@ -1,0 +1,12 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 75
+input_file: crates/pgt_pretty_print/tests/data/single/select_for_update_0_60.sql
+---
+SELECT
+  *
+FROM
+  seats
+ORDER BY seat_no
+LIMIT 1
+FOR UPDATE SKIP LOCKED;

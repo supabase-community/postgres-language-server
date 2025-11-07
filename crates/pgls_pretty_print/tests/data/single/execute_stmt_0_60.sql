@@ -1,0 +1,1 @@
+EXECUTE prepared_statement_name ('param1', 'param2');

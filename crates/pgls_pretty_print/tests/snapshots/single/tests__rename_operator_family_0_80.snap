@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/rename_operator_family_0_80.sql
+snapshot_kind: text
+---
+ALTER OPERATOR FAMILY public.my_family USING btree RENAME TO my_family_new;

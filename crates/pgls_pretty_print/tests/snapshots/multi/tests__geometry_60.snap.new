@@ -1,0 +1,1237 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 160
+input_file: crates/pgls_pretty_print/tests/data/multi/geometry_60.sql
+---
+SET extra_float_digits = -3;
+
+SELECT center(f1) AS center FROM box_tbl;
+
+SELECT @@f1 AS center FROM box_tbl;
+
+SELECT point(f1) AS center FROM circle_tbl;
+
+SELECT @@f1 AS center FROM circle_tbl;
+
+SELECT @@f1 AS center FROM polygon_tbl WHERE #f1 > 2;
+
+SELECT
+  p1.f1
+FROM
+  point_tbl AS p1
+WHERE
+  ishorizontal(p1.f1,
+  CAST('(0,0)' AS point));
+
+SELECT
+  p1.f1
+FROM
+  point_tbl AS p1
+WHERE
+  p1.f1 ?- CAST('(0,0)' AS point);
+
+SELECT
+  p1.f1
+FROM
+  point_tbl AS p1
+WHERE
+  isvertical(p1.f1,
+  CAST('(5.1,34.5)' AS point));
+
+SELECT
+  p1.f1
+FROM
+  point_tbl AS p1
+WHERE
+  p1.f1 ?| CAST('(5.1,34.5)' AS point);
+
+SELECT
+  p1.f1,
+  p2.f1,
+  slope(p1.f1,
+  p2.f1)
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 + p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 - p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 * p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2
+WHERE
+  p1.f1[0] BETWEEN 1 AND 1000;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 * p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2
+WHERE
+  p1.f1[0] <
+  1;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 / p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2
+WHERE
+  p2.f1[0] BETWEEN 1 AND 1000;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 / p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2
+WHERE
+  p2.f1[0] >
+  1000;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 / p2.f1
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2
+WHERE
+  p2.f1 ~= CAST('(0,0)' AS point);
+
+SELECT
+  p.f1,
+  l.s,
+  p.f1 <-> l.s AS dist_pl,
+  l.s <-> p.f1 AS dist_lp
+FROM
+  point_tbl AS p,
+  line_tbl AS l;
+
+SELECT
+  p.f1,
+  l.s,
+  p.f1 <-> l.s AS dist_ps,
+  l.s <-> p.f1 AS dist_sp
+FROM
+  point_tbl AS p,
+  lseg_tbl AS l;
+
+SELECT
+  p.f1,
+  b.f1,
+  p.f1 <-> b.f1 AS dist_pb,
+  b.f1 <-> p.f1 AS dist_bp
+FROM
+  point_tbl AS p,
+  box_tbl AS b;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 <-> p1.f1 AS dist_ppath,
+  p1.f1 <-> p.f1 AS dist_pathp
+FROM
+  point_tbl AS p,
+  path_tbl AS p1;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 <-> p1.f1 AS dist_ppoly,
+  p1.f1 <-> p.f1 AS dist_polyp
+FROM
+  point_tbl AS p,
+  polygon_tbl AS p1;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  line(p1.f1,
+  p2.f1)
+FROM
+  point_tbl AS p1,
+  point_tbl AS p2
+WHERE
+  p1.f1 <>
+  p2.f1;
+
+SELECT
+  p.f1,
+  l.s,
+  p.f1 ## l.s
+FROM
+  point_tbl AS p,
+  line_tbl AS l;
+
+SELECT
+  p.f1,
+  l.s,
+  p.f1 ## l.s
+FROM
+  point_tbl AS p,
+  lseg_tbl AS l;
+
+SELECT
+  p.f1,
+  b.f1,
+  p.f1 ## b.f1
+FROM
+  point_tbl AS p,
+  box_tbl AS b;
+
+SELECT
+  p.f1,
+  l.s
+FROM
+  point_tbl AS p,
+  line_tbl AS l
+WHERE
+  p.f1 <@ l.s;
+
+SELECT
+  p.f1,
+  l.s
+FROM
+  point_tbl AS p,
+  lseg_tbl AS l
+WHERE
+  p.f1 <@ l.s;
+
+SELECT
+  p.f1,
+  p1.f1
+FROM
+  point_tbl AS p,
+  path_tbl AS p1
+WHERE
+  p.f1 <@ p1.f1;
+
+SELECT s FROM line_tbl WHERE ?|s;
+
+SELECT s FROM line_tbl WHERE ?-s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  line_tbl AS l1,
+  line_tbl AS l2
+WHERE
+  l1.s =
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  line_tbl AS l1,
+  line_tbl AS l2
+WHERE
+  l1.s ?|| l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  line_tbl AS l1,
+  line_tbl AS l2
+WHERE
+  l1.s ?-| l2.s;
+
+SELECT
+  l1.s,
+  l2.s,
+  l1.s <-> l2.s
+FROM
+  line_tbl AS l1,
+  line_tbl AS l2;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  line_tbl AS l1,
+  line_tbl AS l2
+WHERE
+  l1.s ?# l2.s;
+
+SELECT
+  l.s,
+  b.f1
+FROM
+  line_tbl AS l,
+  box_tbl AS b
+WHERE
+  l.s ?# b.f1;
+
+SELECT
+  l1.s,
+  l2.s,
+  l1.s # l2.s
+FROM
+  line_tbl AS l1,
+  line_tbl AS l2;
+
+SELECT
+  l.s,
+  l1.s,
+  l.s ## l1.s
+FROM
+  line_tbl AS l,
+  lseg_tbl AS l1;
+
+SELECT
+  p.f1,
+  l.s,
+  l.s # p.f1 AS intersection
+FROM
+  lseg_tbl AS l,
+  point_tbl AS p;
+
+SELECT s, @-@s FROM lseg_tbl;
+
+SELECT s FROM lseg_tbl WHERE ?|s;
+
+SELECT s FROM lseg_tbl WHERE ?-s;
+
+SELECT s, @@s FROM lseg_tbl;
+
+SELECT s, CAST(s AS point) FROM lseg_tbl;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s <
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s <=
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s =
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s >=
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s >
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s <>
+  l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s ?|| l2.s;
+
+SELECT
+  l1.s,
+  l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2
+WHERE
+  l1.s ?-| l2.s;
+
+SELECT
+  l.s,
+  l1.s,
+  l.s <-> l1.s AS dist_sl,
+  l1.s <-> l.s AS dist_ls
+FROM
+  lseg_tbl AS l,
+  line_tbl AS l1;
+
+SELECT
+  l1.s,
+  l2.s,
+  l1.s <-> l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2;
+
+SELECT
+  l.s,
+  b.f1,
+  l.s <-> b.f1 AS dist_sb,
+  b.f1 <-> l.s AS dist_bs
+FROM
+  lseg_tbl AS l,
+  box_tbl AS b;
+
+SELECT
+  l.s,
+  l1.s
+FROM
+  lseg_tbl AS l,
+  line_tbl AS l1
+WHERE
+  l.s ?# l1.s;
+
+SELECT
+  l.s,
+  b.f1
+FROM
+  lseg_tbl AS l,
+  box_tbl AS b
+WHERE
+  l.s ?# b.f1;
+
+SELECT
+  l1.s,
+  l2.s,
+  l1.s # l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2;
+
+SELECT
+  l1.s,
+  l2.s,
+  l1.s ## l2.s
+FROM
+  lseg_tbl AS l1,
+  lseg_tbl AS l2;
+
+SELECT
+  l.s,
+  b.f1,
+  l.s ## b.f1
+FROM
+  lseg_tbl AS l,
+  box_tbl AS b;
+
+SELECT
+  l.s,
+  l1.s
+FROM
+  lseg_tbl AS l,
+  line_tbl AS l1
+WHERE
+  l.s <@ l1.s;
+
+SELECT
+  l.s,
+  b.f1
+FROM
+  lseg_tbl AS l,
+  box_tbl AS b
+WHERE
+  l.s <@ b.f1;
+
+SELECT box(f1) AS box FROM circle_tbl;
+
+SELECT
+  b.f1 + p.f1 AS translation
+FROM
+  box_tbl AS b,
+  point_tbl AS p;
+
+SELECT
+  b.f1 - p.f1 AS translation
+FROM
+  box_tbl AS b,
+  point_tbl AS p;
+
+SELECT
+  b.f1,
+  p.f1,
+  b.f1 * p.f1
+FROM
+  box_tbl AS b,
+  point_tbl AS p
+WHERE
+  p.f1[0] BETWEEN 1 AND 1000;
+
+SELECT
+  b.f1,
+  p.f1,
+  b.f1 * p.f1
+FROM
+  box_tbl AS b,
+  point_tbl AS p
+WHERE
+  p.f1[0] >
+  1000;
+
+SELECT
+  b.f1,
+  p.f1,
+  b.f1 / p.f1
+FROM
+  box_tbl AS b,
+  point_tbl AS p
+WHERE
+  p.f1[0] BETWEEN 1 AND 1000;
+
+SELECT CAST(f1 AS box) FROM point_tbl;
+
+SELECT
+  bound_box(a.f1,
+  b.f1)
+FROM
+  box_tbl AS a,
+  box_tbl AS b;
+
+SELECT
+  b1.f1,
+  b2.f1,
+  b1.f1 <^ b2.f1
+FROM
+  box_tbl AS b1,
+  box_tbl AS b2;
+
+SELECT
+  b1.f1,
+  b2.f1,
+  b1.f1 >^ b2.f1
+FROM
+  box_tbl AS b1,
+  box_tbl AS b2;
+
+SELECT
+  b1.f1,
+  b2.f1,
+  b1.f1 # b2.f1
+FROM
+  box_tbl AS b1,
+  box_tbl AS b2;
+
+SELECT f1, diagonal(f1) FROM box_tbl;
+
+SELECT
+  b1.f1,
+  b2.f1,
+  b1.f1 <-> b2.f1
+FROM
+  box_tbl AS b1,
+  box_tbl AS b2;
+
+SELECT f1, npoints(f1) FROM path_tbl;
+
+SELECT f1, area(f1) FROM path_tbl;
+
+SELECT f1, @-@f1 FROM path_tbl;
+
+SELECT
+  f1,
+  CAST(f1 AS polygon)
+FROM
+  path_tbl
+WHERE
+  isclosed(f1);
+
+SELECT
+  f1,
+  CAST(f1 AS polygon)
+FROM
+  path_tbl
+WHERE
+  isopen(f1);
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2
+WHERE
+  p1.f1 <
+  p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2
+WHERE
+  p1.f1 <=
+  p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2
+WHERE
+  p1.f1 =
+  p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2
+WHERE
+  p1.f1 >=
+  p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2
+WHERE
+  p1.f1 >
+  p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 + p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 + p1.f1
+FROM
+  path_tbl AS p,
+  point_tbl AS p1;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 - p1.f1
+FROM
+  path_tbl AS p,
+  point_tbl AS p1;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 * p1.f1
+FROM
+  path_tbl AS p,
+  point_tbl AS p1;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 / p1.f1
+FROM
+  path_tbl AS p,
+  point_tbl AS p1
+WHERE
+  p1.f1[0] BETWEEN 1 AND 1000;
+
+SELECT
+  p.f1,
+  p1.f1,
+  p.f1 / p1.f1
+FROM
+  path_tbl AS p,
+  point_tbl AS p1
+WHERE
+  p1.f1 ~= CAST('(0,0)' AS point);
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 <-> p2.f1
+FROM
+  path_tbl AS p1,
+  path_tbl AS p2;
+
+SELECT
+  p.f1,
+  poly.f1,
+  poly.f1 @> p.f1 AS contains
+FROM
+  polygon_tbl AS poly,
+  point_tbl AS p;
+
+SELECT
+  p.f1,
+  poly.f1,
+  p.f1 <@ poly.f1 AS contained
+FROM
+  polygon_tbl AS poly,
+  point_tbl AS p;
+
+SELECT
+  npoints(f1) AS npoints,
+  f1 AS polygon
+FROM
+  polygon_tbl;
+
+SELECT polygon(f1) FROM box_tbl;
+
+SELECT polygon(f1) FROM path_tbl WHERE isclosed(f1);
+
+SELECT
+  f1 AS open_path,
+  polygon(pclose(f1)) AS polygon
+FROM
+  path_tbl
+WHERE
+  isopen(f1);
+
+SELECT f1, CAST(f1 AS box) FROM polygon_tbl;
+
+SELECT f1, CAST(f1 AS path) FROM polygon_tbl;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 ~= p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 <@ p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 @> p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 && p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 << p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 &< p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 >> p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 &> p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 <<| p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 &<| p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 |>> p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2
+WHERE
+  p1.f1 |&> p2.f1;
+
+SELECT
+  p1.f1,
+  p2.f1,
+  p1.f1 <-> p2.f1
+FROM
+  polygon_tbl AS p1,
+  polygon_tbl AS p2;
+
+SELECT circle(f1, 50.0) FROM point_tbl;
+
+SELECT circle(f1) FROM box_tbl;
+
+SELECT circle(f1) FROM polygon_tbl WHERE #f1 >= 3;
+
+SELECT
+  c1.f1 AS circle,
+  p1.f1 AS point,
+  p1.f1 <-> c1.f1 AS distance
+FROM
+  circle_tbl AS c1,
+  point_tbl AS p1
+WHERE
+  p1.f1 <-> c1.f1 >
+  0
+ORDER BY distance,
+  area(c1.f1),
+  p1.f1[0];
+
+SELECT
+  f1,
+  CAST(f1 AS polygon)
+FROM
+  circle_tbl
+WHERE
+  f1 >=
+  '<(0,0),1>';
+
+SELECT
+  f1,
+  polygon(8,
+  f1)
+FROM
+  circle_tbl
+WHERE
+  f1 >=
+  '<(0,0),1>';
+
+SELECT
+  f1,
+  polygon(1,
+  f1)
+FROM
+  circle_tbl
+WHERE
+  f1 >=
+  '<(0,0),1>';
+
+SELECT
+  f1,
+  polygon(10,
+  f1)
+FROM
+  circle_tbl
+WHERE
+  f1 <
+  '<(0,0),1>';
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 ~= c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 && c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 &< c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 << c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 >> c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 &> c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <@ c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 @> c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <<| c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 |>> c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 &<| c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 |&> c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 =
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <>
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 >
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <=
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 >=
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <
+  c2.f1;
+
+SELECT
+  c1.f1,
+  c2.f1
+FROM
+  circle_tbl AS c1,
+  circle_tbl AS c2
+WHERE
+  c1.f1 <
+  c2.f1;
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 + p.f1
+FROM
+  circle_tbl AS c,
+  point_tbl AS p;
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 - p.f1
+FROM
+  circle_tbl AS c,
+  point_tbl AS p;
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 * p.f1
+FROM
+  circle_tbl AS c,
+  point_tbl AS p;
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 / p.f1
+FROM
+  circle_tbl AS c,
+  point_tbl AS p
+WHERE
+  p.f1[0] BETWEEN 1 AND 1000;
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 / p.f1
+FROM
+  circle_tbl AS c,
+  point_tbl AS p
+WHERE
+  p.f1[0] >
+  1000;
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 / p.f1
+FROM
+  circle_tbl AS c,
+  point_tbl AS p
+WHERE
+  p.f1 ~= CAST('(0,0)' AS point);
+
+SELECT
+  c.f1,
+  p.f1,
+  c.f1 <-> p.f1
+FROM
+  circle_tbl AS c,
+  polygon_tbl AS p;
+
+CREATE INDEX "gcircleind" ON circle_tbl USING gist (f1);
+
+SELECT
+  *
+FROM
+  circle_tbl
+WHERE
+  f1 && circle(point(1,
+  -2),
+  1)
+ORDER BY area(f1);
+
+SELECT
+  *
+FROM
+  circle_tbl
+WHERE
+  f1 && circle(point(1,
+  -2),
+  1)
+ORDER BY area(f1);
+
+SELECT
+  *
+FROM
+  circle_tbl
+WHERE
+  f1 && circle(point(1,
+  -2),
+  1)
+ORDER BY area(f1);
+
+CREATE INDEX "gpolygonind" ON polygon_tbl USING gist (f1);
+
+SELECT
+  *
+FROM
+  polygon_tbl
+WHERE
+  f1 @> CAST('((1,1),(2,2),(2,1))' AS polygon)
+ORDER BY (poly_center(f1))[0];
+
+SELECT
+  *
+FROM
+  polygon_tbl
+WHERE
+  f1 @> CAST('((1,1),(2,2),(2,1))' AS polygon)
+ORDER BY (poly_center(f1))[0];
+
+SELECT
+  *
+FROM
+  polygon_tbl
+WHERE
+  f1 @> CAST('((1,1),(2,2),(2,1))' AS polygon)
+ORDER BY (poly_center(f1))[0];
+
+SELECT pg_input_is_valid('(1', 'circle');
+
+SELECT * FROM pg_input_error_info('1,', 'circle');
+
+SELECT pg_input_is_valid('(1,2),-1', 'circle');
+
+SELECT * FROM pg_input_error_info('(1,2),-1', 'circle');

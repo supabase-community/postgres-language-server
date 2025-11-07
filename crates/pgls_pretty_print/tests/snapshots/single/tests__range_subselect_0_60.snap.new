@@ -1,0 +1,16 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 76
+input_file: crates/pgls_pretty_print/tests/data/single/range_subselect_0_60.sql
+---
+SELECT
+  *
+FROM
+  (SELECT
+    id,
+    name
+  FROM
+    users
+  WHERE
+    active =
+    TRUE) AS active_users;

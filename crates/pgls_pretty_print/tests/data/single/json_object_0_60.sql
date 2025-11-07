@@ -1,0 +1,1 @@
+SELECT JSON_OBJECT('a': 1);

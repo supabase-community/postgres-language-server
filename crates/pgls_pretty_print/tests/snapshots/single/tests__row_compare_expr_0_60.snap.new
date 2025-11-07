@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 76
+input_file: crates/pgls_pretty_print/tests/data/single/row_compare_expr_0_60.sql
+---
+SELECT
+  *
+FROM
+  employees
+WHERE
+  (salary,
+  bonus) >
+  (50000,
+  10000);

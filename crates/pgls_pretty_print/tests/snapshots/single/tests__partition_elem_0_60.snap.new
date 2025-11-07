@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+assertion_line: 76
+input_file: crates/pgls_pretty_print/tests/data/single/partition_elem_0_60.sql
+---
+CREATE TABLE measurement (
+  city_id INT,
+  logdate DATE
+)
+PARTITION
+BY RANGE
+(logdate);

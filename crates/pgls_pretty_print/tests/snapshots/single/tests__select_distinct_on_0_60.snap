@@ -1,0 +1,14 @@
+---
+source: crates/pgt_pretty_print/tests/tests.rs
+assertion_line: 75
+input_file: crates/pgt_pretty_print/tests/data/single/select_distinct_on_0_60.sql
+---
+SELECT DISTINCT ON (
+  department_id,
+  team_id)
+  employee_id,
+  team_id
+FROM
+  employees
+ORDER BY department_id,
+  team_id;
