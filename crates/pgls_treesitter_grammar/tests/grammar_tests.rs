@@ -15,7 +15,7 @@ fn printed_tree(sql: &str) -> String {
 fn file_snapshot(name: &str, sql: &str) {
     let mut writer = String::new();
 
-    write!(&mut writer, "{}", sql).unwrap();
+    write!(&mut writer, "{sql}").unwrap();
 
     writeln!(&mut writer).unwrap();
     write!(&mut writer, "-----------------------").unwrap();
