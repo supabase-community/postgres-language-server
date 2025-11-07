@@ -324,7 +324,7 @@ impl CompletionFilter<'_> {
                         WrappingClause::DropRole | WrappingClause::AlterRole => true,
 
                         WrappingClause::SetStatement => ctx
-                            .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+                            .before_cursor_matches_kind(&["eyword_role", "keyword_authorization"]),
 
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
                             ctx.history_ends_with(&["role_specification", "any_identifier"])

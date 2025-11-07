@@ -58,7 +58,8 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CompletionAssertion, assert_complete_results, get_test_deps, get_test_params,
+            CompletionAssertion, TestCompletionsBuilder, assert_complete_results, get_test_deps,
+            get_test_params,
         },
     };
 
@@ -381,7 +382,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn filters_out_by_aliases(pool: PgPool) {
+    async fn filters_out_by_aliases_in_join_on(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -400,52 +401,41 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
+        TestCompletionsBuilder::new(&pool, Some(setup))
+            .prefix_static("select u.id, p.content from auth.users u join auth.posts p")
+            .type_sql("on u<1>.id = p.<2>user_id")
+            .comment("Should prefer primary indices here.")
+            .comment("We should only get columns from the auth.posts table.")
+            .snapshot()
+            .await;
+    }
 
-        // test in SELECT clause
-        assert_complete_results(
-            format!(
-                "select u.id, p.{} from auth.users u join auth.posts p on u.id = p.user_id;",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelNotExists("uid".to_string()),
-                CompletionAssertion::LabelNotExists("name".to_string()),
-                CompletionAssertion::LabelNotExists("email".to_string()),
-                CompletionAssertion::Label("content".to_string()),
-                CompletionAssertion::Label("created_at".to_string()),
-                CompletionAssertion::Label("pid".to_string()),
-                CompletionAssertion::Label("title".to_string()),
-                CompletionAssertion::Label("user_id".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn filters_out_by_aliases_in_select(pool: PgPool) {
+        let setup = r#"
+            create schema auth;
 
-        // test in JOIN clause
-        assert_complete_results(
-            format!(
-                "select u.id, p.content from auth.users u join auth.posts p on u.id = p.{};",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelNotExists("uid".to_string()),
-                CompletionAssertion::LabelNotExists("name".to_string()),
-                CompletionAssertion::LabelNotExists("email".to_string()),
-                // primary keys are preferred
-                CompletionAssertion::Label("pid".to_string()),
-                CompletionAssertion::Label("content".to_string()),
-                CompletionAssertion::Label("created_at".to_string()),
-                CompletionAssertion::Label("title".to_string()),
-                CompletionAssertion::Label("user_id".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
+
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
+
+        TestCompletionsBuilder::new(&pool, Some(setup))
+            .type_sql("select u.id, p.pid<1>")
+            .comment("We should only get columns from the auth.posts table.")
+            .append_static("from auth.users u join auth.posts p on u.id = p.user_id;")
+            .snapshot()
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -468,24 +458,12 @@ mod tests {
             );
         "#;
 
-        /*
-         * We are not in the "ON" part of the JOIN clause, so we should not complete columns.
-         */
-        assert_complete_results(
-            format!(
-                "select u.id, p.content from auth.users u join auth.{}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::KindNotExists(CompletionItemKind::Column),
-                CompletionAssertion::LabelAndKind("posts".to_string(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
-            ],
-            Some(setup),
-            &pool,
-        )
-        .await;
+        TestCompletionsBuilder::new(&pool, Some(setup))
+            .type_sql("select u.uid, p.content from auth<1>.users<2> u join auth.posts p on u.uid = p.user_id")
+            .comment("Schema suggestions should be prioritized, since we want to push users to specify them.")
+            .comment("Here, we shouldn't have schema completions.")
+            .snapshot()
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
