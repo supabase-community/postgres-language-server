@@ -52,7 +52,6 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 mod tests {
     use indoc::indoc;
 
-    use pgls_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{

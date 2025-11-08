@@ -1,0 +1,30 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+s|
+select |
+**Should suggest all columns with n first**
+
+Results:
+id - public.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+id - private.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+
+--------------
+
+select n|
+**Should suggest all columns with n first**
+
+Results:
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+id - public.audio_books.id (Column)
+name - Schema: pg_catalog.name (Function)
+
+--------------
+
+select narrator_id |

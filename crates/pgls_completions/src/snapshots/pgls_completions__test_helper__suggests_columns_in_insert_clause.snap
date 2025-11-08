@@ -1,0 +1,265 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Case 1:***
+
+i|
+insert |
+insert i|
+insert into |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+
+--------------
+
+insert into i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+others - public.others (Table)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+
+--------------
+
+insert into instruments |
+insert into instruments (|
+insert into instruments (|)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (i|)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+id - public.others.id (Column)
+a - public.others.a (Column)
+
+--------------
+
+insert into instruments (id, |)
+
+Results:
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (id, n|)
+
+Results:
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (id, name) |
+insert into instruments (id, name) v|
+insert into instruments (id, name) values |
+insert into instruments (id, name) values (|
+insert into instruments (id, name) values (|)
+
+Results:
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (id, name) values (1|)
+insert into instruments (id, name) values (1, |)
+
+Results:
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (id, name) values (1, '|)
+insert into instruments (id, name) values (1, 'my_bass'); |
+
+
+
+
+***Case 2:***
+
+i|
+insert |
+insert i|
+insert into |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+
+--------------
+
+insert into i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+others - public.others (Table)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+
+--------------
+
+insert into instruments |
+insert into instruments (|
+insert into instruments (|)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (i|)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+id - public.others.id (Column)
+a - public.others.a (Column)
+
+--------------
+
+insert into instruments ("id", |)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments ("id", "|)
+
+Results:
+id" - public.instruments.id (Column)
+name" - public.instruments.name (Column)
+z" - public.instruments.z (Column)
+a" - public.others.a (Column)
+b" - public.others.b (Column)
+
+--------------
+
+insert into instruments ("id", "|")
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments ("id", "n|")
+
+Results:
+name - public.instruments.name (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments ("id", "name") |
+insert into instruments ("id", "name") v|
+insert into instruments ("id", "name") values |
+insert into instruments ("id", "name") values (|
+insert into instruments ("id", "name") values (|)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments ("id", "name") values (1|)
+insert into instruments ("id", "name") values (1, |)
+
+Results:
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments ("id", "name") values (1, '|)
+insert into instruments ("id", "name") values (1, 'my_bass'); |
+
+
+
+
+***Case 3:***
+
+insert into instruments (|, name) values ('my_bass');
+
+Results:
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+name - public.instruments.name (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (i|, name) values ('my_bass');
+insert into instruments (id, |, name) values ('my_bass');
+**`name` is already written, so z should be suggested.**
+
+Results:
+z - public.instruments.z (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+a - public.others.a (Column)
+b - public.others.b (Column)
+
+--------------
+
+insert into instruments (id, z |, name) values ('my_bass');

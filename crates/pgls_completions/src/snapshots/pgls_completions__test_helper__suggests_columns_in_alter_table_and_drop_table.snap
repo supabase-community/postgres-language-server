@@ -1,0 +1,748 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Case 1:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments d|
+alter table instruments drop |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop c|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+alter table instruments drop column |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop column n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments drop column name |
+
+
+
+
+***Case 2:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments d|
+alter table instruments drop |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop c|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+alter table instruments drop column |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop column n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments drop column name |
+
+
+
+
+***Case 3:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments d|
+alter table instruments drop |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop c|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+alter table instruments drop column |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop column i|
+
+Results:
+id - public.instruments.id (Column)
+created_at - public.instruments.created_at (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+
+--------------
+
+alter table instruments drop column if |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop column if e|
+
+Results:
+created_at - public.instruments.created_at (Column)
+name - public.instruments.name (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+
+--------------
+
+alter table instruments drop column if exists |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments drop column if exists n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments drop column if exists name |
+
+
+
+
+***Case 4:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments a|
+alter table instruments alter |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments alter c|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+alter table instruments alter column |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments alter column n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments alter column name |
+alter table instruments alter column name s|
+alter table instruments alter column name set |
+alter table instruments alter column name set d|
+alter table instruments alter column name set default |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+
+
+
+
+***Case 5:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments a|
+alter table instruments alter |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments alter n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments alter name |
+alter table instruments alter name s|
+alter table instruments alter name set |
+alter table instruments alter name set d|
+alter table instruments alter name set default |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+
+
+
+
+***Case 6:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table p|
+
+Results:
+public - public (Schema)
+instruments - public.instruments (Table)
+information_schema.parameters - information_schema.parameters (Table)
+pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
+pg_catalog.pg_am - pg_catalog.pg_am (Table)
+
+--------------
+
+alter table public.|
+
+Results:
+instruments - public.instruments (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+
+--------------
+
+alter table public.i|
+
+Results:
+instruments - public.instruments (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+
+--------------
+
+alter table public.instruments |
+alter table public.instruments a|
+alter table public.instruments alter |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table public.instruments alter c|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+alter table public.instruments alter column |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table public.instruments alter column n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table public.instruments alter column name |
+
+
+
+
+***Case 7:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments a|
+alter table instruments alter |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments alter n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments alter name |
+
+
+
+
+***Case 8:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table i|
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema - information_schema (Schema)
+information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+
+--------------
+
+alter table instruments |
+alter table instruments r|
+alter table instruments rename |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table instruments rename n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table instruments rename name |
+alter table instruments rename name t|
+alter table instruments rename name to |
+alter table instruments rename name to n|
+alter table instruments rename name to new_col |
+
+
+
+
+***Case 9:***
+
+a|
+alter |
+alter t|
+alter table |
+
+Results:
+instruments - public.instruments (Table)
+public - public (Schema)
+information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+
+--------------
+
+alter table p|
+
+Results:
+public - public (Schema)
+instruments - public.instruments (Table)
+information_schema.parameters - information_schema.parameters (Table)
+pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
+pg_catalog.pg_am - pg_catalog.pg_am (Table)
+
+--------------
+
+alter table public.|
+
+Results:
+instruments - public.instruments (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+
+--------------
+
+alter table public.i|
+
+Results:
+instruments - public.instruments (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+
+--------------
+
+alter table public.instruments |
+alter table public.instruments r|
+alter table public.instruments rename |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table public.instruments rename c|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+alter table public.instruments rename column |
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+alter table public.instruments rename column n|
+
+Results:
+name - public.instruments.name (Column)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+z - public.instruments.z (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+alter table public.instruments rename column name |
+alter table public.instruments rename column name t|
+alter table public.instruments rename column name to |
+alter table public.instruments rename column name to n|
+alter table public.instruments rename column name to new_col |

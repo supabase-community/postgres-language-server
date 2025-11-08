@@ -1,0 +1,110 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+s|
+select |
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+
+--------------
+
+select "|
+
+Results:
+email" - private.users.email (Column)
+id" - private.users.id (Column)
+name" - private.users.name (Column)
+quoted_column" - private.users.quoted_column (Column)
+abbrev" - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+select "|"
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+select "e|"
+
+Results:
+email - private.users.email (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+id - private.users.id (Column)
+elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+
+--------------
+
+select "email" |
+select "email" f|
+select "email" from |
+
+Results:
+public - public (Schema)
+private - private (Schema)
+private.users - private.users (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+
+--------------
+
+select "email" from "|
+
+Results:
+public - public (Schema)
+private - private (Schema)
+private"."users" - private.users (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+
+--------------
+
+select "email" from "|"
+
+Results:
+public - public (Schema)
+private - private (Schema)
+private"."users - private.users (Table)
+information_schema"."_pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
+information_schema"."_pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+
+--------------
+
+select "email" from "p|"
+
+Results:
+public - public (Schema)
+private - private (Schema)
+private"."users - private.users (Table)
+information_schema"."parameters - information_schema.parameters (Table)
+pg_catalog"."pg_aggregate - pg_catalog.pg_aggregate (Table)
+
+--------------
+
+select "email" from "private".|
+
+Results:
+users - private.users (Table)
+
+--------------
+
+select "email" from "private".u|
+
+Results:
+users - private.users (Table)
+
+--------------
+
+select "email" from "private".users; |

@@ -1,0 +1,83 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+select u.id, auth.posts.content from auth.users u join auth.posts p on |
+**Should prioritize primary keys here.**
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.|
+**Should only consider columns from auth.posts here.**
+
+Results:
+pid - auth.posts.pid (Column)
+content - auth.posts.content (Column)
+created_at - auth.posts.created_at (Column)
+title - auth.posts.title (Column)
+user_id - auth.posts.user_id (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.u|
+**Should only consider columns from auth.posts here.**
+
+Results:
+user_id - auth.posts.user_id (Column)
+pid - auth.posts.pid (Column)
+content - auth.posts.content (Column)
+created_at - auth.posts.created_at (Column)
+title - auth.posts.title (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id |
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id = |
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id = u.|
+**Should only consider columns from auth.users here.**
+
+Results:
+uid - auth.users.uid (Column)
+email - auth.users.email (Column)
+name - auth.users.name (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id = u.u|
+**Should only consider columns from auth.users here.**
+
+Results:
+uid - auth.users.uid (Column)
+email - auth.users.email (Column)
+name - auth.users.name (Column)
+
+--------------
+
+select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id = u.uid; |

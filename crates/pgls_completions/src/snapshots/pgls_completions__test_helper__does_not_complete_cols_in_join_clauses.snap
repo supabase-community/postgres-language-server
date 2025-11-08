@@ -1,0 +1,202 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+s|
+select |
+
+Results:
+content - auth.posts.content (Column)
+created_at - auth.posts.created_at (Column)
+email - auth.users.email (Column)
+name - auth.users.name (Column)
+pid - auth.posts.pid (Column)
+
+--------------
+
+select u.|
+select u.u|
+select u.uid, |
+
+Results:
+content - auth.posts.content (Column)
+created_at - auth.posts.created_at (Column)
+email - auth.users.email (Column)
+name - auth.users.name (Column)
+pid - auth.posts.pid (Column)
+
+--------------
+
+select u.uid, p.|
+select u.uid, p.c|
+select u.uid, p.content |
+select u.uid, p.content f|
+select u.uid, p.content from |
+**Schema suggestions should be prioritized, since we want to push users to specify them.**
+
+Results:
+public - public (Schema)
+auth - auth (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+select u.uid, p.content from a|
+**Schema suggestions should be prioritized, since we want to push users to specify them.**
+
+Results:
+auth - auth (Schema)
+public - public (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+
+--------------
+
+select u.uid, p.content from auth.|
+**Here, we shouldn't have schema completions.**
+
+Results:
+posts - auth.posts (Table)
+users - auth.users (Table)
+
+--------------
+
+select u.uid, p.content from auth.u|
+**Here, we shouldn't have schema completions.**
+
+Results:
+users - auth.users (Table)
+posts - auth.posts (Table)
+
+--------------
+
+select u.uid, p.content from auth.users |
+select u.uid, p.content from auth.users u |
+select u.uid, p.content from auth.users u j|
+select u.uid, p.content from auth.users u join |
+
+Results:
+public - public (Schema)
+auth - auth (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+select u.uid, p.content from auth.users u join a|
+
+Results:
+auth - auth (Schema)
+public - public (Schema)
+auth.posts - auth.posts (Table)
+auth.users - auth.users (Table)
+information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.|
+
+Results:
+posts - auth.posts (Table)
+users - auth.users (Table)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.p|
+
+Results:
+posts - auth.posts (Table)
+users - auth.users (Table)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts |
+select u.uid, p.content from auth.users u join auth.posts p |
+select u.uid, p.content from auth.users u join auth.posts p o|
+select u.uid, p.content from auth.users u join auth.posts p on |
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.|
+
+Results:
+uid - auth.users.uid (Column)
+email - auth.users.email (Column)
+name - auth.users.name (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.u|
+
+Results:
+uid - auth.users.uid (Column)
+email - auth.users.email (Column)
+name - auth.users.name (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.uid |
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.uid = |
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.|
+
+Results:
+pid - auth.posts.pid (Column)
+content - auth.posts.content (Column)
+created_at - auth.posts.created_at (Column)
+title - auth.posts.title (Column)
+user_id - auth.posts.user_id (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.u|
+
+Results:
+user_id - auth.posts.user_id (Column)
+pid - auth.posts.pid (Column)
+content - auth.posts.content (Column)
+created_at - auth.posts.created_at (Column)
+title - auth.posts.title (Column)
+
+--------------
+
+select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.user_id |
+
+Results:
+p.pid - auth.posts.pid (Column)
+u.uid - auth.users.uid (Column)
+p.content - auth.posts.content (Column)
+p.created_at - auth.posts.created_at (Column)
+u.email - auth.users.email (Column)
+
+--------------

@@ -1,0 +1,462 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Case 1:***
+
+s|
+select |
+
+Results:
+name - public.names.name (Column)
+uid - public.names.uid (Column)
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+
+--------------
+
+select "|
+
+Results:
+name" - public.names.name (Column)
+uid" - public.names.uid (Column)
+email" - private.users.email (Column)
+id" - private.users.id (Column)
+name" - private.users.name (Column)
+
+--------------
+
+select "|"
+
+Results:
+name - public.names.name (Column)
+uid - public.names.uid (Column)
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+
+--------------
+
+select "p|"
+
+Results:
+name - public.names.name (Column)
+uid - public.names.uid (Column)
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+
+--------------
+
+select "pr".|
+select "pr"."|
+select "pr"."|"
+select "pr"."e|"
+select "pr"."email" |
+select "pr"."email" f|
+select "pr"."email" from |
+
+Results:
+public - public (Schema)
+private - private (Schema)
+names - public.names (Table)
+private.users - private.users (Table)
+information_schema - information_schema (Schema)
+
+--------------
+
+select "pr"."email" from p|
+
+Results:
+public - public (Schema)
+private - private (Schema)
+names - public.names (Table)
+private.users - private.users (Table)
+information_schema.parameters - information_schema.parameters (Table)
+
+--------------
+
+select "pr"."email" from private.|
+
+Results:
+users - private.users (Table)
+
+--------------
+
+select "pr"."email" from private.u|
+
+Results:
+users - private.users (Table)
+
+--------------
+
+select "pr"."email" from private.users |
+select "pr"."email" from private.users "|
+select "pr"."email" from private.users "|"
+select "pr"."email" from private.users "p|"
+select "pr"."email" from private.users "pr" |
+
+
+
+
+***Case 2:***
+
+s| from private.users "pr"
+select | from private.users "pr"
+
+Results:
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "| from private.users "pr"
+
+Results:
+pr"."email" - private.users.email (Column)
+pr"."id" - private.users.id (Column)
+pr"."name" - private.users.name (Column)
+pr"."quoted_column" - private.users.quoted_column (Column)
+name" - public.names.name (Column)
+
+--------------
+
+select "|" from private.users "pr"
+
+Results:
+pr"."email - private.users.email (Column)
+pr"."id - private.users.id (Column)
+pr"."name - private.users.name (Column)
+pr"."quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "e|" from private.users "pr"
+
+Results:
+pr"."email - private.users.email (Column)
+pr"."name - private.users.name (Column)
+pr"."quoted_column - private.users.quoted_column (Column)
+pr"."id - private.users.id (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "email" | from private.users "pr"
+
+
+
+
+***Case 3:***
+
+s| from private.users "pr"
+select | from private.users "pr"
+
+Results:
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select p| from private.users "pr"
+
+Results:
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select pr.| from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select pr."| from private.users "pr"
+
+Results:
+email" - private.users.email (Column)
+id" - private.users.id (Column)
+name" - private.users.name (Column)
+quoted_column" - private.users.quoted_column (Column)
+
+--------------
+
+select pr."|" from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select pr."e|" from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+id - private.users.id (Column)
+
+--------------
+
+select pr."email" | from private.users "pr"
+
+
+
+
+***Case 4:***
+
+s| from private.users "pr"
+select | from private.users "pr"
+
+Results:
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "| from private.users "pr"
+
+Results:
+pr"."email" - private.users.email (Column)
+pr"."id" - private.users.id (Column)
+pr"."name" - private.users.name (Column)
+pr"."quoted_column" - private.users.quoted_column (Column)
+name" - public.names.name (Column)
+
+--------------
+
+select "|" from private.users "pr"
+
+Results:
+pr"."email - private.users.email (Column)
+pr"."id - private.users.id (Column)
+pr"."name - private.users.name (Column)
+pr"."quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "p|" from private.users "pr"
+
+Results:
+pr"."email - private.users.email (Column)
+pr"."id - private.users.id (Column)
+pr"."name - private.users.name (Column)
+pr"."quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "pr".| from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select "pr"."| from private.users "pr"
+
+Results:
+email" - private.users.email (Column)
+id" - private.users.id (Column)
+name" - private.users.name (Column)
+quoted_column" - private.users.quoted_column (Column)
+
+--------------
+
+select "pr"."|" from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select "pr"."e|" from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+id - private.users.id (Column)
+
+--------------
+
+select "pr"."email" | from private.users "pr"
+
+
+
+
+***Case 5:***
+
+s| from private.users "pr"
+select | from private.users "pr"
+
+Results:
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select p| from private.users "pr"
+
+Results:
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+name - public.names.name (Column)
+
+--------------
+
+select pr.| from private.users "pr"
+**not quoted here, since the alias isn't.**
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select pr.e| from private.users "pr"
+
+Results:
+email - private.users.email (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+id - private.users.id (Column)
+
+--------------
+
+select pr.email | from private.users "pr"
+
+
+
+
+***Case 6:***
+
+s| from private.users "pr" join public.names n on pr.id = n.uid;
+select | from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+n.name - public.names.name (Column)
+n.uid - public.names.uid (Column)
+"pr".email - private.users.email (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+
+--------------
+
+select "| from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+n"."name" - public.names.name (Column)
+n"."uid" - public.names.uid (Column)
+pr"."email" - private.users.email (Column)
+pr"."id" - private.users.id (Column)
+pr"."name" - private.users.name (Column)
+
+--------------
+
+select "|" from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+n"."name - public.names.name (Column)
+n"."uid - public.names.uid (Column)
+pr"."email - private.users.email (Column)
+pr"."id - private.users.id (Column)
+pr"."name - private.users.name (Column)
+
+--------------
+
+select "p|" from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+n"."name - public.names.name (Column)
+n"."uid - public.names.uid (Column)
+pr"."email - private.users.email (Column)
+pr"."id - private.users.id (Column)
+pr"."name - private.users.name (Column)
+
+--------------
+
+select "pr".| from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+email - private.users.email (Column)
+id - private.users.id (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select "pr".e| from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+email - private.users.email (Column)
+name - private.users.name (Column)
+quoted_column - private.users.quoted_column (Column)
+id - private.users.id (Column)
+
+--------------
+
+select "pr"."email", | from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+n.name - public.names.name (Column)
+n.uid - public.names.uid (Column)
+"pr".id - private.users.id (Column)
+"pr".name - private.users.name (Column)
+"pr".quoted_column - private.users.quoted_column (Column)
+
+--------------
+
+select "pr"."email", n.| from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+name - public.names.name (Column)
+uid - public.names.uid (Column)
+
+--------------
+
+select "pr"."email", n.u| from private.users "pr" join public.names n on pr.id = n.uid;
+
+Results:
+uid - public.names.uid (Column)
+name - public.names.name (Column)
+
+--------------
+
+select "pr"."email", n.uid | from private.users "pr" join public.names n on pr.id = n.uid;
