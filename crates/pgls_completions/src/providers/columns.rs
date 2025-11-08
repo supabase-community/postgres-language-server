@@ -52,28 +52,11 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 mod tests {
     use indoc::indoc;
 
-    use sqlx::{Executor, PgPool};
+    use sqlx::PgPool;
 
-    use crate::{
-        CompletionItemKind, complete,
-        test_helper::{
-            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
-            assert_complete_results, get_test_deps, get_test_params,
-        },
-    };
+    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
 
     use pgls_test_utils::QueryWithCursorPosition;
-
-    struct TestCase {
-        query: String,
-    }
-
-    impl TestCase {
-        fn get_input_query(&self) -> QueryWithCursorPosition {
-            let strs: Vec<&str> = self.query.split_whitespace().collect();
-            strs.join(" ").as_str().into()
-        }
-    }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {

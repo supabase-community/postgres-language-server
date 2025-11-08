@@ -303,7 +303,7 @@ impl TestCompletionsCase {
                             let part_without_parens = if starts_with_paren || ends_with_paren {
                                 // we only want to sanitize when the token either starts or ends; that helps
                                 // catch end tokens like `('something');`
-                                part_without_comments.replace('(', "").replace(')', "")
+                                part_without_comments.replace(['(', ')'], "")
                             } else {
                                 part_without_comments.to_string()
                             };
@@ -313,7 +313,7 @@ impl TestCompletionsCase {
 
                             let part_without_quotes = part_without_parens.replace('"', "");
 
-                            if pre_sql.len() > 0 {
+                            if !pre_sql.is_empty() {
                                 let query = format!(
                                     "{}{}{}{}{}",
                                     pre_sql,
@@ -326,7 +326,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     comment,
                                 )
@@ -346,7 +346,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query1.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     comment,
                                 )
@@ -363,13 +363,13 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query2.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     comment,
                                 )
                                 .await;
 
-                                pre_sql.push_str("(");
+                                pre_sql.push('(');
                                 should_close_with_paren = true;
                             }
 
@@ -387,7 +387,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query1.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     comment,
                                 )
@@ -405,7 +405,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query2.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     comment,
                                 )
@@ -432,7 +432,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     if comment_indicator
                                         .is_some_and(|txt| og_part.starts_with(txt.as_str()))
@@ -461,7 +461,7 @@ impl TestCompletionsCase {
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
-                                    &schema_cache,
+                                    schema_cache,
                                     parser,
                                     None,
                                 )
@@ -471,27 +471,27 @@ impl TestCompletionsCase {
                             pre_sql.push_str(&part_without_parens);
 
                             if dot_idx < dot_count {
-                                pre_sql.push_str(".");
+                                pre_sql.push('.');
                             }
 
                             if ends_with_paren {
                                 should_close_with_paren = false;
-                                pre_sql.push_str(")");
+                                pre_sql.push(')');
                             }
                         }
 
                         if whitespace_idx < whitespace_count {
                             // note: we're sanitizing the white_space of typed SQL to simple spaces.
-                            pre_sql.push_str(" ");
+                            pre_sql.push(' ');
                         }
                     }
 
-                    pre_sql.push_str("\n");
+                    pre_sql.push('\n');
                 }
 
                 ChunkToType::WithoutCompletions(sql) => {
                     pre_sql.push_str(sql.as_str());
-                    pre_sql.push_str("\n");
+                    pre_sql.push('\n');
                 }
             }
         }
@@ -526,12 +526,12 @@ impl TestCompletionsCase {
             let diff = pos - sql.len();
 
             sql.push_str(&" ".repeat(diff));
-            sql.push_str("|");
+            sql.push('|');
         }
         writeln!(writer, "{sql}").unwrap();
 
         if let Some(c) = comment {
-            writeln!(writer, "**{}**", c).unwrap();
+            writeln!(writer, "**{c}**").unwrap();
         }
 
         if !items.is_empty() {
