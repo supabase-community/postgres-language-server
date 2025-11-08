@@ -56,8 +56,6 @@ mod tests {
 
     use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
 
-    use pgls_test_utils::QueryWithCursorPosition;
-
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
         let setup = r#"
