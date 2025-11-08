@@ -1,3 +1,4 @@
+use insta::assert_snapshot;
 use pgls_schema_cache::SchemaCache;
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextRange;
@@ -77,8 +78,10 @@ pub(crate) fn get_test_params<'a>(
 pub(crate) enum CompletionAssertion {
     Label(String),
     LabelAndKind(String, CompletionItemKind),
+    #[allow(unused)]
     LabelAndDesc(String, String),
     LabelNotExists(String),
+    #[allow(unused)]
     KindNotExists(CompletionItemKind),
     CompletionTextAndRange(String, TextRange),
 }
@@ -206,6 +209,7 @@ pub(crate) async fn assert_no_complete_results(query: &str, setup: Option<&str>,
 
 enum ChunkToType {
     WithCompletions(String),
+    #[allow(unused)]
     WithoutCompletions(String),
 }
 
@@ -215,56 +219,37 @@ fn comment_regex() -> &'static Regex {
     COMMENT_RE.get_or_init(|| Regex::new(r"<\d+>").unwrap())
 }
 
-pub(crate) struct TestCompletionsBuilder<'a> {
-    prefixes: Vec<String>,
+pub(crate) struct TestCompletionsCase {
     tokens_to_type: Vec<ChunkToType>,
-    appendices: Vec<String>,
+    surrounding_statement: String,
     comments: std::collections::HashMap<usize, String>,
-    pool: &'a PgPool,
-    setup: Option<&'a str>,
     comment_position: usize,
 }
 
-impl<'a> TestCompletionsBuilder<'a> {
-    pub(crate) fn new(pool: &'a PgPool, setup: Option<&'a str>) -> Self {
+impl TestCompletionsCase {
+    pub(crate) fn new() -> Self {
         Self {
-            prefixes: Vec::new(),
             tokens_to_type: Vec::new(),
-            appendices: Vec::new(),
+            surrounding_statement: String::new(),
             comments: HashMap::new(),
-            pool,
-            setup,
             comment_position: 0,
         }
     }
 
-    pub(crate) fn prefix_static(mut self, it: &str) -> Self {
-        self.prefixes.push(it.trim().to_string());
-        self
-    }
-
-    pub(crate) fn append_static(mut self, it: &str) -> Self {
-        self.appendices.push(it.trim().to_string());
+    pub(crate) fn inside_static_statement(mut self, it: &str) -> Self {
+        assert!(it.contains("<sql>"));
+        self.surrounding_statement = it.trim().to_string();
         self
     }
 
     pub(crate) fn type_sql(mut self, it: &str) -> Self {
-        assert_eq!(
-            self.appendices.len(),
-            0,
-            "Make sure to call appendices LAST."
-        );
         self.tokens_to_type
             .push(ChunkToType::WithCompletions(it.trim().to_string()));
         self
     }
 
+    #[allow(unused)]
     pub(crate) fn type_without_completions(mut self, it: &str) -> Self {
-        assert_eq!(
-            self.appendices.len(),
-            0,
-            "Make sure to call appendices LAST."
-        );
         self.tokens_to_type
             .push(ChunkToType::WithoutCompletions(it.trim().to_string()));
         self
@@ -277,30 +262,14 @@ impl<'a> TestCompletionsBuilder<'a> {
         self
     }
 
-    pub(crate) async fn snapshot(self) {
-        if let Some(setup) = self.setup {
-            self.pool.execute(setup).await.expect("Invalid Setup!");
-        }
-
-        let schema_cache = SchemaCache::load(self.pool)
-            .await
-            .expect("Failed to load Schema Cache");
-
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
-            .expect("Error loading sql language");
-
-        let mut joined_prefix = self.prefixes.join("\n");
-        if joined_prefix.len() > 0 {
-            joined_prefix.push_str("\n");
-        };
-
-        let mut joined_appendix = String::new();
-        if self.appendices.len() > 0 {
-            joined_appendix.push_str("\n");
-        }
-        joined_appendix.push_str(self.appendices.join("\n").as_str());
+    async fn generate_snapshot(
+        &self,
+        schema_cache: &SchemaCache,
+        parser: &mut tree_sitter::Parser,
+    ) -> String {
+        let mut stmt_parts = self.surrounding_statement.split("<sql>");
+        let mut pre_sql = stmt_parts.next().unwrap().to_string();
+        let post_sql = stmt_parts.next().unwrap_or("").to_string();
 
         let mut snapshot_result = String::new();
 
@@ -309,6 +278,8 @@ impl<'a> TestCompletionsBuilder<'a> {
                 ChunkToType::WithCompletions(sql) => {
                     let whitespace_count = sql.chars().filter(|c| c.is_ascii_whitespace()).count();
                     let whitespace_split = sql.split_ascii_whitespace().enumerate();
+
+                    let mut should_close_with_paren = false;
 
                     for (whitespace_idx, token) in whitespace_split {
                         let dot_count = token.chars().filter(|c| *c == '.').count();
@@ -324,41 +295,145 @@ impl<'a> TestCompletionsBuilder<'a> {
                                 self.comments.get(&num).map(|s| s.as_str())
                             });
 
-                            let part = comment_regex().replace_all(og_part, "");
+                            let part_without_comments = comment_regex().replace_all(og_part, "");
 
-                            if joined_prefix.len() > 0 {
+                            let starts_with_paren = part_without_comments.starts_with('(');
+                            let ends_with_paren = part_without_comments.ends_with(')');
+
+                            let part_without_parens = if starts_with_paren || ends_with_paren {
+                                // we only want to sanitize when the token either starts or ends; that helps
+                                // catch end tokens like `('something');`
+                                part_without_comments.replace('(', "").replace(')', "")
+                            } else {
+                                part_without_comments.to_string()
+                            };
+
+                            let is_inside_quotes = part_without_parens.starts_with('"')
+                                && part_without_parens.ends_with('"');
+
+                            let part_without_quotes = part_without_parens.replace('"', "");
+
+                            if pre_sql.len() > 0 {
                                 let query = format!(
-                                    "{}{}{}{}",
-                                    joined_prefix,
+                                    "{}{}{}{}{}",
+                                    pre_sql,
                                     if dot_idx <= dot_count { "" } else { "." },
                                     QueryWithCursorPosition::cursor_marker(),
-                                    joined_appendix,
+                                    if should_close_with_paren { ")" } else { "" },
+                                    post_sql,
                                 );
 
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
                                     &schema_cache,
-                                    &mut parser,
+                                    parser,
                                     comment,
                                 )
                                 .await;
                             }
 
-                            if part.len() > 1 {
-                                let query = format!(
-                                    "{}{}{}{}",
-                                    joined_prefix,
-                                    &part[..1],
+                            // try `<pre_sql> (|` and `<pre_sql> (|)`
+                            if starts_with_paren {
+                                let query1 = format!(
+                                    "{}{}({}{}",
+                                    pre_sql,
+                                    if dot_idx <= dot_count { "" } else { "." },
                                     QueryWithCursorPosition::cursor_marker(),
-                                    joined_appendix,
+                                    post_sql,
+                                );
+
+                                self.completions_snapshot(
+                                    query1.into(),
+                                    &mut snapshot_result,
+                                    &schema_cache,
+                                    parser,
+                                    comment,
+                                )
+                                .await;
+
+                                let query2 = format!(
+                                    "{}{}({}){}",
+                                    pre_sql,
+                                    if dot_idx <= dot_count { "" } else { "." },
+                                    QueryWithCursorPosition::cursor_marker(),
+                                    post_sql,
+                                );
+
+                                self.completions_snapshot(
+                                    query2.into(),
+                                    &mut snapshot_result,
+                                    &schema_cache,
+                                    parser,
+                                    comment,
+                                )
+                                .await;
+
+                                pre_sql.push_str("(");
+                                should_close_with_paren = true;
+                            }
+
+                            // try `<pre_sql> "|` and `<pre_sql> "|"`
+                            if is_inside_quotes {
+                                let query1 = format!(
+                                    "{}{}\"{}{}{}",
+                                    pre_sql,
+                                    if dot_idx <= dot_count { "" } else { "." },
+                                    QueryWithCursorPosition::cursor_marker(),
+                                    if should_close_with_paren { ")" } else { "" },
+                                    post_sql,
+                                );
+
+                                self.completions_snapshot(
+                                    query1.into(),
+                                    &mut snapshot_result,
+                                    &schema_cache,
+                                    parser,
+                                    comment,
+                                )
+                                .await;
+
+                                let query2 = format!(
+                                    "{}{}\"{}\"{}{}",
+                                    pre_sql,
+                                    if dot_idx <= dot_count { "" } else { "." },
+                                    QueryWithCursorPosition::cursor_marker(),
+                                    if should_close_with_paren { ")" } else { "" },
+                                    post_sql,
+                                );
+
+                                self.completions_snapshot(
+                                    query2.into(),
+                                    &mut snapshot_result,
+                                    &schema_cache,
+                                    parser,
+                                    comment,
+                                )
+                                .await;
+                            }
+
+                            if part_without_quotes.len() > 1 {
+                                let first_token = &part_without_quotes[..1];
+
+                                let query = format!(
+                                    "{}{}{}{}{}{}",
+                                    pre_sql,
+                                    if is_inside_quotes {
+                                        format!(r#""{first_token}"#)
+                                    } else {
+                                        first_token.to_string()
+                                    },
+                                    QueryWithCursorPosition::cursor_marker(),
+                                    if is_inside_quotes { r#"""# } else { "" },
+                                    if should_close_with_paren { ")" } else { "" },
+                                    post_sql,
                                 );
 
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
                                     &schema_cache,
-                                    &mut parser,
+                                    parser,
                                     if comment_indicator
                                         .is_some_and(|txt| og_part.starts_with(txt.as_str()))
                                     {
@@ -373,46 +448,55 @@ impl<'a> TestCompletionsBuilder<'a> {
                             if whitespace_idx == whitespace_count && dot_idx == dot_count {
                                 let query = format!(
                                     "{}{} {}{}",
-                                    joined_prefix,
-                                    part,
+                                    pre_sql,
+                                    if is_inside_quotes {
+                                        format!(r#""{}""#, part_without_quotes.as_str())
+                                    } else {
+                                        part_without_quotes.clone()
+                                    },
                                     QueryWithCursorPosition::cursor_marker(),
-                                    joined_appendix,
+                                    post_sql,
                                 );
 
                                 self.completions_snapshot(
                                     query.into(),
                                     &mut snapshot_result,
                                     &schema_cache,
-                                    &mut parser,
+                                    parser,
                                     None,
                                 )
                                 .await;
                             }
 
-                            joined_prefix.push_str(&part);
+                            pre_sql.push_str(&part_without_parens);
 
                             if dot_idx < dot_count {
-                                joined_prefix.push_str(".");
+                                pre_sql.push_str(".");
+                            }
+
+                            if ends_with_paren {
+                                should_close_with_paren = false;
+                                pre_sql.push_str(")");
                             }
                         }
 
                         if whitespace_idx < whitespace_count {
                             // note: we're sanitizing the white_space of typed SQL to simple spaces.
-                            joined_prefix.push_str(" ");
+                            pre_sql.push_str(" ");
                         }
                     }
 
-                    joined_prefix.push_str("\n");
+                    pre_sql.push_str("\n");
                 }
 
                 ChunkToType::WithoutCompletions(sql) => {
-                    joined_prefix.push_str(sql.as_str());
-                    joined_prefix.push_str("\n");
+                    pre_sql.push_str(sql.as_str());
+                    pre_sql.push_str("\n");
                 }
             }
         }
 
-        insta::assert_snapshot!(snapshot_result);
+        snapshot_result
     }
 
     async fn completions_snapshot(
@@ -424,11 +508,6 @@ impl<'a> TestCompletionsBuilder<'a> {
         comment: Option<&str>,
     ) {
         let (pos, mut sql) = query.get_text_and_position();
-        if sql.len() == 0 {
-            return;
-        }
-
-        println!("'{sql}', {pos}");
 
         let tree = parser.parse(&sql, None).expect("Invalid TS Tree!");
 
@@ -450,16 +529,13 @@ impl<'a> TestCompletionsBuilder<'a> {
             sql.push_str("|");
         }
         writeln!(writer, "{sql}").unwrap();
-        writeln!(writer).unwrap();
 
         if let Some(c) = comment {
             writeln!(writer, "**{}**", c).unwrap();
-            writeln!(writer).unwrap();
         }
 
-        if items.len() == 0 {
-            writeln!(writer, "No Results").unwrap();
-        } else {
+        if !items.is_empty() {
+            writeln!(writer).unwrap();
             writeln!(writer, "Results:").unwrap();
 
             let max_idx = std::cmp::min(items.len(), 5);
@@ -469,6 +545,7 @@ impl<'a> TestCompletionsBuilder<'a> {
                     "{}",
                     item.completion_text
                         .as_ref()
+                        .filter(|c| !c.is_snippet)
                         .map(|c| c.text.as_str())
                         .unwrap_or(item.label.as_str())
                 )
@@ -487,11 +564,74 @@ impl<'a> TestCompletionsBuilder<'a> {
 
                 writeln!(writer).unwrap();
             }
+
+            writeln!(writer).unwrap();
+
+            writeln!(writer, "--------------").unwrap();
+            writeln!(writer).unwrap();
+        }
+    }
+}
+
+pub(crate) struct TestCompletionsSuite<'a> {
+    pool: &'a PgPool,
+    setup: Option<&'a str>,
+    cases: Vec<TestCompletionsCase>,
+}
+
+impl<'a> TestCompletionsSuite<'a> {
+    pub(crate) fn new(pool: &'a PgPool, setup: Option<&'a str>) -> Self {
+        Self {
+            pool,
+            setup,
+            cases: vec![],
+        }
+    }
+
+    pub(crate) fn with_case(mut self, case: TestCompletionsCase) -> Self {
+        self.cases.push(case);
+        self
+    }
+
+    pub(crate) async fn snapshot(self, snapshot_name: &str) {
+        assert!(!self.cases.is_empty(), "Needs at least one Snapshot case.");
+
+        if let Some(setup) = self.setup {
+            self.pool.execute(setup).await.expect("Problem with Setup");
         }
 
-        writeln!(writer).unwrap();
+        let cache = SchemaCache::load(self.pool)
+            .await
+            .expect("Problem loading SchemaCache");
 
-        writeln!(writer, "--------------").unwrap();
-        writeln!(writer).unwrap();
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .expect("Problem with TreeSitter Grammar");
+
+        let mut final_snapshot = String::new();
+
+        let has_more_than_one_case = self.cases.len() > 1;
+
+        for (idx, additional) in self.cases.iter().enumerate() {
+            if idx > 0 {
+                writeln!(final_snapshot).unwrap();
+                writeln!(final_snapshot).unwrap();
+                writeln!(final_snapshot).unwrap();
+
+                writeln!(final_snapshot).unwrap();
+            }
+
+            if has_more_than_one_case {
+                writeln!(final_snapshot, "***Case {}:***", idx + 1).unwrap();
+                writeln!(final_snapshot).unwrap();
+            }
+
+            let snap = additional.generate_snapshot(&cache, &mut parser).await;
+
+            write!(final_snapshot, "{snap}").unwrap();
+        }
+
+        assert_snapshot!(snapshot_name, final_snapshot)
     }
 }

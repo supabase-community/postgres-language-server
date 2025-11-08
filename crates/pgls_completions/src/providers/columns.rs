@@ -50,16 +50,16 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
+    use indoc::indoc;
 
     use pgls_text_size::TextRange;
     use sqlx::{Executor, PgPool};
 
     use crate::{
-        CompletionItem, CompletionItemKind, complete,
+        CompletionItemKind, complete,
         test_helper::{
-            CompletionAssertion, TestCompletionsBuilder, assert_complete_results, get_test_deps,
-            get_test_params,
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -67,9 +67,6 @@ mod tests {
 
     struct TestCase {
         query: String,
-        message: &'static str,
-        label: &'static str,
-        description: &'static str,
     }
 
     impl TestCase {
@@ -80,7 +77,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn completes_columns(pool: PgPool) {
+    async fn handles_nested_queries(pool: PgPool) {
         let setup = r#"
             create schema private;
 
@@ -100,62 +97,20 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        let queries: Vec<TestCase> = vec![
-            TestCase {
-                message: "correctly prefers the columns of present tables",
-                query: format!(
-                    r#"select na{} from public.audio_books;"#,
-                    QueryWithCursorPosition::cursor_marker()
-                ),
-                label: "narrator",
-                description: "public.audio_books",
-            },
-            TestCase {
-                message: "correctly handles nested queries",
-                query: format!(
-                    r#"
-                select
-                    *
-                from (
-                    select id, na{}
-                    from private.audio_books
-                ) as subquery
-                join public.users u
-                on u.id = subquery.id;
-                "#,
-                    QueryWithCursorPosition::cursor_marker()
-                ),
-                label: "narrator_id",
-                description: "private.audio_books",
-            },
-            TestCase {
-                message: "works without a schema",
-                query: format!(
-                    r#"select na{} from users;"#,
-                    QueryWithCursorPosition::cursor_marker()
-                ),
-                label: "name",
-                description: "public.users",
-            },
-        ];
-
-        for q in queries {
-            let (tree, cache) = get_test_deps(None, q.get_input_query(), &pool).await;
-            let params = get_test_params(&tree, &cache, q.get_input_query());
-            let results = complete(params);
-
-            let CompletionItem {
-                label, description, ..
-            } = results
-                .into_iter()
-                .next()
-                .expect("Should return at least one completion item");
-
-            assert_eq!(label, q.label, "{}", q.message);
-            assert_eq!(description, q.description, "{}", q.message);
-        }
+        TestCompletionsSuite::new(&pool, Some(setup)).with_case(
+        TestCompletionsCase::new()
+        .inside_static_statement(indoc! {r#"
+            select * from (
+                <sql>
+            ) as subquery
+            join public.users u
+            on u.id = subquery.id;
+            "#})
+            .type_sql("select id, narrator_id<1> from private.audio_books")
+            .comment("Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.")
+        )
+            .snapshot("handles_nested_queries")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -179,49 +134,14 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        let case = TestCase {
-            query: format!(r#"select n{};"#, QueryWithCursorPosition::cursor_marker()),
-            description: "",
-            label: "",
-            message: "",
-        };
-
-        let (tree, cache) = get_test_deps(None, case.get_input_query(), &pool).await;
-        let params = get_test_params(&tree, &cache, case.get_input_query());
-        let mut items = complete(params);
-
-        let _ = items.split_off(4);
-
-        #[derive(Eq, PartialEq, Debug)]
-        struct LabelAndDesc {
-            label: String,
-            desc: String,
-        }
-
-        let labels: Vec<LabelAndDesc> = items
-            .into_iter()
-            .map(|c| LabelAndDesc {
-                label: c.label,
-                desc: c.description,
-            })
-            .collect();
-
-        let expected = vec![
-            ("name", "public.users"),
-            ("narrator", "public.audio_books"),
-            ("narrator_id", "private.audio_books"),
-            ("id", "public.audio_books"),
-        ]
-        .into_iter()
-        .map(|(label, schema)| LabelAndDesc {
-            label: label.into(),
-            desc: schema.into(),
-        })
-        .collect::<Vec<LabelAndDesc>>();
-
-        assert_eq!(labels, expected);
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("select narrator_id<1>")
+                    .comment("Should suggest all columns with n first"),
+            )
+            .snapshot("shows_multiple_columns_if_no_relation_specified")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -235,44 +155,10 @@ mod tests {
             );
         "#;
 
-        let test_case = TestCase {
-            message: "suggests user created tables first",
-            query: format!(
-                r#"select {} from users"#,
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            label: "",
-            description: "",
-        };
-
-        let (tree, cache) = get_test_deps(Some(setup), test_case.get_input_query(), &pool).await;
-        let params = get_test_params(&tree, &cache, test_case.get_input_query());
-        let results = complete(params);
-
-        let (first_four, _rest) = results.split_at(4);
-
-        let has_column_in_first_four = |col: &'static str| {
-            first_four
-                .iter()
-                .any(|compl_item| compl_item.label.as_str() == col)
-        };
-
-        assert!(
-            has_column_in_first_four("id"),
-            "`id` not present in first four completion items."
-        );
-        assert!(
-            has_column_in_first_four("name"),
-            "`name` not present in first four completion items."
-        );
-        assert!(
-            has_column_in_first_four("address"),
-            "`address` not present in first four completion items."
-        );
-        assert!(
-            has_column_in_first_four("email"),
-            "`email` not present in first four completion items."
-        );
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql("select name from users"))
+            .snapshot("suggests_relevant_columns_without_letters")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -284,29 +170,20 @@ mod tests {
             id serial primary key,
             name text,
             address text,
-            email text
+            email text,
+            public boolean
         );
     "#;
 
-        let test_case = TestCase {
-            message: "suggests user created tables first",
-            query: format!(
-                r#"select * from private.{}"#,
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            label: "",
-            description: "",
-        };
-
-        let (tree, cache) = get_test_deps(Some(setup), test_case.get_input_query(), &pool).await;
-        let params = get_test_params(&tree, &cache, test_case.get_input_query());
-        let results = complete(params);
-
-        assert!(
-            !results
-                .into_iter()
-                .any(|item| item.kind == CompletionItemKind::Column)
-        );
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("select * from <sql>")
+                    .type_sql("private<1>.users")
+                    .comment("No column suggestions."),
+            )
+            .snapshot("ignores_cols_in_from_clause")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -331,54 +208,27 @@ mod tests {
         );
     "#;
 
-        pool.execute(setup).await.unwrap();
-
-        assert_complete_results(
-            format!(
-                r#"select {} from users"#,
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("<sql> from public.users")
+                    .type_sql("select address2<1>")
+                    .comment("Should suggest address 2 from public table"),
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("address2".into()),
-                CompletionAssertion::Label("email2".into()),
-                CompletionAssertion::Label("id2".into()),
-                CompletionAssertion::Label("name2".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                r#"select {} from private.users"#,
-                QueryWithCursorPosition::cursor_marker()
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("<sql> from private.users")
+                    .type_sql("select address1<1>")
+                    .comment("Should suggest address 1 from private table"),
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("address1".into()),
-                CompletionAssertion::Label("email1".into()),
-                CompletionAssertion::Label("id1".into()),
-                CompletionAssertion::Label("name1".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // asserts fuzzy finding for "settings"
-        assert_complete_results(
-            format!(
-                r#"select sett{} from private.users"#,
-                QueryWithCursorPosition::cursor_marker()
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("<sql> from private.users")
+                    .type_sql("select settings<1>")
+                    .comment("Should prioritize columns starting with s"),
             )
-            .as_str(),
-            vec![CompletionAssertion::Label("user_settings".into())],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("prefers_columns_of_mentioned_tables")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -401,12 +251,17 @@ mod tests {
             );
         "#;
 
-        TestCompletionsBuilder::new(&pool, Some(setup))
-            .prefix_static("select u.id, p.content from auth.users u join auth.posts p")
-            .type_sql("on u<1>.id = p.<2>user_id")
-            .comment("Should prefer primary indices here.")
-            .comment("We should only get columns from the auth.posts table.")
-            .snapshot()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        "select u.id, p.content from auth.users u join auth.posts p <sql>",
+                    )
+                    .type_sql("on u<1>.id = p.<2>user_id")
+                    .comment("Should prefer primary indices here.")
+                    .comment("We should only get columns from the auth.posts table."),
+            )
+            .snapshot("filters_out_by_aliases_in_join_on")
             .await;
     }
 
@@ -430,11 +285,16 @@ mod tests {
             );
         "#;
 
-        TestCompletionsBuilder::new(&pool, Some(setup))
-            .type_sql("select u.id, p.pid<1>")
-            .comment("We should only get columns from the auth.posts table.")
-            .append_static("from auth.users u join auth.posts p on u.id = p.user_id;")
-            .snapshot()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        "<sql> from auth.users u join auth.posts p on u.id = p.user_id;",
+                    )
+                    .type_sql("select u.id, p.pid<1>")
+                    .comment("We should only get columns from the auth.posts table."),
+            )
+            .snapshot("filters_out_by_aliases_in_select")
             .await;
     }
 
@@ -458,12 +318,12 @@ mod tests {
             );
         "#;
 
-        TestCompletionsBuilder::new(&pool, Some(setup))
+        TestCompletionsSuite::new(&pool, Some(setup)).with_case(
+        TestCompletionsCase::new()
             .type_sql("select u.uid, p.content from auth<1>.users<2> u join auth.posts p on u.uid = p.user_id")
             .comment("Schema suggestions should be prioritized, since we want to push users to specify them.")
             .comment("Here, we shouldn't have schema completions.")
-            .snapshot()
-            .await;
+        ).snapshot("does_not_complete_cols_in_join_clauses").await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -486,41 +346,16 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        assert_complete_results(
-            format!(
-                "select u.id, auth.posts.content from auth.users u join auth.posts on u.{}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
-                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
-                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "select u.id, p.content from auth.users u join auth.posts p on p.user_id = u.{}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::KindNotExists(CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("uid".to_string(), CompletionItemKind::Column),
-                CompletionAssertion::LabelAndKind("email".to_string(), CompletionItemKind::Column),
-                CompletionAssertion::LabelAndKind("name".to_string(), CompletionItemKind::Column),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        TestCompletionsSuite::new(&pool, Some(setup)).with_case(
+            TestCompletionsCase::new()
+                .inside_static_statement(
+                    "select u.id, auth.posts.content from auth.users u join auth.posts p on <sql>",
+                )
+                .type_sql("<1>p.user_id<2> = u.uid<3>;")
+                .comment("Should prioritize primary keys here.")
+                .comment("Should only consider columns from auth.posts here.")
+                .comment("Should only consider columns from auth.users here.")
+        ).snapshot("completes_in_join_on_clause").await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -543,76 +378,26 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        assert_complete_results(
-            format!(
-                "select {} from public.one o join public.two on o.id = t.id;",
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        "<sql> from public.one o join public.two on o.id = t.id;",
+                    )
+                    .type_sql("select o.id, a, <1>b, c, d, e, <2>z")
+                    .comment("Should have low priority for `a`, since it's already mentioned.")
+                    .comment("Should have high priority of id of table two, but not one, since it's already mentioned.")
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("a".to_string()),
-                CompletionAssertion::Label("b".to_string()),
-                CompletionAssertion::Label("c".to_string()),
-                CompletionAssertion::Label("d".to_string()),
-                CompletionAssertion::Label("e".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // "a" is already mentioned, so it jumps down
-        assert_complete_results(
-            format!(
-                "select a, {} from public.one o join public.two on o.id = t.id;",
-                QueryWithCursorPosition::cursor_marker()
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        "<sql> from public.one o join public.two on o.id = t.id;",
+                    )
+                    .type_sql("select id, a, b, c, d, e, <1>z")
+                    .comment("`id` could be from both tables, so both priorities are lowered."),
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("b".to_string()),
-                CompletionAssertion::Label("c".to_string()),
-                CompletionAssertion::Label("d".to_string()),
-                CompletionAssertion::Label("e".to_string()),
-                CompletionAssertion::Label("id".to_string()),
-                CompletionAssertion::Label("z".to_string()),
-                CompletionAssertion::Label("a".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // "id" of table one is mentioned, but table two isn't –
-        // its priority stays up
-        assert_complete_results(
-            format!(
-                "select o.id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndDesc("id".to_string(), "public.two".to_string()),
-                CompletionAssertion::Label("z".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // "id" is ambiguous, so both "id" columns are lowered in priority
-        assert_complete_results(
-            format!(
-                "select id, a, b, c, d, e, {} from public.one o join public.two on o.id = t.id;",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![CompletionAssertion::Label("z".to_string())],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("prefers_not_mentioned_columns")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -631,69 +416,25 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        // We should prefer the instrument columns, even though they
-        // are lower in the alphabet
-
-        assert_complete_results(
-            format!(
-                "insert into instruments ({})",
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("insert into instruments (id, name) values (1, 'my_bass');"),
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("id".to_string()),
-                CompletionAssertion::Label("name".to_string()),
-                CompletionAssertion::Label("z".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "insert into instruments (id, {})",
-                QueryWithCursorPosition::cursor_marker()
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql(r#"insert into instruments ("id", "name") values (1, 'my_bass');"#),
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("name".to_string()),
-                CompletionAssertion::Label("z".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "insert into instruments (id, {}, name)",
-                QueryWithCursorPosition::cursor_marker()
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        r#"insert into instruments (<sql>, name) values ('my_bass');"#,
+                    )
+                    .type_sql("id, <1>z")
+                    .comment("`name` is already written, so z should be suggested."),
             )
-            .as_str(),
-            vec![CompletionAssertion::Label("z".to_string())],
-            None,
-            &pool,
-        )
-        .await;
-
-        // works with completed statement
-        assert_complete_results(
-            format!(
-                "insert into instruments (name, {}) values ('my_bass');",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("id".to_string()),
-                CompletionAssertion::Label("z".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("suggests_columns_in_insert_clause")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -713,74 +454,19 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        assert_complete_results(
-            format!(
-                "select name from instruments where {} ",
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        "select name from instruments i join others o on i.z = o.a <sql>",
+                    )
+                    .type_sql("where o.<1>a = <2>i.z and <3>i.id > 5;")
+                .comment("should respect alias speciifcation")
+                .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
+                .comment("should prioritize columns that aren't already mentioned")
             )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("created_at".into()),
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-                CompletionAssertion::Label("z".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        assert_complete_results(
-            format!(
-                "select name from instruments where z = 'something' and created_at > {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            // simply do not complete columns + schemas; functions etc. are ok
-            vec![
-                CompletionAssertion::KindNotExists(CompletionItemKind::Column),
-                CompletionAssertion::KindNotExists(CompletionItemKind::Schema),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // prefers not mentioned columns
-        assert_complete_results(
-            format!(
-                "select name from instruments where id = 'something' and {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("created_at".into()),
-                CompletionAssertion::Label("name".into()),
-                CompletionAssertion::Label("z".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // // uses aliases
-        assert_complete_results(
-            format!(
-                "select name from instruments i join others o on i.z = o.a where i.{}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("created_at".into()),
-                CompletionAssertion::Label("id".into()),
-                CompletionAssertion::Label("name".into()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("suggests_columns_in_where_clause")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -792,65 +478,42 @@ mod tests {
                 z text, 
                 created_at timestamp with time zone default now()
             );
-
-            create table others (
-                a text,
-                b text,
-                c text
-            );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        let queries = vec![
-            format!(
-                "alter table instruments drop column {}",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table instruments drop column if exists {}",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table instruments alter column {} set default",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table instruments alter {} set default",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table public.instruments alter column {}",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table instruments alter {}",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table instruments rename {} to new_col",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                "alter table public.instruments rename column {} to new_col",
-                QueryWithCursorPosition::cursor_marker()
-            ),
-        ];
-
-        for query in queries {
-            assert_complete_results(
-                query.as_str(),
-                vec![
-                    CompletionAssertion::Label("created_at".into()),
-                    CompletionAssertion::Label("id".into()),
-                    CompletionAssertion::Label("name".into()),
-                    CompletionAssertion::Label("z".into()),
-                ],
-                None,
-                &pool,
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new().type_sql("alter table instruments drop column name"),
             )
+            .with_case(
+                TestCompletionsCase::new().type_sql("alter table instruments drop column name"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("alter table instruments drop column if exists name"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("alter table instruments alter column name set default"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("alter table instruments alter name set default"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("alter table public.instruments alter column name"),
+            )
+            .with_case(TestCompletionsCase::new().type_sql("alter table instruments alter name"))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("alter table instruments rename name to new_col"),
+            )
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql("alter table public.instruments rename column name to new_col"),
+            )
+            .snapshot("suggests_columns_in_alter_table_and_drop_table")
             .await;
-        }
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -864,41 +527,23 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        let col_queries = vec![
-            format!(
-                r#"create policy "my_pol" on public.instruments for select using ({})"#,
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                r#"create policy "my_pol" on public.instruments for insert with check ({})"#,
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                r#"create policy "my_pol" on public.instruments for update using (id = 1 and {})"#,
-                QueryWithCursorPosition::cursor_marker()
-            ),
-            format!(
-                r#"create policy "my_pol" on public.instruments for insert with check (id = 1 and {})"#,
-                QueryWithCursorPosition::cursor_marker()
-            ),
-        ];
-
-        for query in col_queries {
-            assert_complete_results(
-                query.as_str(),
-                vec![
-                    CompletionAssertion::Label("created_at".into()),
-                    CompletionAssertion::Label("id".into()),
-                    CompletionAssertion::Label("name".into()),
-                    CompletionAssertion::Label("z".into()),
-                ],
-                None,
-                &pool,
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        r#"create policy "my_pol" on public.instruments for select using (<sql>)"#,
+                    )
+                    .type_sql("id = 1 and created_at > '2025-01-01'"),
             )
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        r#"create policy "my_pol" on public.instruments for insert with check (<sql>)"#,
+                    )
+                    .type_sql("id = 1 and created_at > '2025-01-01'"),
+            )
+            .snapshot("suggests_columns_policy_using_clause")
             .await;
-        }
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -914,75 +559,12 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        // test completion inside quoted column name
-        assert_complete_results(
-            format!(
-                r#"select "em{}" from "private"."users""#,
-                QueryWithCursorPosition::cursor_marker()
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new().type_sql(r#"select "email" from "private"."users";"#),
             )
-            .as_str(),
-            vec![CompletionAssertion::LabelAndDesc(
-                "email".to_string(),
-                "private.users".to_string(),
-            )],
-            None,
-            &pool,
-        )
-        .await;
-
-        // test completion for already quoted column
-        assert_complete_results(
-            format!(
-                r#"select "quoted_col{}" from "private"."users""#,
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![CompletionAssertion::LabelAndDesc(
-                "quoted_column".to_string(),
-                "private.users".to_string(),
-            )],
-            None,
-            &pool,
-        )
-        .await;
-
-        // test completion with empty quotes
-        assert_complete_results(
-            format!(
-                r#"select "{}" from "private"."users""#,
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("email".to_string()),
-                CompletionAssertion::Label("id".to_string()),
-                CompletionAssertion::Label("name".to_string()),
-                CompletionAssertion::Label("quoted_column".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
-
-        // test completion with partially opened quote
-        assert_complete_results(
-            format!(
-                r#"select "{} from "private"."users""#,
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::Label("email".to_string()),
-                CompletionAssertion::Label("id".to_string()),
-                CompletionAssertion::Label("name".to_string()),
-                CompletionAssertion::Label("quoted_column".to_string()),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            .snapshot("completes_quoted_columns")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
@@ -1003,240 +585,40 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
-
-        {
-            // should suggest pr"."email and insert into existing quotes
-            let query = format!(
-                r#"select "e{}" from private.users "pr""#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#"pr"."email"#.into(),
-                    // replaces the full `"e"`
-                    TextRange::new(8.into(), 9.into()),
-                )],
-                None,
-                &pool,
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .type_sql(r#"select "pr"."email" from private.users "pr""#),
             )
-            .await;
-        }
-
-        {
-            // should suggest pr"."email and insert into existing quotes
-            let query = format!(
-                r#"select "{}" from private.users "pr""#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#"pr"."email"#.into(),
-                    TextRange::new(8.into(), 8.into()),
-                )],
-                None,
-                &pool,
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(r#"<sql> from private.users "pr""#)
+                    .type_sql(r#"select "email""#),
             )
-            .await;
-        }
-
-        {
-            // should suggest email and insert into quotes
-            let query = format!(
-                r#"select pr."{}" from private.users "pr""#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#"email"#.into(),
-                    TextRange::new(11.into(), 11.into()),
-                )],
-                None,
-                &pool,
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(r#"<sql> from private.users "pr""#)
+                    .type_sql(r#"select pr."email""#),
             )
-            .await;
-        }
-
-        {
-            // should suggest email
-            let query = format!(
-                r#"select "pr".{} from private.users "pr""#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    "email".into(),
-                    TextRange::new(12.into(), 12.into()),
-                )],
-                None,
-                &pool,
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(r#"<sql> from private.users "pr""#)
+                    .type_sql(r#"select "pr"."email""#),
             )
-            .await;
-        }
-
-        {
-            // should suggest `email`
-            let query = format!(
-                r#"select pr.{} from private.users "pr""#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    "email".into(),
-                    TextRange::new(10.into(), 10.into()),
-                )],
-                None,
-                &pool,
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(r#"<sql> from private.users "pr""#)
+                    .type_sql(r#"select pr.<1>email"#)
+                    .comment("not quoted here, since the alias isn't."),
             )
-            .await;
-        }
-
-        {
-            let query = format!(
-                r#"select {} from private.users "pr" join public.names n on pr.id = n.uid;"#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![
-                    CompletionAssertion::CompletionTextAndRange(
-                        "n.name".into(),
-                        TextRange::new(7.into(), 7.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        "n.uid".into(),
-                        TextRange::new(7.into(), 7.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#""pr".email"#.into(),
-                        TextRange::new(7.into(), 7.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#""pr".id"#.into(),
-                        TextRange::new(7.into(), 7.into()),
-                    ),
-                ],
-                None,
-                &pool,
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement(
+                        r#"<sql> from private.users "pr" join public.names n on pr.id = n.uid;"#,
+                    )
+                    .type_sql(r#"select "pr"."email", n.uid"#),
             )
+            .snapshot("completes_quoted_columns_with_aliases")
             .await;
-        }
-
-        {
-            // should suggest "pr"."email"
-            let query = format!(
-                r#"select "{}" from private.users "pr" join public.names "n" on pr.id = n.uid;"#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#"n"."name"#.into(),
-                        TextRange::new(8.into(), 8.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#"n"."uid"#.into(),
-                        TextRange::new(8.into(), 8.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#"pr"."email"#.into(),
-                        TextRange::new(8.into(), 8.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#"pr"."id"#.into(),
-                        TextRange::new(8.into(), 8.into()),
-                    ),
-                ],
-                None,
-                &pool,
-            )
-            .await;
-        }
-
-        {
-            // should suggest pr"."email"
-            let query = format!(
-                r#"select "{} from private.users "pr";"#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#"pr"."email""#.into(),
-                        TextRange::new(8.into(), 8.into()),
-                    ),
-                    CompletionAssertion::CompletionTextAndRange(
-                        r#"pr"."id""#.into(),
-                        TextRange::new(8.into(), 8.into()),
-                    ),
-                ],
-                None,
-                &pool,
-            )
-            .await;
-        }
-
-        {
-            // should suggest email"
-            let query = format!(
-                r#"select pr."{} from private.users "pr";"#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#"email""#.into(),
-                    TextRange::new(11.into(), 11.into()),
-                )],
-                None,
-                &pool,
-            )
-            .await;
-        }
-
-        {
-            // should suggest email"
-            let query = format!(
-                r#"select "pr"."{} from private.users "pr";"#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#"email""#.into(),
-                    TextRange::new(13.into(), 13.into()),
-                )],
-                None,
-                &pool,
-            )
-            .await;
-        }
-
-        {
-            // should suggest "n".name
-            let query = format!(
-                r#"select {} from names "n";"#,
-                QueryWithCursorPosition::cursor_marker()
-            );
-            assert_complete_results(
-                query.as_str(),
-                vec![CompletionAssertion::CompletionTextAndRange(
-                    r#""n".name"#.into(),
-                    TextRange::new(7.into(), 7.into()),
-                )],
-                None,
-                &pool,
-            )
-            .await;
-        }
     }
 }

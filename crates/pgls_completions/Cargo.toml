@@ -35,6 +35,7 @@ criterion.workspace       = true
 pgls_test_utils.workspace = true
 insta.workspace = true
 regex = "1.12.2"
+indoc = "2.0.7"
 
 
 [lib]
