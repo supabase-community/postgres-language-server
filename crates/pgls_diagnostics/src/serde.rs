@@ -164,7 +164,6 @@ impl From<super::Location<'_>> for Location {
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(test, derive(Eq, PartialEq))]
-
 struct Advices {
     advices: Vec<Advice>,
 }

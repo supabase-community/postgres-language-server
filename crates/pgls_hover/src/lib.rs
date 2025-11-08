@@ -83,14 +83,15 @@ pub fn on_hover(params: OnHoverParams) -> Vec<String> {
                 _ => vec![],
             },
 
-            HoveredNode::Function(node_identification) => match node_identification {
-                (maybe_schema, function_name) => params
+            HoveredNode::Function(node_identification) => {
+                let (maybe_schema, function_name) = node_identification;
+                params
                     .schema_cache
                     .find_functions(&function_name, maybe_schema.as_deref())
                     .into_iter()
                     .map(Hoverable::from)
-                    .collect(),
-            },
+                    .collect()
+            }
 
             HoveredNode::Role(role_name) => params
                 .schema_cache
