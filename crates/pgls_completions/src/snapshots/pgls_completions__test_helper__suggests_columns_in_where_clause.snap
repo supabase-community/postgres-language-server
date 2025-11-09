@@ -1,0 +1,149 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table instruments (
+    id bigint primary key generated always as identity,
+    name text not null,
+    z text, 
+    created_at timestamp with time zone default now()
+);
+
+create table others (
+    a text,
+    b text,
+    c text
+);
+
+
+--------------
+
+select name from instruments i join others o on i.z = o.a |
+
+Results:
+i.id - public.instruments.id (Column)
+o.a - public.others.a (Column)
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a w|
+
+Results:
+i.id - public.instruments.id (Column)
+o.a - public.others.a (Column)
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where |
+
+Results:
+o.a - public.others.a (Column)
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+i.id - public.instruments.id (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.|
+**should respect alias speciifcation**
+
+Results:
+a - public.others.a (Column)
+b - public.others.b (Column)
+c - public.others.c (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a |
+
+Results:
+o.a - public.others.a (Column)
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+i.id - public.instruments.id (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = |
+**should not prioritize suggest columns or schemas (right side of binary expression)**
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
+pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.|
+select name from instruments i join others o on i.z = o.a where o.a = i.z |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
+pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.z a|
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+abbrev - Schema: pg_catalog.abbrev (Function)
+abs - Schema: pg_catalog.abs (Function)
+aclcontains - Schema: pg_catalog.aclcontains (Function)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.z and |
+**should prioritize columns that aren't already mentioned**
+
+Results:
+o.b - public.others.b (Column)
+o.c - public.others.c (Column)
+i.created_at - public.instruments.created_at (Column)
+i.id - public.instruments.id (Column)
+i.name - public.instruments.name (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.|
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.i|
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
+pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > |
+
+Results:
+instruments - public.instruments (Table)
+others - public.others (Table)
+pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
+pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > 5|
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > 5; |

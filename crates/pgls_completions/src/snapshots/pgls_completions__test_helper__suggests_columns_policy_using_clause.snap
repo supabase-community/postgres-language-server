@@ -1,0 +1,148 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create table instruments (
+    id bigint primary key generated always as identity,
+    name text not null,
+    z text, 
+    created_at timestamp with time zone default now()
+);
+
+
+--------------
+
+***Case 1:***
+
+create policy "my_pol" on public.instruments for select using (|)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for select using (i|)
+
+Results:
+id - public.instruments.id (Column)
+created_at - public.instruments.created_at (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for select using (id |)
+create policy "my_pol" on public.instruments for select using (id = |)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for select using (id = 1 |)
+create policy "my_pol" on public.instruments for select using (id = 1 a|)
+create policy "my_pol" on public.instruments for select using (id = 1 and |)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for select using (id = 1 and c|)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for select using (id = 1 and created_at |)
+create policy "my_pol" on public.instruments for select using (id = 1 and created_at > |)
+create policy "my_pol" on public.instruments for select using (id = 1 and created_at > '|)
+create policy "my_pol" on public.instruments for select using (id = 1 and created_at > '2025-01-01' |)
+
+
+
+
+***Case 2:***
+
+create policy "my_pol" on public.instruments for insert with check (|)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for insert with check (i|)
+
+Results:
+id - public.instruments.id (Column)
+created_at - public.instruments.created_at (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for insert with check (id |)
+create policy "my_pol" on public.instruments for insert with check (id = |)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for insert with check (id = 1 |)
+create policy "my_pol" on public.instruments for insert with check (id = 1 a|)
+create policy "my_pol" on public.instruments for insert with check (id = 1 and |)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for insert with check (id = 1 and c|)
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+cache_size - pg_catalog.pg_sequences.cache_size (Column)
+
+--------------
+
+create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at |)
+create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at > |)
+create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at > '|)
+create policy "my_pol" on public.instruments for insert with check (id = 1 and created_at > '2025-01-01' |)

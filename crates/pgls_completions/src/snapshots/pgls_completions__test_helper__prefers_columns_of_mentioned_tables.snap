@@ -1,0 +1,119 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create schema private;
+
+create table private.users (
+    id1 serial primary key,
+    name1 text,
+    address1 text,
+    email1 text,
+    user_settings jsonb
+);
+
+create table public.users (
+    id2 serial primary key,
+    name2 text,
+    address2 text,
+    email2 text,
+    settings jsonb
+);
+
+
+--------------
+
+***Case 1:***
+
+s| from public.users
+select | from public.users
+**Should suggest address 2 from public table**
+
+Results:
+address2 - public.users.address2 (Column)
+email2 - public.users.email2 (Column)
+id2 - public.users.id2 (Column)
+name2 - public.users.name2 (Column)
+settings - public.users.settings (Column)
+
+--------------
+
+select a| from public.users
+**Should suggest address 2 from public table**
+
+Results:
+address2 - public.users.address2 (Column)
+email2 - public.users.email2 (Column)
+name2 - public.users.name2 (Column)
+id2 - public.users.id2 (Column)
+settings - public.users.settings (Column)
+
+--------------
+
+select address2 | from public.users
+
+
+
+
+***Case 2:***
+
+s| from private.users
+select | from private.users
+**Should suggest address 1 from private table**
+
+Results:
+address1 - private.users.address1 (Column)
+email1 - private.users.email1 (Column)
+id1 - private.users.id1 (Column)
+name1 - private.users.name1 (Column)
+user_settings - private.users.user_settings (Column)
+
+--------------
+
+select a| from private.users
+**Should suggest address 1 from private table**
+
+Results:
+address1 - private.users.address1 (Column)
+email1 - private.users.email1 (Column)
+name1 - private.users.name1 (Column)
+id1 - private.users.id1 (Column)
+user_settings - private.users.user_settings (Column)
+
+--------------
+
+select address1 | from private.users
+
+
+
+
+***Case 3:***
+
+s| from private.users
+select | from private.users
+**Should prioritize columns starting with s**
+
+Results:
+address1 - private.users.address1 (Column)
+email1 - private.users.email1 (Column)
+id1 - private.users.id1 (Column)
+name1 - private.users.name1 (Column)
+user_settings - private.users.user_settings (Column)
+
+--------------
+
+select s| from private.users
+**Should prioritize columns starting with s**
+
+Results:
+user_settings - private.users.user_settings (Column)
+address1 - private.users.address1 (Column)
+email1 - private.users.email1 (Column)
+id1 - private.users.id1 (Column)
+name1 - private.users.name1 (Column)
+
+--------------
+
+select settings | from private.users
