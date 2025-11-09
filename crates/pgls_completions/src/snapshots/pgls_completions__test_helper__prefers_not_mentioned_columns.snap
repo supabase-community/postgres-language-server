@@ -2,6 +2,27 @@
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
 ---
+***Setup***
+
+create schema auth;
+
+create table public.one (
+    id serial primary key,
+    a text,
+    b text,
+    z text
+);
+
+create table public.two (
+    id serial primary key,
+    c text,
+    d text,
+    e text
+);
+
+
+--------------
+
 ***Case 1:***
 
 s| from public.one o join public.two on o.id = t.id;

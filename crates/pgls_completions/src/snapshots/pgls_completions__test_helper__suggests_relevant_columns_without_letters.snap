@@ -2,6 +2,18 @@
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
 ---
+***Setup***
+
+create table users (
+    id serial primary key,
+    name text,
+    address text,
+    email text
+);
+
+
+--------------
+
 s|
 select |
 

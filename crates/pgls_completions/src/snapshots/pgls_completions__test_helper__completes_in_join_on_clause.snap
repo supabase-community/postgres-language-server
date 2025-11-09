@@ -2,6 +2,27 @@
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
 ---
+***Setup***
+
+create schema auth;
+
+create table auth.users (
+    uid serial primary key,
+    name text not null,
+    email text unique not null
+);
+
+create table auth.posts (
+    pid serial primary key,
+    user_id int not null references auth.users(uid),
+    title text not null,
+    content text,
+    created_at timestamp default now()
+);
+
+
+--------------
+
 select u.id, auth.posts.content from auth.users u join auth.posts p on |
 **Should prioritize primary keys here.**
 

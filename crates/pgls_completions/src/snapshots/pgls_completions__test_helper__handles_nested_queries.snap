@@ -2,6 +2,28 @@
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
 ---
+***Setup***
+
+create schema private;
+
+create table public.users (
+    id serial primary key,
+    name text
+);
+
+create table public.audio_books (
+    id serial primary key,
+    narrator text
+);
+
+create table private.audio_books (
+    id serial primary key,
+    narrator_id text
+);
+
+
+--------------
+
 select * from (
     |
 ) as subquery

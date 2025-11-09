@@ -2,6 +2,23 @@
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
 ---
+***Setup***
+
+create table instruments (
+    id bigint primary key generated always as identity,
+    name text not null,
+    z text
+);
+
+create table others (
+    id serial primary key,
+    a text,
+    b text
+);
+
+
+--------------
+
 ***Case 1:***
 
 i|

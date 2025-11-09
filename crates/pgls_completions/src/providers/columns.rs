@@ -50,8 +50,6 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 
 #[cfg(test)]
 mod tests {
-    use indoc::indoc;
-
     use sqlx::PgPool;
 
     use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
@@ -79,13 +77,13 @@ mod tests {
 
         TestCompletionsSuite::new(&pool, Some(setup)).with_case(
         TestCompletionsCase::new()
-        .inside_static_statement(indoc! {r#"
+        .inside_static_statement(r#"
             select * from (
                 <sql>
             ) as subquery
             join public.users u
             on u.id = subquery.id;
-            "#})
+            "#)
             .type_sql("select id, narrator_id<1> from private.audio_books")
             .comment("Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.")
         )

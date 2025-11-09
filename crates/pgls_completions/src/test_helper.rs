@@ -5,6 +5,7 @@ use pgls_text_size::TextRange;
 use regex::Regex;
 use sqlx::{Executor, PgPool};
 use std::{collections::HashMap, fmt::Write, sync::OnceLock};
+use unindent::unindent;
 
 use crate::{CompletionItem, CompletionItemKind, CompletionParams, complete};
 
@@ -238,7 +239,7 @@ impl TestCompletionsCase {
 
     pub(crate) fn inside_static_statement(mut self, it: &str) -> Self {
         assert!(it.contains("<sql>"));
-        self.surrounding_statement = it.trim().to_string();
+        self.surrounding_statement = unindent(it);
         self
     }
 
@@ -596,8 +597,17 @@ impl<'a> TestCompletionsSuite<'a> {
     pub(crate) async fn snapshot(self, snapshot_name: &str) {
         assert!(!self.cases.is_empty(), "Needs at least one Snapshot case.");
 
+        let mut final_snapshot = String::new();
+
         if let Some(setup) = self.setup {
             self.pool.execute(setup).await.expect("Problem with Setup");
+            writeln!(final_snapshot, "***Setup***").unwrap();
+            writeln!(final_snapshot).unwrap();
+            write!(final_snapshot, "{}", unindent(setup)).unwrap();
+            writeln!(final_snapshot).unwrap();
+            writeln!(final_snapshot).unwrap();
+            writeln!(final_snapshot, "--------------").unwrap();
+            writeln!(final_snapshot).unwrap();
         }
 
         let cache = SchemaCache::load(self.pool)
@@ -608,8 +618,6 @@ impl<'a> TestCompletionsSuite<'a> {
         parser
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Problem with TreeSitter Grammar");
-
-        let mut final_snapshot = String::new();
 
         let has_more_than_one_case = self.cases.len() > 1;
 

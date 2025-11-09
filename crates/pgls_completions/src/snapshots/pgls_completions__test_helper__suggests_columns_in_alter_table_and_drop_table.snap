@@ -2,6 +2,18 @@
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
 ---
+***Setup***
+
+create table instruments (
+    id bigint primary key generated always as identity,
+    name text not null,
+    z text, 
+    created_at timestamp with time zone default now()
+);
+
+
+--------------
+
 ***Case 1:***
 
 a|
