@@ -2,6 +2,14 @@
 
 The Postgres Language Server can be installed as a development dependency of your project, a standalone executable, or as an extension of your favorite editor.
 
+Install via your package manager if you use one:
+
+```sh
+pnpm add -D -E @postgres-language-server/cli
+```
+
+Alternatively, most [editor integrations](/guides/ide_setup) will manage the installation for you, or you can install it as a [standalone executable](/manual_installation).
+
 ## Configuration
 
 We recommend creating a `postgres-language-server.jsonc` configuration file for each project. This eliminates repetitive CLI options and ensures that consistent configuration in your editor. Some options are only available from a configuration file. This step is optional though: if you are happy with the defaults, you don’t need a configuration file. To create the `postgres-language-server.jsonc` file, run the `init` command in the root folder of your project:
@@ -47,7 +55,7 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
 
 Make sure to edit the database connection settings to connect to your local development database. To see all options, run `postgres-language-server --help`.
 
-You can use your current `postgres-language-server` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/0.8.1/schema.json`.
+You can use your current `postgres-language-server` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/${VERSION}/schema.json`.
 
 ## Usage
 
