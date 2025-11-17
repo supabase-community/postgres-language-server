@@ -55,7 +55,7 @@ You’ll now have a `postgres-language-server.jsonc` file in your directory:
 
 Make sure to edit the database connection settings to connect to your local development database. To see all options, run `postgres-language-server --help`.
 
-You can use your current `postgres-language-server` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/${VERSION}/schema.json`.
+You can use your current `postgres-language-server` version instead of "latest" in the `$schema` URL, e.g. `https://pg-language-server.com/0.0.0/schema.json`.
 
 ## Usage
 
