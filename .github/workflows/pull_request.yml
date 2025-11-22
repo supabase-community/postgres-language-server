@@ -272,6 +272,8 @@ jobs:
         run: cargo run -p xtask_codegen -- configuration
       - name: Run the bindings codegen
         run: cargo run -p xtask_codegen -- bindings
+      - name: Run the splinter codegen
+        run: cargo run -p xtask_codegen -- splinter
       - name: Run the docs codegen
         run: cargo run -p docs_codegen
       - name: Check for git diff -- run "just ready" if you see an error

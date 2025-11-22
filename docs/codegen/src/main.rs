@@ -8,6 +8,7 @@ use docs_codegen::rules_docs::generate_rules_docs;
 use docs_codegen::rules_index::generate_rules_index;
 use docs_codegen::rules_sources::generate_rule_sources;
 use docs_codegen::schema::generate_schema;
+use docs_codegen::version::replace_version;
 
 fn docs_root() -> PathBuf {
     let dir =
@@ -25,6 +26,7 @@ fn main() -> anyhow::Result<()> {
     generate_rules_index(&docs_root)?;
     generate_rule_sources(&docs_root)?;
     generate_schema(&docs_root)?;
+    replace_version(&docs_root)?;
 
     Ok(())
 }
