@@ -1,15 +1,16 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "postgres_lsp",
       "devDependencies": {
         "@biomejs/biome": "1.9.4",
-        "@types/bun": "latest"
+        "@types/bun": "latest",
       },
       "peerDependencies": {
-        "typescript": "^5"
-      }
+        "typescript": "^5",
+      },
     },
     "packages/@postgres-language-server/backend-jsonrpc": {
       "name": "@postgres-language-server/backend-jsonrpc",
@@ -19,13 +20,13 @@
         "@postgres-language-server/cli-linux-arm64": "<placeholder>",
         "@postgres-language-server/cli-linux-x64": "<placeholder>",
         "@postgres-language-server/cli-win32-arm64": "<placeholder>",
-        "@postgres-language-server/cli-win32-x64": "<placeholder>"
-      }
+        "@postgres-language-server/cli-win32-x64": "<placeholder>",
+      },
     },
     "packages/@postgres-language-server/cli": {
       "name": "@postgres-language-server/cli",
       "bin": {
-        "postgres-language-server": "bin/postgres-language-server"
+        "postgres-language-server": "bin/postgres-language-server",
       },
       "optionalDependencies": {
         "@postgres-language-server/cli-aarch64-apple-darwin": "<placeholder>",
@@ -34,8 +35,8 @@
         "@postgres-language-server/cli-x86_64-apple-darwin": "<placeholder>",
         "@postgres-language-server/cli-x86_64-linux-gnu": "<placeholder>",
         "@postgres-language-server/cli-x86_64-linux-musl": "<placeholder>",
-        "@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>"
-      }
+        "@postgres-language-server/cli-x86_64-windows-msvc": "<placeholder>",
+      },
     },
     "packages/@postgrestools/backend-jsonrpc": {
       "name": "@postgrestools/backend-jsonrpc",
@@ -45,13 +46,13 @@
         "@postgrestools/cli-linux-arm64": "<placeholder>",
         "@postgrestools/cli-linux-x64": "<placeholder>",
         "@postgrestools/cli-win32-arm64": "<placeholder>",
-        "@postgrestools/cli-win32-x64": "<placeholder>"
-      }
+        "@postgrestools/cli-win32-x64": "<placeholder>",
+      },
     },
     "packages/@postgrestools/postgrestools": {
       "name": "@postgrestools/postgrestools",
       "bin": {
-        "postgrestools": "bin/postgrestools"
+        "postgrestools": "bin/postgrestools",
       },
       "optionalDependencies": {
         "@postgrestools/cli-aarch64-apple-darwin": "<placeholder>",
@@ -60,233 +61,73 @@
         "@postgrestools/cli-x86_64-apple-darwin": "<placeholder>",
         "@postgrestools/cli-x86_64-linux-gnu": "<placeholder>",
         "@postgrestools/cli-x86_64-linux-musl": "<placeholder>",
-        "@postgrestools/cli-x86_64-windows-msvc": "<placeholder>"
-      }
-    }
+        "@postgrestools/cli-x86_64-windows-msvc": "<placeholder>",
+      },
+    },
   },
   "packages": {
-    "@biomejs/biome": [
-      "@biomejs/biome@1.9.4",
-      "",
-      {
-        "optionalDependencies": {
-          "@biomejs/cli-darwin-arm64": "1.9.4",
-          "@biomejs/cli-darwin-x64": "1.9.4",
-          "@biomejs/cli-linux-arm64": "1.9.4",
-          "@biomejs/cli-linux-arm64-musl": "1.9.4",
-          "@biomejs/cli-linux-x64": "1.9.4",
-          "@biomejs/cli-linux-x64-musl": "1.9.4",
-          "@biomejs/cli-win32-arm64": "1.9.4",
-          "@biomejs/cli-win32-x64": "1.9.4"
-        },
-        "bin": { "biome": "bin/biome" }
-      },
-      "sha512-1rkd7G70+o9KkTn5KLmDYXihGoTaIGO9PIIN2ZB7UJxFrWw04CZHPYiMRjYsaDvVV7hP1dYNRLxSANLaBFGpog=="
-    ],
+    "@biomejs/biome": ["@biomejs/biome@1.9.4", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "1.9.4", "@biomejs/cli-darwin-x64": "1.9.4", "@biomejs/cli-linux-arm64": "1.9.4", "@biomejs/cli-linux-arm64-musl": "1.9.4", "@biomejs/cli-linux-x64": "1.9.4", "@biomejs/cli-linux-x64-musl": "1.9.4", "@biomejs/cli-win32-arm64": "1.9.4", "@biomejs/cli-win32-x64": "1.9.4" }, "bin": { "biome": "bin/biome" } }, "sha512-1rkd7G70+o9KkTn5KLmDYXihGoTaIGO9PIIN2ZB7UJxFrWw04CZHPYiMRjYsaDvVV7hP1dYNRLxSANLaBFGpog=="],
 
-    "@biomejs/cli-darwin-arm64": [
-      "@biomejs/cli-darwin-arm64@1.9.4",
-      "",
-      { "os": "darwin", "cpu": "arm64" },
-      "sha512-bFBsPWrNvkdKrNCYeAp+xo2HecOGPAy9WyNyB/jKnnedgzl4W4Hb9ZMzYNbf8dMCGmUdSavlYHiR01QaYR58cw=="
-    ],
+    "@biomejs/cli-darwin-arm64": ["@biomejs/cli-darwin-arm64@1.9.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-bFBsPWrNvkdKrNCYeAp+xo2HecOGPAy9WyNyB/jKnnedgzl4W4Hb9ZMzYNbf8dMCGmUdSavlYHiR01QaYR58cw=="],
 
-    "@biomejs/cli-darwin-x64": [
-      "@biomejs/cli-darwin-x64@1.9.4",
-      "",
-      { "os": "darwin", "cpu": "x64" },
-      "sha512-ngYBh/+bEedqkSevPVhLP4QfVPCpb+4BBe2p7Xs32dBgs7rh9nY2AIYUL6BgLw1JVXV8GlpKmb/hNiuIxfPfZg=="
-    ],
+    "@biomejs/cli-darwin-x64": ["@biomejs/cli-darwin-x64@1.9.4", "", { "os": "darwin", "cpu": "x64" }, "sha512-ngYBh/+bEedqkSevPVhLP4QfVPCpb+4BBe2p7Xs32dBgs7rh9nY2AIYUL6BgLw1JVXV8GlpKmb/hNiuIxfPfZg=="],
 
-    "@biomejs/cli-linux-arm64": [
-      "@biomejs/cli-linux-arm64@1.9.4",
-      "",
-      { "os": "linux", "cpu": "arm64" },
-      "sha512-fJIW0+LYujdjUgJJuwesP4EjIBl/N/TcOX3IvIHJQNsAqvV2CHIogsmA94BPG6jZATS4Hi+xv4SkBBQSt1N4/g=="
-    ],
+    "@biomejs/cli-linux-arm64": ["@biomejs/cli-linux-arm64@1.9.4", "", { "os": "linux", "cpu": "arm64" }, "sha512-fJIW0+LYujdjUgJJuwesP4EjIBl/N/TcOX3IvIHJQNsAqvV2CHIogsmA94BPG6jZATS4Hi+xv4SkBBQSt1N4/g=="],
 
-    "@biomejs/cli-linux-arm64-musl": [
-      "@biomejs/cli-linux-arm64-musl@1.9.4",
-      "",
-      { "os": "linux", "cpu": "arm64" },
-      "sha512-v665Ct9WCRjGa8+kTr0CzApU0+XXtRgwmzIf1SeKSGAv+2scAlW6JR5PMFo6FzqqZ64Po79cKODKf3/AAmECqA=="
-    ],
+    "@biomejs/cli-linux-arm64-musl": ["@biomejs/cli-linux-arm64-musl@1.9.4", "", { "os": "linux", "cpu": "arm64" }, "sha512-v665Ct9WCRjGa8+kTr0CzApU0+XXtRgwmzIf1SeKSGAv+2scAlW6JR5PMFo6FzqqZ64Po79cKODKf3/AAmECqA=="],
 
-    "@biomejs/cli-linux-x64": [
-      "@biomejs/cli-linux-x64@1.9.4",
-      "",
-      { "os": "linux", "cpu": "x64" },
-      "sha512-lRCJv/Vi3Vlwmbd6K+oQ0KhLHMAysN8lXoCI7XeHlxaajk06u7G+UsFSO01NAs5iYuWKmVZjmiOzJ0OJmGsMwg=="
-    ],
+    "@biomejs/cli-linux-x64": ["@biomejs/cli-linux-x64@1.9.4", "", { "os": "linux", "cpu": "x64" }, "sha512-lRCJv/Vi3Vlwmbd6K+oQ0KhLHMAysN8lXoCI7XeHlxaajk06u7G+UsFSO01NAs5iYuWKmVZjmiOzJ0OJmGsMwg=="],
 
-    "@biomejs/cli-linux-x64-musl": [
-      "@biomejs/cli-linux-x64-musl@1.9.4",
-      "",
-      { "os": "linux", "cpu": "x64" },
-      "sha512-gEhi/jSBhZ2m6wjV530Yy8+fNqG8PAinM3oV7CyO+6c3CEh16Eizm21uHVsyVBEB6RIM8JHIl6AGYCv6Q6Q9Tg=="
-    ],
+    "@biomejs/cli-linux-x64-musl": ["@biomejs/cli-linux-x64-musl@1.9.4", "", { "os": "linux", "cpu": "x64" }, "sha512-gEhi/jSBhZ2m6wjV530Yy8+fNqG8PAinM3oV7CyO+6c3CEh16Eizm21uHVsyVBEB6RIM8JHIl6AGYCv6Q6Q9Tg=="],
 
-    "@biomejs/cli-win32-arm64": [
-      "@biomejs/cli-win32-arm64@1.9.4",
-      "",
-      { "os": "win32", "cpu": "arm64" },
-      "sha512-tlbhLk+WXZmgwoIKwHIHEBZUwxml7bRJgk0X2sPyNR3S93cdRq6XulAZRQJ17FYGGzWne0fgrXBKpl7l4M87Hg=="
-    ],
+    "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@1.9.4", "", { "os": "win32", "cpu": "arm64" }, "sha512-tlbhLk+WXZmgwoIKwHIHEBZUwxml7bRJgk0X2sPyNR3S93cdRq6XulAZRQJ17FYGGzWne0fgrXBKpl7l4M87Hg=="],
 
-    "@biomejs/cli-win32-x64": [
-      "@biomejs/cli-win32-x64@1.9.4",
-      "",
-      { "os": "win32", "cpu": "x64" },
-      "sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA=="
-    ],
+    "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@1.9.4", "", { "os": "win32", "cpu": "x64" }, "sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA=="],
 
-    "@postgres-language-server/backend-jsonrpc": [
-      "@postgres-language-server/backend-jsonrpc@workspace:packages/@postgres-language-server/backend-jsonrpc"
-    ],
+    "@postgres-language-server/backend-jsonrpc": ["@postgres-language-server/backend-jsonrpc@workspace:packages/@postgres-language-server/backend-jsonrpc"],
 
-    "@postgres-language-server/cli": [
-      "@postgres-language-server/cli@workspace:packages/@postgres-language-server/cli"
-    ],
+    "@postgres-language-server/cli": ["@postgres-language-server/cli@workspace:packages/@postgres-language-server/cli"],
 
-    "@postgres-language-server/cli-aarch64-apple-darwin": [
-      "@postgres-language-server/cli-aarch64-apple-darwin@0.17.1",
-      "",
-      { "os": "darwin", "cpu": "arm64" },
-      "sha512-0Umsb4yuHyI8D9oZkkpa6H4aZXMAAMLa7qbOrHRP9IMML4mKp5B9wkCiyvgd1ZKRP82UQBZnVjh53AGXky4Jdw=="
-    ],
+    "@postgres-language-server/cli-aarch64-apple-darwin": ["@postgres-language-server/cli-aarch64-apple-darwin@0.17.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-0Umsb4yuHyI8D9oZkkpa6H4aZXMAAMLa7qbOrHRP9IMML4mKp5B9wkCiyvgd1ZKRP82UQBZnVjh53AGXky4Jdw=="],
 
-    "@postgres-language-server/cli-aarch64-linux-gnu": [
-      "@postgres-language-server/cli-aarch64-linux-gnu@0.17.1",
-      "",
-      { "os": "linux", "cpu": "arm64" },
-      "sha512-ye8IQLNLyJK4hR5tx8rKh1tEO1Sb+Dw574cbBG++K46LTZAdRq5/IQrNkIfDzFdgU+HMK3QYfm54cgudYeVVlQ=="
-    ],
+    "@postgres-language-server/cli-aarch64-linux-gnu": ["@postgres-language-server/cli-aarch64-linux-gnu@0.17.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-ye8IQLNLyJK4hR5tx8rKh1tEO1Sb+Dw574cbBG++K46LTZAdRq5/IQrNkIfDzFdgU+HMK3QYfm54cgudYeVVlQ=="],
 
-    "@postgres-language-server/cli-aarch64-windows-msvc": [
-      "@postgres-language-server/cli-aarch64-windows-msvc@0.17.1",
-      "",
-      { "os": "win32", "cpu": "arm64" },
-      "sha512-FkOjgvN7+vq0RvwVD/effFjKgH1mrAVMnV+3eO9bdZ6jCXpPesGOyCvyhf59IzoqmvIMyEeKJzjOUcXxWPmdZg=="
-    ],
+    "@postgres-language-server/cli-aarch64-windows-msvc": ["@postgres-language-server/cli-aarch64-windows-msvc@0.17.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-FkOjgvN7+vq0RvwVD/effFjKgH1mrAVMnV+3eO9bdZ6jCXpPesGOyCvyhf59IzoqmvIMyEeKJzjOUcXxWPmdZg=="],
 
-    "@postgres-language-server/cli-x86_64-apple-darwin": [
-      "@postgres-language-server/cli-x86_64-apple-darwin@0.17.1",
-      "",
-      { "os": "darwin", "cpu": "x64" },
-      "sha512-B79kZ9tz8fvGihv4W/cyCFzw5Wz95HlqF1hnNTBocJtf8Nvo9h6RDWoUEYliBjRp37gcdV945ZjV2RHHxdKMTw=="
-    ],
+    "@postgres-language-server/cli-x86_64-apple-darwin": ["@postgres-language-server/cli-x86_64-apple-darwin@0.17.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-B79kZ9tz8fvGihv4W/cyCFzw5Wz95HlqF1hnNTBocJtf8Nvo9h6RDWoUEYliBjRp37gcdV945ZjV2RHHxdKMTw=="],
 
-    "@postgres-language-server/cli-x86_64-linux-gnu": [
-      "@postgres-language-server/cli-x86_64-linux-gnu@0.17.1",
-      "",
-      { "os": "linux", "cpu": "x64" },
-      "sha512-lh5Lg/Cc18+232NRd1OZqdpJzuJMW6lrwkC6RKYiiTzxUfRq7uRV8qI0NNnp5cyKiyDO90cpQQ8fjepTaMzh9A=="
-    ],
+    "@postgres-language-server/cli-x86_64-linux-gnu": ["@postgres-language-server/cli-x86_64-linux-gnu@0.17.1", "", { "os": "linux", "cpu": "x64" }, "sha512-lh5Lg/Cc18+232NRd1OZqdpJzuJMW6lrwkC6RKYiiTzxUfRq7uRV8qI0NNnp5cyKiyDO90cpQQ8fjepTaMzh9A=="],
 
-    "@postgres-language-server/cli-x86_64-linux-musl": [
-      "@postgres-language-server/cli-x86_64-linux-musl@0.17.1",
-      "",
-      { "os": "linux", "cpu": "x64" },
-      "sha512-YH5Znq0urRUxtdsbyDu6Dcg5x9qhgDqTl7gCVY/LmVrPnHfP2I6gU/TJT21B5sDTSadjwZ73AbXimLmlwG6HPA=="
-    ],
+    "@postgres-language-server/cli-x86_64-linux-musl": ["@postgres-language-server/cli-x86_64-linux-musl@0.17.1", "", { "os": "linux", "cpu": "x64" }, "sha512-YH5Znq0urRUxtdsbyDu6Dcg5x9qhgDqTl7gCVY/LmVrPnHfP2I6gU/TJT21B5sDTSadjwZ73AbXimLmlwG6HPA=="],
 
-    "@postgres-language-server/cli-x86_64-windows-msvc": [
-      "@postgres-language-server/cli-x86_64-windows-msvc@0.17.1",
-      "",
-      { "os": "win32", "cpu": "x64" },
-      "sha512-o2uIx0Vi3iEBFKKnz024JicgovJZWpM9G4WbQxf3r9IQlZPWvDXknlX7rNPQDnQTFRIUg8bpjZpjEvDFHMmuGg=="
-    ],
+    "@postgres-language-server/cli-x86_64-windows-msvc": ["@postgres-language-server/cli-x86_64-windows-msvc@0.17.1", "", { "os": "win32", "cpu": "x64" }, "sha512-o2uIx0Vi3iEBFKKnz024JicgovJZWpM9G4WbQxf3r9IQlZPWvDXknlX7rNPQDnQTFRIUg8bpjZpjEvDFHMmuGg=="],
 
-    "@postgrestools/backend-jsonrpc": [
-      "@postgrestools/backend-jsonrpc@workspace:packages/@postgrestools/backend-jsonrpc"
-    ],
+    "@postgrestools/backend-jsonrpc": ["@postgrestools/backend-jsonrpc@workspace:packages/@postgrestools/backend-jsonrpc"],
 
-    "@postgrestools/cli-aarch64-apple-darwin": [
-      "@postgrestools/cli-aarch64-apple-darwin@0.13.0",
-      "",
-      { "os": "darwin", "cpu": "arm64" },
-      "sha512-LqgpsiupuNR1m8rSqcMdwep1UsSG5z7RZ9MYHODBB0+AsN/e1YzcyutqGeKs+AfDBdKdv7QmSbpf7KruBYL+tg=="
-    ],
+    "@postgrestools/cli-aarch64-apple-darwin": ["@postgrestools/cli-aarch64-apple-darwin@0.13.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LqgpsiupuNR1m8rSqcMdwep1UsSG5z7RZ9MYHODBB0+AsN/e1YzcyutqGeKs+AfDBdKdv7QmSbpf7KruBYL+tg=="],
 
-    "@postgrestools/cli-aarch64-linux-gnu": [
-      "@postgrestools/cli-aarch64-linux-gnu@0.13.0",
-      "",
-      { "os": "linux", "cpu": "arm64" },
-      "sha512-QxZZBvg9qAo9raTA5cSuSXlrqo+eCUtYMWSR2dgDCEqogNlo/62ubWYgPi+SMEtfm9euqG1GOItxyRv6xUriEA=="
-    ],
+    "@postgrestools/cli-aarch64-linux-gnu": ["@postgrestools/cli-aarch64-linux-gnu@0.13.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-QxZZBvg9qAo9raTA5cSuSXlrqo+eCUtYMWSR2dgDCEqogNlo/62ubWYgPi+SMEtfm9euqG1GOItxyRv6xUriEA=="],
 
-    "@postgrestools/cli-aarch64-windows-msvc": [
-      "@postgrestools/cli-aarch64-windows-msvc@0.13.0",
-      "",
-      { "os": "win32", "cpu": "arm64" },
-      "sha512-C8BRZOPQA16eGL8Kk7D4M+9h2Y7x0GOJEBzjR3ZV54besoH8gcZqSxzaA8WbFczQ3dgEZ5CStny6asl3B5JMHA=="
-    ],
+    "@postgrestools/cli-aarch64-windows-msvc": ["@postgrestools/cli-aarch64-windows-msvc@0.13.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-C8BRZOPQA16eGL8Kk7D4M+9h2Y7x0GOJEBzjR3ZV54besoH8gcZqSxzaA8WbFczQ3dgEZ5CStny6asl3B5JMHA=="],
 
-    "@postgrestools/cli-x86_64-apple-darwin": [
-      "@postgrestools/cli-x86_64-apple-darwin@0.13.0",
-      "",
-      { "os": "darwin", "cpu": "x64" },
-      "sha512-stbU4+en82DofjzpAQlfgKemJe1lbkGhuOAxfWce4jyT25+cil6cEWBia0hZyrve9sVEJctE1MHy9os8s3EGww=="
-    ],
+    "@postgrestools/cli-x86_64-apple-darwin": ["@postgrestools/cli-x86_64-apple-darwin@0.13.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-stbU4+en82DofjzpAQlfgKemJe1lbkGhuOAxfWce4jyT25+cil6cEWBia0hZyrve9sVEJctE1MHy9os8s3EGww=="],
 
-    "@postgrestools/cli-x86_64-linux-gnu": [
-      "@postgrestools/cli-x86_64-linux-gnu@0.13.0",
-      "",
-      { "os": "linux", "cpu": "x64" },
-      "sha512-RPFdgcAiD+BWhSFw7suI0jTkJysHlHzrD4in27OGlKt9AvZ6TgKrCfDatUkn2VQfn6Ib8o/+1roFOKwFbfQIOw=="
-    ],
+    "@postgrestools/cli-x86_64-linux-gnu": ["@postgrestools/cli-x86_64-linux-gnu@0.13.0", "", { "os": "linux", "cpu": "x64" }, "sha512-RPFdgcAiD+BWhSFw7suI0jTkJysHlHzrD4in27OGlKt9AvZ6TgKrCfDatUkn2VQfn6Ib8o/+1roFOKwFbfQIOw=="],
 
-    "@postgrestools/cli-x86_64-windows-msvc": [
-      "@postgrestools/cli-x86_64-windows-msvc@0.13.0",
-      "",
-      { "os": "win32", "cpu": "x64" },
-      "sha512-4S6mbvc9u6ipeMcZHwX3RqGMJaNR9B5utMQN/N3LBnvLx62N9MHU1bk3bnGxfHoALXQTMq+us7M9GvEe1izGHQ=="
-    ],
+    "@postgrestools/cli-x86_64-windows-msvc": ["@postgrestools/cli-x86_64-windows-msvc@0.13.0", "", { "os": "win32", "cpu": "x64" }, "sha512-4S6mbvc9u6ipeMcZHwX3RqGMJaNR9B5utMQN/N3LBnvLx62N9MHU1bk3bnGxfHoALXQTMq+us7M9GvEe1izGHQ=="],
 
-    "@postgrestools/postgrestools": [
-      "@postgrestools/postgrestools@workspace:packages/@postgrestools/postgrestools"
-    ],
+    "@postgrestools/postgrestools": ["@postgrestools/postgrestools@workspace:packages/@postgrestools/postgrestools"],
 
-    "@types/bun": [
-      "@types/bun@1.2.5",
-      "",
-      { "dependencies": { "bun-types": "1.2.5" } },
-      "sha512-w2OZTzrZTVtbnJew1pdFmgV99H0/L+Pvw+z1P67HaR18MHOzYnTYOi6qzErhK8HyT+DB782ADVPPE92Xu2/Opg=="
-    ],
+    "@types/bun": ["@types/bun@1.2.5", "", { "dependencies": { "bun-types": "1.2.5" } }, "sha512-w2OZTzrZTVtbnJew1pdFmgV99H0/L+Pvw+z1P67HaR18MHOzYnTYOi6qzErhK8HyT+DB782ADVPPE92Xu2/Opg=="],
 
-    "@types/node": [
-      "@types/node@22.13.10",
-      "",
-      { "dependencies": { "undici-types": "~6.20.0" } },
-      "sha512-I6LPUvlRH+O6VRUqYOcMudhaIdUVWfsjnZavnsraHvpBwaEyMN29ry+0UVJhImYL16xsscu0aske3yA+uPOWfw=="
-    ],
+    "@types/node": ["@types/node@22.13.10", "", { "dependencies": { "undici-types": "~6.20.0" } }, "sha512-I6LPUvlRH+O6VRUqYOcMudhaIdUVWfsjnZavnsraHvpBwaEyMN29ry+0UVJhImYL16xsscu0aske3yA+uPOWfw=="],
 
-    "@types/ws": [
-      "@types/ws@8.5.14",
-      "",
-      { "dependencies": { "@types/node": "*" } },
-      "sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw=="
-    ],
+    "@types/ws": ["@types/ws@8.5.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw=="],
 
-    "bun-types": [
-      "bun-types@1.2.5",
-      "",
-      { "dependencies": { "@types/node": "*", "@types/ws": "~8.5.10" } },
-      "sha512-3oO6LVGGRRKI4kHINx5PIdIgnLRb7l/SprhzqXapmoYkFl5m4j6EvALvbDVuuBFaamB46Ap6HCUxIXNLCGy+tg=="
-    ],
+    "bun-types": ["bun-types@1.2.5", "", { "dependencies": { "@types/node": "*", "@types/ws": "~8.5.10" } }, "sha512-3oO6LVGGRRKI4kHINx5PIdIgnLRb7l/SprhzqXapmoYkFl5m4j6EvALvbDVuuBFaamB46Ap6HCUxIXNLCGy+tg=="],
 
-    "typescript": [
-      "typescript@5.8.2",
-      "",
-      { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } },
-      "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="
-    ],
+    "typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
 
-    "undici-types": [
-      "undici-types@6.20.0",
-      "",
-      {},
-      "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="
-    ]
+    "undici-types": ["undici-types@6.20.0", "", {}, "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="],
   }
 }
