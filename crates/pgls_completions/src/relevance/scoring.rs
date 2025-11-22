@@ -59,24 +59,53 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
         };
 
+        let is_case =
+            matches!(self.data, CompletionRelevanceData::Column(_)) && content.as_str() == "u";
+
         let fz_matcher = SkimMatcherV2::default();
 
-        let check_against = match ctx.identifier_qualifiers {
+        let check_against = match &ctx.identifier_qualifiers {
             // If both qualifiers are already written out, we must check the item's name itself.
-            (Some(_), Some(_)) => content.to_ascii_lowercase(),
+            (Some(_), Some(_)) => name,
 
-            _ => self
-                .get_table_name()
-                .and_then(|tbl| ctx.get_used_alias_for_table(tbl))
-                .map(|alias| format!("{}.{}", alias, name))
-                .unwrap_or(name),
+            // If only one qualifier is written out, we might look at a schema, a table, or an alias.
+            (None, Some(qualifier)) => {
+                if self.get_schema_name().is_some_and(|s| s == qualifier) {
+                    self.get_table_name()
+                        .map(|t| format!("{}.{}", t, name))
+                        .unwrap_or(name)
+                } else if self.get_table_name().is_some_and(|t| t == qualifier) {
+                    name
+                } else if ctx
+                    .get_mentioned_table_for_alias(&qualifier)
+                    .is_some_and(|alias_tbl| {
+                        self.get_table_name()
+                            .is_some_and(|item_tbl| alias_tbl == item_tbl)
+                    })
+                {
+                    name
+                } else {
+                    // the qualifier does not match schema, table, or alias.
+                    // what the hell is it?
+                    // probably a typo.
+                    self.skip = true;
+                    String::new()
+                }
+            }
+
+            // no qualifier whatsoever, we'll check the full qualified name of the item.
+            _ => self.get_fully_qualified_name(),
         };
 
         match fz_matcher.fuzzy_match(
-            check_against.as_str(),
+            check_against.to_ascii_lowercase().as_str(),
             content.to_ascii_lowercase().as_str(),
         ) {
             Some(score) => {
+                if is_case {
+                    println!("check {}, score {}", check_against, score);
+                }
+
                 let scorei32: i32 = score
                     .try_into()
                     .expect("The length of the input exceeds i32 capacity");
@@ -255,6 +284,21 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
             CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
             CompletionRelevanceData::Role(_) => None,
+        }
+    }
+
+    fn get_fully_qualified_name(&self) -> String {
+        match self.data {
+            CompletionRelevanceData::Schema(s) => s.name.clone(),
+            CompletionRelevanceData::Column(c) => {
+                format!("{}.{}.{}", c.schema_name, c.table_name, c.name)
+            }
+            CompletionRelevanceData::Table(t) => format!("{}.{}", t.schema, t.name),
+            CompletionRelevanceData::Function(f) => format!("{}.{}", f.schema, f.name),
+            CompletionRelevanceData::Policy(p) => {
+                format!("{}.{}.{}", p.schema_name, p.table_name, p.name)
+            }
+            CompletionRelevanceData::Role(r) => r.name.clone(),
         }
     }
 
