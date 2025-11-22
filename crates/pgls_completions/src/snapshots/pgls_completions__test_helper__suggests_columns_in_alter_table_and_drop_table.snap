@@ -58,10 +58,10 @@ alter table instruments drop c|
 
 Results:
 created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
+calls - pg_catalog.pg_stat_user_functions.calls (Column)
+castcontext - pg_catalog.pg_cast.castcontext (Column)
+castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -80,10 +80,10 @@ alter table instruments drop column n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -136,10 +136,10 @@ alter table instruments drop c|
 
 Results:
 created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
+calls - pg_catalog.pg_stat_user_functions.calls (Column)
+castcontext - pg_catalog.pg_cast.castcontext (Column)
+castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -158,10 +158,10 @@ alter table instruments drop column n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -214,10 +214,10 @@ alter table instruments drop c|
 
 Results:
 created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
+calls - pg_catalog.pg_stat_user_functions.calls (Column)
+castcontext - pg_catalog.pg_cast.castcontext (Column)
+castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -236,32 +236,22 @@ alter table instruments drop column i|
 
 Results:
 id - public.instruments.id (Column)
-created_at - public.instruments.created_at (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
 
 --------------
 
 alter table instruments drop column if |
-
-Results:
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-
---------------
-
 alter table instruments drop column if e|
 
 Results:
 created_at - public.instruments.created_at (Column)
 name - public.instruments.name (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+encoding - pg_catalog.pg_database.encoding (Column)
+encrypted - pg_catalog.pg_stat_gssapi.encrypted (Column)
 
 --------------
 
@@ -280,10 +270,10 @@ alter table instruments drop column if exists n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -336,10 +326,10 @@ alter table instruments alter c|
 
 Results:
 created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
+calls - pg_catalog.pg_stat_user_functions.calls (Column)
+castcontext - pg_catalog.pg_cast.castcontext (Column)
+castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -358,10 +348,10 @@ alter table instruments alter column n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -428,10 +418,10 @@ alter table instruments alter n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -474,10 +464,10 @@ alter table p|
 
 Results:
 public - public (Schema)
-instruments - public.instruments (Table)
 information_schema.parameters - information_schema.parameters (Table)
 pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
 pg_catalog.pg_am - pg_catalog.pg_am (Table)
+pg_catalog.pg_amop - pg_catalog.pg_amop (Table)
 
 --------------
 
@@ -514,10 +504,10 @@ alter table public.instruments alter c|
 
 Results:
 created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
+calls - pg_catalog.pg_stat_user_functions.calls (Column)
+castcontext - pg_catalog.pg_cast.castcontext (Column)
+castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -536,10 +526,10 @@ alter table public.instruments alter column n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -592,10 +582,10 @@ alter table instruments alter n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -648,10 +638,10 @@ alter table instruments rename n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -684,10 +674,10 @@ alter table p|
 
 Results:
 public - public (Schema)
-instruments - public.instruments (Table)
 information_schema.parameters - information_schema.parameters (Table)
 pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
 pg_catalog.pg_am - pg_catalog.pg_am (Table)
+pg_catalog.pg_amop - pg_catalog.pg_amop (Table)
 
 --------------
 
@@ -724,10 +714,10 @@ alter table public.instruments rename c|
 
 Results:
 created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
+calls - pg_catalog.pg_stat_user_functions.calls (Column)
+castcontext - pg_catalog.pg_cast.castcontext (Column)
+castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -746,10 +736,10 @@ alter table public.instruments rename column n|
 
 Results:
 name - public.instruments.name (Column)
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 

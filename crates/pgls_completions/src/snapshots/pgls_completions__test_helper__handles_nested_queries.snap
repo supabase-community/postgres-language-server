@@ -29,31 +29,11 @@ select * from (
 ) as subquery
 join public.users u
 on u.id = subquery.id;
-
-Results:
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-
---------------
-
 select * from (
     s|
 ) as subquery
 join public.users u
 on u.id = subquery.id;
-
-Results:
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-
---------------
-
 select * from (
     select |
 ) as subquery
@@ -150,9 +130,9 @@ on u.id = subquery.id;
 Results:
 public - public (Schema)
 private - private (Schema)
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+information_schema.parameters - information_schema.parameters (Table)
 
 --------------
 

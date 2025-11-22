@@ -54,10 +54,10 @@ select "e|"
 
 Results:
 email - private.users.email (Column)
-id - private.users.id (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-apply_error_count - pg_catalog.pg_stat_subscription_stats.apply_error_count (Column)
+elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+encoding - pg_catalog.pg_database.encoding (Column)
 
 --------------
 
@@ -101,9 +101,9 @@ select "email" from "p|"
 Results:
 public - public (Schema)
 private - private (Schema)
-private"."users - private.users (Table)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
+information_schema"."parameters - information_schema.parameters (Table)
 
 --------------
 

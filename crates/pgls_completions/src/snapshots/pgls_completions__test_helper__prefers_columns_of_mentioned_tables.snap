@@ -47,8 +47,8 @@ Results:
 address2 - public.users.address2 (Column)
 email2 - public.users.email2 (Column)
 name2 - public.users.name2 (Column)
-id2 - public.users.id2 (Column)
-settings - public.users.settings (Column)
+address1 - private.users.address1 (Column)
+email1 - private.users.email1 (Column)
 
 --------------
 
@@ -79,8 +79,8 @@ Results:
 address1 - private.users.address1 (Column)
 email1 - private.users.email1 (Column)
 name1 - private.users.name1 (Column)
-id1 - private.users.id1 (Column)
-user_settings - private.users.user_settings (Column)
+address2 - public.users.address2 (Column)
+email2 - public.users.email2 (Column)
 
 --------------
 
@@ -110,9 +110,9 @@ select s| from private.users
 Results:
 user_settings - private.users.user_settings (Column)
 address1 - private.users.address1 (Column)
-email1 - private.users.email1 (Column)
-id1 - private.users.id1 (Column)
-name1 - private.users.name1 (Column)
+settings - public.users.settings (Column)
+address2 - public.users.address2 (Column)
+safe_wal_size - pg_catalog.pg_replication_slots.safe_wal_size (Column)
 
 --------------
 

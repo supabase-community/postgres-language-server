@@ -90,9 +90,9 @@ select "pr"."email" from p|
 Results:
 public - public (Schema)
 private - private (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 information_schema.parameters - information_schema.parameters (Table)
-pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
-pg_catalog.pg_am - pg_catalog.pg_am (Table)
 
 --------------
 

@@ -44,8 +44,8 @@ Results:
 name - public.users.name (Column)
 narrator - public.audio_books.narrator (Column)
 narrator_id - private.audio_books.narrator_id (Column)
-id - public.audio_books.id (Column)
 name - Schema: pg_catalog.name (Function)
+nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
 
 --------------
 

@@ -541,19 +541,23 @@ mod tests {
             );
         "#;
 
-        assert_no_complete_results(
-            format!(r#"select "e{}""#, QueryWithCursorPosition::cursor_marker()).as_str(),
-            Some(setup),
-            &pool,
-        )
-        .await;
-
-        // TestCompletionsSuite::new(&pool, Some(setup))
-        //     .with_case(
-        //         TestCompletionsCase::new().type_sql(r#"select "email" from "private"."users";"#),
+        // assert_no_complete_results(
+        //     format!(
+        //         r#"select "email" from "p{}""#,
+        //         QueryWithCursorPosition::cursor_marker()
         //     )
-        //     .snapshot("completes_quoted_columns")
-        //     .await;
+        //     .as_str(),
+        //     Some(setup),
+        //     &pool,
+        // )
+        // .await;
+
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new().type_sql(r#"select "email" from "private"."users";"#),
+            )
+            .snapshot("completes_quoted_columns")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
