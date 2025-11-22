@@ -3,7 +3,7 @@ use xtask::{project_root, pushd, Result};
 
 use xtask_codegen::{
     generate_analyser, generate_bindings, generate_crate, generate_new_analyser_rule,
-    generate_rules_configuration, task_command, TaskCommand,
+    generate_rules_configuration, generate_splinter, task_command, TaskCommand,
 };
 
 fn main() -> Result<()> {
@@ -30,6 +30,9 @@ fn main() -> Result<()> {
         }
         TaskCommand::Bindings => {
             generate_bindings(Overwrite)?;
+        }
+        TaskCommand::Splinter => {
+            generate_splinter()?;
         }
     }
 

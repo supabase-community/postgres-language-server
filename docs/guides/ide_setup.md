@@ -21,6 +21,10 @@ The language server is available as an Extension. It's published from [this repo
 > [!NOTE]
 > Is there a extension for an editor that is not listed here? Please file a PR and we will be happy to add it to the list
 
+## Sublime Text
+
+See [install instructions](https://lsp.sublimetext.io/language_servers/#postgresql).
+
 ## Integrate in an editor extension
 
 Is your favorite editor missing? Thanks to the language server protocol, integrating the Postgres Language Server protocol should be straightforward.

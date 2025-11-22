@@ -79,7 +79,7 @@ impl CompletionScore<'_> {
         };
 
         let has_mentioned_tables = ctx.has_any_mentioned_relations();
-        let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
+        let has_qualifier = ctx.has_any_qualifier();
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match clause_type {
@@ -87,11 +87,8 @@ impl CompletionScore<'_> {
                 WrappingClause::Delete => 10,
                 WrappingClause::From => 5,
                 WrappingClause::Join { on_node }
-                    if on_node.is_none_or(|on| {
-                        ctx.node_under_cursor
-                            .as_ref()
-                            .is_none_or(|n| n.end_byte() < on.start_byte())
-                    }) =>
+                    if on_node
+                        .is_none_or(|on| ctx.node_under_cursor.end_byte() < on.start_byte()) =>
                 {
                     5
                 }
@@ -110,11 +107,8 @@ impl CompletionScore<'_> {
                 WrappingClause::Where => 10,
                 WrappingClause::CheckOrUsingClause => 0,
                 WrappingClause::Join { on_node }
-                    if on_node.is_some_and(|on| {
-                        ctx.node_under_cursor
-                            .as_ref()
-                            .is_some_and(|n| n.start_byte() > on.end_byte())
-                    }) =>
+                    if on_node
+                        .is_some_and(|on| ctx.node_under_cursor.start_byte() > on.end_byte()) =>
                 {
                     // Users will probably join on primary keys
                     if col.is_primary_key { 20 } else { 10 }
@@ -122,13 +116,13 @@ impl CompletionScore<'_> {
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match clause_type {
-                WrappingClause::From if !has_mentioned_schema => 15,
-                WrappingClause::Join { .. } if !has_mentioned_schema => 15,
-                WrappingClause::Update if !has_mentioned_schema => 15,
-                WrappingClause::Delete if !has_mentioned_schema => 15,
-                WrappingClause::AlterPolicy if !has_mentioned_schema => 15,
-                WrappingClause::DropPolicy if !has_mentioned_schema => 15,
-                WrappingClause::CreatePolicy if !has_mentioned_schema => 15,
+                WrappingClause::From if !has_qualifier => 15,
+                WrappingClause::Join { .. } if !has_qualifier => 15,
+                WrappingClause::Update if !has_qualifier => 15,
+                WrappingClause::Delete if !has_qualifier => 15,
+                WrappingClause::AlterPolicy if !has_qualifier => 15,
+                WrappingClause::DropPolicy if !has_qualifier => 15,
+                WrappingClause::CreatePolicy if !has_qualifier => 15,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => match clause_type {
@@ -149,15 +143,15 @@ impl CompletionScore<'_> {
             Some(wn) => wn,
         };
 
-        let has_mentioned_schema = ctx.schema_or_alias_name.is_some();
+        let has_qualifier = ctx.has_any_qualifier();
         let has_node_text = ctx
             .get_node_under_cursor_content()
             .is_some_and(|txt| !sanitization::is_sanitized_token(txt.as_str()));
 
         self.score += match self.data {
             CompletionRelevanceData::Table(_) => match wrapping_node {
-                WrappingNode::Relation if has_mentioned_schema => 15,
-                WrappingNode::Relation if !has_mentioned_schema => 10,
+                WrappingNode::Relation if has_qualifier => 15,
+                WrappingNode::Relation if !has_qualifier => 10,
                 WrappingNode::BinaryExpression => 5,
                 _ => -50,
             },
@@ -172,8 +166,8 @@ impl CompletionScore<'_> {
                 _ => -15,
             },
             CompletionRelevanceData::Schema(_) => match wrapping_node {
-                WrappingNode::Relation if !has_mentioned_schema && !has_node_text => 15,
-                WrappingNode::Relation if !has_mentioned_schema && has_node_text => 0,
+                WrappingNode::Relation if !has_qualifier && !has_node_text => 15,
+                WrappingNode::Relation if !has_qualifier && has_node_text => 0,
                 _ => -50,
             },
             CompletionRelevanceData::Policy(_) => 0,
@@ -191,17 +185,30 @@ impl CompletionScore<'_> {
     }
 
     fn check_matches_schema(&mut self, ctx: &TreesitterContext) {
-        let schema_name = match ctx.schema_or_alias_name.as_ref() {
-            None => return,
-            Some(n) => n.replace('"', ""),
+        let schema_from_qualifier = match self.data {
+            CompletionRelevanceData::Table(_) | CompletionRelevanceData::Function(_) => {
+                ctx.tail_qualifier_sanitized()
+            }
+
+            CompletionRelevanceData::Column(_) | CompletionRelevanceData::Policy(_) => {
+                ctx.head_qualifier_sanitized()
+            }
+
+            CompletionRelevanceData::Schema(_) | CompletionRelevanceData::Role(_) => None,
         };
+
+        if schema_from_qualifier.is_none() {
+            return;
+        }
+
+        let schema_from_qualifier = schema_from_qualifier.unwrap();
 
         let data_schema = match self.get_schema_name() {
             Some(s) => s,
             None => return,
         };
 
-        if schema_name == data_schema {
+        if schema_from_qualifier == data_schema {
             self.score += 25;
         } else {
             self.score -= 10;

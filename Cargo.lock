@@ -2988,6 +2988,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_splinter"
+version = "0.0.0"
+dependencies = [
+ "insta",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_test_utils",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "ureq",
+]
+
+[[package]]
 name = "pgls_statement_splitter"
 version = "0.0.0"
 dependencies = [
@@ -3078,6 +3092,8 @@ name = "pgls_treesitter_grammar"
 version = "0.0.0"
 dependencies = [
  "cc",
+ "insta",
+ "pgls_test_utils",
  "tree-sitter",
  "tree-sitter-language",
 ]

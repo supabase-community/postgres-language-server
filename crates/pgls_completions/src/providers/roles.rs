@@ -1,7 +1,7 @@
 use crate::{
-    CompletionItemKind,
     builder::{CompletionBuilder, PossibleCompletionItem},
-    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
+    relevance::{filtering::CompletionFilter, scoring::CompletionScore, CompletionRelevanceData},
+    CompletionItemKind,
 };
 use pgls_schema_cache::SchemaCache;
 use pgls_treesitter::TreesitterContext;
@@ -34,7 +34,7 @@ pub fn complete_roles<'a>(
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{CompletionAssertion, assert_complete_results};
+    use crate::test_helper::{assert_complete_results, CompletionAssertion};
 
     use pgls_test_utils::QueryWithCursorPosition;
 
@@ -48,7 +48,16 @@ mod tests {
 
     fn expected_roles() -> Vec<CompletionAssertion> {
         vec![
+            CompletionAssertion::LabelAndKind("anon".into(), crate::CompletionItemKind::Role),
+            CompletionAssertion::LabelAndKind(
+                "authenticated".into(),
+                crate::CompletionItemKind::Role,
+            ),
             CompletionAssertion::LabelAndKind("owner".into(), crate::CompletionItemKind::Role),
+            CompletionAssertion::LabelAndKind(
+                "service_role".into(),
+                crate::CompletionItemKind::Role,
+            ),
             CompletionAssertion::LabelAndKind("test_login".into(), crate::CompletionItemKind::Role),
             CompletionAssertion::LabelAndKind(
                 "test_nologin".into(),

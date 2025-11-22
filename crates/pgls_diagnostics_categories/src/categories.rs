@@ -47,6 +47,30 @@ define_categories! {
     "lint/safety/runningStatementWhileHoldingAccessExclusive": "https://pg-language-server.com/latest/rules/running-statement-while-holding-access-exclusive",
     "lint/safety/transactionNesting": "https://pg-language-server.com/latest/rules/transaction-nesting",
     // end lint rules
+    // splinter rules start
+    "splinter/performance/authRlsInitplan": "https://supabase.com/docs/guides/database/database-advisors?lint=0003_auth_rls_initplan",
+    "splinter/performance/duplicateIndex": "https://supabase.com/docs/guides/database/database-advisors?lint=0009_duplicate_index",
+    "splinter/performance/multiplePermissivePolicies": "https://supabase.com/docs/guides/database/database-advisors?lint=0006_multiple_permissive_policies",
+    "splinter/performance/noPrimaryKey": "https://supabase.com/docs/guides/database/database-advisors?lint=0004_no_primary_key",
+    "splinter/performance/tableBloat": "https://supabase.com/docs/guides/database/database-advisors",
+    "splinter/performance/unindexedForeignKeys": "https://supabase.com/docs/guides/database/database-advisors?lint=0001_unindexed_foreign_keys",
+    "splinter/performance/unusedIndex": "https://supabase.com/docs/guides/database/database-advisors?lint=0005_unused_index",
+    "splinter/security/authUsersExposed": "https://supabase.com/docs/guides/database/database-advisors?lint=0002_auth_users_exposed",
+    "splinter/security/extensionInPublic": "https://supabase.com/docs/guides/database/database-advisors?lint=0014_extension_in_public",
+    "splinter/security/extensionVersionsOutdated": "https://supabase.com/docs/guides/database/database-advisors?lint=0022_extension_versions_outdated",
+    "splinter/security/fkeyToAuthUnique": "https://supabase.com/docs/guides/database/database-advisors",
+    "splinter/security/foreignTableInApi": "https://supabase.com/docs/guides/database/database-advisors?lint=0017_foreign_table_in_api",
+    "splinter/security/functionSearchPathMutable": "https://supabase.com/docs/guides/database/database-advisors?lint=0011_function_search_path_mutable",
+    "splinter/security/insecureQueueExposedInApi": "https://supabase.com/docs/guides/database/database-advisors?lint=0019_insecure_queue_exposed_in_api",
+    "splinter/security/materializedViewInApi": "https://supabase.com/docs/guides/database/database-advisors?lint=0016_materialized_view_in_api",
+    "splinter/security/policyExistsRlsDisabled": "https://supabase.com/docs/guides/database/database-advisors?lint=0007_policy_exists_rls_disabled",
+    "splinter/security/rlsDisabledInPublic": "https://supabase.com/docs/guides/database/database-advisors?lint=0013_rls_disabled_in_public",
+    "splinter/security/rlsEnabledNoPolicy": "https://supabase.com/docs/guides/database/database-advisors?lint=0008_rls_enabled_no_policy",
+    "splinter/security/rlsReferencesUserMetadata": "https://supabase.com/docs/guides/database/database-advisors?lint=0015_rls_references_user_metadata",
+    "splinter/security/securityDefinerView": "https://supabase.com/docs/guides/database/database-advisors?lint=0010_security_definer_view",
+    "splinter/security/unsupportedRegTypes": "https://supabase.com/docs/guides/database/database-advisors?lint=unsupported_reg_types",
+    "splinter/unknown/unknown": "https://supabase.com/docs/guides/database/database-advisors",
+    // splinter rules end
     ;
     // General categories
     "stdin",
@@ -69,4 +93,11 @@ define_categories! {
     "lint/performance",
     "lint/safety",
     // Lint groups end
+
+    // Splinter groups start
+    "splinter",
+    "splinter/performance",
+    "splinter/security",
+    "splinter/unknown",
+    // Splinter groups end
 }

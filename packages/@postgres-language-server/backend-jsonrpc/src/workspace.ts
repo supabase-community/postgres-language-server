@@ -95,6 +95,28 @@ export type Category =
 	| "lint/safety/requireConcurrentIndexDeletion"
 	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
+	| "splinter/performance/authRlsInitplan"
+	| "splinter/performance/duplicateIndex"
+	| "splinter/performance/multiplePermissivePolicies"
+	| "splinter/performance/noPrimaryKey"
+	| "splinter/performance/tableBloat"
+	| "splinter/performance/unindexedForeignKeys"
+	| "splinter/performance/unusedIndex"
+	| "splinter/security/authUsersExposed"
+	| "splinter/security/extensionInPublic"
+	| "splinter/security/extensionVersionsOutdated"
+	| "splinter/security/fkeyToAuthUnique"
+	| "splinter/security/foreignTableInApi"
+	| "splinter/security/functionSearchPathMutable"
+	| "splinter/security/insecureQueueExposedInApi"
+	| "splinter/security/materializedViewInApi"
+	| "splinter/security/policyExistsRlsDisabled"
+	| "splinter/security/rlsDisabledInPublic"
+	| "splinter/security/rlsEnabledNoPolicy"
+	| "splinter/security/rlsReferencesUserMetadata"
+	| "splinter/security/securityDefinerView"
+	| "splinter/security/unsupportedRegTypes"
+	| "splinter/unknown/unknown"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -111,7 +133,11 @@ export type Category =
 	| "dummy"
 	| "lint"
 	| "lint/performance"
-	| "lint/safety";
+	| "lint/safety"
+	| "splinter"
+	| "splinter/performance"
+	| "splinter/security"
+	| "splinter/unknown";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
@@ -139,7 +165,11 @@ export type Advice =
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = "argv" | "memory" | { file: string };
+export type Resource_for_String =
+	| "database"
+	| "argv"
+	| "memory"
+	| { file: string };
 export type TextRange = [TextSize, TextSize];
 export interface MarkupNodeBuf {
 	content: string;

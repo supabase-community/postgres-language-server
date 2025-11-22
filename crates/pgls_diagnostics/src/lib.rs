@@ -36,7 +36,9 @@ pub use crate::display::{
 };
 pub use crate::display_github::PrintGitHubDiagnostic;
 pub use crate::error::{Error, Result};
-pub use crate::location::{LineIndex, LineIndexBuf, Location, Resource, SourceCode};
+pub use crate::location::{
+    DatabaseObject, DatabaseObjectOwned, LineIndex, LineIndexBuf, Location, Resource, SourceCode,
+};
 use pgls_console::fmt::{Formatter, Termcolor};
 use pgls_console::markup;
 use std::fmt::Write;

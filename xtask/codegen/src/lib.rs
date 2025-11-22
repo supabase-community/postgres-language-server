@@ -5,12 +5,14 @@ mod generate_bindings;
 mod generate_configuration;
 mod generate_crate;
 mod generate_new_analyser_rule;
+mod generate_splinter;
 
 pub use self::generate_analyser::generate_analyser;
 pub use self::generate_bindings::generate_bindings;
 pub use self::generate_configuration::{generate_rules_configuration, generate_tool_configuration};
 pub use self::generate_crate::generate_crate;
 pub use self::generate_new_analyser_rule::generate_new_analyser_rule;
+pub use self::generate_splinter::generate_splinter;
 use bpaf::Bpaf;
 use generate_new_analyser_rule::Category;
 use pgls_diagnostics::Severity;
@@ -90,4 +92,7 @@ pub enum TaskCommand {
         #[bpaf(long("severity"), fallback(Severity::Error))]
         severity: Severity,
     },
+    /// Generate splinter categories from the SQL file
+    #[bpaf(command)]
+    Splinter,
 }

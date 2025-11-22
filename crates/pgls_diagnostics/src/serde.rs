@@ -273,6 +273,7 @@ impl super::Advices for Advice {
             Advice::Frame(location) => visitor.record_frame(super::Location {
                 resource: location.path.as_ref().map(super::Resource::as_deref),
                 span: location.span,
+                database_object: None,
                 source_code: location.source_code.as_deref().map(|text| SourceCode {
                     text,
                     line_starts: None,
@@ -495,4 +496,31 @@ mod tests {
     //
     //     assert_eq!(diag, expected);
     // }
+
+    #[test]
+    fn test_database_object_location_macro() {
+        use crate::{DatabaseObjectOwned, Diagnostic};
+
+        #[derive(Debug, Diagnostic)]
+        #[diagnostic(severity = Error, category = "lint")]
+        struct TestDatabaseObjectDiagnostic {
+            #[location(database_object)]
+            db_object: DatabaseObjectOwned,
+        }
+
+        let diag = TestDatabaseObjectDiagnostic {
+            db_object: DatabaseObjectOwned {
+                schema: Some("public".to_string()),
+                name: "contacts".to_string(),
+                object_type: Some("table".to_string()),
+            },
+        };
+
+        let location = diag.location();
+        assert!(location.database_object.is_some());
+        let db_obj = location.database_object.unwrap();
+        assert_eq!(db_obj.schema, Some("public"));
+        assert_eq!(db_obj.name, "contacts");
+        assert_eq!(db_obj.object_type, Some("table"));
+    }
 }
