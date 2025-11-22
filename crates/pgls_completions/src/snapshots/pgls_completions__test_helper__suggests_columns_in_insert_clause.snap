@@ -29,9 +29,9 @@ insert into |
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 
@@ -135,9 +135,9 @@ insert into |
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 

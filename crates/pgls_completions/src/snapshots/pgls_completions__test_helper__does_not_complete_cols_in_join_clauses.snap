@@ -56,11 +56,11 @@ select u.uid, p.content from |
 **Schema suggestions should be prioritized, since we want to push users to specify them.**
 
 Results:
-public - public (Schema)
 auth - auth (Schema)
-auth.posts - auth.posts (Table)
-auth.users - auth.users (Table)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+auth.posts - auth.posts (Table)
 
 --------------
 
@@ -99,11 +99,11 @@ select u.uid, p.content from auth.users u j|
 select u.uid, p.content from auth.users u join |
 
 Results:
-public - public (Schema)
 auth - auth (Schema)
-auth.posts - auth.posts (Table)
-auth.users - auth.users (Table)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+auth.posts - auth.posts (Table)
 
 --------------
 

@@ -60,9 +60,9 @@ select name from instruments i join others o on i.z = o.a where o.a = |
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 
@@ -71,11 +71,11 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z |
 select name from instruments i join others o on i.z = o.a where o.a = i.z a|
 
 Results:
-abbrev - Schema: pg_catalog.abbrev (Function)
-abs - Schema: pg_catalog.abs (Function)
-aclcontains - Schema: pg_catalog.aclcontains (Function)
-acldefault - Schema: pg_catalog.acldefault (Function)
-aclexplode - Schema: pg_catalog.aclexplode (Function)
+information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+information_schema.applicable_roles - information_schema.applicable_roles (Table)
+information_schema.attributes - information_schema.attributes (Table)
+information_schema.collation_character_set_applicability - information_schema.collation_character_set_applicability (Table)
+pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
 
 --------------
 
@@ -99,9 +99,9 @@ select name from instruments i join others o on i.z = o.a where o.a = i.z and i.
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 

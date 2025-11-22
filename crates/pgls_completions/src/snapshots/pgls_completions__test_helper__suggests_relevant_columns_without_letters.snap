@@ -42,11 +42,11 @@ select name f|
 select name from |
 
 Results:
-public - public (Schema)
 users - public.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 

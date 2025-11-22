@@ -50,13 +50,9 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 
 #[cfg(test)]
 mod tests {
-    use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
-    use crate::test_helper::{
-        TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
-        assert_no_complete_results,
-    };
+    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
@@ -540,17 +536,6 @@ mod tests {
                 "quoted_column" text
             );
         "#;
-
-        // assert_no_complete_results(
-        //     format!(
-        //         r#"select "email" from "p{}""#,
-        //         QueryWithCursorPosition::cursor_marker()
-        //     )
-        //     .as_str(),
-        //     Some(setup),
-        //     &pool,
-        // )
-        // .await;
 
         TestCompletionsSuite::new(&pool, Some(setup))
             .with_case(

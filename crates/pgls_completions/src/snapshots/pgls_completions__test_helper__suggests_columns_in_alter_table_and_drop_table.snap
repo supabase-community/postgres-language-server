@@ -23,10 +23,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -101,10 +101,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -179,10 +179,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -291,10 +291,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -366,7 +366,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+instruments - public.instruments (Table)
 
 --------------
 
@@ -383,10 +383,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -436,7 +436,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+instruments - public.instruments (Table)
 
 --------------
 
@@ -453,10 +453,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -547,10 +547,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -603,10 +603,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -663,10 +663,10 @@ alter table |
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
-information_schema._pg_foreign_table_columns - information_schema._pg_foreign_table_columns (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 

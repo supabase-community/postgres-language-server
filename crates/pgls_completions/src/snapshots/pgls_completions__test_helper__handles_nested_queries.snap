@@ -41,11 +41,11 @@ join public.users u
 on u.id = subquery.id;
 
 Results:
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
-pg_catalog.RI_FKey_check_upd() - Schema: pg_catalog.RI_FKey_check_upd (Function)
-pg_catalog.RI_FKey_noaction_del() - Schema: pg_catalog.RI_FKey_noaction_del (Function)
+id - public.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+id - private.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
 
 --------------
 
@@ -56,11 +56,11 @@ join public.users u
 on u.id = subquery.id;
 
 Results:
+id - public.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
 iclikejoinsel - Schema: pg_catalog.iclikejoinsel (Function)
 iclikesel - Schema: pg_catalog.iclikesel (Function)
 icnlikejoinsel - Schema: pg_catalog.icnlikejoinsel (Function)
-icnlikesel - Schema: pg_catalog.icnlikesel (Function)
-icregexeqjoinsel - Schema: pg_catalog.icregexeqjoinsel (Function)
 
 --------------
 
@@ -72,11 +72,11 @@ on u.id = subquery.id;
 **Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.**
 
 Results:
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+id - public.audio_books.id (Column)
 pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
-pg_catalog.RI_FKey_check_upd() - Schema: pg_catalog.RI_FKey_check_upd (Function)
-pg_catalog.RI_FKey_noaction_del() - Schema: pg_catalog.RI_FKey_noaction_del (Function)
 
 --------------
 
@@ -88,11 +88,11 @@ on u.id = subquery.id;
 **Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.**
 
 Results:
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+narrator_id - private.audio_books.narrator_id (Column)
 name - Schema: pg_catalog.name (Function)
 nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
-nameeq - Schema: pg_catalog.nameeq (Function)
-nameeqtext - Schema: pg_catalog.nameeqtext (Function)
-namege - Schema: pg_catalog.namege (Function)
 
 --------------
 
@@ -113,11 +113,11 @@ join public.users u
 on u.id = subquery.id;
 
 Results:
-public - public (Schema)
-private - private (Schema)
 audio_books - public.audio_books (Table)
 users - public.users (Table)
+private - private (Schema)
 private.audio_books - private.audio_books (Table)
+information_schema - information_schema (Schema)
 
 --------------
 
