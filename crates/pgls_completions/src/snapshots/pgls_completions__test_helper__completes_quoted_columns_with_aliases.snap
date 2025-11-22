@@ -77,11 +77,11 @@ select "pr"."email" f|
 select "pr"."email" from |
 
 Results:
-public - public (Schema)
-private - private (Schema)
 names - public.names (Table)
-private.users - private.users (Table)
+private - private (Schema)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 

@@ -269,14 +269,14 @@ impl CompletionScore<'_> {
                 self.score += 10;
             }
 
-            "schema_identifier" if self.get_schema_name().is_some_and(|s| s == "public") => {
+            "schema_identifier" if self.get_schema_name().is_some_and(|s| s != "public") => {
                 self.score += 10;
             }
 
             "any_identifier" => match self.data {
                 CompletionRelevanceData::Table(table) => {
                     if table.schema == "public" {
-                        self.score += 10;
+                        self.score += 20;
                     }
                 }
                 CompletionRelevanceData::Schema(schema) => {
