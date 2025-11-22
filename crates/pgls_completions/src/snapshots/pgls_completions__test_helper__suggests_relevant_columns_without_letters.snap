@@ -53,8 +53,8 @@ _sqlx_migrations - public._sqlx_migrations (Table)
 select name from u|
 
 Results:
-public - public (Schema)
 users - public.users (Table)
+public - public (Schema)
 information_schema.udt_privileges - information_schema.udt_privileges (Table)
 information_schema.usage_privileges - information_schema.usage_privileges (Table)
 information_schema.user_defined_types - information_schema.user_defined_types (Table)

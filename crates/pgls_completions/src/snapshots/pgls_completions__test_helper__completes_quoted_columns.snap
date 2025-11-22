@@ -99,8 +99,8 @@ private"."users - private.users (Table)
 select "email" from "p|"
 
 Results:
-public - public (Schema)
 private - private (Schema)
+public - public (Schema)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
 information_schema"."parameters - information_schema.parameters (Table)
