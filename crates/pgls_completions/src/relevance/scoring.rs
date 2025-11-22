@@ -63,7 +63,7 @@ impl CompletionScore<'_> {
         if case {
             println!("{} after clause type check", self.score);
         }
-        self.check_matching_wrapping_node(ctx);
+        self.check_without_content(ctx);
         if case {
             println!("{} after wrapping node check", self.score);
         }
@@ -247,37 +247,49 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_matching_wrapping_node(&mut self, ctx: &TreesitterContext) {
-        let wrapping_node = match ctx.wrapping_node_kind.as_ref() {
-            None => return,
-            Some(wn) => wn,
-        };
+    // ok i think we need a rule set first.
+    // generally, we want to prefer columns that match a mentioned relation. that's already handled elsewhere. same with schema matches.
 
-        let has_qualifier = ctx.has_any_qualifier();
+    // so, what here? we want to handle the *no content* case.
+    // in that case, we want to check the current node_kind.
 
-        self.score += match self.data {
-            CompletionRelevanceData::Table(_) => match wrapping_node {
-                WrappingNode::Relation if has_qualifier => 15,
-                WrappingNode::Relation if !has_qualifier => 10,
-                WrappingNode::BinaryExpression => 5,
-                _ => -50,
+    fn check_without_content(&mut self, ctx: &TreesitterContext) {
+        // the function is only concerned with cases where the user hasn't typed anything yet.
+        if ctx
+            .get_node_under_cursor_content()
+            .is_some_and(|c| !sanitization::is_sanitized_token(c.as_str()))
+        {
+            return;
+        }
+
+        match ctx.node_under_cursor.kind() {
+            "function_identifier" | "table_identifier"
+                if self.get_schema_name().is_some_and(|s| s == "public") =>
+            {
+                self.score += 10;
+            }
+
+            "schema_identifier" if self.get_schema_name().is_some_and(|s| s == "public") => {
+                self.score += 10;
+            }
+
+            "any_identifier" => match self.data {
+                CompletionRelevanceData::Table(table) => {
+                    if table.schema == "public" {
+                        self.score += 10;
+                    }
+                }
+                CompletionRelevanceData::Schema(schema) => {
+                    if schema.name != "public" {
+                        self.score += 10;
+                    } else {
+                        self.score -= 20;
+                    }
+                }
+                _ => {}
             },
-            CompletionRelevanceData::Function(_) => match wrapping_node {
-                WrappingNode::BinaryExpression => 15,
-                WrappingNode::Relation => 10,
-                _ => -50,
-            },
-            CompletionRelevanceData::Column(_) => match wrapping_node {
-                WrappingNode::BinaryExpression => 15,
-                WrappingNode::Assignment => 15,
-                _ => -15,
-            },
-            CompletionRelevanceData::Schema(_) => match wrapping_node {
-                WrappingNode::Relation if !has_qualifier => 15,
-                _ => -50,
-            },
-            CompletionRelevanceData::Policy(_) => 0,
-            CompletionRelevanceData::Role(_) => 0,
+
+            _ => return,
         }
     }
 

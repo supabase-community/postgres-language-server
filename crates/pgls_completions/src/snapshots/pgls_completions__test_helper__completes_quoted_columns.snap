@@ -66,33 +66,33 @@ select "email" f|
 select "email" from |
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private.users - private.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private.users - private.users (Table)
 
 --------------
 
 select "email" from "|
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private"."users" - private.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private"."users" - private.users (Table)
 
 --------------
 
 select "email" from "|"
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private"."users - private.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private"."users - private.users (Table)
 
 --------------
 
