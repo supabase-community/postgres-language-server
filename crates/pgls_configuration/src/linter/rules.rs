@@ -1,6 +1,7 @@
 //! Generated file, do not edit by hand, see `xtask/codegen`
 
-use crate::analyser::{RuleConfiguration, RulePlainConfiguration};
+#![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
+use crate::rules::{RuleConfiguration, RulePlainConfiguration};
 use biome_deserialize_macros::Merge;
 use pgls_analyse::{RuleFilter, options::RuleOptions};
 use pgls_diagnostics::{Category, Severity};
@@ -899,6 +900,22 @@ impl Safety {
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,
+        }
+    }
+}
+#[doc = r" Push the configured rules to the analyser"]
+pub fn push_to_analyser_rules(
+    rules: &Rules,
+    metadata: &pgls_analyse::MetadataRegistry,
+    analyser_rules: &mut pgls_analyse::AnalyserRules,
+) {
+    if let Some(rules) = rules.safety.as_ref() {
+        for rule_name in Safety::GROUP_RULES {
+            if let Some((_, Some(rule_options))) = rules.get_rule_configuration(rule_name) {
+                if let Some(rule_key) = metadata.find_rule("safety", rule_name) {
+                    analyser_rules.push_rule(rule_key, rule_options);
+                }
+            }
         }
     }
 }

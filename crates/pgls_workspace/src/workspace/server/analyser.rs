@@ -141,7 +141,7 @@ impl RegistryVisitor for LintVisitor<'_, '_> {
 #[cfg(test)]
 mod tests {
     use pgls_analyse::RuleFilter;
-    use pgls_configuration::{RuleConfiguration, Rules, analyser::Safety};
+    use pgls_configuration::{RuleConfiguration, Rules, linter::Safety};
 
     use crate::{
         settings::{LinterSettings, Settings},
