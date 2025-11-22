@@ -28,6 +28,7 @@ gen-lint:
   cargo run -p xtask_codegen -- analyser
   cargo run -p xtask_codegen -- configuration
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- splinter
   cargo run -p rules_check
   cargo run -p docs_codegen
   just format
@@ -110,6 +111,7 @@ ready:
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- splinter
   cargo sqlx prepare --workspace
   just lint-fix
   just format
