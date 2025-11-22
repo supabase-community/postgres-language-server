@@ -1,7 +1,7 @@
 use crate::{
-    builder::{CompletionBuilder, PossibleCompletionItem},
-    relevance::{filtering::CompletionFilter, scoring::CompletionScore, CompletionRelevanceData},
     CompletionItemKind,
+    builder::{CompletionBuilder, PossibleCompletionItem},
+    relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
 use pgls_schema_cache::SchemaCache;
 use pgls_treesitter::TreesitterContext;
@@ -34,7 +34,7 @@ pub fn complete_roles<'a>(
 mod tests {
     use sqlx::{Executor, PgPool};
 
-    use crate::test_helper::{assert_complete_results, CompletionAssertion};
+    use crate::test_helper::{CompletionAssertion, assert_complete_results};
 
     use pgls_test_utils::QueryWithCursorPosition;
 
