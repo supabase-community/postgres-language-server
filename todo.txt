@@ -1,0 +1,22 @@
+
+#### Snapshot review
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__completes_in_join_on_clause.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__completes_quoted_columns_with_aliases.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__completes_quoted_columns.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__does_not_complete_cols_in_join_clauses.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__filters_out_by_aliases_in_join_on.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__filters_out_by_aliases_in_select.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__handles_nested_queries.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__ignores_cols_in_from_clause.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_columns_of_mentioned_tables.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_not_mentioned_columns.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__shows_multiple_columns_if_no_relation_specified.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_alter_table_and_drop_table.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_insert_clause.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_where_clause.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_policy_using_clause.snap
+- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_relevant_columns_without_letters.snap
+
+#### General Todos
+- [ ] Should filter out any items where typed letters don't match at all
+- [ ] 

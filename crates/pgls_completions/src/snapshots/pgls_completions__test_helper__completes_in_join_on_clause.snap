@@ -52,10 +52,6 @@ select u.id, auth.posts.content from auth.users u join auth.posts p on p.u|
 
 Results:
 user_id - auth.posts.user_id (Column)
-pid - auth.posts.pid (Column)
-content - auth.posts.content (Column)
-created_at - auth.posts.created_at (Column)
-title - auth.posts.title (Column)
 
 --------------
 
@@ -96,8 +92,6 @@ select u.id, auth.posts.content from auth.users u join auth.posts p on p.user_id
 
 Results:
 uid - auth.users.uid (Column)
-email - auth.users.email (Column)
-name - auth.users.name (Column)
 
 --------------
 

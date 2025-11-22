@@ -2,6 +2,7 @@ use crate::{
     CompletionItemKind, CompletionText,
     item::CompletionItem,
     relevance::{filtering::CompletionFilter, scoring::CompletionScore},
+    sanitization,
 };
 
 use pgls_treesitter::TreesitterContext;
@@ -24,6 +25,12 @@ pub(crate) struct CompletionBuilder<'a> {
 
 impl<'a> CompletionBuilder<'a> {
     pub fn new(ctx: &'a TreesitterContext) -> Self {
+        println!(
+            "is sanitized: {:#?}",
+            ctx.get_node_under_cursor_content()
+                .map(|txt| sanitization::is_sanitized_token(txt.as_str()))
+        );
+
         CompletionBuilder { items: vec![], ctx }
     }
 
@@ -41,6 +48,11 @@ impl<'a> CompletionBuilder<'a> {
         for item in items.iter_mut() {
             item.score.calc_score(self.ctx);
         }
+
+        items = items
+            .into_iter()
+            .filter(|i| !i.score.should_skip())
+            .collect();
 
         items.sort_by(|a, b| {
             b.score

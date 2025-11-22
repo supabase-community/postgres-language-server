@@ -9,6 +9,7 @@ use super::CompletionRelevanceData;
 #[derive(Debug)]
 pub(crate) struct CompletionScore<'a> {
     score: i32,
+    skip: bool,
     data: CompletionRelevanceData<'a>,
 }
 
@@ -16,12 +17,17 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionScore<'a> {
     fn from(value: CompletionRelevanceData<'a>) -> Self {
         Self {
             score: 0,
+            skip: false,
             data: value,
         }
     }
 }
 
 impl CompletionScore<'_> {
+    pub fn should_skip(&self) -> bool {
+        self.skip
+    }
+
     pub fn get_score(&self) -> i32 {
         self.score
     }
@@ -55,20 +61,35 @@ impl CompletionScore<'_> {
 
         let fz_matcher = SkimMatcherV2::default();
 
-        if let Some(score) =
-            fz_matcher.fuzzy_match(name.as_str(), content.to_ascii_lowercase().as_str())
-        {
-            let scorei32: i32 = score
-                .try_into()
-                .expect("The length of the input exceeds i32 capacity");
+        let check_against = match ctx.identifier_qualifiers {
+            // If both qualifiers are already written out, we must check the item's name itself.
+            (Some(_), Some(_)) => content.to_ascii_lowercase(),
 
-            // the scoring value isn't linear.
-            // here are a couple of samples:
-            // - item: bytea_string_agg_transfn, input: n, score: 15
-            // - item: numeric_uplus, input: n, score: 31
-            // - item: settings, input: sett, score: 91
-            // - item: user_settings, input: sett, score: 82
-            self.score += scorei32 / 2;
+            _ => self
+                .get_table_name()
+                .and_then(|tbl| ctx.get_used_alias_for_table(tbl))
+                .map(|alias| format!("{}.{}", alias, name))
+                .unwrap_or(name),
+        };
+
+        match fz_matcher.fuzzy_match(
+            check_against.as_str(),
+            content.to_ascii_lowercase().as_str(),
+        ) {
+            Some(score) => {
+                let scorei32: i32 = score
+                    .try_into()
+                    .expect("The length of the input exceeds i32 capacity");
+
+                // the scoring value isn't linear.
+                // here are a couple of samples:
+                // - item: bytea_string_agg_transfn, input: n, score: 15
+                // - item: numeric_uplus, input: n, score: 31
+                // - item: settings, input: sett, score: 91
+                // - item: user_settings, input: sett, score: 82
+                self.score += scorei32 / 2;
+            }
+            None => self.skip = true,
         }
     }
 
