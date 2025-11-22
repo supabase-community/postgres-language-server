@@ -47,7 +47,9 @@ impl CompletionScore<'_> {
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
         let content = match ctx.get_node_under_cursor_content() {
             Some(c) if !sanitization::is_sanitized_token(c.as_str()) => c.replace('"', ""),
-            _ => return,
+            _ => {
+                return;
+            }
         };
 
         let name = match self.data {
@@ -59,23 +61,20 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
         };
 
-        let is_case =
-            matches!(self.data, CompletionRelevanceData::Column(_)) && content.as_str() == "u";
-
         let fz_matcher = SkimMatcherV2::default();
 
         let check_against = match &ctx.identifier_qualifiers {
             // If both qualifiers are already written out, we must check the item's name itself.
-            (Some(_), Some(_)) => name,
+            (Some(_), Some(_)) => name.clone(),
 
             // If only one qualifier is written out, we might look at a schema, a table, or an alias.
             (None, Some(qualifier)) => {
                 if self.get_schema_name().is_some_and(|s| s == qualifier) {
                     self.get_table_name()
                         .map(|t| format!("{}.{}", t, name))
-                        .unwrap_or(name)
+                        .unwrap_or(name.clone())
                 } else if self.get_table_name().is_some_and(|t| t == qualifier) {
-                    name
+                    name.clone()
                 } else if ctx
                     .get_mentioned_table_for_alias(&qualifier)
                     .is_some_and(|alias_tbl| {
@@ -83,7 +82,7 @@ impl CompletionScore<'_> {
                             .is_some_and(|item_tbl| alias_tbl == item_tbl)
                     })
                 {
-                    name
+                    name.clone()
                 } else {
                     // the qualifier does not match schema, table, or alias.
                     // what the hell is it?
@@ -102,10 +101,6 @@ impl CompletionScore<'_> {
             content.to_ascii_lowercase().as_str(),
         ) {
             Some(score) => {
-                if is_case {
-                    println!("check {}, score {}", check_against, score);
-                }
-
                 let scorei32: i32 = score
                     .try_into()
                     .expect("The length of the input exceeds i32 capacity");
@@ -116,7 +111,11 @@ impl CompletionScore<'_> {
                 // - item: numeric_uplus, input: n, score: 31
                 // - item: settings, input: sett, score: 91
                 // - item: user_settings, input: sett, score: 82
-                self.score += scorei32 / 2;
+                self.score += if check_against == name {
+                    scorei32 / 2
+                } else {
+                    scorei32 / 3
+                };
             }
             None => self.skip = true,
         }

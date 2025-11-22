@@ -1,6 +1,8 @@
 use pgls_schema_cache::ProcKind;
 use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
 
+use crate::is_sanitized_token;
+
 use super::CompletionRelevanceData;
 
 #[derive(Debug)]
@@ -42,6 +44,14 @@ impl CompletionFilter<'_> {
         {
             return None;
         }
+
+        // if ctx
+        //     .get_node_under_cursor_content()
+        //     .is_some_and(|c| is_sanitized_token(c.as_str()))
+        //     && ctx.before_cursor_matches_kind(&["ERROR"])
+        // {
+        //     return None;
+        // }
 
         // "literal" nodes can be identfiers wrapped in quotes:
         // `select "email" from auth.users;`

@@ -92,7 +92,7 @@ public - public (Schema)
 private - private (Schema)
 names - public.names (Table)
 private.users - private.users (Table)
-information_schema.parameters - information_schema.parameters (Table)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 
@@ -159,9 +159,9 @@ select "e|" from private.users "pr"
 
 Results:
 pr"."email - private.users.email (Column)
+pr"."id - private.users.id (Column)
 pr"."name - private.users.name (Column)
 pr"."quoted_column - private.users.quoted_column (Column)
-pr"."id - private.users.id (Column)
 name - public.names.name (Column)
 
 --------------
@@ -232,7 +232,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -324,7 +323,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -375,7 +373,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -447,7 +444,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -474,7 +470,6 @@ select "pr"."email", n.u| from private.users "pr" join public.names n on pr.id =
 
 Results:
 uid - public.names.uid (Column)
-name - public.names.name (Column)
 
 --------------
 
