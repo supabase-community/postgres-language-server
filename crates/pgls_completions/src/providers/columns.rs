@@ -79,12 +79,12 @@ mod tests {
         TestCompletionsCase::new()
         .inside_static_statement(r#"
             select * from (
-                <sql>
+                <sql> from private.audio_books
             ) as subquery
             join public.users u
             on u.id = subquery.id;
             "#)
-            .type_sql("select id, narrator_id<1> from private.audio_books")
+            .type_sql("select id, narrator_id<1>")
             .comment("Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.")
         )
             .snapshot("handles_nested_queries")

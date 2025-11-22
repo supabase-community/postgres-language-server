@@ -444,9 +444,16 @@ impl CompletionScore<'_> {
         }
 
         // "public" is the default postgres schema where users
-        // create objects. Prefer it by a slight bit.
+        // create objects. Prefer it by a slight bit, but do not suggest the literal one.
         if schema_name.as_str() == "public" {
-            self.score += 2;
+            match self.data {
+                CompletionRelevanceData::Schema(_) => {
+                    self.score -= 2;
+                }
+                _ => {
+                    self.score += 2;
+                }
+            }
         }
 
         let item_name = self.get_item_name().to_string();
