@@ -129,7 +129,7 @@ pub fn generate_new_analyser_rule(
         // We sort rules to reduce conflicts between contributions made in parallel.
         let rule_line = match category {
             Category::Lint => format!(
-                r#"    "lint/{group}/{rule_name_camel}": "{PGLS_WEBSITE}/latest/rules/{kebab_case_rule}","#
+                r#"    "lint/{group}/{rule_name_camel}": "{PGLS_WEBSITE}/latest/reference/rules/{kebab_case_rule}/","#
             ),
         };
         let lint_start = match category {
