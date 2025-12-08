@@ -30,4 +30,5 @@ select
     from names_of_children m
     where m.roleid = r.oid
   ), ARRAY[]::text[]) as "has_member!"
-from pg_catalog.pg_roles r;
+from pg_catalog.pg_roles r
+order by r.rolname;
