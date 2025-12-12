@@ -45,11 +45,7 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        if ctx
-            .get_node_under_cursor_content()
-            .is_some_and(|c| is_sanitized_token(c.as_str()))
-            && ctx.before_cursor_matches_kind(&["ERROR"])
-        {
+        if ctx.before_cursor_matches_kind(&["ERROR"]) {
             return None;
         }
 

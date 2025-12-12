@@ -142,14 +142,20 @@ impl CompletionScore<'_> {
             },
         };
 
-        match fz_matcher.fuzzy_match(
-            check_against.to_ascii_lowercase().as_str(),
-            content.to_ascii_lowercase().as_str(),
-        ) {
+        let content_lower = content.to_ascii_lowercase();
+        let check_against_lower = check_against.to_ascii_lowercase();
+
+        match fz_matcher.fuzzy_match(check_against_lower.as_str(), content_lower.as_str()) {
             Some(score) => {
-                let scorei32: i32 = score
+                let mut scorei32: i32 = score
                     .try_into()
                     .expect("The length of the input exceeds i32 capacity");
+
+                // give a significant bonus for prefix matches since these are much more
+                // likely what the user is looking for
+                if check_against_lower.starts_with(&content_lower) {
+                    scorei32 += 20;
+                }
 
                 // the scoring value isn't linear.
                 // here are a couple of samples:

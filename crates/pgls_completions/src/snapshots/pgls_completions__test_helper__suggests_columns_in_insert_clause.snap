@@ -39,9 +39,9 @@ insert into i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -145,9 +145,9 @@ insert into i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------

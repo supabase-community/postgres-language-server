@@ -22,16 +22,6 @@ create table others (
 
 select name from instruments i join others o on i.z = o.a |
 select name from instruments i join others o on i.z = o.a w|
-
-Results:
-wait_event - pg_catalog.pg_stat_activity.wait_event (Column)
-wait_event_type - pg_catalog.pg_stat_activity.wait_event_type (Column)
-waitstart - pg_catalog.pg_locks.waitstart (Column)
-wal_buffers_full - pg_catalog.pg_stat_wal.wal_buffers_full (Column)
-wal_bytes - pg_catalog.pg_stat_wal.wal_bytes (Column)
-
---------------
-
 select name from instruments i join others o on i.z = o.a where |
 
 Results:
@@ -69,16 +59,6 @@ pg_catalog - pg_catalog (Schema)
 select name from instruments i join others o on i.z = o.a where o.a = i.|
 select name from instruments i join others o on i.z = o.a where o.a = i.z |
 select name from instruments i join others o on i.z = o.a where o.a = i.z a|
-
-Results:
-information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
-information_schema.applicable_roles - information_schema.applicable_roles (Table)
-information_schema.attributes - information_schema.attributes (Table)
-information_schema.collation_character_set_applicability - information_schema.collation_character_set_applicability (Table)
-pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
-
---------------
-
 select name from instruments i join others o on i.z = o.a where o.a = i.z and |
 **should prioritize columns that aren't already mentioned**
 

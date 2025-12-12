@@ -463,9 +463,6 @@ mod tests {
                 TestCompletionsCase::new().type_sql("alter table instruments drop column name"),
             )
             .with_case(
-                TestCompletionsCase::new().type_sql("alter table instruments drop column name"),
-            )
-            .with_case(
                 TestCompletionsCase::new()
                     .type_sql("alter table instruments drop column if exists name"),
             )

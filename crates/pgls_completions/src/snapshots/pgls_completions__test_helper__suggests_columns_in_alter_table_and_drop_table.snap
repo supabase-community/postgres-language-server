@@ -34,9 +34,9 @@ alter table i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -112,87 +112,9 @@ alter table i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
-
---------------
-
-alter table instruments |
-alter table instruments d|
-alter table instruments drop |
-
-Results:
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-
---------------
-
-alter table instruments drop c|
-
-Results:
-created_at - public.instruments.created_at (Column)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
-
---------------
-
-alter table instruments drop column |
-
-Results:
-created_at - public.instruments.created_at (Column)
-id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-
---------------
-
-alter table instruments drop column n|
-
-Results:
-name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
-
---------------
-
-alter table instruments drop column name |
-
-
-
-
-***Case 3:***
-
-a|
-alter |
-alter t|
-alter table |
-
-Results:
-instruments - public.instruments (Table)
-_sqlx_migrations - public._sqlx_migrations (Table)
-information_schema - information_schema (Schema)
-pg_catalog - pg_catalog (Schema)
-pg_toast - pg_toast (Schema)
-
---------------
-
-alter table i|
-
-Results:
-instruments - public.instruments (Table)
 public - public (Schema)
-information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -245,16 +167,6 @@ identity_increment - information_schema.columns.identity_increment (Column)
 
 alter table instruments drop column if |
 alter table instruments drop column if e|
-
-Results:
-created_at - public.instruments.created_at (Column)
-name - public.instruments.name (Column)
-elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
-encoding - pg_catalog.pg_database.encoding (Column)
-encrypted - pg_catalog.pg_stat_gssapi.encrypted (Column)
-
---------------
-
 alter table instruments drop column if exists |
 
 Results:
@@ -282,7 +194,7 @@ alter table instruments drop column if exists name |
 
 
 
-***Case 4:***
+***Case 3:***
 
 a|
 alter |
@@ -302,9 +214,9 @@ alter table i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -374,7 +286,7 @@ instruments - public.instruments (Table)
 
 
 
-***Case 5:***
+***Case 4:***
 
 a|
 alter |
@@ -394,9 +306,9 @@ alter table i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -444,7 +356,7 @@ instruments - public.instruments (Table)
 
 
 
-***Case 6:***
+***Case 5:***
 
 a|
 alter |
@@ -538,7 +450,7 @@ alter table public.instruments alter column name |
 
 
 
-***Case 7:***
+***Case 6:***
 
 a|
 alter |
@@ -558,9 +470,9 @@ alter table i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -594,7 +506,7 @@ alter table instruments alter name |
 
 
 
-***Case 8:***
+***Case 7:***
 
 a|
 alter |
@@ -614,9 +526,9 @@ alter table i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
 pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
@@ -654,7 +566,7 @@ alter table instruments rename name to new_col |
 
 
 
-***Case 9:***
+***Case 8:***
 
 a|
 alter |

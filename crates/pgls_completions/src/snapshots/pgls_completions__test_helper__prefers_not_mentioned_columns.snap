@@ -135,11 +135,11 @@ o.a - public.one.a (Column)
 select o.id, a, b, c, d| from public.one o join public.two on o.id = t.id;
 
 Results:
-id - public.two.id (Column)
 d - public.two.d (Column)
-o.id - public.one.id (Column)
+id - public.two.id (Column)
 data - pg_catalog.pg_largeobject.data (Column)
 data_type - pg_catalog.pg_sequences.data_type (Column)
+database - pg_catalog.pg_hba_file_rules.database (Column)
 
 --------------
 

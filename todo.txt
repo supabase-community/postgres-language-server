@@ -7,10 +7,10 @@
 - [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__filters_out_by_aliases_in_join_on.snap
 - [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__filters_out_by_aliases_in_select.snap
 - [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__handles_nested_queries.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__ignores_cols_in_from_clause.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_columns_of_mentioned_tables.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_not_mentioned_columns.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__shows_multiple_columns_if_no_relation_specified.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__ignores_cols_in_from_clause.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_columns_of_mentioned_tables.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_not_mentioned_columns.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__shows_multiple_columns_if_no_relation_specified.snap
 - [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_alter_table_and_drop_table.snap
 - [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_insert_clause.snap
 - [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_where_clause.snap
