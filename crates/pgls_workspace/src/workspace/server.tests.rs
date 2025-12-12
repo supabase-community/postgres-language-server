@@ -793,3 +793,79 @@ async fn test_search_path_configuration(test_db: PgPool) {
         );
     }
 }
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_multi_line_completions(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+
+        create table auth.users (
+            id serial primary key,
+            email text not null
+        );
+    "#;
+
+    test_db.execute(setup).await.expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+
+    let content = r#"
+select * from auth.users;
+
+select * from auth.|;
+
+select * from auth.users;
+    "#
+    .trim();
+
+    let position = content
+        .find('|')
+        .map(|idx| pgls_text_size::TextSize::new(idx as u32))
+        .expect("Unable to find cursor position in test content");
+
+    let sanitized_content = content.replace('|', "");
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: sanitized_content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            path: path.clone(),
+            position,
+        })
+        .expect("Unable to request completions");
+
+    assert_eq!(
+        completions.items.len(),
+        1,
+        "Expected one completion response"
+    );
+
+    assert_eq!(
+        completions.items[0].completion_text.as_ref().unwrap().range,
+        TextRange::new(position, position),
+        "Expected no syntax diagnostic"
+    );
+}

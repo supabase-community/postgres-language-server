@@ -746,7 +746,7 @@ impl Workspace for WorkspaceServer {
                     text: id.content().to_string(),
                 });
 
-                Ok(CompletionsResult { items })
+                Ok(CompletionsResult::with_offset(items, range.start()))
             }
         }
     }
