@@ -113,9 +113,8 @@ jobs:
             sleep 1
           done
 
-      - uses: tree-sitter/setup-action@v2
-        with:
-          install-lib: false
+      - name: Setup tree-sitter
+        run: cargo install tree-sitter-cli
 
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
@@ -172,9 +171,8 @@ jobs:
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
-      - uses: tree-sitter/setup-action@v2
-        with:
-          install-lib: false
+      - name: Setup Postgres
+        run: cargo install tree-sitter-cli
 
       - name: Run tests
         run: cargo test --workspace
