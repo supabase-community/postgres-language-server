@@ -72,7 +72,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - uses: tree-sitter/setup-action@v2
+      - uses: tree-sitter/setup-action@c4c258862a6a7e43a7aef152256bbf659972c408
         with:
           install-lib: false
 

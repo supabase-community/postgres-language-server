@@ -113,7 +113,7 @@ jobs:
             sleep 1
           done
 
-      - uses: tree-sitter/setup-action@v2
+      - uses: tree-sitter/setup-action@c4c258862a6a7e43a7aef152256bbf659972c408
         with:
           install-lib: false
 
@@ -172,7 +172,7 @@ jobs:
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
-      - uses: tree-sitter/setup-action@v2
+      - uses: tree-sitter/setup-action@c4c258862a6a7e43a7aef152256bbf659972c408
         with:
           install-lib: false
 
@@ -204,7 +204,7 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-      - uses: tree-sitter/setup-action@v2
+      - uses: tree-sitter/setup-action@c4c258862a6a7e43a7aef152256bbf659972c408
         with:
           install-lib: false
       - name: Build main binary
@@ -259,7 +259,7 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: tree-sitter/setup-action@v2
+      - uses: tree-sitter/setup-action@c4c258862a6a7e43a7aef152256bbf659972c408
         with:
           install-lib: false
       - name: Ensure RustFMT on nightly toolchain
