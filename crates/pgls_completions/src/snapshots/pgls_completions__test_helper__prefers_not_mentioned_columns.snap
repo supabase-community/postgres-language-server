@@ -1,0 +1,335 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+expression: final_snapshot
+---
+***Setup***
+
+create schema auth;
+
+create table public.one (
+    id serial primary key,
+    a text,
+    b text,
+    z text
+);
+
+create table public.two (
+    id serial primary key,
+    c text,
+    d text,
+    e text
+);
+
+
+--------------
+
+***Case 1:***
+
+s| from public.one o join public.two on o.id = t.id;
+select | from public.one o join public.two on o.id = t.id;
+
+Results:
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+
+--------------
+
+select o.| from public.one o join public.two on o.id = t.id;
+
+Results:
+a - public.one.a (Column)
+b - public.one.b (Column)
+id - public.one.id (Column)
+z - public.one.z (Column)
+
+--------------
+
+select o.i| from public.one o join public.two on o.id = t.id;
+
+Results:
+id - public.one.id (Column)
+a - public.one.a (Column)
+b - public.one.b (Column)
+z - public.one.z (Column)
+
+--------------
+
+select o.id, | from public.one o join public.two on o.id = t.id;
+
+Results:
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+
+--------------
+
+select o.id, a| from public.one o join public.two on o.id = t.id;
+
+Results:
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+
+--------------
+
+select o.id, a, | from public.one o join public.two on o.id = t.id;
+**Should have low priority for `a`, since it's already mentioned.**
+
+Results:
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+id - public.two.id (Column)
+
+--------------
+
+select o.id, a, b| from public.one o join public.two on o.id = t.id;
+
+Results:
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+id - public.two.id (Column)
+
+--------------
+
+select o.id, a, b, | from public.one o join public.two on o.id = t.id;
+
+Results:
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+id - public.two.id (Column)
+o.z - public.one.z (Column)
+
+--------------
+
+select o.id, a, b, c| from public.one o join public.two on o.id = t.id;
+
+Results:
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+id - public.two.id (Column)
+o.z - public.one.z (Column)
+
+--------------
+
+select o.id, a, b, c, | from public.one o join public.two on o.id = t.id;
+
+Results:
+d - public.two.d (Column)
+e - public.two.e (Column)
+id - public.two.id (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+
+--------------
+
+select o.id, a, b, c, d| from public.one o join public.two on o.id = t.id;
+
+Results:
+id - public.two.id (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.id - public.one.id (Column)
+
+--------------
+
+select o.id, a, b, c, d, | from public.one o join public.two on o.id = t.id;
+
+Results:
+e - public.two.e (Column)
+id - public.two.id (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+
+--------------
+
+select o.id, a, b, c, d, e| from public.one o join public.two on o.id = t.id;
+
+Results:
+e - public.two.e (Column)
+id - public.two.id (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+
+--------------
+
+select o.id, a, b, c, d, e, | from public.one o join public.two on o.id = t.id;
+**Should have high priority of id of table two, but not one, since it's already mentioned.**
+
+Results:
+id - public.two.id (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+
+--------------
+
+select o.id, a, b, c, d, e, z | from public.one o join public.two on o.id = t.id;
+
+
+
+
+***Case 2:***
+
+s| from public.one o join public.two on o.id = t.id;
+select | from public.one o join public.two on o.id = t.id;
+
+Results:
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+
+--------------
+
+select i| from public.one o join public.two on o.id = t.id;
+
+Results:
+o.id - public.one.id (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+
+--------------
+
+select id, | from public.one o join public.two on o.id = t.id;
+
+Results:
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+
+--------------
+
+select id, a| from public.one o join public.two on o.id = t.id;
+
+Results:
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+
+--------------
+
+select id, a, | from public.one o join public.two on o.id = t.id;
+
+Results:
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+
+--------------
+
+select id, a, b| from public.one o join public.two on o.id = t.id;
+
+Results:
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+
+--------------
+
+select id, a, b, | from public.one o join public.two on o.id = t.id;
+
+Results:
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+
+--------------
+
+select id, a, b, c| from public.one o join public.two on o.id = t.id;
+
+Results:
+c - public.two.c (Column)
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+
+--------------
+
+select id, a, b, c, | from public.one o join public.two on o.id = t.id;
+
+Results:
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+
+--------------
+
+select id, a, b, c, d| from public.one o join public.two on o.id = t.id;
+
+Results:
+d - public.two.d (Column)
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.id - public.one.id (Column)
+o.a - public.one.a (Column)
+
+--------------
+
+select id, a, b, c, d, | from public.one o join public.two on o.id = t.id;
+
+Results:
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+
+--------------
+
+select id, a, b, c, d, e| from public.one o join public.two on o.id = t.id;
+
+Results:
+e - public.two.e (Column)
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+
+--------------
+
+select id, a, b, c, d, e, | from public.one o join public.two on o.id = t.id;
+**`id` could be from both tables, so both priorities are lowered.**
+
+Results:
+o.z - public.one.z (Column)
+o.a - public.one.a (Column)
+o.b - public.one.b (Column)
+c - public.two.c (Column)
+d - public.two.d (Column)
+
+--------------
+
+select id, a, b, c, d, e, z | from public.one o join public.two on o.id = t.id;

@@ -32,7 +32,11 @@ tokio = { version = "1.41.1", features = ["full"] }
 
 [dev-dependencies]
 criterion.workspace       = true
+insta.workspace           = true
 pgls_test_utils.workspace = true
+regex                     = "1.12.2"
+unindent                  = "0.2.4"
+
 
 [lib]
 doctest = false
