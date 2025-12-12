@@ -72,9 +72,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v4
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+
+      - name: Setup tree-sitter
+        run: cargo install tree-sitter-cli
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres

@@ -113,6 +113,13 @@ jobs:
             sleep 1
           done
 
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            ~/.cargo/bin/sqlx
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+
       - name: Setup tree-sitter
         run: cargo install tree-sitter-cli
 
@@ -159,6 +166,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
@@ -170,6 +178,12 @@ jobs:
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup Postgres
         run: cargo install tree-sitter-cli
@@ -202,9 +216,13 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v4
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+      - name: setup tree-sitter
+        run: cargo install tree-sitter-cli
       - name: Build main binary
         run: cargo build -p pgls_cli --release
       - name: Setup Bun
@@ -257,9 +275,13 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v4
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+      - name: setup tree-sitter
+        run: cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain
