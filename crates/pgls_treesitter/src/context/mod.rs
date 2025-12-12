@@ -153,7 +153,11 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
-        println!("{} {:#?}", ctx.text, ctx.get_node_under_cursor_content(),);
+        println!("TreesitterContext: {:#?}", ctx);
+        println!(
+            "NodeUnderCursor: {:#?}",
+            ctx.get_node_under_cursor_content()
+        );
 
         ctx
     }
@@ -359,6 +363,10 @@ impl<'a> TreesitterContext<'a> {
                 }
             }
 
+            "insert_columns" => {
+                self.wrapping_node_kind = Some(WrappingNode::List);
+            }
+
             _ => {
                 if let Some(clause_type) =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor)
@@ -372,6 +380,17 @@ impl<'a> TreesitterContext<'a> {
         if current_node.child_count() == 0
             || current_node.first_child_for_byte(self.position).is_none()
         {
+            // if the cursor is exactly at the start of a punctuation node,
+            // prefer the previous sibling (e.g., when cursor is at "i|," prefer "i" over ",")
+            let is_punctuation = matches!(current_node.kind(), "," | ")" | ";");
+            if is_punctuation && current_node.start_byte() == self.position {
+                if let Some(prev) = current_node.prev_sibling() {
+                    if prev.end_byte() == self.position {
+                        self.node_under_cursor = prev;
+                        return;
+                    }
+                }
+            }
             self.node_under_cursor = current_node;
             return;
         }
