@@ -845,7 +845,7 @@ select * from auth.users;
     workspace
         .open_file(OpenFileParams {
             path: path.clone(),
-            content: sanitized_content.into(),
+            content: sanitized_content,
             version: 1,
         })
         .expect("Unable to open test file");
