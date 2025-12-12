@@ -2,13 +2,13 @@
 //!
 //! The configuration is divided by "tool".
 
-pub mod analyser;
 pub mod database;
 pub mod diagnostics;
 pub mod files;
-pub mod generated;
+pub mod linter;
 pub mod migrations;
 pub mod plpgsql_check;
+pub mod rules;
 pub mod typecheck;
 pub mod vcs;
 
@@ -16,13 +16,7 @@ pub use crate::diagnostics::ConfigurationDiagnostic;
 
 use std::path::PathBuf;
 
-pub use crate::generated::push_to_analyser_rules;
 use crate::vcs::{PartialVcsConfiguration, VcsConfiguration, partial_vcs_configuration};
-pub use analyser::{
-    LinterConfiguration, PartialLinterConfiguration, RuleConfiguration, RuleFixConfiguration,
-    RulePlainConfiguration, RuleSelector, RuleWithFixOptions, RuleWithOptions, Rules,
-    partial_linter_configuration,
-};
 use biome_deserialize::StringSet;
 use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
@@ -30,6 +24,10 @@ use database::{
     DatabaseConfiguration, PartialDatabaseConfiguration, partial_database_configuration,
 };
 use files::{FilesConfiguration, PartialFilesConfiguration, partial_files_configuration};
+pub use linter::{
+    LinterConfiguration, PartialLinterConfiguration, Rules, partial_linter_configuration,
+    push_to_analyser_rules,
+};
 use migrations::{
     MigrationsConfiguration, PartialMigrationsConfiguration, partial_migrations_configuration,
 };
@@ -37,6 +35,10 @@ use pgls_env::PGLS_WEBSITE;
 use plpgsql_check::{
     PartialPlPgSqlCheckConfiguration, PlPgSqlCheckConfiguration,
     partial_pl_pg_sql_check_configuration,
+};
+pub use rules::{
+    RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleSelector,
+    RuleWithFixOptions, RuleWithOptions,
 };
 use serde::{Deserialize, Serialize};
 pub use typecheck::{
