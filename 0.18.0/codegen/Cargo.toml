@@ -1,0 +1,35 @@
+
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "<DESCRIPTION>"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "docs_codegen"
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+regex              = { workspace = true }
+anyhow                     = { workspace = true }
+bpaf                     = { workspace = true, features = ["docgen"] }
+schemars       = { workspace = true }
+serde       = { workspace = true }
+serde_json       = { workspace = true }
+pulldown-cmark          = "0.12.2"
+
+pgls_configuration = { workspace = true, features = ["schema"] }
+pgls_env = { workspace = true }
+pgls_cli = { workspace = true }
+pgls_analyse = { workspace = true }
+pgls_analyser = { workspace = true }
+pgls_diagnostics = { workspace = true }
+pgls_query = { workspace = true }
+pgls_query_ext = { workspace = true }
+pgls_workspace = { workspace = true }
+pgls_statement_splitter = { workspace = true }
+pgls_console = { workspace = true }
+biome_string_case = { workspace = true }
+

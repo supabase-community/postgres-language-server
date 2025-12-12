@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://pg-language-server.com/0.18.0/reference/rules/prefer-text-field/" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>preferTextField - Postgres Language Server</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "preferTextField";
+        var mkdocs_page_input_path = "reference/rules/prefer-text-field.md";
+        var mkdocs_page_url = "/0.18.0/reference/rules/prefer-text-field/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Postgres Language Server
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../manual_installation/">Manual Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../configuration/">Configuration</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/syntax_diagnostics/">Syntax Diagnostics</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/linting/">Linting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/type_checking/">Type Checking</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/plpgsql/">PL/pgSQL Support</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../features/editor_features/">Autocompletion & Hover</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/ide_setup/">Use in your IDE</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/checking_migrations/">Checking Migrations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/configure_database/">Configure database connection</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/suppressions/">Suppressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/vcs_integration/">Integrate with VCS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../guides/continuous_integration/">Continuous Integration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../cli/">CLI Commands</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../">Linter Rules</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../rule_sources/">Rule Sources</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../env_variables/">Environment Variables</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Postgres Language Server</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">preferTextField</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/supabase-community/postgres-language-server/edit/master/docs/reference/rules/prefer-text-field.md">Edit on supabase-community/postgres-language-server</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="prefertextfield">preferTextField</h1>
+<p><strong>Diagnostic Category: <code>lint/safety/preferTextField</code></strong></p>
+<p><strong>Since</strong>: <code>vnext</code></p>
+<p><strong>Sources</strong>: 
+- Inspired from: <a href="https://squawkhq.com/docs/prefer-text-field" target="_blank"><code>squawk/prefer-text-field</code></a></p>
+<h2 id="description">Description</h2>
+<p>Prefer using TEXT over VARCHAR(n) types.</p>
+<p>Changing the size of a VARCHAR field requires an ACCESS EXCLUSIVE lock, which blocks all
+reads and writes to the table. It's easier to update a check constraint on a TEXT field
+than a VARCHAR() size since the check constraint can use NOT VALID with a separate
+VALIDATE call.</p>
+<h2 id="examples">Examples</h2>
+<h3 id="invalid">Invalid</h3>
+<pre><code class="language-sql">CREATE TABLE &quot;core_bar&quot; (
+    &quot;id&quot; serial NOT NULL PRIMARY KEY,
+    &quot;alpha&quot; varchar(100) NOT NULL
+);
+</code></pre>
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+
+  &gt; 1 │ CREATE TABLE &quot;core_bar&quot; (
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^
+  &gt; 2 │     &quot;id&quot; serial NOT NULL PRIMARY KEY,
+  &gt; 3 │     &quot;alpha&quot; varchar(100) NOT NULL
+  &gt; 4 │ );
+      │ ^^
+    5 │ 
+
+  i Use a text field with a check constraint.
+
+
+</code></pre>
+<pre><code class="language-sql">ALTER TABLE &quot;core_bar&quot; ALTER COLUMN &quot;kind&quot; TYPE varchar(1000) USING &quot;kind&quot;::varchar(1000);
+</code></pre>
+<pre><code class="language-sh">code-block.sql:1:1 lint/safety/preferTextField ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Changing the size of a varchar field requires an ACCESS EXCLUSIVE lock.
+
+  &gt; 1 │ ALTER TABLE &quot;core_bar&quot; ALTER COLUMN &quot;kind&quot; TYPE varchar(1000) USING &quot;kind&quot;::varchar(1000);
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+
+  i Use a text field with a check constraint.
+
+
+</code></pre>
+<h3 id="valid">Valid</h3>
+<pre><code class="language-sql">CREATE TABLE &quot;core_bar&quot; (
+    &quot;id&quot; serial NOT NULL PRIMARY KEY,
+    &quot;bravo&quot; text NOT NULL
+);
+ALTER TABLE &quot;core_bar&quot; ADD CONSTRAINT &quot;text_size&quot; CHECK (LENGTH(&quot;bravo&quot;) &lt;= 100);
+</code></pre>
+<h2 id="how-to-configure">How to configure</h2>
+<pre><code class="language-json">
+{
+  &quot;linter&quot;: {
+    &quot;rules&quot;: {
+      &quot;safety&quot;: {
+        &quot;preferTextField&quot;: &quot;error&quot;
+      }
+    }
+  }
+}
+
+</code></pre>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/supabase-community/postgres-language-server" class="fa fa-code-fork" style="color: #fcfcfc"> supabase-community/postgres-language-server</a>
+        </span>
+    
+    
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
