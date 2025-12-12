@@ -113,7 +113,7 @@ jobs:
             sleep 1
           done
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/tree-sitter
@@ -179,7 +179,7 @@ jobs:
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/tree-sitter
@@ -216,7 +216,7 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/tree-sitter
@@ -275,7 +275,7 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/tree-sitter
