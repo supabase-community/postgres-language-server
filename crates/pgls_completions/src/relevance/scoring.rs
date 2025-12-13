@@ -33,52 +33,15 @@ impl CompletionScore<'_> {
     }
 
     pub fn calc_score(&mut self, ctx: &TreesitterContext) {
-        let case = (matches!(self.data, CompletionRelevanceData::Schema(_))
-            && self.get_schema_name().is_some_and(|s| s == "pg_catalog"))
-            || (matches!(self.data, CompletionRelevanceData::Table(_))
-                && self.get_table_name().is_some_and(|s| s == "parameters"));
-
-        if case {
-            println!("checking {}", self.get_fully_qualified_name())
-        }
-
         self.check_is_user_defined();
-        if case {
-            println!("{} after user-defined check", self.score);
-        }
-
         self.check_matches_schema(ctx);
-        if case {
-            println!("{} after schema match check", self.score);
-        }
         self.check_matches_query_input(ctx);
-        if case {
-            println!("{} after query input match check", self.score);
-        }
         self.check_is_invocation(ctx);
-        if case {
-            println!("{} after invocation check", self.score);
-        }
         self.check_matching_clause_type(ctx);
-        if case {
-            println!("{} after clause type check", self.score);
-        }
         self.check_without_content(ctx);
-        if case {
-            println!("{} after wrapping node check", self.score);
-        }
         self.check_relations_in_stmt(ctx);
-        if case {
-            println!("{} after relations in stmt check", self.score);
-        }
         self.check_columns_in_stmt(ctx);
-        if case {
-            println!("{} after columns in stmt check", self.score);
-        }
         self.check_is_not_wellknown_migration(ctx);
-        if case {
-            println!("{} after well-known migration check", self.score);
-        }
     }
 
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
@@ -168,21 +131,6 @@ impl CompletionScore<'_> {
                 } else {
                     scorei32 / 3
                 };
-
-                if matches!(self.data, CompletionRelevanceData::Schema(_))
-                    && self.get_schema_name().is_some_and(|s| s == "pg_catalog")
-                {
-                    println!("Debug: Schema pg_catalog match score {}", self.score);
-                }
-
-                if matches!(self.data, CompletionRelevanceData::Table(_))
-                    && self.get_table_name().is_some_and(|s| s == "parameters")
-                {
-                    println!(
-                        "Debug: Table information_schema.parameters match score {}",
-                        self.score
-                    );
-                }
             }
             None => self.skip = true,
         }

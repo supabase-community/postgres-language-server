@@ -25,12 +25,6 @@ pub(crate) struct CompletionBuilder<'a> {
 
 impl<'a> CompletionBuilder<'a> {
     pub fn new(ctx: &'a TreesitterContext) -> Self {
-        println!(
-            "is sanitized: {:#?}",
-            ctx.get_node_under_cursor_content()
-                .map(|txt| sanitization::is_sanitized_token(txt.as_str()))
-        );
-
         CompletionBuilder { items: vec![], ctx }
     }
 
