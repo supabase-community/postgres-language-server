@@ -231,16 +231,6 @@ jobs:
       - name: Install JS dependencies
         run: bun install
 
-      - name: Build backend-jsonrpc (deprecated)
-        working-directory: packages/@postgrestools/backend-jsonrpc
-        run: bun run build
-      - name: Run backend-jsonrpc test (deprecated)
-        working-directory: packages/@postgrestools/backend-jsonrpc
-        run: bun run test
-      - name: Run cli test (deprecated)
-        working-directory: packages/@postgrestools/postgrestools
-        run: bun run test
-
       - name: Build backend-jsonrpc
         working-directory: packages/@postgres-language-server/backend-jsonrpc
         run: bun run build
