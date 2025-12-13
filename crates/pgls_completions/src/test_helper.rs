@@ -186,6 +186,11 @@ pub(crate) async fn assert_complete_results(
         items.len()
     );
 
+    if !items.is_empty() {
+        let max_len = std::cmp::min(items.len(), 5);
+        println!("Completion Items: {:#?}", &items[..max_len]);
+    }
+
     for item in &items {
         for assertion in &not_existing {
             assertion.assert(item);

@@ -153,12 +153,6 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
-        println!("TreesitterContext: {:#?}", ctx);
-        println!(
-            "NodeUnderCursor: {:#?}",
-            ctx.get_node_under_cursor_content()
-        );
-
         ctx
     }
 
@@ -274,14 +268,14 @@ impl<'a> TreesitterContext<'a> {
 
         if chars
             .nth(self.position)
-            .is_some_and(|c| !c.is_ascii_whitespace() && !&[';', ')'].contains(&c))
+            .is_some_and(|c| c.is_ascii_whitespace() || [';', ')', ',', '('].contains(&c))
         {
-            self.position = cmp::min(self.position, self.text.len().saturating_sub(1));
-        } else {
             self.position = cmp::min(
                 self.position.saturating_sub(1),
                 self.text.len().saturating_sub(1),
             );
+        } else {
+            self.position = cmp::min(self.position, self.text.len().saturating_sub(1));
         }
 
         cursor.goto_first_child_for_byte(self.position);
@@ -380,17 +374,6 @@ impl<'a> TreesitterContext<'a> {
         if current_node.child_count() == 0
             || current_node.first_child_for_byte(self.position).is_none()
         {
-            // if the cursor is exactly at the start of a punctuation node,
-            // prefer the previous sibling (e.g., when cursor is at "i|," prefer "i" over ",")
-            let is_punctuation = matches!(current_node.kind(), "," | ")");
-            if is_punctuation && current_node.start_byte() == self.position {
-                if let Some(prev) = current_node.prev_sibling() {
-                    if prev.end_byte() == self.position {
-                        self.node_under_cursor = prev;
-                        return;
-                    }
-                }
-            }
             self.node_under_cursor = current_node;
             return;
         }
@@ -641,8 +624,8 @@ impl<'a> TreesitterContext<'a> {
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
-    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
-    /// you need to pass `&["relation", "object_reference"]`.
+    /// If the tree shows `relation > object_reference > any_identifier`
+    /// you need to pass `&["relation", "object_reference", "any_identifier"]`.
     pub fn history_ends_with(&self, expected_ancestors: &[&'static str]) -> bool {
         self.scope_tracker
             .current()
@@ -1114,5 +1097,59 @@ mod tests {
 
         // should simply not panic
         let _ = TreesitterContext::new(params);
+    }
+
+    #[test]
+    fn corrects_the_position_accordingly() {
+        let query = "select id, email from some_foo(param1, param2);";
+        //           01234567890123456789012345678901234567890123456
+        //           0        10        20        30        40
+
+        let tree = get_tree(query);
+
+        struct TestCase {
+            cursor_position: u32,
+            context_position: usize,
+        }
+
+        let cases: Vec<TestCase> = vec![
+            TestCase {
+                // moves from ',' to 'l' of 'email'
+                cursor_position: 9,
+                context_position: 8,
+            },
+            TestCase {
+                // stays on 'e' of 'email'
+                cursor_position: 11,
+                context_position: 11,
+            },
+            TestCase {
+                // moves from '(' to 'o' of 'some_foo'
+                cursor_position: 30,
+                context_position: 29,
+            },
+            TestCase {
+                // moves from ')' to '2' of 'param2'
+                cursor_position: 45,
+                context_position: 44,
+            },
+        ];
+
+        for case in cases {
+            let params = TreeSitterContextParams {
+                position: case.cursor_position.into(),
+                text: &query,
+                tree: &tree,
+            };
+
+            // should simply not panic
+            let ctx = TreesitterContext::new(params);
+
+            assert_eq!(
+                ctx.position, case.context_position,
+                "received {} but expected {}",
+                ctx.position, case.context_position
+            );
+        }
     }
 }
