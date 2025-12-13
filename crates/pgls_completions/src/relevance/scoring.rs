@@ -1,6 +1,6 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
+use pgls_treesitter::context::{TreesitterContext, WrappingClause};
 
 use crate::sanitization;
 

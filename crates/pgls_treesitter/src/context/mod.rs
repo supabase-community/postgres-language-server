@@ -382,7 +382,7 @@ impl<'a> TreesitterContext<'a> {
         {
             // if the cursor is exactly at the start of a punctuation node,
             // prefer the previous sibling (e.g., when cursor is at "i|," prefer "i" over ",")
-            let is_punctuation = matches!(current_node.kind(), "," | ")" | ";");
+            let is_punctuation = matches!(current_node.kind(), "," | ")");
             if is_punctuation && current_node.start_byte() == self.position {
                 if let Some(prev) = current_node.prev_sibling() {
                     if prev.end_byte() == self.position {

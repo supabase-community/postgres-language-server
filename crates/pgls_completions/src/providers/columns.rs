@@ -53,7 +53,7 @@ mod tests {
     use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
-    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite, assert_complete_results};
+    use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
     async fn handles_nested_queries(pool: PgPool) {
@@ -440,9 +440,9 @@ mod tests {
                         "select name from instruments i join others o on i.z = o.a <sql>",
                     )
                     .type_sql("where o.<1>a = <2>i.z and <3>i.id > 5;")
-                .comment("should respect alias speciifcation")
-                .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
-                .comment("should prioritize columns that aren't already mentioned")
+                    .comment("should respect alias speciifcation")
+                    .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
+                    .comment("should prioritize columns that aren't already mentioned"),
             )
             .snapshot("suggests_columns_in_where_clause")
             .await;

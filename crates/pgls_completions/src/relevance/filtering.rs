@@ -1,7 +1,6 @@
 use pgls_schema_cache::ProcKind;
 use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
 
-use crate::is_sanitized_token;
 
 use super::CompletionRelevanceData;
 
@@ -117,7 +116,8 @@ impl CompletionFilter<'_> {
                         "column_reference_1of1",
                         "column_reference_2of2",
                         "column_reference_3of3",
-                    ]) && !ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
+                    ]) && (!ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
+                        || ctx.has_any_qualifier())
                 }
 
                 CompletionRelevanceData::Schema(_) => ctx.node_under_cursor_is_within_field(&[
