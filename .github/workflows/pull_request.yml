@@ -121,7 +121,7 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Setup sqlx-cli
         run: cargo install sqlx-cli
@@ -186,7 +186,7 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup Postgres
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Run tests
         run: cargo test --workspace
@@ -222,7 +222,7 @@ jobs:
             ~/.cargo/bin/tree-sitter
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
       - name: setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Build main binary
         run: cargo build -p pgls_cli --release
       - name: Setup Bun
@@ -281,7 +281,7 @@ jobs:
             ~/.cargo/bin/tree-sitter
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
       - name: setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain
