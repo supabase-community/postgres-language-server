@@ -20,10 +20,12 @@ pub fn get_completions(
     let doc = session.document(&url)?;
     let encoding = adapters::negotiated_encoding(session.client_capabilities().unwrap());
 
-    let completion_result = match session.workspace.get_completions(GetCompletionsParams {
-        path,
-        position: get_cursor_position(session, &url, params.text_document_position.position)?,
-    }) {
+    let position = get_cursor_position(session, &url, params.text_document_position.position)?;
+
+    let completion_result = match session
+        .workspace
+        .get_completions(GetCompletionsParams { path, position })
+    {
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
