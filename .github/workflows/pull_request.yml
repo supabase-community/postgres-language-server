@@ -124,7 +124,7 @@ jobs:
         run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Setup sqlx-cli
-        run: cargo install sqlx-cli
+        run: command -v sqlx ||cargo install sqlx-cli
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
