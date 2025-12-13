@@ -118,6 +118,7 @@ jobs:
           path: |
             ~/.cargo/bin/tree-sitter
             ~/.cargo/bin/sqlx
+            ~/.cargo/bin/cargo-sqlx
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup tree-sitter
