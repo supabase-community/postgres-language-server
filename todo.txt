@@ -11,12 +11,9 @@
 - [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_columns_of_mentioned_tables.snap
 - [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__prefers_not_mentioned_columns.snap
 - [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__shows_multiple_columns_if_no_relation_specified.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_alter_table_and_drop_table.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_insert_clause.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_where_clause.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_policy_using_clause.snap
-- [ ] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_relevant_columns_without_letters.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_alter_table_and_drop_table.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_insert_clause.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_in_where_clause.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_columns_policy_using_clause.snap
+- [x] crates/pgls_completions/src/snapshots/pgls_completions__test_helper__suggests_relevant_columns_without_letters.snap
 
-#### General Todos
-- [ ] Should filter out any items where typed letters don't match at all
-- [ ] 

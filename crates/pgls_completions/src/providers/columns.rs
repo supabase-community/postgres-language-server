@@ -50,7 +50,6 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
 
 #[cfg(test)]
 mod tests {
-    use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
     use crate::test_helper::{TestCompletionsCase, TestCompletionsSuite};
