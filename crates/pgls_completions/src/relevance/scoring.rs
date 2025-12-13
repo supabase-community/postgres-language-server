@@ -71,12 +71,12 @@ impl CompletionScore<'_> {
             (None, Some(qualifier)) => {
                 if self.get_schema_name().is_some_and(|s| s == qualifier) {
                     self.get_table_name()
-                        .map(|t| format!("{}.{}", t, name))
+                        .map(|t| format!("{t}.{name}"))
                         .unwrap_or(name.clone())
                 } else if self.get_table_name().is_some_and(|t| t == qualifier) {
                     name.clone()
                 } else if ctx
-                    .get_mentioned_table_for_alias(&qualifier)
+                    .get_mentioned_table_for_alias(qualifier)
                     .is_some_and(|alias_tbl| {
                         self.get_table_name()
                             .is_some_and(|item_tbl| alias_tbl == item_tbl)
@@ -97,7 +97,7 @@ impl CompletionScore<'_> {
                 CompletionRelevanceData::Column(_) | CompletionRelevanceData::Policy(_) => self
                     .get_table_name()
                     .and_then(|tbl| ctx.get_used_alias_for_table(tbl))
-                    .map(|t| format!("{}.{}", t, name))
+                    .map(|t| format!("{t}.{name}"))
                     .unwrap_or(name.clone()),
 
                 // everything else is just fuzzy matched against its name.
@@ -243,7 +243,7 @@ impl CompletionScore<'_> {
                 _ => {}
             },
 
-            _ => return,
+            _ => (),
         }
     }
 

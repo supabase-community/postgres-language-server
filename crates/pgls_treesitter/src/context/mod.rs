@@ -1138,7 +1138,7 @@ mod tests {
         for case in cases {
             let params = TreeSitterContextParams {
                 position: case.cursor_position.into(),
-                text: &query,
+                text: query,
                 tree: &tree,
             };
 

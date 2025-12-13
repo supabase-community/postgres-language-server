@@ -2,7 +2,6 @@ use crate::{
     CompletionItemKind, CompletionText,
     item::CompletionItem,
     relevance::{filtering::CompletionFilter, scoring::CompletionScore},
-    sanitization,
 };
 
 use pgls_treesitter::TreesitterContext;
@@ -43,10 +42,7 @@ impl<'a> CompletionBuilder<'a> {
             item.score.calc_score(self.ctx);
         }
 
-        items = items
-            .into_iter()
-            .filter(|i| !i.score.should_skip())
-            .collect();
+        items.retain(|i| !i.score.should_skip());
 
         items.sort_by(|a, b| {
             b.score
