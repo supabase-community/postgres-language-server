@@ -153,8 +153,6 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
-        println!("TreesitterContext: {:#?}", ctx);
-
         ctx
     }
 
@@ -304,30 +302,21 @@ impl<'a> TreesitterContext<'a> {
             return;
         }
 
-        match parent_node_kind {
-            "statement" | "subquery" => {
-                self.wrapping_clause_type =
-                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
+        // match parent_node_kind {
+        //     "statement" | "subquery" => {
+        //         self.wrapping_clause_type =
+        //             self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
 
-                self.wrapping_statement_range = Some(parent_node.range());
-            }
-            "invocation" => self.is_invocation = true,
-            _ => {}
-        }
-
-        // try to gather context from the siblings if we're within an error node.
-        if parent_node_kind == "ERROR" {
-            if let Some(clause_type) = self.get_wrapping_clause_from_error_node_child(current_node)
-            {
-                self.wrapping_clause_type = Some(clause_type);
-            }
-            if let Some(wrapping_node) = self.get_wrapping_node_from_error_node_child(current_node)
-            {
-                self.wrapping_node_kind = Some(wrapping_node)
-            }
-        }
+        //         self.wrapping_statement_range = Some(parent_node.range());
+        //     }
+        //     _ => {}
+        // }
 
         match current_node_kind {
+            "statement" | "subquery" => {
+                self.wrapping_statement_range = Some(current_node.range());
+            }
+
             "object_reference" | "column_reference" => {
                 if let Some((head, middle, _)) = parts_of_reference_query(current_node, self.text) {
                     self.identifier_qualifiers = (
@@ -361,6 +350,8 @@ impl<'a> TreesitterContext<'a> {
                 self.wrapping_node_kind = Some(WrappingNode::List);
             }
 
+            "invocation" => self.is_invocation = true,
+
             _ => {
                 if let Some(clause_type) =
                     self.get_wrapping_clause_from_current_node(current_node, &mut cursor)
@@ -380,119 +371,6 @@ impl<'a> TreesitterContext<'a> {
 
         cursor.goto_first_child_for_byte(self.position);
         self.gather_context_from_node(cursor, current_node);
-    }
-
-    fn get_first_sibling(&self, node: tree_sitter::Node<'a>) -> tree_sitter::Node<'a> {
-        let mut first_sibling = node;
-        while let Some(n) = first_sibling.prev_sibling() {
-            first_sibling = n;
-        }
-        first_sibling
-    }
-
-    fn get_wrapping_node_from_error_node_child(
-        &self,
-        node: tree_sitter::Node<'a>,
-    ) -> Option<WrappingNode> {
-        self.wrapping_clause_type
-            .as_ref()
-            .and_then(|clause| match clause {
-                WrappingClause::Insert => {
-                    let mut first_sib = self.get_first_sibling(node);
-
-                    let mut after_opening_bracket = false;
-                    let mut before_closing_bracket = false;
-
-                    while let Some(next_sib) = first_sib.next_sibling() {
-                        if next_sib.kind() == "("
-                            && next_sib.end_position() <= node.start_position()
-                        {
-                            after_opening_bracket = true;
-                        }
-
-                        if next_sib.kind() == ")"
-                            && next_sib.start_position() >= node.end_position()
-                        {
-                            before_closing_bracket = true;
-                        }
-
-                        first_sib = next_sib;
-                    }
-
-                    if after_opening_bracket && before_closing_bracket {
-                        Some(WrappingNode::List)
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            })
-    }
-
-    fn get_wrapping_clause_from_error_node_child(
-        &self,
-        node: tree_sitter::Node<'a>,
-    ) -> Option<WrappingClause<'a>> {
-        let clause_combinations: Vec<(WrappingClause, &[&'static str])> = vec![
-            // (WrappingClause::Where, &["where"]),
-            // (WrappingClause::Update, &["update"]),
-            // (WrappingClause::Select, &["select"]),
-            // (WrappingClause::Delete, &["delete"]),
-            // (WrappingClause::Insert, &["insert", "into"]),
-            // (WrappingClause::From, &["from"]),
-            (WrappingClause::Join { on_node: None }, &["join"]),
-            // (WrappingClause::AlterColumn, &["alter", "table", "alter"]),
-            // (WrappingClause::RenameColumn, &["alter", "table", "rename"]),
-            // (WrappingClause::AlterTable, &["alter", "table"]),
-            // (
-            //     WrappingClause::AlterTable,
-            //     &["alter", "table", "if", "exists"],
-            // ),
-            // (WrappingClause::DropTable, &["drop", "table"]),
-            // (
-            //     WrappingClause::DropTable,
-            //     &["drop", "table", "if", "exists"],
-            // ),
-        ];
-
-        let first_sibling = self.get_first_sibling(node);
-
-        /*
-         * For each clause, we'll iterate from first_sibling to the next ones,
-         * either until the end or until we land on the node under the cursor.
-         * We'll score the `WrappingClause` by how many tokens it matches in order.
-         */
-        let mut clauses_with_score: Vec<(WrappingClause, usize)> = clause_combinations
-            .into_iter()
-            .map(|(clause, tokens)| {
-                let mut idx = 0;
-
-                let mut sibling = Some(first_sibling);
-                while let Some(sib) = sibling {
-                    if sib.end_byte() >= node.end_byte() || idx >= tokens.len() {
-                        break;
-                    }
-
-                    if let Some(sibling_content) = self.get_ts_node_content(&sib) {
-                        if sibling_content == tokens[idx] {
-                            idx += 1;
-                        }
-                    } else {
-                        break;
-                    }
-
-                    sibling = sib.next_sibling();
-                }
-
-                (clause, idx)
-            })
-            .collect();
-
-        clauses_with_score.sort_by(|(_, score_a), (_, score_b)| score_b.cmp(score_a));
-        clauses_with_score
-            .iter()
-            .find(|(_, score)| *score > 0)
-            .map(|c| c.0.clone())
     }
 
     fn get_wrapping_clause_from_current_node(

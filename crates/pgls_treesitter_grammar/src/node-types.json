@@ -8179,7 +8179,7 @@
     "fields": {
       "new_name": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "any_identifier",

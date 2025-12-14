@@ -36,6 +36,11 @@ module.exports = grammar({
     [$.table_reference, $.column_reference],
     [$.object_reference, $.table_reference],
     [$.function_reference, $.table_reference],
+
+    [$.rename_column, $.rename_object],
+
+    [$.join, $.lateral_join],
+    [$.cross_join, $.lateral_cross_join],
   ],
 
   precedences: ($) => [
@@ -1703,7 +1708,7 @@ module.exports = grammar({
       ),
 
     add_constraint: ($) =>
-      seq(
+      partialSeq(
         $.keyword_add,
         optional($.keyword_constraint),
         $.any_identifier,
@@ -1711,7 +1716,7 @@ module.exports = grammar({
       ),
 
     drop_constraint: ($) =>
-      seq(
+      partialSeq(
         $.keyword_drop,
         $.keyword_constraint,
         optional($._if_exists),
@@ -1720,7 +1725,7 @@ module.exports = grammar({
       ),
 
     alter_column: ($) =>
-      seq(
+      partialSeq(
         // TODO constraint management
         $.keyword_alter,
         optional($.keyword_column),
@@ -1774,7 +1779,7 @@ module.exports = grammar({
       ),
 
     rename_column: ($) =>
-      seq(
+      partialSeq(
         $.keyword_rename,
         optional($.keyword_column),
         $.column_identifier,
@@ -2123,13 +2128,14 @@ module.exports = grammar({
         optional($._drop_behavior)
       ),
 
-    rename_object: ($) => seq($.keyword_rename, $.keyword_to, $.any_identifier),
+    rename_object: ($) =>
+      partialSeq($.keyword_rename, $.keyword_to, $.any_identifier),
 
     set_schema: ($) =>
-      seq($.keyword_set, $.keyword_schema, $.schema_identifier),
+      partialSeq($.keyword_set, $.keyword_schema, $.schema_identifier),
 
     change_ownership: ($) =>
-      seq($.keyword_owner, $.keyword_to, $.role_specification),
+      partialSeq($.keyword_owner, $.keyword_to, $.role_specification),
 
     object_id: ($) =>
       seq(
@@ -2858,20 +2864,22 @@ module.exports = grammar({
             $.keyword_full
           )
         ),
-        $.keyword_join,
-        $.relation,
-        optional($.index_hint),
-        optional($.join),
-        choice(
-          seq($.keyword_on, field("predicate", $._expression)),
-          seq($.keyword_using, alias($._column_list, $.list))
+        partialSeq(
+          $.keyword_join,
+          $.relation,
+          optional($.index_hint),
+          optional($.join),
+          choice(
+            seq($.keyword_on, field("predicate", $._expression)),
+            seq($.keyword_using, alias($._column_list, $.list))
+          )
         )
       ),
 
     cross_join: ($) =>
-      prec.right(
-        seq(
-          $.keyword_cross,
+      seq(
+        $.keyword_cross,
+        partialSeq(
           $.keyword_join,
           $.relation,
           optional(
@@ -2900,29 +2908,33 @@ module.exports = grammar({
             $.keyword_inner
           )
         ),
-        $.keyword_join,
-        $.keyword_lateral,
-        choice($.invocation, $.subquery),
-        optional(
-          choice(
-            seq($.keyword_as, field("alias", $.any_identifier)),
-            field("alias", $.any_identifier)
-          )
-        ),
-        $.keyword_on,
-        choice($._expression, $.keyword_true, $.keyword_false)
+        partialSeq(
+          $.keyword_join,
+          $.keyword_lateral,
+          choice($.invocation, $.subquery),
+          optional(
+            choice(
+              seq($.keyword_as, field("alias", $.any_identifier)),
+              field("alias", $.any_identifier)
+            )
+          ),
+          $.keyword_on,
+          choice($._expression, $.keyword_true, $.keyword_false)
+        )
       ),
 
     lateral_cross_join: ($) =>
       seq(
         $.keyword_cross,
-        $.keyword_join,
-        $.keyword_lateral,
-        choice($.invocation, $.subquery),
-        optional(
-          choice(
-            seq($.keyword_as, field("alias", $.any_identifier)),
-            field("alias", $.any_identifier)
+        partialSeq(
+          $.keyword_join,
+          $.keyword_lateral,
+          choice($.invocation, $.subquery),
+          optional(
+            choice(
+              seq($.keyword_as, field("alias", $.any_identifier)),
+              field("alias", $.any_identifier)
+            )
           )
         )
       ),
