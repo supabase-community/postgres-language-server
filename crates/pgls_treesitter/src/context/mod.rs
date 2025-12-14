@@ -153,6 +153,8 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
 
+        println!("TreesitterContext: {:#?}", ctx);
+
         ctx
     }
 
@@ -432,25 +434,25 @@ impl<'a> TreesitterContext<'a> {
         node: tree_sitter::Node<'a>,
     ) -> Option<WrappingClause<'a>> {
         let clause_combinations: Vec<(WrappingClause, &[&'static str])> = vec![
-            (WrappingClause::Where, &["where"]),
-            (WrappingClause::Update, &["update"]),
-            (WrappingClause::Select, &["select"]),
-            (WrappingClause::Delete, &["delete"]),
-            (WrappingClause::Insert, &["insert", "into"]),
-            (WrappingClause::From, &["from"]),
+            // (WrappingClause::Where, &["where"]),
+            // (WrappingClause::Update, &["update"]),
+            // (WrappingClause::Select, &["select"]),
+            // (WrappingClause::Delete, &["delete"]),
+            // (WrappingClause::Insert, &["insert", "into"]),
+            // (WrappingClause::From, &["from"]),
             (WrappingClause::Join { on_node: None }, &["join"]),
-            (WrappingClause::AlterTable, &["alter", "table"]),
-            (WrappingClause::AlterColumn, &["alter", "table", "alter"]),
-            (WrappingClause::RenameColumn, &["alter", "table", "rename"]),
-            (
-                WrappingClause::AlterTable,
-                &["alter", "table", "if", "exists"],
-            ),
-            (WrappingClause::DropTable, &["drop", "table"]),
-            (
-                WrappingClause::DropTable,
-                &["drop", "table", "if", "exists"],
-            ),
+            // (WrappingClause::AlterColumn, &["alter", "table", "alter"]),
+            // (WrappingClause::RenameColumn, &["alter", "table", "rename"]),
+            // (WrappingClause::AlterTable, &["alter", "table"]),
+            // (
+            //     WrappingClause::AlterTable,
+            //     &["alter", "table", "if", "exists"],
+            // ),
+            // (WrappingClause::DropTable, &["drop", "table"]),
+            // (
+            //     WrappingClause::DropTable,
+            //     &["drop", "table", "if", "exists"],
+            // ),
         ];
 
         let first_sibling = self.get_first_sibling(node);

@@ -1664,14 +1664,16 @@ module.exports = grammar({
     alter_table: ($) =>
       seq(
         $.keyword_alter,
-        $.keyword_table,
-        optional($._if_exists),
-        optional($.keyword_only),
-        $.table_reference,
-        choice(
-          seq(
-            $._alter_specifications,
-            repeat(seq(",", $._alter_specifications))
+        partialSeq(
+          $.keyword_table,
+          optional($._if_exists),
+          optional($.keyword_only),
+          $.table_reference,
+          choice(
+            seq(
+              $._alter_specifications,
+              repeat(seq(",", $._alter_specifications))
+            )
           )
         )
       ),
@@ -2192,7 +2194,7 @@ module.exports = grammar({
     _insert_statement: ($) => seq($.insert, optional($.returning)),
 
     insert: ($) =>
-      seq(
+      partialSeq(
         $.keyword_insert,
         $.keyword_into,
         $.table_reference,
@@ -2339,15 +2341,13 @@ module.exports = grammar({
       seq($.keyword_partition, paren_list($.table_option, true)),
 
     update: ($) =>
-      prec.left(
-        seq(
-          $.keyword_update,
-          optional($.keyword_only),
-          $.relation,
-          $._set_values,
-          // optional($.from),
-          optional($.where)
-        )
+      partialSeq(
+        $.keyword_update,
+        optional($.keyword_only),
+        $.relation,
+        $._set_values,
+        // optional($.from),
+        optional($.where)
       ),
 
     storage_location: ($) =>
@@ -2450,7 +2450,7 @@ module.exports = grammar({
       ),
 
     assignment: ($) =>
-      partial(
+      partialSeq(
         field("left", $.column_reference),
         "=",
         field("right", $._expression)
@@ -3582,11 +3582,17 @@ function unknown_until($, rule, maxLength) {
 }
 
 /**
+ * Grants "full left precedence", so
+ * a rule built with this can be partially matched.
+ * For example, partial($.keyword_update, $.table_reference, $.keyword_set) will match if the
+ * parser only sees "update".
+ *
+ * Make sure to only use this for rules that are unambiguous in their partial forms.
  *
  * @param  {...(RuleOrLiteral)} rules
  * @returns {PrecLeftRule}
  */
-function partial(...rules) {
+function partialSeq(...rules) {
   const lastIdx = rules.length - 1;
 
   /** @type {RuleOrLiteral} */
