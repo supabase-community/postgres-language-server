@@ -1,7 +1,7 @@
 use anyhow::{Result, bail};
 use biome_string_case::Case;
-use pgls_analyse::{AnalyserOptions, AnalysisFilter, RuleFilter, RuleMetadata};
-use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
+use pgls_analyse::{AnalysisFilter, RuleFilter, RuleMetadata};
+use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, LinterOptions};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
@@ -431,7 +431,7 @@ fn print_diagnostics(
         ..AnalysisFilter::default()
     };
     let settings = Settings::default();
-    let options = AnalyserOptions::default();
+    let options = LinterOptions::default();
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
         filter,

@@ -2667,6 +2667,7 @@ dependencies = [
  "pgls_statement_splitter",
  "pgls_test_macros",
  "pgls_text_size",
+ "rustc-hash 2.1.0",
  "serde",
  "termcolor",
 ]

@@ -1,6 +1,8 @@
 use crate::{to_capitalized, update};
 use biome_string_case::Case;
-use pgls_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleGroup, RuleMetadata};
+use pgls_analyse::{
+    GroupCategory, RegistryVisitor, RuleCategory, RuleGroup, RuleMeta, RuleMetadata,
+};
 use pgls_diagnostics::Severity;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
@@ -92,7 +94,7 @@ impl RegistryVisitor for CategoryRulesVisitor {
 
     fn record_rule<R>(&mut self)
     where
-        R: Rule<Options: Default> + 'static,
+        R: RuleMeta + 'static,
     {
         self.groups
             .entry(<R::Group as RuleGroup>::NAME)

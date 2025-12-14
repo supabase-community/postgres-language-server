@@ -3,7 +3,8 @@
 #![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
 use crate::rules::{RuleConfiguration, RulePlainConfiguration};
 use biome_deserialize_macros::Merge;
-use pgls_analyse::{RuleFilter, options::RuleOptions};
+use pgls_analyse::RuleFilter;
+use pgls_analyser::RuleOptions;
 use pgls_diagnostics::{Category, Severity};
 use rustc_hash::FxHashSet;
 #[cfg(feature = "schema")]

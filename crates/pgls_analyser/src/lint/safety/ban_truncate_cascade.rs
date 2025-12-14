@@ -1,4 +1,5 @@
-use pgls_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use crate::{Rule, RuleContext, RuleDiagnostic};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::DropBehavior;

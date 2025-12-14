@@ -1,20 +1,40 @@
 use std::{ops::Deref, sync::LazyLock};
 
-use pgls_analyse::{
-    AnalysedFileContext, AnalyserOptions, AnalysisFilter, MetadataRegistry, RegistryRuleParams,
-    RuleDiagnostic, RuleRegistry,
-};
+use pgls_analyse::{AnalysisFilter, MetadataRegistry};
 pub use registry::visit_registry;
 
 mod lint;
+mod linter_context;
+mod linter_options;
+mod linter_registry;
+mod linter_rule;
 pub mod options;
 mod registry;
 
+// Re-export linter-specific types
+pub use linter_context::{AnalysedFileContext, LinterRuleContext};
+pub use linter_options::{LinterOptions, LinterRules, RuleOptions};
+pub use linter_registry::{
+    LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
+};
+pub use linter_rule::{LinterDiagnostic, LinterRule};
+
+// For convenience in macros and rule files - keep these shorter names
+pub use LinterDiagnostic as RuleDiagnostic;
+pub use LinterRule as Rule;
+pub use LinterRuleContext as RuleContext;
+
 pub static METADATA: LazyLock<MetadataRegistry> = LazyLock::new(|| {
     let mut metadata = MetadataRegistry::default();
-    visit_registry(&mut metadata);
+    // Use a separate visitor for metadata that implements pgls_analyse::RegistryVisitor
+    visit_metadata_registry(&mut metadata);
     metadata
 });
+
+// Separate function for visiting metadata registry (uses pgls_analyse::RegistryVisitor)
+fn visit_metadata_registry<V: pgls_analyse::RegistryVisitor>(registry: &mut V) {
+    registry.record_category::<crate::lint::Lint>();
+}
 
 /// Main entry point to the analyser.
 pub struct Analyser<'a> {
@@ -24,10 +44,10 @@ pub struct Analyser<'a> {
     metadata: &'a MetadataRegistry,
 
     /// Holds all rule options
-    options: &'a AnalyserOptions,
+    options: &'a LinterOptions,
 
     /// Holds all rules
-    registry: RuleRegistry,
+    registry: LinterRuleRegistry,
 }
 
 #[derive(Debug)]
@@ -42,13 +62,13 @@ pub struct AnalyserParams<'a> {
 }
 
 pub struct AnalyserConfig<'a> {
-    pub options: &'a AnalyserOptions,
+    pub options: &'a LinterOptions,
     pub filter: AnalysisFilter<'a>,
 }
 
 impl<'a> Analyser<'a> {
     pub fn new(conf: AnalyserConfig<'a>) -> Self {
-        let mut builder = RuleRegistry::builder(&conf.filter);
+        let mut builder = LinterRuleRegistry::builder(&conf.filter);
         visit_registry(&mut builder);
         let registry = builder.build();
 
@@ -59,7 +79,7 @@ impl<'a> Analyser<'a> {
         }
     }
 
-    pub fn run(&self, params: AnalyserParams) -> Vec<RuleDiagnostic> {
+    pub fn run(&self, params: AnalyserParams) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
         let roots: Vec<pgls_query::NodeEnum> =
@@ -68,7 +88,7 @@ impl<'a> Analyser<'a> {
 
         for (i, stmt) in params.stmts.into_iter().enumerate() {
             let stmt_diagnostics: Vec<_> = {
-                let rule_params = RegistryRuleParams {
+                let rule_params = LinterRegistryRuleParams {
                     root: &roots[i],
                     options: self.options,
                     analysed_file_context: &file_context,
@@ -131,7 +151,7 @@ mod tests {
         let ast = pgls_query::parse(SQL).expect("failed to parse SQL");
         let range = TextRange::new(0.into(), u32::try_from(SQL.len()).unwrap().into());
 
-        let options = AnalyserOptions::default();
+        let options = LinterOptions::default();
 
         let analyser = Analyser::new(crate::AnalyserConfig {
             options: &options,

@@ -1,6 +1,5 @@
-use pgls_analyse::{
-    AnalysedFileContext, Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule,
-};
+use crate::{AnalysedFileContext, Rule, RuleContext, RuleDiagnostic};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 

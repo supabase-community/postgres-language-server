@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display, Formatter};
 
 use crate::{
     categories::RuleCategories,
-    rule::{GroupCategory, Rule, RuleGroup},
+    metadata::{GroupCategory, RuleGroup, RuleMeta},
 };
 
 /// Allow filtering a single rule or group of rules by their names
@@ -52,7 +52,7 @@ impl<'analysis> AnalysisFilter<'analysis> {
     }
 
     /// Return `true` if the rule `R` matches this filter
-    pub fn match_rule<R: Rule>(&self) -> bool {
+    pub fn match_rule<R: RuleMeta>(&self) -> bool {
         self.match_category::<<R::Group as RuleGroup>::Category>()
             && self.enabled_rules.is_none_or(|enabled_rules| {
                 enabled_rules.iter().any(|filter| filter.match_rule::<R>())
@@ -83,7 +83,7 @@ impl<'a> RuleFilter<'a> {
     /// Return `true` if the rule `R` matches this filter
     pub fn match_rule<R>(self) -> bool
     where
-        R: Rule,
+        R: RuleMeta,
     {
         match self {
             RuleFilter::Group(group) => group == <R::Group as RuleGroup>::NAME,
@@ -160,7 +160,7 @@ impl RuleKey {
         Self { group, rule }
     }
 
-    pub fn rule<R: Rule>() -> Self {
+    pub fn rule<R: RuleMeta>() -> Self {
         Self::new(<R::Group as RuleGroup>::NAME, R::METADATA.name)
     }
 
