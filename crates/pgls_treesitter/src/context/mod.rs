@@ -302,16 +302,6 @@ impl<'a> TreesitterContext<'a> {
             return;
         }
 
-        // match parent_node_kind {
-        //     "statement" | "subquery" => {
-        //         self.wrapping_clause_type =
-        //             self.get_wrapping_clause_from_current_node(current_node, &mut cursor);
-
-        //         self.wrapping_statement_range = Some(parent_node.range());
-        //     }
-        //     _ => {}
-        // }
-
         match current_node_kind {
             "statement" | "subquery" => {
                 self.wrapping_statement_range = Some(current_node.range());
