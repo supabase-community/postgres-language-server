@@ -72,8 +72,8 @@ impl Rules {
     #[doc = r" The function can return `None` if the rule is not properly configured."]
     pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
         let mut split_code = category.name().split('/');
-        let _lint = split_code.next();
-        debug_assert_eq!(_lint, Some("lint"));
+        let _category = split_code.next();
+        debug_assert_eq!(_category, Some("lint"));
         let group = <RuleGroup as std::str::FromStr>::from_str(split_code.next()?).ok()?;
         let rule_name = split_code.next()?;
         let rule_name = Self::has_rule(group, rule_name)?;

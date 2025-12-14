@@ -1,176 +1,426 @@
 use anyhow::{Context, Result};
 use biome_string_case::Case;
+use quote::{format_ident, quote};
 use std::collections::BTreeMap;
 use std::fs;
-use xtask::{glue::fs2, project_root};
+use std::path::{Path, PathBuf};
+use xtask::{glue::fs2, project_root, Mode};
 
-/// Generate splinter categories from the SQL files (both generic and Supabase-specific)
+use crate::update;
+
+/// Metadata extracted from SQL file comments
+#[derive(Debug, Clone)]
+struct SqlRuleMetadata {
+    /// Rule name in camelCase (from meta comment)
+    name: String,
+    /// Rule name in snake_case (from filename)
+    snake_name: String,
+    /// Human-readable title
+    title: String,
+    /// Severity level (INFO, WARN, ERROR)
+    severity: String,
+    /// Category (PERFORMANCE, SECURITY, etc.)
+    category: String,
+    /// Description of what the rule detects
+    description: String,
+    /// Remediation URL or text
+    remediation: String,
+    /// Path to SQL file relative to vendor/
+    sql_file_path: PathBuf,
+}
+
+/// Generate splinter rules, registry, and categories from individual SQL files
 pub fn generate_splinter() -> Result<()> {
+    let vendor_dir = project_root().join("crates/pgls_splinter/vendor");
+
+    // Scan for SQL files in performance/ and security/ directories
     let mut all_rules = BTreeMap::new();
 
-    // Process generic rules
-    let generic_sql_path = project_root().join("crates/pgls_splinter/vendor/splinter_generic.sql");
-    if generic_sql_path.exists() {
-        let sql_content = fs::read_to_string(&generic_sql_path)
-            .with_context(|| format!("Failed to read SQL file at {generic_sql_path:?}"))?;
-        let rules = extract_rules_from_sql(&sql_content)?;
-        all_rules.extend(rules);
+    for category in &["performance", "security"] {
+        let category_dir = vendor_dir.join(category);
+        if !category_dir.exists() {
+            continue;
+        }
+
+        for entry in fs::read_dir(&category_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.extension().and_then(|s| s.to_str()) == Some("sql") {
+                let metadata = extract_metadata_from_sql(&path, category)?;
+                all_rules.insert(metadata.snake_name.clone(), metadata);
+            }
+        }
     }
 
-    // Process Supabase-specific rules
-    let supabase_sql_path =
-        project_root().join("crates/pgls_splinter/vendor/splinter_supabase.sql");
-    if supabase_sql_path.exists() {
-        let sql_content = fs::read_to_string(&supabase_sql_path)
-            .with_context(|| format!("Failed to read SQL file at {supabase_sql_path:?}"))?;
-        let rules = extract_rules_from_sql(&sql_content)?;
-        all_rules.extend(rules);
-    }
+    // Generate Rust rule files
+    generate_rule_trait()?;
+    generate_rule_files(&all_rules)?;
+    generate_registry(&all_rules)?;
 
-    update_categories_file(all_rules)?;
+    // Update categories file (keep existing logic for backward compat)
+    update_categories_file(&all_rules)?;
 
     Ok(())
 }
 
-/// Extract rule information from the SQL file
-fn extract_rules_from_sql(content: &str) -> Result<BTreeMap<String, RuleInfo>> {
-    let mut rules = BTreeMap::new();
+/// Extract metadata from SQL file comment headers
+fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleMetadata> {
+    let content = fs::read_to_string(sql_path)
+        .with_context(|| format!("Failed to read SQL file: {sql_path:?}"))?;
 
-    let lines: Vec<&str> = content.lines().collect();
+    let mut name = None;
+    let mut title = None;
+    let mut severity = None;
+    let mut meta_category = None;
+    let mut description = None;
+    let mut remediation = None;
 
-    for (i, line) in lines.iter().enumerate() {
+    // Parse metadata comments
+    for line in content.lines() {
         let line = line.trim();
+        if !line.starts_with("--") {
+            break; // Stop at first non-comment line
+        }
 
-        // Look for pattern: 'rule_name' as "name!",
-        if line.contains(" as \"name!\"") {
-            if let Some(name) = extract_string_literal(line) {
-                // Look ahead for categories and remediation URL
-                let mut categories = None;
-                let mut remediation_url = None;
+        if line.starts_with("-- meta:") {
+            let meta_line = &line[8..].trim(); // Remove "-- meta:"
 
-                for next_line in lines[i..].iter().take(30) {
-                    let next_line = next_line.trim();
-
-                    // Extract categories from pattern: array['CATEGORY'] as "categories!",
-                    if next_line.contains(" as \"categories!\"") {
-                        categories = extract_categories(next_line);
-                    }
-
-                    // Extract remediation URL from pattern: 'url' as "remediation!",
-                    if next_line.contains(" as \"remediation!\"") {
-                        remediation_url = extract_string_literal(next_line);
-                    }
-
-                    // Stop once we have both
-                    if categories.is_some() && remediation_url.is_some() {
-                        break;
-                    }
-                }
-
-                let cats = categories
-                    .with_context(|| format!("Failed to find categories for rule '{name}'"))?;
-
-                // Convert old database-linter URLs to database-advisors
-                let updated_url = remediation_url
-                    .map(|url| url.replace("/database-linter", "/database-advisors"))
-                    .or(Some(
-                        "https://supabase.com/docs/guides/database/database-advisors".to_string(),
-                    ));
-
-                rules.insert(
-                    name.clone(),
-                    RuleInfo {
-                        snake_case: name.clone(),
-                        camel_case: snake_to_camel_case(&name),
-                        categories: cats,
-                        url: updated_url,
-                    },
-                );
+            if let Some(value) = extract_meta_value(meta_line, "name") {
+                name = Some(value);
+            } else if let Some(value) = extract_meta_value(meta_line, "title") {
+                title = Some(value);
+            } else if let Some(value) = extract_meta_value(meta_line, "severity") {
+                severity = Some(value);
+            } else if let Some(value) = extract_meta_value(meta_line, "category") {
+                meta_category = Some(value);
+            } else if let Some(value) = extract_meta_value(meta_line, "description") {
+                description = Some(value);
+            } else if let Some(value) = extract_meta_value(meta_line, "remediation") {
+                remediation = Some(value);
             }
         }
     }
 
-    // Add the "unknown" fallback rule
-    rules.insert(
-        "unknown".to_string(),
-        RuleInfo {
-            snake_case: "unknown".to_string(),
-            camel_case: "unknown".to_string(),
-            categories: vec!["UNKNOWN".to_string()],
-            url: Some("https://supabase.com/docs/guides/database/database-advisors".to_string()),
-        },
-    );
+    // Get snake_case name from filename
+    let snake_name = sql_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .context("Invalid filename")?
+        .to_string();
 
-    Ok(rules)
-}
+    // Build metadata
+    let name = name.context("Missing 'name' in metadata comments")?;
+    let title = title.context("Missing 'title' in metadata comments")?;
+    let severity = severity.context("Missing 'severity' in metadata comments")?;
+    let category_from_meta = meta_category.context("Missing 'category' in metadata comments")?;
+    let description = description.context("Missing 'description' in metadata comments")?;
+    let remediation = remediation.unwrap_or_else(|| {
+        "https://supabase.com/docs/guides/database/database-advisors".to_string()
+    });
 
-/// Extract a string literal from a line like "'some_string' as ..."
-fn extract_string_literal(line: &str) -> Option<String> {
-    let trimmed = line.trim();
-
-    if let Some(start_single) = trimmed.find('\'') {
-        if let Some(end) = trimmed[start_single + 1..].find('\'') {
-            return Some(trimmed[start_single + 1..start_single + 1 + end].to_string());
-        }
+    // Verify category matches directory
+    if category_from_meta.to_lowercase() != category {
+        anyhow::bail!(
+            "Category mismatch: file in {category}/ but metadata says {category_from_meta}"
+        );
     }
 
+    let sql_file_path = PathBuf::from(category).join(format!("{}.sql", snake_name));
+
+    Ok(SqlRuleMetadata {
+        name,
+        snake_name,
+        title,
+        severity,
+        category: category_from_meta,
+        description,
+        remediation,
+        sql_file_path,
+    })
+}
+
+/// Extract value from metadata line like "name = value"
+fn extract_meta_value(line: &str, key: &str) -> Option<String> {
+    if let Some(pos) = line.find(&format!("{key} =")) {
+        let value_start = pos + key.len() + " =".len();
+        let value = line[value_start..].trim();
+        return Some(value.to_string());
+    }
     None
 }
 
-/// Extract categories from a line like "array['CATEGORY'] as "categories!","
-fn extract_categories(line: &str) -> Option<Vec<String>> {
-    let trimmed = line.trim();
+/// Generate src/rule.rs with SplinterRule trait
+fn generate_rule_trait() -> Result<()> {
+    let rule_path = project_root().join("crates/pgls_splinter/src/rule.rs");
 
-    // Look for array['...']
-    if let Some(start) = trimmed.find("array[") {
-        if let Some(end) = trimmed[start..].find(']') {
-            let array_content = &trimmed[start + 6..start + end];
+    let content = quote! {
+        //! Generated file, do not edit by hand, see `xtask/codegen`
 
-            // Extract all string literals within the array
-            let categories: Vec<String> = array_content
-                .split(',')
-                .filter_map(|s| {
-                    let s = s.trim();
-                    if let Some(start_quote) = s.find('\'') {
-                        if let Some(end_quote) = s[start_quote + 1..].find('\'') {
-                            return Some(
-                                s[start_quote + 1..start_quote + 1 + end_quote].to_string(),
-                            );
-                        }
-                    }
-                    None
-                })
-                .collect();
+        use pgls_analyse::RuleMeta;
 
-            if !categories.is_empty() {
-                return Some(categories);
+        /// Trait for splinter (database-level) rules
+        ///
+        /// Splinter rules are different from linter rules:
+        /// - They execute SQL queries against the database
+        /// - They don't have AST-based execution
+        /// - Rule logic is in SQL files, not Rust
+        pub trait SplinterRule: RuleMeta {
+            /// Path to the SQL file containing the rule query
+            fn sql_file_path() -> &'static str;
+        }
+    };
+
+    let formatted = xtask::reformat(content)?;
+    update(&rule_path, &formatted, &Mode::Overwrite)?;
+
+    Ok(())
+}
+
+/// Generate rule files in src/rules/{category}/{rule_name}.rs
+fn generate_rule_files(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
+    let rules_dir = project_root().join("crates/pgls_splinter/src/rules");
+
+    // Group rules by category
+    let mut rules_by_category: BTreeMap<String, Vec<&SqlRuleMetadata>> = BTreeMap::new();
+    for rule in rules.values() {
+        rules_by_category
+            .entry(rule.category.to_lowercase())
+            .or_default()
+            .push(rule);
+    }
+
+    // Generate category mod files and rule files
+    for (category, category_rules) in &rules_by_category {
+        let category_dir = rules_dir.join(category);
+        fs2::create_dir_all(&category_dir)?;
+
+        // Generate individual rule files
+        for rule in category_rules {
+            generate_rule_file(&category_dir, rule)?;
+        }
+
+        // Generate category mod.rs
+        generate_category_mod(&category_dir, category, category_rules)?;
+    }
+
+    // Generate main rules mod.rs
+    generate_rules_mod(&rules_dir, &rules_by_category)?;
+
+    Ok(())
+}
+
+/// Generate individual rule file
+fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result<()> {
+    let rule_file = category_dir.join(format!("{}.rs", metadata.snake_name));
+
+    let struct_name = Case::Pascal.convert(&metadata.snake_name);
+    let struct_name = format_ident!("{}", struct_name);
+
+    // These will be used as string literals in the quote!
+    let title = &metadata.title;
+    let description = &metadata.description;
+    let name = &metadata.name; // camelCase name
+    let category_upper = metadata.category.to_uppercase();
+    let category_ident = format_ident!("{}", category_upper);
+    let sql_path = metadata.sql_file_path.display().to_string();
+
+    // Parse severity - this will be a Rust expression
+    let severity = match metadata.severity.as_str() {
+        "INFO" => quote! { pgls_diagnostics::Severity::Information },
+        "WARN" => quote! { pgls_diagnostics::Severity::Warning },
+        "ERROR" => quote! { pgls_diagnostics::Severity::Error },
+        _ => quote! { pgls_diagnostics::Severity::Information },
+    };
+
+    let content = quote! {
+        //! Generated file, do not edit by hand, see `xtask/codegen`
+
+        use crate::rule::SplinterRule;
+        use pgls_analyse::RuleMeta;
+
+        ::pgls_analyse::declare_rule! {
+            /// #title
+            ///
+            /// #description
+            pub #struct_name {
+                version: "1.0.0",
+                name: #name,
+                severity: #severity,
             }
         }
+
+        impl SplinterRule for #struct_name {
+            fn sql_file_path() -> &'static str {
+                #sql_path
+            }
+        }
+    };
+
+    let formatted = xtask::reformat(content)?;
+    update(&rule_file, &formatted, &Mode::Overwrite)?;
+
+    Ok(())
+}
+
+/// Generate category mod.rs that exports all rules in the category
+fn generate_category_mod(
+    category_dir: &Path,
+    category: &str,
+    rules: &[&SqlRuleMetadata],
+) -> Result<()> {
+    let mod_file = category_dir.join("mod.rs");
+
+    let category_title = Case::Pascal.convert(category);
+    let category_struct = format_ident!("{}", category_title);
+
+    // Generate mod declarations
+    let mod_names: Vec<_> = rules
+        .iter()
+        .map(|r| format_ident!("{}", r.snake_name))
+        .collect();
+
+    // Generate rule paths for declare_lint_group!
+    let rule_paths: Vec<_> = rules
+        .iter()
+        .map(|r| {
+            let mod_name = format_ident!("{}", r.snake_name);
+            let struct_name = format_ident!("{}", Case::Pascal.convert(&r.snake_name));
+            quote! { self::#mod_name::#struct_name }
+        })
+        .collect();
+
+    let content = quote! {
+        //! Generated file, do not edit by hand, see `xtask/codegen`
+
+        #( pub mod #mod_names; )*
+
+        ::pgls_analyse::declare_lint_group! {
+            pub #category_struct {
+                name: #category,
+                rules: [
+                    #( #rule_paths, )*
+                ]
+            }
+        }
+    };
+
+    let formatted = xtask::reformat(content)?;
+    update(&mod_file, &formatted, &Mode::Overwrite)?;
+
+    Ok(())
+}
+
+/// Generate main rules/mod.rs
+fn generate_rules_mod(
+    rules_dir: &Path,
+    rules_by_category: &BTreeMap<String, Vec<&SqlRuleMetadata>>,
+) -> Result<()> {
+    let mod_file = rules_dir.join("mod.rs");
+
+    let category_mods: Vec<_> = rules_by_category
+        .keys()
+        .map(|cat| {
+            let mod_name = format_ident!("{}", cat);
+            quote! { pub mod #mod_name; }
+        })
+        .collect();
+
+    // Generate group paths for declare_category!
+    let group_paths: Vec<_> = rules_by_category
+        .keys()
+        .map(|cat| {
+            let mod_name = format_ident!("{}", cat);
+            let group_name = format_ident!("{}", Case::Pascal.convert(cat));
+            quote! { self::#mod_name::#group_name }
+        })
+        .collect();
+
+    let content = quote! {
+        //! Generated file, do not edit by hand, see `xtask/codegen`
+
+        #( #category_mods )*
+
+        ::pgls_analyse::declare_category! {
+            pub Splinter {
+                kind: Lint,
+                groups: [
+                    #( #group_paths, )*
+                ]
+            }
+        }
+    };
+
+    let formatted = xtask::reformat(content)?;
+    update(&mod_file, &formatted, &Mode::Overwrite)?;
+
+    Ok(())
+}
+
+/// Generate src/registry.rs with visit_registry() and get_sql_file_path()
+fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
+    let registry_path = project_root().join("crates/pgls_splinter/src/registry.rs");
+
+    // Group rules by category for organized output
+    let mut rules_by_category: BTreeMap<String, Vec<&SqlRuleMetadata>> = BTreeMap::new();
+    for rule in rules.values() {
+        rules_by_category
+            .entry(rule.category.to_lowercase())
+            .or_default()
+            .push(rule);
     }
 
-    None
-}
+    // Record the top-level category (which contains all groups)
+    let mut record_calls = vec![quote! {
+        registry.record_category::<crate::rules::Splinter>();
+    }];
 
-/// Convert snake_case to camelCase
-fn snake_to_camel_case(s: &str) -> String {
-    Case::Camel.convert(s)
-}
+    // Generate match arms for SQL file path mapping
+    let sql_path_arms: Vec<_> = rules
+        .values()
+        .map(|rule| {
+            let name = &rule.name;
+            let vendor_path = project_root()
+                .join("crates/pgls_splinter/vendor")
+                .join(&rule.sql_file_path);
+            let path_str = vendor_path.display().to_string();
 
-/// Check if a string is a valid URL (simple check for http/https)
-fn is_valid_url(s: &str) -> bool {
-    s.starts_with("http://") || s.starts_with("https://")
-}
+            quote! {
+                #name => Some(#path_str)
+            }
+        })
+        .collect();
 
-struct RuleInfo {
-    #[allow(dead_code)]
-    snake_case: String,
-    camel_case: String,
-    categories: Vec<String>,
-    url: Option<String>,
+    let content = quote! {
+        //! Generated file, do not edit by hand, see `xtask/codegen`
+
+        use pgls_analyse::RegistryVisitor;
+
+        /// Visit all splinter rules using the visitor pattern
+        /// This is called during registry building to collect enabled rules
+        pub fn visit_registry<V: RegistryVisitor>(registry: &mut V) {
+            #( #record_calls )*
+        }
+
+        /// Map rule name (camelCase) to SQL file path
+        /// Returns None if rule not found
+        pub fn get_sql_file_path(rule_name: &str) -> Option<&'static str> {
+            match rule_name {
+                #( #sql_path_arms, )*
+                _ => None,
+            }
+        }
+    };
+
+    let formatted = xtask::reformat(content)?;
+    update(&registry_path, &formatted, &Mode::Overwrite)?;
+
+    Ok(())
 }
 
 /// Update the categories.rs file with splinter rules
-fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
+/// This maintains backward compatibility with existing category system
+fn update_categories_file(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
     let categories_path =
         project_root().join("crates/pgls_diagnostics_categories/src/categories.rs");
 
@@ -179,30 +429,16 @@ fn update_categories_file(rules: BTreeMap<String, RuleInfo>) -> Result<()> {
     // Generate splinter rule entries grouped by category
     let mut splinter_rules: Vec<(String, String)> = rules
         .values()
-        .flat_map(|rule| {
-            // For each rule, create entries for all its categories
-            // In practice, splinter rules have only one category
-            rule.categories.iter().map(|category| {
-                let group = category.to_lowercase();
+        .map(|rule| {
+            let group = rule.category.to_lowercase();
+            let url = &rule.remediation;
 
-                // Use extracted URL if it's a valid URL, otherwise fallback to default
-                let url = rule
-                    .url
-                    .as_ref()
-                    .filter(|u| is_valid_url(u))
-                    .map(|u| u.as_str())
-                    .unwrap_or("https://supabase.com/docs/guides/database/database-advisors");
-
-                (
-                    group.clone(),
-                    format!(
-                        "    \"splinter/{}/{}\": \"{}\",",
-                        group, rule.camel_case, url
-                    ),
-                )
-            })
+            (
+                group.clone(),
+                format!("    \"splinter/{}/{}\": \"{}\",", group, rule.name, url),
+            )
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     // Sort by group, then by entry
     splinter_rules.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
