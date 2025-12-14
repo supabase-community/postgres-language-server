@@ -323,8 +323,6 @@ impl<'a> TreesitterContext<'a> {
             {
                 self.wrapping_node_kind = Some(wrapping_node)
             }
-
-            self.get_info_from_error_node_child(current_node);
         }
 
         match current_node_kind {
@@ -493,76 +491,6 @@ impl<'a> TreesitterContext<'a> {
             .iter()
             .find(|(_, score)| *score > 0)
             .map(|c| c.0.clone())
-    }
-
-    fn get_info_from_error_node_child(&mut self, node: tree_sitter::Node<'a>) {
-        let mut first_sibling = self.get_first_sibling(node);
-
-        if let Some(clause) = self.wrapping_clause_type.as_ref() {
-            match *clause {
-                WrappingClause::Insert => {
-                    while let Some(sib) = first_sibling.next_sibling() {
-                        match sib.kind() {
-                            "object_reference" => {
-                                if let Some(txt) = self.get_ts_node_content(&sib) {
-                                    let mut iter = txt.split('.').rev();
-                                    let table = iter.next().unwrap().to_string();
-                                    let schema = iter.next().map(|s| s.to_string());
-                                    self.mentioned_relations
-                                        .entry(schema)
-                                        .and_modify(|s| {
-                                            s.insert(table.clone());
-                                        })
-                                        .or_insert(HashSet::from([table]));
-                                }
-                            }
-
-                            "column" => {
-                                if let Some(txt) = self.get_ts_node_content(&sib) {
-                                    let entry = MentionedColumn {
-                                        column: txt,
-                                        alias: None,
-                                    };
-
-                                    self.mentioned_columns
-                                        .entry(Some(WrappingClause::Insert))
-                                        .and_modify(|s| {
-                                            s.insert(entry.clone());
-                                        })
-                                        .or_insert(HashSet::from([entry]));
-                                }
-                            }
-
-                            _ => {}
-                        }
-
-                        first_sibling = sib;
-                    }
-                }
-
-                WrappingClause::AlterColumn => {
-                    while let Some(sib) = first_sibling.next_sibling() {
-                        if sib.kind() == "object_reference" {
-                            if let Some(txt) = self.get_ts_node_content(&sib) {
-                                let mut iter = txt.split('.').rev();
-                                let table = iter.next().unwrap().to_string();
-                                let schema = iter.next().map(|s| s.to_string());
-                                self.mentioned_relations
-                                    .entry(schema)
-                                    .and_modify(|s| {
-                                        s.insert(table.clone());
-                                    })
-                                    .or_insert(HashSet::from([table]));
-                            }
-                        }
-
-                        first_sibling = sib;
-                    }
-                }
-
-                _ => {}
-            }
-        }
     }
 
     fn get_wrapping_clause_from_current_node(
