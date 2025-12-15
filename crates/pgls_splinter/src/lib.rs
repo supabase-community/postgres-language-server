@@ -95,12 +95,21 @@ pub async fn run_splinter(
     }
 
     // Combine SQL queries with UNION ALL
-    // SQL files are already complete queries wrapped in parentheses
-    let combined_sql = sql_queries
+    // Some SQL files are wrapped in parentheses, some are not
+    // Ensure all queries are wrapped for valid UNION ALL syntax
+    let processed_queries: Vec<String> = sql_queries
         .iter()
-        .map(|sql| sql.trim())
-        .collect::<Vec<_>>()
-        .join("\n\nUNION ALL\n\n");
+        .map(|sql| {
+            let trimmed = sql.trim();
+            // Wrap in parentheses if not already wrapped
+            if trimmed.starts_with('(') && trimmed.ends_with(')') {
+                trimmed.to_string()
+            } else {
+                format!("({trimmed})")
+            }
+        })
+        .collect();
+    let combined_sql = processed_queries.join("\n\nUNION ALL\n\n");
 
     // Execute the combined query
     let mut tx = params.conn.begin().await?;
