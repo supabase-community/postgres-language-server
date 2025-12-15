@@ -1,8 +1,8 @@
 use core::slice;
 use std::{collections::HashMap, fmt::Write, fs::read_to_string, path::Path};
 
-use pgls_analyse::{AnalyserOptions, AnalysisFilter, RuleDiagnostic, RuleFilter};
-use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams};
+use pgls_analyse::{AnalysisFilter, RuleFilter};
+use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
 
@@ -25,7 +25,7 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
     let query =
         read_to_string(full_path).unwrap_or_else(|_| panic!("Failed to read file: {full_path} "));
 
-    let options = AnalyserOptions::default();
+    let options = LinterOptions::default();
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
         filter,
@@ -79,7 +79,7 @@ fn parse_test_path(path: &Path) -> (String, String, String) {
     (group.into(), rule.into(), fname.into())
 }
 
-fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[RuleDiagnostic]) {
+fn write_snapshot(snapshot: &mut String, query: &str, diagnostics: &[LinterDiagnostic]) {
     writeln!(snapshot, "# Input").unwrap();
     writeln!(snapshot, "```").unwrap();
     writeln!(snapshot, "{query}").unwrap();
@@ -140,7 +140,7 @@ impl Expectation {
         );
     }
 
-    fn assert(&self, diagnostics: &[RuleDiagnostic]) {
+    fn assert(&self, diagnostics: &[LinterDiagnostic]) {
         match self {
             Self::NoDiagnostics => {
                 if !diagnostics.is_empty() {
