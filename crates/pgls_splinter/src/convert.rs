@@ -103,7 +103,7 @@ fn rule_name_to_category(name: &str, group: &str) -> &'static Category {
             category!("splinter/security/insecureQueueExposedInApi")
         }
         ("security", "fkey_to_auth_unique") => category!("splinter/security/fkeyToAuthUnique"),
-        _ => panic!("Unknown splinter rule: {group}/{name}")
+        _ => panic!("Unknown splinter rule: {group}/{name}"),
     }
 }
 
