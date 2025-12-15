@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public
+-- meta: requires_supabase = true
 
 (
 select

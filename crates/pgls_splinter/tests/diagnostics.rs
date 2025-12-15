@@ -1,3 +1,4 @@
+use pgls_analyse::AnalysisFilter;
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
 use pgls_splinter::{SplinterParams, run_splinter};
@@ -57,10 +58,17 @@ impl TestSetup<'_> {
             .await
             .expect("Failed to setup test database");
 
-        // Run splinter checks
-        let diagnostics = run_splinter(SplinterParams { conn: self.test_db })
-            .await
-            .expect("Failed to run splinter checks");
+        // Run splinter checks with all rules enabled
+        let filter = AnalysisFilter::default();
+        let diagnostics = run_splinter(
+            SplinterParams {
+                conn: self.test_db,
+                schema_cache: None,
+            },
+            &filter,
+        )
+        .await
+        .expect("Failed to run splinter checks");
 
         let content = if diagnostics.is_empty() {
             String::from("No Diagnostics")
@@ -235,9 +243,16 @@ async fn multiple_issues(test_db: PgPool) {
 async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
     // Without Supabase roles, generic rules should still run
     // but Supabase-specific rules should be skipped
-    let diagnostics = run_splinter(SplinterParams { conn: &test_db })
-        .await
-        .expect("Should not error when Supabase roles are missing");
+    let filter = AnalysisFilter::default();
+    let diagnostics = run_splinter(
+        SplinterParams {
+            conn: &test_db,
+            schema_cache: None,
+        },
+        &filter,
+    )
+    .await
+    .expect("Should not error when Supabase roles are missing");
 
     assert!(
         diagnostics.is_empty(),
@@ -251,9 +266,16 @@ async fn missing_roles_runs_generic_checks_only(test_db: PgPool) {
         .await
         .expect("Failed to create test table");
 
-    let diagnostics_with_issue = run_splinter(SplinterParams { conn: &test_db })
-        .await
-        .expect("Should not error when checking for issues");
+    let filter = AnalysisFilter::default();
+    let diagnostics_with_issue = run_splinter(
+        SplinterParams {
+            conn: &test_db,
+            schema_cache: None,
+        },
+        &filter,
+    )
+    .await
+    .expect("Should not error when checking for issues");
 
     assert!(
         !diagnostics_with_issue.is_empty(),

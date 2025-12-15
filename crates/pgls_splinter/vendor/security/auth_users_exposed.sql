@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0002_auth_users_exposed
+-- meta: requires_supabase = true
 
 (
 select

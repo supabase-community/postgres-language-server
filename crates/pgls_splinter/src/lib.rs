@@ -5,6 +5,8 @@ pub mod registry;
 pub mod rule;
 pub mod rules;
 
+use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
+use pgls_schema_cache::SchemaCache;
 use sqlx::PgPool;
 
 pub use diagnostics::{SplinterAdvices, SplinterDiagnostic};
@@ -14,41 +16,103 @@ pub use rule::SplinterRule;
 #[derive(Debug)]
 pub struct SplinterParams<'a> {
     pub conn: &'a PgPool,
+    pub schema_cache: Option<&'a SchemaCache>,
 }
 
-async fn check_supabase_roles(conn: &PgPool) -> Result<bool, sqlx::Error> {
-    let required_roles = ["anon", "authenticated", "service_role"];
+/// Visitor that collects enabled splinter rules based on filter
+struct SplinterRuleCollector<'a> {
+    filter: &'a AnalysisFilter<'a>,
+    enabled_rules: Vec<String>, // rule names in camelCase
+}
 
-    let existing_roles: Vec<String> =
-        sqlx::query_scalar("SELECT rolname FROM pg_roles WHERE rolname = ANY($1)")
-            .bind(&required_roles[..])
-            .fetch_all(conn)
-            .await?;
+impl<'a> RegistryVisitor for SplinterRuleCollector<'a> {
+    fn record_category<C: pgls_analyse::GroupCategory>(&mut self) {
+        if self.filter.match_category::<C>() {
+            C::record_groups(self);
+        }
+    }
 
-    // Check if all required roles exist
-    let all_exist = required_roles
-        .iter()
-        .all(|role| existing_roles.contains(&(*role).to_string()));
+    fn record_group<G: pgls_analyse::RuleGroup>(&mut self) {
+        if self.filter.match_group::<G>() {
+            G::record_rules(self);
+        }
+    }
 
-    Ok(all_exist)
+    fn record_rule<R: RuleMeta>(&mut self) {
+        if self.filter.match_rule::<R>() {
+            self.enabled_rules.push(R::METADATA.name.to_string());
+        }
+    }
 }
 
 pub async fn run_splinter(
     params: SplinterParams<'_>,
+    filter: &AnalysisFilter<'_>,
 ) -> Result<Vec<SplinterDiagnostic>, sqlx::Error> {
-    let mut all_results = Vec::new();
+    // Use visitor pattern to collect enabled rules
+    let mut collector = SplinterRuleCollector {
+        filter,
+        enabled_rules: Vec::new(),
+    };
+    crate::registry::visit_registry(&mut collector);
 
-    let generic_results = query::load_generic_splinter_results(params.conn).await?;
-    all_results.extend(generic_results);
-
-    // Only run Supabase-specific rules if the required roles exist
-    let has_supabase_roles = check_supabase_roles(params.conn).await?;
-    if has_supabase_roles {
-        let supabase_results = query::load_supabase_splinter_results(params.conn).await?;
-        all_results.extend(supabase_results);
+    // If no rules are enabled, return early
+    if collector.enabled_rules.is_empty() {
+        return Ok(Vec::new());
     }
 
-    let diagnostics: Vec<SplinterDiagnostic> = all_results.into_iter().map(Into::into).collect();
+    // Check if Supabase roles exist (anon, authenticated, service_role)
+    let has_supabase_roles = params.schema_cache.map_or(false, |cache| {
+        let required_roles = ["anon", "authenticated", "service_role"];
+        required_roles.iter().all(|role_name| {
+            cache
+                .roles
+                .iter()
+                .any(|role| role.name.as_str() == *role_name)
+        })
+    });
+
+    // Build dynamic SQL query from enabled rules
+    // Filter out Supabase-specific rules if Supabase roles don't exist
+    // SQL content is embedded at compile time using include_str! for performance
+    let mut sql_queries = Vec::new();
+
+    for rule_name in &collector.enabled_rules {
+        // Skip Supabase-specific rules if Supabase roles don't exist
+        if !has_supabase_roles && crate::registry::rule_requires_supabase(rule_name) {
+            continue;
+        }
+
+        // Get embedded SQL content (compile-time included)
+        if let Some(sql) = crate::registry::get_sql_content(rule_name) {
+            sql_queries.push(sql);
+        }
+    }
+
+    // If no SQL files could be read, return early
+    if sql_queries.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Combine SQL queries with UNION ALL
+    let combined_sql = sql_queries.join("\n\nUNION ALL\n\n");
+
+    // Execute the combined query
+    let mut tx = params.conn.begin().await?;
+
+    // Set search path as done in the original implementation
+    sqlx::query("set local search_path = ''")
+        .execute(&mut *tx)
+        .await?;
+
+    let results = sqlx::query_as::<_, SplinterQueryResult>(&combined_sql)
+        .fetch_all(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    // Convert results to diagnostics
+    let diagnostics: Vec<SplinterDiagnostic> = results.into_iter().map(Into::into).collect();
 
     Ok(diagnostics)
 }

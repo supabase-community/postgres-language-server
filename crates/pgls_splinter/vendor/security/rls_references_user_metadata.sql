@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0015_rls_references_user_metadata
+-- meta: requires_supabase = true
 
 (
 with policies as (

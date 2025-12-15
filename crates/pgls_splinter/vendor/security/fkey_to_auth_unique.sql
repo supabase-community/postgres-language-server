@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects user defined foreign keys to unique constraints in the auth schema.
 -- meta: remediation = Drop the foreign key constraint that references the auth schema.
+-- meta: requires_supabase = true
 
 (
 select

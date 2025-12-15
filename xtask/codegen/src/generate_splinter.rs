@@ -25,6 +25,10 @@ struct SqlRuleMetadata {
     description: String,
     /// Remediation URL or text
     remediation: String,
+    /// Whether this rule requires Supabase roles (anon, authenticated, service_role)
+    requires_supabase: bool,
+    /// The actual SQL query content (everything after metadata comments)
+    sql_query: String,
     /// Path to SQL file relative to vendor/
     sql_file_path: PathBuf,
 }
@@ -75,11 +79,14 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
     let mut meta_category = None;
     let mut description = None;
     let mut remediation = None;
+    let mut requires_supabase = None;
 
-    // Parse metadata comments
-    for line in content.lines() {
+    // Parse metadata comments and find where SQL starts
+    let mut sql_start_line = 0;
+    for (idx, line) in content.lines().enumerate() {
         let line = line.trim();
         if !line.starts_with("--") {
+            sql_start_line = idx;
             break; // Stop at first non-comment line
         }
 
@@ -98,9 +105,20 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
                 description = Some(value);
             } else if let Some(value) = extract_meta_value(meta_line, "remediation") {
                 remediation = Some(value);
+            } else if let Some(value) = extract_meta_value(meta_line, "requires_supabase") {
+                requires_supabase = Some(value.to_lowercase() == "true");
             }
         }
     }
+
+    // Extract SQL query (everything after metadata comments)
+    let sql_query: String = content
+        .lines()
+        .skip(sql_start_line)
+        .collect::<Vec<_>>()
+        .join("\n")
+        .trim()
+        .to_string();
 
     // Get snake_case name from filename
     let snake_name = sql_path
@@ -118,6 +136,7 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
     let remediation = remediation.unwrap_or_else(|| {
         "https://supabase.com/docs/guides/database/database-advisors".to_string()
     });
+    let requires_supabase = requires_supabase.unwrap_or(false);
 
     // Verify category matches directory
     if category_from_meta.to_lowercase() != category {
@@ -136,6 +155,8 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
         category: category_from_meta,
         description,
         remediation,
+        requires_supabase,
+        sql_query,
         sql_file_path,
     })
 }
@@ -221,9 +242,11 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
     let title = &metadata.title;
     let description = &metadata.description;
     let name = &metadata.name; // camelCase name
-    let category_upper = metadata.category.to_uppercase();
-    let category_ident = format_ident!("{}", category_upper);
+    let remediation = &metadata.remediation;
+    let sql_query = &metadata.sql_query;
+    let category_lower = metadata.category.to_lowercase();
     let sql_path = metadata.sql_file_path.display().to_string();
+    let requires_supabase = metadata.requires_supabase;
 
     // Parse severity - this will be a Rust expression
     let severity = match metadata.severity.as_str() {
@@ -233,15 +256,63 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
         _ => quote! { pgls_diagnostics::Severity::Information },
     };
 
+    // Build comprehensive documentation
+    let requires_supabase_note = if requires_supabase {
+        format!("\n/// \n/// **Note:** This rule requires Supabase roles (`anon`, `authenticated`, `service_role`). \n/// It will be automatically skipped if these roles don't exist in your database.")
+    } else {
+        String::new()
+    };
+
+    let doc_string = format!(
+        r#"/// # {title}
+///
+/// {description}{requires_supabase_note}
+///
+/// ## SQL Query
+///
+/// ```sql
+{sql_query_commented}
+/// ```
+///
+/// ## Configuration
+///
+/// Enable or disable this rule in your configuration:
+///
+/// ```json
+/// {{
+///   "splinter": {{
+///     "rules": {{
+///       "{category_lower}": {{
+///         "{name}": "warn"
+///       }}
+///     }}
+///   }}
+/// }}
+/// ```
+///
+/// ## Remediation
+///
+/// See: <{remediation}>"#,
+        title = title,
+        description = description,
+        requires_supabase_note = requires_supabase_note,
+        sql_query_commented = sql_query
+            .lines()
+            .map(|line| format!("/// {}", line))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        category_lower = category_lower,
+        name = name,
+        remediation = remediation,
+    );
+
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
         use crate::rule::SplinterRule;
 
         ::pgls_analyse::declare_rule! {
-            /// #title
-            ///
-            /// #description
+            #[doc = #doc_string]
             pub #struct_name {
                 version: "1.0.0",
                 name: #name,
@@ -374,7 +445,7 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
         registry.record_category::<crate::rules::Splinter>();
     }];
 
-    // Generate match arms for SQL file path mapping
+    // Generate match arms for SQL file path mapping (camelCase → path)
     let sql_path_arms: Vec<_> = rules
         .values()
         .map(|rule| {
@@ -384,6 +455,49 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
 
             quote! {
                 #name => Some(#relative_path)
+            }
+        })
+        .collect();
+
+    // Generate match arms for category lookup (snake_case → &'static Category)
+    let category_arms: Vec<_> = rules
+        .values()
+        .map(|rule| {
+            let snake_name = &rule.snake_name;
+            let group = rule.category.to_lowercase();
+            let camel_name = &rule.name;
+            let category_path = format!("splinter/{}/{}", group, camel_name);
+
+            quote! {
+                #snake_name => Some(::pgls_diagnostics::category!(#category_path))
+            }
+        })
+        .collect();
+
+    // Generate match arms for Supabase requirement check (camelCase → bool)
+    let supabase_arms: Vec<_> = rules
+        .values()
+        .map(|rule| {
+            let camel_name = &rule.name;
+            let requires = rule.requires_supabase;
+
+            quote! {
+                #camel_name => #requires
+            }
+        })
+        .collect();
+
+    // Generate match arms for SQL content lookup (camelCase → embedded SQL)
+    // Use include_str! to embed SQL files at compile time
+    let sql_content_arms: Vec<_> = rules
+        .values()
+        .map(|rule| {
+            let camel_name = &rule.name;
+            // Path relative to crate root (where Cargo.toml is)
+            let relative_path = format!("vendor/{}", rule.sql_file_path.display());
+
+            quote! {
+                #camel_name => Some(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", #relative_path)))
             }
         })
         .collect();
@@ -401,10 +515,43 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
 
         /// Map rule name (camelCase) to SQL file path
         /// Returns None if rule not found
+        #[deprecated(note = "Use get_sql_content() instead - SQL is now embedded at compile time")]
         pub fn get_sql_file_path(rule_name: &str) -> Option<&'static str> {
             match rule_name {
                 #( #sql_path_arms, )*
                 _ => None,
+            }
+        }
+
+        /// Get embedded SQL content for a rule (camelCase name)
+        /// Returns None if rule not found
+        ///
+        /// SQL files are embedded at compile time using include_str! for performance
+        /// and to make the binary self-contained.
+        pub fn get_sql_content(rule_name: &str) -> Option<&'static str> {
+            match rule_name {
+                #( #sql_content_arms, )*
+                _ => None,
+            }
+        }
+
+        /// Map rule name from SQL result (snake_case) to diagnostic category
+        /// Returns None if rule not found
+        ///
+        /// This replaces the hardcoded match in convert.rs
+        pub fn get_rule_category(rule_name: &str) -> Option<&'static ::pgls_diagnostics::Category> {
+            match rule_name {
+                #( #category_arms, )*
+                _ => None,
+            }
+        }
+
+        /// Check if a rule requires Supabase roles (anon, authenticated, service_role)
+        /// Rules that require Supabase should be filtered out if these roles don't exist
+        pub fn rule_requires_supabase(rule_name: &str) -> bool {
+            match rule_name {
+                #( #supabase_arms, )*
+                _ => false,
             }
         }
     };

@@ -1,3 +1,7 @@
+pub mod linter;
+pub mod splinter;
+
+pub use crate::analyser::linter::*;
 use biome_deserialize::Merge;
 use biome_deserialize_macros::Deserializable;
 use pgls_analyser::RuleOptions;
@@ -5,6 +9,7 @@ use pgls_diagnostics::Severity;
 #[cfg(feature = "schema")]
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
@@ -293,5 +298,129 @@ impl<T: Default> Merge for RuleWithFixOptions<T> {
     fn merge_with(&mut self, other: Self) {
         self.level = other.level;
         self.options = other.options;
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum RuleSelector {
+    LinterGroup(linter::RuleGroup),
+    LinterRule(linter::RuleGroup, &'static str),
+    SplinterGroup(splinter::RuleGroup),
+    SplinterRule(splinter::RuleGroup, &'static str),
+}
+
+impl From<RuleSelector> for RuleFilter<'static> {
+    fn from(value: RuleSelector) -> Self {
+        match value {
+            RuleSelector::LinterGroup(group) => RuleFilter::Group(group.as_str()),
+            RuleSelector::LinterRule(group, name) => RuleFilter::Rule(group.as_str(), name),
+            RuleSelector::SplinterGroup(group) => RuleFilter::Group(group.as_str()),
+            RuleSelector::SplinterRule(group, name) => RuleFilter::Rule(group.as_str(), name),
+        }
+    }
+}
+
+impl<'a> From<&'a RuleSelector> for RuleFilter<'static> {
+    fn from(value: &'a RuleSelector) -> Self {
+        match value {
+            RuleSelector::LinterGroup(group) => RuleFilter::Group(group.as_str()),
+            RuleSelector::LinterRule(group, name) => RuleFilter::Rule(group.as_str(), name),
+            RuleSelector::SplinterGroup(group) => RuleFilter::Group(group.as_str()),
+            RuleSelector::SplinterRule(group, name) => RuleFilter::Rule(group.as_str(), name),
+        }
+    }
+}
+
+impl FromStr for RuleSelector {
+    type Err = &'static str;
+    fn from_str(selector: &str) -> Result<Self, Self::Err> {
+        // Check for explicit prefixes
+        if let Some(linter_selector) = selector.strip_prefix("lint/") {
+            return parse_linter_selector(linter_selector);
+        }
+        if let Some(splinter_selector) = selector.strip_prefix("splinter/") {
+            return parse_splinter_selector(splinter_selector);
+        }
+
+        // No prefix: try linter first (for backward compatibility), then splinter
+        parse_linter_selector(selector)
+            .or_else(|_| parse_splinter_selector(selector))
+            .map_err(|_| "This rule or group doesn't exist in linter or splinter.")
+    }
+}
+
+fn parse_linter_selector(selector: &str) -> Result<RuleSelector, &'static str> {
+    if let Some((group_name, rule_name)) = selector.split_once('/') {
+        let group = linter::RuleGroup::from_str(group_name)?;
+        if let Some(rule_name) = linter::Rules::has_rule(group, rule_name) {
+            Ok(RuleSelector::LinterRule(group, rule_name))
+        } else {
+            Err("This linter rule doesn't exist.")
+        }
+    } else {
+        let group = linter::RuleGroup::from_str(selector)?;
+        Ok(RuleSelector::LinterGroup(group))
+    }
+}
+
+fn parse_splinter_selector(selector: &str) -> Result<RuleSelector, &'static str> {
+    if let Some((group_name, rule_name)) = selector.split_once('/') {
+        let group = splinter::RuleGroup::from_str(group_name)?;
+        if let Some(rule_name) = splinter::Rules::has_rule(group, rule_name) {
+            Ok(RuleSelector::SplinterRule(group, rule_name))
+        } else {
+            Err("This splinter rule doesn't exist.")
+        }
+    } else {
+        let group = splinter::RuleGroup::from_str(selector)?;
+        Ok(RuleSelector::SplinterGroup(group))
+    }
+}
+
+impl serde::Serialize for RuleSelector {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            RuleSelector::LinterGroup(group) => serializer.serialize_str(group.as_str()),
+            RuleSelector::LinterRule(group, rule_name) => {
+                let group_name = group.as_str();
+                serializer.serialize_str(&format!("{group_name}/{rule_name}"))
+            }
+            RuleSelector::SplinterGroup(group) => {
+                serializer.serialize_str(&format!("splinter/{}", group.as_str()))
+            }
+            RuleSelector::SplinterRule(group, rule_name) => {
+                let group_name = group.as_str();
+                serializer.serialize_str(&format!("splinter/{group_name}/{rule_name}"))
+            }
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for RuleSelector {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl serde::de::Visitor<'_> for Visitor {
+            type Value = RuleSelector;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("<group>/<ruyle_name>")
+            }
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                match RuleSelector::from_str(v) {
+                    Ok(result) => Ok(result),
+                    Err(error) => Err(serde::de::Error::custom(error)),
+                }
+            }
+        }
+        deserializer.deserialize_str(Visitor)
+    }
+}
+
+#[cfg(feature = "schema")]
+impl schemars::JsonSchema for RuleSelector {
+    fn schema_name() -> String {
+        "RuleCode".to_string()
+    }
+    fn json_schema(r#gen: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
+        String::json_schema(r#gen)
     }
 }

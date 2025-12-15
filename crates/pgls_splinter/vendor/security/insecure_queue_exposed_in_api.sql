@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects cases where an insecure Queue is exposed over Data APIs
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0019_insecure_queue_exposed_in_api
+-- meta: requires_supabase = true
 
 (
 select

@@ -2999,6 +2999,7 @@ dependencies = [
  "pgls_analyse",
  "pgls_console",
  "pgls_diagnostics",
+ "pgls_schema_cache",
  "pgls_test_utils",
  "serde",
  "serde_json",

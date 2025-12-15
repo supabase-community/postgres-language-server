@@ -4,6 +4,7 @@
 -- meta: category = PERFORMANCE
 -- meta: description = Detects if calls to \`current_setting()\` and \`auth.<function>()\` in RLS policies are being unnecessarily re-evaluated for each row
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan
+-- meta: requires_supabase = true
 
 (
 with policies as (
