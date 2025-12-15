@@ -1222,6 +1222,7 @@ dependencies = [
  "pgls_env",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_workspace",
  "pulldown-cmark",
