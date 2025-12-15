@@ -4,13 +4,12 @@ use pgls_analyse::{
 use regex::Regex;
 use std::collections::BTreeMap;
 
-/// Metadata for a splinter rule with SQL content
+/// Metadata for a splinter rule with SQL content and registry metadata
 #[derive(Clone)]
 pub(crate) struct SplinterRuleMetadata {
     pub(crate) metadata: RuleMetadata,
     pub(crate) sql_content: &'static str,
-    pub(crate) requires_supabase: bool,
-    pub(crate) description: String,
+    pub(crate) registry_metadata: pgls_splinter::registry::SplinterRuleMetadata,
 }
 
 pub(crate) fn replace_section(
@@ -95,32 +94,23 @@ impl RegistryVisitor for SplinterRulesVisitor {
             .entry(<R::Group as RuleGroup>::NAME)
             .or_default();
 
-        // Get SQL content and Supabase requirement from registry
+        // Get SQL content and metadata from registry
         let sql_content = pgls_splinter::registry::get_sql_content(R::METADATA.name)
             .unwrap_or("-- SQL content not found");
-        let requires_supabase = pgls_splinter::registry::rule_requires_supabase(R::METADATA.name);
-
-        // Extract description from SQL content metadata
-        let description = extract_description_from_sql(sql_content);
+        let registry_metadata = pgls_splinter::registry::get_rule_metadata(R::METADATA.name)
+            .unwrap_or(pgls_splinter::registry::SplinterRuleMetadata {
+                description: "Detects potential issues in your database schema.",
+                remediation: "https://supabase.com/docs/guides/database/database-advisors",
+                requires_supabase: false,
+            });
 
         group.insert(
             R::METADATA.name,
             SplinterRuleMetadata {
                 metadata: R::METADATA,
                 sql_content,
-                requires_supabase,
-                description,
+                registry_metadata,
             },
         );
     }
-}
-
-fn extract_description_from_sql(sql: &str) -> String {
-    // Look for "-- meta: description = ..." in SQL content
-    for line in sql.lines() {
-        if let Some(desc_line) = line.strip_prefix("-- meta: description = ") {
-            return desc_line.trim().to_string();
-        }
-    }
-    "Detects potential issues in your database schema.".to_string()
 }

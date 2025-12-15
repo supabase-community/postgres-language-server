@@ -4,16 +4,6 @@ use std::{fs, io::Write as _, path::Path};
 
 use crate::utils::SplinterRuleMetadata;
 
-/// Extract remediation URL from SQL metadata comments
-fn extract_remediation_from_sql(sql: &str) -> Option<String> {
-    for line in sql.lines() {
-        if let Some(url) = line.strip_prefix("-- meta: remediation = ") {
-            return Some(url.trim().to_string());
-        }
-    }
-    None
-}
-
 /// Strip metadata comments from SQL content
 /// Removes all lines starting with "-- meta:"
 fn strip_metadata_from_sql(sql: &str) -> String {
@@ -80,7 +70,7 @@ fn generate_splinter_rule_doc(
     writeln!(content)?;
 
     // Add Supabase requirement notice
-    if splinter_meta.requires_supabase {
+    if splinter_meta.registry_metadata.requires_supabase {
         writeln!(content, "> [!NOTE]")?;
         writeln!(
             content,
@@ -92,15 +82,14 @@ fn generate_splinter_rule_doc(
     writeln!(content, "## Description")?;
     writeln!(content)?;
 
-    // Use description from SQL metadata
-    writeln!(content, "{}", splinter_meta.description)?;
+    // Use description from registry metadata
+    writeln!(content, "{}", splinter_meta.registry_metadata.description)?;
     writeln!(content)?;
 
-    // Add "Learn More" link with remediation URL
-    if let Some(remediation) = extract_remediation_from_sql(splinter_meta.sql_content) {
-        writeln!(content, "[Learn More]({remediation})")?;
-        writeln!(content)?;
-    }
+    // Add "Learn More" link with remediation URL from registry metadata
+    let remediation = splinter_meta.registry_metadata.remediation;
+    writeln!(content, "[Learn More]({remediation})")?;
+    writeln!(content)?;
 
     // Add SQL query section (with metadata stripped)
     writeln!(content, "## SQL Query")?;

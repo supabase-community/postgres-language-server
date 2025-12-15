@@ -502,10 +502,40 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
         })
         .collect();
 
+    // Generate match arms for metadata lookup (camelCase → SplinterRuleMetadata)
+    let metadata_arms: Vec<_> = rules
+        .values()
+        .map(|rule| {
+            let camel_name = &rule.name;
+            let description = &rule.description;
+            let remediation = &rule.remediation;
+            let requires_supabase = rule.requires_supabase;
+
+            quote! {
+                #camel_name => Some(SplinterRuleMetadata {
+                    description: #description,
+                    remediation: #remediation,
+                    requires_supabase: #requires_supabase,
+                })
+            }
+        })
+        .collect();
+
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
         use pgls_analyse::RegistryVisitor;
+
+        /// Metadata for a splinter rule
+        #[derive(Debug, Clone, Copy)]
+        pub struct SplinterRuleMetadata {
+            /// Description of what the rule detects
+            pub description: &'static str,
+            /// URL to documentation/remediation guide
+            pub remediation: &'static str,
+            /// Whether this rule requires Supabase roles (anon, authenticated, service_role)
+            pub requires_supabase: bool,
+        }
 
         /// Visit all splinter rules using the visitor pattern
         /// This is called during registry building to collect enabled rules
@@ -535,6 +565,17 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
             }
         }
 
+        /// Get metadata for a rule (camelCase name)
+        /// Returns None if rule not found
+        ///
+        /// This provides structured access to rule metadata without requiring SQL parsing
+        pub fn get_rule_metadata(rule_name: &str) -> Option<SplinterRuleMetadata> {
+            match rule_name {
+                #( #metadata_arms, )*
+                _ => None,
+            }
+        }
+
         /// Map rule name from SQL result (snake_case) to diagnostic category
         /// Returns None if rule not found
         ///
@@ -548,6 +589,7 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
 
         /// Check if a rule requires Supabase roles (anon, authenticated, service_role)
         /// Rules that require Supabase should be filtered out if these roles don't exist
+        #[deprecated(note = "Use get_rule_metadata() instead")]
         pub fn rule_requires_supabase(rule_name: &str) -> bool {
             match rule_name {
                 #( #supabase_arms, )*
