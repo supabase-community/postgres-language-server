@@ -95,14 +95,15 @@ pub async fn run_splinter(
     }
 
     // Combine SQL queries with UNION ALL
-    // Wrap each query in SELECT * FROM (...) to handle CTEs correctly
+    // Wrap each query in SELECT * FROM (...) AS alias to handle CTEs correctly
     // This allows queries with WITH clauses to be properly combined with UNION ALL
     let processed_queries: Vec<String> = sql_queries
         .iter()
-        .map(|sql| {
+        .enumerate()
+        .map(|(idx, sql)| {
             let trimmed = sql.trim();
-            // Wrap in SELECT * FROM to create a valid subquery
-            format!("SELECT * FROM {trimmed}")
+            // Wrap in SELECT * FROM with alias (required by PostgreSQL)
+            format!("SELECT * FROM {trimmed} AS rule_{idx}")
         })
         .collect();
     let combined_sql = processed_queries.join("\n\nUNION ALL\n\n");
