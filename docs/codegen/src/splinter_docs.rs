@@ -76,7 +76,7 @@ fn generate_splinter_rule_doc(
         pgls_diagnostics::Severity::Error => "Error",
         _ => "Info",
     };
-    writeln!(content, "**Severity**: {}", severity_str)?;
+    writeln!(content, "**Severity**: {severity_str}")?;
     writeln!(content)?;
 
     // Add Supabase requirement notice
@@ -98,7 +98,7 @@ fn generate_splinter_rule_doc(
 
     // Add "Learn More" link with remediation URL
     if let Some(remediation) = extract_remediation_from_sql(splinter_meta.sql_content) {
-        writeln!(content, "[Learn More]({})", remediation)?;
+        writeln!(content, "[Learn More]({remediation})")?;
         writeln!(content)?;
     }
 
@@ -107,7 +107,7 @@ fn generate_splinter_rule_doc(
     writeln!(content)?;
     writeln!(content, "```sql")?;
     let sql_without_metadata = strip_metadata_from_sql(splinter_meta.sql_content);
-    writeln!(content, "{}", sql_without_metadata)?;
+    writeln!(content, "{sql_without_metadata}")?;
     writeln!(content, "```")?;
     writeln!(content)?;
 
