@@ -103,11 +103,7 @@ fn rule_name_to_category(name: &str, group: &str) -> &'static Category {
             category!("splinter/security/insecureQueueExposedInApi")
         }
         ("security", "fkey_to_auth_unique") => category!("splinter/security/fkeyToAuthUnique"),
-        _ => {
-            // Log a warning for unknown rules but provide a fallback
-            eprintln!("Warning: Unknown splinter rule: {group}/{name}");
-            category!("splinter/performance/unindexedForeignKeys") // Fallback to first rule
-        }
+        _ => panic!("Unknown splinter rule: {group}/{name}")
     }
 }
 
