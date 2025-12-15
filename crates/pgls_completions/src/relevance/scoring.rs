@@ -309,6 +309,21 @@ impl CompletionScore<'_> {
         }
     }
 
+    fn get_fully_qualified_name(&self) -> String {
+        match self.data {
+            CompletionRelevanceData::Schema(s) => s.name.clone(),
+            CompletionRelevanceData::Column(c) => {
+                format!("{}.{}.{}", c.schema_name, c.table_name, c.name)
+            }
+            CompletionRelevanceData::Table(t) => format!("{}.{}", t.schema, t.name),
+            CompletionRelevanceData::Function(f) => format!("{}.{}", f.schema, f.name),
+            CompletionRelevanceData::Policy(p) => {
+                format!("{}.{}.{}", p.schema_name, p.table_name, p.name)
+            }
+            CompletionRelevanceData::Role(r) => r.name.clone(),
+        }
+    }
+
     fn get_table_name(&self) -> Option<&str> {
         match self.data {
             CompletionRelevanceData::Column(c) => Some(c.table_name.as_str()),
