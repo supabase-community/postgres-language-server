@@ -380,13 +380,11 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
         .values()
         .map(|rule| {
             let name = &rule.name;
-            let vendor_path = project_root()
-                .join("crates/pgls_splinter/vendor")
-                .join(&rule.sql_file_path);
-            let path_str = vendor_path.display().to_string();
+            // Use relative path from crate root
+            let relative_path = format!("vendor/{}", rule.sql_file_path.display());
 
             quote! {
-                #name => Some(#path_str)
+                #name => Some(#relative_path)
             }
         })
         .collect();
