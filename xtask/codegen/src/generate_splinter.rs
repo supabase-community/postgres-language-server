@@ -126,7 +126,7 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
         );
     }
 
-    let sql_file_path = PathBuf::from(category).join(format!("{}.sql", snake_name));
+    let sql_file_path = PathBuf::from(category).join(format!("{snake_name}.sql"));
 
     Ok(SqlRuleMetadata {
         name,
@@ -237,7 +237,6 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
         use crate::rule::SplinterRule;
-        use pgls_analyse::RuleMeta;
 
         ::pgls_analyse::declare_rule! {
             /// #title
