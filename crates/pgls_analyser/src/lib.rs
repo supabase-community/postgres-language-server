@@ -116,8 +116,8 @@ impl<'a> Analyser<'a> {
 mod tests {
     use core::slice;
 
-    use pgls_analyse::{AnalysisFilter, RuleFilter};
     use crate::LinterOptions;
+    use pgls_analyse::{AnalysisFilter, RuleFilter};
     use pgls_console::{
         Markup,
         fmt::{Formatter, Termcolor},

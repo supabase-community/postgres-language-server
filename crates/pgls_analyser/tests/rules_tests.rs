@@ -2,7 +2,9 @@ use core::slice;
 use std::{collections::HashMap, fmt::Write, fs::read_to_string, path::Path};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
-use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions};
+use pgls_analyser::{
+    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
+};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
 
