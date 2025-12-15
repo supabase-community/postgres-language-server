@@ -1,6 +1,5 @@
 use biome_deserialize::Merge;
 use biome_deserialize_macros::Deserializable;
-use pgls_analyse::RuleFilter;
 use pgls_analyser::RuleOptions;
 use pgls_diagnostics::Severity;
 #[cfg(feature = "schema")]

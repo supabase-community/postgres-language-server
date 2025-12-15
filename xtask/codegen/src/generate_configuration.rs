@@ -287,7 +287,8 @@ fn generate_lint_rules_file(
 
         use crate::rules::{RuleConfiguration, RulePlainConfiguration};
         use biome_deserialize_macros::Merge;
-        use pgls_analyse::{RuleFilter, options::RuleOptions};
+        use pgls_analyse::RuleFilter;
+        use pgls_analyser::RuleOptions;
         use pgls_diagnostics::{Category, Severity};
         use rustc_hash::FxHashSet;
         #[cfg(feature = "schema")]
@@ -426,7 +427,7 @@ fn generate_lint_rules_file(
         pub fn push_to_analyser_rules(
             rules: &Rules,
             metadata: &pgls_analyse::MetadataRegistry,
-            analyser_rules: &mut pgls_analyse::AnalyserRules,
+            analyser_rules: &mut pgls_analyser::LinterRules,
         ) {
             #(
                 if let Some(rules) = rules.#group_idents.as_ref() {
@@ -789,7 +790,8 @@ fn generate_action_actions_file(
 
         use crate::rules::{RuleAssistConfiguration, RuleAssistPlainConfiguration};
         use biome_deserialize_macros::{Deserializable, Merge};
-        use pgls_analyse::{RuleFilter, options::RuleOptions};
+        use pgls_analyse::RuleFilter;
+        use pgls_analyser::RuleOptions;
         use pgls_diagnostics::{Category, Severity};
         use rustc_hash::FxHashSet;
         #[cfg(feature = "schema")]
