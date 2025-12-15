@@ -268,14 +268,14 @@ impl<'a> TreesitterContext<'a> {
 
         if chars
             .nth(self.position)
-            .is_some_and(|c| !c.is_ascii_whitespace() && !&[';', ')'].contains(&c))
+            .is_some_and(|c| c.is_ascii_whitespace() || [';', ')', ',', '('].contains(&c))
         {
-            self.position = cmp::min(self.position, self.text.len().saturating_sub(1));
-        } else {
             self.position = cmp::min(
                 self.position.saturating_sub(1),
                 self.text.len().saturating_sub(1),
             );
+        } else {
+            self.position = cmp::min(self.position, self.text.len().saturating_sub(1));
         }
 
         cursor.goto_first_child_for_byte(self.position);
@@ -355,6 +355,10 @@ impl<'a> TreesitterContext<'a> {
                 {
                     self.wrapping_node_kind = current_node_kind.try_into().ok();
                 }
+            }
+
+            "insert_columns" => {
+                self.wrapping_node_kind = Some(WrappingNode::List);
             }
 
             _ => {
@@ -620,8 +624,8 @@ impl<'a> TreesitterContext<'a> {
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
-    /// If the tree shows `relation > object_reference > any_identifier` and the "any_identifier" is a leaf node,
-    /// you need to pass `&["relation", "object_reference"]`.
+    /// If the tree shows `relation > object_reference > any_identifier`
+    /// you need to pass `&["relation", "object_reference", "any_identifier"]`.
     pub fn history_ends_with(&self, expected_ancestors: &[&'static str]) -> bool {
         self.scope_tracker
             .current()
@@ -1093,5 +1097,59 @@ mod tests {
 
         // should simply not panic
         let _ = TreesitterContext::new(params);
+    }
+
+    #[test]
+    fn corrects_the_position_accordingly() {
+        let query = "select id, email from some_foo(param1, param2);";
+        //           01234567890123456789012345678901234567890123456
+        //           0        10        20        30        40
+
+        let tree = get_tree(query);
+
+        struct TestCase {
+            cursor_position: u32,
+            context_position: usize,
+        }
+
+        let cases: Vec<TestCase> = vec![
+            TestCase {
+                // moves from ',' to 'l' of 'email'
+                cursor_position: 9,
+                context_position: 8,
+            },
+            TestCase {
+                // stays on 'e' of 'email'
+                cursor_position: 11,
+                context_position: 11,
+            },
+            TestCase {
+                // moves from '(' to 'o' of 'some_foo'
+                cursor_position: 30,
+                context_position: 29,
+            },
+            TestCase {
+                // moves from ')' to '2' of 'param2'
+                cursor_position: 45,
+                context_position: 44,
+            },
+        ];
+
+        for case in cases {
+            let params = TreeSitterContextParams {
+                position: case.cursor_position.into(),
+                text: query,
+                tree: &tree,
+            };
+
+            // should simply not panic
+            let ctx = TreesitterContext::new(params);
+
+            assert_eq!(
+                ctx.position, case.context_position,
+                "received {} but expected {}",
+                ctx.position, case.context_position
+            );
+        }
     }
 }

@@ -273,8 +273,8 @@ mod tests {
         assert_complete_results(
             format!("update {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![CompletionAssertion::LabelAndKind(
-                "public".into(),
-                CompletionItemKind::Schema,
+                "coos".into(),
+                CompletionItemKind::Table,
             )],
             None,
             &pool,
@@ -354,10 +354,10 @@ mod tests {
 
         assert_complete_results(
             format!("delete from {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("coos".into(), CompletionItemKind::Table),
-            ],
+            vec![CompletionAssertion::LabelAndKind(
+                "coos".into(),
+                CompletionItemKind::Table,
+            )],
             None,
             &pool,
         )
@@ -418,8 +418,13 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind(
+                    "information_schema".into(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind("pg_catalog".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("pg_toast".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
@@ -454,7 +459,6 @@ mod tests {
         assert_complete_results(
             format!("alter table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
@@ -471,7 +475,6 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
@@ -484,7 +487,6 @@ mod tests {
         assert_complete_results(
             format!("drop table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
@@ -501,7 +503,6 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
@@ -529,7 +530,6 @@ mod tests {
         assert_complete_results(
             format!("insert into {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
@@ -561,7 +561,6 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
@@ -686,8 +685,14 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind(
+                    "information_schema".into(),
+                    CompletionItemKind::Schema,
+                ),
+                CompletionAssertion::LabelAndKind("pg_catalog".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("pg_toast".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("public".into(), CompletionItemKind::Schema),
             ],
             None,
             &pool,

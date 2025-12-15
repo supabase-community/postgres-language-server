@@ -2241,8 +2241,6 @@ module.exports = grammar({
         )
       ),
 
-    assignment_list: ($) => seq($.assignment, repeat(seq(",", $.assignment))),
-
     _set_values: ($) => seq($.keyword_set, comma_list($.assignment, true)),
 
     _column_list: ($) => paren_list(alias($._column, $.column), true),

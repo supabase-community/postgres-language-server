@@ -26,7 +26,8 @@ pub(crate) fn remove_sanitized_token(it: &str) -> String {
 }
 
 pub(crate) fn is_sanitized_token(node_under_cursor_txt: &str) -> bool {
-    node_under_cursor_txt == SANITIZED_TOKEN || is_sanitized_token_with_quote(node_under_cursor_txt)
+    node_under_cursor_txt.replace('"', "") == SANITIZED_TOKEN
+        || is_sanitized_token_with_quote(node_under_cursor_txt)
 }
 
 pub(crate) fn is_sanitized_token_with_quote(node_under_cursor_txt: &str) -> bool {

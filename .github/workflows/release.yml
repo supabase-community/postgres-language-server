@@ -79,7 +79,7 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres

@@ -21,27 +21,7 @@ create table others (
 --------------
 
 select name from instruments i join others o on i.z = o.a |
-
-Results:
-i.id - public.instruments.id (Column)
-o.a - public.others.a (Column)
-o.b - public.others.b (Column)
-o.c - public.others.c (Column)
-i.created_at - public.instruments.created_at (Column)
-
---------------
-
 select name from instruments i join others o on i.z = o.a w|
-
-Results:
-i.id - public.instruments.id (Column)
-o.a - public.others.a (Column)
-o.b - public.others.b (Column)
-o.c - public.others.c (Column)
-i.created_at - public.instruments.created_at (Column)
-
---------------
-
 select name from instruments i join others o on i.z = o.a where |
 
 Results:
@@ -64,51 +44,30 @@ c - public.others.c (Column)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a |
-
-Results:
-o.a - public.others.a (Column)
-o.b - public.others.b (Column)
-o.c - public.others.c (Column)
-i.created_at - public.instruments.created_at (Column)
-i.id - public.instruments.id (Column)
-
---------------
-
 select name from instruments i join others o on i.z = o.a where o.a = |
 **should not prioritize suggest columns or schemas (right side of binary expression)**
 
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a = i.|
+
+Results:
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
+
+--------------
+
 select name from instruments i join others o on i.z = o.a where o.a = i.z |
-
-Results:
-instruments - public.instruments (Table)
-others - public.others (Table)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
-
---------------
-
 select name from instruments i join others o on i.z = o.a where o.a = i.z a|
-
-Results:
-instruments - public.instruments (Table)
-others - public.others (Table)
-abbrev - Schema: pg_catalog.abbrev (Function)
-abs - Schema: pg_catalog.abs (Function)
-aclcontains - Schema: pg_catalog.aclcontains (Function)
-
---------------
-
 select name from instruments i join others o on i.z = o.a where o.a = i.z and |
 **should prioritize columns that aren't already mentioned**
 
@@ -122,26 +81,31 @@ i.name - public.instruments.name (Column)
 --------------
 
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.|
-select name from instruments i join others o on i.z = o.a where o.a = i.z and i.i|
-select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id |
 
 Results:
-instruments - public.instruments (Table)
-others - public.others (Table)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+created_at - public.instruments.created_at (Column)
+id - public.instruments.id (Column)
+name - public.instruments.name (Column)
+z - public.instruments.z (Column)
 
 --------------
 
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.i|
+
+Results:
+id - public.instruments.id (Column)
+
+--------------
+
+select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id |
 select name from instruments i join others o on i.z = o.a where o.a = i.z and i.id > |
 
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 

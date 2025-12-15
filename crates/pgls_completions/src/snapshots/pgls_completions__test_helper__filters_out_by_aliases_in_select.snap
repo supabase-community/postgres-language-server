@@ -49,7 +49,6 @@ select u.i| from auth.users u join auth.posts p on u.id = p.user_id;
 Results:
 email - auth.users.email (Column)
 uid - auth.users.uid (Column)
-name - auth.users.name (Column)
 
 --------------
 
@@ -81,10 +80,6 @@ select u.id, p.p| from auth.users u join auth.posts p on u.id = p.user_id;
 
 Results:
 pid - auth.posts.pid (Column)
-content - auth.posts.content (Column)
-created_at - auth.posts.created_at (Column)
-title - auth.posts.title (Column)
-user_id - auth.posts.user_id (Column)
 
 --------------
 

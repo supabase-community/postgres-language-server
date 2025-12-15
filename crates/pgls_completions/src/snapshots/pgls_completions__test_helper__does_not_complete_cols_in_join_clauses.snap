@@ -56,11 +56,11 @@ select u.uid, p.content from |
 **Schema suggestions should be prioritized, since we want to push users to specify them.**
 
 Results:
-public - public (Schema)
 auth - auth (Schema)
-auth.posts - auth.posts (Table)
-auth.users - auth.users (Table)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+auth.posts - auth.posts (Table)
 
 --------------
 
@@ -69,10 +69,10 @@ select u.uid, p.content from a|
 
 Results:
 auth - auth (Schema)
-public - public (Schema)
-auth.posts - auth.posts (Table)
-auth.users - auth.users (Table)
 information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+information_schema.applicable_roles - information_schema.applicable_roles (Table)
+information_schema.attributes - information_schema.attributes (Table)
+information_schema - information_schema (Schema)
 
 --------------
 
@@ -90,7 +90,6 @@ select u.uid, p.content from auth.u|
 
 Results:
 users - auth.users (Table)
-posts - auth.posts (Table)
 
 --------------
 
@@ -100,11 +99,11 @@ select u.uid, p.content from auth.users u j|
 select u.uid, p.content from auth.users u join |
 
 Results:
-public - public (Schema)
 auth - auth (Schema)
-auth.posts - auth.posts (Table)
-auth.users - auth.users (Table)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+auth.posts - auth.posts (Table)
 
 --------------
 
@@ -112,10 +111,10 @@ select u.uid, p.content from auth.users u join a|
 
 Results:
 auth - auth (Schema)
-public - public (Schema)
-auth.posts - auth.posts (Table)
-auth.users - auth.users (Table)
 information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
+information_schema.applicable_roles - information_schema.applicable_roles (Table)
+information_schema.attributes - information_schema.attributes (Table)
+information_schema - information_schema (Schema)
 
 --------------
 
@@ -131,7 +130,6 @@ select u.uid, p.content from auth.users u join auth.p|
 
 Results:
 posts - auth.posts (Table)
-users - auth.users (Table)
 
 --------------
 
@@ -162,22 +160,10 @@ select u.uid, p.content from auth.users u join auth.posts p on u.u|
 
 Results:
 uid - auth.users.uid (Column)
-email - auth.users.email (Column)
-name - auth.users.name (Column)
 
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p on u.uid |
-
-Results:
-p.pid - auth.posts.pid (Column)
-u.uid - auth.users.uid (Column)
-p.content - auth.posts.content (Column)
-p.created_at - auth.posts.created_at (Column)
-u.email - auth.users.email (Column)
-
---------------
-
 select u.uid, p.content from auth.users u join auth.posts p on u.uid = |
 
 Results:
@@ -204,20 +190,7 @@ select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.u|
 
 Results:
 user_id - auth.posts.user_id (Column)
-pid - auth.posts.pid (Column)
-content - auth.posts.content (Column)
-created_at - auth.posts.created_at (Column)
-title - auth.posts.title (Column)
 
 --------------
 
 select u.uid, p.content from auth.users u join auth.posts p on u.uid = p.user_id |
-
-Results:
-p.pid - auth.posts.pid (Column)
-u.uid - auth.users.uid (Column)
-p.content - auth.posts.content (Column)
-p.created_at - auth.posts.created_at (Column)
-u.email - auth.users.email (Column)
-
---------------

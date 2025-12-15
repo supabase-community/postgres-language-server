@@ -56,8 +56,8 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+encoding - pg_catalog.pg_database.encoding (Column)
 
 --------------
 
@@ -66,44 +66,44 @@ select "email" f|
 select "email" from |
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private.users - private.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private.users - private.users (Table)
 
 --------------
 
 select "email" from "|
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private"."users" - private.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private"."users" - private.users (Table)
 
 --------------
 
 select "email" from "|"
 
 Results:
-public - public (Schema)
 private - private (Schema)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 private"."users - private.users (Table)
-information_schema"."_pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema"."_pg_foreign_servers - information_schema._pg_foreign_servers (Table)
 
 --------------
 
 select "email" from "p|"
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private"."users - private.users (Table)
+public - public (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 information_schema"."parameters - information_schema.parameters (Table)
-pg_catalog"."pg_aggregate - pg_catalog.pg_aggregate (Table)
 
 --------------
 
@@ -115,10 +115,4 @@ users - private.users (Table)
 --------------
 
 select "email" from "private".u|
-
-Results:
-users - private.users (Table)
-
---------------
-
 select "email" from "private".users; |

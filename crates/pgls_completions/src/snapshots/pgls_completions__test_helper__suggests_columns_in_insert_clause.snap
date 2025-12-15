@@ -29,9 +29,9 @@ insert into |
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 
@@ -39,10 +39,10 @@ insert into i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-others - public.others (Table)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
 
@@ -63,10 +63,10 @@ insert into instruments (i|)
 
 Results:
 id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
-id - public.others.id (Column)
-a - public.others.a (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
 
 --------------
 
@@ -85,10 +85,10 @@ insert into instruments (id, n|)
 
 Results:
 name - public.instruments.name (Column)
-z - public.instruments.z (Column)
-id - public.instruments.id (Column)
-a - public.others.a (Column)
-b - public.others.b (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -135,9 +135,9 @@ insert into |
 Results:
 instruments - public.instruments (Table)
 others - public.others (Table)
-public - public (Schema)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
 
 --------------
 
@@ -145,10 +145,10 @@ insert into i|
 
 Results:
 instruments - public.instruments (Table)
-public - public (Schema)
-others - public.others (Table)
 information_schema - information_schema (Schema)
 information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
+public - public (Schema)
+pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 
 --------------
 
@@ -169,10 +169,10 @@ insert into instruments (i|)
 
 Results:
 id - public.instruments.id (Column)
-name - public.instruments.name (Column)
-z - public.instruments.z (Column)
-id - public.others.id (Column)
-a - public.others.a (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
 
 --------------
 
@@ -213,10 +213,10 @@ insert into instruments ("id", "n|")
 
 Results:
 name - public.instruments.name (Column)
-id - public.instruments.id (Column)
-z - public.instruments.z (Column)
-a - public.others.a (Column)
-b - public.others.b (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -267,6 +267,16 @@ b - public.others.b (Column)
 --------------
 
 insert into instruments (i|, name) values ('my_bass');
+
+Results:
+id - public.instruments.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+identity_generation - information_schema.columns.identity_generation (Column)
+identity_increment - information_schema.columns.identity_increment (Column)
+
+--------------
+
 insert into instruments (id, |, name) values ('my_bass');
 **`name` is already written, so z should be suggested.**
 

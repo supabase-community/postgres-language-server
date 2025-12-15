@@ -43,6 +43,10 @@ impl CompletionFilter<'_> {
             return None;
         }
 
+        if ctx.before_cursor_matches_kind(&["ERROR"]) {
+            return None;
+        }
+
         // "literal" nodes can be identfiers wrapped in quotes:
         // `select "email" from auth.users;`
         // Here, "email" is a literal node.
@@ -111,7 +115,8 @@ impl CompletionFilter<'_> {
                         "column_reference_1of1",
                         "column_reference_2of2",
                         "column_reference_3of3",
-                    ]) && !ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
+                    ]) && (!ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
+                        || ctx.has_any_qualifier())
                 }
 
                 CompletionRelevanceData::Schema(_) => ctx.node_under_cursor_is_within_field(&[
@@ -138,17 +143,23 @@ impl CompletionFilter<'_> {
                     ]) && matches!(f.kind, ProcKind::Aggregate))
                 }
 
-                CompletionRelevanceData::Table(_) => ctx.node_under_cursor_is_within_field(&[
-                    "object_reference_1of1",
-                    "object_reference_1of2",
-                    "object_reference_2of2",
-                    "object_reference_2of3",
-                    "table_reference_1of1",
-                    "column_reference_1of1",
-                    "column_reference_1of2",
-                    "column_reference_2of2",
-                ]),
-
+                CompletionRelevanceData::Table(_) => {
+                    ctx.node_under_cursor_is_within_field(&[
+                        "object_reference_1of1",
+                        "object_reference_1of2",
+                        "object_reference_2of2",
+                        "object_reference_2of3",
+                        "table_reference_1of1",
+                        "column_reference_1of1",
+                        "column_reference_1of2",
+                        "column_reference_2of2",
+                    ]) && !ctx.history_ends_with(&[
+                        "update",
+                        "assignment",
+                        "column_reference",
+                        "any_identifier",
+                    ])
+                }
                 _ => false,
             },
 
@@ -164,7 +175,12 @@ impl CompletionFilter<'_> {
             .map(|clause| {
                 match self.data {
                     CompletionRelevanceData::Table(_) => match clause {
-                        WrappingClause::From | WrappingClause::Update => true,
+                        WrappingClause::From => true,
+
+                        WrappingClause::Update => ctx
+                            .wrapping_node_kind
+                            .as_ref()
+                            .is_none_or(|n| n != &WrappingNode::Assignment),
 
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => ctx
                             .history_ends_with(&[

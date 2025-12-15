@@ -51,21 +51,10 @@ select u.id, p.content from auth.users u join auth.posts p on u.i|
 Results:
 uid - auth.users.uid (Column)
 email - auth.users.email (Column)
-name - auth.users.name (Column)
 
 --------------
 
 select u.id, p.content from auth.users u join auth.posts p on u.id |
-
-Results:
-p.pid - auth.posts.pid (Column)
-u.uid - auth.users.uid (Column)
-p.content - auth.posts.content (Column)
-p.created_at - auth.posts.created_at (Column)
-u.email - auth.users.email (Column)
-
---------------
-
 select u.id, p.content from auth.users u join auth.posts p on u.id = |
 
 Results:
@@ -93,20 +82,7 @@ select u.id, p.content from auth.users u join auth.posts p on u.id = p.u|
 
 Results:
 user_id - auth.posts.user_id (Column)
-pid - auth.posts.pid (Column)
-content - auth.posts.content (Column)
-created_at - auth.posts.created_at (Column)
-title - auth.posts.title (Column)
 
 --------------
 
 select u.id, p.content from auth.users u join auth.posts p on u.id = p.user_id |
-
-Results:
-p.pid - auth.posts.pid (Column)
-u.uid - auth.users.uid (Column)
-p.content - auth.posts.content (Column)
-p.created_at - auth.posts.created_at (Column)
-u.email - auth.users.email (Column)
-
---------------

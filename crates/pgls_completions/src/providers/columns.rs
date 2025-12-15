@@ -79,12 +79,12 @@ mod tests {
         TestCompletionsCase::new()
         .inside_static_statement(r#"
             select * from (
-                <sql>
+                <sql> from private.audio_books
             ) as subquery
             join public.users u
             on u.id = subquery.id;
             "#)
-            .type_sql("select id, narrator_id<1> from private.audio_books")
+            .type_sql("select id, narrator_id<1>")
             .comment("Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.")
         )
             .snapshot("handles_nested_queries")
@@ -439,9 +439,9 @@ mod tests {
                         "select name from instruments i join others o on i.z = o.a <sql>",
                     )
                     .type_sql("where o.<1>a = <2>i.z and <3>i.id > 5;")
-                .comment("should respect alias speciifcation")
-                .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
-                .comment("should prioritize columns that aren't already mentioned")
+                    .comment("should respect alias speciifcation")
+                    .comment("should not prioritize suggest columns or schemas (right side of binary expression)")
+                    .comment("should prioritize columns that aren't already mentioned"),
             )
             .snapshot("suggests_columns_in_where_clause")
             .await;
@@ -459,9 +459,6 @@ mod tests {
         "#;
 
         TestCompletionsSuite::new(&pool, Some(setup))
-            .with_case(
-                TestCompletionsCase::new().type_sql("alter table instruments drop column name"),
-            )
             .with_case(
                 TestCompletionsCase::new().type_sql("alter table instruments drop column name"),
             )

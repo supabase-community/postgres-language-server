@@ -21,11 +21,11 @@ select * from |
 **No column suggestions.**
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private.users - private.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private.users - private.users (Table)
 
 --------------
 
@@ -33,11 +33,11 @@ select * from p|
 **No column suggestions.**
 
 Results:
-public - public (Schema)
 private - private (Schema)
-private.users - private.users (Table)
+public - public (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 information_schema.parameters - information_schema.parameters (Table)
-pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
 
 --------------
 

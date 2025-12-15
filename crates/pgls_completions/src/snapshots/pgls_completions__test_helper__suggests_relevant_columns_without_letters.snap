@@ -30,10 +30,10 @@ select n|
 
 Results:
 name - public.users.name (Column)
-address - public.users.address (Column)
-email - public.users.email (Column)
-id - public.users.id (Column)
-name - Schema: pg_catalog.name (Function)
+nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
+nameeq - Schema: pg_catalog.nameeq (Function)
+nameeqtext - Schema: pg_catalog.nameeqtext (Function)
+namege - Schema: pg_catalog.namege (Function)
 
 --------------
 
@@ -42,11 +42,11 @@ select name f|
 select name from |
 
 Results:
-public - public (Schema)
 users - public.users (Table)
 information_schema - information_schema (Schema)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 

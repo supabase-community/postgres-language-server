@@ -13838,31 +13838,6 @@
         }
       ]
     },
-    "assignment_list": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "assignment"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ","
-              },
-              {
-                "type": "SYMBOL",
-                "name": "assignment"
-              }
-            ]
-          }
-        }
-      ]
-    },
     "_set_values": {
       "type": "SEQ",
       "members": [

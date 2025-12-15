@@ -1,6 +1,6 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
+use pgls_treesitter::context::{TreesitterContext, WrappingClause};
 
 use crate::sanitization;
 
@@ -9,6 +9,7 @@ use super::CompletionRelevanceData;
 #[derive(Debug)]
 pub(crate) struct CompletionScore<'a> {
     score: i32,
+    skip: bool,
     data: CompletionRelevanceData<'a>,
 }
 
@@ -16,12 +17,17 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionScore<'a> {
     fn from(value: CompletionRelevanceData<'a>) -> Self {
         Self {
             score: 0,
+            skip: false,
             data: value,
         }
     }
 }
 
 impl CompletionScore<'_> {
+    pub fn should_skip(&self) -> bool {
+        self.skip
+    }
+
     pub fn get_score(&self) -> i32 {
         self.score
     }
@@ -32,7 +38,7 @@ impl CompletionScore<'_> {
         self.check_matches_query_input(ctx);
         self.check_is_invocation(ctx);
         self.check_matching_clause_type(ctx);
-        self.check_matching_wrapping_node(ctx);
+        self.check_without_content(ctx);
         self.check_relations_in_stmt(ctx);
         self.check_columns_in_stmt(ctx);
         self.check_is_not_wellknown_migration(ctx);
@@ -41,7 +47,9 @@ impl CompletionScore<'_> {
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
         let content = match ctx.get_node_under_cursor_content() {
             Some(c) if !sanitization::is_sanitized_token(c.as_str()) => c.replace('"', ""),
-            _ => return,
+            _ => {
+                return;
+            }
         };
 
         let name = match self.data {
@@ -55,20 +63,76 @@ impl CompletionScore<'_> {
 
         let fz_matcher = SkimMatcherV2::default();
 
-        if let Some(score) =
-            fz_matcher.fuzzy_match(name.as_str(), content.to_ascii_lowercase().as_str())
-        {
-            let scorei32: i32 = score
-                .try_into()
-                .expect("The length of the input exceeds i32 capacity");
+        let check_against = match &ctx.identifier_qualifiers {
+            // If both qualifiers are already written out, we must check the item's name itself.
+            (Some(_), Some(_)) => name.clone(),
 
-            // the scoring value isn't linear.
-            // here are a couple of samples:
-            // - item: bytea_string_agg_transfn, input: n, score: 15
-            // - item: numeric_uplus, input: n, score: 31
-            // - item: settings, input: sett, score: 91
-            // - item: user_settings, input: sett, score: 82
-            self.score += scorei32 / 2;
+            // If only one qualifier is written out, we might look at a schema, a table, or an alias.
+            (None, Some(qualifier)) => {
+                if self.get_schema_name().is_some_and(|s| s == qualifier) {
+                    self.get_table_name()
+                        .map(|t| format!("{t}.{name}"))
+                        .unwrap_or(name.clone())
+                } else if self.get_table_name().is_some_and(|t| t == qualifier) {
+                    name.clone()
+                } else if ctx
+                    .get_mentioned_table_for_alias(qualifier)
+                    .is_some_and(|alias_tbl| {
+                        self.get_table_name()
+                            .is_some_and(|item_tbl| alias_tbl == item_tbl)
+                    })
+                {
+                    name.clone()
+                } else {
+                    // the qualifier does not match schema, table, or alias.
+                    // what the hell is it?
+                    // probably a typo.
+                    self.skip = true;
+                    String::new()
+                }
+            }
+
+            _ => match self.data {
+                // for columns and functions, we fuzzy match with a possible alias.
+                CompletionRelevanceData::Column(_) | CompletionRelevanceData::Policy(_) => self
+                    .get_table_name()
+                    .and_then(|tbl| ctx.get_used_alias_for_table(tbl))
+                    .map(|t| format!("{t}.{name}"))
+                    .unwrap_or(name.clone()),
+
+                // everything else is just fuzzy matched against its name.
+                _ => name.clone(),
+            },
+        };
+
+        let content_lower = content.to_ascii_lowercase();
+        let check_against_lower = check_against.to_ascii_lowercase();
+
+        match fz_matcher.fuzzy_match(check_against_lower.as_str(), content_lower.as_str()) {
+            Some(score) => {
+                let mut scorei32: i32 = score
+                    .try_into()
+                    .expect("The length of the input exceeds i32 capacity");
+
+                // give a significant bonus for prefix matches since these are much more
+                // likely what the user is looking for
+                if check_against_lower.starts_with(&content_lower) {
+                    scorei32 += 20;
+                }
+
+                // the scoring value isn't linear.
+                // here are a couple of samples:
+                // - item: bytea_string_agg_transfn, input: n, score: 15
+                // - item: numeric_uplus, input: n, score: 31
+                // - item: settings, input: sett, score: 91
+                // - item: user_settings, input: sett, score: 82
+                self.score += if check_against == name {
+                    scorei32 / 2
+                } else {
+                    scorei32 / 3
+                };
+            }
+            None => self.skip = true,
         }
     }
 
@@ -137,41 +201,49 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_matching_wrapping_node(&mut self, ctx: &TreesitterContext) {
-        let wrapping_node = match ctx.wrapping_node_kind.as_ref() {
-            None => return,
-            Some(wn) => wn,
-        };
+    // ok i think we need a rule set first.
+    // generally, we want to prefer columns that match a mentioned relation. that's already handled elsewhere. same with schema matches.
 
-        let has_qualifier = ctx.has_any_qualifier();
-        let has_node_text = ctx
+    // so, what here? we want to handle the *no content* case.
+    // in that case, we want to check the current node_kind.
+
+    fn check_without_content(&mut self, ctx: &TreesitterContext) {
+        // the function is only concerned with cases where the user hasn't typed anything yet.
+        if ctx
             .get_node_under_cursor_content()
-            .is_some_and(|txt| !sanitization::is_sanitized_token(txt.as_str()));
+            .is_some_and(|c| !sanitization::is_sanitized_token(c.as_str()))
+        {
+            return;
+        }
 
-        self.score += match self.data {
-            CompletionRelevanceData::Table(_) => match wrapping_node {
-                WrappingNode::Relation if has_qualifier => 15,
-                WrappingNode::Relation if !has_qualifier => 10,
-                WrappingNode::BinaryExpression => 5,
-                _ => -50,
+        match ctx.node_under_cursor.kind() {
+            "function_identifier" | "table_identifier"
+                if self.get_schema_name().is_some_and(|s| s == "public") =>
+            {
+                self.score += 10;
+            }
+
+            "schema_identifier" if self.get_schema_name().is_some_and(|s| s != "public") => {
+                self.score += 10;
+            }
+
+            "any_identifier" => match self.data {
+                CompletionRelevanceData::Table(table) => {
+                    if table.schema == "public" {
+                        self.score += 20;
+                    }
+                }
+                CompletionRelevanceData::Schema(schema) => {
+                    if schema.name != "public" {
+                        self.score += 10;
+                    } else {
+                        self.score -= 20;
+                    }
+                }
+                _ => {}
             },
-            CompletionRelevanceData::Function(_) => match wrapping_node {
-                WrappingNode::BinaryExpression => 15,
-                WrappingNode::Relation => 10,
-                _ => -50,
-            },
-            CompletionRelevanceData::Column(_) => match wrapping_node {
-                WrappingNode::BinaryExpression => 15,
-                WrappingNode::Assignment => 15,
-                _ => -15,
-            },
-            CompletionRelevanceData::Schema(_) => match wrapping_node {
-                WrappingNode::Relation if !has_qualifier && !has_node_text => 15,
-                WrappingNode::Relation if !has_qualifier && has_node_text => 0,
-                _ => -50,
-            },
-            CompletionRelevanceData::Policy(_) => 0,
-            CompletionRelevanceData::Role(_) => 0,
+
+            _ => (),
         }
     }
 
@@ -234,6 +306,21 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
             CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
             CompletionRelevanceData::Role(_) => None,
+        }
+    }
+
+    fn get_fully_qualified_name(&self) -> String {
+        match self.data {
+            CompletionRelevanceData::Schema(s) => s.name.clone(),
+            CompletionRelevanceData::Column(c) => {
+                format!("{}.{}.{}", c.schema_name, c.table_name, c.name)
+            }
+            CompletionRelevanceData::Table(t) => format!("{}.{}", t.schema, t.name),
+            CompletionRelevanceData::Function(f) => format!("{}.{}", f.schema, f.name),
+            CompletionRelevanceData::Policy(p) => {
+                format!("{}.{}.{}", p.schema_name, p.table_name, p.name)
+            }
+            CompletionRelevanceData::Role(r) => r.name.clone(),
         }
     }
 
@@ -311,9 +398,16 @@ impl CompletionScore<'_> {
         }
 
         // "public" is the default postgres schema where users
-        // create objects. Prefer it by a slight bit.
+        // create objects. Prefer it by a slight bit, but do not suggest the literal one.
         if schema_name.as_str() == "public" {
-            self.score += 2;
+            match self.data {
+                CompletionRelevanceData::Schema(_) => {
+                    self.score -= 2;
+                }
+                _ => {
+                    self.score += 2;
+                }
+            }
         }
 
         let item_name = self.get_item_name().to_string();

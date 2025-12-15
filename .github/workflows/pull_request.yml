@@ -118,13 +118,14 @@ jobs:
           path: |
             ~/.cargo/bin/tree-sitter
             ~/.cargo/bin/sqlx
+            ~/.cargo/bin/cargo-sqlx
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Setup sqlx-cli
-        run: cargo install sqlx-cli
+        run: command -v sqlx ||cargo install sqlx-cli
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -186,7 +187,7 @@ jobs:
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
 
       - name: Setup Postgres
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Run tests
         run: cargo test --workspace
@@ -222,23 +223,13 @@ jobs:
             ~/.cargo/bin/tree-sitter
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
       - name: setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Build main binary
         run: cargo build -p pgls_cli --release
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Install JS dependencies
         run: bun install
-
-      - name: Build backend-jsonrpc (deprecated)
-        working-directory: packages/@postgrestools/backend-jsonrpc
-        run: bun run build
-      - name: Run backend-jsonrpc test (deprecated)
-        working-directory: packages/@postgrestools/backend-jsonrpc
-        run: bun run test
-      - name: Run cli test (deprecated)
-        working-directory: packages/@postgrestools/postgrestools
-        run: bun run test
 
       - name: Build backend-jsonrpc
         working-directory: packages/@postgres-language-server/backend-jsonrpc
@@ -281,7 +272,7 @@ jobs:
             ~/.cargo/bin/tree-sitter
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
       - name: setup tree-sitter
-        run: cargo install tree-sitter-cli
+        run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain

@@ -25,161 +25,79 @@ create table private.audio_books (
 --------------
 
 select * from (
-    |
+    | from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+select * from (
+    s| from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+select * from (
+    select | from private.audio_books
 ) as subquery
 join public.users u
 on u.id = subquery.id;
 
 Results:
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+id - private.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+id - public.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
 
 --------------
 
 select * from (
-    s|
+    select i| from private.audio_books
 ) as subquery
 join public.users u
 on u.id = subquery.id;
 
 Results:
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
-information_schema._pg_foreign_data_wrappers - information_schema._pg_foreign_data_wrappers (Table)
-information_schema._pg_foreign_servers - information_schema._pg_foreign_servers (Table)
+id - private.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+id - public.audio_books.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
 
 --------------
 
 select * from (
-    select |
-) as subquery
-join public.users u
-on u.id = subquery.id;
-
-Results:
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
-pg_catalog.RI_FKey_check_upd() - Schema: pg_catalog.RI_FKey_check_upd (Function)
-pg_catalog.RI_FKey_noaction_del() - Schema: pg_catalog.RI_FKey_noaction_del (Function)
-
---------------
-
-select * from (
-    select i|
-) as subquery
-join public.users u
-on u.id = subquery.id;
-
-Results:
-iclikejoinsel - Schema: pg_catalog.iclikejoinsel (Function)
-iclikesel - Schema: pg_catalog.iclikesel (Function)
-icnlikejoinsel - Schema: pg_catalog.icnlikejoinsel (Function)
-icnlikesel - Schema: pg_catalog.icnlikesel (Function)
-icregexeqjoinsel - Schema: pg_catalog.icregexeqjoinsel (Function)
-
---------------
-
-select * from (
-    select id, |
+    select id, | from private.audio_books
 ) as subquery
 join public.users u
 on u.id = subquery.id;
 **Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.**
 
 Results:
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
-pg_catalog.RI_FKey_cascade_upd() - Schema: pg_catalog.RI_FKey_cascade_upd (Function)
-pg_catalog.RI_FKey_check_ins() - Schema: pg_catalog.RI_FKey_check_ins (Function)
-pg_catalog.RI_FKey_check_upd() - Schema: pg_catalog.RI_FKey_check_upd (Function)
-pg_catalog.RI_FKey_noaction_del() - Schema: pg_catalog.RI_FKey_noaction_del (Function)
+narrator_id - private.audio_books.narrator_id (Column)
+id - private.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+id - public.audio_books.id (Column)
 
 --------------
 
 select * from (
-    select id, n|
+    select id, n| from private.audio_books
 ) as subquery
 join public.users u
 on u.id = subquery.id;
 **Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.**
 
 Results:
-name - Schema: pg_catalog.name (Function)
-nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
-nameeq - Schema: pg_catalog.nameeq (Function)
-nameeqtext - Schema: pg_catalog.nameeqtext (Function)
-namege - Schema: pg_catalog.namege (Function)
+narrator_id - private.audio_books.narrator_id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_distinct - pg_catalog.pg_stats.n_distinct (Column)
 
 --------------
 
 select * from (
-    select id, narrator_id |
-) as subquery
-join public.users u
-on u.id = subquery.id;
-select * from (
-    select id, narrator_id f|
-) as subquery
-join public.users u
-on u.id = subquery.id;
-select * from (
-    select id, narrator_id from |
-) as subquery
-join public.users u
-on u.id = subquery.id;
-
-Results:
-public - public (Schema)
-private - private (Schema)
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
-
---------------
-
-select * from (
-    select id, narrator_id from p|
-) as subquery
-join public.users u
-on u.id = subquery.id;
-
-Results:
-public - public (Schema)
-private - private (Schema)
-audio_books - public.audio_books (Table)
-users - public.users (Table)
-private.audio_books - private.audio_books (Table)
-
---------------
-
-select * from (
-    select id, narrator_id from private.|
-) as subquery
-join public.users u
-on u.id = subquery.id;
-
-Results:
-audio_books - private.audio_books (Table)
-
---------------
-
-select * from (
-    select id, narrator_id from private.a|
-) as subquery
-join public.users u
-on u.id = subquery.id;
-
-Results:
-audio_books - private.audio_books (Table)
-
---------------
-
-select * from (
-    select id, narrator_id from private.audio_books |
+    select id, narrator_id | from private.audio_books
 ) as subquery
 join public.users u
 on u.id = subquery.id;

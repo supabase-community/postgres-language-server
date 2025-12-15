@@ -60,11 +60,11 @@ name - private.users.name (Column)
 select "p|"
 
 Results:
-name - public.names.name (Column)
-uid - public.names.uid (Column)
-email - private.users.email (Column)
-id - private.users.id (Column)
-name - private.users.name (Column)
+pad_attribute - information_schema.collations.pad_attribute (Column)
+page - pg_catalog.pg_locks.page (Column)
+pageno - pg_catalog.pg_largeobject.pageno (Column)
+paracl - pg_catalog.pg_parameter_acl.paracl (Column)
+parameter_default - information_schema.parameters.parameter_default (Column)
 
 --------------
 
@@ -77,21 +77,21 @@ select "pr"."email" f|
 select "pr"."email" from |
 
 Results:
-public - public (Schema)
-private - private (Schema)
 names - public.names (Table)
-private.users - private.users (Table)
+private - private (Schema)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
 select "pr"."email" from p|
 
 Results:
-public - public (Schema)
 private - private (Schema)
-names - public.names (Table)
-private.users - private.users (Table)
+public - public (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 information_schema.parameters - information_schema.parameters (Table)
 
 --------------
@@ -161,8 +161,8 @@ Results:
 pr"."email - private.users.email (Column)
 pr"."name - private.users.name (Column)
 pr"."quoted_column - private.users.quoted_column (Column)
-pr"."id - private.users.id (Column)
 name - public.names.name (Column)
+elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
 
 --------------
 
@@ -192,7 +192,7 @@ Results:
 "pr".id - private.users.id (Column)
 "pr".name - private.users.name (Column)
 "pr".quoted_column - private.users.quoted_column (Column)
-name - public.names.name (Column)
+pad_attribute - information_schema.collations.pad_attribute (Column)
 
 --------------
 
@@ -232,7 +232,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -284,7 +283,7 @@ pr"."email - private.users.email (Column)
 pr"."id - private.users.id (Column)
 pr"."name - private.users.name (Column)
 pr"."quoted_column - private.users.quoted_column (Column)
-name - public.names.name (Column)
+pad_attribute - information_schema.collations.pad_attribute (Column)
 
 --------------
 
@@ -324,7 +323,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -354,7 +352,7 @@ Results:
 "pr".id - private.users.id (Column)
 "pr".name - private.users.name (Column)
 "pr".quoted_column - private.users.quoted_column (Column)
-name - public.names.name (Column)
+pad_attribute - information_schema.collations.pad_attribute (Column)
 
 --------------
 
@@ -375,7 +373,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -423,11 +420,11 @@ pr"."name - private.users.name (Column)
 select "p|" from private.users "pr" join public.names n on pr.id = n.uid;
 
 Results:
-n"."name - public.names.name (Column)
-n"."uid - public.names.uid (Column)
 pr"."email - private.users.email (Column)
 pr"."id - private.users.id (Column)
 pr"."name - private.users.name (Column)
+pr"."quoted_column - private.users.quoted_column (Column)
+pad_attribute - information_schema.collations.pad_attribute (Column)
 
 --------------
 
@@ -447,7 +444,6 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-id - private.users.id (Column)
 
 --------------
 
@@ -474,7 +470,6 @@ select "pr"."email", n.u| from private.users "pr" join public.names n on pr.id =
 
 Results:
 uid - public.names.uid (Column)
-name - public.names.name (Column)
 
 --------------
 
