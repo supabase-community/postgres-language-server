@@ -109,7 +109,11 @@ pub async fn run_splinter(
             }
         })
         .collect();
-    let combined_sql = processed_queries.join("\n\nUNION ALL\n\n");
+    // Add ORDER BY to ensure deterministic ordering across all results
+    let combined_sql = format!(
+        "SELECT * FROM (\n{}\n) AS all_results ORDER BY \"cache_key!\"",
+        processed_queries.join("\n\nUNION ALL\n\n")
+    );
 
     // Execute the combined query
     let mut tx = params.conn.begin().await?;
