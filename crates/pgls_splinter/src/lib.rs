@@ -62,7 +62,7 @@ pub async fn run_splinter(
     }
 
     // Check if Supabase roles exist (anon, authenticated, service_role)
-    let has_supabase_roles = params.schema_cache.map_or(false, |cache| {
+    let has_supabase_roles = params.schema_cache.is_some_and(|cache| {
         let required_roles = ["anon", "authenticated", "service_role"];
         required_roles.iter().all(|role_name| {
             cache

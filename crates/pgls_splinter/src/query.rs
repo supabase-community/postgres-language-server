@@ -1,5 +1,5 @@
 use serde_json::Value;
-use sqlx::{PgPool, Row};
+use sqlx::Row;
 
 /// Raw query result from the Splinter SQL query.
 /// This struct represents a single linting issue found in the database.
@@ -39,19 +39,20 @@ pub struct SplinterQueryResult {
 }
 
 // Implement FromRow manually since we're using dynamic SQL
+// Column names include "!" suffix (e.g., "name!") which indicates NOT NULL in SQL files
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for SplinterQueryResult {
     fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
         Ok(SplinterQueryResult {
-            name: row.try_get("name")?,
-            title: row.try_get("title")?,
-            level: row.try_get("level")?,
-            facing: row.try_get("facing")?,
-            categories: row.try_get("categories")?,
-            description: row.try_get("description")?,
-            detail: row.try_get("detail")?,
-            remediation: row.try_get("remediation")?,
-            metadata: row.try_get("metadata")?,
-            cache_key: row.try_get("cache_key")?,
+            name: row.try_get("name!")?,
+            title: row.try_get("title!")?,
+            level: row.try_get("level!")?,
+            facing: row.try_get("facing!")?,
+            categories: row.try_get("categories!")?,
+            description: row.try_get("description!")?,
+            detail: row.try_get("detail!")?,
+            remediation: row.try_get("remediation!")?,
+            metadata: row.try_get("metadata!")?,
+            cache_key: row.try_get("cache_key!")?,
         })
     }
 }
