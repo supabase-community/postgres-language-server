@@ -258,7 +258,7 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
 
     // Build comprehensive documentation
     let requires_supabase_note = if requires_supabase {
-        format!("\n/// \n/// **Note:** This rule requires Supabase roles (`anon`, `authenticated`, `service_role`). \n/// It will be automatically skipped if these roles don't exist in your database.")
+        "\n/// \n/// **Note:** This rule requires Supabase roles (`anon`, `authenticated`, `service_role`). \n/// It will be automatically skipped if these roles don't exist in your database.".to_string()
     } else {
         String::new()
     };
@@ -298,7 +298,7 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
         requires_supabase_note = requires_supabase_note,
         sql_query_commented = sql_query
             .lines()
-            .map(|line| format!("/// {}", line))
+            .map(|line| format!("/// {line}"))
             .collect::<Vec<_>>()
             .join("\n"),
         category_lower = category_lower,
@@ -466,7 +466,7 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
             let snake_name = &rule.snake_name;
             let group = rule.category.to_lowercase();
             let camel_name = &rule.name;
-            let category_path = format!("splinter/{}/{}", group, camel_name);
+            let category_path = format!("splinter/{group}/{camel_name}");
 
             quote! {
                 #snake_name => Some(::pgls_diagnostics::category!(#category_path))
