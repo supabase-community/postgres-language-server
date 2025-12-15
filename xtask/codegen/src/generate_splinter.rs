@@ -371,7 +371,7 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
     }
 
     // Record the top-level category (which contains all groups)
-    let mut record_calls = vec![quote! {
+    let record_calls = vec![quote! {
         registry.record_category::<crate::rules::Splinter>();
     }];
 
