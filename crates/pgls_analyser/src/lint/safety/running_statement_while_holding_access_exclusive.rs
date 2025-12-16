@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -43,17 +43,17 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for RunningStatementWhileHoldingAccessExclusive {
+impl LinterRule for RunningStatementWhileHoldingAccessExclusive {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         // Check if we're currently holding an ACCESS EXCLUSIVE lock
         let tx_state = ctx.file_context().transaction_state();
         if tx_state.is_holding_access_exclusive() {
             diagnostics.push(
-                RuleDiagnostic::new(
+                LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {

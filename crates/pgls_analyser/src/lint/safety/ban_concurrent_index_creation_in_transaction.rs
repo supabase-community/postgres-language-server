@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -27,10 +27,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for BanConcurrentIndexCreationInTransaction {
+impl LinterRule for BanConcurrentIndexCreationInTransaction {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         // check if the current statement is CREATE INDEX CONCURRENTLY and there is at least one
@@ -39,7 +39,7 @@ impl Rule for BanConcurrentIndexCreationInTransaction {
         // since our analyser assumes we're always in a transaction context, we always flag concurrent indexes
         if let pgls_query::NodeEnum::IndexStmt(stmt) = ctx.stmt() {
             if stmt.concurrent && ctx.file_context().stmt_count() > 1 {
-                diagnostics.push(RuleDiagnostic::new(
+                diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {

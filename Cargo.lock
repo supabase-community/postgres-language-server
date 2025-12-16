@@ -1222,6 +1222,7 @@ dependencies = [
  "pgls_env",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_workspace",
  "pulldown-cmark",
@@ -2999,11 +3000,11 @@ dependencies = [
  "pgls_analyse",
  "pgls_console",
  "pgls_diagnostics",
+ "pgls_schema_cache",
  "pgls_test_utils",
  "serde",
  "serde_json",
  "sqlx",
- "ureq",
 ]
 
 [[package]]

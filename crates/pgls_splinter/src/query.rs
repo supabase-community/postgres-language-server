@@ -1,5 +1,5 @@
 use serde_json::Value;
-use sqlx::PgPool;
+use sqlx::Row;
 
 /// Raw query result from the Splinter SQL query.
 /// This struct represents a single linting issue found in the database.
@@ -38,42 +38,21 @@ pub struct SplinterQueryResult {
     pub cache_key: String,
 }
 
-pub async fn load_generic_splinter_results(
-    pool: &PgPool,
-) -> Result<Vec<SplinterQueryResult>, sqlx::Error> {
-    let mut tx = pool.begin().await?;
-
-    // this is done by the splinter.sql file normally, but we remove it so that sqlx can work with
-    // the file properly.
-    sqlx::query("set local search_path = ''")
-        .execute(&mut *tx)
-        .await?;
-
-    let results = sqlx::query_file_as!(SplinterQueryResult, "vendor/splinter_generic.sql")
-        .fetch_all(&mut *tx)
-        .await?;
-
-    tx.commit().await?;
-
-    Ok(results)
-}
-
-pub async fn load_supabase_splinter_results(
-    pool: &PgPool,
-) -> Result<Vec<SplinterQueryResult>, sqlx::Error> {
-    let mut tx = pool.begin().await?;
-
-    // this is done by the splinter.sql file normally, but we remove it so that sqlx can work with
-    // the file properly.
-    sqlx::query("set local search_path = ''")
-        .execute(&mut *tx)
-        .await?;
-
-    let results = sqlx::query_file_as!(SplinterQueryResult, "vendor/splinter_supabase.sql")
-        .fetch_all(&mut *tx)
-        .await?;
-
-    tx.commit().await?;
-
-    Ok(results)
+// Implement FromRow manually since we're using dynamic SQL
+// Column names include "!" suffix (e.g., "name!") which indicates NOT NULL in SQL files
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for SplinterQueryResult {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
+        Ok(SplinterQueryResult {
+            name: row.try_get("name!")?,
+            title: row.try_get("title!")?,
+            level: row.try_get("level!")?,
+            facing: row.try_get("facing!")?,
+            categories: row.try_get("categories!")?,
+            description: row.try_get("description!")?,
+            detail: row.try_get("detail!")?,
+            remediation: row.try_get("remediation!")?,
+            metadata: row.try_get("metadata!")?,
+            cache_key: row.try_get("cache_key!")?,
+        })
+    }
 }

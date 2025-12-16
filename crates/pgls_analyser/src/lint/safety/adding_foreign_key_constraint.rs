@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -43,10 +43,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for AddingForeignKeyConstraint {
+impl LinterRule for AddingForeignKeyConstraint {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
@@ -95,7 +95,7 @@ impl Rule for AddingForeignKeyConstraint {
 fn check_foreign_key_constraint(
     constraint: &pgls_query::protobuf::Constraint,
     is_column_constraint: bool,
-) -> Option<RuleDiagnostic> {
+) -> Option<LinterDiagnostic> {
     // Only check foreign key constraints
     if constraint.contype() != pgls_query::protobuf::ConstrType::ConstrForeign {
         return None;
@@ -121,7 +121,7 @@ fn check_foreign_key_constraint(
     };
 
     Some(
-        RuleDiagnostic::new(rule_category!(), None, markup! { {message} })
+        LinterDiagnostic::new(rule_category!(), None, markup! { {message} })
             .detail(None, detail)
             .note(note),
     )

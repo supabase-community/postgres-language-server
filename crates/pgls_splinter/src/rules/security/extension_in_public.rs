@@ -2,9 +2,11 @@
 
 #![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
 use crate::rule::SplinterRule;
-::pgls_analyse::declare_rule! { # [doc = r" #title"] # [doc = r""] # [doc = r" #description"] pub ExtensionInPublic { version : "1.0.0" , name : "extensionInPublic" , severity : pgls_diagnostics :: Severity :: Warning , } }
+::pgls_analyse::declare_rule! { # [doc = "/// # Extension in Public\n///\n/// Detects extensions installed in the \\`public\\` schema.\n///\n/// ## SQL Query\n///\n/// ```sql\n/// (\n/// select\n///     'extension_in_public' as \"name!\",\n///     'Extension in Public' as \"title!\",\n///     'WARN' as \"level!\",\n///     'EXTERNAL' as \"facing!\",\n///     array['SECURITY'] as \"categories!\",\n///     'Detects extensions installed in the \\`public\\` schema.' as \"description!\",\n///     format(\n///         'Extension \\`%s\\` is installed in the public schema. Move it to another schema.',\n///         pe.extname\n///     ) as \"detail!\",\n///     'https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public' as \"remediation!\",\n///     jsonb_build_object(\n///         'schema', pe.extnamespace::regnamespace,\n///         'name', pe.extname,\n///         'type', 'extension'\n///     ) as \"metadata!\",\n///     format(\n///         'extension_in_public_%s',\n///         pe.extname\n///     ) as \"cache_key!\"\n/// from\n///     pg_catalog.pg_extension pe\n/// where\n///     -- plpgsql is installed by default in public and outside user control\n///     -- confirmed safe\n///     pe.extname not in ('plpgsql')\n///     -- Scoping this to public is not optimal. Ideally we would use the postgres\n///     -- search path. That currently isn't available via SQL. In other lints\n///     -- we have used has_schema_privilege('anon', 'extensions', 'USAGE') but that\n///     -- is not appropriate here as it would evaluate true for the extensions schema\n///     and pe.extnamespace::regnamespace::text = 'public')\n/// ```\n///\n/// ## Configuration\n///\n/// Enable or disable this rule in your configuration:\n///\n/// ```json\n/// {\n///   \"splinter\": {\n///     \"rules\": {\n///       \"security\": {\n///         \"extensionInPublic\": \"warn\"\n///       }\n///     }\n///   }\n/// }\n/// ```\n///\n/// ## Remediation\n///\n/// See: <https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public>"] pub ExtensionInPublic { version : "1.0.0" , name : "extensionInPublic" , severity : pgls_diagnostics :: Severity :: Warning , } }
 impl SplinterRule for ExtensionInPublic {
-    fn sql_file_path() -> &'static str {
-        "security/extension_in_public.sql"
-    }
+    const SQL_FILE_PATH: &'static str = "security/extension_in_public.sql";
+    const DESCRIPTION: &'static str = "Detects extensions installed in the \\`public\\` schema.";
+    const REMEDIATION: &'static str =
+        "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public";
+    const REQUIRES_SUPABASE: bool = false;
 }

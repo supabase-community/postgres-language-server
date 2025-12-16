@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -29,15 +29,15 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for BanTruncateCascade {
+impl LinterRule for BanTruncateCascade {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::TruncateStmt(stmt) = &ctx.stmt() {
             if stmt.behavior() == DropBehavior::DropCascade {
-                diagnostics.push(RuleDiagnostic::new(
+                diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {

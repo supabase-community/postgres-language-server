@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0017_foreign_table_in_api
+-- meta: requires_supabase = true
 
 (
 select

@@ -4,6 +4,16 @@ use pgls_analyse::{
 use regex::Regex;
 use std::collections::BTreeMap;
 
+/// Metadata for a splinter rule with SQL content and metadata from trait
+#[derive(Clone)]
+pub(crate) struct SplinterRuleMetadata {
+    pub(crate) metadata: RuleMetadata,
+    pub(crate) sql_content: &'static str,
+    pub(crate) description: &'static str,
+    pub(crate) remediation: &'static str,
+    pub(crate) requires_supabase: bool,
+}
+
 pub(crate) fn replace_section(
     content: &str,
     section_identifier: &str,
@@ -57,5 +67,54 @@ impl RegistryVisitor for LintRulesVisitor {
         R: RuleMeta + 'static,
     {
         self.push_rule::<R>()
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct SplinterRulesVisitor {
+    /// This is mapped to:
+    /// - group (performance, security) -> list of rules
+    /// - list or rules is mapped to
+    /// - rule name -> splinter metadata
+    pub(crate) groups: BTreeMap<&'static str, BTreeMap<&'static str, SplinterRuleMetadata>>,
+}
+
+impl RegistryVisitor for SplinterRulesVisitor {
+    fn record_category<C: GroupCategory>(&mut self) {
+        // Splinter uses Lint category (like linter), so we need to accept it
+        if matches!(C::CATEGORY, RuleCategory::Lint) {
+            C::record_groups(self);
+        }
+    }
+
+    fn record_rule<R>(&mut self)
+    where
+        R: RuleMeta + 'static,
+    {
+        let group = self
+            .groups
+            .entry(<R::Group as RuleGroup>::NAME)
+            .or_default();
+
+        // Get SQL content and metadata from registry
+        let sql_content = pgls_splinter::registry::get_sql_content(R::METADATA.name)
+            .unwrap_or("-- SQL content not found");
+        let (description, remediation, requires_supabase) =
+            pgls_splinter::registry::get_rule_metadata_fields(R::METADATA.name).unwrap_or((
+                "Detects potential issues in your database schema.",
+                "https://supabase.com/docs/guides/database/database-advisors",
+                false,
+            ));
+
+        group.insert(
+            R::METADATA.name,
+            SplinterRuleMetadata {
+                metadata: R::METADATA,
+                sql_content,
+                description,
+                remediation,
+                requires_supabase,
+            },
+        );
     }
 }

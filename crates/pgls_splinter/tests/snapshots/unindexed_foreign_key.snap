@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 Category: splinter/performance/unindexedForeignKeys
 Severity: Information
-Message: Table \`public.posts\` has a foreign key \`posts_user_id_fkey\` without a covering index. This can lead to suboptimal query performance.
+Message: Table `public.posts` has a foreign key `posts_user_id_fkey` without a covering index. This can lead to suboptimal query performance.
 Advices:
 Identifies foreign key constraints without a covering index, which can impact database performance.
 [Info] table: public.posts

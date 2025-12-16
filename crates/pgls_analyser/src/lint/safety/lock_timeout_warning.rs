@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -44,10 +44,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for LockTimeoutWarning {
+impl LinterRule for LockTimeoutWarning {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         // Check if lock timeout has been set in the transaction
@@ -72,7 +72,7 @@ impl Rule for LockTimeoutWarning {
                     if !tx_state.has_created_object(schema, table) {
                         let full_name = format!("{schema}.{table}");
                         diagnostics.push(
-                            RuleDiagnostic::new(
+                            LinterDiagnostic::new(
                                 rule_category!(),
                                 None,
                                 markup! {
@@ -102,7 +102,7 @@ impl Rule for LockTimeoutWarning {
                             let full_name = format!("{schema}.{table}");
                             let index_name = &stmt.idxname;
                             diagnostics.push(
-                                RuleDiagnostic::new(
+                                LinterDiagnostic::new(
                                     rule_category!(),
                                     None,
                                     markup! {

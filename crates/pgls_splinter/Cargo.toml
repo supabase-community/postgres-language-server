@@ -11,14 +11,12 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
-pgls_analyse.workspace     = true
-pgls_diagnostics.workspace = true
-serde.workspace            = true
-serde_json.workspace       = true
-sqlx.workspace             = true
-
-[build-dependencies]
-ureq = "2.10"
+pgls_analyse.workspace      = true
+pgls_diagnostics.workspace  = true
+pgls_schema_cache.workspace = true
+serde.workspace             = true
+serde_json.workspace        = true
+sqlx.workspace              = true
 
 [dev-dependencies]
 insta.workspace           = true

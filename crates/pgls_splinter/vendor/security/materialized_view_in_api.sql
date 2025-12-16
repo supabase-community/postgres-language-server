@@ -4,6 +4,7 @@
 -- meta: category = SECURITY
 -- meta: description = Detects materialized views that are accessible over the Data APIs.
 -- meta: remediation = https://supabase.com/docs/guides/database/database-linter?lint=0016_materialized_view_in_api
+-- meta: requires_supabase = true
 
 (
 select

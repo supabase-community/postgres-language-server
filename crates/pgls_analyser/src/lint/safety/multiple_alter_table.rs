@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -40,10 +40,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for MultipleAlterTable {
+impl LinterRule for MultipleAlterTable {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         // Check if current statement is ALTER TABLE
@@ -94,7 +94,7 @@ impl Rule for MultipleAlterTable {
                     };
 
                     diagnostics.push(
-                        RuleDiagnostic::new(
+                        LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {

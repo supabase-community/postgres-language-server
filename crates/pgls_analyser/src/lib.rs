@@ -23,7 +23,6 @@ pub use linter_rule::{LinterDiagnostic, LinterRule};
 pub use LinterDiagnostic as RuleDiagnostic;
 pub use LinterRule as Rule;
 pub use LinterRuleContext as RuleContext;
-
 pub static METADATA: LazyLock<MetadataRegistry> = LazyLock::new(|| {
     let mut metadata = MetadataRegistry::default();
     // Use a separate visitor for metadata that implements pgls_analyse::RegistryVisitor
