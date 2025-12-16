@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -27,17 +27,17 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for BanDropNotNull {
+impl LinterRule for BanDropNotNull {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
             for cmd in &stmt.cmds {
                 if let Some(pgls_query::NodeEnum::AlterTableCmd(cmd)) = &cmd.node {
                     if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDropNotNull {
-                        diagnostics.push(RuleDiagnostic::new(
+                        diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {

@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -35,10 +35,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for ConstraintMissingNotValid {
+impl LinterRule for ConstraintMissingNotValid {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() else {
@@ -67,7 +67,7 @@ impl Rule for ConstraintMissingNotValid {
 
 fn check_constraint_needs_not_valid(
     constraint: &pgls_query::protobuf::Constraint,
-) -> Option<RuleDiagnostic> {
+) -> Option<LinterDiagnostic> {
     // Skip if the constraint has NOT VALID
     if !constraint.initially_valid {
         return None;
@@ -77,7 +77,7 @@ fn check_constraint_needs_not_valid(
     match constraint.contype() {
         pgls_query::protobuf::ConstrType::ConstrCheck
         | pgls_query::protobuf::ConstrType::ConstrForeign => Some(
-            RuleDiagnostic::new(
+            LinterDiagnostic::new(
                 rule_category!(),
                 None,
                 markup! {

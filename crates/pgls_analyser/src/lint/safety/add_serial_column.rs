@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -38,10 +38,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for AddSerialColumn {
+impl LinterRule for AddSerialColumn {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
@@ -56,7 +56,7 @@ impl Rule for AddSerialColumn {
                                 let type_str = get_type_name(type_name);
                                 if is_serial_type(&type_str) {
                                     diagnostics.push(
-                                        RuleDiagnostic::new(
+                                        LinterDiagnostic::new(
                                             rule_category!(),
                                             None,
                                             markup! {
@@ -86,7 +86,7 @@ impl Rule for AddSerialColumn {
 
                             if has_stored_generated {
                                 diagnostics.push(
-                                    RuleDiagnostic::new(
+                                    LinterDiagnostic::new(
                                         rule_category!(),
                                         None,
                                         markup! {

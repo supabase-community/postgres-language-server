@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -41,10 +41,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for PreferRobustStmts {
+impl LinterRule for PreferRobustStmts {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         // Since we assume we're always in a transaction, we only check for
@@ -55,7 +55,7 @@ impl Rule for PreferRobustStmts {
                 if stmt.concurrent {
                     // Check for unnamed index
                     if stmt.idxname.is_empty() {
-                        diagnostics.push(RuleDiagnostic::new(
+                        diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
@@ -66,7 +66,7 @@ impl Rule for PreferRobustStmts {
                     // Check for IF NOT EXISTS
                     if !stmt.if_not_exists {
                         diagnostics.push(
-                            RuleDiagnostic::new(
+                            LinterDiagnostic::new(
                                 rule_category!(),
                                 None,
                                 markup! {
@@ -85,7 +85,7 @@ impl Rule for PreferRobustStmts {
                 // Concurrent drop runs outside transaction
                 if stmt.concurrent && !stmt.missing_ok {
                     diagnostics.push(
-                        RuleDiagnostic::new(
+                        LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {

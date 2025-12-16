@@ -1,4 +1,4 @@
-use crate::{AnalysedFileContext, Rule, RuleContext, RuleDiagnostic};
+use crate::{AnalysedFileContext, LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -34,10 +34,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for TransactionNesting {
+impl LinterRule for TransactionNesting {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::TransactionStmt(stmt) = &ctx.stmt() {
@@ -46,7 +46,7 @@ impl Rule for TransactionNesting {
                 | pgls_query::protobuf::TransactionStmtKind::TransStmtStart => {
                     // Check if there's already a BEGIN in previous statements
                     if has_transaction_start_before(ctx.file_context()) {
-                        diagnostics.push(RuleDiagnostic::new(
+                        diagnostics.push(LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
@@ -55,7 +55,7 @@ impl Rule for TransactionNesting {
                         ).detail(None, "Starting a transaction when already in a transaction can cause issues."));
                     }
                     // Always warn about BEGIN/START since we assume we're in a transaction
-                    diagnostics.push(RuleDiagnostic::new(
+                    diagnostics.push(LinterDiagnostic::new(
                         rule_category!(),
                         None,
                         markup! {
@@ -67,7 +67,7 @@ impl Rule for TransactionNesting {
                 pgls_query::protobuf::TransactionStmtKind::TransStmtCommit
                 | pgls_query::protobuf::TransactionStmtKind::TransStmtRollback => {
                     // Always warn about COMMIT/ROLLBACK since we assume we're in a transaction
-                    diagnostics.push(RuleDiagnostic::new(
+                    diagnostics.push(LinterDiagnostic::new(
                         rule_category!(),
                         None,
                         markup! {

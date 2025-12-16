@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -40,10 +40,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for AddingPrimaryKeyConstraint {
+impl LinterRule for AddingPrimaryKeyConstraint {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = &ctx.stmt() {
@@ -92,12 +92,12 @@ impl Rule for AddingPrimaryKeyConstraint {
 
 fn check_for_primary_key_constraint(
     constraint: &pgls_query::protobuf::Constraint,
-) -> Option<RuleDiagnostic> {
+) -> Option<LinterDiagnostic> {
     if constraint.contype() == pgls_query::protobuf::ConstrType::ConstrPrimary
         && constraint.indexname.is_empty()
     {
         Some(
-            RuleDiagnostic::new(
+            LinterDiagnostic::new(
                 rule_category!(),
                 None,
                 markup! {

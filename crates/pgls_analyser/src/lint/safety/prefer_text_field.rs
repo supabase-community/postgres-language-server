@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -45,10 +45,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for PreferTextField {
+impl LinterRule for PreferTextField {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         match &ctx.stmt() {
@@ -84,7 +84,7 @@ impl Rule for PreferTextField {
 }
 
 fn check_column_def(
-    diagnostics: &mut Vec<RuleDiagnostic>,
+    diagnostics: &mut Vec<LinterDiagnostic>,
     col_def: &pgls_query::protobuf::ColumnDef,
 ) {
     if let Some(type_name) = &col_def.type_name {
@@ -93,7 +93,7 @@ fn check_column_def(
                 // Check if it's varchar with a size limit
                 if name.sval.to_lowercase() == "varchar" && !type_name.typmods.is_empty() {
                     diagnostics.push(
-                        RuleDiagnostic::new(
+                        LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
