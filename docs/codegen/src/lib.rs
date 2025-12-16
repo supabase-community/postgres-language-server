@@ -5,6 +5,7 @@ pub mod rules_docs;
 pub mod rules_index;
 pub mod rules_sources;
 pub mod schema;
+pub mod splinter_docs;
 pub mod version;
 
-mod utils;
+pub(crate) mod utils;

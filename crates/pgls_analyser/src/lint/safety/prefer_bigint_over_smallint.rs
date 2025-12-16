@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -52,10 +52,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for PreferBigintOverSmallint {
+impl LinterRule for PreferBigintOverSmallint {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         match &ctx.stmt() {
@@ -90,7 +90,7 @@ impl Rule for PreferBigintOverSmallint {
 }
 
 fn check_column_def(
-    diagnostics: &mut Vec<RuleDiagnostic>,
+    diagnostics: &mut Vec<LinterDiagnostic>,
     col_def: &pgls_query::protobuf::ColumnDef,
 ) {
     let Some(type_name) = &col_def.type_name else {
@@ -111,7 +111,7 @@ fn check_column_def(
         }
 
         diagnostics.push(
-            RuleDiagnostic::new(
+            LinterDiagnostic::new(
                 rule_category!(),
                 None,
                 markup! {

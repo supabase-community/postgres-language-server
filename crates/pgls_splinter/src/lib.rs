@@ -79,8 +79,12 @@ pub async fn run_splinter(
 
     for rule_name in &collector.enabled_rules {
         // Skip Supabase-specific rules if Supabase roles don't exist
-        if !has_supabase_roles && crate::registry::rule_requires_supabase(rule_name) {
-            continue;
+        if !has_supabase_roles {
+            if let Some(metadata) = crate::registry::get_rule_metadata(rule_name) {
+                if metadata.requires_supabase {
+                    continue;
+                }
+            }
         }
 
         // Get embedded SQL content (compile-time included)
@@ -99,7 +103,7 @@ pub async fn run_splinter(
     // Ensure all queries are wrapped for valid UNION ALL syntax
     let processed_queries: Vec<String> = sql_queries
         .iter()
-        .map(|sql| {
+        .map(|sql: &&str| {
             let trimmed = sql.trim();
             // Wrap in parentheses if not already wrapped
             if trimmed.starts_with('(') && trimmed.ends_with(')') {

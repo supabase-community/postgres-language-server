@@ -10,5 +10,11 @@ use pgls_analyse::RuleMeta;
 #[doc = r" - Rule logic is in SQL files, not Rust"]
 pub trait SplinterRule: RuleMeta {
     #[doc = r" Path to the SQL file containing the rule query"]
-    fn sql_file_path() -> &'static str;
+    const SQL_FILE_PATH: &'static str;
+    #[doc = r" Description of what the rule detects"]
+    const DESCRIPTION: &'static str;
+    #[doc = r" URL to documentation/remediation guide"]
+    const REMEDIATION: &'static str;
+    #[doc = r" Whether this rule requires Supabase roles (anon, authenticated, service_role)"]
+    const REQUIRES_SUPABASE: bool;
 }

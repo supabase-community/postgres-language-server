@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -25,10 +25,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for AddingRequiredField {
+impl LinterRule for AddingRequiredField {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
         if let pgls_query::NodeEnum::AlterTableStmt(stmt) = ctx.stmt() {
@@ -47,7 +47,7 @@ impl Rule for AddingRequiredField {
                         == pgls_query::protobuf::AlterTableType::AtAddColumn
                     {
                         diagnostics.push(
-                            RuleDiagnostic::new(
+                            LinterDiagnostic::new(
                                 rule_category!(),
                                 None,
                                 markup! {

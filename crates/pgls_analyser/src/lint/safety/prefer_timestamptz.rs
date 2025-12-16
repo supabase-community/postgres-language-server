@@ -1,4 +1,4 @@
-use crate::{Rule, RuleContext, RuleDiagnostic};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -58,10 +58,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for PreferTimestamptz {
+impl LinterRule for PreferTimestamptz {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         match &ctx.stmt() {
@@ -97,7 +97,7 @@ impl Rule for PreferTimestamptz {
 }
 
 fn check_column_def(
-    diagnostics: &mut Vec<RuleDiagnostic>,
+    diagnostics: &mut Vec<LinterDiagnostic>,
     col_def: &pgls_query::protobuf::ColumnDef,
 ) {
     if let Some(type_name) = &col_def.type_name {
@@ -106,7 +106,7 @@ fn check_column_def(
                 // Check for "timestamp" (without timezone)
                 if name.sval.to_lowercase() == "timestamp" {
                     diagnostics.push(
-                        RuleDiagnostic::new(
+                        LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {
