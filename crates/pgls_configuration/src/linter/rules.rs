@@ -3,7 +3,8 @@
 #![doc = r" Generated file, do not edit by hand, see `xtask/codegen`"]
 use crate::rules::{RuleConfiguration, RulePlainConfiguration};
 use biome_deserialize_macros::Merge;
-use pgls_analyse::{RuleFilter, options::RuleOptions};
+use pgls_analyse::RuleFilter;
+use pgls_analyser::RuleOptions;
 use pgls_diagnostics::{Category, Severity};
 use rustc_hash::FxHashSet;
 #[cfg(feature = "schema")]
@@ -907,7 +908,7 @@ impl Safety {
 pub fn push_to_analyser_rules(
     rules: &Rules,
     metadata: &pgls_analyse::MetadataRegistry,
-    analyser_rules: &mut pgls_analyse::AnalyserRules,
+    analyser_rules: &mut pgls_analyser::LinterRules,
 ) {
     if let Some(rules) = rules.safety.as_ref() {
         for rule_name in Safety::GROUP_RULES {

@@ -15,8 +15,9 @@ use document::{
 };
 use futures::{StreamExt, stream};
 use pg_query::convert_to_positional_params;
-use pgls_analyse::{AnalyserOptions, AnalysisFilter};
-use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams};
+use pgls_analyse::AnalysisFilter;
+use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
+
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -601,7 +602,7 @@ impl Workspace for WorkspaceServer {
             .with_linter_rules(&params.only, &params.skip)
             .finish();
 
-        let options = AnalyserOptions {
+        let options = LinterOptions {
             rules: to_analyser_rules(settings),
         };
 

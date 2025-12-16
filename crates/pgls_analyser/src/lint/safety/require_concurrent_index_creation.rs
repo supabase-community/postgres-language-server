@@ -1,4 +1,5 @@
-use pgls_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use crate::{Rule, RuleContext, RuleDiagnostic};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -74,10 +75,7 @@ impl Rule for RequireConcurrentIndexCreation {
     }
 }
 
-fn is_table_created_in_file(
-    file_context: &pgls_analyse::AnalysedFileContext,
-    table_name: &str,
-) -> bool {
+fn is_table_created_in_file(file_context: &crate::AnalysedFileContext, table_name: &str) -> bool {
     // Check all statements in the file to see if this table was created
     for stmt in file_context.stmts {
         if let pgls_query::NodeEnum::CreateStmt(create_stmt) = stmt {

@@ -1,4 +1,6 @@
-use pgls_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleGroup, RuleMetadata};
+use pgls_analyse::{
+    GroupCategory, RegistryVisitor, RuleCategory, RuleGroup, RuleMeta, RuleMetadata,
+};
 use regex::Regex;
 use std::collections::BTreeMap;
 
@@ -32,7 +34,7 @@ pub(crate) struct LintRulesVisitor {
 impl LintRulesVisitor {
     fn push_rule<R>(&mut self)
     where
-        R: Rule<Options: Default> + 'static,
+        R: RuleMeta + 'static,
     {
         let group = self
             .groups
@@ -52,7 +54,7 @@ impl RegistryVisitor for LintRulesVisitor {
 
     fn record_rule<R>(&mut self)
     where
-        R: Rule + 'static,
+        R: RuleMeta + 'static,
     {
         self.push_rule::<R>()
     }

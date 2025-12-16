@@ -1,4 +1,4 @@
-use pgls_diagnostics::{Category, Severity, category};
+use pgls_diagnostics::{Category, DatabaseObjectOwned, Severity, category};
 use serde_json::Value;
 
 use crate::{SplinterAdvices, SplinterDiagnostic, SplinterQueryResult};
@@ -22,6 +22,11 @@ impl From<SplinterQueryResult> for SplinterDiagnostic {
             category: rule_name_to_category(&result.name, &group),
             message: result.detail.into(),
             severity,
+            db_object: object_name.as_ref().map(|name| DatabaseObjectOwned {
+                schema: schema.clone(),
+                name: name.clone(),
+                object_type: object_type.clone(),
+            }),
             advices: SplinterAdvices {
                 description: result.description,
                 schema,

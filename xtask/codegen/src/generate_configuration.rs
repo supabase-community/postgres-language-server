@@ -1,6 +1,8 @@
 use crate::{to_capitalized, update};
 use biome_string_case::Case;
-use pgls_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleGroup, RuleMetadata};
+use pgls_analyse::{
+    GroupCategory, RegistryVisitor, RuleCategory, RuleGroup, RuleMeta, RuleMetadata,
+};
 use pgls_diagnostics::Severity;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
@@ -92,7 +94,7 @@ impl RegistryVisitor for CategoryRulesVisitor {
 
     fn record_rule<R>(&mut self)
     where
-        R: Rule<Options: Default> + 'static,
+        R: RuleMeta + 'static,
     {
         self.groups
             .entry(<R::Group as RuleGroup>::NAME)
@@ -285,7 +287,8 @@ fn generate_lint_rules_file(
 
         use crate::rules::{RuleConfiguration, RulePlainConfiguration};
         use biome_deserialize_macros::Merge;
-        use pgls_analyse::{RuleFilter, options::RuleOptions};
+        use pgls_analyse::RuleFilter;
+        use pgls_analyser::RuleOptions;
         use pgls_diagnostics::{Category, Severity};
         use rustc_hash::FxHashSet;
         #[cfg(feature = "schema")]
@@ -424,7 +427,7 @@ fn generate_lint_rules_file(
         pub fn push_to_analyser_rules(
             rules: &Rules,
             metadata: &pgls_analyse::MetadataRegistry,
-            analyser_rules: &mut pgls_analyse::AnalyserRules,
+            analyser_rules: &mut pgls_analyser::LinterRules,
         ) {
             #(
                 if let Some(rules) = rules.#group_idents.as_ref() {
@@ -787,7 +790,8 @@ fn generate_action_actions_file(
 
         use crate::rules::{RuleAssistConfiguration, RuleAssistPlainConfiguration};
         use biome_deserialize_macros::{Deserializable, Merge};
-        use pgls_analyse::{RuleFilter, options::RuleOptions};
+        use pgls_analyse::RuleFilter;
+        use pgls_analyser::RuleOptions;
         use pgls_diagnostics::{Category, Severity};
         use rustc_hash::FxHashSet;
         #[cfg(feature = "schema")]
