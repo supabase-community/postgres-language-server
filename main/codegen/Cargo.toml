@@ -25,6 +25,7 @@ pgls_env = { workspace = true }
 pgls_cli = { workspace = true }
 pgls_analyse = { workspace = true }
 pgls_analyser = { workspace = true }
+pgls_splinter = { workspace = true }
 pgls_diagnostics = { workspace = true }
 pgls_query = { workspace = true }
 pgls_query_ext = { workspace = true }

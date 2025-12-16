@@ -101,6 +101,14 @@
          <lastmod>2025-12-16</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/auth-rls-initplan/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/auth-users-exposed/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/ban-char-field/</loc>
          <lastmod>2025-12-16</lastmod>
     </url>
@@ -145,11 +153,55 @@
          <lastmod>2025-12-16</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/duplicate-index/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/extension-in-public/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/extension-versions-outdated/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/fkey-to-auth-unique/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/foreign-table-in-api/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/function-search-path-mutable/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/insecure-queue-exposed-in-api/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/lock-timeout-warning/</loc>
          <lastmod>2025-12-16</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/materialized-view-in-api/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/multiple-alter-table/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/multiple-permissive-policies/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/no-primary-key/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/policy-exists-rls-disabled/</loc>
          <lastmod>2025-12-16</lastmod>
     </url>
     <url>
@@ -201,11 +253,43 @@
          <lastmod>2025-12-16</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/rls-disabled-in-public/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/rls-enabled-no-policy/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/rls-references-user-metadata/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/running-statement-while-holding-access-exclusive/</loc>
          <lastmod>2025-12-16</lastmod>
     </url>
     <url>
+         <loc>https://pg-language-server.com/main/reference/rules/security-definer-view/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/table-bloat/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
          <loc>https://pg-language-server.com/main/reference/rules/transaction-nesting/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unindexed-foreign-keys/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unsupported-reg-types/</loc>
+         <lastmod>2025-12-16</lastmod>
+    </url>
+    <url>
+         <loc>https://pg-language-server.com/main/reference/rules/unused-index/</loc>
          <lastmod>2025-12-16</lastmod>
     </url>
 </urlset>
