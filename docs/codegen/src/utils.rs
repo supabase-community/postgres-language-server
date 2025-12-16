@@ -4,12 +4,14 @@ use pgls_analyse::{
 use regex::Regex;
 use std::collections::BTreeMap;
 
-/// Metadata for a splinter rule with SQL content and registry metadata
+/// Metadata for a splinter rule with SQL content and metadata from trait
 #[derive(Clone)]
 pub(crate) struct SplinterRuleMetadata {
     pub(crate) metadata: RuleMetadata,
     pub(crate) sql_content: &'static str,
-    pub(crate) registry_metadata: pgls_splinter::registry::SplinterRuleMetadata,
+    pub(crate) description: &'static str,
+    pub(crate) remediation: &'static str,
+    pub(crate) requires_supabase: bool,
 }
 
 pub(crate) fn replace_section(
@@ -97,19 +99,21 @@ impl RegistryVisitor for SplinterRulesVisitor {
         // Get SQL content and metadata from registry
         let sql_content = pgls_splinter::registry::get_sql_content(R::METADATA.name)
             .unwrap_or("-- SQL content not found");
-        let registry_metadata = pgls_splinter::registry::get_rule_metadata(R::METADATA.name)
-            .unwrap_or(pgls_splinter::registry::SplinterRuleMetadata {
-                description: "Detects potential issues in your database schema.",
-                remediation: "https://supabase.com/docs/guides/database/database-advisors",
-                requires_supabase: false,
-            });
+        let (description, remediation, requires_supabase) =
+            pgls_splinter::registry::get_rule_metadata_fields(R::METADATA.name).unwrap_or((
+                "Detects potential issues in your database schema.",
+                "https://supabase.com/docs/guides/database/database-advisors",
+                false,
+            ));
 
         group.insert(
             R::METADATA.name,
             SplinterRuleMetadata {
                 metadata: R::METADATA,
                 sql_content,
-                registry_metadata,
+                description,
+                remediation,
+                requires_supabase,
             },
         );
     }

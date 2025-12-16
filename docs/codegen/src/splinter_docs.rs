@@ -70,7 +70,7 @@ fn generate_splinter_rule_doc(
     writeln!(content)?;
 
     // Add Supabase requirement notice
-    if splinter_meta.registry_metadata.requires_supabase {
+    if splinter_meta.requires_supabase {
         writeln!(content, "> [!NOTE]")?;
         writeln!(
             content,
@@ -82,12 +82,12 @@ fn generate_splinter_rule_doc(
     writeln!(content, "## Description")?;
     writeln!(content)?;
 
-    // Use description from registry metadata
-    writeln!(content, "{}", splinter_meta.registry_metadata.description)?;
+    // Use description from trait
+    writeln!(content, "{}", splinter_meta.description)?;
     writeln!(content)?;
 
-    // Add "Learn More" link with remediation URL from registry metadata
-    let remediation = splinter_meta.registry_metadata.remediation;
+    // Add "Learn More" link with remediation URL from trait
+    let remediation = splinter_meta.remediation;
     writeln!(content, "[Learn More]({remediation})")?;
     writeln!(content)?;
 

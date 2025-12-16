@@ -161,119 +161,24 @@ pub fn get_sql_content(rule_name: &str) -> Option<&'static str> {
         _ => None,
     }
 }
+#[doc = r" Get metadata fields for a rule (camelCase name)"]
+#[doc = r" Returns (description, remediation, requires_supabase) tuple"]
+#[doc = r""]
+#[doc = r" This calls the trait constants from the generated rule types"]
+pub fn get_rule_metadata_fields(rule_name: &str) -> Option<(&'static str, &'static str, bool)> {
+    match rule_name { "authRlsInitplan" => Some ((< crate :: rules :: performance :: auth_rls_initplan :: AuthRlsInitplan as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: auth_rls_initplan :: AuthRlsInitplan as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: auth_rls_initplan :: AuthRlsInitplan as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "authUsersExposed" => Some ((< crate :: rules :: security :: auth_users_exposed :: AuthUsersExposed as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: auth_users_exposed :: AuthUsersExposed as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: auth_users_exposed :: AuthUsersExposed as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "duplicateIndex" => Some ((< crate :: rules :: performance :: duplicate_index :: DuplicateIndex as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: duplicate_index :: DuplicateIndex as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: duplicate_index :: DuplicateIndex as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "extensionInPublic" => Some ((< crate :: rules :: security :: extension_in_public :: ExtensionInPublic as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: extension_in_public :: ExtensionInPublic as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: extension_in_public :: ExtensionInPublic as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "extensionVersionsOutdated" => Some ((< crate :: rules :: security :: extension_versions_outdated :: ExtensionVersionsOutdated as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: extension_versions_outdated :: ExtensionVersionsOutdated as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: extension_versions_outdated :: ExtensionVersionsOutdated as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "fkeyToAuthUnique" => Some ((< crate :: rules :: security :: fkey_to_auth_unique :: FkeyToAuthUnique as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: fkey_to_auth_unique :: FkeyToAuthUnique as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: fkey_to_auth_unique :: FkeyToAuthUnique as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "foreignTableInApi" => Some ((< crate :: rules :: security :: foreign_table_in_api :: ForeignTableInApi as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: foreign_table_in_api :: ForeignTableInApi as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: foreign_table_in_api :: ForeignTableInApi as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "functionSearchPathMutable" => Some ((< crate :: rules :: security :: function_search_path_mutable :: FunctionSearchPathMutable as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: function_search_path_mutable :: FunctionSearchPathMutable as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: function_search_path_mutable :: FunctionSearchPathMutable as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "insecureQueueExposedInApi" => Some ((< crate :: rules :: security :: insecure_queue_exposed_in_api :: InsecureQueueExposedInApi as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: insecure_queue_exposed_in_api :: InsecureQueueExposedInApi as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: insecure_queue_exposed_in_api :: InsecureQueueExposedInApi as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "materializedViewInApi" => Some ((< crate :: rules :: security :: materialized_view_in_api :: MaterializedViewInApi as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: materialized_view_in_api :: MaterializedViewInApi as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: materialized_view_in_api :: MaterializedViewInApi as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "multiplePermissivePolicies" => Some ((< crate :: rules :: performance :: multiple_permissive_policies :: MultiplePermissivePolicies as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: multiple_permissive_policies :: MultiplePermissivePolicies as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: multiple_permissive_policies :: MultiplePermissivePolicies as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "noPrimaryKey" => Some ((< crate :: rules :: performance :: no_primary_key :: NoPrimaryKey as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: no_primary_key :: NoPrimaryKey as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: no_primary_key :: NoPrimaryKey as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "policyExistsRlsDisabled" => Some ((< crate :: rules :: security :: policy_exists_rls_disabled :: PolicyExistsRlsDisabled as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: policy_exists_rls_disabled :: PolicyExistsRlsDisabled as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: policy_exists_rls_disabled :: PolicyExistsRlsDisabled as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "rlsDisabledInPublic" => Some ((< crate :: rules :: security :: rls_disabled_in_public :: RlsDisabledInPublic as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: rls_disabled_in_public :: RlsDisabledInPublic as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: rls_disabled_in_public :: RlsDisabledInPublic as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "rlsEnabledNoPolicy" => Some ((< crate :: rules :: security :: rls_enabled_no_policy :: RlsEnabledNoPolicy as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: rls_enabled_no_policy :: RlsEnabledNoPolicy as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: rls_enabled_no_policy :: RlsEnabledNoPolicy as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "rlsReferencesUserMetadata" => Some ((< crate :: rules :: security :: rls_references_user_metadata :: RlsReferencesUserMetadata as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: rls_references_user_metadata :: RlsReferencesUserMetadata as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: rls_references_user_metadata :: RlsReferencesUserMetadata as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "securityDefinerView" => Some ((< crate :: rules :: security :: security_definer_view :: SecurityDefinerView as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: security_definer_view :: SecurityDefinerView as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: security_definer_view :: SecurityDefinerView as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "tableBloat" => Some ((< crate :: rules :: performance :: table_bloat :: TableBloat as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: table_bloat :: TableBloat as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: table_bloat :: TableBloat as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "unindexedForeignKeys" => Some ((< crate :: rules :: performance :: unindexed_foreign_keys :: UnindexedForeignKeys as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: unindexed_foreign_keys :: UnindexedForeignKeys as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: unindexed_foreign_keys :: UnindexedForeignKeys as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "unsupportedRegTypes" => Some ((< crate :: rules :: security :: unsupported_reg_types :: UnsupportedRegTypes as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: security :: unsupported_reg_types :: UnsupportedRegTypes as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: security :: unsupported_reg_types :: UnsupportedRegTypes as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , "unusedIndex" => Some ((< crate :: rules :: performance :: unused_index :: UnusedIndex as crate :: rule :: SplinterRule > :: DESCRIPTION , < crate :: rules :: performance :: unused_index :: UnusedIndex as crate :: rule :: SplinterRule > :: REMEDIATION , < crate :: rules :: performance :: unused_index :: UnusedIndex as crate :: rule :: SplinterRule > :: REQUIRES_SUPABASE ,)) , _ => None , }
+}
 #[doc = r" Get metadata for a rule (camelCase name)"]
 #[doc = r" Returns None if rule not found"]
 #[doc = r""]
-#[doc = r" This provides structured access to rule metadata without requiring SQL parsing"]
+#[doc = r" This provides structured access to rule metadata by calling trait constants"]
 pub fn get_rule_metadata(rule_name: &str) -> Option<SplinterRuleMetadata> {
-    match rule_name {
-        "authRlsInitplan" => Some(SplinterRuleMetadata {
-            description: "Detects if calls to \\`current_setting()\\` and \\`auth.<function>()\\` in RLS policies are being unnecessarily re-evaluated for each row",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan",
-            requires_supabase: true,
-        }),
-        "authUsersExposed" => Some(SplinterRuleMetadata {
-            description: "Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0002_auth_users_exposed",
-            requires_supabase: true,
-        }),
-        "duplicateIndex" => Some(SplinterRuleMetadata {
-            description: "Detects cases where two ore more identical indexes exist.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index",
-            requires_supabase: false,
-        }),
-        "extensionInPublic" => Some(SplinterRuleMetadata {
-            description: "Detects extensions installed in the \\`public\\` schema.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public",
-            requires_supabase: false,
-        }),
-        "extensionVersionsOutdated" => Some(SplinterRuleMetadata {
-            description: "Detects extensions that are not using the default (recommended) version.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0022_extension_versions_outdated",
-            requires_supabase: false,
-        }),
-        "fkeyToAuthUnique" => Some(SplinterRuleMetadata {
-            description: "Detects user defined foreign keys to unique constraints in the auth schema.",
-            remediation: "Drop the foreign key constraint that references the auth schema.",
-            requires_supabase: true,
-        }),
-        "foreignTableInApi" => Some(SplinterRuleMetadata {
-            description: "Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0017_foreign_table_in_api",
-            requires_supabase: true,
-        }),
-        "functionSearchPathMutable" => Some(SplinterRuleMetadata {
-            description: "Detects functions where the search_path parameter is not set.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable",
-            requires_supabase: false,
-        }),
-        "insecureQueueExposedInApi" => Some(SplinterRuleMetadata {
-            description: "Detects cases where an insecure Queue is exposed over Data APIs",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0019_insecure_queue_exposed_in_api",
-            requires_supabase: true,
-        }),
-        "materializedViewInApi" => Some(SplinterRuleMetadata {
-            description: "Detects materialized views that are accessible over the Data APIs.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0016_materialized_view_in_api",
-            requires_supabase: true,
-        }),
-        "multiplePermissivePolicies" => Some(SplinterRuleMetadata {
-            description: "Detects if multiple permissive row level security policies are present on a table for the same \\`role\\` and \\`action\\` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies",
-            requires_supabase: false,
-        }),
-        "noPrimaryKey" => Some(SplinterRuleMetadata {
-            description: "Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key",
-            requires_supabase: false,
-        }),
-        "policyExistsRlsDisabled" => Some(SplinterRuleMetadata {
-            description: "Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0007_policy_exists_rls_disabled",
-            requires_supabase: false,
-        }),
-        "rlsDisabledInPublic" => Some(SplinterRuleMetadata {
-            description: "Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public",
-            requires_supabase: true,
-        }),
-        "rlsEnabledNoPolicy" => Some(SplinterRuleMetadata {
-            description: "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
-            requires_supabase: false,
-        }),
-        "rlsReferencesUserMetadata" => Some(SplinterRuleMetadata {
-            description: "Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0015_rls_references_user_metadata",
-            requires_supabase: true,
-        }),
-        "securityDefinerView" => Some(SplinterRuleMetadata {
-            description: "Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view",
-            requires_supabase: true,
-        }),
-        "tableBloat" => Some(SplinterRuleMetadata {
-            description: "Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.",
-            remediation: "Consider running vacuum full (WARNING: incurs downtime) and tweaking autovacuum settings to reduce bloat.",
-            requires_supabase: false,
-        }),
-        "unindexedForeignKeys" => Some(SplinterRuleMetadata {
-            description: "Identifies foreign key constraints without a covering index, which can impact database performance.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys",
-            requires_supabase: false,
-        }),
-        "unsupportedRegTypes" => Some(SplinterRuleMetadata {
-            description: "Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=unsupported_reg_types",
-            requires_supabase: false,
-        }),
-        "unusedIndex" => Some(SplinterRuleMetadata {
-            description: "Detects if an index has never been used and may be a candidate for removal.",
-            remediation: "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index",
-            requires_supabase: false,
-        }),
-        _ => None,
-    }
+    let (description, remediation, requires_supabase) = get_rule_metadata_fields(rule_name)?;
+    Some(SplinterRuleMetadata {
+        description,
+        remediation,
+        requires_supabase,
+    })
 }
 #[doc = r" Map rule name from SQL result (snake_case) to diagnostic category"]
 #[doc = r" Returns None if rule not found"]

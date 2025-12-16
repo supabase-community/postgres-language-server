@@ -188,7 +188,16 @@ fn generate_rule_trait() -> Result<()> {
         /// - Rule logic is in SQL files, not Rust
         pub trait SplinterRule: RuleMeta {
             /// Path to the SQL file containing the rule query
-            fn sql_file_path() -> &'static str;
+            const SQL_FILE_PATH: &'static str;
+
+            /// Description of what the rule detects
+            const DESCRIPTION: &'static str;
+
+            /// URL to documentation/remediation guide
+            const REMEDIATION: &'static str;
+
+            /// Whether this rule requires Supabase roles (anon, authenticated, service_role)
+            const REQUIRES_SUPABASE: bool;
         }
     };
 
@@ -321,9 +330,10 @@ fn generate_rule_file(category_dir: &Path, metadata: &SqlRuleMetadata) -> Result
         }
 
         impl SplinterRule for #struct_name {
-            fn sql_file_path() -> &'static str {
-                #sql_path
-            }
+            const SQL_FILE_PATH: &'static str = #sql_path;
+            const DESCRIPTION: &'static str = #description;
+            const REMEDIATION: &'static str = #remediation;
+            const REQUIRES_SUPABASE: bool = #requires_supabase;
         }
     };
 
@@ -502,21 +512,22 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
         })
         .collect();
 
-    // Generate match arms for metadata lookup (camelCase → SplinterRuleMetadata)
-    let metadata_arms: Vec<_> = rules
+    // Generate match arms for metadata fields lookup (camelCase → tuple)
+    // These call the trait constants from the generated rule types
+    let metadata_fields_arms: Vec<_> = rules
         .values()
         .map(|rule| {
             let camel_name = &rule.name;
-            let description = &rule.description;
-            let remediation = &rule.remediation;
-            let requires_supabase = rule.requires_supabase;
+            let category_ident = format_ident!("{}", rule.category.to_lowercase());
+            let module_name = format_ident!("{}", &rule.snake_name);
+            let struct_name = format_ident!("{}", Case::Pascal.convert(&rule.snake_name));
 
             quote! {
-                #camel_name => Some(SplinterRuleMetadata {
-                    description: #description,
-                    remediation: #remediation,
-                    requires_supabase: #requires_supabase,
-                })
+                #camel_name => Some((
+                    <crate::rules::#category_ident::#module_name::#struct_name as crate::rule::SplinterRule>::DESCRIPTION,
+                    <crate::rules::#category_ident::#module_name::#struct_name as crate::rule::SplinterRule>::REMEDIATION,
+                    <crate::rules::#category_ident::#module_name::#struct_name as crate::rule::SplinterRule>::REQUIRES_SUPABASE,
+                ))
             }
         })
         .collect();
@@ -565,15 +576,30 @@ fn generate_registry(rules: &BTreeMap<String, SqlRuleMetadata>) -> Result<()> {
             }
         }
 
+        /// Get metadata fields for a rule (camelCase name)
+        /// Returns (description, remediation, requires_supabase) tuple
+        ///
+        /// This calls the trait constants from the generated rule types
+        pub fn get_rule_metadata_fields(
+            rule_name: &str,
+        ) -> Option<(&'static str, &'static str, bool)> {
+            match rule_name {
+                #( #metadata_fields_arms, )*
+                _ => None,
+            }
+        }
+
         /// Get metadata for a rule (camelCase name)
         /// Returns None if rule not found
         ///
-        /// This provides structured access to rule metadata without requiring SQL parsing
+        /// This provides structured access to rule metadata by calling trait constants
         pub fn get_rule_metadata(rule_name: &str) -> Option<SplinterRuleMetadata> {
-            match rule_name {
-                #( #metadata_arms, )*
-                _ => None,
-            }
+            let (description, remediation, requires_supabase) = get_rule_metadata_fields(rule_name)?;
+            Some(SplinterRuleMetadata {
+                description,
+                remediation,
+                requires_supabase,
+            })
         }
 
         /// Map rule name from SQL result (snake_case) to diagnostic category

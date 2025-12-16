@@ -103,7 +103,7 @@ pub async fn run_splinter(
     // Ensure all queries are wrapped for valid UNION ALL syntax
     let processed_queries: Vec<String> = sql_queries
         .iter()
-        .map(|sql| {
+        .map(|sql: &&str| {
             let trimmed = sql.trim();
             // Wrap in parentheses if not already wrapped
             if trimmed.starts_with('(') && trimmed.ends_with(')') {
