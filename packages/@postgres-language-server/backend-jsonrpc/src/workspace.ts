@@ -116,7 +116,6 @@ export type Category =
 	| "splinter/security/rlsReferencesUserMetadata"
 	| "splinter/security/securityDefinerView"
 	| "splinter/security/unsupportedRegTypes"
-	| "splinter/unknown/unknown"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -136,8 +135,7 @@ export type Category =
 	| "lint/safety"
 	| "splinter"
 	| "splinter/performance"
-	| "splinter/security"
-	| "splinter/unknown";
+	| "splinter/security";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;

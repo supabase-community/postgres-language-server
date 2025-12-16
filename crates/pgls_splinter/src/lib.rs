@@ -1,11 +1,15 @@
 mod convert;
 mod diagnostics;
 mod query;
+pub mod registry;
+pub mod rule;
+pub mod rules;
 
 use sqlx::PgPool;
 
 pub use diagnostics::{SplinterAdvices, SplinterDiagnostic};
 pub use query::SplinterQueryResult;
+pub use rule::SplinterRule;
 
 #[derive(Debug)]
 pub struct SplinterParams<'a> {

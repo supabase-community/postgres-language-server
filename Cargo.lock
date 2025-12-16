@@ -2996,6 +2996,7 @@ name = "pgls_splinter"
 version = "0.0.0"
 dependencies = [
  "insta",
+ "pgls_analyse",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_test_utils",
@@ -5615,6 +5616,7 @@ dependencies = [
  "pgls_analyser",
  "pgls_diagnostics",
  "pgls_env",
+ "pgls_splinter",
  "pgls_workspace",
  "proc-macro2",
  "pulldown-cmark",
