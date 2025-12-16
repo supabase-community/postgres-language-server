@@ -3005,7 +3005,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "ureq",
 ]
 
 [[package]]

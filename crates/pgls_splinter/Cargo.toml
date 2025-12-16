@@ -18,9 +18,6 @@ serde.workspace             = true
 serde_json.workspace        = true
 sqlx.workspace              = true
 
-[build-dependencies]
-ureq = "2.10"
-
 [dev-dependencies]
 insta.workspace           = true
 pgls_console.workspace    = true
