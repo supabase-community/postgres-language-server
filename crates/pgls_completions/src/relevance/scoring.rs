@@ -73,14 +73,13 @@ impl CompletionScore<'_> {
                     self.get_table_name()
                         .map(|t| format!("{t}.{name}"))
                         .unwrap_or(name.clone())
-                } else if self.get_table_name().is_some_and(|t| t == qualifier) {
-                    name.clone()
-                } else if ctx
-                    .get_mentioned_table_for_alias(qualifier)
-                    .is_some_and(|alias_tbl| {
-                        self.get_table_name()
-                            .is_some_and(|item_tbl| alias_tbl == item_tbl)
-                    })
+                } else if self.get_table_name().is_some_and(|t| t == qualifier)
+                    || ctx
+                        .get_mentioned_table_for_alias(qualifier)
+                        .is_some_and(|alias_tbl| {
+                            self.get_table_name()
+                                .is_some_and(|item_tbl| alias_tbl == item_tbl)
+                        })
                 {
                     name.clone()
                 } else {
@@ -306,21 +305,6 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
             CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
             CompletionRelevanceData::Role(_) => None,
-        }
-    }
-
-    fn get_fully_qualified_name(&self) -> String {
-        match self.data {
-            CompletionRelevanceData::Schema(s) => s.name.clone(),
-            CompletionRelevanceData::Column(c) => {
-                format!("{}.{}.{}", c.schema_name, c.table_name, c.name)
-            }
-            CompletionRelevanceData::Table(t) => format!("{}.{}", t.schema, t.name),
-            CompletionRelevanceData::Function(f) => format!("{}.{}", f.schema, f.name),
-            CompletionRelevanceData::Policy(p) => {
-                format!("{}.{}.{}", p.schema_name, p.table_name, p.name)
-            }
-            CompletionRelevanceData::Role(r) => r.name.clone(),
         }
     }
 
