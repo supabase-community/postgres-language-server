@@ -60,6 +60,17 @@ impl ToolConfig {
     fn partial_config_struct_name(&self) -> String {
         format!("Partial{}", self.config_struct_name())
     }
+
+    /// Derived: Category prefix used in diagnostics (e.g., "lint" for linter, "splinter" for splinter)
+    fn category_prefix(&self) -> &'static str {
+        match self.name {
+            "linter" => "lint",
+            "splinter" => "splinter",
+            "assists" => "assists",
+            "pglinter" => "pglinter",
+            _ => self.name,
+        }
+    }
 }
 
 /// All supported tools
@@ -280,7 +291,7 @@ fn generate_lint_rules_file(
         struct_groups.push(generate_lint_group_struct(tool.name, group, &rules));
     }
 
-    let category_prefix = tool.name;
+    let category_prefix = tool.category_prefix();
     let rules_struct_content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 

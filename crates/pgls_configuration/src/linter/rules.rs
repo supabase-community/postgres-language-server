@@ -73,7 +73,7 @@ impl Rules {
     pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
         let mut split_code = category.name().split('/');
         let _category_prefix = split_code.next();
-        debug_assert_eq!(_category_prefix, Some("linter"));
+        debug_assert_eq!(_category_prefix, Some("lint"));
         let group = <RuleGroup as std::str::FromStr>::from_str(split_code.next()?).ok()?;
         let rule_name = split_code.next()?;
         let rule_name = Self::has_rule(group, rule_name)?;
