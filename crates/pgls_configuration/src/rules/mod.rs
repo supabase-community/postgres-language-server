@@ -6,4 +6,4 @@ pub use configuration::{
     RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleWithFixOptions,
     RuleWithOptions,
 };
-pub use selector::RuleSelector;
+pub use selector::{AnalyzerGroup, RuleSelector};

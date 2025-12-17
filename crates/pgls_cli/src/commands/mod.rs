@@ -3,7 +3,7 @@ use crate::cli_options::{CliOptions, CliReporter, ColorsArg, cli_options};
 use crate::logging::LoggingKind;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
-use pgls_configuration::{PartialConfiguration, partial_configuration};
+use pgls_configuration::{PartialConfiguration, RuleSelector, partial_configuration};
 use pgls_fs::FileSystem;
 use pgls_workspace::DynRef;
 use std::ffi::OsString;
@@ -69,6 +69,14 @@ pub enum PgLSCommand {
         /// Single file, single path or list of paths
         #[bpaf(positional("PATH"), many)]
         paths: Vec<OsString>,
+
+        /// When provided, only the specified groups or rules will be executed.
+        #[bpaf(long("only"), argument("GROUP|RULE"))]
+        only: Vec<RuleSelector>,
+
+        /// When provided, the specified groups or rules will be skipped during execution.
+        #[bpaf(long("skip"), argument("GROUP|RULE"))]
+        skip: Vec<RuleSelector>,
     },
 
     /// Starts the daemon server process.

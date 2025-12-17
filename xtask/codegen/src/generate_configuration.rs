@@ -105,8 +105,8 @@ impl RegistryVisitor for CategoryRulesVisitor {
 
 /// Generate all rule configurations
 pub fn generate_rules_configuration(mode: Mode) -> Result<()> {
-    // Currently we only generate for the linter tool
     generate_tool_configuration(mode, "linter")?;
+    generate_tool_configuration(mode, "splinter")?;
     Ok(())
 }
 
@@ -123,11 +123,10 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
     // Collect rules from the tool's crate
     let mut visitor = CategoryRulesVisitor::new(tool.category);
 
-    // For now, only linter is implemented
     match tool.name {
         "linter" => pgls_analyser::visit_registry(&mut visitor),
+        "splinter" => pgls_splinter::registry::visit_registry(&mut visitor),
         "assists" => unimplemented!("Assists rules not yet implemented"),
-        "splinter" => unimplemented!("Splinter rules not yet implemented"),
         "pglinter" => unimplemented!("PGLinter rules not yet implemented"),
         _ => unreachable!(),
     }
@@ -164,6 +163,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     let partial_config_struct = Ident::new(&tool.partial_config_struct_name(), Span::call_site());
     let generated_file = tool.generated_file().trim_end_matches(".rs");
     let generated_file_ident = Ident::new(generated_file, Span::call_site());
+    let tool_name = tool.name;
 
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
@@ -181,7 +181,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
         #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
         pub struct #config_struct {
-            /// if `false`, it disables the feature and the linter won't be executed. `true` by default
+            #[doc = concat!("if `false`, it disables the feature and the ", #tool_name, " won't be executed. `true` by default")]
             #[partial(bpaf(hide))]
             pub enabled: bool,
 
@@ -189,13 +189,11 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             #[partial(bpaf(pure(Default::default()), optional, hide))]
             pub rules: Rules,
 
-            /// A list of Unix shell style patterns. The formatter will ignore files/folders that will
-            /// match these patterns.
+            #[doc = concat!("A list of Unix shell style patterns. The ", #tool_name, " will ignore files/folders that will match these patterns.")]
             #[partial(bpaf(hide))]
             pub ignore: StringSet,
 
-            /// A list of Unix shell style patterns. The formatter will include files/folders that will
-            /// match these patterns.
+            #[doc = concat!("A list of Unix shell style patterns. The ", #tool_name, " will include files/folders that will match these patterns.")]
             #[partial(bpaf(hide))]
             pub include: StringSet,
         }
@@ -233,7 +231,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
 
 /// Generate the rules.rs file for a Lint tool
 fn generate_lint_rules_file(
-    _tool: &ToolConfig,
+    tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<String> {
     let mut struct_groups = Vec::with_capacity(groups.len());
@@ -279,9 +277,10 @@ fn generate_lint_rules_file(
         group_pascal_idents.push(group_pascal_ident);
         group_idents.push(group_ident);
         group_strings.push(Literal::string(group));
-        struct_groups.push(generate_lint_group_struct(group, &rules));
+        struct_groups.push(generate_lint_group_struct(tool.name, group, &rules));
     }
 
+    let category_prefix = tool.name;
     let rules_struct_content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
@@ -360,8 +359,8 @@ fn generate_lint_rules_file(
             pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
                 let mut split_code = category.name().split('/');
 
-                let _lint = split_code.next();
-                debug_assert_eq!(_lint, Some("lint"));
+                let _category_prefix = split_code.next();
+                debug_assert_eq!(_category_prefix, Some(#category_prefix));
 
                 let group = <RuleGroup as std::str::FromStr>::from_str(split_code.next()?).ok()?;
                 let rule_name = split_code.next()?;
@@ -457,6 +456,7 @@ fn generate_lint_rules_file(
 
 /// Generate a group struct for lint rules
 fn generate_lint_group_struct(
+    tool_name: &str,
     group: &str,
     rules: &BTreeMap<&'static str, RuleMetadata>,
 ) -> TokenStream {
@@ -489,8 +489,12 @@ fn generate_lint_group_struct(
              #rule
         });
 
-        let rule_option_type = quote! {
-            pgls_analyser::options::#rule_name
+        // For splinter rules, use () as options since they don't have configurable options
+        // For linter rules, use pgls_analyser::options::#rule_name
+        let rule_option_type = if tool_name == "splinter" {
+            quote! { () }
+        } else {
+            quote! { pgls_analyser::options::#rule_name }
         };
         let rule_option = quote! { Option<RuleConfiguration<#rule_option_type>> };
 
@@ -668,13 +672,20 @@ fn extract_summary_from_docs(docs: &str) -> String {
             }
             Event::Start(tag) => match tag {
                 Tag::Strong | Tag::Paragraph => continue,
-                _ => panic!("Unimplemented tag {tag:?}"),
+                _ => {
+                    // Skip unsupported tags instead of panicking
+                    continue;
+                }
             },
             Event::End(tag) => match tag {
                 TagEnd::Strong | TagEnd::Paragraph => continue,
-                _ => panic!("Unimplemented tag {tag:?}"),
+                _ => {
+                    // Skip unsupported tags instead of panicking
+                    continue;
+                }
             },
-            _ => panic!("Unimplemented event {event:?}"),
+            // Skip HTML, links, and other events that we don't need in the summary
+            _ => continue,
         }
     }
 
