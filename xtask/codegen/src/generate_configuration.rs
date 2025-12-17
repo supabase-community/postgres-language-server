@@ -174,7 +174,6 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     let partial_config_struct = Ident::new(&tool.partial_config_struct_name(), Span::call_site());
     let generated_file = tool.generated_file().trim_end_matches(".rs");
     let generated_file_ident = Ident::new(generated_file, Span::call_site());
-    let tool_name = tool.name;
 
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
@@ -192,7 +191,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
         #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
         pub struct #config_struct {
-            #[doc = concat!("if `false`, it disables the feature and the ", #tool_name, " won't be executed. `true` by default")]
+            /// if `false`, it disables the feature and the linter won't be executed. `true` by default
             #[partial(bpaf(hide))]
             pub enabled: bool,
 
@@ -200,11 +199,11 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             #[partial(bpaf(pure(Default::default()), optional, hide))]
             pub rules: Rules,
 
-            #[doc = concat!("A list of Unix shell style patterns. The ", #tool_name, " will ignore files/folders that will match these patterns.")]
+            /// A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
             #[partial(bpaf(hide))]
             pub ignore: StringSet,
 
-            #[doc = concat!("A list of Unix shell style patterns. The ", #tool_name, " will include files/folders that will match these patterns.")]
+            /// A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
             #[partial(bpaf(hide))]
             pub include: StringSet,
         }

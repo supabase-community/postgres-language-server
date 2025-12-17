@@ -12,16 +12,16 @@ use serde::{Deserialize, Serialize};
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct SplinterConfiguration {
-    # [doc = concat ! ("if `false`, it disables the feature and the " , "splinter" , " won't be executed. `true` by default")]
+    #[doc = r" if `false`, it disables the feature and the linter won't be executed. `true` by default"]
     #[partial(bpaf(hide))]
     pub enabled: bool,
     #[doc = r" List of rules"]
     #[partial(bpaf(pure(Default::default()), optional, hide))]
     pub rules: Rules,
-    # [doc = concat ! ("A list of Unix shell style patterns. The " , "splinter" , " will ignore files/folders that will match these patterns.")]
+    #[doc = r" A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns."]
     #[partial(bpaf(hide))]
     pub ignore: StringSet,
-    # [doc = concat ! ("A list of Unix shell style patterns. The " , "splinter" , " will include files/folders that will match these patterns.")]
+    #[doc = r" A list of Unix shell style patterns. The linter will include files/folders that will match these patterns."]
     #[partial(bpaf(hide))]
     pub include: StringSet,
 }
