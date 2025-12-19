@@ -5292,6 +5292,105 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "PREC",
+              "value": -10,
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "c",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:comment:copy:create"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "co",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:comment:copy"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "d",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:delete:drop"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "re|r",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:reset:revoke"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "s",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:select:set:show"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "se",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:select:set"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "u",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:unload:update"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "REPLACED_TOKEN",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:alter:comment:copy:create:delete:drop:grant:insert:merge:reset:revoke:select:set:show:truncate:unload:update:vacuum:with"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "REPLACED_TOKEN_WITH_QUOTE",
+                      "flags": "i"
+                    },
+                    "named": false,
+                    "value": "any_keyword:alter:comment:copy:create:delete:drop:grant:insert:merge:reset:revoke:select:set:show:truncate:unload:update:vacuum:with"
+                  }
+                ]
+              }
             }
           ]
         }
@@ -6751,6 +6850,79 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "keyword_create"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "creat|crea|cre|cr",
+                        "flags": "gi"
+                      },
+                      "named": false,
+                      "value": "partial_keyword:create"
+                    }
+                  ]
+                },
+                {
+                  "type": "PREC",
+                  "value": -10,
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "s",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:schema:sequence"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "t",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:table:trigger:type"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "REPLACED_TOKEN",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:database:extension:function:index:materialized:policy:role:schema:sequence:table:trigger:type:view"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "REPLACED_TOKEN_WITH_QUOTE",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:database:extension:function:index:materialized:policy:role:schema:sequence:table:trigger:type:view"
+                      }
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -11222,6 +11394,79 @@
             {
               "type": "SYMBOL",
               "name": "alter_policy"
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "keyword_alter"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "alte|alt|al",
+                        "flags": "gi"
+                      },
+                      "named": false,
+                      "value": "partial_keyword:alter"
+                    }
+                  ]
+                },
+                {
+                  "type": "PREC",
+                  "value": -10,
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "s",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:schema:sequence"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "t",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:table:type"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "REPLACED_TOKEN",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:database:index:policy:role:schema:sequence:table:type:view"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "REPLACED_TOKEN_WITH_QUOTE",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:database:index:policy:role:schema:sequence:table:type:view"
+                      }
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -13774,6 +14019,79 @@
             {
               "type": "SYMBOL",
               "name": "drop_policy"
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "keyword_drop"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "dro|dr",
+                        "flags": "gi"
+                      },
+                      "named": false,
+                      "value": "partial_keyword:drop"
+                    }
+                  ]
+                },
+                {
+                  "type": "PREC",
+                  "value": -10,
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "s",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:schema:sequence"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "t",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:table:type"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "REPLACED_TOKEN",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:database:extension:function:index:policy:role:schema:sequence:table:type:view"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "REPLACED_TOKEN_WITH_QUOTE",
+                          "flags": "i"
+                        },
+                        "named": false,
+                        "value": "any_keyword:database:extension:function:index:policy:role:schema:sequence:table:type:view"
+                      }
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -15191,6 +15509,35 @@
                                                               {
                                                                 "type": "SYMBOL",
                                                                 "name": "_select_statement"
+                                                              },
+                                                              {
+                                                                "type": "PREC",
+                                                                "value": -10,
+                                                                "content": {
+                                                                  "type": "CHOICE",
+                                                                  "members": [
+                                                                    {
+                                                                      "type": "ALIAS",
+                                                                      "content": {
+                                                                        "type": "PATTERN",
+                                                                        "value": "REPLACED_TOKEN",
+                                                                        "flags": "i"
+                                                                      },
+                                                                      "named": false,
+                                                                      "value": "any_keyword:default:on:select:values"
+                                                                    },
+                                                                    {
+                                                                      "type": "ALIAS",
+                                                                      "content": {
+                                                                        "type": "PATTERN",
+                                                                        "value": "REPLACED_TOKEN_WITH_QUOTE",
+                                                                        "flags": "i"
+                                                                      },
+                                                                      "named": false,
+                                                                      "value": "any_keyword:default:on:select:values"
+                                                                    }
+                                                                  ]
+                                                                }
                                                               }
                                                             ]
                                                           },
@@ -16409,8 +16756,42 @@
                                             "type": "CHOICE",
                                             "members": [
                                               {
-                                                "type": "SYMBOL",
-                                                "name": "where"
+                                                "type": "CHOICE",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "where"
+                                                  },
+                                                  {
+                                                    "type": "PREC",
+                                                    "value": -10,
+                                                    "content": {
+                                                      "type": "CHOICE",
+                                                      "members": [
+                                                        {
+                                                          "type": "ALIAS",
+                                                          "content": {
+                                                            "type": "PATTERN",
+                                                            "value": "REPLACED_TOKEN",
+                                                            "flags": "i"
+                                                          },
+                                                          "named": false,
+                                                          "value": "any_keyword:from:returning:where"
+                                                        },
+                                                        {
+                                                          "type": "ALIAS",
+                                                          "content": {
+                                                            "type": "PATTERN",
+                                                            "value": "REPLACED_TOKEN_WITH_QUOTE",
+                                                            "flags": "i"
+                                                          },
+                                                          "named": false,
+                                                          "value": "any_keyword:from:returning:where"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
                                               },
                                               {
                                                 "type": "BLANK"
@@ -18999,6 +19380,65 @@
               {
                 "type": "SYMBOL",
                 "name": "lateral_cross_join"
+              },
+              {
+                "type": "PREC",
+                "value": -10,
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "l",
+                        "flags": "i"
+                      },
+                      "named": false,
+                      "value": "any_keyword:lateral:left:limit"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "o",
+                        "flags": "i"
+                      },
+                      "named": false,
+                      "value": "any_keyword:offset:order"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "w",
+                        "flags": "i"
+                      },
+                      "named": false,
+                      "value": "any_keyword:where:window"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "REPLACED_TOKEN",
+                        "flags": "i"
+                      },
+                      "named": false,
+                      "value": "any_keyword:cross:full:group:having:inner:join:lateral:left:limit:natural:offset:order:right:where:window"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "PATTERN",
+                        "value": "REPLACED_TOKEN_WITH_QUOTE",
+                        "flags": "i"
+                      },
+                      "named": false,
+                      "value": "any_keyword:cross:full:group:having:inner:join:lateral:left:limit:natural:offset:order:right:where:window"
+                    }
+                  ]
+                }
               }
             ]
           }

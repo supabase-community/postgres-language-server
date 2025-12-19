@@ -759,7 +759,28 @@ module.exports = grammar({
         choice(
           $._ddl_statement,
           $._dml_write,
-          optional_parenthesis($._dml_read)
+          optional_parenthesis($._dml_read),
+          oneOfKeywords([
+            "alter",
+            "comment",
+            "copy",
+            "create",
+            "delete",
+            "drop",
+            "grant",
+            "insert",
+            "merge",
+            "reset",
+            "revoke",
+            "select",
+            "set",
+            "show",
+            "truncate",
+            "unload",
+            "update",
+            "vacuum",
+            "with",
+          ])
         )
       ),
 
@@ -1003,7 +1024,25 @@ module.exports = grammar({
           $.create_extension,
           $.create_trigger,
           $.create_policy,
-          prec.left(seq($.create_schema, repeat($._create_statement)))
+          prec.left(seq($.create_schema, repeat($._create_statement))),
+          seq(
+            completableKeyword($, "create", { minLength: 2 }),
+            oneOfKeywords([
+              "database",
+              "extension",
+              "function",
+              "index",
+              "materialized",
+              "policy",
+              "role",
+              "schema",
+              "sequence",
+              "table",
+              "trigger",
+              "type",
+              "view",
+            ])
+          )
         )
       ),
 
@@ -1708,7 +1747,21 @@ module.exports = grammar({
           $.alter_database,
           $.alter_role,
           $.alter_sequence,
-          $.alter_policy
+          $.alter_policy,
+          seq(
+            completableKeyword($, "alter", { minLength: 2 }),
+            oneOfKeywords([
+              "database",
+              "index",
+              "policy",
+              "role",
+              "schema",
+              "sequence",
+              "table",
+              "type",
+              "view",
+            ])
+          )
         )
       ),
 
@@ -2082,7 +2135,23 @@ module.exports = grammar({
           $.drop_sequence,
           $.drop_extension,
           $.drop_function,
-          $.drop_policy
+          $.drop_policy,
+          seq(
+            completableKeyword($, "drop", { minLength: 2 }),
+            oneOfKeywords([
+              "database",
+              "extension",
+              "function",
+              "index",
+              "policy",
+              "role",
+              "schema",
+              "sequence",
+              "table",
+              "type",
+              "view",
+            ])
+          )
         )
       ),
 
@@ -2265,7 +2334,8 @@ module.exports = grammar({
         choice(
           seq($.keyword_default, $.keyword_values),
           $.insert_values,
-          $._select_statement
+          $._select_statement,
+          oneOfKeywords(["default", "on", "select", "values"])
         ),
         optional($._on_conflict)
       ),
@@ -2402,7 +2472,7 @@ module.exports = grammar({
         $.relation,
         $._set_values,
         // optional($.from),
-        optional($.where)
+        optional(choice($.where, oneOfKeywords(["from", "returning", "where"])))
       ),
 
     storage_location: ($) =>
@@ -2866,7 +2936,29 @@ module.exports = grammar({
         comma_list($.relation, true),
         optional($.index_hint),
         repeat(
-          choice($.join, $.cross_join, $.lateral_join, $.lateral_cross_join)
+          choice(
+            $.join,
+            $.cross_join,
+            $.lateral_join,
+            $.lateral_cross_join,
+            oneOfKeywords([
+              "cross",
+              "full",
+              "group",
+              "having",
+              "inner",
+              "join",
+              "lateral",
+              "left",
+              "limit",
+              "natural",
+              "offset",
+              "order",
+              "right",
+              "where",
+              "window",
+            ])
+          )
         ),
         optional($.where),
         optional($.group_by),
@@ -3718,22 +3810,54 @@ function completableKeyword($, keyword, opts = {}) {
 }
 
 /**
- * Provides an alternative node before we match any other keyword.
- * The LSP will be able to infer the possible keywords from the node kind.
+ * Provides alternatives for ambiguous keyword prefixes.
+ * For each prefix that matches multiple keywords, creates an alias like:
+ *   any_keyword:select:set (for "se" which matches both)
  *
  * @param {string[]} keywords
  */
 function oneOfKeywords(keywords) {
-  const kwAlias = `any_keyword:${keywords.join(":")}`;
+  const allKwAlias = `any_keyword:${keywords.join(":")}`;
 
-  const anything = new RegExp("[a-z]", "i");
+  // find all ambiguous prefixes and group keywords by prefix
+  const prefixToKeywords = new Map();
 
-  return prec(
-    -10, // low precedence, since this should serve as a fallback
-    choice(
-      alias(anything, kwAlias),
-      alias(new RegExp("REPLACED_TOKEN", "i"), kwAlias),
-      alias(new RegExp("REPLACED_TOKEN_WITH_QUOTE", "i"), kwAlias)
-    )
-  );
+  for (const kw of keywords) {
+    for (let len = 1; len < kw.length; len++) {
+      const prefix = kw.substring(0, len);
+      if (!prefixToKeywords.has(prefix)) {
+        prefixToKeywords.set(prefix, []);
+      }
+      prefixToKeywords.get(prefix).push(kw);
+    }
+  }
+
+  // build choices for ambiguous prefixes (those matching 2+ keywords)
+  const choices = [];
+
+  // group ambiguous prefixes by their matching keyword set
+  const keywordSetToPrefix = new Map();
+  for (const [prefix, matchingKws] of prefixToKeywords) {
+    if (matchingKws.length >= 2) {
+      const key = matchingKws.sort().join(":");
+      if (!keywordSetToPrefix.has(key)) {
+        keywordSetToPrefix.set(key, []);
+      }
+      keywordSetToPrefix.get(key).push(prefix);
+    }
+  }
+
+  // create a regex for each unique keyword set
+  for (const [keySet, prefixes] of keywordSetToPrefix) {
+    const sortedPrefixes = prefixes.sort((a, b) => b.length - a.length);
+    const pattern = sortedPrefixes.join("|");
+    const alias_name = `any_keyword:${keySet}`;
+    choices.push(alias(new RegExp(pattern, "i"), alias_name));
+  }
+
+  // always include REPLACED_TOKEN with all keywords
+  choices.push(alias(new RegExp("REPLACED_TOKEN", "i"), allKwAlias));
+  choices.push(alias(new RegExp("REPLACED_TOKEN_WITH_QUOTE", "i"), allKwAlias));
+
+  return prec(-10, choice(...choices));
 }

@@ -9101,6 +9101,10 @@
           "named": true
         },
         {
+          "type": "keyword_alter",
+          "named": true
+        },
+        {
           "type": "keyword_analyze",
           "named": true
         },
@@ -9117,6 +9121,10 @@
           "named": true
         },
         {
+          "type": "keyword_create",
+          "named": true
+        },
+        {
           "type": "keyword_csv",
           "named": true
         },
@@ -9126,6 +9134,10 @@
         },
         {
           "type": "keyword_delimiter",
+          "named": true
+        },
+        {
+          "type": "keyword_drop",
           "named": true
         },
         {
@@ -11324,6 +11336,86 @@
   },
   {
     "type": "`",
+    "named": false
+  },
+  {
+    "type": "any_keyword:alter:comment:copy:create:delete:drop:grant:insert:merge:reset:revoke:select:set:show:truncate:unload:update:vacuum:with",
+    "named": false
+  },
+  {
+    "type": "any_keyword:comment:copy",
+    "named": false
+  },
+  {
+    "type": "any_keyword:comment:copy:create",
+    "named": false
+  },
+  {
+    "type": "any_keyword:cross:full:group:having:inner:join:lateral:left:limit:natural:offset:order:right:where:window",
+    "named": false
+  },
+  {
+    "type": "any_keyword:database:extension:function:index:materialized:policy:role:schema:sequence:table:trigger:type:view",
+    "named": false
+  },
+  {
+    "type": "any_keyword:database:extension:function:index:policy:role:schema:sequence:table:type:view",
+    "named": false
+  },
+  {
+    "type": "any_keyword:database:index:policy:role:schema:sequence:table:type:view",
+    "named": false
+  },
+  {
+    "type": "any_keyword:default:on:select:values",
+    "named": false
+  },
+  {
+    "type": "any_keyword:delete:drop",
+    "named": false
+  },
+  {
+    "type": "any_keyword:from:returning:where",
+    "named": false
+  },
+  {
+    "type": "any_keyword:lateral:left:limit",
+    "named": false
+  },
+  {
+    "type": "any_keyword:offset:order",
+    "named": false
+  },
+  {
+    "type": "any_keyword:reset:revoke",
+    "named": false
+  },
+  {
+    "type": "any_keyword:schema:sequence",
+    "named": false
+  },
+  {
+    "type": "any_keyword:select:set",
+    "named": false
+  },
+  {
+    "type": "any_keyword:select:set:show",
+    "named": false
+  },
+  {
+    "type": "any_keyword:table:trigger:type",
+    "named": false
+  },
+  {
+    "type": "any_keyword:table:type",
+    "named": false
+  },
+  {
+    "type": "any_keyword:unload:update",
+    "named": false
+  },
+  {
+    "type": "any_keyword:where:window",
     "named": false
   },
   {
