@@ -721,8 +721,8 @@ module.exports = grammar({
       seq(
         optional(
           seq(
-            $.keyword_explain,
-            optional($.keyword_analyze),
+            completableKeyword($, "explain", { minLength: 1 }),
+            optional(completableKeyword($, "analyze", { minLength: 2 })),
             optional($.keyword_verbose)
           )
         ),
@@ -749,7 +749,7 @@ module.exports = grammar({
 
     _cte: ($) =>
       seq(
-        $.keyword_with,
+        completableKeyword($, "with", { minLength: 1 }),
         optional($.keyword_recursive),
         $.cte,
         repeat(seq(",", $.cte))
@@ -785,7 +785,7 @@ module.exports = grammar({
     // athena
     _unload_statement: ($) =>
       seq(
-        $.keyword_unload,
+        completableKeyword($, "unload", { minLength: 2 }),
         wrapped_in_parenthesis($._select_statement),
         $.keyword_to,
         $._single_quote_string,
@@ -793,7 +793,10 @@ module.exports = grammar({
       ),
 
     _show_statement: ($) =>
-      seq($.keyword_show, choice($.keyword_all, $.any_identifier)),
+      seq(
+        completableKeyword($, "show", { minLength: 2 }),
+        choice($.keyword_all, $.any_identifier)
+      ),
 
     cte: ($) =>
       seq(
@@ -835,7 +838,7 @@ module.exports = grammar({
 
     comment_statement: ($) =>
       seq(
-        $.keyword_comment,
+        completableKeyword($, "comment", { minLength: 4 }),
         $.keyword_on,
         $._comment_target,
         $.keyword_is,
@@ -929,7 +932,7 @@ module.exports = grammar({
 
     _truncate_statement: ($) =>
       seq(
-        $.keyword_truncate,
+        completableKeyword($, "truncate", { minLength: 1 }),
         optional($.keyword_table),
         optional($.keyword_only),
         comma_list($.table_reference, false),
@@ -949,7 +952,8 @@ module.exports = grammar({
         optional($.limit)
       ),
 
-    delete: ($) => seq($.keyword_delete, optional($.index_hint)),
+    delete: ($) =>
+      seq(completableKeyword($, "delete", { minLength: 2 }), optional($.index_hint)),
 
     _create_statement: ($) =>
       seq(
@@ -998,11 +1002,11 @@ module.exports = grammar({
     create_table: ($) =>
       prec.left(
         seq(
-          $.keyword_create,
+          completableKeyword($, "create", { minLength: 2 }),
           optional(
             choice($._temporary, $.keyword_unlogged, $.keyword_external)
           ),
-          $.keyword_table,
+          completableKeyword($, "table", { minLength: 2 }),
           optional($._if_not_exists),
           $.object_reference,
           choice(
@@ -1018,8 +1022,8 @@ module.exports = grammar({
 
     create_policy: ($) =>
       seq(
-        $.keyword_create,
-        $.keyword_policy,
+        completableKeyword($, "create", { minLength: 2 }),
+        completableKeyword($, "policy", { minLength: 1 }),
         $.any_identifier,
         $.keyword_on,
         $.table_reference,
@@ -1044,7 +1048,7 @@ module.exports = grammar({
 
     alter_policy: ($) =>
       seq(
-        seq($.keyword_alter, $.keyword_policy, $.policy_identifier),
+        seq(completableKeyword($, "alter", { minLength: 2 }), $.keyword_policy, $.policy_identifier),
         optional(
           seq(
             $.keyword_on,
@@ -1063,7 +1067,7 @@ module.exports = grammar({
     drop_policy: ($) =>
       seq(
         seq(
-          $.keyword_drop,
+          completableKeyword($, "drop", { minLength: 2 }),
           $.keyword_policy,
           optional($._if_exists),
           $.policy_identifier
@@ -1113,7 +1117,7 @@ module.exports = grammar({
 
     set_statement: ($) =>
       seq(
-        $.keyword_set,
+        completableKeyword($, "set", { minLength: 2 }),
         choice(
           seq(
             optional(choice($.keyword_session, $.keyword_local)),
@@ -1166,11 +1170,11 @@ module.exports = grammar({
     create_view: ($) =>
       prec.right(
         seq(
-          $.keyword_create,
+          completableKeyword($, "create", { minLength: 2 }),
           optional($._or_replace),
           optional($._temporary),
           optional($.keyword_recursive),
-          $.keyword_view,
+          completableKeyword($, "view", { minLength: 1 }),
           $.object_reference,
           optional(paren_list($.any_identifier, true)),
           unknown_until(
@@ -1193,7 +1197,7 @@ module.exports = grammar({
     create_materialized_view: ($) =>
       prec.right(
         seq(
-          $.keyword_create,
+          completableKeyword($, "create", { minLength: 2 }),
           $.keyword_materialized,
           $.keyword_view,
           optional($._if_not_exists),
@@ -1219,9 +1223,9 @@ module.exports = grammar({
 
     create_function: ($) =>
       seq(
-        $.keyword_create,
+        completableKeyword($, "create", { minLength: 2 }),
         optional($._or_replace),
-        $.keyword_function,
+        completableKeyword($, "function", { minLength: 1 }),
         $.object_reference,
         $.function_arguments,
         $.keyword_returns,
@@ -1395,9 +1399,9 @@ module.exports = grammar({
 
     create_index: ($) =>
       seq(
-        $.keyword_create,
+        completableKeyword($, "create", { minLength: 2 }),
         optional($.keyword_unique),
-        $.keyword_index,
+        completableKeyword($, "index", { minLength: 1 }),
         optional($.keyword_concurrently),
         optional(seq(optional($._if_not_exists), field("column", $._column))),
         $.keyword_on,
@@ -1425,8 +1429,8 @@ module.exports = grammar({
     create_schema: ($) =>
       prec.left(
         seq(
-          $.keyword_create,
-          $.keyword_schema,
+          completableKeyword($, "create", { minLength: 2 }),
+          completableKeyword($, "schema", { minLength: 2 }),
           choice(
             seq(
               optional($._if_not_exists),
@@ -1457,8 +1461,8 @@ module.exports = grammar({
 
     create_database: ($) =>
       seq(
-        $.keyword_create,
-        $.keyword_database,
+        completableKeyword($, "create", { minLength: 2 }),
+        completableKeyword($, "database", { minLength: 1 }),
         optional($._if_not_exists),
         $.any_identifier,
         optional($.keyword_with),
@@ -1467,7 +1471,7 @@ module.exports = grammar({
 
     create_role: ($) =>
       seq(
-        $.keyword_create,
+        completableKeyword($, "create", { minLength: 2 }),
         choice($.keyword_user, $.keyword_role, $.keyword_group),
         $.any_identifier,
         optional($.keyword_with),
@@ -1505,14 +1509,14 @@ module.exports = grammar({
 
     create_sequence: ($) =>
       seq(
-        $.keyword_create,
+        completableKeyword($, "create", { minLength: 2 }),
         optional(
           choice(
             choice($.keyword_temporary, $.keyword_temp),
             $.keyword_unlogged
           )
         ),
-        $.keyword_sequence,
+        completableKeyword($, "sequence", { minLength: 2 }),
         optional($._if_not_exists),
         $.object_reference,
         repeat(
@@ -1552,8 +1556,8 @@ module.exports = grammar({
 
     create_extension: ($) =>
       seq(
-        $.keyword_create,
-        $.keyword_extension,
+        completableKeyword($, "create", { minLength: 2 }),
+        completableKeyword($, "extension", { minLength: 1 }),
         optional($._if_not_exists),
         $.any_identifier,
         optional($.keyword_with),
@@ -1569,10 +1573,10 @@ module.exports = grammar({
 
     create_trigger: ($) =>
       seq(
-        $.keyword_create,
+        completableKeyword($, "create", { minLength: 2 }),
         optional($._or_replace),
         optional($.keyword_constraint),
-        $.keyword_trigger,
+        completableKeyword($, "trigger", { minLength: 2 }),
         $.object_reference,
         choice(
           $.keyword_before,
@@ -1627,8 +1631,8 @@ module.exports = grammar({
 
     create_type: ($) =>
       seq(
-        $.keyword_create,
-        $.keyword_type,
+        completableKeyword($, "create", { minLength: 2 }),
+        completableKeyword($, "type", { minLength: 2 }),
         $.object_reference,
         optional(
           seq(
@@ -1673,9 +1677,9 @@ module.exports = grammar({
 
     alter_table: ($) =>
       seq(
-        $.keyword_alter,
+        completableKeyword($, "alter", { minLength: 2 }),
         partialSeq(
-          $.keyword_table,
+          completableKeyword($, "table", { minLength: 2 }),
           optional($._if_exists),
           optional($.keyword_only),
           $.table_reference,
@@ -1722,7 +1726,7 @@ module.exports = grammar({
 
     drop_constraint: ($) =>
       partialSeq(
-        $.keyword_drop,
+        completableKeyword($, "drop", { minLength: 2 }),
         $.keyword_constraint,
         optional($._if_exists),
         $.any_identifier,
@@ -1732,7 +1736,7 @@ module.exports = grammar({
     alter_column: ($) =>
       partialSeq(
         // TODO constraint management
-        $.keyword_alter,
+        completableKeyword($, "alter", { minLength: 2 }),
         optional($.keyword_column),
         $.column_identifier,
         choice(
@@ -1768,7 +1772,7 @@ module.exports = grammar({
               seq($.keyword_default, $._expression)
             )
           ),
-          seq($.keyword_drop, $.keyword_default)
+          seq(completableKeyword($, "drop", { minLength: 2 }), $.keyword_default)
         )
       ),
 
@@ -1777,7 +1781,7 @@ module.exports = grammar({
 
     drop_column: ($) =>
       seq(
-        $.keyword_drop,
+        completableKeyword($, "drop", { minLength: 2 }),
         optional($.keyword_column),
         optional($._if_exists),
         $.column_identifier
@@ -1794,8 +1798,8 @@ module.exports = grammar({
 
     alter_view: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_view,
+        completableKeyword($, "alter", { minLength: 2 }),
+        completableKeyword($, "view", { minLength: 1 }),
         optional($._if_exists),
         $.object_reference,
         choice(
@@ -1809,8 +1813,8 @@ module.exports = grammar({
 
     alter_schema: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_schema,
+        completableKeyword($, "alter", { minLength: 2 }),
+        completableKeyword($, "schema", { minLength: 2 }),
         $.schema_identifier,
         choice($.keyword_rename, $.keyword_owner),
         $.keyword_to,
@@ -1819,8 +1823,8 @@ module.exports = grammar({
 
     alter_database: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_database,
+        completableKeyword($, "alter", { minLength: 2 }),
+        completableKeyword($, "database", { minLength: 1 }),
         $.any_identifier,
         optional($.keyword_with),
         choice(
@@ -1845,7 +1849,7 @@ module.exports = grammar({
 
     alter_role: ($) =>
       seq(
-        $.keyword_alter,
+        completableKeyword($, "alter", { minLength: 2 }),
         choice($.keyword_role, $.keyword_group, $.keyword_user),
         choice($.role_identifier, $.keyword_all),
         choice(
@@ -1882,14 +1886,14 @@ module.exports = grammar({
 
     alter_index: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_index,
+        completableKeyword($, "alter", { minLength: 2 }),
+        completableKeyword($, "index", { minLength: 1 }),
         optional($._if_exists),
         $.any_identifier,
         choice(
           $.rename_object,
           seq(
-            $.keyword_alter,
+            completableKeyword($, "alter", { minLength: 2 }),
             optional($.keyword_column),
             alias($._natural_number, $.literal),
             $.keyword_set,
@@ -1912,8 +1916,8 @@ module.exports = grammar({
 
     alter_sequence: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_sequence,
+        completableKeyword($, "alter", { minLength: 2 }),
+        completableKeyword($, "sequence", { minLength: 2 }),
         optional($._if_exists),
         $.object_reference,
         choice(
@@ -1965,8 +1969,8 @@ module.exports = grammar({
 
     alter_type: ($) =>
       seq(
-        $.keyword_alter,
-        $.keyword_type,
+        completableKeyword($, "alter", { minLength: 2 }),
+        completableKeyword($, "type", { minLength: 2 }),
         $.type_identifier,
         choice(
           $.change_ownership,
@@ -2003,13 +2007,13 @@ module.exports = grammar({
             choice(
               seq($.keyword_add, $.keyword_attribute, $.any_identifier, $.type),
               seq(
-                $.keyword_drop,
+                completableKeyword($, "drop", { minLength: 2 }),
                 $.keyword_attribute,
                 optional($._if_exists),
                 $.any_identifier
               ),
               seq(
-                $.keyword_alter,
+                completableKeyword($, "alter", { minLength: 2 }),
                 $.keyword_attribute,
                 $.any_identifier,
                 optional(seq($.keyword_set, $.keyword_data)),
@@ -2044,8 +2048,8 @@ module.exports = grammar({
 
     drop_table: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_table,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "table", { minLength: 2 }),
         optional($._if_exists),
         $.table_reference,
         optional($._drop_behavior)
@@ -2053,8 +2057,8 @@ module.exports = grammar({
 
     drop_view: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_view,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "view", { minLength: 1 }),
         optional($._if_exists),
         $.object_reference,
         optional($._drop_behavior)
@@ -2062,8 +2066,8 @@ module.exports = grammar({
 
     drop_schema: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_schema,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "schema", { minLength: 2 }),
         optional($._if_exists),
         $.schema_identifier,
         optional($._drop_behavior)
@@ -2071,8 +2075,8 @@ module.exports = grammar({
 
     drop_database: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_database,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "database", { minLength: 1 }),
         optional($._if_exists),
         $.any_identifier,
         optional($.keyword_with),
@@ -2081,7 +2085,7 @@ module.exports = grammar({
 
     drop_role: ($) =>
       seq(
-        $.keyword_drop,
+        completableKeyword($, "drop", { minLength: 2 }),
         choice($.keyword_group, $.keyword_role, $.keyword_user),
         optional($._if_exists),
         $.role_identifier
@@ -2089,8 +2093,8 @@ module.exports = grammar({
 
     drop_type: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_type,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "type", { minLength: 2 }),
         optional($._if_exists),
         $.type_reference,
         optional($._drop_behavior)
@@ -2098,8 +2102,8 @@ module.exports = grammar({
 
     drop_sequence: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_sequence,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "sequence", { minLength: 2 }),
         optional($._if_exists),
         $.object_reference,
         optional($._drop_behavior)
@@ -2107,8 +2111,8 @@ module.exports = grammar({
 
     drop_index: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_index,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "index", { minLength: 1 }),
         optional($.keyword_concurrently),
         optional($._if_exists),
         field("name", $.any_identifier),
@@ -2117,8 +2121,8 @@ module.exports = grammar({
 
     drop_extension: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_extension,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "extension", { minLength: 1 }),
         optional($._if_exists),
         comma_list($.any_identifier, true),
         optional(choice($.keyword_cascade, $.keyword_restrict))
@@ -2126,8 +2130,8 @@ module.exports = grammar({
 
     drop_function: ($) =>
       seq(
-        $.keyword_drop,
-        $.keyword_function,
+        completableKeyword($, "drop", { minLength: 2 }),
+        completableKeyword($, "function", { minLength: 1 }),
         optional($._if_exists),
         $.function_reference,
         optional($._drop_behavior)
@@ -2155,7 +2159,7 @@ module.exports = grammar({
 
     _copy_statement: ($) =>
       seq(
-        $.keyword_copy,
+        completableKeyword($, "copy", { minLength: 3 }),
         $.table_reference,
         $._column_list,
         $.keyword_from,
@@ -2206,8 +2210,8 @@ module.exports = grammar({
 
     insert: ($) =>
       partialSeq(
-        $.keyword_insert,
-        $.keyword_into,
+        completableKeyword($, "insert", { minLength: 1 }),
+        completableKeyword($, "into", { minLength: 1 }),
         $.table_reference,
         optional($.alias),
         optional($.insert_columns),
@@ -2229,7 +2233,7 @@ module.exports = grammar({
     insert_values: ($) =>
       comma_list(
         seq(
-          $.keyword_values,
+          completableKeyword($, "values", { minLength: 1 }),
           paren_list(choice($._expression, $.keyword_default), true)
         ),
         true
@@ -2264,7 +2268,7 @@ module.exports = grammar({
 
     _merge_statement: ($) =>
       seq(
-        $.keyword_merge,
+        completableKeyword($, "merge", { minLength: 1 }),
         $.keyword_into,
         $.table_reference,
         optional($.alias),
@@ -2319,7 +2323,7 @@ module.exports = grammar({
 
     _vacuum_table: ($) =>
       seq(
-        $.keyword_vacuum,
+        completableKeyword($, "vacuum", { minLength: 1 }),
         optional($._vacuum_option),
         optional($.keyword_only),
         $.table_reference,
@@ -2353,7 +2357,7 @@ module.exports = grammar({
 
     update: ($) =>
       partialSeq(
-        $.keyword_update,
+        completableKeyword($, "update", { minLength: 2 }),
         optional($.keyword_only),
         $.relation,
         $._set_values,
@@ -2817,7 +2821,7 @@ module.exports = grammar({
 
     from: ($) =>
       seq(
-        $.keyword_from,
+        completableKeyword($, "from", { minLength: 1 }),
         optional($.keyword_only),
         comma_list($.relation, true),
         optional($.index_hint),
@@ -2870,7 +2874,7 @@ module.exports = grammar({
           )
         ),
         partialSeq(
-          $.keyword_join,
+          completableKeyword($, "join", { minLength: 1 }),
           $.relation,
           optional($.index_hint),
           optional($.join),
@@ -2885,7 +2889,7 @@ module.exports = grammar({
       seq(
         $.keyword_cross,
         partialSeq(
-          $.keyword_join,
+          completableKeyword($, "join", { minLength: 1 }),
           $.relation,
           optional(
             seq(
@@ -2914,7 +2918,7 @@ module.exports = grammar({
           )
         ),
         partialSeq(
-          $.keyword_join,
+          completableKeyword($, "join", { minLength: 1 }),
           $.keyword_lateral,
           choice($.invocation, $.subquery),
           optional(
@@ -2932,7 +2936,7 @@ module.exports = grammar({
       seq(
         $.keyword_cross,
         partialSeq(
-          $.keyword_join,
+          completableKeyword($, "join", { minLength: 1 }),
           $.keyword_lateral,
           choice($.invocation, $.subquery),
           optional(
@@ -2944,21 +2948,27 @@ module.exports = grammar({
         )
       ),
 
-    where: ($) => seq($.keyword_where, field("predicate", $._expression)),
+    where: ($) =>
+      seq(completableKeyword($, "where", { minLength: 1 }), field("predicate", $._expression)),
 
     group_by: ($) =>
       seq(
-        $.keyword_group,
+        completableKeyword($, "group", { minLength: 1 }),
         $.keyword_by,
         comma_list($._expression, true),
         optional($._having)
       ),
 
-    _having: ($) => seq($.keyword_having, $._expression),
+    _having: ($) =>
+      seq(completableKeyword($, "having", { minLength: 1 }), $._expression),
 
     order_by: ($) =>
       prec.right(
-        seq($.keyword_order, $.keyword_by, comma_list($.order_target, true))
+        seq(
+          completableKeyword($, "order", { minLength: 1 }),
+          $.keyword_by,
+          comma_list($.order_target, true)
+        )
       ),
 
     order_target: ($) =>
@@ -2977,16 +2987,19 @@ module.exports = grammar({
         )
       ),
 
-    limit: ($) => seq($.keyword_limit, $.literal, optional($.offset)),
+    limit: ($) =>
+      seq(completableKeyword($, "limit", { minLength: 1 }), $.literal, optional($.offset)),
 
-    offset: ($) => seq($.keyword_offset, $.literal),
+    offset: ($) =>
+      seq(completableKeyword($, "offset", { minLength: 2 }), $.literal),
 
-    returning: ($) => seq($.keyword_returning, $.select_expression),
+    returning: ($) =>
+      seq(completableKeyword($, "returning", { minLength: 3 }), $.select_expression),
 
     grant_statement: ($) =>
       prec.left(
         seq(
-          $.keyword_grant,
+          completableKeyword($, "grant", { minLength: 1 }),
           $.grantables,
           $.keyword_to,
           comma_list($.role_specification, true),

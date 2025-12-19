@@ -157,7 +157,7 @@
     },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "array",
@@ -828,7 +828,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "add_column",
@@ -4626,7 +4626,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "index_hint",
@@ -4770,7 +4770,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "any_identifier",
@@ -4937,7 +4937,7 @@
     },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "keyword_cascade",
@@ -6582,7 +6582,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "alias",
@@ -6996,7 +6996,7 @@
     },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "index_hint",
@@ -7191,7 +7191,7 @@
     },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "array",
@@ -8922,7 +8922,7 @@
     },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "alias",
@@ -10646,7 +10646,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "assignment",
@@ -11081,7 +11081,7 @@
     },
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "keyword_where",
@@ -12721,7 +12721,107 @@
     "named": true
   },
   {
+    "type": "partial_keyword:alter",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:analyze",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:comment",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:copy",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:create",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:database",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:delete",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:drop",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:explain",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:extension",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:from",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:function",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:grant",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:group",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:having",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:index",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:insert",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:into",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:join",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:limit",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:merge",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:offset",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:order",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:policy",
+    "named": false
+  },
+  {
     "type": "partial_keyword:reset",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:returning",
     "named": false
   },
   {
@@ -12729,7 +12829,67 @@
     "named": false
   },
   {
+    "type": "partial_keyword:schema",
+    "named": false
+  },
+  {
     "type": "partial_keyword:select",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:sequence",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:set",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:show",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:table",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:trigger",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:truncate",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:type",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:unload",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:update",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:vacuum",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:values",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:view",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:where",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:with",
     "named": false
   }
 ]
