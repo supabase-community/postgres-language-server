@@ -2,12 +2,33 @@ use pgls_analyse::RuleFilter;
 
 use std::str::FromStr;
 
-use crate::{Rules, linter::RuleGroup};
+/// Represents a rule group from any analyzer (linter or splinter)
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum AnalyzerGroup {
+    Linter(crate::linter::RuleGroup),
+    Splinter(crate::splinter::RuleGroup),
+}
+
+impl AnalyzerGroup {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Linter(group) => group.as_str(),
+            Self::Splinter(group) => group.as_str(),
+        }
+    }
+
+    pub const fn category_prefix(&self) -> &'static str {
+        match self {
+            Self::Linter(_) => "lint",
+            Self::Splinter(_) => "splinter",
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum RuleSelector {
-    Group(RuleGroup),
-    Rule(RuleGroup, &'static str),
+    Group(AnalyzerGroup),
+    Rule(AnalyzerGroup, &'static str),
 }
 
 impl From<RuleSelector> for RuleFilter<'static> {
@@ -31,20 +52,56 @@ impl<'a> From<&'a RuleSelector> for RuleFilter<'static> {
 impl FromStr for RuleSelector {
     type Err = &'static str;
     fn from_str(selector: &str) -> Result<Self, Self::Err> {
-        let selector = selector.strip_prefix("lint/").unwrap_or(selector);
-        if let Some((group_name, rule_name)) = selector.split_once('/') {
-            let group = RuleGroup::from_str(group_name)?;
-            if let Some(rule_name) = Rules::has_rule(group, rule_name) {
-                Ok(RuleSelector::Rule(group, rule_name))
-            } else {
-                Err("This rule doesn't exist.")
+        // Try to detect the analyzer from the prefix
+        let (analyzer_type, rest) = if let Some(rest) = selector.strip_prefix("lint/") {
+            ("lint", rest)
+        } else if let Some(rest) = selector.strip_prefix("splinter/") {
+            ("splinter", rest)
+        } else {
+            // Default to lint for backward compatibility
+            ("lint", selector)
+        };
+
+        if let Some((group_name, rule_name)) = rest.split_once('/') {
+            // Parse as <group>/<rule>
+            match analyzer_type {
+                "lint" => {
+                    let group = crate::linter::RuleGroup::from_str(group_name)?;
+                    if let Some(rule_name) = crate::linter::Rules::has_rule(group, rule_name) {
+                        Ok(RuleSelector::Rule(AnalyzerGroup::Linter(group), rule_name))
+                    } else {
+                        Err("This rule doesn't exist.")
+                    }
+                }
+                "splinter" => {
+                    let group = crate::splinter::RuleGroup::from_str(group_name)?;
+                    if let Some(rule_name) = crate::splinter::Rules::has_rule(group, rule_name) {
+                        Ok(RuleSelector::Rule(
+                            AnalyzerGroup::Splinter(group),
+                            rule_name,
+                        ))
+                    } else {
+                        Err("This rule doesn't exist.")
+                    }
+                }
+                _ => Err("Unknown analyzer type."),
             }
         } else {
-            match RuleGroup::from_str(selector) {
-                Ok(group) => Ok(RuleSelector::Group(group)),
-                Err(_) => Err(
-                    "This group doesn't exist. Use the syntax `<group>/<rule>` to specify a rule.",
-                ),
+            // Parse as just <group>
+            match analyzer_type {
+                "lint" => match crate::linter::RuleGroup::from_str(rest) {
+                    Ok(group) => Ok(RuleSelector::Group(AnalyzerGroup::Linter(group))),
+                    Err(_) => Err(
+                        "This group doesn't exist. Use the syntax `<group>/<rule>` to specify a rule.",
+                    ),
+                },
+                "splinter" => match crate::splinter::RuleGroup::from_str(rest) {
+                    Ok(group) => Ok(RuleSelector::Group(AnalyzerGroup::Splinter(group))),
+                    Err(_) => Err(
+                        "This group doesn't exist. Use the syntax `<group>/<rule>` to specify a rule.",
+                    ),
+                },
+                _ => Err("Unknown analyzer type."),
             }
         }
     }
@@ -53,10 +110,15 @@ impl FromStr for RuleSelector {
 impl serde::Serialize for RuleSelector {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
-            RuleSelector::Group(group) => serializer.serialize_str(group.as_str()),
-            RuleSelector::Rule(group, rule_name) => {
+            RuleSelector::Group(group) => {
+                let prefix = group.category_prefix();
                 let group_name = group.as_str();
-                serializer.serialize_str(&format!("{group_name}/{rule_name}"))
+                serializer.serialize_str(&format!("{prefix}/{group_name}"))
+            }
+            RuleSelector::Rule(group, rule_name) => {
+                let prefix = group.category_prefix();
+                let group_name = group.as_str();
+                serializer.serialize_str(&format!("{prefix}/{group_name}/{rule_name}"))
             }
         }
     }
@@ -68,7 +130,7 @@ impl<'de> serde::Deserialize<'de> for RuleSelector {
         impl serde::de::Visitor<'_> for Visitor {
             type Value = RuleSelector;
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("<group>/<ruyle_name>")
+                formatter.write_str("<group>/<rule_name>")
             }
             fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
                 match RuleSelector::from_str(v) {

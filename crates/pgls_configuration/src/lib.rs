@@ -9,6 +9,7 @@ pub mod linter;
 pub mod migrations;
 pub mod plpgsql_check;
 pub mod rules;
+pub mod splinter;
 pub mod typecheck;
 pub mod vcs;
 
@@ -37,7 +38,7 @@ use plpgsql_check::{
     partial_pl_pg_sql_check_configuration,
 };
 pub use rules::{
-    RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleSelector,
+    AnalyzerGroup, RuleConfiguration, RuleFixConfiguration, RulePlainConfiguration, RuleSelector,
     RuleWithFixOptions, RuleWithOptions,
 };
 use serde::{Deserialize, Serialize};

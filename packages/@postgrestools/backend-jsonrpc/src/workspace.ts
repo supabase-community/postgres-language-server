@@ -381,11 +381,11 @@ export interface PartialLinterConfiguration {
 	 */
 	enabled?: boolean;
 	/**
-	 * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
+	 * A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
 	 */
 	ignore?: StringSet;
 	/**
-	 * A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.
+	 * A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
 	 */
 	include?: StringSet;
 	/**
