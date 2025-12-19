@@ -1,34 +1,9 @@
-create table
-  unknown_users (id serial primary key, address text, email text);
+s * from auth.users;
+se * from auth.users;
+sel * from auth.users;
+sele * from auth.users;
+selec * from auth.users;
+select * from auth.users;
 
-drop table unknown_users;
-
-select
-  *
-from
-  unknown_users;
-
-sel 1;
-
-
-
-create function test_organisation_id ()
-    returns setof text
-    language plpgsql
-    security invoker
-    as $$
-    declre
-        v_organisation_id uuid;
-begin
-    return next is(private.organisation_id(), v_organisation_id, 'should return organisation_id of token');
-end
-$$;
-
-
-create function f1()
-returns void as $$
-declare b constant int;
-begin
-  call p1(10, b);
-end;
-$$ language plpgsql;
+REV ALL PRIVILEGES ON kinds FROM manuel;
+RES timezone;

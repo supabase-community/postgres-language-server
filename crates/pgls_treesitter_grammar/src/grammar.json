@@ -6268,8 +6268,23 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "keyword_select"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "keyword_select"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "selec|sele|sel",
+                "flags": "gi"
+              },
+              "named": false,
+              "value": "partial_keyword:select"
+            }
+          ]
         },
         {
           "type": "SEQ",
@@ -7308,8 +7323,23 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "keyword_reset"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "keyword_reset"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "PATTERN",
+                "value": "rese|res",
+                "flags": "gi"
+              },
+              "named": false,
+              "value": "partial_keyword:reset"
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -18992,8 +19022,23 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "keyword_revoke"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "keyword_revoke"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "PATTERN",
+                  "value": "revok|revo|rev",
+                  "flags": "gi"
+                },
+                "named": false,
+                "value": "partial_keyword:revoke"
+              }
+            ]
           },
           {
             "type": "CHOICE",

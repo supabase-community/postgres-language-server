@@ -12719,5 +12719,17 @@
   {
     "type": "parameter",
     "named": true
+  },
+  {
+    "type": "partial_keyword:reset",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:revoke",
+    "named": false
+  },
+  {
+    "type": "partial_keyword:select",
+    "named": false
   }
 ]

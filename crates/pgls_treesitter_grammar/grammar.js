@@ -913,7 +913,9 @@ module.exports = grammar({
 
     select: ($) =>
       seq(
-        $.keyword_select,
+        completableKeyword($, "select", {
+          minLength: 3,
+        }),
         seq(optional($.keyword_distinct), $.select_expression)
       ),
 
@@ -1086,7 +1088,10 @@ module.exports = grammar({
       ),
 
     reset_statement: ($) =>
-      seq($.keyword_reset, choice($.keyword_all, $.any_identifier)),
+      seq(
+        completableKeyword($, "reset", { minLength: 3 }),
+        choice($.keyword_all, $.any_identifier)
+      ),
 
     _transaction_mode: ($) =>
       seq(
@@ -2994,7 +2999,7 @@ module.exports = grammar({
     revoke_statement: ($) =>
       prec.left(
         seq(
-          $.keyword_revoke,
+          completableKeyword($, "revoke", { minLength: 3 }),
           optional(
             choice(
               seq($.keyword_grant, $.keyword_option, $.keyword_for),
@@ -3615,4 +3620,48 @@ function partialSeq(...rules) {
   }
 
   return prec.left(finishedRule);
+}
+
+/**
+ *
+ * @typedef {Object} CompletableKeywordOpts
+ * @property {number} [minLength]
+ * @property {boolean} [unambiguous]
+ */
+
+/**
+ * @param {RuleRecord} $
+ * @param {string} keyword
+ * @param {CompletableKeywordOpts} [opts={}]
+ */
+function completableKeyword($, keyword, opts = {}) {
+  let matcher = "";
+
+  const minLength = opts.minLength ?? 1;
+  const unambiguous = opts.unambiguous ?? false;
+
+  for (let i = minLength; i < keyword.length; i++) {
+    if (matcher.length > 0) {
+      matcher += "|";
+    }
+
+    matcher += keyword.substring(0, i);
+  }
+
+  const reversedMatcher = matcher.split("|").toReversed().join("|");
+  const partialMatch = new RegExp(reversedMatcher, "ig");
+
+  const noMatchAlias = `partial_keyword:${keyword}`;
+
+  const options = [$[`keyword_${keyword}`], alias(partialMatch, noMatchAlias)];
+
+  if (unambiguous) {
+    options.push(alias(new RegExp("REPLACED_TOKEN", "i"), noMatchAlias));
+
+    options.push(
+      alias(new RegExp("REPLACED_TOKEN_WITH_QUOTE", "i"), noMatchAlias)
+    );
+  }
+
+  return choice(...options);
 }
