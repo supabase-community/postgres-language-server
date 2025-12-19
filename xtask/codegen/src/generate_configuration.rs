@@ -65,9 +65,6 @@ impl ToolConfig {
     fn category_prefix(&self) -> &'static str {
         match self.name {
             "linter" => "lint",
-            "splinter" => "splinter",
-            "assists" => "assists",
-            "pglinter" => "pglinter",
             _ => self.name,
         }
     }
