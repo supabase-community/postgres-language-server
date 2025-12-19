@@ -68,7 +68,37 @@ module.exports = grammar({
     program: ($) =>
       seq(
         // any number of transactions, statements, or blocks with a terminating ;
-        repeat(seq(choice($.transaction, $.statement, $.block), ";")),
+        repeat(
+          seq(
+            choice(
+              $.transaction,
+              $.statement,
+              $.block
+              // oneOfKeywords([
+              //   "select",
+              //   "create",
+              //   "alter",
+              //   "drop",
+              //   "vacuum",
+              //   "merge",
+              //   "comment",
+              //   "set",
+              //   "reset",
+              //   "revoke",
+              //   "grant",
+              //   "delete",
+              //   "insert",
+              //   "update",
+              //   "truncate",
+              //   "copy",
+              //   "select",
+              //   "show",
+              //   "unload",
+              // ])
+            ),
+            ";"
+          )
+        ),
         // optionally, a single statement without a terminating ;
         optional($.statement)
       ),
@@ -953,7 +983,10 @@ module.exports = grammar({
       ),
 
     delete: ($) =>
-      seq(completableKeyword($, "delete", { minLength: 2 }), optional($.index_hint)),
+      seq(
+        completableKeyword($, "delete", { minLength: 2 }),
+        optional($.index_hint)
+      ),
 
     _create_statement: ($) =>
       seq(
@@ -1048,7 +1081,11 @@ module.exports = grammar({
 
     alter_policy: ($) =>
       seq(
-        seq(completableKeyword($, "alter", { minLength: 2 }), $.keyword_policy, $.policy_identifier),
+        seq(
+          completableKeyword($, "alter", { minLength: 2 }),
+          $.keyword_policy,
+          $.policy_identifier
+        ),
         optional(
           seq(
             $.keyword_on,
@@ -1772,7 +1809,10 @@ module.exports = grammar({
               seq($.keyword_default, $._expression)
             )
           ),
-          seq(completableKeyword($, "drop", { minLength: 2 }), $.keyword_default)
+          seq(
+            completableKeyword($, "drop", { minLength: 2 }),
+            $.keyword_default
+          )
         )
       ),
 
@@ -2949,7 +2989,10 @@ module.exports = grammar({
       ),
 
     where: ($) =>
-      seq(completableKeyword($, "where", { minLength: 1 }), field("predicate", $._expression)),
+      seq(
+        completableKeyword($, "where", { minLength: 1 }),
+        field("predicate", $._expression)
+      ),
 
     group_by: ($) =>
       seq(
@@ -2988,13 +3031,20 @@ module.exports = grammar({
       ),
 
     limit: ($) =>
-      seq(completableKeyword($, "limit", { minLength: 1 }), $.literal, optional($.offset)),
+      seq(
+        completableKeyword($, "limit", { minLength: 1 }),
+        $.literal,
+        optional($.offset)
+      ),
 
     offset: ($) =>
       seq(completableKeyword($, "offset", { minLength: 2 }), $.literal),
 
     returning: ($) =>
-      seq(completableKeyword($, "returning", { minLength: 3 }), $.select_expression),
+      seq(
+        completableKeyword($, "returning", { minLength: 3 }),
+        $.select_expression
+      ),
 
     grant_statement: ($) =>
       prec.left(
@@ -3639,7 +3689,6 @@ function partialSeq(...rules) {
  *
  * @typedef {Object} CompletableKeywordOpts
  * @property {number} [minLength]
- * @property {boolean} [unambiguous]
  */
 
 /**
@@ -3651,7 +3700,6 @@ function completableKeyword($, keyword, opts = {}) {
   let matcher = "";
 
   const minLength = opts.minLength ?? 1;
-  const unambiguous = opts.unambiguous ?? false;
 
   for (let i = minLength; i < keyword.length; i++) {
     if (matcher.length > 0) {
@@ -3666,15 +3714,26 @@ function completableKeyword($, keyword, opts = {}) {
 
   const noMatchAlias = `partial_keyword:${keyword}`;
 
-  const options = [$[`keyword_${keyword}`], alias(partialMatch, noMatchAlias)];
+  return choice($[`keyword_${keyword}`], alias(partialMatch, noMatchAlias));
+}
 
-  if (unambiguous) {
-    options.push(alias(new RegExp("REPLACED_TOKEN", "i"), noMatchAlias));
+/**
+ * Provides an alternative node before we match any other keyword.
+ * The LSP will be able to infer the possible keywords from the node kind.
+ *
+ * @param {string[]} keywords
+ */
+function oneOfKeywords(keywords) {
+  const kwAlias = `any_keyword:${keywords.join(":")}`;
 
-    options.push(
-      alias(new RegExp("REPLACED_TOKEN_WITH_QUOTE", "i"), noMatchAlias)
-    );
-  }
+  const anything = new RegExp("[a-z]", "i");
 
-  return choice(...options);
+  return prec(
+    -10, // low precedence, since this should serve as a fallback
+    choice(
+      alias(anything, kwAlias),
+      alias(new RegExp("REPLACED_TOKEN", "i"), kwAlias),
+      alias(new RegExp("REPLACED_TOKEN_WITH_QUOTE", "i"), kwAlias)
+    )
+  );
 }
