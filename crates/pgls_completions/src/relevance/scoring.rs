@@ -59,6 +59,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
+            CompletionRelevanceData::Keyword(k) => k.to_ascii_lowercase(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
@@ -197,6 +198,8 @@ impl CompletionScore<'_> {
                 WrappingClause::DropRole | WrappingClause::AlterRole => 25,
                 _ => -50,
             },
+
+            CompletionRelevanceData::Keyword(_) => 0,
         }
     }
 
@@ -265,7 +268,9 @@ impl CompletionScore<'_> {
                 ctx.head_qualifier_sanitized()
             }
 
-            CompletionRelevanceData::Schema(_) | CompletionRelevanceData::Role(_) => None,
+            CompletionRelevanceData::Schema(_)
+            | CompletionRelevanceData::Role(_)
+            | CompletionRelevanceData::Keyword(_) => None,
         };
 
         if schema_from_qualifier.is_none() {
@@ -294,6 +299,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
             CompletionRelevanceData::Policy(p) => p.name.as_str(),
             CompletionRelevanceData::Role(r) => r.name.as_str(),
+            CompletionRelevanceData::Keyword(k) => k,
         }
     }
 
@@ -305,6 +311,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
             CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
             CompletionRelevanceData::Role(_) => None,
+            CompletionRelevanceData::Keyword(_) => None,
         }
     }
 

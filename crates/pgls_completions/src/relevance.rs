@@ -9,4 +9,5 @@ pub(crate) enum CompletionRelevanceData<'a> {
     Schema(&'a pgls_schema_cache::Schema),
     Policy(&'a pgls_schema_cache::Policy),
     Role(&'a pgls_schema_cache::Role),
+    Keyword(&'static str),
 }

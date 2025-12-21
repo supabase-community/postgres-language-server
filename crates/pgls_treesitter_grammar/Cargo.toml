@@ -23,3 +23,8 @@ cc = "1.2"
 insta                     = { version = "1.42.1" }
 pgls_test_utils.workspace = true
 tree-sitter               = "0.25.5"
+criterion.workspace       = true
+
+[[bench]]
+harness = false
+name    = "lookahead_iter"

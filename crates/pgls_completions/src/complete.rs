@@ -6,8 +6,8 @@ use crate::{
     builder::CompletionBuilder,
     item::CompletionItem,
     providers::{
-        complete_columns, complete_functions, complete_policies, complete_roles, complete_schemas,
-        complete_tables,
+        complete_columns, complete_functions, complete_keywords, complete_policies, complete_roles,
+        complete_schemas, complete_tables,
     },
     sanitization::SanitizedCompletionParams,
 };
@@ -43,6 +43,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
     complete_schemas(&ctx, sanitized_params.schema, &mut builder);
     complete_policies(&ctx, sanitized_params.schema, &mut builder);
     complete_roles(&ctx, sanitized_params.schema, &mut builder);
+    complete_keywords(&ctx, &mut builder);
 
     builder.finish()
 }
