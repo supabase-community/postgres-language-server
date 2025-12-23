@@ -1,86 +1,92 @@
 # Non-PostgreSQL Keywords in Grammar
 
-Keywords in `crates/pgls_completions/src/providers/keywords.rs` and the tree-sitter grammar that are **not** PostgreSQL keywords, but come from other SQL dialects.
+Keywords in `crates/pgls_completions/src/providers/keywords.rs` and the tree-sitter grammar that are **not** native PostgreSQL keywords, but come from other SQL dialects.
 
-Reference: [PostgreSQL SQL Key Words Documentation](https://www.postgresql.org/docs/current/sql-keywords-appendix.html)
+## Verification Sources
+
+- [PostgreSQL SQL Key Words Documentation](https://www.postgresql.org/docs/current/sql-keywords-appendix.html)
+- [PostgreSQL Data Types](https://www.postgresql.org/docs/current/datatype.html)
+- [PostgreSQL SQL Commands](https://www.postgresql.org/docs/current/sql-commands.html)
 
 ---
 
 ## MySQL-Specific Keywords
 
-| Keyword | Description |
-|---------|-------------|
-| `auto_increment` | MySQL auto-incrementing column syntax (PostgreSQL uses `SERIAL` or `GENERATED AS IDENTITY`) |
-| `change` | MySQL `ALTER TABLE ... CHANGE COLUMN` syntax |
-| `delayed` | MySQL `INSERT DELAYED` syntax |
-| `duplicate` | MySQL `ON DUPLICATE KEY` syntax |
-| `engine` | MySQL storage engine specification (e.g., `ENGINE=InnoDB`) |
-| `escaped` | MySQL `LOAD DATA ... ESCAPED BY` syntax |
-| `fields` | MySQL `LOAD DATA ... FIELDS` syntax (PostgreSQL uses `COLUMNS` in some contexts) |
-| `follows` | MySQL trigger ordering (`FOLLOWS other_trigger`) |
-| `high_priority` | MySQL query priority hint |
-| `ignore` | MySQL `INSERT IGNORE` / `LOAD DATA ... IGNORE` syntax |
-| `lines` | MySQL `LOAD DATA ... LINES` syntax |
-| `low_priority` | MySQL query priority hint |
-| `mediumint` | MySQL-specific integer type (24-bit) |
-| `modify` | MySQL `ALTER TABLE ... MODIFY COLUMN` syntax |
-| `optimize` | MySQL `OPTIMIZE TABLE` command |
-| `separator` | MySQL `GROUP_CONCAT ... SEPARATOR` syntax |
-| `terminated` | MySQL/Hive `FIELDS TERMINATED BY` syntax |
-| `unsigned` | MySQL unsigned integer modifier |
-| `use` | MySQL `USE database` command |
-| `wait` | MySQL locking hint |
-| `zerofill` | MySQL zero-padding display modifier |
+These keywords are MySQL-specific and have no equivalent syntax in PostgreSQL:
+
+| Keyword | Description | Verification |
+|---------|-------------|--------------|
+| `auto_increment` | MySQL auto-incrementing column syntax | PostgreSQL uses `SERIAL` or `GENERATED AS IDENTITY` |
+| `change` | MySQL `ALTER TABLE ... CHANGE COLUMN` | PostgreSQL uses `ALTER COLUMN` |
+| `delayed` | MySQL `INSERT DELAYED` | No PostgreSQL equivalent |
+| `duplicate` | MySQL `ON DUPLICATE KEY` | PostgreSQL uses `ON CONFLICT` |
+| `engine` | MySQL storage engine (e.g., `ENGINE=InnoDB`) | PostgreSQL has no storage engines |
+| `escaped` | MySQL `LOAD DATA ... ESCAPED BY` | PostgreSQL COPY uses `ESCAPE` differently |
+| `fields` | MySQL `LOAD DATA ... FIELDS` | PostgreSQL COPY uses different syntax |
+| `follows` | MySQL trigger ordering (`FOLLOWS other_trigger`) | No PostgreSQL equivalent |
+| `high_priority` | MySQL query priority hint | No PostgreSQL equivalent |
+| `ignore` | MySQL `INSERT IGNORE` | PostgreSQL uses `ON CONFLICT DO NOTHING` |
+| `lines` | MySQL `LOAD DATA ... LINES` | No PostgreSQL equivalent |
+| `low_priority` | MySQL query priority hint | No PostgreSQL equivalent |
+| `mediumint` | MySQL 3-byte integer type | [Not in PostgreSQL](https://dev.to/kellyblaire/real-life-examples-of-choosing-integer-types-in-mysql-postgresql-183m) - use `INTEGER` |
+| `modify` | MySQL `ALTER TABLE ... MODIFY COLUMN` | PostgreSQL uses `ALTER COLUMN` |
+| `optimize` | MySQL `OPTIMIZE TABLE` | PostgreSQL uses `VACUUM` |
+| `separator` | MySQL `GROUP_CONCAT ... SEPARATOR` | PostgreSQL uses `string_agg()` with different syntax |
+| `terminated` | MySQL/Hive `FIELDS TERMINATED BY` | No PostgreSQL equivalent |
+| `unsigned` | MySQL unsigned integer modifier | [Not supported in PostgreSQL](https://github.com/jbranchaud/til/blob/master/postgres/postgres-does-not-support-unsigned-integers.md) |
+| `use` | MySQL `USE database` | PostgreSQL uses `\c` or `SET search_path` |
+| `wait` | MySQL locking hint | No PostgreSQL equivalent |
+| `zerofill` | MySQL zero-padding display modifier | No PostgreSQL equivalent |
 
 ---
 
 ## SQL Server (T-SQL) Specific Keywords
 
-| Keyword | Description |
-|---------|-------------|
-| `datetime` | SQL Server datetime type (PostgreSQL uses `TIMESTAMP`) |
-| `datetime2` | SQL Server datetime2 type |
-| `datetimeoffset` | SQL Server datetimeoffset type (PostgreSQL uses `TIMESTAMPTZ`) |
-| `image` | SQL Server legacy binary type (deprecated, use `VARBINARY(MAX)`) |
-| `nvarchar` | SQL Server national varchar type |
-| `object_id` | SQL Server system function/identifier |
-| `smalldatetime` | SQL Server smalldatetime type |
-| `smallmoney` | SQL Server smallmoney type |
-| `tinyint` | SQL Server/MySQL 8-bit integer (PostgreSQL uses `SMALLINT`) |
+| Keyword | Description | Verification |
+|---------|-------------|--------------|
+| `datetime` | SQL Server datetime type | [PostgreSQL uses `TIMESTAMP`](https://www.postgresql.org/docs/current/datatype-datetime.html) |
+| `datetime2` | SQL Server datetime2 type | No PostgreSQL equivalent |
+| `datetimeoffset` | SQL Server datetimeoffset type | PostgreSQL uses `TIMESTAMPTZ` |
+| `image` | SQL Server legacy binary type | PostgreSQL uses `BYTEA` |
+| `nvarchar` | SQL Server national varchar | PostgreSQL uses `VARCHAR` (no separate national type) |
+| `object_id` | SQL Server system function/identifier | No PostgreSQL equivalent |
+| `smalldatetime` | SQL Server smalldatetime type | No PostgreSQL equivalent |
+| `smallmoney` | SQL Server smallmoney type | PostgreSQL uses `MONEY` or `NUMERIC` |
+| `tinyint` | SQL Server/MySQL 8-bit integer | [Not in PostgreSQL](https://dev.to/kellyblaire/real-life-examples-of-choosing-integer-types-in-mysql-postgresql-183m) - use `SMALLINT` |
 
 ---
 
 ## Hive/Impala/Spark (Big Data) Specific Keywords
 
-| Keyword | Description |
-|---------|-------------|
-| `avro` | Hive file format |
-| `bin_pack` | Impala optimization hint |
-| `cached` | Impala table caching |
-| `compute` | Impala `COMPUTE STATS` command |
-| `delimited` | Hive `ROW FORMAT DELIMITED` syntax |
-| `incremental` | Impala `COMPUTE INCREMENTAL STATS` |
-| `jsonfile` | Hive JSON file format |
-| `metadata` | Hive/Impala metadata operations |
-| `noscan` | Impala `COMPUTE STATS ... NOSCAN` option |
-| `orc` | Hive ORC file format |
-| `overwrite` | Hive `INSERT OVERWRITE` syntax |
-| `parquet` | Hive/Spark Parquet file format |
-| `rcfile` | Hive RCFile format |
-| `sequencefile` | Hive SequenceFile format |
-| `sort` | Hive `SORT BY` clause |
-| `stats` | Impala/Hive statistics operations |
-| `stored` | Hive `STORED AS` clause |
-| `tblproperties` | Hive table properties |
-| `textfile` | Hive text file format |
-| `uncached` | Impala table caching control |
-| `unload` | Redshift/Hive `UNLOAD` command |
+| Keyword | Description | Verification |
+|---------|-------------|--------------|
+| `avro` | Hive Avro file format | No PostgreSQL equivalent |
+| `bin_pack` | Impala optimization hint | No PostgreSQL equivalent |
+| `cached` | Impala table caching | No PostgreSQL equivalent |
+| `compute` | Impala `COMPUTE STATS` | PostgreSQL uses `ANALYZE` |
+| `delimited` | Hive `ROW FORMAT DELIMITED` | No PostgreSQL equivalent |
+| `incremental` | Impala `COMPUTE INCREMENTAL STATS` | No PostgreSQL equivalent |
+| `jsonfile` | Hive JSON file format | No PostgreSQL equivalent |
+| `metadata` | Hive/Impala metadata operations | No PostgreSQL equivalent |
+| `noscan` | Impala `COMPUTE STATS ... NOSCAN` | No PostgreSQL equivalent |
+| `orc` | Hive ORC file format | No PostgreSQL equivalent |
+| `overwrite` | Hive `INSERT OVERWRITE` | No PostgreSQL equivalent |
+| `parquet` | Hive/Spark Parquet file format | No PostgreSQL equivalent |
+| `rcfile` | Hive RCFile format | No PostgreSQL equivalent |
+| `sequencefile` | Hive SequenceFile format | No PostgreSQL equivalent |
+| `sort` | Hive `SORT BY` clause | PostgreSQL uses `ORDER BY` |
+| `stats` | Impala/Hive statistics | PostgreSQL uses `ANALYZE` |
+| `stored` | Hive `STORED AS` clause | No PostgreSQL equivalent |
+| `tblproperties` | Hive table properties | No PostgreSQL equivalent |
+| `textfile` | Hive text file format | No PostgreSQL equivalent |
+| `uncached` | Impala table caching control | No PostgreSQL equivalent |
+| `unload` | Redshift/Hive `UNLOAD` command | PostgreSQL uses `COPY TO` |
 
 ---
 
 ## PostGIS Extension Keywords
 
-These are not core PostgreSQL keywords but come from the PostGIS spatial extension:
+These are not core PostgreSQL keywords but come from the PostGIS spatial extension. They work in PostgreSQL only when PostGIS is installed:
 
 | Keyword | Description |
 |---------|-------------|
@@ -91,23 +97,18 @@ These are not core PostgreSQL keywords but come from the PostGIS spatial extensi
 
 ---
 
-## Other Non-Standard Keywords
+## Keywords in PostgreSQL's SQL Standard Appendix (Not Features)
 
-| Keyword | Description | Origin |
-|---------|-------------|--------|
-| `restricted` | Non-standard security option | Various |
-| `safe` | Non-standard function attribute | Various |
-| `unsafe` | Non-standard function attribute | Various |
+The following keywords appear in [PostgreSQL's keyword appendix](https://www.postgresql.org/docs/current/sql-keywords-appendix.html) as SQL standard keywords that PostgreSQL recognizes for compatibility, but they don't correspond to implemented features:
 
----
-
-## Notes
-
-1. Some keywords like `string` appear in the grammar but are listed in PostgreSQL's keyword appendix as SQL standard keywords that PostgreSQL recognizes.
-
-2. PostgreSQL-specific types like `bigserial`, `smallserial`, `bytea`, `inet`, `jsonb`, `money`, `oid`, `regclass`, `regtype`, `timestamptz`, `uuid` are PostgreSQL types but not listed as reserved keywords—they can be used as identifiers.
-
-3. Index types like `brin`, `btree`, `gin`, `gist`, `spgist`, and `hash` are PostgreSQL-specific but are recognized tokens, not reserved keywords.
+| Keyword | Notes |
+|---------|-------|
+| `nchar` | SQL standard national character - recognized but functionally equivalent to `char` |
+| `precedes` | SQL:2011 temporal - recognized but limited support |
+| `string` | SQL standard - PostgreSQL uses `TEXT` or `VARCHAR` |
+| `varbinary` | SQL standard - PostgreSQL uses `BYTEA` |
+| `version` | SQL standard keyword - not a PostgreSQL feature keyword |
+| `virtual` | SQL standard for generated columns - PostgreSQL uses `GENERATED ALWAYS AS ... STORED` |
 
 ---
 
@@ -119,5 +120,21 @@ These are not core PostgreSQL keywords but come from the PostGIS spatial extensi
 | SQL Server-specific | 9 |
 | Hive/Impala/Spark | 21 |
 | PostGIS extension | 4 |
-| Other non-standard | 3 |
-| **Total** | **58** |
+| SQL Standard (not features) | 6 |
+| **Total** | **61** |
+
+---
+
+## Notes
+
+1. **PostgreSQL-specific keywords that ARE valid** (removed from this list):
+   - `permissive`, `restrictive` - [Row-level security policy types](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+   - `brin`, `btree`, `gin`, `gist`, `spgist`, `hash` - [Index types](https://www.postgresql.org/docs/current/indexes-types.html)
+   - `force_quote`, `force_null`, `force_not_null`, `freeze`, `header`, `delimiter` - [COPY options](https://www.postgresql.org/docs/current/sql-copy.html)
+   - `leakproof`, `immutable`, `stable`, `volatile`, `strict`, `support` - [Function attributes](https://www.postgresql.org/docs/current/sql-createfunction.html)
+   - `parallel` with `safe`/`unsafe`/`restricted` - Function parallelism options
+
+2. **Type aliases that ARE valid in PostgreSQL**:
+   - `bigserial`, `smallserial`, `serial` - Auto-incrementing types
+   - `bytea`, `inet`, `jsonb`, `money`, `uuid`, `timestamptz` - PostgreSQL-specific types
+   - `regclass`, `regtype`, `regproc`, `regnamespace`, `oid` - System catalog types
