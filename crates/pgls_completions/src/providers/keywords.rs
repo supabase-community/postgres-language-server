@@ -24,31 +24,24 @@ const ALL_KEYWORDS: &[&str] = &[
     "atomic",
     "attribute",
     "authorization",
-    "auto_increment",
-    "avro",
     "before",
     "begin",
     "between",
     "bigint",
     "bigserial",
-    "bin_pack",
     "binary",
     "bit",
     "boolean",
-    "box2d",
-    "box3d",
     "brin",
     "btree",
     "by",
     "bytea",
     "cache",
-    "cached",
     "called",
     "cascade",
     "cascaded",
     "case",
     "cast",
-    "change",
     "char",
     "character",
     "characteristics",
@@ -60,7 +53,6 @@ const ALL_KEYWORDS: &[&str] = &[
     "commit",
     "committed",
     "compression",
-    "compute",
     "concurrently",
     "conflict",
     "connection",
@@ -79,34 +71,27 @@ const ALL_KEYWORDS: &[&str] = &[
     "data",
     "database",
     "date",
-    "datetime",
-    "datetime2",
-    "datetimeoffset",
     "decimal",
     "declare",
     "default",
     "deferrable",
     "deferred",
     "definer",
-    "delayed",
     "delete",
-    "delimited",
     "delimiter",
     "desc",
+    "disable_page_skipping",
     "distinct",
     "do",
     "double",
     "drop",
-    "duplicate",
     "each",
     "else",
     "encoding",
     "encrypted",
     "end",
-    "engine",
     "enum",
     "escape",
-    "escaped",
     "except",
     "exclude",
     "execute",
@@ -116,12 +101,10 @@ const ALL_KEYWORDS: &[&str] = &[
     "extension",
     "external",
     "false",
-    "fields",
     "filter",
     "first",
     "float",
     "following",
-    "follows",
     "for",
     "force",
     "force_not_null",
@@ -135,8 +118,6 @@ const ALL_KEYWORDS: &[&str] = &[
     "function",
     "functions",
     "generated",
-    "geography",
-    "geometry",
     "gin",
     "gist",
     "grant",
@@ -146,16 +127,13 @@ const ALL_KEYWORDS: &[&str] = &[
     "hash",
     "having",
     "header",
-    "high_priority",
     "if",
-    "ignore",
-    "image",
     "immediate",
     "immutable",
     "in",
     "increment",
-    "incremental",
     "index",
+    "index_cleanup",
     "inet",
     "inherit",
     "initially",
@@ -174,7 +152,6 @@ const ALL_KEYWORDS: &[&str] = &[
     "join",
     "json",
     "jsonb",
-    "jsonfile",
     "key",
     "language",
     "last",
@@ -184,39 +161,31 @@ const ALL_KEYWORDS: &[&str] = &[
     "level",
     "like",
     "limit",
-    "lines",
+    "list",
     "local",
     "location",
     "logged",
-    "low_priority",
     "main",
     "maintain",
     "match",
     "matched",
     "materialized",
     "maxvalue",
-    "mediumint",
     "merge",
-    "metadata",
     "minvalue",
-    "modify",
     "money",
     "name",
     "names",
     "natural",
-    "nchar",
     "new",
     "no",
     "none",
-    "noscan",
     "not",
     "nothing",
     "nowait",
     "null",
     "nulls",
     "numeric",
-    "nvarchar",
-    "object_id",
     "of",
     "off",
     "offset",
@@ -225,10 +194,8 @@ const ALL_KEYWORDS: &[&str] = &[
     "old",
     "on",
     "only",
-    "optimize",
     "option",
     "or",
-    "orc",
     "order",
     "ordinality",
     "others",
@@ -236,11 +203,9 @@ const ALL_KEYWORDS: &[&str] = &[
     "outer",
     "over",
     "overriding",
-    "overwrite",
     "owned",
     "owner",
     "parallel",
-    "parquet",
     "partition",
     "partitioned",
     "password",
@@ -254,11 +219,11 @@ const ALL_KEYWORDS: &[&str] = &[
     "privileges",
     "procedure",
     "procedures",
+    "process_toast",
     "program",
     "public",
     "quote",
     "range",
-    "rcfile",
     "read",
     "real",
     "recursive",
@@ -293,9 +258,7 @@ const ALL_KEYWORDS: &[&str] = &[
     "schema",
     "security",
     "select",
-    "separator",
     "sequence",
-    "sequencefile",
     "serial",
     "serializable",
     "session",
@@ -304,41 +267,33 @@ const ALL_KEYWORDS: &[&str] = &[
     "setof",
     "show",
     "similar",
-    "smalldatetime",
+    "skip_locked",
     "smallint",
-    "smallmoney",
     "smallserial",
     "snapshot",
     "some",
-    "sort",
     "spgist",
     "stable",
     "start",
     "statement",
     "statistics",
-    "stats",
     "stdin",
     "storage",
     "stored",
     "strict",
-    "string",
     "support",
     "system",
     "table",
     "tables",
     "tablespace",
-    "tblproperties",
     "temp",
     "temporary",
-    "terminated",
     "text",
-    "textfile",
     "then",
     "ties",
     "time",
     "timestamp",
     "timestamptz",
-    "tinyint",
     "to",
     "transaction",
     "trigger",
@@ -346,17 +301,13 @@ const ALL_KEYWORDS: &[&str] = &[
     "truncate",
     "type",
     "unbounded",
-    "uncached",
     "uncommitted",
     "union",
     "unique",
-    "unload",
     "unlogged",
     "unsafe",
-    "unsigned",
     "until",
     "update",
-    "use",
     "user",
     "using",
     "uuid",
@@ -364,16 +315,13 @@ const ALL_KEYWORDS: &[&str] = &[
     "valid",
     "value",
     "values",
-    "varbinary",
     "varchar",
     "variadic",
     "varying",
     "verbose",
     "version",
     "view",
-    "virtual",
     "volatile",
-    "wait",
     "when",
     "where",
     "window",
@@ -381,11 +329,14 @@ const ALL_KEYWORDS: &[&str] = &[
     "without",
     "write",
     "xml",
-    "zerofill",
     "zone",
 ];
 
-pub fn complete_keywords<'a>(ctx: &TreesitterContext<'a>, builder: &mut CompletionBuilder<'a>) {
+pub fn complete_keywords<'a>(
+    ctx: &TreesitterContext<'a>,
+    builder: &mut CompletionBuilder<'a>,
+    use_upper_case: bool,
+) {
     let keywords = ALL_KEYWORDS
         .iter()
         .filter(|kw| ctx.possible_keywords_at_position.contains(kw));
@@ -393,14 +344,20 @@ pub fn complete_keywords<'a>(ctx: &TreesitterContext<'a>, builder: &mut Completi
     for kw in keywords {
         let relevance = CompletionRelevanceData::Keyword(kw);
 
+        let kw = if use_upper_case {
+            kw.to_ascii_uppercase()
+        } else {
+            kw.to_string()
+        };
+
         let item = PossibleCompletionItem {
-            label: kw.to_string(),
+            label: kw.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: "Keyword".into(),
+            description: "".into(),
             kind: CompletionItemKind::Keyword,
             completion_text: Some(CompletionText {
-                text: kw.to_string(),
+                text: kw,
                 range: get_range_to_replace(ctx),
                 is_snippet: false,
             }),
@@ -413,11 +370,13 @@ pub fn complete_keywords<'a>(ctx: &TreesitterContext<'a>, builder: &mut Completi
 
 #[cfg(test)]
 mod tests {
+
     use pgls_test_utils::QueryWithCursorPosition;
     use sqlx::PgPool;
 
     use crate::test_helper::{
-        CompletionAssertion, assert_complete_results, assert_no_complete_results,
+        CompletionAssertion, TestCompletionsCase, TestCompletionsSuite, assert_complete_results,
+        assert_no_complete_results,
     };
 
     #[sqlx::test]
@@ -443,18 +402,30 @@ mod tests {
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
-                    "separator".into(),
-                    crate::CompletionItemKind::Keyword,
-                ),
-                CompletionAssertion::LabelAndKind(
                     "sequence".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
-                    "sequencefile".into(),
+                    "serial".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "serializable".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "session".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "session_user".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind("set".into(), crate::CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind(
+                    "setof".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
             ],
             Some(setup),
             &pool,
@@ -463,7 +434,26 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn completes_keywords_2(pool: PgPool) {
+    async fn completes_after_from_clause(pool: PgPool) {
+        let setup = r#"
+            create table public.users (
+                id serial primary key,
+                email varchar(255)
+            );
+        "#;
+
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("select email from users <sql>")
+                    .type_sql("where id = 1;"),
+            )
+            .snapshot("after_from_clause")
+            .await;
+    }
+
+    #[sqlx::test]
+    async fn completes_join_kw(pool: PgPool) {
         let setup = r#"
             create table public.users (
                 id serial primary key,
@@ -472,10 +462,19 @@ mod tests {
         "#;
 
         let query = format!(
-            "select email from auth.users {}",
+            "select * from public.users left {}",
             QueryWithCursorPosition::cursor_marker()
         );
 
-        assert_no_complete_results(query.as_str(), Some(setup), &pool).await;
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "join".into(),
+                crate::CompletionItemKind::Keyword,
+            )],
+            Some(setup),
+            &pool,
+        )
+        .await;
     }
 }

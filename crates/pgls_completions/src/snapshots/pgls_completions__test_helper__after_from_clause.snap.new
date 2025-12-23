@@ -1,0 +1,71 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+assertion_line: 643
+expression: final_snapshot
+---
+***Setup***
+
+create table public.users (
+    id serial primary key,
+    email varchar(255)
+);
+
+
+--------------
+
+select email from users |
+
+Results:
+as - Keyword.as (Keyword)
+create - Keyword.create (Keyword)
+cross - Keyword.cross (Keyword)
+except - Keyword.except (Keyword)
+full - Keyword.full (Keyword)
+
+--------------
+
+select email from users w|
+
+Results:
+where - Keyword.where (Keyword)
+window - Keyword.window (Keyword)
+with - Keyword.with (Keyword)
+
+--------------
+
+select email from users where |
+
+Results:
+email - public.users.email (Column)
+id - public.users.id (Column)
+all - Keyword.all (Keyword)
+any - Keyword.any (Keyword)
+array - Keyword.array (Keyword)
+
+--------------
+
+select email from users where i|
+
+Results:
+id - public.users.id (Column)
+email - public.users.email (Column)
+interval - Keyword.interval (Keyword)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+
+--------------
+
+select email from users where id |
+select email from users where id = |
+
+Results:
+all - Keyword.all (Keyword)
+any - Keyword.any (Keyword)
+array - Keyword.array (Keyword)
+case - Keyword.case (Keyword)
+cast - Keyword.cast (Keyword)
+
+--------------
+
+select email from users where id = 1|
+select email from users where id = 1; |

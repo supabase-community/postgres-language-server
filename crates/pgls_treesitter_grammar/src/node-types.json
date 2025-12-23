@@ -272,10 +272,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -1133,14 +1129,6 @@
           "named": true
         },
         {
-          "type": "keyword_to",
-          "named": true
-        },
-        {
-          "type": "keyword_unload",
-          "named": true
-        },
-        {
           "type": "keyword_with",
           "named": true
         },
@@ -1150,10 +1138,6 @@
         },
         {
           "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_id",
           "named": true
         },
         {
@@ -1178,10 +1162,6 @@
         },
         {
           "type": "set_operation",
-          "named": true
-        },
-        {
-          "type": "storage_parameters",
           "named": true
         },
         {
@@ -1292,10 +1272,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -1380,10 +1356,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -1459,10 +1431,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -1544,10 +1512,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -1619,45 +1583,11 @@
       }
     },
     "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_bigint",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "binary",
-    "named": true,
-    "fields": {
-      "precision": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
       "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "keyword_binary",
+          "type": "keyword_bigint",
           "named": true
         }
       ]
@@ -1713,10 +1643,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -1908,10 +1834,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -2069,10 +1991,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -2166,10 +2084,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -2250,10 +2164,6 @@
         },
         {
           "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_id",
           "named": true
         },
         {
@@ -2405,10 +2315,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -2557,10 +2463,6 @@
           "named": true
         },
         {
-          "type": "keyword_auto_increment",
-          "named": true
-        },
-        {
           "type": "keyword_cascade",
           "named": true
         },
@@ -2641,19 +2543,11 @@
           "named": true
         },
         {
-          "type": "keyword_virtual",
-          "named": true
-        },
-        {
           "type": "list",
           "named": true
         },
         {
           "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_id",
           "named": true
         },
         {
@@ -3615,14 +3509,6 @@
           "named": true
         },
         {
-          "type": "keyword_to",
-          "named": true
-        },
-        {
-          "type": "keyword_unload",
-          "named": true
-        },
-        {
           "type": "keyword_with",
           "named": true
         },
@@ -3636,10 +3522,6 @@
         },
         {
           "type": "set_operation",
-          "named": true
-        },
-        {
-          "type": "storage_parameters",
           "named": true
         }
       ]
@@ -3999,10 +3881,6 @@
           "named": true
         },
         {
-          "type": "keyword_tblproperties",
-          "named": true
-        },
-        {
           "type": "keyword_temp",
           "named": true
         },
@@ -4023,10 +3901,6 @@
           "named": true
         },
         {
-          "type": "row_format",
-          "named": true
-        },
-        {
           "type": "select",
           "named": true
         },
@@ -4035,15 +3909,7 @@
           "named": true
         },
         {
-          "type": "storage_location",
-          "named": true
-        },
-        {
           "type": "storage_parameters",
-          "named": true
-        },
-        {
-          "type": "stored_as",
           "named": true
         },
         {
@@ -4262,10 +4128,6 @@
         },
         {
           "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_id",
           "named": true
         },
         {
@@ -4559,32 +4421,6 @@
     }
   },
   {
-    "type": "datetimeoffset",
-    "named": true,
-    "fields": {
-      "size": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_datetimeoffset",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "decimal",
     "named": true,
     "fields": {
@@ -4625,13 +4461,9 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "index_hint",
-          "named": true
-        },
         {
           "type": "keyword_delete",
           "named": true
@@ -4720,14 +4552,6 @@
         },
         {
           "type": "keyword_real",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
           "named": true
         }
       ]
@@ -5387,10 +5211,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -5577,19 +5397,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "keyword_float",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
           "named": true
         }
       ]
@@ -5677,10 +5489,6 @@
         },
         {
           "type": "group_by",
-          "named": true
-        },
-        {
-          "type": "index_hint",
           "named": true
         },
         {
@@ -5870,10 +5678,6 @@
         },
         {
           "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_id",
           "named": true
         },
         {
@@ -6481,10 +6285,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -6525,52 +6325,6 @@
       "types": [
         {
           "type": "field",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "index_hint",
-    "named": true,
-    "fields": {
-      "index_name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "any_identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_for",
-          "named": true
-        },
-        {
-          "type": "keyword_force",
-          "named": true
-        },
-        {
-          "type": "keyword_ignore",
-          "named": true
-        },
-        {
-          "type": "keyword_index",
-          "named": true
-        },
-        {
-          "type": "keyword_join",
-          "named": true
-        },
-        {
-          "type": "keyword_use",
           "named": true
         }
       ]
@@ -6755,10 +6509,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -6805,19 +6555,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "keyword_int",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
           "named": true
         }
       ]
@@ -6870,15 +6612,7 @@
           "named": true
         },
         {
-          "type": "keyword_separator",
-          "named": true
-        },
-        {
           "type": "limit",
-          "named": true
-        },
-        {
-          "type": "literal",
           "named": true
         },
         {
@@ -6960,10 +6694,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -6998,10 +6728,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "index_hint",
-          "named": true
-        },
         {
           "type": "join",
           "named": true
@@ -7084,11 +6810,6 @@
     "fields": {}
   },
   {
-    "type": "keyword_mediumint",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "keyword_real",
     "named": true,
     "fields": {}
@@ -7105,11 +6826,6 @@
   },
   {
     "type": "keyword_smallserial",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "keyword_tinyint",
     "named": true,
     "fields": {}
   },
@@ -7274,10 +6990,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -7388,10 +7100,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -7444,66 +7152,6 @@
         },
         {
           "type": "keyword_true",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "mediumint",
-    "named": true,
-    "fields": {
-      "size": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_mediumint",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "nchar",
-    "named": true,
-    "fields": {
-      "size": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_nchar",
           "named": true
         }
       ]
@@ -7628,51 +7276,6 @@
       "types": [
         {
           "type": "keyword_numeric",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "nvarchar",
-    "named": true,
-    "fields": {
-      "size": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_nvarchar",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "object_id",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_object_id",
-          "named": true
-        },
-        {
-          "type": "literal",
           "named": true
         }
       ]
@@ -7859,10 +7462,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -7961,10 +7560,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -8053,10 +7648,6 @@
         },
         {
           "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_id",
           "named": true
         },
         {
@@ -8378,80 +7969,6 @@
         },
         {
           "type": "role_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "row_format",
-    "named": true,
-    "fields": {
-      "escaped_char": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      },
-      "fields_terminated_char": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      },
-      "row_terminated_char": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_by",
-          "named": true
-        },
-        {
-          "type": "keyword_delimited",
-          "named": true
-        },
-        {
-          "type": "keyword_escaped",
-          "named": true
-        },
-        {
-          "type": "keyword_fields",
-          "named": true
-        },
-        {
-          "type": "keyword_format",
-          "named": true
-        },
-        {
-          "type": "keyword_lines",
-          "named": true
-        },
-        {
-          "type": "keyword_row",
-          "named": true
-        },
-        {
-          "type": "keyword_terminated",
           "named": true
         }
       ]
@@ -8815,19 +8332,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "keyword_smallint",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
           "named": true
         }
       ]
@@ -8883,10 +8392,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -9237,19 +8742,11 @@
           "named": true
         },
         {
-          "type": "keyword_to",
-          "named": true
-        },
-        {
           "type": "keyword_true",
           "named": true
         },
         {
           "type": "keyword_truncate",
-          "named": true
-        },
-        {
-          "type": "keyword_unload",
           "named": true
         },
         {
@@ -9297,10 +8794,6 @@
           "named": true
         },
         {
-          "type": "storage_parameters",
-          "named": true
-        },
-        {
           "type": "subquery",
           "named": true
         },
@@ -9318,72 +8811,6 @@
         },
         {
           "type": "where",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "storage_location",
-    "named": true,
-    "fields": {
-      "path": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      },
-      "pool": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_cached",
-          "named": true
-        },
-        {
-          "type": "keyword_in",
-          "named": true
-        },
-        {
-          "type": "keyword_location",
-          "named": true
-        },
-        {
-          "type": "keyword_replication",
-          "named": true
-        },
-        {
-          "type": "keyword_uncached",
-          "named": true
-        },
-        {
-          "type": "keyword_with",
           "named": true
         }
       ]
@@ -9411,57 +8838,6 @@
         },
         {
           "type": "literal",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "stored_as",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_as",
-          "named": true
-        },
-        {
-          "type": "keyword_avro",
-          "named": true
-        },
-        {
-          "type": "keyword_csv",
-          "named": true
-        },
-        {
-          "type": "keyword_jsonfile",
-          "named": true
-        },
-        {
-          "type": "keyword_orc",
-          "named": true
-        },
-        {
-          "type": "keyword_parquet",
-          "named": true
-        },
-        {
-          "type": "keyword_rcfile",
-          "named": true
-        },
-        {
-          "type": "keyword_sequencefile",
-          "named": true
-        },
-        {
-          "type": "keyword_stored",
-          "named": true
-        },
-        {
-          "type": "keyword_textfile",
           "named": true
         }
       ]
@@ -9504,14 +8880,6 @@
           "named": true
         },
         {
-          "type": "keyword_to",
-          "named": true
-        },
-        {
-          "type": "keyword_unload",
-          "named": true
-        },
-        {
           "type": "keyword_with",
           "named": true
         },
@@ -9525,10 +8893,6 @@
         },
         {
           "type": "set_operation",
-          "named": true
-        },
-        {
-          "type": "storage_parameters",
           "named": true
         }
       ]
@@ -9584,10 +8948,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -9669,10 +9029,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -9748,10 +9104,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -9833,10 +9185,6 @@
             "named": true
           },
           {
-            "type": "object_id",
-            "named": true
-          },
-          {
             "type": "object_reference",
             "named": true
           },
@@ -9887,10 +9235,6 @@
           },
           {
             "type": "keyword_default",
-            "named": true
-          },
-          {
-            "type": "keyword_engine",
             "named": true
           }
         ]
@@ -9954,11 +9298,11 @@
           "named": true
         },
         {
-          "type": "keyword_partition",
+          "type": "keyword_list",
           "named": true
         },
         {
-          "type": "keyword_partitioned",
+          "type": "keyword_partition",
           "named": true
         },
         {
@@ -10058,10 +9402,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -10187,40 +9527,6 @@
     }
   },
   {
-    "type": "tinyint",
-    "named": true,
-    "fields": {
-      "size": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_tinyint",
-          "named": true
-        },
-        {
-          "type": "keyword_unsigned",
-          "named": true
-        },
-        {
-          "type": "keyword_zerofill",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "transaction",
     "named": true,
     "fields": {},
@@ -10279,19 +9585,11 @@
           "named": true
         },
         {
-          "type": "binary",
-          "named": true
-        },
-        {
           "type": "bit",
           "named": true
         },
         {
           "type": "char",
-          "named": true
-        },
-        {
-          "type": "datetimeoffset",
           "named": true
         },
         {
@@ -10323,39 +9621,11 @@
           "named": true
         },
         {
-          "type": "keyword_box2d",
-          "named": true
-        },
-        {
-          "type": "keyword_box3d",
-          "named": true
-        },
-        {
           "type": "keyword_bytea",
           "named": true
         },
         {
           "type": "keyword_date",
-          "named": true
-        },
-        {
-          "type": "keyword_datetime",
-          "named": true
-        },
-        {
-          "type": "keyword_datetime2",
-          "named": true
-        },
-        {
-          "type": "keyword_geography",
-          "named": true
-        },
-        {
-          "type": "keyword_geometry",
-          "named": true
-        },
-        {
-          "type": "keyword_image",
           "named": true
         },
         {
@@ -10407,19 +9677,7 @@
           "named": true
         },
         {
-          "type": "keyword_smalldatetime",
-          "named": true
-        },
-        {
-          "type": "keyword_smallmoney",
-          "named": true
-        },
-        {
           "type": "keyword_smallserial",
-          "named": true
-        },
-        {
-          "type": "keyword_string",
           "named": true
         },
         {
@@ -10439,19 +9697,7 @@
           "named": true
         },
         {
-          "type": "mediumint",
-          "named": true
-        },
-        {
-          "type": "nchar",
-          "named": true
-        },
-        {
           "type": "numeric",
-          "named": true
-        },
-        {
-          "type": "nvarchar",
           "named": true
         },
         {
@@ -10464,14 +9710,6 @@
         },
         {
           "type": "timestamp",
-          "named": true
-        },
-        {
-          "type": "tinyint",
-          "named": true
-        },
-        {
-          "type": "varbinary",
           "named": true
         },
         {
@@ -10572,10 +9810,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -10695,32 +9929,6 @@
     }
   },
   {
-    "type": "varbinary",
-    "named": true,
-    "fields": {
-      "precision": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "literal",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_varbinary",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "varchar",
     "named": true,
     "fields": {
@@ -10796,10 +10004,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -10958,10 +10162,6 @@
           "named": true
         },
         {
-          "type": "object_id",
-          "named": true
-        },
-        {
           "type": "object_reference",
           "named": true
         },
@@ -11042,10 +10242,6 @@
           },
           {
             "type": "literal",
-            "named": true
-          },
-          {
-            "type": "object_id",
             "named": true
           },
           {
@@ -11404,14 +10600,6 @@
     "named": true
   },
   {
-    "type": "keyword_auto_increment",
-    "named": true
-  },
-  {
-    "type": "keyword_avro",
-    "named": true
-  },
-  {
     "type": "keyword_before",
     "named": true
   },
@@ -11436,14 +10624,6 @@
     "named": true
   },
   {
-    "type": "keyword_box2d",
-    "named": true
-  },
-  {
-    "type": "keyword_box3d",
-    "named": true
-  },
-  {
     "type": "keyword_brin",
     "named": true
   },
@@ -11461,10 +10641,6 @@
   },
   {
     "type": "keyword_cache",
-    "named": true
-  },
-  {
-    "type": "keyword_cached",
     "named": true
   },
   {
@@ -11592,18 +10768,6 @@
     "named": true
   },
   {
-    "type": "keyword_datetime",
-    "named": true
-  },
-  {
-    "type": "keyword_datetime2",
-    "named": true
-  },
-  {
-    "type": "keyword_datetimeoffset",
-    "named": true
-  },
-  {
     "type": "keyword_decimal",
     "named": true
   },
@@ -11629,10 +10793,6 @@
   },
   {
     "type": "keyword_delete",
-    "named": true
-  },
-  {
-    "type": "keyword_delimited",
     "named": true
   },
   {
@@ -11680,19 +10840,11 @@
     "named": true
   },
   {
-    "type": "keyword_engine",
-    "named": true
-  },
-  {
     "type": "keyword_enum",
     "named": true
   },
   {
     "type": "keyword_escape",
-    "named": true
-  },
-  {
-    "type": "keyword_escaped",
     "named": true
   },
   {
@@ -11729,10 +10881,6 @@
   },
   {
     "type": "keyword_false",
-    "named": true
-  },
-  {
-    "type": "keyword_fields",
     "named": true
   },
   {
@@ -11804,14 +10952,6 @@
     "named": true
   },
   {
-    "type": "keyword_geography",
-    "named": true
-  },
-  {
-    "type": "keyword_geometry",
-    "named": true
-  },
-  {
     "type": "keyword_gin",
     "named": true
   },
@@ -11849,14 +10989,6 @@
   },
   {
     "type": "keyword_if",
-    "named": true
-  },
-  {
-    "type": "keyword_ignore",
-    "named": true
-  },
-  {
-    "type": "keyword_image",
     "named": true
   },
   {
@@ -11948,10 +11080,6 @@
     "named": true
   },
   {
-    "type": "keyword_jsonfile",
-    "named": true
-  },
-  {
     "type": "keyword_key",
     "named": true
   },
@@ -11984,15 +11112,11 @@
     "named": true
   },
   {
-    "type": "keyword_lines",
+    "type": "keyword_list",
     "named": true
   },
   {
     "type": "keyword_local",
-    "named": true
-  },
-  {
-    "type": "keyword_location",
     "named": true
   },
   {
@@ -12048,10 +11172,6 @@
     "named": true
   },
   {
-    "type": "keyword_nchar",
-    "named": true
-  },
-  {
     "type": "keyword_new",
     "named": true
   },
@@ -12081,14 +11201,6 @@
   },
   {
     "type": "keyword_numeric",
-    "named": true
-  },
-  {
-    "type": "keyword_nvarchar",
-    "named": true
-  },
-  {
-    "type": "keyword_object_id",
     "named": true
   },
   {
@@ -12132,10 +11244,6 @@
     "named": true
   },
   {
-    "type": "keyword_orc",
-    "named": true
-  },
-  {
     "type": "keyword_order",
     "named": true
   },
@@ -12176,15 +11284,7 @@
     "named": true
   },
   {
-    "type": "keyword_parquet",
-    "named": true
-  },
-  {
     "type": "keyword_partition",
-    "named": true
-  },
-  {
-    "type": "keyword_partitioned",
     "named": true
   },
   {
@@ -12244,10 +11344,6 @@
     "named": true
   },
   {
-    "type": "keyword_rcfile",
-    "named": true
-  },
-  {
     "type": "keyword_read",
     "named": true
   },
@@ -12289,10 +11385,6 @@
   },
   {
     "type": "keyword_replace",
-    "named": true
-  },
-  {
-    "type": "keyword_replication",
     "named": true
   },
   {
@@ -12376,15 +11468,7 @@
     "named": true
   },
   {
-    "type": "keyword_separator",
-    "named": true
-  },
-  {
     "type": "keyword_sequence",
-    "named": true
-  },
-  {
-    "type": "keyword_sequencefile",
     "named": true
   },
   {
@@ -12413,14 +11497,6 @@
   },
   {
     "type": "keyword_similar",
-    "named": true
-  },
-  {
-    "type": "keyword_smalldatetime",
-    "named": true
-  },
-  {
-    "type": "keyword_smallmoney",
     "named": true
   },
   {
@@ -12468,10 +11544,6 @@
     "named": true
   },
   {
-    "type": "keyword_string",
-    "named": true
-  },
-  {
     "type": "keyword_support",
     "named": true
   },
@@ -12492,10 +11564,6 @@
     "named": true
   },
   {
-    "type": "keyword_tblproperties",
-    "named": true
-  },
-  {
     "type": "keyword_temp",
     "named": true
   },
@@ -12504,15 +11572,7 @@
     "named": true
   },
   {
-    "type": "keyword_terminated",
-    "named": true
-  },
-  {
     "type": "keyword_text",
-    "named": true
-  },
-  {
-    "type": "keyword_textfile",
     "named": true
   },
   {
@@ -12564,10 +11624,6 @@
     "named": true
   },
   {
-    "type": "keyword_uncached",
-    "named": true
-  },
-  {
     "type": "keyword_uncommitted",
     "named": true
   },
@@ -12580,10 +11636,6 @@
     "named": true
   },
   {
-    "type": "keyword_unload",
-    "named": true
-  },
-  {
     "type": "keyword_unlogged",
     "named": true
   },
@@ -12592,19 +11644,11 @@
     "named": true
   },
   {
-    "type": "keyword_unsigned",
-    "named": true
-  },
-  {
     "type": "keyword_until",
     "named": true
   },
   {
     "type": "keyword_update",
-    "named": true
-  },
-  {
-    "type": "keyword_use",
     "named": true
   },
   {
@@ -12636,10 +11680,6 @@
     "named": true
   },
   {
-    "type": "keyword_varbinary",
-    "named": true
-  },
-  {
     "type": "keyword_variadic",
     "named": true
   },
@@ -12657,10 +11697,6 @@
   },
   {
     "type": "keyword_view",
-    "named": true
-  },
-  {
-    "type": "keyword_virtual",
     "named": true
   },
   {
@@ -12693,10 +11729,6 @@
   },
   {
     "type": "keyword_xml",
-    "named": true
-  },
-  {
-    "type": "keyword_zerofill",
     "named": true
   },
   {

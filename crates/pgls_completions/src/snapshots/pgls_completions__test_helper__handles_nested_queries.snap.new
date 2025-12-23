@@ -1,0 +1,104 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+assertion_line: 645
+expression: final_snapshot
+---
+***Setup***
+
+create schema private;
+
+create table public.users (
+    id serial primary key,
+    name text
+);
+
+create table public.audio_books (
+    id serial primary key,
+    narrator text
+);
+
+create table private.audio_books (
+    id serial primary key,
+    narrator_id text
+);
+
+
+--------------
+
+select * from (
+    | from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+select * from (
+    s| from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+select * from (
+    select | from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+
+Results:
+id - private.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+id - public.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+
+--------------
+
+select * from (
+    select i| from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+
+Results:
+id - private.audio_books.id (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+id - public.audio_books.id (Column)
+ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
+identity_cycle - information_schema.columns.identity_cycle (Column)
+
+--------------
+
+select * from (
+    select id, | from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+**Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.**
+
+Results:
+narrator_id - private.audio_books.narrator_id (Column)
+id - private.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+id - public.audio_books.id (Column)
+
+--------------
+
+select * from (
+    select id, n| from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;
+**Should prefer the one from private.audio_audiobooks, since the other tables are out of scope.**
+
+Results:
+narrator_id - private.audio_books.narrator_id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+null - Keyword.null (Keyword)
+n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+
+--------------
+
+select * from (
+    select id, narrator_id | from private.audio_books
+) as subquery
+join public.users u
+on u.id = subquery.id;

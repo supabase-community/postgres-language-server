@@ -157,6 +157,10 @@ impl<'a> TreesitterContext<'a> {
         ctx.gather_info_from_ts_queries();
         ctx.gather_possible_keywords_at_position();
 
+        println!("{:#?}", ctx);
+        // println!("{:#?}", ctx.get_node_under_cursor_content());
+        // println!("{:#?}", ctx.node_under_cursor.kind());
+
         ctx
     }
 
@@ -411,7 +415,28 @@ impl<'a> TreesitterContext<'a> {
     }
 
     fn gather_possible_keywords_at_position(&mut self) {
-        let parse_state = self.node_under_cursor.parse_state();
+        let parse_state = if self.node_under_cursor.kind() == "ERROR" {
+            self.node_under_cursor.parse_state()
+            // if self.node_under_cursor.child_count() > 0 {
+            //     match self.node_under_cursor.child(0) {
+            //         Some(c) => {
+            //             println!("Looking at child: {}", c.kind());
+            //             c.parse_state()
+            //         }
+            //         None => return,
+            //     }
+            // } else {
+            //     match self.node_under_cursor.parent() {
+            //         Some(n) => {
+            //             println!("Looking at parent.");
+            //             n.parse_state()
+            //         }
+            //         None => return,
+            //     }
+            // }
+        } else {
+            self.node_under_cursor.parse_state()
+        };
 
         let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
         if let Some(mut lookahead_iterator) = language.lookahead_iterator(parse_state) {

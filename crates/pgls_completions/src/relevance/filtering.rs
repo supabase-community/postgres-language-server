@@ -17,19 +17,19 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 impl CompletionFilter<'_> {
     pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
         if matches!(self.data, CompletionRelevanceData::Keyword(_)) {
-            return Some(());
+            Some(())
+        } else {
+            self.completable_context(ctx)?;
+
+            self.check_specific_node_type(ctx)
+                // we want to rely on treesitter more, so checking the clause is a fallback
+                .or_else(|| self.check_clause(ctx))?;
+
+            self.check_invocation(ctx)?;
+            self.check_mentioned_schema_or_alias(ctx)?;
+
+            Some(())
         }
-
-        self.completable_context(ctx)?;
-
-        self.check_specific_node_type(ctx)
-            // we want to rely on treesitter more, so checking the clause is a fallback
-            .or_else(|| self.check_clause(ctx))?;
-
-        self.check_invocation(ctx)?;
-        self.check_mentioned_schema_or_alias(ctx)?;
-
-        Some(())
     }
 
     fn completable_context(&self, ctx: &TreesitterContext) -> Option<()> {

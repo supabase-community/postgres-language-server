@@ -1,0 +1,64 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+assertion_line: 645
+expression: final_snapshot
+---
+***Setup***
+
+create schema private;
+
+create table private.users (
+    id serial primary key,
+    name text,
+    address text,
+    email text,
+    public boolean
+);
+
+
+--------------
+
+select * from |
+**No column suggestions.**
+
+Results:
+private - private (Schema)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+private.users - private.users (Table)
+
+--------------
+
+select * from p|
+**No column suggestions.**
+
+Results:
+private - private (Schema)
+public - public (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+information_schema.parameters - information_schema.parameters (Table)
+
+--------------
+
+select * from private.|
+
+Results:
+users - private.users (Table)
+
+--------------
+
+select * from private.u|
+
+Results:
+users - private.users (Table)
+
+--------------
+
+select * from private.users |
+
+Results:
+join - Keyword.join (Keyword)
+
+--------------

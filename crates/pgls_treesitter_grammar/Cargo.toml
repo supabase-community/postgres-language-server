@@ -28,3 +28,7 @@ criterion.workspace       = true
 [[bench]]
 harness = false
 name    = "lookahead_iter"
+
+[[bench]]
+harness = false
+name    = "parsing"

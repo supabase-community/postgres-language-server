@@ -124,6 +124,7 @@ where
             tree: Cow::Owned(tree),
         }
     }
+
     fn unadjusted(params: CompletionParams<'larger>) -> Self {
         Self {
             position: params.position,

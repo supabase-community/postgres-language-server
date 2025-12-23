@@ -1,0 +1,53 @@
+---
+source: crates/pgls_completions/src/test_helper.rs
+assertion_line: 645
+expression: final_snapshot
+---
+***Setup***
+
+create schema private;
+
+create table public.users (
+    id serial primary key,
+    name text
+);
+
+create table public.audio_books (
+    id serial primary key,
+    narrator text
+);
+
+create table private.audio_books (
+    id serial primary key,
+    narrator_id text
+);
+
+
+--------------
+
+s|
+select |
+**Should suggest all columns with n first**
+
+Results:
+id - public.audio_books.id (Column)
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+false - Keyword.false (Keyword)
+id - private.audio_books.id (Column)
+
+--------------
+
+select n|
+**Should suggest all columns with n first**
+
+Results:
+name - public.users.name (Column)
+narrator - public.audio_books.narrator (Column)
+narrator_id - private.audio_books.narrator_id (Column)
+null - Keyword.null (Keyword)
+name - Schema: pg_catalog.name (Function)
+
+--------------
+
+select narrator_id |
