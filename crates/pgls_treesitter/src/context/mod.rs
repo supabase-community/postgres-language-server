@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     context::ancestors::ScopeTracker,
-    parts_of_reference_query,
+    helper, parts_of_reference_query,
     queries::{self, QueryResult, TreeSitterQueriesExecutor},
 };
 use pgls_text_size::TextSize;
@@ -127,6 +127,12 @@ pub struct TreesitterContext<'a> {
     pub is_invocation: bool,
     pub wrapping_statement_range: Option<tree_sitter::Range>,
 
+    pub previous_clause_completed: bool,
+    pub previous_clause: Option<tree_sitter::Node<'a>>,
+
+    pub current_clause_completed: bool,
+    pub current_clause: Option<tree_sitter::Node<'a>>,
+
     mentioned_relations: HashMap<Option<String>, HashSet<String>>,
     mentioned_table_aliases: HashMap<String, String>,
     mentioned_columns: HashMap<Option<WrappingClause<'a>>, HashSet<MentionedColumn>>,
@@ -151,15 +157,19 @@ impl<'a> TreesitterContext<'a> {
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
+
+            previous_clause_completed: false,
+            previous_clause: None,
+
+            current_clause_completed: false,
+            current_clause: None,
         };
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
         ctx.gather_possible_keywords_at_position();
-
-        println!("{:#?}", ctx);
-        // println!("{:#?}", ctx.get_node_under_cursor_content());
-        // println!("{:#?}", ctx.node_under_cursor.kind());
+        ctx.check_previous_clause_completed();
+        ctx.check_current_clause_completed();
 
         ctx
     }
@@ -414,26 +424,33 @@ impl<'a> TreesitterContext<'a> {
         }
     }
 
+    fn check_current_clause_completed(&mut self) {
+        if let Some(closest_parent) = helper::goto_closest_parent_clause(self.node_under_cursor) {
+            self.current_clause = Some(closest_parent);
+            self.current_clause_completed = closest_parent
+                .child_by_field_name("end")
+                .is_some_and(|child| child != self.node_under_cursor)
+        };
+    }
+
+    fn check_previous_clause_completed(&mut self) {
+        if let Some(previous_leaf) = helper::goto_previous_leaf(self.node_under_cursor) {
+            if let Some(closest_parent) = helper::goto_closest_parent_clause(previous_leaf) {
+                self.previous_clause = Some(closest_parent);
+                self.previous_clause_completed = closest_parent
+                    .child_by_field_name("end")
+                    .is_some_and(|child| child != self.node_under_cursor)
+            }
+        };
+    }
+
     fn gather_possible_keywords_at_position(&mut self) {
         let parse_state = if self.node_under_cursor.kind() == "ERROR" {
-            self.node_under_cursor.parse_state()
-            // if self.node_under_cursor.child_count() > 0 {
-            //     match self.node_under_cursor.child(0) {
-            //         Some(c) => {
-            //             println!("Looking at child: {}", c.kind());
-            //             c.parse_state()
-            //         }
-            //         None => return,
-            //     }
-            // } else {
-            //     match self.node_under_cursor.parent() {
-            //         Some(n) => {
-            //             println!("Looking at parent.");
-            //             n.parse_state()
-            //         }
-            //         None => return,
-            //     }
-            // }
+            if self.node_under_cursor.child_count() > 0 {
+                self.node_under_cursor.child(0).unwrap().parse_state()
+            } else {
+                self.node_under_cursor.parse_state()
+            }
         } else {
             self.node_under_cursor.parse_state()
         };
