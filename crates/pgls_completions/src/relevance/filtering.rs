@@ -504,7 +504,11 @@ impl CompletionFilter<'_> {
 
         if tree.root_node().has_error() {
             return None;
-        };
+        } else if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
+            // if the previous clause has an error and injecting the keyword fixes it,
+            // the keyword helped treesitter recover -> suggestable keyword
+            return Some(());
+        }
 
         if clause_to_investigate.is_none() {
             if keyword.starts_statement {

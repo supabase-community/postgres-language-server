@@ -44,8 +44,8 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("always"),
     SqlKeyword::new("analyze").starts_statement(),
     SqlKeyword::new("and").require_prefix(),
-    SqlKeyword::new("any"),
-    SqlKeyword::new("array"),
+    SqlKeyword::new("any").require_prefix(),
+    SqlKeyword::new("array").require_prefix(),
     SqlKeyword::new("as").require_prefix(),
     SqlKeyword::new("asc"),
     SqlKeyword::new("atomic"),
@@ -68,7 +68,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("cascade"),
     SqlKeyword::new("cascaded"),
     SqlKeyword::new("case"),
-    SqlKeyword::new("cast"),
+    SqlKeyword::new("cast").require_prefix(),
     SqlKeyword::new("char"),
     SqlKeyword::new("character"),
     SqlKeyword::new("characteristics"),
@@ -122,7 +122,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("except"),
     SqlKeyword::new("exclude"),
     SqlKeyword::new("execute"),
-    SqlKeyword::new("exists"),
+    SqlKeyword::new("exists").require_prefix(),
     SqlKeyword::new("explain").starts_statement(),
     SqlKeyword::new("extended"),
     SqlKeyword::new("extension"),
@@ -171,7 +171,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("instead"),
     SqlKeyword::new("int"),
     SqlKeyword::new("intersect"),
-    SqlKeyword::new("interval"),
+    SqlKeyword::new("interval").require_prefix(),
     SqlKeyword::new("into"),
     SqlKeyword::new("invoker"),
     SqlKeyword::new("is"),
@@ -364,11 +364,11 @@ pub fn complete_keywords<'a>(
     builder: &mut CompletionBuilder<'a>,
     use_upper_case: bool,
 ) {
-    let keywords = ALL_KEYWORDS
-        .iter()
-        .filter(|kw| ctx.possible_keywords_at_position.contains(&kw.name));
+    let keywords_to_try = ALL_KEYWORDS.iter().filter(|kw| {
+        ctx.tree.root_node().has_error() || ctx.possible_keywords_at_position.contains(&kw.name)
+    });
 
-    for kw in keywords {
+    for kw in keywords_to_try {
         let relevance = CompletionRelevanceData::Keyword(kw);
 
         let label = if use_upper_case {
@@ -594,6 +594,25 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn adds_where_after_clause(pool: PgPool) {
+        let query = format!(
+            "select * from public.users us left join client_settings as cs on us.id = cs.client_id whe{}",
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        assert_complete_results(
+            query.as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "where".into(),
+                crate::CompletionItemKind::Keyword,
+            )],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    #[sqlx::test]
     async fn completes_keywords_after_column_aliases(pool: PgPool) {
         let setup = r#"
             create table public.users (
@@ -669,10 +688,16 @@ mod tests {
 
         assert_complete_results(
             query.as_str(),
-            vec![CompletionAssertion::LabelAndKind(
-                "join".into(),
-                crate::CompletionItemKind::Keyword,
-            )],
+            vec![
+                CompletionAssertion::LabelAndKind(
+                    "join".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "outer".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+            ],
             Some(setup),
             &pool,
         )

@@ -21,7 +21,6 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
-    [$.object_reference],
     [$.between_expression, $.binary_expression],
     [$.time],
     [$.timestamp],
@@ -34,8 +33,8 @@ module.exports = grammar({
     [$.schema_identifier, $.table_identifier],
 
     [$.table_reference, $.column_reference],
-    [$.object_reference, $.table_reference],
     [$.function_reference, $.table_reference],
+    [$.function_reference, $.object_reference],
 
     [$.rename_column, $.rename_object],
 
@@ -2489,32 +2488,31 @@ module.exports = grammar({
       partialSeq($.keyword_filter, wrapped_in_parenthesis($.where)),
 
     invocation: ($) =>
-      prec(
-        1,
-        seq(
-          $.function_reference,
+      seq(
+        $.function_reference,
+        "(",
+        optional(
           choice(
             // default invocation
-            paren_list(
+            comma_list(
               seq(
                 optional($.keyword_distinct),
                 field("parameter", $.term),
                 optional($.order_by)
               ),
-              false
+              true
             ),
             // _aggregate_function, e.g. group_concat
-            wrapped_in_parenthesis(
-              seq(
-                optional($.keyword_distinct),
-                field("parameter", $.term),
-                optional($.order_by),
-                optional($.limit)
-              )
+            seq(
+              optional($.keyword_distinct),
+              field("parameter", $.term),
+              optional($.order_by),
+              optional($.limit)
             )
-          ),
-          optional($.filter_expression)
-        )
+          )
+        ),
+        ")",
+        optional($.filter_expression)
       ),
 
     exists: ($) => partialSeq($.keyword_exists, field("end", $.subquery)),
@@ -3163,20 +3161,23 @@ module.exports = grammar({
     // todo: handle schema.function(arg1, arg2)
 
     object_reference: ($) =>
-      choice(
-        seq(
-          field("object_reference_1of3", $.any_identifier),
-          ".",
-          field("object_reference_2of3", $.any_identifier),
-          ".",
-          field("object_reference_3of3", $.any_identifier)
-        ),
-        seq(
-          field("object_reference_1of2", $.any_identifier),
-          ".",
-          field("object_reference_2of2", $.any_identifier)
-        ),
-        field("object_reference_1of1", $.any_identifier)
+      prec(
+        10,
+        choice(
+          seq(
+            field("object_reference_1of3", $.any_identifier),
+            ".",
+            field("object_reference_2of3", $.any_identifier),
+            ".",
+            field("object_reference_3of3", $.any_identifier)
+          ),
+          seq(
+            field("object_reference_1of2", $.any_identifier),
+            ".",
+            field("object_reference_2of2", $.any_identifier)
+          ),
+          field("object_reference_1of1", $.any_identifier)
+        )
       ),
 
     type_reference: ($) =>

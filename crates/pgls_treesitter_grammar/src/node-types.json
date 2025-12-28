@@ -6860,16 +6860,6 @@
     "type": "invocation",
     "named": true,
     "fields": {
-      "end": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": ")",
-            "named": false
-          }
-        ]
-      },
       "parameter": {
         "multiple": true,
         "required": false,
