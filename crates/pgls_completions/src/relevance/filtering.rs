@@ -521,7 +521,10 @@ impl CompletionFilter<'_> {
         // we allow those nodes that do not change the clause
         if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
             if let Some(current_parent) = goto_closest_parent_clause(current_node) {
-                if Some(current_parent.kind()) == clause_to_investigate.map(|n| n.kind()) {
+                if Some(current_parent.kind()) == clause_to_investigate.map(|n| n.kind())
+                    && Some(current_parent.start_byte())
+                        == clause_to_investigate.map(|n| n.start_byte())
+                {
                     return Some(());
                 }
             }
