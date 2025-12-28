@@ -1,0 +1,20 @@
+---
+source: crates/pgls_cli/tests/assert_dblint.rs
+expression: output
+snapshot_kind: text
+---
+status: success
+stdout:
+Warning: Deprecated config filename detected. Use 'postgres-language-server.jsonc'.
+
+Command completed in <duration>.
+stderr:
+splinter/performance/noPrimaryKey ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  i Table \`public.test_no_pk\` does not have a primary key
+  
+  Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
+  
+  i table: public.test_no_pk
+  
+  i Remediation: https://supabase.com/docs/guides/database/database-linter?lint=0004_no_primary_key

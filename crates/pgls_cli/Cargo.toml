@@ -52,8 +52,10 @@ mimalloc = "0.1.43"
 tikv-jemallocator = "0.6.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.16"
-insta      = { workspace = true, features = ["yaml"] }
+assert_cmd      = "2.0.16"
+insta           = { workspace = true, features = ["yaml"] }
+pgls_test_utils = { workspace = true }
+sqlx            = { workspace = true }
 
 [lib]
 doctest = false

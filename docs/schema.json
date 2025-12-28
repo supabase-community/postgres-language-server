@@ -335,7 +335,7 @@
           "description": "Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -346,7 +346,7 @@
           "description": "Duplicate Index: Detects cases where two ore more identical indexes exist.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -357,7 +357,7 @@
           "description": "Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -368,7 +368,7 @@
           "description": "No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -386,7 +386,7 @@
           "description": "Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -397,7 +397,7 @@
           "description": "Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -408,7 +408,7 @@
           "description": "Unused Index: Detects if an index has never been used and may be a candidate for removal.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -462,6 +462,32 @@
           "allOf": [
             {
               "$ref": "#/definitions/RulePlainConfiguration"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleWithSplinterRuleOptions": {
+      "type": "object",
+      "required": [
+        "level",
+        "options"
+      ],
+      "properties": {
+        "level": {
+          "description": "The severity of the emitted diagnostics by the rule",
+          "allOf": [
+            {
+              "$ref": "#/definitions/RulePlainConfiguration"
+            }
+          ]
+        },
+        "options": {
+          "description": "Rule's options",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SplinterRuleOptions"
             }
           ]
         }
@@ -867,7 +893,7 @@
           "description": "Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -878,7 +904,7 @@
           "description": "Extension in Public: Detects extensions installed in the `public` schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -889,7 +915,7 @@
           "description": "Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -900,7 +926,7 @@
           "description": "Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -911,7 +937,7 @@
           "description": "Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -922,7 +948,7 @@
           "description": "Function Search Path Mutable: Detects functions where the search_path parameter is not set.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -933,7 +959,7 @@
           "description": "Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -944,7 +970,7 @@
           "description": "Materialized View in API: Detects materialized views that are accessible over the Data APIs.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -955,7 +981,7 @@
           "description": "Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -973,7 +999,7 @@
           "description": "RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -984,7 +1010,7 @@
           "description": "RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -995,7 +1021,7 @@
           "description": "RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -1006,7 +1032,7 @@
           "description": "Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -1017,7 +1043,7 @@
           "description": "Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.",
           "anyOf": [
             {
-              "$ref": "#/definitions/RuleConfiguration"
+              "$ref": "#/definitions/SplinterRuleConfiguration"
             },
             {
               "type": "null"
@@ -1047,6 +1073,31 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SplinterRuleConfiguration": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RulePlainConfiguration"
+        },
+        {
+          "$ref": "#/definitions/RuleWithSplinterRuleOptions"
+        }
+      ]
+    },
+    "SplinterRuleOptions": {
+      "description": "Shared options for all splinter rules.\n\nThese options allow configuring per-rule filtering of database objects.",
+      "type": "object",
+      "properties": {
+        "ignore": {
+          "description": "A list of glob patterns for database objects to ignore.\n\nPatterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character\n\nEach pattern should be in the format `schema.object_name`, for example: - `\"public.my_table\"` - ignores a specific table - `\"audit.*\"` - ignores all objects in the audit schema - `\"*.audit_*\"` - ignores objects with audit_ prefix in any schema",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false

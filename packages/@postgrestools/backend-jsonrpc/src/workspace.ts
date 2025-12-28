@@ -649,19 +649,19 @@ export interface Performance {
 	/**
 	 * Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row
 	 */
-	authRlsInitplan?: RuleConfiguration_for_Null;
+	authRlsInitplan?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Duplicate Index: Detects cases where two ore more identical indexes exist.
 	 */
-	duplicateIndex?: RuleConfiguration_for_Null;
+	duplicateIndex?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.
 	 */
-	multiplePermissivePolicies?: RuleConfiguration_for_Null;
+	multiplePermissivePolicies?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
 	 */
-	noPrimaryKey?: RuleConfiguration_for_Null;
+	noPrimaryKey?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * It enables the recommended rules for this group
 	 */
@@ -669,15 +669,15 @@ export interface Performance {
 	/**
 	 * Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.
 	 */
-	tableBloat?: RuleConfiguration_for_Null;
+	tableBloat?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.
 	 */
-	unindexedForeignKeys?: RuleConfiguration_for_Null;
+	unindexedForeignKeys?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Unused Index: Detects if an index has never been used and may be a candidate for removal.
 	 */
-	unusedIndex?: RuleConfiguration_for_Null;
+	unusedIndex?: RuleConfiguration_for_SplinterRuleOptions;
 }
 /**
  * A list of rules that belong to this group
@@ -690,39 +690,39 @@ export interface Security {
 	/**
 	 * Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.
 	 */
-	authUsersExposed?: RuleConfiguration_for_Null;
+	authUsersExposed?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Extension in Public: Detects extensions installed in the `public` schema.
 	 */
-	extensionInPublic?: RuleConfiguration_for_Null;
+	extensionInPublic?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.
 	 */
-	extensionVersionsOutdated?: RuleConfiguration_for_Null;
+	extensionVersionsOutdated?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.
 	 */
-	fkeyToAuthUnique?: RuleConfiguration_for_Null;
+	fkeyToAuthUnique?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.
 	 */
-	foreignTableInApi?: RuleConfiguration_for_Null;
+	foreignTableInApi?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Function Search Path Mutable: Detects functions where the search_path parameter is not set.
 	 */
-	functionSearchPathMutable?: RuleConfiguration_for_Null;
+	functionSearchPathMutable?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs
 	 */
-	insecureQueueExposedInApi?: RuleConfiguration_for_Null;
+	insecureQueueExposedInApi?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Materialized View in API: Detects materialized views that are accessible over the Data APIs.
 	 */
-	materializedViewInApi?: RuleConfiguration_for_Null;
+	materializedViewInApi?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.
 	 */
-	policyExistsRlsDisabled?: RuleConfiguration_for_Null;
+	policyExistsRlsDisabled?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * It enables the recommended rules for this group
 	 */
@@ -730,27 +730,30 @@ export interface Security {
 	/**
 	 * RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST
 	 */
-	rlsDisabledInPublic?: RuleConfiguration_for_Null;
+	rlsDisabledInPublic?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.
 	 */
-	rlsEnabledNoPolicy?: RuleConfiguration_for_Null;
+	rlsEnabledNoPolicy?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.
 	 */
-	rlsReferencesUserMetadata?: RuleConfiguration_for_Null;
+	rlsReferencesUserMetadata?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user
 	 */
-	securityDefinerView?: RuleConfiguration_for_Null;
+	securityDefinerView?: RuleConfiguration_for_SplinterRuleOptions;
 	/**
 	 * Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.
 	 */
-	unsupportedRegTypes?: RuleConfiguration_for_Null;
+	unsupportedRegTypes?: RuleConfiguration_for_SplinterRuleOptions;
 }
 export type RuleConfiguration_for_Null =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_Null;
+export type RuleConfiguration_for_SplinterRuleOptions =
+	| RulePlainConfiguration
+	| RuleWithOptions_for_SplinterRuleOptions;
 export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
 export interface RuleWithOptions_for_Null {
 	/**
@@ -761,6 +764,31 @@ export interface RuleWithOptions_for_Null {
 	 * Rule's options
 	 */
 	options: null;
+}
+export interface RuleWithOptions_for_SplinterRuleOptions {
+	/**
+	 * The severity of the emitted diagnostics by the rule
+	 */
+	level: RulePlainConfiguration;
+	/**
+	 * Rule's options
+	 */
+	options: SplinterRuleOptions;
+}
+/**
+	* Shared options for all splinter rules.
+
+These options allow configuring per-rule filtering of database objects. 
+	 */
+export interface SplinterRuleOptions {
+	/**
+	* A list of glob patterns for database objects to ignore.
+
+Patterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character
+
+Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema 
+	 */
+	ignore?: string[];
 }
 export interface OpenFileParams {
 	content: string;

@@ -733,6 +733,7 @@ impl Workspace for WorkspaceServer {
         let pool_clone = pool.clone();
         let schema_cache_clone = schema_cache.clone();
         let categories = params.categories;
+        let rules_config = settings.splinter.rules.clone();
         let splinter_result = run_async(async move {
             let filter = AnalysisFilter {
                 categories,
@@ -742,6 +743,7 @@ impl Workspace for WorkspaceServer {
             let splinter_params = pgls_splinter::SplinterParams {
                 conn: &pool_clone,
                 schema_cache: schema_cache_clone.as_deref(),
+                rules_config: rules_config.as_ref(),
             };
             pgls_splinter::run_splinter(splinter_params, &filter).await
         });

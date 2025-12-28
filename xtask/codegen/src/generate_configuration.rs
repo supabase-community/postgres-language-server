@@ -220,7 +220,6 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         quote! {}
     };
 
-
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
@@ -363,7 +362,6 @@ fn generate_lint_rules_file(
     // Schema name for the Rules struct (e.g., "LinterRules", "SplinterRules")
     let rules_schema_name = format!("{}Rules", to_capitalized(tool.name));
     let rules_schema_name_lit = Literal::string(&rules_schema_name);
-
 
     let rules_struct_content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
