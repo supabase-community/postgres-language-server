@@ -9,6 +9,7 @@ use crate::{
     queries::{self, QueryResult, TreeSitterQueriesExecutor},
 };
 use pgls_text_size::TextSize;
+use tree_sitter::Language;
 
 mod ancestors;
 
@@ -103,6 +104,8 @@ pub struct TreeSitterContextParams<'a> {
 pub struct TreesitterContext<'a> {
     pub node_under_cursor: tree_sitter::Node<'a>,
 
+    pub possible_keywords_at_position: Vec<&'static str>,
+
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub position: usize,
@@ -148,10 +151,12 @@ impl<'a> TreesitterContext<'a> {
             mentioned_table_aliases: HashMap::new(),
             mentioned_columns: HashMap::new(),
             scope_tracker: ScopeTracker::new(),
+            possible_keywords_at_position: vec![],
         };
 
         ctx.gather_tree_context();
         ctx.gather_info_from_ts_queries();
+        ctx.gather_possible_keywords_at_position();
 
         ctx
     }
@@ -232,6 +237,26 @@ impl<'a> TreesitterContext<'a> {
                 }
                 _ => {}
             };
+        }
+    }
+
+    fn gather_possible_keywords_at_position(&mut self) {
+        let parse_state = if self.node_under_cursor.kind() == "ERROR" {
+            if self.node_under_cursor.child_count() > 0 {
+                self.node_under_cursor.child(0).unwrap().parse_state()
+            } else {
+                self.node_under_cursor.parse_state()
+            }
+        } else {
+            self.node_under_cursor.parse_state()
+        };
+
+        let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
+        if let Some(mut lookahead_iterator) = language.lookahead_iterator(parse_state) {
+            self.possible_keywords_at_position = lookahead_iterator
+                .iter_names()
+                .filter_map(|kw| kw.strip_prefix("keyword_"))
+                .collect();
         }
     }
 

@@ -16,6 +16,10 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 
 impl CompletionFilter<'_> {
     pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
+        if matches!(self.data, CompletionRelevanceData::Keyword(_)) {
+            return Some(());
+        }
+
         self.completable_context(ctx)?;
 
         self.check_specific_node_type(ctx)
@@ -359,6 +363,8 @@ impl CompletionFilter<'_> {
 
                         _ => false,
                     },
+
+                    CompletionRelevanceData::Keyword(_) => false,
                 }
             })
             .and_then(|is_ok| if is_ok { Some(()) } else { None })
@@ -401,6 +407,7 @@ impl CompletionFilter<'_> {
             CompletionRelevanceData::Schema(_) => false,
             // no policy or row completion if user typed a schema node first.
             CompletionRelevanceData::Policy(_) | CompletionRelevanceData::Role(_) => false,
+            CompletionRelevanceData::Keyword(_) => false,
         };
 
         if !matches {
