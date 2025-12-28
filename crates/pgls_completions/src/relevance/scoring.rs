@@ -59,7 +59,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
             CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Keyword(k) => k.to_ascii_lowercase(),
+            CompletionRelevanceData::Keyword(k) => k.name.to_ascii_lowercase(),
         };
 
         let fz_matcher = SkimMatcherV2::default();
@@ -299,7 +299,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
             CompletionRelevanceData::Policy(p) => p.name.as_str(),
             CompletionRelevanceData::Role(r) => r.name.as_str(),
-            CompletionRelevanceData::Keyword(k) => k,
+            CompletionRelevanceData::Keyword(k) => k.name,
         }
     }
 

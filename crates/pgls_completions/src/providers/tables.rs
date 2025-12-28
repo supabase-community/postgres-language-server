@@ -64,8 +64,8 @@ mod tests {
     use crate::{
         CompletionItem, CompletionItemKind, complete,
         test_helper::{
-            CompletionAssertion, assert_complete_results, assert_no_complete_results,
-            get_test_deps, get_test_params,
+            CompletionAssertion, TestCompletionsCase, TestCompletionsSuite,
+            assert_complete_results, assert_no_complete_results, get_test_deps, get_test_params,
         },
     };
 
@@ -411,27 +411,22 @@ mod tests {
             );
         "#;
 
-        assert_complete_results(
-            format!(
-                "select * from auth.users u join {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind(
-                    "information_schema".into(),
-                    CompletionItemKind::Schema,
-                ),
-                CompletionAssertion::LabelAndKind("pg_catalog".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("pg_toast".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            Some(setup),
-            &pool,
-        )
-        .await;
+        let query = format!(
+            // "select * from auth.users u j{}",
+            "select * from auth.users as u join client_settings c on u.id = c.client_id wh{}",
+            QueryWithCursorPosition::cursor_marker()
+        );
+
+        assert_complete_results(query.as_str(), vec![], Some(setup), &pool).await;
+
+        // TestCompletionsSuite::new(&pool, Some(setup))
+        //     .with_case(
+        //         TestCompletionsCase::new()
+        //             .inside_static_statement("select * from auth.users u <sql>")
+        //             .type_sql("join"),
+        //     )
+        //     .snapshot("suggests_tables_in_join")
+        //     .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

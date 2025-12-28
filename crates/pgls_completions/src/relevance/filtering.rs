@@ -1,5 +1,9 @@
 use pgls_schema_cache::ProcKind;
-use pgls_treesitter::context::{TreesitterContext, WrappingClause, WrappingNode};
+use pgls_treesitter::{
+    context::{TreesitterContext, WrappingClause, WrappingNode},
+    goto_closest_parent_clause, goto_node_at_position,
+};
+use tree_sitter::{InputEdit, Point, Tree};
 
 use super::CompletionRelevanceData;
 
@@ -15,8 +19,10 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 }
 
 impl CompletionFilter<'_> {
-    pub fn is_relevant(&self, ctx: &TreesitterContext) -> Option<()> {
-        if matches!(self.data, CompletionRelevanceData::Keyword(_)) {
+    pub fn is_relevant(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+        if let CompletionRelevanceData::Keyword(kw) = self.data {
+            self.check_keyword_requires_prefix(ctx, kw)?;
+            self.valid_keyword(ctx, shared_tree)?;
             Some(())
         } else {
             self.completable_context(ctx)?;
@@ -112,15 +118,18 @@ impl CompletionFilter<'_> {
 
             "any_identifier" => match self.data {
                 CompletionRelevanceData::Column(_) => {
-                    ctx.node_under_cursor_is_within_field(&[
+                    let matches_field = ctx.node_under_cursor_is_within_field(&[
                         "object_reference_1of1",
                         "object_reference_2of2",
                         "object_reference_3of3",
                         "column_reference_1of1",
                         "column_reference_2of2",
                         "column_reference_3of3",
-                    ]) && (!ctx.node_under_cursor_is_within_field(&["binary_expr_right"])
-                        || ctx.has_any_qualifier())
+                    ]);
+
+                    let has_any_qualifier = ctx.has_any_qualifier();
+
+                    matches_field || has_any_qualifier
                 }
 
                 CompletionRelevanceData::Schema(_) => ctx.node_under_cursor_is_within_field(&[
@@ -415,6 +424,118 @@ impl CompletionFilter<'_> {
         }
 
         Some(())
+    }
+
+    fn check_keyword_requires_prefix(
+        &self,
+        ctx: &TreesitterContext,
+        kw: &crate::providers::SqlKeyword,
+    ) -> Option<()> {
+        if !kw.require_prefix {
+            return Some(());
+        }
+
+        let content = ctx.get_node_under_cursor_content()?;
+        if content.is_empty() || crate::sanitization::is_sanitized_token(&content) {
+            return None;
+        }
+
+        Some(())
+    }
+
+    fn valid_keyword(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+        let keyword = if let CompletionRelevanceData::Keyword(kw) = self.data {
+            kw
+        } else {
+            return Some(());
+        };
+
+        let kw_name = keyword.name;
+
+        let start_position = ctx.node_under_cursor.start_position();
+        let start_byte = ctx.node_under_cursor.start_byte();
+        let old_end_position = ctx.node_under_cursor.end_position();
+        let old_end_byte = ctx.node_under_cursor.end_byte();
+
+        let new_end_byte = start_byte + kw_name.len();
+        let new_end_position = Point {
+            row: start_position.row,
+            column: start_position.column + kw_name.len(),
+        };
+
+        shared_tree.edit(&InputEdit {
+            new_end_byte,
+            new_end_position,
+            old_end_byte,
+            old_end_position,
+            start_byte,
+            start_position,
+        });
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+            .unwrap();
+
+        let replaced_sql = format!(
+            "{}{}{}",
+            &ctx.text[..start_byte],
+            kw_name,
+            &ctx.text[old_end_byte..]
+        );
+
+        let tree = parser.parse(replaced_sql, Some(shared_tree)).unwrap();
+
+        // undo changes to shared tree
+        shared_tree.edit(&InputEdit {
+            new_end_byte: old_end_byte,
+            new_end_position: old_end_position,
+            old_end_byte: new_end_byte,
+            old_end_position: new_end_position,
+            start_byte,
+            start_position,
+        });
+
+        let (clause_to_investigate, clause_completed) = if ctx.node_under_cursor.kind() != "ERROR" {
+            (ctx.current_clause, ctx.current_clause_completed)
+        } else {
+            (ctx.previous_clause, ctx.previous_clause_completed)
+        };
+
+        if tree.root_node().has_error() {
+            return None;
+        };
+
+        if clause_to_investigate.is_none() {
+            if keyword.starts_statement {
+                return Some(());
+            } else {
+                return None;
+            }
+        }
+
+        if clause_completed {
+            return Some(());
+        }
+
+        // we allow those nodes that do not change the clause
+        if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
+            if let Some(current_parent) = goto_closest_parent_clause(current_node) {
+                if Some(current_parent.kind()) == clause_to_investigate.map(|n| n.kind()) {
+                    return Some(());
+                }
+            }
+        }
+
+        // will allow those nodes that fully exchange the cluase
+        if let Some(current_node) = goto_node_at_position(&tree, start_byte) {
+            // replacing the start byte means full exchanging
+            if Some(current_node.start_byte()) == clause_to_investigate.map(|n| n.start_byte()) {
+                return Some(());
+            }
+        }
+
+        None
     }
 }
 

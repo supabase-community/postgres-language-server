@@ -186,6 +186,8 @@ pub(crate) async fn assert_complete_results(
         items.len()
     );
 
+    println!("{:#?}", &items[..items.len()]);
+
     for item in &items {
         for assertion in &not_existing {
             assertion.assert(item);

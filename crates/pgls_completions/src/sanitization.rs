@@ -147,7 +147,7 @@ fn cursor_inbetween_nodes(sql: &str, position: TextSize) -> bool {
     let mut chars = sql.chars();
 
     let previous_whitespace = chars
-        .nth(position - 1)
+        .nth(position.saturating_sub(1))
         .is_some_and(|c| c.is_ascii_whitespace());
 
     let current_whitespace = chars.next().is_some_and(|c| c.is_ascii_whitespace());
@@ -170,7 +170,9 @@ fn cursor_prepared_to_write_token_after_last_node(sql: &str, position: TextSize)
 
 fn cursor_on_a_dot(sql: &str, position: TextSize) -> bool {
     let position: usize = position.into();
-    sql.chars().nth(position - 1).is_some_and(|c| c == '.')
+    sql.chars()
+        .nth(position.saturating_sub(1))
+        .is_some_and(|c| c == '.')
 }
 
 fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool {
@@ -245,7 +247,11 @@ fn cursor_between_parentheses(sql: &str, position: TextSize) -> bool {
     // early check: '(|)'
     // however, we want to check this after the level nesting.
     let mut chars = sql.chars();
-    if chars.nth(position - 1).is_some_and(|c| c == '(') && chars.next().is_some_and(|c| c == ')') {
+    if chars
+        .nth(position.saturating_sub(1))
+        .is_some_and(|c| c == '(')
+        && chars.next().is_some_and(|c| c == ')')
+    {
         return true;
     }
 
