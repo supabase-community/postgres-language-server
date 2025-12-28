@@ -706,9 +706,71 @@ impl Workspace for WorkspaceServer {
 
     fn pull_db_diagnostics(
         &self,
-        _params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
+        params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
-        Ok(PullDiagnosticsResult::default())
+        let settings = self.workspaces();
+        let Some(settings) = settings.settings() else {
+            debug!("No settings available. Returning empty diagnostics.");
+            return Ok(PullDiagnosticsResult::default());
+        };
+
+        if !settings.splinter.enabled {
+            debug!("Splinter is disabled. Skipping database linting.");
+            return Ok(PullDiagnosticsResult::default());
+        }
+
+        let Some(pool) = self.get_current_connection() else {
+            debug!("No database connection available. Skipping splinter checks.");
+            return Ok(PullDiagnosticsResult::default());
+        };
+
+        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
+            .with_splinter_rules(&params.only, &params.skip)
+            .finish();
+
+        let schema_cache = self.schema_cache.load(pool.clone()).ok();
+
+        let pool_clone = pool.clone();
+        let schema_cache_clone = schema_cache.clone();
+        let categories = params.categories;
+        let splinter_result = run_async(async move {
+            let filter = AnalysisFilter {
+                categories,
+                enabled_rules: Some(enabled_rules.as_slice()),
+                disabled_rules: &disabled_rules,
+            };
+            let splinter_params = pgls_splinter::SplinterParams {
+                conn: &pool_clone,
+                schema_cache: schema_cache_clone.as_deref(),
+            };
+            pgls_splinter::run_splinter(splinter_params, &filter).await
+        });
+
+        let splinter_diagnostics = match splinter_result {
+            Ok(Ok(diags)) => diags,
+            Ok(Err(sql_err)) => {
+                debug!("Splinter SQL error: {:?}", sql_err);
+                return Err(sql_err.into());
+            }
+            Err(join_err) => {
+                debug!("Splinter join error: {:?}", join_err);
+                return Err(join_err);
+            }
+        };
+
+        let total = splinter_diagnostics.len();
+        let max = params.max_diagnostics as usize;
+        let diagnostics: Vec<SDiagnostic> = splinter_diagnostics
+            .into_iter()
+            .take(max)
+            .map(SDiagnostic::new)
+            .collect();
+        let skipped = total.saturating_sub(max) as u32;
+
+        Ok(PullDiagnosticsResult {
+            diagnostics,
+            skipped_diagnostics: skipped,
+        })
     }
 
     #[ignored_path(path=&params.path)]
