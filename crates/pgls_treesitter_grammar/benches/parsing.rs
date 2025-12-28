@@ -1,7 +1,7 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("small sql", |b| {
+    c.bench_function("parsing > small sql", |b| {
         let content = format!("select * from users;");
 
         b.iter(|| {
@@ -14,7 +14,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("mid sql", |b| {
+    c.bench_function("parsing > mid sql", |b| {
         let content = format!(
             r#"select
   n.oid :: int8 as "id!",
@@ -43,7 +43,7 @@ where
         });
     });
 
-    c.bench_function("large sql", |b| {
+    c.bench_function("parsing > large sql", |b| {
         let content = format!(
             r#"with
   available_tables as (
