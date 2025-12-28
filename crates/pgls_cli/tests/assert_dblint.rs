@@ -1,40 +1,48 @@
 use assert_cmd::Command;
+use insta::assert_snapshot;
+use sqlx::PgPool;
 use std::process::ExitStatus;
 
 const BIN: &str = "postgres-language-server";
 
-/// Get database URL from environment or use default docker-compose URL
-fn get_database_url() -> Option<String> {
-    std::env::var("DATABASE_URL")
-        .ok()
-        .or_else(|| Some("postgres://postgres:postgres@127.0.0.1:5432/postgres".to_string()))
+/// Get database URL from the pool's connect options
+/// Uses the known docker-compose credentials (postgres:postgres)
+fn get_database_url(pool: &PgPool) -> String {
+    let opts = pool.connect_options();
+    format!(
+        "postgres://postgres:postgres@{}:{}/{}",
+        opts.get_host(),
+        opts.get_port(),
+        opts.get_database().unwrap_or("postgres")
+    )
 }
 
-/// Execute SQL against the database
-fn execute_sql(sql: &str) -> bool {
-    let Some(url) = get_database_url() else {
-        return false;
-    };
-
-    std::process::Command::new("psql")
-        .arg(&url)
-        .arg("-c")
-        .arg(sql)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+async fn dblint_empty_database_snapshot(test_db: PgPool) {
+    let url = get_database_url(&test_db);
+    let output = run_dblint(&url, &[]);
+    assert_snapshot!(output);
 }
 
-/// Setup test schema with known issues for splinter to detect
-fn setup_test_schema() {
-    // Create a table without a primary key (triggers no_primary_key rule)
-    execute_sql("DROP TABLE IF EXISTS dblint_test_no_pk CASCADE");
-    execute_sql("CREATE TABLE dblint_test_no_pk (id int, name text)");
-}
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+#[cfg_attr(
+    target_os = "windows",
+    ignore = "snapshot expectations only validated on unix-like platforms"
+)]
+async fn dblint_detects_issues_snapshot(test_db: PgPool) {
+    // Setup: create table without primary key (triggers noPrimaryKey rule)
+    sqlx::raw_sql("CREATE TABLE test_no_pk (id int, name text)")
+        .execute(&test_db)
+        .await
+        .expect("Failed to create test table");
 
-/// Cleanup test schema
-fn cleanup_test_schema() {
-    execute_sql("DROP TABLE IF EXISTS dblint_test_no_pk CASCADE");
+    let url = get_database_url(&test_db);
+    let output = run_dblint(&url, &[]);
+    assert_snapshot!(output);
 }
 
 #[test]
@@ -42,66 +50,25 @@ fn cleanup_test_schema() {
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
-fn dblint_runs_without_errors() {
-    let output = run_dblint(&[]);
-    assert!(
-        output.contains("Command completed"),
-        "Expected successful completion, got: {output}",
-    );
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn dblint_detects_no_primary_key() {
-    // Setup: create table without primary key
-    setup_test_schema();
-
-    // Run dblint
-    let output = run_dblint(&[]);
-
-    // Cleanup
-    cleanup_test_schema();
-
-    // Should detect the no_primary_key issue
-    assert!(
-        output.contains("noPrimaryKey") || output.contains("primary key"),
-        "Expected to detect missing primary key issue, got: {output}",
-    );
-}
-
-#[test]
-#[cfg_attr(
-    target_os = "windows",
-    ignore = "snapshot expectations only validated on unix-like platforms"
-)]
-fn dblint_fails_without_database() {
-    // Test that dblint fails gracefully when no database is configured
+fn dblint_no_database_snapshot() {
+    // Test that dblint completes gracefully when no database is configured
     let mut cmd = Command::cargo_bin(BIN).expect("binary not built");
     let output = cmd
         .args(["dblint", "--disable-db", "--log-level", "none"])
         .output()
         .expect("failed to run CLI");
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
-    // Should complete (possibly with warning about no database)
-    assert!(
-        output.status.success()
-            || stderr.contains("database")
-            || stdout.contains("Command completed"),
-        "Expected graceful handling without database, got stdout: {stdout}, stderr: {stderr}",
+    let normalized = normalize_output(
+        output.status,
+        &String::from_utf8_lossy(&output.stdout),
+        &String::from_utf8_lossy(&output.stderr),
     );
+    assert_snapshot!(normalized);
 }
 
-fn run_dblint(args: &[&str]) -> String {
-    let url = get_database_url().expect("database URL required");
-
+fn run_dblint(url: &str, args: &[&str]) -> String {
     let mut cmd = Command::cargo_bin(BIN).expect("binary not built");
-    let mut full_args = vec!["dblint", "--connection-string", &url, "--log-level", "none"];
+    let mut full_args = vec!["dblint", "--connection-string", url, "--log-level", "none"];
     full_args.extend_from_slice(args);
 
     let output = cmd.args(full_args).output().expect("failed to run CLI");
