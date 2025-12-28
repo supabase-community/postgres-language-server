@@ -315,6 +315,10 @@ export interface PartialConfiguration {
 	 */
 	plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
 	/**
+	 * The configuration for splinter
+	 */
+	splinter?: PartialSplinterConfiguration;
+	/**
 	 * The configuration for type checking
 	 */
 	typecheck?: PartialTypecheckConfiguration;
@@ -391,7 +395,7 @@ export interface PartialLinterConfiguration {
 	/**
 	 * List of rules
 	 */
-	rules?: Rules;
+	rules?: LinterRules;
 }
 /**
  * The configuration of the filesystem
@@ -414,6 +418,16 @@ export interface PartialPlPgSqlCheckConfiguration {
 	 * if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
 	 */
 	enabled?: boolean;
+}
+export interface PartialSplinterConfiguration {
+	/**
+	 * if `false`, it disables the feature and the linter won't be executed. `true` by default
+	 */
+	enabled?: boolean;
+	/**
+	 * List of rules
+	 */
+	rules?: SplinterRules;
 }
 /**
  * The configuration for type checking.
@@ -455,7 +469,7 @@ If we can't find the configuration, it will attempt to use the current working d
 	 */
 	useIgnoreFile?: boolean;
 }
-export interface Rules {
+export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
 	 */
@@ -465,6 +479,18 @@ export interface Rules {
 	 */
 	recommended?: boolean;
 	safety?: Safety;
+}
+export interface SplinterRules {
+	/**
+	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+	 */
+	all?: boolean;
+	performance?: Performance;
+	/**
+	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+	 */
+	recommended?: boolean;
+	security?: Security;
 }
 export type VcsClientKind = "git";
 /**
@@ -611,6 +637,116 @@ export interface Safety {
 	 * Detects problematic transaction nesting that could lead to unexpected behavior.
 	 */
 	transactionNesting?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Performance {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row
+	 */
+	authRlsInitplan?: RuleConfiguration_for_Null;
+	/**
+	 * Duplicate Index: Detects cases where two ore more identical indexes exist.
+	 */
+	duplicateIndex?: RuleConfiguration_for_Null;
+	/**
+	 * Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.
+	 */
+	multiplePermissivePolicies?: RuleConfiguration_for_Null;
+	/**
+	 * No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
+	 */
+	noPrimaryKey?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+	/**
+	 * Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.
+	 */
+	tableBloat?: RuleConfiguration_for_Null;
+	/**
+	 * Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.
+	 */
+	unindexedForeignKeys?: RuleConfiguration_for_Null;
+	/**
+	 * Unused Index: Detects if an index has never been used and may be a candidate for removal.
+	 */
+	unusedIndex?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Security {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.
+	 */
+	authUsersExposed?: RuleConfiguration_for_Null;
+	/**
+	 * Extension in Public: Detects extensions installed in the `public` schema.
+	 */
+	extensionInPublic?: RuleConfiguration_for_Null;
+	/**
+	 * Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.
+	 */
+	extensionVersionsOutdated?: RuleConfiguration_for_Null;
+	/**
+	 * Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.
+	 */
+	fkeyToAuthUnique?: RuleConfiguration_for_Null;
+	/**
+	 * Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.
+	 */
+	foreignTableInApi?: RuleConfiguration_for_Null;
+	/**
+	 * Function Search Path Mutable: Detects functions where the search_path parameter is not set.
+	 */
+	functionSearchPathMutable?: RuleConfiguration_for_Null;
+	/**
+	 * Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs
+	 */
+	insecureQueueExposedInApi?: RuleConfiguration_for_Null;
+	/**
+	 * Materialized View in API: Detects materialized views that are accessible over the Data APIs.
+	 */
+	materializedViewInApi?: RuleConfiguration_for_Null;
+	/**
+	 * Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.
+	 */
+	policyExistsRlsDisabled?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+	/**
+	 * RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST
+	 */
+	rlsDisabledInPublic?: RuleConfiguration_for_Null;
+	/**
+	 * RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.
+	 */
+	rlsEnabledNoPolicy?: RuleConfiguration_for_Null;
+	/**
+	 * RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.
+	 */
+	rlsReferencesUserMetadata?: RuleConfiguration_for_Null;
+	/**
+	 * Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user
+	 */
+	securityDefinerView?: RuleConfiguration_for_Null;
+	/**
+	 * Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.
+	 */
+	unsupportedRegTypes?: RuleConfiguration_for_Null;
 }
 export type RuleConfiguration_for_Null =
 	| RulePlainConfiguration
