@@ -4,7 +4,6 @@
 mod options;
 pub use options::SplinterRuleOptions;
 mod rules;
-use biome_deserialize::StringSet;
 use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
 pub use rules::*;
@@ -20,12 +19,6 @@ pub struct SplinterConfiguration {
     #[doc = r" List of rules"]
     #[partial(bpaf(pure(Default::default()), optional, hide))]
     pub rules: Rules,
-    #[doc = r" A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns."]
-    #[partial(bpaf(hide))]
-    pub ignore: StringSet,
-    #[doc = r" A list of Unix shell style patterns. The linter will include files/folders that will match these patterns."]
-    #[partial(bpaf(hide))]
-    pub include: StringSet,
 }
 impl SplinterConfiguration {
     pub const fn is_disabled(&self) -> bool {
@@ -37,8 +30,6 @@ impl Default for SplinterConfiguration {
         Self {
             enabled: true,
             rules: Default::default(),
-            ignore: Default::default(),
-            include: Default::default(),
         }
     }
 }

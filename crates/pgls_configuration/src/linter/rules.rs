@@ -46,6 +46,7 @@ impl std::str::FromStr for RuleGroup {
 }
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(rename = "LinterRules"))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rules {
     #[doc = r" It enables the lint rules recommended by Postgres Language Server. `true` by default."]

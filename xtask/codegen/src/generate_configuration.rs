@@ -14,11 +14,17 @@ use xtask::*;
 struct ToolConfig {
     name: &'static str,
     category: RuleCategory,
+    /// Whether this tool operates on files (vs database)
+    handles_files: bool,
 }
 
 impl ToolConfig {
-    const fn new(name: &'static str, category: RuleCategory) -> Self {
-        Self { name, category }
+    const fn new(name: &'static str, category: RuleCategory, handles_files: bool) -> Self {
+        Self {
+            name,
+            category,
+            handles_files,
+        }
     }
 
     /// Derived: Directory name under pgls_configuration/src/
@@ -72,10 +78,10 @@ impl ToolConfig {
 
 /// All supported tools
 const TOOLS: &[ToolConfig] = &[
-    ToolConfig::new("linter", RuleCategory::Lint),
-    ToolConfig::new("assists", RuleCategory::Action),
-    ToolConfig::new("splinter", RuleCategory::Lint),
-    ToolConfig::new("pglinter", RuleCategory::Lint),
+    ToolConfig::new("linter", RuleCategory::Lint, true),
+    ToolConfig::new("assists", RuleCategory::Action, true),
+    ToolConfig::new("splinter", RuleCategory::Lint, false), // Database linter, doesn't handle files
+    ToolConfig::new("pglinter", RuleCategory::Lint, true),
 ];
 
 /// Visitor that collects rules for a specific category
@@ -182,6 +188,39 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         quote! {}
     };
 
+    // Only file-based tools need ignore/include fields
+    let handles_files = tool.handles_files;
+
+    let file_fields = if handles_files {
+        quote! {
+            /// A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
+            #[partial(bpaf(hide))]
+            pub ignore: StringSet,
+
+            /// A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
+            #[partial(bpaf(hide))]
+            pub include: StringSet,
+        }
+    } else {
+        quote! {}
+    };
+
+    let file_defaults = if handles_files {
+        quote! {
+            ignore: Default::default(),
+            include: Default::default(),
+        }
+    } else {
+        quote! {}
+    };
+
+    let string_set_import = if handles_files {
+        quote! { use biome_deserialize::StringSet; }
+    } else {
+        quote! {}
+    };
+
+
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
@@ -189,7 +228,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
 
         mod #generated_file_ident;
 
-        use biome_deserialize::StringSet;
+        #string_set_import
         use biome_deserialize_macros::{Merge, Partial};
         use bpaf::Bpaf;
         pub use #generated_file_ident::*;
@@ -208,13 +247,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
             #[partial(bpaf(pure(Default::default()), optional, hide))]
             pub rules: Rules,
 
-            /// A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
-            #[partial(bpaf(hide))]
-            pub ignore: StringSet,
-
-            /// A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
-            #[partial(bpaf(hide))]
-            pub include: StringSet,
+            #file_fields
         }
 
         impl #config_struct {
@@ -228,8 +261,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
                 Self {
                     enabled: true,
                     rules: Default::default(),
-                    ignore: Default::default(),
-                    include: Default::default(),
+                    #file_defaults
                 }
             }
         }
@@ -328,6 +360,11 @@ fn generate_lint_rules_file(
         quote! {}
     };
 
+    // Schema name for the Rules struct (e.g., "LinterRules", "SplinterRules")
+    let rules_schema_name = format!("{}Rules", to_capitalized(tool.name));
+    let rules_schema_name_lit = Literal::string(&rules_schema_name);
+
+
     let rules_struct_content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
@@ -368,6 +405,7 @@ fn generate_lint_rules_file(
 
         #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
         #[cfg_attr(feature = "schema", derive(JsonSchema))]
+        #[cfg_attr(feature = "schema", schemars(rename = #rules_schema_name_lit))]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
         pub struct Rules {
             /// It enables the lint rules recommended by Postgres Language Server. `true` by default.
@@ -736,6 +774,7 @@ fn generate_lint_group_struct(
 }
 
 /// Extract the first paragraph from markdown documentation as a summary
+/// Stops at the first heading (## etc) or end of first paragraph
 fn extract_summary_from_docs(docs: &str) -> String {
     let mut summary = String::new();
     let parser = Parser::new(docs);
@@ -755,6 +794,16 @@ fn extract_summary_from_docs(docs: &str) -> String {
             Event::Start(Tag::Paragraph) => {}
             Event::End(TagEnd::Paragraph) => {
                 break;
+            }
+            // Stop at H2+ headings (subsections) - H1 is the title
+            Event::Start(Tag::Heading { level, .. })
+                if level != pulldown_cmark::HeadingLevel::H1 =>
+            {
+                break;
+            }
+            // Add separator after H1 heading ends
+            Event::End(TagEnd::Heading(_)) => {
+                summary.push_str(": ");
             }
             Event::Start(tag) => match tag {
                 Tag::Strong | Tag::Paragraph => continue,

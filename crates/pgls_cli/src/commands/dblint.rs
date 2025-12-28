@@ -3,6 +3,7 @@ use std::time::Instant;
 use crate::cli_options::CliOptions;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
+use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::PartialConfiguration;
 use pgls_diagnostics::Error;
 use pgls_workspace::features::diagnostics::{PullDatabaseDiagnosticsParams, PullDiagnosticsResult};
@@ -24,10 +25,17 @@ pub fn dblint(
 
     let start = Instant::now();
 
+    let params = PullDatabaseDiagnosticsParams {
+        categories: RuleCategoriesBuilder::default().all().build(),
+        max_diagnostics,
+        only: Vec::new(), // Uses configuration settings
+        skip: Vec::new(), // Uses configuration settings
+    };
+
     let PullDiagnosticsResult {
         diagnostics,
         skipped_diagnostics,
-    } = workspace.pull_db_diagnostics(PullDatabaseDiagnosticsParams { max_diagnostics })?;
+    } = workspace.pull_db_diagnostics(params)?;
 
     let report = Report::new(
         diagnostics.into_iter().map(Error::from).collect(),

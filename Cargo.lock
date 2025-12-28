@@ -3175,6 +3175,7 @@ dependencies = [
  "pgls_query",
  "pgls_query_ext",
  "pgls_schema_cache",
+ "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",
  "pgls_test_utils",
