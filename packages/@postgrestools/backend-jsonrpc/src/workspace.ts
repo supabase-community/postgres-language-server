@@ -95,28 +95,6 @@ export type Category =
 	| "lint/safety/requireConcurrentIndexDeletion"
 	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
-	| "pglinter/extensionNotInstalled"
-	| "pglinter/ruleDisabledInExtension"
-	| "pglinter/base/compositePrimaryKeyTooManyColumns"
-	| "pglinter/base/howManyObjectsWithUppercase"
-	| "pglinter/base/howManyRedudantIndex"
-	| "pglinter/base/howManyTableWithoutIndexOnFk"
-	| "pglinter/base/howManyTableWithoutPrimaryKey"
-	| "pglinter/base/howManyTablesNeverSelected"
-	| "pglinter/base/howManyTablesWithFkMismatch"
-	| "pglinter/base/howManyTablesWithFkOutsideSchema"
-	| "pglinter/base/howManyTablesWithReservedKeywords"
-	| "pglinter/base/howManyTablesWithSameTrigger"
-	| "pglinter/base/howManyUnusedIndex"
-	| "pglinter/base/severalTableOwnerInSchema"
-	| "pglinter/cluster/passwordEncryptionIsMd5"
-	| "pglinter/cluster/pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists"
-	| "pglinter/cluster/pgHbaEntriesWithMethodTrustShouldNotExists"
-	| "pglinter/schema/ownerSchemaIsInternalRole"
-	| "pglinter/schema/schemaOwnerDoNotMatchTableOwner"
-	| "pglinter/schema/schemaPrefixedOrSuffixedWithEnvt"
-	| "pglinter/schema/schemaWithDefaultRoleNotGranted"
-	| "pglinter/schema/unsecuredPublicSchema"
 	| "splinter/performance/authRlsInitplan"
 	| "splinter/performance/duplicateIndex"
 	| "splinter/performance/multiplePermissivePolicies"
@@ -140,7 +118,6 @@ export type Category =
 	| "splinter/security/unsupportedRegTypes"
 	| "stdin"
 	| "check"
-	| "format"
 	| "configuration"
 	| "database/connection"
 	| "internalError/io"
@@ -158,11 +135,7 @@ export type Category =
 	| "lint/safety"
 	| "splinter"
 	| "splinter/performance"
-	| "splinter/security"
-	| "pglinter"
-	| "pglinter/base"
-	| "pglinter/cluster"
-	| "pglinter/schema";
+	| "splinter/security";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
@@ -184,7 +157,6 @@ export type Advice =
 	| { list: MarkupBuf[] }
 	| { frame: Location }
 	| { diff: TextEdit }
-	| { diffWithOffset: [TextEdit, number] }
 	| { backtrace: [MarkupBuf, Backtrace] }
 	| { command: string }
 	| { group: [MarkupBuf, Advices] };
@@ -303,8 +275,7 @@ export type CompletionItemKind =
 	| "column"
 	| "schema"
 	| "policy"
-	| "role"
-	| "keyword";
+	| "role";
 export interface UpdateSettingsParams {
 	configuration: PartialConfiguration;
 	gitignore_matches: string[];
@@ -332,10 +303,6 @@ export interface PartialConfiguration {
 	 */
 	files?: PartialFilesConfiguration;
 	/**
-	 * The configuration for the SQL formatter
-	 */
-	format?: PartialFormatConfiguration;
-	/**
 	 * The configuration for the linter
 	 */
 	linter?: PartialLinterConfiguration;
@@ -343,10 +310,6 @@ export interface PartialConfiguration {
 	 * Configure migrations
 	 */
 	migrations?: PartialMigrationsConfiguration;
-	/**
-	 * The configuration for pglinter
-	 */
-	pglinter?: PartialPglinterConfiguration;
 	/**
 	 * The configuration for type checking
 	 */
@@ -416,47 +379,6 @@ export interface PartialFilesConfiguration {
 	 */
 	maxSize?: number;
 }
-/**
- * The configuration for SQL formatting.
- */
-export interface PartialFormatConfiguration {
-	/**
-	 * Constant casing (NULL, TRUE, FALSE): "upper" or "lower". Default: "lower".
-	 */
-	constantCase?: KeywordCase;
-	/**
-	 * If `false`, it disables the formatter. `true` by default.
-	 */
-	enabled?: boolean;
-	/**
-	 * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
-	 */
-	ignore?: StringSet;
-	/**
-	 * A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.
-	 */
-	include?: StringSet;
-	/**
-	 * Number of spaces (or tab width) for indentation. Default: 2.
-	 */
-	indentSize?: number;
-	/**
-	 * Indentation style: "spaces" or "tabs". Default: "spaces".
-	 */
-	indentStyle?: IndentStyle;
-	/**
-	 * Keyword casing: "upper" or "lower". Default: "lower".
-	 */
-	keywordCase?: KeywordCase;
-	/**
-	 * Maximum line width before breaking. Default: 100.
-	 */
-	lineWidth?: number;
-	/**
-	 * Data type casing (text, varchar, int): "upper" or "lower". Default: "lower".
-	 */
-	typeCase?: KeywordCase;
-}
 export interface PartialLinterConfiguration {
 	/**
 	 * if `false`, it disables the feature and the linter won't be executed. `true` by default
@@ -488,16 +410,6 @@ export interface PartialMigrationsConfiguration {
 	 */
 	migrationsDir?: string;
 }
-export interface PartialPglinterConfiguration {
-	/**
-	 * if `false`, it disables the feature and the linter won't be executed. `true` by default
-	 */
-	enabled?: boolean;
-	/**
-	 * List of rules
-	 */
-	rules?: PglinterRules;
-}
 /**
  * The configuration for type checking.
  */
@@ -512,10 +424,6 @@ export interface PartialSplinterConfiguration {
 	 * if `false`, it disables the feature and the linter won't be executed. `true` by default
 	 */
 	enabled?: boolean;
-	/**
-	 * A list of glob patterns for database objects to ignore across all rules. Patterns use Unix-style globs where `*` matches any sequence of characters. Format: `schema.object_name`, e.g., "public.my_table", "audit.*"
-	 */
-	ignore?: StringSet;
 	/**
 	 * List of rules
 	 */
@@ -561,14 +469,6 @@ If we can't find the configuration, it will attempt to use the current working d
 	 */
 	useIgnoreFile?: boolean;
 }
-/**
- * Keyword casing style for the formatter.
- */
-export type KeywordCase = "upper" | "lower";
-/**
- * Indentation style for the formatter.
- */
-export type IndentStyle = "spaces" | "tabs";
 export interface LinterRules {
 	/**
 	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
@@ -579,19 +479,6 @@ export interface LinterRules {
 	 */
 	recommended?: boolean;
 	safety?: Safety;
-}
-export interface PglinterRules {
-	/**
-	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
-	 */
-	all?: boolean;
-	base?: Base;
-	cluster?: Cluster;
-	/**
-	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
-	 */
-	recommended?: boolean;
-	schema?: Schema;
 }
 export interface SplinterRules {
 	/**
@@ -754,125 +641,6 @@ export interface Safety {
 /**
  * A list of rules that belong to this group
  */
-export interface Base {
-	/**
-	 * It enables ALL rules for this group.
-	 */
-	all?: boolean;
-	/**
-	 * CompositePrimaryKeyTooManyColumns (B012): Detect tables with composite primary keys involving more than 4 columns
-	 */
-	compositePrimaryKeyTooManyColumns?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyObjectsWithUppercase (B005): Count number of objects with uppercase in name or in columns.
-	 */
-	howManyObjectsWithUppercase?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyRedudantIndex (B002): Count number of redundant index vs nb index.
-	 */
-	howManyRedudantIndex?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTableWithoutIndexOnFk (B003): Count number of tables without index on foreign key.
-	 */
-	howManyTableWithoutIndexOnFk?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTableWithoutPrimaryKey (B001): Count number of tables without primary key.
-	 */
-	howManyTableWithoutPrimaryKey?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTablesNeverSelected (B006): Count number of table(s) that has never been selected.
-	 */
-	howManyTablesNeverSelected?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTablesWithFkMismatch (B008): Count number of tables with foreign keys that do not match the key reference type.
-	 */
-	howManyTablesWithFkMismatch?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTablesWithFkOutsideSchema (B007): Count number of tables with foreign keys outside their schema.
-	 */
-	howManyTablesWithFkOutsideSchema?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTablesWithReservedKeywords (B010): Count number of database objects using reserved keywords in their names.
-	 */
-	howManyTablesWithReservedKeywords?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyTablesWithSameTrigger (B009): Count number of tables using the same trigger vs nb table with their own triggers.
-	 */
-	howManyTablesWithSameTrigger?: RuleConfiguration_for_Null;
-	/**
-	 * HowManyUnusedIndex (B004): Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
-	 */
-	howManyUnusedIndex?: RuleConfiguration_for_Null;
-	/**
-	 * It enables the recommended rules for this group
-	 */
-	recommended?: boolean;
-	/**
-	 * SeveralTableOwnerInSchema (B011): In a schema there are several tables owned by different owners.
-	 */
-	severalTableOwnerInSchema?: RuleConfiguration_for_Null;
-}
-/**
- * A list of rules that belong to this group
- */
-export interface Cluster {
-	/**
-	 * It enables ALL rules for this group.
-	 */
-	all?: boolean;
-	/**
-	 * PasswordEncryptionIsMd5 (C003): This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.
-	 */
-	passwordEncryptionIsMd5?: RuleConfiguration_for_Null;
-	/**
-	 * PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists (C002): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
-	 */
-	pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists?: RuleConfiguration_for_Null;
-	/**
-	 * PgHbaEntriesWithMethodTrustShouldNotExists (C001): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
-	 */
-	pgHbaEntriesWithMethodTrustShouldNotExists?: RuleConfiguration_for_Null;
-	/**
-	 * It enables the recommended rules for this group
-	 */
-	recommended?: boolean;
-}
-/**
- * A list of rules that belong to this group
- */
-export interface Schema {
-	/**
-	 * It enables ALL rules for this group.
-	 */
-	all?: boolean;
-	/**
-	 * OwnerSchemaIsInternalRole (S004): Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).
-	 */
-	ownerSchemaIsInternalRole?: RuleConfiguration_for_Null;
-	/**
-	 * It enables the recommended rules for this group
-	 */
-	recommended?: boolean;
-	/**
-	 * SchemaOwnerDoNotMatchTableOwner (S005): The schema owner and tables in the schema do not match.
-	 */
-	schemaOwnerDoNotMatchTableOwner?: RuleConfiguration_for_Null;
-	/**
-	 * SchemaPrefixedOrSuffixedWithEnvt (S002): The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
-	 */
-	schemaPrefixedOrSuffixedWithEnvt?: RuleConfiguration_for_Null;
-	/**
-	 * SchemaWithDefaultRoleNotGranted (S001): The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.
-	 */
-	schemaWithDefaultRoleNotGranted?: RuleConfiguration_for_Null;
-	/**
-	 * UnsecuredPublicSchema (S003): Only authorized users should be allowed to create objects.
-	 */
-	unsecuredPublicSchema?: RuleConfiguration_for_Null;
-}
-/**
- * A list of rules that belong to this group
- */
 export interface Performance {
 	/**
 	 * It enables ALL rules for this group.
@@ -881,19 +649,19 @@ export interface Performance {
 	/**
 	 * Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row
 	 */
-	authRlsInitplan?: RuleConfiguration_for_SplinterRuleOptions;
+	authRlsInitplan?: RuleConfiguration_for_Null;
 	/**
 	 * Duplicate Index: Detects cases where two ore more identical indexes exist.
 	 */
-	duplicateIndex?: RuleConfiguration_for_SplinterRuleOptions;
+	duplicateIndex?: RuleConfiguration_for_Null;
 	/**
 	 * Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.
 	 */
-	multiplePermissivePolicies?: RuleConfiguration_for_SplinterRuleOptions;
+	multiplePermissivePolicies?: RuleConfiguration_for_Null;
 	/**
 	 * No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.
 	 */
-	noPrimaryKey?: RuleConfiguration_for_SplinterRuleOptions;
+	noPrimaryKey?: RuleConfiguration_for_Null;
 	/**
 	 * It enables the recommended rules for this group
 	 */
@@ -901,15 +669,15 @@ export interface Performance {
 	/**
 	 * Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.
 	 */
-	tableBloat?: RuleConfiguration_for_SplinterRuleOptions;
+	tableBloat?: RuleConfiguration_for_Null;
 	/**
 	 * Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.
 	 */
-	unindexedForeignKeys?: RuleConfiguration_for_SplinterRuleOptions;
+	unindexedForeignKeys?: RuleConfiguration_for_Null;
 	/**
 	 * Unused Index: Detects if an index has never been used and may be a candidate for removal.
 	 */
-	unusedIndex?: RuleConfiguration_for_SplinterRuleOptions;
+	unusedIndex?: RuleConfiguration_for_Null;
 }
 /**
  * A list of rules that belong to this group
@@ -922,39 +690,39 @@ export interface Security {
 	/**
 	 * Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.
 	 */
-	authUsersExposed?: RuleConfiguration_for_SplinterRuleOptions;
+	authUsersExposed?: RuleConfiguration_for_Null;
 	/**
 	 * Extension in Public: Detects extensions installed in the `public` schema.
 	 */
-	extensionInPublic?: RuleConfiguration_for_SplinterRuleOptions;
+	extensionInPublic?: RuleConfiguration_for_Null;
 	/**
 	 * Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.
 	 */
-	extensionVersionsOutdated?: RuleConfiguration_for_SplinterRuleOptions;
+	extensionVersionsOutdated?: RuleConfiguration_for_Null;
 	/**
 	 * Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.
 	 */
-	fkeyToAuthUnique?: RuleConfiguration_for_SplinterRuleOptions;
+	fkeyToAuthUnique?: RuleConfiguration_for_Null;
 	/**
 	 * Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.
 	 */
-	foreignTableInApi?: RuleConfiguration_for_SplinterRuleOptions;
+	foreignTableInApi?: RuleConfiguration_for_Null;
 	/**
 	 * Function Search Path Mutable: Detects functions where the search_path parameter is not set.
 	 */
-	functionSearchPathMutable?: RuleConfiguration_for_SplinterRuleOptions;
+	functionSearchPathMutable?: RuleConfiguration_for_Null;
 	/**
 	 * Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs
 	 */
-	insecureQueueExposedInApi?: RuleConfiguration_for_SplinterRuleOptions;
+	insecureQueueExposedInApi?: RuleConfiguration_for_Null;
 	/**
 	 * Materialized View in API: Detects materialized views that are accessible over the Data APIs.
 	 */
-	materializedViewInApi?: RuleConfiguration_for_SplinterRuleOptions;
+	materializedViewInApi?: RuleConfiguration_for_Null;
 	/**
 	 * Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.
 	 */
-	policyExistsRlsDisabled?: RuleConfiguration_for_SplinterRuleOptions;
+	policyExistsRlsDisabled?: RuleConfiguration_for_Null;
 	/**
 	 * It enables the recommended rules for this group
 	 */
@@ -962,30 +730,27 @@ export interface Security {
 	/**
 	 * RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST
 	 */
-	rlsDisabledInPublic?: RuleConfiguration_for_SplinterRuleOptions;
+	rlsDisabledInPublic?: RuleConfiguration_for_Null;
 	/**
 	 * RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.
 	 */
-	rlsEnabledNoPolicy?: RuleConfiguration_for_SplinterRuleOptions;
+	rlsEnabledNoPolicy?: RuleConfiguration_for_Null;
 	/**
 	 * RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.
 	 */
-	rlsReferencesUserMetadata?: RuleConfiguration_for_SplinterRuleOptions;
+	rlsReferencesUserMetadata?: RuleConfiguration_for_Null;
 	/**
 	 * Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user
 	 */
-	securityDefinerView?: RuleConfiguration_for_SplinterRuleOptions;
+	securityDefinerView?: RuleConfiguration_for_Null;
 	/**
 	 * Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.
 	 */
-	unsupportedRegTypes?: RuleConfiguration_for_SplinterRuleOptions;
+	unsupportedRegTypes?: RuleConfiguration_for_Null;
 }
 export type RuleConfiguration_for_Null =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_Null;
-export type RuleConfiguration_for_SplinterRuleOptions =
-	| RulePlainConfiguration
-	| RuleWithOptions_for_SplinterRuleOptions;
 export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
 export interface RuleWithOptions_for_Null {
 	/**
@@ -996,31 +761,6 @@ export interface RuleWithOptions_for_Null {
 	 * Rule's options
 	 */
 	options: null;
-}
-export interface RuleWithOptions_for_SplinterRuleOptions {
-	/**
-	 * The severity of the emitted diagnostics by the rule
-	 */
-	level: RulePlainConfiguration;
-	/**
-	 * Rule's options
-	 */
-	options: SplinterRuleOptions;
-}
-/**
-	* Shared options for all splinter rules.
-
-These options allow configuring per-rule filtering of database objects. 
-	 */
-export interface SplinterRuleOptions {
-	/**
-	* A list of glob patterns for database objects to ignore.
-
-Patterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character
-
-Each pattern should be in the format `schema.object_name`, for example: - `"public.my_table"` - ignores a specific table - `"audit.*"` - ignores all objects in the audit schema - `"*.audit_*"` - ignores objects with audit_ prefix in any schema 
-	 */
-	ignore?: string[];
 }
 export interface OpenFileParams {
 	content: string;

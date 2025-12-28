@@ -44,17 +44,6 @@
         }
       ]
     },
-    "format": {
-      "description": "The configuration for the SQL formatter",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/FormatConfiguration"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "linter": {
       "description": "The configuration for the linter",
       "anyOf": [
@@ -71,17 +60,6 @@
       "anyOf": [
         {
           "$ref": "#/definitions/MigrationsConfiguration"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "pglinter": {
-      "description": "The configuration for pglinter",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/PglinterConfiguration"
         },
         {
           "type": "null"
@@ -135,213 +113,6 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "Base": {
-      "description": "A list of rules that belong to this group",
-      "type": "object",
-      "properties": {
-        "all": {
-          "description": "It enables ALL rules for this group.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "compositePrimaryKeyTooManyColumns": {
-          "description": "CompositePrimaryKeyTooManyColumns (B012): Detect tables with composite primary keys involving more than 4 columns",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyObjectsWithUppercase": {
-          "description": "HowManyObjectsWithUppercase (B005): Count number of objects with uppercase in name or in columns.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyRedudantIndex": {
-          "description": "HowManyRedudantIndex (B002): Count number of redundant index vs nb index.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTableWithoutIndexOnFk": {
-          "description": "HowManyTableWithoutIndexOnFk (B003): Count number of tables without index on foreign key.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTableWithoutPrimaryKey": {
-          "description": "HowManyTableWithoutPrimaryKey (B001): Count number of tables without primary key.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTablesNeverSelected": {
-          "description": "HowManyTablesNeverSelected (B006): Count number of table(s) that has never been selected.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTablesWithFkMismatch": {
-          "description": "HowManyTablesWithFkMismatch (B008): Count number of tables with foreign keys that do not match the key reference type.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTablesWithFkOutsideSchema": {
-          "description": "HowManyTablesWithFkOutsideSchema (B007): Count number of tables with foreign keys outside their schema.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTablesWithReservedKeywords": {
-          "description": "HowManyTablesWithReservedKeywords (B010): Count number of database objects using reserved keywords in their names.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyTablesWithSameTrigger": {
-          "description": "HowManyTablesWithSameTrigger (B009): Count number of tables using the same trigger vs nb table with their own triggers.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "howManyUnusedIndex": {
-          "description": "HowManyUnusedIndex (B004): Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "recommended": {
-          "description": "It enables the recommended rules for this group",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "severalTableOwnerInSchema": {
-          "description": "SeveralTableOwnerInSchema (B011): In a schema there are several tables owned by different owners.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "Cluster": {
-      "description": "A list of rules that belong to this group",
-      "type": "object",
-      "properties": {
-        "all": {
-          "description": "It enables ALL rules for this group.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "passwordEncryptionIsMd5": {
-          "description": "PasswordEncryptionIsMd5 (C003): This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists": {
-          "description": "PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists (C002): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "pgHbaEntriesWithMethodTrustShouldNotExists": {
-          "description": "PgHbaEntriesWithMethodTrustShouldNotExists (C001): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "recommended": {
-          "description": "It enables the recommended rules for this group",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
     "DatabaseConfiguration": {
       "description": "The configuration of the database connection.",
       "type": "object",
@@ -449,142 +220,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "FormatConfiguration": {
-      "description": "The configuration for SQL formatting.",
-      "type": "object",
-      "properties": {
-        "constantCase": {
-          "description": "Constant casing (NULL, TRUE, FALSE): \"upper\" or \"lower\". Default: \"lower\".",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/KeywordCase"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "enabled": {
-          "description": "If `false`, it disables the formatter. `true` by default.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "ignore": {
-          "description": "A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringSet"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "include": {
-          "description": "A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringSet"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "indentSize": {
-          "description": "Number of spaces (or tab width) for indentation. Default: 2.",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "indentStyle": {
-          "description": "Indentation style: \"spaces\" or \"tabs\". Default: \"spaces\".",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/IndentStyle"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "keywordCase": {
-          "description": "Keyword casing: \"upper\" or \"lower\". Default: \"lower\".",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/KeywordCase"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "lineWidth": {
-          "description": "Maximum line width before breaking. Default: 100.",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint16",
-          "minimum": 0.0
-        },
-        "typeCase": {
-          "description": "Data type casing (text, varchar, int): \"upper\" or \"lower\". Default: \"lower\".",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/KeywordCase"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "IndentStyle": {
-      "description": "Indentation style for the formatter.",
-      "oneOf": [
-        {
-          "description": "Use spaces for indentation (default).",
-          "type": "string",
-          "enum": [
-            "spaces"
-          ]
-        },
-        {
-          "description": "Use tabs for indentation.",
-          "type": "string",
-          "enum": [
-            "tabs"
-          ]
-        }
-      ]
-    },
-    "KeywordCase": {
-      "description": "Keyword casing style for the formatter.",
-      "oneOf": [
-        {
-          "description": "Use uppercase keywords (SELECT, FROM, WHERE).",
-          "type": "string",
-          "enum": [
-            "upper"
-          ]
-        },
-        {
-          "description": "Use lowercase keywords (select, from, where). Default.",
-          "type": "string",
-          "enum": [
-            "lower"
-          ]
-        }
-      ]
     },
     "LinterConfiguration": {
       "type": "object",
@@ -700,7 +335,7 @@
           "description": "Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -711,7 +346,7 @@
           "description": "Duplicate Index: Detects cases where two ore more identical indexes exist.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -722,7 +357,7 @@
           "description": "Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -733,7 +368,7 @@
           "description": "No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -751,7 +386,7 @@
           "description": "Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -762,7 +397,7 @@
           "description": "Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -773,81 +408,7 @@
           "description": "Unused Index: Detects if an index has never been used and may be a candidate for removal.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "PglinterConfiguration": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "description": "if `false`, it disables the feature and the linter won't be executed. `true` by default",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "rules": {
-          "description": "List of rules",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PglinterRules"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "PglinterRules": {
-      "type": "object",
-      "properties": {
-        "all": {
-          "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "base": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Base"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "cluster": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Cluster"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "recommended": {
-          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "schema": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Schema"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -901,32 +462,6 @@
           "allOf": [
             {
               "$ref": "#/definitions/RulePlainConfiguration"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "RuleWithSplinterRuleOptions": {
-      "type": "object",
-      "required": [
-        "level",
-        "options"
-      ],
-      "properties": {
-        "level": {
-          "description": "The severity of the emitted diagnostics by the rule",
-          "allOf": [
-            {
-              "$ref": "#/definitions/RulePlainConfiguration"
-            }
-          ]
-        },
-        "options": {
-          "description": "Rule's options",
-          "allOf": [
-            {
-              "$ref": "#/definitions/SplinterRuleOptions"
             }
           ]
         }
@@ -1317,82 +852,6 @@
       },
       "additionalProperties": false
     },
-    "Schema": {
-      "description": "A list of rules that belong to this group",
-      "type": "object",
-      "properties": {
-        "all": {
-          "description": "It enables ALL rules for this group.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "ownerSchemaIsInternalRole": {
-          "description": "OwnerSchemaIsInternalRole (S004): Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "recommended": {
-          "description": "It enables the recommended rules for this group",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "schemaOwnerDoNotMatchTableOwner": {
-          "description": "SchemaOwnerDoNotMatchTableOwner (S005): The schema owner and tables in the schema do not match.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "schemaPrefixedOrSuffixedWithEnvt": {
-          "description": "SchemaPrefixedOrSuffixedWithEnvt (S002): The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "schemaWithDefaultRoleNotGranted": {
-          "description": "SchemaWithDefaultRoleNotGranted (S001): The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "unsecuredPublicSchema": {
-          "description": "UnsecuredPublicSchema (S003): Only authorized users should be allowed to create objects.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RuleConfiguration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
     "Security": {
       "description": "A list of rules that belong to this group",
       "type": "object",
@@ -1408,7 +867,7 @@
           "description": "Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1419,7 +878,7 @@
           "description": "Extension in Public: Detects extensions installed in the `public` schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1430,7 +889,7 @@
           "description": "Extension Versions Outdated: Detects extensions that are not using the default (recommended) version.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1441,7 +900,7 @@
           "description": "Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1452,7 +911,7 @@
           "description": "Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1463,7 +922,7 @@
           "description": "Function Search Path Mutable: Detects functions where the search_path parameter is not set.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1474,7 +933,7 @@
           "description": "Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1485,7 +944,7 @@
           "description": "Materialized View in API: Detects materialized views that are accessible over the Data APIs.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1496,7 +955,7 @@
           "description": "Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1514,7 +973,7 @@
           "description": "RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1525,7 +984,7 @@
           "description": "RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1536,7 +995,7 @@
           "description": "RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1547,7 +1006,7 @@
           "description": "Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1558,7 +1017,7 @@
           "description": "Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade.",
           "anyOf": [
             {
-              "$ref": "#/definitions/SplinterRuleConfiguration"
+              "$ref": "#/definitions/RuleConfiguration"
             },
             {
               "type": "null"
@@ -1578,17 +1037,6 @@
             "null"
           ]
         },
-        "ignore": {
-          "description": "A list of glob patterns for database objects to ignore across all rules. Patterns use Unix-style globs where `*` matches any sequence of characters. Format: `schema.object_name`, e.g., \"public.my_table\", \"audit.*\"",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringSet"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "rules": {
           "description": "List of rules",
           "anyOf": [
@@ -1599,31 +1047,6 @@
               "type": "null"
             }
           ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "SplinterRuleConfiguration": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/RulePlainConfiguration"
-        },
-        {
-          "$ref": "#/definitions/RuleWithSplinterRuleOptions"
-        }
-      ]
-    },
-    "SplinterRuleOptions": {
-      "description": "Shared options for all splinter rules.\n\nThese options allow configuring per-rule filtering of database objects.",
-      "type": "object",
-      "properties": {
-        "ignore": {
-          "description": "A list of glob patterns for database objects to ignore.\n\nPatterns use Unix-style globs where: - `*` matches any sequence of characters - `?` matches any single character\n\nEach pattern should be in the format `schema.object_name`, for example: - `\"public.my_table\"` - ignores a specific table - `\"audit.*\"` - ignores all objects in the audit schema - `\"*.audit_*\"` - ignores objects with audit_ prefix in any schema",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       },
       "additionalProperties": false

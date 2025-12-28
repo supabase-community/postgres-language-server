@@ -1,0 +1,10 @@
+---
+source: crates/pgls_cli/tests/assert_dblint.rs
+assertion_line: 126
+expression: normalized
+---
+status: failure
+stdout:
+
+stderr:
+Error: couldn't parse `summary`: value "summary" is not valid for the --reporter argument

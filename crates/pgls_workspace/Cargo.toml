@@ -33,6 +33,7 @@ pgls_pretty_print                 = { workspace = true }
 pgls_query                        = { workspace = true }
 pgls_query_ext                    = { workspace = true }
 pgls_schema_cache                 = { workspace = true, features = ["serde"] }
+pgls_splinter                     = { workspace = true }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
 pgls_text_edit.workspace          = true
@@ -52,8 +53,8 @@ tree-sitter.workspace             = true
 
 # Optional DB dependencies
 futures            = { version = "0.3.31", optional = true }
+pgls_pglinter      = { workspace = true, optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
-pgls_splinter      = { workspace = true, optional = true }
 pgls_typecheck     = { workspace = true, optional = true }
 sqlx               = { workspace = true, optional = true }
 tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
@@ -67,8 +68,8 @@ db = [
   "dep:futures",
   "dep:sqlx",
   "dep:tokio",
+  "dep:pgls_pglinter",
   "dep:pgls_plpgsql_check",
-  "dep:pgls_splinter",
   "dep:pgls_typecheck",
   "pgls_schema_cache/db",
 ]

@@ -4,7 +4,6 @@
 mod options;
 pub use options::SplinterRuleOptions;
 mod rules;
-use biome_deserialize::StringSet;
 use biome_deserialize_macros::{Merge, Partial};
 use bpaf::Bpaf;
 pub use rules::*;
