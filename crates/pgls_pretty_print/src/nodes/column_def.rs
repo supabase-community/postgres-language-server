@@ -1,7 +1,7 @@
 use pgls_query::protobuf::ColumnDef;
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::{ListSeparatorSpacing, emit_comma_separated_list_with_spacing};
 
@@ -43,7 +43,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
 
     // Add DEFAULT clause if specified
     if let Some(ref raw_default) = n.raw_default {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::DEFAULT_KW);
         e.space();
         super::emit_node(raw_default, e);
@@ -77,7 +77,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     // Add constraints if any
     // TODO: Handle IDENTITY constraints specially
     for constraint in &n.constraints {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_node(constraint, e);
     }
 

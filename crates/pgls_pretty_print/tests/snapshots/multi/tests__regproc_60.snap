@@ -1,6 +1,6 @@
 ---
-source: crates/pgt_pretty_print/tests/tests.rs
-input_file: crates/pgt_pretty_print/tests/data/multi/regproc_60.sql
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/regproc_60.sql
 snapshot_kind: text
 ---
 CREATE ROLE regress_regrole_test;
@@ -120,11 +120,15 @@ SELECT CAST(to_regnamespace('-') AS OID);
 SELECT CAST(to_regdatabase('-') AS OID);
 
 CREATE TABLE regrole_test (
-  rolid OID DEFAULT CAST('regress_regrole_test' AS regrole)
+  rolid OID
+  DEFAULT CAST('regress_regrole_test'
+  AS regrole)
 );
 
 CREATE TABLE regdatabase_test (
-  datid OID DEFAULT CAST('template1' AS regdatabase)
+  datid OID
+  DEFAULT CAST('template1'
+  AS regdatabase)
 );
 
 DROP ROLE regress_regrole_test;

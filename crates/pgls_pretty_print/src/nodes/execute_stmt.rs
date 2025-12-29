@@ -8,6 +8,14 @@ use crate::{
 use super::emit_node;
 
 pub(super) fn emit_execute_stmt(e: &mut EventEmitter, n: &ExecuteStmt) {
+    emit_execute_stmt_impl(e, n, true);
+}
+
+pub(super) fn emit_execute_stmt_no_semicolon(e: &mut EventEmitter, n: &ExecuteStmt) {
+    emit_execute_stmt_impl(e, n, false);
+}
+
+fn emit_execute_stmt_impl(e: &mut EventEmitter, n: &ExecuteStmt, with_semicolon: bool) {
     e.group_start(GroupKind::ExecuteStmt);
 
     e.token(TokenKind::EXECUTE_KW);
@@ -21,7 +29,9 @@ pub(super) fn emit_execute_stmt(e: &mut EventEmitter, n: &ExecuteStmt) {
         e.token(TokenKind::R_PAREN);
     }
 
-    e.token(TokenKind::SEMICOLON);
+    if with_semicolon {
+        e.token(TokenKind::SEMICOLON);
+    }
 
     e.group_end();
 }

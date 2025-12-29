@@ -23,7 +23,8 @@ FROM
   pg_class
 WHERE
   oid =
-  CAST('past_inh_db_parent' AS REGCLASS);
+  CAST('past_inh_db_parent'
+  AS REGCLASS);
 
 DROP TABLE "past_inh_db_child";
 
@@ -40,7 +41,8 @@ FROM
   pg_class
 WHERE
   oid =
-  CAST('past_inh_db_parent' AS REGCLASS);
+  CAST('past_inh_db_parent'
+  AS REGCLASS);
 
 DROP TABLE "past_inh_db_parent", "past_inh_db_other";
 

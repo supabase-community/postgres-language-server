@@ -404,24 +404,33 @@ EXECUTE FUNCTION event_trigger_report_end();
 CREATE SCHEMA "evttrig";
 
 CREATE TABLE one (
-  col_a serial PRIMARY KEY,
-  col_b TEXT DEFAULT 'forty two',
+  col_a serial
+  PRIMARY KEY,
+  col_b TEXT
+  DEFAULT 'forty two',
   col_c serial
 );
 
 CREATE INDEX "one_idx" ON one USING btree ( col_b);
 
 CREATE TABLE two (
-  col_c INT CHECK (col_c >
-  0) REFERENCES one DEFAULT 42
+  col_c INT
+  CHECK (col_c >
+  0)
+  REFERENCES one
+  DEFAULT 42
 );
 
 CREATE TABLE id (
-  col_d INT NOT NULL GENERATED ALWAYS AS IDENTITY
+  col_d INT
+  NOT NULL
+  GENERATED ALWAYS
+  AS IDENTITY
 );
 
 CREATE TABLE evttrig.parted (
-  id INT PRIMARY KEY
+  id INT
+  PRIMARY KEY
 )
 PARTITION BY RANGE(id);
 
@@ -498,8 +507,10 @@ BEGIN
 END; ';
 
 CREATE TABLE evtrg_nontemp_table (
-  f1 INT PRIMARY KEY,
-  f2 INT DEFAULT 42
+  f1 INT
+  PRIMARY KEY,
+  f2 INT
+  DEFAULT 42
 );
 
 CREATE TRIGGER evtrg_nontemp_trig
@@ -520,8 +531,10 @@ USING (f2 >
 DROP TABLE "evtrg_nontemp_table";
 
 CREATE TEMPORARY TABLE a_temp_tbl (
-  f1 INT PRIMARY KEY,
-  f2 INT DEFAULT 42
+  f1 INT
+  PRIMARY KEY,
+  f2 INT
+  DEFAULT 42
 );
 
 CREATE TRIGGER a_temp_trig
@@ -568,7 +581,8 @@ ON table_rewrite
 EXECUTE FUNCTION test_evtrig_no_rewrite();
 
 CREATE TABLE rewriteme (
-  id serial PRIMARY KEY,
+  id serial
+  PRIMARY KEY,
   foo DOUBLE PRECISION,
   bar TIMESTAMP WITH TIME ZONE
 );
@@ -596,8 +610,10 @@ END;
 ';
 
 ALTER TABLE rewriteme
-  ADD COLUMN onemore INT DEFAULT 0,
-  ADD COLUMN another INT DEFAULT -1,
+  ADD COLUMN onemore INT
+    DEFAULT 0,
+  ADD COLUMN another INT
+    DEFAULT -1,
   ALTER COLUMN foo TYPE NUMERIC(10,
   4);
 
@@ -857,7 +873,8 @@ DROP POLICY "p2" ON "event_trigger_test";
 
 SELECT
   e.evtname,
-  pg_describe_object(CAST('pg_event_trigger' AS REGCLASS),
+  pg_describe_object(CAST('pg_event_trigger'
+  AS REGCLASS),
   e.oid,
   0) AS descr,
   b.type,
@@ -867,8 +884,10 @@ SELECT
   a.objid,
   a.objsubid) AS ident
 FROM
-  pg_event_trigger AS e,
-  LATERAL pg_identify_object_as_address(CAST('pg_event_trigger' AS REGCLASS),
+  pg_event_trigger
+  AS e,
+  LATERAL pg_identify_object_as_address(CAST('pg_event_trigger'
+  AS REGCLASS),
   e.oid,
   0) AS b,
   LATERAL pg_get_object_address(b.type,

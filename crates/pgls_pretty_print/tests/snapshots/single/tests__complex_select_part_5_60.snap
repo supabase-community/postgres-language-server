@@ -8,7 +8,8 @@ SELECT
   FALSE,
   ARRAY[resorigtbl]
 FROM
-  results AS r
+  results
+  AS r
 WHERE
   TRUE
 UNION ALL
@@ -20,10 +21,13 @@ SELECT
   tab.resorigtbl,
   tab.resorigcol,
   tab.resorigtbl = ANY (path),
-  path || tab.resorigtbl
+  path ||
+  tab.resorigtbl
 FROM
-  recursion AS view
-  INNER JOIN results AS tab
+  recursion
+  AS view
+  INNER JOIN results
+  AS tab
   ON view.resorigtbl =
     tab.view_id AND
     view.resorigcol =

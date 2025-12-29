@@ -1607,8 +1607,10 @@ SELECT
   t2.id,
   t1.val + t2.val
 FROM
-  num_data AS t1,
-  num_data AS t2;
+  num_data
+  AS t1,
+  num_data
+  AS t2;
 
 SELECT
   t1.id1,
@@ -1616,8 +1618,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_add AS t2
+  num_result
+  AS t1,
+  num_exp_add
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1635,8 +1639,10 @@ SELECT
   round(t1.val + t2.val,
   10)
 FROM
-  num_data AS t1,
-  num_data AS t2;
+  num_data
+  AS t1,
+  num_data
+  AS t2;
 
 SELECT
   t1.id1,
@@ -1645,8 +1651,10 @@ SELECT
   round(t2.expected,
   10) AS expected
 FROM
-  num_result AS t1,
-  num_exp_add AS t2
+  num_result
+  AS t1,
+  num_exp_add
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1664,8 +1672,10 @@ SELECT
   t2.id,
   t1.val - t2.val
 FROM
-  num_data AS t1,
-  num_data AS t2;
+  num_data
+  AS t1,
+  num_data
+  AS t2;
 
 SELECT
   t1.id1,
@@ -1673,8 +1683,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_sub AS t2
+  num_result
+  AS t1,
+  num_exp_sub
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1692,8 +1704,10 @@ SELECT
   round(t1.val - t2.val,
   40)
 FROM
-  num_data AS t1,
-  num_data AS t2;
+  num_data
+  AS t1,
+  num_data
+  AS t2;
 
 SELECT
   t1.id1,
@@ -1702,8 +1716,10 @@ SELECT
   round(t2.expected,
   40)
 FROM
-  num_result AS t1,
-  num_exp_sub AS t2
+  num_result
+  AS t1,
+  num_exp_sub
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1721,8 +1737,10 @@ SELECT
   t2.id,
   t1.val * t2.val
 FROM
-  num_data AS t1,
-  num_data AS t2;
+  num_data
+  AS t1,
+  num_data
+  AS t2;
 
 SELECT
   t1.id1,
@@ -1730,8 +1748,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_mul AS t2
+  num_result
+  AS t1,
+  num_exp_mul
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1749,8 +1769,10 @@ SELECT
   round(t1.val * t2.val,
   30)
 FROM
-  num_data AS t1,
-  num_data AS t2;
+  num_data
+  AS t1,
+  num_data
+  AS t2;
 
 SELECT
   t1.id1,
@@ -1759,8 +1781,10 @@ SELECT
   round(t2.expected,
   30) AS expected
 FROM
-  num_result AS t1,
-  num_exp_mul AS t2
+  num_result
+  AS t1,
+  num_exp_mul
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1778,8 +1802,10 @@ SELECT
   t2.id,
   t1.val / t2.val
 FROM
-  num_data AS t1,
-  num_data AS t2
+  num_data
+  AS t1,
+  num_data
+  AS t2
 WHERE
   t2.val <>
   '0.0';
@@ -1790,8 +1816,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_div AS t2
+  num_result
+  AS t1,
+  num_exp_div
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1809,8 +1837,10 @@ SELECT
   round(t1.val / t2.val,
   80)
 FROM
-  num_data AS t1,
-  num_data AS t2
+  num_data
+  AS t1,
+  num_data
+  AS t2
 WHERE
   t2.val <>
   '0.0';
@@ -1822,8 +1852,10 @@ SELECT
   round(t2.expected,
   80) AS expected
 FROM
-  num_result AS t1,
-  num_exp_div AS t2
+  num_result
+  AS t1,
+  num_exp_div
+  AS t2
 WHERE
   t1.id1 =
   t2.id1 AND
@@ -1848,8 +1880,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_sqrt AS t2
+  num_result
+  AS t1,
+  num_exp_sqrt
+  AS t2
 WHERE
   t1.id1 =
   t2.id AND
@@ -1874,8 +1908,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_ln AS t2
+  num_result
+  AS t1,
+  num_exp_ln
+  AS t2
 WHERE
   t1.id1 =
   t2.id AND
@@ -1888,7 +1924,8 @@ INSERT INTO num_result
 SELECT
   id,
   0,
-  log(CAST('10' AS NUMERIC),
+  log(CAST('10'
+  AS NUMERIC),
   abs(val))
 FROM
   num_data
@@ -1901,8 +1938,10 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_log10 AS t2
+  num_result
+  AS t1,
+  num_exp_log10
+  AS t2
 WHERE
   t1.id1 =
   t2.id AND
@@ -1915,7 +1954,8 @@ INSERT INTO num_result
 SELECT
   id,
   0,
-  power(CAST('10' AS NUMERIC),
+  power(CAST('10'
+  AS NUMERIC),
   ln(abs(round(val,
   200))))
 FROM
@@ -1929,15 +1969,18 @@ SELECT
   t1.result,
   t2.expected
 FROM
-  num_result AS t1,
-  num_exp_power_10_ln AS t2
+  num_result
+  AS t1,
+  num_exp_power_10_ln
+  AS t2
 WHERE
   t1.id1 =
   t2.id AND
   t1.result <>
   t2.expected;
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('-1'),
 ('4.2'),
@@ -1951,10 +1994,13 @@ SELECT
   x1 - x2 AS diff,
   x1 * x2 AS prod
 FROM
-  v AS v1 (x1),
-  v AS v2 (x2);
+  v
+  AS v1 (x1),
+  v
+  AS v2 (x2);
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('-1'),
 ('4.2'),
@@ -1969,8 +2015,10 @@ SELECT
   div(x1,
   x2) AS div
 FROM
-  v AS v1 (x1),
-  v AS v2 (x2)
+  v
+  AS v1 (x1),
+  v
+  AS v2 (x2)
 WHERE
   x2 <>
   0;
@@ -1999,7 +2047,8 @@ SELECT div(CAST('nan' AS NUMERIC), '0');
 
 SELECT div(CAST('0' AS NUMERIC), '0');
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('-1'),
 ('4.2'),
@@ -2018,7 +2067,8 @@ SELECT
 FROM
   v;
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('-1'),
 ('4.2'),
@@ -2037,7 +2087,8 @@ SELECT
 FROM
   v;
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('-1'),
 ('4.2'),
@@ -2051,12 +2102,14 @@ WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
 ('-inf'),
 ('nan'))
 SELECT
-  SUBSTRING(CAST(x AS TEXT) FROM 1 FOR 32)
+  SUBSTRING(CAST(x
+  AS TEXT) FROM 1 FOR 32)
 FROM
   v
 ORDER BY x;
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('4.2'),
 ('inf'),
@@ -2071,7 +2124,8 @@ SELECT sqrt(CAST('-1' AS NUMERIC));
 
 SELECT sqrt(CAST('-inf' AS NUMERIC));
 
-WITH v (x) AS (VALUES (CAST('1' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('1'
+AS NUMERIC)),
 ('4.2'),
 ('inf'),
 ('nan'))
@@ -2089,7 +2143,8 @@ SELECT ln(CAST('-1' AS NUMERIC));
 
 SELECT ln(CAST('-inf' AS NUMERIC));
 
-WITH v (x) AS (VALUES (CAST('2' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('2'
+AS NUMERIC)),
 ('4.2'),
 ('inf'),
 ('nan'))
@@ -2099,8 +2154,10 @@ SELECT
   log(x1,
   x2)
 FROM
-  v AS v1 (x1),
-  v AS v2 (x2);
+  v
+  AS v1 (x1),
+  v
+  AS v2 (x2);
 
 SELECT log(CAST('0' AS NUMERIC), '10');
 
@@ -2116,7 +2173,8 @@ SELECT log(CAST('inf' AS NUMERIC), '-inf');
 
 SELECT log(CAST('-inf' AS NUMERIC), 'inf');
 
-WITH v (x) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (x) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('1'),
 ('2'),
 ('4.2'),
@@ -2128,8 +2186,10 @@ SELECT
   power(x1,
   x2)
 FROM
-  v AS v1 (x1),
-  v AS v2 (x2)
+  v
+  AS v1 (x1),
+  v
+  AS v2 (x2)
 WHERE
   x1 <>
   0 OR
@@ -2239,18 +2299,26 @@ SELECT CAST(32767.5 AS SMALLINT);
 SELECT CAST(CAST('NaN' AS DOUBLE PRECISION) AS NUMERIC);
 
 SELECT
-  CAST(CAST('Infinity' AS DOUBLE PRECISION) AS NUMERIC);
+  CAST(CAST('Infinity'
+  AS DOUBLE PRECISION)
+  AS NUMERIC);
 
 SELECT
-  CAST(CAST('-Infinity' AS DOUBLE PRECISION) AS NUMERIC);
+  CAST(CAST('-Infinity'
+  AS DOUBLE PRECISION)
+  AS NUMERIC);
 
 SELECT CAST(CAST('NaN' AS NUMERIC) AS DOUBLE PRECISION);
 
 SELECT
-  CAST(CAST('Infinity' AS NUMERIC) AS DOUBLE PRECISION);
+  CAST(CAST('Infinity'
+  AS NUMERIC)
+  AS DOUBLE PRECISION);
 
 SELECT
-  CAST(CAST('-Infinity' AS NUMERIC) AS DOUBLE PRECISION);
+  CAST(CAST('-Infinity'
+  AS NUMERIC)
+  AS DOUBLE PRECISION);
 
 SELECT CAST(CAST('NaN' AS REAL) AS NUMERIC);
 
@@ -2313,17 +2381,23 @@ DROP TABLE "ceil_floor_round";
 
 SELECT
   i AS pow,
-  round(CAST(-2.5 * 10 ^ i AS NUMERIC),
+  round(CAST(-2.5 * 10 ^ i
+  AS NUMERIC),
   -i),
-  round(CAST(-1.5 * 10 ^ i AS NUMERIC),
+  round(CAST(-1.5 * 10 ^ i
+  AS NUMERIC),
   -i),
-  round(CAST(-0.5 * 10 ^ i AS NUMERIC),
+  round(CAST(-0.5 * 10 ^ i
+  AS NUMERIC),
   -i),
-  round(CAST(0.5 * 10 ^ i AS NUMERIC),
+  round(CAST(0.5 * 10 ^ i
+  AS NUMERIC),
   -i),
-  round(CAST(1.5 * 10 ^ i AS NUMERIC),
+  round(CAST(1.5 * 10 ^ i
+  AS NUMERIC),
   -i),
-  round(CAST(2.5 * 10 ^ i AS NUMERIC),
+  round(CAST(2.5 * 10 ^ i
+  AS NUMERIC),
   -i)
 FROM
   generate_series(-5,
@@ -2370,45 +2444,61 @@ SELECT width_bucket(5.0, 3.0, 4.0, -5);
 SELECT width_bucket(3.5, 3.0, 3.0, 888);
 
 SELECT
-  width_bucket(CAST(5.0 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(4.0 AS DOUBLE PRECISION),
+  width_bucket(CAST(5.0
+  AS DOUBLE PRECISION),
+  CAST(3.0
+  AS DOUBLE PRECISION),
+  CAST(4.0
+  AS DOUBLE PRECISION),
   0);
 
 SELECT
-  width_bucket(CAST(5.0 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(4.0 AS DOUBLE PRECISION),
+  width_bucket(CAST(5.0
+  AS DOUBLE PRECISION),
+  CAST(3.0
+  AS DOUBLE PRECISION),
+  CAST(4.0
+  AS DOUBLE PRECISION),
   -5);
 
 SELECT
-  width_bucket(CAST(3.5 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
+  width_bucket(CAST(3.5
+  AS DOUBLE PRECISION),
+  CAST(3.0
+  AS DOUBLE PRECISION),
+  CAST(3.0
+  AS DOUBLE PRECISION),
   888);
 
 SELECT width_bucket('NaN', 3.0, 4.0, 888);
 
 SELECT
-  width_bucket(CAST('NaN' AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(4.0 AS DOUBLE PRECISION),
+  width_bucket(CAST('NaN'
+  AS DOUBLE PRECISION),
+  CAST(3.0
+  AS DOUBLE PRECISION),
+  CAST(4.0
+  AS DOUBLE PRECISION),
   888);
 
 SELECT width_bucket(0, 'NaN', 4.0, 888);
 
 SELECT
-  width_bucket(CAST(0 AS DOUBLE PRECISION),
+  width_bucket(CAST(0
+  AS DOUBLE PRECISION),
   'NaN',
-  CAST(4.0 AS DOUBLE PRECISION),
+  CAST(4.0
+  AS DOUBLE PRECISION),
   888);
 
 SELECT width_bucket(2.0, 3.0, '-inf', 888);
 
 SELECT
-  width_bucket(CAST(0 AS DOUBLE PRECISION),
+  width_bucket(CAST(0
+  AS DOUBLE PRECISION),
   '-inf',
-  CAST(4.0 AS DOUBLE PRECISION),
+  CAST(4.0
+  AS DOUBLE PRECISION),
   888);
 
 CREATE TABLE width_bucket_test (
@@ -2417,7 +2507,8 @@ CREATE TABLE width_bucket_test (
 );
 
 UPDATE width_bucket_test
-SET operand_f8 = CAST(operand_num AS DOUBLE PRECISION);
+SET operand_f8 = CAST(operand_num
+AS DOUBLE PRECISION);
 
 SELECT
   operand_num,
@@ -2465,45 +2556,57 @@ FROM
   width_bucket_test;
 
 SELECT
-  width_bucket(CAST(0.0 AS NUMERIC),
-  CAST('Infinity' AS NUMERIC),
+  width_bucket(CAST(0.0
+  AS NUMERIC),
+  CAST('Infinity'
+  AS NUMERIC),
   5,
   10);
 
 SELECT
-  width_bucket(CAST(0.0 AS NUMERIC),
+  width_bucket(CAST(0.0
+  AS NUMERIC),
   5,
-  CAST('-Infinity' AS NUMERIC),
+  CAST('-Infinity'
+  AS NUMERIC),
   20);
 
 SELECT
-  width_bucket(CAST('Infinity' AS NUMERIC),
+  width_bucket(CAST('Infinity'
+  AS NUMERIC),
   1,
   10,
   10),
-  width_bucket(CAST('-Infinity' AS NUMERIC),
+  width_bucket(CAST('-Infinity'
+  AS NUMERIC),
   1,
   10,
   10);
 
 SELECT
-  width_bucket(CAST(0.0 AS DOUBLE PRECISION),
-  CAST('Infinity' AS DOUBLE PRECISION),
+  width_bucket(CAST(0.0
+  AS DOUBLE PRECISION),
+  CAST('Infinity'
+  AS DOUBLE PRECISION),
   5,
   10);
 
 SELECT
-  width_bucket(CAST(0.0 AS DOUBLE PRECISION),
+  width_bucket(CAST(0.0
+  AS DOUBLE PRECISION),
   5,
-  CAST('-Infinity' AS DOUBLE PRECISION),
+  CAST('-Infinity'
+  AS DOUBLE PRECISION),
   20);
 
 SELECT
-  width_bucket(CAST('Infinity' AS DOUBLE PRECISION),
+  width_bucket(CAST('Infinity'
+  AS DOUBLE PRECISION),
   1,
   10,
   10),
-  width_bucket(CAST('-Infinity' AS DOUBLE PRECISION),
+  width_bucket(CAST('-Infinity'
+  AS DOUBLE PRECISION),
   1,
   10,
   10);
@@ -2512,11 +2615,13 @@ DROP TABLE "width_bucket_test";
 
 SELECT
   x,
-  width_bucket(CAST(x AS DOUBLE PRECISION),
+  width_bucket(CAST(x
+  AS DOUBLE PRECISION),
   10,
   100,
   9) AS flt,
-  width_bucket(CAST(x AS NUMERIC),
+  width_bucket(CAST(x
+  AS NUMERIC),
   10,
   100,
   9) AS num
@@ -2527,11 +2632,13 @@ FROM
 
 SELECT
   x,
-  width_bucket(CAST(x AS DOUBLE PRECISION),
+  width_bucket(CAST(x
+  AS DOUBLE PRECISION),
   100,
   10,
   9) AS flt,
-  width_bucket(CAST(x AS NUMERIC),
+  width_bucket(CAST(x
+  AS NUMERIC),
   100,
   10,
   9) AS num
@@ -2544,7 +2651,8 @@ SELECT width_bucket(0, -CAST(1e100 AS NUMERIC), 1, 10);
 
 SELECT
   width_bucket(0,
-  -CAST(1e100 AS DOUBLE PRECISION),
+  -CAST(1e100
+  AS DOUBLE PRECISION),
   1,
   10);
 
@@ -2552,7 +2660,8 @@ SELECT width_bucket(1, CAST(1e100 AS NUMERIC), 0, 10);
 
 SELECT
   width_bucket(1,
-  CAST(1e100 AS DOUBLE PRECISION),
+  CAST(1e100
+  AS DOUBLE PRECISION),
   0,
   10);
 
@@ -2567,17 +2676,22 @@ SELECT
   cnt)
 FROM
   (SELECT
-    CAST(1.797e+308 AS DOUBLE PRECISION) AS big,
-    CAST(5e-324 AS DOUBLE PRECISION) AS tiny) AS v,
-  LATERAL (VALUES (CAST(10.5 AS DOUBLE PRECISION),
+    CAST(1.797e+308
+    AS DOUBLE PRECISION) AS big,
+    CAST(5e-324
+    AS DOUBLE PRECISION) AS tiny) AS v,
+  LATERAL (VALUES (CAST(10.5
+  AS DOUBLE PRECISION),
   -big,
   big,
   1),
-  (CAST(10.5 AS DOUBLE PRECISION),
+  (CAST(10.5
+  AS DOUBLE PRECISION),
   -big,
   big,
   2),
-  (CAST(10.5 AS DOUBLE PRECISION),
+  (CAST(10.5
+  AS DOUBLE PRECISION),
   -big,
   big,
   3),
@@ -2585,15 +2699,18 @@ FROM
   -big / 2,
   big / 2,
   10),
-  (CAST(10.5 AS DOUBLE PRECISION),
+  (CAST(10.5
+  AS DOUBLE PRECISION),
   big,
   -big,
   1),
-  (CAST(10.5 AS DOUBLE PRECISION),
+  (CAST(10.5
+  AS DOUBLE PRECISION),
   big,
   -big,
   2),
-  (CAST(10.5 AS DOUBLE PRECISION),
+  (CAST(10.5
+  AS DOUBLE PRECISION),
   big,
   -big,
   3),
@@ -2622,13 +2739,15 @@ FROM
   cnt);
 
 SELECT
-  width_bucket(CAST(1 AS DOUBLE PRECISION),
+  width_bucket(CAST(1
+  AS DOUBLE PRECISION),
   0,
   1,
   2147483647);
 
 SELECT
-  width_bucket(CAST(0 AS DOUBLE PRECISION),
+  width_bucket(CAST(0
+  AS DOUBLE PRECISION),
   1,
   0,
   2147483647);
@@ -2761,7 +2880,8 @@ SELECT to_char(val, '9.999EEEE') FROM num_data;
 
 SELECT to_char(val, 'FMRN') FROM num_data;
 
-WITH v (val) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (val) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('-4.2'),
 ('4.2e9'),
 ('1.2e-5'),
@@ -2772,9 +2892,11 @@ SELECT
   val,
   to_char(val,
   '9.999EEEE') AS numeric,
-  to_char(CAST(val AS DOUBLE PRECISION),
+  to_char(CAST(val
+  AS DOUBLE PRECISION),
   '9.999EEEE') AS float8,
-  to_char(CAST(val AS REAL),
+  to_char(CAST(val
+  AS REAL),
   '9.999EEEE') AS float4
 FROM
   v;
@@ -2803,12 +2925,15 @@ WITH v (exp) AS (VALUES (-16379),
 (131071))
 SELECT
   exp,
-  to_char(CAST('1.2345e' || exp AS NUMERIC),
+  to_char(CAST('1.2345e' ||
+  exp
+  AS NUMERIC),
   '9.999EEEE') AS numeric
 FROM
   v;
 
-WITH v (val) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (val) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('-4.2'),
 ('4.2e9'),
 ('1.2e-5'),
@@ -2819,14 +2944,17 @@ SELECT
   val,
   to_char(val,
   'MI9999999999.99') AS numeric,
-  to_char(CAST(val AS DOUBLE PRECISION),
+  to_char(CAST(val
+  AS DOUBLE PRECISION),
   'MI9999999999.99') AS float8,
-  to_char(CAST(val AS REAL),
+  to_char(CAST(val
+  AS REAL),
   'MI9999999999.99') AS float4
 FROM
   v;
 
-WITH v (val) AS (VALUES (CAST('0' AS NUMERIC)),
+WITH v (val) AS (VALUES (CAST('0'
+AS NUMERIC)),
 ('-4.2'),
 ('4.2e9'),
 ('1.2e-5'),
@@ -2837,9 +2965,11 @@ SELECT
   val,
   to_char(val,
   'MI99.99') AS numeric,
-  to_char(CAST(val AS DOUBLE PRECISION),
+  to_char(CAST(val
+  AS DOUBLE PRECISION),
   'MI99.99') AS float8,
-  to_char(CAST(val AS REAL),
+  to_char(CAST(val
+  AS REAL),
   'MI99.99') AS float4
 FROM
   v;
@@ -2851,7 +2981,8 @@ SELECT to_char(CAST('100' AS NUMERIC), 'FM999.');
 SELECT to_char(CAST('100' AS NUMERIC), 'FM999');
 
 SELECT
-  to_char(CAST('12345678901' AS DOUBLE PRECISION),
+  to_char(CAST('12345678901'
+  AS DOUBLE PRECISION),
   'FM9999999999D9999900000000000000000');
 
 SELECT to_char(CAST('100' AS NUMERIC), 'rn');
@@ -2875,7 +3006,8 @@ SELECT to_char(CAST(1234.56 AS NUMERIC), '99999V99');
 SELECT to_char(CAST(1234.56 AS REAL), '99999V99');
 
 SELECT
-  to_char(CAST(1234.56 AS DOUBLE PRECISION),
+  to_char(CAST(1234.56
+  AS DOUBLE PRECISION),
   '99999V99');
 
 SELECT to_char(CAST('100' AS NUMERIC), 'foo999');

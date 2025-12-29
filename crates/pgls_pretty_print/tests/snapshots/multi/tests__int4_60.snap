@@ -32,198 +32,250 @@ SELECT * FROM pg_input_error_info('1000000000000', 'int4');
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 <>
-  CAST('0' AS SMALLINT);
+  CAST('0'
+  AS SMALLINT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 <>
-  CAST('0' AS INT);
+  CAST('0'
+  AS INT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 =
-  CAST('0' AS SMALLINT);
+  CAST('0'
+  AS SMALLINT);
 
 SELECT i.* FROM int4_tbl AS i WHERE i.f1 = CAST('0' AS INT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 <
-  CAST('0' AS SMALLINT);
+  CAST('0'
+  AS SMALLINT);
 
 SELECT i.* FROM int4_tbl AS i WHERE i.f1 < CAST('0' AS INT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 <=
-  CAST('0' AS SMALLINT);
+  CAST('0'
+  AS SMALLINT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 <=
-  CAST('0' AS INT);
+  CAST('0'
+  AS INT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 >
-  CAST('0' AS SMALLINT);
+  CAST('0'
+  AS SMALLINT);
 
 SELECT i.* FROM int4_tbl AS i WHERE i.f1 > CAST('0' AS INT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 >=
-  CAST('0' AS SMALLINT);
+  CAST('0'
+  AS SMALLINT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   i.f1 >=
-  CAST('0' AS INT);
+  CAST('0'
+  AS INT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
-  i.f1 % CAST('2' AS SMALLINT) =
-  CAST('1' AS SMALLINT);
+  i.f1 % CAST('2'
+  AS SMALLINT) =
+  CAST('1'
+  AS SMALLINT);
 
 SELECT
   i.*
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
-  i.f1 % CAST('2' AS INT) =
-  CAST('0' AS SMALLINT);
+  i.f1 % CAST('2'
+  AS INT) =
+  CAST('0'
+  AS SMALLINT);
 
 SELECT
   i.f1,
-  i.f1 * CAST('2' AS SMALLINT) AS x
+  i.f1 * CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 * CAST('2' AS SMALLINT) AS x
+  i.f1 * CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   abs(f1) <
   1073741824;
 
 SELECT
   i.f1,
-  i.f1 * CAST('2' AS INT) AS x
+  i.f1 * CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 * CAST('2' AS INT) AS x
+  i.f1 * CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   abs(f1) <
   1073741824;
 
 SELECT
   i.f1,
-  i.f1 + CAST('2' AS SMALLINT) AS x
+  i.f1 + CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 + CAST('2' AS SMALLINT) AS x
+  i.f1 + CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   f1 <
   2147483646;
 
 SELECT
   i.f1,
-  i.f1 + CAST('2' AS INT) AS x
+  i.f1 + CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 + CAST('2' AS INT) AS x
+  i.f1 + CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   f1 <
   2147483646;
 
 SELECT
   i.f1,
-  i.f1 - CAST('2' AS SMALLINT) AS x
+  i.f1 - CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 - CAST('2' AS SMALLINT) AS x
+  i.f1 - CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   f1 >
   -2147483647;
 
 SELECT
   i.f1,
-  i.f1 - CAST('2' AS INT) AS x
+  i.f1 - CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 - CAST('2' AS INT) AS x
+  i.f1 - CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i
+  int4_tbl
+  AS i
 WHERE
   f1 >
   -2147483647;
 
 SELECT
   i.f1,
-  i.f1 / CAST('2' AS SMALLINT) AS x
+  i.f1 / CAST('2'
+  AS SMALLINT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT
   i.f1,
-  i.f1 / CAST('2' AS INT) AS x
+  i.f1 / CAST('2'
+  AS INT) AS x
 FROM
-  int4_tbl AS i;
+  int4_tbl
+  AS i;
 
 SELECT -2 + 3 AS one;
 
@@ -234,16 +286,28 @@ SELECT 2 - -1 AS three;
 SELECT 2 - -2 AS four;
 
 SELECT
-  CAST('2' AS SMALLINT) * CAST('2' AS SMALLINT) =
-  CAST('16' AS SMALLINT) / CAST('4' AS SMALLINT) AS "true";
+  CAST('2'
+  AS SMALLINT) * CAST('2'
+  AS SMALLINT) =
+  CAST('16'
+  AS SMALLINT) / CAST('4'
+  AS SMALLINT) AS "true";
 
 SELECT
-  CAST('2' AS INT) * CAST('2' AS SMALLINT) =
-  CAST('16' AS SMALLINT) / CAST('4' AS INT) AS "true";
+  CAST('2'
+  AS INT) * CAST('2'
+  AS SMALLINT) =
+  CAST('16'
+  AS SMALLINT) / CAST('4'
+  AS INT) AS "true";
 
 SELECT
-  CAST('2' AS SMALLINT) * CAST('2' AS INT) =
-  CAST('16' AS INT) / CAST('4' AS SMALLINT) AS "true";
+  CAST('2'
+  AS SMALLINT) * CAST('2'
+  AS INT) =
+  CAST('16'
+  AS INT) / CAST('4'
+  AS SMALLINT) AS "true";
 
 SELECT CAST('1000' AS INT) < CAST('999' AS INT) AS "false";
 
@@ -271,27 +335,43 @@ SELECT CAST(-2147483648 AS INT) % CAST(-1 AS SMALLINT);
 
 SELECT
   x,
-  CAST(x AS INT) AS int4_value
+  CAST(x
+  AS INT) AS int4_value
 FROM
-  (VALUES (-CAST(2.5 AS DOUBLE PRECISION)),
-  (-CAST(1.5 AS DOUBLE PRECISION)),
-  (-CAST(0.5 AS DOUBLE PRECISION)),
-  (CAST(0.0 AS DOUBLE PRECISION)),
-  (CAST(0.5 AS DOUBLE PRECISION)),
-  (CAST(1.5 AS DOUBLE PRECISION)),
-  (CAST(2.5 AS DOUBLE PRECISION))) AS t (x);
+  (VALUES (-CAST(2.5
+  AS DOUBLE PRECISION)),
+  (-CAST(1.5
+  AS DOUBLE PRECISION)),
+  (-CAST(0.5
+  AS DOUBLE PRECISION)),
+  (CAST(0.0
+  AS DOUBLE PRECISION)),
+  (CAST(0.5
+  AS DOUBLE PRECISION)),
+  (CAST(1.5
+  AS DOUBLE PRECISION)),
+  (CAST(2.5
+  AS DOUBLE PRECISION))) AS t (x);
 
 SELECT
   x,
-  CAST(x AS INT) AS int4_value
+  CAST(x
+  AS INT) AS int4_value
 FROM
-  (VALUES (-CAST(2.5 AS NUMERIC)),
-  (-CAST(1.5 AS NUMERIC)),
-  (-CAST(0.5 AS NUMERIC)),
-  (CAST(0.0 AS NUMERIC)),
-  (CAST(0.5 AS NUMERIC)),
-  (CAST(1.5 AS NUMERIC)),
-  (CAST(2.5 AS NUMERIC))) AS t (x);
+  (VALUES (-CAST(2.5
+  AS NUMERIC)),
+  (-CAST(1.5
+  AS NUMERIC)),
+  (-CAST(0.5
+  AS NUMERIC)),
+  (CAST(0.0
+  AS NUMERIC)),
+  (CAST(0.5
+  AS NUMERIC)),
+  (CAST(1.5
+  AS NUMERIC)),
+  (CAST(2.5
+  AS NUMERIC))) AS t (x);
 
 SELECT
   a,
@@ -305,27 +385,43 @@ SELECT
   gcd(-b,
   a)
 FROM
-  (VALUES (CAST(0 AS INT),
-  CAST(0 AS INT)),
-  (CAST(0 AS INT),
-  CAST(6410818 AS INT)),
-  (CAST(61866666 AS INT),
-  CAST(6410818 AS INT)),
-  (-CAST(61866666 AS INT),
-  CAST(6410818 AS INT)),
-  (CAST(-2147483648 AS INT),
-  CAST(1 AS INT)),
-  (CAST(-2147483648 AS INT),
-  CAST(2147483647 AS INT)),
-  (CAST(-2147483648 AS INT),
-  CAST(1073741824 AS INT))) AS v (a,
+  (VALUES (CAST(0
+  AS INT),
+  CAST(0
+  AS INT)),
+  (CAST(0
+  AS INT),
+  CAST(6410818
+  AS INT)),
+  (CAST(61866666
+  AS INT),
+  CAST(6410818
+  AS INT)),
+  (-CAST(61866666
+  AS INT),
+  CAST(6410818
+  AS INT)),
+  (CAST(-2147483648
+  AS INT),
+  CAST(1
+  AS INT)),
+  (CAST(-2147483648
+  AS INT),
+  CAST(2147483647
+  AS INT)),
+  (CAST(-2147483648
+  AS INT),
+  CAST(1073741824
+  AS INT))) AS v (a,
   b);
 
 SELECT gcd(CAST(-2147483648 AS INT), CAST(0 AS INT));
 
 SELECT
-  gcd(CAST(-2147483648 AS INT),
-  CAST(-2147483648 AS INT));
+  gcd(CAST(-2147483648
+  AS INT),
+  CAST(-2147483648
+  AS INT));
 
 SELECT
   a,
@@ -339,25 +435,39 @@ SELECT
   lcm(-b,
   a)
 FROM
-  (VALUES (CAST(0 AS INT),
-  CAST(0 AS INT)),
-  (CAST(0 AS INT),
-  CAST(42 AS INT)),
-  (CAST(42 AS INT),
-  CAST(42 AS INT)),
-  (CAST(330 AS INT),
-  CAST(462 AS INT)),
-  (-CAST(330 AS INT),
-  CAST(462 AS INT)),
-  (CAST(-2147483648 AS INT),
-  CAST(0 AS INT))) AS v (a,
+  (VALUES (CAST(0
+  AS INT),
+  CAST(0
+  AS INT)),
+  (CAST(0
+  AS INT),
+  CAST(42
+  AS INT)),
+  (CAST(42
+  AS INT),
+  CAST(42
+  AS INT)),
+  (CAST(330
+  AS INT),
+  CAST(462
+  AS INT)),
+  (-CAST(330
+  AS INT),
+  CAST(462
+  AS INT)),
+  (CAST(-2147483648
+  AS INT),
+  CAST(0
+  AS INT))) AS v (a,
   b);
 
 SELECT lcm(CAST(-2147483648 AS INT), CAST(1 AS INT));
 
 SELECT
-  lcm(CAST(2147483647 AS INT),
-  CAST(2147483646 AS INT));
+  lcm(CAST(2147483647
+  AS INT),
+  CAST(2147483646
+  AS INT));
 
 SELECT CAST('0b100101' AS INT);
 

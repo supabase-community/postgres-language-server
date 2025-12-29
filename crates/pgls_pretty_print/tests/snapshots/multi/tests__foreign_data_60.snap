@@ -42,8 +42,10 @@ CREATE FOREIGN DATA WRAPPER postgresql
 
 SELECT
   fdwname,
-  CAST(fdwhandler AS REGPROC),
-  CAST(fdwvalidator AS REGPROC),
+  CAST(fdwhandler
+  AS REGPROC),
+  CAST(fdwvalidator
+  AS REGPROC),
   fdwoptions
 FROM
   pg_foreign_data_wrapper
@@ -493,7 +495,8 @@ CREATE SERVER s0 FOREIGN DATA WRAPPER dummy;
 CREATE FOREIGN TABLE ft1 () SERVER no_server;
 
 CREATE FOREIGN TABLE ft1 (
-  c1 INT OPTIONS ("param 1" 'val1') PRIMARY KEY,
+  c1 INT OPTIONS ("param 1" 'val1')
+  PRIMARY KEY,
   c2 TEXT OPTIONS (param2 'val2', param3 'val3'),
   c3 DATE
 ) SERVER s0 OPTIONS (delimiter ',',
@@ -503,7 +506,8 @@ quote '"',
 CREATE TABLE ref_table ( id INT PRIMARY KEY );
 
 CREATE FOREIGN TABLE ft1 (
-  c1 INT OPTIONS ("param 1" 'val1') REFERENCES ref_table (id),
+  c1 INT OPTIONS ("param 1" 'val1')
+  REFERENCES ref_table (id),
   c2 TEXT OPTIONS (param2 'val2', param3 'val3'),
   c3 DATE
 ) SERVER s0 OPTIONS (delimiter ',',
@@ -513,7 +517,8 @@ quote '"',
 DROP TABLE "ref_table";
 
 CREATE FOREIGN TABLE ft1 (
-  c1 INT OPTIONS ("param 1" 'val1') NOT NULL,
+  c1 INT OPTIONS ("param 1" 'val1')
+  NOT NULL,
   c2 TEXT OPTIONS (param2 'val2', param3 'val3'),
   c3 DATE,
   UNIQUE (c3)
@@ -522,11 +527,15 @@ quote '"',
 "be quoted" 'value');
 
 CREATE FOREIGN TABLE ft1 (
-  c1 INT OPTIONS ("param 1" 'val1') NOT NULL,
-  c2 TEXT OPTIONS (param2 'val2', param3 'val3') CHECK (c2 <>
+  c1 INT OPTIONS ("param 1" 'val1')
+  NOT NULL,
+  c2 TEXT OPTIONS (param2 'val2', param3 'val3')
+  CHECK (c2 <>
   ''),
   c3 DATE,
-  CHECK (c3 BETWEEN CAST('1994-01-01' AS DATE) AND CAST('1994-01-31' AS DATE))
+  CHECK (c3 BETWEEN CAST('1994-01-01'
+  AS DATE) AND CAST('1994-01-31'
+  AS DATE))
 ) SERVER s0 OPTIONS (delimiter ',',
 quote '"',
 "be quoted" 'value');
@@ -626,7 +635,8 @@ PARTITION OF lt1_part1
 FOR VALUES FROM (0) TO (100) SERVER s0;
 
 CREATE FOREIGN TABLE ft_part_1_2 (
-  a INT NOT NULL
+  a INT
+  NOT NULL
 ) SERVER s0;
 
 ALTER TABLE lt1_part1
@@ -750,7 +760,8 @@ ALTER FOREIGN TABLE IF EXISTS doesnt_exist_ft1
   ADD COLUMN c6 INT;
 
 ALTER FOREIGN TABLE IF EXISTS doesnt_exist_ft1
-  ADD COLUMN c7 INT NOT NULL;
+  ADD COLUMN c7 INT
+    NOT NULL;
 
 ALTER FOREIGN TABLE IF EXISTS doesnt_exist_ft1
   ADD COLUMN c8 INT;
@@ -1306,7 +1317,8 @@ quote '"',
 DROP FOREIGN TABLE "ft2";
 
 CREATE FOREIGN TABLE ft2 (
-  c1 INT NOT NULL,
+  c1 INT
+  NOT NULL,
   c2 TEXT,
   c3 DATE
 ) SERVER s0 OPTIONS (delimiter ',',
@@ -1377,8 +1389,10 @@ SELECT
   coninhcount,
   connoinherit
 FROM
-  pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  pg_class
+  AS pc
+  INNER JOIN pg_constraint
+  AS pgc
   ON conrelid =
     pc.oid
 WHERE
@@ -1392,7 +1406,8 @@ DROP FOREIGN TABLE "ft2";
 DROP FOREIGN TABLE "ft2" CASCADE;
 
 CREATE FOREIGN TABLE ft2 (
-  c1 INT NOT NULL,
+  c1 INT
+  NOT NULL,
   c2 TEXT,
   c3 DATE
 ) SERVER s0 OPTIONS (delimiter ',',
@@ -1413,8 +1428,10 @@ ALTER TABLE fd_pt1 DROP CONSTRAINT fd_pt1chk2 CASCADE;
 
 INSERT INTO fd_pt1
 VALUES (1,
-CAST('fd_pt1' AS TEXT),
-CAST('1994-01-01' AS DATE));
+CAST('fd_pt1'
+AS TEXT),
+CAST('1994-01-01'
+AS DATE));
 
 ALTER TABLE fd_pt1
   ADD CONSTRAINT "fd_pt1chk3" CHECK (c2 <>
@@ -1465,7 +1482,8 @@ DROP OWNED BY regress_test_role2;
 DROP OWNED BY regress_test_role2 CASCADE;
 
 CREATE TABLE fd_pt2 (
-  c1 INT NOT NULL,
+  c1 INT
+  NOT NULL,
   c2 TEXT,
   c3 DATE
 )
@@ -1480,7 +1498,8 @@ quote '"',
 DROP FOREIGN TABLE "fd_pt2_1";
 
 CREATE FOREIGN TABLE fd_pt2_1 (
-  c1 INT NOT NULL,
+  c1 INT
+  NOT NULL,
   c2 TEXT,
   c3 DATE,
   c4 CHAR(1)
@@ -1496,7 +1515,8 @@ ALTER TABLE fd_pt2
 DROP FOREIGN TABLE "fd_pt2_1";
 
 CREATE FOREIGN TABLE fd_pt2_1 (
-  c1 INT NOT NULL,
+  c1 INT
+  NOT NULL,
   c2 TEXT,
   c3 DATE
 ) SERVER s0 OPTIONS (delimiter ',',

@@ -343,32 +343,46 @@ SELECT * FROM pg_input_error_info('6874898-01-01', 'date');
 RESET datestyle;
 
 SELECT
-  f1 - CAST('2000-01-01' AS DATE) AS "Days From 2K"
+  f1 - CAST('2000-01-01'
+  AS DATE) AS "Days From 2K"
 FROM
   date_tbl;
 
 SELECT
-  f1 - CAST('epoch' AS DATE) AS "Days From Epoch"
+  f1 - CAST('epoch'
+  AS DATE) AS "Days From Epoch"
 FROM
   date_tbl;
 
 SELECT
-  CAST('yesterday' AS DATE) - CAST('today' AS DATE) AS "One day";
+  CAST('yesterday'
+  AS DATE) - CAST('today'
+  AS DATE) AS "One day";
 
 SELECT
-  CAST('today' AS DATE) - CAST('tomorrow' AS DATE) AS "One day";
+  CAST('today'
+  AS DATE) - CAST('tomorrow'
+  AS DATE) AS "One day";
 
 SELECT
-  CAST('yesterday' AS DATE) - CAST('tomorrow' AS DATE) AS "Two days";
+  CAST('yesterday'
+  AS DATE) - CAST('tomorrow'
+  AS DATE) AS "Two days";
 
 SELECT
-  CAST('tomorrow' AS DATE) - CAST('today' AS DATE) AS "One day";
+  CAST('tomorrow'
+  AS DATE) - CAST('today'
+  AS DATE) AS "One day";
 
 SELECT
-  CAST('today' AS DATE) - CAST('yesterday' AS DATE) AS "One day";
+  CAST('today'
+  AS DATE) - CAST('yesterday'
+  AS DATE) AS "One day";
 
 SELECT
-  CAST('tomorrow' AS DATE) - CAST('yesterday' AS DATE) AS "Two days";
+  CAST('tomorrow'
+  AS DATE) - CAST('yesterday'
+  AS DATE) AS "Two days";
 
 SELECT
   f1 AS date,
@@ -406,18 +420,22 @@ FROM
 SELECT EXTRACT('epoch' FROM CAST('1970-01-01' AS DATE));
 
 SELECT
-  EXTRACT('century' FROM CAST('0101-12-31 BC' AS DATE));
+  EXTRACT('century' FROM CAST('0101-12-31 BC'
+  AS DATE));
 
 SELECT
-  EXTRACT('century' FROM CAST('0100-12-31 BC' AS DATE));
+  EXTRACT('century' FROM CAST('0100-12-31 BC'
+  AS DATE));
 
 SELECT
-  EXTRACT('century' FROM CAST('0001-12-31 BC' AS DATE));
+  EXTRACT('century' FROM CAST('0001-12-31 BC'
+  AS DATE));
 
 SELECT EXTRACT('century' FROM CAST('0001-01-01' AS DATE));
 
 SELECT
-  EXTRACT('century' FROM CAST('0001-01-01 AD' AS DATE));
+  EXTRACT('century' FROM CAST('0001-01-01 AD'
+  AS DATE));
 
 SELECT EXTRACT('century' FROM CAST('1900-12-31' AS DATE));
 
@@ -430,22 +448,28 @@ SELECT EXTRACT('century' FROM CAST('2001-01-01' AS DATE));
 SELECT EXTRACT('century' FROM CURRENT_DATE) >= 21 AS "true";
 
 SELECT
-  EXTRACT('millennium' FROM CAST('0001-12-31 BC' AS DATE));
+  EXTRACT('millennium' FROM CAST('0001-12-31 BC'
+  AS DATE));
 
 SELECT
-  EXTRACT('millennium' FROM CAST('0001-01-01 AD' AS DATE));
+  EXTRACT('millennium' FROM CAST('0001-01-01 AD'
+  AS DATE));
 
 SELECT
-  EXTRACT('millennium' FROM CAST('1000-12-31' AS DATE));
+  EXTRACT('millennium' FROM CAST('1000-12-31'
+  AS DATE));
 
 SELECT
-  EXTRACT('millennium' FROM CAST('1001-01-01' AS DATE));
+  EXTRACT('millennium' FROM CAST('1001-01-01'
+  AS DATE));
 
 SELECT
-  EXTRACT('millennium' FROM CAST('2000-12-31' AS DATE));
+  EXTRACT('millennium' FROM CAST('2000-12-31'
+  AS DATE));
 
 SELECT
-  EXTRACT('millennium' FROM CAST('2001-01-01' AS DATE));
+  EXTRACT('millennium' FROM CAST('2001-01-01'
+  AS DATE));
 
 SELECT EXTRACT('millennium' FROM CURRENT_DATE);
 
@@ -464,10 +488,12 @@ SELECT EXTRACT('decade' FROM CAST('0011-01-01 BC' AS DATE));
 SELECT EXTRACT('decade' FROM CAST('0012-12-31 BC' AS DATE));
 
 SELECT
-  EXTRACT('microseconds' FROM CAST('2020-08-11' AS DATE));
+  EXTRACT('microseconds' FROM CAST('2020-08-11'
+  AS DATE));
 
 SELECT
-  EXTRACT('milliseconds' FROM CAST('2020-08-11' AS DATE));
+  EXTRACT('milliseconds' FROM CAST('2020-08-11'
+  AS DATE));
 
 SELECT EXTRACT('second' FROM CAST('2020-08-11' AS DATE));
 
@@ -488,12 +514,14 @@ SELECT EXTRACT('decade' FROM CAST('2020-08-11' AS DATE));
 SELECT EXTRACT('century' FROM CAST('2020-08-11' AS DATE));
 
 SELECT
-  EXTRACT('millennium' FROM CAST('2020-08-11' AS DATE));
+  EXTRACT('millennium' FROM CAST('2020-08-11'
+  AS DATE));
 
 SELECT EXTRACT('isoyear' FROM CAST('2020-08-11' AS DATE));
 
 SELECT
-  EXTRACT('isoyear' FROM CAST('2020-08-11 BC' AS DATE));
+  EXTRACT('isoyear' FROM CAST('2020-08-11 BC'
+  AS DATE));
 
 SELECT EXTRACT('quarter' FROM CAST('2020-08-11' AS DATE));
 
@@ -512,10 +540,12 @@ SELECT EXTRACT('doy' FROM CAST('2020-08-11' AS DATE));
 SELECT EXTRACT('timezone' FROM CAST('2020-08-11' AS DATE));
 
 SELECT
-  EXTRACT('timezone_m' FROM CAST('2020-08-11' AS DATE));
+  EXTRACT('timezone_m' FROM CAST('2020-08-11'
+  AS DATE));
 
 SELECT
-  EXTRACT('timezone_h' FROM CAST('2020-08-11' AS DATE));
+  EXTRACT('timezone_h' FROM CAST('2020-08-11'
+  AS DATE));
 
 SELECT EXTRACT('epoch' FROM CAST('2020-08-11' AS DATE));
 
@@ -523,13 +553,15 @@ SELECT EXTRACT('julian' FROM CAST('2020-08-11' AS DATE));
 
 SELECT
   date_trunc('MILLENNIUM',
-  CAST('1970-03-20 04:30:00.00000' AS TIMESTAMP));
+  CAST('1970-03-20 04:30:00.00000'
+  AS TIMESTAMP));
 
 SELECT date_trunc('MILLENNIUM', CAST('1970-03-20' AS DATE));
 
 SELECT
   date_trunc('CENTURY',
-  CAST('1970-03-20 04:30:00.00000' AS TIMESTAMP));
+  CAST('1970-03-20 04:30:00.00000'
+  AS TIMESTAMP));
 
 SELECT date_trunc('CENTURY', CAST('1970-03-20' AS DATE));
 
@@ -548,21 +580,30 @@ SELECT date_trunc('DECADE', CAST('0002-12-31 BC' AS DATE));
 SELECT CAST('infinity' AS DATE), CAST('-infinity' AS DATE);
 
 SELECT
-  CAST('infinity' AS DATE) >
-  CAST('today' AS DATE) AS t;
+  CAST('infinity'
+  AS DATE) >
+  CAST('today'
+  AS DATE) AS t;
 
 SELECT
-  CAST('-infinity' AS DATE) <
-  CAST('today' AS DATE) AS t;
+  CAST('-infinity'
+  AS DATE) <
+  CAST('today'
+  AS DATE) AS t;
 
 SELECT
-  isfinite(CAST('infinity' AS DATE)),
-  isfinite(CAST('-infinity' AS DATE)),
-  isfinite(CAST('today' AS DATE));
+  isfinite(CAST('infinity'
+  AS DATE)),
+  isfinite(CAST('-infinity'
+  AS DATE)),
+  isfinite(CAST('today'
+  AS DATE));
 
 SELECT
-  CAST('infinity' AS DATE) =
-  CAST('+infinity' AS DATE) AS t;
+  CAST('infinity'
+  AS DATE) =
+  CAST('+infinity'
+  AS DATE) AS t;
 
 SELECT EXTRACT('day' FROM CAST('infinity' AS DATE));
 

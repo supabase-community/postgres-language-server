@@ -55,6 +55,16 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
                 super::emit_node(&n.functions[0], e);
             }
         }
+
+        // Emit column definitions if present (for record functions like json_populate_record)
+        if !n.coldeflist.is_empty() {
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+            e.token(TokenKind::R_PAREN);
+        }
     }
 
     if n.ordinality {

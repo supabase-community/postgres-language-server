@@ -5,12 +5,14 @@ snapshot_kind: text
 ---
 CREATE TABLE guid1 (
   guid_field UUID,
-  text_field TEXT DEFAULT NOW()
+  text_field TEXT
+  DEFAULT NOW()
 );
 
 CREATE TABLE guid2 (
   guid_field UUID,
-  text_field TEXT DEFAULT NOW()
+  text_field TEXT
+  DEFAULT NOW()
 );
 
 CREATE TABLE guid3 ( id serial, guid_field UUID );
@@ -172,16 +174,20 @@ VALUES ('3f3e3c3b3a3039383736353433a2313e');
 SELECT
   COUNT(*)
 FROM
-  guid1 AS g1
-  INNER JOIN guid2 AS g2
+  guid1
+  AS g1
+  INNER JOIN guid2
+  AS g2
   ON g1.guid_field =
     g2.guid_field;
 
 SELECT
   COUNT(*)
 FROM
-  guid1 AS g1
-  LEFT OUTER JOIN guid2 AS g2
+  guid1
+  AS g1
+  LEFT OUTER JOIN guid2
+  AS g2
   ON g1.guid_field =
     g2.guid_field
 WHERE
@@ -210,7 +216,8 @@ INSERT INTO guid1 (guid_field) VALUES (uuidv7());
 INSERT INTO guid1 (guid_field) VALUES (uuidv7());
 
 INSERT INTO guid1 (guid_field)
-VALUES (uuidv7(CAST('1 day' AS INTERVAL)));
+VALUES (uuidv7(CAST('1 day'
+AS INTERVAL)));
 
 SELECT COUNT(DISTINCT guid_field) FROM guid1;
 
@@ -232,10 +239,14 @@ WITH uuidts AS (SELECT
 FROM
   (SELECT
     y,
-    uuid_extract_timestamp(uuidv7(CAST(y || ' years' AS INTERVAL))) AS ts
+    uuid_extract_timestamp(uuidv7(CAST(y ||
+    ' years'
+    AS INTERVAL))) AS ts
   FROM
-    generate_series(1970 - CAST(EXTRACT('year' FROM NOW()) AS INT),
-    10888 - CAST(EXTRACT('year' FROM NOW()) AS INT)) AS y))
+    generate_series(1970 - CAST(EXTRACT('year' FROM NOW())
+    AS INT),
+    10888 - CAST(EXTRACT('year' FROM NOW())
+    AS INT)) AS y))
 SELECT
   y,
   ts,

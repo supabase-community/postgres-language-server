@@ -53,12 +53,14 @@ SELECT unnest(ARRAY[1, 2]) FROM few WHERE FALSE;
 SELECT
   *
 FROM
-  few AS f1,
+  few
+  AS f1,
   (SELECT
     unnest(ARRAY[1,
     2])
   FROM
-    few AS f2
+    few
+    AS f2
   WHERE
     FALSE
   OFFSET 0) AS ss;
@@ -66,12 +68,14 @@ FROM
 SELECT
   *
 FROM
-  few AS f1,
+  few
+  AS f1,
   (SELECT
     unnest(ARRAY[1,
     2])
   FROM
-    few AS f2
+    few
+    AS f2
   WHERE
     FALSE
   OFFSET 0) AS ss;
@@ -118,7 +122,8 @@ SELECT
   COUNT(*),
   MIN(id),
   MAX(id),
-  unnest(CAST('{1,1,3}' AS INT[]))
+  unnest(CAST('{1,1,3}'
+  AS INT[]))
 FROM
   few
 WHERE
@@ -131,21 +136,24 @@ SELECT
   COUNT(*),
   MIN(id),
   MAX(id),
-  unnest(CAST('{1,1,3}' AS INT[]))
+  unnest(CAST('{1,1,3}'
+  AS INT[]))
 FROM
   few
 WHERE
   few.id =
   1
 GROUP BY few.dataa,
-  unnest(CAST('{1,1,3}' AS INT[]));
+  unnest(CAST('{1,1,3}'
+  AS INT[]));
 
 SELECT
   few.dataa,
   COUNT(*),
   MIN(id),
   MAX(id),
-  unnest(CAST('{1,1,3}' AS INT[]))
+  unnest(CAST('{1,1,3}'
+  AS INT[]))
 FROM
   few
 WHERE
@@ -201,7 +209,8 @@ WHERE
   dataa =
   'a'
 GROUP BY few.dataa,
-  unnest(CAST('{1,1,3}' AS INT[]))
+  unnest(CAST('{1,1,3}'
+  AS INT[]))
 ORDER BY 2;
 
 SELECT
@@ -222,7 +231,8 @@ SELECT MIN(generate_series(1, 3)) FROM few;
 SELECT
   SUM(CAST(3 = ANY (SELECT
     generate_series(1,
-    4)) AS INT));
+    4))
+  AS INT));
 
 SELECT
   SUM(CAST(3 = ANY (SELECT
@@ -231,7 +241,8 @@ SELECT
     ORDER BY x)
   FROM
     generate_series(1,
-    4) AS x) AS INT));
+    4) AS x)
+  AS INT));
 
 SELECT MIN(generate_series(1, 3)) OVER () FROM few;
 

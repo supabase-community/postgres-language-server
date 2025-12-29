@@ -94,10 +94,20 @@ fn emit_multi_assign_clause(
         .source
         .as_ref()
         .expect("MultiAssignRef source missing row expression");
-    let row_expr = assert_node_variant!(RowExpr, source_node);
 
-    let expand_tuple = row_expr.args.len() == total
-        && matches!(row_expr.row_format(), CoercionForm::CoerceImplicitCast);
+    // Check if source is a RowExpr - if so, we may expand it; otherwise emit as-is
+    let maybe_row_expr = if let Some(pgls_query::NodeEnum::RowExpr(r)) = source_node.node.as_ref() {
+        Some(r)
+    } else {
+        None
+    };
+
+    let expand_tuple = maybe_row_expr
+        .map(|row_expr| {
+            row_expr.args.len() == total
+                && matches!(row_expr.row_format(), CoercionForm::CoerceImplicitCast)
+        })
+        .unwrap_or(false);
 
     e.group_start(GroupKind::ResTarget);
 
@@ -120,15 +130,17 @@ fn emit_multi_assign_clause(
 
     // Source expressions
     if expand_tuple {
-        e.token(TokenKind::L_PAREN);
-        for (idx, expr) in row_expr.args.iter().enumerate() {
-            if idx > 0 {
-                e.token(TokenKind::COMMA);
-                e.line(LineType::SoftOrSpace);
+        if let Some(row_expr) = maybe_row_expr {
+            e.token(TokenKind::L_PAREN);
+            for (idx, expr) in row_expr.args.iter().enumerate() {
+                if idx > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::SoftOrSpace);
+                }
+                emit_node(expr, e);
             }
-            emit_node(expr, e);
+            e.token(TokenKind::R_PAREN);
         }
-        e.token(TokenKind::R_PAREN);
     } else {
         emit_node(source_node, e);
     }

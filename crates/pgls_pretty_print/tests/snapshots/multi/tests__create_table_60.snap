@@ -44,25 +44,30 @@ DROP TABLE "unlogged2";
 INSERT INTO unlogged1 VALUES (42);
 
 CREATE UNLOGGED TABLE public.unlogged2 (
-  a INT PRIMARY KEY
+  a INT
+  PRIMARY KEY
 );
 
 CREATE UNLOGGED TABLE pg_temp.unlogged3 (
-  a INT PRIMARY KEY
+  a INT
+  PRIMARY KEY
 );
 
 CREATE TABLE pg_temp.implicitly_temp ( a INT PRIMARY KEY );
 
 CREATE TEMPORARY TABLE explicitly_temp (
-  a INT PRIMARY KEY
+  a INT
+  PRIMARY KEY
 );
 
 CREATE TEMPORARY TABLE pg_temp.doubly_temp (
-  a INT PRIMARY KEY
+  a INT
+  PRIMARY KEY
 );
 
 CREATE TEMPORARY TABLE public.temp_to_perm (
-  a INT PRIMARY KEY
+  a INT
+  PRIMARY KEY
 );
 
 DROP TABLE "unlogged1", "public"."unlogged2";
@@ -111,21 +116,25 @@ DROP TABLE "as_select1";
 
 PREPARE select1 AS SELECT 1 AS a;;
 
-CREATE TABLE as_select1 AS EXECUTE select1;;
+CREATE TABLE as_select1 AS EXECUTE select1;
 
-CREATE TABLE as_select1 AS EXECUTE select1;;
+CREATE TABLE as_select1 AS EXECUTE select1;
 
 SELECT * FROM as_select1;
 
-CREATE TABLE IF NOT EXISTS as_select1 AS EXECUTE select1;;
+CREATE TABLE IF NOT EXISTS as_select1 AS EXECUTE select1;
 
 DROP TABLE "as_select1";
 
 DEALLOCATE select1;
 
 SELECT
-  'CREATE TABLE extra_wide_table(firstc text, ' || array_to_string(array_agg('c' || i || ' bool'),
-  ',') || ', lastc text);'
+  'CREATE TABLE extra_wide_table(firstc text, ' ||
+  array_to_string(array_agg('c' ||
+  i ||
+  ' bool'),
+  ',') ||
+  ', lastc text);'
 FROM
   generate_series(1,
   1100) AS g (i);
@@ -168,22 +177,26 @@ CREATE TABLE default_expr_column ( id INT DEFAULT id );
 CREATE TABLE default_expr_column ( id INT DEFAULT bar.id );
 
 CREATE TABLE default_expr_agg_column (
-  id INT DEFAULT AVG(id)
+  id INT
+  DEFAULT AVG(id)
 );
 
 CREATE TABLE default_expr_non_column (
-  a INT DEFAULT AVG(non_existent)
+  a INT
+  DEFAULT AVG(non_existent)
 );
 
 CREATE TABLE default_expr_agg ( a INT DEFAULT AVG(1) );
 
 CREATE TABLE default_expr_agg (
-  a INT DEFAULT ((SELECT
+  a INT
+  DEFAULT ((SELECT
     1))
 );
 
 CREATE TABLE default_expr_agg (
-  a INT DEFAULT generate_series(1,
+  a INT
+  DEFAULT generate_series(1,
   3)
 );
 
@@ -380,15 +393,18 @@ CREATE TABLE partitioned (
   b INT
 )
 PARTITION BY LIST((CAST(ROW(a,
-b) AS partitioned)));
+b)
+AS partitioned)));
 
 CREATE TABLE partitioned1
 PARTITION OF partitioned
-FOR VALUES IN (CAST('(1,2)' AS partitioned));
+FOR VALUES IN (CAST('(1,2)'
+AS partitioned));
 
 CREATE TABLE partitioned2
 PARTITION OF partitioned
-FOR VALUES IN (CAST('(2,4)' AS partitioned));
+FOR VALUES IN (CAST('(2,4)'
+AS partitioned));
 
 SELECT
   *
@@ -396,8 +412,10 @@ FROM
   partitioned
 WHERE
   CAST(ROW(a,
-  b) AS partitioned) =
-  CAST('(1,2)' AS partitioned);
+  b)
+  AS partitioned) =
+  CAST('(1,2)'
+  AS partitioned);
 
 DROP TABLE "partitioned";
 
@@ -421,7 +439,8 @@ FROM
   partitioned
 WHERE
   partitioned =
-  CAST('(1,2)' AS partitioned);
+  CAST('(1,2)'
+  AS partitioned);
 
 DROP TABLE "partitioned";
 
@@ -548,7 +567,8 @@ FOR VALUES IN ('11');
 CREATE TABLE moneyp_12
 PARTITION OF moneyp
 FOR VALUES IN (CAST(to_char(12,
-'99') AS INT));
+'99')
+AS INT));
 
 DROP TABLE "moneyp";
 
@@ -588,7 +608,8 @@ FOR VALUES FROM (MAX(somename)) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM (MAX(CAST('2019-02-01' AS DATE))) TO ('2019-01-01');
+FOR VALUES FROM (MAX(CAST('2019-02-01'
+AS DATE))) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
@@ -880,7 +901,9 @@ FOR VALUES WITH (MODULUS 8, REMAINDER 8);
 
 CREATE TABLE parted (
   a TEXT,
-  b INT NOT NULL DEFAULT 0,
+  b INT
+  NOT NULL
+  DEFAULT 0,
   CONSTRAINT "check_a" CHECK (length(a) >
   0)
 )
@@ -896,7 +919,8 @@ FROM
   pg_attribute
 WHERE
   attrelid =
-  CAST('part_a' AS REGCLASS) AND
+  CAST('part_a'
+  AS REGCLASS) AND
   attnum >
   0
 ORDER BY attnum;
@@ -904,9 +928,12 @@ ORDER BY attnum;
 CREATE TABLE part_b
 PARTITION OF parted
 (
-  b NOT NULL,
-  b DEFAULT 1,
-  b CHECK (b >=
+  b
+  NOT NULL,
+  b
+  DEFAULT 1,
+  b
+  CHECK (b >=
   0),
   CONSTRAINT "check_a" CHECK (length(a) >
   0)
@@ -916,7 +943,9 @@ FOR VALUES IN ('b');
 CREATE TABLE part_b
 PARTITION OF parted
 (
-  b NOT NULL DEFAULT 1,
+  b
+  NOT NULL
+  DEFAULT 1,
   CONSTRAINT "check_a" CHECK (length(a) >
   0),
   CONSTRAINT "check_b" CHECK (b >=
@@ -932,7 +961,8 @@ FROM
   pg_constraint
 WHERE
   conrelid =
-  CAST('part_b' AS REGCLASS)
+  CAST('part_b'
+  AS REGCLASS)
 ORDER BY coninhcount DESC,
   conname;
 
@@ -946,7 +976,8 @@ FROM
   pg_constraint
 WHERE
   conrelid =
-  CAST('part_b' AS REGCLASS)
+  CAST('part_b'
+  AS REGCLASS)
 ORDER BY coninhcount DESC,
   conname;
 
@@ -966,7 +997,8 @@ FROM
   pg_constraint
 WHERE
   conrelid =
-  CAST('part_b' AS REGCLASS)
+  CAST('part_b'
+  AS REGCLASS)
 ORDER BY coninhcount DESC,
   conname;
 
@@ -978,7 +1010,9 @@ PARTITION BY RANGE(c);
 CREATE TABLE part_c
 PARTITION OF parted
 (
-  b NOT NULL DEFAULT 0
+  b
+  NOT NULL
+  DEFAULT 0
 )
 FOR VALUES IN ('c')
 PARTITION BY RANGE((b));
@@ -988,16 +1022,21 @@ PARTITION OF part_c
 FOR VALUES FROM (1) TO (10);
 
 CREATE TABLE parted_notnull_inh_test (
-  a INT DEFAULT 1,
-  b INT NOT NULL DEFAULT 0
+  a INT
+  DEFAULT 1,
+  b INT
+  NOT NULL
+  DEFAULT 0
 )
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_notnull_inh_test1
 PARTITION OF parted_notnull_inh_test
 (
-  a NOT NULL,
-  b DEFAULT 1
+  a
+  NOT NULL,
+  b
+  DEFAULT 1
 )
 FOR VALUES IN (1);
 
@@ -1060,11 +1099,13 @@ FOR VALUES FROM ('g') TO ('m');
 
 CREATE TABLE test_part_coll_cast
 PARTITION OF test_part_coll_posix
-FOR VALUES FROM (CAST('m' AS NAME) COLLATE "C") TO ('s');
+FOR VALUES FROM (CAST('m'
+AS NAME) COLLATE "C") TO ('s');
 
 CREATE TABLE test_part_coll_cast2
 PARTITION OF test_part_coll_posix
-FOR VALUES FROM (CAST('s' AS NAME)) TO ('z');
+FOR VALUES FROM (CAST('s'
+AS NAME)) TO ('z');
 
 DROP TABLE "test_part_coll_posix";
 
@@ -1175,7 +1216,8 @@ COMMENT ON TABLE parted_col_comment IS 'Am partitioned table';
 COMMENT ON COLUMN parted_col_comment.a IS 'Partition key';
 
 SELECT
-  obj_description(CAST('parted_col_comment' AS REGCLASS));
+  obj_description(CAST('parted_col_comment'
+  AS REGCLASS));
 
 DROP TABLE "parted_col_comment";
 
@@ -1268,7 +1310,8 @@ INSERT INTO volatile_partbound_test
 VALUES (CURRENT_TIMESTAMP);
 
 SELECT
-  CAST(tableoid AS REGCLASS)
+  CAST(tableoid
+  AS REGCLASS)
 FROM
   volatile_partbound_test;
 

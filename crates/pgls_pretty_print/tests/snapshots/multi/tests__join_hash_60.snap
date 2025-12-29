@@ -134,15 +134,19 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
@@ -170,15 +174,19 @@ SET LOCAL enable_parallel_hash = off;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
@@ -206,15 +214,19 @@ SET LOCAL enable_parallel_hash = on;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
@@ -240,15 +252,19 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
@@ -276,15 +292,19 @@ SET LOCAL enable_parallel_hash = off;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
@@ -312,15 +332,19 @@ SET LOCAL enable_parallel_hash = on;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN simple AS s
+  simple
+  AS r
+  INNER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
@@ -336,8 +360,10 @@ FROM
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 ROLLBACK TO SAVEPOINT settings;
@@ -353,15 +379,19 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN bigger_than_it_looks AS s
+  simple
+  AS r
+  INNER JOIN bigger_than_it_looks
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN bigger_than_it_looks AS s
+  simple
+  AS r
+  INNER JOIN bigger_than_it_looks
+  AS s
   USING ("id");
 
 SELECT
@@ -389,15 +419,19 @@ SET LOCAL enable_parallel_hash = off;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN bigger_than_it_looks AS s
+  simple
+  AS r
+  INNER JOIN bigger_than_it_looks
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN bigger_than_it_looks AS s
+  simple
+  AS r
+  INNER JOIN bigger_than_it_looks
+  AS s
   USING ("id");
 
 SELECT
@@ -425,15 +459,19 @@ SET LOCAL enable_parallel_hash = on;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN bigger_than_it_looks AS s
+  simple
+  AS r
+  INNER JOIN bigger_than_it_looks
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN bigger_than_it_looks AS s
+  simple
+  AS r
+  INNER JOIN bigger_than_it_looks
+  AS s
   USING ("id");
 
 SELECT
@@ -459,15 +497,19 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN extremely_skewed AS s
+  simple
+  AS r
+  INNER JOIN extremely_skewed
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN extremely_skewed AS s
+  simple
+  AS r
+  INNER JOIN extremely_skewed
+  AS s
   USING ("id");
 
 SELECT
@@ -492,15 +534,19 @@ SET LOCAL enable_parallel_hash = off;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN extremely_skewed AS s
+  simple
+  AS r
+  INNER JOIN extremely_skewed
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN extremely_skewed AS s
+  simple
+  AS r
+  INNER JOIN extremely_skewed
+  AS s
   USING ("id");
 
 SELECT
@@ -525,15 +571,19 @@ SET LOCAL enable_parallel_hash = on;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN extremely_skewed AS s
+  simple
+  AS r
+  INNER JOIN extremely_skewed
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  INNER JOIN extremely_skewed AS s
+  simple
+  AS r
+  INNER JOIN extremely_skewed
+  AS s
   USING ("id");
 
 SELECT
@@ -568,7 +618,8 @@ CREATE TABLE join_foo AS
   SELECT
     generate_series(1,
     3) AS id,
-    CAST('xxxxx' AS TEXT) AS t;
+    CAST('xxxxx'
+    AS TEXT) AS t;
 
 ALTER TABLE join_foo SET (parallel_workers = 0);
 
@@ -576,7 +627,8 @@ CREATE TABLE join_bar AS
   SELECT
     generate_series(1,
     10000) AS id,
-    CAST('xxxxx' AS TEXT) AS t;
+    CAST('xxxxx'
+    AS TEXT) AS t;
 
 ALTER TABLE join_bar SET (parallel_workers = 2);
 
@@ -610,8 +662,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -626,8 +680,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -676,8 +732,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -692,8 +750,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -742,8 +802,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -758,8 +820,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -808,8 +872,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -824,8 +890,10 @@ FROM
     b1.id,
     b1.t
   FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
+    join_bar
+    AS b1
+    INNER JOIN join_bar
+    AS b2
     USING ("id")) AS ss
   ON join_foo.id <
     ss.id + 1 AND
@@ -851,15 +919,19 @@ SET LOCAL max_parallel_workers_per_gather = 0;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 ROLLBACK TO SAVEPOINT settings;
@@ -873,15 +945,19 @@ SET LOCAL max_parallel_workers_per_gather = 2;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 ROLLBACK TO SAVEPOINT settings;
@@ -893,15 +969,19 @@ SET LOCAL max_parallel_workers_per_gather = 2;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   USING ("id");
 
 ROLLBACK TO SAVEPOINT settings;
@@ -913,16 +993,20 @@ SET LOCAL max_parallel_workers_per_gather = 0;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   ON r.id =
     0 - s.id;
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   ON r.id =
     0 - s.id;
 
@@ -937,16 +1021,20 @@ SET LOCAL max_parallel_workers_per_gather = 2;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   ON r.id =
     0 - s.id;
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   ON r.id =
     0 - s.id;
 
@@ -959,16 +1047,20 @@ SET LOCAL max_parallel_workers_per_gather = 2;
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   ON r.id =
     0 - s.id;
 
 SELECT
   COUNT(*)
 FROM
-  simple AS r
-  FULL OUTER JOIN simple AS s
+  simple
+  AS r
+  FULL OUTER JOIN simple
+  AS s
   ON r.id =
     0 - s.id;
 
@@ -991,7 +1083,8 @@ FROM
   LEFT OUTER JOIN (SELECT
     id,
     COALESCE(t,
-    '') || '' AS t
+    '') ||
+    '' AS t
   FROM
     wide) AS s
   USING ("id");
@@ -1003,7 +1096,8 @@ FROM
   LEFT OUTER JOIN (SELECT
     id,
     COALESCE(t,
-    '') || '' AS t
+    '') ||
+    '' AS t
   FROM
     wide) AS s
   USING ("id");
@@ -1042,8 +1136,10 @@ UPDATE hjtest_matchbits_t2 SET id = 2;
 SELECT
   *
 FROM
-  hjtest_matchbits_t1 AS t1
-  FULL OUTER JOIN hjtest_matchbits_t2 AS t2
+  hjtest_matchbits_t1
+  AS t1
+  FULL OUTER JOIN hjtest_matchbits_t2
+  AS t2
   ON t1.id =
     t2.id
 ORDER BY t1.id;
@@ -1055,8 +1151,10 @@ SET enable_parallel_hash = off;
 SELECT
   *
 FROM
-  hjtest_matchbits_t1 AS t1
-  FULL OUTER JOIN hjtest_matchbits_t2 AS t2
+  hjtest_matchbits_t1
+  AS t1
+  FULL OUTER JOIN hjtest_matchbits_t2
+  AS t2
   ON t1.id =
     t2.id;
 
@@ -1158,8 +1256,10 @@ VALUES (TRUE,
 SELECT
   hjtest_1.a AS a1,
   hjtest_2.a AS a2,
-  CAST(hjtest_1.tableoid AS REGCLASS) AS t1,
-  CAST(hjtest_2.tableoid AS REGCLASS) AS t2
+  CAST(hjtest_1.tableoid
+  AS REGCLASS) AS t1,
+  CAST(hjtest_2.tableoid
+  AS REGCLASS) AS t2
 FROM
   hjtest_1,
   hjtest_2
@@ -1186,8 +1286,10 @@ WHERE
 SELECT
   hjtest_1.a AS a1,
   hjtest_2.a AS a2,
-  CAST(hjtest_1.tableoid AS REGCLASS) AS t1,
-  CAST(hjtest_2.tableoid AS REGCLASS) AS t2
+  CAST(hjtest_1.tableoid
+  AS REGCLASS) AS t1,
+  CAST(hjtest_2.tableoid
+  AS REGCLASS) AS t2
 FROM
   hjtest_1,
   hjtest_2
@@ -1214,8 +1316,10 @@ WHERE
 SELECT
   hjtest_1.a AS a1,
   hjtest_2.a AS a2,
-  CAST(hjtest_1.tableoid AS REGCLASS) AS t1,
-  CAST(hjtest_2.tableoid AS REGCLASS) AS t2
+  CAST(hjtest_1.tableoid
+  AS REGCLASS) AS t1,
+  CAST(hjtest_2.tableoid
+  AS REGCLASS) AS t2
 FROM
   hjtest_2,
   hjtest_1
@@ -1242,8 +1346,10 @@ WHERE
 SELECT
   hjtest_1.a AS a1,
   hjtest_2.a AS a2,
-  CAST(hjtest_1.tableoid AS REGCLASS) AS t1,
-  CAST(hjtest_2.tableoid AS REGCLASS) AS t2
+  CAST(hjtest_1.tableoid
+  AS REGCLASS) AS t1,
+  CAST(hjtest_2.tableoid
+  AS REGCLASS) AS t2
 FROM
   hjtest_2,
   hjtest_1
@@ -1277,13 +1383,16 @@ SELECT
   i8.q2,
   ss.*
 FROM
-  int8_tbl AS i8,
+  int8_tbl
+  AS i8,
   LATERAL (SELECT
     t1.fivethous,
     i4.f1
   FROM
-    tenk1 AS t1
-    INNER JOIN int4_tbl AS i4
+    tenk1
+    AS t1
+    INNER JOIN int4_tbl
+    AS i4
     ON t1.fivethous =
       i4.f1 + i8.q2
   ORDER BY 1,
@@ -1293,13 +1402,16 @@ SELECT
   i8.q2,
   ss.*
 FROM
-  int8_tbl AS i8,
+  int8_tbl
+  AS i8,
   LATERAL (SELECT
     t1.fivethous,
     i4.f1
   FROM
-    tenk1 AS t1
-    INNER JOIN int4_tbl AS i4
+    tenk1
+    AS t1
+    INNER JOIN int4_tbl
+    AS i4
     ON t1.fivethous =
       i4.f1 + i8.q2
   ORDER BY 1,

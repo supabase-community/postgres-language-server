@@ -38,40 +38,64 @@ autovacuum_enabled = off);
 INSERT INTO brintest
 SELECT
   CAST(repeat(stringu1,
-  8) AS BYTEA),
+  8)
+  AS BYTEA),
   CAST(substr(stringu1,
   1,
-  1) AS CHAR),
-  CAST(stringu1 AS NAME),
+  1)
+  AS CHAR),
+  CAST(stringu1
+  AS NAME),
   142857 * tenthous,
   thousand,
   twothousand,
   repeat(stringu1,
   8),
-  CAST(unique1 AS OID),
+  CAST(unique1
+  AS OID),
   CAST(format('(%s,%s)',
   tenthous,
-  twenty) AS TID),
+  twenty)
+  AS TID),
   (four + 1.0) / (hundred + 1),
-  CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
+  CAST(odd
+  AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format('%s:00:%s:00:%s:00',
   to_hex(odd),
   to_hex(even),
-  to_hex(hundred)) AS MACADDR),
-  CAST('10.2.3.4/24' AS INET) + tenthous,
-  CAST('10.2.3/24' AS CIDR) + tenthous,
+  to_hex(hundred))
+  AS MACADDR),
+  CAST('10.2.3.4/24'
+  AS INET) + tenthous,
+  CAST('10.2.3/24'
+  AS CIDR) + tenthous,
   CAST(substr(stringu1,
   1,
-  1) AS CHAR),
-  CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
-  CAST('1972-10-10 03:00' AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes' AS INTERVAL))),
-  CAST('01:30:20+02' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(thousand AS BIT(10)),
-  CAST(CAST(tenthous AS BIT(16)) AS BIT VARYING),
-  CAST(tenthous AS NUMERIC(36,
+  1)
+  AS CHAR),
+  CAST('1995-08-15'
+  AS DATE) + tenthous,
+  CAST('01:20:30'
+  AS TIME) + thousand * CAST('18.5 second'
+  AS INTERVAL),
+  CAST('1942-07-23 03:05:09'
+  AS TIMESTAMP) + tenthous * CAST('36.38 hours'
+  AS INTERVAL),
+  CAST('1972-10-10 03:00'
+  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
+  AS INTERVAL),
+  justify_days(justify_hours(tenthous * CAST('12 minutes'
+  AS INTERVAL))),
+  CAST('01:30:20+02'
+  AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
+  AS INTERVAL),
+  CAST(thousand
+  AS BIT(10)),
+  CAST(CAST(tenthous
+  AS BIT(16))
+  AS BIT VARYING),
+  CAST(tenthous
+  AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
   CAST(format('%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous,
@@ -89,13 +113,15 @@ SELECT
   to_char(tenthous,
   'FM0000'),
   to_char(tenthous,
-  'FM0000')) AS UUID),
+  'FM0000'))
+  AS UUID),
   int4range(thousand,
   twothousand),
   CAST(format('%s/%s%s',
   odd,
   even,
-  tenthous) AS PG_LSN),
+  tenthous)
+  AS PG_LSN),
   box(point(odd,
   even),
   point(thousand,
@@ -109,9 +135,12 @@ INSERT INTO brintest (inetcol,
 cidrcol,
 int4rangecol)
 SELECT
-  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) + tenthous,
-  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) + tenthous,
-  CAST('empty' AS INT4RANGE)
+  CAST('fe80::6e40:8ff:fea9:8c46'
+  AS INET) + tenthous,
+  CAST('fe80::6e40:8ff:fea9:8c46'
+  AS CIDR) + tenthous,
+  CAST('empty'
+  AS INT4RANGE)
 FROM
   tenk1
 ORDER BY thousand,
@@ -484,40 +513,64 @@ RESET enable_bitmapscan;
 INSERT INTO brintest
 SELECT
   CAST(repeat(stringu1,
-  42) AS BYTEA),
+  42)
+  AS BYTEA),
   CAST(substr(stringu1,
   1,
-  1) AS CHAR),
-  CAST(stringu1 AS NAME),
+  1)
+  AS CHAR),
+  CAST(stringu1
+  AS NAME),
   142857 * tenthous,
   thousand,
   twothousand,
   repeat(stringu1,
   42),
-  CAST(unique1 AS OID),
+  CAST(unique1
+  AS OID),
   CAST(format('(%s,%s)',
   tenthous,
-  twenty) AS TID),
+  twenty)
+  AS TID),
   (four + 1.0) / (hundred + 1),
-  CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
+  CAST(odd
+  AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format('%s:00:%s:00:%s:00',
   to_hex(odd),
   to_hex(even),
-  to_hex(hundred)) AS MACADDR),
-  CAST('10.2.3.4' AS INET) + tenthous,
-  CAST('10.2.3/24' AS CIDR) + tenthous,
+  to_hex(hundred))
+  AS MACADDR),
+  CAST('10.2.3.4'
+  AS INET) + tenthous,
+  CAST('10.2.3/24'
+  AS CIDR) + tenthous,
   CAST(substr(stringu1,
   1,
-  1) AS CHAR),
-  CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
-  CAST('1972-10-10 03:00' AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes' AS INTERVAL))),
-  CAST('01:30:20' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(thousand AS BIT(10)),
-  CAST(CAST(tenthous AS BIT(16)) AS BIT VARYING),
-  CAST(tenthous AS NUMERIC(36,
+  1)
+  AS CHAR),
+  CAST('1995-08-15'
+  AS DATE) + tenthous,
+  CAST('01:20:30'
+  AS TIME) + thousand * CAST('18.5 second'
+  AS INTERVAL),
+  CAST('1942-07-23 03:05:09'
+  AS TIMESTAMP) + tenthous * CAST('36.38 hours'
+  AS INTERVAL),
+  CAST('1972-10-10 03:00'
+  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
+  AS INTERVAL),
+  justify_days(justify_hours(tenthous * CAST('12 minutes'
+  AS INTERVAL))),
+  CAST('01:30:20'
+  AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
+  AS INTERVAL),
+  CAST(thousand
+  AS BIT(10)),
+  CAST(CAST(tenthous
+  AS BIT(16))
+  AS BIT VARYING),
+  CAST(tenthous
+  AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
   CAST(format('%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous,
@@ -535,13 +588,15 @@ SELECT
   to_char(tenthous,
   'FM0000'),
   to_char(tenthous,
-  'FM0000')) AS UUID),
+  'FM0000'))
+  AS UUID),
   int4range(thousand,
   twothousand),
   CAST(format('%s/%s%s',
   odd,
   even,
-  tenthous) AS PG_LSN),
+  tenthous)
+  AS PG_LSN),
   box(point(odd,
   even),
   point(thousand,
@@ -618,7 +673,8 @@ INSERT INTO brintest_2 VALUES ('empty');
 
 INSERT INTO brintest_2
 VALUES (numrange(0,
-2 ^ CAST(1000 AS NUMERIC)));
+2 ^ CAST(1000
+AS NUMERIC)));
 
 INSERT INTO brintest_2 VALUES ('(-1, 0)');
 
@@ -657,7 +713,8 @@ SELECT * FROM brin_test WHERE b = 1;
 CREATE TABLE brintest_3 ( a TEXT, b TEXT, c TEXT, d TEXT );
 
 WITH rand_value AS (SELECT
-  string_agg(fipshash(CAST(i AS TEXT)),
+  string_agg(fipshash(CAST(i
+  AS TEXT)),
   '') AS val
 FROM
   generate_series(1,
@@ -690,7 +747,8 @@ DROP INDEX "brin_test_temp_idx";
 VACUUM brintest_3;
 
 WITH rand_value AS (SELECT
-  string_agg(fipshash(CAST(-i AS TEXT)),
+  string_agg(fipshash(CAST(-i
+  AS TEXT)),
   '') AS val
 FROM
   generate_series(1,
@@ -747,7 +805,8 @@ CREATE INDEX "brinidx_unlogged" ON brintest_unlogged USING brin
 
 INSERT INTO brintest_unlogged
 VALUES (numrange(0,
-2 ^ CAST(1000 AS NUMERIC)));
+2 ^ CAST(1000
+AS NUMERIC)));
 
 DROP TABLE "brintest_unlogged";
 

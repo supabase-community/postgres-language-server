@@ -41,6 +41,9 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
             Some(pgls_query::NodeEnum::DeleteStmt(stmt)) => {
                 super::emit_delete_stmt_no_semicolon(e, stmt);
             }
+            Some(pgls_query::NodeEnum::MergeStmt(stmt)) => {
+                super::emit_merge_stmt_no_semicolon(e, stmt);
+            }
             _ => {
                 super::emit_node(query, e);
             }

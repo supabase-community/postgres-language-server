@@ -15,20 +15,24 @@ SELECT
   'view_columns',
   view_columns) ORDER BY pks_fks.ord) AS column_dependencies
 FROM
-  repeated_references AS rep
+  repeated_references
+  AS rep
   INNER JOIN pks_fks
   USING (
     "resorigtbl",
     "resorigcol")
-  INNER JOIN pg_class AS tbl
+  INNER JOIN pg_class
+  AS tbl
   ON tbl.oid =
     rep.resorigtbl
-  INNER JOIN pg_attribute AS col
+  INNER JOIN pg_attribute
+  AS col
   ON col.attrelid =
     tbl.oid AND
     col.attnum =
     rep.resorigcol
-  INNER JOIN pg_namespace AS sch
+  INNER JOIN pg_namespace
+  AS sch
   ON sch.oid =
     tbl.relnamespace
 GROUP BY sch.nspname,

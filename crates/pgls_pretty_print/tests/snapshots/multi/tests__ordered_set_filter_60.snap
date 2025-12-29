@@ -20,5 +20,7 @@ SELECT
   FILTER (WHERE
     duration IS NOT NULL)
 FROM
-  (VALUES (CAST('1 hour' AS INTERVAL)),
-  (CAST('2 hours' AS INTERVAL))) AS durations (duration);
+  (VALUES (CAST('1 hour'
+  AS INTERVAL)),
+  (CAST('2 hours'
+  AS INTERVAL))) AS durations (duration);

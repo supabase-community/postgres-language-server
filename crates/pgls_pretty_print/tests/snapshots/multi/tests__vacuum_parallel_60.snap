@@ -40,7 +40,8 @@ SELECT
     pg_class
   WHERE
     oid =
-    CAST('vacuum_in_leader_small_index' AS REGCLASS) AND
+    CAST('vacuum_in_leader_small_index'
+    AS REGCLASS) AND
     pg_relation_size(oid) <
     pg_size_bytes(current_setting('min_parallel_index_scan_size'))) AS leader_will_handle_small_index;
 
@@ -49,8 +50,10 @@ SELECT
 FROM
   pg_class
 WHERE
-  oid IN (CAST('regular_sized_index' AS REGCLASS),
-  CAST('typically_sized_index' AS REGCLASS)) AND
+  oid IN (CAST('regular_sized_index'
+  AS REGCLASS),
+  CAST('typically_sized_index'
+  AS REGCLASS)) AND
   pg_relation_size(oid) >=
   pg_size_bytes(current_setting('min_parallel_index_scan_size'));
 

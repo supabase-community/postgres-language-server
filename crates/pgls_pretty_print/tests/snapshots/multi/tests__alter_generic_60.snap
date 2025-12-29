@@ -165,13 +165,17 @@ RESET session_authorization;
 SELECT
   n.nspname,
   proname,
-  CAST(prorettype AS REGTYPE),
+  CAST(prorettype
+  AS REGTYPE),
   prokind,
   a.rolname
 FROM
-  pg_proc AS p,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_proc
+  AS p,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   p.pronamespace =
   n.oid AND
@@ -227,9 +231,12 @@ SELECT
   c.conname,
   a.rolname
 FROM
-  pg_conversion AS c,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_conversion
+  AS c,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   c.connamespace =
   n.oid AND
@@ -303,8 +310,10 @@ SELECT
   lanname,
   a.rolname
 FROM
-  pg_language AS l,
-  pg_authid AS a
+  pg_language
+  AS l,
+  pg_authid
+  AS a
 WHERE
   l.lanowner =
   a.oid AND
@@ -357,13 +366,19 @@ SELECT
   n.nspname,
   oprname,
   a.rolname,
-  CAST(oprleft AS REGTYPE),
-  CAST(oprright AS REGTYPE),
-  CAST(oprcode AS REGPROC)
+  CAST(oprleft
+  AS REGTYPE),
+  CAST(oprright
+  AS REGTYPE),
+  CAST(oprcode
+  AS REGPROC)
 FROM
-  pg_operator AS o,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_operator
+  AS o,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   o.oprnamespace =
   n.oid AND
@@ -502,10 +517,14 @@ SELECT
   amname,
   rolname
 FROM
-  pg_opfamily AS o,
-  pg_am AS m,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_opfamily
+  AS o,
+  pg_am
+  AS m,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   o.opfmethod =
   m.oid AND
@@ -525,10 +544,14 @@ SELECT
   amname,
   rolname
 FROM
-  pg_opclass AS o,
-  pg_am AS m,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_opclass
+  AS o,
+  pg_am
+  AS m,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   o.opcmethod =
   m.oid AND
@@ -963,9 +986,12 @@ SELECT
   stxname,
   rolname
 FROM
-  pg_statistic_ext AS s,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_statistic_ext
+  AS s,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   s.stxnamespace =
   n.oid AND
@@ -1040,9 +1066,12 @@ SELECT
   dictname,
   rolname
 FROM
-  pg_ts_dict AS t,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_ts_dict
+  AS t,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   t.dictnamespace =
   n.oid AND
@@ -1117,9 +1146,12 @@ SELECT
   cfgname,
   rolname
 FROM
-  pg_ts_config AS t,
-  pg_namespace AS n,
-  pg_authid AS a
+  pg_ts_config
+  AS t,
+  pg_namespace
+  AS n,
+  pg_authid
+  AS a
 WHERE
   t.cfgnamespace =
   n.oid AND
@@ -1164,8 +1196,10 @@ SELECT
   nspname,
   tmplname
 FROM
-  pg_ts_template AS t,
-  pg_namespace AS n
+  pg_ts_template
+  AS t,
+  pg_namespace
+  AS n
 WHERE
   t.tmplnamespace =
   n.oid AND
@@ -1214,8 +1248,10 @@ SELECT
   nspname,
   prsname
 FROM
-  pg_ts_parser AS t,
-  pg_namespace AS n
+  pg_ts_parser
+  AS t,
+  pg_namespace
+  AS n
 WHERE
   t.prsnamespace =
   n.oid AND

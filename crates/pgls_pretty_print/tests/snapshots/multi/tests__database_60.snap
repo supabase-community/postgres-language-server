@@ -20,7 +20,8 @@ SET datacl = array_fill(makeaclitem(10,
 10,
 'USAGE',
 FALSE),
-ARRAY[CAST(5e5 AS INT)])
+ARRAY[CAST(5e5
+AS INT)])
 WHERE
   datname =
   'regression_utf8';

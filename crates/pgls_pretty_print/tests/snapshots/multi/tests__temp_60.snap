@@ -130,7 +130,8 @@ SELECT * FROM temptest2;
 BEGIN;
 
 CREATE TEMPORARY TABLE temptest4 (
-  col INT REFERENCES temptest3
+  col INT
+  REFERENCES temptest3
 );
 
 COMMIT;
@@ -365,9 +366,13 @@ PREPARE TRANSACTION 'twophase_search';
 SET temp_buffers = 100;
 
 CREATE TEMPORARY TABLE test_temp (
-  a INT NOT NULL UNIQUE,
-  b TEXT NOT NULL,
-  cnt INT NOT NULL
+  a INT
+  NOT NULL
+  UNIQUE,
+  b TEXT
+  NOT NULL,
+  cnt INT
+  NOT NULL
 );
 
 INSERT INTO test_temp
@@ -379,7 +384,8 @@ SELECT
   0;
 
 SELECT
-  pg_relation_size('test_temp') / CAST(current_setting('block_size') AS BIGINT) >
+  pg_relation_size('test_temp') / CAST(current_setting('block_size')
+  AS BIGINT) >
   200;
 
 CREATE FUNCTION test_temp_pin(

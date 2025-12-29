@@ -120,29 +120,13 @@ pub(super) fn emit_json_returning_node(e: &mut EventEmitter, returning: &JsonRet
 pub(super) fn emit_json_returning_clause(
     e: &mut EventEmitter,
     returning: &JsonReturning,
-    has_content: &mut bool,
+    _has_content: &mut bool,
 ) {
-    if *has_content {
-        e.space();
-    }
-
-    e.token(TokenKind::RETURNING_KW);
-
-    if returning.typid != 0 {
-        e.space();
-        super::emit_identifier(e, &format!("type#{}", returning.typid));
-    }
-
-    if returning.typmod >= 0 {
-        e.space();
-        super::emit_identifier(e, &format!("typmod#{}", returning.typmod));
-    }
-
+    // JsonReturning contains internal type info (typid, typmod), not SQL RETURNING clause
+    // Only emit the format if present (FORMAT JSON ENCODING ...)
     if let Some(ref format) = returning.format {
         emit_json_format(e, format);
     }
-
-    *has_content = true;
 }
 
 fn emit_encoding(e: &mut EventEmitter, label: &str, needs_space: bool) {

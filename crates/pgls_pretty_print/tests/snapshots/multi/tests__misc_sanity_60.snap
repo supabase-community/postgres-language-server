@@ -6,7 +6,8 @@ snapshot_kind: text
 SELECT
   *
 FROM
-  pg_depend AS d1
+  pg_depend
+  AS d1
 WHERE
   refclassid =
   0 OR
@@ -27,7 +28,8 @@ WHERE
 SELECT
   *
 FROM
-  pg_shdepend AS d1
+  pg_shdepend
+  AS d1
 WHERE
   refclassid =
   0 OR
@@ -46,10 +48,13 @@ WHERE
 SELECT
   relname,
   attname,
-  CAST(atttypid AS REGTYPE)
+  CAST(atttypid
+  AS REGTYPE)
 FROM
-  pg_class AS c
-  INNER JOIN pg_attribute AS a
+  pg_class
+  AS c
+  INNER JOIN pg_attribute
+  AS a
   ON c.oid =
     attrelid
 WHERE
@@ -70,7 +75,8 @@ FROM
   pg_class
 WHERE
   relnamespace =
-  CAST('pg_catalog' AS regnamespace) AND
+  CAST('pg_catalog'
+  AS regnamespace) AND
   relkind =
   'r' AND
   NOT pg_class.oid IN (SELECT
@@ -84,13 +90,16 @@ ORDER BY 1;
 SELECT
   relname
 FROM
-  pg_class AS c
-  INNER JOIN pg_index AS i
+  pg_class
+  AS c
+  INNER JOIN pg_index
+  AS i
   ON c.oid =
     i.indexrelid
 WHERE
   relnamespace =
-  CAST('pg_catalog' AS regnamespace) AND
+  CAST('pg_catalog'
+  AS regnamespace) AND
   relkind =
   'i' AND
   i.indisunique AND

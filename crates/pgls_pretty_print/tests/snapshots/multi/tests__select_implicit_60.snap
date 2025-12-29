@@ -91,8 +91,10 @@ SELECT c, COUNT(*) FROM test_missing_target GROUP BY 3;
 SELECT
   COUNT(*)
 FROM
-  test_missing_target AS x,
-  test_missing_target AS y
+  test_missing_target
+  AS x,
+  test_missing_target
+  AS y
 WHERE
   x.a =
   y.a
@@ -115,8 +117,10 @@ SELECT
   x.b,
   COUNT(*)
 FROM
-  test_missing_target AS x,
-  test_missing_target AS y
+  test_missing_target
+  AS x,
+  test_missing_target
+  AS y
 WHERE
   x.a =
   y.a
@@ -126,8 +130,10 @@ ORDER BY x.b;
 SELECT
   COUNT(*)
 FROM
-  test_missing_target AS x,
-  test_missing_target AS y
+  test_missing_target
+  AS x,
+  test_missing_target
+  AS y
 WHERE
   x.a =
   y.a
@@ -138,8 +144,10 @@ CREATE TABLE test_missing_target2 AS
   SELECT
     COUNT(*)
   FROM
-    test_missing_target AS x,
-    test_missing_target AS y
+    test_missing_target
+    AS x,
+    test_missing_target
+    AS y
   WHERE
     x.a =
     y.a
@@ -197,8 +205,10 @@ ORDER BY (b + 1) / 2 DESC;
 SELECT
   COUNT(x.a)
 FROM
-  test_missing_target AS x,
-  test_missing_target AS y
+  test_missing_target
+  AS x,
+  test_missing_target
+  AS y
 WHERE
   x.a =
   y.a
@@ -209,8 +219,10 @@ SELECT
   x.b / 2,
   COUNT(x.b)
 FROM
-  test_missing_target AS x,
-  test_missing_target AS y
+  test_missing_target
+  AS x,
+  test_missing_target
+  AS y
 WHERE
   x.a =
   y.a
@@ -220,8 +232,10 @@ ORDER BY x.b / 2;
 SELECT
   COUNT(b)
 FROM
-  test_missing_target AS x,
-  test_missing_target AS y
+  test_missing_target
+  AS x,
+  test_missing_target
+  AS y
 WHERE
   x.a =
   y.a
@@ -231,8 +245,10 @@ CREATE TABLE test_missing_target3 AS
   SELECT
     COUNT(x.b)
   FROM
-    test_missing_target AS x,
-    test_missing_target AS y
+    test_missing_target
+    AS x,
+    test_missing_target
+    AS y
   WHERE
     x.a =
     y.a

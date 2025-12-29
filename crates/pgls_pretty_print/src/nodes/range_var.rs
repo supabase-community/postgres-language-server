@@ -2,7 +2,7 @@ use pgls_query::protobuf::RangeVar;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_range_var(e: &mut EventEmitter, n: &RangeVar) {
@@ -32,7 +32,7 @@ fn emit_range_var_impl(e: &mut EventEmitter, n: &RangeVar, allow_only: bool) {
 
     // Emit alias if present
     if let Some(ref alias) = n.alias {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_alias(e, alias);
     }
 

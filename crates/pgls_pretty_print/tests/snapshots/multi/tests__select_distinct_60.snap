@@ -60,7 +60,8 @@ SET jit_above_cost = DEFAULT;
 
 CREATE TABLE distinct_group_2 AS
   SELECT DISTINCT
-    CAST(g % 1000 AS TEXT)
+    CAST(g % 1000
+    AS TEXT)
   FROM
     generate_series(0,
     9999) AS g;
@@ -90,7 +91,8 @@ SET jit_above_cost = DEFAULT;
 
 CREATE TABLE distinct_hash_2 AS
   SELECT DISTINCT
-    CAST(g % 1000 AS TEXT)
+    CAST(g % 1000
+    AS TEXT)
   FROM
     generate_series(0,
     9999) AS g;

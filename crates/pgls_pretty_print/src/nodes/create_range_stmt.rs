@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::{emit_comma_separated_list, emit_dot_separated_list},
 };
 use pgls_query::protobuf::CreateRangeStmt;
@@ -21,7 +21,7 @@ pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) 
     e.token(TokenKind::IDENT("RANGE".to_string()));
 
     if !n.params.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.params, super::emit_node);
         e.token(TokenKind::R_PAREN);

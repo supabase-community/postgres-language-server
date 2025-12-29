@@ -154,13 +154,16 @@ COPY parted_copytest FROM 'filename' WITH (FREEZE);
 ROLLBACK;
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   COUNT(*),
   SUM(a)
 FROM
   parted_copytest
 GROUP BY tableoid
-ORDER BY CAST(CAST(tableoid AS REGCLASS) AS NAME);
+ORDER BY CAST(CAST(tableoid
+  AS REGCLASS)
+  AS NAME);
 
 TRUNCATE parted_copytest;
 
@@ -183,13 +186,16 @@ EXECUTE FUNCTION part_ins_func();
 COPY parted_copytest FROM 'filename';
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   COUNT(*),
   SUM(a)
 FROM
   parted_copytest
 GROUP BY tableoid
-ORDER BY CAST(CAST(tableoid AS REGCLASS) AS NAME);
+ORDER BY CAST(CAST(tableoid
+  AS REGCLASS)
+  AS NAME);
 
 TRUNCATE parted_copytest;
 
@@ -288,7 +294,8 @@ SELECT * FROM header_copytest ORDER BY a;
 DROP TABLE "header_copytest";
 
 CREATE TEMPORARY TABLE oversized_column_default (
-  col1 VARCHAR(5) DEFAULT 'more than 5 chars',
+  col1 VARCHAR(5)
+  DEFAULT 'more than 5 chars',
   col2 VARCHAR(5)
 );
 
@@ -301,9 +308,13 @@ COPY oversized_column_default FROM STDOUT WITH (DEFAULT '');
 DROP TABLE "oversized_column_default";
 
 CREATE TABLE parted_si (
-  id INT NOT NULL,
-  data TEXT NOT NULL,
-  rand DOUBLE PRECISION NOT NULL DEFAULT random()
+  id INT
+  NOT NULL,
+  data TEXT
+  NOT NULL,
+  rand DOUBLE PRECISION
+  NOT NULL
+  DEFAULT random()
 )
 PARTITION BY LIST((id % 2));
 
@@ -318,7 +329,8 @@ FOR VALUES IN (1);
 COPY parted_si (id, data) FROM 'filename';
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   id % 2 =
   0 AS is_even,
   COUNT(*)

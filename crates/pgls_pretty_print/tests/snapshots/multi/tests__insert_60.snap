@@ -5,8 +5,10 @@ snapshot_kind: text
 ---
 CREATE TABLE inserttest (
   col1 INT,
-  col2 INT NOT NULL,
-  col3 TEXT DEFAULT 'testing'
+  col2 INT
+  NOT NULL,
+  col3 TEXT
+  DEFAULT 'testing'
 );
 
 INSERT INTO inserttest (col1,
@@ -81,7 +83,8 @@ INSERT INTO large_tuple_test SELECT 1, NULL;
 INSERT INTO large_tuple_test SELECT 2, repeat('a', 1000);
 
 SELECT
-  pg_size_pretty(pg_relation_size(CAST('large_tuple_test' AS REGCLASS),
+  pg_size_pretty(pg_relation_size(CAST('large_tuple_test'
+  AS REGCLASS),
   'main'));
 
 INSERT INTO large_tuple_test SELECT 3, NULL;
@@ -314,7 +317,8 @@ f4[1]."if2"[1],
 f4[1]."if2"[2])
 SELECT
   CAST(ROW(1,
-  '{x}') AS insert_test_domain),
+  '{x}')
+  AS insert_test_domain),
   'bear',
   'beer';
 
@@ -641,7 +645,9 @@ FROM
 INSERT INTO list_parted (b) VALUES (1);
 
 SELECT
-  CAST(CAST(tableoid AS REGCLASS) AS TEXT),
+  CAST(CAST(tableoid
+  AS REGCLASS)
+  AS TEXT),
   a,
   MIN(b) AS min_b,
   MAX(b) AS max_b
@@ -681,7 +687,8 @@ INSERT INTO hpart0 VALUES (11);
 INSERT INTO hpart3 VALUES (11);
 
 SELECT
-  CAST(tableoid AS REGCLASS) AS part,
+  CAST(tableoid
+  AS REGCLASS) AS part,
   a,
   a % 4 AS "remainder = a % 4"
 FROM
@@ -714,8 +721,10 @@ PARTITION BY RANGE(a,
 b);
 
 CREATE TABLE mlparted1 (
-  b INT NOT NULL,
-  a INT NOT NULL
+  b INT
+  NOT NULL,
+  a INT
+  NOT NULL
 )
 PARTITION BY RANGE((b + 0));
 
@@ -730,7 +739,8 @@ ALTER TABLE mlparted11 DROP COLUMN a;
 ALTER TABLE mlparted11 ADD COLUMN a INT NOT NULL;
 
 SELECT
-  CAST(attrelid AS REGCLASS),
+  CAST(attrelid
+  AS REGCLASS),
   attname,
   attnum
 FROM
@@ -739,12 +749,17 @@ WHERE
   attname =
   'a' AND
   (attrelid =
-  CAST('mlparted' AS REGCLASS) OR
+  CAST('mlparted'
+  AS REGCLASS) OR
   attrelid =
-  CAST('mlparted1' AS REGCLASS) OR
+  CAST('mlparted1'
+  AS REGCLASS) OR
   attrelid =
-  CAST('mlparted11' AS REGCLASS))
-ORDER BY CAST(CAST(attrelid AS REGCLASS) AS TEXT);
+  CAST('mlparted11'
+  AS REGCLASS))
+ORDER BY CAST(CAST(attrelid
+  AS REGCLASS)
+  AS TEXT);
 
 ALTER TABLE mlparted1
   ATTACH PARTITION
@@ -851,7 +866,8 @@ SELECT
 FROM
   generate_series(2,
   39) AS s (a)
-RETURNING CAST(tableoid AS REGCLASS),
+RETURNING CAST(tableoid
+AS REGCLASS),
 *)
 SELECT
   a,
@@ -868,15 +884,19 @@ ALTER TABLE mlparted ADD COLUMN c TEXT;
 
 CREATE TABLE mlparted5 (
   c TEXT,
-  a INT NOT NULL,
-  b INT NOT NULL
+  a INT
+  NOT NULL,
+  b INT
+  NOT NULL
 )
 PARTITION BY LIST(c);
 
 CREATE TABLE mlparted5a (
-  a INT NOT NULL,
+  a INT
+  NOT NULL,
   c TEXT,
-  b INT NOT NULL
+  b INT
+  NOT NULL
 );
 
 ALTER TABLE mlparted5
@@ -995,7 +1015,8 @@ INSERT INTO mlparted VALUES (1, 45, 'c', 1);
 INSERT INTO mlparted VALUES (1, 45, 'f', 1);
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   *
 FROM
   mlparted
@@ -1023,7 +1044,8 @@ INSERT INTO mlparted VALUES (1, 45, 'c', 1);
 INSERT INTO mlparted VALUES (1, 45, 'f', 1);
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   *
 FROM
   mlparted
@@ -1198,7 +1220,9 @@ INSERT INTO mcrparted5 VALUES (30, 21, 20);
 INSERT INTO mcrparted4 VALUES (30, 21, 20);
 
 SELECT
-  CAST(CAST(tableoid AS REGCLASS) AS TEXT),
+  CAST(CAST(tableoid
+  AS REGCLASS)
+  AS TEXT),
   *
 FROM
   mcrparted
@@ -1233,8 +1257,10 @@ INSERT INTO brtrigpartcon VALUES (1, 'hi there');
 INSERT INTO brtrigpartcon1 VALUES (1, 'hi there');
 
 CREATE TABLE inserttest3 (
-  f1 TEXT DEFAULT 'foo',
-  f2 TEXT DEFAULT 'bar',
+  f1 TEXT
+  DEFAULT 'foo',
+  f2 TEXT
+  DEFAULT 'bar',
   f3 INT
 );
 
@@ -1327,7 +1353,8 @@ VALUES (1,
 COPY donothingbrtrig_test FROM STDOUT;
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   *
 FROM
   donothingbrtrig_test;
@@ -1416,7 +1443,8 @@ VALUES ('aaa',
 0);
 
 SELECT
-  CAST(tableoid AS REGCLASS),
+  CAST(tableoid
+  AS REGCLASS),
   *
 FROM
   mcrparted

@@ -4,12 +4,16 @@ input_file: crates/pgls_pretty_print/tests/data/multi/text_60.sql
 snapshot_kind: text
 ---
 SELECT
-  CAST('this is a text string' AS TEXT) =
-  CAST('this is a text string' AS TEXT) AS "true";
+  CAST('this is a text string'
+  AS TEXT) =
+  CAST('this is a text string'
+  AS TEXT) AS "true";
 
 SELECT
-  CAST('this is a text string' AS TEXT) =
-  CAST('this is a text strin' AS TEXT) AS "false";
+  CAST('this is a text string'
+  AS TEXT) =
+  CAST('this is a text strin'
+  AS TEXT) AS "false";
 
 SELECT * FROM text_tbl;
 
@@ -183,7 +187,8 @@ SELECT format('%s, %s', VARIADIC ARRAY[TRUE, FALSE]);
 SELECT
   format('%s, %s',
   VARIADIC CAST(ARRAY[TRUE,
-  FALSE] AS TEXT[]));
+  FALSE]
+  AS TEXT[]));
 
 SELECT
   format('%2$s, %1$s',

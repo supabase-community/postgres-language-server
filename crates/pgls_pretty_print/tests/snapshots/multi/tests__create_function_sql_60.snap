@@ -33,14 +33,19 @@ AS 'SELECT false';
 
 SELECT
   proname,
-  CAST(prorettype AS REGTYPE),
-  CAST(proargtypes AS REGTYPE[])
+  CAST(prorettype
+  AS REGTYPE),
+  CAST(proargtypes
+  AS REGTYPE[])
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_A_1' AS REGPROC),
-  CAST('functest_A_2' AS REGPROC),
-  CAST('functest_A_3' AS REGPROC))
+  oid IN (CAST('functest_A_1'
+  AS REGPROC),
+  CAST('functest_A_2'
+  AS REGPROC),
+  CAST('functest_A_3'
+  AS REGPROC))
 ORDER BY proname;
 
 SELECT functest_a_1('abcd', '2020-01-01');
@@ -86,10 +91,14 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_B_1' AS REGPROC),
-  CAST('functest_B_2' AS REGPROC),
-  CAST('functest_B_3' AS REGPROC),
-  CAST('functest_B_4' AS REGPROC))
+  oid IN (CAST('functest_B_1'
+  AS REGPROC),
+  CAST('functest_B_2'
+  AS REGPROC),
+  CAST('functest_B_3'
+  AS REGPROC),
+  CAST('functest_B_4'
+  AS REGPROC))
 ORDER BY proname;
 
 ALTER FUNCTION functest_b_2(INT) VOLATILE;
@@ -102,10 +111,14 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_B_1' AS REGPROC),
-  CAST('functest_B_2' AS REGPROC),
-  CAST('functest_B_3' AS REGPROC),
-  CAST('functest_B_4' AS REGPROC))
+  oid IN (CAST('functest_B_1'
+  AS REGPROC),
+  CAST('functest_B_2'
+  AS REGPROC),
+  CAST('functest_B_3'
+  AS REGPROC),
+  CAST('functest_B_4'
+  AS REGPROC))
 ORDER BY proname;
 
 CREATE FUNCTION functest_c_1(
@@ -137,9 +150,12 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_C_1' AS REGPROC),
-  CAST('functest_C_2' AS REGPROC),
-  CAST('functest_C_3' AS REGPROC))
+  oid IN (CAST('functest_C_1'
+  AS REGPROC),
+  CAST('functest_C_2'
+  AS REGPROC),
+  CAST('functest_C_3'
+  AS REGPROC))
 ORDER BY proname;
 
 ALTER FUNCTION functest_c_1(INT) IMMUTABLE;
@@ -154,9 +170,12 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_C_1' AS REGPROC),
-  CAST('functest_C_2' AS REGPROC),
-  CAST('functest_C_3' AS REGPROC))
+  oid IN (CAST('functest_C_1'
+  AS REGPROC),
+  CAST('functest_C_2'
+  AS REGPROC),
+  CAST('functest_C_3'
+  AS REGPROC))
 ORDER BY proname;
 
 CREATE FUNCTION functest_e_1(
@@ -180,8 +199,10 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_E_1' AS REGPROC),
-  CAST('functest_E_2' AS REGPROC))
+  oid IN (CAST('functest_E_1'
+  AS REGPROC),
+  CAST('functest_E_2'
+  AS REGPROC))
 ORDER BY proname;
 
 ALTER FUNCTION functest_e_1(INT) LEAKPROOF;
@@ -194,8 +215,10 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_E_1' AS REGPROC),
-  CAST('functest_E_2' AS REGPROC))
+  oid IN (CAST('functest_E_1'
+  AS REGPROC),
+  CAST('functest_E_2'
+  AS REGPROC))
 ORDER BY proname;
 
 ALTER FUNCTION functest_e_2(INT) NOT LEAKPROOF;
@@ -206,8 +229,10 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_E_1' AS REGPROC),
-  CAST('functest_E_2' AS REGPROC))
+  oid IN (CAST('functest_E_1'
+  AS REGPROC),
+  CAST('functest_E_2'
+  AS REGPROC))
 ORDER BY proname;
 
 ALTER FUNCTION functest_e_1(INT)
@@ -271,10 +296,14 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_F_1' AS REGPROC),
-  CAST('functest_F_2' AS REGPROC),
-  CAST('functest_F_3' AS REGPROC),
-  CAST('functest_F_4' AS REGPROC))
+  oid IN (CAST('functest_F_1'
+  AS REGPROC),
+  CAST('functest_F_2'
+  AS REGPROC),
+  CAST('functest_F_3'
+  AS REGPROC),
+  CAST('functest_F_4'
+  AS REGPROC))
 ORDER BY proname;
 
 ALTER FUNCTION functest_f_1(INT) IMMUTABLE;
@@ -289,10 +318,14 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_F_1' AS REGPROC),
-  CAST('functest_F_2' AS REGPROC),
-  CAST('functest_F_3' AS REGPROC),
-  CAST('functest_F_4' AS REGPROC))
+  oid IN (CAST('functest_F_1'
+  AS REGPROC),
+  CAST('functest_F_2'
+  AS REGPROC),
+  CAST('functest_F_3'
+  AS REGPROC),
+  CAST('functest_F_4'
+  AS REGPROC))
 ORDER BY proname;
 
 SELECT pg_get_functiondef(CAST('functest_A_1' AS REGPROC));
@@ -316,7 +349,8 @@ b >
 CREATE FUNCTION functest_s_2(
   "a" TEXT[]
 )
-RETURNS INT RETURN CAST(a[1] AS INT);;
+RETURNS INT RETURN CAST(a[1]
+AS INT);;
 
 CREATE FUNCTION functest_s_3()
 RETURNS BOOLEAN RETURN FALSE;;
@@ -495,11 +529,14 @@ SELECT
   r0.routine_name,
   r1.routine_name
 FROM
-  information_schema.routine_routine_usage AS rru
-  INNER JOIN information_schema.routines AS r0
+  information_schema.routine_routine_usage
+  AS rru
+  INNER JOIN information_schema.routines
+  AS r0
   ON r0.specific_name =
     rru.specific_name
-  INNER JOIN information_schema.routines AS r1
+  INNER JOIN information_schema.routines
+  AS r1
   ON r1.specific_name =
     rru.routine_name
 WHERE

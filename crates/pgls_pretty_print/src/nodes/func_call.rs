@@ -51,6 +51,14 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
                 "substring" => "SUBSTRING",
                 "trim" => "TRIM",
                 "normalize" => "NORMALIZE",
+                // SQL value functions without parens
+                "system_user" => "SYSTEM_USER",
+                "session_user" => "SESSION_USER",
+                "current_user" => "CURRENT_USER",
+                "current_role" => "CURRENT_ROLE",
+                "current_catalog" => "CURRENT_CATALOG",
+                "current_schema" => "CURRENT_SCHEMA",
+                "user" => "USER",
                 _ => &s.sval,
             };
             name_parts.push(name.to_string());
@@ -68,24 +76,33 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     let function_name = name_parts.last().map(|s| s.as_str()).unwrap_or("");
 
     // Handle special SQL standard function syntax
-    match function_name {
-        "EXTRACT" => {
+    match function_name.to_lowercase().as_str() {
+        "extract" => {
             emit_extract_function(e, n);
         }
-        "OVERLAY" => {
+        "overlay" => {
             emit_overlay_function(e, n);
         }
-        "POSITION" => {
+        "position" => {
             emit_position_function(e, n);
         }
-        "SUBSTRING" => {
+        "substring" => {
             emit_substring_function(e, n);
         }
-        "TRIM" => {
+        "trim" => {
             emit_trim_function(e, n);
         }
-        "NORMALIZE" => {
+        "normalize" => {
             emit_normalize_function(e, n);
+        }
+        "xmlexists" => {
+            emit_xmlexists_function(e, n);
+        }
+        // SQL value functions that don't use parentheses
+        "system_user" | "session_user" | "current_user" | "current_role"
+        | "current_catalog" | "current_schema" | "user" => {
+            // These SQL standard functions are called without parentheses
+            // Already emitted the name above, no parens needed
         }
         _ => {
             // Standard function call with comma-separated arguments
@@ -377,6 +394,29 @@ fn emit_normalize_function(e: &mut EventEmitter, n: &FuncCall) {
             super::emit_node(&n.args[1], e);
         }
     }
+
+    e.token(TokenKind::R_PAREN);
+}
+
+// XMLEXISTS(xpath PASSING [BY REF|VALUE] xml)
+fn emit_xmlexists_function(e: &mut EventEmitter, n: &FuncCall) {
+    assert!(
+        n.args.len() == 2,
+        "XMLEXISTS function expects 2 arguments, got {}",
+        n.args.len()
+    );
+
+    e.token(TokenKind::L_PAREN);
+
+    // First arg: xpath expression
+    super::emit_node(&n.args[0], e);
+
+    e.space();
+    e.token(TokenKind::IDENT("PASSING".to_string()));
+    e.space();
+
+    // Second arg: xml value
+    super::emit_node(&n.args[1], e);
 
     e.token(TokenKind::R_PAREN);
 }

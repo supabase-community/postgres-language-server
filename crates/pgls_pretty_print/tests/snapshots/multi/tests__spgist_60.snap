@@ -86,7 +86,8 @@ WHERE
   EXISTS (SELECT
     *
   FROM
-    spgist_box_tbl AS b
+    spgist_box_tbl
+    AS b
   WHERE
     b.b && box(v.p,
     v.p));
@@ -102,15 +103,18 @@ INSERT INTO spgist_text_tbl (id,
 t)
 SELECT
   g,
-  'f' || repeat('o',
-  100) || g
+  'f' ||
+  repeat('o',
+  100) ||
+  g
 FROM
   generate_series(1,
   10000) AS g
 UNION ALL
 SELECT
   g,
-  'baaaaaaaaaaaaaar' || g
+  'baaaaaaaaaaaaaar' ||
+  g
 FROM
   generate_series(1,
   1000) AS g;
@@ -119,8 +123,10 @@ INSERT INTO spgist_text_tbl (id,
 t)
 SELECT
   -g,
-  'f' || repeat('o',
-  100 - g) || 'surprise'
+  'f' ||
+  repeat('o',
+  100 - g) ||
+  'surprise'
 FROM
   generate_series(1,
   100) AS g;

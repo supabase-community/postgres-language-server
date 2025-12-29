@@ -153,6 +153,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
         if let Some(ref inner) = query.node {
             match inner {
                 NodeEnum::SelectStmt(stmt) => emit_select_stmt_no_semicolon(e, stmt),
+                NodeEnum::ExecuteStmt(stmt) => super::emit_execute_stmt_no_semicolon(e, stmt),
                 _ => emit_node(query, e),
             }
         }
@@ -160,18 +161,15 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
 
     e.indent_end();
 
-    // WITH DATA / WITH NO DATA
-    if n.objtype == 24 {
-        // Materialized view (ObjectMatview=24)
-        if let Some(ref into) = n.into {
-            if into.skip_data {
-                e.space();
-                e.token(TokenKind::WITH_KW);
-                e.space();
-                e.token(TokenKind::NO_KW);
-                e.space();
-                e.token(TokenKind::DATA_KW);
-            }
+    // WITH DATA / WITH NO DATA (applies to both CREATE TABLE AS and CREATE MATERIALIZED VIEW)
+    if let Some(ref into) = n.into {
+        if into.skip_data {
+            e.space();
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::NO_KW);
+            e.space();
+            e.token(TokenKind::DATA_KW);
         }
     }
 

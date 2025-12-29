@@ -44,7 +44,8 @@ SELECT CAST('08:00:2b:01.02:03:04:05' AS MACADDR8);
 SELECT CAST('08:00:2b:01.02:03:04:05' AS MACADDR8);
 
 SELECT
-  macaddr8_set7bit(CAST('00:08:2b:01:02:03' AS MACADDR8));
+  macaddr8_set7bit(CAST('00:08:2b:01:02:03'
+  AS MACADDR8));
 
 CREATE TABLE macaddr8_data ( a INT, b MACADDR8 );
 
@@ -138,7 +139,8 @@ WHERE
   1;
 
 SELECT
-  CAST(b AS MACADDR) <=
+  CAST(b
+  AS MACADDR) <=
   '08:00:2b:01:02:04'
 FROM
   macaddr8_data
@@ -147,7 +149,8 @@ WHERE
   1;
 
 SELECT
-  CAST(b AS MACADDR) >=
+  CAST(b
+  AS MACADDR) >=
   '08:00:2b:01:02:04'
 FROM
   macaddr8_data
@@ -165,8 +168,10 @@ WHERE
   1;
 
 SELECT
-  CAST(b AS MACADDR) <>
-  CAST('08:00:2b:01:02:04' AS MACADDR)
+  CAST(b
+  AS MACADDR) <>
+  CAST('08:00:2b:01:02:04'
+  AS MACADDR)
 FROM
   macaddr8_data
 WHERE
@@ -174,8 +179,10 @@ WHERE
   1;
 
 SELECT
-  CAST(b AS MACADDR) <>
-  CAST('08:00:2b:01:02:03' AS MACADDR)
+  CAST(b
+  AS MACADDR) <>
+  CAST('08:00:2b:01:02:03'
+  AS MACADDR)
 FROM
   macaddr8_data
 WHERE

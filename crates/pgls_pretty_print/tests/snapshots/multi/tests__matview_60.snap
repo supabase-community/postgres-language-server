@@ -4,9 +4,13 @@ input_file: crates/pgls_pretty_print/tests/data/multi/matview_60.sql
 snapshot_kind: text
 ---
 CREATE TABLE mvtest_t (
-  id INT NOT NULL PRIMARY KEY,
-  type TEXT NOT NULL,
-  amt NUMERIC NOT NULL
+  id INT
+  NOT NULL
+  PRIMARY KEY,
+  type TEXT
+  NOT NULL,
+  amt NUMERIC
+  NOT NULL
 );
 
 INSERT INTO mvtest_t
@@ -58,7 +62,8 @@ FROM
   pg_class
 WHERE
   oid =
-  CAST('mvtest_tm' AS REGCLASS);
+  CAST('mvtest_tm'
+  AS REGCLASS);
 
 SELECT * FROM mvtest_tm ORDER BY type;
 
@@ -70,7 +75,8 @@ FROM
   pg_class
 WHERE
   oid =
-  CAST('mvtest_tm' AS REGCLASS);
+  CAST('mvtest_tm'
+  AS REGCLASS);
 
 CREATE UNIQUE
 INDEX "mvtest_tm_type" ON mvtest_tm USING btree

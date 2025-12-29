@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterRoleSetStmt;
 
 use super::role_spec::emit_role_spec;
@@ -18,7 +18,7 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
 
     // Optional: IN DATABASE clause
     if !n.database.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IN_KW);
         e.space();
         e.token(TokenKind::IDENT("DATABASE".to_string()));
@@ -28,9 +28,10 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
 
     // The SET/RESET statement
     if let Some(ref setstmt) = n.setstmt {
-        e.space();
-        super::emit_variable_set_stmt(e, setstmt);
+        e.line(LineType::SoftOrSpace);
+        super::emit_variable_set_stmt_no_semicolon(e, setstmt);
     }
 
+    e.token(TokenKind::SEMICOLON);
     e.group_end();
 }

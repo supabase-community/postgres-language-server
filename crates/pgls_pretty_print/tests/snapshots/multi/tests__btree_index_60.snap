@@ -59,74 +59,92 @@ SELECT b.* FROM bt_i4_heap AS b WHERE b.seqno = 4500;
 SELECT
   b.*
 FROM
-  bt_name_heap AS b
+  bt_name_heap
+  AS b
 WHERE
   b.seqno <
-  CAST('1' AS NAME);
+  CAST('1'
+  AS NAME);
 
 SELECT
   b.*
 FROM
-  bt_name_heap AS b
+  bt_name_heap
+  AS b
 WHERE
   b.seqno >=
-  CAST('9999' AS NAME);
+  CAST('9999'
+  AS NAME);
 
 SELECT
   b.*
 FROM
-  bt_name_heap AS b
+  bt_name_heap
+  AS b
 WHERE
   b.seqno =
-  CAST('4500' AS NAME);
+  CAST('4500'
+  AS NAME);
 
 SELECT
   b.*
 FROM
-  bt_txt_heap AS b
+  bt_txt_heap
+  AS b
 WHERE
   b.seqno <
-  CAST('1' AS TEXT);
+  CAST('1'
+  AS TEXT);
 
 SELECT
   b.*
 FROM
-  bt_txt_heap AS b
+  bt_txt_heap
+  AS b
 WHERE
   b.seqno >=
-  CAST('9999' AS TEXT);
+  CAST('9999'
+  AS TEXT);
 
 SELECT
   b.*
 FROM
-  bt_txt_heap AS b
+  bt_txt_heap
+  AS b
 WHERE
   b.seqno =
-  CAST('4500' AS TEXT);
+  CAST('4500'
+  AS TEXT);
 
 SELECT
   b.*
 FROM
-  bt_f8_heap AS b
+  bt_f8_heap
+  AS b
 WHERE
   b.seqno <
-  CAST('1' AS DOUBLE PRECISION);
+  CAST('1'
+  AS DOUBLE PRECISION);
 
 SELECT
   b.*
 FROM
-  bt_f8_heap AS b
+  bt_f8_heap
+  AS b
 WHERE
   b.seqno >=
-  CAST('9999' AS DOUBLE PRECISION);
+  CAST('9999'
+  AS DOUBLE PRECISION);
 
 SELECT
   b.*
 FROM
-  bt_f8_heap AS b
+  bt_f8_heap
+  AS b
 WHERE
   b.seqno =
-  CAST('4500' AS DOUBLE PRECISION);
+  CAST('4500'
+  AS DOUBLE PRECISION);
 
 SELECT
   proname,
@@ -630,28 +648,32 @@ SELECT
 FROM
   btree_bpchar
 WHERE
-  CAST(f1 AS CHAR) LIKE 'foo';
+  CAST(f1
+  AS CHAR) LIKE 'foo';
 
 SELECT
   *
 FROM
   btree_bpchar
 WHERE
-  CAST(f1 AS CHAR) LIKE 'foo';
+  CAST(f1
+  AS CHAR) LIKE 'foo';
 
 SELECT
   *
 FROM
   btree_bpchar
 WHERE
-  CAST(f1 AS CHAR) LIKE 'foo%';
+  CAST(f1
+  AS CHAR) LIKE 'foo%';
 
 SELECT
   *
 FROM
   btree_bpchar
 WHERE
-  CAST(f1 AS CHAR) LIKE 'foo%';
+  CAST(f1
+  AS CHAR) LIKE 'foo%';
 
 INSERT INTO btree_bpchar
 SELECT

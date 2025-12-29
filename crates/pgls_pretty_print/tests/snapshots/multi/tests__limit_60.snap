@@ -4,7 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/limit_60.sql
 snapshot_kind: text
 ---
 SELECT
-  CAST('' AS TEXT) AS two,
+  CAST(''
+  AS TEXT) AS two,
   unique1,
   unique2,
   stringu1
@@ -17,7 +18,8 @@ ORDER BY unique1
 LIMIT 2;
 
 SELECT
-  CAST('' AS TEXT) AS five,
+  CAST(''
+  AS TEXT) AS five,
   unique1,
   unique2,
   stringu1
@@ -30,7 +32,8 @@ ORDER BY unique1
 LIMIT 5;
 
 SELECT
-  CAST('' AS TEXT) AS two,
+  CAST(''
+  AS TEXT) AS two,
   unique1,
   unique2,
   stringu1
@@ -45,7 +48,8 @@ ORDER BY unique1
 LIMIT 5;
 
 SELECT
-  CAST('' AS TEXT) AS three,
+  CAST(''
+  AS TEXT) AS three,
   unique1,
   unique2,
   stringu1
@@ -59,7 +63,8 @@ LIMIT 3
 OFFSET 20;
 
 SELECT
-  CAST('' AS TEXT) AS zero,
+  CAST(''
+  AS TEXT) AS zero,
   unique1,
   unique2,
   stringu1
@@ -73,7 +78,8 @@ LIMIT 8
 OFFSET 99;
 
 SELECT
-  CAST('' AS TEXT) AS eleven,
+  CAST(''
+  AS TEXT) AS eleven,
   unique1,
   unique2,
   stringu1
@@ -87,7 +93,8 @@ LIMIT 20
 OFFSET 39;
 
 SELECT
-  CAST('' AS TEXT) AS ten,
+  CAST(''
+  AS TEXT) AS ten,
   unique1,
   unique2,
   stringu1
@@ -97,7 +104,8 @@ ORDER BY unique1
 OFFSET 990;
 
 SELECT
-  CAST('' AS TEXT) AS five,
+  CAST(''
+  AS TEXT) AS five,
   unique1,
   unique2,
   stringu1
@@ -108,7 +116,8 @@ LIMIT 5
 OFFSET 990;
 
 SELECT
-  CAST('' AS TEXT) AS five,
+  CAST(''
+  AS TEXT) AS five,
   unique1,
   unique2,
   stringu1
@@ -124,7 +133,8 @@ FROM
   int8_tbl
 LIMIT CASE
 WHEN random() <
-0.5 THEN CAST(NULL AS BIGINT)
+0.5 THEN CAST(NULL
+AS BIGINT)
 END;
 
 SELECT
@@ -133,7 +143,8 @@ FROM
   int8_tbl
 OFFSET CASE
 WHEN random() <
-0.5 THEN CAST(NULL AS BIGINT)
+0.5 THEN CAST(NULL
+AS BIGINT)
 END;
 
 BEGIN;

@@ -1,9 +1,33 @@
-use pgls_query::protobuf::CreateStmt;
+use pgls_query::protobuf::{CreateStmt, node::Node as NodeEnum};
 
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
+
+/// Emit a column override for typed tables (OF typename).
+/// These use the syntax: column_name WITH OPTIONS constraints
+fn emit_typed_table_column_override(e: &mut EventEmitter, item: &pgls_query::protobuf::Node) {
+    if let Some(NodeEnum::ColumnDef(col)) = &item.node {
+        // Emit column name
+        super::string::emit_identifier_maybe_quoted(e, &col.colname);
+
+        // WITH OPTIONS keyword
+        e.space();
+        e.token(TokenKind::WITH_KW);
+        e.space();
+        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+
+        // Emit constraints (e.g., GENERATED ALWAYS AS ... STORED)
+        for constraint in &col.constraints {
+            e.line(LineType::SoftOrSpace);
+            super::emit_node(constraint, e);
+        }
+    } else {
+        // Fall back to regular node emission
+        super::emit_node(item, e);
+    }
+}
 
 pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
     e.group_start(GroupKind::CreateStmt);
@@ -109,6 +133,38 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         e.space();
         if let Some(ref typename) = n.of_typename {
             super::emit_type_name(e, typename);
+        }
+
+        // Typed tables can have column overrides with WITH OPTIONS
+        let has_content = !n.table_elts.is_empty() || !n.constraints.is_empty();
+        if has_content {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::L_PAREN);
+            e.indent_start();
+            e.line(LineType::SoftOrSpace);
+
+            let mut first = true;
+            for item in &n.table_elts {
+                if !first {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::SoftOrSpace);
+                }
+                // For typed tables, columns need WITH OPTIONS syntax
+                emit_typed_table_column_override(e, item);
+                first = false;
+            }
+            for item in &n.constraints {
+                if !first {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::SoftOrSpace);
+                }
+                super::emit_node(item, e);
+                first = false;
+            }
+
+            e.indent_end();
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::R_PAREN);
         }
     } else {
         // Regular table with columns and constraints

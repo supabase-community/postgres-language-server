@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::{node_list::emit_comma_separated_list, node_list::emit_dot_separated_list},
 };
 use pgls_query::{NodeEnum, protobuf::CreateStatsStmt};
@@ -38,7 +38,7 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
         e.token(TokenKind::R_PAREN);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
     e.space();
 

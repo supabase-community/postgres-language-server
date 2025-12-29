@@ -77,9 +77,9 @@ FROM
   tenk1
 GROUP BY length(stringu1);;
 
-CREATE TABLE parallel_write AS EXECUTE prep_stmt;;
+CREATE TABLE parallel_write AS EXECUTE prep_stmt;
 
-CREATE TABLE parallel_write AS EXECUTE prep_stmt;;
+CREATE TABLE parallel_write AS EXECUTE prep_stmt;
 
 DROP TABLE "parallel_write";
 

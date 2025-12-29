@@ -53,7 +53,8 @@ SELECT
 SELECT CAST('[1]' AS JSONB) @? 'lax $[10000000000000000]';
 
 SELECT
-  CAST('[1]' AS JSONB) @? 'strict $[10000000000000000]';
+  CAST('[1]'
+  AS JSONB) @? 'strict $[10000000000000000]';
 
 SELECT jsonb_path_query('[1]', 'lax $[10000000000000000]');
 
@@ -74,26 +75,32 @@ SELECT CAST('[1]' AS JSONB) @? '$[1.2]';
 SELECT CAST('[1]' AS JSONB) @? 'strict $[1.2]';
 
 SELECT
-  CAST('{"a": [1,2,3], "b": [3,4,5]}' AS JSONB) @? '$ ? (@.a[*] >  @.b[*])';
+  CAST('{"a": [1,2,3], "b": [3,4,5]}'
+  AS JSONB) @? '$ ? (@.a[*] >  @.b[*])';
 
 SELECT
-  CAST('{"a": [1,2,3], "b": [3,4,5]}' AS JSONB) @? '$ ? (@.a[*] >= @.b[*])';
+  CAST('{"a": [1,2,3], "b": [3,4,5]}'
+  AS JSONB) @? '$ ? (@.a[*] >= @.b[*])';
 
 SELECT
-  CAST('{"a": [1,2,3], "b": [3,4,"5"]}' AS JSONB) @? '$ ? (@.a[*] >= @.b[*])';
+  CAST('{"a": [1,2,3], "b": [3,4,"5"]}'
+  AS JSONB) @? '$ ? (@.a[*] >= @.b[*])';
 
 SELECT
-  CAST('{"a": [1,2,3], "b": [3,4,"5"]}' AS JSONB) @? 'strict $ ? (@.a[*] >= @.b[*])';
+  CAST('{"a": [1,2,3], "b": [3,4,"5"]}'
+  AS JSONB) @? 'strict $ ? (@.a[*] >= @.b[*])';
 
 SELECT
-  CAST('{"a": [1,2,3], "b": [3,4,null]}' AS JSONB) @? '$ ? (@.a[*] >= @.b[*])';
+  CAST('{"a": [1,2,3], "b": [3,4,null]}'
+  AS JSONB) @? '$ ? (@.a[*] >= @.b[*])';
 
 SELECT CAST('1' AS JSONB) @? '$ ? ((@ == "1") is unknown)';
 
 SELECT CAST('1' AS JSONB) @? '$ ? ((@ == 1) is unknown)';
 
 SELECT
-  CAST('[{"a": 1}, {"a": 2}]' AS JSONB) @? '$[0 to 1] ? (@.a > 1)';
+  CAST('[{"a": 1}, {"a": 2}]'
+  AS JSONB) @? '$[0 to 1] ? (@.a > 1)';
 
 SELECT
   jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]',
@@ -451,43 +458,56 @@ SELECT
   'lax $.**{2 to 3}.b ? (@ > 0)');
 
 SELECT
-  CAST('{"a": {"b": 1}}' AS JSONB) @? '$.**.b ? ( @ > 0)';
+  CAST('{"a": {"b": 1}}'
+  AS JSONB) @? '$.**.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"b": 1}}' AS JSONB) @? '$.**{0}.b ? ( @ > 0)';
+  CAST('{"a": {"b": 1}}'
+  AS JSONB) @? '$.**{0}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"b": 1}}' AS JSONB) @? '$.**{1}.b ? ( @ > 0)';
+  CAST('{"a": {"b": 1}}'
+  AS JSONB) @? '$.**{1}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"b": 1}}' AS JSONB) @? '$.**{0 to last}.b ? ( @ > 0)';
+  CAST('{"a": {"b": 1}}'
+  AS JSONB) @? '$.**{0 to last}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"b": 1}}' AS JSONB) @? '$.**{1 to last}.b ? ( @ > 0)';
+  CAST('{"a": {"b": 1}}'
+  AS JSONB) @? '$.**{1 to last}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"b": 1}}' AS JSONB) @? '$.**{1 to 2}.b ? ( @ > 0)';
+  CAST('{"a": {"b": 1}}'
+  AS JSONB) @? '$.**{1 to 2}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**{0}.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**{0}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**{1}.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**{1}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**{0 to last}.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**{0 to last}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**{1 to last}.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**{1 to last}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**{1 to 2}.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**{1 to 2}.b ? ( @ > 0)';
 
 SELECT
-  CAST('{"a": {"c": {"b": 1}}}' AS JSONB) @? '$.**{2 to 3}.b ? ( @ > 0)';
+  CAST('{"a": {"c": {"b": 1}}}'
+  AS JSONB) @? '$.**{2 to 3}.b ? ( @ > 0)';
 
 SELECT
   jsonb_path_query('{"g": {"x": 2}}',
@@ -541,10 +561,12 @@ SELECT
   'y',
   y)) AS "x && y"
 FROM
-  (VALUES (CAST('true' AS JSONB)),
+  (VALUES (CAST('true'
+  AS JSONB)),
   ('false'),
   ('"null"')) AS x (x),
-  (VALUES (CAST('true' AS JSONB)),
+  (VALUES (CAST('true'
+  AS JSONB)),
   ('false'),
   ('"null"')) AS y (y);
 
@@ -560,33 +582,42 @@ SELECT
   'y',
   y)) AS "x || y"
 FROM
-  (VALUES (CAST('true' AS JSONB)),
+  (VALUES (CAST('true'
+  AS JSONB)),
   ('false'),
   ('"null"')) AS x (x),
-  (VALUES (CAST('true' AS JSONB)),
+  (VALUES (CAST('true'
+  AS JSONB)),
   ('false'),
   ('"null"')) AS y (y);
 
 SELECT
-  CAST('{"a": 1, "b":1}' AS JSONB) @? '$ ? (@.a == @.b)';
+  CAST('{"a": 1, "b":1}'
+  AS JSONB) @? '$ ? (@.a == @.b)';
 
 SELECT
-  CAST('{"c": {"a": 1, "b":1}}' AS JSONB) @? '$ ? (@.a == @.b)';
+  CAST('{"c": {"a": 1, "b":1}}'
+  AS JSONB) @? '$ ? (@.a == @.b)';
 
 SELECT
-  CAST('{"c": {"a": 1, "b":1}}' AS JSONB) @? '$.c ? (@.a == @.b)';
+  CAST('{"c": {"a": 1, "b":1}}'
+  AS JSONB) @? '$.c ? (@.a == @.b)';
 
 SELECT
-  CAST('{"c": {"a": 1, "b":1}}' AS JSONB) @? '$.c ? ($.c.a == @.b)';
+  CAST('{"c": {"a": 1, "b":1}}'
+  AS JSONB) @? '$.c ? ($.c.a == @.b)';
 
 SELECT
-  CAST('{"c": {"a": 1, "b":1}}' AS JSONB) @? '$.* ? (@.a == @.b)';
+  CAST('{"c": {"a": 1, "b":1}}'
+  AS JSONB) @? '$.* ? (@.a == @.b)';
 
 SELECT
-  CAST('{"a": 1, "b":1}' AS JSONB) @? '$.** ? (@.a == @.b)';
+  CAST('{"a": 1, "b":1}'
+  AS JSONB) @? '$.** ? (@.a == @.b)';
 
 SELECT
-  CAST('{"c": {"a": 1, "b":1}}' AS JSONB) @? '$.** ? (@.a == @.b)';
+  CAST('{"c": {"a": 1, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == @.b)';
 
 SELECT
   jsonb_path_query('{"c": {"a": 2, "b":1}}',
@@ -605,25 +636,32 @@ SELECT
   '$.** ? (@.a == (@.b + 1))');
 
 SELECT
-  CAST('{"c": {"a": -1, "b":1}}' AS JSONB) @? '$.** ? (@.a == - 1)';
+  CAST('{"c": {"a": -1, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == - 1)';
 
 SELECT
-  CAST('{"c": {"a": -1, "b":1}}' AS JSONB) @? '$.** ? (@.a == -1)';
+  CAST('{"c": {"a": -1, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == -1)';
 
 SELECT
-  CAST('{"c": {"a": -1, "b":1}}' AS JSONB) @? '$.** ? (@.a == -@.b)';
+  CAST('{"c": {"a": -1, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == -@.b)';
 
 SELECT
-  CAST('{"c": {"a": -1, "b":1}}' AS JSONB) @? '$.** ? (@.a == - @.b)';
+  CAST('{"c": {"a": -1, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == - @.b)';
 
 SELECT
-  CAST('{"c": {"a": 0, "b":1}}' AS JSONB) @? '$.** ? (@.a == 1 - @.b)';
+  CAST('{"c": {"a": 0, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == 1 - @.b)';
 
 SELECT
-  CAST('{"c": {"a": 2, "b":1}}' AS JSONB) @? '$.** ? (@.a == 1 - - @.b)';
+  CAST('{"c": {"a": 2, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == 1 - - @.b)';
 
 SELECT
-  CAST('{"c": {"a": 0, "b":1}}' AS JSONB) @? '$.** ? (@.a == 1 - +@.b)';
+  CAST('{"c": {"a": 0, "b":1}}'
+  AS JSONB) @? '$.** ? (@.a == 1 - +@.b)';
 
 SELECT CAST('[1,2,3]' AS JSONB) @? '$ ? (+@[*] > +2)';
 
@@ -711,14 +749,16 @@ SELECT
   TRUE);
 
 SELECT
-  CAST('{"a": [1,2,3], "b": [3,4,5]}' AS JSONB) @? '$.*';
+  CAST('{"a": [1,2,3], "b": [3,4,5]}'
+  AS JSONB) @? '$.*';
 
 SELECT CAST('[1,2,3]' AS JSONB) @? '$.*';
 
 SELECT CAST('[1,2,3,{"b": [3,4,5]}]' AS JSONB) @? 'lax $.*';
 
 SELECT
-  CAST('[1,2,3,{"b": [3,4,5]}]' AS JSONB) @? 'strict $.*';
+  CAST('[1,2,3,{"b": [3,4,5]}]'
+  AS JSONB) @? 'strict $.*';
 
 SELECT jsonb_path_query('2', '$ > 1');
 
@@ -875,10 +915,12 @@ SELECT
   'strict $.keyvalue().a');
 
 SELECT
-  CAST('{"a": 1, "b": [1, 2]}' AS JSONB) @? 'lax $.keyvalue()';
+  CAST('{"a": 1, "b": [1, 2]}'
+  AS JSONB) @? 'lax $.keyvalue()';
 
 SELECT
-  CAST('{"a": 1, "b": [1, 2]}' AS JSONB) @? 'lax $.keyvalue().key';
+  CAST('{"a": 1, "b": [1, 2]}'
+  AS JSONB) @? 'lax $.keyvalue().key';
 
 SELECT jsonb_path_query('null', '$.double()');
 
@@ -1045,7 +1087,8 @@ SELECT jsonb_path_query('"12:34"', '$.datetime("aaa")');
 SELECT jsonb_path_query('"aaaa"', '$.datetime("HH24")');
 
 SELECT
-  CAST('"10-03-2017"' AS JSONB) @? '$.datetime("dd-mm-yyyy")';
+  CAST('"10-03-2017"'
+  AS JSONB) @? '$.datetime("dd-mm-yyyy")';
 
 SELECT
   jsonb_path_query('"10-03-2017"',
@@ -1796,7 +1839,8 @@ SELECT jsonb_path_query('{}', '$.timestamp()');
 SELECT jsonb_path_query('"bogus"', '$.timestamp()');
 
 SELECT
-  CAST('"2023-08-15 12:34:56"' AS JSONB) @? '$.timestamp()';
+  CAST('"2023-08-15 12:34:56"'
+  AS JSONB) @? '$.timestamp()';
 
 SELECT
   jsonb_path_query('"2023-08-15 12:34:56"',
@@ -1861,7 +1905,8 @@ SELECT jsonb_path_query('{}', '$.timestamp_tz()');
 SELECT jsonb_path_query('"bogus"', '$.timestamp_tz()');
 
 SELECT
-  CAST('"2023-08-15 12:34:56 +05:30"' AS JSONB) @? '$.timestamp_tz()';
+  CAST('"2023-08-15 12:34:56 +05:30"'
+  AS JSONB) @? '$.timestamp_tz()';
 
 SELECT
   jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
@@ -2513,7 +2558,8 @@ SELECT
 
 SELECT
   jsonb_path_query('"1000000-01-01"',
-  CAST('$.datetime() > "2020-01-01 12:00:00".datetime()' AS jsonpath));
+  CAST('$.datetime() > "2020-01-01 12:00:00".datetime()'
+  AS jsonpath));
 
 SET timezone TO DEFAULT;
 
@@ -2591,10 +2637,12 @@ SELECT
 SELECT jsonb_path_query_first('[{"a": 1}]', 'false');
 
 SELECT
-  CAST('[{"a": 1}, {"a": 2}]' AS JSONB) @? '$[*].a ? (@ > 1)';
+  CAST('[{"a": 1}, {"a": 2}]'
+  AS JSONB) @? '$[*].a ? (@ > 1)';
 
 SELECT
-  CAST('[{"a": 1}, {"a": 2}]' AS JSONB) @? '$[*] ? (@.a > 2)';
+  CAST('[{"a": 1}, {"a": 2}]'
+  AS JSONB) @? '$[*] ? (@.a > 2)';
 
 SELECT
   jsonb_path_exists('[{"a": 1}, {"a": 2}]',
@@ -2648,10 +2696,12 @@ SELECT
   "silent" := FALSE);
 
 SELECT
-  CAST('[{"a": 1}, {"a": 2}]' AS JSONB) @@ '$[*].a > 1';
+  CAST('[{"a": 1}, {"a": 2}]'
+  AS JSONB) @@ '$[*].a > 1';
 
 SELECT
-  CAST('[{"a": 1}, {"a": 2}]' AS JSONB) @@ '$[*].a > 2';
+  CAST('[{"a": 1}, {"a": 2}]'
+  AS JSONB) @@ '$[*].a > 2';
 
 SELECT
   jsonb_path_match('[{"a": 1}, {"a": 2}]',
@@ -2667,7 +2717,8 @@ num) AS (SELECT
   s),
   num
 FROM
-  unnest(CAST('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}' AS TEXT[])) WITH ORDINALITY AS a (s,
+  unnest(CAST('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}'
+  AS TEXT[])) WITH ORDINALITY AS a (s,
   num))
 SELECT
   s1.j,
@@ -2688,7 +2739,9 @@ SELECT
   '$.s > $s',
   "vars" := s2.j) AS gt
 FROM
-  str AS s1,
-  str AS s2
+  str
+  AS s1,
+  str
+  AS s2
 ORDER BY s1.num,
   s2.num;

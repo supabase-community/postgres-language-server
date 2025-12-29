@@ -128,7 +128,8 @@ SELECT
   relowner
 FROM
   pg_type
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON typrelid =
     c.oid
 WHERE
@@ -144,7 +145,8 @@ SELECT
   relowner
 FROM
   pg_type
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON typrelid =
     c.oid
 WHERE

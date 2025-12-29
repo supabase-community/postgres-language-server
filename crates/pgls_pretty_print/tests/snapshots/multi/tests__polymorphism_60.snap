@@ -124,11 +124,13 @@ SELECT
   polyf(int4range(42,
   49),
   11,
-  CAST(2 AS SMALLINT)) AS int,
+  CAST(2
+  AS SMALLINT)) AS int,
   polyf(float8range(4.5,
   7.8),
   7.8,
-  CAST(11 AS REAL)) AS num;
+  CAST(11
+  AS REAL)) AS num;
 
 SELECT polyf(int4range(42, 49), 11, 4.5) AS fail;
 
@@ -152,11 +154,13 @@ SELECT
   polyf(multirange(int4range(42,
   49)),
   11,
-  CAST(2 AS SMALLINT)) AS int,
+  CAST(2
+  AS SMALLINT)) AS int,
   polyf(multirange(float8range(4.5,
   7.8)),
   7.8,
-  CAST(11 AS REAL)) AS num;
+  CAST(11
+  AS REAL)) AS num;
 
 SELECT
   polyf(multirange(int4range(42,
@@ -1179,7 +1183,8 @@ CREATE AGGREGATE first_el_agg_any (ANYELEMENT)
 );
 
 SELECT
-  first_el_agg_f8(CAST(x AS DOUBLE PRECISION))
+  first_el_agg_f8(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   generate_series(1,
   10) AS x;
@@ -1187,7 +1192,8 @@ FROM
 SELECT first_el_agg_any(x) FROM generate_series(1, 10) AS x;
 
 SELECT
-  first_el_agg_f8(CAST(x AS DOUBLE PRECISION))
+  first_el_agg_f8(CAST(x
+  AS DOUBLE PRECISION))
   OVER (
   ORDER BY x)
 FROM
@@ -1223,12 +1229,14 @@ SELECT
   *
 FROM
   array_in('{1,2,3}',
-  CAST('int4' AS REGTYPE),
+  CAST('int4'
+  AS REGTYPE),
   -1);
 
 SELECT
   anyrange_in('[10,20)',
-  CAST('int4range' AS REGTYPE),
+  CAST('int4range'
+  AS REGTYPE),
   -1);
 
 CREATE FUNCTION myleast(
@@ -1450,7 +1458,8 @@ AS '
 LANGUAGE "sql";
 
 CREATE FUNCTION dfunc(
-  ANYELEMENT DEFAULT CAST('World' AS TEXT)
+  ANYELEMENT DEFAULT CAST('World'
+  AS TEXT)
 )
 RETURNS TEXT
 AS '
@@ -1482,7 +1491,8 @@ SELECT dfunc(10);
 SELECT dfunc(10, 20);
 
 CREATE OR REPLACE FUNCTION dfunc(
-  VARIADIC "a" INT[] DEFAULT CAST(ARRAY[] AS INT[])
+  VARIADIC "a" INT[] DEFAULT CAST(ARRAY[]
+  AS INT[])
 )
 RETURNS INT
 AS ' select array_upper($1, 1) '
@@ -1640,19 +1650,22 @@ LANGUAGE "sql";
 SELECT
   (dfunc('Hello World',
   20,
-  CAST('2009-07-25' AS DATE))).*;
+  CAST('2009-07-25'
+  AS DATE))).*;
 
 SELECT
   *
 FROM
   dfunc('Hello World',
   20,
-  CAST('2009-07-25' AS DATE));
+  CAST('2009-07-25'
+  AS DATE));
 
 SELECT
   *
 FROM
-  dfunc("c" := CAST('2009-07-25' AS DATE),
+  dfunc("c" := CAST('2009-07-25'
+  AS DATE),
   "a" := 'Hello World',
   "b" := 20);
 
@@ -1661,13 +1674,15 @@ SELECT
 FROM
   dfunc('Hello World',
   "b" := 20,
-  "c" := CAST('2009-07-25' AS DATE));
+  "c" := CAST('2009-07-25'
+  AS DATE));
 
 SELECT
   *
 FROM
   dfunc('Hello World',
-  "c" := CAST('2009-07-25' AS DATE),
+  "c" := CAST('2009-07-25'
+  AS DATE),
   "b" := 20);
 
 SELECT
@@ -1675,7 +1690,8 @@ SELECT
 FROM
   dfunc('Hello World',
   "c" := 20,
-  "b" := CAST('2009-07-25' AS DATE));
+  "b" := CAST('2009-07-25'
+  AS DATE));
 
 DROP FUNCTION dfunc(VARCHAR, NUMERIC, DATE);
 
@@ -1811,7 +1827,8 @@ SELECT dfunc("a" := 1, "b" := 2);
 SELECT dfunc("a" := CAST('a' AS TEXT), "b" := 'b');
 
 SELECT
-  dfunc("a" := CAST('a' AS TEXT),
+  dfunc("a" := CAST('a'
+  AS TEXT),
   "b" := 'b',
   "flag" := FALSE);
 
@@ -1822,7 +1839,8 @@ SELECT dfunc("a" := CAST('a' AS TEXT), "flag" := TRUE);
 SELECT dfunc("a" := CAST('a' AS TEXT), "flag" := FALSE);
 
 SELECT
-  dfunc("b" := CAST('b' AS TEXT),
+  dfunc("b" := CAST('b'
+  AS TEXT),
   "a" := 'a',
   "flag" := TRUE);
 
@@ -1839,7 +1857,8 @@ SELECT dfunc("a" := 1, "b" := 2);
 SELECT dfunc("a" := CAST('a' AS TEXT), "b" := 'b');
 
 SELECT
-  dfunc("a" := CAST('a' AS TEXT),
+  dfunc("a" := CAST('a'
+  AS TEXT),
   "b" := 'b',
   "flag" := FALSE);
 
@@ -1850,7 +1869,8 @@ SELECT dfunc("a" := CAST('a' AS TEXT), "flag" := TRUE);
 SELECT dfunc("a" := CAST('a' AS TEXT), "flag" := FALSE);
 
 SELECT
-  dfunc("b" := CAST('b' AS TEXT),
+  dfunc("b" := CAST('b'
+  AS TEXT),
   "a" := 'a',
   "flag" := TRUE);
 

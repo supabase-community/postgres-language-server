@@ -62,10 +62,12 @@ SELECT CAST('1 * 2 + 4 % -3 != false' AS jsonpath);
 SELECT CAST('"\b\f\r\n\t\v\"\''\\"' AS jsonpath);
 
 SELECT
-  CAST('"\x50\u0067\u{53}\u{051}\u{00004C}"' AS jsonpath);
+  CAST('"\x50\u0067\u{53}\u{051}\u{00004C}"'
+  AS jsonpath);
 
 SELECT
-  CAST('$.foo\x50\u0067\u{53}\u{051}\u{00004C}\t\"bar' AS jsonpath);
+  CAST('$.foo\x50\u0067\u{53}\u{051}\u{00004C}\t\"bar'
+  AS jsonpath);
 
 SELECT CAST('"\z"' AS jsonpath);
 
@@ -80,26 +82,32 @@ SELECT CAST('$.g ? (@.a == 1 || @.a == 4)' AS jsonpath);
 SELECT CAST('$.g ? (@.a == 1 && @.a == 4)' AS jsonpath);
 
 SELECT
-  CAST('$.g ? (@.a == 1 || @.a == 4 && @.b == 7)' AS jsonpath);
+  CAST('$.g ? (@.a == 1 || @.a == 4 && @.b == 7)'
+  AS jsonpath);
 
 SELECT
-  CAST('$.g ? (@.a == 1 || !(@.a == 4) && @.b == 7)' AS jsonpath);
+  CAST('$.g ? (@.a == 1 || !(@.a == 4) && @.b == 7)'
+  AS jsonpath);
 
 SELECT
-  CAST('$.g ? (@.a == 1 || !(@.x >= 123 || @.a == 4) && @.b == 7)' AS jsonpath);
+  CAST('$.g ? (@.a == 1 || !(@.x >= 123 || @.a == 4) && @.b == 7)'
+  AS jsonpath);
 
 SELECT
-  CAST('$.g ? (@.x >= @[*]?(@.a > "abc"))' AS jsonpath);
+  CAST('$.g ? (@.x >= @[*]?(@.a > "abc"))'
+  AS jsonpath);
 
 SELECT
-  CAST('$.g ? ((@.x >= 123 || @.a == 4) is unknown)' AS jsonpath);
+  CAST('$.g ? ((@.x >= 123 || @.a == 4) is unknown)'
+  AS jsonpath);
 
 SELECT CAST('$.g ? (exists (@.x))' AS jsonpath);
 
 SELECT CAST('$.g ? (exists (@.x ? (@ == 14)))' AS jsonpath);
 
 SELECT
-  CAST('$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))' AS jsonpath);
+  CAST('$.g ? ((@.x >= 123 || @.a == 4) && exists (@.x ? (@ == 14)))'
+  AS jsonpath);
 
 SELECT CAST('$.g ? (+@.x >= +-(+@.a + 2))' AS jsonpath);
 
@@ -114,7 +122,8 @@ SELECT CAST('$.g ? (@.zip == $zip)' AS jsonpath);
 SELECT CAST('$.a[1,2, 3 to 16]' AS jsonpath);
 
 SELECT
-  CAST('$.a[$a + 1, ($b[*]) to -($[0] * 2)]' AS jsonpath);
+  CAST('$.a[$a + 1, ($b[*]) to -($[0] * 2)]'
+  AS jsonpath);
 
 SELECT CAST('$.a[$.a.size() - 3]' AS jsonpath);
 
@@ -143,7 +152,8 @@ SELECT CAST('"aaa".type()' AS jsonpath);
 SELECT CAST('true.type()' AS jsonpath);
 
 SELECT
-  CAST('$.double().floor().ceiling().abs()' AS jsonpath);
+  CAST('$.double().floor().ceiling().abs()'
+  AS jsonpath);
 
 SELECT CAST('$.keyvalue().key' AS jsonpath);
 
@@ -152,7 +162,8 @@ SELECT CAST('$.datetime()' AS jsonpath);
 SELECT CAST('$.datetime("datetime template")' AS jsonpath);
 
 SELECT
-  CAST('$.bigint().integer().number().decimal()' AS jsonpath);
+  CAST('$.bigint().integer().number().decimal()'
+  AS jsonpath);
 
 SELECT CAST('$.boolean()' AS jsonpath);
 
@@ -183,36 +194,46 @@ SELECT CAST('$ ? (@ starts with "abc")' AS jsonpath);
 SELECT CAST('$ ? (@ starts with $var)' AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "(invalid pattern")' AS jsonpath);
+  CAST('$ ? (@ like_regex "(invalid pattern")'
+  AS jsonpath);
 
 SELECT CAST('$ ? (@ like_regex "pattern")' AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "i")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "i")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "is")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "is")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "isim")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "isim")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "xsms")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "xsms")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "q")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "q")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "iq")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "iq")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "smixq")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "smixq")'
+  AS jsonpath);
 
 SELECT
-  CAST('$ ? (@ like_regex "pattern" flag "a")' AS jsonpath);
+  CAST('$ ? (@ like_regex "pattern" flag "a")'
+  AS jsonpath);
 
 SELECT CAST('$ < 1' AS jsonpath);
 
@@ -237,7 +258,8 @@ SELECT CAST('($)' AS jsonpath);
 SELECT CAST('(($))' AS jsonpath);
 
 SELECT
-  CAST('((($ + 1)).a + ((2)).b ? ((((@ > 1)) || (exists(@.c)))))' AS jsonpath);
+  CAST('((($ + 1)).a + ((2)).b ? ((((@ > 1)) || (exists(@.c)))))'
+  AS jsonpath);
 
 SELECT CAST('$ ? (@.a < 1)' AS jsonpath);
 
@@ -480,7 +502,8 @@ SELECT
   errinfo.detail,
   errinfo.hint
 FROM
-  unnest(ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")' AS TEXT),
+  unnest(ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")'
+  AS TEXT),
   '$ ? (@ like_regex "pattern" flag "a")',
   '@ + 1',
   '00',

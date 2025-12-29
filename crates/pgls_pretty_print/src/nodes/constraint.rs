@@ -79,12 +79,26 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 }
             }
 
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
             e.token(TokenKind::IDENTITY_KW);
 
-            // TODO: Add sequence options from n.options if present
+            // Add sequence options if present (e.g., START 7 INCREMENT 5)
+            if !n.options.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::L_PAREN);
+                for (idx, opt) in n.options.iter().enumerate() {
+                    if idx > 0 {
+                        e.line(LineType::SoftOrSpace);
+                    }
+                    if let Some(NodeEnum::DefElem(def)) = &opt.node {
+                        // Emit sequence option like START 7, INCREMENT 5
+                        super::emit_sequence_option(e, def);
+                    }
+                }
+                e.token(TokenKind::R_PAREN);
+            }
         }
         x if x == ConstrType::ConstrGenerated as i32 => {
             // GENERATED ALWAYS AS (expr) STORED
@@ -300,7 +314,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::FOREIGN_KW);
                 e.space();
                 e.token(TokenKind::KEY_KW);
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::L_PAREN);
                 emit_comma_separated_list(e, &n.fk_attrs, super::emit_node);
                 e.token(TokenKind::R_PAREN);

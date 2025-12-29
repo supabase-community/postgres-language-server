@@ -6,12 +6,14 @@ snapshot_kind: text
 CREATE TABLE clstr_tst_s ( rf_a serial PRIMARY KEY, b INT );
 
 CREATE TABLE clstr_tst (
-  a serial PRIMARY KEY,
+  a serial
+  PRIMARY KEY,
   b INT,
   c TEXT,
   d TEXT,
   CONSTRAINT "clstr_tst_con"
-  FOREIGN KEY (b)
+  FOREIGN KEY
+  (b)
   REFERENCES clstr_tst_s
 );
 
@@ -121,7 +123,8 @@ SELECT
   a,
   b,
   c,
-  SUBSTRING(d FROM 1 FOR CAST(30 AS INT)),
+  SUBSTRING(d FROM 1 FOR CAST(30
+  AS INT)),
   length(d)
 FROM
   clstr_tst;
@@ -130,7 +133,8 @@ SELECT
   a,
   b,
   c,
-  SUBSTRING(d FROM 1 FOR CAST(30 AS INT)),
+  SUBSTRING(d FROM 1 FOR CAST(30
+  AS INT)),
   length(d)
 FROM
   clstr_tst
@@ -140,7 +144,8 @@ SELECT
   a,
   b,
   c,
-  SUBSTRING(d FROM 1 FOR CAST(30 AS INT)),
+  SUBSTRING(d FROM 1 FOR CAST(30
+  AS INT)),
   length(d)
 FROM
   clstr_tst
@@ -150,7 +155,8 @@ SELECT
   a,
   b,
   c,
-  SUBSTRING(d FROM 1 FOR CAST(30 AS INT)),
+  SUBSTRING(d FROM 1 FOR CAST(30
+  AS INT)),
   length(d)
 FROM
   clstr_tst
@@ -162,7 +168,8 @@ SELECT
   a,
   b,
   c,
-  SUBSTRING(d FROM 1 FOR CAST(30 AS INT)),
+  SUBSTRING(d FROM 1 FOR CAST(30
+  AS INT)),
   length(d)
 FROM
   clstr_tst;
@@ -178,7 +185,8 @@ FROM
   pg_constraint
 WHERE
   conrelid =
-  CAST('clstr_tst' AS REGCLASS)
+  CAST('clstr_tst'
+  AS REGCLASS)
 ORDER BY 1;
 
 SELECT
@@ -192,7 +200,8 @@ SELECT
     oid =
     c.reltoastrelid) AS hastoast
 FROM
-  pg_class AS c
+  pg_class
+  AS c
 WHERE
   relname LIKE 'clstr_tst%'
 ORDER BY relname;
@@ -202,7 +211,8 @@ SELECT
 FROM
   pg_index,
   pg_class,
-  pg_class AS pg_class_2
+  pg_class
+  AS pg_class_2
 WHERE
   pg_class.oid =
   indexrelid AND
@@ -219,7 +229,8 @@ SELECT
 FROM
   pg_index,
   pg_class,
-  pg_class AS pg_class_2
+  pg_class
+  AS pg_class_2
 WHERE
   pg_class.oid =
   indexrelid AND
@@ -236,7 +247,8 @@ SELECT
 FROM
   pg_index,
   pg_class,
-  pg_class AS pg_class_2
+  pg_class
+  AS pg_class_2
 WHERE
   pg_class.oid =
   indexrelid AND
@@ -381,7 +393,8 @@ COMMIT;
 SELECT * FROM clustertest;
 
 CREATE TEMPORARY TABLE clstr_temp (
-  col1 INT PRIMARY KEY,
+  col1 INT
+  PRIMARY KEY,
   col2 TEXT
 );
 
@@ -448,8 +461,10 @@ CREATE TEMPORARY TABLE old_cluster_info AS
     relfilenode,
     relkind
   FROM
-    pg_partition_tree(CAST('clstrpart' AS REGCLASS)) AS tree
-    INNER JOIN pg_class AS c
+    pg_partition_tree(CAST('clstrpart'
+    AS REGCLASS)) AS tree
+    INNER JOIN pg_class
+    AS c
     ON c.oid =
       tree.relid;
 
@@ -462,8 +477,10 @@ CREATE TEMPORARY TABLE new_cluster_info AS
     relfilenode,
     relkind
   FROM
-    pg_partition_tree(CAST('clstrpart' AS REGCLASS)) AS tree
-    INNER JOIN pg_class AS c
+    pg_partition_tree(CAST('clstrpart'
+    AS REGCLASS)) AS tree
+    INNER JOIN pg_class
+    AS c
     ON c.oid =
       tree.relid;
 
@@ -474,8 +491,10 @@ SELECT
   old.relfilenode =
   new.relfilenode
 FROM
-  old_cluster_info AS old
-  INNER JOIN new_cluster_info AS new
+  old_cluster_info
+  AS old
+  INNER JOIN new_cluster_info
+  AS new
   USING ("relname")
 ORDER BY relname COLLATE "C";
 
@@ -518,7 +537,8 @@ CREATE TEMPORARY TABLE ptnowner_oldnodes AS
     relfilenode
   FROM
     pg_partition_tree('ptnowner') AS tree
-    INNER JOIN pg_class AS c
+    INNER JOIN pg_class
+    AS c
     ON c.oid =
       tree.relid;
 
@@ -533,8 +553,10 @@ SELECT
   a.relfilenode =
   b.relfilenode
 FROM
-  pg_class AS a
-  INNER JOIN ptnowner_oldnodes AS b
+  pg_class
+  AS a
+  INNER JOIN ptnowner_oldnodes
+  AS b
   USING ("oid")
 ORDER BY a.relname COLLATE "C";
 
@@ -585,7 +607,8 @@ RESET enable_indexscan;
 RESET maintenance_work_mem;
 
 CREATE TABLE clstr_expression (
-  id serial PRIMARY KEY,
+  id serial
+  PRIMARY KEY,
   a INT,
   b TEXT COLLATE "C"
 );
@@ -594,7 +617,8 @@ INSERT INTO clstr_expression (a,
 b)
 SELECT
   g.i % 42,
-  'prefix' || g.i
+  'prefix' ||
+  g.i
 FROM
   generate_series(1,
   133) AS g (i);

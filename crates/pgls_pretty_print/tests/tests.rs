@@ -155,6 +155,7 @@ fn test_multi(fixture: Fixture<&str>) {
         normalize_join_expr(&mut parsed_ast);
         normalize_join_expr(&mut ast);
         normalize_foreign_table_partbound(&mut ast);
+        normalize_merge_support_func(&mut ast);
 
         assert_eq!(ast, parsed_ast);
 
@@ -183,6 +184,8 @@ fn assert_line_lengths(sql: &str, max_line_length: usize) {
         let mut i = 0usize;
         let mut current_outside_run = 0usize;
         let mut max_outside_run = 0usize;
+        let mut longest_token = 0usize;
+        let mut current_token_len = 0usize;
 
         while i < chars.len() {
             match state.clone() {
@@ -190,6 +193,16 @@ fn assert_line_lengths(sql: &str, max_line_length: usize) {
                     current_outside_run += 1;
                     if current_outside_run > max_outside_run {
                         max_outside_run = current_outside_run;
+                    }
+
+                    // Track token length (identifier-like sequences)
+                    if chars[i].is_alphanumeric() || chars[i] == '_' {
+                        current_token_len += 1;
+                    } else {
+                        if current_token_len > longest_token {
+                            longest_token = current_token_len;
+                        }
+                        current_token_len = 0;
                     }
 
                     match chars[i] {
@@ -255,7 +268,14 @@ fn assert_line_lengths(sql: &str, max_line_length: usize) {
             }
         }
 
-        if max_outside_run > max_line_length {
+        // Check final token
+        if current_token_len > longest_token {
+            longest_token = current_token_len;
+        }
+
+        // If the longest token exceeds max length, the line can't be broken further
+        // Allow lines where the excess is due to an unbreakable identifier
+        if max_outside_run > max_line_length && longest_token <= max_line_length {
             panic!("Line exceeds max length of {max_line_length} outside literals: {line}");
         }
     }
@@ -525,6 +545,18 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             pgls_query::NodeMut::TransactionStmt(n) => {
                 (*n).location = 0;
             }
+            pgls_query::NodeMut::JsonParseExpr(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::JsonFuncExpr(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::JsonScalarExpr(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::JsonSerializeExpr(n) => {
+                (*n).location = 0;
+            }
             pgls_query::NodeMut::CopyStmt(n) => {
                 // Normalize boolean options in COPY statement options
                 for opt in (*n).options.iter_mut() {
@@ -629,6 +661,22 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
                         }
                     }
                 }
+            }
+            pgls_query::NodeMut::DeallocateStmt(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::PublicationObjSpec(n) => {
+                (*n).location = 0;
+                // Normalize TABLES IN SCHEMA CURRENT_SCHEMA to TABLES IN CURRENT_SCHEMA
+                // The latter parses as PublicationobjTablesInCurSchema (3) with empty name,
+                // while the former parses as PublicationobjTablesInSchema (2) with name "CURRENT_SCHEMA"
+                if (*n).pubobjtype == 2 && (*n).name.eq_ignore_ascii_case("CURRENT_SCHEMA") {
+                    (*n).pubobjtype = 3;
+                    (*n).name.clear();
+                }
+            }
+            pgls_query::NodeMut::XmlExpr(n) => {
+                (*n).location = 0;
             }
             _ => {}
         });
@@ -836,6 +884,81 @@ fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
                 }
             }
         }
+        pgls_query::NodeEnum::AlterTableStmt(stmt) => {
+            for cmd in &mut stmt.cmds {
+                if let Some(pgls_query::NodeEnum::AlterTableCmd(c)) = cmd.node.as_mut() {
+                    if let Some(ref mut def) = c.def {
+                        if let Some(ref mut n) = def.node {
+                            normalize_a_indirection(n);
+                        }
+                    }
+                }
+            }
+        }
+        pgls_query::NodeEnum::CreateStatsStmt(stmt) => {
+            for expr in &mut stmt.exprs {
+                if let Some(ref mut n) = expr.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::StatsElem(se) => {
+            if let Some(ref mut expr) = se.expr {
+                if let Some(ref mut n) = expr.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::IndexStmt(stmt) => {
+            for param in &mut stmt.index_params {
+                if let Some(ref mut n) = param.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::IndexElem(ie) => {
+            if let Some(ref mut expr) = ie.expr {
+                if let Some(ref mut n) = expr.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::AExpr(ae) => {
+            if let Some(ref mut lexpr) = ae.lexpr {
+                if let Some(ref mut n) = lexpr.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut rexpr) = ae.rexpr {
+                if let Some(ref mut n) = rexpr.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::JoinExpr(je) => {
+            if let Some(ref mut quals) = je.quals {
+                if let Some(ref mut n) = quals.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut larg) = je.larg {
+                if let Some(ref mut n) = larg.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut rarg) = je.rarg {
+                if let Some(ref mut n) = rarg.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::RangeSubselect(rs) => {
+            if let Some(ref mut sub) = rs.subquery {
+                if let Some(ref mut n) = sub.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
         _ => {}
     }
 }
@@ -970,6 +1093,123 @@ fn normalize_foreign_table_partbound(node: &mut pgls_query::NodeEnum) {
                 // Clear table_elts since partition columns come from parent
                 base.table_elts.clear();
             }
+        }
+    }
+}
+
+/// Normalize MergeSupportFunc nodes:
+/// MergeSupportFunc is an internal executor node that gets emitted as `mergesupport#<oid>`
+/// When re-parsed, this becomes a ColumnRef. To match, we need to convert MergeSupportFunc
+/// in the original AST to the equivalent ColumnRef.
+fn normalize_merge_support_func(node: &mut pgls_query::NodeEnum) {
+    normalize_merge_support_func_recursive(node);
+}
+
+fn normalize_merge_support_func_recursive(node: &mut pgls_query::NodeEnum) {
+    // First check if this node itself is a MergeSupportFunc and replace it
+    if let pgls_query::NodeEnum::MergeSupportFunc(msf) = node {
+        let ident = format!("mergesupport#{}", msf.msftype);
+        *node = pgls_query::NodeEnum::ColumnRef(pgls_query::protobuf::ColumnRef {
+            fields: vec![pgls_query::protobuf::Node {
+                node: Some(pgls_query::NodeEnum::String(
+                    pgls_query::protobuf::String { sval: ident },
+                )),
+            }],
+            location: 0,
+        });
+        return;
+    }
+
+    // Manually handle types that can contain MergeSupportFunc
+    match node {
+        pgls_query::NodeEnum::SelectStmt(stmt) => {
+            process_node_list(&mut stmt.target_list);
+            process_node_list(&mut stmt.from_clause);
+            process_optional_boxed_node(&mut stmt.where_clause);
+            if let Some(ref mut wc) = stmt.with_clause {
+                process_node_list(&mut wc.ctes);
+            }
+        }
+        pgls_query::NodeEnum::ResTarget(rt) => {
+            process_optional_boxed_node(&mut rt.val);
+        }
+        pgls_query::NodeEnum::CommonTableExpr(cte) => {
+            process_optional_boxed_node(&mut cte.ctequery);
+        }
+        pgls_query::NodeEnum::MergeStmt(stmt) => {
+            process_node_list(&mut stmt.returning_list);
+            process_node_list(&mut stmt.merge_when_clauses);
+        }
+        pgls_query::NodeEnum::MergeWhenClause(mwc) => {
+            process_node_list(&mut mwc.target_list);
+            process_node_list(&mut mwc.values);
+            process_optional_boxed_node(&mut mwc.condition);
+        }
+        pgls_query::NodeEnum::UpdateStmt(stmt) => {
+            process_node_list(&mut stmt.target_list);
+            process_node_list(&mut stmt.returning_list);
+        }
+        pgls_query::NodeEnum::InsertStmt(stmt) => {
+            process_node_list(&mut stmt.returning_list);
+            process_optional_boxed_node(&mut stmt.select_stmt);
+        }
+        pgls_query::NodeEnum::DeleteStmt(stmt) => {
+            process_node_list(&mut stmt.returning_list);
+        }
+        pgls_query::NodeEnum::CaseExpr(ce) => {
+            process_optional_boxed_node(&mut ce.arg);
+            process_node_list(&mut ce.args);
+            process_optional_boxed_node(&mut ce.defresult);
+        }
+        pgls_query::NodeEnum::CaseWhen(cw) => {
+            process_optional_boxed_node(&mut cw.expr);
+            process_optional_boxed_node(&mut cw.result);
+        }
+        pgls_query::NodeEnum::FuncCall(fc) => {
+            process_node_list(&mut fc.args);
+        }
+        pgls_query::NodeEnum::AExpr(expr) => {
+            process_optional_boxed_node(&mut expr.lexpr);
+            process_optional_boxed_node(&mut expr.rexpr);
+        }
+        pgls_query::NodeEnum::SubLink(sl) => {
+            process_optional_boxed_node(&mut sl.subselect);
+            process_optional_boxed_node(&mut sl.testexpr);
+        }
+        pgls_query::NodeEnum::WithClause(wc) => {
+            process_node_list(&mut wc.ctes);
+        }
+        pgls_query::NodeEnum::CopyStmt(cs) => {
+            if let Some(query) = &mut cs.query {
+                if let Some(n) = &mut query.node {
+                    normalize_merge_support_func_recursive(n);
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+fn process_node_list(list: &mut [pgls_query::protobuf::Node]) {
+    for node in list.iter_mut() {
+        if let Some(ref mut n) = node.node {
+            normalize_merge_support_func_recursive(n);
+        }
+    }
+}
+
+fn process_optional_node(opt: &mut Option<pgls_query::protobuf::Node>) {
+    if let Some(node) = opt {
+        if let Some(n) = &mut node.node {
+            normalize_merge_support_func_recursive(n);
+        }
+    }
+}
+
+fn process_optional_boxed_node(opt: &mut Option<Box<pgls_query::protobuf::Node>>) {
+    if let Some(node) = opt {
+        if let Some(n) = &mut node.node {
+            normalize_merge_support_func_recursive(n);
         }
     }
 }

@@ -249,7 +249,8 @@ DROP TABLE "attmp_new";
 DROP TABLE "attmp_new2";
 
 CREATE TABLE part_attmp (
-  a INT PRIMARY KEY
+  a INT
+  PRIMARY KEY
 )
 PARTITION BY RANGE(a);
 
@@ -289,7 +290,8 @@ FROM
   pg_type
 WHERE
   oid =
-  CAST('attmp_array[]' AS REGTYPE);
+  CAST('attmp_array[]'
+  AS REGTYPE);
 
 SELECT
   typname
@@ -297,7 +299,8 @@ FROM
   pg_type
 WHERE
   oid =
-  CAST('attmp_array2[]' AS REGTYPE);
+  CAST('attmp_array2[]'
+  AS REGTYPE);
 
 ALTER TABLE attmp_array2 RENAME TO _attmp_array;
 
@@ -307,7 +310,8 @@ FROM
   pg_type
 WHERE
   oid =
-  CAST('attmp_array[]' AS REGTYPE);
+  CAST('attmp_array[]'
+  AS REGTYPE);
 
 SELECT
   typname
@@ -315,7 +319,8 @@ FROM
   pg_type
 WHERE
   oid =
-  CAST('_attmp_array[]' AS REGTYPE);
+  CAST('_attmp_array[]'
+  AS REGTYPE);
 
 DROP TABLE "_attmp_array";
 
@@ -329,7 +334,8 @@ FROM
   pg_type
 WHERE
   oid =
-  CAST('attmp_array[]' AS REGTYPE);
+  CAST('attmp_array[]'
+  AS REGTYPE);
 
 ALTER TABLE attmp_array RENAME TO _attmp_array;
 
@@ -339,7 +345,8 @@ FROM
   pg_type
 WHERE
   oid =
-  CAST('_attmp_array[]' AS REGTYPE);
+  CAST('_attmp_array[]'
+  AS REGTYPE);
 
 DROP TABLE "_attmp_array";
 
@@ -385,7 +392,8 @@ ALTER INDEX alter_idx_rename_test_parted
 RENAME TO alter_idx_rename_test_parted_2;
 
 SELECT
-  CAST(relation AS REGCLASS),
+  CAST(relation
+  AS REGCLASS),
   mode
 FROM
   pg_locks
@@ -394,8 +402,12 @@ WHERE
   pg_backend_pid() AND
   locktype =
   'relation' AND
-  CAST(CAST(relation AS REGCLASS) AS TEXT) LIKE 'alter\_idx%'
-ORDER BY CAST(CAST(relation AS REGCLASS) AS TEXT) COLLATE "C";
+  CAST(CAST(relation
+  AS REGCLASS)
+  AS TEXT) LIKE 'alter\_idx%'
+ORDER BY CAST(CAST(relation
+  AS REGCLASS)
+  AS TEXT) COLLATE "C";
 
 COMMIT;
 
@@ -408,7 +420,8 @@ ALTER INDEX alter_idx_rename_test_parted_idx
 RENAME TO alter_idx_rename_test_parted_idx_2;
 
 SELECT
-  CAST(relation AS REGCLASS),
+  CAST(relation
+  AS REGCLASS),
   mode
 FROM
   pg_locks
@@ -417,8 +430,12 @@ WHERE
   pg_backend_pid() AND
   locktype =
   'relation' AND
-  CAST(CAST(relation AS REGCLASS) AS TEXT) LIKE 'alter\_idx%'
-ORDER BY CAST(CAST(relation AS REGCLASS) AS TEXT) COLLATE "C";
+  CAST(CAST(relation
+  AS REGCLASS)
+  AS TEXT) LIKE 'alter\_idx%'
+ORDER BY CAST(CAST(relation
+  AS REGCLASS)
+  AS TEXT) COLLATE "C";
 
 COMMIT;
 
@@ -431,7 +448,8 @@ ALTER TABLE alter_idx_rename_test_parted_idx_2
 RENAME TO alter_idx_rename_test_parted_idx_3;
 
 SELECT
-  CAST(relation AS REGCLASS),
+  CAST(relation
+  AS REGCLASS),
   mode
 FROM
   pg_locks
@@ -440,8 +458,12 @@ WHERE
   pg_backend_pid() AND
   locktype =
   'relation' AND
-  CAST(CAST(relation AS REGCLASS) AS TEXT) LIKE 'alter\_idx%'
-ORDER BY CAST(CAST(relation AS REGCLASS) AS TEXT) COLLATE "C";
+  CAST(CAST(relation
+  AS REGCLASS)
+  AS TEXT) LIKE 'alter\_idx%'
+ORDER BY CAST(CAST(relation
+  AS REGCLASS)
+  AS TEXT) COLLATE "C";
 
 COMMIT;
 
@@ -511,14 +533,16 @@ ALTER TABLE onek
   DROP CONSTRAINT onek_unique1_constraint_foo;
 
 CREATE TABLE constraint_rename_test (
-  a INT CONSTRAINT "con1" CHECK (a >
+  a INT
+  CONSTRAINT "con1" CHECK (a >
   0),
   b INT,
   c INT
 );
 
 CREATE TABLE constraint_rename_test2 (
-  a INT CONSTRAINT "con1" CHECK (a >
+  a INT
+  CONSTRAINT "con1" CHECK (a >
   0),
   d INT
 )
@@ -613,19 +637,22 @@ INSERT INTO attmp3 VALUES (5, 50);
 
 ALTER TABLE attmp3
   ADD CONSTRAINT "attmpconstr"
-  FOREIGN KEY (c)
+  FOREIGN KEY
+  (c)
   REFERENCES attmp2
   MATCH FULL;
 
 ALTER TABLE attmp3
   ADD CONSTRAINT "attmpconstr"
-  FOREIGN KEY (a)
+  FOREIGN KEY
+  (a)
   REFERENCES attmp2 (b)
   MATCH FULL;
 
 ALTER TABLE attmp3
   ADD CONSTRAINT "attmpconstr"
-  FOREIGN KEY (a)
+  FOREIGN KEY
+  (a)
   REFERENCES attmp2
   MATCH FULL;
 
@@ -633,7 +660,8 @@ DELETE FROM attmp3 WHERE a = 5;
 
 ALTER TABLE attmp3
   ADD CONSTRAINT "attmpconstr"
-  FOREIGN KEY (a)
+  FOREIGN KEY
+  (a)
   REFERENCES attmp2
   MATCH FULL;
 
@@ -643,7 +671,8 @@ INSERT INTO attmp3 VALUES (5, 50);
 
 ALTER TABLE attmp3
   ADD CONSTRAINT "attmpconstr"
-  FOREIGN KEY (a)
+  FOREIGN KEY
+  (a)
   REFERENCES attmp2
   MATCH FULL
   NOT VALID;
@@ -741,7 +770,8 @@ FROM
   pg_constraint
 WHERE
   conrelid =
-  CAST('parent_noinh_convalid' AS REGCLASS) AND
+  CAST('parent_noinh_convalid'
+  AS REGCLASS) AND
   conname =
   'check_a_is_2';
 
@@ -749,7 +779,8 @@ DROP TABLE "parent_noinh_convalid", "child_noinh_convalid";
 
 ALTER TABLE attmp5
   ADD CONSTRAINT "attmpconstr"
-  FOREIGN KEY (a)
+  FOREIGN KEY
+  (a)
   REFERENCES attmp4 (a)
   MATCH FULL;
 
@@ -777,10 +808,14 @@ CREATE TABLE nv_child_2010 () INHERITS (nv_parent);
 CREATE TABLE nv_child_2011 () INHERITS (nv_parent);
 
 ALTER TABLE nv_child_2010
-  ADD CHECK (d BETWEEN CAST('2010-01-01' AS DATE) AND CAST('2010-12-31' AS DATE)) NOT VALID;
+  ADD CHECK (d BETWEEN CAST('2010-01-01'
+  AS DATE) AND CAST('2010-12-31'
+  AS DATE)) NOT VALID;
 
 ALTER TABLE nv_child_2011
-  ADD CHECK (d BETWEEN CAST('2011-01-01' AS DATE) AND CAST('2011-12-31' AS DATE)) NOT VALID;
+  ADD CHECK (d BETWEEN CAST('2011-01-01'
+  AS DATE) AND CAST('2011-12-31'
+  AS DATE)) NOT VALID;
 
 SELECT
   *
@@ -790,7 +825,9 @@ WHERE
   d BETWEEN '2011-08-01' AND '2011-08-31';
 
 CREATE TABLE nv_child_2009 (
-  CHECK (d BETWEEN CAST('2009-01-01' AS DATE) AND CAST('2009-12-31' AS DATE))
+  CHECK (d BETWEEN CAST('2009-01-01'
+  AS DATE) AND CAST('2009-12-31'
+  AS DATE))
 )
 INHERITS (nv_parent);
 
@@ -799,14 +836,18 @@ SELECT
 FROM
   nv_parent
 WHERE
-  d BETWEEN CAST('2011-08-01' AS DATE) AND CAST('2011-08-31' AS DATE);
+  d BETWEEN CAST('2011-08-01'
+  AS DATE) AND CAST('2011-08-31'
+  AS DATE);
 
 SELECT
   *
 FROM
   nv_parent
 WHERE
-  d BETWEEN CAST('2009-08-01' AS DATE) AND CAST('2009-08-31' AS DATE);
+  d BETWEEN CAST('2009-08-01'
+  AS DATE) AND CAST('2009-08-31'
+  AS DATE);
 
 ALTER TABLE nv_child_2011
   VALIDATE CONSTRAINT nv_child_2011_d_check;
@@ -816,10 +857,14 @@ SELECT
 FROM
   nv_parent
 WHERE
-  d BETWEEN CAST('2009-08-01' AS DATE) AND CAST('2009-08-31' AS DATE);
+  d BETWEEN CAST('2009-08-01'
+  AS DATE) AND CAST('2009-08-31'
+  AS DATE);
 
 ALTER TABLE nv_parent
-  ADD CHECK (d BETWEEN CAST('2001-01-01' AS DATE) AND CAST('2099-12-31' AS DATE)) NOT VALID;
+  ADD CHECK (d BETWEEN CAST('2001-01-01'
+  AS DATE) AND CAST('2099-12-31'
+  AS DATE)) NOT VALID;
 
 CREATE TEMPORARY TABLE pktable ( ptest1 INT PRIMARY KEY );
 
@@ -828,11 +873,13 @@ INSERT INTO pktable VALUES (42);
 CREATE TEMPORARY TABLE fktable ( ftest1 INET );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1)
+  ADD FOREIGN KEY
+  (ftest1)
   REFERENCES pktable;
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1)
+  ADD FOREIGN KEY
+  (ftest1)
   REFERENCES pktable (ptest1);
 
 DROP TABLE "fktable";
@@ -840,7 +887,8 @@ DROP TABLE "fktable";
 CREATE TEMPORARY TABLE fktable ( ftest1 BIGINT );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1)
+  ADD FOREIGN KEY
+  (ftest1)
   REFERENCES pktable;
 
 INSERT INTO fktable VALUES (42);
@@ -852,7 +900,8 @@ DROP TABLE "fktable";
 CREATE TEMPORARY TABLE fktable ( ftest1 NUMERIC );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1)
+  ADD FOREIGN KEY
+  (ftest1)
   REFERENCES pktable;
 
 DROP TABLE "fktable";
@@ -860,7 +909,8 @@ DROP TABLE "fktable";
 DROP TABLE "pktable";
 
 CREATE TEMPORARY TABLE pktable (
-  ptest1 NUMERIC PRIMARY KEY
+  ptest1 NUMERIC
+  PRIMARY KEY
 );
 
 INSERT INTO pktable VALUES (42);
@@ -868,7 +918,8 @@ INSERT INTO pktable VALUES (42);
 CREATE TEMPORARY TABLE fktable ( ftest1 INT );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1)
+  ADD FOREIGN KEY
+  (ftest1)
   REFERENCES pktable;
 
 INSERT INTO fktable VALUES (42);
@@ -892,7 +943,8 @@ CREATE TEMPORARY TABLE fktable (
 );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1,
+  ADD FOREIGN KEY
+  (ftest1,
   ftest2)
   REFERENCES pktable;
 
@@ -904,7 +956,8 @@ CREATE TEMPORARY TABLE fktable (
 );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1,
+  ADD FOREIGN KEY
+  (ftest1,
   ftest2)
   REFERENCES pktable (ptest1,
   ptest2);
@@ -914,13 +967,15 @@ DROP TABLE "fktable";
 CREATE TEMPORARY TABLE fktable ( ftest1 INT, ftest2 INET );
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest1,
+  ADD FOREIGN KEY
+  (ftest1,
   ftest2)
   REFERENCES pktable (ptest2,
   ptest1);
 
 ALTER TABLE fktable
-  ADD FOREIGN KEY (ftest2,
+  ADD FOREIGN KEY
+  (ftest2,
   ftest1)
   REFERENCES pktable (ptest1,
   ptest2);
@@ -935,27 +990,31 @@ CREATE TEMPORARY TABLE fktable ( ftest1 INT );
 
 ALTER TABLE fktable
   ADD CONSTRAINT "fknd"
-  FOREIGN KEY (ftest1)
+  FOREIGN KEY
+  (ftest1)
   REFERENCES pktable
   ON DELETE CASCADE;
 
 ALTER TABLE fktable
   ADD CONSTRAINT "fkdd"
-  FOREIGN KEY (ftest1)
+  FOREIGN KEY
+  (ftest1)
   REFERENCES pktable
   ON DELETE CASCADE
   DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE fktable
   ADD CONSTRAINT "fkdi"
-  FOREIGN KEY (ftest1)
+  FOREIGN KEY
+  (ftest1)
   REFERENCES pktable
   ON DELETE CASCADE
   DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE fktable
   ADD CONSTRAINT "fknd2"
-  FOREIGN KEY (ftest1)
+  FOREIGN KEY
+  (ftest1)
   REFERENCES pktable
   ON DELETE CASCADE
   DEFERRABLE INITIALLY DEFERRED;
@@ -965,7 +1024,8 @@ ALTER TABLE fktable
 
 ALTER TABLE fktable
   ADD CONSTRAINT "fkdd2"
-  FOREIGN KEY (ftest1)
+  FOREIGN KEY
+  (ftest1)
   REFERENCES pktable
   ON DELETE CASCADE;
 
@@ -974,7 +1034,8 @@ ALTER TABLE fktable
 
 ALTER TABLE fktable
   ADD CONSTRAINT "fkdi2"
-  FOREIGN KEY (ftest1)
+  FOREIGN KEY
+  (ftest1)
   REFERENCES pktable
   ON DELETE CASCADE;
 
@@ -983,36 +1044,42 @@ ALTER TABLE fktable
 
 SELECT
   conname,
-  CAST(tgfoid AS REGPROC),
+  CAST(tgfoid
+  AS REGPROC),
   tgtype,
   tgdeferrable,
   tginitdeferred
 FROM
   pg_trigger
-  INNER JOIN pg_constraint AS con
+  INNER JOIN pg_constraint
+  AS con
   ON con.oid =
     tgconstraint
 WHERE
   tgrelid =
-  CAST('pktable' AS REGCLASS)
+  CAST('pktable'
+  AS REGCLASS)
 ORDER BY 1,
   2,
   3;
 
 SELECT
   conname,
-  CAST(tgfoid AS REGPROC),
+  CAST(tgfoid
+  AS REGPROC),
   tgtype,
   tgdeferrable,
   tginitdeferred
 FROM
   pg_trigger
-  INNER JOIN pg_constraint AS con
+  INNER JOIN pg_constraint
+  AS con
   ON con.oid =
     tgconstraint
 WHERE
   tgrelid =
-  CAST('fktable' AS REGCLASS)
+  CAST('fktable'
+  AS REGCLASS)
 ORDER BY 1,
   2,
   3;
@@ -1062,7 +1129,8 @@ INSERT INTO atacc1 (test, test2, test3) VALUES (4, 4, 5);
 DROP TABLE "atacc1";
 
 CREATE TABLE atacc1 (
-  test INT CHECK (test >
+  test INT
+  CHECK (test >
   3),
   test2 INT
 );
@@ -1289,7 +1357,9 @@ INSERT INTO atacc1 (test) VALUES (0);
 ALTER TABLE atacc1 ADD COLUMN test2 INT PRIMARY KEY;
 
 ALTER TABLE atacc1
-  ADD COLUMN test2 INT DEFAULT 0 PRIMARY KEY;
+  ADD COLUMN test2 INT
+    DEFAULT 0
+    PRIMARY KEY;
 
 DROP TABLE "atacc1";
 
@@ -1298,7 +1368,9 @@ CREATE TABLE atacc1 ( a INT );
 INSERT INTO atacc1 VALUES (1);
 
 ALTER TABLE atacc1
-  ADD COLUMN b DOUBLE PRECISION NOT NULL DEFAULT random(),
+  ADD COLUMN b DOUBLE PRECISION
+    NOT NULL
+    DEFAULT random(),
   ADD PRIMARY KEY (a);
 
 DROP TABLE "atacc1";
@@ -1307,7 +1379,8 @@ CREATE TABLE atacc1 ( a INT PRIMARY KEY );
 
 ALTER TABLE atacc1
   ADD CONSTRAINT "atacc1_fkey"
-  FOREIGN KEY (a)
+  FOREIGN KEY
+  (a)
   REFERENCES atacc1 (a)
   NOT VALID;
 
@@ -1533,8 +1606,10 @@ DROP TABLE "child";
 DROP TABLE "parent";
 
 CREATE TABLE def_test (
-  c1 INT DEFAULT 5,
-  c2 TEXT DEFAULT 'initial_default'
+  c1 INT
+  DEFAULT 5,
+  c2 TEXT
+  DEFAULT 'initial_default'
 );
 
 INSERT INTO def_test DEFAULT VALUES;
@@ -1591,9 +1666,11 @@ ALTER TABLE pg_class DROP COLUMN relname;
 ALTER TABLE nosuchtable DROP COLUMN bar;
 
 CREATE TABLE atacc1 (
-  a INT NOT NULL,
+  a INT
+  NOT NULL,
   b INT,
-  c INT NOT NULL,
+  c INT
+  NOT NULL,
   d INT
 );
 

@@ -4,10 +4,14 @@ input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps_60.sql
 snapshot_kind: text
 ---
 CREATE TEMPORARY TABLE articles (
-  id INT CONSTRAINT "articles_pkey" PRIMARY KEY,
+  id INT
+  CONSTRAINT "articles_pkey" PRIMARY KEY,
   keywords TEXT,
-  title TEXT UNIQUE NOT NULL,
-  body TEXT UNIQUE,
+  title TEXT
+  UNIQUE
+  NOT NULL,
+  body TEXT
+  UNIQUE,
   created DATE
 );
 
@@ -66,8 +70,10 @@ SELECT
   a.body,
   a.created
 FROM
-  articles AS a,
-  articles_in_category AS aic
+  articles
+  AS a,
+  articles_in_category
+  AS aic
 WHERE
   a.id =
   aic.article_id AND
@@ -85,8 +91,10 @@ SELECT
   a.body,
   a.created
 FROM
-  articles AS a,
-  articles_in_category AS aic
+  articles
+  AS a,
+  articles_in_category
+  AS aic
 WHERE
   a.id =
   aic.article_id AND
@@ -105,8 +113,10 @@ SELECT
   a.body,
   a.created
 FROM
-  articles AS a
-  INNER JOIN articles_in_category AS aic
+  articles
+  AS a
+  INNER JOIN articles_in_category
+  AS aic
   ON a.id =
     aic.article_id
 WHERE
@@ -124,8 +134,10 @@ SELECT
   a.body,
   a.created
 FROM
-  articles AS a
-  INNER JOIN articles_in_category AS aic
+  articles
+  AS a
+  INNER JOIN articles_in_category
+  AS aic
   ON a.id =
     aic.article_id
 WHERE
@@ -140,8 +152,10 @@ GROUP BY aic.article_id,
 SELECT
   aic.changed
 FROM
-  articles AS a
-  INNER JOIN articles_in_category AS aic
+  articles
+  AS a
+  INNER JOIN articles_in_category
+  AS aic
   ON a.id =
     aic.article_id
 WHERE
@@ -156,8 +170,10 @@ GROUP BY aic.category_id,
 SELECT
   aic.changed
 FROM
-  articles AS a
-  INNER JOIN articles_in_category AS aic
+  articles
+  AS a
+  INNER JOIN articles_in_category
+  AS aic
   ON a.id =
     aic.article_id
 WHERE
@@ -181,8 +197,10 @@ SELECT
   p.name,
   SUM(s.units) * p.price AS sales
 FROM
-  products AS p
-  LEFT OUTER JOIN sales AS s
+  products
+  AS p
+  LEFT OUTER JOIN sales
+  AS s
   USING ("product_id")
 GROUP BY product_id,
   p.name,
@@ -193,8 +211,10 @@ SELECT
   p.name,
   SUM(s.units) * p.price AS sales
 FROM
-  products AS p
-  LEFT OUTER JOIN sales AS s
+  products
+  AS p
+  LEFT OUTER JOIN sales
+  AS s
   USING ("product_id")
 GROUP BY product_id;
 
@@ -205,27 +225,47 @@ SELECT
   p.name,
   SUM(s.units) * p.price AS sales
 FROM
-  products AS p
-  LEFT OUTER JOIN sales AS s
+  products
+  AS p
+  LEFT OUTER JOIN sales
+  AS s
   USING ("product_id")
 GROUP BY product_id;
 
 CREATE TEMPORARY TABLE node (
   nid serial,
-  vid INT NOT NULL DEFAULT '0',
-  type VARCHAR(32) NOT NULL DEFAULT '',
-  title VARCHAR(128) NOT NULL DEFAULT '',
-  uid INT NOT NULL DEFAULT '0',
-  status INT NOT NULL DEFAULT '1',
-  created INT NOT NULL DEFAULT '0',
+  vid INT
+  NOT NULL
+  DEFAULT '0',
+  type VARCHAR(32)
+  NOT NULL
+  DEFAULT '',
+  title VARCHAR(128)
+  NOT NULL
+  DEFAULT '',
+  uid INT
+  NOT NULL
+  DEFAULT '0',
+  status INT
+  NOT NULL
+  DEFAULT '1',
+  created INT
+  NOT NULL
+  DEFAULT '0',
   PRIMARY KEY (nid,
   vid)
 );
 
 CREATE TEMPORARY TABLE users (
-  uid INT NOT NULL DEFAULT '0',
-  name VARCHAR(60) NOT NULL DEFAULT '',
-  pass VARCHAR(32) NOT NULL DEFAULT '',
+  uid INT
+  NOT NULL
+  DEFAULT '0',
+  name VARCHAR(60)
+  NOT NULL
+  DEFAULT '',
+  pass VARCHAR(32)
+  NOT NULL
+  DEFAULT '',
   PRIMARY KEY (uid),
   UNIQUE (name)
 );
@@ -234,8 +274,10 @@ SELECT
   u.uid,
   u.name
 FROM
-  node AS n
-  INNER JOIN users AS u
+  node
+  AS n
+  INNER JOIN users
+  AS u
   ON u.uid =
     n.uid
 WHERE
@@ -250,8 +292,10 @@ SELECT
   u.uid,
   u.name
 FROM
-  node AS n
-  INNER JOIN users AS u
+  node
+  AS n
+  INNER JOIN users
+  AS u
   ON u.uid =
     n.uid
 WHERE
@@ -295,8 +339,10 @@ SELECT
   aic.category_id,
   aic.changed
 FROM
-  articles AS a
-  INNER JOIN articles_in_category AS aic
+  articles
+  AS a
+  INNER JOIN articles_in_category
+  AS aic
   ON a.id =
     aic.article_id
 WHERE

@@ -31,8 +31,10 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
     match n.op() {
         SetOperation::SetopUnion | SetOperation::SetopIntersect | SetOperation::SetopExcept => {
             // Emit left operand - wrap in parentheses if it's a set operation that needs precedence protection
+            // or if it has ORDER BY/LIMIT/OFFSET that would be ambiguous
             if let Some(ref larg) = n.larg {
-                let needs_parens_left = needs_set_operation_parens(n.op(), larg.op(), true);
+                let needs_parens_left =
+                    needs_set_operation_parens(n.op(), larg.op(), true) || select_needs_parens(larg);
                 if needs_parens_left {
                     e.token(TokenKind::L_PAREN);
                 }
@@ -58,9 +60,11 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             }
 
             // Emit right operand - wrap in parentheses if it's a set operation that needs precedence protection
+            // or if it has ORDER BY/LIMIT/OFFSET that would be ambiguous
             e.line(LineType::SoftOrSpace);
             if let Some(ref rarg) = n.rarg {
-                let needs_parens_right = needs_set_operation_parens(n.op(), rarg.op(), false);
+                let needs_parens_right =
+                    needs_set_operation_parens(n.op(), rarg.op(), false) || select_needs_parens(rarg);
                 if needs_parens_right {
                     e.token(TokenKind::L_PAREN);
                 }
@@ -205,6 +209,11 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             e.token(TokenKind::GROUP_KW);
             e.space();
             e.token(TokenKind::BY_KW);
+            // Emit DISTINCT if group_distinct is set
+            if n.group_distinct {
+                e.space();
+                e.token(TokenKind::DISTINCT_KW);
+            }
             e.space();
             e.indent_start();
             emit_comma_separated_list(e, &n.group_clause, super::emit_node);
@@ -343,6 +352,18 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
 }
 
 /// Determines if we need parentheses around a set operation operand.
+/// Check if a SelectStmt needs parentheses when used as a child of a set operation.
+/// This is needed when the SELECT has ORDER BY, LIMIT, or OFFSET clauses that
+/// would be ambiguous without parentheses.
+fn select_needs_parens(stmt: &SelectStmt) -> bool {
+    // Only non-set-operation SELECTs with ORDER BY/LIMIT/OFFSET need parens
+    // If it's itself a set operation, the parens are handled by needs_set_operation_parens
+    matches!(stmt.op(), SetOperation::SetopNone | SetOperation::Undefined)
+        && (!stmt.sort_clause.is_empty()
+            || stmt.limit_count.is_some()
+            || stmt.limit_offset.is_some())
+}
+
 /// SQL set operations have this precedence: INTERSECT > UNION = EXCEPT
 /// UNION and EXCEPT are left-associative.
 ///

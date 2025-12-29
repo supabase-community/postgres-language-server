@@ -241,7 +241,8 @@ FROM
   pg_attribute
 WHERE
   attrelid =
-  CAST('mytab' AS REGCLASS) AND
+  CAST('mytab'
+  AS REGCLASS) AND
   attnum >
   0;
 
@@ -283,8 +284,12 @@ COMMUTATOR = >%,
 NEGATOR = >=%);
 
 SELECT
-  CAST('(1,2)' AS point) <% CAST('(0,0,3)' AS widget) AS t,
-  CAST('(1,2)' AS point) <% CAST('(0,0,1)' AS widget) AS f;
+  CAST('(1,2)'
+  AS point) <% CAST('(0,0,3)'
+  AS widget) AS t,
+  CAST('(1,2)'
+  AS point) <% CAST('(0,0,1)'
+  AS widget) AS f;
 
 CREATE TABLE city (
   name NAME,

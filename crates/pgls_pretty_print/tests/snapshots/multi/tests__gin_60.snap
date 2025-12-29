@@ -136,7 +136,8 @@ FROM
   t_gin_test_tbl
 WHERE
   ARRAY[0] <@ i AND
-  CAST('{}' AS INT[]) <@ j;
+  CAST('{}'
+  AS INT[]) <@ j;
 
 SELECT * FROM t_gin_test_tbl WHERE i @> '{}';
 
@@ -200,9 +201,12 @@ FROM
   (' j @> ''{10}'' and i @> ''{}'' '),
   (' j @> ''{10}'' and j @> ''{}'' and i @> ''{}'' '),
   (' i @> ''{1}'' and j @> ''{10}'' ')) AS q (query),
-  LATERAL explain_query_json('select * from t_gin_test_tbl where ' || query) AS js,
-  LATERAL execute_text_query_index('select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' || query) AS res_index,
-  LATERAL execute_text_query_heap('select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' || query) AS res_heap;
+  LATERAL explain_query_json('select * from t_gin_test_tbl where ' ||
+  query) AS js,
+  LATERAL execute_text_query_index('select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
+  query) AS res_index,
+  LATERAL execute_text_query_heap('select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
+  query) AS res_heap;
 
 RESET enable_seqscan;
 
@@ -242,14 +246,16 @@ SELECT
 FROM
   t_gin_test_tbl
 WHERE
-  j @> CAST('{}' AS INT[]);
+  j @> CAST('{}'
+  AS INT[]);
 
 SELECT
   COUNT(*)
 FROM
   t_gin_test_tbl
 WHERE
-  j @> CAST('{}' AS INT[]);
+  j @> CAST('{}'
+  AS INT[]);
 
 DELETE FROM t_gin_test_tbl WHERE j @> ARRAY[2];
 
@@ -264,7 +270,8 @@ SELECT
 FROM
   t_gin_test_tbl
 WHERE
-  j @> CAST('{}' AS INT[]);
+  j @> CAST('{}'
+  AS INT[]);
 
 RESET enable_seqscan;
 

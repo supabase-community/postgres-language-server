@@ -32,8 +32,10 @@ CALL ptest1('a');
 
 CALL ptest1('xy' || 'zzy');
 
-CALL ptest1(SUBSTRING(CAST(CAST(random() AS NUMERIC(20,
-15)) AS TEXT) FROM 1 FOR 1));
+CALL ptest1(SUBSTRING(CAST(CAST(random()
+AS NUMERIC(20,
+15))
+AS TEXT) FROM 1 FOR 1));
 
 SELECT * FROM cp_test ORDER BY b COLLATE "C";
 

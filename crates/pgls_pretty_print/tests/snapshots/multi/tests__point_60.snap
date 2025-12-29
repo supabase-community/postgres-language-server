@@ -30,43 +30,55 @@ SELECT p.* FROM point_tbl AS p WHERE p.f1 ~= '(5.1, 34.5)';
 SELECT
   p.*
 FROM
-  point_tbl AS p
+  point_tbl
+  AS p
 WHERE
-  p.f1 <@ CAST('(0,0,100,100)' AS box);
+  p.f1 <@ CAST('(0,0,100,100)'
+  AS box);
 
 SELECT
   p.*
 FROM
-  point_tbl AS p
+  point_tbl
+  AS p
 WHERE
-  CAST('(0,0,100,100)' AS box) @> p.f1;
+  CAST('(0,0,100,100)'
+  AS box) @> p.f1;
 
 SELECT
   p.*
 FROM
-  point_tbl AS p
+  point_tbl
+  AS p
 WHERE
-  NOT p.f1 <@ CAST('(0,0,100,100)' AS box);
+  NOT p.f1 <@ CAST('(0,0,100,100)'
+  AS box);
 
 SELECT
   p.*
 FROM
-  point_tbl AS p
+  point_tbl
+  AS p
 WHERE
-  p.f1 <@ CAST('[(0,0),(-10,0),(-10,10)]' AS path);
+  p.f1 <@ CAST('[(0,0),(-10,0),(-10,10)]'
+  AS path);
 
 SELECT
   p.*
 FROM
-  point_tbl AS p
+  point_tbl
+  AS p
 WHERE
-  NOT CAST('(0,0,100,100)' AS box) @> p.f1;
+  NOT CAST('(0,0,100,100)'
+  AS box) @> p.f1;
 
 SELECT
   p.f1,
-  p.f1 <-> CAST('(0,0)' AS point) AS dist
+  p.f1 <-> CAST('(0,0)'
+  AS point) AS dist
 FROM
-  point_tbl AS p
+  point_tbl
+  AS p
 ORDER BY dist;
 
 SELECT
@@ -74,8 +86,10 @@ SELECT
   p2.f1 AS point2,
   p1.f1 <-> p2.f1 AS dist
 FROM
-  point_tbl AS p1,
-  point_tbl AS p2
+  point_tbl
+  AS p1,
+  point_tbl
+  AS p2
 ORDER BY dist,
   p1.f1[0],
   p2.f1[0];
@@ -84,8 +98,10 @@ SELECT
   p1.f1 AS point1,
   p2.f1 AS point2
 FROM
-  point_tbl AS p1,
-  point_tbl AS p2
+  point_tbl
+  AS p1,
+  point_tbl
+  AS p2
 WHERE
   p1.f1 <-> p2.f1 >
   3;
@@ -95,8 +111,10 @@ SELECT
   p2.f1 AS point2,
   p1.f1 <-> p2.f1 AS distance
 FROM
-  point_tbl AS p1,
-  point_tbl AS p2
+  point_tbl
+  AS p1,
+  point_tbl
+  AS p2
 WHERE
   p1.f1 <-> p2.f1 >
   3 AND
@@ -110,8 +128,10 @@ SELECT
   p2.f1 AS point2,
   p1.f1 <-> p2.f1 AS distance
 FROM
-  point_tbl AS p1,
-  point_tbl AS p2
+  point_tbl
+  AS p1,
+  point_tbl
+  AS p2
 WHERE
   p1.f1 <-> p2.f1 >
   3 AND
@@ -146,21 +166,24 @@ SELECT
 FROM
   point_gist_tbl
 WHERE
-  f1 ~= CAST('(0.0000009,0.0000009)' AS point);
+  f1 ~= CAST('(0.0000009,0.0000009)'
+  AS point);
 
 SELECT
   COUNT(*)
 FROM
   point_gist_tbl
 WHERE
-  f1 <@ CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)' AS box);
+  f1 <@ CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   point_gist_tbl
 WHERE
-  f1 ~= CAST('(0.0000018,0.0000018)' AS point);
+  f1 ~= CAST('(0.0000018,0.0000018)'
+  AS point);
 
 SET enable_seqscan = false;
 
@@ -173,21 +196,24 @@ SELECT
 FROM
   point_gist_tbl
 WHERE
-  f1 ~= CAST('(0.0000009,0.0000009)' AS point);
+  f1 ~= CAST('(0.0000009,0.0000009)'
+  AS point);
 
 SELECT
   COUNT(*)
 FROM
   point_gist_tbl
 WHERE
-  f1 <@ CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)' AS box);
+  f1 <@ CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   point_gist_tbl
 WHERE
-  f1 ~= CAST('(0.0000018,0.0000018)' AS point);
+  f1 ~= CAST('(0.0000018,0.0000018)'
+  AS point);
 
 RESET enable_seqscan;
 

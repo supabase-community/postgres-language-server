@@ -30,14 +30,16 @@ a,
 b)
 VALUES ('b',
 3,
-CAST('mumble' AS TEXT));
+CAST('mumble'
+AS TEXT));
 
 INSERT INTO b_star (class, a) VALUES ('b', 4);
 
 INSERT INTO b_star (class,
 b)
 VALUES ('b',
-CAST('bumble' AS TEXT));
+CAST('bumble'
+AS TEXT));
 
 INSERT INTO b_star (class) VALUES ('b');
 
@@ -46,14 +48,16 @@ a,
 c)
 VALUES ('c',
 5,
-CAST('hi mom' AS NAME));
+CAST('hi mom'
+AS NAME));
 
 INSERT INTO c_star (class, a) VALUES ('c', 6);
 
 INSERT INTO c_star (class,
 c)
 VALUES ('c',
-CAST('hi paul' AS NAME));
+CAST('hi paul'
+AS NAME));
 
 INSERT INTO c_star (class) VALUES ('c');
 
@@ -64,9 +68,12 @@ c,
 d)
 VALUES ('d',
 7,
-CAST('grumble' AS TEXT),
-CAST('hi sunita' AS NAME),
-CAST('0.0' AS DOUBLE PRECISION));
+CAST('grumble'
+AS TEXT),
+CAST('hi sunita'
+AS NAME),
+CAST('0.0'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class,
 a,
@@ -74,8 +81,10 @@ b,
 c)
 VALUES ('d',
 8,
-CAST('stumble' AS TEXT),
-CAST('hi koko' AS NAME));
+CAST('stumble'
+AS TEXT),
+CAST('hi koko'
+AS NAME));
 
 INSERT INTO d_star (class,
 a,
@@ -83,8 +92,10 @@ b,
 d)
 VALUES ('d',
 9,
-CAST('rumble' AS TEXT),
-CAST('1.1' AS DOUBLE PRECISION));
+CAST('rumble'
+AS TEXT),
+CAST('1.1'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class,
 a,
@@ -92,76 +103,93 @@ c,
 d)
 VALUES ('d',
 10,
-CAST('hi kristin' AS NAME),
-CAST('10.01' AS DOUBLE PRECISION));
+CAST('hi kristin'
+AS NAME),
+CAST('10.01'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class,
 b,
 c,
 d)
 VALUES ('d',
-CAST('crumble' AS TEXT),
-CAST('hi boris' AS NAME),
-CAST('100.001' AS DOUBLE PRECISION));
+CAST('crumble'
+AS TEXT),
+CAST('hi boris'
+AS NAME),
+CAST('100.001'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class,
 a,
 b)
 VALUES ('d',
 11,
-CAST('fumble' AS TEXT));
+CAST('fumble'
+AS TEXT));
 
 INSERT INTO d_star (class,
 a,
 c)
 VALUES ('d',
 12,
-CAST('hi avi' AS NAME));
+CAST('hi avi'
+AS NAME));
 
 INSERT INTO d_star (class,
 a,
 d)
 VALUES ('d',
 13,
-CAST('1000.0001' AS DOUBLE PRECISION));
+CAST('1000.0001'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class,
 b,
 c)
 VALUES ('d',
-CAST('tumble' AS TEXT),
-CAST('hi andrew' AS NAME));
+CAST('tumble'
+AS TEXT),
+CAST('hi andrew'
+AS NAME));
 
 INSERT INTO d_star (class,
 b,
 d)
 VALUES ('d',
-CAST('humble' AS TEXT),
-CAST('10000.00001' AS DOUBLE PRECISION));
+CAST('humble'
+AS TEXT),
+CAST('10000.00001'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class,
 c,
 d)
 VALUES ('d',
-CAST('hi ginger' AS NAME),
-CAST('100000.000001' AS DOUBLE PRECISION));
+CAST('hi ginger'
+AS NAME),
+CAST('100000.000001'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class, a) VALUES ('d', 14);
 
 INSERT INTO d_star (class,
 b)
 VALUES ('d',
-CAST('jumble' AS TEXT));
+CAST('jumble'
+AS TEXT));
 
 INSERT INTO d_star (class,
 c)
 VALUES ('d',
-CAST('hi jolly' AS NAME));
+CAST('hi jolly'
+AS NAME));
 
 INSERT INTO d_star (class,
 d)
 VALUES ('d',
-CAST('1000000.0000001' AS DOUBLE PRECISION));
+CAST('1000000.0000001'
+AS DOUBLE PRECISION));
 
 INSERT INTO d_star (class) VALUES ('d');
 
@@ -171,41 +199,49 @@ c,
 e)
 VALUES ('e',
 15,
-CAST('hi carol' AS NAME),
-CAST('-1' AS SMALLINT));
+CAST('hi carol'
+AS NAME),
+CAST('-1'
+AS SMALLINT));
 
 INSERT INTO e_star (class,
 a,
 c)
 VALUES ('e',
 16,
-CAST('hi bob' AS NAME));
+CAST('hi bob'
+AS NAME));
 
 INSERT INTO e_star (class,
 a,
 e)
 VALUES ('e',
 17,
-CAST('-2' AS SMALLINT));
+CAST('-2'
+AS SMALLINT));
 
 INSERT INTO e_star (class,
 c,
 e)
 VALUES ('e',
-CAST('hi michelle' AS NAME),
-CAST('-3' AS SMALLINT));
+CAST('hi michelle'
+AS NAME),
+CAST('-3'
+AS SMALLINT));
 
 INSERT INTO e_star (class, a) VALUES ('e', 18);
 
 INSERT INTO e_star (class,
 c)
 VALUES ('e',
-CAST('hi elisa' AS NAME));
+CAST('hi elisa'
+AS NAME));
 
 INSERT INTO e_star (class,
 e)
 VALUES ('e',
-CAST('-4' AS SMALLINT));
+CAST('-4'
+AS SMALLINT));
 
 INSERT INTO f_star (class,
 a,
@@ -214,9 +250,12 @@ e,
 f)
 VALUES ('f',
 19,
-CAST('hi claire' AS NAME),
-CAST('-5' AS SMALLINT),
-CAST('(1,3),(2,4)' AS polygon));
+CAST('hi claire'
+AS NAME),
+CAST('-5'
+AS SMALLINT),
+CAST('(1,3),(2,4)'
+AS polygon));
 
 INSERT INTO f_star (class,
 a,
@@ -224,8 +263,10 @@ c,
 e)
 VALUES ('f',
 20,
-CAST('hi mike' AS NAME),
-CAST('-6' AS SMALLINT));
+CAST('hi mike'
+AS NAME),
+CAST('-6'
+AS SMALLINT));
 
 INSERT INTO f_star (class,
 a,
@@ -233,8 +274,10 @@ c,
 f)
 VALUES ('f',
 21,
-CAST('hi marcel' AS NAME),
-CAST('(11,44),(22,55),(33,66)' AS polygon));
+CAST('hi marcel'
+AS NAME),
+CAST('(11,44),(22,55),(33,66)'
+AS polygon));
 
 INSERT INTO f_star (class,
 a,
@@ -242,76 +285,93 @@ e,
 f)
 VALUES ('f',
 22,
-CAST('-7' AS SMALLINT),
-CAST('(111,555),(222,666),(333,777),(444,888)' AS polygon));
+CAST('-7'
+AS SMALLINT),
+CAST('(111,555),(222,666),(333,777),(444,888)'
+AS polygon));
 
 INSERT INTO f_star (class,
 c,
 e,
 f)
 VALUES ('f',
-CAST('hi keith' AS NAME),
-CAST('-8' AS SMALLINT),
-CAST('(1111,3333),(2222,4444)' AS polygon));
+CAST('hi keith'
+AS NAME),
+CAST('-8'
+AS SMALLINT),
+CAST('(1111,3333),(2222,4444)'
+AS polygon));
 
 INSERT INTO f_star (class,
 a,
 c)
 VALUES ('f',
 24,
-CAST('hi marc' AS NAME));
+CAST('hi marc'
+AS NAME));
 
 INSERT INTO f_star (class,
 a,
 e)
 VALUES ('f',
 25,
-CAST('-9' AS SMALLINT));
+CAST('-9'
+AS SMALLINT));
 
 INSERT INTO f_star (class,
 a,
 f)
 VALUES ('f',
 26,
-CAST('(11111,33333),(22222,44444)' AS polygon));
+CAST('(11111,33333),(22222,44444)'
+AS polygon));
 
 INSERT INTO f_star (class,
 c,
 e)
 VALUES ('f',
-CAST('hi allison' AS NAME),
-CAST('-10' AS SMALLINT));
+CAST('hi allison'
+AS NAME),
+CAST('-10'
+AS SMALLINT));
 
 INSERT INTO f_star (class,
 c,
 f)
 VALUES ('f',
-CAST('hi jeff' AS NAME),
-CAST('(111111,333333),(222222,444444)' AS polygon));
+CAST('hi jeff'
+AS NAME),
+CAST('(111111,333333),(222222,444444)'
+AS polygon));
 
 INSERT INTO f_star (class,
 e,
 f)
 VALUES ('f',
-CAST('-11' AS SMALLINT),
-CAST('(1111111,3333333),(2222222,4444444)' AS polygon));
+CAST('-11'
+AS SMALLINT),
+CAST('(1111111,3333333),(2222222,4444444)'
+AS polygon));
 
 INSERT INTO f_star (class, a) VALUES ('f', 27);
 
 INSERT INTO f_star (class,
 c)
 VALUES ('f',
-CAST('hi carl' AS NAME));
+CAST('hi carl'
+AS NAME));
 
 INSERT INTO f_star (class,
 e)
 VALUES ('f',
-CAST('-12' AS SMALLINT));
+CAST('-12'
+AS SMALLINT));
 
 INSERT INTO f_star (class,
 f)
 VALUES ('f',
-CAST('(11111111,33333333),(22222222,44444444)' AS polygon));
+CAST('(11111111,33333333),(22222222,44444444)'
+AS polygon));
 
 INSERT INTO f_star (class) VALUES ('f');
 
@@ -332,10 +392,12 @@ SELECT * FROM a_star;
 SELECT
   *
 FROM
-  b_star AS x
+  b_star
+  AS x
 WHERE
   x.b =
-  CAST('bumble' AS TEXT) OR
+  CAST('bumble'
+  AS TEXT) OR
   x.a <
   3;
 
@@ -343,9 +405,11 @@ SELECT
   class,
   a
 FROM
-  c_star AS x
+  c_star
+  AS x
 WHERE
-  x.c ~ CAST('hi' AS TEXT);
+  x.c ~ CAST('hi'
+  AS TEXT);
 
 SELECT class, b, c FROM d_star AS x WHERE x.a < 100;
 
@@ -402,7 +466,8 @@ SELECT
 FROM
   pg_class
 WHERE
-  CAST(oid AS REGCLASS) IN ('a_star',
+  CAST(oid
+  AS REGCLASS) IN ('a_star',
   'c_star')
 ORDER BY 1;
 

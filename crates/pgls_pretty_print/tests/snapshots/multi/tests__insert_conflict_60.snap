@@ -90,7 +90,8 @@ WHERE
   EXISTS (SELECT
     1
   FROM
-    insertconflicttest AS ii
+    insertconflicttest
+    AS ii
   WHERE
     ii.key =
     excluded.key);
@@ -294,21 +295,24 @@ ON CONFLICT ((lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
-INSERT INTO insertconflicttest AS ict
+INSERT INTO insertconflicttest
+AS ict
 VALUES (6,
 'Passionfruit')
 ON CONFLICT (key) DO
 UPDATE
 SET fruit = excluded.fruit;
 
-INSERT INTO insertconflicttest AS ict
+INSERT INTO insertconflicttest
+AS ict
 VALUES (6,
 'Passionfruit')
 ON CONFLICT (key) DO
 UPDATE
 SET fruit = ict.fruit;
 
-INSERT INTO insertconflicttest AS ict
+INSERT INTO insertconflicttest
+AS ict
 VALUES (6,
 'Passionfruit')
 ON CONFLICT (key) DO
@@ -609,7 +613,8 @@ ON CONFLICT (key) WHERE
 UPDATE
 SET fruit = excluded.fruit;
 
-INSERT INTO insertconflicttest AS t
+INSERT INTO insertconflicttest
+AS t
 VALUES (23,
 'Blackberry')
 ON CONFLICT (key) WHERE
@@ -617,7 +622,8 @@ ON CONFLICT (key) WHERE
   t.fruit =
   'inconsequential' DO NOTHING;
 
-INSERT INTO insertconflictview AS t
+INSERT INTO insertconflictview
+AS t
 VALUES (23,
 'Blackberry')
 ON CONFLICT (key) WHERE
@@ -656,7 +662,8 @@ INDEX "plain" ON insertconflicttest USING btree
   key
 );
 
-INSERT INTO insertconflicttest AS i
+INSERT INTO insertconflicttest
+AS i
 VALUES (23,
 'Jackfruit')
 ON CONFLICT (key) DO
@@ -667,7 +674,8 @@ WHERE
   excluded.*
 RETURNING *;
 
-INSERT INTO insertconflicttest AS i
+INSERT INTO insertconflicttest
+AS i
 VALUES (23,
 'Jackfruit')
 ON CONFLICT (key) DO
@@ -678,7 +686,8 @@ WHERE
   excluded.*
 RETURNING *;
 
-INSERT INTO insertconflicttest AS i
+INSERT INTO insertconflicttest
+AS i
 VALUES (23,
 'Jackfruit')
 ON CONFLICT (key) DO
@@ -689,15 +698,18 @@ WHERE
   excluded.*
 RETURNING *;
 
-INSERT INTO insertconflicttest AS i
+INSERT INTO insertconflicttest
+AS i
 VALUES (23,
 'Avocado')
 ON CONFLICT (key) DO
 UPDATE
-SET fruit = CAST(excluded.* AS TEXT)
+SET fruit = CAST(excluded.*
+AS TEXT)
 RETURNING *;
 
-INSERT INTO insertconflicttest AS i
+INSERT INTO insertconflicttest
+AS i
 VALUES (23,
 'Avocado')
 ON CONFLICT (key) DO
@@ -706,12 +718,14 @@ SET fruit = excluded.fruit
 WHERE
   excluded.* IS NULL;
 
-INSERT INTO insertconflicttest AS i
+INSERT INTO insertconflicttest
+AS i
 VALUES (23,
 'Avocado')
 ON CONFLICT (key) DO
 UPDATE
-SET fruit = CAST(excluded.* AS TEXT);
+SET fruit = CAST(excluded.*
+AS TEXT);
 
 DROP INDEX "plain";
 
@@ -727,7 +741,8 @@ INSERT INTO syscolconflicttest
 VALUES (1)
 ON CONFLICT (key) DO
 UPDATE
-SET data = CAST(excluded.ctid AS TEXT);
+SET data = CAST(excluded.ctid
+AS TEXT);
 
 DROP TABLE "syscolconflicttest";
 
@@ -918,7 +933,8 @@ UPDATE
 SET data = excluded.data
 RETURNING *;
 
-INSERT INTO excluded AS target
+INSERT INTO excluded
+AS target
 VALUES (1,
 '2')
 ON CONFLICT (key) DO
@@ -926,7 +942,8 @@ UPDATE
 SET data = excluded.data
 RETURNING *;
 
-INSERT INTO excluded AS target
+INSERT INTO excluded
+AS target
 VALUES (1,
 '2')
 ON CONFLICT (key) DO
@@ -945,7 +962,8 @@ RETURNING excluded.*;
 DROP TABLE "excluded";
 
 CREATE TABLE dropcol (
-  key INT PRIMARY KEY,
+  key INT
+  PRIMARY KEY,
   drop1 INT,
   keep1 TEXT,
   drop2 NUMERIC,
@@ -1042,7 +1060,8 @@ RETURNING *;
 DROP TABLE "dropcol";
 
 CREATE TABLE twoconstraints (
-  f1 INT UNIQUE,
+  f1 INT
+  UNIQUE,
   f2 box,
   EXCLUDE USING gist (f2 WITH &&)
 );
@@ -1146,7 +1165,8 @@ SELECT * FROM selfconflict;
 DROP TABLE "selfconflict";
 
 CREATE TABLE parted_conflict_test (
-  a INT UNIQUE,
+  a INT
+  UNIQUE,
   b CHAR(1)
 )
 PARTITION BY LIST(a);
@@ -1154,7 +1174,8 @@ PARTITION BY LIST(a);
 CREATE TABLE parted_conflict_test_1
 PARTITION OF parted_conflict_test
 (
-  b UNIQUE
+  b
+  UNIQUE
 )
 FOR VALUES IN (1,
 2);
@@ -1206,7 +1227,8 @@ SELECT * FROM parted_conflict_test ORDER BY a;
 
 CREATE TABLE parted_conflict_test_2 (
   b CHAR(1),
-  a INT UNIQUE
+  a INT
+  UNIQUE
 );
 
 ALTER TABLE parted_conflict_test
@@ -1332,7 +1354,8 @@ SELECT * FROM parted_conflict_test ORDER BY a;
 DROP TABLE "parted_conflict_test";
 
 CREATE TABLE parted_conflict (
-  a INT PRIMARY KEY,
+  a INT
+  PRIMARY KEY,
   b TEXT
 )
 PARTITION BY RANGE(a);
@@ -1439,11 +1462,13 @@ c) = ROW(excluded.*)
 WHERE
   parted_conflict =
   (50,
-  CAST('cincuenta' AS TEXT),
+  CAST('cincuenta'
+  AS TEXT),
   1) AND
   excluded =
   (50,
-  CAST('cincuenta' AS TEXT),
+  CAST('cincuenta'
+  AS TEXT),
   2);
 
 SELECT * FROM parted_conflict ORDER BY a;

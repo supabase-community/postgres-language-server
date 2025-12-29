@@ -5,6 +5,44 @@ For current implementation status and guidance, see [pretty_printer.md](./pretty
 ## Session History
 
 ---
+**Date**: 2025-12-29 (Session 83)
+**Focus**: Fixing failing tests to improve pass rate
+**Progress**: 355/447 → 366/447 tests passing (79.4% → 81.8%)
+
+**Key Fixes**:
+1. **ALTER ROLE SET** - Added `emit_variable_set_stmt_no_semicolon` variant and used `SoftOrSpace` line breaks in `alter_role_set_stmt.rs` to allow wrapping before SET clause
+
+2. **Password quoting** - Fixed password values in role options (`def_elem.rs`) to use `emit_string_literal` instead of `emit_node` for PASSWORD and VALID UNTIL options
+
+3. **GROUP BY DISTINCT** - Added `DISTINCT` keyword emission in `select_stmt.rs` when `group_distinct: true`
+
+4. **UNION ORDER BY parentheses** - Added `select_needs_parens` function to wrap SELECT statements with ORDER BY/LIMIT/OFFSET in parentheses when used as children of set operations
+
+5. **MultiAssignRef SubLink** - Fixed `res_target.rs` to handle SubLink sources in multi-assign clauses (not just RowExpr)
+
+6. **COPY with MERGE** - Added `emit_merge_stmt_no_semicolon` variant to `copy_stmt.rs` to handle MERGE statements inside COPY queries
+
+7. **DoStmt argument order** - Fixed `do_stmt.rs` to preserve original SQL order of LANGUAGE and body clauses based on DefElem location field
+
+8. **MergeSupportFunc normalization** - Added comprehensive AST normalization in `tests.rs` for MergeSupportFunc planner nodes that become ColumnRef after reparse
+
+9. **DeallocateStmt location** - Added DeallocateStmt to `clear_location` function in tests
+
+10. **CREATE TABLE AS WITH NO DATA** - Fixed `create_table_as_stmt.rs` to emit WITH NO DATA for regular tables (not just materialized views)
+
+11. **ExecuteStmt no-semicolon** - Added `emit_execute_stmt_no_semicolon` variant for use in CREATE TABLE AS statements
+
+**Learnings**:
+- When a statement can be embedded in another (e.g., MERGE in COPY, EXECUTE in CREATE TABLE AS), always need a no-semicolon variant
+- MergeSupportFunc is a planner placeholder that emits as `mergesupport#<oid>` and reparses to ColumnRef - needs AST normalization
+- DefElem location field can be used to preserve original argument order in statements like DO
+- WITH NO DATA applies to both CREATE TABLE AS and CREATE MATERIALIZED VIEW
+
+**Next Steps**:
+- Continue debugging remaining ~80 failing tests
+- Many failures are line length issues with long identifiers or expressions
+
+---
 **Date**: 2025-12-28 (Session 82)
 **Focus**: Continuing to fix failing tests
 **Progress**: 265/447 → 276/447 tests passing (59% → 61.7%)

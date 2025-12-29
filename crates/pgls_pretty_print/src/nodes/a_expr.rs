@@ -532,9 +532,8 @@ fn operator_needs_space(op: &str) -> bool {
 
 fn operator_prefers_line_break(name: &[Node]) -> bool {
     match extract_simple_operator(name) {
-        Some("=") | Some("<>") | Some("!=") | Some("<") | Some(">") | Some("<=") | Some(">=") => {
-            true
-        }
+        Some("=") | Some("<>") | Some("!=") | Some("<") | Some(">") | Some("<=") | Some(">=")
+        | Some("||") | Some("AND") | Some("and") | Some("OR") | Some("or") => true,
         _ => false,
     }
 }

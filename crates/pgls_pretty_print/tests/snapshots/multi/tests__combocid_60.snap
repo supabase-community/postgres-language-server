@@ -111,7 +111,8 @@ COMMIT;
 SELECT ctid, cmin, * FROM combocidtest;
 
 CREATE TABLE IF NOT EXISTS testcase (
-  id INT PRIMARY KEY,
+  id INT
+  PRIMARY KEY,
   balance NUMERIC
 );
 

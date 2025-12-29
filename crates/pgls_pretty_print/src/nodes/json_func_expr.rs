@@ -8,9 +8,9 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
     e.group_start(GroupKind::JsonFuncExpr);
 
     // Map JSON function operation types
-    // JsonExistsOp = 0, JsonQueryOp = 1, JsonValueOp = 2, etc.
+    // 0=Undefined, 1=JsonExistsOp, 2=JsonQueryOp, 3=JsonValueOp, 4=JsonTableOp
     match n.op {
-        0 => {
+        1 => {
             // JSON_EXISTS
             e.token(TokenKind::IDENT("JSON_EXISTS".to_string()));
             e.token(TokenKind::L_PAREN);
@@ -30,7 +30,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
 
             e.token(TokenKind::R_PAREN);
         }
-        1 => {
+        2 => {
             // JSON_QUERY
             e.token(TokenKind::IDENT("JSON_QUERY".to_string()));
             e.token(TokenKind::L_PAREN);
@@ -52,7 +52,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
 
             e.token(TokenKind::R_PAREN);
         }
-        2 => {
+        3 => {
             // JSON_VALUE
             e.token(TokenKind::IDENT("JSON_VALUE".to_string()));
             e.token(TokenKind::L_PAREN);

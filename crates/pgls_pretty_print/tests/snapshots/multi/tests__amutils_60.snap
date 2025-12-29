@@ -7,13 +7,16 @@ SELECT
   prop,
   pg_indexam_has_property(a.oid,
   prop) AS "AM",
-  pg_index_has_property(CAST('onek_hundred' AS REGCLASS),
+  pg_index_has_property(CAST('onek_hundred'
+  AS REGCLASS),
   prop) AS "Index",
-  pg_index_column_has_property(CAST('onek_hundred' AS REGCLASS),
+  pg_index_column_has_property(CAST('onek_hundred'
+  AS REGCLASS),
   1,
   prop) AS "Column"
 FROM
-  pg_am AS a,
+  pg_am
+  AS a,
   unnest(CAST(ARRAY['asc',
   'desc',
   'nulls_first',
@@ -32,7 +35,8 @@ FROM
   'can_multi_col',
   'can_exclude',
   'can_include',
-  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  'bogus']
+  AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
 WHERE
   a.amname =
@@ -43,13 +47,16 @@ SELECT
   prop,
   pg_indexam_has_property(a.oid,
   prop) AS "AM",
-  pg_index_has_property(CAST('gcircleind' AS REGCLASS),
+  pg_index_has_property(CAST('gcircleind'
+  AS REGCLASS),
   prop) AS "Index",
-  pg_index_column_has_property(CAST('gcircleind' AS REGCLASS),
+  pg_index_column_has_property(CAST('gcircleind'
+  AS REGCLASS),
   1,
   prop) AS "Column"
 FROM
-  pg_am AS a,
+  pg_am
+  AS a,
   unnest(CAST(ARRAY['asc',
   'desc',
   'nulls_first',
@@ -68,7 +75,8 @@ FROM
   'can_multi_col',
   'can_exclude',
   'can_include',
-  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  'bogus']
+  AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
 WHERE
   a.amname =
@@ -77,25 +85,32 @@ ORDER BY ord;
 
 SELECT
   prop,
-  pg_index_column_has_property(CAST('onek_hundred' AS REGCLASS),
+  pg_index_column_has_property(CAST('onek_hundred'
+  AS REGCLASS),
   1,
   prop) AS btree,
-  pg_index_column_has_property(CAST('hash_i4_index' AS REGCLASS),
+  pg_index_column_has_property(CAST('hash_i4_index'
+  AS REGCLASS),
   1,
   prop) AS hash,
-  pg_index_column_has_property(CAST('gcircleind' AS REGCLASS),
+  pg_index_column_has_property(CAST('gcircleind'
+  AS REGCLASS),
   1,
   prop) AS gist,
-  pg_index_column_has_property(CAST('sp_radix_ind' AS REGCLASS),
+  pg_index_column_has_property(CAST('sp_radix_ind'
+  AS REGCLASS),
   1,
   prop) AS spgist_radix,
-  pg_index_column_has_property(CAST('sp_quad_ind' AS REGCLASS),
+  pg_index_column_has_property(CAST('sp_quad_ind'
+  AS REGCLASS),
   1,
   prop) AS spgist_quad,
-  pg_index_column_has_property(CAST('botharrayidx' AS REGCLASS),
+  pg_index_column_has_property(CAST('botharrayidx'
+  AS REGCLASS),
   1,
   prop) AS gin,
-  pg_index_column_has_property(CAST('brinidx' AS REGCLASS),
+  pg_index_column_has_property(CAST('brinidx'
+  AS REGCLASS),
   1,
   prop) AS brin
 FROM
@@ -108,30 +123,38 @@ FROM
   'returnable',
   'search_array',
   'search_nulls',
-  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  'bogus']
+  AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
 ORDER BY ord;
 
 SELECT
   prop,
-  pg_index_has_property(CAST('onek_hundred' AS REGCLASS),
+  pg_index_has_property(CAST('onek_hundred'
+  AS REGCLASS),
   prop) AS btree,
-  pg_index_has_property(CAST('hash_i4_index' AS REGCLASS),
+  pg_index_has_property(CAST('hash_i4_index'
+  AS REGCLASS),
   prop) AS hash,
-  pg_index_has_property(CAST('gcircleind' AS REGCLASS),
+  pg_index_has_property(CAST('gcircleind'
+  AS REGCLASS),
   prop) AS gist,
-  pg_index_has_property(CAST('sp_radix_ind' AS REGCLASS),
+  pg_index_has_property(CAST('sp_radix_ind'
+  AS REGCLASS),
   prop) AS spgist,
-  pg_index_has_property(CAST('botharrayidx' AS REGCLASS),
+  pg_index_has_property(CAST('botharrayidx'
+  AS REGCLASS),
   prop) AS gin,
-  pg_index_has_property(CAST('brinidx' AS REGCLASS),
+  pg_index_has_property(CAST('brinidx'
+  AS REGCLASS),
   prop) AS brin
 FROM
   unnest(CAST(ARRAY['clusterable',
   'index_scan',
   'bitmap_scan',
   'backward_scan',
-  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  'bogus']
+  AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
 ORDER BY ord;
 
@@ -141,13 +164,15 @@ SELECT
   pg_indexam_has_property(a.oid,
   prop) AS p
 FROM
-  pg_am AS a,
+  pg_am
+  AS a,
   unnest(CAST(ARRAY['can_order',
   'can_unique',
   'can_multi_col',
   'can_exclude',
   'can_include',
-  'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
+  'bogus']
+  AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
 WHERE
   amtype =
@@ -177,7 +202,8 @@ SELECT
   col,
   prop)
 FROM
-  (VALUES (CAST('fooindex' AS REGCLASS))) AS v1 (o),
+  (VALUES (CAST('fooindex'
+  AS REGCLASS))) AS v1 (o),
   (VALUES (1,
   'orderable'),
   (2,
@@ -210,7 +236,8 @@ SELECT
   col,
   prop)
 FROM
-  (VALUES (CAST('foocover' AS REGCLASS))) AS v1 (o),
+  (VALUES (CAST('foocover'
+  AS REGCLASS))) AS v1 (o),
   (VALUES (1,
   'orderable'),
   (2,

@@ -16,7 +16,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('rainbow' AS REGTYPE);
+  CAST('rainbow'
+  AS REGTYPE);
 
 SELECT CAST('red' AS rainbow);
 
@@ -46,7 +47,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('planets' AS REGTYPE)
+  CAST('planets'
+  AS REGTYPE)
 ORDER BY 2;
 
 ALTER TYPE planets ADD VALUE 'uranus';
@@ -58,7 +60,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('planets' AS REGTYPE)
+  CAST('planets'
+  AS REGTYPE)
 ORDER BY 2;
 
 ALTER TYPE planets ADD VALUE 'mercury' BEFORE 'venus';
@@ -76,7 +79,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('planets' AS REGTYPE)
+  CAST('planets'
+  AS REGTYPE)
 ORDER BY 2;
 
 SELECT
@@ -86,8 +90,10 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('planets' AS REGTYPE)
-ORDER BY CAST(enumlabel AS planets);
+  CAST('planets'
+  AS REGTYPE)
+ORDER BY CAST(enumlabel
+  AS planets);
 
 ALTER TYPE planets ADD VALUE 'plutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutopluto';
 
@@ -176,7 +182,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('insenum' AS REGTYPE)
+  CAST('insenum'
+  AS REGTYPE)
 ORDER BY enumsortorder;
 
 CREATE TABLE enumtest ( col rainbow );
@@ -204,8 +211,11 @@ SELECT * FROM enumtest WHERE col <= 'green' ORDER BY col;
 SELECT CAST(CAST('red' AS rainbow) AS TEXT) || 'hithere';
 
 SELECT
-  CAST(CAST('red' AS TEXT) AS rainbow) =
-  CAST('red' AS rainbow);
+  CAST(CAST('red'
+  AS TEXT)
+  AS rainbow) =
+  CAST('red'
+  AS rainbow);
 
 SELECT MIN(col) FROM enumtest;
 
@@ -273,7 +283,8 @@ SELECT (CAST('{red,green,blue}' AS rainbow[]))[2];
 SELECT 'red' = ANY (CAST('{red,green,blue}' AS rainbow[]));
 
 SELECT
-  'yellow' = ANY (CAST('{red,green,blue}' AS rainbow[]));
+  'yellow' = ANY (CAST('{red,green,blue}'
+  AS rainbow[]));
 
 SELECT 'red' = ALL (CAST('{red,green,blue}' AS rainbow[]));
 
@@ -286,8 +297,10 @@ SELECT enum_last(CAST('green' AS rainbow));
 SELECT enum_range(CAST(NULL AS rainbow));
 
 SELECT
-  enum_range(CAST('orange' AS rainbow),
-  CAST('green' AS rainbow));
+  enum_range(CAST('orange'
+  AS rainbow),
+  CAST('green'
+  AS rainbow));
 
 SELECT enum_range(NULL, CAST('green' AS rainbow));
 
@@ -330,7 +343,8 @@ DROP FUNCTION echo_me(rainbow);
 CREATE TABLE enumtest_parent ( id rainbow PRIMARY KEY );
 
 CREATE TABLE enumtest_child (
-  parent rainbow REFERENCES enumtest_parent
+  parent rainbow
+  REFERENCES enumtest_parent
 );
 
 INSERT INTO enumtest_parent VALUES ('red');
@@ -344,7 +358,8 @@ DELETE FROM enumtest_parent;
 CREATE TYPE bogus AS ENUM ('good', 'bad', 'ugly');
 
 CREATE TABLE enumtest_bogus_child (
-  parent bogus REFERENCES enumtest_parent
+  parent bogus
+  REFERENCES enumtest_parent
 );
 
 DROP TYPE bogus;
@@ -358,7 +373,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('rainbow' AS REGTYPE)
+  CAST('rainbow'
+  AS REGTYPE)
 ORDER BY 2;
 
 ALTER TYPE rainbow RENAME VALUE 'red' TO 'crimson';
@@ -398,7 +414,8 @@ FROM
   pg_enum
 WHERE
   enumtypid =
-  CAST('bogus' AS REGTYPE)
+  CAST('bogus'
+  AS REGTYPE)
 ORDER BY 2;
 
 BEGIN;

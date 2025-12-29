@@ -1,0 +1,361 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/int2_60.sql
+snapshot_kind: text
+---
+INSERT INTO int2_tbl (f1) VALUES ('34.5');
+
+INSERT INTO int2_tbl (f1) VALUES ('100000');
+
+INSERT INTO int2_tbl (f1) VALUES ('asdf');
+
+INSERT INTO int2_tbl (f1) VALUES ('    ');
+
+INSERT INTO int2_tbl (f1) VALUES ('- 1234');
+
+INSERT INTO int2_tbl (f1) VALUES ('4 444');
+
+INSERT INTO int2_tbl (f1) VALUES ('123 dt');
+
+INSERT INTO int2_tbl (f1) VALUES ('');
+
+SELECT * FROM int2_tbl;
+
+SELECT pg_input_is_valid('34', 'int2');
+
+SELECT pg_input_is_valid('asdf', 'int2');
+
+SELECT pg_input_is_valid('50000', 'int2');
+
+SELECT * FROM pg_input_error_info('50000', 'int2');
+
+SELECT pg_input_is_valid(' 1 3  5 ', 'int2vector');
+
+SELECT * FROM pg_input_error_info('1 asdf', 'int2vector');
+
+SELECT * FROM pg_input_error_info('50000', 'int2vector');
+
+SELECT * FROM int2_tbl AS f (a, b);
+
+SELECT * FROM (SELECT * FROM int2_tbl) AS s (a, b);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 <>
+  CAST('0'
+  AS SMALLINT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 <>
+  CAST('0'
+  AS INT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 =
+  CAST('0'
+  AS SMALLINT);
+
+SELECT i.* FROM int2_tbl AS i WHERE i.f1 = CAST('0' AS INT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 <
+  CAST('0'
+  AS SMALLINT);
+
+SELECT i.* FROM int2_tbl AS i WHERE i.f1 < CAST('0' AS INT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 <=
+  CAST('0'
+  AS SMALLINT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 <=
+  CAST('0'
+  AS INT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 >
+  CAST('0'
+  AS SMALLINT);
+
+SELECT i.* FROM int2_tbl AS i WHERE i.f1 > CAST('0' AS INT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 >=
+  CAST('0'
+  AS SMALLINT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 >=
+  CAST('0'
+  AS INT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 % CAST('2'
+  AS SMALLINT) =
+  CAST('1'
+  AS SMALLINT);
+
+SELECT
+  i.*
+FROM
+  int2_tbl
+  AS i
+WHERE
+  i.f1 % CAST('2'
+  AS INT) =
+  CAST('0'
+  AS SMALLINT);
+
+SELECT
+  i.f1,
+  i.f1 * CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 * CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i
+WHERE
+  abs(f1) <
+  16384;
+
+SELECT
+  i.f1,
+  i.f1 * CAST('2'
+  AS INT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 + CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 + CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i
+WHERE
+  f1 <
+  32766;
+
+SELECT
+  i.f1,
+  i.f1 + CAST('2'
+  AS INT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 - CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 - CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i
+WHERE
+  f1 >
+  -32767;
+
+SELECT
+  i.f1,
+  i.f1 - CAST('2'
+  AS INT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 / CAST('2'
+  AS SMALLINT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT
+  i.f1,
+  i.f1 / CAST('2'
+  AS INT) AS x
+FROM
+  int2_tbl
+  AS i;
+
+SELECT CAST(-CAST(1 AS SMALLINT) << 15 AS TEXT);
+
+SELECT
+  CAST((-CAST(1
+  AS SMALLINT) << 15) + CAST(1
+  AS SMALLINT)
+  AS TEXT);
+
+SELECT CAST(-32768 AS SMALLINT) * CAST(-1 AS SMALLINT);
+
+SELECT CAST(-32768 AS SMALLINT) / CAST(-1 AS SMALLINT);
+
+SELECT CAST(-32768 AS SMALLINT) % CAST(-1 AS SMALLINT);
+
+SELECT
+  x,
+  CAST(x
+  AS SMALLINT) AS int2_value
+FROM
+  (VALUES (-CAST(2.5
+  AS DOUBLE PRECISION)),
+  (-CAST(1.5
+  AS DOUBLE PRECISION)),
+  (-CAST(0.5
+  AS DOUBLE PRECISION)),
+  (CAST(0.0
+  AS DOUBLE PRECISION)),
+  (CAST(0.5
+  AS DOUBLE PRECISION)),
+  (CAST(1.5
+  AS DOUBLE PRECISION)),
+  (CAST(2.5
+  AS DOUBLE PRECISION))) AS t (x);
+
+SELECT
+  x,
+  CAST(x
+  AS SMALLINT) AS int2_value
+FROM
+  (VALUES (-CAST(2.5
+  AS NUMERIC)),
+  (-CAST(1.5
+  AS NUMERIC)),
+  (-CAST(0.5
+  AS NUMERIC)),
+  (CAST(0.0
+  AS NUMERIC)),
+  (CAST(0.5
+  AS NUMERIC)),
+  (CAST(1.5
+  AS NUMERIC)),
+  (CAST(2.5
+  AS NUMERIC))) AS t (x);
+
+SELECT CAST('0b100101' AS SMALLINT);
+
+SELECT CAST('0o273' AS SMALLINT);
+
+SELECT CAST('0x42F' AS SMALLINT);
+
+SELECT CAST('0b' AS SMALLINT);
+
+SELECT CAST('0o' AS SMALLINT);
+
+SELECT CAST('0x' AS SMALLINT);
+
+SELECT CAST('0b111111111111111' AS SMALLINT);
+
+SELECT CAST('0b1000000000000000' AS SMALLINT);
+
+SELECT CAST('0o77777' AS SMALLINT);
+
+SELECT CAST('0o100000' AS SMALLINT);
+
+SELECT CAST('0x7FFF' AS SMALLINT);
+
+SELECT CAST('0x8000' AS SMALLINT);
+
+SELECT CAST('-0b1000000000000000' AS SMALLINT);
+
+SELECT CAST('-0b1000000000000001' AS SMALLINT);
+
+SELECT CAST('-0o100000' AS SMALLINT);
+
+SELECT CAST('-0o100001' AS SMALLINT);
+
+SELECT CAST('-0x8000' AS SMALLINT);
+
+SELECT CAST('-0x8001' AS SMALLINT);
+
+SELECT CAST('1_000' AS SMALLINT);
+
+SELECT CAST('1_2_3' AS SMALLINT);
+
+SELECT CAST('0xE_FF' AS SMALLINT);
+
+SELECT CAST('0o2_73' AS SMALLINT);
+
+SELECT CAST('0b_10_0101' AS SMALLINT);
+
+SELECT CAST('_100' AS SMALLINT);
+
+SELECT CAST('100_' AS SMALLINT);
+
+SELECT CAST('10__000' AS SMALLINT);

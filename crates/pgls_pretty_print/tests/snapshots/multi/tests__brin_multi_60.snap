@@ -31,28 +31,47 @@ SELECT
   142857 * tenthous,
   thousand,
   twothousand,
-  CAST(unique1 AS OID),
+  CAST(unique1
+  AS OID),
   CAST(format('(%s,%s)',
   tenthous,
-  twenty) AS TID),
+  twenty)
+  AS TID),
   (four + 1.0) / (hundred + 1),
-  CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
+  CAST(odd
+  AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format('%s:00:%s:00:%s:00',
   to_hex(odd),
   to_hex(even),
-  to_hex(hundred)) AS MACADDR),
-  CAST(substr(fipshash(CAST(unique1 AS TEXT)),
+  to_hex(hundred))
+  AS MACADDR),
+  CAST(substr(fipshash(CAST(unique1
+  AS TEXT)),
   1,
-  16) AS MACADDR8),
-  CAST('10.2.3.4/24' AS INET) + tenthous,
-  CAST('10.2.3/24' AS CIDR) + tenthous,
-  CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
-  CAST('1972-10-10 03:00' AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes' AS INTERVAL))),
-  CAST('01:30:20+02' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(tenthous AS NUMERIC(36,
+  16)
+  AS MACADDR8),
+  CAST('10.2.3.4/24'
+  AS INET) + tenthous,
+  CAST('10.2.3/24'
+  AS CIDR) + tenthous,
+  CAST('1995-08-15'
+  AS DATE) + tenthous,
+  CAST('01:20:30'
+  AS TIME) + thousand * CAST('18.5 second'
+  AS INTERVAL),
+  CAST('1942-07-23 03:05:09'
+  AS TIMESTAMP) + tenthous * CAST('36.38 hours'
+  AS INTERVAL),
+  CAST('1972-10-10 03:00'
+  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
+  AS INTERVAL),
+  justify_days(justify_hours(tenthous * CAST('12 minutes'
+  AS INTERVAL))),
+  CAST('01:30:20+02'
+  AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
+  AS INTERVAL),
+  CAST(tenthous
+  AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
   CAST(format('%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous,
@@ -70,11 +89,13 @@ SELECT
   to_char(tenthous,
   'FM0000'),
   to_char(tenthous,
-  'FM0000')) AS UUID),
+  'FM0000'))
+  AS UUID),
   CAST(format('%s/%s%s',
   odd,
   even,
-  tenthous) AS PG_LSN)
+  tenthous)
+  AS PG_LSN)
 FROM
   tenk1
 ORDER BY unique2
@@ -83,8 +104,10 @@ LIMIT 100;
 INSERT INTO brintest_multi (inetcol,
 cidrcol)
 SELECT
-  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) + tenthous,
-  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) + tenthous
+  CAST('fe80::6e40:8ff:fea9:8c46'
+  AS INET) + tenthous,
+  CAST('fe80::6e40:8ff:fea9:8c46'
+  AS CIDR) + tenthous
 FROM
   tenk1
 ORDER BY thousand,
@@ -410,28 +433,47 @@ SELECT
   142857 * tenthous,
   thousand,
   twothousand,
-  CAST(unique1 AS OID),
+  CAST(unique1
+  AS OID),
   CAST(format('(%s,%s)',
   tenthous,
-  twenty) AS TID),
+  twenty)
+  AS TID),
   (four + 1.0) / (hundred + 1),
-  CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
+  CAST(odd
+  AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format('%s:00:%s:00:%s:00',
   to_hex(odd),
   to_hex(even),
-  to_hex(hundred)) AS MACADDR),
-  CAST(substr(fipshash(CAST(unique1 AS TEXT)),
+  to_hex(hundred))
+  AS MACADDR),
+  CAST(substr(fipshash(CAST(unique1
+  AS TEXT)),
   1,
-  16) AS MACADDR8),
-  CAST('10.2.3.4' AS INET) + tenthous,
-  CAST('10.2.3/24' AS CIDR) + tenthous,
-  CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
-  CAST('1972-10-10 03:00' AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes' AS INTERVAL))),
-  CAST('01:30:20' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(tenthous AS NUMERIC(36,
+  16)
+  AS MACADDR8),
+  CAST('10.2.3.4'
+  AS INET) + tenthous,
+  CAST('10.2.3/24'
+  AS CIDR) + tenthous,
+  CAST('1995-08-15'
+  AS DATE) + tenthous,
+  CAST('01:20:30'
+  AS TIME) + thousand * CAST('18.5 second'
+  AS INTERVAL),
+  CAST('1942-07-23 03:05:09'
+  AS TIMESTAMP) + tenthous * CAST('36.38 hours'
+  AS INTERVAL),
+  CAST('1972-10-10 03:00'
+  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
+  AS INTERVAL),
+  justify_days(justify_hours(tenthous * CAST('12 minutes'
+  AS INTERVAL))),
+  CAST('01:30:20'
+  AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
+  AS INTERVAL),
+  CAST(tenthous
+  AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
   CAST(format('%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous,
@@ -449,11 +491,13 @@ SELECT
   to_char(tenthous,
   'FM0000'),
   to_char(tenthous,
-  'FM0000')) AS UUID),
+  'FM0000'))
+  AS UUID),
   CAST(format('%s/%s%s',
   odd,
   even,
-  tenthous) AS PG_LSN)
+  tenthous)
+  AS PG_LSN)
 FROM
   tenk1
 ORDER BY unique2
@@ -465,10 +509,12 @@ SELECT brin_desummarize_range('brinidx_multi', 0);
 VACUUM brintest_multi;
 
 INSERT INTO public.brintest_multi (float4col)
-VALUES (CAST('nan' AS REAL));
+VALUES (CAST('nan'
+AS REAL));
 
 INSERT INTO public.brintest_multi (float8col)
-VALUES (CAST('nan' AS REAL));
+VALUES (CAST('nan'
+AS REAL));
 
 UPDATE brintest_multi SET int8col = int8col * int4col;
 
@@ -706,7 +752,8 @@ CREATE TABLE brin_test_multi_2 (
 
 INSERT INTO brin_test_multi_2
 SELECT
-  CAST(v AS UUID)
+  CAST(v
+  AS UUID)
 FROM
   (SELECT
     ROW_NUMBER()
@@ -715,7 +762,8 @@ FROM
     v
   FROM
     (SELECT
-      fipshash(CAST(i / 13 AS TEXT)) AS v
+      fipshash(CAST(i / 13
+      AS TEXT)) AS v
     FROM
       generate_series(1,
       1000) AS s (i)) AS foo) AS bar
@@ -780,7 +828,8 @@ TRUNCATE brin_test_multi_2;
 
 INSERT INTO brin_test_multi_2
 SELECT
-  CAST(v AS UUID)
+  CAST(v
+  AS UUID)
 FROM
   (SELECT
     ROW_NUMBER()
@@ -789,7 +838,8 @@ FROM
     v
   FROM
     (SELECT
-      fipshash(CAST(i / 13 AS TEXT)) AS v
+      fipshash(CAST(i / 13
+      AS TEXT)) AS v
     FROM
       generate_series(1,
       1000) AS s (i)) AS foo) AS bar
@@ -855,14 +905,20 @@ SET datestyle = iso;
 
 INSERT INTO brin_timestamp_test
 SELECT
-  CAST('4713-01-01 00:00:01 BC' AS TIMESTAMP WITH TIME ZONE) + CAST(i || ' seconds' AS INTERVAL)
+  CAST('4713-01-01 00:00:01 BC'
+  AS TIMESTAMP WITH TIME ZONE) + CAST(i ||
+  ' seconds'
+  AS INTERVAL)
 FROM
   generate_series(1,
   30) AS s (i);
 
 INSERT INTO brin_timestamp_test
 SELECT
-  CAST('294276-12-01 00:00:01' AS TIMESTAMP WITH TIME ZONE) + CAST(i || ' seconds' AS INTERVAL)
+  CAST('294276-12-01 00:00:01'
+  AS TIMESTAMP WITH TIME ZONE) + CAST(i ||
+  ' seconds'
+  AS INTERVAL)
 FROM
   generate_series(1,
   30) AS s (i);
@@ -878,14 +934,16 @@ CREATE TABLE brin_date_test ( a DATE );
 
 INSERT INTO brin_date_test
 SELECT
-  CAST('4713-01-01 BC' AS DATE) + i
+  CAST('4713-01-01 BC'
+  AS DATE) + i
 FROM
   generate_series(1,
   30) AS s (i);
 
 INSERT INTO brin_date_test
 SELECT
-  CAST('5874897-12-01' AS DATE) + i
+  CAST('5874897-12-01'
+  AS DATE) + i
 FROM
   generate_series(1,
   30) AS s (i);
@@ -903,7 +961,8 @@ FROM
   brin_date_test
 WHERE
   a =
-  CAST('2023-01-01' AS DATE);
+  CAST('2023-01-01'
+  AS DATE);
 
 DROP TABLE "brin_date_test";
 
@@ -919,9 +978,12 @@ INSERT INTO brin_timestamp_test
 SELECT
   i
 FROM
-  generate_series(CAST('2000-01-01' AS TIMESTAMP),
-  CAST('2000-02-09' AS TIMESTAMP),
-  CAST('1 day' AS INTERVAL)) AS s (i);
+  generate_series(CAST('2000-01-01'
+  AS TIMESTAMP),
+  CAST('2000-02-09'
+  AS TIMESTAMP),
+  CAST('1 day'
+  AS INTERVAL)) AS s (i);
 
 CREATE INDEX ON brin_timestamp_test USING brin
 (
@@ -936,7 +998,8 @@ FROM
   brin_timestamp_test
 WHERE
   a =
-  CAST('2023-01-01' AS TIMESTAMP);
+  CAST('2023-01-01'
+  AS TIMESTAMP);
 
 SELECT
   *
@@ -944,7 +1007,8 @@ FROM
   brin_timestamp_test
 WHERE
   a =
-  CAST('1900-01-01' AS TIMESTAMP);
+  CAST('1900-01-01'
+  AS TIMESTAMP);
 
 DROP TABLE "brin_timestamp_test";
 
@@ -958,7 +1022,8 @@ VALUES ('-infinity'),
 
 INSERT INTO brin_date_test
 SELECT
-  CAST('2000-01-01' AS DATE) + i
+  CAST('2000-01-01'
+  AS DATE) + i
 FROM
   generate_series(1,
   40) AS s (i);
@@ -976,7 +1041,8 @@ FROM
   brin_date_test
 WHERE
   a =
-  CAST('2023-01-01' AS DATE);
+  CAST('2023-01-01'
+  AS DATE);
 
 SELECT
   *
@@ -984,7 +1050,8 @@ FROM
   brin_date_test
 WHERE
   a =
-  CAST('1900-01-01' AS DATE);
+  CAST('1900-01-01'
+  AS DATE);
 
 DROP TABLE "brin_date_test";
 
@@ -996,14 +1063,18 @@ CREATE TABLE brin_interval_test ( a INTERVAL );
 
 INSERT INTO brin_interval_test
 SELECT
-  CAST(i || ' years' AS INTERVAL)
+  CAST(i ||
+  ' years'
+  AS INTERVAL)
 FROM
   generate_series(-178000000,
   -177999980) AS s (i);
 
 INSERT INTO brin_interval_test
 SELECT
-  CAST(i || ' years' AS INTERVAL)
+  CAST(i ||
+  ' years'
+  AS INTERVAL)
 FROM
   generate_series(177999980,
   178000000) AS s (i);
@@ -1021,7 +1092,8 @@ FROM
   brin_interval_test
 WHERE
   a =
-  CAST('-30 years' AS INTERVAL);
+  CAST('-30 years'
+  AS INTERVAL);
 
 SELECT
   *
@@ -1029,7 +1101,8 @@ FROM
   brin_interval_test
 WHERE
   a =
-  CAST('30 years' AS INTERVAL);
+  CAST('30 years'
+  AS INTERVAL);
 
 DROP TABLE "brin_interval_test";
 
@@ -1043,7 +1116,9 @@ VALUES ('-infinity'),
 
 INSERT INTO brin_interval_test
 SELECT
-  CAST(i || ' days' AS INTERVAL)
+  CAST(i ||
+  ' days'
+  AS INTERVAL)
 FROM
   generate_series(100,
   140) AS s (i);
@@ -1061,7 +1136,8 @@ FROM
   brin_interval_test
 WHERE
   a =
-  CAST('-30 years' AS INTERVAL);
+  CAST('-30 years'
+  AS INTERVAL);
 
 SELECT
   *
@@ -1069,7 +1145,8 @@ FROM
   brin_interval_test
 WHERE
   a =
-  CAST('30 years' AS INTERVAL);
+  CAST('30 years'
+  AS INTERVAL);
 
 DROP TABLE "brin_interval_test";
 

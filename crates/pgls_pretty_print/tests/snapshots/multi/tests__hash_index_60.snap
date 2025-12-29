@@ -93,7 +93,8 @@ FROM
   hash_name_heap
 WHERE
   hash_name_heap.random =
-  CAST('1505703298' AS NAME);
+  CAST('1505703298'
+  AS NAME);
 
 SELECT
   *
@@ -101,7 +102,8 @@ FROM
   hash_name_heap
 WHERE
   hash_name_heap.random =
-  CAST('7777777' AS NAME);
+  CAST('7777777'
+  AS NAME);
 
 SELECT
   *
@@ -109,7 +111,8 @@ FROM
   hash_txt_heap
 WHERE
   hash_txt_heap.random =
-  CAST('1351610853' AS TEXT);
+  CAST('1351610853'
+  AS TEXT);
 
 SELECT
   *
@@ -117,7 +120,8 @@ FROM
   hash_txt_heap
 WHERE
   hash_txt_heap.random =
-  CAST('111111112222222233333333' AS TEXT);
+  CAST('111111112222222233333333'
+  AS TEXT);
 
 SELECT
   *
@@ -125,7 +129,8 @@ FROM
   hash_f8_heap
 WHERE
   hash_f8_heap.random =
-  CAST('444705537' AS DOUBLE PRECISION);
+  CAST('444705537'
+  AS DOUBLE PRECISION);
 
 SELECT
   *
@@ -133,7 +138,8 @@ FROM
   hash_f8_heap
 WHERE
   hash_f8_heap.random =
-  CAST('88888888' AS DOUBLE PRECISION);
+  CAST('88888888'
+  AS DOUBLE PRECISION);
 
 UPDATE hash_i4_heap
 SET random = 1
@@ -145,7 +151,8 @@ SELECT
   h.seqno AS i1492,
   h.random AS i1
 FROM
-  hash_i4_heap AS h
+  hash_i4_heap
+  AS h
 WHERE
   h.random =
   1;
@@ -159,13 +166,15 @@ WHERE
 SELECT
   h.seqno AS i20000
 FROM
-  hash_i4_heap AS h
+  hash_i4_heap
+  AS h
 WHERE
   h.random =
   1492795354;
 
 UPDATE hash_name_heap
-SET random = CAST('0123456789abcdef' AS NAME)
+SET random = CAST('0123456789abcdef'
+AS NAME)
 WHERE
   hash_name_heap.seqno =
   6543;
@@ -174,27 +183,33 @@ SELECT
   h.seqno AS i6543,
   h.random AS c0_to_f
 FROM
-  hash_name_heap AS h
+  hash_name_heap
+  AS h
 WHERE
   h.random =
-  CAST('0123456789abcdef' AS NAME);
+  CAST('0123456789abcdef'
+  AS NAME);
 
 UPDATE hash_name_heap
 SET seqno = 20000
 WHERE
   hash_name_heap.random =
-  CAST('76652222' AS NAME);
+  CAST('76652222'
+  AS NAME);
 
 SELECT
   h.seqno AS emptyset
 FROM
-  hash_name_heap AS h
+  hash_name_heap
+  AS h
 WHERE
   h.random =
-  CAST('76652222' AS NAME);
+  CAST('76652222'
+  AS NAME);
 
 UPDATE hash_txt_heap
-SET random = CAST('0123456789abcdefghijklmnop' AS TEXT)
+SET random = CAST('0123456789abcdefghijklmnop'
+AS TEXT)
 WHERE
   hash_txt_heap.seqno =
   4002;
@@ -203,27 +218,33 @@ SELECT
   h.seqno AS i4002,
   h.random AS c0_to_p
 FROM
-  hash_txt_heap AS h
+  hash_txt_heap
+  AS h
 WHERE
   h.random =
-  CAST('0123456789abcdefghijklmnop' AS TEXT);
+  CAST('0123456789abcdefghijklmnop'
+  AS TEXT);
 
 UPDATE hash_txt_heap
 SET seqno = 20000
 WHERE
   hash_txt_heap.random =
-  CAST('959363399' AS TEXT);
+  CAST('959363399'
+  AS TEXT);
 
 SELECT
   h.seqno AS t20000
 FROM
-  hash_txt_heap AS h
+  hash_txt_heap
+  AS h
 WHERE
   h.random =
-  CAST('959363399' AS TEXT);
+  CAST('959363399'
+  AS TEXT);
 
 UPDATE hash_f8_heap
-SET random = CAST('-1234.1234' AS DOUBLE PRECISION)
+SET random = CAST('-1234.1234'
+AS DOUBLE PRECISION)
 WHERE
   hash_f8_heap.seqno =
   8906;
@@ -232,24 +253,29 @@ SELECT
   h.seqno AS i8096,
   h.random AS f1234_1234
 FROM
-  hash_f8_heap AS h
+  hash_f8_heap
+  AS h
 WHERE
   h.random =
-  CAST('-1234.1234' AS DOUBLE PRECISION);
+  CAST('-1234.1234'
+  AS DOUBLE PRECISION);
 
 UPDATE hash_f8_heap
 SET seqno = 20000
 WHERE
   hash_f8_heap.random =
-  CAST('488912369' AS DOUBLE PRECISION);
+  CAST('488912369'
+  AS DOUBLE PRECISION);
 
 SELECT
   h.seqno AS f20000
 FROM
-  hash_f8_heap AS h
+  hash_f8_heap
+  AS h
 WHERE
   h.random =
-  CAST('488912369' AS DOUBLE PRECISION);
+  CAST('488912369'
+  AS DOUBLE PRECISION);
 
 CREATE TABLE hash_split_heap ( keycol INT );
 

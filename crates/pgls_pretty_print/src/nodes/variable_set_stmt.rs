@@ -67,9 +67,21 @@ fn emit_variable_name(e: &mut EventEmitter, name: &str) {
     }
 }
 
+/// Emit the SET/RESET statement body without a semicolon (for use in ALTER ROLE SET, etc.)
+pub(super) fn emit_variable_set_stmt_no_semicolon(e: &mut EventEmitter, n: &VariableSetStmt) {
+    e.group_start(GroupKind::VariableSetStmt);
+    emit_variable_set_stmt_inner(e, n);
+    e.group_end();
+}
+
 pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) {
     e.group_start(GroupKind::VariableSetStmt);
+    emit_variable_set_stmt_inner(e, n);
+    e.token(TokenKind::SEMICOLON);
+    e.group_end();
+}
 
+fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
     // Handle different kinds of SET statements
     // kind 1 = VAR_SET_VALUE (most common)
     // kind 2 = VAR_SET_DEFAULT
@@ -83,16 +95,12 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
         e.token(TokenKind::RESET_KW);
         e.space();
         emit_variable_name(e, &n.name);
-        e.token(TokenKind::SEMICOLON);
-        e.group_end();
         return;
     } else if n.kind == 6 {
         // VAR_RESET_ALL - emit RESET ALL
         e.token(TokenKind::RESET_KW);
         e.space();
         e.token(TokenKind::ALL_KW);
-        e.token(TokenKind::SEMICOLON);
-        e.group_end();
         return;
     }
 
@@ -226,8 +234,4 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
         // TODO: Handle these variants properly
         emit_variable_name(e, &n.name);
     }
-
-    e.token(TokenKind::SEMICOLON);
-
-    e.group_end();
 }

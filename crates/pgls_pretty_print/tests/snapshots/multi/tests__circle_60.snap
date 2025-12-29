@@ -50,8 +50,10 @@ SELECT
   c2.f1 AS two,
   c1.f1 <-> c2.f1 AS distance
 FROM
-  circle_tbl AS c1,
-  circle_tbl AS c2
+  circle_tbl
+  AS c1,
+  circle_tbl
+  AS c2
 WHERE
   c1.f1 <
   c2.f1 AND

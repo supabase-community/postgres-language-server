@@ -138,7 +138,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test0') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -149,7 +150,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test01') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -160,7 +162,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test3') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -175,7 +178,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree(pg_partition_root('ptif_test01')) AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -194,7 +198,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test0_index') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -205,7 +210,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test01_index') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -216,7 +222,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test3_index') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 
@@ -227,7 +234,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree(pg_partition_root('ptif_test01_index')) AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN pg_class
+  AS c
   ON p.relid =
     c.oid;
 

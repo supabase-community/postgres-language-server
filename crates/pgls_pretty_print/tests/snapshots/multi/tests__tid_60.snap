@@ -4,10 +4,14 @@ input_file: crates/pgls_pretty_print/tests/data/multi/tid_60.sql
 snapshot_kind: text
 ---
 SELECT
-  CAST('(0,0)' AS TID) AS tid00,
-  CAST('(0,1)' AS TID) AS tid01,
-  CAST('(-1,0)' AS TID) AS tidm10,
-  CAST('(4294967295,65535)' AS TID) AS tidmax;
+  CAST('(0,0)'
+  AS TID) AS tid00,
+  CAST('(0,1)'
+  AS TID) AS tid01,
+  CAST('(-1,0)'
+  AS TID) AS tidm10,
+  CAST('(4294967295,65535)'
+  AS TID) AS tidmax;
 
 SELECT CAST('(4294967296,1)' AS TID);
 
@@ -38,16 +42,20 @@ CREATE MATERIALIZED VIEW tid_matview AS
     tid_tab;
 
 SELECT
-  currtid2(CAST('tid_matview' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_matview'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 INSERT INTO tid_tab VALUES (1);
 
 REFRESH MATERIALIZED VIEW tid_matview;
 
 SELECT
-  currtid2(CAST('tid_matview' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_matview'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP MATERIALIZED VIEW "tid_matview";
 
@@ -56,32 +64,40 @@ TRUNCATE tid_tab;
 CREATE SEQUENCE tid_seq;
 
 SELECT
-  currtid2(CAST('tid_seq' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_seq'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP SEQUENCE "tid_seq";
 
 CREATE INDEX "tid_ind" ON tid_tab USING btree ( a);
 
 SELECT
-  currtid2(CAST('tid_ind' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_ind'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP INDEX "tid_ind";
 
 CREATE TABLE tid_part ( a INT ) PARTITION BY RANGE(a);
 
 SELECT
-  currtid2(CAST('tid_part' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_part'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP TABLE "tid_part";
 
 CREATE VIEW tid_view_no_ctid AS SELECT a FROM tid_tab;
 
 SELECT
-  currtid2(CAST('tid_view_no_ctid' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_view_no_ctid'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP VIEW "tid_view_no_ctid";
 
@@ -93,14 +109,18 @@ FROM
   tid_tab;
 
 SELECT
-  currtid2(CAST('tid_view_with_ctid' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_view_with_ctid'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 INSERT INTO tid_tab VALUES (1);
 
 SELECT
-  currtid2(CAST('tid_view_with_ctid' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_view_with_ctid'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP VIEW "tid_view_with_ctid";
 
@@ -109,8 +129,10 @@ TRUNCATE tid_tab;
 CREATE VIEW tid_view_fake_ctid AS SELECT 1 AS ctid, 2 AS a;
 
 SELECT
-  currtid2(CAST('tid_view_fake_ctid' AS TEXT),
-  CAST('(0,1)' AS TID));
+  currtid2(CAST('tid_view_fake_ctid'
+  AS TEXT),
+  CAST('(0,1)'
+  AS TID));
 
 DROP VIEW "tid_view_fake_ctid";
 

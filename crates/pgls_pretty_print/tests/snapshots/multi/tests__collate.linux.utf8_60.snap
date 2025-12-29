@@ -28,7 +28,8 @@ SET search_path TO collate_tests;
 
 CREATE TABLE collate_test1 (
   a INT,
-  b TEXT COLLATE "en_US" NOT NULL
+  b TEXT COLLATE "en_US"
+  NOT NULL
 );
 
 CREATE TABLE collate_test_fail (
@@ -262,13 +263,15 @@ SET lc_time = tr_TR;
 SELECT to_char(CAST('2010-02-01' AS DATE), 'DD TMMON YYYY');
 
 SELECT
-  to_char(CAST('2010-02-01' AS DATE),
+  to_char(CAST('2010-02-01'
+  AS DATE),
   'DD TMMON YYYY' COLLATE "tr_TR");
 
 SELECT to_char(CAST('2010-04-01' AS DATE), 'DD TMMON YYYY');
 
 SELECT
-  to_char(CAST('2010-04-01' AS DATE),
+  to_char(CAST('2010-04-01'
+  AS DATE),
   'DD TMMON YYYY' COLLATE "tr_TR");
 
 SELECT to_date('01 ÅUB 2010', 'DD TMMON YYYY');
@@ -297,7 +300,8 @@ ORDER BY b COLLATE "C";
 CREATE VIEW collview3 AS
 SELECT
   a,
-  lower((x || x) COLLATE "C")
+  lower((x ||
+  x) COLLATE "C")
 FROM
   collate_test10;
 
@@ -410,36 +414,42 @@ CREATE DOMAIN testdomain AS TEXT;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test1
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test2
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test3
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain_sv)
+  CAST(b
+  AS testdomain_sv)
 FROM
   collate_test3
 ORDER BY 2;
 
 SELECT
   a,
-  lower(CAST(x AS testdomain)),
-  lower(CAST(y AS testdomain))
+  lower(CAST(x
+  AS testdomain)),
+  lower(CAST(y
+  AS testdomain))
 FROM
   collate_test10;
 
@@ -591,7 +601,8 @@ FROM
   ('b')) AS t (x)
 UNION ALL
 SELECT
-  (x || 'c') COLLATE "de_DE"
+  (x ||
+  'c') COLLATE "de_DE"
 FROM
   foo
 WHERE
@@ -644,8 +655,10 @@ SELECT
   mylt_plpgsql(a.b,
   b.b)
 FROM
-  collate_test1 AS a,
-  collate_test1 AS b
+  collate_test1
+  AS a,
+  collate_test1
+  AS b
 ORDER BY a.b,
   b.b;
 
@@ -661,8 +674,10 @@ SELECT
   mylt_plpgsql(a.b,
   b.b COLLATE "C")
 FROM
-  collate_test1 AS a,
-  collate_test1 AS b
+  collate_test1
+  AS a,
+  collate_test1
+  AS b
 ORDER BY a.b,
   b.b;
 
@@ -765,7 +780,8 @@ CREATE INDEX "collate_test1_idx3" ON collate_test1 USING btree
 
 CREATE INDEX "collate_test1_idx4" ON collate_test1 USING btree
 (
-  ((b || 'foo') COLLATE "POSIX")
+  ((b ||
+  'foo') COLLATE "POSIX")
 );
 
 CREATE INDEX "collate_test1_idx5" ON collate_test1 USING btree
@@ -894,7 +910,8 @@ CREATE TYPE collate_dep_test2 AS (
 
 CREATE VIEW collate_dep_test3 AS
 SELECT
-  CAST('foo' AS TEXT) COLLATE "test0" AS foo;
+  CAST('foo'
+  AS TEXT) COLLATE "test0" AS foo;
 
 CREATE TABLE collate_dep_test4t ( a INT, b TEXT );
 
@@ -911,10 +928,12 @@ DROP TABLE "collate_dep_test1", "collate_dep_test4t";
 
 DROP TYPE collate_dep_test2;
 
-CREATE TYPE textrange_c AS RANGE (subtype = TEXT,
+CREATE TYPE textrange_c AS RANGE
+(subtype = TEXT,
 collation = "C");
 
-CREATE TYPE textrange_en_us AS RANGE (subtype = TEXT,
+CREATE TYPE textrange_en_us AS RANGE
+(subtype = TEXT,
 collation = "en_US");
 
 SELECT textrange_c('A', 'Z') @> CAST('b' AS TEXT);

@@ -77,7 +77,8 @@ FROM
     (ts_token_type(cfgparser)).tokid AS tokid
   FROM
     pg_ts_config) AS tt
-  RIGHT OUTER JOIN pg_ts_config_map AS m
+  RIGHT OUTER JOIN pg_ts_config_map
+  AS m
   ON tt.cfgid =
     m.mapcfg AND
     tt.tokid =
@@ -829,12 +830,14 @@ SELECT
 
 SELECT
   plainto_tsquery('english',
-  'foo bar') || plainto_tsquery('english',
+  'foo bar') ||
+  plainto_tsquery('english',
   'asd fg');
 
 SELECT
   plainto_tsquery('english',
-  'foo bar') || (!!plainto_tsquery('english',
+  'foo bar') ||
+  (!!plainto_tsquery('english',
   'asd fg'));
 
 SELECT plainto_tsquery('english', 'foo bar') && 'asd | fg';
@@ -994,7 +997,8 @@ SELECT
   to_tsquery('both & stripped'));
 
 SELECT
-  ts_rank_cd(to_tsvector('unstripped') || strip(to_tsvector('stripped')),
+  ts_rank_cd(to_tsvector('unstripped') ||
+  strip(to_tsvector('stripped')),
   to_tsquery('unstripped & stripped'));
 
 SELECT
@@ -1208,19 +1212,22 @@ ff-bg
 
 SELECT
   ts_headline('simple',
-  CAST('1 2 3 1 3' AS TEXT),
+  CAST('1 2 3 1 3'
+  AS TEXT),
   '1 <-> 3',
   'MaxWords=2, MinWords=1');
 
 SELECT
   ts_headline('simple',
-  CAST('1 2 3 1 3' AS TEXT),
+  CAST('1 2 3 1 3'
+  AS TEXT),
   '1 & 3',
   'MaxWords=4, MinWords=1');
 
 SELECT
   ts_headline('simple',
-  CAST('1 2 3 1 3' AS TEXT),
+  CAST('1 2 3 1 3'
+  AS TEXT),
   '1 <-> 3',
   'MaxWords=4, MinWords=1');
 
@@ -1327,7 +1334,8 @@ ALTER TABLE test_tsquery ADD COLUMN sample TSQUERY;
 
 UPDATE test_tsquery
 SET sample = to_tsquery('english',
-CAST(txtsample AS TEXT));
+CAST(txtsample
+AS TEXT));
 
 SELECT
   COUNT(*)
@@ -1421,7 +1429,8 @@ RESET enable_seqscan;
 
 SELECT
   ts_rewrite('foo & bar & qq & new & york',
-  CAST('new & york' AS TSQUERY),
+  CAST('new & york'
+  AS TSQUERY),
   'big & apple | nyc | new & york & city');
 
 SELECT
@@ -1433,15 +1442,18 @@ SELECT
 
 SELECT
   ts_rewrite('moscow',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite('moscow & hotel',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite('bar & qq & foo & (new <-> york)',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite('moscow',
@@ -1457,19 +1469,23 @@ SELECT
 
 SELECT
   ts_rewrite('1 & (2 <-> 3)',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite('1 & (2 <2> 3)',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite('5 <-> (1 & (2 <-> 3))',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite('5 <-> (6 | 8)',
-  CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
+  CAST('SELECT keyword, sample FROM test_tsquery'
+  AS TEXT));
 
 SELECT
   ts_rewrite(to_tsquery('5 & (6 | 5)'),
@@ -1629,7 +1645,9 @@ BEFORE
 INSERT OR UPDATE
 ON test_tsvector
 FOR EACH ROW
-EXECUTE FUNCTION tsvector_update_trigger(a, "pg_catalog.english", t);
+EXECUTE FUNCTION tsvector_update_trigger(a,
+"pg_catalog.english",
+t);
 
 SELECT
   COUNT(*)
@@ -1695,14 +1713,16 @@ SELECT
 FROM
   pendtest
 WHERE
-  CAST('ipsu:*' AS TSQUERY) @@ ts;
+  CAST('ipsu:*'
+  AS TSQUERY) @@ ts;
 
 SELECT
   *
 FROM
   pendtest
 WHERE
-  CAST('ipsa:*' AS TSQUERY) @@ ts;
+  CAST('ipsa:*'
+  AS TSQUERY) @@ ts;
 
 SELECT * FROM pendtest WHERE CAST('ips:*' AS TSQUERY) @@ ts;
 

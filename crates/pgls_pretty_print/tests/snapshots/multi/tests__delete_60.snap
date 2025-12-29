@@ -1,10 +1,11 @@
 ---
-source: crates/pgt_pretty_print/tests/tests.rs
-input_file: crates/pgt_pretty_print/tests/data/multi/delete_60.sql
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/delete_60.sql
 snapshot_kind: text
 ---
 CREATE TABLE delete_test (
-  id serial PRIMARY KEY,
+  id serial
+  PRIMARY KEY,
   a INT,
   b TEXT
 );

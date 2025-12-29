@@ -27,7 +27,8 @@ BEGIN;
 
 UPDATE lotest_stash_values
 SET fd = lo_open(loid,
-CAST(X'20000' | X'40000' AS INT));
+CAST(X'20000' | X'40000'
+AS INT));
 
 SELECT
   lowrite(fd,
@@ -79,7 +80,8 @@ BEGIN;
 
 UPDATE lotest_stash_values
 SET fd = lo_open(loid,
-CAST(X'20000' | X'40000' AS INT));
+CAST(X'20000' | X'40000'
+AS INT));
 
 SELECT lo_lseek(fd, 104, 0) FROM lotest_stash_values;
 
@@ -103,7 +105,8 @@ BEGIN;
 
 SELECT
   lo_open(loid,
-  CAST(X'40000' AS INT))
+  CAST(X'40000'
+  AS INT))
 FROM
   lotest_stash_values;
 
@@ -115,7 +118,8 @@ BEGIN;
 
 UPDATE lotest_stash_values
 SET fd = lo_open(loid,
-CAST(X'20000' | X'40000' AS INT));
+CAST(X'20000' | X'40000'
+AS INT));
 
 SELECT lo_truncate(fd, 11) FROM lotest_stash_values;
 
@@ -143,7 +147,8 @@ BEGIN;
 
 UPDATE lotest_stash_values
 SET fd = lo_open(loid,
-CAST(X'20000' | X'40000' AS INT));
+CAST(X'20000' | X'40000'
+AS INT));
 
 SELECT
   lo_lseek64(fd,
@@ -198,7 +203,8 @@ BEGIN;
 
 UPDATE lotest_stash_values
 SET fd = lo_open(loid,
-CAST(X'20000' | X'40000' AS INT));
+CAST(X'20000' | X'40000'
+AS INT));
 
 SELECT lo_lseek(fd, 0, 2) FROM lotest_stash_values;
 

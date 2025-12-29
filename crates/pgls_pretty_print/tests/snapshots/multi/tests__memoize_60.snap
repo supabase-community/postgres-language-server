@@ -50,8 +50,10 @@ SELECT
   COUNT(*),
   AVG(t1.unique1)
 FROM
-  tenk1 AS t1
-  INNER JOIN tenk1 AS t2
+  tenk1
+  AS t1
+  INNER JOIN tenk1
+  AS t2
   ON t1.unique1 =
     t2.twenty
 WHERE
@@ -70,11 +72,13 @@ SELECT
   COUNT(*),
   AVG(t2.unique1)
 FROM
-  tenk1 AS t1,
+  tenk1
+  AS t1,
   LATERAL (SELECT
     t2.unique1
   FROM
-    tenk1 AS t2
+    tenk1
+    AS t2
   WHERE
     t1.twenty =
     t2.unique1
@@ -97,12 +101,14 @@ SELECT
   COUNT(*),
   AVG(t2.t1two)
 FROM
-  tenk1 AS t1
+  tenk1
+  AS t1
   LEFT OUTER JOIN LATERAL (SELECT
     t1.two AS t1two,
     *
   FROM
-    tenk1 AS t2
+    tenk1
+    AS t2
   WHERE
     t2.unique1 <
     4
@@ -124,12 +130,14 @@ SELECT
   COUNT(*),
   AVG(t1.twenty)
 FROM
-  tenk1 AS t1
+  tenk1
+  AS t1
   LEFT OUTER JOIN LATERAL (SELECT
     t1.two + 1 AS c1,
     t2.unique1 AS c2
   FROM
-    tenk1 AS t2) AS s
+    tenk1
+    AS t2) AS s
   ON TRUE
 WHERE
   s.c1 =
@@ -149,13 +157,15 @@ SELECT
   COUNT(*),
   AVG(t1.twenty)
 FROM
-  tenk1 AS t1
+  tenk1
+  AS t1
   LEFT OUTER JOIN LATERAL (SELECT
     t1.twenty AS c1,
     t2.unique1 AS c2,
     t2.two
   FROM
-    tenk1 AS t2) AS s
+    tenk1
+    AS t2) AS s
   ON t1.two =
     s.two
 WHERE
@@ -171,11 +181,14 @@ CREATE TABLE expr_key ( x NUMERIC, t TEXT );
 INSERT INTO expr_key (x,
 t)
 SELECT
-  CAST(d1 AS NUMERIC),
-  CAST(d1 AS TEXT)
+  CAST(d1
+  AS NUMERIC),
+  CAST(d1
+  AS TEXT)
 FROM
   (SELECT
-    round(CAST(d / pi() AS NUMERIC),
+    round(CAST(d / pi()
+    AS NUMERIC),
     7) AS d1
   FROM
     generate_series(1,
@@ -215,8 +228,10 @@ CREATE TABLE flt ( f DOUBLE PRECISION );
 CREATE INDEX "flt_f_idx" ON flt USING btree ( f);
 
 INSERT INTO flt
-VALUES (CAST('-0.0' AS DOUBLE PRECISION)),
-(CAST('+0.0' AS DOUBLE PRECISION));
+VALUES (CAST('-0.0'
+AS DOUBLE PRECISION)),
+(CAST('+0.0'
+AS DOUBLE PRECISION));
 
 ANALYZE flt;
 
@@ -308,15 +323,18 @@ RESET enable_partitionwise_join;
 SELECT
   unique1
 FROM
-  tenk1 AS t0
+  tenk1
+  AS t0
 WHERE
   unique1 <
   3 AND
   EXISTS (SELECT
     1
   FROM
-    tenk1 AS t1
-    INNER JOIN tenk1 AS t2
+    tenk1
+    AS t1
+    INNER JOIN tenk1
+    AS t2
     ON t1.unique1 =
       t2.hundred
   WHERE
@@ -329,15 +347,18 @@ WHERE
 SELECT
   unique1
 FROM
-  tenk1 AS t0
+  tenk1
+  AS t0
 WHERE
   unique1 <
   3 AND
   EXISTS (SELECT
     1
   FROM
-    tenk1 AS t1
-    INNER JOIN tenk1 AS t2
+    tenk1
+    AS t1
+    INNER JOIN tenk1
+    AS t2
     ON t1.unique1 =
       t2.hundred
   WHERE
@@ -371,11 +392,13 @@ SELECT
   COUNT(*),
   AVG(t2.unique1)
 FROM
-  tenk1 AS t1,
+  tenk1
+  AS t1,
   LATERAL (SELECT
     t2.unique1
   FROM
-    tenk1 AS t2
+    tenk1
+    AS t2
   WHERE
     t1.twenty =
     t2.unique1) AS t2
@@ -387,11 +410,13 @@ SELECT
   COUNT(*),
   AVG(t2.unique1)
 FROM
-  tenk1 AS t1,
+  tenk1
+  AS t1,
   LATERAL (SELECT
     t2.unique1
   FROM
-    tenk1 AS t2
+    tenk1
+    AS t2
   WHERE
     t1.twenty =
     t2.unique1) AS t2
@@ -430,14 +455,16 @@ WHERE t2.a IS NULL;',
 SELECT
   COUNT(*)
 FROM
-  tab_anti AS t1
+  tab_anti
+  AS t1
   LEFT OUTER JOIN LATERAL (SELECT DISTINCT ON (
     a)
     a,
     b,
     t1.a AS x
   FROM
-    tab_anti AS t2) AS t2
+    tab_anti
+    AS t2) AS t2
   ON t1.a + 1 =
     t2.a
 WHERE
@@ -446,17 +473,20 @@ WHERE
 SELECT
   *
 FROM
-  tab_anti AS t1
+  tab_anti
+  AS t1
 WHERE
   t1.a IN (SELECT
     a
   FROM
-    tab_anti AS t2
+    tab_anti
+    AS t2
   WHERE
     t2.b IN (SELECT
       t1.b
     FROM
-      tab_anti AS t3
+      tab_anti
+      AS t3
     WHERE
       t2.a >
       1

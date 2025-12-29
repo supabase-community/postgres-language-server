@@ -12,7 +12,8 @@ CREATE TABLE quad_point_tbl AS
 
 INSERT INTO quad_point_tbl
 SELECT
-  CAST('(333.0,400.0)' AS point)
+  CAST('(333.0,400.0)'
+  AS point)
 FROM
   generate_series(1,
   1000);
@@ -72,14 +73,16 @@ SELECT
 FROM
   quad_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
@@ -136,7 +139,8 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2 AS
   FROM
     quad_point_tbl
   WHERE
-    p <@ CAST('(200,200,1000,1000)' AS box);
+    p <@ CAST('(200,200,1000,1000)'
+    AS box);
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq3 AS
   SELECT
@@ -275,28 +279,32 @@ SELECT
 FROM
   quad_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
@@ -390,8 +398,10 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_idx1 AS
 SELECT
   *
 FROM
-  quad_point_tbl_ord_seq1 AS seq
-  FULL OUTER JOIN quad_point_tbl_ord_idx1 AS idx
+  quad_point_tbl_ord_seq1
+  AS seq
+  FULL OUTER JOIN quad_point_tbl_ord_idx1
+  AS idx
   ON seq.n =
     idx.n
 WHERE
@@ -406,7 +416,8 @@ SELECT
 FROM
   quad_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx2 AS
   SELECT
@@ -418,13 +429,16 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_idx2 AS
   FROM
     quad_point_tbl
   WHERE
-    p <@ CAST('(200,200,1000,1000)' AS box);
+    p <@ CAST('(200,200,1000,1000)'
+    AS box);
 
 SELECT
   *
 FROM
-  quad_point_tbl_ord_seq2 AS seq
-  FULL OUTER JOIN quad_point_tbl_ord_idx2 AS idx
+  quad_point_tbl_ord_seq2
+  AS seq
+  FULL OUTER JOIN quad_point_tbl_ord_idx2
+  AS idx
   ON seq.n =
     idx.n
 WHERE
@@ -456,8 +470,10 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_idx3 AS
 SELECT
   *
 FROM
-  quad_point_tbl_ord_seq3 AS seq
-  FULL OUTER JOIN quad_point_tbl_ord_idx3 AS idx
+  quad_point_tbl_ord_seq3
+  AS seq
+  FULL OUTER JOIN quad_point_tbl_ord_idx3
+  AS idx
   ON seq.n =
     idx.n
 WHERE
@@ -468,28 +484,32 @@ SELECT
 FROM
   kd_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   kd_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   kd_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
 FROM
   kd_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT COUNT(*) FROM kd_point_tbl WHERE p << '(5000, 4000)';
 
@@ -553,8 +573,10 @@ CREATE TEMPORARY TABLE kd_point_tbl_ord_idx1 AS
 SELECT
   *
 FROM
-  quad_point_tbl_ord_seq1 AS seq
-  FULL OUTER JOIN kd_point_tbl_ord_idx1 AS idx
+  quad_point_tbl_ord_seq1
+  AS seq
+  FULL OUTER JOIN kd_point_tbl_ord_idx1
+  AS idx
   ON seq.n =
     idx.n
 WHERE
@@ -569,7 +591,8 @@ SELECT
 FROM
   kd_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx2 AS
   SELECT
@@ -581,13 +604,16 @@ CREATE TEMPORARY TABLE kd_point_tbl_ord_idx2 AS
   FROM
     kd_point_tbl
   WHERE
-    p <@ CAST('(200,200,1000,1000)' AS box);
+    p <@ CAST('(200,200,1000,1000)'
+    AS box);
 
 SELECT
   *
 FROM
-  quad_point_tbl_ord_seq2 AS seq
-  FULL OUTER JOIN kd_point_tbl_ord_idx2 AS idx
+  quad_point_tbl_ord_seq2
+  AS seq
+  FULL OUTER JOIN kd_point_tbl_ord_idx2
+  AS idx
   ON seq.n =
     idx.n
 WHERE
@@ -619,8 +645,10 @@ CREATE TEMPORARY TABLE kd_point_tbl_ord_idx3 AS
 SELECT
   *
 FROM
-  quad_point_tbl_ord_seq3 AS seq
-  FULL OUTER JOIN kd_point_tbl_ord_idx3 AS idx
+  quad_point_tbl_ord_seq3
+  AS seq
+  FULL OUTER JOIN kd_point_tbl_ord_idx3
+  AS idx
   ON seq.n =
     idx.n
 WHERE
@@ -661,7 +689,8 @@ SELECT
     p <-> '0,0'
   LIMIT 1)
 FROM
-  (VALUES (CAST('1,2' AS point)),
+  (VALUES (CAST('1,2'
+  AS point)),
   (NULL),
   ('1234,5678')) AS pts (pt);
 
@@ -908,28 +937,32 @@ SELECT
 FROM
   quad_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
 FROM
   quad_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
@@ -1006,28 +1039,32 @@ SELECT
 FROM
   kd_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   kd_point_tbl
 WHERE
-  p <@ CAST('(200,200,1000,1000)' AS box);
+  p <@ CAST('(200,200,1000,1000)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   kd_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT
   COUNT(*)
 FROM
   kd_point_tbl
 WHERE
-  CAST('(200,200,1000,1000)' AS box) @> p;
+  CAST('(200,200,1000,1000)'
+  AS box) @> p;
 
 SELECT COUNT(*) FROM kd_point_tbl WHERE p << '(5000, 4000)';
 

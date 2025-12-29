@@ -71,7 +71,8 @@ CREATE TABLE cmdata2 ( f1 TEXT COMPRESSION lz4 );
 
 INSERT INTO cmdata2
 SELECT
-  large_val_lz4() || repeat('a',
+  large_val_lz4() ||
+  repeat('a',
   4000);
 
 SELECT pg_column_compression(f1) FROM cmdata2;
@@ -156,12 +157,15 @@ CREATE TABLE cmdata2 (
 CREATE UNIQUE
 INDEX "idx1" ON cmdata2 USING btree
 (
-  (f1 || f2)
+  (f1 ||
+  f2)
 );
 
 INSERT INTO cmdata2
 VALUES ((SELECT
-  CAST(array_agg(fipshash(CAST(g AS TEXT))) AS TEXT)
+  CAST(array_agg(fipshash(CAST(g
+  AS TEXT)))
+  AS TEXT)
 FROM
   generate_series(1,
   50) AS g),

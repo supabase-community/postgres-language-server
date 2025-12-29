@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::TypeCast;
 
@@ -16,7 +16,7 @@ pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
         super::emit_node(arg, e);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::AS_KW);
     e.space();
 

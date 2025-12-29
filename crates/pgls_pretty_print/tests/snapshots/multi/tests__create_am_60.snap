@@ -72,7 +72,8 @@ SELECT
 FROM
   fast_emp4000
 WHERE
-  home_base <@ CAST('(200,200),(2000,1000)' AS box)
+  home_base <@ CAST('(200,200),(2000,1000)'
+  AS box)
 ORDER BY home_base[0][0];
 
 SELECT
@@ -80,7 +81,8 @@ SELECT
 FROM
   fast_emp4000
 WHERE
-  home_base <@ CAST('(200,200),(2000,1000)' AS box)
+  home_base <@ CAST('(200,200),(2000,1000)'
+  AS box)
 ORDER BY home_base[0][0];
 
 SELECT
@@ -88,14 +90,16 @@ SELECT
 FROM
   fast_emp4000
 WHERE
-  home_base && CAST('(1000,1000,0,0)' AS box);
+  home_base && CAST('(1000,1000,0,0)'
+  AS box);
 
 SELECT
   COUNT(*)
 FROM
   fast_emp4000
 WHERE
-  home_base && CAST('(1000,1000,0,0)' AS box);
+  home_base && CAST('(1000,1000,0,0)'
+  AS box);
 
 SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
@@ -170,8 +174,10 @@ PARTITION BY LIST(a) USING heap2;
 SELECT
   a.amname
 FROM
-  pg_class AS c,
-  pg_am AS a
+  pg_class
+  AS c,
+  pg_am
+  AS a
 WHERE
   c.relname =
   'tableam_parted_heap2' AND
@@ -214,17 +220,24 @@ SELECT
   (CASE
   WHEN relkind =
   't' THEN (SELECT
-    'toast for ' || CAST(relname AS REGCLASS)
+    'toast for ' ||
+    CAST(relname
+    AS REGCLASS)
   FROM
-    pg_class AS pcm
+    pg_class
+    AS pcm
   WHERE
     pcm.reltoastrelid =
     pc.oid)
-  ELSE CAST(CAST(relname AS REGCLASS) AS TEXT)
+  ELSE CAST(CAST(relname
+  AS REGCLASS)
+  AS TEXT)
   END) COLLATE "C" AS relname
 FROM
-  pg_class AS pc,
-  pg_am AS pa
+  pg_class
+  AS pc,
+  pg_am
+  AS pa
 WHERE
   pa.oid =
   pc.relam AND
@@ -243,7 +256,8 @@ FROM
   pg_am
 WHERE
   pg_depend.refclassid =
-  CAST('pg_am' AS REGCLASS) AND
+  CAST('pg_am'
+  AS REGCLASS) AND
   pg_am.oid =
   pg_depend.refobjid AND
   pg_am.amname =
@@ -255,7 +269,8 @@ ORDER BY classid,
 CREATE TABLE heaptable USING heap AS
   SELECT
     a,
-    repeat(CAST(a AS TEXT),
+    repeat(CAST(a
+    AS TEXT),
     100)
   FROM
     generate_series(1,
@@ -264,13 +279,16 @@ CREATE TABLE heaptable USING heap AS
 SELECT
   amname
 FROM
-  pg_class AS c,
-  pg_am AS am
+  pg_class
+  AS c,
+  pg_am
+  AS am
 WHERE
   c.relam =
   am.oid AND
   c.oid =
-  CAST('heaptable' AS REGCLASS);
+  CAST('heaptable'
+  AS REGCLASS);
 
 ALTER TABLE heaptable SET ACCESS METHOD heap2;
 
@@ -286,9 +304,11 @@ FROM
   pg_depend
 WHERE
   classid =
-  CAST('pg_class' AS REGCLASS) AND
+  CAST('pg_class'
+  AS REGCLASS) AND
   objid =
-  CAST('heaptable' AS REGCLASS)
+  CAST('heaptable'
+  AS REGCLASS)
 ORDER BY 1,
   2;
 
@@ -306,9 +326,11 @@ FROM
   pg_depend
 WHERE
   classid =
-  CAST('pg_class' AS REGCLASS) AND
+  CAST('pg_class'
+  AS REGCLASS) AND
   objid =
-  CAST('heaptable' AS REGCLASS)
+  CAST('heaptable'
+  AS REGCLASS)
 ORDER BY 1,
   2;
 
@@ -317,13 +339,16 @@ ALTER TABLE heaptable SET ACCESS METHOD heap2;
 SELECT
   amname
 FROM
-  pg_class AS c,
-  pg_am AS am
+  pg_class
+  AS c,
+  pg_am
+  AS am
 WHERE
   c.relam =
   am.oid AND
   c.oid =
-  CAST('heaptable' AS REGCLASS);
+  CAST('heaptable'
+  AS REGCLASS);
 
 SELECT
   COUNT(a),
@@ -343,13 +368,16 @@ ALTER TABLE heaptable SET ACCESS METHOD DEFAULT;
 SELECT
   amname
 FROM
-  pg_class AS c,
-  pg_am AS am
+  pg_class
+  AS c,
+  pg_am
+  AS am
 WHERE
   c.relam =
   am.oid AND
   c.oid =
-  CAST('heaptable' AS REGCLASS);
+  CAST('heaptable'
+  AS REGCLASS);
 
 SET LOCAL default_table_access_method = heap;
 
@@ -358,13 +386,16 @@ ALTER TABLE heaptable SET ACCESS METHOD DEFAULT;
 SELECT
   amname
 FROM
-  pg_class AS c,
-  pg_am AS am
+  pg_class
+  AS c,
+  pg_am
+  AS am
 WHERE
   c.relam =
   am.oid AND
   c.oid =
-  CAST('heaptable' AS REGCLASS);
+  CAST('heaptable'
+  AS REGCLASS);
 
 ROLLBACK;
 
@@ -377,26 +408,32 @@ CREATE MATERIALIZED VIEW heapmv USING heap AS
 SELECT
   amname
 FROM
-  pg_class AS c,
-  pg_am AS am
+  pg_class
+  AS c,
+  pg_am
+  AS am
 WHERE
   c.relam =
   am.oid AND
   c.oid =
-  CAST('heapmv' AS REGCLASS);
+  CAST('heapmv'
+  AS REGCLASS);
 
 ALTER MATERIALIZED VIEW heapmv SET ACCESS METHOD heap2;
 
 SELECT
   amname
 FROM
-  pg_class AS c,
-  pg_am AS am
+  pg_class
+  AS c,
+  pg_am
+  AS am
 WHERE
   c.relam =
   am.oid AND
   c.oid =
-  CAST('heapmv' AS REGCLASS);
+  CAST('heapmv'
+  AS REGCLASS);
 
 SELECT COUNT(a), COUNT(1) FILTER (WHERE a = 1) FROM heapmv;
 
@@ -434,11 +471,13 @@ FROM
   pg_am
 WHERE
   pg_depend.refclassid =
-  CAST('pg_am' AS REGCLASS) AND
+  CAST('pg_am'
+  AS REGCLASS) AND
   pg_am.oid =
   pg_depend.refobjid AND
   pg_depend.objid =
-  CAST('am_partitioned' AS REGCLASS);
+  CAST('am_partitioned'
+  AS REGCLASS);
 
 DROP TABLE "am_partitioned";
 
@@ -466,19 +505,23 @@ FROM
   pg_am
 WHERE
   pg_depend.refclassid =
-  CAST('pg_am' AS REGCLASS) AND
+  CAST('pg_am'
+  AS REGCLASS) AND
   pg_am.oid =
   pg_depend.refobjid AND
   pg_depend.objid =
-  CAST('am_partitioned' AS REGCLASS);
+  CAST('am_partitioned'
+  AS REGCLASS);
 
 ALTER TABLE am_partitioned SET ACCESS METHOD heap2;
 
 SELECT
   a.amname
 FROM
-  pg_class AS c,
-  pg_am AS a
+  pg_class
+  AS c,
+  pg_am
+  AS a
 WHERE
   c.relname =
   'am_partitioned' AND
@@ -497,11 +540,13 @@ FROM
   pg_am
 WHERE
   pg_depend.refclassid =
-  CAST('pg_am' AS REGCLASS) AND
+  CAST('pg_am'
+  AS REGCLASS) AND
   pg_am.oid =
   pg_depend.refobjid AND
   pg_depend.objid =
-  CAST('am_partitioned' AS REGCLASS);
+  CAST('am_partitioned'
+  AS REGCLASS);
 
 SET LOCAL default_table_access_method = heap2;
 
@@ -510,8 +555,10 @@ ALTER TABLE am_partitioned SET ACCESS METHOD heap;
 SELECT
   a.amname
 FROM
-  pg_class AS c,
-  pg_am AS a
+  pg_class
+  AS c,
+  pg_am
+  AS a
 WHERE
   c.relname =
   'am_partitioned' AND
@@ -530,11 +577,13 @@ FROM
   pg_am
 WHERE
   pg_depend.refclassid =
-  CAST('pg_am' AS REGCLASS) AND
+  CAST('pg_am'
+  AS REGCLASS) AND
   pg_am.oid =
   pg_depend.refobjid AND
   pg_depend.objid =
-  CAST('am_partitioned' AS REGCLASS);
+  CAST('am_partitioned'
+  AS REGCLASS);
 
 SET LOCAL default_table_access_method = heap2;
 
@@ -543,8 +592,10 @@ ALTER TABLE am_partitioned SET ACCESS METHOD heap2;
 SELECT
   a.amname
 FROM
-  pg_class AS c,
-  pg_am AS a
+  pg_class
+  AS c,
+  pg_am
+  AS a
 WHERE
   c.relname =
   'am_partitioned' AND
@@ -611,8 +662,10 @@ SELECT
   c.relname,
   a.amname
 FROM
-  pg_class AS c,
-  pg_am AS a
+  pg_class
+  AS c,
+  pg_am
+  AS a
 WHERE
   c.relam =
   a.oid AND
@@ -622,7 +675,8 @@ SELECT
   c.relname,
   'default'
 FROM
-  pg_class AS c
+  pg_class
+  AS c
 WHERE
   c.relam =
   0 AND
@@ -693,17 +747,24 @@ SELECT
   (CASE
   WHEN relkind =
   't' THEN (SELECT
-    'toast for ' || CAST(relname AS REGCLASS)
+    'toast for ' ||
+    CAST(relname
+    AS REGCLASS)
   FROM
-    pg_class AS pcm
+    pg_class
+    AS pcm
   WHERE
     pcm.reltoastrelid =
     pc.oid)
-  ELSE CAST(CAST(relname AS REGCLASS) AS TEXT)
+  ELSE CAST(CAST(relname
+  AS REGCLASS)
+  AS TEXT)
   END) COLLATE "C" AS relname
 FROM
-  pg_class AS pc
-  LEFT OUTER JOIN pg_am AS pa
+  pg_class
+  AS pc
+  LEFT OUTER JOIN pg_am
+  AS pa
   ON pa.oid =
     pc.relam
 WHERE

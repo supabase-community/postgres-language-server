@@ -129,8 +129,10 @@ SELECT
   explain_filter('explain (memory) execute int8_query');
 
 CREATE TABLE gen_part (
-  key1 INT NOT NULL,
-  key2 INT NOT NULL
+  key1 INT
+  NOT NULL,
+  key2 INT
+  NOT NULL
 )
 PARTITION BY LIST(key1);
 

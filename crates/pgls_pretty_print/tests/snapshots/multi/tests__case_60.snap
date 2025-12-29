@@ -166,14 +166,18 @@ SELECT
   b.i,
   b.j)
 FROM
-  case_tbl AS a,
-  case2_tbl AS b;
+  case_tbl
+  AS a,
+  case2_tbl
+  AS b;
 
 SELECT
   *
 FROM
-  case_tbl AS a,
-  case2_tbl AS b
+  case_tbl
+  AS a,
+  case2_tbl
+  AS b
 WHERE
   COALESCE(a.f,
   b.i,
@@ -184,14 +188,18 @@ SELECT
   NULLIF(a.i, b.i) AS "NULLIF(a.i,b.i)",
   NULLIF(b.i, 4) AS "NULLIF(b.i,4)"
 FROM
-  case_tbl AS a,
-  case2_tbl AS b;
+  case_tbl
+  AS a,
+  case2_tbl
+  AS b;
 
 SELECT
   *
 FROM
-  case_tbl AS a,
-  case2_tbl AS b
+  case_tbl
+  AS a,
+  case2_tbl
+  AS b
 WHERE
   COALESCE(f,
   b.i) =
@@ -227,7 +235,8 @@ WHEN b.i >=
 2 THEN 2 * j
 ELSE 3 * j
 END
-FROM case2_tbl AS b
+FROM case2_tbl
+AS b
 WHERE
   j =
   -case_tbl.i;
@@ -279,7 +288,8 @@ RIGHTARG = foodomain);
 
 SELECT
   CASE volfoo('bar')
-  WHEN CAST('foo' AS foodomain) THEN 'is foo'
+  WHEN CAST('foo'
+  AS foodomain) THEN 'is foo'
   ELSE 'is not foo'
   END;
 
@@ -318,17 +328,21 @@ SELECT
   CASE make_ad(1,
   2)
   WHEN CAST(ARRAY[2,
-  4] AS arrdomain) THEN 'wrong'
+  4]
+  AS arrdomain) THEN 'wrong'
   WHEN CAST(ARRAY[2,
-  5] AS arrdomain) THEN 'still wrong'
+  5]
+  AS arrdomain) THEN 'still wrong'
   WHEN CAST(ARRAY[1,
-  2] AS arrdomain) THEN 'right'
+  2]
+  AS arrdomain) THEN 'right'
   END;
 
 SELECT
   NULLIF(make_ad(1,
   2), CAST(ARRAY[2,
-  3] AS arrdomain));
+  3]
+  AS arrdomain));
 
 ROLLBACK;
 
@@ -337,11 +351,15 @@ BEGIN;
 CREATE TYPE casetestenum AS ENUM ('e', 'f', 'g');
 
 SELECT
-  CASE CAST('foo' AS TEXT)
+  CASE CAST('foo'
+  AS TEXT)
   WHEN 'foo' THEN ARRAY['a',
   'b',
   'c',
-  'd'] || CAST(enum_range(CAST(NULL AS casetestenum)) AS TEXT[])
+  'd'] ||
+  CAST(enum_range(CAST(NULL
+  AS casetestenum))
+  AS TEXT[])
   ELSE ARRAY['x',
   'y']
   END;

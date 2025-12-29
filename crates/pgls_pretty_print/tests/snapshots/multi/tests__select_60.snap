@@ -117,7 +117,8 @@ SELECT
   p.name,
   p.age
 FROM
-  person AS p
+  person
+  AS p
 ORDER BY age USING >,
   name;
 

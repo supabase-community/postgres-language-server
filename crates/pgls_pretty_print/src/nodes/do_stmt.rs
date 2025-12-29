@@ -12,8 +12,8 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
 
     e.token(TokenKind::DO_KW);
 
-    let mut language: Option<String> = None;
-    let mut body: Option<String> = None;
+    let mut language: Option<(String, i32)> = None;
+    let mut body: Option<(String, i32)> = None;
 
     for arg in &n.args {
         match &arg.node {
@@ -21,7 +21,7 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
                 "language" => {
                     if let Some(lang_node) = &def_elem.arg {
                         if let Some(NodeEnum::String(s)) = &lang_node.node {
-                            language = Some(s.sval.clone());
+                            language = Some((s.sval.clone(), def_elem.location));
                         } else {
                             debug_assert!(
                                 false,
@@ -35,7 +35,7 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
                 "as" => {
                     if let Some(code_node) = &def_elem.arg {
                         if let Some(NodeEnum::String(s)) = &code_node.node {
-                            body = Some(s.sval.clone());
+                            body = Some((s.sval.clone(), def_elem.location));
                         } else {
                             debug_assert!(false, "DoStmt AS def_elem should hold a String node");
                         }
@@ -53,16 +53,37 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
         }
     }
 
-    if let Some(code) = body {
-        e.space();
-        emit_dollar_quoted_str(e, &code);
-    }
+    // Determine order based on location - smaller location comes first
+    // This preserves the original SQL order (LANGUAGE before body or body before LANGUAGE)
+    let language_first = match (&language, &body) {
+        (Some((_, lang_loc)), Some((_, body_loc))) => lang_loc < body_loc,
+        (Some(_), None) => true,
+        (None, Some(_)) => false,
+        (None, None) => false,
+    };
 
-    if let Some(lang) = language {
-        e.space();
-        emit_keyword(e, "LANGUAGE");
-        e.space();
-        emit_identifier_maybe_quoted(e, &lang);
+    if language_first {
+        if let Some((lang, _)) = &language {
+            e.space();
+            emit_keyword(e, "LANGUAGE");
+            e.space();
+            emit_identifier_maybe_quoted(e, lang);
+        }
+        if let Some((code, _)) = &body {
+            e.space();
+            emit_dollar_quoted_str(e, code);
+        }
+    } else {
+        if let Some((code, _)) = &body {
+            e.space();
+            emit_dollar_quoted_str(e, code);
+        }
+        if let Some((lang, _)) = &language {
+            e.space();
+            emit_keyword(e, "LANGUAGE");
+            e.space();
+            emit_identifier_maybe_quoted(e, lang);
+        }
     }
 
     e.token(TokenKind::SEMICOLON);

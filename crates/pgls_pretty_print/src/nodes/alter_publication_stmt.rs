@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterPublicationStmt;
 
 use super::node_list::emit_comma_separated_list;
@@ -18,42 +18,56 @@ pub(super) fn emit_alter_publication_stmt(e: &mut EventEmitter, n: &AlterPublica
     }
 
     // action: 0=Undefined, 1=AP_AddObjects, 2=AP_DropObjects, 3=AP_SetObjects
-    match n.action {
-        1 => {
-            // ADD
-            e.space();
-            e.token(TokenKind::ADD_KW);
-        }
-        2 => {
-            // DROP
-            e.space();
-            e.token(TokenKind::DROP_KW);
-        }
-        3 => {
-            // SET
-            e.space();
-            e.token(TokenKind::SET_KW);
-        }
-        _ => {}
-    }
+    // Check if we have objects/tables or just options
+    let has_objects = n.for_all_tables || !n.pubobjects.is_empty();
 
-    // Emit objects or FOR ALL TABLES
-    if n.for_all_tables {
-        e.space();
-        e.token(TokenKind::FOR_KW);
-        e.space();
-        e.token(TokenKind::ALL_KW);
-        e.space();
-        e.token(TokenKind::IDENT("TABLES".to_string()));
-    } else if !n.pubobjects.is_empty() {
-        e.space();
-        emit_comma_separated_list(e, &n.pubobjects, super::emit_node);
-    }
+    if has_objects {
+        // ADD/DROP/SET with objects
+        match n.action {
+            1 => {
+                // ADD
+                e.space();
+                e.token(TokenKind::ADD_KW);
+            }
+            2 => {
+                // DROP
+                e.space();
+                e.token(TokenKind::DROP_KW);
+            }
+            3 => {
+                // SET
+                e.space();
+                e.token(TokenKind::SET_KW);
+            }
+            _ => {}
+        }
 
-    // Optional: WITH (options)
-    if !n.options.is_empty() {
-        e.space();
-        e.token(TokenKind::WITH_KW);
+        // Emit objects or FOR ALL TABLES
+        if n.for_all_tables {
+            e.space();
+            e.token(TokenKind::FOR_KW);
+            e.space();
+            e.token(TokenKind::ALL_KW);
+            e.space();
+            e.token(TokenKind::IDENT("TABLES".to_string()));
+        } else if !n.pubobjects.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            emit_comma_separated_list(e, &n.pubobjects, super::emit_node);
+        }
+
+        // WITH options after objects (e.g., ADD TABLE t WITH (publish = true))
+        if !n.options.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            emit_comma_separated_list(e, &n.options, super::emit_node);
+            e.token(TokenKind::R_PAREN);
+        }
+    } else {
+        // Just options - use SET for setting publication options
+        e.line(LineType::SoftOrSpace);
+        e.token(TokenKind::SET_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.options, super::emit_node);

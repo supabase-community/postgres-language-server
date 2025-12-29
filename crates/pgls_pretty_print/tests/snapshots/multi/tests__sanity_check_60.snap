@@ -9,11 +9,14 @@ SELECT
   relname,
   nspname
 FROM
-  pg_class AS c
-  LEFT OUTER JOIN pg_namespace AS n
+  pg_class
+  AS c
+  LEFT OUTER JOIN pg_namespace
+  AS n
   ON n.oid =
     relnamespace
-  INNER JOIN pg_attribute AS a
+  INNER JOIN pg_attribute
+  AS a
   ON attrelid =
     c.oid AND
     attname =
@@ -27,7 +30,8 @@ WHERE
   NOT EXISTS (SELECT
     1
   FROM
-    pg_index AS i
+    pg_index
+    AS i
   WHERE
     indrelid =
     c.oid AND

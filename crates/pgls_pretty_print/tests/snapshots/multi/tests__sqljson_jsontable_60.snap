@@ -55,7 +55,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"1.23"' AS JSONB),
+    CAST('"1.23"'
+    AS JSONB),
     '$.a' AS js2
     COLUMNS (
       js2 INT PATH '$'
@@ -66,7 +67,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST(NULL AS JSONB),
+    CAST(NULL
+    AS JSONB),
     '$'
     COLUMNS (
       v1 TIMESTAMP
@@ -78,7 +80,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"1.23"' AS JSONB),
+    CAST('"1.23"'
+    AS JSONB),
     '$.a'
     COLUMNS (
       js2 INT PATH '$',
@@ -92,7 +95,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('{"rec": "(1,2)"}' AS JSONB),
+    CAST('{"rec": "(1,2)"}'
+    AS JSONB),
     '$'
     COLUMNS (
       id FOR ORDINALITY,
@@ -106,7 +110,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST(NULL AS JSONB),
+    CAST(NULL
+    AS JSONB),
     '$'
     COLUMNS (
       foo INT
@@ -117,7 +122,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"1.23"' AS JSONB),
+    CAST('"1.23"'
+    AS JSONB),
     'strict $.a'
     COLUMNS (
       js2 INT PATH '$'
@@ -128,7 +134,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('123' AS JSONB),
+    CAST('123'
+    AS JSONB),
     '$'
     COLUMNS (
       item INT PATH '$',
@@ -149,9 +156,11 @@ CREATE TEMPORARY TABLE json_table_test (js) AS
 SELECT
   *
 FROM
-  json_table_test AS vals
+  json_table_test
+  AS vals
   LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     'lax $[*]'
     COLUMNS (
       id FOR ORDINALITY,
@@ -170,9 +179,11 @@ FROM
 SELECT
   *
 FROM
-  json_table_test AS vals
+  json_table_test
+  AS vals
   LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     'lax $[*]'
     COLUMNS (
       id FOR ORDINALITY,
@@ -188,9 +199,11 @@ FROM
 SELECT
   *
 FROM
-  json_table_test AS vals
+  json_table_test
+  AS vals
   LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     'lax $[*]'
     COLUMNS (
       id FOR ORDINALITY,
@@ -205,9 +218,11 @@ FROM
 SELECT
   *
 FROM
-  json_table_test AS vals
+  json_table_test
+  AS vals
   LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     'lax $[*]'
     COLUMNS (
       id FOR ORDINALITY,
@@ -227,10 +242,13 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('{"d1": "H"}' AS JSONB),
+    CAST('{"d1": "H"}'
+    AS JSONB),
     '$'
     COLUMNS (
-      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST(CAST('"foo1"' AS JSONB) AS TEXT) ON EMPTY
+      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST(CAST('"foo1"'
+      AS JSONB)
+      AS TEXT) ON EMPTY
     )
   );
 
@@ -238,10 +256,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('{"d1": "H"}' AS JSONB),
+    CAST('{"d1": "H"}'
+    AS JSONB),
     '$'
     COLUMNS (
-      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST('foo' AS jsonb_test_domain) ON EMPTY
+      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST('foo'
+      AS jsonb_test_domain) ON EMPTY
     )
   );
 
@@ -249,10 +269,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('{"d1": "H"}' AS JSONB),
+    CAST('{"d1": "H"}'
+    AS JSONB),
     '$'
     COLUMNS (
-      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST('foo1' AS jsonb_test_domain) ON EMPTY
+      js1 jsonb_test_domain PATH '$.a2' DEFAULT CAST('foo1'
+      AS jsonb_test_domain) ON EMPTY
     )
   );
 
@@ -260,10 +282,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('{"d1": "foo"}' AS JSONB),
+    CAST('{"d1": "foo"}'
+    AS JSONB),
     '$'
     COLUMNS (
-      js1 jsonb_test_domain PATH '$.d1' DEFAULT CAST('foo2' AS jsonb_test_domain) ON ERROR
+      js1 jsonb_test_domain PATH '$.d1' DEFAULT CAST('foo2'
+      AS jsonb_test_domain) ON ERROR
     )
   );
 
@@ -271,10 +295,13 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('{"d1": "foo"}' AS JSONB),
+    CAST('{"d1": "foo"}'
+    AS JSONB),
     '$'
     COLUMNS (
-      js1 OID[] PATH '$.d2' DEFAULT CAST(CAST('{1}' AS INT[]) AS OID[]) ON EMPTY
+      js1 OID[] PATH '$.d2' DEFAULT CAST(CAST('{1}'
+      AS INT[])
+      AS OID[]) ON EMPTY
     )
   );
 
@@ -283,10 +310,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       int INT PATH '$',
       text text PATH '$',
@@ -302,10 +331,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       js JSON PATH '$',
       jb jsonb PATH '$',
@@ -320,10 +351,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       jsb jsonb FORMAT JSON PATH '$',
       jsbq jsonb FORMAT JSON PATH '$' OMIT QUOTES,
@@ -337,10 +370,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       exists1 bool EXISTS PATH '$.aaa',
       exists2 INT EXISTS PATH '$.aaa' TRUE ON ERROR,
@@ -353,10 +388,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       js2 JSON PATH '$',
       jsb2w jsonb PATH '$' WITH UNCONDITIONAL WRAPPER,
@@ -381,10 +418,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       id FOR ORDINALITY,
       int INT PATH '$',
@@ -396,10 +435,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       id FOR ORDINALITY,
       int INT PATH '$',
@@ -423,7 +464,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       id FOR ORDINALITY,
@@ -436,7 +478,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       id FOR ORDINALITY,
@@ -450,7 +493,8 @@ FROM
   (VALUES ('1'),
   ('"err"')) AS vals (js),
   JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH '$'
@@ -463,7 +507,8 @@ FROM
   (VALUES ('1'),
   ('"err"')) AS vals (js)
   LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH '$' ERROR ON ERROR
@@ -477,7 +522,8 @@ FROM
   (VALUES ('1'),
   ('"err"')) AS vals (js)
   LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
+    CAST(vals.js
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH '$' ERROR ON ERROR
@@ -489,7 +535,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH '$.a' ERROR ON EMPTY
@@ -500,7 +547,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH 'strict $.a' ERROR ON ERROR
@@ -512,7 +560,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH 'lax $.a' ERROR ON EMPTY
@@ -524,7 +573,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH '$' DEFAULT 1 ON EMPTY DEFAULT 2 ON ERROR
@@ -535,7 +585,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH 'strict $.a' DEFAULT 1 ON EMPTY DEFAULT 2 ON ERROR
@@ -546,7 +597,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT PATH 'lax $.a' DEFAULT 1 ON EMPTY DEFAULT 2 ON ERROR
@@ -557,7 +609,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a int4 EXISTS PATH '$.a' ERROR ON ERROR
@@ -568,7 +621,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a int4 EXISTS PATH '$' ERROR ON ERROR
@@ -579,7 +633,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a int2 EXISTS PATH '$.a'
@@ -590,7 +645,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a int8 EXISTS PATH '$.a'
@@ -601,7 +657,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a float4 EXISTS PATH '$.a'
@@ -612,7 +669,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a CHAR(3) EXISTS PATH '$.a'
@@ -623,7 +681,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a CHAR(3) EXISTS PATH '$.a' ERROR ON ERROR
@@ -634,7 +693,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a CHAR(5) EXISTS PATH '$.a' ERROR ON ERROR
@@ -645,7 +705,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a JSON EXISTS PATH '$.a'
@@ -656,7 +717,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a jsonb EXISTS PATH '$.a'
@@ -669,10 +731,12 @@ CREATE DOMAIN dint4_0 AS INT CHECK (value <> 0);
 
 SELECT
   a,
-  CAST(a AS BOOLEAN)
+  CAST(a
+  AS BOOLEAN)
 FROM
   JSON_TABLE(
-    CAST('"a"' AS JSONB),
+    CAST('"a"'
+    AS JSONB),
     '$'
     COLUMNS (
       a dint4 EXISTS PATH '$.a'
@@ -681,10 +745,12 @@ FROM
 
 SELECT
   a,
-  CAST(a AS BOOLEAN)
+  CAST(a
+  AS BOOLEAN)
 FROM
   JSON_TABLE(
-    CAST('{"a":1}' AS JSONB),
+    CAST('{"a":1}'
+    AS JSONB),
     '$'
     COLUMNS (
       a dint4_0 EXISTS PATH '$.b'
@@ -693,10 +759,12 @@ FROM
 
 SELECT
   a,
-  CAST(a AS BOOLEAN)
+  CAST(a
+  AS BOOLEAN)
 FROM
   JSON_TABLE(
-    CAST('{"a":1}' AS JSONB),
+    CAST('{"a":1}'
+    AS JSONB),
     '$'
     COLUMNS (
       a dint4_0 EXISTS PATH '$.b' ERROR ON ERROR
@@ -705,10 +773,12 @@ FROM
 
 SELECT
   a,
-  CAST(a AS BOOLEAN)
+  CAST(a
+  AS BOOLEAN)
 FROM
   JSON_TABLE(
-    CAST('{"a":1}' AS JSONB),
+    CAST('{"a":1}'
+    AS JSONB),
     '$'
     COLUMNS (
       a dint4_0 EXISTS PATH '$.b' FALSE ON ERROR
@@ -717,10 +787,12 @@ FROM
 
 SELECT
   a,
-  CAST(a AS BOOLEAN)
+  CAST(a
+  AS BOOLEAN)
 FROM
   JSON_TABLE(
-    CAST('{"a":1}' AS JSONB),
+    CAST('{"a":1}'
+    AS JSONB),
     '$'
     COLUMNS (
       a dint4_0 EXISTS PATH '$.b' TRUE ON ERROR
@@ -733,7 +805,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text PATH '$' KEEP QUOTES
@@ -744,7 +817,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text PATH '$' OMIT QUOTES
@@ -755,7 +829,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text FORMAT JSON PATH '$' KEEP QUOTES
@@ -766,7 +841,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text FORMAT JSON PATH '$' OMIT QUOTES
@@ -777,7 +853,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text FORMAT JSON PATH '$' WITHOUT WRAPPER KEEP QUOTES
@@ -788,7 +865,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text PATH '$' WITHOUT WRAPPER OMIT QUOTES
@@ -799,7 +877,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text FORMAT JSON PATH '$' WITH UNCONDITIONAL WRAPPER
@@ -810,7 +889,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text PATH '$' WITH UNCONDITIONAL WRAPPER OMIT QUOTES
@@ -821,7 +901,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('"world"' AS JSONB),
+    CAST('"world"'
+    AS JSONB),
     '$'
     COLUMNS (
       item text FORMAT JSON PATH '$' WITH UNCONDITIONAL WRAPPER KEEP QUOTES
@@ -832,7 +913,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('[1,2,3]' AS JSONB),
+    CAST('[1,2,3]'
+    AS JSONB),
     '$[*] ? (@ < $x)'
     PASSING 3 AS x
     COLUMNS (
@@ -844,7 +926,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('[1,2,3]' AS JSONB),
+    CAST('[1,2,3]'
+    AS JSONB),
     '$[*] ? (@ < $x)'
     PASSING 10 AS x,
     3 AS y
@@ -868,7 +951,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('[]' AS JSONB),
+    CAST('[]'
+    AS JSONB),
     '$' AS a
     COLUMNS (
       b INT,
@@ -883,7 +967,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('[]' AS JSONB),
+    CAST('[]'
+    AS JSONB),
     '$' AS a
     COLUMNS (
       b INT,
@@ -898,7 +983,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('[]' AS JSONB),
+    CAST('[]'
+    AS JSONB),
     '$'
     COLUMNS (
       b INT,
@@ -913,7 +999,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('[]' AS JSONB),
+    CAST('[]'
+    AS JSONB),
     '$'
     COLUMNS (
       NESTED PATH '$' AS a
@@ -943,7 +1030,8 @@ VALUES ('[
 SELECT
   jt.*
 FROM
-  jsonb_table_test AS jtt,
+  jsonb_table_test
+  AS jtt,
   JSON_TABLE(
     jtt.js,
     'strict $[*]' AS p
@@ -971,7 +1059,8 @@ FROM
   generate_series(1,
   3) AS y,
   JSON_TABLE(
-    CAST('[[1,2,3],[2,3,4,5],[3,4,5,6]]' AS JSONB),
+    CAST('[[1,2,3],[2,3,4,5],[3,4,5,6]]'
+    AS JSONB),
     'strict $[*] ? (@[*] <= $x)'
     PASSING x AS x,
     y AS y
@@ -989,10 +1078,12 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('null' AS JSONB),
+    CAST('null'
+    AS JSONB),
     'lax $[*]'
     PASSING 1 + 2 AS a,
-    CAST('"foo"' AS JSON) AS "b c"
+    CAST('"foo"'
+    AS JSON) AS "b c"
     COLUMNS (
       id FOR ORDINALITY,
       NESTED PATH '$[1]' AS p1
@@ -1252,7 +1343,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT
@@ -1264,7 +1356,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT TRUE ON EMPTY
@@ -1275,7 +1368,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT OMIT QUOTES TRUE ON ERROR
@@ -1286,7 +1380,8 @@ SELECT
   *
 FROM
   JSON_TABLE(
-    CAST('1' AS JSONB),
+    CAST('1'
+    AS JSONB),
     '$'
     COLUMNS (
       a INT EXISTS EMPTY OBJECT ON ERROR

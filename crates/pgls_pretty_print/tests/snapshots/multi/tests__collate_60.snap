@@ -9,7 +9,8 @@ SET search_path TO collate_tests;
 
 CREATE TABLE collate_test1 (
   a INT,
-  b TEXT COLLATE "C" NOT NULL
+  b TEXT COLLATE "C"
+  NOT NULL
 );
 
 CREATE TABLE collate_test_fail (
@@ -145,7 +146,8 @@ ORDER BY b COLLATE "C";
 CREATE VIEW collview3 AS
 SELECT
   a,
-  lower((x || x) COLLATE "POSIX")
+  lower((x ||
+  x) COLLATE "POSIX")
 FROM
   collate_test10;
 
@@ -235,29 +237,34 @@ CREATE DOMAIN testdomain AS TEXT;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test1
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test2
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain_p)
+  CAST(b
+  AS testdomain_p)
 FROM
   collate_test2
 ORDER BY 2;
 
 SELECT
   a,
-  lower(CAST(x AS testdomain)),
-  lower(CAST(y AS testdomain))
+  lower(CAST(x
+  AS testdomain)),
+  lower(CAST(y
+  AS testdomain))
 FROM
   collate_test10;
 
@@ -424,7 +431,8 @@ FROM
   ('b')) AS t (x)
 UNION ALL
 SELECT
-  (x || 'c') COLLATE "POSIX"
+  (x ||
+  'c') COLLATE "POSIX"
 FROM
   foo
 WHERE
@@ -542,7 +550,8 @@ CREATE INDEX "collate_test1_idx3" ON collate_test1 USING btree
 
 CREATE INDEX "collate_test1_idx4" ON collate_test1 USING btree
 (
-  ((b || 'foo') COLLATE "POSIX")
+  ((b ||
+  'foo') COLLATE "POSIX")
 );
 
 CREATE INDEX "collate_test1_idx5" ON collate_test1 USING btree
@@ -571,13 +580,15 @@ SET enable_hashjoin = 0;
 SET enable_nestloop = 0;
 
 CREATE TABLE collate_test20 (
-  f1 TEXT COLLATE "C" PRIMARY KEY
+  f1 TEXT COLLATE "C"
+  PRIMARY KEY
 );
 
 INSERT INTO collate_test20 VALUES ('foo'), ('bar');
 
 CREATE TABLE collate_test21 (
-  f2 TEXT COLLATE "POSIX" REFERENCES collate_test20
+  f2 TEXT COLLATE "POSIX"
+  REFERENCES collate_test20
 );
 
 INSERT INTO collate_test21 VALUES ('foo'), ('bar');
@@ -589,13 +600,15 @@ CREATE TABLE collate_test22 ( f2 TEXT COLLATE "POSIX" );
 INSERT INTO collate_test22 VALUES ('foo'), ('bar'), ('baz');
 
 ALTER TABLE collate_test22
-  ADD FOREIGN KEY (f2)
+  ADD FOREIGN KEY
+  (f2)
   REFERENCES collate_test20;
 
 DELETE FROM collate_test22 WHERE f2 = 'baz';
 
 ALTER TABLE collate_test22
-  ADD FOREIGN KEY (f2)
+  ADD FOREIGN KEY
+  (f2)
   REFERENCES collate_test20;
 
 RESET enable_seqscan;
@@ -685,7 +698,8 @@ SELECT
   c1 + 1 AS c1p
 FROM
   (SELECT
-    CAST('4' COLLATE "C" AS INT) AS c1) AS ss;
+    CAST('4' COLLATE "C"
+    AS INT) AS c1) AS ss;
 
 CREATE COLLATION coll_dup_chk
 (

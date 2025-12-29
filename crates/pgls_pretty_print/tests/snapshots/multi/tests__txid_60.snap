@@ -77,7 +77,8 @@ SELECT
   txid_current_snapshot());
 
 SELECT
-  CAST('1000100010001000:1000100010001100:1000100010001012,1000100010001013' AS TXID_SNAPSHOT);
+  CAST('1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  AS TXID_SNAPSHOT);
 
 SELECT
   txid_visible_in_snapshot('1000100010001012',
@@ -98,7 +99,8 @@ SELECT txid_current_if_assigned() IS NULL;
 SELECT txid_current();
 
 SELECT
-  txid_current_if_assigned() IS NOT DISTINCT FROM CAST('txid_current' AS BIGINT);
+  txid_current_if_assigned() IS NOT DISTINCT FROM CAST('txid_current'
+  AS BIGINT);
 
 COMMIT;
 

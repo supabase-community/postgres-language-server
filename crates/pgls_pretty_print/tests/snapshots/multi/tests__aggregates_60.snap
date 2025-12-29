@@ -28,7 +28,8 @@ FROM
   'world'])) AS v (v);
 
 SELECT
-  CAST(AVG(b) AS NUMERIC(10,
+  CAST(AVG(b)
+  AS NUMERIC(10,
   3)) AS avg_107_943
 FROM
   aggtest;
@@ -68,76 +69,112 @@ SELECT var_pop(CAST(b AS NUMERIC)) FROM aggtest;
 SELECT var_samp(CAST(b AS NUMERIC)) FROM aggtest;
 
 SELECT
-  var_pop(CAST(1.0 AS DOUBLE PRECISION)),
-  var_samp(CAST(2.0 AS DOUBLE PRECISION));
+  var_pop(CAST(1.0
+  AS DOUBLE PRECISION)),
+  var_samp(CAST(2.0
+  AS DOUBLE PRECISION));
 
 SELECT
-  stddev_pop(CAST(3.0 AS DOUBLE PRECISION)),
-  stddev_samp(CAST(4.0 AS DOUBLE PRECISION));
+  stddev_pop(CAST(3.0
+  AS DOUBLE PRECISION)),
+  stddev_samp(CAST(4.0
+  AS DOUBLE PRECISION));
 
 SELECT
-  var_pop(CAST('inf' AS DOUBLE PRECISION)),
-  var_samp(CAST('inf' AS DOUBLE PRECISION));
+  var_pop(CAST('inf'
+  AS DOUBLE PRECISION)),
+  var_samp(CAST('inf'
+  AS DOUBLE PRECISION));
 
 SELECT
-  stddev_pop(CAST('inf' AS DOUBLE PRECISION)),
-  stddev_samp(CAST('inf' AS DOUBLE PRECISION));
+  stddev_pop(CAST('inf'
+  AS DOUBLE PRECISION)),
+  stddev_samp(CAST('inf'
+  AS DOUBLE PRECISION));
 
 SELECT
-  var_pop(CAST('nan' AS DOUBLE PRECISION)),
-  var_samp(CAST('nan' AS DOUBLE PRECISION));
+  var_pop(CAST('nan'
+  AS DOUBLE PRECISION)),
+  var_samp(CAST('nan'
+  AS DOUBLE PRECISION));
 
 SELECT
-  stddev_pop(CAST('nan' AS DOUBLE PRECISION)),
-  stddev_samp(CAST('nan' AS DOUBLE PRECISION));
+  stddev_pop(CAST('nan'
+  AS DOUBLE PRECISION)),
+  stddev_samp(CAST('nan'
+  AS DOUBLE PRECISION));
 
 SELECT
-  var_pop(CAST(1.0 AS REAL)),
-  var_samp(CAST(2.0 AS REAL));
+  var_pop(CAST(1.0
+  AS REAL)),
+  var_samp(CAST(2.0
+  AS REAL));
 
 SELECT
-  stddev_pop(CAST(3.0 AS REAL)),
-  stddev_samp(CAST(4.0 AS REAL));
+  stddev_pop(CAST(3.0
+  AS REAL)),
+  stddev_samp(CAST(4.0
+  AS REAL));
 
 SELECT
-  var_pop(CAST('inf' AS REAL)),
-  var_samp(CAST('inf' AS REAL));
+  var_pop(CAST('inf'
+  AS REAL)),
+  var_samp(CAST('inf'
+  AS REAL));
 
 SELECT
-  stddev_pop(CAST('inf' AS REAL)),
-  stddev_samp(CAST('inf' AS REAL));
+  stddev_pop(CAST('inf'
+  AS REAL)),
+  stddev_samp(CAST('inf'
+  AS REAL));
 
 SELECT
-  var_pop(CAST('nan' AS REAL)),
-  var_samp(CAST('nan' AS REAL));
+  var_pop(CAST('nan'
+  AS REAL)),
+  var_samp(CAST('nan'
+  AS REAL));
 
 SELECT
-  stddev_pop(CAST('nan' AS REAL)),
-  stddev_samp(CAST('nan' AS REAL));
+  stddev_pop(CAST('nan'
+  AS REAL)),
+  stddev_samp(CAST('nan'
+  AS REAL));
 
 SELECT
-  var_pop(CAST(1.0 AS NUMERIC)),
-  var_samp(CAST(2.0 AS NUMERIC));
+  var_pop(CAST(1.0
+  AS NUMERIC)),
+  var_samp(CAST(2.0
+  AS NUMERIC));
 
 SELECT
-  stddev_pop(CAST(3.0 AS NUMERIC)),
-  stddev_samp(CAST(4.0 AS NUMERIC));
+  stddev_pop(CAST(3.0
+  AS NUMERIC)),
+  stddev_samp(CAST(4.0
+  AS NUMERIC));
 
 SELECT
-  var_pop(CAST('inf' AS NUMERIC)),
-  var_samp(CAST('inf' AS NUMERIC));
+  var_pop(CAST('inf'
+  AS NUMERIC)),
+  var_samp(CAST('inf'
+  AS NUMERIC));
 
 SELECT
-  stddev_pop(CAST('inf' AS NUMERIC)),
-  stddev_samp(CAST('inf' AS NUMERIC));
+  stddev_pop(CAST('inf'
+  AS NUMERIC)),
+  stddev_samp(CAST('inf'
+  AS NUMERIC));
 
 SELECT
-  var_pop(CAST('nan' AS NUMERIC)),
-  var_samp(CAST('nan' AS NUMERIC));
+  var_pop(CAST('nan'
+  AS NUMERIC)),
+  var_samp(CAST('nan'
+  AS NUMERIC));
 
 SELECT
-  stddev_pop(CAST('nan' AS NUMERIC)),
-  stddev_samp(CAST('nan' AS NUMERIC));
+  stddev_pop(CAST('nan'
+  AS NUMERIC)),
+  stddev_samp(CAST('nan'
+  AS NUMERIC));
 
 SELECT MAX(ROW(a, b)) FROM aggtest;
 
@@ -152,13 +189,15 @@ SELECT SUM(CAST(NULL AS INT)) FROM generate_series(1, 3);
 SELECT SUM(CAST(NULL AS BIGINT)) FROM generate_series(1, 3);
 
 SELECT
-  SUM(CAST(NULL AS NUMERIC))
+  SUM(CAST(NULL
+  AS NUMERIC))
 FROM
   generate_series(1,
   3);
 
 SELECT
-  SUM(CAST(NULL AS DOUBLE PRECISION))
+  SUM(CAST(NULL
+  AS DOUBLE PRECISION))
 FROM
   generate_series(1,
   3);
@@ -168,112 +207,148 @@ SELECT AVG(CAST(NULL AS INT)) FROM generate_series(1, 3);
 SELECT AVG(CAST(NULL AS BIGINT)) FROM generate_series(1, 3);
 
 SELECT
-  AVG(CAST(NULL AS NUMERIC))
+  AVG(CAST(NULL
+  AS NUMERIC))
 FROM
   generate_series(1,
   3);
 
 SELECT
-  AVG(CAST(NULL AS DOUBLE PRECISION))
+  AVG(CAST(NULL
+  AS DOUBLE PRECISION))
 FROM
   generate_series(1,
   3);
 
 SELECT
-  SUM(CAST('NaN' AS NUMERIC))
+  SUM(CAST('NaN'
+  AS NUMERIC))
 FROM
   generate_series(1,
   3);
 
 SELECT
-  AVG(CAST('NaN' AS NUMERIC))
+  AVG(CAST('NaN'
+  AS NUMERIC))
 FROM
   generate_series(1,
   3);
 
 SELECT
-  SUM(CAST(x AS DOUBLE PRECISION)),
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  SUM(CAST(x
+  AS DOUBLE PRECISION)),
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES ('1'),
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS DOUBLE PRECISION)),
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  SUM(CAST(x
+  AS DOUBLE PRECISION)),
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES ('infinity'),
   ('1')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS DOUBLE PRECISION)),
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  SUM(CAST(x
+  AS DOUBLE PRECISION)),
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES ('infinity'),
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS DOUBLE PRECISION)),
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  SUM(CAST(x
+  AS DOUBLE PRECISION)),
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES ('-infinity'),
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS DOUBLE PRECISION)),
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  SUM(CAST(x
+  AS DOUBLE PRECISION)),
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES ('-infinity'),
   ('-infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS NUMERIC)),
-  AVG(CAST(x AS NUMERIC)),
-  var_pop(CAST(x AS NUMERIC))
+  SUM(CAST(x
+  AS NUMERIC)),
+  AVG(CAST(x
+  AS NUMERIC)),
+  var_pop(CAST(x
+  AS NUMERIC))
 FROM
   (VALUES ('1'),
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS NUMERIC)),
-  AVG(CAST(x AS NUMERIC)),
-  var_pop(CAST(x AS NUMERIC))
+  SUM(CAST(x
+  AS NUMERIC)),
+  AVG(CAST(x
+  AS NUMERIC)),
+  var_pop(CAST(x
+  AS NUMERIC))
 FROM
   (VALUES ('infinity'),
   ('1')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS NUMERIC)),
-  AVG(CAST(x AS NUMERIC)),
-  var_pop(CAST(x AS NUMERIC))
+  SUM(CAST(x
+  AS NUMERIC)),
+  AVG(CAST(x
+  AS NUMERIC)),
+  var_pop(CAST(x
+  AS NUMERIC))
 FROM
   (VALUES ('infinity'),
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS NUMERIC)),
-  AVG(CAST(x AS NUMERIC)),
-  var_pop(CAST(x AS NUMERIC))
+  SUM(CAST(x
+  AS NUMERIC)),
+  AVG(CAST(x
+  AS NUMERIC)),
+  var_pop(CAST(x
+  AS NUMERIC))
 FROM
   (VALUES ('-infinity'),
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(CAST(x AS NUMERIC)),
-  AVG(CAST(x AS NUMERIC)),
-  var_pop(CAST(x AS NUMERIC))
+  SUM(CAST(x
+  AS NUMERIC)),
+  AVG(CAST(x
+  AS NUMERIC)),
+  var_pop(CAST(x
+  AS NUMERIC))
 FROM
   (VALUES ('-infinity'),
   ('-infinity')) AS v (x);
 
 SELECT
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES (100000003),
   (100000004),
@@ -281,8 +356,10 @@ FROM
   (100000007)) AS v (x);
 
 SELECT
-  AVG(CAST(x AS DOUBLE PRECISION)),
-  var_pop(CAST(x AS DOUBLE PRECISION))
+  AVG(CAST(x
+  AS DOUBLE PRECISION)),
+  var_pop(CAST(x
+  AS DOUBLE PRECISION))
 FROM
   (VALUES (7000000000005),
   (7000000000007)) AS v (x);
@@ -306,22 +383,34 @@ SELECT covar_pop(b, a), covar_samp(b, a) FROM aggtest;
 SELECT corr(b, a) FROM aggtest;
 
 SELECT
-  covar_pop(CAST(1 AS DOUBLE PRECISION),
-  CAST(2 AS DOUBLE PRECISION)),
-  covar_samp(CAST(3 AS DOUBLE PRECISION),
-  CAST(4 AS DOUBLE PRECISION));
+  covar_pop(CAST(1
+  AS DOUBLE PRECISION),
+  CAST(2
+  AS DOUBLE PRECISION)),
+  covar_samp(CAST(3
+  AS DOUBLE PRECISION),
+  CAST(4
+  AS DOUBLE PRECISION));
 
 SELECT
-  covar_pop(CAST(1 AS DOUBLE PRECISION),
-  CAST('inf' AS DOUBLE PRECISION)),
-  covar_samp(CAST(3 AS DOUBLE PRECISION),
-  CAST('inf' AS DOUBLE PRECISION));
+  covar_pop(CAST(1
+  AS DOUBLE PRECISION),
+  CAST('inf'
+  AS DOUBLE PRECISION)),
+  covar_samp(CAST(3
+  AS DOUBLE PRECISION),
+  CAST('inf'
+  AS DOUBLE PRECISION));
 
 SELECT
-  covar_pop(CAST(1 AS DOUBLE PRECISION),
-  CAST('nan' AS DOUBLE PRECISION)),
-  covar_samp(CAST(3 AS DOUBLE PRECISION),
-  CAST('nan' AS DOUBLE PRECISION));
+  covar_pop(CAST(1
+  AS DOUBLE PRECISION),
+  CAST('nan'
+  AS DOUBLE PRECISION)),
+  covar_samp(CAST(3
+  AS DOUBLE PRECISION),
+  CAST('nan'
+  AS DOUBLE PRECISION));
 
 CREATE TABLE regr_test (
   x DOUBLE PRECISION,
@@ -372,11 +461,13 @@ FROM
   regr_test;
 
 SELECT
-  float8_accum(CAST('{4,140,2900}' AS DOUBLE PRECISION[]),
+  float8_accum(CAST('{4,140,2900}'
+  AS DOUBLE PRECISION[]),
   100);
 
 SELECT
-  float8_regr_accum(CAST('{4,140,2900,1290,83075,15050}' AS DOUBLE PRECISION[]),
+  float8_regr_accum(CAST('{4,140,2900,1290,83075,15050}'
+  AS DOUBLE PRECISION[]),
   200,
   100);
 
@@ -414,28 +505,40 @@ WHERE
   100);
 
 SELECT
-  float8_combine(CAST('{3,60,200}' AS DOUBLE PRECISION[]),
-  CAST('{0,0,0}' AS DOUBLE PRECISION[]));
+  float8_combine(CAST('{3,60,200}'
+  AS DOUBLE PRECISION[]),
+  CAST('{0,0,0}'
+  AS DOUBLE PRECISION[]));
 
 SELECT
-  float8_combine(CAST('{0,0,0}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200}' AS DOUBLE PRECISION[]));
+  float8_combine(CAST('{0,0,0}'
+  AS DOUBLE PRECISION[]),
+  CAST('{2,180,200}'
+  AS DOUBLE PRECISION[]));
 
 SELECT
-  float8_combine(CAST('{3,60,200}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200}' AS DOUBLE PRECISION[]));
+  float8_combine(CAST('{3,60,200}'
+  AS DOUBLE PRECISION[]),
+  CAST('{2,180,200}'
+  AS DOUBLE PRECISION[]));
 
 SELECT
-  float8_regr_combine(CAST('{3,60,200,750,20000,2000}' AS DOUBLE PRECISION[]),
-  CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[]));
+  float8_regr_combine(CAST('{3,60,200,750,20000,2000}'
+  AS DOUBLE PRECISION[]),
+  CAST('{0,0,0,0,0,0}'
+  AS DOUBLE PRECISION[]));
 
 SELECT
-  float8_regr_combine(CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200,740,57800,-3400}' AS DOUBLE PRECISION[]));
+  float8_regr_combine(CAST('{0,0,0,0,0,0}'
+  AS DOUBLE PRECISION[]),
+  CAST('{2,180,200,740,57800,-3400}'
+  AS DOUBLE PRECISION[]));
 
 SELECT
-  float8_regr_combine(CAST('{3,60,200,750,20000,2000}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200,740,57800,-3400}' AS DOUBLE PRECISION[]));
+  float8_regr_combine(CAST('{3,60,200,750,20000,2000}'
+  AS DOUBLE PRECISION[]),
+  CAST('{2,180,200,740,57800,-3400}'
+  AS DOUBLE PRECISION[]));
 
 DROP TABLE "regr_test";
 
@@ -493,13 +596,15 @@ SELECT
   ten,
   SUM(DISTINCT four)
 FROM
-  onek AS a
+  onek
+  AS a
 GROUP BY ten
 HAVING
   EXISTS (SELECT
     1
   FROM
-    onek AS b
+    onek
+    AS b
   WHERE
     SUM(DISTINCT a.four) =
     b.four);
@@ -508,13 +613,15 @@ SELECT
   ten,
   SUM(DISTINCT four)
 FROM
-  onek AS a
+  onek
+  AS a
 GROUP BY ten
 HAVING
   EXISTS (SELECT
     1
   FROM
-    onek AS b
+    onek
+    AS b
   WHERE
     SUM(DISTINCT a.four + b.four) =
     b.four);
@@ -524,12 +631,14 @@ SELECT
     MAX((SELECT
       i.unique2
     FROM
-      tenk1 AS i
+      tenk1
+      AS i
     WHERE
       i.unique1 =
       o.unique1)))
 FROM
-  tenk1 AS o;
+  tenk1
+  AS o;
 
 SELECT
   s1,
@@ -853,24 +962,28 @@ SELECT
   (SELECT DISTINCT
     MIN(t1.f1)
   FROM
-    int4_tbl AS t1
+    int4_tbl
+    AS t1
   WHERE
     t1.f1 =
     t0.f1)
 FROM
-  int4_tbl AS t0;
+  int4_tbl
+  AS t0;
 
 SELECT
   f1,
   (SELECT DISTINCT
     MIN(t1.f1)
   FROM
-    int4_tbl AS t1
+    int4_tbl
+    AS t1
   WHERE
     t1.f1 =
     t0.f1)
 FROM
-  int4_tbl AS t0;
+  int4_tbl
+  AS t0;
 
 ROLLBACK;
 
@@ -883,11 +996,14 @@ SELECT
     AVG(a1.col1 ORDER BY (SELECT
       AVG(a2.col2)
     FROM
-      tenk1 AS a3))
+      tenk1
+      AS a3))
   FROM
-    tenk1 AS a1 (col1)))
+    tenk1
+    AS a1 (col1)))
 FROM
-  tenk1 AS a2 (col2);
+  tenk1
+  AS a2 (col2);
 
 CREATE TEMPORARY TABLE t1 (
   a INT,
@@ -1060,7 +1176,8 @@ SELECT
   f1,
   COUNT(*)
 FROM
-  t1 AS x (x0,
+  t1
+  AS x (x0,
   x1)
   LEFT OUTER JOIN t1
   LEFT OUTER JOIN t2
@@ -1073,7 +1190,8 @@ SELECT
   f2,
   COUNT(*)
 FROM
-  t1 AS x (x0,
+  t1
+  AS x (x0,
   x1)
   LEFT OUTER JOIN t1
   LEFT OUTER JOIN t2
@@ -1175,7 +1293,8 @@ FROM
   varchar_tbl;
 
 SELECT
-  string_agg(DISTINCT CAST(f1 AS VARCHAR(2)),
+  string_agg(DISTINCT CAST(f1
+  AS VARCHAR(2)),
   ',')
   FILTER (WHERE
     length(f1) >
@@ -1789,20 +1908,24 @@ FROM
   varchar_tbl;
 
 SELECT
-  string_agg(DISTINCT CAST(f1 AS TEXT),
+  string_agg(DISTINCT CAST(f1
+  AS TEXT),
   ',' ORDER BY f1)
 FROM
   varchar_tbl;
 
 SELECT
   string_agg(DISTINCT f1,
-  ',' ORDER BY CAST(f1 AS TEXT))
+  ',' ORDER BY CAST(f1
+  AS TEXT))
 FROM
   varchar_tbl;
 
 SELECT
-  string_agg(DISTINCT CAST(f1 AS TEXT),
-  ',' ORDER BY CAST(f1 AS TEXT))
+  string_agg(DISTINCT CAST(f1
+  AS TEXT),
+  ',' ORDER BY CAST(f1
+  AS TEXT))
 FROM
   varchar_tbl;
 
@@ -1888,17 +2011,22 @@ FROM
   (SELECT
     y,
     CAST(unnest(regexp_split_to_array(a1.t,
-    ',')) AS INT) AS t,
-    unnest(regexp_split_to_array(CAST(a1.b AS TEXT),
+    ','))
+    AS INT) AS t,
+    unnest(regexp_split_to_array(CAST(a1.b
+    AS TEXT),
     ',')) AS b,
     unnest(a1.a) AS a,
     unnest(a1.aa) AS aa
   FROM
     (SELECT
       y,
-      string_agg(CAST(x AS TEXT),
+      string_agg(CAST(x
+      AS TEXT),
       ',') AS t,
-      string_agg(CAST(CAST(x AS TEXT) AS BYTEA),
+      string_agg(CAST(CAST(x
+      AS TEXT)
+      AS BYTEA),
       ',') AS b,
       array_agg(x) AS a,
       array_agg(ARRAY[x]) AS aa
@@ -1957,9 +2085,11 @@ SELECT
   ten,
   SUM(DISTINCT four)
   FILTER (WHERE
-    CAST(four AS TEXT) ~ '123')
+    CAST(four
+    AS TEXT) ~ '123')
 FROM
-  onek AS a
+  onek
+  AS a
 GROUP BY ten;
 
 SELECT
@@ -1969,13 +2099,15 @@ SELECT
     four >
     10)
 FROM
-  onek AS a
+  onek
+  AS a
 GROUP BY ten
 HAVING
   EXISTS (SELECT
     1
   FROM
-    onek AS b
+    onek
+    AS b
   WHERE
     SUM(DISTINCT a.four) =
     b.four);
@@ -2038,7 +2170,8 @@ SELECT
     MAX((SELECT
       i.unique2
     FROM
-      tenk1 AS i
+      tenk1
+      AS i
     WHERE
       i.unique1 =
       o.unique1))
@@ -2046,7 +2179,8 @@ SELECT
       o.unique1 <
       10))
 FROM
-  tenk1 AS o;
+  tenk1
+  AS o;
 
 SELECT
   SUM(unique1)
@@ -2127,11 +2261,13 @@ FROM
 SELECT
   p,
   percentile_cont(p)
-  WITHIN GROUP (ORDER BY CAST(x AS DOUBLE PRECISION))
+  WITHIN GROUP (ORDER BY CAST(x
+  AS DOUBLE PRECISION))
 FROM
   generate_series(1,
   5) AS x,
-  (VALUES (CAST(0 AS DOUBLE PRECISION)),
+  (VALUES (CAST(0
+  AS DOUBLE PRECISION)),
   (0.1),
   (0.25),
   (0.4),
@@ -2146,11 +2282,13 @@ ORDER BY p;
 SELECT
   p,
   SUM()
-  WITHIN GROUP (ORDER BY CAST(x AS DOUBLE PRECISION))
+  WITHIN GROUP (ORDER BY CAST(x
+  AS DOUBLE PRECISION))
 FROM
   generate_series(1,
   5) AS x,
-  (VALUES (CAST(0 AS DOUBLE PRECISION)),
+  (VALUES (CAST(0
+  AS DOUBLE PRECISION)),
   (0.1),
   (0.25),
   (0.4),
@@ -2169,7 +2307,8 @@ SELECT
 FROM
   generate_series(1,
   5) AS x,
-  (VALUES (CAST(0 AS DOUBLE PRECISION)),
+  (VALUES (CAST(0
+  AS DOUBLE PRECISION)),
   (0.1),
   (0.25),
   (0.4),
@@ -2319,7 +2458,8 @@ SELECT
   0.75])
   WITHIN GROUP (ORDER BY x)
 FROM
-  unnest(CAST('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}' AS TEXT[])) AS u (x);
+  unnest(CAST('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
+  AS TEXT[])) AS u (x);
 
 SELECT
   pg_collation_for(percentile_disc(1)
@@ -2394,14 +2534,16 @@ FROM
   5) AS x;
 
 SELECT
-  RANK(CAST('adam' AS TEXT) COLLATE "C")
+  RANK(CAST('adam'
+  AS TEXT) COLLATE "C")
   WITHIN GROUP (ORDER BY x COLLATE "POSIX")
 FROM
   (VALUES ('fred'),
   ('jim')) AS v (x);
 
 SELECT
-  RANK(CAST('adam' AS VARCHAR))
+  RANK(CAST('adam'
+  AS VARCHAR))
   WITHIN GROUP (ORDER BY x)
 FROM
   (VALUES ('fred'),
@@ -2594,7 +2736,8 @@ SELECT
   percentile_disc(0.5)
   WITHIN GROUP (ORDER BY a)
 FROM
-  (VALUES (CAST(1 AS DOUBLE PRECISION)),
+  (VALUES (CAST(1
+  AS DOUBLE PRECISION)),
   (3),
   (5),
   (7)) AS t (a);
@@ -2605,7 +2748,8 @@ SELECT
   percentile_disc(0.5)
   WITHIN GROUP (ORDER BY a)
 FROM
-  (VALUES (CAST(1 AS DOUBLE PRECISION)),
+  (VALUES (CAST(1
+  AS DOUBLE PRECISION)),
   (3),
   (5),
   (7)) AS t (a);
@@ -2761,7 +2905,8 @@ CREATE TABLE btg AS
   SELECT
     i % 10 AS x,
     i % 10 AS y,
-    'abc' || i % 10 AS z,
+    'abc' ||
+    i % 10 AS z,
     i AS w
   FROM
     generate_series(1,
@@ -2802,8 +2947,10 @@ SET enable_nestloop = off;
 SELECT
   COUNT(*)
 FROM
-  btg AS t1
-  INNER JOIN btg AS t2
+  btg
+  AS t1
+  INNER JOIN btg
+  AS t2
   ON t1.w =
     t2.w AND
     t1.x =
@@ -2877,8 +3024,10 @@ SELECT
   AVG(c1.f ORDER BY c1.x,
   c1.y)
 FROM
-  group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  group_agg_pk
+  AS c1
+  INNER JOIN group_agg_pk
+  AS c2
   ON c1.x =
     c2.x
 GROUP BY c1.w,
@@ -2888,8 +3037,10 @@ SELECT
   AVG(c1.f ORDER BY c1.x,
   c1.y)
 FROM
-  group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  group_agg_pk
+  AS c1
+  INNER JOIN group_agg_pk
+  AS c2
   ON c1.x =
     c2.x
 GROUP BY c1.w,
@@ -2899,8 +3050,10 @@ SELECT
   c1.y,
   c1.x
 FROM
-  group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  group_agg_pk
+  AS c1
+  INNER JOIN group_agg_pk
+  AS c2
   ON c1.x =
     c2.x
 GROUP BY c1.y,
@@ -2911,8 +3064,10 @@ SELECT
   c1.y,
   c1.x
 FROM
-  group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  group_agg_pk
+  AS c1
+  INNER JOIN group_agg_pk
+  AS c2
   ON c1.x =
     c2.x
 GROUP BY c1.y,
@@ -3057,8 +3212,10 @@ END;
 ';
 
 SELECT
-  eatarray(rwagg(ARRAY[CAST(1.0 AS REAL)])),
-  eatarray(rwagg(ARRAY[CAST(1.0 AS REAL)]));
+  eatarray(rwagg(ARRAY[CAST(1.0
+  AS REAL)])),
+  eatarray(rwagg(ARRAY[CAST(1.0
+  AS REAL)]));
 
 ROLLBACK;
 
@@ -3077,10 +3234,14 @@ SET parallel_leader_participation = off;
 SET enable_indexonlyscan = off;
 
 SELECT
-  variance(CAST(unique1 AS INT)),
-  SUM(CAST(unique1 AS BIGINT)),
-  regr_count(CAST(unique1 AS DOUBLE PRECISION),
-  CAST(unique1 AS DOUBLE PRECISION))
+  variance(CAST(unique1
+  AS INT)),
+  SUM(CAST(unique1
+  AS BIGINT)),
+  regr_count(CAST(unique1
+  AS DOUBLE PRECISION),
+  CAST(unique1
+  AS DOUBLE PRECISION))
 FROM
   (SELECT
     *
@@ -3103,10 +3264,14 @@ FROM
     tenk1) AS u;
 
 SELECT
-  variance(CAST(unique1 AS INT)),
-  SUM(CAST(unique1 AS BIGINT)),
-  regr_count(CAST(unique1 AS DOUBLE PRECISION),
-  CAST(unique1 AS DOUBLE PRECISION))
+  variance(CAST(unique1
+  AS INT)),
+  SUM(CAST(unique1
+  AS BIGINT)),
+  regr_count(CAST(unique1
+  AS DOUBLE PRECISION),
+  CAST(unique1
+  AS DOUBLE PRECISION))
 FROM
   (SELECT
     *
@@ -3129,8 +3294,10 @@ FROM
     tenk1) AS u;
 
 SELECT
-  variance(CAST(unique1 AS BIGINT)),
-  AVG(CAST(unique1 AS NUMERIC))
+  variance(CAST(unique1
+  AS BIGINT)),
+  AVG(CAST(unique1
+  AS NUMERIC))
 FROM
   (SELECT
     *
@@ -3153,8 +3320,10 @@ FROM
     tenk1) AS u;
 
 SELECT
-  variance(CAST(unique1 AS BIGINT)),
-  AVG(CAST(unique1 AS NUMERIC))
+  variance(CAST(unique1
+  AS BIGINT)),
+  AVG(CAST(unique1
+  AS NUMERIC))
 FROM
   (SELECT
     *
@@ -3201,8 +3370,10 @@ FROM
 SELECT MIN(x ORDER BY y) FROM (VALUES (1, 2)) AS d (x, y);
 
 SELECT
-  v || 'a',
-  CASE v || 'a'
+  v ||
+  'a',
+  CASE v ||
+  'a'
   WHEN 'aa' THEN 1
   ELSE 0
   END,
@@ -3210,13 +3381,16 @@ SELECT
 FROM
   unnest(ARRAY['a',
   'b']) AS u (v)
-GROUP BY v || 'a'
+GROUP BY v ||
+  'a'
 ORDER BY 1;
 
 SELECT
-  v || 'a',
+  v ||
+  'a',
   CASE
-  WHEN v || 'a' =
+  WHEN v ||
+  'a' =
   'aa' THEN 1
   ELSE 0
   END,
@@ -3224,7 +3398,8 @@ SELECT
 FROM
   unnest(ARRAY['a',
   'b']) AS u (v)
-GROUP BY v || 'a'
+GROUP BY v ||
+  'a'
 ORDER BY 1;
 
 SET enable_sort = false;
@@ -3273,7 +3448,8 @@ SET jit_above_cost = 0;
 
 SELECT
   g % 10000 AS c1,
-  SUM(CAST(g AS NUMERIC)) AS c2,
+  SUM(CAST(g
+  AS NUMERIC)) AS c2,
   COUNT(*) AS c3
 FROM
   agg_data_20k
@@ -3282,7 +3458,8 @@ GROUP BY g % 10000;
 CREATE TABLE agg_group_1 AS
   SELECT
     g % 10000 AS c1,
-    SUM(CAST(g AS NUMERIC)) AS c2,
+    SUM(CAST(g
+    AS NUMERIC)) AS c2,
     COUNT(*) AS c3
   FROM
     agg_data_20k
@@ -3296,8 +3473,10 @@ CREATE TABLE agg_group_2 AS
     (300),
     (500)) AS r (a),
     LATERAL (SELECT
-      CAST(g / 2 AS NUMERIC) AS c1,
-      array_agg(CAST(g AS NUMERIC)) AS c2,
+      CAST(g / 2
+      AS NUMERIC) AS c1,
+      array_agg(CAST(g
+      AS NUMERIC)) AS c2,
       COUNT(*) AS c3
     FROM
       agg_data_2k
@@ -3310,8 +3489,10 @@ SET jit_above_cost = DEFAULT;
 
 CREATE TABLE agg_group_3 AS
   SELECT
-    CAST(g / 2 AS NUMERIC) AS c1,
-    SUM(CAST(7 AS INT)) AS c2,
+    CAST(g / 2
+    AS NUMERIC) AS c1,
+    SUM(CAST(7
+    AS INT)) AS c2,
     COUNT(*) AS c3
   FROM
     agg_data_2k
@@ -3319,8 +3500,10 @@ CREATE TABLE agg_group_3 AS
 
 CREATE TABLE agg_group_4 AS
   SELECT
-    CAST(g / 2 AS NUMERIC) AS c1,
-    array_agg(CAST(g AS NUMERIC)) AS c2,
+    CAST(g / 2
+    AS NUMERIC) AS c1,
+    array_agg(CAST(g
+    AS NUMERIC)) AS c2,
     COUNT(*) AS c3
   FROM
     agg_data_2k
@@ -3334,7 +3517,8 @@ SET jit_above_cost = 0;
 
 SELECT
   g % 10000 AS c1,
-  SUM(CAST(g AS NUMERIC)) AS c2,
+  SUM(CAST(g
+  AS NUMERIC)) AS c2,
   COUNT(*) AS c3
 FROM
   agg_data_20k
@@ -3343,7 +3527,8 @@ GROUP BY g % 10000;
 CREATE TABLE agg_hash_1 AS
   SELECT
     g % 10000 AS c1,
-    SUM(CAST(g AS NUMERIC)) AS c2,
+    SUM(CAST(g
+    AS NUMERIC)) AS c2,
     COUNT(*) AS c3
   FROM
     agg_data_20k
@@ -3357,8 +3542,10 @@ CREATE TABLE agg_hash_2 AS
     (300),
     (500)) AS r (a),
     LATERAL (SELECT
-      CAST(g / 2 AS NUMERIC) AS c1,
-      array_agg(CAST(g AS NUMERIC)) AS c2,
+      CAST(g / 2
+      AS NUMERIC) AS c1,
+      array_agg(CAST(g
+      AS NUMERIC)) AS c2,
       COUNT(*) AS c3
     FROM
       agg_data_2k
@@ -3371,8 +3558,10 @@ SET jit_above_cost = DEFAULT;
 
 CREATE TABLE agg_hash_3 AS
   SELECT
-    CAST(g / 2 AS NUMERIC) AS c1,
-    SUM(CAST(7 AS INT)) AS c2,
+    CAST(g / 2
+    AS NUMERIC) AS c1,
+    SUM(CAST(7
+    AS INT)) AS c2,
     COUNT(*) AS c3
   FROM
     agg_data_2k
@@ -3380,8 +3569,10 @@ CREATE TABLE agg_hash_3 AS
 
 CREATE TABLE agg_hash_4 AS
   SELECT
-    CAST(g / 2 AS NUMERIC) AS c1,
-    array_agg(CAST(g AS NUMERIC)) AS c2,
+    CAST(g / 2
+    AS NUMERIC) AS c1,
+    array_agg(CAST(g
+    AS NUMERIC)) AS c2,
     COUNT(*) AS c3
   FROM
     agg_data_2k

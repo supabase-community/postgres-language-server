@@ -25,7 +25,8 @@ SET search_path TO collate_tests;
 
 CREATE TABLE collate_test1 (
   a INT,
-  b TEXT COLLATE "en-x-icu" NOT NULL
+  b TEXT COLLATE "en-x-icu"
+  NOT NULL
 );
 
 CREATE TABLE collate_test_fail (
@@ -288,7 +289,8 @@ ORDER BY b COLLATE "C";
 CREATE VIEW collview3 AS
 SELECT
   a,
-  lower((x || x) COLLATE "C")
+  lower((x ||
+  x) COLLATE "C")
 FROM
   collate_test10;
 
@@ -401,36 +403,42 @@ CREATE DOMAIN testdomain AS TEXT;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test1
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test2
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain)
+  CAST(b
+  AS testdomain)
 FROM
   collate_test3
 ORDER BY 2;
 
 SELECT
   a,
-  CAST(b AS testdomain_sv)
+  CAST(b
+  AS testdomain_sv)
 FROM
   collate_test3
 ORDER BY 2;
 
 SELECT
   a,
-  lower(CAST(x AS testdomain)),
-  lower(CAST(y AS testdomain))
+  lower(CAST(x
+  AS testdomain)),
+  lower(CAST(y
+  AS testdomain))
 FROM
   collate_test10;
 
@@ -582,7 +590,8 @@ FROM
   ('b')) AS t (x)
 UNION ALL
 SELECT
-  (x || 'c') COLLATE "de-x-icu"
+  (x ||
+  'c') COLLATE "de-x-icu"
 FROM
   foo
 WHERE
@@ -635,8 +644,10 @@ SELECT
   mylt_plpgsql(a.b,
   b.b)
 FROM
-  collate_test1 AS a,
-  collate_test1 AS b
+  collate_test1
+  AS a,
+  collate_test1
+  AS b
 ORDER BY a.b,
   b.b;
 
@@ -652,8 +663,10 @@ SELECT
   mylt_plpgsql(a.b,
   b.b COLLATE "C")
 FROM
-  collate_test1 AS a,
-  collate_test1 AS b
+  collate_test1
+  AS a,
+  collate_test1
+  AS b
 ORDER BY a.b,
   b.b;
 
@@ -756,7 +769,8 @@ CREATE INDEX "collate_test1_idx3" ON collate_test1 USING btree
 
 CREATE INDEX "collate_test1_idx4" ON collate_test1 USING btree
 (
-  ((b || 'foo') COLLATE "POSIX")
+  ((b ||
+  'foo') COLLATE "POSIX")
 );
 
 CREATE INDEX "collate_test1_idx5" ON collate_test1 USING btree
@@ -933,7 +947,8 @@ CREATE TYPE collate_dep_test2 AS (
 
 CREATE VIEW collate_dep_test3 AS
 SELECT
-  CAST('foo' AS TEXT) COLLATE "test0" AS foo;
+  CAST('foo'
+  AS TEXT) COLLATE "test0" AS foo;
 
 CREATE TABLE collate_dep_test4t ( a INT, b TEXT );
 
@@ -950,10 +965,12 @@ DROP TABLE "collate_dep_test1", "collate_dep_test4t";
 
 DROP TYPE collate_dep_test2;
 
-CREATE TYPE textrange_c AS RANGE (subtype = TEXT,
+CREATE TYPE textrange_c AS RANGE
+(subtype = TEXT,
 collation = "C");
 
-CREATE TYPE textrange_en_us AS RANGE (subtype = TEXT,
+CREATE TYPE textrange_en_us AS RANGE
+(subtype = TEXT,
 collation = "en-x-icu");
 
 SELECT textrange_c('A', 'Z') @> CAST('b' AS TEXT);
@@ -1268,7 +1285,8 @@ SELECT
   'ABC' COLLATE "case_insensitive";
 
 SELECT
-  array_sort(CAST('{a,B}' AS TEXT[]) COLLATE "case_insensitive");
+  array_sort(CAST('{a,B}'
+  AS TEXT[]) COLLATE "case_insensitive");
 
 SELECT array_sort(CAST('{a,B}' AS TEXT[]) COLLATE "C");
 
@@ -1577,12 +1595,14 @@ INSERT INTO test1bpci VALUES ('ABC');
 CREATE UNIQUE INDEX ON test3bpci USING btree ( x);
 
 SELECT
-  string_to_array(CAST('ABC,DEF,GHI' AS CHAR(11)) COLLATE "case_insensitive",
+  string_to_array(CAST('ABC,DEF,GHI'
+  AS CHAR(11)) COLLATE "case_insensitive",
   ',',
   'abc');
 
 SELECT
-  string_to_array(CAST('ABCDEFGHI' AS CHAR(9)) COLLATE "case_insensitive",
+  string_to_array(CAST('ABCDEFGHI'
+  AS CHAR(9)) COLLATE "case_insensitive",
   NULL,
   'b');
 
@@ -1638,14 +1658,16 @@ FROM
   pg_class
 WHERE
   relname =
-  CAST('PG_CLASS' AS TEXT) COLLATE "case_insensitive";
+  CAST('PG_CLASS'
+  AS TEXT) COLLATE "case_insensitive";
 
 SELECT
   relname
 FROM
   pg_class
 WHERE
-  CAST('PG_CLASS' AS TEXT) =
+  CAST('PG_CLASS'
+  AS TEXT) =
   relname COLLATE "case_insensitive";
 
 SELECT
@@ -1655,7 +1677,8 @@ FROM
 WHERE
   typname LIKE 'int_' AND
   typname <>
-  CAST('INT2' AS TEXT) COLLATE "case_insensitive"
+  CAST('INT2'
+  AS TEXT) COLLATE "case_insensitive"
 ORDER BY typname;
 
 SELECT
@@ -1664,7 +1687,8 @@ FROM
   pg_type
 WHERE
   typname LIKE 'int_' AND
-  CAST('INT2' AS TEXT) <>
+  CAST('INT2'
+  AS TEXT) <>
   typname COLLATE "case_insensitive"
 ORDER BY typname;
 
@@ -1815,32 +1839,38 @@ SELECT 'äbc' LIKE '_äbc' COLLATE "ignore_accents";
 SELECT 'foox' LIKE 'foo\' COLLATE "ignore_accents";
 
 CREATE TABLE test10pk (
-  x TEXT COLLATE "case_sensitive" PRIMARY KEY
+  x TEXT COLLATE "case_sensitive"
+  PRIMARY KEY
 );
 
 CREATE TABLE test10fk (
-  x TEXT COLLATE "case_insensitive" REFERENCES test10pk (x)
+  x TEXT COLLATE "case_insensitive"
+  REFERENCES test10pk (x)
   ON DELETE CASCADE
   ON UPDATE CASCADE
 );
 
 CREATE TABLE test11pk (
-  x TEXT COLLATE "case_insensitive" PRIMARY KEY
+  x TEXT COLLATE "case_insensitive"
+  PRIMARY KEY
 );
 
 CREATE TABLE test11fk (
-  x TEXT COLLATE "case_sensitive" REFERENCES test11pk (x)
+  x TEXT COLLATE "case_sensitive"
+  REFERENCES test11pk (x)
   ON DELETE CASCADE
   ON UPDATE CASCADE
 );
 
 CREATE TABLE test12pk (
-  x TEXT COLLATE "case_insensitive" PRIMARY KEY
+  x TEXT COLLATE "case_insensitive"
+  PRIMARY KEY
 );
 
 CREATE TABLE test12fk (
   a INT,
-  b TEXT COLLATE "case_insensitive" REFERENCES test12pk (x)
+  b TEXT COLLATE "case_insensitive"
+  REFERENCES test12pk (x)
 );
 
 INSERT INTO test12pk VALUES ('abc');
@@ -1856,12 +1886,14 @@ SELECT * FROM test12fk;
 DROP TABLE "test12pk", "test12fk";
 
 CREATE TABLE test12pk (
-  x TEXT COLLATE "case_insensitive" PRIMARY KEY
+  x TEXT COLLATE "case_insensitive"
+  PRIMARY KEY
 );
 
 CREATE TABLE test12fk (
   a INT,
-  b TEXT COLLATE "case_insensitive" REFERENCES test12pk (x)
+  b TEXT COLLATE "case_insensitive"
+  REFERENCES test12pk (x)
   ON UPDATE RESTRICT
 );
 
@@ -1878,12 +1910,14 @@ SELECT * FROM test12fk;
 DROP TABLE "test12pk", "test12fk";
 
 CREATE TABLE test12pk (
-  x TEXT COLLATE "case_insensitive" PRIMARY KEY
+  x TEXT COLLATE "case_insensitive"
+  PRIMARY KEY
 );
 
 CREATE TABLE test12fk (
   a INT,
-  b TEXT COLLATE "case_insensitive" REFERENCES test12pk (x)
+  b TEXT COLLATE "case_insensitive"
+  REFERENCES test12pk (x)
   ON UPDATE CASCADE
 );
 
@@ -2221,8 +2255,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c
 GROUP BY 1
@@ -2232,8 +2268,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c
 GROUP BY 1
@@ -2245,8 +2283,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c
 GROUP BY 1
@@ -2256,8 +2296,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c
 GROUP BY 1
@@ -2267,8 +2309,10 @@ SELECT
   t1.c COLLATE "C",
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
@@ -2278,8 +2322,10 @@ SELECT
   t1.c COLLATE "C",
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
@@ -2291,8 +2337,10 @@ SELECT
   t1.c COLLATE "C",
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
@@ -2302,8 +2350,10 @@ SELECT
   t1.c COLLATE "C",
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab3
+  AS t2
   ON t1.c =
     t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
@@ -2346,8 +2396,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab4 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab4
+  AS t2
   ON t1.c =
     t2.c AND
     t1.c =
@@ -2359,8 +2411,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab3 AS t1
-  INNER JOIN pagg_tab4 AS t2
+  pagg_tab3
+  AS t1
+  INNER JOIN pagg_tab4
+  AS t2
   ON t1.c =
     t2.c AND
     t1.c =
@@ -2460,8 +2514,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  pagg_tab5
+  AS t1
+  INNER JOIN pagg_tab6
+  AS t2
   ON t1.c =
     t2.c AND
     t1.c =
@@ -2473,8 +2529,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  pagg_tab5
+  AS t1
+  INNER JOIN pagg_tab6
+  AS t2
   ON t1.c =
     t2.c AND
     t1.c =
@@ -2488,8 +2546,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  pagg_tab5
+  AS t1
+  INNER JOIN pagg_tab6
+  AS t2
   ON t1.c =
     t2.c AND
     t1.c =
@@ -2501,8 +2561,10 @@ SELECT
   t1.c,
   COUNT(t2.c)
 FROM
-  pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  pagg_tab5
+  AS t1
+  INNER JOIN pagg_tab6
+  AS t2
   ON t1.c =
     t2.c AND
     t1.c =

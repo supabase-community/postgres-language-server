@@ -67,8 +67,10 @@ SELECT
   COUNT(*) >
   1
 FROM
-  contexts AS c1,
-  contexts AS c2
+  contexts
+  AS c1,
+  contexts
+  AS c2
 WHERE
   c2.name =
   'CacheMemoryContext' AND

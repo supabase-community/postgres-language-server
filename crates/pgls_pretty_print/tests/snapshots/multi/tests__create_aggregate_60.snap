@@ -268,7 +268,8 @@ SELECT
   aggfnoid,
   aggtransfn,
   aggcombinefn,
-  CAST(aggtranstype AS REGTYPE),
+  CAST(aggtranstype
+  AS REGTYPE),
   aggserialfn,
   aggdeserialfn,
   aggfinalmodify
@@ -276,7 +277,8 @@ FROM
   pg_aggregate
 WHERE
   aggfnoid =
-  CAST('myavg' AS REGPROC);
+  CAST('myavg'
+  AS REGPROC);
 
 DROP AGGREGATE myavg(NUMERIC);
 
@@ -302,7 +304,8 @@ SELECT
   aggfnoid,
   aggtransfn,
   aggcombinefn,
-  CAST(aggtranstype AS REGTYPE),
+  CAST(aggtranstype
+  AS REGTYPE),
   aggserialfn,
   aggdeserialfn,
   aggfinalmodify
@@ -310,7 +313,8 @@ FROM
   pg_aggregate
 WHERE
   aggfnoid =
-  CAST('myavg' AS REGPROC);
+  CAST('myavg'
+  AS REGPROC);
 
 CREATE OR REPLACE AGGREGATE myavg (NUMERIC)
 (
@@ -322,7 +326,8 @@ SELECT
   aggfnoid,
   aggtransfn,
   aggcombinefn,
-  CAST(aggtranstype AS REGTYPE),
+  CAST(aggtranstype
+  AS REGTYPE),
   aggserialfn,
   aggdeserialfn,
   aggfinalmodify
@@ -330,7 +335,8 @@ FROM
   pg_aggregate
 WHERE
   aggfnoid =
-  CAST('myavg' AS REGPROC);
+  CAST('myavg'
+  AS REGPROC);
 
 CREATE OR REPLACE AGGREGATE myavg (NUMERIC)
 (

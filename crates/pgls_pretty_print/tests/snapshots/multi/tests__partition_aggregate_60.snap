@@ -297,8 +297,10 @@ SELECT
   SUM(t1.y),
   COUNT(*)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -312,8 +314,10 @@ SELECT
   SUM(t1.y),
   COUNT(*)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -327,8 +331,10 @@ SELECT
   SUM(t1.y),
   COUNT(t1)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -342,8 +348,10 @@ SELECT
   SUM(t1.y),
   COUNT(t1)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -357,8 +365,10 @@ SELECT
   SUM(t1.y),
   COUNT(*)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -374,8 +384,10 @@ SELECT
   SUM(t1.x),
   COUNT(*)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -392,8 +404,10 @@ SELECT
   SUM(t1.x),
   COUNT(*)
 FROM
-  pagg_tab1 AS t1,
-  pagg_tab2 AS t2
+  pagg_tab1
+  AS t1,
+  pagg_tab2
+  AS t2
 WHERE
   t1.x =
   t2.y
@@ -411,8 +425,10 @@ SELECT
   b.y,
   SUM(a.y)
 FROM
-  pagg_tab1 AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  pagg_tab1
+  AS a
+  LEFT OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY b.y
@@ -422,8 +438,10 @@ SELECT
   b.y,
   SUM(a.y)
 FROM
-  pagg_tab1 AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  pagg_tab1
+  AS a
+  LEFT OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY b.y
@@ -433,8 +451,10 @@ SELECT
   b.y,
   SUM(a.y)
 FROM
-  pagg_tab1 AS a
-  RIGHT OUTER JOIN pagg_tab2 AS b
+  pagg_tab1
+  AS a
+  RIGHT OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY b.y
@@ -444,8 +464,10 @@ SELECT
   b.y,
   SUM(a.y)
 FROM
-  pagg_tab1 AS a
-  RIGHT OUTER JOIN pagg_tab2 AS b
+  pagg_tab1
+  AS a
+  RIGHT OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY b.y
@@ -455,8 +477,10 @@ SELECT
   a.x,
   SUM(b.x)
 FROM
-  pagg_tab1 AS a
-  FULL OUTER JOIN pagg_tab2 AS b
+  pagg_tab1
+  AS a
+  FULL OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY a.x
@@ -466,8 +490,10 @@ SELECT
   a.x,
   SUM(b.x)
 FROM
-  pagg_tab1 AS a
-  FULL OUTER JOIN pagg_tab2 AS b
+  pagg_tab1
+  AS a
+  FULL OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY a.x
@@ -611,7 +637,8 @@ FROM
     1 AND
     x =
     2) AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  LEFT OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY a.x,
@@ -633,7 +660,8 @@ FROM
     1 AND
     x =
     2) AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  LEFT OUTER JOIN pagg_tab2
+  AS b
   ON a.x =
     b.y
 GROUP BY a.x,

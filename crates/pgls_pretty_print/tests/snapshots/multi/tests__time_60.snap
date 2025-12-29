@@ -1,6 +1,6 @@
 ---
-source: crates/pgt_pretty_print/tests/tests.rs
-input_file: crates/pgt_pretty_print/tests/data/multi/time_60.sql
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/time_60.sql
 snapshot_kind: text
 ---
 CREATE TABLE time_tbl ( f1 TIME(2) );
@@ -72,49 +72,63 @@ FROM
   'time');
 
 SELECT
-  f1 + CAST('00:01' AS TIME) AS "Illegal"
+  f1 + CAST('00:01'
+  AS TIME) AS "Illegal"
 FROM
   time_tbl;
 
 SELECT
-  EXTRACT('microsecond' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('microsecond' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('millisecond' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('millisecond' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('second' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('second' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('minute' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('minute' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('hour' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('hour' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('day' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('day' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('fortnight' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('fortnight' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('timezone' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('timezone' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
-  EXTRACT('epoch' FROM CAST('2020-05-26 13:30:25.575401' AS TIME));
+  EXTRACT('epoch' FROM CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
   date_part('microsecond',
-  CAST('2020-05-26 13:30:25.575401' AS TIME));
+  CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
   date_part('millisecond',
-  CAST('2020-05-26 13:30:25.575401' AS TIME));
+  CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
   date_part('second',
-  CAST('2020-05-26 13:30:25.575401' AS TIME));
+  CAST('2020-05-26 13:30:25.575401'
+  AS TIME));
 
 SELECT
   date_part('epoch',
-  CAST('2020-05-26 13:30:25.575401' AS TIME));
+  CAST('2020-05-26 13:30:25.575401'
+  AS TIME));

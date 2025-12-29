@@ -2,7 +2,7 @@ use pgls_query::protobuf::ReplicaIdentityStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdentityStmt) {
@@ -11,7 +11,7 @@ pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdenti
     e.token(TokenKind::IDENT("REPLICA".to_string()));
     e.space();
     e.token(TokenKind::IDENT("IDENTITY".to_string()));
-    e.space();
+    e.line(LineType::SoftOrSpace);
 
     // identity_type: 'd' = DEFAULT, 'f' = FULL, 'i' = USING INDEX, 'n' = NOTHING
     match n.identity_type.as_str() {
@@ -30,7 +30,7 @@ pub(super) fn emit_replica_identity_stmt(e: &mut EventEmitter, n: &ReplicaIdenti
             e.space();
             e.token(TokenKind::INDEX_KW);
             if !n.name.is_empty() {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::IDENT(n.name.clone()));
             }
         }

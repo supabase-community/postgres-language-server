@@ -6,7 +6,9 @@ snapshot_kind: text
 CREATE TEMPORARY TABLE x (
   a serial,
   b INT,
-  c TEXT NOT NULL DEFAULT 'stuff',
+  c TEXT
+  NOT NULL
+  DEFAULT 'stuff',
   d TEXT,
   e TEXT
 );

@@ -185,19 +185,22 @@ ALTER OPERATOR FAMILY integer_ops USING btree
     int8alias1);
 
 CREATE TABLE ec0 (
-  ff BIGINT PRIMARY KEY,
+  ff BIGINT
+  PRIMARY KEY,
   f1 BIGINT,
   f2 BIGINT
 );
 
 CREATE TABLE ec1 (
-  ff BIGINT PRIMARY KEY,
+  ff BIGINT
+  PRIMARY KEY,
   f1 int8alias1,
   f2 int8alias2
 );
 
 CREATE TABLE ec2 (
-  xf BIGINT PRIMARY KEY,
+  xf BIGINT
+  PRIMARY KEY,
   x1 int8alias1,
   x2 int8alias2
 );
@@ -214,7 +217,8 @@ WHERE
   ff =
   f1 AND
   f1 =
-  CAST('42' AS BIGINT);
+  CAST('42'
+  AS BIGINT);
 
 SELECT
   *
@@ -224,7 +228,8 @@ WHERE
   ff =
   f1 AND
   f1 =
-  CAST('42' AS int8alias1);
+  CAST('42'
+  AS int8alias1);
 
 SELECT
   *
@@ -234,7 +239,8 @@ WHERE
   ff =
   f1 AND
   f1 =
-  CAST('42' AS int8alias1);
+  CAST('42'
+  AS int8alias1);
 
 SELECT
   *
@@ -244,7 +250,8 @@ WHERE
   ff =
   f1 AND
   f1 =
-  CAST('42' AS int8alias2);
+  CAST('42'
+  AS int8alias2);
 
 SELECT
   *
@@ -255,7 +262,8 @@ WHERE
   ff =
   x1 AND
   ff =
-  CAST('42' AS BIGINT);
+  CAST('42'
+  AS BIGINT);
 
 SELECT
   *
@@ -266,7 +274,8 @@ WHERE
   ff =
   x1 AND
   ff =
-  CAST('42' AS int8alias1);
+  CAST('42'
+  AS int8alias1);
 
 SELECT
   *
@@ -276,7 +285,8 @@ FROM
 WHERE
   ff =
   x1 AND
-  CAST('42' AS BIGINT) =
+  CAST('42'
+  AS BIGINT) =
   x1;
 
 SELECT
@@ -288,7 +298,8 @@ WHERE
   ff =
   x1 AND
   x1 =
-  CAST('42' AS int8alias1);
+  CAST('42'
+  AS int8alias1);
 
 SELECT
   *
@@ -299,7 +310,8 @@ WHERE
   ff =
   x1 AND
   x1 =
-  CAST('42' AS int8alias2);
+  CAST('42'
+  AS int8alias2);
 
 CREATE UNIQUE
 INDEX "ec1_expr1" ON ec1 USING btree
@@ -350,7 +362,8 @@ WHERE
   ss1.x =
   ec1.f1 AND
   ec1.ff =
-  CAST(42 AS BIGINT);
+  CAST(42
+  AS BIGINT);
 
 SELECT
   *
@@ -377,7 +390,8 @@ WHERE
   ss1.x =
   ec1.f1 AND
   ec1.ff =
-  CAST(42 AS BIGINT) AND
+  CAST(42
+  AS BIGINT) AND
   ec1.ff =
   ec1.f1;
 
@@ -425,7 +439,8 @@ WHERE
   ss1.x =
   ss2.x AND
   ec1.ff =
-  CAST(42 AS BIGINT);
+  CAST(42
+  AS BIGINT);
 
 SET enable_mergejoin = on;
 
@@ -475,7 +490,8 @@ WHERE
   ss1.x =
   ss2.x AND
   ec1.ff =
-  CAST(42 AS BIGINT);
+  CAST(42
+  AS BIGINT);
 
 SET enable_nestloop = on;
 
@@ -508,7 +524,8 @@ WHERE
   ss1.x =
   ec1.f1 AND
   ec1.ff =
-  CAST(42 AS BIGINT);
+  CAST(42
+  AS BIGINT);
 
 SET enable_mergejoin = on;
 
@@ -539,7 +556,8 @@ WHERE
   ss1.x =
   ec1.f1 AND
   ec1.ff =
-  CAST(42 AS BIGINT);
+  CAST(42
+  AS BIGINT);
 
 SET enable_nestloop = on;
 
@@ -553,7 +571,8 @@ AS PERMISSIVE
 FOR ALL
 TO PUBLIC
 USING (f1 <
-CAST('5' AS int8alias1));
+CAST('5'
+AS int8alias1));
 
 CREATE USER regress_user_ectest;
 
@@ -564,26 +583,34 @@ GRANT SELECT ON TABLE ec1 TO regress_user_ectest;
 SELECT
   *
 FROM
-  ec0 AS a,
-  ec1 AS b
+  ec0
+  AS a,
+  ec1
+  AS b
 WHERE
   a.ff =
   b.ff AND
   a.ff =
-  CAST(CAST(43 AS BIGINT) AS int8alias1);
+  CAST(CAST(43
+  AS BIGINT)
+  AS int8alias1);
 
 SET SESSION AUTHORIZATION regress_user_ectest;
 
 SELECT
   *
 FROM
-  ec0 AS a,
-  ec1 AS b
+  ec0
+  AS a,
+  ec1
+  AS b
 WHERE
   a.ff =
   b.ff AND
   a.ff =
-  CAST(CAST(43 AS BIGINT) AS int8alias1);
+  CAST(CAST(43
+  AS BIGINT)
+  AS int8alias1);
 
 RESET session_authorization;
 
@@ -608,24 +635,32 @@ SET enable_mergejoin = off;
 SELECT
   *
 FROM
-  ec0 AS m
-  INNER JOIN ec0 AS n
+  ec0
+  AS m
+  INNER JOIN ec0
+  AS n
   ON m.ff =
     n.ff
-  INNER JOIN ec1 AS p
+  INNER JOIN ec1
+  AS p
   ON m.ff + n.ff =
     p.f1;
 
 SELECT
   *
 FROM
-  ec0 AS m
-  INNER JOIN ec0 AS n
+  ec0
+  AS m
+  INNER JOIN ec0
+  AS n
   ON m.ff =
     n.ff
-  INNER JOIN ec1 AS p
-  ON CAST(p.f1 AS BIGINT) =
-    CAST(m.ff + n.ff AS int8alias1);
+  INNER JOIN ec1
+  AS p
+  ON CAST(p.f1
+    AS BIGINT) =
+    CAST(m.ff + n.ff
+    AS int8alias1);
 
 RESET enable_mergejoin;
 
@@ -643,7 +678,8 @@ CREATE TEMPORARY TABLE undername ( f1 NAME, f2 INT );
 
 CREATE TEMPORARY VIEW overview AS
 SELECT
-  CAST(f1 AS information_schema.sql_identifier) AS sqli,
+  CAST(f1
+  AS information_schema.sql_identifier) AS sqli,
   f2
 FROM
   undername;
@@ -661,8 +697,10 @@ SET enable_mergejoin = on;
 SELECT
   *
 FROM
-  tbl_nocom AS t1
-  FULL OUTER JOIN tbl_nocom AS t2
+  tbl_nocom
+  AS t1
+  FULL OUTER JOIN tbl_nocom
+  AS t2
   ON t2.a =
     t1.b;
 
@@ -691,8 +729,10 @@ SET enable_mergejoin = off;
 SELECT
   *
 FROM
-  tbl_nocom AS t1
-  FULL OUTER JOIN tbl_nocom AS t2
+  tbl_nocom
+  AS t1
+  FULL OUTER JOIN tbl_nocom
+  AS t2
   ON t2.a =
     t1.b;
 

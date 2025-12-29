@@ -225,7 +225,12 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
                 e.token(TokenKind::PASSWORD_KW);
                 if let Some(ref arg) = n.arg {
                     e.space();
-                    super::emit_node(arg, e);
+                    // Password values must be single-quoted strings
+                    if let Some(NodeEnum::String(s)) = &arg.node {
+                        super::emit_string_literal(e, s);
+                    } else {
+                        super::emit_node(arg, e);
+                    }
                 }
             }
         }
@@ -233,7 +238,12 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::PASSWORD_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                // Password values must be single-quoted strings
+                if let Some(NodeEnum::String(s)) = &arg.node {
+                    super::emit_string_literal(e, s);
+                } else {
+                    super::emit_node(arg, e);
+                }
             }
         }
         "validUntil" => {
@@ -242,7 +252,12 @@ pub(super) fn emit_role_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::UNTIL_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                super::emit_node(arg, e);
+                // VALID UNTIL values must be single-quoted strings
+                if let Some(NodeEnum::String(s)) = &arg.node {
+                    super::emit_string_literal(e, s);
+                } else {
+                    super::emit_node(arg, e);
+                }
             }
         }
         "rolemembers" => {
