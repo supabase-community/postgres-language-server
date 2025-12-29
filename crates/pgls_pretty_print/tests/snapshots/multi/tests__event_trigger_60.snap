@@ -149,7 +149,8 @@ CALL p1();
 
 ALTER EVENT TRIGGER regress_event_trigger DISABLE;
 
-DROP TABLE "event_trigger_fire2",
+DROP TABLE
+"event_trigger_fire2",
 "event_trigger_fire3",
 "event_trigger_fire4",
 "event_trigger_fire5",

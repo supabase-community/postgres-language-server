@@ -2378,7 +2378,8 @@ ALTER TABLE parted_pk_detach_test
 ALTER TABLE parted_pk_detach_test1
   DROP CONSTRAINT parted_pk_detach_test1_pkey;
 
-DROP TABLE "parted_pk_detach_test",
+DROP TABLE
+"parted_pk_detach_test",
 "parted_pk_detach_test1";
 
 CREATE TABLE parted_uniq_detach_test (
@@ -2401,7 +2402,8 @@ ALTER TABLE parted_uniq_detach_test
 ALTER TABLE parted_uniq_detach_test1
   DROP CONSTRAINT parted_uniq_detach_test1_a_key;
 
-DROP TABLE "parted_uniq_detach_test",
+DROP TABLE
+"parted_uniq_detach_test",
 "parted_uniq_detach_test1";
 
 CREATE TABLE parted_index_col_drop (

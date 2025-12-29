@@ -45,6 +45,8 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
 
     // CTE query in parentheses
     e.token(TokenKind::L_PAREN);
+    e.indent_start();
+    e.line(LineType::Soft);
 
     if let Some(ref query) = n.ctequery {
         // For CTEs, we don't want semicolons in the query
@@ -65,6 +67,8 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
         }
     }
 
+    e.indent_end();
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 
     if let Some(ref search) = n.search_clause {

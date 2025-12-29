@@ -3872,7 +3872,7 @@ ON TYPES
 TO regress_priv_user2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3890,7 +3890,7 @@ WHERE
 DROP OWNED BY regress_priv_user2, regress_priv_user2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -4050,7 +4050,7 @@ DROP DOMAIN testns.priv_testdomain1;
 RESET role;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -4656,18 +4656,11 @@ SELECT
 
 SET ROLE TO regress_readallstats;
 
-SELECT "COUNT"(*) >= 0 AS ok FROM pg_aios;
+SELECT COUNT(*) >= 0 AS ok FROM pg_aios;
 
-SELECT
-  "COUNT"(
-  *
-  ) >=
-  0
-  AS ok
-FROM
-  pg_backend_memory_contexts;
+SELECT COUNT(*) >= 0 AS ok FROM pg_backend_memory_contexts;
 
-SELECT "COUNT"(*) >= 0 AS ok FROM pg_shmem_allocations;
+SELECT COUNT(*) >= 0 AS ok FROM pg_shmem_allocations;
 
 RESET role;
 
@@ -4956,7 +4949,8 @@ WHERE
   grantor LIKE 'regress_grantor%'
 ORDER BY ROW(t.*);
 
-DROP TABLE "grantor_test1",
+DROP TABLE
+"grantor_test1",
 "grantor_test2",
 "grantor_test3";
 

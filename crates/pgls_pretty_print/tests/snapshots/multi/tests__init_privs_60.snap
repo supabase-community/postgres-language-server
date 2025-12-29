@@ -3,7 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/init_privs_60.sql
 snapshot_kind: text
 ---
-SELECT "COUNT"(*) > 0 FROM pg_init_privs;
+SELECT COUNT(*) > 0 FROM pg_init_privs;
 
 GRANT SELECT ON TABLE pg_proc TO CURRENT_USER;
 

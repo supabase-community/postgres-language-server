@@ -23,7 +23,7 @@ SELECT pg_input_is_valid('16AE7F7', 'pg_lsn');
 
 SELECT * FROM pg_input_error_info('16AE7F7', 'pg_lsn');
 
-SELECT "MIN"(f1), "MAX"(f1) FROM pg_lsn_tbl;
+SELECT MIN(f1), MAX(f1) FROM pg_lsn_tbl;
 
 DROP TABLE "pg_lsn_tbl";
 

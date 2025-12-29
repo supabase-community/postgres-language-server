@@ -33,9 +33,9 @@ CREATE TABLE tid_tab ( a INT );
 
 INSERT INTO tid_tab VALUES (1), (2);
 
-SELECT "MIN"(ctid) FROM tid_tab;
+SELECT MIN(ctid) FROM tid_tab;
 
-SELECT "MAX"(ctid) FROM tid_tab;
+SELECT MAX(ctid) FROM tid_tab;
 
 TRUNCATE tid_tab;
 

@@ -264,38 +264,40 @@ FROM
 
 SELECT array_agg(id ORDER BY guid_field) FROM guid3;
 
-WITH uuidts AS (SELECT
-  y,
-  ts
-  AS ts,
-  LAG(
-  ts
-  )
-  OVER (
-  ORDER BY y)
-  AS prev_ts
-FROM
-  (SELECT
+WITH uuidts AS (
+  SELECT
     y,
-    uuid_extract_timestamp(
-    uuidv7(
-    CAST(y ||
-    ' years'
-    AS INTERVAL)
+    ts
+    AS ts,
+    LAG(
+    ts
     )
-    )
-    AS ts
+    OVER (
+    ORDER BY y)
+    AS prev_ts
   FROM
-    generate_series(
-    1970 - CAST(EXTRACT('year' FROM NOW(
+    (SELECT
+      y,
+      uuid_extract_timestamp(
+      uuidv7(
+      CAST(y ||
+      ' years'
+      AS INTERVAL)
+      )
+      )
+      AS ts
+    FROM
+      generate_series(
+      1970 - CAST(EXTRACT('year' FROM NOW(
 
-    ))
-    AS INT),
-    10888 - CAST(EXTRACT('year' FROM NOW(
+      ))
+      AS INT),
+      10888 - CAST(EXTRACT('year' FROM NOW(
 
-    ))
-    AS INT)
-    ) AS y))
+      ))
+      AS INT)
+      ) AS y)
+)
 SELECT
   y,
   ts,

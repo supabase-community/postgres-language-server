@@ -457,7 +457,7 @@ CREATE VIEW functestv3 AS SELECT * FROM functest3;
 CREATE FUNCTION
 functest_s_14()
 RETURNS BIGINT RETURN (SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -513,7 +513,8 @@ WHERE
 ORDER BY 1,
   2;
 
-DROP FUNCTION functest_is_1(
+DROP FUNCTION
+functest_is_1(
   INT,
   INT,
   TEXT),
@@ -561,7 +562,7 @@ CREATE FUNCTION
 functest_is_7()
 RETURNS INT
 LANGUAGE "sql" RETURN (SELECT
-  "COUNT"(
+  COUNT(
   a
   )
 FROM

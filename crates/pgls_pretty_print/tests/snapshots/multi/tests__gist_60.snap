@@ -26,7 +26,8 @@ CREATE INDEX "gist_pointidx4" ON gist_point_tbl USING gist
   p
 ) WITH (buffering = auto);
 
-DROP INDEX "gist_pointidx2",
+DROP INDEX
+"gist_pointidx2",
 "gist_pointidx3",
 "gist_pointidx4";
 
@@ -577,9 +578,9 @@ WHERE
   0.95
   );
 
-SELECT "COUNT"(*) FROM gist_tbl;
+SELECT COUNT(*) FROM gist_tbl;
 
-SELECT "COUNT"(*) FROM gist_tbl;
+SELECT COUNT(*) FROM gist_tbl;
 
 SELECT
   p

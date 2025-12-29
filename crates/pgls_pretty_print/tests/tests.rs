@@ -156,6 +156,7 @@ fn test_multi(fixture: Fixture<&str>) {
         normalize_join_expr(&mut ast);
         normalize_foreign_table_partbound(&mut ast);
         normalize_merge_support_func(&mut ast);
+        normalize_merge_support_func(&mut parsed_ast);
 
         assert_eq!(ast, parsed_ast);
 
@@ -1084,7 +1085,7 @@ fn normalize_join_expr(node: &mut pgls_query::NodeEnum) {
             je.alias = None;
             // Clear join_using_alias (not currently emitted)
             je.join_using_alias = None;
-            // Recursively normalize nested joins
+            // Recursively normalize nested joins and subqueries
             if let Some(ref mut larg) = je.larg {
                 if let Some(ref mut n) = larg.node {
                     normalize_join_expr(n);
@@ -1096,13 +1097,6 @@ fn normalize_join_expr(node: &mut pgls_query::NodeEnum) {
                 }
             }
         }
-        pgls_query::NodeEnum::SelectStmt(stmt) => {
-            for from in &mut stmt.from_clause {
-                if let Some(ref mut n) = from.node {
-                    normalize_join_expr(n);
-                }
-            }
-        }
         pgls_query::NodeEnum::RangeSubselect(rs) => {
             if let Some(ref mut sub) = rs.subquery {
                 if let Some(ref mut n) = sub.node {
@@ -1110,9 +1104,30 @@ fn normalize_join_expr(node: &mut pgls_query::NodeEnum) {
                 }
             }
         }
+        pgls_query::NodeEnum::SelectStmt(stmt) => {
+            for from in &mut stmt.from_clause {
+                if let Some(ref mut n) = from.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
         pgls_query::NodeEnum::ViewStmt(vs) => {
             if let Some(ref mut query) = vs.query {
                 if let Some(ref mut n) = query.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::DeleteStmt(del) => {
+            if let Some(ref mut where_clause) = del.where_clause {
+                if let Some(ref mut n) = where_clause.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::SubLink(sl) => {
+            if let Some(ref mut sub) = sl.subselect {
+                if let Some(ref mut n) = sub.node {
                     normalize_join_expr(n);
                 }
             }
@@ -1179,7 +1194,15 @@ fn normalize_merge_support_func_recursive(node: &mut pgls_query::NodeEnum) {
             process_node_list(&mut stmt.from_clause);
             process_optional_boxed_node(&mut stmt.where_clause);
             if let Some(ref mut wc) = stmt.with_clause {
+                wc.location = 0;
                 process_node_list(&mut wc.ctes);
+            }
+            // Handle set operations (UNION/INTERSECT/EXCEPT)
+            if let Some(ref mut larg) = stmt.larg {
+                process_select_stmt_box(larg.as_mut());
+            }
+            if let Some(ref mut rarg) = stmt.rarg {
+                process_select_stmt_box(rarg.as_mut());
             }
         }
         pgls_query::NodeEnum::ResTarget(rt) => {
@@ -1228,7 +1251,18 @@ fn normalize_merge_support_func_recursive(node: &mut pgls_query::NodeEnum) {
             process_optional_boxed_node(&mut sl.subselect);
             process_optional_boxed_node(&mut sl.testexpr);
         }
+        pgls_query::NodeEnum::RangeSubselect(rs) => {
+            process_optional_boxed_node(&mut rs.subquery);
+        }
+        pgls_query::NodeEnum::JoinExpr(je) => {
+            process_optional_boxed_node(&mut je.larg);
+            process_optional_boxed_node(&mut je.rarg);
+        }
+        pgls_query::NodeEnum::ViewStmt(vs) => {
+            process_optional_boxed_node(&mut vs.query);
+        }
         pgls_query::NodeEnum::WithClause(wc) => {
+            wc.location = 0;
             process_node_list(&mut wc.ctes);
         }
         pgls_query::NodeEnum::CopyStmt(cs) => {
@@ -1263,5 +1297,15 @@ fn process_optional_boxed_node(opt: &mut Option<Box<pgls_query::protobuf::Node>>
         if let Some(n) = &mut node.node {
             normalize_merge_support_func_recursive(n);
         }
+    }
+}
+
+fn process_select_stmt_box(stmt: &mut pgls_query::protobuf::SelectStmt) {
+    // Recursively process the SelectStmt
+    let inner = std::mem::take(stmt);
+    let mut node_enum = pgls_query::NodeEnum::SelectStmt(Box::new(inner));
+    normalize_merge_support_func_recursive(&mut node_enum);
+    if let pgls_query::NodeEnum::SelectStmt(updated) = node_enum {
+        *stmt = *updated;
     }
 }

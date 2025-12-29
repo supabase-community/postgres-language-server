@@ -13,35 +13,35 @@ SELECT unicode_assigned('abc');
 
 SELECT unicode_assigned('abc􏿿');
 
-SELECT "NORMALIZE"('');
+SELECT NORMALIZE('');
 
 SELECT
-  "NORMALIZE"('äⓑc') =
+  NORMALIZE('äⓑc') =
   'äⓑc' COLLATE "C"
   AS test_default;
 
 SELECT
-  "NORMALIZE"('äⓑc', NFC) =
+  NORMALIZE('äⓑc', NFC) =
   'äⓑc' COLLATE "C"
   AS test_nfc;
 
 SELECT
-  "NORMALIZE"('äbc', NFC) =
+  NORMALIZE('äbc', NFC) =
   'äbc' COLLATE "C"
   AS test_nfc_idem;
 
 SELECT
-  "NORMALIZE"('äⓑc', NFD) =
+  NORMALIZE('äⓑc', NFD) =
   'äⓑc' COLLATE "C"
   AS test_nfd;
 
 SELECT
-  "NORMALIZE"('äⓑc', NFKC) =
+  NORMALIZE('äⓑc', NFKC) =
   'äbc' COLLATE "C"
   AS test_nfkc;
 
 SELECT
-  "NORMALIZE"('äⓑc', NFKD) =
+  NORMALIZE('äⓑc', NFKD) =
   'äbc' COLLATE "C"
   AS test_nfkd;
 

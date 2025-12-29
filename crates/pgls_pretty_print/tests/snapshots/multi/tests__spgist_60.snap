@@ -98,7 +98,7 @@ CREATE INDEX "spgist_box_idx" ON spgist_box_tbl USING spgist
 );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM

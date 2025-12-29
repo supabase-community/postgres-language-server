@@ -828,20 +828,22 @@ SELECT * FROM brin_test WHERE b = 1;
 
 CREATE TABLE brintest_3 ( a TEXT, b TEXT, c TEXT, d TEXT );
 
-WITH rand_value AS (SELECT
-  string_agg(
-  fipshash(
-  CAST(i
-  AS TEXT)
-  ),
-  ''
-  )
-  AS val
-FROM
-  generate_series(
-  1,
-  60
-  ) AS s (i))
+WITH rand_value AS (
+  SELECT
+    string_agg(
+    fipshash(
+    CAST(i
+    AS TEXT)
+    ),
+    ''
+    )
+    AS val
+  FROM
+    generate_series(
+    1,
+    60
+    ) AS s (i)
+)
 INSERT INTO brintest_3
 SELECT
   val,
@@ -869,20 +871,22 @@ DROP INDEX "brin_test_temp_idx";
 
 VACUUM brintest_3;
 
-WITH rand_value AS (SELECT
-  string_agg(
-  fipshash(
-  CAST(-i
-  AS TEXT)
-  ),
-  ''
-  )
-  AS val
-FROM
-  generate_series(
-  1,
-  60
-  ) AS s (i))
+WITH rand_value AS (
+  SELECT
+    string_agg(
+    fipshash(
+    CAST(-i
+    AS TEXT)
+    ),
+    ''
+    )
+    AS val
+  FROM
+    generate_series(
+    1,
+    60
+    ) AS s (i)
+)
 INSERT INTO brintest_3
 SELECT
   val,

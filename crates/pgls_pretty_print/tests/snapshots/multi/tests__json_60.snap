@@ -642,7 +642,7 @@ WHERE
   'object';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM

@@ -1,7 +1,7 @@
 use pgls_query::protobuf::{DropBehavior, DropStmt, ObjectType};
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::{emit_comma_separated_list, emit_dot_separated_list_with};
 
@@ -78,7 +78,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
 
     // Object names
     if !n.objects.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         match object_type {
             ObjectType::ObjectCast => {
                 emit_comma_separated_list(e, &n.objects, emit_drop_cast_object);

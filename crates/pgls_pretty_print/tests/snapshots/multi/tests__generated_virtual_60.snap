@@ -943,17 +943,17 @@ INSERT INTO gtest32 VALUES (1), (2);
 ANALYZE gtest32;
 
 SELECT
-  "SUM"(
+  SUM(
   t2.b
   )
   OVER (
   PARTITION BY t2.a),
-  "SUM"(
+  SUM(
   t2.c
   )
   OVER (
   PARTITION BY t2.a),
-  "SUM"(
+  SUM(
   t2.d
   )
   OVER (
@@ -968,17 +968,17 @@ FROM
 ORDER BY t1.a;
 
 SELECT
-  "SUM"(
+  SUM(
   t2.b
   )
   OVER (
   PARTITION BY t2.a),
-  "SUM"(
+  SUM(
   t2.c
   )
   OVER (
   PARTITION BY t2.a),
-  "SUM"(
+  SUM(
   t2.d
   )
   OVER (

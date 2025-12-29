@@ -805,7 +805,7 @@ SET enable_indexscan = f;
 SET enable_bitmapscan = f;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -815,7 +815,7 @@ WHERE
   AS INT4RANGE);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -827,10 +827,10 @@ WHERE
   20
   );
 
-SELECT "COUNT"(*) FROM test_range_gist WHERE ir @> 10;
+SELECT COUNT(*) FROM test_range_gist WHERE ir @> 10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -842,7 +842,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -854,7 +854,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -866,7 +866,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -878,7 +878,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -890,7 +890,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -902,7 +902,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -914,7 +914,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -926,7 +926,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -936,7 +936,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -954,7 +954,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -964,7 +964,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -974,7 +974,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -992,7 +992,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1010,7 +1010,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1028,7 +1028,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1046,7 +1046,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1070,7 +1070,7 @@ SET enable_indexscan = t;
 SET enable_bitmapscan = f;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1080,7 +1080,7 @@ WHERE
   AS INT4RANGE);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1092,10 +1092,10 @@ WHERE
   20
   );
 
-SELECT "COUNT"(*) FROM test_range_gist WHERE ir @> 10;
+SELECT COUNT(*) FROM test_range_gist WHERE ir @> 10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1107,7 +1107,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1119,7 +1119,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1131,7 +1131,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1143,7 +1143,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1155,7 +1155,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1167,7 +1167,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1179,7 +1179,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1191,7 +1191,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1201,7 +1201,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1219,7 +1219,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1229,7 +1229,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1239,7 +1239,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1257,7 +1257,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1275,7 +1275,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1293,7 +1293,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1311,7 +1311,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1336,7 +1336,7 @@ CREATE INDEX "test_range_gist_idx" ON test_range_gist USING gist
 );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1346,7 +1346,7 @@ WHERE
   AS INT4RANGE);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1358,10 +1358,10 @@ WHERE
   20
   );
 
-SELECT "COUNT"(*) FROM test_range_gist WHERE ir @> 10;
+SELECT COUNT(*) FROM test_range_gist WHERE ir @> 10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1373,7 +1373,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1385,7 +1385,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1397,7 +1397,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1409,7 +1409,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1421,7 +1421,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1433,7 +1433,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1445,7 +1445,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1457,7 +1457,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1467,7 +1467,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1485,7 +1485,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1495,7 +1495,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1505,7 +1505,7 @@ WHERE
   AS int4multirange);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1523,7 +1523,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1541,7 +1541,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1559,7 +1559,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1577,7 +1577,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1690,7 +1690,7 @@ SET enable_indexscan = f;
 SET enable_bitmapscan = f;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1700,7 +1700,7 @@ WHERE
   AS INT4RANGE);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1712,10 +1712,10 @@ WHERE
   20
   );
 
-SELECT "COUNT"(*) FROM test_range_spgist WHERE ir @> 10;
+SELECT COUNT(*) FROM test_range_spgist WHERE ir @> 10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1727,7 +1727,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1739,7 +1739,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1751,7 +1751,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1763,7 +1763,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1775,7 +1775,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1787,7 +1787,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1799,7 +1799,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1817,7 +1817,7 @@ SET enable_indexscan = t;
 SET enable_bitmapscan = f;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1827,7 +1827,7 @@ WHERE
   AS INT4RANGE);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1839,10 +1839,10 @@ WHERE
   20
   );
 
-SELECT "COUNT"(*) FROM test_range_spgist WHERE ir @> 10;
+SELECT COUNT(*) FROM test_range_spgist WHERE ir @> 10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1854,7 +1854,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1866,7 +1866,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1878,7 +1878,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1890,7 +1890,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1902,7 +1902,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1914,7 +1914,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1926,7 +1926,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1945,7 +1945,7 @@ CREATE INDEX "test_range_spgist_idx" ON test_range_spgist USING spgist
 );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1955,7 +1955,7 @@ WHERE
   AS INT4RANGE);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1967,10 +1967,10 @@ WHERE
   20
   );
 
-SELECT "COUNT"(*) FROM test_range_spgist WHERE ir @> 10;
+SELECT COUNT(*) FROM test_range_spgist WHERE ir @> 10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1982,7 +1982,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1994,7 +1994,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2006,7 +2006,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2018,7 +2018,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2030,7 +2030,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2042,7 +2042,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2054,7 +2054,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2112,7 +2112,7 @@ FROM
 SET enable_seqscan = f;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2132,7 +2132,7 @@ CREATE INDEX ON test_range_elem USING spgist
 );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2147,7 +2147,7 @@ WHERE
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2435,7 +2435,8 @@ SELECT
   )
   );
 
-DROP FUNCTION anycompatiblearray_anycompatiblerange_func(
+DROP FUNCTION
+anycompatiblearray_anycompatiblerange_func(
   anycompatiblearray,
   anycompatiblerange);
 
@@ -2661,7 +2662,7 @@ SELECT
   ) @> CURRENT_DATE;
 
 SELECT
-  "NOW"(
+  NOW(
 
   ) <@ tstzrange(
   '2024-01-20 00:00',

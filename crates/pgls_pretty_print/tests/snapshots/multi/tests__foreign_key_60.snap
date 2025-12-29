@@ -2619,11 +2619,11 @@ ORDER BY a;
 
 INSERT INTO fk_partitioned_fk VALUES (2503, 2503);
 
-SELECT "COUNT"(*) FROM fk_partitioned_fk WHERE a IS NULL;
+SELECT COUNT(*) FROM fk_partitioned_fk WHERE a IS NULL;
 
 DELETE FROM fk_notpartitioned_pk;
 
-SELECT "COUNT"(*) FROM fk_partitioned_fk WHERE a IS NULL;
+SELECT COUNT(*) FROM fk_partitioned_fk WHERE a IS NULL;
 
 ALTER TABLE fk_partitioned_fk
   DROP CONSTRAINT fk_partitioned_fk_a_b_fkey;

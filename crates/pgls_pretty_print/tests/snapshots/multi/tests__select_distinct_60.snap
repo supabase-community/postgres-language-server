@@ -22,7 +22,7 @@ ORDER BY two USING <,
 SELECT DISTINCT p.age FROM person AS p ORDER BY age USING >;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -34,7 +34,7 @@ FROM
     tenk1) AS ss;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM

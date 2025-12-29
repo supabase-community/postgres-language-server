@@ -797,7 +797,7 @@ DROP TABLE "some_tab" CASCADE;
 
 CREATE TABLE firstparent (
   tomorrow DATE
-  DEFAULT (CAST("NOW"(
+  DEFAULT (CAST(NOW(
 
   )
   AS DATE) + 1)
@@ -805,7 +805,7 @@ CREATE TABLE firstparent (
 
 CREATE TABLE secondparent (
   tomorrow DATE
-  DEFAULT (CAST("NOW"(
+  DEFAULT (CAST(NOW(
 
   )
   AS DATE) + 1)
@@ -817,7 +817,7 @@ secondparent);
 
 CREATE TABLE thirdparent (
   tomorrow DATE
-  DEFAULT (CAST("NOW"(
+  DEFAULT (CAST(NOW(
 
   )
   AS DATE) - 1)
@@ -829,14 +829,15 @@ thirdparent);
 
 CREATE TABLE otherchild (
   tomorrow DATE
-  DEFAULT "NOW"(
+  DEFAULT NOW(
 
   )
 )
 INHERITS (firstparent,
 thirdparent);
 
-DROP TABLE "firstparent",
+DROP TABLE
+"firstparent",
 "secondparent",
 "jointchild",
 "thirdparent",
@@ -1381,20 +1382,22 @@ ALTER TABLE inht1 RENAME COLUMN aaa TO aaaa;
 
 ALTER TABLE inht1 RENAME COLUMN b TO bb;
 
-WITH RECURSIVE r AS (SELECT
-  CAST('inht1'
-  AS REGCLASS)
-  AS inhrelid
-UNION ALL
-SELECT
-  c.inhrelid
-FROM
-  pg_inherits
-  AS c,
-  r
-WHERE
-  r.inhrelid =
-  c.inhparent)
+WITH RECURSIVE r AS (
+  SELECT
+    CAST('inht1'
+    AS REGCLASS)
+    AS inhrelid
+  UNION ALL
+  SELECT
+    c.inhrelid
+  FROM
+    pg_inherits
+    AS c,
+    r
+  WHERE
+    r.inhrelid =
+    c.inhparent
+)
 SELECT
   CAST(a.attrelid
   AS REGCLASS),
@@ -1404,7 +1407,7 @@ SELECT
 FROM
   (SELECT
     inhrelid,
-    "COUNT"(
+    COUNT(
     *
     )
     AS expected
@@ -1845,9 +1848,9 @@ SELECT * FROM matest0 ORDER BY 1 - id;
 
 SELECT * FROM matest0 ORDER BY 1 - id;
 
-SELECT "MIN"(1 - id) FROM matest0;
+SELECT MIN(1 - id) FROM matest0;
 
-SELECT "MIN"(1 - id) FROM matest0;
+SELECT MIN(1 - id) FROM matest0;
 
 RESET enable_indexscan;
 
@@ -1859,9 +1862,9 @@ SELECT * FROM matest0 ORDER BY 1 - id;
 
 SELECT * FROM matest0 ORDER BY 1 - id;
 
-SELECT "MIN"(1 - id) FROM matest0;
+SELECT MIN(1 - id) FROM matest0;
 
-SELECT "MIN"(1 - id) FROM matest0;
+SELECT MIN(1 - id) FROM matest0;
 
 RESET enable_seqscan;
 
@@ -2003,7 +2006,7 @@ ORDER BY thousand,
   tenthous;
 
 SELECT
-  "MIN"(
+  MIN(
   x
   )
 FROM
@@ -2022,7 +2025,7 @@ FROM
     AS b) AS s;
 
 SELECT
-  "MIN"(
+  MIN(
   y
   )
 FROM
@@ -2382,7 +2385,8 @@ inh_parent2);
 
 ALTER TABLE inh_child2 NO INHERIT inh_parent2;
 
-DROP TABLE "inh_parent1",
+DROP TABLE
+"inh_parent1",
 "inh_parent2",
 "inh_child1",
 "inh_child2";
@@ -2484,7 +2488,8 @@ DROP TABLE "inh_nn_lvl1", "inh_nn_lvl2", "inh_nn_lvl3";
 
 CREATE TABLE inh_nn1 ( a INT NOT NULL );
 
-DROP TABLE IF EXISTS "inh_nn1",
+DROP TABLE IF EXISTS
+"inh_nn1",
 "inh_nn2",
 "inh_nn3",
 "inh_nn4";
@@ -2551,7 +2556,8 @@ WHERE
 ORDER BY 2,
   1;
 
-DROP TABLE "inh_parent",
+DROP TABLE
+"inh_parent",
 "inh_child1",
 "inh_child2",
 "inh_child3";
@@ -2615,7 +2621,8 @@ WHERE
 ORDER BY 2,
   1;
 
-DROP TABLE "inh_parent",
+DROP TABLE
+"inh_parent",
 "inh_child",
 "inh_child2",
 "inh_child3";
@@ -3264,31 +3271,9 @@ CREATE INDEX "parted_minmax1i" ON parted_minmax1 USING btree
 
 INSERT INTO parted_minmax VALUES (1, '12345');
 
-SELECT
-  "MIN"(
-  a
-  ),
-  "MAX"(
-  a
-  )
-FROM
-  parted_minmax
-WHERE
-  b =
-  '12345';
+SELECT MIN(a), MAX(a) FROM parted_minmax WHERE b = '12345';
 
-SELECT
-  "MIN"(
-  a
-  ),
-  "MAX"(
-  a
-  )
-FROM
-  parted_minmax
-WHERE
-  b =
-  '12345';
+SELECT MIN(a), MAX(a) FROM parted_minmax WHERE b = '12345';
 
 DROP TABLE "parted_minmax";
 

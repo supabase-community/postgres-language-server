@@ -176,7 +176,7 @@ SET enable_indexscan = false;
 SET enable_bitmapscan = false;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -186,7 +186,7 @@ WHERE
   AS point);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -196,7 +196,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -212,7 +212,7 @@ SET enable_indexscan = true;
 SET enable_bitmapscan = true;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -222,7 +222,7 @@ WHERE
   AS point);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -232,7 +232,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM

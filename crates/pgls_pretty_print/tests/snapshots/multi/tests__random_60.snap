@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -21,13 +21,13 @@ FROM
     )) AS ss
 GROUP BY r
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   1;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -36,7 +36,7 @@ SELECT
     r >=
     1)
   AS out_of_range,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -44,7 +44,7 @@ SELECT
     0.01) >
   0
   AS has_small,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -100,7 +100,7 @@ SELECT
 
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -116,14 +116,14 @@ FROM
     )) AS ss
 GROUP BY r
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   1;
 
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -142,7 +142,7 @@ GROUP BY r;
 
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -216,7 +216,7 @@ SELECT random(3.14, 3.14);
 
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -233,14 +233,14 @@ FROM
     )) AS ss
 GROUP BY r
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   2;
 
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -257,14 +257,14 @@ FROM
     )) AS ss
 GROUP BY r
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   1;
 
 SELECT
   r,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -281,13 +281,13 @@ FROM
     )) AS ss
 GROUP BY r
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   1;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -295,7 +295,7 @@ SELECT
     -2104533975) >
   0
   AS has_small,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -317,7 +317,7 @@ FROM
     )) AS ss;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -326,7 +326,7 @@ SELECT
     r >
     1500000000)
   AS out_of_range,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -334,7 +334,7 @@ SELECT
     -1470000000) >
   0
   AS has_small,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -356,7 +356,7 @@ FROM
     )) AS ss;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -364,7 +364,7 @@ SELECT
     -9038904596117680292) >
   0
   AS has_small,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -386,7 +386,7 @@ FROM
     )) AS ss;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -395,7 +395,7 @@ SELECT
     r >
     1500000000000000)
   AS out_of_range,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -403,7 +403,7 @@ SELECT
     -1470000000000000) >
   0
   AS has_small,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -425,7 +425,7 @@ FROM
     )) AS ss;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -434,7 +434,7 @@ SELECT
     r >
     1.5)
   AS out_of_range,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -442,7 +442,7 @@ SELECT
     -1.47) >
   0
   AS has_small,
-  "COUNT"(
+  COUNT(
   *
   )
   FILTER (WHERE
@@ -464,13 +464,13 @@ FROM
     )) AS ss;
 
 SELECT
-  "MIN"(
+  MIN(
   r
   ),
-  "MAX"(
+  MAX(
   r
   ),
-  "COUNT"(
+  COUNT(
   r
   )
 FROM
@@ -487,13 +487,13 @@ FROM
     ));
 
 SELECT
-  "MIN"(
+  MIN(
   r
   ),
-  "MAX"(
+  MAX(
   r
   ),
-  "COUNT"(
+  COUNT(
   r
   )
 FROM
@@ -510,13 +510,13 @@ FROM
     ));
 
 SELECT
-  "MIN"(
+  MIN(
   r
   ),
-  "MAX"(
+  MAX(
   r
   ),
-  "COUNT"(
+  COUNT(
   r
   )
 FROM

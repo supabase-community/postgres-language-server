@@ -417,11 +417,11 @@ SELECT class, c FROM e_star AS x WHERE x.c IS NOT NULL;
 
 SELECT * FROM f_star AS x WHERE x.c IS NULL;
 
-SELECT "SUM"(a) FROM a_star;
+SELECT SUM(a) FROM a_star;
 
 SELECT
   class,
-  "SUM"(
+  SUM(
   a
   )
 FROM

@@ -154,13 +154,13 @@ SET enable_hashagg = 0;
 
 SELECT
   few.dataa,
-  "COUNT"(
+  COUNT(
   *
   ),
-  "MIN"(
+  MIN(
   id
   ),
-  "MAX"(
+  MAX(
   id
   ),
   unnest(
@@ -176,13 +176,13 @@ GROUP BY few.dataa;
 
 SELECT
   few.dataa,
-  "COUNT"(
+  COUNT(
   *
   ),
-  "MIN"(
+  MIN(
   id
   ),
-  "MAX"(
+  MAX(
   id
   ),
   unnest(
@@ -202,13 +202,13 @@ GROUP BY few.dataa,
 
 SELECT
   few.dataa,
-  "COUNT"(
+  COUNT(
   *
   ),
-  "MIN"(
+  MIN(
   id
   ),
-  "MAX"(
+  MAX(
   id
   ),
   unnest(
@@ -231,14 +231,14 @@ SELECT
   1,
   1
   ),
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
   few
 GROUP BY 1
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   1;
@@ -249,7 +249,7 @@ SELECT
   1,
   1
   ),
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -257,14 +257,14 @@ FROM
 GROUP BY 1,
   2
 HAVING
-  "COUNT"(
+  COUNT(
   *
   ) >
   1;
 
 SELECT
   few.dataa,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -277,7 +277,7 @@ ORDER BY 2;
 
 SELECT
   few.dataa,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -307,10 +307,10 @@ FROM
 
 SELECT q1, COALESCE(generate_series(1, 3), 0) FROM int8_tbl;
 
-SELECT "MIN"(generate_series(1, 3)) FROM few;
+SELECT MIN(generate_series(1, 3)) FROM few;
 
 SELECT
-  "SUM"(
+  SUM(
   CAST(3 = ANY (SELECT
     generate_series(
     1,
@@ -320,9 +320,9 @@ SELECT
   );
 
 SELECT
-  "SUM"(
+  SUM(
   CAST(3 = ANY (SELECT
-    "LAG"(
+    LAG(
     x
     )
     OVER (
@@ -335,15 +335,15 @@ SELECT
   AS INT)
   );
 
-SELECT "MIN"(generate_series(1, 3)) OVER () FROM few;
+SELECT MIN(generate_series(1, 3)) OVER () FROM few;
 
 SELECT
   id,
-  "LAG"(
+  LAG(
   id
   )
   OVER (),
-  "COUNT"(
+  COUNT(
   *
   )
   OVER (),
@@ -355,8 +355,8 @@ FROM
   few;
 
 SELECT
-  "SUM"(
-  "COUNT"(
+  SUM(
+  COUNT(
   *
   )
   )
@@ -380,13 +380,13 @@ GROUP BY g;
 
 SELECT
   few.dataa,
-  "COUNT"(
+  COUNT(
   *
   ),
-  "MIN"(
+  MIN(
   id
   ),
-  "MAX"(
+  MAX(
   id
   ),
   generate_series(
@@ -410,7 +410,7 @@ SELECT
   2
   )
   AS g,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -427,7 +427,7 @@ SELECT
   2
   )
   AS g,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -445,7 +445,7 @@ SELECT
   2
   )
   AS g,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -463,7 +463,7 @@ SELECT
   2
   )
   AS g,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -481,7 +481,7 @@ SELECT
   2
   )
   AS g,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -500,7 +500,7 @@ SELECT
   2
   )
   AS g,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM

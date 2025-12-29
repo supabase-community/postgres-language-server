@@ -51,7 +51,7 @@ SHOW "search_path";
 DROP SCHEMA test_ns_schema_2 CASCADE;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -80,7 +80,7 @@ ALTER SCHEMA test_ns_schema_1
 RENAME TO test_ns_schema_renamed;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -106,7 +106,7 @@ CREATE TABLE abc ( a serial, b INT UNIQUE );
 DROP SCHEMA test_ns_schema_renamed CASCADE;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM

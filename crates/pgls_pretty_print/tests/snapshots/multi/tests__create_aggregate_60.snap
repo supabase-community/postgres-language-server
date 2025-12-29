@@ -159,7 +159,8 @@ CREATE AGGREGATE least_agg (BIGINT)
   sfunc = least_accum
 );
 
-DROP FUNCTION least_accum(
+DROP FUNCTION
+least_accum(
   anycompatible,
   anycompatible) CASCADE;
 

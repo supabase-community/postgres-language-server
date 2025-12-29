@@ -659,11 +659,11 @@ SELECT
   AS REGCLASS)
   AS TEXT),
   a,
-  "MIN"(
+  MIN(
   b
   )
   AS min_b,
-  "MAX"(
+  MAX(
   b
   )
   AS max_b
@@ -877,26 +877,28 @@ ALTER TABLE mlparted
 
 WITH ins (a,
 b,
-c) AS (INSERT INTO mlparted (b,
-a)
-SELECT
-  s.a,
-  1
-FROM
-  generate_series(
-  2,
-  39
-  ) AS s (a)
-RETURNING CAST(tableoid
-AS REGCLASS),
-*)
+c) AS (
+  INSERT INTO mlparted (b,
+  a)
+  SELECT
+    s.a,
+    1
+  FROM
+    generate_series(
+    2,
+    39
+    ) AS s (a)
+  RETURNING CAST(tableoid
+  AS REGCLASS),
+  *
+)
 SELECT
   a,
   b,
-  "MIN"(
+  MIN(
   c
   ),
-  "MAX"(
+  MAX(
   c
   )
 FROM
@@ -1308,10 +1310,12 @@ FROM regress_coldesc_role;
 
 SET ROLE TO regress_coldesc_role;
 
-WITH result AS (INSERT INTO brtrigpartcon
-VALUES (1,
-'hi there')
-RETURNING 1)
+WITH result AS (
+  INSERT INTO brtrigpartcon
+  VALUES (1,
+  'hi there')
+  RETURNING 1
+)
 INSERT INTO inserttest3 (f3)
 SELECT
   *

@@ -40,17 +40,17 @@ SELECT
 FROM
   base_tbl
 HAVING
-  "MAX"(
+  MAX(
   a
   ) >
   0;
 
-CREATE VIEW ro_view4 AS SELECT "COUNT"(*) FROM base_tbl;
+CREATE VIEW ro_view4 AS SELECT COUNT(*) FROM base_tbl;
 
 CREATE VIEW ro_view5 AS
 SELECT
   a,
-  "RANK"(
+  RANK(
 
   )
   OVER ()
@@ -447,7 +447,7 @@ DELETE FROM rw_view1 WHERE a = 5;
 
 CREATE TABLE base_tbl_hist (
   ts TIMESTAMP WITH TIME ZONE
-  DEFAULT "NOW"(
+  DEFAULT NOW(
 
   ),
   a INT,
@@ -3772,7 +3772,8 @@ INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a;
 
-DROP TRIGGER "base_tab_def_view_instrig" ON "base_tab_def_view";
+DROP TRIGGER
+"base_tab_def_view_instrig" ON "base_tab_def_view";
 
 DROP FUNCTION base_tab_def_view_instrig_func;
 
@@ -3838,7 +3839,8 @@ INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a;
 
-DROP RULE "base_tab_def_view_ins_rule" ON "base_tab_def_view";
+DROP RULE
+"base_tab_def_view_ins_rule" ON "base_tab_def_view";
 
 CREATE RULE base_tab_def_view_ins_rule
 AS ON INSERT TO base_tab_def_view
@@ -3902,7 +3904,8 @@ INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a, c NULLS LAST;
 
-DROP RULE "base_tab_def_view_ins_rule" ON "base_tab_def_view";
+DROP RULE
+"base_tab_def_view_ins_rule" ON "base_tab_def_view";
 
 SELECT new.a, new.b, 'xxx';
 

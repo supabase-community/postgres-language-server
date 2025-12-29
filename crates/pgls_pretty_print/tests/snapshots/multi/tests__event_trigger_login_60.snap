@@ -24,9 +24,9 @@ EXECUTE FUNCTION on_login_proc();
 
 ALTER EVENT TRIGGER on_login_trigger ENABLE ALWAYS;
 
-SELECT "COUNT"(*) FROM user_logins;
+SELECT COUNT(*) FROM user_logins;
 
-SELECT "COUNT"(*) FROM user_logins;
+SELECT COUNT(*) FROM user_logins;
 
 SELECT
   dathasloginevt

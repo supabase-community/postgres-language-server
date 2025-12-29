@@ -206,9 +206,9 @@ FROM
 
 SELECT q2, abs(q2) FROM int8_tbl;
 
-SELECT "MIN"(q1), "MIN"(q2) FROM int8_tbl;
+SELECT MIN(q1), MIN(q2) FROM int8_tbl;
 
-SELECT "MAX"(q1), "MAX"(q2) FROM int8_tbl;
+SELECT MAX(q1), MAX(q2) FROM int8_tbl;
 
 SELECT
   to_char(

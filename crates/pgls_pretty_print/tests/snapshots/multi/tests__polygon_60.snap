@@ -92,7 +92,7 @@ SET enable_bitmapscan = off;
 
 CREATE TEMPORARY TABLE quad_poly_tbl_ord_seq2 AS
   SELECT
-    "RANK"(
+    RANK(
 
     )
     OVER (
@@ -116,7 +116,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -126,7 +126,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -136,7 +136,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -146,7 +146,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -156,7 +156,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -166,7 +166,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -176,7 +176,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -186,7 +186,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -196,7 +196,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -206,7 +206,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -216,7 +216,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -226,7 +226,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -236,7 +236,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -246,7 +246,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -256,7 +256,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -266,7 +266,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -276,7 +276,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -286,7 +286,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -296,7 +296,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -306,7 +306,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -316,7 +316,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -326,7 +326,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -336,7 +336,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -346,7 +346,7 @@ WHERE
   AS polygon);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -360,7 +360,7 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SELECT
-  "RANK"(
+  RANK(
 
   )
   OVER (
@@ -379,7 +379,7 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_poly_tbl_ord_idx2 AS
   SELECT
-    "RANK"(
+    RANK(
 
     )
     OVER (

@@ -354,14 +354,14 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
 /// Determines if we need parentheses around a set operation operand.
 /// Check if a SelectStmt needs parentheses when used as a child of a set operation.
 /// This is needed when the SELECT has ORDER BY, LIMIT, or OFFSET clauses that
-/// would be ambiguous without parentheses.
+/// would be ambiguous without parentheses, or when it has a WITH clause.
 fn select_needs_parens(stmt: &SelectStmt) -> bool {
-    // Only non-set-operation SELECTs with ORDER BY/LIMIT/OFFSET need parens
-    // If it's itself a set operation, the parens are handled by needs_set_operation_parens
-    matches!(stmt.op(), SetOperation::SetopNone | SetOperation::Undefined)
-        && (!stmt.sort_clause.is_empty()
-            || stmt.limit_count.is_some()
-            || stmt.limit_offset.is_some())
+    // SELECTs (including set operations) with ORDER BY/LIMIT/OFFSET/WITH need parens
+    // when used as a child of a set operation
+    !stmt.sort_clause.is_empty()
+        || stmt.limit_count.is_some()
+        || stmt.limit_offset.is_some()
+        || stmt.with_clause.is_some()
 }
 
 /// SQL set operations have this precedence: INTERSECT > UNION = EXCEPT

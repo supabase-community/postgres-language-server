@@ -857,10 +857,10 @@ SELECT CAST('{"a":null, "b":"qq"}' AS JSONB) ? 'c';
 
 SELECT CAST('{"a":"null", "b":"qq"}' AS JSONB) ? 'a';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j -> 'array' ? 'bar';
+SELECT COUNT(*) FROM testjsonb WHERE j -> 'array' ? 'bar';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -870,7 +870,7 @@ WHERE
   AS TEXT);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2583,7 +2583,8 @@ FROM
   '{"a": 2}'
   ) AS q;
 
-DROP TYPE jsb_ia,
+DROP TYPE
+jsb_ia,
 jsb_ia2,
 jsb_char2,
 jsb_i_not_null_rec,
@@ -3051,12 +3052,12 @@ DROP DOMAIN jb_ordered_pair;
 
 DROP TYPE jb_unordered_pair;
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"wait":null}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"wait":null}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"wait":"CC"}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"wait":"CC"}';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3064,16 +3065,16 @@ FROM
 WHERE
   j @> '{"wait":"CC", "public":true}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"age":25}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"age":25}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"age":25.0}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"age":25.0}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j ? 'public';
+SELECT COUNT(*) FROM testjsonb WHERE j ? 'public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j ? 'bar';
+SELECT COUNT(*) FROM testjsonb WHERE j ? 'bar';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3083,7 +3084,7 @@ WHERE
   'disabled'];
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3092,26 +3093,12 @@ WHERE
   j ?& ARRAY['public',
   'disabled'];
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '$.wait == null';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.wait == null';
+
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '"CC" == $.wait';
 
 SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '"CC" == $.wait';
-
-SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3119,14 +3106,14 @@ FROM
 WHERE
   j @@ '$.wait == "CC" && true == $.public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ '$.age == 25';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.age == 25';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ '$.age == 25.0';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.age == 25.0';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ 'exists($)';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ 'exists($)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3134,10 +3121,10 @@ FROM
 WHERE
   j @@ 'exists($.public)';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ 'exists($.bar)';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ 'exists($.bar)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3146,7 +3133,7 @@ WHERE
   j @@ 'exists($.public) || exists($.disabled)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3155,7 +3142,7 @@ WHERE
   j @@ 'exists($.public) && exists($.disabled)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3164,7 +3151,7 @@ WHERE
   j @? '$.wait ? (@ == null)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3173,7 +3160,7 @@ WHERE
   j @? '$.wait ? ("CC" == @)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3182,7 +3169,7 @@ WHERE
   j @? '$ ? (@.wait == "CC" && true == @.public)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3191,7 +3178,7 @@ WHERE
   j @? '$.age ? (@ == 25)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3199,22 +3186,22 @@ FROM
 WHERE
   j @? '$ ? (@.age == 25.0)';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$.public';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$.public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$.bar';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$.bar';
 
 CREATE INDEX "jidx" ON testjsonb USING gin ( j);
 
 SET enable_seqscan = off;
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"wait":null}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"wait":null}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"wait":"CC"}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"wait":"CC"}';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3222,12 +3209,12 @@ FROM
 WHERE
   j @> '{"wait":"CC", "public":true}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"age":25}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"age":25}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"age":25.0}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"age":25.0}';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3236,7 +3223,7 @@ WHERE
   j @> '{"array":["foo"]}';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3244,14 +3231,14 @@ FROM
 WHERE
   j @> '{"array":["bar"]}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j ? 'public';
+SELECT COUNT(*) FROM testjsonb WHERE j ? 'public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j ? 'bar';
+SELECT COUNT(*) FROM testjsonb WHERE j ? 'bar';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3261,7 +3248,7 @@ WHERE
   'disabled'];
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3270,26 +3257,12 @@ WHERE
   j ?& ARRAY['public',
   'disabled'];
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '$.wait == null';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.wait == null';
+
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.wait == null';
 
 SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '$.wait == null';
-
-SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3298,7 +3271,7 @@ WHERE
   j @@ 'exists($ ? (@.wait == null))';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3306,17 +3279,10 @@ FROM
 WHERE
   j @@ 'exists($.wait ? (@ == null))';
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '"CC" == $.wait';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '"CC" == $.wait';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3324,12 +3290,12 @@ FROM
 WHERE
   j @@ '$.wait == "CC" && true == $.public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ '$.age == 25';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.age == 25';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ '$.age == 25.0';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.age == 25.0';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3338,7 +3304,7 @@ WHERE
   j @@ '$.array[*] == "foo"';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3347,7 +3313,7 @@ WHERE
   j @@ '$.array[*] == "bar"';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3356,7 +3322,7 @@ WHERE
   j @@ 'exists($ ? (@.array[*] == "bar"))';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3365,7 +3331,7 @@ WHERE
   j @@ 'exists($.array ? (@[*] == "bar"))';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3373,10 +3339,10 @@ FROM
 WHERE
   j @@ 'exists($.array[*] ? (@ == "bar"))';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ 'exists($)';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ 'exists($)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3384,10 +3350,10 @@ FROM
 WHERE
   j @@ 'exists($.public)';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ 'exists($.bar)';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ 'exists($.bar)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3396,7 +3362,7 @@ WHERE
   j @@ 'exists($.public) || exists($.disabled)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3405,7 +3371,7 @@ WHERE
   j @@ 'exists($.public) && exists($.disabled)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3414,7 +3380,7 @@ WHERE
   j @? '$.wait ? (@ == null)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3423,7 +3389,7 @@ WHERE
   j @? '$.wait ? (@ == null)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3432,7 +3398,7 @@ WHERE
   j @? '$.wait ? ("CC" == @)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3441,7 +3407,7 @@ WHERE
   j @? '$ ? (@.wait == "CC" && true == @.public)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3450,7 +3416,7 @@ WHERE
   j @? '$.age ? (@ == 25)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3459,7 +3425,7 @@ WHERE
   j @? '$ ? (@.age == 25.0)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3468,7 +3434,7 @@ WHERE
   j @? '$ ? (@.array[*] == "bar")';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3477,7 +3443,7 @@ WHERE
   j @? '$.array ? (@[*] == "bar")';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3485,21 +3451,21 @@ FROM
 WHERE
   j @? '$.array[*] ? (@ == "bar")';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$.public';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$.public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$.bar';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$.bar';
 
 CREATE INDEX "jidx_array" ON testjsonb USING gin
 (
   (j -> 'array')
 );
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j -> 'array' ? 'bar';
+SELECT COUNT(*) FROM testjsonb WHERE j -> 'array' ? 'bar';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3509,7 +3475,7 @@ WHERE
   AS TEXT);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3521,7 +3487,7 @@ WHERE
 RESET enable_seqscan;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3534,7 +3500,7 @@ FROM
 
 SELECT
   key,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3548,12 +3514,12 @@ GROUP BY key
 ORDER BY count DESC,
   key;
 
-SELECT "COUNT"(DISTINCT j) FROM testjsonb;
+SELECT COUNT(DISTINCT j) FROM testjsonb;
 
 SET enable_hashagg = off;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3576,7 +3542,7 @@ SET enable_hashagg = on;
 SET enable_sort = off;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3617,10 +3583,10 @@ CREATE INDEX "jidx" ON testjsonb USING btree ( j);
 
 SET enable_seqscan = off;
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j > '{"p":1}';
+SELECT COUNT(*) FROM testjsonb WHERE j > '{"p":1}';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3638,12 +3604,12 @@ CREATE INDEX "jidx" ON testjsonb USING gin
 
 SET enable_seqscan = off;
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"wait":null}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"wait":null}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"wait":"CC"}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"wait":"CC"}';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3651,23 +3617,16 @@ FROM
 WHERE
   j @> '{"wait":"CC", "public":true}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"age":25}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"age":25}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{"age":25.0}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{"age":25.0}';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @> '{}';
+SELECT COUNT(*) FROM testjsonb WHERE j @> '{}';
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '$.wait == null';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.wait == null';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3676,7 +3635,7 @@ WHERE
   j @@ 'exists($ ? (@.wait == null))';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3684,17 +3643,10 @@ FROM
 WHERE
   j @@ 'exists($.wait ? (@ == null))';
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  testjsonb
-WHERE
-  j @@ '"CC" == $.wait';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '"CC" == $.wait';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3702,12 +3654,12 @@ FROM
 WHERE
   j @@ '$.wait == "CC" && true == $.public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ '$.age == 25';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.age == 25';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ '$.age == 25.0';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ '$.age == 25.0';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3716,7 +3668,7 @@ WHERE
   j @@ '$.array[*] == "foo"';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3725,7 +3677,7 @@ WHERE
   j @@ '$.array[*] == "bar"';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3734,7 +3686,7 @@ WHERE
   j @@ 'exists($ ? (@.array[*] == "bar"))';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3743,7 +3695,7 @@ WHERE
   j @@ 'exists($.array ? (@[*] == "bar"))';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3751,10 +3703,10 @@ FROM
 WHERE
   j @@ 'exists($.array[*] ? (@ == "bar"))';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @@ 'exists($)';
+SELECT COUNT(*) FROM testjsonb WHERE j @@ 'exists($)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3763,7 +3715,7 @@ WHERE
   j @? '$.wait ? (@ == null)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3772,7 +3724,7 @@ WHERE
   j @? '$.wait ? (@ == null)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3781,7 +3733,7 @@ WHERE
   j @? '$.wait ? ("CC" == @)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3790,7 +3742,7 @@ WHERE
   j @? '$ ? (@.wait == "CC" && true == @.public)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3799,7 +3751,7 @@ WHERE
   j @? '$.age ? (@ == 25)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3808,7 +3760,7 @@ WHERE
   j @? '$ ? (@.age == 25.0)';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3817,7 +3769,7 @@ WHERE
   j @? '$ ? (@.array[*] == "bar")';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3826,7 +3778,7 @@ WHERE
   j @? '$.array ? (@[*] == "bar")';
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -3834,11 +3786,11 @@ FROM
 WHERE
   j @? '$.array[*] ? (@ == "bar")';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$.public';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$.public';
 
-SELECT "COUNT"(*) FROM testjsonb WHERE j @? '$.bar';
+SELECT COUNT(*) FROM testjsonb WHERE j @? '$.bar';
 
 RESET enable_seqscan;
 

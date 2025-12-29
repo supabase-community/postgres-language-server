@@ -62,9 +62,9 @@ VALUES ('{}',
 '{foo,bar}',
 '{bar,foo}');
 
-INSERT INTO arrtest (b[2]) VALUES ("NOW"());
+INSERT INTO arrtest (b[2]) VALUES (NOW());
 
-INSERT INTO arrtest (b[1:2]) VALUES ("NOW"());
+INSERT INTO arrtest (b[1:2]) VALUES (NOW());
 
 SELECT * FROM arrtest;
 
@@ -232,7 +232,7 @@ WHERE
   c
   ) IS NOT NULL;
 
-SELECT ("NOW"())[1];
+SELECT (NOW())[1];
 
 CREATE TEMPORARY TABLE arrtest_s (
   a SMALLINT[],
@@ -1373,22 +1373,22 @@ VALUES ('{1,2,3}',
 '{1.6}');
 
 SELECT
-  "MAX"(
+  MAX(
   f1
   ),
-  "MIN"(
+  MIN(
   f1
   ),
-  "MAX"(
+  MAX(
   f2
   ),
-  "MIN"(
+  MIN(
   f2
   ),
-  "MAX"(
+  MAX(
   f3
   ),
-  "MIN"(
+  MIN(
   f3
   )
 FROM
@@ -1402,22 +1402,22 @@ VALUES ('{3,3,2,4,5,6}',
 '{2.1,3.3,1.8,1.7,1.6}');
 
 SELECT
-  "MAX"(
+  MAX(
   f1
   ),
-  "MIN"(
+  MIN(
   f1
   ),
-  "MAX"(
+  MAX(
   f2
   ),
-  "MIN"(
+  MIN(
   f2
   ),
-  "MAX"(
+  MAX(
   f3
   ),
-  "MIN"(
+  MIN(
   f3
   )
 FROM
@@ -1431,22 +1431,22 @@ VALUES ('{2}',
 '{1.6,2.2,2.6,0.4}');
 
 SELECT
-  "MAX"(
+  MAX(
   f1
   ),
-  "MIN"(
+  MIN(
   f1
   ),
-  "MAX"(
+  MAX(
   f2
   ),
-  "MIN"(
+  MIN(
   f2
   ),
-  "MAX"(
+  MAX(
   f3
   ),
-  "MIN"(
+  MIN(
   f3
   )
 FROM
@@ -1460,22 +1460,22 @@ VALUES ('{4,2,6,7,8,1}',
 NULL);
 
 SELECT
-  "MAX"(
+  MAX(
   f1
   ),
-  "MIN"(
+  MIN(
   f1
   ),
-  "MAX"(
+  MAX(
   f2
   ),
-  "MIN"(
+  MIN(
   f2
   ),
-  "MAX"(
+  MAX(
   f3
   ),
-  "MIN"(
+  MIN(
   f3
   )
 FROM
@@ -1489,22 +1489,22 @@ VALUES ('{}',
 '{2.1,1.87,1.4,2.2}');
 
 SELECT
-  "MAX"(
+  MAX(
   f1
   ),
-  "MIN"(
+  MIN(
   f1
   ),
-  "MAX"(
+  MAX(
   f2
   ),
-  "MIN"(
+  MIN(
   f2
   ),
-  "MAX"(
+  MAX(
   f3
   ),
-  "MIN"(
+  MIN(
   f3
   )
 FROM
@@ -2458,7 +2458,7 @@ FROM
 
 SELECT
   width_bucket(
-  "NOW"(
+  NOW(
 
   ),
   CAST(ARRAY['yesterday',

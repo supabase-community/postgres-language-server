@@ -11,7 +11,7 @@ CREATE TYPE rainbow AS ENUM ('red',
 'purple');
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -224,11 +224,11 @@ SELECT
   CAST('red'
   AS rainbow);
 
-SELECT "MIN"(col) FROM enumtest;
+SELECT MIN(col) FROM enumtest;
 
-SELECT "MAX"(col) FROM enumtest;
+SELECT MAX(col) FROM enumtest;
 
-SELECT "MAX"(col) FROM enumtest WHERE col < 'green';
+SELECT MAX(col) FROM enumtest WHERE col < 'green';
 
 SET enable_seqscan = off;
 
@@ -252,11 +252,11 @@ SELECT * FROM enumtest WHERE col < 'green' ORDER BY col;
 
 SELECT * FROM enumtest WHERE col <= 'green' ORDER BY col;
 
-SELECT "MIN"(col) FROM enumtest;
+SELECT MIN(col) FROM enumtest;
 
-SELECT "MAX"(col) FROM enumtest;
+SELECT MAX(col) FROM enumtest;
 
-SELECT "MAX"(col) FROM enumtest WHERE col < 'green';
+SELECT MAX(col) FROM enumtest WHERE col < 'green';
 
 DROP INDEX "enumtest_btree";
 
@@ -481,7 +481,7 @@ DROP TABLE "enumtest";
 
 DROP TYPE rainbow;
 
-SELECT "COUNT"(*) FROM pg_type WHERE typname = 'rainbow';
+SELECT COUNT(*) FROM pg_type WHERE typname = 'rainbow';
 
 SELECT
   *

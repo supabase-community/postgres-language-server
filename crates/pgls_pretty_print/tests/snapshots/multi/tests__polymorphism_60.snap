@@ -174,7 +174,8 @@ SELECT
 
 SELECT polyf(int4range(42, 49), 11, 4.5) AS fail;
 
-DROP FUNCTION polyf(
+DROP FUNCTION
+polyf(
   anycompatiblerange,
   anycompatible,
   anycompatible);
@@ -230,7 +231,8 @@ SELECT
   )
   AS fail;
 
-DROP FUNCTION polyf(
+DROP FUNCTION
+polyf(
   anycompatiblemultirange,
   anycompatible,
   anycompatible);
@@ -319,7 +321,8 @@ SELECT
   )
   AS num;
 
-DROP FUNCTION polyf(
+DROP FUNCTION
+polyf(
   anycompatiblemultirange,
   anycompatiblearray);
 
@@ -417,7 +420,8 @@ FROM
   34.5
   );
 
-DROP FUNCTION polyf(
+DROP FUNCTION
+polyf(
   ANYELEMENT,
   ANYARRAY,
   anycompatible,
@@ -1413,7 +1417,7 @@ WHERE
   histogram_bounds IS NOT NULL;
 
 SELECT
-  "MAX"(
+  MAX(
   histogram_bounds
   )
 FROM
@@ -2370,7 +2374,8 @@ FROM
   )
   ) AS x;
 
-DROP FUNCTION anyctest(
+DROP FUNCTION
+anyctest(
   anycompatiblerange,
   anycompatiblerange);
 
@@ -2447,7 +2452,8 @@ FROM
 
 SELECT x, pg_typeof(x) FROM anyctest(11.2, '{[4,7)}') AS x;
 
-DROP FUNCTION anyctest(
+DROP FUNCTION
+anyctest(
   anycompatible,
   anycompatiblemultirange);
 
@@ -2504,7 +2510,8 @@ FROM
   )
   ) AS x;
 
-DROP FUNCTION anyctest(
+DROP FUNCTION
+anyctest(
   anycompatiblemultirange,
   anycompatiblemultirange);
 
@@ -2545,7 +2552,8 @@ FROM
   2]
   ) AS x;
 
-DROP FUNCTION anyctest(
+DROP FUNCTION
+anyctest(
   anycompatiblenonarray,
   anycompatiblenonarray);
 
@@ -2626,7 +2634,8 @@ FROM
   34.5
   ) AS x;
 
-DROP FUNCTION anyctest(
+DROP FUNCTION
+anyctest(
   ANYELEMENT,
   ANYARRAY,
   anycompatible,

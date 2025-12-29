@@ -30,12 +30,12 @@ SET enable_seqscan = false;
 
 SET work_mem = 64;
 
-SELECT "COUNT"(*) FROM bmscantest WHERE a = 1 AND b = 1;
+SELECT COUNT(*) FROM bmscantest WHERE a = 1 AND b = 1;
 
 VACUUM (FREEZE) bmscantest;
 
-SELECT "COUNT"(*) FROM bmscantest WHERE a = 1 AND b = 1;
+SELECT COUNT(*) FROM bmscantest WHERE a = 1 AND b = 1;
 
-SELECT "COUNT"(*) FROM bmscantest WHERE a = 1 OR b = 1;
+SELECT COUNT(*) FROM bmscantest WHERE a = 1 OR b = 1;
 
 DROP TABLE "bmscantest";

@@ -6,7 +6,7 @@ snapshot_kind: text
 SELECT
   id,
   name,
-  "ROW_NUMBER"(
+  ROW_NUMBER(
 
   )
   OVER (

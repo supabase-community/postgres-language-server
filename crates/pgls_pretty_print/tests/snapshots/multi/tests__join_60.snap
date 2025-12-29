@@ -796,7 +796,7 @@ WHERE
   xx2 IS NOT NULL;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -816,7 +816,7 @@ WHERE
     42);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -853,7 +853,7 @@ SET geqo = on;
 SET geqo_threshold = 2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -950,7 +950,7 @@ ORDER BY 1,
   2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -992,7 +992,7 @@ FROM
   tenk1
   AS t,
   (SELECT
-    "SUM"(
+    SUM(
     f1
     ) + 1
     AS f1
@@ -1000,7 +1000,7 @@ FROM
     int4_tbl
     AS i4a) AS a,
   (SELECT
-    "SUM"(
+    SUM(
     f1
     )
     AS f1
@@ -1024,7 +1024,7 @@ FROM
   tenk1
   AS t,
   (SELECT
-    "SUM"(
+    SUM(
     f1
     ) + 1
     AS f1
@@ -1032,7 +1032,7 @@ FROM
     int4_tbl
     AS i4a) AS a,
   (SELECT
-    "SUM"(
+    SUM(
     f1
     )
     AS f1
@@ -1059,7 +1059,7 @@ FROM
     t2.two AND
     t1.unique1 =
     (SELECT
-      "MIN"(
+      MIN(
       unique1
       )
     FROM
@@ -1086,7 +1086,7 @@ FROM
     t2.two AND
     t1.unique1 =
     (SELECT
-      "MIN"(
+      MIN(
       unique1
       )
     FROM
@@ -1178,7 +1178,7 @@ FROM
   int4_tbl
   AS t1
   LEFT OUTER JOIN (SELECT
-    "NOW"(
+    NOW(
 
     )
   FROM
@@ -1447,7 +1447,7 @@ FROM
     j2_tbl.k;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1473,7 +1473,7 @@ FROM
     y.unique2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1507,7 +1507,7 @@ SET enable_hashagg = 0;
 SELECT
   x.thousand,
   x.twothousand,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1814,7 +1814,7 @@ SET enable_mergejoin = off;
 SET enable_memoize = off;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -1829,7 +1829,7 @@ WHERE
   10;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2202,7 +2202,7 @@ WHERE
   3);
 
 PREPARE foo (BOOLEAN) AS SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -2292,7 +2292,7 @@ ROLLBACK;
 
 SELECT
   t1.q2,
-  "COUNT"(
+  COUNT(
   t2.*
   )
 FROM
@@ -2307,7 +2307,7 @@ ORDER BY 1;
 
 SELECT
   t1.q2,
-  "COUNT"(
+  COUNT(
   t2.*
   )
 FROM
@@ -2324,7 +2324,7 @@ ORDER BY 1;
 
 SELECT
   t1.q2,
-  "COUNT"(
+  COUNT(
   t2.*
   )
 FROM
@@ -2342,7 +2342,7 @@ ORDER BY 1;
 
 SELECT
   t1.q2,
-  "COUNT"(
+  COUNT(
   t2.*
   )
 FROM
@@ -2418,7 +2418,7 @@ FROM
   FROM
     a
     LEFT OUTER JOIN (SELECT
-      "COUNT"(
+      COUNT(
       1
       )
       AS cnt,

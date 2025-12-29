@@ -189,19 +189,19 @@ CREATE TABLE default_expr_column ( id INT DEFAULT bar.id );
 
 CREATE TABLE default_expr_agg_column (
   id INT
-  DEFAULT "AVG"(
+  DEFAULT AVG(
   id
   )
 );
 
 CREATE TABLE default_expr_non_column (
   a INT
-  DEFAULT "AVG"(
+  DEFAULT AVG(
   non_existent
   )
 );
 
-CREATE TABLE default_expr_agg ( a INT DEFAULT "AVG"(1) );
+CREATE TABLE default_expr_agg ( a INT DEFAULT AVG(1) );
 
 CREATE TABLE default_expr_agg (
   a INT
@@ -281,7 +281,7 @@ DROP FUNCTION retset(INT);
 CREATE TABLE partitioned (
   a INT
 )
-PARTITION BY RANGE(("AVG"(
+PARTITION BY RANGE((AVG(
 a
 )));
 
@@ -289,7 +289,7 @@ CREATE TABLE partitioned (
   a INT,
   b INT
 )
-PARTITION BY RANGE(("AVG"(
+PARTITION BY RANGE((AVG(
 a
 )
 OVER (
@@ -545,19 +545,19 @@ FOR VALUES IN (a);
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN ("SUM"(
+FOR VALUES IN (SUM(
 a
 ));
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN ("SUM"(
+FOR VALUES IN (SUM(
 somename
 ));
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN ("SUM"(
+FOR VALUES IN (SUM(
 1
 ));
 
@@ -647,19 +647,19 @@ FOR VALUES FROM (a) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM ("MAX"(
+FOR VALUES FROM (MAX(
 a
 )) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM ("MAX"(
+FOR VALUES FROM (MAX(
 somename
 )) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM ("MAX"(
+FOR VALUES FROM (MAX(
 CAST('2019-02-01'
 AS DATE)
 )) TO ('2019-01-01');
@@ -1258,7 +1258,8 @@ INSERT INTO partkey_t VALUES (100);
 
 INSERT INTO partkey_t VALUES (200);
 
-DROP TABLE "parted",
+DROP TABLE
+"parted",
 "list_parted",
 "range_parted",
 "list_parted2",

@@ -145,35 +145,39 @@ SELECT
 FROM
   utf8_verification_inputs;
 
-WITH test_bytes AS (SELECT
-  inbytes,
-  description,
-  (test_conv(
-  inbytes ||
-  CAST(repeat(
-  '.',
-  3
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  utf8_verification_inputs),
-test_padded AS (SELECT
-  description,
-  (test_conv(
-  inbytes ||
-  CAST(repeat(
-  '.',
-  64
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  test_bytes)
+WITH test_bytes AS (
+  SELECT
+    inbytes,
+    description,
+    (test_conv(
+    inbytes ||
+    CAST(repeat(
+    '.',
+    3
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    utf8_verification_inputs
+),
+test_padded AS (
+  SELECT
+    description,
+    (test_conv(
+    inbytes ||
+    CAST(repeat(
+    '.',
+    64
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    test_bytes
+)
 SELECT
   description,
   b.error
@@ -190,42 +194,46 @@ WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-WITH test_bytes AS (SELECT
-  inbytes,
-  description,
-  (test_conv(
-  inbytes ||
-  CAST(repeat(
-  '.',
-  3
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  utf8_verification_inputs),
-test_padded AS (SELECT
-  description,
-  (test_conv(
-  CAST(repeat(
-  '.',
-  64 - length(
-  inbytes
-  )
-  )
-  AS BYTEA) ||
-  inbytes ||
-  CAST(repeat(
-  '.',
-  64
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  test_bytes)
+WITH test_bytes AS (
+  SELECT
+    inbytes,
+    description,
+    (test_conv(
+    inbytes ||
+    CAST(repeat(
+    '.',
+    3
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    utf8_verification_inputs
+),
+test_padded AS (
+  SELECT
+    description,
+    (test_conv(
+    CAST(repeat(
+    '.',
+    64 - length(
+    inbytes
+    )
+    )
+    AS BYTEA) ||
+    inbytes ||
+    CAST(repeat(
+    '.',
+    64
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    test_bytes
+)
 SELECT
   description,
   b.error
@@ -242,40 +250,44 @@ WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-WITH test_bytes AS (SELECT
-  inbytes,
-  description,
-  (test_conv(
-  inbytes ||
-  CAST(repeat(
-  '.',
-  3
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  utf8_verification_inputs),
-test_padded AS (SELECT
-  description,
-  (test_conv(
-  CAST(repeat(
-  '.',
-  64
-  )
-  AS BYTEA) ||
-  inbytes ||
-  CAST(repeat(
-  '.',
-  3
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  test_bytes)
+WITH test_bytes AS (
+  SELECT
+    inbytes,
+    description,
+    (test_conv(
+    inbytes ||
+    CAST(repeat(
+    '.',
+    3
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    utf8_verification_inputs
+),
+test_padded AS (
+  SELECT
+    description,
+    (test_conv(
+    CAST(repeat(
+    '.',
+    64
+    )
+    AS BYTEA) ||
+    inbytes ||
+    CAST(repeat(
+    '.',
+    3
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    test_bytes
+)
 SELECT
   description,
   b.error
@@ -292,42 +304,46 @@ WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-WITH test_bytes AS (SELECT
-  inbytes,
-  description,
-  (test_conv(
-  inbytes ||
-  CAST(repeat(
-  '.',
-  3
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  utf8_verification_inputs),
-test_padded AS (SELECT
-  description,
-  (test_conv(
-  CAST(repeat(
-  '.',
-  64 - length(
-  inbytes
-  )
-  )
-  AS BYTEA) ||
-  inbytes ||
-  CAST(repeat(
-  '.',
-  3
-  )
-  AS BYTEA),
-  'utf8',
-  'utf8'
-  )).error
-FROM
-  test_bytes)
+WITH test_bytes AS (
+  SELECT
+    inbytes,
+    description,
+    (test_conv(
+    inbytes ||
+    CAST(repeat(
+    '.',
+    3
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    utf8_verification_inputs
+),
+test_padded AS (
+  SELECT
+    description,
+    (test_conv(
+    CAST(repeat(
+    '.',
+    64 - length(
+    inbytes
+    )
+    )
+    AS BYTEA) ||
+    inbytes ||
+    CAST(repeat(
+    '.',
+    3
+    )
+    AS BYTEA),
+    'utf8',
+    'utf8'
+    )).error
+  FROM
+    test_bytes
+)
 SELECT
   description,
   b.error

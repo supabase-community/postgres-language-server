@@ -99,7 +99,10 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         if needs_explicit_quoting && i == name_parts.len() - 1 {
             super::emit_identifier(e, part);
         } else {
-            super::emit_identifier_maybe_quoted(e, part);
+            // Emit function name directly without quoting check
+            // Function names are case-insensitive and we've already normalized
+            // to uppercase for built-ins, so just emit as-is
+            e.token(TokenKind::IDENT(part.clone()));
         }
     }
 

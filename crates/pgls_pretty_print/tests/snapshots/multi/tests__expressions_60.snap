@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 SELECT
   CAST(date(
-  "NOW"(
+  NOW(
 
   )
   )
@@ -14,7 +14,7 @@ SELECT
   AS TEXT);
 
 SELECT
-  CAST(CAST("NOW"(
+  CAST(CAST(NOW(
 
   )
   AS TIME WITH TIME ZONE)
@@ -23,7 +23,7 @@ SELECT
   AS TEXT);
 
 SELECT
-  CAST(CAST("NOW"(
+  CAST(CAST(NOW(
 
   )
   AS TIME(4) WITH TIME ZONE)
@@ -32,7 +32,7 @@ SELECT
   AS TEXT);
 
 SELECT
-  CAST(CAST("NOW"(
+  CAST(CAST(NOW(
 
   )
   AS TIME)
@@ -41,7 +41,7 @@ SELECT
   AS TEXT);
 
 SELECT
-  CAST(CAST("NOW"(
+  CAST(CAST(NOW(
 
   )
   AS TIME(3))
@@ -49,7 +49,7 @@ SELECT
   CAST(LOCALTIME(3)
   AS TEXT);
 
-SELECT CURRENT_TIMESTAMP = "NOW"();
+SELECT CURRENT_TIMESTAMP = NOW();
 
 SELECT
   length(
@@ -62,7 +62,7 @@ SELECT
   );
 
 SELECT
-  CAST(CAST("NOW"(
+  CAST(CAST(NOW(
 
   )
   AS TIMESTAMP)

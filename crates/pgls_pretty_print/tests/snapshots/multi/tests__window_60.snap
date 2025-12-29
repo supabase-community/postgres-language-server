@@ -2307,7 +2307,8 @@ SELECT * FROM unbounded_syntax_test2a(2);
 
 SELECT * FROM unbounded_syntax_test2b(2);
 
-DROP FUNCTION unbounded_syntax_test1a,
+DROP FUNCTION
+unbounded_syntax_test1a,
 unbounded_syntax_test1b,
 unbounded_syntax_test2a,
 unbounded_syntax_test2b;
@@ -4363,14 +4364,16 @@ SELECT
 FROM
   empsalary;
 
-WITH cte (x) AS (SELECT
-  *
-FROM
-  generate_series(
-  1,
-  35,
-  2
-  ))
+WITH cte (x) AS (
+  SELECT
+    *
+  FROM
+    generate_series(
+    1,
+    35,
+    2
+    )
+)
 SELECT
   x,
   SUM(
@@ -4387,14 +4390,16 @@ WINDOW
   AND
   1 FOLLOWING);
 
-WITH cte (x) AS (SELECT
-  *
-FROM
-  generate_series(
-  1,
-  35,
-  2
-  ))
+WITH cte (x) AS (
+  SELECT
+    *
+  FROM
+    generate_series(
+    1,
+    35,
+    2
+    )
+)
 SELECT
   x,
   SUM(
@@ -4411,14 +4416,16 @@ WINDOW
   AND
   1 FOLLOWING);
 
-WITH cte (x) AS (SELECT
-  *
-FROM
-  generate_series(
-  1,
-  35,
-  2
-  ))
+WITH cte (x) AS (
+  SELECT
+    *
+  FROM
+    generate_series(
+    1,
+    35,
+    2
+    )
+)
 SELECT
   x,
   SUM(
@@ -4435,23 +4442,25 @@ WINDOW
   AND
   1 FOLLOWING);
 
-WITH cte (x) AS (SELECT
-  1
-UNION ALL
-SELECT
-  1
-UNION ALL
-SELECT
-  1
-UNION ALL
-SELECT
-  *
-FROM
-  generate_series(
-  5,
-  49,
-  2
-  ))
+WITH cte (x) AS (
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    *
+  FROM
+    generate_series(
+    5,
+    49,
+    2
+    )
+)
 SELECT
   x,
   SUM(
@@ -4468,23 +4477,25 @@ WINDOW
   AND
   1 FOLLOWING);
 
-WITH cte (x) AS (SELECT
-  1
-UNION ALL
-SELECT
-  1
-UNION ALL
-SELECT
-  1
-UNION ALL
-SELECT
-  *
-FROM
-  generate_series(
-  5,
-  49,
-  2
-  ))
+WITH cte (x) AS (
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    *
+  FROM
+    generate_series(
+    5,
+    49,
+    2
+    )
+)
 SELECT
   x,
   SUM(
@@ -4501,23 +4512,25 @@ WINDOW
   AND
   1 FOLLOWING);
 
-WITH cte (x) AS (SELECT
-  1
-UNION ALL
-SELECT
-  1
-UNION ALL
-SELECT
-  1
-UNION ALL
-SELECT
-  *
-FROM
-  generate_series(
-  5,
-  49,
-  2
-  ))
+WITH cte (x) AS (
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    *
+  FROM
+    generate_series(
+    5,
+    49,
+    2
+    )
+)
 SELECT
   x,
   SUM(
@@ -6337,32 +6350,36 @@ CREATE AGGREGATE sum_int_randomrestart (INT)
   minvfunc = sum_int_randrestart_minvfunc
 );
 
-WITH vs AS (SELECT
-  i,
-  CAST(random(
+WITH vs AS (
+  SELECT
+    i,
+    CAST(random(
 
-  ) * 100
-  AS INT)
-  AS v
-FROM
-  generate_series(
-  1,
-  100
-  ) AS i),
-sum_following AS (SELECT
-  i,
-  SUM(
-  v
-  )
-  OVER (
-  ORDER BY i DESC
-  ROWS BETWEEN
-  UNBOUNDED PRECEDING
-  AND
-  CURRENT ROW)
-  AS s
-FROM
-  vs)
+    ) * 100
+    AS INT)
+    AS v
+  FROM
+    generate_series(
+    1,
+    100
+    ) AS i
+),
+sum_following AS (
+  SELECT
+    i,
+    SUM(
+    v
+    )
+    OVER (
+    ORDER BY i DESC
+    ROWS BETWEEN
+    UNBOUNDED PRECEDING
+    AND
+    CURRENT ROW)
+    AS s
+  FROM
+    vs
+)
 SELECT DISTINCT
   sum_following.s =
   sum_int_randomrestart(

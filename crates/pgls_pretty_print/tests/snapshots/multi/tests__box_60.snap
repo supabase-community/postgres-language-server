@@ -321,7 +321,7 @@ SET enable_bitmapscan = off;
 
 CREATE TABLE quad_box_tbl_ord_seq1 AS
   SELECT
-    "RANK"(
+    RANK(
 
     )
     OVER (
@@ -337,7 +337,7 @@ CREATE TABLE quad_box_tbl_ord_seq1 AS
 
 CREATE TABLE quad_box_tbl_ord_seq2 AS
   SELECT
-    "RANK"(
+    RANK(
 
     )
     OVER (
@@ -361,7 +361,7 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = on;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -371,7 +371,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -381,7 +381,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -391,7 +391,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -401,7 +401,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -411,7 +411,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -421,7 +421,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -431,7 +431,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -441,7 +441,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -451,7 +451,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -461,7 +461,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -471,7 +471,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -481,7 +481,7 @@ WHERE
   AS box);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -495,7 +495,7 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SELECT
-  "RANK"(
+  RANK(
 
   )
   OVER (
@@ -511,7 +511,7 @@ FROM
 
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx1 AS
   SELECT
-    "RANK"(
+    RANK(
 
     )
     OVER (
@@ -545,7 +545,7 @@ WHERE
   idx.id IS NULL;
 
 SELECT
-  "RANK"(
+  RANK(
 
   )
   OVER (
@@ -564,7 +564,7 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2 AS
   SELECT
-    "RANK"(
+    RANK(
 
     )
     OVER (

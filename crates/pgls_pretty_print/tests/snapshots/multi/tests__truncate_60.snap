@@ -143,7 +143,8 @@ FROM
 
 SELECT * FROM trunc_e;
 
-DROP TABLE "truncate_a",
+DROP TABLE
+"truncate_a",
 "trunc_c",
 "trunc_b",
 "trunc_d",
@@ -270,7 +271,7 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION trunctrigger("before trigger truncate");
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   AS "Row count in test table"
@@ -282,7 +283,7 @@ SELECT * FROM trunc_trigger_log;
 TRUNCATE trunc_trigger_test;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   AS "Row count in test table"
@@ -311,7 +312,7 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION trunctrigger("after trigger truncate");
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   AS "Row count in test table"
@@ -323,7 +324,7 @@ SELECT * FROM trunc_trigger_log;
 TRUNCATE trunc_trigger_test;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
   AS "Row count in test table"

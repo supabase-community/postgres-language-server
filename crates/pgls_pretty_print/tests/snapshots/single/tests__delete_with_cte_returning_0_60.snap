@@ -3,16 +3,18 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/single/delete_with_cte_returning_0_60.sql
 snapshot_kind: text
 ---
-WITH stale AS (SELECT
-  id
-FROM
-  sessions
-WHERE
-  last_seen <
-  "NOW"(
+WITH stale AS (
+  SELECT
+    id
+  FROM
+    sessions
+  WHERE
+    last_seen <
+    NOW(
 
-  ) - CAST('30 days'
-  AS INTERVAL))
+    ) - CAST('30 days'
+    AS INTERVAL)
+)
 DELETE FROM sessions
 USING stale
 WHERE

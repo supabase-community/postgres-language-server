@@ -2026,14 +2026,16 @@ WHERE
   t1.result <>
   t2.expected;
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('-1'),
-('4.2'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('-1'),
+  ('4.2'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   x1,
   x2,
@@ -2049,14 +2051,16 @@ FROM
   v
   AS v2 (x2);
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('-1'),
-('4.2'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('-1'),
+  ('4.2'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   x1,
   x2,
@@ -2102,15 +2106,17 @@ SELECT div(CAST('nan' AS NUMERIC), '0');
 
 SELECT div(CAST('0' AS NUMERIC), '0');
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('-1'),
-('4.2'),
-('-7.777'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('-1'),
+  ('4.2'),
+  ('-7.777'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   x,
   -x
@@ -2134,15 +2140,17 @@ SELECT
 FROM
   v;
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('-1'),
-('4.2'),
-('-7.777'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('-1'),
+  ('4.2'),
+  ('-7.777'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   x,
   round(
@@ -2164,20 +2172,22 @@ SELECT
 FROM
   v;
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('-1'),
-('4.2'),
-('-7.777'),
-('1e340'),
-('-1e340'),
-('inf'),
-('-inf'),
-('nan'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('-1'),
+  ('4.2'),
+  ('-7.777'),
+  ('1e340'),
+  ('-1e340'),
+  ('inf'),
+  ('-inf'),
+  ('nan'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   SUBSTRING(CAST(x
   AS TEXT) FROM 1 FOR 32)
@@ -2185,12 +2195,14 @@ FROM
   v
 ORDER BY x;
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('4.2'),
-('inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('4.2'),
+  ('inf'),
+  ('nan')
+)
 SELECT
   x,
   sqrt(
@@ -2203,11 +2215,13 @@ SELECT sqrt(CAST('-1' AS NUMERIC));
 
 SELECT sqrt(CAST('-inf' AS NUMERIC));
 
-WITH v (x) AS (VALUES (CAST('1'
-AS NUMERIC)),
-('4.2'),
-('inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('1'
+  AS NUMERIC)),
+  ('4.2'),
+  ('inf'),
+  ('nan')
+)
 SELECT
   x,
   log(
@@ -2228,11 +2242,13 @@ SELECT ln(CAST('-1' AS NUMERIC));
 
 SELECT ln(CAST('-inf' AS NUMERIC));
 
-WITH v (x) AS (VALUES (CAST('2'
-AS NUMERIC)),
-('4.2'),
-('inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('2'
+  AS NUMERIC)),
+  ('4.2'),
+  ('inf'),
+  ('nan')
+)
 SELECT
   x1,
   x2,
@@ -2260,13 +2276,15 @@ SELECT log(CAST('inf' AS NUMERIC), '-inf');
 
 SELECT log(CAST('-inf' AS NUMERIC), 'inf');
 
-WITH v (x) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('1'),
-('2'),
-('4.2'),
-('inf'),
-('nan'))
+WITH v (x) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('1'),
+  ('2'),
+  ('4.2'),
+  ('inf'),
+  ('nan')
+)
 SELECT
   x1,
   x2,
@@ -3118,14 +3136,16 @@ SELECT to_char(val, '9.999EEEE') FROM num_data;
 
 SELECT to_char(val, 'FMRN') FROM num_data;
 
-WITH v (val) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('-4.2'),
-('4.2e9'),
-('1.2e-5'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (val) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('-4.2'),
+  ('4.2e9'),
+  ('1.2e-5'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   val,
   to_char(
@@ -3148,28 +3168,30 @@ SELECT
 FROM
   v;
 
-WITH v (exp) AS (VALUES (-16379),
-(-16378),
-(-1234),
-(-789),
-(-45),
-(-5),
-(-4),
-(-3),
-(-2),
-(-1),
-(0),
-(1),
-(2),
-(3),
-(4),
-(5),
-(38),
-(275),
-(2345),
-(45678),
-(131070),
-(131071))
+WITH v (exp) AS (
+  VALUES (-16379),
+  (-16378),
+  (-1234),
+  (-789),
+  (-45),
+  (-5),
+  (-4),
+  (-3),
+  (-2),
+  (-1),
+  (0),
+  (1),
+  (2),
+  (3),
+  (4),
+  (5),
+  (38),
+  (275),
+  (2345),
+  (45678),
+  (131070),
+  (131071)
+)
 SELECT
   exp,
   to_char(
@@ -3182,14 +3204,16 @@ SELECT
 FROM
   v;
 
-WITH v (val) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('-4.2'),
-('4.2e9'),
-('1.2e-5'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (val) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('-4.2'),
+  ('4.2e9'),
+  ('1.2e-5'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   val,
   to_char(
@@ -3212,14 +3236,16 @@ SELECT
 FROM
   v;
 
-WITH v (val) AS (VALUES (CAST('0'
-AS NUMERIC)),
-('-4.2'),
-('4.2e9'),
-('1.2e-5'),
-('inf'),
-('-inf'),
-('nan'))
+WITH v (val) AS (
+  VALUES (CAST('0'
+  AS NUMERIC)),
+  ('-4.2'),
+  ('4.2e9'),
+  ('1.2e-5'),
+  ('inf'),
+  ('-inf'),
+  ('nan')
+)
 SELECT
   val,
   to_char(

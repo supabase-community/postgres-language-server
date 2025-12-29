@@ -32,7 +32,7 @@ INSERT INTO test_missing_target VALUES (9, 4, 'CCCC', 'j');
 
 SELECT
   c,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -41,7 +41,7 @@ GROUP BY test_missing_target.c
 ORDER BY c;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -50,7 +50,7 @@ GROUP BY test_missing_target.c
 ORDER BY c;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -59,7 +59,7 @@ GROUP BY a
 ORDER BY b;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -69,7 +69,7 @@ ORDER BY b;
 
 SELECT
   test_missing_target.b,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -80,7 +80,7 @@ ORDER BY b;
 SELECT c FROM test_missing_target ORDER BY a;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -88,11 +88,11 @@ FROM
 GROUP BY b
 ORDER BY b DESC;
 
-SELECT "COUNT"(*) FROM test_missing_target ORDER BY 1 DESC;
+SELECT COUNT(*) FROM test_missing_target ORDER BY 1 DESC;
 
 SELECT
   c,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -100,10 +100,10 @@ FROM
 GROUP BY 1
 ORDER BY 1;
 
-SELECT c, "COUNT"(*) FROM test_missing_target GROUP BY 3;
+SELECT c, COUNT(*) FROM test_missing_target GROUP BY 3;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -131,7 +131,7 @@ ORDER BY a / 2;
 
 SELECT
   x.b,
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -146,7 +146,7 @@ GROUP BY x.b
 ORDER BY x.b;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -162,7 +162,7 @@ ORDER BY x.b;
 
 CREATE TABLE test_missing_target2 AS
   SELECT
-    "COUNT"(
+    COUNT(
     *
     )
   FROM
@@ -180,7 +180,7 @@ SELECT * FROM test_missing_target2;
 
 SELECT
   a % 2,
-  "COUNT"(
+  COUNT(
   b
   )
 FROM
@@ -189,7 +189,7 @@ GROUP BY test_missing_target.a % 2
 ORDER BY test_missing_target.a % 2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   c
   )
 FROM
@@ -202,7 +202,7 @@ ORDER BY lower(
   );
 
 SELECT
-  "COUNT"(
+  COUNT(
   a
   )
 FROM
@@ -211,7 +211,7 @@ GROUP BY a
 ORDER BY b;
 
 SELECT
-  "COUNT"(
+  COUNT(
   b
   )
 FROM
@@ -223,7 +223,7 @@ SELECT
   lower(
   test_missing_target.c
   ),
-  "COUNT"(
+  COUNT(
   c
   )
 FROM
@@ -238,7 +238,7 @@ ORDER BY lower(
 SELECT a FROM test_missing_target ORDER BY upper(d);
 
 SELECT
-  "COUNT"(
+  COUNT(
   b
   )
 FROM
@@ -247,7 +247,7 @@ GROUP BY (b + 1) / 2
 ORDER BY (b + 1) / 2 DESC;
 
 SELECT
-  "COUNT"(
+  COUNT(
   x.a
   )
 FROM
@@ -263,7 +263,7 @@ ORDER BY b / 2;
 
 SELECT
   x.b / 2,
-  "COUNT"(
+  COUNT(
   x.b
   )
 FROM
@@ -278,7 +278,7 @@ GROUP BY x.b / 2
 ORDER BY x.b / 2;
 
 SELECT
-  "COUNT"(
+  COUNT(
   b
   )
 FROM
@@ -293,7 +293,7 @@ GROUP BY x.b / 2;
 
 CREATE TABLE test_missing_target3 AS
   SELECT
-    "COUNT"(
+    COUNT(
     x.b
     )
   FROM

@@ -9,7 +9,7 @@ SELECT
   ) <>
   'UTF8' OR
   (SELECT
-    "COUNT"(
+    COUNT(
     *
     )
   FROM
@@ -511,11 +511,11 @@ SELECT
 FROM
   collate_test10;
 
-SELECT "MIN"(b), "MAX"(b) FROM collate_test1;
+SELECT MIN(b), MAX(b) FROM collate_test1;
 
-SELECT "MIN"(b), "MAX"(b) FROM collate_test2;
+SELECT MIN(b), MAX(b) FROM collate_test2;
 
-SELECT "MIN"(b), "MAX"(b) FROM collate_test3;
+SELECT MIN(b), MAX(b) FROM collate_test3;
 
 SELECT array_agg(b ORDER BY b) FROM collate_test1;
 
@@ -652,22 +652,24 @@ SELECT x || y FROM collate_test10;
 
 SELECT x, y FROM collate_test10 ORDER BY x || y;
 
-WITH RECURSIVE foo (x) AS (SELECT
-  x
-FROM
-  (VALUES ('a' COLLATE "en_US"),
-  ('b')) AS t (x)
-UNION ALL
-SELECT
-  (x ||
-  'c') COLLATE "de_DE"
-FROM
-  foo
-WHERE
-  length(
-  x
-  ) <
-  10)
+WITH RECURSIVE foo (x) AS (
+  SELECT
+    x
+  FROM
+    (VALUES ('a' COLLATE "en_US"),
+    ('b')) AS t (x)
+  UNION ALL
+  SELECT
+    (x ||
+    'c') COLLATE "de_DE"
+  FROM
+    foo
+  WHERE
+    length(
+    x
+    ) <
+    10
+)
 SELECT
   *
 FROM

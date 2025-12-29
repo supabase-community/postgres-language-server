@@ -84,30 +84,14 @@ DELETE FROM gin_test_tbl WHERE i @> ARRAY[2];
 
 VACUUM gin_test_tbl;
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  gin_test_tbl
-WHERE
-  i @> ARRAY[1,
-  999];
+SELECT COUNT(*) FROM gin_test_tbl WHERE i @> ARRAY[1, 999];
 
-SELECT
-  "COUNT"(
-  *
-  )
-FROM
-  gin_test_tbl
-WHERE
-  i @> ARRAY[1,
-  999];
+SELECT COUNT(*) FROM gin_test_tbl WHERE i @> ARRAY[1, 999];
 
 SET gin_fuzzy_search_limit = 1000;
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   ) >
   0
@@ -118,7 +102,7 @@ WHERE
   i @> ARRAY[1];
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   ) >
   0
@@ -281,16 +265,16 @@ SET enable_seqscan = off;
 
 SET enable_bitmapscan = on;
 
-SELECT "COUNT"(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
 
-SELECT "COUNT"(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
 
-SELECT "COUNT"(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
 
-SELECT "COUNT"(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -300,7 +284,7 @@ WHERE
   AS INT[]);
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
@@ -313,12 +297,12 @@ DELETE FROM t_gin_test_tbl WHERE j @> ARRAY[2];
 
 VACUUM t_gin_test_tbl;
 
-SELECT "COUNT"(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
 
-SELECT "COUNT"(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
+SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[2];
 
 SELECT
-  "COUNT"(
+  COUNT(
   *
   )
 FROM
