@@ -5,6 +5,144 @@ For current implementation status and guidance, see [pretty_printer.md](./pretty
 ## Session History
 
 ---
+**Date**: 2025-12-28 (Session 82)
+**Focus**: Continuing to fix failing tests
+**Progress**: 265/447 → 276/447 tests passing (59% → 61.7%)
+
+**Key Fixes**:
+1. **Constraint** - Added DEFERRABLE support for PRIMARY KEY and UNIQUE constraints (was only implemented for FOREIGN KEY)
+
+2. **FuncCall** - Added VARIADIC keyword emission for variadic function calls (`func_variadic: true`)
+
+3. **SelectStmt** - Added parentheses for set operations (UNION/EXCEPT/INTERSECT) to preserve precedence when mixing different operators
+
+4. **TableLikeClause** - Updated PostgreSQL 17 bit values for CREATE TABLE ... LIKE options:
+   - Old: DEFAULTS=0, CONSTRAINTS=1, IDENTITY=2, GENERATED=3, INDEXES=4, STATISTICS=5, STORAGE=6, COMMENTS=7
+   - New: COMMENTS=0, COMPRESSION=1, CONSTRAINTS=2, DEFAULTS=3, GENERATED=4, IDENTITY=5, INDEXES=6, STATISTICS=7, STORAGE=8
+   - Added COMPRESSION option
+
+5. **StatsElem** - Added parentheses around expressions in CREATE STATISTICS (e.g., `ON (a || b)`)
+
+6. **CommentStmt** - Fixed COMMENT ON COLUMN and COMMENT ON CONSTRAINT:
+   - COLUMN: emit dot-separated list for table.column
+   - CONSTRAINT: emit `constraint_name ON table_name` format
+
+7. **IndexStmt** - Added line break before INCLUDE clause for long lines
+
+8. **Constraint (DEFAULT)** - Added parentheses for complex DEFAULT expressions (SubLink, BoolExpr, AExpr)
+
+9. **ColumnDef** - Uncommented COLLATE clause emission (was disabled as TODO)
+
+10. **CollateClause** - Added parentheses around complex expressions (AExpr, BoolExpr, etc.) to preserve COLLATE precedence
+
+11. **SelectStmt (set operations)** - Added ORDER BY, LIMIT/OFFSET, and locking clause emission for UNION/EXCEPT/INTERSECT operations
+
+12. **Test framework** - Added BooleanTest and MinMaxExpr to clear_location function for AST comparison
+
+**Known Issues**:
+- AIndirection: Nested array subscripts (`a[0][0]`) get flattened when reparsed (semantically equivalent but structurally different AST)
+- Ordered-set aggregate Integer sentinels differ after reparse (1 vs -1, internal representation)
+- CREATE COLLATION with multiple options emits them in separate parentheses instead of one
+
+**Learnings**:
+- PostgreSQL 17 changed the bit positions for CREATE TABLE LIKE options (added COMPRESSION)
+- DEFERRABLE clause applies to PRIMARY KEY, UNIQUE, and FOREIGN KEY constraints, not just FK
+- Set operations need parentheses to preserve grouping when mixing UNION/EXCEPT/INTERSECT
+- COLLATE has higher precedence than operators like ||, so expressions need parentheses
+- Set operations (UNION/EXCEPT/INTERSECT) can have their own ORDER BY, LIMIT, and locking clauses
+
+---
+**Date**: 2025-12-28 (Session 81)
+**Focus**: Fixing failing tests and improving pass rate
+**Progress**: 197/447 → 265/447 tests passing (44% → 59%)
+
+**Key Fixes**:
+1. **CreateOpClassItem** - Fixed DROP vs ADD handling for OPERATOR FAMILY:
+   - DROP uses `class_args` for types without operator name
+   - ADD uses `name.objargs` with operator/function name
+   - Fixed FUNCTION argument order (class_args before function name)
+
+2. **DropStmt** - Added missing object types:
+   - Added `ObjectOpclass`, `ObjectOpfamily`, `ObjectStatisticExt`, `ObjectLanguage`, `ObjectTsparser`, `ObjectTsdictionary`, `ObjectTstemplate`, `ObjectTsconfiguration`
+   - Added special handling for DROP RULE/TRIGGER/POLICY (name ON table_name syntax)
+   - Added special handling for DROP OPERATOR CLASS/FAMILY (name USING access_method syntax)
+
+3. **AlterObjectSchemaStmt** - Added missing object types: `ObjectTsparser`, `ObjectTstemplate`, `ObjectExtension`
+
+4. **GrantStmt** - Added `SoftOrSpace` line break before TO/FROM clause for long statements
+
+5. **DefElem** - Fixed identifier quoting using `emit_identifier_maybe_quoted` to preserve case for mixed-case option names like `"Init"`
+
+6. **Constraint** - Added `SoftOrSpace` breaks for FOREIGN KEY constraints: after constraint name, after FK columns, before ON DELETE/UPDATE, before DEFERRABLE
+
+7. **AlterTableStmt** - Added `AtAlterConstraint` handling for ALTER CONSTRAINT statement
+
+8. **ResTarget** - Fixed column name quoting using `emit_identifier_maybe_quoted` for dropped column markers
+
+9. **RangeVar** - Added `emit_range_var_name` variant that doesn't emit ONLY keyword for DDL contexts
+
+10. **DefineStmt** - Fixed aggregate args:
+    - Handle `None` nodes as `*` (any type) for aggregates
+    - Handle ORDER BY sentinel integers for ordered-set aggregates
+
+11. **ObjectWithArgs** - Fixed empty args to emit `(*)` instead of `()` when `args_unspecified: false`
+
+12. **AIndirection** - Fixed .* and field access:
+    - Added dot before AStar nodes
+    - Added parentheses for function calls when used with .* or field access
+
+**Learnings**:
+- Many failing tests are due to AST comparison differences, not semantic issues (e.g., location fields, boolean vs string values)
+- PostgreSQL normalizes identifiers during parsing - unquoted identifiers become lowercase
+- DROP statements for different object types have different syntaxes that need special handling
+- Ordered-set aggregates use integer sentinels in the args list to indicate ORDER BY position
+- Function calls need parentheses when used with field access (.field) or star expansion (.*)
+
+**Next Steps**:
+- Continue fixing remaining parse errors
+- Many AST comparison failures may be acceptable semantic equivalents
+- Review line length issues in CAST/concatenation expressions
+
+---
+**Date**: 2025-12-27 (Session 80 - Status Quo)
+**Focus**: Workflow tooling and status documentation
+**Progress**: 248/270 nodes documented | 197/447 tests passing (44%)
+
+**Current State**:
+- All NodeEnum variants now have handlers in `src/nodes/mod.rs` (no `todo!()` fallbacks remain)
+- 197 tests passing, 250 failing
+- 68 pending snapshots need review
+- 12 files contain TODO comments for partial implementations
+
+**Files with TODOs**:
+- `alter_table_stmt.rs` (1), `column_def.rs` (2), `constraint.rs` (1)
+- `create_publication_stmt.rs` (1), `declare_cursor_stmt.rs` (1), `def_elem.rs` (1)
+- `define_stmt.rs` (1), `json_func_expr.rs` (2), `reindex_stmt.rs` (1), `scalar_array_op_expr.rs` (1)
+
+**Tooling Added**:
+- `just pp-status` - Shows test pass rate, TODO count, pending snapshots
+- `just pp-test <pattern>` - Test files matching pattern
+- `just pp-failing` - List failing tests
+- `just pp-debug <name>` - Debug specific test
+- `just pp-review` / `just pp-accept` - Snapshot management
+- `just pp-analyze` - Analyze failure patterns
+- `just pp-single` / `just pp-multi` - Run subsets of tests
+- `just pp-agentic` - Run agentic task with Stop hook that auto-loops until all tests pass
+
+**Key Files Created/Modified**:
+- `scripts/pp-status.sh` (new) - Status reporting script
+- `scripts/pp-hook.sh` (new) - Stop hook that blocks until all tests pass
+- `.claude/settings.local.json` - Added Stop hook configuration
+- `justfile` - Added `pp-*` commands
+- `agentic/pretty_printer.md` - Added Quick Commands section
+
+**Next Steps**:
+- Review pending 68 snapshots with `just pp-review`
+- Address TODOs in partial implementations
+- Focus on fixing failing tests to improve pass rate from 44%
+---
+
+---
 **Date**: 2025-11-06 (Session 79)
 **Nodes Implemented/Fixed**: `JsonAggConstructor`, `JsonExpr`, `JsonFormat`, `JsonOutput`, `JsonReturning`, `MergeSupportFunc`, `PartitionBoundSpec`, `PartitionRangeDatum`, `PlAssignStmt`, `PublicationTable`, `RawStmt`, `RtePermissionInfo`, `SinglePartitionSpec`, `SortGroupClause`, `StatsElem`
 **Progress**: 233/270 → 248/270

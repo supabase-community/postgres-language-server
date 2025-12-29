@@ -26,6 +26,17 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
                 emit_owner_operator_collection(e, object);
             }
         }
+        ObjectType::ObjectAggregate => {
+            // Aggregate needs (*) for "any argument types"
+            if let Some(ref object) = n.object {
+                e.space();
+                if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
+                    super::emit_object_with_args_for_aggregate(e, owa);
+                } else {
+                    emit_owner_object(e, object);
+                }
+            }
+        }
         _ => {
             if let Some(ref relation) = n.relation {
                 e.space();
@@ -142,6 +153,11 @@ fn emit_object_type(e: &mut EventEmitter, object_type: ObjectType) {
         ObjectType::ObjectPolicy => e.token(TokenKind::POLICY_KW),
         ObjectType::ObjectRule => e.token(TokenKind::RULE_KW),
         ObjectType::ObjectTrigger => e.token(TokenKind::TRIGGER_KW),
+        ObjectType::ObjectEventTrigger => {
+            e.token(TokenKind::EVENT_KW);
+            e.space();
+            e.token(TokenKind::TRIGGER_KW);
+        }
         ObjectType::ObjectUserMapping => {
             e.token(TokenKind::USER_KW);
             e.space();

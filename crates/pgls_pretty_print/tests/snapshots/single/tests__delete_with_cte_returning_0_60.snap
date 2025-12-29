@@ -7,10 +7,12 @@ WITH stale AS (SELECT
   id
 FROM
   sessions
-WHERE last_seen <
+WHERE
+  last_seen <
   NOW() - CAST('30 days' AS INTERVAL))
 DELETE FROM sessions
 USING stale
-WHERE sessions.id =
+WHERE
+  sessions.id =
   stale.id
 RETURNING sessions.id;

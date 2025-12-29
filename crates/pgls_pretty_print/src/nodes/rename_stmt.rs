@@ -21,20 +21,8 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
     let rename_type = ObjectType::try_from(n.rename_type).unwrap_or(ObjectType::Undefined);
     let relation_type = ObjectType::try_from(n.relation_type).unwrap_or(ObjectType::Undefined);
 
-    // For table-related renames with an actual relation, use the relation to determine the type
-    let target_type = if n.relation.is_some() {
-        match rename_type {
-            ObjectType::ObjectColumn
-            | ObjectType::ObjectTabconstraint
-            | ObjectType::ObjectTrigger
-            | ObjectType::ObjectRule => ObjectType::ObjectTable,
-            ObjectType::ObjectDomconstraint => ObjectType::ObjectDomain,
-            ObjectType::ObjectAttribute => ObjectType::ObjectType,
-            _ => resolve_alter_target(rename_type, relation_type),
-        }
-    } else {
-        resolve_alter_target(rename_type, relation_type)
-    };
+    // For table-related renames, use the relation_type if provided, otherwise default appropriately
+    let target_type = resolve_alter_target(rename_type, relation_type);
 
     emit_object_type(e, target_type);
 
@@ -76,12 +64,17 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
             emit_simple_rename(e, &n.newname);
         }
         ObjectType::ObjectDomconstraint => {
-            emit_relation_head(e, n);
+            // Domain name is in object field for domain constraints
+            emit_object_head(e, n);
             emit_keyworded_rename(e, TokenKind::CONSTRAINT_KW, &n.subname, &n.newname);
         }
         ObjectType::ObjectAttribute => {
             emit_object_head(e, n);
             emit_attribute_rename(e, &n.subname, &n.newname);
+        }
+        ObjectType::ObjectAggregate => {
+            emit_aggregate_head(e, n);
+            emit_simple_rename(e, &n.newname);
         }
         _ => {
             emit_default_head(e, n);
@@ -157,6 +150,11 @@ fn emit_object_type(e: &mut EventEmitter, object_type: ObjectType) {
         ObjectType::ObjectPolicy => e.token(TokenKind::POLICY_KW),
         ObjectType::ObjectRule => e.token(TokenKind::RULE_KW),
         ObjectType::ObjectTrigger => e.token(TokenKind::TRIGGER_KW),
+        ObjectType::ObjectEventTrigger => {
+            e.token(TokenKind::EVENT_KW);
+            e.space();
+            e.token(TokenKind::TRIGGER_KW);
+        }
         ObjectType::ObjectStatisticExt => e.token(TokenKind::STATISTICS_KW),
         ObjectType::ObjectTsparser => {
             e.token(TokenKind::TEXT_KW);
@@ -200,14 +198,19 @@ fn resolve_alter_target(rename_type: ObjectType, relation_type: ObjectType) -> O
         ObjectType::ObjectColumn
         | ObjectType::ObjectTabconstraint
         | ObjectType::ObjectTrigger
-        | ObjectType::ObjectRule => match relation_type {
-            ObjectType::Undefined => ObjectType::ObjectTable,
-            other => other,
-        },
-        ObjectType::ObjectDomconstraint => match relation_type {
-            ObjectType::Undefined => ObjectType::ObjectDomain,
-            other => other,
-        },
+        | ObjectType::ObjectRule => {
+            // Only accept valid table-like relation types
+            match relation_type {
+                ObjectType::ObjectView
+                | ObjectType::ObjectMatview
+                | ObjectType::ObjectForeignTable => relation_type,
+                _ => ObjectType::ObjectTable, // Default to TABLE for others
+            }
+        }
+        ObjectType::ObjectDomconstraint => {
+            // Domain constraint renames should always be ALTER DOMAIN
+            ObjectType::ObjectDomain
+        }
         ObjectType::ObjectAttribute => match relation_type {
             ObjectType::Undefined => ObjectType::ObjectType,
             other => other,
@@ -240,6 +243,17 @@ fn emit_default_head(e: &mut EventEmitter, n: &RenameStmt) {
     } else if !n.subname.is_empty() {
         e.space();
         emit_identifier_maybe_quoted(e, &n.subname);
+    }
+}
+
+fn emit_aggregate_head(e: &mut EventEmitter, n: &RenameStmt) {
+    if let Some(ref object) = n.object {
+        e.space();
+        if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
+            super::emit_object_with_args_for_aggregate(e, owa);
+        } else {
+            emit_node(object, e);
+        }
     }
 }
 

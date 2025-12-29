@@ -3,6 +3,7 @@ use pgls_query::protobuf::{CommonTableExpr, CteMaterialize};
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
+use super::insert_stmt::emit_insert_stmt_no_semicolon;
 use super::merge_stmt::emit_merge_stmt_no_semicolon;
 use super::node_list::emit_comma_separated_list;
 use super::select_stmt::emit_select_stmt_no_semicolon;
@@ -47,13 +48,16 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
 
     if let Some(ref query) = n.ctequery {
         // For CTEs, we don't want semicolons in the query
-        // Check if it's a SelectStmt or MergeStmt and use the no-semicolon variant
+        // Check if it's a SelectStmt, MergeStmt, or InsertStmt and use the no-semicolon variant
         match &query.node {
             Some(pgls_query::NodeEnum::SelectStmt(select_stmt)) => {
                 emit_select_stmt_no_semicolon(e, select_stmt);
             }
             Some(pgls_query::NodeEnum::MergeStmt(merge_stmt)) => {
                 emit_merge_stmt_no_semicolon(e, merge_stmt);
+            }
+            Some(pgls_query::NodeEnum::InsertStmt(insert_stmt)) => {
+                emit_insert_stmt_no_semicolon(e, insert_stmt);
             }
             _ => {
                 super::emit_node(query, e);

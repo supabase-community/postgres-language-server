@@ -2,7 +2,7 @@ use pgls_query::protobuf::{DropBehavior, GrantStmt, GrantTargetType, ObjectType}
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 
@@ -136,6 +136,36 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
                 e.token(TokenKind::OBJECT_KW);
                 e.space();
             }
+            ObjectType::ObjectFdw => {
+                e.token(TokenKind::IDENT("FOREIGN".to_string()));
+                e.space();
+                e.token(TokenKind::IDENT("DATA".to_string()));
+                e.space();
+                e.token(TokenKind::IDENT("WRAPPER".to_string()));
+                e.space();
+            }
+            ObjectType::ObjectForeignServer => {
+                e.token(TokenKind::IDENT("FOREIGN".to_string()));
+                e.space();
+                e.token(TokenKind::SERVER_KW);
+                e.space();
+            }
+            ObjectType::ObjectLanguage => {
+                e.token(TokenKind::LANGUAGE_KW);
+                e.space();
+            }
+            ObjectType::ObjectTablespace => {
+                e.token(TokenKind::TABLESPACE_KW);
+                e.space();
+            }
+            ObjectType::ObjectDomain => {
+                e.token(TokenKind::DOMAIN_KW);
+                e.space();
+            }
+            ObjectType::ObjectRoutine => {
+                e.token(TokenKind::ROUTINE_KW);
+                e.space();
+            }
             _ => {}
         }
     }
@@ -143,10 +173,11 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     // Object names
     if !n.objects.is_empty() {
         emit_comma_separated_list(e, &n.objects, super::emit_node);
-        e.space();
     }
 
-    // TO/FROM
+    // TO/FROM - allow line break before this clause
+    e.line(LineType::SoftOrSpace);
+
     if n.is_grant {
         e.token(TokenKind::TO_KW);
     } else {
@@ -181,11 +212,9 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     }
 
     // CASCADE/RESTRICT (for revoke)
-    if !n.is_grant {
-        if matches!(n.behavior(), DropBehavior::DropCascade) {
-            e.space();
-            e.token(TokenKind::CASCADE_KW);
-        }
+    if !n.is_grant && matches!(n.behavior(), DropBehavior::DropCascade) {
+        e.space();
+        e.token(TokenKind::CASCADE_KW);
     }
 
     e.token(TokenKind::SEMICOLON);

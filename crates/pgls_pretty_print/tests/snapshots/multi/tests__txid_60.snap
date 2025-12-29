@@ -52,7 +52,8 @@ FROM
   snapshot_test,
   generate_series(11,
   21) AS id
-WHERE nr =
+WHERE
+  nr =
   2;
 
 SELECT
@@ -63,7 +64,8 @@ FROM
   snapshot_test,
   generate_series(90,
   160) AS id
-WHERE nr =
+WHERE
+  nr =
   4;
 
 SELECT
@@ -134,7 +136,10 @@ BEGIN;
 
 CREATE FUNCTION test_future_xid_status(
   BIGINT
-) RETURNS VOID LANGUAGE "plpgsql" AS '
+)
+RETURNS VOID
+LANGUAGE "plpgsql"
+AS '
 BEGIN
   PERFORM txid_status($1);
   RAISE EXCEPTION ''didn''''t ERROR at xid in the future as expected'';

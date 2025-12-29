@@ -19,7 +19,8 @@ SELECT
   rolvaliduntil
 FROM
   pg_authid
-WHERE rolname =
+WHERE
+  rolname =
   'regress_test_def_superuser';
 
 CREATE ROLE regress_test_superuser SUPERUSER;
@@ -38,7 +39,8 @@ SELECT
   rolvaliduntil
 FROM
   pg_authid
-WHERE rolname =
+WHERE
+  rolname =
   'regress_test_superuser';
 
 ALTER ROLE regress_test_superuser;

@@ -6,14 +6,23 @@ snapshot_kind: text
 CREATE FUNCTION alter_op_test_fn(
   BOOLEAN,
   BOOLEAN
-) RETURNS BOOLEAN AS ' SELECT NULL::BOOLEAN; ' LANGUAGE "sql" IMMUTABLE;
+)
+RETURNS BOOLEAN
+AS ' SELECT NULL::BOOLEAN; '
+LANGUAGE "sql"
+IMMUTABLE;
 
 CREATE FUNCTION customcontsel(
   internal,
   OID,
   internal,
   INT
-) RETURNS DOUBLE PRECISION AS 'contsel' LANGUAGE "internal" STABLE STRICT;
+)
+RETURNS DOUBLE PRECISION
+AS 'contsel'
+LANGUAGE "internal"
+STABLE
+STRICT;
 
 CREATE OPERATOR === (LEFTARG = BOOLEAN,
 RIGHTARG = BOOLEAN,
@@ -32,7 +41,8 @@ SELECT
   deptype
 FROM
   pg_depend
-WHERE classid =
+WHERE
+  classid =
   CAST('pg_operator' AS REGCLASS) AND
   objid =
   CAST('===(bool,bool)' AS REGOPERATOR)
@@ -47,7 +57,8 @@ SELECT
   oprjoin
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -61,7 +72,8 @@ SELECT
   deptype
 FROM
   pg_depend
-WHERE classid =
+WHERE
+  classid =
   CAST('pg_operator' AS REGCLASS) AND
   objid =
   CAST('===(bool,bool)' AS REGOPERATOR)
@@ -78,7 +90,8 @@ SELECT
   oprjoin
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -92,7 +105,8 @@ SELECT
   deptype
 FROM
   pg_depend
-WHERE classid =
+WHERE
+  classid =
   CAST('pg_operator' AS REGCLASS) AND
   objid =
   CAST('===(bool,bool)' AS REGOPERATOR)
@@ -107,7 +121,8 @@ SELECT
   oprjoin
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -121,7 +136,8 @@ SELECT
   deptype
 FROM
   pg_depend
-WHERE classid =
+WHERE
+  classid =
   CAST('pg_operator' AS REGCLASS) AND
   objid =
   CAST('===(bool,bool)' AS REGOPERATOR)
@@ -136,7 +152,8 @@ SELECT
   oprjoin
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -150,7 +167,8 @@ SELECT
   deptype
 FROM
   pg_depend
-WHERE classid =
+WHERE
+  classid =
   CAST('pg_operator' AS REGCLASS) AND
   objid =
   CAST('===(bool,bool)' AS REGOPERATOR)
@@ -177,12 +195,20 @@ RESET session_authorization;
 CREATE FUNCTION alter_op_test_fn_bool_real(
   BOOLEAN,
   REAL
-) RETURNS BOOLEAN AS ' SELECT NULL::BOOLEAN; ' LANGUAGE "sql" IMMUTABLE;
+)
+RETURNS BOOLEAN
+AS ' SELECT NULL::BOOLEAN; '
+LANGUAGE "sql"
+IMMUTABLE;
 
 CREATE FUNCTION alter_op_test_fn_real_bool(
   REAL,
   BOOLEAN
-) RETURNS BOOLEAN AS ' SELECT NULL::BOOLEAN; ' LANGUAGE "sql" IMMUTABLE;
+)
+RETURNS BOOLEAN
+AS ' SELECT NULL::BOOLEAN; '
+LANGUAGE "sql"
+IMMUTABLE;
 
 CREATE OPERATOR === (LEFTARG = BOOLEAN,
 RIGHTARG = REAL,
@@ -209,7 +235,8 @@ SELECT
   oprcanhash
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -229,7 +256,8 @@ FROM
     com.oprcom AND
     op.oprcom =
     com.oid
-WHERE op.oprname =
+WHERE
+  op.oprname =
   '===' AND
   op.oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -251,7 +279,8 @@ FROM
     neg.oprnegate AND
     op.oprnegate =
     neg.oid
-WHERE op.oprname =
+WHERE
+  op.oprname =
   '===' AND
   op.oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -277,7 +306,8 @@ SELECT
   0) AS negator
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND
@@ -315,7 +345,8 @@ SELECT
   0) AS negator
 FROM
   pg_operator
-WHERE oprname =
+WHERE
+  oprname =
   '===' AND
   oprleft =
   CAST('boolean' AS REGTYPE) AND

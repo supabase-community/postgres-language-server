@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_policy_stmt_0_60.sql
+snapshot_kind: text
+---
+CREATE POLICY mypolicy
+ON mytable
+AS PERMISSIVE
+FOR ALL
+TO PUBLIC;

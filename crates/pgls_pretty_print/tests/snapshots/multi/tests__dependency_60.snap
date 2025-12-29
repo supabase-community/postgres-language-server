@@ -1,0 +1,166 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/dependency_60.sql
+snapshot_kind: text
+---
+CREATE USER regress_dep_user;
+
+CREATE USER regress_dep_user2;
+
+CREATE USER regress_dep_user3;
+
+CREATE GROUP regress_dep_group;
+
+CREATE TABLE deptest ( f1 serial PRIMARY KEY, f2 TEXT );
+
+GRANT SELECT ON TABLE deptest TO regress_dep_group;
+
+GRANT ALL ON TABLE deptest
+TO regress_dep_user,
+regress_dep_user2;
+
+DROP ROLE regress_dep_user;
+
+DROP ROLE regress_dep_group;
+
+REVOKE SELECT ON TABLE deptest FROM regress_dep_group;
+
+DROP ROLE regress_dep_group;
+
+REVOKE SELECT,
+INSERT,
+UPDATE,
+DELETE,
+TRUNCATE,
+REFERENCES,
+MAINTAIN ON TABLE deptest
+FROM regress_dep_user;
+
+DROP ROLE regress_dep_user;
+
+REVOKE TRIGGER ON TABLE deptest FROM regress_dep_user;
+
+DROP ROLE regress_dep_user;
+
+REVOKE ALL ON TABLE deptest FROM regress_dep_user2;
+
+DROP ROLE regress_dep_user2;
+
+ALTER TABLE deptest OWNER TO regress_dep_user3;
+
+DROP ROLE regress_dep_user3;
+
+DROP TABLE "deptest";
+
+DROP ROLE regress_dep_user3;
+
+CREATE USER regress_dep_user0;
+
+CREATE USER regress_dep_user1;
+
+CREATE USER regress_dep_user2;
+
+SET SESSION AUTHORIZATION regress_dep_user0;
+
+DROP OWNED BY regress_dep_user1;
+
+DROP OWNED BY regress_dep_user0, regress_dep_user2;
+
+REASSIGN OWNED BY regress_dep_user0 TO regress_dep_user1;
+
+REASSIGN OWNED BY regress_dep_user1 TO regress_dep_user0;
+
+DROP OWNED BY regress_dep_user0;
+
+CREATE TABLE deptest1 ( f1 INT UNIQUE );
+
+GRANT ALL ON TABLE deptest1
+TO regress_dep_user1 WITH GRANT OPTION;
+
+SET SESSION AUTHORIZATION regress_dep_user1;
+
+CREATE TABLE deptest ( a serial PRIMARY KEY, b TEXT );
+
+GRANT ALL ON TABLE deptest1 TO regress_dep_user2;
+
+RESET session_authorization;
+
+DROP OWNED BY regress_dep_user1;
+
+GRANT ALL ON TABLE deptest1 TO regress_dep_user1;
+
+GRANT CREATE ON DATABASE regression TO regress_dep_user1;
+
+SET SESSION AUTHORIZATION regress_dep_user1;
+
+CREATE SCHEMA "deptest";
+
+CREATE TABLE deptest ( a serial PRIMARY KEY, b TEXT );
+
+ALTER DEFAULT PRIVILEGES
+FOR ROLE regress_dep_user1
+IN SCHEMA deptest
+GRANT ALL ON TABLES 
+TO regress_dep_user2;
+
+CREATE FUNCTION deptest_func()
+RETURNS VOID
+LANGUAGE "plpgsql"
+AS ' BEGIN END; ';
+
+CREATE TYPE deptest_enum AS ENUM ('red');
+
+CREATE TYPE deptest_range AS RANGE (subtype = INT);
+
+CREATE TABLE deptest2 ( f1 INT );
+
+CREATE SEQUENCE ss1;
+
+ALTER TABLE deptest2
+  ALTER COLUMN f1 SET DEFAULT nextval('ss1');
+
+ALTER SEQUENCE ss1 OWNED BY deptest2.f1;
+
+CREATE TYPE deptest_t AS ( a INT );
+
+SELECT
+  typowner =
+  relowner
+FROM
+  pg_type
+  INNER JOIN pg_class AS c
+  ON typrelid =
+    c.oid
+WHERE
+  typname =
+  'deptest_t';
+
+RESET session_authorization;
+
+REASSIGN OWNED BY regress_dep_user1 TO regress_dep_user2;
+
+SELECT
+  typowner =
+  relowner
+FROM
+  pg_type
+  INNER JOIN pg_class AS c
+  ON typrelid =
+    c.oid
+WHERE
+  typname =
+  'deptest_t';
+
+DROP ROLE regress_dep_user1;
+
+DROP OWNED BY regress_dep_user1;
+
+DROP ROLE regress_dep_user1;
+
+DROP ROLE regress_dep_user2;
+
+DROP OWNED BY regress_dep_user2, regress_dep_user0;
+
+DROP ROLE regress_dep_user2;
+
+DROP ROLE regress_dep_user0;

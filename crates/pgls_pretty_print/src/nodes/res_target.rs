@@ -143,7 +143,7 @@ pub(super) fn emit_column_name_with_indirection(e: &mut EventEmitter, n: &ResTar
         return;
     }
 
-    e.token(TokenKind::IDENT(n.name.clone()));
+    emit_identifier_maybe_quoted(e, &n.name);
 
     for i in &n.indirection {
         match &i.node {

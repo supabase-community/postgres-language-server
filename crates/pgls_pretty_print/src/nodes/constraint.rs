@@ -4,7 +4,7 @@ use pgls_query::{
 };
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
 use super::string::emit_identifier;
@@ -17,19 +17,49 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             e.token(TokenKind::NULL_KW);
         }
         x if x == ConstrType::ConstrNotnull as i32 => {
+            // For domain constraints: CONSTRAINT name NOT NULL
+            if !n.conname.is_empty() {
+                e.token(TokenKind::CONSTRAINT_KW);
+                e.space();
+                emit_identifier(e, &n.conname);
+                e.space();
+            }
             e.token(TokenKind::NOT_KW);
             e.space();
             e.token(TokenKind::NULL_KW);
+            // Note: keys field may contain 'value' for domains, but it's not emitted
         }
         x if x == ConstrType::ConstrDefault as i32 => {
             e.token(TokenKind::DEFAULT_KW);
             if let Some(ref raw_expr) = n.raw_expr {
                 e.space();
+
+                // Complex expressions (SubLink, BoolExpr, etc.) need parentheses in DEFAULT
+                let needs_parens = match raw_expr.node.as_ref() {
+                    Some(NodeEnum::SubLink(_)) => true,
+                    Some(NodeEnum::BoolExpr(_)) => true,
+                    Some(NodeEnum::AExpr(_)) => true,
+                    _ => false,
+                };
+
+                if needs_parens {
+                    e.token(TokenKind::L_PAREN);
+                }
                 super::emit_node(raw_expr, e);
+                if needs_parens {
+                    e.token(TokenKind::R_PAREN);
+                }
             }
         }
         x if x == ConstrType::ConstrIdentity as i32 => {
-            // GENERATED {ALWAYS | BY DEFAULT} AS IDENTITY
+            // CONSTRAINT name GENERATED {ALWAYS | BY DEFAULT} AS IDENTITY
+            if !n.conname.is_empty() {
+                e.token(TokenKind::CONSTRAINT_KW);
+                e.space();
+                emit_identifier(e, &n.conname);
+                e.space();
+            }
+
             e.token(TokenKind::GENERATED_KW);
             e.space();
 
@@ -134,6 +164,19 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.space();
                 emit_identifier(e, &n.indexname);
             }
+
+            // DEFERRABLE handling for PRIMARY KEY
+            if n.deferrable {
+                e.space();
+                e.token(TokenKind::DEFERRABLE_KW);
+
+                if n.initdeferred {
+                    e.space();
+                    e.token(TokenKind::INITIALLY_KW);
+                    e.space();
+                    e.token(TokenKind::DEFERRED_KW);
+                }
+            }
         }
         x if x == ConstrType::ConstrUnique as i32 => {
             // CONSTRAINT name UNIQUE (columns)
@@ -160,6 +203,19 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::INDEX_KW);
                 e.space();
                 emit_identifier(e, &n.indexname);
+            }
+
+            // DEFERRABLE handling for UNIQUE
+            if n.deferrable {
+                e.space();
+                e.token(TokenKind::DEFERRABLE_KW);
+
+                if n.initdeferred {
+                    e.space();
+                    e.token(TokenKind::INITIALLY_KW);
+                    e.space();
+                    e.token(TokenKind::DEFERRED_KW);
+                }
             }
         }
         x if x == ConstrType::ConstrExclusion as i32 => {
@@ -235,7 +291,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::CONSTRAINT_KW);
                 e.space();
                 emit_identifier(e, &n.conname);
-                e.space();
+                e.line(LineType::SoftOrSpace);
             }
 
             // Table-level constraint has FOREIGN KEY (...)
@@ -248,7 +304,7 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::L_PAREN);
                 emit_comma_separated_list(e, &n.fk_attrs, super::emit_node);
                 e.token(TokenKind::R_PAREN);
-                e.space();
+                e.line(LineType::SoftOrSpace);
             }
 
             e.token(TokenKind::REFERENCES_KW);
@@ -269,13 +325,13 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             if !n.fk_matchtype.is_empty() {
                 match n.fk_matchtype.as_str() {
                     "f" => {
-                        e.space();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::MATCH_KW);
                         e.space();
                         e.token(TokenKind::FULL_KW);
                     }
                     "p" => {
-                        e.space();
+                        e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::MATCH_KW);
                         e.space();
                         e.token(TokenKind::PARTIAL_KW);
@@ -287,19 +343,21 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 }
             }
 
-            // ON DELETE action
-            if !n.fk_del_action.is_empty() {
+            // ON DELETE action - allow line break before
+            if !n.fk_del_action.is_empty() && n.fk_del_action != "a" {
+                e.line(LineType::SoftOrSpace);
                 emit_foreign_key_action(e, &n.fk_del_action, "DELETE", &n.fk_del_set_cols);
             }
 
-            // ON UPDATE action
-            if !n.fk_upd_action.is_empty() {
+            // ON UPDATE action - allow line break before
+            if !n.fk_upd_action.is_empty() && n.fk_upd_action != "a" {
+                e.line(LineType::SoftOrSpace);
                 emit_foreign_key_action(e, &n.fk_upd_action, "UPDATE", &[]);
             }
 
-            // DEFERRABLE
+            // DEFERRABLE - allow line break before
             if n.deferrable {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::DEFERRABLE_KW);
 
                 if n.initdeferred {
@@ -316,11 +374,33 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
             }
 
             if !n.initially_valid {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::NOT_KW);
                 e.space();
                 e.token(TokenKind::VALID_KW);
             }
+        }
+        x if x == ConstrType::ConstrAttrDeferrable as i32 => {
+            // DEFERRABLE constraint attribute
+            e.token(TokenKind::DEFERRABLE_KW);
+        }
+        x if x == ConstrType::ConstrAttrNotDeferrable as i32 => {
+            // NOT DEFERRABLE constraint attribute
+            e.token(TokenKind::NOT_KW);
+            e.space();
+            e.token(TokenKind::DEFERRABLE_KW);
+        }
+        x if x == ConstrType::ConstrAttrDeferred as i32 => {
+            // INITIALLY DEFERRED constraint attribute
+            e.token(TokenKind::INITIALLY_KW);
+            e.space();
+            e.token(TokenKind::DEFERRED_KW);
+        }
+        x if x == ConstrType::ConstrAttrImmediate as i32 => {
+            // INITIALLY IMMEDIATE constraint attribute
+            e.token(TokenKind::INITIALLY_KW);
+            e.space();
+            e.token(TokenKind::IMMEDIATE_KW);
         }
         _ => {
             // Unknown constraint type - emit placeholder
@@ -347,12 +427,7 @@ fn emit_foreign_key_action(
     event: &str,
     set_cols: &[pgls_query::protobuf::Node],
 ) {
-    if action == "a" {
-        // NO ACTION is the default, usually not emitted
-        return;
-    }
-
-    e.space();
+    // Caller handles line break - we just emit the action
     e.token(TokenKind::ON_KW);
     e.space();
     e.token(TokenKind::IDENT(event.to_string()));
@@ -388,6 +463,12 @@ fn emit_foreign_key_action(
                 emit_comma_separated_list(e, set_cols, super::emit_node);
                 e.token(TokenKind::R_PAREN);
             }
+        }
+        "a" => {
+            // NO ACTION is the default - emit explicitly when caller wants it
+            e.token(TokenKind::NO_KW);
+            e.space();
+            e.token(TokenKind::ACTION_KW);
         }
         _ => {}
     }

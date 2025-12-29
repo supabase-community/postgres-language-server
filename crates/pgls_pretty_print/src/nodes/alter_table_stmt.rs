@@ -2,6 +2,7 @@ use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
 };
+use pgls_query::NodeEnum;
 use pgls_query::protobuf::{
     AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType,
 };
@@ -14,7 +15,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     e.token(TokenKind::ALTER_KW);
     e.space();
 
-    // Emit object type (TABLE, INDEX, etc.)
+    // Emit object type (TABLE, INDEX, TYPE, etc.)
     match n.objtype() {
         ObjectType::ObjectTable => e.token(TokenKind::TABLE_KW),
         ObjectType::ObjectIndex => e.token(TokenKind::INDEX_KW),
@@ -30,6 +31,7 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
             e.space();
             e.token(TokenKind::TABLE_KW);
         }
+        ObjectType::ObjectType => e.token(TokenKind::TYPE_KW),
         _ => e.token(TokenKind::TABLE_KW), // Default to TABLE
     }
 
@@ -43,8 +45,12 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     }
 
     // Emit relation name
+    // For ObjectType (ALTER TYPE), don't emit ONLY since it's not valid
     if let Some(ref relation) = n.relation {
-        super::emit_range_var(e, relation);
+        match n.objtype() {
+            ObjectType::ObjectType => super::emit_range_var_name(e, relation),
+            _ => super::emit_range_var(e, relation),
+        }
     }
 
     // Emit commands
@@ -60,7 +66,8 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
 
             // Extract AlterTableCmd from Node
             let cmd = assert_node_variant!(AlterTableCmd, cmd_node);
-            emit_alter_table_cmd(e, cmd);
+            let for_type = matches!(n.objtype(), ObjectType::ObjectType);
+            emit_alter_table_cmd_for_type(e, cmd, for_type);
         }
 
         e.indent_end();
@@ -71,7 +78,21 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
     e.group_end();
 }
 
+/// Emit an ALTER TABLE command. The `for_type` parameter indicates if this is
+/// ALTER TYPE (which uses ATTRIBUTE instead of COLUMN).
+pub(super) fn emit_alter_table_cmd_for_type(
+    e: &mut EventEmitter,
+    cmd: &AlterTableCmd,
+    for_type: bool,
+) {
+    emit_alter_table_cmd_impl(e, cmd, for_type);
+}
+
 pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
+    emit_alter_table_cmd_impl(e, cmd, false);
+}
+
+fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type: bool) {
     match cmd.subtype() {
         AlterTableType::AtAddColumn => {
             e.token(TokenKind::ADD_KW);
@@ -85,7 +106,12 @@ pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
         AlterTableType::AtDropColumn => {
             e.token(TokenKind::DROP_KW);
             e.space();
-            e.token(TokenKind::COLUMN_KW);
+            // For ALTER TYPE, use ATTRIBUTE instead of COLUMN
+            if for_type {
+                e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+            } else {
+                e.token(TokenKind::COLUMN_KW);
+            }
             if cmd.missing_ok {
                 e.space();
                 e.token(TokenKind::IF_KW);
@@ -104,7 +130,12 @@ pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
         AlterTableType::AtAlterColumnType => {
             e.token(TokenKind::ALTER_KW);
             e.space();
-            e.token(TokenKind::COLUMN_KW);
+            // For ALTER TYPE, use ATTRIBUTE instead of COLUMN
+            if for_type {
+                e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+            } else {
+                e.token(TokenKind::COLUMN_KW);
+            }
             if !cmd.name.is_empty() {
                 e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
@@ -144,6 +175,11 @@ pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
                     e.space();
                     super::emit_node(raw_default, e);
                 }
+            }
+            // Emit CASCADE/RESTRICT - behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
+            if matches!(cmd.behavior(), DropBehavior::DropCascade) {
+                e.space();
+                e.token(TokenKind::CASCADE_KW);
             }
         }
         AlterTableType::AtColumnDefault => {
@@ -419,9 +455,12 @@ pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
             e.token(TokenKind::IDENT("ACCESS".to_string()));
             e.space();
             e.token(TokenKind::IDENT("METHOD".to_string()));
+            e.space();
             if !cmd.name.is_empty() {
-                e.space();
                 e.token(TokenKind::IDENT(cmd.name.clone()));
+            } else {
+                // Empty name means DEFAULT
+                e.token(TokenKind::DEFAULT_KW);
             }
         }
         AlterTableType::AtEnableRowSecurity => {
@@ -658,8 +697,103 @@ pub(super) fn emit_alter_table_cmd(e: &mut EventEmitter, cmd: &AlterTableCmd) {
                 e.token(TokenKind::EXISTS_KW);
             }
         }
+        AlterTableType::AtAlterConstraint => {
+            // ALTER CONSTRAINT constraint_name [DEFERRABLE | NOT DEFERRABLE] [INITIALLY DEFERRED | INITIALLY IMMEDIATE]
+            e.token(TokenKind::ALTER_KW);
+            e.space();
+            e.token(TokenKind::CONSTRAINT_KW);
+            e.space();
+
+            // constraint name comes from the def (Constraint node)
+            if let Some(ref def) = cmd.def {
+                if let Some(NodeEnum::Constraint(c)) = &def.node {
+                    super::string::emit_identifier(e, &c.conname);
+
+                    // DEFERRABLE or NOT DEFERRABLE
+                    if c.deferrable {
+                        e.space();
+                        e.token(TokenKind::DEFERRABLE_KW);
+                    } else {
+                        e.space();
+                        e.token(TokenKind::NOT_KW);
+                        e.space();
+                        e.token(TokenKind::DEFERRABLE_KW);
+                    }
+
+                    // INITIALLY DEFERRED or INITIALLY IMMEDIATE
+                    if c.initdeferred {
+                        e.space();
+                        e.token(TokenKind::INITIALLY_KW);
+                        e.space();
+                        e.token(TokenKind::DEFERRED_KW);
+                    } else {
+                        e.space();
+                        e.token(TokenKind::INITIALLY_KW);
+                        e.space();
+                        e.token(TokenKind::IMMEDIATE_KW);
+                    }
+                }
+            }
+        }
+        AlterTableType::AtDropOids => {
+            // ALTER TABLE ... SET WITHOUT OIDS (deprecated but still parsed)
+            e.token(TokenKind::SET_KW);
+            e.space();
+            e.token(TokenKind::WITHOUT_KW);
+            e.space();
+            e.token(TokenKind::IDENT("OIDS".to_string()));
+        }
+        AlterTableType::AtAlterColumnGenericOptions => {
+            // ALTER COLUMN col OPTIONS (SET/ADD/DROP name 'value')
+            e.token(TokenKind::ALTER_KW);
+            e.space();
+            e.token(TokenKind::COLUMN_KW);
+            if !cmd.name.is_empty() {
+                e.space();
+                e.token(TokenKind::IDENT(cmd.name.clone()));
+            }
+            e.space();
+            e.token(TokenKind::IDENT("OPTIONS".to_string()));
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            if let Some(ref def) = cmd.def {
+                if let Some(NodeEnum::List(list)) = &def.node {
+                    for (i, opt) in list.items.iter().enumerate() {
+                        if i > 0 {
+                            e.token(TokenKind::COMMA);
+                            e.space();
+                        }
+                        if let Some(NodeEnum::DefElem(de)) = &opt.node {
+                            super::emit_options_def_elem(e, de);
+                        }
+                    }
+                }
+            }
+            e.token(TokenKind::R_PAREN);
+        }
+        AlterTableType::AtGenericOptions => {
+            // OPTIONS (SET/ADD/DROP name 'value') - table-level options
+            e.token(TokenKind::IDENT("OPTIONS".to_string()));
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            if let Some(ref def) = cmd.def {
+                if let Some(NodeEnum::List(list)) = &def.node {
+                    for (i, opt) in list.items.iter().enumerate() {
+                        if i > 0 {
+                            e.token(TokenKind::COMMA);
+                            e.space();
+                        }
+                        if let Some(NodeEnum::DefElem(de)) = &opt.node {
+                            super::emit_options_def_elem(e, de);
+                        }
+                    }
+                }
+            }
+            e.token(TokenKind::R_PAREN);
+        }
         _ => {
             // Fallback for unimplemented subtypes
+            debug_assert!(false, "Unhandled AlterTableType: {:?}", cmd.subtype());
             e.token(TokenKind::IDENT(format!("TODO: {:?}", cmd.subtype())));
         }
     }

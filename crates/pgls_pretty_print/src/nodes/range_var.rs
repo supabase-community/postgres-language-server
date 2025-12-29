@@ -6,19 +6,29 @@ use crate::{
 };
 
 pub(super) fn emit_range_var(e: &mut EventEmitter, n: &RangeVar) {
+    emit_range_var_impl(e, n, true);
+}
+
+/// Emit a RangeVar without ONLY keyword (for DDL contexts like CREATE TYPE)
+pub(super) fn emit_range_var_name(e: &mut EventEmitter, n: &RangeVar) {
+    emit_range_var_impl(e, n, false);
+}
+
+fn emit_range_var_impl(e: &mut EventEmitter, n: &RangeVar, allow_only: bool) {
     e.group_start(GroupKind::RangeVar);
 
-    if !n.inh {
+    // ONLY is only valid in DML contexts (SELECT, UPDATE, DELETE, LOCK), not DDL
+    if allow_only && !n.inh {
         e.token(TokenKind::ONLY_KW);
         e.space();
     }
 
     if !n.schemaname.is_empty() {
-        e.token(TokenKind::IDENT(n.schemaname.clone()));
+        super::string::emit_identifier_maybe_quoted(e, &n.schemaname);
         e.token(TokenKind::DOT);
     }
 
-    e.token(TokenKind::IDENT(n.relname.clone()));
+    super::string::emit_identifier_maybe_quoted(e, &n.relname);
 
     // Emit alias if present
     if let Some(ref alias) = n.alias {

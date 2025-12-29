@@ -11,5 +11,6 @@ FROM
     name
   FROM
     users
-  WHERE active =
+  WHERE
+    active =
     TRUE) AS active_users;

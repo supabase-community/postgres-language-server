@@ -33,21 +33,24 @@ SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 <>
+WHERE
+  i.f1 <>
   CAST('0' AS SMALLINT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 <>
+WHERE
+  i.f1 <>
   CAST('0' AS INT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 =
+WHERE
+  i.f1 =
   CAST('0' AS SMALLINT);
 
 SELECT i.* FROM int4_tbl AS i WHERE i.f1 = CAST('0' AS INT);
@@ -56,7 +59,8 @@ SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 <
+WHERE
+  i.f1 <
   CAST('0' AS SMALLINT);
 
 SELECT i.* FROM int4_tbl AS i WHERE i.f1 < CAST('0' AS INT);
@@ -65,21 +69,24 @@ SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 <=
+WHERE
+  i.f1 <=
   CAST('0' AS SMALLINT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 <=
+WHERE
+  i.f1 <=
   CAST('0' AS INT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 >
+WHERE
+  i.f1 >
   CAST('0' AS SMALLINT);
 
 SELECT i.* FROM int4_tbl AS i WHERE i.f1 > CAST('0' AS INT);
@@ -88,28 +95,32 @@ SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 >=
+WHERE
+  i.f1 >=
   CAST('0' AS SMALLINT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 >=
+WHERE
+  i.f1 >=
   CAST('0' AS INT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 % CAST('2' AS SMALLINT) =
+WHERE
+  i.f1 % CAST('2' AS SMALLINT) =
   CAST('1' AS SMALLINT);
 
 SELECT
   i.*
 FROM
   int4_tbl AS i
-WHERE i.f1 % CAST('2' AS INT) =
+WHERE
+  i.f1 % CAST('2' AS INT) =
   CAST('0' AS SMALLINT);
 
 SELECT
@@ -123,7 +134,8 @@ SELECT
   i.f1 * CAST('2' AS SMALLINT) AS x
 FROM
   int4_tbl AS i
-WHERE abs(f1) <
+WHERE
+  abs(f1) <
   1073741824;
 
 SELECT
@@ -137,7 +149,8 @@ SELECT
   i.f1 * CAST('2' AS INT) AS x
 FROM
   int4_tbl AS i
-WHERE abs(f1) <
+WHERE
+  abs(f1) <
   1073741824;
 
 SELECT
@@ -151,7 +164,8 @@ SELECT
   i.f1 + CAST('2' AS SMALLINT) AS x
 FROM
   int4_tbl AS i
-WHERE f1 <
+WHERE
+  f1 <
   2147483646;
 
 SELECT
@@ -165,7 +179,8 @@ SELECT
   i.f1 + CAST('2' AS INT) AS x
 FROM
   int4_tbl AS i
-WHERE f1 <
+WHERE
+  f1 <
   2147483646;
 
 SELECT
@@ -179,7 +194,8 @@ SELECT
   i.f1 - CAST('2' AS SMALLINT) AS x
 FROM
   int4_tbl AS i
-WHERE f1 >
+WHERE
+  f1 >
   -2147483647;
 
 SELECT
@@ -193,7 +209,8 @@ SELECT
   i.f1 - CAST('2' AS INT) AS x
 FROM
   int4_tbl AS i
-WHERE f1 >
+WHERE
+  f1 >
   -2147483647;
 
 SELECT

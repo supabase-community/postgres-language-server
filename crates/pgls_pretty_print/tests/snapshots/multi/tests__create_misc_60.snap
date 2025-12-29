@@ -11,7 +11,8 @@ CREATE TABLE c_star ( c NAME ) INHERITS (a_star);
 
 CREATE TABLE d_star (
   d DOUBLE PRECISION
-) INHERITS (b_star,
+)
+INHERITS (b_star,
 c_star);
 
 CREATE TABLE e_star ( e SMALLINT ) INHERITS (c_star);
@@ -332,7 +333,8 @@ SELECT
   *
 FROM
   b_star AS x
-WHERE x.b =
+WHERE
+  x.b =
   CAST('bumble' AS TEXT) OR
   x.a <
   3;
@@ -342,7 +344,8 @@ SELECT
   a
 FROM
   c_star AS x
-WHERE x.c ~ CAST('hi' AS TEXT);
+WHERE
+  x.c ~ CAST('hi' AS TEXT);
 
 SELECT class, b, c FROM d_star AS x WHERE x.a < 100;
 
@@ -398,7 +401,8 @@ SELECT
   0 AS has_toast_table
 FROM
   pg_class
-WHERE CAST(oid AS REGCLASS) IN ('a_star',
+WHERE
+  CAST(oid AS REGCLASS) IN ('a_star',
   'c_star')
 ORDER BY 1;
 

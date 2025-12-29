@@ -52,7 +52,8 @@ SELECT
 FROM
   circle_tbl AS c1,
   circle_tbl AS c2
-WHERE c1.f1 <
+WHERE
+  c1.f1 <
   c2.f1 AND
   c1.f1 <-> c2.f1 >
   0

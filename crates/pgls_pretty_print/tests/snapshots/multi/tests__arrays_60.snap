@@ -1,0 +1,2208 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/arrays_60.sql
+snapshot_kind: text
+---
+CREATE TABLE arrtest (
+  a SMALLINT[],
+  b INT[][][],
+  c NAME[],
+  d TEXT[][],
+  e DOUBLE PRECISION[],
+  f CHAR(5)[],
+  g VARCHAR(5)[]
+);
+
+CREATE TABLE array_op_test ( seqno INT, i INT[], t TEXT[] );
+
+COPY array_op_test FROM 'filename';
+
+ANALYZE array_op_test;
+
+INSERT INTO arrtest (a[1:5],
+b[1:1][1:2][1:2],
+c,
+d,
+f,
+g)
+VALUES ('{1,2,3,4,5}',
+'{{{0,0},{1,2}}}',
+'{}',
+'{}',
+'{}',
+'{}');
+
+UPDATE arrtest SET e[0] = '1.1';
+
+UPDATE arrtest SET e[1] = '2.2';
+
+INSERT INTO arrtest (f) VALUES ('{"too long"}');
+
+INSERT INTO arrtest (a,
+b[1:2][1:2],
+c,
+d,
+e,
+f,
+g)
+VALUES ('{11,12,23}',
+'{{3,4},{4,5}}',
+'{"foobar"}',
+'{{"elt1", "elt2"}}',
+'{"3.4", "6.7"}',
+'{"abc","abcde"}',
+'{"abc","abcde"}');
+
+INSERT INTO arrtest (a,
+b[1:2],
+c,
+d[1:2])
+VALUES ('{}',
+'{3,4}',
+'{foo,bar}',
+'{bar,foo}');
+
+INSERT INTO arrtest (b[2]) VALUES (NOW());
+
+INSERT INTO arrtest (b[1:2]) VALUES (NOW());
+
+SELECT * FROM arrtest;
+
+SELECT
+  arrtest.a[1],
+  arrtest.b[1][1][1],
+  arrtest.c[1],
+  arrtest.d[1][1],
+  arrtest.e[0]
+FROM
+  arrtest;
+
+SELECT a[1], b[1][1][1], c[1], d[1][1], e[0] FROM arrtest;
+
+SELECT
+  a[1:3],
+  b[1:1][1:2][1:2],
+  c[1:2],
+  d[1:1][1:2]
+FROM
+  arrtest;
+
+SELECT
+  array_ndims(a) AS a,
+  array_ndims(b) AS b,
+  array_ndims(c) AS c
+FROM
+  arrtest;
+
+SELECT
+  array_dims(a) AS a,
+  array_dims(b) AS b,
+  array_dims(c) AS c
+FROM
+  arrtest;
+
+SELECT
+  *
+FROM
+  arrtest
+WHERE
+  a[1] <
+  5 AND
+  c =
+  CAST('{"foobar"}' AS _name);
+
+UPDATE arrtest
+SET a[1:2] = '{16,25}'
+WHERE
+  NOT a =
+  CAST('{}' AS _int2);
+
+UPDATE arrtest
+SET b[1:1][1:1][1:2] = '{113, 117}',
+b[1:1][1:2][2:2] = '{142, 147}'
+WHERE
+  array_dims(b) =
+  '[1:1][1:2][1:2]';
+
+UPDATE arrtest
+SET c[2:2] = '{"new_word"}'
+WHERE
+  array_dims(c) IS NOT NULL;
+
+SELECT a, b, c FROM arrtest;
+
+SELECT
+  a[1:3],
+  b[1:1][1:2][1:2],
+  c[1:2],
+  d[1:1][2:2]
+FROM
+  arrtest;
+
+SELECT b[1:1][2][2], d[1:1][2] FROM arrtest;
+
+INSERT INTO arrtest (a) VALUES ('{1,null,3}');
+
+SELECT a FROM arrtest;
+
+UPDATE arrtest SET a[4] = NULL WHERE a[2] IS NULL;
+
+SELECT a FROM arrtest WHERE a[2] IS NULL;
+
+DELETE FROM arrtest WHERE a[2] IS NULL AND b IS NULL;
+
+SELECT a, b, c FROM arrtest;
+
+SELECT pg_input_is_valid('{1,2,3}', 'integer[]');
+
+SELECT pg_input_is_valid('{1,2', 'integer[]');
+
+SELECT pg_input_is_valid('{1,zed}', 'integer[]');
+
+SELECT * FROM pg_input_error_info('{1,zed}', 'integer[]');
+
+SELECT CAST('{{1,2,3},{4,5,6},{7,8,9}}' AS INT[]);
+
+SELECT (CAST('{{1,2,3},{4,5,6},{7,8,9}}' AS INT[]))[1:2][2];
+
+SELECT
+  CAST('[0:2][0:2]={{1,2,3},{4,5,6},{7,8,9}}' AS INT[]);
+
+SELECT
+  (CAST('[0:2][0:2]={{1,2,3},{4,5,6},{7,8,9}}' AS INT[]))[1:2][2];
+
+SELECT (CAST('{}' AS INT[]))[1][2][3][4][5][6][7];
+
+SELECT
+  (CAST('{{{1},{2},{3}},{{4},{5},{6}}}' AS INT[]))[1][NULL][1];
+
+SELECT
+  (CAST('{{{1},{2},{3}},{{4},{5},{6}}}' AS INT[]))[1][NULL:1][1];
+
+SELECT
+  (CAST('{{{1},{2},{3}},{{4},{5},{6}}}' AS INT[]))[1][1:NULL][1];
+
+UPDATE arrtest
+SET c[NULL] = '{"can''t assign"}'
+WHERE
+  array_dims(c) IS NOT NULL;
+
+UPDATE arrtest
+SET c[NULL:1] = '{"can''t assign"}'
+WHERE
+  array_dims(c) IS NOT NULL;
+
+UPDATE arrtest
+SET c[1:NULL] = '{"can''t assign"}'
+WHERE
+  array_dims(c) IS NOT NULL;
+
+SELECT (NOW())[1];
+
+CREATE TEMPORARY TABLE arrtest_s (
+  a SMALLINT[],
+  b SMALLINT[][]
+);
+
+INSERT INTO arrtest_s
+VALUES ('{1,2,3,4,5}',
+'{{1,2,3}, {4,5,6}, {7,8,9}}');
+
+INSERT INTO arrtest_s
+VALUES ('[0:4]={1,2,3,4,5}',
+'[0:2][0:2]={{1,2,3}, {4,5,6}, {7,8,9}}');
+
+SELECT * FROM arrtest_s;
+
+SELECT a[:3], b[:2][:2] FROM arrtest_s;
+
+SELECT a[2:], b[2:][2:] FROM arrtest_s;
+
+SELECT a[:], b[:] FROM arrtest_s;
+
+UPDATE arrtest_s
+SET a[:3] = '{11, 12, 13}',
+b[:2][:2] = '{{11,12}, {14,15}}'
+WHERE
+  array_lower(a,
+  1) =
+  1;
+
+SELECT * FROM arrtest_s;
+
+UPDATE arrtest_s
+SET a[3:] = '{23, 24, 25}',
+b[2:][2:] = '{{25,26}, {28,29}}';
+
+SELECT * FROM arrtest_s;
+
+UPDATE arrtest_s SET a[:] = '{11, 12, 13, 14, 15}';
+
+SELECT * FROM arrtest_s;
+
+UPDATE arrtest_s SET a[:] = '{23, 24, 25}';
+
+INSERT INTO arrtest_s VALUES (NULL, NULL);
+
+UPDATE arrtest_s SET a[:] = '{11, 12, 13, 14, 15}';
+
+CREATE TEMPORARY TABLE point_tbl AS
+  SELECT
+    *
+  FROM
+    public.point_tbl;
+
+INSERT INTO point_tbl (f1) VALUES (NULL);
+
+SELECT f1[0:1] FROM point_tbl;
+
+SELECT f1[0:] FROM point_tbl;
+
+SELECT f1[:1] FROM point_tbl;
+
+SELECT f1[:] FROM point_tbl;
+
+UPDATE point_tbl
+SET f1[0] = 10
+WHERE
+  f1 IS NULL
+RETURNING *;
+
+INSERT INTO point_tbl (f1[0]) VALUES (0) RETURNING *;
+
+UPDATE point_tbl
+SET f1[0] = NULL
+WHERE
+  CAST(f1 AS TEXT) =
+  CAST(CAST('(10,10)' AS point) AS TEXT)
+RETURNING *;
+
+UPDATE point_tbl
+SET f1[0] = -10,
+f1[1] = -10
+WHERE
+  CAST(f1 AS TEXT) =
+  CAST(CAST('(10,10)' AS point) AS TEXT)
+RETURNING *;
+
+UPDATE point_tbl
+SET f1[3] = 10
+WHERE
+  CAST(f1 AS TEXT) =
+  CAST(CAST('(-10,-10)' AS point) AS TEXT)
+RETURNING *;
+
+CREATE TEMPORARY TABLE arrtest1 ( i INT[], t TEXT[] );
+
+INSERT INTO arrtest1
+VALUES (ARRAY[1,
+2,
+NULL,
+4],
+ARRAY['one',
+'two',
+NULL,
+'four']);
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1 SET i[2] = 22, t[2] = 'twenty-two';
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1 SET i[5] = 5, t[5] = 'five';
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1 SET i[8] = 8, t[8] = 'eight';
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1 SET i[0] = 0, t[0] = 'zero';
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1 SET i[-3] = -3, t[-3] = 'minus-three';
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[0:2] = ARRAY[10,
+11,
+12],
+t[0:2] = ARRAY['ten',
+'eleven',
+'twelve'];
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[8:10] = ARRAY[18,
+NULL,
+20],
+t[8:10] = ARRAY['p18',
+NULL,
+'p20'];
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[11:12] = ARRAY[NULL,
+22],
+t[11:12] = ARRAY[NULL,
+'p22'];
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[15:16] = ARRAY[NULL,
+26],
+t[15:16] = ARRAY[NULL,
+'p26'];
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[-5:-3] = ARRAY[-15,
+-14,
+-13],
+t[-5:-3] = ARRAY['m15',
+'m14',
+'m13'];
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[-7:-6] = ARRAY[-17,
+NULL],
+t[-7:-6] = ARRAY['m17',
+NULL];
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[-12:-10] = ARRAY[-22,
+NULL,
+-20],
+t[-12:-10] = ARRAY['m22',
+NULL,
+'m20'];
+
+SELECT * FROM arrtest1;
+
+DELETE FROM arrtest1;
+
+INSERT INTO arrtest1
+VALUES (ARRAY[1,
+2,
+NULL,
+4],
+ARRAY['one',
+'two',
+NULL,
+'four']);
+
+SELECT * FROM arrtest1;
+
+UPDATE arrtest1
+SET i[0:5] = ARRAY[0,
+1,
+2,
+NULL,
+4,
+5],
+t[0:5] = ARRAY['z',
+'p1',
+'p2',
+NULL,
+'p4',
+'p5'];
+
+SELECT * FROM arrtest1;
+
+CREATE TEMPORARY TABLE arrtest2 (
+  i INT[4],
+  f DOUBLE PRECISION[],
+  n NUMERIC[],
+  t TEXT[],
+  d TIMESTAMP[]
+);
+
+INSERT INTO arrtest2
+VALUES (ARRAY[ARRAY[ARRAY[113,
+142],
+ARRAY[1,
+147]]],
+CAST(ARRAY[1.1,
+1.2,
+1.3] AS DOUBLE PRECISION[]),
+ARRAY[1.1,
+1.2,
+1.3],
+ARRAY[ARRAY[ARRAY['aaa',
+'aab'],
+ARRAY['aba',
+'abb'],
+ARRAY['aca',
+'acb']],
+ARRAY[ARRAY['baa',
+'bab'],
+ARRAY['bba',
+'bbb'],
+ARRAY['bca',
+'bcb']]],
+CAST(ARRAY['19620326',
+'19931223',
+'19970117'] AS TIMESTAMP[]));
+
+CREATE TEMPORARY TABLE arrtest_f (
+  f0 INT,
+  f1 TEXT,
+  f2 DOUBLE PRECISION
+);
+
+INSERT INTO arrtest_f VALUES (1, 'cat1', 1.21);
+
+INSERT INTO arrtest_f VALUES (2, 'cat1', 1.24);
+
+INSERT INTO arrtest_f VALUES (3, 'cat1', 1.18);
+
+INSERT INTO arrtest_f VALUES (4, 'cat1', 1.26);
+
+INSERT INTO arrtest_f VALUES (5, 'cat1', 1.15);
+
+INSERT INTO arrtest_f VALUES (6, 'cat2', 1.15);
+
+INSERT INTO arrtest_f VALUES (7, 'cat2', 1.26);
+
+INSERT INTO arrtest_f VALUES (8, 'cat2', 1.32);
+
+INSERT INTO arrtest_f VALUES (9, 'cat2', 1.30);
+
+CREATE TEMPORARY TABLE arrtest_i (
+  f0 INT,
+  f1 TEXT,
+  f2 INT
+);
+
+INSERT INTO arrtest_i VALUES (1, 'cat1', 21);
+
+INSERT INTO arrtest_i VALUES (2, 'cat1', 24);
+
+INSERT INTO arrtest_i VALUES (3, 'cat1', 18);
+
+INSERT INTO arrtest_i VALUES (4, 'cat1', 26);
+
+INSERT INTO arrtest_i VALUES (5, 'cat1', 15);
+
+INSERT INTO arrtest_i VALUES (6, 'cat2', 15);
+
+INSERT INTO arrtest_i VALUES (7, 'cat2', 26);
+
+INSERT INTO arrtest_i VALUES (8, 'cat2', 32);
+
+INSERT INTO arrtest_i VALUES (9, 'cat2', 30);
+
+SELECT
+  t.f[1][3][1] AS "131",
+  t.f[2][2][1] AS "221"
+FROM
+  (SELECT
+    ARRAY[ARRAY[ARRAY[111,
+    112],
+    ARRAY[121,
+    122],
+    ARRAY[131,
+    132]],
+    ARRAY[ARRAY[211,
+    212],
+    ARRAY[221,
+    122],
+    ARRAY[231,
+    232]]] AS f) AS t;
+
+SELECT
+  ARRAY[ARRAY[ARRAY[ARRAY[ARRAY[ARRAY['hello'],
+  ARRAY['world']]]]]];
+
+SELECT ARRAY[ARRAY['hello'], ARRAY['world']];
+
+SELECT
+  ARRAY(SELECT
+    f2
+  FROM
+    arrtest_f
+  ORDER BY f2) AS "ARRAY";
+
+SELECT CAST('{1,null,3}' AS INT[]);
+
+SELECT ARRAY[1, NULL, 3];
+
+SELECT array_append(ARRAY[42], 6) AS "{42,6}";
+
+SELECT array_prepend(6, ARRAY[42]) AS "{6,42}";
+
+SELECT array_cat(ARRAY[1, 2], ARRAY[3, 4]) AS "{1,2,3,4}";
+
+SELECT
+  array_cat(ARRAY[1,
+  2],
+  ARRAY[ARRAY[3,
+  4],
+  ARRAY[5,
+  6]]) AS "{{1,2},{3,4},{5,6}}";
+
+SELECT
+  array_cat(ARRAY[ARRAY[3,
+  4],
+  ARRAY[5,
+  6]],
+  ARRAY[1,
+  2]) AS "{{3,4},{5,6},{1,2}}";
+
+SELECT array_position(ARRAY[1, 2, 3, 4, 5], 4);
+
+SELECT array_position(ARRAY[5, 3, 4, 2, 1], 4);
+
+SELECT array_position(ARRAY[ARRAY[1, 2], ARRAY[3, 4]], 3);
+
+SELECT
+  array_position(ARRAY['sun',
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  'fri',
+  'sat'],
+  'mon');
+
+SELECT
+  array_position(ARRAY['sun',
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  'fri',
+  'sat'],
+  'sat');
+
+SELECT
+  array_position(ARRAY['sun',
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  'fri',
+  'sat'],
+  NULL);
+
+SELECT
+  array_position(ARRAY['sun',
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  NULL,
+  'fri',
+  'sat'],
+  NULL);
+
+SELECT
+  array_position(ARRAY['sun',
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  NULL,
+  'fri',
+  'sat'],
+  'sat');
+
+SELECT array_positions(NULL, 10);
+
+SELECT array_positions(NULL, CAST(NULL AS INT));
+
+SELECT
+  array_positions(ARRAY[1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6],
+  4);
+
+SELECT array_positions(ARRAY[ARRAY[1, 2], ARRAY[3, 4]], 4);
+
+SELECT
+  array_positions(ARRAY[1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6],
+  NULL);
+
+SELECT
+  array_positions(ARRAY[1,
+  2,
+  3,
+  NULL,
+  5,
+  6,
+  1,
+  2,
+  3,
+  NULL,
+  5,
+  6],
+  NULL);
+
+SELECT
+  array_length(array_positions(ARRAY(SELECT
+    CAST('AAAAAAAAAAAAAAAAAAAAAAAAA' AS TEXT) || i % 10
+  FROM
+    generate_series(1,
+    100) AS g (i)),
+  'AAAAAAAAAAAAAAAAAAAAAAAAA5'),
+  1);
+
+DO $$
+DECLARE
+  o int;
+  a int[] := ARRAY[1,2,3,2,3,1,2];
+BEGIN
+  o := array_position(a, 2);
+  WHILE o IS NOT NULL
+  LOOP
+    RAISE NOTICE '%', o;
+    o := array_position(a, 2, o + 1);
+  END LOOP;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT array_position(CAST('[2:4]={1,2,3}' AS INT[]), 1);
+
+SELECT array_positions(CAST('[2:4]={1,2,3}' AS INT[]), 1);
+
+SELECT
+  array_position(ids,
+  (1,
+  1)),
+  array_positions(ids,
+  (1,
+  1))
+FROM
+  (VALUES (ARRAY[(0,
+  0),
+  (1,
+  1)]),
+  (ARRAY[(1,
+  1)])) AS f (ids);
+
+SELECT
+  a
+FROM
+  arrtest
+WHERE
+  b =
+  ARRAY[ARRAY[ARRAY[113,
+  142],
+  ARRAY[1,
+  147]]];
+
+SELECT
+  NOT ARRAY[1.1,
+  1.2,
+  1.3] =
+  ARRAY[1.1,
+  1.2,
+  1.3] AS "FALSE";
+
+SELECT ARRAY[1, 2] || 3 AS "{1,2,3}";
+
+SELECT 0 || ARRAY[1, 2] AS "{0,1,2}";
+
+SELECT ARRAY[1, 2] || ARRAY[3, 4] AS "{1,2,3,4}";
+
+SELECT
+  ARRAY[ARRAY[ARRAY['hello',
+  'world']]] || ARRAY[ARRAY[ARRAY['happy',
+  'birthday']]] AS "ARRAY";
+
+SELECT
+  ARRAY[ARRAY[1,
+  2],
+  ARRAY[3,
+  4]] || ARRAY[5,
+  6] AS "{{1,2},{3,4},{5,6}}";
+
+SELECT
+  ARRAY[0,
+  0] || ARRAY[1,
+  1] || ARRAY[2,
+  2] AS "{0,0,1,1,2,2}";
+
+SELECT 0 || ARRAY[1, 2] || 3 AS "{0,1,2,3}";
+
+SELECT ARRAY[1.1] || ARRAY[2, 3, 4];
+
+SELECT
+  array_agg(x) || array_agg(x)
+FROM
+  (VALUES (ROW(1,
+  2)),
+  (ROW(3,
+  4))) AS v (x);
+
+SELECT
+  ROW(1,
+  2) || array_agg(x)
+FROM
+  (VALUES (ROW(3,
+  4)),
+  (ROW(5,
+  6))) AS v (x);
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i @> '{32}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i && '{32}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i @> '{17}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i && '{17}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i @> '{32,17}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i && '{32,17}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i <@ '{38,34,32,89}'
+ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE i = '{}' ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE i @> '{}' ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE i && '{}' ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE i <@ '{}' ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i =
+  '{NULL}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i @> '{NULL}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i && '{NULL}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  i <@ '{NULL}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t @> '{AAAAAAAA72908}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t && '{AAAAAAAA72908}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t @> '{AAAAAAAAAA646}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t && '{AAAAAAAAAA646}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t @> '{AAAAAAAA72908,AAAAAAAAAA646}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t && '{AAAAAAAA72908,AAAAAAAAAA646}'
+ORDER BY seqno;
+
+SELECT
+  *
+FROM
+  array_op_test
+WHERE
+  t <@ '{AAAAAAAA72908,AAAAAAAAAAAAAAAAAAA17075,AA88409,AAAAAAAAAAAAAAAAAA36842,AAAAAAA48038,AAAAAAAAAAAAAA10611}'
+ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE t = '{}' ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE t @> '{}' ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE t && '{}' ORDER BY seqno;
+
+SELECT * FROM array_op_test WHERE t <@ '{}' ORDER BY seqno;
+
+SELECT
+  CAST(CAST(CAST(ARRAY[1,
+  2,
+  3] AS TEXT[]) AS INT[]) AS DOUBLE PRECISION[]) AS "{1,2,3}";
+
+SELECT
+  pg_typeof(CAST(CAST(CAST(ARRAY[1,
+  2,
+  3] AS TEXT[]) AS INT[]) AS DOUBLE PRECISION[])) AS "double precision[]";
+
+SELECT
+  CAST(CAST(ARRAY[ARRAY['a',
+  'bc'],
+  ARRAY['def',
+  'hijk']] AS TEXT[]) AS VARCHAR[]) AS "{{a,bc},{def,hijk}}";
+
+SELECT
+  pg_typeof(CAST(CAST(ARRAY[ARRAY['a',
+  'bc'],
+  ARRAY['def',
+  'hijk']] AS TEXT[]) AS VARCHAR[])) AS "character varying[]";
+
+SELECT
+  CAST(ARRAY[ARRAY[ARRAY[ARRAY[ARRAY[ARRAY['a',
+  'bb',
+  'ccc']]]]]] AS TEXT[]) AS "{{{{{{a,bb,ccc}}}}}}";
+
+SELECT CAST(CAST(NULL AS TEXT[]) AS INT[]) AS "NULL";
+
+SELECT 33 = ANY ('{1,2,3}');
+
+SELECT 33 = ANY ('{1,2,33}');
+
+SELECT 33 = ALL ('{1,2,33}');
+
+SELECT 33 >= ALL ('{1,2,33}');
+
+SELECT CAST(NULL AS INT) >= ALL ('{1,2,33}');
+
+SELECT CAST(NULL AS INT) >= ALL ('{}');
+
+SELECT CAST(NULL AS INT) >= ANY ('{}');
+
+SELECT 33.4 = ANY (ARRAY[1, 2, 3]);
+
+SELECT 33.4 > ALL (ARRAY[1, 2, 3]);
+
+SELECT 33 * ANY ('{1,2,3}');
+
+SELECT 33 * ANY (44);
+
+SELECT 33 = ANY (CAST(NULL AS INT[]));
+
+SELECT CAST(NULL AS INT) = ANY ('{1,2,3}');
+
+SELECT 33 = ANY ('{1,null,3}');
+
+SELECT 33 = ANY ('{1,null,33}');
+
+SELECT 33 = ALL (CAST(NULL AS INT[]));
+
+SELECT CAST(NULL AS INT) = ALL ('{1,2,3}');
+
+SELECT 33 = ALL ('{1,null,3}');
+
+SELECT 33 = ALL ('{33,null,33}');
+
+SELECT
+  -1 <> ALL (ARRAY(SELECT
+    NULLIF(g.i, 900)
+  FROM
+    generate_series(1,
+    1000) AS g (i)));
+
+CREATE TEMPORARY TABLE arr_tbl ( f1 INT[] UNIQUE );
+
+INSERT INTO arr_tbl VALUES ('{1,2,3}');
+
+INSERT INTO arr_tbl VALUES ('{1,2}');
+
+INSERT INTO arr_tbl VALUES ('{1,2,3}');
+
+INSERT INTO arr_tbl VALUES ('{2,3,4}');
+
+INSERT INTO arr_tbl VALUES ('{1,5,3}');
+
+INSERT INTO arr_tbl VALUES ('{1,2,10}');
+
+SET enable_seqscan = off;
+
+SET enable_bitmapscan = off;
+
+SELECT
+  *
+FROM
+  arr_tbl
+WHERE
+  f1 >
+  '{1,2,3}' AND
+  f1 <=
+  '{1,5,3}';
+
+SELECT
+  *
+FROM
+  arr_tbl
+WHERE
+  f1 >=
+  '{1,2,3}' AND
+  f1 <
+  '{1,5,3}';
+
+CREATE TEMPORARY TABLE arr_pk_tbl (
+  pk INT PRIMARY KEY,
+  f1 INT[]
+);
+
+INSERT INTO arr_pk_tbl VALUES (1, '{1,2,3}');
+
+INSERT INTO arr_pk_tbl
+VALUES (1,
+'{3,4,5}')
+ON CONFLICT (pk) DO
+UPDATE
+SET f1[1] = excluded.f1[1],
+f1[3] = excluded.f1[3]
+RETURNING pk,
+f1;
+
+INSERT INTO arr_pk_tbl (pk,
+f1[1:2])
+VALUES (1,
+'{6,7,8}')
+ON CONFLICT (pk) DO
+UPDATE
+SET f1[1] = excluded.f1[1],
+f1[2] = excluded.f1[2],
+f1[3] = excluded.f1[3]
+RETURNING pk,
+f1;
+
+RESET enable_seqscan;
+
+RESET enable_bitmapscan;
+
+INSERT INTO arr_pk_tbl
+VALUES (10,
+'[-2147483648:-2147483647]={1,2}');
+
+UPDATE arr_pk_tbl SET f1[2147483647] = 42 WHERE pk = 10;
+
+UPDATE arr_pk_tbl
+SET f1[2147483646:2147483647] = ARRAY[4,
+2]
+WHERE
+  pk =
+  10;
+
+INSERT INTO arr_pk_tbl (pk,
+f1[0:2147483647])
+VALUES (2,
+'{}');
+
+INSERT INTO arr_pk_tbl (pk,
+f1[-2147483648:2147483647])
+VALUES (2,
+'{}');
+
+DO $$ declare a int[];
+begin
+  a := '[-2147483648:-2147483647]={1,2}'::int[];
+  a[2147483647] := 42;
+end $$;
+
+SELECT 'foo' ~~ ANY (ARRAY['%a', '%o']);
+
+SELECT 'foo' ~~ ANY (ARRAY['%a', '%b']);
+
+SELECT 'foo' ~~ ALL (ARRAY['f%', '%o']);
+
+SELECT 'foo' ~~ ALL (ARRAY['f%', '%b']);
+
+SELECT 'foo' !~~ ANY (ARRAY['%a', '%b']);
+
+SELECT 'foo' !~~ ALL (ARRAY['%a', '%o']);
+
+SELECT 'foo' ~~* ANY (ARRAY['%A', '%O']);
+
+SELECT 'foo' ~~* ALL (ARRAY['F%', '%O']);
+
+SELECT CAST('{{1,{2}},{2,3}}' AS TEXT[]);
+
+SELECT CAST('{{1,2},\{2,3}}' AS TEXT[]);
+
+SELECT CAST('{"a"b}' AS TEXT[]);
+
+SELECT CAST('{a"b"}' AS TEXT[]);
+
+SELECT CAST('{"a""b"}' AS TEXT[]);
+
+SELECT CAST('{{"1 2" x},{3}}' AS TEXT[]);
+
+SELECT CAST('{{"1 2"} x,{3}}' AS TEXT[]);
+
+SELECT CAST('{}}' AS TEXT[]);
+
+SELECT CAST('{ }}' AS TEXT[]);
+
+SELECT CAST('}{' AS TEXT[]);
+
+SELECT CAST('{foo{}}' AS TEXT[]);
+
+SELECT CAST('{"foo"{}}' AS TEXT[]);
+
+SELECT CAST('{foo,,bar}' AS TEXT[]);
+
+SELECT CAST('{{1},{{2}}}' AS TEXT[]);
+
+SELECT CAST('{{{1}},{2}}' AS TEXT[]);
+
+SELECT CAST('{{},{{}}}' AS TEXT[]);
+
+SELECT CAST('{{{}},{}}' AS TEXT[]);
+
+SELECT CAST('{{1},{}}' AS TEXT[]);
+
+SELECT CAST('{{},{1}}' AS TEXT[]);
+
+SELECT CAST('[1:0]={}' AS INT[]);
+
+SELECT CAST('[2147483646:2147483647]={1,2}' AS INT[]);
+
+SELECT CAST('[1:-1]={}' AS INT[]);
+
+SELECT CAST('[2]={1}' AS INT[]);
+
+SELECT CAST('[1:]={1}' AS INT[]);
+
+SELECT CAST('[:1]={1}' AS INT[]);
+
+SELECT ARRAY[];
+
+SELECT CAST('{{1,},{1},}' AS TEXT[]);
+
+SELECT CAST('{{1,},{1}}' AS TEXT[]);
+
+SELECT CAST('{{1,}}' AS TEXT[]);
+
+SELECT CAST('{1,}' AS TEXT[]);
+
+SELECT CAST('[21474836488:21474836489]={1,2}' AS INT[]);
+
+SELECT CAST('[-2147483649:-2147483648]={1,2}' AS INT[]);
+
+SELECT CAST('{}' AS TEXT[]);
+
+SELECT CAST('{{},{}}' AS TEXT[]);
+
+SELECT
+  CAST('{{{1,2,3,4},{2,3,4,5}},{{3,4,5,6},{4,5,6,7}}}' AS TEXT[]);
+
+SELECT CAST('{null,n\ull,"null"}' AS TEXT[]);
+
+SELECT CAST('{ ab\c , "ab\"c" }' AS TEXT[]);
+
+SELECT CAST('{0 second  ,0 second}' AS INTERVAL[]);
+
+SELECT CAST('{ { "," } , { 3 } }' AS TEXT[]);
+
+SELECT
+  CAST('  {   {  "  0 second  "   ,  0 second  }   }' AS TEXT[]);
+
+SELECT
+  CAST('{
+           0 second,
+           @ 1 hour @ 42 minutes @ 20 seconds
+         }' AS INTERVAL[]);
+
+SELECT CAST(ARRAY[] AS TEXT[]);
+
+SELECT CAST('[2]={1,7}' AS INT[]);
+
+SELECT CAST('[0:1]={1.1,2.2}' AS DOUBLE PRECISION[]);
+
+SELECT CAST('[2147483646:2147483646]={1}' AS INT[]);
+
+SELECT CAST('[-2147483648:-2147483647]={1,2}' AS INT[]);
+
+CREATE TEMPORARY TABLE arraggtest (
+  f1 INT[],
+  f2 TEXT[][],
+  f3 DOUBLE PRECISION[]
+);
+
+INSERT INTO arraggtest (f1,
+f2,
+f3)
+VALUES ('{1,2,3,4}',
+'{{grey,red},{blue,blue}}',
+'{1.6, 0.0}');
+
+INSERT INTO arraggtest (f1,
+f2,
+f3)
+VALUES ('{1,2,3}',
+'{{grey,red},{grey,blue}}',
+'{1.6}');
+
+SELECT
+  MAX(f1),
+  MIN(f1),
+  MAX(f2),
+  MIN(f2),
+  MAX(f3),
+  MIN(f3)
+FROM
+  arraggtest;
+
+INSERT INTO arraggtest (f1,
+f2,
+f3)
+VALUES ('{3,3,2,4,5,6}',
+'{{white,yellow},{pink,orange}}',
+'{2.1,3.3,1.8,1.7,1.6}');
+
+SELECT
+  MAX(f1),
+  MIN(f1),
+  MAX(f2),
+  MIN(f2),
+  MAX(f3),
+  MIN(f3)
+FROM
+  arraggtest;
+
+INSERT INTO arraggtest (f1,
+f2,
+f3)
+VALUES ('{2}',
+'{{black,red},{green,orange}}',
+'{1.6,2.2,2.6,0.4}');
+
+SELECT
+  MAX(f1),
+  MIN(f1),
+  MAX(f2),
+  MIN(f2),
+  MAX(f3),
+  MIN(f3)
+FROM
+  arraggtest;
+
+INSERT INTO arraggtest (f1,
+f2,
+f3)
+VALUES ('{4,2,6,7,8,1}',
+'{{red},{black},{purple},{blue},{blue}}',
+NULL);
+
+SELECT
+  MAX(f1),
+  MIN(f1),
+  MAX(f2),
+  MIN(f2),
+  MAX(f3),
+  MIN(f3)
+FROM
+  arraggtest;
+
+INSERT INTO arraggtest (f1,
+f2,
+f3)
+VALUES ('{}',
+'{{pink,white,blue,red,grey,orange}}',
+'{2.1,1.87,1.4,2.2}');
+
+SELECT
+  MAX(f1),
+  MIN(f1),
+  MAX(f2),
+  MIN(f2),
+  MAX(f3),
+  MIN(f3)
+FROM
+  arraggtest;
+
+CREATE TYPE comptype AS ( f1 INT, f2 TEXT );
+
+CREATE TABLE comptable ( c1 comptype, c2 comptype[] );
+
+INSERT INTO comptable
+VALUES (ROW(1,
+'foo'),
+ARRAY[CAST(ROW(2,
+'bar') AS comptype),
+CAST(ROW(3,
+'baz') AS comptype)]);
+
+CREATE TYPE _comptype AS ENUM ('fooey');
+
+SELECT * FROM comptable;
+
+SELECT c2[2].f2 FROM comptable;
+
+DROP TYPE _comptype;
+
+DROP TABLE "comptable";
+
+DROP TYPE comptype;
+
+CREATE OR REPLACE FUNCTION unnest1(
+  ANYARRAY
+)
+RETURNS SETOF ANYELEMENT
+AS '
+select $1[s] from generate_subscripts($1,1) g(s);
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION unnest2(
+  ANYARRAY
+)
+RETURNS SETOF ANYELEMENT
+AS '
+select $1[s1][s2] from generate_subscripts($1,1) g1(s1),
+                   generate_subscripts($1,2) g2(s2);
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+SELECT * FROM unnest1(ARRAY[1, 2, 3]);
+
+SELECT
+  *
+FROM
+  unnest2(ARRAY[ARRAY[1,
+  2,
+  3],
+  ARRAY[4,
+  5,
+  6]]);
+
+DROP FUNCTION unnest1(ANYARRAY);
+
+DROP FUNCTION unnest2(ANYARRAY);
+
+SELECT
+  array_fill(CAST(NULL AS INT),
+  ARRAY[3,
+  3],
+  ARRAY[2,
+  2]);
+
+SELECT array_fill(CAST(NULL AS INT), ARRAY[3, 3]);
+
+SELECT
+  array_fill(CAST(NULL AS TEXT),
+  ARRAY[3,
+  3],
+  ARRAY[2,
+  2]);
+
+SELECT array_fill(CAST(NULL AS TEXT), ARRAY[3, 3]);
+
+SELECT array_fill(7, ARRAY[3, 3], ARRAY[2, 2]);
+
+SELECT array_fill(7, ARRAY[3, 3]);
+
+SELECT
+  array_fill(CAST('juhu' AS TEXT),
+  ARRAY[3,
+  3],
+  ARRAY[2,
+  2]);
+
+SELECT array_fill(CAST('juhu' AS TEXT), ARRAY[3, 3]);
+
+SELECT
+  a,
+  a =
+  '{}' AS is_eq,
+  array_dims(a)
+FROM
+  (SELECT
+    array_fill(42,
+    ARRAY[0]) AS a) AS ss;
+
+SELECT
+  a,
+  a =
+  '{}' AS is_eq,
+  array_dims(a)
+FROM
+  (SELECT
+    array_fill(42,
+    '{}') AS a) AS ss;
+
+SELECT
+  a,
+  a =
+  '{}' AS is_eq,
+  array_dims(a)
+FROM
+  (SELECT
+    array_fill(42,
+    '{}',
+    '{}') AS a) AS ss;
+
+SELECT array_fill(1, NULL, ARRAY[2, 2]);
+
+SELECT array_fill(1, ARRAY[2, 2], NULL);
+
+SELECT array_fill(1, ARRAY[2, 2], '{}');
+
+SELECT array_fill(1, ARRAY[3, 3], ARRAY[1, 1, 1]);
+
+SELECT array_fill(1, ARRAY[1, 2, NULL]);
+
+SELECT array_fill(1, ARRAY[ARRAY[1, 2], ARRAY[3, 4]]);
+
+SELECT string_to_array('1|2|3', '|');
+
+SELECT string_to_array('1|2|3|', '|');
+
+SELECT string_to_array('1||2|3||', '||');
+
+SELECT string_to_array('1|2|3', '');
+
+SELECT string_to_array('', '|');
+
+SELECT string_to_array('1|2|3', NULL);
+
+SELECT string_to_array(NULL, '|') IS NULL;
+
+SELECT string_to_array('abc', '');
+
+SELECT string_to_array('abc', '', 'abc');
+
+SELECT string_to_array('abc', ',');
+
+SELECT string_to_array('abc', ',', 'abc');
+
+SELECT string_to_array('1,2,3,4,,6', ',');
+
+SELECT string_to_array('1,2,3,4,,6', ',', '');
+
+SELECT string_to_array('1,2,3,4,*,6', ',', '*');
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1|2|3',
+  '|') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1|2|3|',
+  '|') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1||2|3||',
+  '||') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1|2|3',
+  '') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('',
+  '|') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1|2|3',
+  NULL) AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table(NULL,
+  '|') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('abc',
+  '') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('abc',
+  '',
+  'abc') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('abc',
+  ',') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('abc',
+  ',',
+  'abc') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1,2,3,4,,6',
+  ',') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1,2,3,4,,6',
+  ',',
+  '') AS g (v);
+
+SELECT
+  v,
+  v IS NULL AS "is null"
+FROM
+  string_to_table('1,2,3,4,*,6',
+  ',',
+  '*') AS g (v);
+
+SELECT array_to_string(CAST(NULL AS INT[]), ',') IS NULL;
+
+SELECT array_to_string(CAST('{}' AS INT[]), ',');
+
+SELECT array_to_string(ARRAY[1, 2, 3, 4, NULL, 6], ',');
+
+SELECT
+  array_to_string(ARRAY[1,
+  2,
+  3,
+  4,
+  NULL,
+  6],
+  ',',
+  '*');
+
+SELECT array_to_string(ARRAY[1, 2, 3, 4, NULL, 6], NULL);
+
+SELECT
+  array_to_string(ARRAY[1,
+  2,
+  3,
+  4,
+  NULL,
+  6],
+  ',',
+  NULL);
+
+SELECT array_to_string(string_to_array('1|2|3', '|'), '|');
+
+SELECT array_length(ARRAY[1, 2, 3], 1);
+
+SELECT
+  array_length(ARRAY[ARRAY[1,
+  2,
+  3],
+  ARRAY[4,
+  5,
+  6]],
+  0);
+
+SELECT
+  array_length(ARRAY[ARRAY[1,
+  2,
+  3],
+  ARRAY[4,
+  5,
+  6]],
+  1);
+
+SELECT
+  array_length(ARRAY[ARRAY[1,
+  2,
+  3],
+  ARRAY[4,
+  5,
+  6]],
+  2);
+
+SELECT
+  array_length(ARRAY[ARRAY[1,
+  2,
+  3],
+  ARRAY[4,
+  5,
+  6]],
+  3);
+
+SELECT cardinality(CAST(NULL AS INT[]));
+
+SELECT cardinality(CAST('{}' AS INT[]));
+
+SELECT cardinality(ARRAY[1, 2, 3]);
+
+SELECT cardinality(CAST('[2:4]={5,6,7}' AS INT[]));
+
+SELECT cardinality(CAST('{{1,2}}' AS INT[]));
+
+SELECT cardinality(CAST('{{1,2},{3,4},{5,6}}' AS INT[]));
+
+SELECT
+  cardinality(CAST('{{{1,9},{5,6}},{{2,3},{3,4}}}' AS INT[]));
+
+SELECT
+  array_agg(unique1)
+FROM
+  (SELECT
+    unique1
+  FROM
+    tenk1
+  WHERE
+    unique1 <
+    15
+  ORDER BY unique1) AS ss;
+
+SELECT
+  array_agg(ten)
+FROM
+  (SELECT
+    ten
+  FROM
+    tenk1
+  WHERE
+    unique1 <
+    15
+  ORDER BY unique1) AS ss;
+
+SELECT
+  array_agg(NULLIF(ten, 4))
+FROM
+  (SELECT
+    ten
+  FROM
+    tenk1
+  WHERE
+    unique1 <
+    15
+  ORDER BY unique1) AS ss;
+
+SELECT array_agg(unique1) FROM tenk1 WHERE unique1 < -15;
+
+SELECT
+  array_agg(ar)
+FROM
+  (VALUES (CAST('{1,2}' AS INT[])),
+  (CAST('{3,4}' AS INT[]))) AS v (ar);
+
+SELECT
+  array_agg(DISTINCT ar ORDER BY ar DESC)
+FROM
+  (SELECT
+    ARRAY[i / 2]
+  FROM
+    generate_series(1,
+    10) AS a (i)) AS b (ar);
+
+SELECT
+  array_agg(ar)
+FROM
+  (SELECT
+    array_agg(ARRAY[i,
+    i + 1,
+    i - 1])
+  FROM
+    generate_series(1,
+    2) AS a (i)) AS b (ar);
+
+SELECT
+  array_agg(ARRAY[i + 1.2,
+  i + 1.3,
+  i + 1.4])
+FROM
+  generate_series(1,
+  3) AS g (i);
+
+SELECT
+  array_agg(ARRAY['Hello',
+  CAST(i AS TEXT)])
+FROM
+  generate_series(9,
+  11) AS g (i);
+
+SELECT
+  array_agg(ARRAY[i,
+  NULLIF(i, 3),
+  i + 1])
+FROM
+  generate_series(1,
+  4) AS g (i);
+
+SELECT
+  array_agg(CAST('{}' AS INT[]))
+FROM
+  generate_series(1,
+  2);
+
+SELECT
+  array_agg(CAST(NULL AS INT[]))
+FROM
+  generate_series(1,
+  2);
+
+SELECT
+  array_agg(ar)
+FROM
+  (VALUES (CAST('{1,2}' AS INT[])),
+  (CAST('{3}' AS INT[]))) AS v (ar);
+
+SELECT unnest(ARRAY[1, 2, 3]);
+
+SELECT * FROM unnest(ARRAY[1, 2, 3]);
+
+SELECT
+  unnest(CAST(ARRAY[1,
+  2,
+  3,
+  4.5] AS DOUBLE PRECISION[]));
+
+SELECT unnest(CAST(ARRAY[1, 2, 3, 4.5] AS NUMERIC[]));
+
+SELECT unnest(ARRAY[1, 2, 3, NULL, 4, NULL, NULL, 5, 6]);
+
+SELECT
+  unnest(CAST(ARRAY[1,
+  2,
+  3,
+  NULL,
+  4,
+  NULL,
+  NULL,
+  5,
+  6] AS TEXT[]));
+
+SELECT abs(unnest(ARRAY[1, 2, NULL, -3]));
+
+SELECT array_remove(ARRAY[1, 2, 2, 3], 2);
+
+SELECT array_remove(ARRAY[1, 2, 2, 3], 5);
+
+SELECT array_remove(ARRAY[1, NULL, NULL, 3], NULL);
+
+SELECT array_remove(ARRAY['A', 'CC', 'D', 'C', 'RR'], 'RR');
+
+SELECT array_remove(ARRAY[1.0, 2.1, 3.3], 1);
+
+SELECT array_remove('{{1,2,2},{1,4,3}}', 2);
+
+SELECT array_remove(ARRAY['X', 'X', 'X'], 'X') = '{}';
+
+SELECT array_replace(ARRAY[1, 2, 5, 4], 5, 3);
+
+SELECT array_replace(ARRAY[1, 2, 5, 4], 5, NULL);
+
+SELECT array_replace(ARRAY[1, 2, NULL, 4, NULL], NULL, 5);
+
+SELECT array_replace(ARRAY['A', 'B', 'DD', 'B'], 'B', 'CC');
+
+SELECT array_replace(ARRAY[1, NULL, 3], NULL, NULL);
+
+SELECT array_replace(ARRAY['AB', NULL, 'CDE'], NULL, '12');
+
+SELECT
+  ARRAY(SELECT
+    ARRAY[i,
+    i / 2]
+  FROM
+    generate_series(1,
+    5) AS i);
+
+SELECT
+  ARRAY(SELECT
+    ARRAY['Hello',
+    CAST(i AS TEXT)]
+  FROM
+    generate_series(9,
+    11) AS i);
+
+SELECT
+  pg_typeof(ARRAY(SELECT
+    CAST('11 22 33' AS int2vector)
+  FROM
+    generate_series(1,
+    5)));
+
+SELECT
+  ARRAY(SELECT
+    CAST('11 22 33' AS int2vector)
+  FROM
+    generate_series(1,
+    5));
+
+SELECT
+  unnest(ARRAY(SELECT
+    CAST('11 22 33' AS int2vector)
+  FROM
+    generate_series(1,
+    5)));
+
+SELECT
+  pg_typeof(ARRAY(SELECT
+    CAST('11 22 33' AS oidvector)
+  FROM
+    generate_series(1,
+    5)));
+
+SELECT
+  ARRAY(SELECT
+    CAST('11 22 33' AS oidvector)
+  FROM
+    generate_series(1,
+    5));
+
+SELECT
+  unnest(ARRAY(SELECT
+    CAST('11 22 33' AS oidvector)
+  FROM
+    generate_series(1,
+    5)));
+
+SELECT pg_typeof(ARRAY[CAST('11 22 33' AS int2vector)]);
+
+SELECT ARRAY[CAST('11 22 33' AS int2vector)];
+
+SELECT
+  pg_typeof(unnest(ARRAY[CAST('11 22 33' AS int2vector)]));
+
+SELECT unnest(ARRAY[CAST('11 22 33' AS int2vector)]);
+
+SELECT pg_typeof(unnest(CAST('11 22 33' AS int2vector)));
+
+SELECT unnest(CAST('11 22 33' AS int2vector));
+
+SELECT pg_typeof(ARRAY[CAST('11 22 33' AS oidvector)]);
+
+SELECT ARRAY[CAST('11 22 33' AS oidvector)];
+
+SELECT
+  pg_typeof(unnest(ARRAY[CAST('11 22 33' AS oidvector)]));
+
+SELECT unnest(ARRAY[CAST('11 22 33' AS oidvector)]);
+
+SELECT pg_typeof(unnest(CAST('11 22 33' AS oidvector)));
+
+SELECT unnest(CAST('11 22 33' AS oidvector));
+
+CREATE TEMPORARY TABLE t1 ( f1 int8_tbl[] );
+
+INSERT INTO t1 (f1[5]."q1") VALUES (42);
+
+SELECT * FROM t1;
+
+UPDATE t1 SET f1[5]."q2" = 43;
+
+SELECT * FROM t1;
+
+CREATE TEMPORARY TABLE src ( f1 TEXT );
+
+INSERT INTO src
+SELECT
+  string_agg(CAST(random() AS TEXT),
+  '')
+FROM
+  generate_series(1,
+  10000);
+
+CREATE TYPE textandtext AS ( c1 TEXT, c2 TEXT );
+
+CREATE TEMPORARY TABLE dest ( f1 textandtext[] );
+
+INSERT INTO dest
+SELECT
+  ARRAY[CAST(ROW(f1,
+  f1) AS textandtext)]
+FROM
+  src;
+
+SELECT length(fipshash(f1[1].c2)) FROM dest;
+
+DELETE FROM src;
+
+SELECT length(fipshash(f1[1].c2)) FROM dest;
+
+TRUNCATE src;
+
+DROP TABLE "src";
+
+SELECT length(fipshash(f1[1].c2)) FROM dest;
+
+DROP TABLE "dest";
+
+DROP TYPE textandtext;
+
+SELECT
+  op,
+  width_bucket(CAST(op AS NUMERIC),
+  CAST(ARRAY[1,
+  3,
+  5,
+  10.0] AS NUMERIC[])) AS wb_n1,
+  width_bucket(CAST(op AS NUMERIC),
+  CAST(ARRAY[0,
+  5.5,
+  9.99] AS NUMERIC[])) AS wb_n2,
+  width_bucket(CAST(op AS NUMERIC),
+  CAST(ARRAY[-6,
+  -5,
+  2.0] AS NUMERIC[])) AS wb_n3,
+  width_bucket(CAST(op AS DOUBLE PRECISION),
+  CAST(ARRAY[1,
+  3,
+  5,
+  10.0] AS DOUBLE PRECISION[])) AS wb_f1,
+  width_bucket(CAST(op AS DOUBLE PRECISION),
+  CAST(ARRAY[0,
+  5.5,
+  9.99] AS DOUBLE PRECISION[])) AS wb_f2,
+  width_bucket(CAST(op AS DOUBLE PRECISION),
+  CAST(ARRAY[-6,
+  -5,
+  2.0] AS DOUBLE PRECISION[])) AS wb_f3
+FROM
+  (VALUES (-5.2),
+  (-0.0000000001),
+  (0.000000000001),
+  (1),
+  (1.99999999999999),
+  (2),
+  (2.00000000000001),
+  (3),
+  (4),
+  (4.5),
+  (5),
+  (5.5),
+  (6),
+  (7),
+  (8),
+  (9),
+  (9.99999999999999),
+  (10),
+  (10.0000000000001)) AS v (op);
+
+SELECT
+  op,
+  width_bucket(op,
+  CAST(ARRAY[1,
+  3,
+  9,
+  'NaN',
+  'NaN'] AS DOUBLE PRECISION[])) AS wb
+FROM
+  (VALUES (-CAST(5.2 AS DOUBLE PRECISION)),
+  (CAST(4 AS DOUBLE PRECISION)),
+  (CAST(77 AS DOUBLE PRECISION)),
+  (CAST('NaN' AS DOUBLE PRECISION))) AS v (op);
+
+SELECT
+  op,
+  width_bucket(op,
+  ARRAY[1,
+  3,
+  5,
+  10]) AS wb_1
+FROM
+  generate_series(0,
+  11) AS op;
+
+SELECT
+  width_bucket(NOW(),
+  CAST(ARRAY['yesterday',
+  'today',
+  'tomorrow'] AS TIMESTAMP WITH TIME ZONE[]));
+
+SELECT width_bucket(5, ARRAY[3]);
+
+SELECT width_bucket(5, '{}');
+
+SELECT
+  width_bucket(CAST('5' AS TEXT),
+  CAST(ARRAY[3,
+  4] AS INT[]));
+
+SELECT width_bucket(5, ARRAY[3, 4, NULL]);
+
+SELECT width_bucket(5, ARRAY[ARRAY[1, 2], ARRAY[3, 4]]);
+
+SELECT
+  arr,
+  trim_array(arr,
+  2)
+FROM
+  (VALUES (CAST('{1,2,3,4,5,6}' AS BIGINT[])),
+  ('{1,2}'),
+  ('[10:16]={1,2,3,4,5,6,7}'),
+  ('[-15:-10]={1,2,3,4,5,6}'),
+  ('{{1,10},{2,20},{3,30},{4,40}}')) AS v (arr);
+
+SELECT trim_array(ARRAY[1, 2, 3], -1);
+
+SELECT trim_array(ARRAY[1, 2, 3], 10);
+
+SELECT trim_array(CAST(ARRAY[] AS INT[]), 1);
+
+SELECT
+  array_shuffle(CAST('{1,2,3,4,5,6}' AS INT[])) <@ '{1,2,3,4,5,6}';
+
+SELECT
+  array_shuffle(CAST('{1,2,3,4,5,6}' AS INT[])) @> '{1,2,3,4,5,6}';
+
+SELECT
+  array_dims(array_shuffle(CAST('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}' AS INT[])));
+
+SELECT
+  array_dims(array_shuffle(CAST('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}' AS INT[])));
+
+SELECT
+  array_sample(CAST('{1,2,3,4,5,6}' AS INT[]),
+  3) <@ '{1,2,3,4,5,6}';
+
+SELECT
+  array_length(array_sample(CAST('{1,2,3,4,5,6}' AS INT[]),
+  3),
+  1);
+
+SELECT
+  array_dims(array_sample(CAST('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}' AS INT[]),
+  3));
+
+SELECT
+  array_dims(array_sample(CAST('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}' AS INT[]),
+  2));
+
+SELECT array_sample(CAST('{1,2,3,4,5,6}' AS INT[]), -1);
+
+SELECT array_sample(CAST('{1,2,3,4,5,6}' AS INT[]), 7);
+
+SELECT array_reverse(CAST('{}' AS INT[]));
+
+SELECT array_reverse(CAST('{1}' AS INT[]));
+
+SELECT array_reverse(CAST('{1,2}' AS INT[]));
+
+SELECT array_reverse(CAST('{1,2,3,NULL,4,5,6}' AS INT[]));
+
+SELECT
+  array_reverse(CAST('{{1,2},{3,4},{5,6},{7,8}}' AS INT[]));
+
+SELECT array_sort(CAST('{}' AS INT[]));
+
+SELECT array_sort(CAST('{1}' AS INT[]));
+
+SELECT array_sort(CAST('{1,3,5,2,4,6}' AS INT[]));
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,4.4,6.6}' AS NUMERIC[]));
+
+SELECT
+  array_sort(CAST('{foo,bar,CCC,Abc,bbc}' AS TEXT[]) COLLATE "C");
+
+SELECT
+  array_sort(CAST('{foo,bar,null,CCC,Abc,bbc}' AS TEXT[]) COLLATE "C");
+
+SELECT
+  array_sort(ARRAY(SELECT
+    CAST('1 4' AS int2vector)
+  UNION ALL
+  SELECT
+    CAST('1 2' AS int2vector)));
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]),
+  TRUE);
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]),
+  FALSE);
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]),
+  TRUE,
+  TRUE);
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]),
+  TRUE,
+  FALSE);
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]),
+  FALSE,
+  TRUE);
+
+SELECT
+  array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]),
+  FALSE,
+  FALSE);
+
+SELECT array_sort(CAST('{{1}}' AS INT[]));
+
+SELECT
+  array_sort(ARRAY[ARRAY[2,
+  4],
+  ARRAY[2,
+  1],
+  ARRAY[6,
+  5]]);
+
+SELECT
+  array_sort(CAST('{{"1 2","3 4"}, {"1 -2","-1 4"}}' AS int2vector[]));
+
+SELECT array_sort(CAST('{1}' AS XID[]));
+
+SELECT array_sort(CAST('{1,2,3}' AS XID[]));
+
+SELECT array_sort(CAST('{{1,2,3},{2,3,4}}' AS XID[]));
+
+SELECT
+  array_sort(a)
+FROM
+  (VALUES (CAST('[10:12][20:21]={{1,2},{10,20},{3,4}}' AS INT[]))) AS v (a);
+
+SELECT
+  array_sort(a)
+FROM
+  (VALUES (CAST('[-1:0]={7,1}' AS INT[]))) AS v (a);
+
+SELECT
+  array_sort(a)
+FROM
+  (VALUES (CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' AS INT[]))) AS v (a);
+
+SELECT
+  array_sort(a[-1:0])
+FROM
+  (VALUES (CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' AS INT[]))) AS v (a);
+
+SELECT
+  array_sort(a[-1:0][20:20])
+FROM
+  (VALUES (CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' AS INT[]))) AS v (a);

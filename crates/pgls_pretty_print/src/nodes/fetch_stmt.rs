@@ -16,52 +16,70 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
     }
 
     // Direction: NEXT, PRIOR, FIRST, LAST, ABSOLUTE n, RELATIVE n, FORWARD, BACKWARD, etc.
-    // FetchDirection enum values:
-    // 0: FETCH_FORWARD (default)
-    // 1: FETCH_BACKWARD
-    // 2: FETCH_ABSOLUTE
-    // 3: FETCH_RELATIVE
-    // 4: FETCH_FIRST (not documented)
-    // 5: FETCH_LAST (not documented)
+    // FetchDirection enum values (from protobuf.rs):
+    // 0: Undefined
+    // 1: FetchForward
+    // 2: FetchBackward
+    // 3: FetchAbsolute
+    // 4: FetchRelative
+
+    // Note: PostgreSQL uses LLONG_MAX (9223372036854775807) to represent "ALL"
+    let is_all = n.how_many == 0 || n.how_many == 9223372036854775807;
 
     // Emit direction and count
-    // direction: 0=FORWARD, 1=BACKWARD, 2=ABSOLUTE, 3=RELATIVE
     match n.direction {
         1 => {
-            // BACKWARD
-            e.space();
-            e.token(TokenKind::IDENT("BACKWARD".to_string()));
+            // FetchForward - emit explicit FORWARD for ALL, or NEXT for single row
+            if is_all {
+                e.space();
+                e.token(TokenKind::IDENT("FORWARD".to_string()));
+            } else if n.how_many == 1 {
+                e.space();
+                e.token(TokenKind::NEXT_KW);
+            } else if n.how_many > 1 {
+                e.space();
+                e.token(TokenKind::IDENT("FORWARD".to_string()));
+            }
         }
         2 => {
-            // ABSOLUTE
+            // FetchBackward
+            if n.how_many == 1 {
+                e.space();
+                e.token(TokenKind::IDENT("PRIOR".to_string()));
+            } else {
+                e.space();
+                e.token(TokenKind::IDENT("BACKWARD".to_string()));
+            }
+        }
+        3 => {
+            // FetchAbsolute
             e.space();
             e.token(TokenKind::IDENT("ABSOLUTE".to_string()));
         }
-        3 => {
-            // RELATIVE
+        4 => {
+            // FetchRelative
             e.space();
             e.token(TokenKind::IDENT("RELATIVE".to_string()));
         }
         _ => {
-            // FORWARD (default, usually omitted unless explicit)
+            // Undefined - should not normally happen
         }
     }
 
     // Emit count
-    // Note: PostgreSQL uses LLONG_MAX (9223372036854775807) to represent "ALL"
-    if n.how_many == 0 || n.how_many == 9223372036854775807 {
-        // ALL case (represented as 0 or LLONG_MAX in the AST)
+    if is_all {
         e.space();
         e.token(TokenKind::ALL_KW);
-    } else if n.how_many > 0 {
+    } else if n.how_many > 1 {
         e.space();
         e.token(TokenKind::IDENT(n.how_many.to_string()));
     }
+    // how_many == 1 is already handled with NEXT/PRIOR above
 
-    // Emit FROM/IN cursor_name
+    // Emit FROM cursor_name
     if !n.portalname.is_empty() {
         e.space();
-        e.token(TokenKind::IN_KW);
+        e.token(TokenKind::FROM_KW);
         e.space();
         e.token(TokenKind::IDENT(n.portalname.clone()));
     }

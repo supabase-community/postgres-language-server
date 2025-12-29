@@ -336,7 +336,28 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     e.token(TokenKind::TO_KW);
     e.space();
 
+    // PostgreSQL stores SIMILAR TO as a call to similar_to_escape(pattern) or similar_to_escape(pattern, escape)
+    // We need to emit the original pattern (and ESCAPE clause if present)
     if let Some(ref rexpr) = n.rexpr {
+        if let Some(pgls_query::NodeEnum::FuncCall(func)) = rexpr.node.as_ref() {
+            if func.funcname.iter().any(|n| {
+                matches!(n.node.as_ref(), Some(pgls_query::NodeEnum::String(s)) if s.sval == "similar_to_escape")
+            }) {
+                // Emit just the pattern (first argument)
+                if !func.args.is_empty() {
+                    super::emit_node(&func.args[0], e);
+                }
+                // If there's a second argument, it's the ESCAPE character
+                if func.args.len() >= 2 {
+                    e.space();
+                    e.token(TokenKind::ESCAPE_KW);
+                    e.space();
+                    super::emit_node(&func.args[1], e);
+                }
+                return;
+            }
+        }
+        // Fallback for other patterns
         super::emit_node(rexpr, e);
     }
 }

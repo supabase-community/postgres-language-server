@@ -1,7 +1,7 @@
 use pgls_query::protobuf::PartitionSpec;
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind, LineType};
+use crate::emitter::{EventEmitter, GroupKind};
 
 use super::node_list::emit_comma_separated_list;
 
@@ -9,7 +9,7 @@ pub(super) fn emit_partition_spec(e: &mut EventEmitter, n: &PartitionSpec) {
     e.group_start(GroupKind::PartitionSpec);
 
     e.token(TokenKind::PARTITION_KW);
-    e.line(LineType::SoftOrSpace);
+    e.space();
     e.token(TokenKind::BY_KW);
     e.space();
 
@@ -24,7 +24,6 @@ pub(super) fn emit_partition_spec(e: &mut EventEmitter, n: &PartitionSpec) {
 
     // Emit partition parameters (columns/expressions)
     if !n.part_params.is_empty() {
-        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.part_params, super::emit_node);
         e.token(TokenKind::R_PAREN);

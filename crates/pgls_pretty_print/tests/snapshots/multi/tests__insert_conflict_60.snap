@@ -1,7 +1,7 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-assertion_line: 160
 input_file: crates/pgls_pretty_print/tests/data/multi/insert_conflict_60.sql
+snapshot_kind: text
 ---
 CREATE TABLE insertconflicttest ( key INT, fruit TEXT );
 
@@ -12,20 +12,32 @@ FROM
   insertconflicttest;
 
 CREATE UNIQUE
-INDEX "op_index_key" ON insertconflicttest USING btree (key,
-fruit text_pattern_ops);
+INDEX "op_index_key" ON insertconflicttest USING btree
+(
+  key,
+  fruit text_pattern_ops
+);
 
 CREATE UNIQUE
-INDEX "collation_index_key" ON insertconflicttest USING btree (key,
-fruit COLLATE "C");
+INDEX "collation_index_key" ON insertconflicttest USING btree
+(
+  key,
+  fruit COLLATE "C"
+);
 
 CREATE UNIQUE
-INDEX "both_index_key" ON insertconflicttest USING btree (key,
-fruit COLLATE "C" text_pattern_ops);
+INDEX "both_index_key" ON insertconflicttest USING btree
+(
+  key,
+  fruit COLLATE "C" text_pattern_ops
+);
 
 CREATE UNIQUE
-INDEX "both_index_expr_key" ON insertconflicttest USING btree (key,
-lower(fruit) COLLATE "C" text_pattern_ops);
+INDEX "both_index_expr_key" ON insertconflicttest USING btree
+(
+  key,
+  (lower(fruit)) COLLATE "C" text_pattern_ops
+);
 
 INSERT INTO insertconflicttest
 VALUES (0,
@@ -54,17 +66,17 @@ key) DO NOTHING;
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT (lower(fruit),
+ON CONFLICT ((lower(fruit)),
 key,
-lower(fruit),
+(lower(fruit)),
 key) DO NOTHING;
 
 INSERT INTO insertconflictview
 VALUES (0,
 'Crowberry')
-ON CONFLICT (lower(fruit),
+ON CONFLICT ((lower(fruit)),
 key,
-lower(fruit),
+(lower(fruit)),
 key) DO NOTHING;
 
 INSERT INTO insertconflicttest
@@ -104,7 +116,7 @@ key) DO NOTHING;
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT (lower(fruit) COLLATE "C",
+ON CONFLICT ((lower(fruit)) COLLATE "C",
 key,
 key) DO NOTHING;
 
@@ -119,7 +131,7 @@ key) DO NOTHING;
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT (lower(fruit) COLLATE "C" text_pattern_ops,
+ON CONFLICT ((lower(fruit)) COLLATE "C" text_pattern_ops,
 key,
 key) DO NOTHING;
 
@@ -132,25 +144,31 @@ DROP INDEX "both_index_key";
 DROP INDEX "both_index_expr_key";
 
 CREATE UNIQUE
-INDEX "cross_match" ON insertconflicttest USING btree (lower(fruit) COLLATE "C",
-upper(fruit) text_pattern_ops);
+INDEX "cross_match" ON insertconflicttest USING btree
+(
+  (lower(fruit)) COLLATE "C",
+  (upper(fruit)) text_pattern_ops
+);
 
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT (lower(fruit) text_pattern_ops,
-upper(fruit) COLLATE "C") DO NOTHING;
+ON CONFLICT ((lower(fruit)) text_pattern_ops,
+(upper(fruit)) COLLATE "C") DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT (lower(fruit) COLLATE "C",
-upper(fruit) text_pattern_ops) DO NOTHING;
+ON CONFLICT ((lower(fruit)) COLLATE "C",
+(upper(fruit)) text_pattern_ops) DO NOTHING;
 
 DROP INDEX "cross_match";
 
 CREATE UNIQUE
-INDEX "key_index" ON insertconflicttest USING btree (key);
+INDEX "key_index" ON insertconflicttest USING btree
+(
+  key
+);
 
 INSERT INTO insertconflicttest
 VALUES (0,
@@ -272,7 +290,7 @@ SET fruit = excluded.fruit;
 INSERT INTO insertconflicttest
 VALUES (6,
 'Passionfruit')
-ON CONFLICT (lower(fruit)) DO
+ON CONFLICT ((lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -308,8 +326,11 @@ SET insertconflicttest."fruit" = 'Mango';
 DROP INDEX "key_index";
 
 CREATE UNIQUE
-INDEX "comp_key_index" ON insertconflicttest USING btree (key,
-fruit);
+INDEX "comp_key_index" ON insertconflicttest USING btree
+(
+  key,
+  fruit
+);
 
 INSERT INTO insertconflicttest
 VALUES (7,
@@ -347,14 +368,14 @@ INSERT INTO insertconflicttest
 VALUES (11,
 'Cherry')
 ON CONFLICT (key,
-lower(fruit)) DO
+(lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (12,
 'Date')
-ON CONFLICT (lower(fruit),
+ON CONFLICT ((lower(fruit)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -362,14 +383,20 @@ SET fruit = excluded.fruit;
 DROP INDEX "comp_key_index";
 
 CREATE UNIQUE
-INDEX "part_comp_key_index" ON insertconflicttest USING btree (key,
-fruit) WHERE
+INDEX "part_comp_key_index" ON insertconflicttest USING btree
+(
+  key,
+  fruit
+) WHERE
   key <
   5;
 
 CREATE UNIQUE
-INDEX "expr_part_comp_key_index" ON insertconflicttest USING btree (key,
-lower(fruit)) WHERE
+INDEX "expr_part_comp_key_index" ON insertconflicttest USING btree
+(
+  key,
+  (lower(fruit))
+) WHERE
   key <
   5;
 
@@ -409,14 +436,14 @@ INSERT INTO insertconflicttest
 VALUES (17,
 'Mulberry')
 ON CONFLICT (key,
-lower(fruit)) DO
+(lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (18,
 'Pineapple')
-ON CONFLICT (lower(fruit),
+ON CONFLICT ((lower(fruit)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -426,27 +453,30 @@ DROP INDEX "part_comp_key_index";
 DROP INDEX "expr_part_comp_key_index";
 
 CREATE UNIQUE
-INDEX "expr_key_index" ON insertconflicttest USING btree (lower(fruit));
+INDEX "expr_key_index" ON insertconflicttest USING btree
+(
+  (lower(fruit))
+);
 
 INSERT INTO insertconflicttest
 VALUES (20,
 'Quince')
-ON CONFLICT (lower(fruit)) DO
+ON CONFLICT ((lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (21,
 'Pomegranate')
-ON CONFLICT (lower(fruit),
-lower(fruit)) DO
+ON CONFLICT ((lower(fruit)),
+(lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (22,
 'Apricot')
-ON CONFLICT (upper(fruit)) DO
+ON CONFLICT ((upper(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -460,26 +490,32 @@ SET fruit = excluded.fruit;
 DROP INDEX "expr_key_index";
 
 CREATE UNIQUE
-INDEX "expr_comp_key_index" ON insertconflicttest USING btree (key,
-lower(fruit));
+INDEX "expr_comp_key_index" ON insertconflicttest USING btree
+(
+  key,
+  (lower(fruit))
+);
 
 CREATE UNIQUE
-INDEX "tricky_expr_comp_key_index" ON insertconflicttest USING btree (key,
-lower(fruit),
-upper(fruit));
+INDEX "tricky_expr_comp_key_index" ON insertconflicttest USING btree
+(
+  key,
+  (lower(fruit)),
+  (upper(fruit))
+);
 
 INSERT INTO insertconflicttest
 VALUES (24,
 'Plum')
 ON CONFLICT (key,
-lower(fruit)) DO
+(lower(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (25,
 'Peach')
-ON CONFLICT (lower(fruit),
+ON CONFLICT ((lower(fruit)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -487,9 +523,9 @@ SET fruit = excluded.fruit;
 INSERT INTO insertconflicttest
 VALUES (26,
 'Fig')
-ON CONFLICT (lower(fruit),
+ON CONFLICT ((lower(fruit)),
 key,
-lower(fruit),
+(lower(fruit)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -498,7 +534,7 @@ INSERT INTO insertconflicttest
 VALUES (27,
 'Prune')
 ON CONFLICT (key,
-upper(fruit)) DO
+(upper(fruit))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -522,10 +558,16 @@ DROP INDEX "expr_comp_key_index";
 DROP INDEX "tricky_expr_comp_key_index";
 
 CREATE UNIQUE
-INDEX "key_index" ON insertconflicttest USING btree (key);
+INDEX "key_index" ON insertconflicttest USING btree
+(
+  key
+);
 
 CREATE UNIQUE
-INDEX "fruit_index" ON insertconflicttest USING btree (fruit);
+INDEX "fruit_index" ON insertconflicttest USING btree
+(
+  fruit
+);
 
 INSERT INTO insertconflicttest
 VALUES (26,
@@ -553,7 +595,10 @@ DROP INDEX "key_index";
 DROP INDEX "fruit_index";
 
 CREATE UNIQUE
-INDEX "partial_key_index" ON insertconflicttest USING btree (key) WHERE
+INDEX "partial_key_index" ON insertconflicttest USING btree
+(
+  key
+) WHERE
   fruit LIKE '%berry';
 
 INSERT INTO insertconflicttest
@@ -606,7 +651,10 @@ SET fruit = excluded.fruit;
 DROP INDEX "partial_key_index";
 
 CREATE UNIQUE
-INDEX "plain" ON insertconflicttest USING btree (key);
+INDEX "plain" ON insertconflicttest USING btree
+(
+  key
+);
 
 INSERT INTO insertconflicttest AS i
 VALUES (23,
@@ -686,11 +734,17 @@ DROP TABLE "syscolconflicttest";
 CREATE TABLE insertconflict ( a BIGINT, b BIGINT );
 
 CREATE UNIQUE
-INDEX "insertconflicti1" ON insertconflict USING btree (COALESCE(a,
-0));
+INDEX "insertconflicti1" ON insertconflict USING btree
+(
+  (COALESCE(a,
+  0))
+);
 
 CREATE UNIQUE
-INDEX "insertconflicti2" ON insertconflict USING btree (b) WHERE
+INDEX "insertconflicti2" ON insertconflict USING btree
+(
+  b
+) WHERE
   COALESCE(a,
   1) >
   0;
@@ -698,8 +752,8 @@ INDEX "insertconflicti2" ON insertconflict USING btree (b) WHERE
 INSERT INTO insertconflict
 VALUES (1,
 2)
-ON CONFLICT (COALESCE(a,
-0)) DO NOTHING;
+ON CONFLICT ((COALESCE(a,
+0))) DO NOTHING;
 
 INSERT INTO insertconflict
 VALUES (1,
@@ -758,10 +812,16 @@ CREATE TABLE cities (
 CREATE TABLE capitals ( state CHAR(2) ) INHERITS (cities);
 
 CREATE UNIQUE
-INDEX "cities_names_unique" ON cities USING btree (name);
+INDEX "cities_names_unique" ON cities USING btree
+(
+  name
+);
 
 CREATE UNIQUE
-INDEX "capitals_names_unique" ON capitals USING btree (name);
+INDEX "capitals_names_unique" ON capitals USING btree
+(
+  name
+);
 
 INSERT INTO cities VALUES ('San Francisco', 7.24E+5, 63);
 
@@ -1089,9 +1149,7 @@ CREATE TABLE parted_conflict_test (
   a INT UNIQUE,
   b CHAR(1)
 )
-PARTITION
-BY LIST
-(a);
+PARTITION BY LIST(a);
 
 CREATE TABLE parted_conflict_test_1
 PARTITION OF parted_conflict_test
@@ -1208,9 +1266,7 @@ SELECT * FROM parted_conflict_test ORDER BY a;
 CREATE TABLE parted_conflict_test_4
 PARTITION OF parted_conflict_test
 FOR VALUES IN (5)
-PARTITION
-BY LIST
-(a);
+PARTITION BY LIST(a);
 
 CREATE TABLE parted_conflict_test_4_1
 PARTITION OF parted_conflict_test_4
@@ -1279,16 +1335,12 @@ CREATE TABLE parted_conflict (
   a INT PRIMARY KEY,
   b TEXT
 )
-PARTITION
-BY RANGE
-(a);
+PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1
 PARTITION OF parted_conflict
 FOR VALUES FROM (0) TO (1000)
-PARTITION
-BY RANGE
-(a);
+PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1_1
 PARTITION OF parted_conflict_1
@@ -1309,25 +1361,28 @@ CREATE TABLE parted_conflict (
   a INT,
   b TEXT
 )
-PARTITION
-BY RANGE
-(a);
+PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1
 PARTITION OF parted_conflict
 FOR VALUES FROM (0) TO (1000)
-PARTITION
-BY RANGE
-(a);
+PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1_1
 PARTITION OF parted_conflict_1
 FOR VALUES FROM (0) TO (500);
 
 CREATE UNIQUE
-INDEX ON ONLY parted_conflict_1 USING btree (a);
+INDEX ON ONLY parted_conflict_1 USING btree
+(
+  a
+);
 
-CREATE UNIQUE INDEX ON ONLY parted_conflict USING btree (a);
+CREATE UNIQUE
+INDEX ON ONLY parted_conflict USING btree
+(
+  a
+);
 
 ALTER INDEX parted_conflict_a_idx
   ATTACH PARTITION
@@ -1349,9 +1404,7 @@ CREATE TABLE parted_conflict (
   b TEXT,
   c INT
 )
-PARTITION
-BY RANGE
-(a);
+PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1 (
   drp TEXT,
@@ -1362,7 +1415,7 @@ CREATE TABLE parted_conflict_1 (
 
 ALTER TABLE parted_conflict_1 DROP COLUMN drp;
 
-CREATE UNIQUE INDEX ON parted_conflict USING btree (a, b);
+CREATE UNIQUE INDEX ON parted_conflict USING btree ( a, b);
 
 ALTER TABLE parted_conflict
   ATTACH PARTITION

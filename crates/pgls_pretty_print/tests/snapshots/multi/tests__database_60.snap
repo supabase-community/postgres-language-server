@@ -1,0 +1,47 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/database_60.sql
+snapshot_kind: text
+---
+CREATE DATABASE "regression_tbd" WITH encoding = 'utf8' lc_collate = 'C' lc_ctype = 'C' template = 'template0';
+
+ALTER DATABASE regression_tbd RENAME TO regression_utf8;
+
+ALTER DATABASE regression_utf8 tablespace = 'regress_tblspace';
+
+ALTER DATABASE regression_utf8 tablespace = 'pg_default';
+
+ALTER DATABASE regression_utf8 connection_limit = 123;
+
+BEGIN;
+
+UPDATE pg_database
+SET datacl = array_fill(makeaclitem(10,
+10,
+'USAGE',
+FALSE),
+ARRAY[CAST(5e5 AS INT)])
+WHERE
+  datname =
+  'regression_utf8';
+
+ALTER DATABASE regression_utf8
+RENAME TO regression_rename_rolled_back;
+
+ROLLBACK;
+
+CREATE ROLE regress_datdba_before;
+
+CREATE ROLE regress_datdba_after;
+
+ALTER DATABASE regression_utf8
+OWNER TO regress_datdba_before;
+
+REASSIGN OWNED BY regress_datdba_before
+TO regress_datdba_after;
+
+DROP DATABASE regression_utf8;
+
+DROP ROLE regress_datdba_before;
+
+DROP ROLE regress_datdba_after;

@@ -7,7 +7,8 @@ SELECT
   *
 FROM
   employees
-WHERE (salary,
+WHERE
+  (salary,
   bonus) >
   (50000,
   10000);

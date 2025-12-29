@@ -2,7 +2,7 @@ use pgls_query::protobuf::CreateDomainStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt) {
@@ -34,10 +34,12 @@ pub(super) fn emit_create_domain_stmt(e: &mut EventEmitter, n: &CreateDomainStmt
 
     // Emit constraints (CHECK, NOT NULL, DEFAULT, etc.)
     if !n.constraints.is_empty() {
+        e.indent_start();
         for constraint in &n.constraints {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             super::emit_node(constraint, e);
         }
+        e.indent_end();
     }
 
     e.token(TokenKind::SEMICOLON);

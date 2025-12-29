@@ -59,7 +59,8 @@ FROM
     2])
   FROM
     few AS f2
-  WHERE FALSE
+  WHERE
+    FALSE
   OFFSET 0) AS ss;
 
 SELECT
@@ -71,7 +72,8 @@ FROM
     2])
   FROM
     few AS f2
-  WHERE FALSE
+  WHERE
+    FALSE
   OFFSET 0) AS ss;
 
 SELECT
@@ -119,7 +121,8 @@ SELECT
   unnest(CAST('{1,1,3}' AS INT[]))
 FROM
   few
-WHERE few.id =
+WHERE
+  few.id =
   1
 GROUP BY few.dataa;
 
@@ -131,7 +134,8 @@ SELECT
   unnest(CAST('{1,1,3}' AS INT[]))
 FROM
   few
-WHERE few.id =
+WHERE
+  few.id =
   1
 GROUP BY few.dataa,
   unnest(CAST('{1,1,3}' AS INT[]));
@@ -144,7 +148,8 @@ SELECT
   unnest(CAST('{1,1,3}' AS INT[]))
 FROM
   few
-WHERE few.id =
+WHERE
+  few.id =
   1
 GROUP BY few.dataa,
   5;
@@ -159,7 +164,8 @@ SELECT
 FROM
   few
 GROUP BY 1
-HAVING COUNT(*) >
+HAVING
+  COUNT(*) >
   1;
 
 SELECT
@@ -171,7 +177,8 @@ FROM
   few
 GROUP BY 1,
   2
-HAVING COUNT(*) >
+HAVING
+  COUNT(*) >
   1;
 
 SELECT
@@ -179,7 +186,8 @@ SELECT
   COUNT(*)
 FROM
   few
-WHERE dataa =
+WHERE
+  dataa =
   'a'
 GROUP BY few.dataa
 ORDER BY 2;
@@ -189,7 +197,8 @@ SELECT
   COUNT(*)
 FROM
   few
-WHERE dataa =
+WHERE
+  dataa =
   'a'
 GROUP BY few.dataa,
   unnest(CAST('{1,1,3}' AS INT[]))

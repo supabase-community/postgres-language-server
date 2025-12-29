@@ -1,0 +1,71 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/vacuum_parallel_60.sql
+snapshot_kind: text
+---
+SET max_parallel_maintenance_workers = 4;
+
+SET min_parallel_index_scan_size = '128kB';
+
+CREATE TABLE parallel_vacuum_table (
+  a INT
+) WITH (autovacuum_enabled = off);
+
+INSERT INTO parallel_vacuum_table
+SELECT
+  i
+FROM
+  generate_series(1,
+  10000) AS i;
+
+CREATE INDEX "regular_sized_index" ON parallel_vacuum_table USING btree
+(
+  a
+);
+
+CREATE INDEX "typically_sized_index" ON parallel_vacuum_table USING btree
+(
+  a
+);
+
+CREATE INDEX "vacuum_in_leader_small_index" ON parallel_vacuum_table USING btree
+(
+  (1)
+);
+
+SELECT
+  EXISTS (SELECT
+    1
+  FROM
+    pg_class
+  WHERE
+    oid =
+    CAST('vacuum_in_leader_small_index' AS REGCLASS) AND
+    pg_relation_size(oid) <
+    pg_size_bytes(current_setting('min_parallel_index_scan_size'))) AS leader_will_handle_small_index;
+
+SELECT
+  COUNT(*) AS trigger_parallel_vacuum_nindexes
+FROM
+  pg_class
+WHERE
+  oid IN (CAST('regular_sized_index' AS REGCLASS),
+  CAST('typically_sized_index' AS REGCLASS)) AND
+  pg_relation_size(oid) >=
+  pg_size_bytes(current_setting('min_parallel_index_scan_size'));
+
+DELETE FROM parallel_vacuum_table;
+
+VACUUM (PARALLEL 4,
+INDEX_CLEANUP "on") parallel_vacuum_table;
+
+INSERT INTO parallel_vacuum_table
+SELECT
+  i
+FROM
+  generate_series(1,
+  10000) AS i;
+
+RESET max_parallel_maintenance_workers;
+
+RESET min_parallel_index_scan_size;

@@ -126,7 +126,7 @@ pub(super) fn emit_merge_action(e: &mut EventEmitter, action: &MergeAction) {
         _ => "other",
     };
 
-    super::emit_identifier(e, &format!("merge_action#{}_{}", match_kind, command));
+    super::emit_identifier(e, &format!("merge_action#{match_kind}_{command}"));
 
     if let Some(ref qual) = action.qual {
         e.line(LineType::SoftOrSpace);

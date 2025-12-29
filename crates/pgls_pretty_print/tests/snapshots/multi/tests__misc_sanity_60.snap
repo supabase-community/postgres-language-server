@@ -7,7 +7,8 @@ SELECT
   *
 FROM
   pg_depend AS d1
-WHERE refclassid =
+WHERE
+  refclassid =
   0 OR
   refobjid =
   0 OR
@@ -27,7 +28,8 @@ SELECT
   *
 FROM
   pg_shdepend AS d1
-WHERE refclassid =
+WHERE
+  refclassid =
   0 OR
   refobjid =
   0 OR
@@ -50,7 +52,8 @@ FROM
   INNER JOIN pg_attribute AS a
   ON c.oid =
     attrelid
-WHERE c.oid <
+WHERE
+  c.oid <
   16384 AND
   reltoastrelid =
   0 AND
@@ -65,7 +68,8 @@ SELECT
   relname
 FROM
   pg_class
-WHERE relnamespace =
+WHERE
+  relnamespace =
   CAST('pg_catalog' AS regnamespace) AND
   relkind =
   'r' AND
@@ -73,7 +77,8 @@ WHERE relnamespace =
     indrelid
   FROM
     pg_index
-  WHERE indisprimary)
+  WHERE
+    indisprimary)
 ORDER BY 1;
 
 SELECT
@@ -83,7 +88,8 @@ FROM
   INNER JOIN pg_index AS i
   ON c.oid =
     i.indexrelid
-WHERE relnamespace =
+WHERE
+  relnamespace =
   CAST('pg_catalog' AS regnamespace) AND
   relkind =
   'i' AND

@@ -140,7 +140,8 @@ SELECT
   masklen(i) AS "masklen(inet)"
 FROM
   inet_tbl
-WHERE masklen(c) <=
+WHERE
+  masklen(c) <=
   8;
 
 SELECT
@@ -208,7 +209,7 @@ SELECT set_masklen(inet(text(i)), 33) FROM inet_tbl;
 
 SELECT set_masklen(cidr(text(c)), 33) FROM inet_tbl;
 
-CREATE INDEX "inet_idx1" ON inet_tbl USING btree (i);
+CREATE INDEX "inet_idx1" ON inet_tbl USING btree ( i);
 
 SET enable_seqscan = off;
 
@@ -216,55 +217,66 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR);
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR);
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR);
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR);
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i <<= CAST('192.168.1.0/24' AS CIDR);
+WHERE
+  i <<= CAST('192.168.1.0/24' AS CIDR);
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i <<= CAST('192.168.1.0/24' AS CIDR);
+WHERE
+  i <<= CAST('192.168.1.0/24' AS CIDR);
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE CAST('192.168.1.0/24' AS CIDR) >>= i;
+WHERE
+  CAST('192.168.1.0/24' AS CIDR) >>= i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE CAST('192.168.1.0/24' AS CIDR) >>= i;
+WHERE
+  CAST('192.168.1.0/24' AS CIDR) >>= i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE CAST('192.168.1.0/24' AS CIDR) >> i;
+WHERE
+  CAST('192.168.1.0/24' AS CIDR) >> i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE CAST('192.168.1.0/24' AS CIDR) >> i;
+WHERE
+  CAST('192.168.1.0/24' AS CIDR) >> i;
 
 SET enable_seqscan = on;
 
 DROP INDEX "inet_idx1";
 
-CREATE INDEX "inet_idx2" ON inet_tbl USING gist (i inet_ops);
+CREATE INDEX "inet_idx2" ON inet_tbl USING gist
+(
+  i inet_ops
+);
 
 SET enable_seqscan = off;
 
@@ -272,42 +284,48 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i <<= CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i <<= CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i && CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i && CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i >>= CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i >>= CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i >> CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i >> CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i <
+WHERE
+  i <
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -315,7 +333,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i <=
+WHERE
+  i <=
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -323,7 +342,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i =
+WHERE
+  i =
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -331,7 +351,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i >=
+WHERE
+  i >=
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -339,7 +360,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i >
+WHERE
+  i >
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -347,7 +369,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i <>
+WHERE
+  i <>
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -355,21 +378,23 @@ SELECT
   i
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   i
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SET enable_seqscan = on;
 
 DROP INDEX "inet_idx2";
 
-CREATE INDEX "inet_idx3" ON inet_tbl USING spgist (i);
+CREATE INDEX "inet_idx3" ON inet_tbl USING spgist ( i);
 
 SET enable_seqscan = off;
 
@@ -377,42 +402,48 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i <<= CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i <<= CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i && CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i && CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i >>= CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i >>= CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i >> CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i >> CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   *
 FROM
   inet_tbl
-WHERE i <
+WHERE
+  i <
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -420,7 +451,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i <=
+WHERE
+  i <=
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -428,7 +460,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i =
+WHERE
+  i =
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -436,7 +469,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i >=
+WHERE
+  i >=
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -444,7 +478,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i >
+WHERE
+  i >
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -452,7 +487,8 @@ SELECT
   *
 FROM
   inet_tbl
-WHERE i <>
+WHERE
+  i <>
   CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
@@ -460,14 +496,16 @@ SELECT
   i
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SELECT
   i
 FROM
   inet_tbl
-WHERE i << CAST('192.168.1.0/24' AS CIDR)
+WHERE
+  i << CAST('192.168.1.0/24' AS CIDR)
 ORDER BY i;
 
 SET enable_seqscan = on;
@@ -527,7 +565,8 @@ SELECT
   i)
 FROM
   inet_tbl
-WHERE inet_same_family(c,
+WHERE
+  inet_same_family(c,
   i);
 
 SELECT

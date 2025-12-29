@@ -33,84 +33,97 @@ SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 && CAST('(2.5,2.5,1.0,1.0)' AS box);
+WHERE
+  b.f1 && CAST('(2.5,2.5,1.0,1.0)' AS box);
 
 SELECT
   b1.*
 FROM
   box_tbl AS b1
-WHERE b1.f1 &< CAST('(2.0,2.0,2.5,2.5)' AS box);
+WHERE
+  b1.f1 &< CAST('(2.0,2.0,2.5,2.5)' AS box);
 
 SELECT
   b1.*
 FROM
   box_tbl AS b1
-WHERE b1.f1 &> CAST('(2.0,2.0,2.5,2.5)' AS box);
+WHERE
+  b1.f1 &> CAST('(2.0,2.0,2.5,2.5)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 << CAST('(3.0,3.0,5.0,5.0)' AS box);
+WHERE
+  b.f1 << CAST('(3.0,3.0,5.0,5.0)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 <=
+WHERE
+  b.f1 <=
   CAST('(3.0,3.0,5.0,5.0)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 <
+WHERE
+  b.f1 <
   CAST('(3.0,3.0,5.0,5.0)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 =
+WHERE
+  b.f1 =
   CAST('(3.0,3.0,5.0,5.0)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 >
+WHERE
+  b.f1 >
   CAST('(3.5,3.0,4.5,3.0)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 >=
+WHERE
+  b.f1 >=
   CAST('(3.5,3.0,4.5,3.0)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE CAST('(3.0,3.0,5.0,5.0)' AS box) >> b.f1;
+WHERE
+  CAST('(3.0,3.0,5.0,5.0)' AS box) >> b.f1;
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE b.f1 <@ CAST('(0,0,3,3)' AS box);
+WHERE
+  b.f1 <@ CAST('(0,0,3,3)' AS box);
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE CAST('(0,0,3,3)' AS box) @> b.f1;
+WHERE
+  CAST('(0,0,3,3)' AS box) @> b.f1;
 
 SELECT
   b.f1
 FROM
   box_tbl AS b
-WHERE CAST('(1,1,3,3)' AS box) ~= b.f1;
+WHERE
+  CAST('(1,1,3,3)' AS box) ~= b.f1;
 
 SELECT @@b1.f1 AS p FROM box_tbl AS b1;
 
@@ -120,7 +133,8 @@ SELECT
 FROM
   box_tbl AS b1,
   box_tbl AS b2
-WHERE b1.f1 @> b2.f1 AND
+WHERE
+  b1.f1 @> b2.f1 AND
   NOT b1.f1 ~= b2.f1;
 
 SELECT height(f1), width(f1) FROM box_tbl;
@@ -137,7 +151,7 @@ FROM
   generate_series(1,
   50) AS i;
 
-CREATE INDEX "box_spgist" ON box_temp USING spgist (f1);
+CREATE INDEX "box_spgist" ON box_temp USING spgist ( f1);
 
 INSERT INTO box_temp
 VALUES (NULL),
@@ -181,13 +195,15 @@ SELECT
   *
 FROM
   box_temp
-WHERE f1 |&> '(49.99,49.99),(49.99,49.99)';
+WHERE
+  f1 |&> '(49.99,49.99),(49.99,49.99)';
 
 SELECT
   *
 FROM
   box_temp
-WHERE f1 |&> '(49.99,49.99),(49.99,49.99)';
+WHERE
+  f1 |&> '(49.99,49.99),(49.99,49.99)';
 
 SELECT * FROM box_temp WHERE f1 |>> '(37,38),(39,40)';
 
@@ -244,7 +260,10 @@ NULL),
 (11005,
 '((-infinity,-infinity),(700,infinity))');
 
-CREATE INDEX "quad_box_tbl_idx" ON quad_box_tbl USING spgist (b);
+CREATE INDEX "quad_box_tbl_idx" ON quad_box_tbl USING spgist
+(
+  b
+);
 
 SET enable_seqscan = on;
 
@@ -271,7 +290,8 @@ CREATE TABLE quad_box_tbl_ord_seq2 AS
     id
   FROM
     quad_box_tbl
-  WHERE b <@ CAST('((200,300),(500,600))' AS box);
+  WHERE
+    b <@ CAST('((200,300),(500,600))' AS box);
 
 SET enable_seqscan = off;
 
@@ -283,79 +303,92 @@ SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b << CAST('((100,200),(300,500))' AS box);
+WHERE
+  b << CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b &< CAST('((100,200),(300,500))' AS box);
+WHERE
+  b &< CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b && CAST('((100,200),(300,500))' AS box);
+WHERE
+  b && CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b &> CAST('((100,200),(300,500))' AS box);
+WHERE
+  b &> CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b >> CAST('((100,200),(300,500))' AS box);
+WHERE
+  b >> CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b >> CAST('((100,200),(300,500))' AS box);
+WHERE
+  b >> CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b <<| CAST('((100,200),(300,500))' AS box);
+WHERE
+  b <<| CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b &<| CAST('((100,200),(300,500))' AS box);
+WHERE
+  b &<| CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b |&> CAST('((100,200),(300,500))' AS box);
+WHERE
+  b |&> CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b |>> CAST('((100,200),(300,500))' AS box);
+WHERE
+  b |>> CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b @> CAST('((201,301),(202,303))' AS box);
+WHERE
+  b @> CAST('((201,301),(202,303))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b <@ CAST('((100,200),(300,500))' AS box);
+WHERE
+  b <@ CAST('((100,200),(300,500))' AS box);
 
 SELECT
   COUNT(*)
 FROM
   quad_box_tbl
-WHERE b ~= CAST('((200,300),(205,305))' AS box);
+WHERE
+  b ~= CAST('((200,300),(205,305))' AS box);
 
 SET enable_indexscan = on;
 
@@ -393,7 +426,8 @@ FROM
     idx.dist OR
     seq.dist IS NULL AND
     idx.dist IS NULL)
-WHERE seq.id IS NULL OR
+WHERE
+  seq.id IS NULL OR
   idx.id IS NULL;
 
 SELECT
@@ -404,7 +438,8 @@ SELECT
   id
 FROM
   quad_box_tbl
-WHERE b <@ CAST('((200,300),(500,600))' AS box);
+WHERE
+  b <@ CAST('((200,300),(500,600))' AS box);
 
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2 AS
   SELECT
@@ -415,7 +450,8 @@ CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2 AS
     id
   FROM
     quad_box_tbl
-  WHERE b <@ CAST('((200,300),(500,600))' AS box);
+  WHERE
+    b <@ CAST('((200,300),(500,600))' AS box);
 
 SELECT
   *
@@ -430,7 +466,8 @@ FROM
     idx.dist OR
     seq.dist IS NULL AND
     idx.dist IS NULL)
-WHERE seq.id IS NULL OR
+WHERE
+  seq.id IS NULL OR
   idx.id IS NULL;
 
 RESET enable_seqscan;

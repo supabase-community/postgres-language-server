@@ -34,7 +34,8 @@ FROM
   'can_include',
   'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
-WHERE a.amname =
+WHERE
+  a.amname =
   'btree'
 ORDER BY ord;
 
@@ -69,7 +70,8 @@ FROM
   'can_include',
   'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
-WHERE a.amname =
+WHERE
+  a.amname =
   'gist'
 ORDER BY ord;
 
@@ -147,7 +149,8 @@ FROM
   'can_include',
   'bogus'] AS TEXT[])) WITH ORDINALITY AS u (prop,
   ord)
-WHERE amtype =
+WHERE
+  amtype =
   'i'
 ORDER BY amname,
   ord;
@@ -159,10 +162,13 @@ CREATE TEMPORARY TABLE foo (
   f4 INT
 );
 
-CREATE INDEX "fooindex" ON foo USING btree (f1 DESC,
-f2 ASC,
-f3 NULLS FIRST,
-f4 NULLS LAST);
+CREATE INDEX "fooindex" ON foo USING btree
+(
+  f1 DESC,
+  f2 ASC,
+  f3 NULLS FIRST,
+  f4 NULLS LAST
+);
 
 SELECT
   col,
@@ -190,7 +196,11 @@ FROM
 ORDER BY col,
   idx;
 
-CREATE INDEX "foocover" ON foo USING btree (f1) INCLUDE (f2,
+CREATE INDEX "foocover" ON foo USING btree
+(
+  f1
+)
+INCLUDE (f2,
 f3);
 
 SELECT

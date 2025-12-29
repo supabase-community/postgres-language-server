@@ -7,14 +7,19 @@ CREATE TABLE user_logins ( id serial, who TEXT );
 
 GRANT SELECT ON TABLE user_logins TO PUBLIC;
 
-CREATE FUNCTION on_login_proc() RETURNS event_trigger AS '
+CREATE FUNCTION on_login_proc()
+RETURNS event_trigger
+AS '
 BEGIN
   INSERT INTO user_logins (who) VALUES (SESSION_USER);
   RAISE NOTICE ''You are welcome!'';
 END;
-' LANGUAGE "plpgsql";
+'
+LANGUAGE "plpgsql";
 
-CREATE EVENT TRIGGER "on_login_trigger" ON login EXECUTE FUNCTION on_login_proc();
+CREATE EVENT TRIGGER "on_login_trigger"
+ON login
+EXECUTE FUNCTION on_login_proc();
 
 ALTER EVENT TRIGGER on_login_trigger ENABLE ALWAYS;
 
@@ -26,7 +31,8 @@ SELECT
   dathasloginevt
 FROM
   pg_database
-WHERE datname =
+WHERE
+  datname =
   'DBNAME';
 
 DROP TABLE "user_logins";

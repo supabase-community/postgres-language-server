@@ -22,12 +22,11 @@ pub(super) fn emit_drop_owned_stmt(e: &mut EventEmitter, n: &DropOwnedStmt) {
     }
 
     // CASCADE or RESTRICT
-    if n.behavior != 0 {
+    // behavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
+    // RESTRICT is the default, so only emit CASCADE explicitly
+    if n.behavior == 2 {
         e.space();
-        match n.behavior {
-            1 => e.token(TokenKind::CASCADE_KW),
-            _ => e.token(TokenKind::RESTRICT_KW),
-        }
+        e.token(TokenKind::CASCADE_KW);
     }
 
     e.token(TokenKind::SEMICOLON);

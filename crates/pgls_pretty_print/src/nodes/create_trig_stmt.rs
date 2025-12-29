@@ -1,7 +1,9 @@
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
-    nodes::node_list::emit_dot_separated_list,
+    nodes::node_list::{
+        emit_comma_separated_list, emit_dot_separated_list, emit_space_separated_list,
+    },
 };
 use pgls_query::protobuf::CreateTrigStmt;
 
@@ -141,13 +143,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.token(TokenKind::L_PAREN);
     if !n.args.is_empty() {
         // Arguments are string literals
-        for (i, arg) in n.args.iter().enumerate() {
-            if i > 0 {
-                e.token(TokenKind::COMMA);
-                e.space();
-            }
-            super::emit_node(arg, e);
-        }
+        emit_comma_separated_list(e, &n.args, super::emit_node);
     }
     e.token(TokenKind::R_PAREN);
 
@@ -157,11 +153,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 }
 
 fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
-    for (idx, rel) in rels.iter().enumerate() {
-        if idx > 0 {
-            e.space();
-        }
-
+    emit_space_separated_list(e, rels, |rel, e| {
         let transition = assert_node_variant!(TriggerTransition, rel);
 
         if transition.is_new {
@@ -182,5 +174,5 @@ fn emit_trigger_transitions(e: &mut EventEmitter, rels: &[pgls_query::Node]) {
         e.token(TokenKind::AS_KW);
         e.space();
         e.token(TokenKind::IDENT(transition.name.clone()));
-    }
+    });
 }

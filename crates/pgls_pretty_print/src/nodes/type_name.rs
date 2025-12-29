@@ -28,6 +28,10 @@ pub(super) fn emit_type_name(e: &mut EventEmitter, n: &TypeName) {
 
     if n.pct_type {
         emit_pct_type(e, &name_parts);
+    } else if is_time_with_tz_type(&name_parts) {
+        // Special handling for TIME/TIMESTAMP WITH TIME ZONE
+        // Precision goes after TIME/TIMESTAMP, before WITH TIME ZONE
+        emit_time_with_tz_type(e, n, &name_parts);
     } else {
         emit_normalized_type_name(e, &name_parts);
     }
@@ -176,6 +180,12 @@ fn emit_type_modifiers(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]
         return;
     }
 
+    // For TIME/TIMESTAMP WITH TIME ZONE types, modifiers are already emitted inline
+    // in emit_time_with_tz_type
+    if is_time_with_tz_type(name_parts) {
+        return;
+    }
+
     if !n.typmods.is_empty() {
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.typmods, |node, emitter| {
@@ -202,6 +212,69 @@ fn is_interval_type(name_parts: &[String]) -> bool {
         .last()
         .map(|name| name.eq_ignore_ascii_case("interval"))
         .unwrap_or(false)
+}
+
+fn is_time_with_tz_type(name_parts: &[String]) -> bool {
+    let base_name = match name_parts {
+        [name] => name,
+        [schema, name] if is_pg_catalog(schema) => name,
+        _ => return false,
+    };
+
+    let lowered = base_name.to_ascii_lowercase();
+    matches!(lowered.as_str(), "timetz" | "timestamptz")
+}
+
+fn emit_time_with_tz_type(e: &mut EventEmitter, n: &TypeName, name_parts: &[String]) {
+    let base_name = match name_parts {
+        [name] => name,
+        [schema, name] if is_pg_catalog(schema) => name,
+        _ => {
+            emit_normalized_type_name(e, name_parts);
+            return;
+        }
+    };
+
+    let lowered = base_name.to_ascii_lowercase();
+    match lowered.as_str() {
+        "timetz" => {
+            e.token(TokenKind::TIME_KW);
+            // Emit precision if any
+            if !n.typmods.is_empty() {
+                e.token(TokenKind::L_PAREN);
+                emit_comma_separated_list(e, &n.typmods, |node, emitter| {
+                    super::emit_node(node, emitter)
+                });
+                e.token(TokenKind::R_PAREN);
+            }
+            e.space();
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::TIME_KW);
+            e.space();
+            e.token(TokenKind::IDENT("ZONE".to_string()));
+        }
+        "timestamptz" => {
+            e.token(TokenKind::TIMESTAMP_KW);
+            // Emit precision if any
+            if !n.typmods.is_empty() {
+                e.token(TokenKind::L_PAREN);
+                emit_comma_separated_list(e, &n.typmods, |node, emitter| {
+                    super::emit_node(node, emitter)
+                });
+                e.token(TokenKind::R_PAREN);
+            }
+            e.space();
+            e.token(TokenKind::WITH_KW);
+            e.space();
+            e.token(TokenKind::TIME_KW);
+            e.space();
+            e.token(TokenKind::IDENT("ZONE".to_string()));
+        }
+        _ => {
+            emit_normalized_type_name(e, name_parts);
+        }
+    }
 }
 
 fn emit_interval_type_modifiers(e: &mut EventEmitter, n: &TypeName) -> bool {

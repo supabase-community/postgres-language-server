@@ -11,5 +11,6 @@ SELECT
   address
 FROM
   customers
-WHERE city =
+WHERE
+  city =
   'New York';

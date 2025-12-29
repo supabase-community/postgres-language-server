@@ -7,15 +7,25 @@ use crate::{
 };
 
 pub(super) fn emit_object_with_args(e: &mut EventEmitter, n: &ObjectWithArgs) {
-    emit_object_with_args_impl(e, n, true);
+    emit_object_with_args_impl(e, n, true, false);
 }
 
 /// Emit ObjectWithArgs without parentheses (for operators in operator classes)
 pub(super) fn emit_object_name_only(e: &mut EventEmitter, n: &ObjectWithArgs) {
-    emit_object_with_args_impl(e, n, false);
+    emit_object_with_args_impl(e, n, false, false);
 }
 
-fn emit_object_with_args_impl(e: &mut EventEmitter, n: &ObjectWithArgs, with_parens: bool) {
+/// Emit ObjectWithArgs for aggregates, where (*) means "any arguments"
+pub(super) fn emit_object_with_args_for_aggregate(e: &mut EventEmitter, n: &ObjectWithArgs) {
+    emit_object_with_args_impl(e, n, true, true);
+}
+
+fn emit_object_with_args_impl(
+    e: &mut EventEmitter,
+    n: &ObjectWithArgs,
+    with_parens: bool,
+    is_aggregate: bool,
+) {
     e.group_start(GroupKind::ObjectWithArgs);
 
     // Object name (qualified name)
@@ -34,23 +44,40 @@ fn emit_object_with_args_impl(e: &mut EventEmitter, n: &ObjectWithArgs, with_par
             if n.objargs.len() > 1 {
                 e.indent_start();
                 e.line(LineType::Soft);
-                emit_comma_separated_list(e, &n.objargs, super::emit_node);
+                // For operators, NONE is represented by a Node with node: None
+                emit_comma_separated_list(e, &n.objargs, emit_objarg_or_none);
                 e.indent_end();
             } else {
-                emit_comma_separated_list(e, &n.objargs, super::emit_node);
+                emit_comma_separated_list(e, &n.objargs, emit_objarg_or_none);
             }
             e.token(TokenKind::R_PAREN);
         } else if !n.args_unspecified {
-            // Empty parens if args are specified as empty
+            // Empty objargs with args_unspecified=false means:
+            // - For aggregates: (*) meaning "any argument types"
+            // - For functions: () meaning "no arguments"
             if space_before_paren {
                 e.space();
             }
             e.token(TokenKind::L_PAREN);
+            if is_aggregate {
+                e.token(TokenKind::IDENT("*".to_string()));
+            }
             e.token(TokenKind::R_PAREN);
         }
     }
 
     e.group_end();
+}
+
+/// Emit an operator argument, with NONE for missing types
+fn emit_objarg_or_none(node: &pgls_query::Node, e: &mut EventEmitter) {
+    if node.node.is_some() {
+        super::emit_node(node, e);
+    } else {
+        // A Node with node: None represents NONE (no argument type)
+        // Used for unary operators
+        e.token(TokenKind::IDENT("NONE".to_string()));
+    }
 }
 
 fn needs_space_before_paren(n: &ObjectWithArgs) -> bool {

@@ -3,6 +3,8 @@ use pgls_query::protobuf::ColumnDef;
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind};
 
+use super::node_list::{ListSeparatorSpacing, emit_comma_separated_list_with_spacing};
+
 pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     e.group_start(GroupKind::ColumnDef);
 
@@ -48,11 +50,29 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     }
 
     // Add collation if specified
-    // TODO: Implement CollateClause emission
-    // if let Some(ref coll_clause) = n.coll_clause {
-    //     e.space();
-    //     super::emit_node(coll_clause, e);
-    // }
+    if let Some(ref coll_clause) = n.coll_clause {
+        e.space();
+        super::emit_collate_clause(e, coll_clause);
+    }
+
+    // Add column-level FDW OPTIONS clause (for foreign tables) - must come before constraints
+    // Uses Space (not SoftOrSpace) to keep options on same line
+    if !n.fdwoptions.is_empty() {
+        e.space();
+        e.token(TokenKind::IDENT("OPTIONS".to_string()));
+        e.space();
+        e.token(TokenKind::L_PAREN);
+        emit_comma_separated_list_with_spacing(
+            e,
+            &n.fdwoptions,
+            ListSeparatorSpacing::Space,
+            |opt, e| {
+                let def_elem = assert_node_variant!(DefElem, opt);
+                super::emit_options_def_elem(e, def_elem);
+            },
+        );
+        e.token(TokenKind::R_PAREN);
+    }
 
     // Add constraints if any
     // TODO: Handle IDENTITY constraints specially

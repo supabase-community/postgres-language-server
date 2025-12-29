@@ -162,7 +162,7 @@ fn emit_transaction_option(e: &mut EventEmitter, def: &DefElem) {
     }
 }
 
-fn def_elem_string<'a>(def: &'a DefElem) -> Option<&'a str> {
+fn def_elem_string(def: &DefElem) -> Option<&str> {
     let arg = def.arg.as_ref()?;
     match arg.node.as_ref()? {
         NodeEnum::AConst(a_const) => match a_const.val.as_ref()? {

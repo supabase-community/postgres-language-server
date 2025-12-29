@@ -22,15 +22,37 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
             super::emit_range_var(e, relation);
         }
 
-        // Emit column definitions
-        if !base.table_elts.is_empty() {
+        // PARTITION OF parent_table
+        if !base.inh_relations.is_empty() {
+            e.line(crate::emitter::LineType::SoftOrSpace);
+            e.token(TokenKind::PARTITION_KW);
+            e.space();
+            e.token(TokenKind::OF_KW);
+            e.space();
+            // Emit first inherited relation as parent table
+            super::emit_node(&base.inh_relations[0], e);
+
+            // Partition bound spec (DEFAULT or FOR VALUES ...)
+            // For partition foreign tables, a bound spec is required
+            if let Some(ref partbound) = base.partbound {
+                e.line(crate::emitter::LineType::SoftOrSpace);
+                super::emit_partition_bound_spec(e, partbound);
+            } else {
+                // Default partition when no partbound specified
+                e.line(crate::emitter::LineType::SoftOrSpace);
+                e.token(TokenKind::DEFAULT_KW);
+            }
+        } else {
+            // Emit column definitions (always emit parentheses, even for empty list)
             e.space();
             e.token(TokenKind::L_PAREN);
-            e.indent_start();
-            e.line(crate::emitter::LineType::SoftOrSpace);
-            emit_comma_separated_list(e, &base.table_elts, super::emit_node);
-            e.indent_end();
-            e.line(crate::emitter::LineType::SoftOrSpace);
+            if !base.table_elts.is_empty() {
+                e.indent_start();
+                e.line(crate::emitter::LineType::SoftOrSpace);
+                emit_comma_separated_list(e, &base.table_elts, super::emit_node);
+                e.indent_end();
+                e.line(crate::emitter::LineType::SoftOrSpace);
+            }
             e.token(TokenKind::R_PAREN);
         }
     }
@@ -47,7 +69,10 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
         e.token(TokenKind::IDENT("OPTIONS".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
+        emit_comma_separated_list(e, &n.options, |n, e| {
+            let def_elem = assert_node_variant!(DefElem, n);
+            super::emit_options_def_elem(e, def_elem);
+        });
         e.token(TokenKind::R_PAREN);
     }
 

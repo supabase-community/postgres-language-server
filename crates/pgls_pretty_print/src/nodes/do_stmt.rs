@@ -44,7 +44,7 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
                     }
                 }
                 other => {
-                    debug_assert!(false, "Unexpected defname '{}' in DoStmt args", other);
+                    debug_assert!(false, "Unexpected defname '{other}' in DoStmt args");
                 }
             },
             unexpected => {

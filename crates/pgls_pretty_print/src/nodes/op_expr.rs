@@ -73,12 +73,12 @@ pub(super) fn emit_null_if_expr(e: &mut EventEmitter, n: &NullIfExpr) {
 
 fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u32) {
     if args.is_empty() {
-        e.token(TokenKind::IDENT(format!("op#{}", opno)));
+        e.token(TokenKind::IDENT(format!("op#{opno}")));
         return;
     }
 
     if args.len() == 1 {
-        e.token(TokenKind::IDENT(format!("op#{}", opno)));
+        e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
         super::emit_node(&args[0], e);
         return;
@@ -87,7 +87,7 @@ fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u32) {
     super::emit_node(&args[0], e);
     for arg in &args[1..] {
         e.space();
-        e.token(TokenKind::IDENT(format!("op#{}", opno)));
+        e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
         super::emit_node(arg, e);
     }

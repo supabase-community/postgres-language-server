@@ -7,11 +7,21 @@ CREATE TYPE casttesttype;
 
 CREATE FUNCTION casttesttype_in(
   cstring
-) RETURNS casttesttype AS 'textin' LANGUAGE "internal" STRICT IMMUTABLE;
+)
+RETURNS casttesttype
+AS 'textin'
+LANGUAGE "internal"
+STRICT
+IMMUTABLE;
 
 CREATE FUNCTION casttesttype_out(
   casttesttype
-) RETURNS cstring AS 'textout' LANGUAGE "internal" STRICT IMMUTABLE;
+)
+RETURNS cstring
+AS 'textout'
+LANGUAGE "internal"
+STRICT
+IMMUTABLE;
 
 CREATE TYPE casttesttype
 (
@@ -23,7 +33,10 @@ CREATE TYPE casttesttype
 
 CREATE FUNCTION casttestfunc(
   casttesttype
-) RETURNS INT LANGUAGE "sql" AS ' SELECT 1; ';
+)
+RETURNS INT
+LANGUAGE "sql"
+AS ' SELECT 1; ';
 
 SELECT casttestfunc(CAST('foo' AS TEXT));
 
@@ -52,7 +65,10 @@ DROP CAST (INT AS casttesttype);
 
 CREATE FUNCTION int4_casttesttype(
   INT
-) RETURNS casttesttype LANGUAGE "sql" AS ' SELECT (''foo''::text || $1::text)::casttesttype; ';
+)
+RETURNS casttesttype
+LANGUAGE "sql"
+AS ' SELECT (''foo''::text || $1::text)::casttesttype; ';
 
 CREATE CAST (INT AS casttesttype)
 WITH FUNCTION int4_casttesttype(INT)
@@ -64,7 +80,10 @@ DROP FUNCTION int4_casttesttype(INT) CASCADE;
 
 CREATE FUNCTION bar_int4_text(
   INT
-) RETURNS TEXT LANGUAGE "sql" AS ' SELECT (''bar''::text || $1::text); ';
+)
+RETURNS TEXT
+LANGUAGE "sql"
+AS ' SELECT (''bar''::text || $1::text); ';
 
 CREATE CAST (INT AS casttesttype)
 WITH FUNCTION bar_int4_text(INT)
@@ -82,14 +101,16 @@ SELECT
   deptype
 FROM
   pg_depend
-WHERE classid =
+WHERE
+  classid =
   CAST('pg_cast' AS REGCLASS) AND
   objid =
   (SELECT
     oid
   FROM
     pg_cast
-  WHERE castsource =
+  WHERE
+    castsource =
     CAST('int4' AS REGTYPE) AND
     casttarget =
     CAST('casttesttype' AS REGTYPE))

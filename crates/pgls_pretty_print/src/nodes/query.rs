@@ -30,7 +30,7 @@ pub(super) fn emit_query(e: &mut EventEmitter, n: &Query) {
         QuerySource::Undefined => "unspecified",
     };
 
-    super::emit_identifier(e, &format!("query#{}_{}", cmd, source));
+    super::emit_identifier(e, &format!("query#{cmd}_{source}"));
 
     if n.result_relation >= 0 {
         e.space();

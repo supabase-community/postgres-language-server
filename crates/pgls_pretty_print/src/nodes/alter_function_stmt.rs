@@ -11,9 +11,9 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
     e.token(TokenKind::ALTER_KW);
     e.space();
 
-    // objtype: 0=FUNCTION, 1=PROCEDURE
+    // ObjectType: ObjectFunction=20, ObjectProcedure=30
     match n.objtype {
-        1 => {
+        30 => {
             e.token(TokenKind::IDENT("PROCEDURE".to_string()));
         }
         _ => {

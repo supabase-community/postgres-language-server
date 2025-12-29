@@ -5,6 +5,8 @@ use crate::{
     emitter::{EventEmitter, GroupKind},
 };
 
+use super::node_list::emit_space_separated_list;
+
 pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
     e.group_start(GroupKind::CreatedbStmt);
 
@@ -22,12 +24,7 @@ pub(super) fn emit_createdb_stmt(e: &mut EventEmitter, n: &CreatedbStmt) {
         e.space();
         e.token(TokenKind::WITH_KW);
         e.space();
-        for (i, opt) in n.options.iter().enumerate() {
-            if i > 0 {
-                e.space();
-            }
-            super::emit_node(opt, e);
-        }
+        emit_space_separated_list(e, &n.options, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

@@ -1,6 +1,6 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
-use pgls_query::protobuf::AlterDefaultPrivilegesStmt;
+use crate::emitter::{EventEmitter, GroupKind, LineType};
+use pgls_query::{NodeEnum, protobuf::AlterDefaultPrivilegesStmt};
 
 use super::node_list::emit_comma_separated_list;
 
@@ -16,16 +16,51 @@ pub(super) fn emit_alter_default_privileges_stmt(
     e.space();
     e.token(TokenKind::IDENT("PRIVILEGES".to_string()));
 
-    // Optional: FOR ROLE/USER or IN SCHEMA
-    if !n.options.is_empty() {
-        e.space();
-        emit_comma_separated_list(e, &n.options, super::emit_node);
+    // Options can contain FOR ROLE/USER and IN SCHEMA clauses
+    for opt in &n.options {
+        if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
+            match def.defname.as_str() {
+                "roles" => {
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::FOR_KW);
+                    e.space();
+                    e.token(TokenKind::ROLE_KW);
+                    e.space();
+                    if let Some(ref arg) = def.arg {
+                        if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
+                            emit_comma_separated_list(e, &list.items, super::emit_node);
+                        } else {
+                            super::emit_node(arg, e);
+                        }
+                    }
+                }
+                "schemas" => {
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::IN_KW);
+                    e.space();
+                    e.token(TokenKind::SCHEMA_KW);
+                    e.space();
+                    if let Some(ref arg) = def.arg {
+                        if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
+                            emit_comma_separated_list(e, &list.items, super::emit_node);
+                        } else {
+                            super::emit_node(arg, e);
+                        }
+                    }
+                }
+                _ => {
+                    // Unknown option - emit as-is
+                    e.space();
+                    super::emit_node(opt, e);
+                }
+            }
+        }
     }
 
     // The actual GRANT/REVOKE statement
     if let Some(ref action) = n.action {
-        e.space();
-        super::emit_node_enum(&pgls_query::NodeEnum::GrantStmt(action.clone()), e);
+        e.line(LineType::SoftOrSpace);
+        super::emit_node_enum(&NodeEnum::GrantStmt(action.clone()), e);
     }
 
     e.group_end();

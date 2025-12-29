@@ -167,7 +167,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         e.space();
         e.token(TokenKind::USING_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.access_method.clone()));
+        super::string::emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
     // Add WITH options if specified

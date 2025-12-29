@@ -5,6 +5,8 @@ use crate::{
     emitter::{EventEmitter, GroupKind},
 };
 
+use super::node_list::emit_space_separated_list;
+
 pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt) {
     e.group_start(GroupKind::CreateSchemaStmt);
 
@@ -37,12 +39,7 @@ pub(super) fn emit_create_schema_stmt(e: &mut EventEmitter, n: &CreateSchemaStmt
     // Schema elements (nested CREATE statements)
     if !n.schema_elts.is_empty() {
         e.space();
-        for (i, elt) in n.schema_elts.iter().enumerate() {
-            if i > 0 {
-                e.space();
-            }
-            super::emit_node(elt, e);
-        }
+        emit_space_separated_list(e, &n.schema_elts, super::emit_node);
     }
 
     e.token(TokenKind::SEMICOLON);

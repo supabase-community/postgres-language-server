@@ -70,16 +70,16 @@ pub(super) fn emit_range_tbl_entry(e: &mut EventEmitter, n: &RangeTblEntry) {
     e.group_end();
 }
 
-fn preferred_alias<'a>(entry: &'a RangeTblEntry) -> Option<&'a str> {
+fn preferred_alias(entry: &RangeTblEntry) -> Option<&str> {
     entry
         .alias
         .as_ref()
-        .and_then(|alias| (!alias.aliasname.is_empty()).then(|| alias.aliasname.as_str()))
+        .and_then(|alias| (!alias.aliasname.is_empty()).then_some(alias.aliasname.as_str()))
         .or_else(|| {
             entry
                 .eref
                 .as_ref()
-                .and_then(|alias| (!alias.aliasname.is_empty()).then(|| alias.aliasname.as_str()))
+                .and_then(|alias| (!alias.aliasname.is_empty()).then_some(alias.aliasname.as_str()))
         })
 }
 

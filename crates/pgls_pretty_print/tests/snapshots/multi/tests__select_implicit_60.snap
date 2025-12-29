@@ -93,7 +93,8 @@ SELECT
 FROM
   test_missing_target AS x,
   test_missing_target AS y
-WHERE x.a =
+WHERE
+  x.a =
   y.a
 GROUP BY b
 ORDER BY b;
@@ -116,7 +117,8 @@ SELECT
 FROM
   test_missing_target AS x,
   test_missing_target AS y
-WHERE x.a =
+WHERE
+  x.a =
   y.a
 GROUP BY x.b
 ORDER BY x.b;
@@ -126,7 +128,8 @@ SELECT
 FROM
   test_missing_target AS x,
   test_missing_target AS y
-WHERE x.a =
+WHERE
+  x.a =
   y.a
 GROUP BY x.b
 ORDER BY x.b;
@@ -137,7 +140,8 @@ CREATE TABLE test_missing_target2 AS
   FROM
     test_missing_target AS x,
     test_missing_target AS y
-  WHERE x.a =
+  WHERE
+    x.a =
     y.a
   GROUP BY x.b
   ORDER BY x.b;
@@ -195,7 +199,8 @@ SELECT
 FROM
   test_missing_target AS x,
   test_missing_target AS y
-WHERE x.a =
+WHERE
+  x.a =
   y.a
 GROUP BY b / 2
 ORDER BY b / 2;
@@ -206,7 +211,8 @@ SELECT
 FROM
   test_missing_target AS x,
   test_missing_target AS y
-WHERE x.a =
+WHERE
+  x.a =
   y.a
 GROUP BY x.b / 2
 ORDER BY x.b / 2;
@@ -216,7 +222,8 @@ SELECT
 FROM
   test_missing_target AS x,
   test_missing_target AS y
-WHERE x.a =
+WHERE
+  x.a =
   y.a
 GROUP BY x.b / 2;
 
@@ -226,7 +233,8 @@ CREATE TABLE test_missing_target3 AS
   FROM
     test_missing_target AS x,
     test_missing_target AS y
-  WHERE x.a =
+  WHERE
+    x.a =
     y.a
   GROUP BY x.b / 2
   ORDER BY x.b / 2;

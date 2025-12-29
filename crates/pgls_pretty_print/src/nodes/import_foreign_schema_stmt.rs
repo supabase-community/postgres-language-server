@@ -2,7 +2,7 @@ use pgls_query::protobuf::ImportForeignSchemaStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportForeignSchemaStmt) {
@@ -20,15 +20,16 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
     }
 
     // LIMIT TO / EXCEPT
+    // list_type: 1=All, 2=LimitTo, 3=Except
     if !n.table_list.is_empty() {
-        e.space();
-        if n.list_type == 1 {
+        e.line(LineType::SoftOrSpace);
+        if n.list_type == 2 {
             // LIMIT TO
             e.token(TokenKind::IDENT("LIMIT".to_string()));
             e.space();
             e.token(TokenKind::TO_KW);
         } else {
-            // EXCEPT
+            // EXCEPT (3)
             e.token(TokenKind::EXCEPT_KW);
         }
         e.space();
@@ -39,7 +40,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
 
     // FROM SERVER
     if !n.server_name.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);
         e.space();
         e.token(TokenKind::SERVER_KW);
@@ -49,7 +50,7 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
 
     // INTO schema
     if !n.local_schema.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::INTO_KW);
         e.space();
         e.token(TokenKind::IDENT(n.local_schema.clone()));
@@ -57,11 +58,14 @@ pub(super) fn emit_import_foreign_schema_stmt(e: &mut EventEmitter, n: &ImportFo
 
     // OPTIONS
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("OPTIONS".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.options, super::emit_node);
+        super::node_list::emit_comma_separated_list(e, &n.options, |n, e| {
+            let def_elem = assert_node_variant!(DefElem, n);
+            super::emit_options_def_elem(e, def_elem);
+        });
         e.token(TokenKind::R_PAREN);
     }
 

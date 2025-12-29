@@ -16,5 +16,6 @@ FROM
   INNER JOIN pg_rewrite AS r
   ON r.ev_class =
     c.oid
-WHERE c.relkind IN ('v',
+WHERE
+  c.relkind IN ('v',
   'm');

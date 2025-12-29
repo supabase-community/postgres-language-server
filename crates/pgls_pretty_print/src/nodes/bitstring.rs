@@ -19,11 +19,11 @@ pub(super) fn emit_bitstring(e: &mut EventEmitter, n: &BitString) {
     } else if n.bsval.starts_with('b') || n.bsval.starts_with('B') {
         // Handle binary without quotes
         let digits = &n.bsval[1..];
-        e.token(TokenKind::STRING(format!("B'{}'", digits)));
+        e.token(TokenKind::STRING(format!("B'{digits}'")));
     } else if n.bsval.starts_with('x') || n.bsval.starts_with('X') {
         // Handle hex without quotes
         let digits = &n.bsval[1..];
-        e.token(TokenKind::STRING(format!("X'{}'", digits)));
+        e.token(TokenKind::STRING(format!("X'{digits}'")));
     } else {
         // Default to binary if no prefix
         e.token(TokenKind::STRING(format!("B'{}'", n.bsval)));

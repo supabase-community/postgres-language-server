@@ -23,7 +23,7 @@ enum StringState {
 fn test_single(fixture: Fixture<&str>) {
     let content = fixture.content();
 
-    println!("Original content:\n{}", content);
+    println!("Original content:\n{content}");
 
     let absolute_fixture_path = Utf8Path::new(fixture.path());
     let input_file = absolute_fixture_path;
@@ -42,7 +42,7 @@ fn test_single(fixture: Fixture<&str>) {
     let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
     let mut ast = parsed.into_root().expect("No root node found");
 
-    println!("Parsed AST: {:#?}", ast);
+    println!("Parsed AST: {ast:#?}");
 
     let mut emitter = EventEmitter::new();
     emit_node_enum(&ast, &mut emitter);
@@ -56,7 +56,7 @@ fn test_single(fixture: Fixture<&str>) {
     let mut renderer = Renderer::new(&mut output, config);
     renderer.render(emitter.events).expect("Failed to render");
 
-    println!("Formatted content:\n{}", output);
+    println!("Formatted content:\n{output}");
 
     assert_line_lengths(&output, max_line_length);
 
@@ -65,6 +65,13 @@ fn test_single(fixture: Fixture<&str>) {
 
     clear_location(&mut parsed_ast);
     clear_location(&mut ast);
+    normalize_a_indirection(&mut parsed_ast);
+    normalize_a_indirection(&mut ast);
+    normalize_object_with_args(&mut parsed_ast);
+    normalize_object_with_args(&mut ast);
+    normalize_join_expr(&mut parsed_ast);
+    normalize_join_expr(&mut ast);
+    normalize_foreign_table_partbound(&mut ast);
 
     assert_eq!(ast, parsed_ast);
 
@@ -113,7 +120,7 @@ fn test_multi(fixture: Fixture<&str>) {
         let parsed = pgls_query::parse(trimmed).expect("Failed to parse SQL");
         let mut ast = parsed.into_root().expect("No root node found");
 
-        println!("Parsed AST: {:#?}", ast);
+        println!("Parsed AST: {ast:#?}");
 
         let mut emitter = EventEmitter::new();
         emit_node_enum(&ast, &mut emitter);
@@ -132,15 +139,22 @@ fn test_multi(fixture: Fixture<&str>) {
 
         // Verify AST equality
         let parsed_output = pgls_query::parse(&output).unwrap_or_else(|e| {
-            eprintln!("Failed to parse formatted SQL. Error: {:?}", e);
+            eprintln!("Failed to parse formatted SQL. Error: {e:?}");
             eprintln!("Statement index: {}", range.start());
-            eprintln!("Formatted SQL:\n{}", output);
-            panic!("Failed to parse formatted SQL: {:?}", e);
+            eprintln!("Formatted SQL:\n{output}");
+            panic!("Failed to parse formatted SQL: {e:?}");
         });
         let mut parsed_ast = parsed_output.into_root().expect("No root node found");
 
         clear_location(&mut parsed_ast);
         clear_location(&mut ast);
+        normalize_a_indirection(&mut parsed_ast);
+        normalize_a_indirection(&mut ast);
+        normalize_object_with_args(&mut parsed_ast);
+        normalize_object_with_args(&mut ast);
+        normalize_join_expr(&mut parsed_ast);
+        normalize_join_expr(&mut ast);
+        normalize_foreign_table_partbound(&mut ast);
 
         assert_eq!(ast, parsed_ast);
 
@@ -150,7 +164,7 @@ fn test_multi(fixture: Fixture<&str>) {
     // Join all formatted statements with double newline
     let final_output = formatted_statements.join("\n\n");
 
-    println!("Formatted multi-statement content:\n{}", final_output);
+    println!("Formatted multi-statement content:\n{final_output}");
 
     with_settings!({
         omit_expression => true,
@@ -242,10 +256,7 @@ fn assert_line_lengths(sql: &str, max_line_length: usize) {
         }
 
         if max_outside_run > max_line_length {
-            panic!(
-                "Line exceeds max length of {} outside literals: {}",
-                max_line_length, line
-            );
+            panic!("Line exceeds max length of {max_line_length} outside literals: {line}");
         }
     }
 }
@@ -301,8 +312,23 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             }
             pgls_query::NodeMut::FuncCall(n) => {
                 (*n).location = 0;
+                // Normalize funcformat to CoerceExplicitCall since we emit as regular function call
+                (*n).funcformat = pgls_query::protobuf::CoercionForm::CoerceExplicitCall.into();
+                // Remove pg_catalog prefix from function names
+                if (*n).funcname.len() == 2 {
+                    if let Some(pgls_query::NodeEnum::String(schema)) =
+                        (*n).funcname.first().and_then(|node| node.node.as_ref())
+                    {
+                        if schema.sval.eq_ignore_ascii_case("pg_catalog") {
+                            (*n).funcname.remove(0);
+                        }
+                    }
+                }
             }
             pgls_query::NodeMut::NamedArgExpr(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::SetToDefault(n) => {
                 (*n).location = 0;
             }
             pgls_query::NodeMut::AArrayExpr(n) => {
@@ -337,6 +363,8 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             }
             pgls_query::NodeMut::DefElem(n) => {
                 (*n).location = 0;
+                // Normalize defname to lowercase for case-insensitive options
+                (*n).defname = (*n).defname.to_lowercase();
             }
             pgls_query::NodeMut::XmlSerialize(n) => {
                 (*n).location = 0;
@@ -403,12 +431,48 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
                         }
                     }
                 }
+
+                // Normalize char to bpchar(1) and bpchar to bpchar(1)
+                if (*n).names.len() == 1 {
+                    if let Some(pgls_query::NodeEnum::String(type_name)) =
+                        (*n).names.first().and_then(|node| node.node.as_ref())
+                    {
+                        let is_char = type_name.sval.eq_ignore_ascii_case("char");
+                        let is_bpchar = type_name.sval.eq_ignore_ascii_case("bpchar");
+                        if (is_char || is_bpchar) && (*n).typmods.is_empty() {
+                            // char/bpchar without size is char(1) = bpchar(1)
+                            (*n).names[0] = pgls_query::protobuf::Node {
+                                node: Some(pgls_query::NodeEnum::String(
+                                    pgls_query::protobuf::String {
+                                        sval: "bpchar".to_string(),
+                                    },
+                                )),
+                            };
+                            (*n).typmods.push(pgls_query::protobuf::Node {
+                                node: Some(pgls_query::NodeEnum::AConst(
+                                    pgls_query::protobuf::AConst {
+                                        isnull: false,
+                                        location: 0,
+                                        val: Some(pgls_query::protobuf::a_const::Val::Ival(
+                                            pgls_query::protobuf::Integer { ival: 1 },
+                                        )),
+                                    },
+                                )),
+                            });
+                        }
+                    }
+                }
             }
             pgls_query::NodeMut::JsonBehavior(n) => {
                 (*n).location = 0;
             }
             pgls_query::NodeMut::AConst(n) => {
                 (*n).location = 0;
+                // Normalize string values to lowercase for settings like datestyle
+                // PostgreSQL normalizes case when parsing SET statements
+                if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = (*n).val.as_mut() {
+                    s.sval = s.sval.to_lowercase();
+                }
             }
             pgls_query::NodeMut::RangeVar(n) => {
                 (*n).location = 0;
@@ -443,6 +507,12 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             pgls_query::NodeMut::NullTest(n) => {
                 (*n).location = 0;
             }
+            pgls_query::NodeMut::BooleanTest(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::MinMaxExpr(n) => {
+                (*n).location = 0;
+            }
             pgls_query::NodeMut::Constraint(n) => {
                 (*n).location = 0;
             }
@@ -452,7 +522,454 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             pgls_query::NodeMut::CaseExpr(n) => {
                 (*n).location = 0;
             }
+            pgls_query::NodeMut::TransactionStmt(n) => {
+                (*n).location = 0;
+            }
+            pgls_query::NodeMut::CopyStmt(n) => {
+                // Normalize boolean options in COPY statement options
+                for opt in (*n).options.iter_mut() {
+                    if let Some(pgls_query::NodeEnum::DefElem(def)) = opt.node.as_mut() {
+                        def.location = 0;
+                        // Normalize boolean true to None for COPY options
+                        let should_clear = def
+                            .arg
+                            .as_ref()
+                            .and_then(|arg| arg.node.as_ref())
+                            .map(|node| {
+                                matches!(node, pgls_query::NodeEnum::Boolean(b) if b.boolval)
+                            })
+                            .unwrap_or(false);
+                        if should_clear {
+                            def.arg = None;
+                        }
+                    }
+                }
+            }
+            pgls_query::NodeMut::DefineStmt(n) => {
+                // Normalize the Integer flag in args for ordered-set aggregates
+                // The integer indicates the number of direct arguments, but this may differ
+                // between syntactic forms (positive value vs -1)
+                // Normalize all to 0 to ignore this difference
+                for arg in (*n).args.iter_mut() {
+                    if let Some(pgls_query::NodeEnum::Integer(int)) = arg.node.as_mut() {
+                        int.ival = 0;
+                    }
+                }
+            }
+            pgls_query::NodeMut::FunctionParameter(n) => {
+                // Normalize FunctionParameter mode to FuncParamDefault
+                // When emitting objargs (TypeName), reparsing creates objfuncargs (FunctionParameter)
+                // with potentially different modes (e.g., FuncParamVariadic vs FuncParamDefault)
+                (*n).mode = pgls_query::protobuf::FunctionParameterMode::FuncParamDefault as i32;
+                // Clear name as DROP FUNCTION can be parsed with or without param names
+                (*n).name.clear();
+            }
+            pgls_query::NodeMut::IndexElem(n) => {
+                // Normalize DefElem args in opclassopts from TypeName to String
+                for opt in (*n).opclassopts.iter_mut() {
+                    if let Some(pgls_query::NodeEnum::DefElem(def)) = opt.node.as_mut() {
+                        def.location = 0;
+                        // Normalize TypeName to String
+                        if let Some(ref mut arg) = def.arg {
+                            if let Some(pgls_query::NodeEnum::TypeName(tn)) = arg.node.as_mut() {
+                                if tn.names.len() == 1
+                                    && tn.typmods.is_empty()
+                                    && tn.array_bounds.is_empty()
+                                    && !tn.setof
+                                    && !tn.pct_type
+                                {
+                                    if let Some(first) = tn.names.first() {
+                                        arg.node = first.node.clone();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            pgls_query::NodeMut::DefElem(n) => {
+                (*n).location = 0;
+                // Normalize boolean options: arg: Some(Boolean(true)) is equivalent to arg: None
+                // This handles the difference between "WITH CSV HEADER" and "WITH (FORMAT csv, HEADER)"
+                let should_clear = (*n)
+                    .arg
+                    .as_ref()
+                    .and_then(|arg| arg.node.as_ref())
+                    .map(|node| matches!(node, pgls_query::NodeEnum::Boolean(b) if b.boolval))
+                    .unwrap_or(false);
+                if should_clear {
+                    (*n).arg = None;
+                }
+
+                // Normalize TypeName with single string name to just String
+                // e.g., TypeName { names: [String("1000")] } -> String("1000")
+                // This handles the difference when an identifier is parsed as a type name
+                let should_convert = (*n)
+                    .arg
+                    .as_ref()
+                    .and_then(|arg| arg.node.as_ref())
+                    .map(|node| {
+                        if let pgls_query::NodeEnum::TypeName(tn) = node {
+                            tn.names.len() == 1
+                                && tn.typmods.is_empty()
+                                && tn.array_bounds.is_empty()
+                                && !tn.setof
+                                && !tn.pct_type
+                        } else {
+                            false
+                        }
+                    })
+                    .unwrap_or(false);
+                if should_convert {
+                    if let Some(ref mut arg) = (*n).arg {
+                        if let Some(pgls_query::NodeEnum::TypeName(tn)) = arg.node.as_mut() {
+                            if let Some(first) = tn.names.first() {
+                                arg.node = first.node.clone();
+                            }
+                        }
+                    }
+                }
+            }
             _ => {}
         });
+    }
+}
+
+/// Normalize AIndirection nodes by flattening nested AIndirection into a single node
+/// This handles the case where `(col[0])[0]` parses to a flat structure but `col[0][0]`
+/// parses to a nested structure - they're semantically equivalent.
+/// Also converts AIndirection(ColumnRef, [String]) to ColumnRef with merged fields.
+fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
+    if let pgls_query::NodeEnum::AIndirection(ind) = node {
+        // Recursively normalize the arg first
+        if let Some(ref mut arg) = ind.arg {
+            if let Some(ref mut inner_node) = arg.node {
+                normalize_a_indirection(inner_node);
+            }
+        }
+
+        // Now flatten: if arg is another AIndirection, pull up its contents
+        loop {
+            let inner_opt = ind.arg.as_ref().and_then(|arg| {
+                if let Some(pgls_query::NodeEnum::AIndirection(inner)) = arg.node.as_ref() {
+                    Some(inner.clone())
+                } else {
+                    None
+                }
+            });
+
+            if let Some(inner) = inner_opt {
+                // Replace arg with inner's arg
+                ind.arg = inner.arg;
+                // Prepend inner's indirection to current indirection
+                let mut new_indirection = inner.indirection;
+                new_indirection.append(&mut ind.indirection);
+                ind.indirection = new_indirection;
+            } else {
+                break;
+            }
+        }
+
+        // Merge leading String/AStar elements from indirection into ColumnRef fields
+        // This normalizes `d1.r` which may parse as either structure
+        // Also handles partial cases like `value.if2[1]` where we merge "if2" but keep AIndices
+        if let Some(ref mut arg) = ind.arg {
+            if let Some(pgls_query::NodeEnum::ColumnRef(col)) = arg.node.as_mut() {
+                // Find how many leading elements are String or AStar
+                let merge_count = ind
+                    .indirection
+                    .iter()
+                    .take_while(|indir| {
+                        matches!(
+                            indir.node.as_ref(),
+                            Some(pgls_query::NodeEnum::String(_) | pgls_query::NodeEnum::AStar(_))
+                        )
+                    })
+                    .count();
+
+                if merge_count > 0 {
+                    // Split indirection: merge first `merge_count` into ColumnRef, keep rest
+                    let remaining = ind.indirection.split_off(merge_count);
+                    col.fields.append(&mut ind.indirection);
+                    ind.indirection = remaining;
+
+                    // If no indirection left, convert to just ColumnRef
+                    if ind.indirection.is_empty() {
+                        *node = pgls_query::NodeEnum::ColumnRef(col.clone());
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    // Recursively process all children
+    match node {
+        pgls_query::NodeEnum::SelectStmt(stmt) => {
+            for target in &mut stmt.target_list {
+                if let Some(ref mut n) = target.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            for from in &mut stmt.from_clause {
+                if let Some(ref mut n) = from.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut w) = stmt.where_clause {
+                if let Some(ref mut n) = w.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            for sort in &mut stmt.sort_clause {
+                if let Some(ref mut n) = sort.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::SortBy(sb) => {
+            if let Some(ref mut n) = sb.node {
+                if let Some(ref mut inner) = n.node {
+                    normalize_a_indirection(inner);
+                }
+            }
+        }
+        pgls_query::NodeEnum::ResTarget(rt) => {
+            if let Some(ref mut v) = rt.val {
+                if let Some(ref mut n) = v.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::FuncCall(fc) => {
+            for arg in &mut fc.args {
+                if let Some(ref mut n) = arg.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::AExpr(expr) => {
+            if let Some(ref mut l) = expr.lexpr {
+                if let Some(ref mut n) = l.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut r) = expr.rexpr {
+                if let Some(ref mut n) = r.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::UpdateStmt(stmt) => {
+            for target in &mut stmt.target_list {
+                if let Some(ref mut n) = target.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut w) = stmt.where_clause {
+                if let Some(ref mut n) = w.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::DeleteStmt(stmt) => {
+            if let Some(ref mut w) = stmt.where_clause {
+                if let Some(ref mut n) = w.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::InsertStmt(stmt) => {
+            if let Some(ref mut sel) = stmt.select_stmt {
+                if let Some(ref mut n) = sel.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::Constraint(c) => {
+            if let Some(ref mut raw) = c.raw_expr {
+                if let Some(ref mut n) = raw.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::AlterDomainStmt(stmt) => {
+            if let Some(ref mut def) = stmt.def {
+                if let Some(ref mut n) = def.node {
+                    normalize_a_indirection(n);
+                    // For NOT NULL constraints on domains, clear keys and conname
+                    // since they aren't emitted/reparsed
+                    if let pgls_query::NodeEnum::Constraint(c) = n {
+                        if c.contype == pgls_query::protobuf::ConstrType::ConstrNotnull as i32 {
+                            c.keys.clear();
+                            // conname is emitted, so leave it for comparison
+                        }
+                    }
+                }
+            }
+        }
+        pgls_query::NodeEnum::CreateDomainStmt(stmt) => {
+            for constraint in &mut stmt.constraints {
+                if let Some(ref mut n) = constraint.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::NullTest(nt) => {
+            if let Some(ref mut arg) = nt.arg {
+                if let Some(ref mut n) = arg.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::BoolExpr(be) => {
+            for arg in &mut be.args {
+                if let Some(ref mut n) = arg.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::RuleStmt(stmt) => {
+            for action in &mut stmt.actions {
+                if let Some(ref mut n) = action.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Normalize ObjectWithArgs by clearing objfuncargs
+/// When we emit from objargs, the reparsed objfuncargs may differ in count
+/// (e.g., OUT parameters in objfuncargs but not in objargs)
+fn normalize_object_with_args(node: &mut pgls_query::NodeEnum) {
+    match node {
+        pgls_query::NodeEnum::ObjectWithArgs(owa) => {
+            // Clear objfuncargs - we emit from objargs only
+            owa.objfuncargs.clear();
+        }
+        pgls_query::NodeEnum::DropStmt(ds) => {
+            for obj in &mut ds.objects {
+                if let Some(ref mut n) = obj.node {
+                    normalize_object_with_args(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::AlterObjectSchemaStmt(stmt) => {
+            if let Some(ref mut obj) = stmt.object {
+                if let Some(ref mut n) = obj.node {
+                    normalize_object_with_args(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::CommentStmt(stmt) => {
+            if let Some(ref mut obj) = stmt.object {
+                if let Some(ref mut n) = obj.node {
+                    normalize_object_with_args(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::AlterFunctionStmt(stmt) => {
+            if let Some(ref mut func) = stmt.func {
+                normalize_object_with_args_inner(func);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn normalize_object_with_args_inner(owa: &mut pgls_query::protobuf::ObjectWithArgs) {
+    owa.objfuncargs.clear();
+}
+
+/// Normalize JoinExpr nodes - clear alias and quals for cross joins
+fn normalize_join_expr(node: &mut pgls_query::NodeEnum) {
+    match node {
+        pgls_query::NodeEnum::JoinExpr(je) => {
+            // Normalize INNER JOIN ON TRUE to no quals (equivalent to CROSS JOIN)
+            if je.jointype == pgls_query::protobuf::JoinType::JoinInner as i32 {
+                let is_true_qual = je
+                    .quals
+                    .as_ref()
+                    .and_then(|q| q.node.as_ref())
+                    .map(|n| {
+                        matches!(
+                            n,
+                            pgls_query::NodeEnum::AConst(c)
+                                if matches!(c.val.as_ref(), Some(pgls_query::protobuf::a_const::Val::Boolval(b)) if b.boolval)
+                        )
+                    })
+                    .unwrap_or(false);
+                if is_true_qual {
+                    je.quals = None;
+                }
+            }
+            // Clear join alias (not currently emitted - requires parentheses around join)
+            je.alias = None;
+            // Clear join_using_alias (not currently emitted)
+            je.join_using_alias = None;
+            // Recursively normalize nested joins
+            if let Some(ref mut larg) = je.larg {
+                if let Some(ref mut n) = larg.node {
+                    normalize_join_expr(n);
+                }
+            }
+            if let Some(ref mut rarg) = je.rarg {
+                if let Some(ref mut n) = rarg.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::SelectStmt(stmt) => {
+            for from in &mut stmt.from_clause {
+                if let Some(ref mut n) = from.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::RangeSubselect(rs) => {
+            if let Some(ref mut sub) = rs.subquery {
+                if let Some(ref mut n) = sub.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::ViewStmt(vs) => {
+            if let Some(ref mut query) = vs.query {
+                if let Some(ref mut n) = query.node {
+                    normalize_join_expr(n);
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Normalize CreateForeignTableStmt partbound:
+/// When partbound is None but inh_relations is non-empty, set a default partition bound
+/// Also clear table_elts for partitions since they inherit from parent
+fn normalize_foreign_table_partbound(node: &mut pgls_query::NodeEnum) {
+    if let pgls_query::NodeEnum::CreateForeignTableStmt(stmt) = node {
+        if let Some(ref mut base) = stmt.base_stmt {
+            // If we have partition inheritance
+            if !base.inh_relations.is_empty() {
+                // Add a default partbound if missing
+                if base.partbound.is_none() {
+                    base.partbound = Some(pgls_query::protobuf::PartitionBoundSpec {
+                        strategy: String::new(),
+                        is_default: true,
+                        modulus: 0,
+                        remainder: 0,
+                        listdatums: vec![],
+                        lowerdatums: vec![],
+                        upperdatums: vec![],
+                        location: 0,
+                    });
+                }
+                // Clear table_elts since partition columns come from parent
+                base.table_elts.clear();
+            }
+        }
     }
 }

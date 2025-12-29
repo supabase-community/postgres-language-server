@@ -7,7 +7,8 @@ SELECT
   *
 FROM
   demo
-WHERE (flag_a OR
+WHERE
+  (flag_a OR
   flag_b) AND
   NOT (flag_c OR
   flag_d) AND

@@ -38,7 +38,8 @@ GROUP BY sch.nspname,
   pks_fks.conname,
   pks_fks.contype,
   pks_fks.ncol
-HAVING ncol =
+HAVING
+  ncol =
   array_length(array_agg(ROW(col.attname,
   view_columns) ORDER BY pks_fks.ord),
   1);

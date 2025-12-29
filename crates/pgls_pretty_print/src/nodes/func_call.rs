@@ -149,7 +149,29 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
     if n.agg_star {
         e.token(TokenKind::IDENT("*".to_string()));
     } else if !n.args.is_empty() {
-        emit_comma_separated_list(e, &n.args, super::emit_node);
+        // Handle VARIADIC - if func_variadic is true, prepend VARIADIC to the last argument
+        if n.func_variadic && !n.args.is_empty() {
+            // Emit non-variadic args first
+            for (idx, arg) in n.args.iter().take(n.args.len() - 1).enumerate() {
+                if idx > 0 {
+                    e.token(TokenKind::COMMA);
+                    e.line(LineType::SoftOrSpace);
+                }
+                super::emit_node(arg, e);
+            }
+
+            if n.args.len() > 1 {
+                e.token(TokenKind::COMMA);
+                e.line(LineType::SoftOrSpace);
+            }
+
+            // Emit VARIADIC with the last argument
+            e.token(TokenKind::VARIADIC_KW);
+            e.space();
+            super::emit_node(n.args.last().unwrap(), e);
+        } else {
+            emit_comma_separated_list(e, &n.args, super::emit_node);
+        }
     }
 
     // Handle ORDER BY inside function (for aggregates not using WITHIN GROUP)
@@ -228,6 +250,7 @@ fn emit_overlay_function(e: &mut EventEmitter, n: &FuncCall) {
 }
 
 // POSITION(substring IN string)
+// PostgreSQL stores args as: [string, substring] (reversed from syntax)
 fn emit_position_function(e: &mut EventEmitter, n: &FuncCall) {
     assert!(
         n.args.len() == 2,
@@ -237,14 +260,14 @@ fn emit_position_function(e: &mut EventEmitter, n: &FuncCall) {
 
     e.token(TokenKind::L_PAREN);
 
-    // First arg: substring
-    super::emit_node(&n.args[0], e);
+    // First syntactic arg: substring (stored as second arg in AST)
+    super::emit_node(&n.args[1], e);
 
     e.space();
     e.token(TokenKind::IN_KW);
     e.space();
-    // Second arg: string
-    super::emit_node(&n.args[1], e);
+    // Second syntactic arg: string (stored as first arg in AST)
+    super::emit_node(&n.args[0], e);
 
     e.token(TokenKind::R_PAREN);
 }

@@ -76,7 +76,8 @@ FROM
   10) AS j,
   generate_series(1,
   5) AS k
-WHERE i <=
+WHERE
+  i <=
   10 AND
   j >
   0 AND
@@ -93,7 +94,8 @@ FROM
   10) AS j,
   generate_series(1,
   5) AS k
-WHERE i <=
+WHERE
+  i <=
   10 AND
   j >
   0 AND

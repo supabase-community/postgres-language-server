@@ -3,7 +3,7 @@ use pgls_query::protobuf::{DropBehavior, DropStmt, ObjectType};
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind};
 
-use super::node_list::emit_comma_separated_list;
+use super::node_list::{emit_comma_separated_list, emit_dot_separated_list_with};
 
 pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
     e.group_start(GroupKind::DropStmt);
@@ -11,47 +11,59 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
     e.token(TokenKind::DROP_KW);
     e.space();
 
-    // Object type
-    let object_type_str = match n.remove_type {
-        x if x == ObjectType::ObjectTable as i32 => "TABLE",
-        x if x == ObjectType::ObjectIndex as i32 => "INDEX",
-        x if x == ObjectType::ObjectSequence as i32 => "SEQUENCE",
-        x if x == ObjectType::ObjectView as i32 => "VIEW",
-        x if x == ObjectType::ObjectSchema as i32 => "SCHEMA",
-        x if x == ObjectType::ObjectFunction as i32 => "FUNCTION",
-        x if x == ObjectType::ObjectProcedure as i32 => "PROCEDURE",
-        x if x == ObjectType::ObjectRoutine as i32 => "ROUTINE",
-        x if x == ObjectType::ObjectAggregate as i32 => "AGGREGATE",
-        x if x == ObjectType::ObjectOperator as i32 => "OPERATOR",
-        x if x == ObjectType::ObjectType as i32 => "TYPE",
-        x if x == ObjectType::ObjectDomain as i32 => "DOMAIN",
-        x if x == ObjectType::ObjectCollation as i32 => "COLLATION",
-        x if x == ObjectType::ObjectConversion as i32 => "CONVERSION",
-        x if x == ObjectType::ObjectTrigger as i32 => "TRIGGER",
-        x if x == ObjectType::ObjectRule as i32 => "RULE",
-        x if x == ObjectType::ObjectExtension as i32 => "EXTENSION",
-        x if x == ObjectType::ObjectForeignTable as i32 => "FOREIGN TABLE",
-        x if x == ObjectType::ObjectMatview as i32 => "MATERIALIZED VIEW",
-        x if x == ObjectType::ObjectRole as i32 => "ROLE",
-        x if x == ObjectType::ObjectDatabase as i32 => "DATABASE",
-        x if x == ObjectType::ObjectTablespace as i32 => "TABLESPACE",
-        x if x == ObjectType::ObjectFdw as i32 => "FOREIGN DATA WRAPPER",
-        x if x == ObjectType::ObjectForeignServer as i32 => "SERVER",
-        x if x == ObjectType::ObjectUserMapping as i32 => "USER MAPPING",
-        x if x == ObjectType::ObjectAccessMethod as i32 => "ACCESS METHOD",
-        x if x == ObjectType::ObjectPublication as i32 => "PUBLICATION",
-        x if x == ObjectType::ObjectSubscription as i32 => "SUBSCRIPTION",
-        x if x == ObjectType::ObjectPolicy as i32 => "POLICY",
-        x if x == ObjectType::ObjectEventTrigger as i32 => "EVENT TRIGGER",
-        x if x == ObjectType::ObjectTransform as i32 => "TRANSFORM",
-        x if x == ObjectType::ObjectCast as i32 => "CAST",
-        _ => "UNKNOWN",
+    // Object type - use typed enum accessor
+    let object_type = n.remove_type();
+    let object_type_str = match object_type {
+        ObjectType::ObjectTable => "TABLE",
+        ObjectType::ObjectIndex => "INDEX",
+        ObjectType::ObjectSequence => "SEQUENCE",
+        ObjectType::ObjectView => "VIEW",
+        ObjectType::ObjectSchema => "SCHEMA",
+        ObjectType::ObjectFunction => "FUNCTION",
+        ObjectType::ObjectProcedure => "PROCEDURE",
+        ObjectType::ObjectRoutine => "ROUTINE",
+        ObjectType::ObjectAggregate => "AGGREGATE",
+        ObjectType::ObjectOperator => "OPERATOR",
+        ObjectType::ObjectOpclass => "OPERATOR CLASS",
+        ObjectType::ObjectOpfamily => "OPERATOR FAMILY",
+        ObjectType::ObjectType => "TYPE",
+        ObjectType::ObjectDomain => "DOMAIN",
+        ObjectType::ObjectCollation => "COLLATION",
+        ObjectType::ObjectConversion => "CONVERSION",
+        ObjectType::ObjectTrigger => "TRIGGER",
+        ObjectType::ObjectRule => "RULE",
+        ObjectType::ObjectExtension => "EXTENSION",
+        ObjectType::ObjectForeignTable => "FOREIGN TABLE",
+        ObjectType::ObjectMatview => "MATERIALIZED VIEW",
+        ObjectType::ObjectRole => "ROLE",
+        ObjectType::ObjectDatabase => "DATABASE",
+        ObjectType::ObjectTablespace => "TABLESPACE",
+        ObjectType::ObjectFdw => "FOREIGN DATA WRAPPER",
+        ObjectType::ObjectForeignServer => "SERVER",
+        ObjectType::ObjectUserMapping => "USER MAPPING",
+        ObjectType::ObjectAccessMethod => "ACCESS METHOD",
+        ObjectType::ObjectPublication => "PUBLICATION",
+        ObjectType::ObjectSubscription => "SUBSCRIPTION",
+        ObjectType::ObjectPolicy => "POLICY",
+        ObjectType::ObjectEventTrigger => "EVENT TRIGGER",
+        ObjectType::ObjectTransform => "TRANSFORM",
+        ObjectType::ObjectCast => "CAST",
+        ObjectType::ObjectStatisticExt => "STATISTICS",
+        ObjectType::ObjectLanguage => "LANGUAGE",
+        ObjectType::ObjectTsparser => "TEXT SEARCH PARSER",
+        ObjectType::ObjectTsdictionary => "TEXT SEARCH DICTIONARY",
+        ObjectType::ObjectTstemplate => "TEXT SEARCH TEMPLATE",
+        ObjectType::ObjectTsconfiguration => "TEXT SEARCH CONFIGURATION",
+        _ => {
+            debug_assert!(false, "Unhandled ObjectType in DropStmt: {object_type:?}");
+            "UNKNOWN"
+        }
     };
 
     e.token(TokenKind::IDENT(object_type_str.to_string()));
 
     // CONCURRENTLY for indexes
-    if n.concurrent && n.remove_type == ObjectType::ObjectIndex as i32 {
+    if n.concurrent && object_type == ObjectType::ObjectIndex {
         e.space();
         e.token(TokenKind::CONCURRENTLY_KW);
     }
@@ -67,21 +79,42 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
     // Object names
     if !n.objects.is_empty() {
         e.space();
-        if n.remove_type == ObjectType::ObjectCast as i32 {
-            emit_comma_separated_list(e, &n.objects, emit_drop_cast_object);
-        } else {
-            emit_comma_separated_list(e, &n.objects, |node, e| {
-                if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
-                    emit_dot_separated_identifiers(e, &list.items);
-                } else {
-                    super::emit_node(node, e);
-                }
-            });
+        match object_type {
+            ObjectType::ObjectCast => {
+                emit_comma_separated_list(e, &n.objects, emit_drop_cast_object);
+            }
+            ObjectType::ObjectOpclass | ObjectType::ObjectOpfamily => {
+                // DROP OPERATOR CLASS/FAMILY uses: name USING access_method
+                emit_comma_separated_list(e, &n.objects, emit_drop_opclass_object);
+            }
+            ObjectType::ObjectRule | ObjectType::ObjectTrigger | ObjectType::ObjectPolicy => {
+                // DROP RULE/TRIGGER/POLICY uses: name ON table_name
+                emit_comma_separated_list(e, &n.objects, emit_drop_on_object);
+            }
+            ObjectType::ObjectAggregate => {
+                // DROP AGGREGATE needs (*) for "any argument types"
+                emit_comma_separated_list(e, &n.objects, |node, e| {
+                    if let Some(pgls_query::NodeEnum::ObjectWithArgs(owa)) = node.node.as_ref() {
+                        super::emit_object_with_args_for_aggregate(e, owa);
+                    } else {
+                        super::emit_node(node, e);
+                    }
+                });
+            }
+            _ => {
+                emit_comma_separated_list(e, &n.objects, |node, e| {
+                    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
+                        emit_dot_separated_identifiers(e, &list.items);
+                    } else {
+                        super::emit_node(node, e);
+                    }
+                });
+            }
         }
     }
 
     // CASCADE/RESTRICT
-    if n.behavior == DropBehavior::DropCascade as i32 {
+    if n.behavior() == DropBehavior::DropCascade {
         e.space();
         e.token(TokenKind::CASCADE_KW);
     }
@@ -91,17 +124,13 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
 }
 
 fn emit_dot_separated_identifiers(e: &mut EventEmitter, items: &[pgls_query::protobuf::Node]) {
-    for (i, item) in items.iter().enumerate() {
-        if i > 0 {
-            e.token(TokenKind::DOT);
-        }
-
+    emit_dot_separated_list_with(e, items, |item, e| {
         if let Some(pgls_query::NodeEnum::String(s)) = item.node.as_ref() {
             super::string::emit_identifier(e, &s.sval);
         } else {
             super::emit_node(item, e);
         }
-    }
+    });
 }
 
 fn emit_drop_cast_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
@@ -114,6 +143,62 @@ fn emit_drop_cast_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter
             e.space();
             super::emit_node(&list.items[1], e);
             e.token(TokenKind::R_PAREN);
+            return;
+        }
+    }
+
+    // Fallback for unexpected structure
+    super::emit_node(node, e);
+}
+
+/// Emit DROP OPERATOR CLASS/FAMILY object.
+/// Format: name USING access_method
+/// The list is [access_method, name_parts...]
+fn emit_drop_opclass_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
+    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
+        if list.items.len() >= 2 {
+            // First element is the access method name
+            // Remaining elements are the operator class/family name parts
+            let name_parts = &list.items[1..];
+            emit_dot_separated_identifiers(e, name_parts);
+            e.space();
+            e.token(TokenKind::IDENT("USING".to_string()));
+            e.space();
+            if let Some(pgls_query::NodeEnum::String(s)) = list.items[0].node.as_ref() {
+                super::string::emit_identifier(e, &s.sval);
+            }
+            return;
+        }
+    }
+
+    // Fallback for unexpected structure
+    super::emit_node(node, e);
+}
+
+/// Emit DROP RULE/TRIGGER/POLICY object.
+/// Format: name ON table_name
+/// The list is [table_name_parts..., object_name] - last item is the object name
+fn emit_drop_on_object(node: &pgls_query::protobuf::Node, e: &mut EventEmitter) {
+    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref() {
+        if list.items.len() >= 2 {
+            // Last element is the object name (trigger/rule/policy)
+            // All previous elements are the table name parts (schema, table, etc.)
+            let (table_parts, object_name_item) = list.items.split_at(list.items.len() - 1);
+            let object_name = &object_name_item[0];
+
+            // Emit object name first
+            if let Some(pgls_query::NodeEnum::String(s)) = object_name.node.as_ref() {
+                super::string::emit_identifier(e, &s.sval);
+            } else {
+                super::emit_node(object_name, e);
+            }
+
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+
+            // Emit table name parts dot-separated
+            emit_dot_separated_identifiers(e, table_parts);
             return;
         }
     }

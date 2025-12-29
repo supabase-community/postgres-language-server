@@ -16,8 +16,16 @@ pub(super) fn emit_sql_value_function(e: &mut EventEmitter, n: &SqlValueFunction
         SqlValueFunctionOp::SvfopCurrentTime => {
             e.token(TokenKind::CURRENT_TIME_KW);
         }
+        SqlValueFunctionOp::SvfopCurrentTimeN => {
+            e.token(TokenKind::CURRENT_TIME_KW);
+            emit_precision(e, n.typmod);
+        }
         SqlValueFunctionOp::SvfopCurrentTimestamp => {
             e.token(TokenKind::CURRENT_TIMESTAMP_KW);
+        }
+        SqlValueFunctionOp::SvfopCurrentTimestampN => {
+            e.token(TokenKind::CURRENT_TIMESTAMP_KW);
+            emit_precision(e, n.typmod);
         }
         SqlValueFunctionOp::SvfopCurrentUser => {
             e.token(TokenKind::CURRENT_USER_KW);
@@ -40,8 +48,16 @@ pub(super) fn emit_sql_value_function(e: &mut EventEmitter, n: &SqlValueFunction
         SqlValueFunctionOp::SvfopLocaltime => {
             e.token(TokenKind::LOCALTIME_KW);
         }
+        SqlValueFunctionOp::SvfopLocaltimeN => {
+            e.token(TokenKind::LOCALTIME_KW);
+            emit_precision(e, n.typmod);
+        }
         SqlValueFunctionOp::SvfopLocaltimestamp => {
             e.token(TokenKind::LOCALTIMESTAMP_KW);
+        }
+        SqlValueFunctionOp::SvfopLocaltimestampN => {
+            e.token(TokenKind::LOCALTIMESTAMP_KW);
+            emit_precision(e, n.typmod);
         }
         _ => {
             // Fallback for unknown types
@@ -50,4 +66,10 @@ pub(super) fn emit_sql_value_function(e: &mut EventEmitter, n: &SqlValueFunction
     }
 
     e.group_end();
+}
+
+fn emit_precision(e: &mut EventEmitter, typmod: i32) {
+    e.token(TokenKind::L_PAREN);
+    e.token(TokenKind::IDENT(typmod.to_string()));
+    e.token(TokenKind::R_PAREN);
 }

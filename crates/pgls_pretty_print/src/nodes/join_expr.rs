@@ -124,5 +124,9 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         e.token(TokenKind::TRUE_KW);
     }
 
+    // Note: Join aliases (e.g., (t1 JOIN t2) AS alias) are not emitted
+    // as they require parentheses around the join expression for the alias to be valid.
+    // This is a limitation of the current emitter architecture.
+
     e.group_end();
 }

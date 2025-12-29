@@ -6,7 +6,8 @@ snapshot_kind: text
 SELECT
   percentile_disc(0.5)
   WITHIN GROUP (ORDER BY score)
-  FILTER (WHERE score >
+  FILTER (WHERE
+    score >
     0)
 FROM
   (VALUES (1),
@@ -16,7 +17,8 @@ FROM
 SELECT
   percentile_cont(0.9)
   WITHIN GROUP (ORDER BY duration)
-  FILTER (WHERE duration IS NOT NULL)
+  FILTER (WHERE
+    duration IS NOT NULL)
 FROM
   (VALUES (CAST('1 hour' AS INTERVAL)),
   (CAST('2 hours' AS INTERVAL))) AS durations (duration);

@@ -51,6 +51,22 @@ fn is_simple_identifier(s: &str) -> bool {
         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
 }
 
+/// Emit a dot-separated variable name, quoting parts that need it
+fn emit_variable_name(e: &mut EventEmitter, name: &str) {
+    let parts: Vec<&str> = name.split('.').collect();
+    for (i, part) in parts.iter().enumerate() {
+        if i > 0 {
+            e.token(TokenKind::DOT);
+        }
+        if is_simple_identifier(part) {
+            e.token(TokenKind::IDENT(part.to_string()));
+        } else {
+            // Quote the identifier
+            e.token(TokenKind::IDENT(format!("\"{part}\"")));
+        }
+    }
+}
+
 pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) {
     e.group_start(GroupKind::VariableSetStmt);
 
@@ -66,7 +82,7 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
         // VAR_RESET - emit RESET variable_name
         e.token(TokenKind::RESET_KW);
         e.space();
-        e.token(TokenKind::IDENT(n.name.clone()));
+        emit_variable_name(e, &n.name);
         e.token(TokenKind::SEMICOLON);
         e.group_end();
         return;
@@ -102,8 +118,13 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
             "catalog" => {
                 e.token(TokenKind::CATALOG_KW);
             }
-            "client_encoding" => {
+            "names" => {
+                // SET NAMES is parsed with name="names"
                 e.token(TokenKind::NAMES_KW);
+            }
+            "client_encoding" => {
+                // SET client_encoding should stay as client_encoding
+                e.token(TokenKind::IDENT(n.name.clone()));
             }
             "role" => {
                 e.token(TokenKind::ROLE_KW);
@@ -121,8 +142,8 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
                 e.token(TokenKind::LEVEL_KW);
             }
             _ => {
-                // Generic variable name
-                e.token(TokenKind::IDENT(n.name.clone()));
+                // Generic variable name - may contain dots and special chars
+                emit_variable_name(e, &n.name);
             }
         }
 
@@ -130,19 +151,23 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
         if !n.args.is_empty() {
             // Determine whether to use = or TO or nothing
             // SESSION AUTHORIZATION uses no connector (just space)
+            // SET TIME ZONE uses no connector (just space before value)
             // Most special variables use TO
             // Generic variables use =
             let uses_to = matches!(
                 n.name.to_lowercase().as_str(),
-                "timezone"
-                    | "catalog"
+                "catalog"
+                    | "names"
                     | "client_encoding"
                     | "role"
                     | "transaction_isolation"
                     | "search_path"
             );
 
-            let no_connector = n.name.to_lowercase() == "session_authorization";
+            let no_connector = matches!(
+                n.name.to_lowercase().as_str(),
+                "session_authorization" | "timezone"
+            );
 
             e.space();
             if !no_connector {
@@ -172,13 +197,14 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
                 n.name.to_lowercase().as_str(),
                 "timezone"
                     | "catalog"
+                    | "names"
                     | "client_encoding"
                     | "role"
                     | "transaction_isolation"
                     | "search_path"
             );
 
-            e.token(TokenKind::IDENT(n.name.clone()));
+            emit_variable_name(e, &n.name);
             e.space();
             if uses_to {
                 e.token(TokenKind::TO_KW);
@@ -190,7 +216,7 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
         }
     } else if n.kind == 3 {
         // VAR_SET_CURRENT
-        e.token(TokenKind::IDENT(n.name.clone()));
+        emit_variable_name(e, &n.name);
         e.space();
         e.token(TokenKind::FROM_KW);
         e.space();
@@ -198,7 +224,7 @@ pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) 
     } else {
         // VAR_SET_MULTI, VAR_RESET, VAR_RESET_ALL or other
         // TODO: Handle these variants properly
-        e.token(TokenKind::IDENT(n.name.clone()));
+        emit_variable_name(e, &n.name);
     }
 
     e.token(TokenKind::SEMICOLON);

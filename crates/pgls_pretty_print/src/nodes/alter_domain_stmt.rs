@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDomainStmt;
 
 use super::node_list::emit_dot_separated_list;
@@ -12,12 +12,8 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
     e.token(TokenKind::IDENT("DOMAIN".to_string()));
     e.space();
 
-    if n.missing_ok {
-        e.token(TokenKind::IF_KW);
-        e.space();
-        e.token(TokenKind::EXISTS_KW);
-        e.space();
-    }
+    // Note: missing_ok in AlterDomainStmt is for the constraint (DROP CONSTRAINT IF EXISTS),
+    // not for the domain itself. ALTER DOMAIN doesn't support IF EXISTS at domain level.
 
     // Domain name (qualified)
     if !n.type_name.is_empty() {
@@ -27,15 +23,20 @@ pub(super) fn emit_alter_domain_stmt(e: &mut EventEmitter, n: &AlterDomainStmt) 
     // subtype field indicates the operation:
     // 'T' = SET DEFAULT, 'N' = DROP NOT NULL, 'O' = SET NOT NULL,
     // 'C' = ADD CONSTRAINT, 'X' = DROP CONSTRAINT, 'V' = VALIDATE CONSTRAINT
-    e.space();
+    e.line(LineType::SoftOrSpace);
     match n.subtype.as_str() {
         "T" => {
-            e.token(TokenKind::SET_KW);
-            e.space();
-            e.token(TokenKind::DEFAULT_KW);
+            // If def is None, it's DROP DEFAULT; otherwise SET DEFAULT value
             if let Some(ref def) = n.def {
+                e.token(TokenKind::SET_KW);
+                e.space();
+                e.token(TokenKind::DEFAULT_KW);
                 e.space();
                 super::emit_node(def, e);
+            } else {
+                e.token(TokenKind::DROP_KW);
+                e.space();
+                e.token(TokenKind::DEFAULT_KW);
             }
         }
         "N" => {

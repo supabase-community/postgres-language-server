@@ -7,7 +7,10 @@ CREATE TABLE gin_test_tbl (
   i INT[]
 ) WITH (autovacuum_enabled = off);
 
-CREATE INDEX "gin_test_idx" ON gin_test_tbl USING gin (i) WITH (fastupdate = 'on',
+CREATE INDEX "gin_test_idx" ON gin_test_tbl USING gin
+(
+  i
+) WITH (fastupdate = 'on',
 gin_pending_list_limit = 4096);
 
 INSERT INTO gin_test_tbl
@@ -82,20 +85,22 @@ SELECT
   0 AS ok
 FROM
   gin_test_tbl
-WHERE i @> ARRAY[1];
+WHERE
+  i @> ARRAY[1];
 
 SELECT
   COUNT(*) >
   0 AS ok
 FROM
   gin_test_tbl
-WHERE i @> ARRAY[1];
+WHERE
+  i @> ARRAY[1];
 
 RESET gin_fuzzy_search_limit;
 
 CREATE TEMPORARY TABLE t_gin_test_tbl ( i INT[], j INT[] );
 
-CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
+CREATE INDEX ON t_gin_test_tbl USING gin ( i, j);
 
 INSERT INTO t_gin_test_tbl
 VALUES (NULL,
@@ -129,7 +134,8 @@ SELECT
   *
 FROM
   t_gin_test_tbl
-WHERE ARRAY[0] <@ i AND
+WHERE
+  ARRAY[0] <@ i AND
   CAST('{}' AS INT[]) <@ j;
 
 SELECT * FROM t_gin_test_tbl WHERE i @> '{}';
@@ -138,9 +144,12 @@ SELECT * FROM t_gin_test_tbl WHERE i @> '{}';
 
 CREATE FUNCTION explain_query_json(
   "query_sql" TEXT
-) RETURNS TABLE (
+)
+RETURNS TABLE (
   "explain_line" JSON
-) LANGUAGE "plpgsql" AS '
+)
+LANGUAGE "plpgsql"
+AS '
 begin
   set enable_seqscan = off;
   set enable_bitmapscan = on;
@@ -150,7 +159,10 @@ end;
 
 CREATE FUNCTION execute_text_query_index(
   "query_sql" TEXT
-) RETURNS SETOF TEXT LANGUAGE "plpgsql" AS '
+)
+RETURNS SETOF TEXT
+LANGUAGE "plpgsql"
+AS '
 begin
   set enable_seqscan = off;
   set enable_bitmapscan = on;
@@ -160,7 +172,10 @@ end;
 
 CREATE FUNCTION execute_text_query_heap(
   "query_sql" TEXT
-) RETURNS SETOF TEXT LANGUAGE "plpgsql" AS '
+)
+RETURNS SETOF TEXT
+LANGUAGE "plpgsql"
+AS '
 begin
   set enable_seqscan = on;
   set enable_bitmapscan = off;
@@ -226,13 +241,15 @@ SELECT
   COUNT(*)
 FROM
   t_gin_test_tbl
-WHERE j @> CAST('{}' AS INT[]);
+WHERE
+  j @> CAST('{}' AS INT[]);
 
 SELECT
   COUNT(*)
 FROM
   t_gin_test_tbl
-WHERE j @> CAST('{}' AS INT[]);
+WHERE
+  j @> CAST('{}' AS INT[]);
 
 DELETE FROM t_gin_test_tbl WHERE j @> ARRAY[2];
 
@@ -246,7 +263,8 @@ SELECT
   COUNT(*)
 FROM
   t_gin_test_tbl
-WHERE j @> CAST('{}' AS INT[]);
+WHERE
+  j @> CAST('{}' AS INT[]);
 
 RESET enable_seqscan;
 
@@ -256,7 +274,7 @@ DROP TABLE "t_gin_test_tbl";
 
 CREATE UNLOGGED TABLE t_gin_test_tbl ( i INT[], j INT[] );
 
-CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
+CREATE INDEX ON t_gin_test_tbl USING gin ( i, j);
 
 INSERT INTO t_gin_test_tbl
 VALUES (NULL,

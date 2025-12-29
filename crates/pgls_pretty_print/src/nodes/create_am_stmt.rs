@@ -2,7 +2,7 @@ use pgls_query::protobuf::CreateAmStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
@@ -22,7 +22,7 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
     // TYPE
     // amtype is a single character: 'i' = INDEX, 't' = TABLE
     if !n.amtype.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TYPE_KW);
         e.space();
         let type_str = match n.amtype.as_str() {
@@ -35,7 +35,7 @@ pub(super) fn emit_create_am_stmt(e: &mut EventEmitter, n: &CreateAmStmt) {
 
     // HANDLER
     if !n.handler_name.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("HANDLER".to_string()));
         e.space();
         super::node_list::emit_dot_separated_list(e, &n.handler_name);

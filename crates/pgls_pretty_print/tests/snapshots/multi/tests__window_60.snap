@@ -123,7 +123,8 @@ SELECT
   OVER w
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10
 WINDOW
   w AS ();
@@ -132,7 +133,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE FALSE
+WHERE
+  FALSE
 WINDOW
   w AS (
   PARTITION BY ten);
@@ -146,7 +148,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -155,7 +158,8 @@ SELECT
   ORDER BY unique2)
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -167,7 +171,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -179,7 +184,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -191,7 +197,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -203,7 +210,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -215,7 +223,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -238,7 +247,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -251,7 +261,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -265,7 +276,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -279,7 +291,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10
 ORDER BY four,
   ten;
@@ -293,7 +306,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -306,7 +320,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -320,7 +335,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -334,7 +350,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10
 ORDER BY four,
   ten;
@@ -348,7 +365,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -359,7 +377,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -373,7 +392,8 @@ FROM
     *
   FROM
     tenk1
-  WHERE unique2 <
+  WHERE
+    unique2 <
     10
   ORDER BY four,
     ten) AS s
@@ -392,7 +412,8 @@ FROM
     *
   FROM
     tenk1
-  WHERE unique2 <
+  WHERE
+    unique2 <
     10
   ORDER BY four,
     ten) AS s;
@@ -420,9 +441,11 @@ FROM
     *
   FROM
     tenk1
-  WHERE two =
+  WHERE
+    two =
     1) AS s
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -435,7 +458,8 @@ SELECT
   ORDER BY ten) AS VARCHAR) AS cntsum
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -459,7 +483,8 @@ FROM
     ORDER BY ten) AS twosum
   FROM
     tenk1) AS sub
-WHERE total <>
+WHERE
+  total <>
   fourcount + twosum;
 
 SELECT
@@ -469,7 +494,8 @@ SELECT
   ORDER BY thousand / 100)
 FROM
   tenk1
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -518,14 +544,16 @@ SELECT
     two
   FROM
     tenk1
-  WHERE s.unique2 =
+  WHERE
+    s.unique2 =
     unique2))
   OVER (
   PARTITION BY four
   ORDER BY ten)
 FROM
   tenk1 AS s
-WHERE unique2 <
+WHERE
+  unique2 <
   10;
 
 SELECT
@@ -537,7 +565,8 @@ FROM
     *
   FROM
     tenk1
-  WHERE FALSE) AS s;
+  WHERE
+    FALSE) AS s;
 
 SELECT
   SUM(salary)
@@ -754,7 +783,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -768,7 +798,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -782,7 +813,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -796,7 +828,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -811,7 +844,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -826,7 +860,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -841,7 +876,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -857,7 +893,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -873,7 +910,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -889,7 +927,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -905,7 +944,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -921,7 +961,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -937,7 +978,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -951,7 +993,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -965,7 +1008,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -979,7 +1023,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -994,7 +1039,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10
 WINDOW
   w AS (
@@ -1013,7 +1059,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10
 WINDOW
   w AS (
@@ -1032,7 +1079,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10
 WINDOW
   w AS (
@@ -1051,7 +1099,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10
 WINDOW
   w AS (
@@ -1069,7 +1118,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10
 WINDOW
   w AS (
@@ -1093,7 +1143,8 @@ SELECT
   unique1
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 CREATE TEMPORARY VIEW v_window AS
@@ -1238,7 +1289,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1253,7 +1305,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1268,7 +1321,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1284,7 +1338,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1300,7 +1355,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1316,7 +1372,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1332,7 +1389,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1348,7 +1406,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1364,7 +1423,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1381,7 +1441,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1780,18 +1841,22 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 COMMIT;
 
 CREATE FUNCTION unbounded_syntax_test1b(
   "x" INT
-) RETURNS TABLE (
+)
+RETURNS TABLE (
   "a" INT,
   "b" INT,
   "c" INT
-) LANGUAGE "sql" AS '
+)
+LANGUAGE "sql"
+AS '
   SELECT sum(unique1) over (rows between x preceding and x following),
          unique1, four
   FROM tenk1 WHERE unique1 < 10;
@@ -1812,18 +1877,22 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 COMMIT;
 
 CREATE FUNCTION unbounded_syntax_test2b(
   "unbounded" INT
-) RETURNS TABLE (
+)
+RETURNS TABLE (
   "a" INT,
   "b" INT,
   "c" INT
-) LANGUAGE "sql" AS '
+)
+LANGUAGE "sql"
+AS '
   SELECT sum(unique1) over (rows between unbounded preceding and unbounded following),
          unique1, four
   FROM tenk1 WHERE unique1 < 10;
@@ -1840,7 +1909,10 @@ unbounded_syntax_test2b;
 
 CREATE FUNCTION unbounded(
   "x" INT
-) RETURNS INT LANGUAGE "sql" IMMUTABLE RETURN x;;
+)
+RETURNS INT
+LANGUAGE "sql"
+IMMUTABLE RETURN x;;
 
 SELECT
   SUM(unique1)
@@ -1853,7 +1925,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1867,7 +1940,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -1882,7 +1956,8 @@ SELECT
 FROM
   tenk1,
   (VALUES (1)) AS unbounded (x)
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 DROP FUNCTION unbounded;
@@ -3139,7 +3214,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3154,7 +3230,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3169,7 +3246,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3184,7 +3262,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3199,7 +3278,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3214,7 +3294,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3229,7 +3310,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3244,7 +3326,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3259,7 +3342,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3275,7 +3359,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3291,7 +3376,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3307,7 +3393,8 @@ SELECT
   four
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3324,7 +3411,8 @@ SELECT
   ten
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3342,7 +3430,8 @@ SELECT
   ten
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3360,7 +3449,8 @@ SELECT
   ten
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3378,7 +3468,8 @@ SELECT
   ten
 FROM
   tenk1
-WHERE unique1 <
+WHERE
+  unique1 <
   10;
 
 SELECT
@@ -3660,7 +3751,8 @@ SELECT
   1 FOLLOWING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3675,7 +3767,8 @@ SELECT
   1 FOLLOWING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3690,7 +3783,8 @@ SELECT
   1 FOLLOWING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3706,7 +3800,8 @@ SELECT
   1 PRECEDING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3722,7 +3817,8 @@ SELECT
   2 FOLLOWING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3736,22 +3832,8 @@ SELECT
   1 FOLLOWING)
 FROM
   t1
-WHERE f1 =
-  f2;
-
-SELECT
-  f1,
-  SUM(f1)
-  OVER (
-  PARTITION BY f1
-  ORDER BY f2
-  GROUPS BETWEEN
-  1 PRECEDING
-  AND
-  1 FOLLOWING)
-FROM
-  t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3766,7 +3848,24 @@ SELECT
   1 FOLLOWING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
+  f2;
+
+SELECT
+  f1,
+  SUM(f1)
+  OVER (
+  PARTITION BY f1
+  ORDER BY f2
+  GROUPS BETWEEN
+  1 PRECEDING
+  AND
+  1 FOLLOWING)
+FROM
+  t1
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3782,7 +3881,8 @@ SELECT
   1 PRECEDING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT
@@ -3798,7 +3898,8 @@ SELECT
   2 FOLLOWING)
 FROM
   t1
-WHERE f1 =
+WHERE
+  f1 =
   f2;
 
 SELECT RANK() OVER ( ORDER BY length('abc'));
@@ -3814,7 +3915,8 @@ SELECT
   *
 FROM
   empsalary
-WHERE ROW_NUMBER()
+WHERE
+  ROW_NUMBER()
   OVER (
   ORDER BY salary) <
   10;
@@ -3839,7 +3941,8 @@ FROM
 GROUP BY 1;
 
 DELETE FROM empsalary
-WHERE RANK()
+WHERE
+  RANK()
   OVER (
   ORDER BY random()) >
   10;
@@ -3882,9 +3985,11 @@ SELECT
   OVER (
   ORDER BY depname),
   SUM(SUM(salary)
-  FILTER (WHERE enroll_date >
+  FILTER (WHERE
+    enroll_date >
     '2007-01-01'))
-  FILTER (WHERE depname <>
+  FILTER (WHERE
+    depname <>
     'sales')
   OVER (
   ORDER BY depname DESC) AS filtered_sum,
@@ -4009,7 +4114,8 @@ FROM
     depname) AS depminsalary
   FROM
     empsalary) AS emp
-WHERE depname =
+WHERE
+  depname =
   'sales';
 
 SELECT
@@ -4025,7 +4131,8 @@ FROM
     PARTITION BY depname) AS depminsalary
   FROM
     empsalary) AS emp
-WHERE depname =
+WHERE
+  depname =
   'sales';
 
 SELECT
@@ -4038,7 +4145,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE rn <
+WHERE
+  rn <
   3;
 
 SELECT
@@ -4051,7 +4159,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE rn <
+WHERE
+  rn <
   3;
 
 SELECT
@@ -4064,7 +4173,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE 3 >
+WHERE
+  3 >
   rn;
 
 SELECT
@@ -4077,7 +4187,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE 2 >=
+WHERE
+  2 >=
   rn;
 
 SELECT
@@ -4091,7 +4202,8 @@ FROM
     ORDER BY salary DESC) AS r
   FROM
     empsalary) AS emp
-WHERE r <=
+WHERE
+  r <=
   3;
 
 SELECT
@@ -4105,7 +4217,8 @@ FROM
     ORDER BY salary DESC) AS r
   FROM
     empsalary) AS emp
-WHERE r <=
+WHERE
+  r <=
   3;
 
 SELECT
@@ -4119,7 +4232,8 @@ FROM
     ORDER BY salary DESC) AS dr
   FROM
     empsalary) AS emp
-WHERE dr =
+WHERE
+  dr =
   1;
 
 SELECT
@@ -4133,7 +4247,8 @@ FROM
     ORDER BY salary DESC) AS dr
   FROM
     empsalary) AS emp
-WHERE dr =
+WHERE
+  dr =
   1;
 
 SELECT
@@ -4147,7 +4262,8 @@ FROM
     ORDER BY salary DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4161,7 +4277,8 @@ FROM
     ORDER BY salary DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4175,7 +4292,8 @@ FROM
     ORDER BY salary DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4189,7 +4307,8 @@ FROM
     ORDER BY salary DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4207,7 +4326,8 @@ FROM
     UNBOUNDED FOLLOWING) AS c
   FROM
     empsalary) AS emp
-WHERE c >=
+WHERE
+  c >=
   3;
 
 SELECT
@@ -4220,7 +4340,8 @@ FROM
     OVER () AS c
   FROM
     empsalary) AS emp
-WHERE 11 <=
+WHERE
+  11 <=
   c;
 
 SELECT
@@ -4237,7 +4358,8 @@ FROM
     ORDER BY salary DESC) AS dr
   FROM
     empsalary) AS emp
-WHERE dr =
+WHERE
+  dr =
   1;
 
 SELECT
@@ -4252,7 +4374,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE rn <
+WHERE
+  rn <
   3;
 
 SELECT
@@ -4267,7 +4390,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE rn <
+WHERE
+  rn <
   3;
 
 SELECT
@@ -4283,7 +4407,8 @@ FROM
     ORDER BY empno) AS rn
   FROM
     empsalary) AS emp
-WHERE rn <
+WHERE
+  rn <
   3;
 
 SELECT
@@ -4299,7 +4424,8 @@ FROM
     ORDER BY salary DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4315,7 +4441,8 @@ FROM
     ORDER BY salary DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4329,7 +4456,8 @@ FROM
     OVER () AS c
   FROM
     empsalary) AS emp
-WHERE c =
+WHERE
+  c =
   1;
 
 SELECT
@@ -4344,7 +4472,8 @@ FROM
     PARTITION BY salary) || ' Department' AS n_dep
   FROM
     empsalary) AS emp
-WHERE rn <
+WHERE
+  rn <
   1;
 
 SELECT
@@ -4369,7 +4498,8 @@ FROM
     PARTITION BY depname) AS nt
   FROM
     empsalary) AS e
-WHERE rn <=
+WHERE
+  rn <=
   1 AND
   c1 <=
   3 AND
@@ -4398,7 +4528,8 @@ FROM
     PARTITION BY depname) AS nt
   FROM
     empsalary) AS e
-WHERE rn <=
+WHERE
+  rn <=
   1 AND
   c1 <=
   3 AND
@@ -4416,9 +4547,11 @@ FROM
     empsalary AS e1
     LEFT OUTER JOIN empsalary AS e2
     ON TRUE
-  WHERE e1.empno =
+  WHERE
+    e1.empno =
     e2.empno) AS s
-WHERE s.c =
+WHERE
+  s.c =
   1;
 
 SELECT
@@ -4431,7 +4564,8 @@ FROM
     (SELECT
       (SELECT
         1) AS x) AS s1) AS s
-WHERE s.c =
+WHERE
+  s.c =
   1;
 
 SELECT
@@ -4449,7 +4583,8 @@ FROM
     UNBOUNDED FOLLOWING) AS c
   FROM
     empsalary) AS emp
-WHERE c <=
+WHERE
+  c <=
   3;
 
 SELECT
@@ -4463,7 +4598,8 @@ FROM
     ORDER BY salary) AS c
   FROM
     empsalary) AS emp
-WHERE 3 <=
+WHERE
+  3 <=
   c;
 
 SELECT
@@ -4477,7 +4613,8 @@ FROM
     ORDER BY empno DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c =
+WHERE
+  c =
   1;
 
 SELECT
@@ -4492,7 +4629,8 @@ FROM
     ORDER BY empno DESC) AS c
   FROM
     empsalary) AS emp
-WHERE c =
+WHERE
+  c =
   1;
 
 SELECT
@@ -4511,7 +4649,8 @@ FROM
     ORDER BY enroll_date) AS depminsalary
   FROM
     empsalary) AS emp
-WHERE depname =
+WHERE
+  depname =
   'sales';
 
 SELECT
@@ -4619,7 +4758,8 @@ FROM
     ORDER BY enroll_date DESC) AS last_emp
   FROM
     empsalary) AS emp
-WHERE first_emp =
+WHERE
+  first_emp =
   1 OR
   last_emp =
   1;
@@ -4642,7 +4782,8 @@ FROM
     ORDER BY enroll_date DESC) AS last_emp
   FROM
     empsalary) AS emp
-WHERE first_emp =
+WHERE
+  first_emp =
   1 OR
   last_emp =
   1;
@@ -4652,7 +4793,13 @@ DROP TABLE "empsalary";
 CREATE FUNCTION nth_value_def(
   "val" ANYELEMENT,
   "n" INT DEFAULT 1
-) RETURNS ANYELEMENT LANGUAGE "internal" WINDOW IMMUTABLE STRICT AS 'window_nth_value';
+)
+RETURNS ANYELEMENT
+LANGUAGE "internal"
+WINDOW
+IMMUTABLE
+STRICT
+AS 'window_nth_value';
 
 SELECT
   nth_value_def("n" := 2,
@@ -4666,7 +4813,8 @@ FROM
     *
   FROM
     tenk1
-  WHERE unique2 <
+  WHERE
+    unique2 <
     10
   ORDER BY four,
     ten) AS s;
@@ -4682,7 +4830,8 @@ FROM
     *
   FROM
     tenk1
-  WHERE unique2 <
+  WHERE
+    unique2 <
     10
   ORDER BY four,
     ten) AS s;
@@ -4690,17 +4839,29 @@ FROM
 CREATE FUNCTION logging_sfunc_nonstrict(
   TEXT,
   ANYELEMENT
-) RETURNS TEXT AS ' SELECT COALESCE($1, '''') || ''*'' || quote_nullable($2) ' LANGUAGE "sql" IMMUTABLE;
+)
+RETURNS TEXT
+AS ' SELECT COALESCE($1, '''') || ''*'' || quote_nullable($2) '
+LANGUAGE "sql"
+IMMUTABLE;
 
 CREATE FUNCTION logging_msfunc_nonstrict(
   TEXT,
   ANYELEMENT
-) RETURNS TEXT AS ' SELECT COALESCE($1, '''') || ''+'' || quote_nullable($2) ' LANGUAGE "sql" IMMUTABLE;
+)
+RETURNS TEXT
+AS ' SELECT COALESCE($1, '''') || ''+'' || quote_nullable($2) '
+LANGUAGE "sql"
+IMMUTABLE;
 
 CREATE FUNCTION logging_minvfunc_nonstrict(
   TEXT,
   ANYELEMENT
-) RETURNS TEXT AS ' SELECT $1 || ''-'' || quote_nullable($2) ' LANGUAGE "sql" IMMUTABLE;
+)
+RETURNS TEXT
+AS ' SELECT $1 || ''-'' || quote_nullable($2) '
+LANGUAGE "sql"
+IMMUTABLE;
 
 CREATE AGGREGATE logging_agg_nonstrict (ANYELEMENT)
 (
@@ -4725,17 +4886,32 @@ CREATE AGGREGATE logging_agg_nonstrict_initcond (ANYELEMENT)
 CREATE FUNCTION logging_sfunc_strict(
   TEXT,
   ANYELEMENT
-) RETURNS TEXT AS ' SELECT $1 || ''*'' || quote_nullable($2) ' LANGUAGE "sql" STRICT IMMUTABLE;
+)
+RETURNS TEXT
+AS ' SELECT $1 || ''*'' || quote_nullable($2) '
+LANGUAGE "sql"
+STRICT
+IMMUTABLE;
 
 CREATE FUNCTION logging_msfunc_strict(
   TEXT,
   ANYELEMENT
-) RETURNS TEXT AS ' SELECT $1 || ''+'' || quote_nullable($2) ' LANGUAGE "sql" STRICT IMMUTABLE;
+)
+RETURNS TEXT
+AS ' SELECT $1 || ''+'' || quote_nullable($2) '
+LANGUAGE "sql"
+STRICT
+IMMUTABLE;
 
 CREATE FUNCTION logging_minvfunc_strict(
   TEXT,
   ANYELEMENT
-) RETURNS TEXT AS ' SELECT $1 || ''-'' || quote_nullable($2) ' LANGUAGE "sql" STRICT IMMUTABLE;
+)
+RETURNS TEXT
+AS ' SELECT $1 || ''-'' || quote_nullable($2) '
+LANGUAGE "sql"
+STRICT
+IMMUTABLE;
 
 CREATE AGGREGATE logging_agg_strict (TEXT)
 (
@@ -4816,16 +4992,20 @@ SELECT
   ELSE '-'
   END AS row,
   logging_agg_nonstrict(v)
-  FILTER (WHERE f)
+  FILTER (WHERE
+    f)
   OVER wnd AS nstrict_filt,
   logging_agg_nonstrict_initcond(v)
-  FILTER (WHERE f)
+  FILTER (WHERE
+    f)
   OVER wnd AS nstrict_init_filt,
   logging_agg_strict(CAST(v AS TEXT))
-  FILTER (WHERE f)
+  FILTER (WHERE
+    f)
   OVER wnd AS strict_filt,
   logging_agg_strict_initcond(v)
-  FILTER (WHERE f)
+  FILTER (WHERE
+    f)
   OVER wnd AS strict_init_filt
 FROM
   (VALUES (1,
@@ -4910,10 +5090,12 @@ SELECT
   CAST(i AS TEXT) || ':' || COALESCE(CAST(v AS TEXT),
   'NULL') AS row,
   logging_agg_strict(CAST(v AS TEXT))
-  FILTER (WHERE TRUE)
+  FILTER (WHERE
+    TRUE)
   OVER wnd AS inverse,
   logging_agg_strict(CAST(v AS TEXT))
-  FILTER (WHERE random() >=
+  FILTER (WHERE
+    random() >=
     0)
   OVER wnd AS noinverse
 FROM
@@ -4956,7 +5138,11 @@ ORDER BY i;
 CREATE FUNCTION sum_int_randrestart_minvfunc(
   INT,
   INT
-) RETURNS INT AS ' SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END ' LANGUAGE "sql" STRICT;
+)
+RETURNS INT
+AS ' SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END '
+LANGUAGE "sql"
+STRICT;
 
 CREATE AGGREGATE sum_int_randomrestart (INT)
 (
@@ -6025,7 +6211,8 @@ FROM
   INNER JOIN tenk1 AS t2
   ON t1.unique1 =
     t2.tenthous
-WHERE t2.two =
+WHERE
+  t2.two =
   1
 LIMIT 1;
 
@@ -6076,11 +6263,15 @@ WINDOW
 
 CREATE FUNCTION pg_temp.f(
   "group_size" BIGINT
-) RETURNS SETOF INT[] AS '
+)
+RETURNS SETOF INT[]
+AS '
     SELECT array_agg(s) OVER w
       FROM generate_series(1,5) s
     WINDOW w AS (ORDER BY s ROWS BETWEEN CURRENT ROW AND GROUP_SIZE FOLLOWING)
-' LANGUAGE "sql" STABLE;
+'
+LANGUAGE "sql"
+STABLE;
 
 SELECT * FROM pg_temp.f(2);
 

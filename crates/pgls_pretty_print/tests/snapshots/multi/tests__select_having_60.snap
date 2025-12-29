@@ -37,7 +37,8 @@ FROM
   test_having
 GROUP BY b,
   c
-HAVING COUNT(*) =
+HAVING
+  COUNT(*) =
   1
 ORDER BY b,
   c;
@@ -49,7 +50,8 @@ FROM
   test_having
 GROUP BY b,
   c
-HAVING b =
+HAVING
+  b =
   3
 ORDER BY b,
   c;
@@ -60,7 +62,8 @@ SELECT
 FROM
   test_having
 GROUP BY lower(c)
-HAVING COUNT(*) >
+HAVING
+  COUNT(*) >
   2 OR
   MIN(a) =
   MAX(a)
@@ -72,7 +75,8 @@ SELECT
 FROM
   test_having
 GROUP BY c
-HAVING COUNT(*) >
+HAVING
+  COUNT(*) >
   2 OR
   MIN(a) =
   MAX(a)
@@ -83,7 +87,8 @@ SELECT
   MAX(a)
 FROM
   test_having
-HAVING MIN(a) =
+HAVING
+  MIN(a) =
   MAX(a);
 
 SELECT
@@ -91,7 +96,8 @@ SELECT
   MAX(a)
 FROM
   test_having
-HAVING MIN(a) <
+HAVING
+  MIN(a) <
   MAX(a);
 
 SELECT a FROM test_having HAVING MIN(a) < MAX(a);
@@ -106,9 +112,11 @@ SELECT
   1 AS one
 FROM
   test_having
-WHERE 1 / a =
+WHERE
+  1 / a =
   1
-HAVING 1 <
+HAVING
+  1 <
   2;
 
 DROP TABLE "test_having";

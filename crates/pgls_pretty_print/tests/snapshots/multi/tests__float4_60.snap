@@ -114,7 +114,8 @@ SELECT
   f.f1 * '-10' AS x
 FROM
   float4_tbl AS f
-WHERE f.f1 >
+WHERE
+  f.f1 >
   '0.0';
 
 SELECT
@@ -122,7 +123,8 @@ SELECT
   f.f1 + '-10' AS x
 FROM
   float4_tbl AS f
-WHERE f.f1 >
+WHERE
+  f.f1 >
   '0.0';
 
 SELECT
@@ -130,7 +132,8 @@ SELECT
   f.f1 / '-10' AS x
 FROM
   float4_tbl AS f
-WHERE f.f1 >
+WHERE
+  f.f1 >
   '0.0';
 
 SELECT
@@ -138,7 +141,8 @@ SELECT
   f.f1 - '-10' AS x
 FROM
   float4_tbl AS f
-WHERE f.f1 >
+WHERE
+  f.f1 >
   '0.0';
 
 SELECT f.f1 / '0.0' FROM float4_tbl AS f;
@@ -149,7 +153,8 @@ SELECT f.f1, @f.f1 AS abs_f1 FROM float4_tbl AS f;
 
 UPDATE float4_tbl
 SET f1 = float4_tbl.f1 * '-1'
-WHERE float4_tbl.f1 >
+WHERE
+  float4_tbl.f1 >
   '0.0';
 
 SELECT * FROM float4_tbl ORDER BY 1;
@@ -217,11 +222,21 @@ CREATE TYPE xfloat4;
 
 CREATE FUNCTION xfloat4in(
   cstring
-) RETURNS xfloat4 IMMUTABLE STRICT LANGUAGE "internal" AS 'int4in';
+)
+RETURNS xfloat4
+IMMUTABLE
+STRICT
+LANGUAGE "internal"
+AS 'int4in';
 
 CREATE FUNCTION xfloat4out(
   xfloat4
-) RETURNS cstring IMMUTABLE STRICT LANGUAGE "internal" AS 'int4out';
+)
+RETURNS cstring
+IMMUTABLE
+STRICT
+LANGUAGE "internal"
+AS 'int4out';
 
 CREATE TYPE xfloat4
 (

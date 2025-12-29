@@ -1,0 +1,356 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/copy_60.sql
+snapshot_kind: text
+---
+CREATE TEMPORARY TABLE copytest (
+  style TEXT,
+  test TEXT,
+  filler INT
+);
+
+INSERT INTO copytest VALUES ('DOS', 'abc
+def', 1);
+
+INSERT INTO copytest VALUES ('Unix', 'abc
+def', 2);
+
+INSERT INTO copytest VALUES ('Mac', 'abcdef', 3);
+
+INSERT INTO copytest VALUES ('esc\ape', 'a\r\\
+\nb', 4);
+
+COPY copytest TO 'filename' WITH (FORMAT 'csv');
+
+CREATE TEMPORARY TABLE copytest2 ( LIKE copytest );
+
+COPY copytest2 FROM 'filename' WITH (FORMAT 'csv');
+
+SELECT * FROM copytest EXCEPT SELECT * FROM copytest2;
+
+TRUNCATE copytest2;
+
+COPY copytest TO 'filename' WITH (FORMAT 'csv',
+QUOTE '''',
+ESCAPE '\');
+
+COPY copytest2 FROM 'filename' WITH (FORMAT 'csv',
+QUOTE '''',
+ESCAPE '\');
+
+SELECT * FROM copytest EXCEPT SELECT * FROM copytest2;
+
+TRUNCATE copytest2;
+
+COPY copytest2 (test) FROM 'filename' WITH (FORMAT 'csv');
+
+SELECT test FROM copytest2 ORDER BY test COLLATE "C";
+
+TRUNCATE copytest2;
+
+COPY copytest2 (test) FROM STDOUT;
+
+SELECT test FROM copytest2;
+
+CREATE TEMPORARY TABLE copytest3 (
+  c1 INT,
+  "col with , comma" TEXT,
+  "col with "" quote" INT
+);
+
+COPY copytest3 FROM STDOUT WITH (FORMAT 'csv', HEADER);
+
+COPY copytest3 TO STDOUT WITH (FORMAT 'csv', HEADER);
+
+CREATE TEMPORARY TABLE copytest4 (
+  c1 INT,
+  "colname with tab: 	" TEXT
+);
+
+COPY copytest4 FROM STDOUT WITH (HEADER);
+
+COPY copytest4 TO STDOUT WITH (HEADER);
+
+CREATE TEMPORARY TABLE copytest5 ( c1 INT );
+
+COPY copytest5 FROM STDOUT WITH (FORMAT 'csv', HEADER 2);
+
+TRUNCATE copytest5;
+
+COPY copytest5 FROM STDOUT WITH (FORMAT 'csv', HEADER 4);
+
+SELECT COUNT(*) FROM copytest5;
+
+TRUNCATE copytest5;
+
+COPY copytest5 FROM STDOUT WITH (FORMAT 'csv', HEADER 5);
+
+SELECT COUNT(*) FROM copytest5;
+
+CREATE TABLE parted_copytest (
+  a INT,
+  b INT,
+  c TEXT
+)
+PARTITION BY LIST(b);
+
+CREATE TABLE parted_copytest_a1 ( c TEXT, b INT, a INT );
+
+CREATE TABLE parted_copytest_a2 ( a INT, c TEXT, b INT );
+
+ALTER TABLE parted_copytest
+  ATTACH PARTITION
+  parted_copytest_a1
+  FOR VALUES IN (1);
+
+ALTER TABLE parted_copytest
+  ATTACH PARTITION
+  parted_copytest_a2
+  FOR VALUES IN (2);
+
+INSERT INTO parted_copytest
+SELECT
+  x,
+  1,
+  'One'
+FROM
+  generate_series(1,
+  1000) AS x;
+
+INSERT INTO parted_copytest
+SELECT
+  x,
+  2,
+  'Two'
+FROM
+  generate_series(1001,
+  1010) AS x;
+
+INSERT INTO parted_copytest
+SELECT
+  x,
+  1,
+  'One'
+FROM
+  generate_series(1011,
+  1020) AS x;
+
+COPY (SELECT
+  *
+FROM
+  parted_copytest
+ORDER BY a) TO 'filename';
+
+TRUNCATE parted_copytest;
+
+COPY parted_copytest FROM 'filename';
+
+BEGIN;
+
+TRUNCATE parted_copytest;
+
+COPY parted_copytest FROM 'filename' WITH (FREEZE);
+
+ROLLBACK;
+
+SELECT
+  CAST(tableoid AS REGCLASS),
+  COUNT(*),
+  SUM(a)
+FROM
+  parted_copytest
+GROUP BY tableoid
+ORDER BY CAST(CAST(tableoid AS REGCLASS) AS NAME);
+
+TRUNCATE parted_copytest;
+
+CREATE FUNCTION part_ins_func()
+RETURNS trigger
+LANGUAGE "plpgsql"
+AS '
+begin
+  return new;
+end;
+';
+
+CREATE TRIGGER part_ins_trig
+BEFORE
+INSERT
+ON parted_copytest_a2
+FOR EACH ROW
+EXECUTE FUNCTION part_ins_func();
+
+COPY parted_copytest FROM 'filename';
+
+SELECT
+  CAST(tableoid AS REGCLASS),
+  COUNT(*),
+  SUM(a)
+FROM
+  parted_copytest
+GROUP BY tableoid
+ORDER BY CAST(CAST(tableoid AS REGCLASS) AS NAME);
+
+TRUNCATE parted_copytest;
+
+CREATE INDEX ON parted_copytest USING btree ( b);
+
+DROP TRIGGER "part_ins_trig" ON "parted_copytest_a2";
+
+COPY parted_copytest FROM STDOUT;
+
+SELECT * FROM parted_copytest WHERE b = 1;
+
+SELECT * FROM parted_copytest WHERE b = 2;
+
+DROP TABLE "parted_copytest";
+
+CREATE TABLE tab_progress_reporting (
+  name TEXT,
+  age INT,
+  location point,
+  salary INT,
+  manager NAME
+);
+
+CREATE FUNCTION notice_after_tab_progress_reporting()
+RETURNS trigger
+AS '
+declare report record;
+begin
+  -- The fields ignored here are the ones that may not remain
+  -- consistent across multiple runs.  The sizes reported may differ
+  -- across platforms, so just check if these are strictly positive.
+  with progress_data as (
+    select
+       relid::regclass::text as relname,
+       command,
+       type,
+       bytes_processed > 0 as has_bytes_processed,
+       bytes_total > 0 as has_bytes_total,
+       tuples_processed,
+       tuples_excluded,
+       tuples_skipped
+      from pg_stat_progress_copy
+      where pid = pg_backend_pid())
+  select into report (to_jsonb(r)) as value
+    from progress_data r;
+
+  raise info ''progress: %'', report.value::text;
+  return new;
+end;
+'
+LANGUAGE "plpgsql";
+
+CREATE TRIGGER check_after_tab_progress_reporting
+AFTER
+INSERT
+ON tab_progress_reporting
+FOR EACH STATEMENT
+EXECUTE FUNCTION notice_after_tab_progress_reporting();
+
+COPY tab_progress_reporting FROM STDOUT;
+
+TRUNCATE tab_progress_reporting;
+
+COPY tab_progress_reporting FROM 'filename' WHERE
+  salary <
+  2000;
+
+COPY tab_progress_reporting FROM STDOUT WITH (ON_ERROR 'ignore');
+
+DROP TRIGGER "check_after_tab_progress_reporting" ON "tab_progress_reporting";
+
+DROP FUNCTION notice_after_tab_progress_reporting();
+
+DROP TABLE "tab_progress_reporting";
+
+CREATE TABLE header_copytest ( a INT, b INT, c TEXT );
+
+ALTER TABLE header_copytest DROP COLUMN c;
+
+ALTER TABLE header_copytest ADD COLUMN c TEXT;
+
+COPY header_copytest TO STDOUT;
+
+COPY header_copytest FROM STDOUT;
+
+COPY header_copytest FROM STDOUT;
+
+SELECT * FROM header_copytest ORDER BY a;
+
+ALTER TABLE header_copytest DROP COLUMN b;
+
+COPY header_copytest (c, a) FROM STDOUT;
+
+SELECT * FROM header_copytest ORDER BY a;
+
+DROP TABLE "header_copytest";
+
+CREATE TEMPORARY TABLE oversized_column_default (
+  col1 VARCHAR(5) DEFAULT 'more than 5 chars',
+  col2 VARCHAR(5)
+);
+
+COPY oversized_column_default FROM STDOUT;
+
+COPY oversized_column_default (col2) FROM STDOUT;
+
+COPY oversized_column_default FROM STDOUT WITH (DEFAULT '');
+
+DROP TABLE "oversized_column_default";
+
+CREATE TABLE parted_si (
+  id INT NOT NULL,
+  data TEXT NOT NULL,
+  rand DOUBLE PRECISION NOT NULL DEFAULT random()
+)
+PARTITION BY LIST((id % 2));
+
+CREATE TABLE parted_si_p_even
+PARTITION OF parted_si
+FOR VALUES IN (0);
+
+CREATE TABLE parted_si_p_odd
+PARTITION OF parted_si
+FOR VALUES IN (1);
+
+COPY parted_si (id, data) FROM 'filename';
+
+SELECT
+  CAST(tableoid AS REGCLASS),
+  id % 2 =
+  0 AS is_even,
+  COUNT(*)
+FROM
+  parted_si
+GROUP BY 1,
+  2
+ORDER BY 1;
+
+DROP TABLE "parted_si";
+
+BEGIN;
+
+CREATE FOREIGN DATA WRAPPER copytest_wrapper;
+
+CREATE SERVER copytest_server
+  FOREIGN DATA WRAPPER copytest_wrapper;
+
+CREATE FOREIGN TABLE copytest_foreign_table (
+  a INT
+) SERVER copytest_server;
+
+COPY copytest_foreign_table FROM STDOUT WITH (FREEZE);
+
+CREATE MATERIALIZED VIEW copytest_mv AS
+  SELECT
+    1 AS id WITH NO DATA;
+
+COPY copytest_mv (id) TO STDOUT;
+
+REFRESH MATERIALIZED VIEW copytest_mv;
+
+COPY copytest_mv (id) TO STDOUT;
+
+DROP MATERIALIZED VIEW "copytest_mv";

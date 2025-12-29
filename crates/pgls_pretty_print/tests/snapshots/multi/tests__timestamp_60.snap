@@ -21,21 +21,24 @@ SELECT
   COUNT(*) AS one
 FROM
   timestamp_tbl
-WHERE d1 =
+WHERE
+  d1 =
   CAST('today' AS TIMESTAMP);
 
 SELECT
   COUNT(*) AS three
 FROM
   timestamp_tbl
-WHERE d1 =
+WHERE
+  d1 =
   CAST('tomorrow' AS TIMESTAMP);
 
 SELECT
   COUNT(*) AS one
 FROM
   timestamp_tbl
-WHERE d1 =
+WHERE
+  d1 =
   CAST('yesterday' AS TIMESTAMP);
 
 COMMIT;
@@ -60,7 +63,8 @@ SELECT
   COUNT(*) AS two
 FROM
   timestamp_tbl
-WHERE d1 =
+WHERE
+  d1 =
   CAST('now' AS TIMESTAMP(2));
 
 SELECT
@@ -273,49 +277,56 @@ SELECT
   d1
 FROM
   timestamp_tbl
-WHERE d1 >
+WHERE
+  d1 >
   CAST('1997-01-02' AS TIMESTAMP);
 
 SELECT
   d1
 FROM
   timestamp_tbl
-WHERE d1 <
+WHERE
+  d1 <
   CAST('1997-01-02' AS TIMESTAMP);
 
 SELECT
   d1
 FROM
   timestamp_tbl
-WHERE d1 =
+WHERE
+  d1 =
   CAST('1997-01-02' AS TIMESTAMP);
 
 SELECT
   d1
 FROM
   timestamp_tbl
-WHERE d1 <>
+WHERE
+  d1 <>
   CAST('1997-01-02' AS TIMESTAMP);
 
 SELECT
   d1
 FROM
   timestamp_tbl
-WHERE d1 <=
+WHERE
+  d1 <=
   CAST('1997-01-02' AS TIMESTAMP);
 
 SELECT
   d1
 FROM
   timestamp_tbl
-WHERE d1 >=
+WHERE
+  d1 >=
   CAST('1997-01-02' AS TIMESTAMP);
 
 SELECT
   d1 - CAST('1997-01-02' AS TIMESTAMP) AS diff
 FROM
   timestamp_tbl
-WHERE d1 BETWEEN '1902-01-01' AND '2038-01-01';
+WHERE
+  d1 BETWEEN '1902-01-01' AND '2038-01-01';
 
 SELECT
   date_trunc('week',
@@ -508,7 +519,8 @@ SELECT
   d1 - CAST('1997-01-02' AS TIMESTAMP) AS diff
 FROM
   timestamp_tbl
-WHERE d1 BETWEEN CAST('1902-01-01' AS TIMESTAMP) AND CAST('2038-01-01' AS TIMESTAMP);
+WHERE
+  d1 BETWEEN CAST('1902-01-01' AS TIMESTAMP) AND CAST('2038-01-01' AS TIMESTAMP);
 
 SELECT
   d1 AS timestamp,

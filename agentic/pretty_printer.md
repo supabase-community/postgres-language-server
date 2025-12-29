@@ -4,6 +4,25 @@
 
 This document outlines the plan to complete the implementation of the Postgres SQL pretty printer in `crates/pgt_pretty_print/`. The pretty printer takes parsed SQL AST nodes (from `pgt_query`) and emits formatted SQL code that respects line length constraints while maintaining semantic correctness.
 
+## Quick Commands
+
+```bash
+just pp-status         # Show test pass rate, TODO count, pending snapshots
+just pp-test <pattern> # Test files matching pattern (e.g., just pp-test select_stmt)
+just pp-failing        # List currently failing tests
+just pp-debug <name>   # Debug specific test with full output
+just pp-review         # Review pending snapshots (cargo insta)
+just pp-accept         # Accept all pending snapshots
+just pp-analyze        # Analyze failure patterns
+just pp-single         # Run only single-statement tests (faster)
+just pp-multi          # Run only multi-statement tests
+just pp-agentic        # Run agentic task (auto-loops via Stop hook until tests pass)
+
+# Short aliases: pps, ppf, ppr
+```
+
+**Note**: A Stop hook in `.claude/settings.local.json` automatically blocks Claude from stopping until all tests pass. Just run `just pp-agentic` and it will keep working until done.
+
 ## ⚠️ SCOPE: Implementation Task
 
 **THIS TASK IS ONLY ABOUT IMPLEMENTING `emit_*` FUNCTIONS IN `src/nodes/`**
@@ -12,6 +31,8 @@ This document outlines the plan to complete the implementation of the Postgres S
 - ✅ **DO**: Add new files to `src/nodes/` for each node type
 - ✅ **DO**: Update `src/nodes/mod.rs` to dispatch new node types
 - ✅ **DO**: Use existing helpers in `node_list.rs` and `string.rs`
+- ✅ **DO**: Use `emit_comma_separated_list()` for ALL comma-separated lists - never manual enumerate loops
+- ✅ **DO**: Use `emit_identifier_maybe_quoted()` for identifiers - never raw `TokenKind::IDENT`
 - ✅ **DO**: Keep this document updated with progress and learnings
 - ❌ **DON'T**: Modify the renderer (`src/renderer.rs`)
 - ❌ **DON'T**: Modify the emitter (`src/emitter.rs`)
@@ -426,25 +447,33 @@ pub fn emit_node_enum(node: &NodeEnum, e: &mut EventEmitter) {
 - **GroupStart/GroupEnd**: Logical grouping for layout decisions
 - **IndentStart/IndentEnd**: Increase/decrease indentation level
 
-### Inspirations from Go Parser
+### Go Reference Implementation
 
-The Go parser in `parser/ast/*.go` provides reference implementations via `SqlString()` methods:
+A Go reference implementation is available at `crates/pgls_pretty_print/parser/`. This is from the `pg_query_go` project and provides `SqlString()` methods showing how to emit SQL for each node type.
+
+**Location**: `crates/pgls_pretty_print/parser/ast/`
 
 1. **Statement Files**:
    - `statements.go`: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP
    - `ddl_statements.go`: CREATE TABLE, ALTER TABLE, etc.
+   - `ddl_creation_statements.go`: CREATE INDEX, CREATE FUNCTION, etc.
    - `administrative_statements.go`: GRANT, REVOKE, etc.
-   - `utility_statements.go`: COPY, VACUUM, etc.
+   - `advanced_statements.go`: MERGE, COPY, etc.
+   - `alter_misc_statements.go`: Various ALTER statements
 
 2. **Expression Files**:
    - `expressions.go`: A_Expr, BoolExpr, ColumnRef, FuncCall, etc.
-   - `type_coercion_nodes.go`: TypeCast, CollateClause, etc.
 
 3. **Key Methods to Reference**:
-   - `SqlString()`: Returns the SQL string representation
+   - `SqlString()`: Returns the SQL string representation - **this is the main reference**
    - `FormatFullyQualifiedName()`: Handles schema.table.column formatting
    - `QuoteIdentifier()`: Adds quotes when needed
    - `FormatCommaList()`: Comma-separated lists
+
+4. **How to Use**:
+   - Find the node type you're implementing (e.g., `CreateStmt`)
+   - Search for `func (n *CreateStmt) SqlString()` in the Go files
+   - Translate the Go logic to Rust emit_* calls
 
 ### Inspiration from pgFormatter
 
@@ -584,7 +613,7 @@ You can and should create new test cases to validate your implementations!
    - Check `src/nodes/mod.rs` for the `todo!()` in `emit_node_enum`
 
 2. **Study the Go Implementation and pgFormatter**
-   - Find the corresponding node in `parser/ast/*.go`
+   - Find the corresponding node in `crates/pgls_pretty_print/parser/ast/*.go`
    - Study its `SqlString()` method for SQL structure
    - Use pgFormatter for line breaking ideas: `pg_format tests/data/single/your_test.sql`
    - Understand the structure and formatting rules
@@ -959,6 +988,84 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
 - [x] XmlExpr (XMLELEMENT, XMLCONCAT, XMLCOMMENT, XMLFOREST, XMLPI, XMLROOT functions)
 - [x] XmlSerialize (XMLSERIALIZE(DOCUMENT/CONTENT expr AS type))
 
+## ⚠️ AVOID THESE ANTI-PATTERNS
+
+### Anti-pattern 1: Manual Enumerate Loops
+
+❌ **BAD** - Manual loop with first flag:
+```rust
+for (i, item) in n.items.iter().enumerate() {
+    if i > 0 {
+        e.token(TokenKind::COMMA);
+        e.line(LineType::SoftOrSpace);
+    }
+    emit_node(e, item);
+}
+```
+
+✅ **GOOD** - Use helper:
+```rust
+emit_comma_separated_list(e, &n.items, super::emit_node);
+```
+
+### Anti-pattern 2: Raw IDENT tokens
+
+❌ **BAD** - Hand-crafted identifier:
+```rust
+e.token(TokenKind::IDENT(n.name.clone()));
+```
+
+✅ **GOOD** - Use helper for proper quoting:
+```rust
+emit_identifier_maybe_quoted(e, &n.name);
+```
+
+### Anti-pattern 3: Duplicating helper logic
+
+❌ **BAD** - Copy-pasting list iteration:
+```rust
+let mut first = true;
+for item in items {
+    if !first { e.token(TokenKind::COMMA); e.space(); }
+    // ...
+    first = false;
+}
+```
+
+✅ **GOOD** - Use appropriate helper:
+```rust
+emit_comma_separated_list(e, items, |item, e| { ... });
+// or for other separators:
+emit_dot_separated_list(e, items);
+emit_keyword_separated_list(e, items, TokenKind::AND_KW);
+```
+
+### Available Helpers Reference
+
+| Helper | Use For |
+|--------|---------|
+| `emit_comma_separated_list(e, items, render_fn)` | `(a, b, c)` lists (can wrap) |
+| `emit_comma_separated_list_with_spacing(e, items, spacing, render_fn)` | Configurable wrapping |
+| `emit_dot_separated_list(e, items)` | `schema.table.column` |
+| `emit_dot_separated_list_with(e, items, render_fn)` | Custom dot-separated rendering |
+| `emit_keyword_separated_list(e, items, kw, render_fn)` | `a AND b AND c` |
+| `emit_space_separated_list(e, items, render_fn)` | `a b c` |
+| `emit_identifier_maybe_quoted(e, name)` | Smart identifier quoting |
+| `emit_string_literal(e, text)` | `'string values'` |
+| `emit_keyword(e, keyword_str)` | SQL keywords |
+
+### ListSeparatorSpacing enum
+
+```rust
+use super::node_list::{ListSeparatorSpacing, emit_comma_separated_list_with_spacing};
+
+// SoftOrSpace (default) - can wrap to newline if needed
+emit_comma_separated_list_with_spacing(e, &items, ListSeparatorSpacing::SoftOrSpace, render_fn);
+
+// Space - always a space, never wraps (for inline OPTIONS, etc.)
+emit_comma_separated_list_with_spacing(e, &items, ListSeparatorSpacing::Space, render_fn);
+```
+
 ## 📚 Implementation Learnings
 
 Keep this section focused on durable guidance. When you add new insights, summarise them as short bullets and retire items that stop being relevant.
@@ -1066,8 +1173,8 @@ If you need to add new tokens or groups:
 - `src/nodes/select_stmt.rs`: Example of complex statement
 - `src/nodes/a_expr.rs`: Example of expression handling
 - `src/nodes/node_list.rs`: List helper functions
-- `parser/ast/statements.go`: Go reference for statements
-- `parser/ast/expressions.go`: Go reference for expressions
+- `crates/pgls_pretty_print/parser/ast/statements.go`: Go reference for statements
+- `crates/pgls_pretty_print/parser/ast/expressions.go`: Go reference for expressions
 
 ### Useful Commands
 ```bash
@@ -1216,7 +1323,7 @@ cargo insta review
 
 ### 5. Iterate
 
-- Check Go implementation in `parser/ast/*.go` for reference
+- Check Go implementation in `crates/pgls_pretty_print/parser/ast/*.go` for reference
 - Adjust groups, spaces, and line breaks based on test output
 - Ensure AST equality check passes (tests validate this automatically)
 
@@ -1236,10 +1343,10 @@ cargo insta review
 - `src/nodes/column_ref.rs` - List helper example
 
 **Go reference files** (read for SQL logic):
-- `parser/ast/statements.go` - Main SQL statements
-- `parser/ast/expressions.go` - Expression nodes
-- `parser/ast/ddl_statements.go` - DDL statements
-- Other `parser/ast/*.go` files as needed
+- `crates/pgls_pretty_print/parser/ast/statements.go` - Main SQL statements
+- `crates/pgls_pretty_print/parser/ast/expressions.go` - Expression nodes
+- `crates/pgls_pretty_print/parser/ast/ddl_statements.go` - DDL statements
+- Other `crates/pgls_pretty_print/parser/ast/*.go` files as needed
 
 **DO NOT MODIFY**:
 - `src/renderer.rs` - Layout engine (already complete)
@@ -1351,7 +1458,7 @@ cargo insta review
 
 ### 5. Iterate
 
-- Check Go implementation in `parser/ast/*.go` for reference
+- Check Go implementation in `crates/pgls_pretty_print/parser/ast/*.go` for reference
 - Adjust groups, spaces, and line breaks based on test output
 - Ensure AST equality check passes (tests validate this automatically)
 
@@ -1371,10 +1478,10 @@ cargo insta review
 - `src/nodes/column_ref.rs` - List helper example
 
 **Go reference files** (read for SQL logic):
-- `parser/ast/statements.go` - Main SQL statements
-- `parser/ast/expressions.go` - Expression nodes
-- `parser/ast/ddl_statements.go` - DDL statements
-- Other `parser/ast/*.go` files as needed
+- `crates/pgls_pretty_print/parser/ast/statements.go` - Main SQL statements
+- `crates/pgls_pretty_print/parser/ast/expressions.go` - Expression nodes
+- `crates/pgls_pretty_print/parser/ast/ddl_statements.go` - DDL statements
+- Other `crates/pgls_pretty_print/parser/ast/*.go` files as needed
 
 **DO NOT MODIFY**:
 - `src/renderer.rs` - Layout engine (already complete)

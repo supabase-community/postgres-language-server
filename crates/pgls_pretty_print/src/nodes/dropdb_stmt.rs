@@ -1,8 +1,9 @@
-use pgls_query::protobuf::DropdbStmt;
+use pgls_query::{NodeEnum, protobuf::DropdbStmt};
 
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
+    nodes::node_list::emit_comma_separated_list,
 };
 
 pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
@@ -24,7 +25,18 @@ pub(super) fn emit_dropdb_stmt(e: &mut EventEmitter, n: &DropdbStmt) {
         e.token(TokenKind::IDENT(n.dbname.clone()));
     }
 
-    // Note: options field exists but not commonly used - skipping for now
+    // DROP DATABASE options like (FORCE)
+    if !n.options.is_empty() {
+        e.space();
+        e.token(TokenKind::L_PAREN);
+        emit_comma_separated_list(e, &n.options, |node, emitter| {
+            if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
+                // Options like FORCE have just the name, no value
+                emitter.token(TokenKind::IDENT(def.defname.to_uppercase()));
+            }
+        });
+        e.token(TokenKind::R_PAREN);
+    }
 
     e.token(TokenKind::SEMICOLON);
     e.group_end();

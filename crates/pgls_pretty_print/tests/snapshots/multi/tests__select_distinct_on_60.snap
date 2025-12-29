@@ -53,7 +53,8 @@ SELECT DISTINCT ON (
   two
 FROM
   tenk1
-WHERE four =
+WHERE
+  four =
   0
 ORDER BY 1;
 
@@ -63,7 +64,8 @@ SELECT DISTINCT ON (
   two
 FROM
   tenk1
-WHERE four =
+WHERE
+  four =
   0
 ORDER BY 1;
 
@@ -73,7 +75,8 @@ SELECT DISTINCT ON (
   two
 FROM
   tenk1
-WHERE four =
+WHERE
+  four =
   0
 ORDER BY 1,
   2;
@@ -84,7 +87,8 @@ SELECT DISTINCT ON (
   hundred
 FROM
   tenk1
-WHERE four =
+WHERE
+  four =
   0
 ORDER BY 1,
   2;
@@ -100,8 +104,11 @@ FROM
   generate_series(1,
   1000) AS i;
 
-CREATE INDEX "distinct_on_tbl_x_y_idx" ON distinct_on_tbl USING btree (x,
-y);
+CREATE INDEX "distinct_on_tbl_x_y_idx" ON distinct_on_tbl USING btree
+(
+  x,
+  y
+);
 
 ANALYZE distinct_on_tbl;
 

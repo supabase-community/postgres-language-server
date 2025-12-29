@@ -20,16 +20,11 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
         e.token(TokenKind::IDENT(n.fdwname.clone()));
     }
 
-    // Handler/validator functions in func_options
+    // Handler/validator functions in func_options - space-separated, not comma-separated
     if !n.func_options.is_empty() {
-        e.line(LineType::SoftOrSpace);
         e.indent_start();
-        for (i, opt) in n.func_options.iter().enumerate() {
-            if i > 0 {
-                e.token(TokenKind::COMMA);
-                e.space();
-            }
-
+        for opt in n.func_options.iter() {
+            e.line(LineType::SoftOrSpace);
             let def_elem = assert_node_variant!(DefElem, opt);
 
             match def_elem.defname.as_str() {

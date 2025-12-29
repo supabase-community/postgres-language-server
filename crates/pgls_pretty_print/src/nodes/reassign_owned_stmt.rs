@@ -2,7 +2,7 @@ use pgls_query::protobuf::ReassignOwnedStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::emit_node;
@@ -20,7 +20,7 @@ pub(super) fn emit_reassign_owned_stmt(e: &mut EventEmitter, n: &ReassignOwnedSt
     // Emit role list
     super::node_list::emit_comma_separated_list(e, &n.roles, emit_node);
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::TO_KW);
     e.space();
 

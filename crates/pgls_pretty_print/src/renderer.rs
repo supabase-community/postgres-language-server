@@ -209,7 +209,7 @@ impl<W: Write> Renderer<W> {
             self.at_line_start = false;
         }
 
-        write!(self.writer, "{}", text)?;
+        write!(self.writer, "{text}")?;
         self.current_line_length += text.len();
         Ok(())
     }
@@ -242,7 +242,7 @@ impl<W: Write> Renderer<W> {
                 tabs
             }
         };
-        write!(self.writer, "{}", indent_str)?;
+        write!(self.writer, "{indent_str}")?;
         Ok(())
     }
 }

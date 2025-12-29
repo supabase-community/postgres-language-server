@@ -2,7 +2,10 @@ use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
 };
-use pgls_query::protobuf::{ObjectType, SecLabelStmt};
+use pgls_query::{
+    NodeEnum,
+    protobuf::{ObjectType, SecLabelStmt},
+};
 
 use super::string::{emit_identifier_maybe_quoted, emit_keyword, emit_single_quoted_str};
 
@@ -59,7 +62,16 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
 
     // Emit object name
     if let Some(ref object) = n.object {
-        super::emit_node(object, e);
+        // Aggregate needs (*) for "any argument types"
+        if n.objtype() == ObjectType::ObjectAggregate {
+            if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {
+                super::emit_object_with_args_for_aggregate(e, owa);
+            } else {
+                super::emit_node(object, e);
+            }
+        } else {
+            super::emit_node(object, e);
+        }
     }
 
     // Emit IS 'label'

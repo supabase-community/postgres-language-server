@@ -2,7 +2,7 @@ use pgls_query::protobuf::CreateEventTrigStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventTrigStmt) {
@@ -22,7 +22,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
 
     // ON event_name
     if !n.eventname.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
         e.token(TokenKind::IDENT(n.eventname.clone()));
@@ -31,7 +31,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
     // WHEN clause (optional)
     // Format: WHEN TAG IN ('value1', 'value2') AND TAG IN ('value3')
     if !n.whenclause.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHEN_KW);
         e.space();
         for (i, when) in n.whenclause.iter().enumerate() {
@@ -69,7 +69,7 @@ pub(super) fn emit_create_event_trig_stmt(e: &mut EventEmitter, n: &CreateEventT
 
     // EXECUTE FUNCTION function_name()
     if !n.funcname.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::EXECUTE_KW);
         e.space();
         e.token(TokenKind::FUNCTION_KW);

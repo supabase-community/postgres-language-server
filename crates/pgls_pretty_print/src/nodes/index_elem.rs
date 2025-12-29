@@ -30,6 +30,23 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
     if !n.opclass.is_empty() {
         e.space();
         super::node_list::emit_dot_separated_list(e, &n.opclass);
+
+        // Optional opclass options (e.g., tsvector_ops(siglen = 1000))
+        if !n.opclassopts.is_empty() {
+            e.token(TokenKind::L_PAREN);
+            super::node_list::emit_comma_separated_list(e, &n.opclassopts, |node, emitter| {
+                if let Some(pgls_query::NodeEnum::DefElem(def)) = node.node.as_ref() {
+                    emitter.token(TokenKind::IDENT(def.defname.clone()));
+                    if let Some(ref arg) = def.arg {
+                        emitter.space();
+                        emitter.token(TokenKind::IDENT("=".to_string()));
+                        emitter.space();
+                        super::emit_node(arg, emitter);
+                    }
+                }
+            });
+            e.token(TokenKind::R_PAREN);
+        }
     }
 
     // Sort order (ASC/DESC)

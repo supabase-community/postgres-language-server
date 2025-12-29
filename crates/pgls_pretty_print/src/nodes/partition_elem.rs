@@ -12,8 +12,10 @@ pub(super) fn emit_partition_elem(e: &mut EventEmitter, n: &PartitionElem) {
     if !n.name.is_empty() {
         e.token(TokenKind::IDENT(n.name.clone()));
     } else if let Some(ref expr) = n.expr {
-        // Emit expression if no column name
+        // Emit expression wrapped in parentheses (required by PostgreSQL syntax)
+        e.token(TokenKind::L_PAREN);
         super::emit_node(expr, e);
+        e.token(TokenKind::R_PAREN);
     }
 
     // Emit COLLATE clause if present

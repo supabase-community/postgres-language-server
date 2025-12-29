@@ -21,13 +21,15 @@ SELECT
   oprcom
 FROM
   pg_catalog.pg_operator AS fk
-WHERE oprcom <>
+WHERE
+  oprcom <>
   0 AND
   NOT EXISTS (SELECT
     1
   FROM
     pg_catalog.pg_operator AS pk
-  WHERE pk.oid =
+  WHERE
+    pk.oid =
     fk.oprcom);
 
 SELECT
@@ -35,13 +37,15 @@ SELECT
   oprnegate
 FROM
   pg_catalog.pg_operator AS fk
-WHERE oprnegate <>
+WHERE
+  oprnegate <>
   0 AND
   NOT EXISTS (SELECT
     1
   FROM
     pg_catalog.pg_operator AS pk
-  WHERE pk.oid =
+  WHERE
+    pk.oid =
     fk.oprnegate);
 
 DROP OPERATOR === (BIGINT, BIGINT);
@@ -63,13 +67,15 @@ SELECT
   oprcom
 FROM
   pg_catalog.pg_operator AS fk
-WHERE oprcom <>
+WHERE
+  oprcom <>
   0 AND
   NOT EXISTS (SELECT
     1
   FROM
     pg_catalog.pg_operator AS pk
-  WHERE pk.oid =
+  WHERE
+    pk.oid =
     fk.oprcom);
 
 SELECT
@@ -77,13 +83,15 @@ SELECT
   oprnegate
 FROM
   pg_catalog.pg_operator AS fk
-WHERE oprnegate <>
+WHERE
+  oprnegate <>
   0 AND
   NOT EXISTS (SELECT
     1
   FROM
     pg_catalog.pg_operator AS pk
-  WHERE pk.oid =
+  WHERE
+    pk.oid =
     fk.oprnegate);
 
 DROP OPERATOR <| (BIGINT, BIGINT);

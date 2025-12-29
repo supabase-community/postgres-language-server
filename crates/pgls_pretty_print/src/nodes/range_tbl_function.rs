@@ -48,7 +48,7 @@ pub(super) fn emit_range_tbl_function(e: &mut EventEmitter, n: &RangeTblFunction
                 e.token(TokenKind::COMMA);
                 e.space();
             }
-            super::emit_identifier(e, &format!("${}", param));
+            super::emit_identifier(e, &format!("${param}"));
             first = false;
         }
         e.token(TokenKind::R_PAREN);

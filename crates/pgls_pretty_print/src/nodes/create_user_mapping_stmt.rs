@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 use pgls_query::protobuf::CreateUserMappingStmt;
@@ -24,14 +24,14 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
     }
 
     if let Some(ref user) = n.user {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
         e.space();
         super::emit_role_spec(e, user);
     }
 
     if !n.servername.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("SERVER".to_string()));
         e.space();
         e.token(TokenKind::IDENT(n.servername.clone()));
@@ -42,7 +42,10 @@ pub(super) fn emit_create_user_mapping_stmt(e: &mut EventEmitter, n: &CreateUser
         e.token(TokenKind::IDENT("OPTIONS".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list(e, &n.options, super::emit_node);
+        emit_comma_separated_list(e, &n.options, |n, e| {
+            let def_elem = assert_node_variant!(DefElem, n);
+            super::emit_options_def_elem(e, def_elem);
+        });
         e.token(TokenKind::R_PAREN);
     }
 

@@ -1,8 +1,8 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
-use pgls_query::protobuf::AlterRoleStmt;
+use crate::emitter::{EventEmitter, GroupKind, LineType};
+use pgls_query::{NodeEnum, protobuf::AlterRoleStmt};
 
-use super::node_list::emit_comma_separated_list;
+use super::def_elem::emit_role_option;
 use super::role_spec::emit_role_spec;
 
 pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
@@ -19,10 +19,16 @@ pub(super) fn emit_alter_role_stmt(e: &mut EventEmitter, n: &AlterRoleStmt) {
         emit_role_spec(e, role);
     }
 
-    // Emit role options
+    // Emit role options with line breaks
     if !n.options.is_empty() {
-        e.space();
-        emit_comma_separated_list(e, &n.options, super::emit_node);
+        e.indent_start();
+        for opt in &n.options {
+            if let Some(NodeEnum::DefElem(def)) = opt.node.as_ref() {
+                e.line(LineType::SoftOrSpace);
+                emit_role_option(e, def);
+            }
+        }
+        e.indent_end();
     }
 
     e.token(TokenKind::SEMICOLON);

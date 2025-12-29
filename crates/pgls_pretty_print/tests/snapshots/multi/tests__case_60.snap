@@ -174,7 +174,8 @@ SELECT
 FROM
   case_tbl AS a,
   case2_tbl AS b
-WHERE COALESCE(a.f,
+WHERE
+  COALESCE(a.f,
   b.i,
   b.j) =
   2;
@@ -191,7 +192,8 @@ SELECT
 FROM
   case_tbl AS a,
   case2_tbl AS b
-WHERE COALESCE(f,
+WHERE
+  COALESCE(f,
   b.i) =
   2;
 
@@ -226,7 +228,8 @@ WHEN b.i >=
 ELSE 3 * j
 END
 FROM case2_tbl AS b
-WHERE j =
+WHERE
+  j =
   -case_tbl.i;
 
 SELECT * FROM case_tbl;
@@ -235,7 +238,11 @@ BEGIN;
 
 CREATE FUNCTION vol(
   TEXT
-) RETURNS TEXT AS 'begin return $1; end' LANGUAGE "plpgsql" VOLATILE;
+)
+RETURNS TEXT
+AS 'begin return $1; end'
+LANGUAGE "plpgsql"
+VOLATILE;
 
 SELECT
   CASE CASE vol('bar')
@@ -252,12 +259,19 @@ CREATE DOMAIN foodomain AS TEXT;
 
 CREATE FUNCTION volfoo(
   TEXT
-) RETURNS foodomain AS 'begin return $1::foodomain; end' LANGUAGE "plpgsql" VOLATILE;
+)
+RETURNS foodomain
+AS 'begin return $1::foodomain; end'
+LANGUAGE "plpgsql"
+VOLATILE;
 
 CREATE FUNCTION inline_eq(
   foodomain,
   foodomain
-) RETURNS BOOLEAN AS 'SELECT CASE $2::text WHEN $1::text THEN true ELSE false END' LANGUAGE "sql";
+)
+RETURNS BOOLEAN
+AS 'SELECT CASE $2::text WHEN $1::text THEN true ELSE false END'
+LANGUAGE "sql";
 
 CREATE OPERATOR = (PROCEDURE = inline_eq,
 LEFTARG = foodomain,
@@ -278,16 +292,23 @@ CREATE DOMAIN arrdomain AS INT[];
 CREATE FUNCTION make_ad(
   INT,
   INT
-) RETURNS arrdomain AS 'declare x arrdomain;
+)
+RETURNS arrdomain
+AS 'declare x arrdomain;
    begin
      x := array[$1,$2];
      return x;
-   end' LANGUAGE "plpgsql" VOLATILE;
+   end'
+LANGUAGE "plpgsql"
+VOLATILE;
 
 CREATE FUNCTION ad_eq(
   arrdomain,
   arrdomain
-) RETURNS BOOLEAN AS 'begin return array_eq($1, $2); end' LANGUAGE "plpgsql";
+)
+RETURNS BOOLEAN
+AS 'begin return array_eq($1, $2); end'
+LANGUAGE "plpgsql";
 
 CREATE OPERATOR = (PROCEDURE = ad_eq,
 LEFTARG = arrdomain,

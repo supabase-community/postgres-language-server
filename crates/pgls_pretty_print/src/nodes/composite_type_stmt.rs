@@ -16,7 +16,7 @@ pub(super) fn emit_composite_type_stmt(e: &mut EventEmitter, n: &CompositeTypeSt
     e.space();
 
     if let Some(ref typevar) = n.typevar {
-        super::emit_range_var(e, typevar);
+        super::emit_range_var_name(e, typevar);
     }
 
     e.space();

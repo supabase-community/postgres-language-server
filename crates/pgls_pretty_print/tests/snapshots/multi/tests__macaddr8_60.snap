@@ -98,9 +98,15 @@ INSERT INTO macaddr8_data VALUES (21, '08002b0102030405');
 
 SELECT * FROM macaddr8_data ORDER BY 1;
 
-CREATE INDEX "macaddr8_data_btree" ON macaddr8_data USING btree (b);
+CREATE INDEX "macaddr8_data_btree" ON macaddr8_data USING btree
+(
+  b
+);
 
-CREATE INDEX "macaddr8_data_hash" ON macaddr8_data USING hash (b);
+CREATE INDEX "macaddr8_data_hash" ON macaddr8_data USING hash
+(
+  b
+);
 
 SELECT a, b, trunc(b) FROM macaddr8_data ORDER BY 2, 1;
 
@@ -109,7 +115,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -117,7 +124,8 @@ SELECT
   '08:00:2b:ff:fe:01:02:04'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -125,7 +133,8 @@ SELECT
   '08:00:2b:ff:fe:01:02:03'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -133,7 +142,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -141,7 +151,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -149,7 +160,8 @@ SELECT
   '08:00:2b:ff:fe:01:02:03'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -157,7 +169,8 @@ SELECT
   CAST('08:00:2b:01:02:04' AS MACADDR)
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -165,7 +178,8 @@ SELECT
   CAST('08:00:2b:01:02:03' AS MACADDR)
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -173,7 +187,8 @@ SELECT
   '08:00:2b:01:02:03:04:06'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -181,7 +196,8 @@ SELECT
   '08:00:2b:01:02:03:04:06'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -189,7 +205,8 @@ SELECT
   '08:00:2b:01:02:03:04:05'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -197,7 +214,8 @@ SELECT
   '08:00:2b:01:02:03:04:06'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -205,7 +223,8 @@ SELECT
   '08:00:2b:01:02:03:04:06'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -213,7 +232,8 @@ SELECT
   '08:00:2b:01:02:03:04:05'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -221,7 +241,8 @@ SELECT
   '08:00:2b:01:02:03:04:06'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT
@@ -229,7 +250,8 @@ SELECT
   '08:00:2b:01:02:03:04:05'
 FROM
   macaddr8_data
-WHERE a =
+WHERE
+  a =
   15;
 
 SELECT ~b FROM macaddr8_data;

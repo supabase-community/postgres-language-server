@@ -8,7 +8,8 @@ SELECT
   running_total
 FROM
   metrics
-WHERE total >
+WHERE
+  total >
   0
 WINDOW
   w AS (

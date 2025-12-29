@@ -161,42 +161,64 @@ show-logs:
 agentic name:
     codex exec --yolo "please read agentic/{{name}}.md and follow the instructions closely while continueing the described task. Make sure to understand recent Session History, Implementation Learnings and read all instructions. Continue until the task is complete."
 
-agentic-loop name:
-    #!/usr/bin/env bash
-    set +e  # Don't exit on error
-    echo "Starting agentic loop - will retry on rate limits..."
-    echo "Stop keyword: ===AGENTIC_TASK_COMPLETE==="
-    iteration=1
-    output_file=$(mktemp)
-    trap "rm -f $output_file" EXIT
+# === Pretty Printer Development ===
 
-    while true; do
-        echo "$(date): Starting iteration $iteration..."
+# Run pretty printer agentic task (Stop hook auto-loops until tests pass)
+pp-agentic:
+    claude --dangerously-skip-permissions "Read agentic/pretty_printer.md and agentic/session_log.md. \
+    \
+    Your goal: Complete the pretty printer by fixing node implementations until ALL tests pass. \
+    \
+    Workflow: \
+    1. Run 'just pp-status' to see current state \
+    2. Run 'just pp-failing' to find failing tests \
+    3. Pick a failing test and debug with 'just pp-debug <name>' \
+    4. Fix the emit_* function in crates/pgls_pretty_print/src/nodes/*.rs \
+    5. Verify with 'just pp-test <pattern>' \
+    6. Accept valid snapshots with 'just pp-review' \
+    7. Repeat \
+    \
+    Follow the Implementation Learnings in pretty_printer.md. Update session_log.md with your progress."
 
-        # Run agentic and capture output
-        just agentic {{name}} 2>&1 | tee "$output_file"
-        exit_code=${PIPESTATUS[0]}
+# Show pretty printer implementation status
+pp-status:
+    @./scripts/pp-status.sh
 
-        # Check for completion keyword in last 10 lines only
-        if tail -n 10 "$output_file" | grep -q "===AGENTIC_TASK_COMPLETE==="; then
-            echo "$(date): ✓ Task complete keyword detected - stopping loop"
-            break
-        fi
+# Test with pattern filter (e.g., just pp-test select_stmt)
+pp-test pattern:
+    cargo test -p pgls_pretty_print -- {{pattern}} --show-output
 
-        # Handle exit codes
-        if [ $exit_code -eq 0 ]; then
-            echo "$(date): Iteration $iteration completed successfully!"
-            iteration=$((iteration + 1))
-        elif [ $exit_code -eq 1 ]; then
-            echo "$(date): Rate limit hit (exit code 1) - waiting 3 hours before retry..."
-            sleep 10800  # 3 hours = 10800 seconds
-            echo "$(date): Resuming after 3-hour wait..."
-        else
-            echo "$(date): Unexpected error (exit code $exit_code) - stopping loop"
-            break
-        fi
-    done
+# List failing tests
+pp-failing:
+    @cargo test -p pgls_pretty_print 2>&1 | grep "FAILED" | head -30
 
-    rm -f "$output_file"
-    echo "$(date): Agentic loop finished after $iteration iterations"
+# Debug a specific test with full output
+pp-debug name:
+    cargo test -p pgls_pretty_print {{name}} -- --show-output --nocapture
+
+# Review pending snapshots
+pp-review:
+    cargo insta review -p pgls_pretty_print
+
+# Accept all pending snapshots
+pp-accept:
+    cargo insta accept -p pgls_pretty_print
+
+# Analyze failure patterns
+pp-analyze:
+    @echo "=== Failure Analysis ===" && \
+    cargo test -p pgls_pretty_print 2>&1 | grep -oE "test_(single|multi)__[a-z0-9_]+" | sort | uniq -c | sort -rn | head -20
+
+# Run only single-statement tests (faster iteration)
+pp-single:
+    cargo test -p pgls_pretty_print test_single
+
+# Run only multi-statement tests
+pp-multi:
+    cargo test -p pgls_pretty_print test_multi
+
+# Short aliases (only for commands without required args)
+pps: pp-status
+ppf: pp-failing
+ppr: pp-review
 

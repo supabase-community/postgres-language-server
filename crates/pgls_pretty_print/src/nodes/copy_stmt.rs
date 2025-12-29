@@ -6,7 +6,7 @@ use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
 };
-use pgls_query::protobuf::CopyStmt;
+use pgls_query::{NodeEnum, protobuf::CopyStmt};
 
 pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
     e.group_start(GroupKind::CopyStmt);
@@ -77,7 +77,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
-            super::emit_options_def_elem(e, def_elem);
+            emit_copy_option(e, def_elem);
         });
         e.token(TokenKind::R_PAREN);
     }
@@ -90,6 +90,51 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
     }
 
     e.token(TokenKind::SEMICOLON);
+
+    e.group_end();
+}
+
+/// Emit COPY options with proper SQL syntax
+/// Boolean options like HEADER, FREEZE, etc. when true are emitted without a value
+fn emit_copy_option(e: &mut EventEmitter, n: &pgls_query::protobuf::DefElem) {
+    e.group_start(GroupKind::DefElem);
+
+    // Emit the option name in uppercase
+    let name_upper = n.defname.to_uppercase();
+    e.token(TokenKind::IDENT(name_upper.clone()));
+
+    // Handle the value based on its type
+    if let Some(ref arg) = n.arg {
+        if let Some(node_enum) = &arg.node {
+            match node_enum {
+                NodeEnum::Boolean(b) => {
+                    // For boolean options like HEADER, FREEZE, etc.:
+                    // - When true, emit just the option name (already done above)
+                    // - When false, we still need to emit false explicitly
+                    if !b.boolval {
+                        e.space();
+                        e.token(TokenKind::FALSE_KW);
+                    }
+                    // Note: when true, we don't emit any value - just the name is sufficient
+                }
+                NodeEnum::String(s) => {
+                    e.space();
+                    super::emit_string_literal(e, s);
+                }
+                NodeEnum::List(list) => {
+                    // For options like FORCE_QUOTE (column_list)
+                    e.space();
+                    e.token(TokenKind::L_PAREN);
+                    emit_comma_separated_list(e, &list.items, super::emit_node);
+                    e.token(TokenKind::R_PAREN);
+                }
+                _ => {
+                    e.space();
+                    super::emit_node(arg, e);
+                }
+            }
+        }
+    }
 
     e.group_end();
 }

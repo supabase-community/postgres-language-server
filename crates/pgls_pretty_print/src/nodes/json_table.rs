@@ -101,39 +101,36 @@ pub(super) fn emit_json_table_path_spec(e: &mut EventEmitter, spec: &JsonTablePa
 pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn) {
     e.group_start(GroupKind::JsonTableColumn);
 
-    match col.coltype() {
-        JsonTableColumnType::JtcNested => {
-            e.token(TokenKind::IDENT("NESTED".to_string()));
-            e.space();
-            e.token(TokenKind::IDENT("PATH".to_string()));
-            e.space();
-            if let Some(pathspec) = col.pathspec.as_ref() {
-                emit_json_table_path_spec(e, pathspec);
-            }
-
-            if !col.columns.is_empty() {
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::IDENT("COLUMNS".to_string()));
-                e.space();
-                e.token(TokenKind::L_PAREN);
-                e.indent_start();
-                e.line(LineType::SoftOrSpace);
-                emit_comma_separated_list(e, &col.columns, |node, e| {
-                    if let Some(NodeEnum::JsonTableColumn(nested)) = node.node.as_ref() {
-                        emit_json_table_column(e, nested);
-                    } else {
-                        super::emit_node(node, e);
-                    }
-                });
-                e.indent_end();
-                e.line(LineType::SoftOrSpace);
-                e.token(TokenKind::R_PAREN);
-            }
-
-            e.group_end();
-            return;
+    if col.coltype() == JsonTableColumnType::JtcNested {
+        e.token(TokenKind::IDENT("NESTED".to_string()));
+        e.space();
+        e.token(TokenKind::IDENT("PATH".to_string()));
+        e.space();
+        if let Some(pathspec) = col.pathspec.as_ref() {
+            emit_json_table_path_spec(e, pathspec);
         }
-        _ => {}
+
+        if !col.columns.is_empty() {
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::IDENT("COLUMNS".to_string()));
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.indent_start();
+            e.line(LineType::SoftOrSpace);
+            emit_comma_separated_list(e, &col.columns, |node, e| {
+                if let Some(NodeEnum::JsonTableColumn(nested)) = node.node.as_ref() {
+                    emit_json_table_column(e, nested);
+                } else {
+                    super::emit_node(node, e);
+                }
+            });
+            e.indent_end();
+            e.line(LineType::SoftOrSpace);
+            e.token(TokenKind::R_PAREN);
+        }
+
+        e.group_end();
+        return;
     }
 
     if !col.name.is_empty() {

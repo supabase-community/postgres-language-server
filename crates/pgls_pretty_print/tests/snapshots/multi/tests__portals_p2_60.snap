@@ -1,0 +1,164 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/portals_p2_60.sql
+snapshot_kind: text
+---
+BEGIN;
+
+DECLARE "foo13" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  50;;
+
+DECLARE "foo14" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  51;;
+
+DECLARE "foo15" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  52;;
+
+DECLARE "foo16" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  53;;
+
+DECLARE "foo17" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  54;;
+
+DECLARE "foo18" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  55;;
+
+DECLARE "foo19" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  56;;
+
+DECLARE "foo20" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  57;;
+
+DECLARE "foo21" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  58;;
+
+DECLARE "foo22" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  59;;
+
+DECLARE "foo23" CURSOR FOR SELECT
+  *
+FROM
+  onek
+WHERE
+  unique1 =
+  60;;
+
+DECLARE "foo24" CURSOR FOR SELECT
+  *
+FROM
+  onek2
+WHERE
+  unique1 =
+  50;;
+
+DECLARE "foo25" CURSOR FOR SELECT
+  *
+FROM
+  onek2
+WHERE
+  unique1 =
+  60;;
+
+FETCH FORWARD ALL FROM foo13;
+
+FETCH FORWARD ALL FROM foo14;
+
+FETCH FORWARD ALL FROM foo15;
+
+FETCH FORWARD ALL FROM foo16;
+
+FETCH FORWARD ALL FROM foo17;
+
+FETCH FORWARD ALL FROM foo18;
+
+FETCH FORWARD ALL FROM foo19;
+
+FETCH FORWARD ALL FROM foo20;
+
+FETCH FORWARD ALL FROM foo21;
+
+FETCH FORWARD ALL FROM foo22;
+
+FETCH FORWARD ALL FROM foo23;
+
+FETCH FORWARD ALL FROM foo24;
+
+FETCH FORWARD ALL FROM foo25;
+
+CLOSE foo13;
+
+CLOSE foo14;
+
+CLOSE foo15;
+
+CLOSE foo16;
+
+CLOSE foo17;
+
+CLOSE foo18;
+
+CLOSE foo19;
+
+CLOSE foo20;
+
+CLOSE foo21;
+
+CLOSE foo22;
+
+CLOSE foo23;
+
+CLOSE foo24;
+
+CLOSE foo25;
+
+COMMIT;

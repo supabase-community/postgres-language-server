@@ -57,9 +57,13 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // Index columns/expressions
     if !n.index_params.is_empty() {
-        e.space();
+        e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
+        e.indent_start();
+        e.line(crate::emitter::LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.index_params, super::emit_node);
+        e.indent_end();
+        e.line(crate::emitter::LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 
@@ -74,7 +78,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // INCLUDE columns
     if !n.index_including_params.is_empty() {
-        e.space();
+        e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::INCLUDE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

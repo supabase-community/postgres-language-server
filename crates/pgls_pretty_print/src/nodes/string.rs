@@ -106,7 +106,7 @@ pub(super) fn emit_string_identifier(e: &mut EventEmitter, n: &PgString) {
 
 pub(super) fn emit_identifier(e: &mut EventEmitter, value: &str) {
     let escaped = value.replace('"', "\"\"");
-    e.token(TokenKind::IDENT(format!("\"{}\"", escaped)));
+    e.token(TokenKind::IDENT(format!("\"{escaped}\"")));
 }
 
 /// Emit an identifier, adding quotes only if necessary.
@@ -138,14 +138,13 @@ pub(super) fn emit_keyword(e: &mut EventEmitter, keyword: &str) {
 
 pub(super) fn emit_single_quoted_str(e: &mut EventEmitter, value: &str) {
     let escaped = value.replace('\'', "''");
-    e.token(TokenKind::STRING(format!("'{}'", escaped)));
+    e.token(TokenKind::STRING(format!("'{escaped}'")));
 }
 
 pub(super) fn emit_dollar_quoted_str(e: &mut EventEmitter, value: &str) {
     let delimiter = pick_dollar_delimiter(value);
     e.token(TokenKind::DOLLAR_QUOTED_STRING(format!(
-        "{}{}{}",
-        delimiter, value, delimiter
+        "{delimiter}{value}{delimiter}"
     )));
 }
 
@@ -189,7 +188,7 @@ fn pick_dollar_delimiter(body: &str) -> String {
         let tag = if counter == 0 {
             "$pg$".to_string()
         } else {
-            format!("$pg{}$", counter)
+            format!("$pg{counter}$")
         };
 
         if !body.contains(&tag) {

@@ -35,9 +35,15 @@ INSERT INTO macaddr_data VALUES (14, '08:00:2a:01:02:04');
 
 SELECT * FROM macaddr_data;
 
-CREATE INDEX "macaddr_data_btree" ON macaddr_data USING btree (b);
+CREATE INDEX "macaddr_data_btree" ON macaddr_data USING btree
+(
+  b
+);
 
-CREATE INDEX "macaddr_data_hash" ON macaddr_data USING hash (b);
+CREATE INDEX "macaddr_data_hash" ON macaddr_data USING hash
+(
+  b
+);
 
 SELECT a, b, trunc(b) FROM macaddr_data ORDER BY 2, 1;
 
@@ -46,7 +52,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -54,7 +61,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -62,7 +70,8 @@ SELECT
   '08:00:2b:01:02:03'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -70,7 +79,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -78,7 +88,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -86,7 +97,8 @@ SELECT
   '08:00:2b:01:02:03'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -94,7 +106,8 @@ SELECT
   '08:00:2b:01:02:04'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT
@@ -102,7 +115,8 @@ SELECT
   '08:00:2b:01:02:03'
 FROM
   macaddr_data
-WHERE a =
+WHERE
+  a =
   1;
 
 SELECT ~b FROM macaddr_data;

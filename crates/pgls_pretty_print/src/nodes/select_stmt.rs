@@ -30,9 +30,16 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
     // Check if this is a set operation (UNION/INTERSECT/EXCEPT)
     match n.op() {
         SetOperation::SetopUnion | SetOperation::SetopIntersect | SetOperation::SetopExcept => {
-            // Emit left operand
+            // Emit left operand - wrap in parentheses if it's a set operation that needs precedence protection
             if let Some(ref larg) = n.larg {
+                let needs_parens_left = needs_set_operation_parens(n.op(), larg.op(), true);
+                if needs_parens_left {
+                    e.token(TokenKind::L_PAREN);
+                }
                 emit_select_stmt_no_semicolon(e, larg);
+                if needs_parens_left {
+                    e.token(TokenKind::R_PAREN);
+                }
             }
 
             // Emit set operation keyword
@@ -50,10 +57,79 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
                 e.token(TokenKind::ALL_KW);
             }
 
-            // Emit right operand
+            // Emit right operand - wrap in parentheses if it's a set operation that needs precedence protection
             e.line(LineType::SoftOrSpace);
             if let Some(ref rarg) = n.rarg {
+                let needs_parens_right = needs_set_operation_parens(n.op(), rarg.op(), false);
+                if needs_parens_right {
+                    e.token(TokenKind::L_PAREN);
+                }
                 emit_select_stmt_no_semicolon(e, rarg);
+                if needs_parens_right {
+                    e.token(TokenKind::R_PAREN);
+                }
+            }
+
+            // Emit ORDER BY clause if present on the set operation
+            if !n.sort_clause.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::ORDER_KW);
+                e.space();
+                e.token(TokenKind::BY_KW);
+                e.space();
+                e.indent_start();
+                emit_comma_separated_list(e, &n.sort_clause, super::emit_node);
+                e.indent_end();
+            }
+
+            // Emit LIMIT/OFFSET clauses
+            match n.limit_option() {
+                LimitOption::WithTies => {
+                    if let Some(ref offset) = n.limit_offset {
+                        e.line(LineType::SoftOrSpace);
+                        e.token(TokenKind::OFFSET_KW);
+                        e.space();
+                        super::emit_node(offset, e);
+                        e.space();
+                        e.token(TokenKind::ROWS_KW);
+                    }
+
+                    if let Some(ref limit) = n.limit_count {
+                        e.line(LineType::SoftOrSpace);
+                        e.token(TokenKind::FETCH_KW);
+                        e.space();
+                        e.token(TokenKind::FIRST_KW);
+                        e.space();
+                        super::emit_node(limit, e);
+                        e.space();
+                        e.token(TokenKind::ROWS_KW);
+                        e.space();
+                        e.token(TokenKind::WITH_KW);
+                        e.space();
+                        emit_keyword(e, "TIES");
+                    }
+                }
+                _ => {
+                    if let Some(ref offset) = n.limit_offset {
+                        e.line(LineType::SoftOrSpace);
+                        e.token(TokenKind::OFFSET_KW);
+                        e.space();
+                        super::emit_node(offset, e);
+                    }
+
+                    if let Some(ref limit) = n.limit_count {
+                        e.line(LineType::SoftOrSpace);
+                        e.token(TokenKind::LIMIT_KW);
+                        e.space();
+                        super::emit_node(limit, e);
+                    }
+                }
+            }
+
+            // Emit locking clause if present
+            for locking in &n.locking_clause {
+                e.line(LineType::SoftOrSpace);
+                super::emit_node(locking, e);
             }
 
             if with_semicolon {
@@ -264,4 +340,61 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
 
     e.indent_end();
     e.token(TokenKind::R_PAREN);
+}
+
+/// Determines if we need parentheses around a set operation operand.
+/// SQL set operations have this precedence: INTERSECT > UNION = EXCEPT
+/// UNION and EXCEPT are left-associative.
+///
+/// We need parentheses when:
+/// 1. Right operand has the same operator (to preserve right-to-left grouping if user wrote it that way)
+/// 2. Child operator has lower precedence than parent
+/// 3. Child has UNION/EXCEPT and parent has INTERSECT (different precedence)
+fn needs_set_operation_parens(
+    parent_op: SetOperation,
+    child_op: SetOperation,
+    is_left_operand: bool,
+) -> bool {
+    // No parentheses needed if child is not a set operation
+    match child_op {
+        SetOperation::SetopNone | SetOperation::Undefined => return false,
+        _ => {}
+    }
+
+    // INTERSECT has higher precedence than UNION/EXCEPT
+    // If parent is INTERSECT and child is UNION/EXCEPT, no parens needed (child binds tighter naturally)
+    // If parent is UNION/EXCEPT and child is INTERSECT, no parens needed (INTERSECT binds tighter)
+
+    // Parentheses are needed:
+    // 1. When child is UNION/EXCEPT and parent is INTERSECT (to preserve order)
+    //    -> Actually no, INTERSECT binds tighter, so this doesn't need parens
+    // 2. When parent is UNION and child is EXCEPT on the right (or vice versa) - same precedence, need to preserve structure
+    // 3. When parent and child are the same operator and it's right operand (right-associative grouping)
+
+    // Same operator on right side needs parentheses to preserve structure
+    // E.g., A UNION (B UNION C) needs parens, otherwise it's (A UNION B) UNION C
+    if !is_left_operand && child_op == parent_op {
+        return true;
+    }
+
+    // Different operators at same precedence level need parens on right to preserve structure
+    // UNION and EXCEPT have same precedence
+    match (parent_op, child_op) {
+        // UNION and EXCEPT have same precedence, so right-side needs parens
+        (SetOperation::SetopUnion, SetOperation::SetopExcept)
+        | (SetOperation::SetopExcept, SetOperation::SetopUnion) => !is_left_operand,
+        // INTERSECT has higher precedence - if child is INTERSECT, no parens needed
+        // If parent is INTERSECT and child is UNION/EXCEPT, we need parens
+        (SetOperation::SetopIntersect, SetOperation::SetopUnion)
+        | (SetOperation::SetopIntersect, SetOperation::SetopExcept) => {
+            // Parent INTERSECT binds tighter than child UNION/EXCEPT
+            // So child needs parens to be evaluated first
+            true
+        }
+        // If parent is UNION/EXCEPT and child is INTERSECT, no parens needed
+        // INTERSECT already binds tighter
+        (SetOperation::SetopUnion, SetOperation::SetopIntersect)
+        | (SetOperation::SetopExcept, SetOperation::SetopIntersect) => false,
+        _ => false,
+    }
 }
