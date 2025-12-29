@@ -66,6 +66,17 @@
         }
       ]
     },
+    "pglinter": {
+      "description": "The configuration for pglinter",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PglinterConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "plpgsqlCheck": {
       "description": "The configuration for type checking",
       "anyOf": [
@@ -113,6 +124,213 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "Base": {
+      "description": "A list of rules that belong to this group",
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules for this group.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "compositePrimaryKeyTooManyColumns": {
+          "description": "CompositePrimaryKeyTooManyColumns (B012): Detect tables with composite primary keys involving more than 4 columns",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyObjectsWithUppercase": {
+          "description": "HowManyObjectsWithUppercase (B005): Count number of objects with uppercase in name or in columns.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyRedudantIndex": {
+          "description": "HowManyRedudantIndex (B002): Count number of redundant index vs nb index.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTableWithoutIndexOnFk": {
+          "description": "HowManyTableWithoutIndexOnFk (B003): Count number of tables without index on foreign key.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTableWithoutPrimaryKey": {
+          "description": "HowManyTableWithoutPrimaryKey (B001): Count number of tables without primary key.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTablesNeverSelected": {
+          "description": "HowManyTablesNeverSelected (B006): Count number of table(s) that has never been selected.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTablesWithFkMismatch": {
+          "description": "HowManyTablesWithFkMismatch (B008): Count number of tables with foreign keys that do not match the key reference type.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTablesWithFkOutsideSchema": {
+          "description": "HowManyTablesWithFkOutsideSchema (B007): Count number of tables with foreign keys outside their schema.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTablesWithReservedKeywords": {
+          "description": "HowManyTablesWithReservedKeywords (B010): Count number of database objects using reserved keywords in their names.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyTablesWithSameTrigger": {
+          "description": "HowManyTablesWithSameTrigger (B009): Count number of tables using the same trigger vs nb table with their own triggers.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "howManyUnusedIndex": {
+          "description": "HowManyUnusedIndex (B004): Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the recommended rules for this group",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "severalTableOwnerInSchema": {
+          "description": "SeveralTableOwnerInSchema (B011): In a schema there are several tables owned by different owners.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Cluster": {
+      "description": "A list of rules that belong to this group",
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules for this group.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "passwordEncryptionIsMd5": {
+          "description": "PasswordEncryptionIsMd5 (C003): This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists": {
+          "description": "PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists (C002): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pgHbaEntriesWithMethodTrustShouldNotExists": {
+          "description": "PgHbaEntriesWithMethodTrustShouldNotExists (C001): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the recommended rules for this group",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "DatabaseConfiguration": {
       "description": "The configuration of the database connection.",
       "type": "object",
@@ -409,6 +627,80 @@
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PglinterConfiguration": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "if `false`, it disables the feature and the linter won't be executed. `true` by default",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "rules": {
+          "description": "List of rules",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PglinterRules"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PglinterRules": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "base": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Base"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cluster": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Cluster"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Schema"
             },
             {
               "type": "null"
@@ -840,6 +1132,82 @@
         },
         "transactionNesting": {
           "description": "Detects problematic transaction nesting that could lead to unexpected behavior.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Schema": {
+      "description": "A list of rules that belong to this group",
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "It enables ALL rules for this group.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ownerSchemaIsInternalRole": {
+          "description": "OwnerSchemaIsInternalRole (S004): Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommended": {
+          "description": "It enables the recommended rules for this group",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "schemaOwnerDoNotMatchTableOwner": {
+          "description": "SchemaOwnerDoNotMatchTableOwner (S005): The schema owner and tables in the schema do not match.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaPrefixedOrSuffixedWithEnvt": {
+          "description": "SchemaPrefixedOrSuffixedWithEnvt (S002): The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaWithDefaultRoleNotGranted": {
+          "description": "SchemaWithDefaultRoleNotGranted (S001): The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unsecuredPublicSchema": {
+          "description": "UnsecuredPublicSchema (S003): Only authorized users should be allowed to create objects.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
