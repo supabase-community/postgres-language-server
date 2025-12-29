@@ -30,5 +30,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Add initialization script for extensions
-RUN echo "CREATE EXTENSION IF NOT EXISTS plpgsql_check;" > /docker-entrypoint-initdb.d/01-create-extension.sql && \
+# Create extensions in template1 so they're available in all new databases (for SQLx tests)
+# Also create in postgres database for direct connections
+RUN echo "\\c template1" > /docker-entrypoint-initdb.d/01-create-extension.sql && \
+    echo "CREATE EXTENSION IF NOT EXISTS plpgsql_check;" >> /docker-entrypoint-initdb.d/01-create-extension.sql && \
+    echo "CREATE EXTENSION IF NOT EXISTS pglinter;" >> /docker-entrypoint-initdb.d/01-create-extension.sql && \
+    echo "\\c postgres" >> /docker-entrypoint-initdb.d/01-create-extension.sql && \
+    echo "CREATE EXTENSION IF NOT EXISTS plpgsql_check;" >> /docker-entrypoint-initdb.d/01-create-extension.sql && \
     echo "CREATE EXTENSION IF NOT EXISTS pglinter;" >> /docker-entrypoint-initdb.d/01-create-extension.sql
