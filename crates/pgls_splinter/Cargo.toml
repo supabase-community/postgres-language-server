@@ -26,5 +26,9 @@ insta.workspace             = true
 pgls_console.workspace      = true
 pgls_test_utils.workspace   = true
 
+[build-dependencies]
+serde_json = "1"
+ureq       = { version = "2.9", features = ["json"] }
+
 [lib]
 doctest = false

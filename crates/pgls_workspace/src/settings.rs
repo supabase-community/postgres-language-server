@@ -324,7 +324,7 @@ impl Settings {
     }
 
     /// Returns pglinter rules.
-    pub fn as_pglinter_rules(&self) -> Option<Cow<pgls_configuration::pglinter::Rules>> {
+    pub fn as_pglinter_rules(&self) -> Option<Cow<'_, pgls_configuration::pglinter::Rules>> {
         self.pglinter.rules.as_ref().map(Cow::Borrowed)
     }
 

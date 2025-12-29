@@ -166,6 +166,20 @@ impl Rules {
         }
         disabled_rules
     }
+    #[doc = r" Build matchers for all rules that have ignore patterns configured."]
+    #[doc = r" Returns a map from rule name (camelCase) to the matcher."]
+    pub fn get_ignore_matchers(
+        &self,
+    ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+        let mut matchers = rustc_hash::FxHashMap::default();
+        if let Some(group) = &self.performance {
+            matchers.extend(group.get_ignore_matchers());
+        }
+        if let Some(group) = &self.security {
+            matchers.extend(group.get_ignore_matchers());
+        }
+        matchers
+    }
 }
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
@@ -180,25 +194,26 @@ pub struct Performance {
     pub all: Option<bool>,
     #[doc = "Auth RLS Initialization Plan: Detects if calls to `current_setting()` and `auth.()` in RLS policies are being unnecessarily re-evaluated for each row"]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub auth_rls_initplan: Option<RuleConfiguration<()>>,
+    pub auth_rls_initplan: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Duplicate Index: Detects cases where two ore more identical indexes exist."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub duplicate_index: Option<RuleConfiguration<()>>,
+    pub duplicate_index: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Multiple Permissive Policies: Detects if multiple permissive row level security policies are present on a table for the same `role` and `action` (e.g. insert). Multiple permissive policies are suboptimal for performance as each policy must be executed for every relevant query."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub multiple_permissive_policies: Option<RuleConfiguration<()>>,
+    pub multiple_permissive_policies:
+        Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "No Primary Key: Detects if a table does not have a primary key. Tables without a primary key can be inefficient to interact with at scale."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub no_primary_key: Option<RuleConfiguration<()>>,
+    pub no_primary_key: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Table Bloat: Detects if a table has excess bloat and may benefit from maintenance operations like vacuum full or cluster."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub table_bloat: Option<RuleConfiguration<()>>,
+    pub table_bloat: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Unindexed foreign keys: Identifies foreign key constraints without a covering index, which can impact database performance."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub unindexed_foreign_keys: Option<RuleConfiguration<()>>,
+    pub unindexed_foreign_keys: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Unused Index: Detects if an index has never been used and may be a candidate for removal."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub unused_index: Option<RuleConfiguration<()>>,
+    pub unused_index: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
 }
 impl Performance {
     const GROUP_NAME: &'static str = "performance";
@@ -393,6 +408,90 @@ impl Performance {
             _ => None,
         }
     }
+    #[doc = r" Build matchers for rules in this group that have ignore patterns configured"]
+    pub fn get_ignore_matchers(
+        &self,
+    ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+        let mut matchers = rustc_hash::FxHashMap::default();
+        if let Some(conf) = &self.auth_rls_initplan {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("authRlsInitplan", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.duplicate_index {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("duplicateIndex", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.multiple_permissive_policies {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("multiplePermissivePolicies", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.no_primary_key {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("noPrimaryKey", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.table_bloat {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("tableBloat", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.unindexed_foreign_keys {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("unindexedForeignKeys", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.unused_index {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("unusedIndex", m);
+                }
+            }
+        }
+        matchers
+    }
 }
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
@@ -407,46 +506,50 @@ pub struct Security {
     pub all: Option<bool>,
     #[doc = "Exposed Auth Users: Detects if auth.users is exposed to anon or authenticated roles via a view or materialized view in schemas exposed to PostgREST, potentially compromising user data security."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub auth_users_exposed: Option<RuleConfiguration<()>>,
+    pub auth_users_exposed: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Extension in Public: Detects extensions installed in the `public` schema."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub extension_in_public: Option<RuleConfiguration<()>>,
+    pub extension_in_public: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Extension Versions Outdated: Detects extensions that are not using the default (recommended) version."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub extension_versions_outdated: Option<RuleConfiguration<()>>,
+    pub extension_versions_outdated:
+        Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Foreign Key to Auth Unique Constraint: Detects user defined foreign keys to unique constraints in the auth schema."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fkey_to_auth_unique: Option<RuleConfiguration<()>>,
+    pub fkey_to_auth_unique: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Foreign Table in API: Detects foreign tables that are accessible over APIs. Foreign tables do not respect row level security policies."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub foreign_table_in_api: Option<RuleConfiguration<()>>,
+    pub foreign_table_in_api: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Function Search Path Mutable: Detects functions where the search_path parameter is not set."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub function_search_path_mutable: Option<RuleConfiguration<()>>,
+    pub function_search_path_mutable:
+        Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Insecure Queue Exposed in API: Detects cases where an insecure Queue is exposed over Data APIs"]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub insecure_queue_exposed_in_api: Option<RuleConfiguration<()>>,
+    pub insecure_queue_exposed_in_api:
+        Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Materialized View in API: Detects materialized views that are accessible over the Data APIs."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub materialized_view_in_api: Option<RuleConfiguration<()>>,
+    pub materialized_view_in_api: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Policy Exists RLS Disabled: Detects cases where row level security (RLS) policies have been created, but RLS has not been enabled for the underlying table."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub policy_exists_rls_disabled: Option<RuleConfiguration<()>>,
+    pub policy_exists_rls_disabled: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "RLS Disabled in Public: Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST"]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rls_disabled_in_public: Option<RuleConfiguration<()>>,
+    pub rls_disabled_in_public: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "RLS Enabled No Policy: Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rls_enabled_no_policy: Option<RuleConfiguration<()>>,
+    pub rls_enabled_no_policy: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "RLS references user metadata: Detects when Supabase Auth user_metadata is referenced insecurely in a row level security (RLS) policy."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub rls_references_user_metadata: Option<RuleConfiguration<()>>,
+    pub rls_references_user_metadata:
+        Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Security Definer View: Detects views defined with the SECURITY DEFINER property. These views enforce Postgres permissions and row level security policies (RLS) of the view creator, rather than that of the querying user"]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub security_definer_view: Option<RuleConfiguration<()>>,
+    pub security_definer_view: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
     #[doc = "Unsupported reg types: Identifies columns using unsupported reg* types outside pg_catalog schema, which prevents database upgrades using pg_upgrade."]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub unsupported_reg_types: Option<RuleConfiguration<()>>,
+    pub unsupported_reg_types: Option<RuleConfiguration<crate::splinter::SplinterRuleOptions>>,
 }
 impl Security {
     const GROUP_NAME: &'static str = "security";
@@ -766,6 +869,167 @@ impl Security {
                 .map(|conf| (conf.level(), conf.get_options())),
             _ => None,
         }
+    }
+    #[doc = r" Build matchers for rules in this group that have ignore patterns configured"]
+    pub fn get_ignore_matchers(
+        &self,
+    ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+        let mut matchers = rustc_hash::FxHashMap::default();
+        if let Some(conf) = &self.auth_users_exposed {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("authUsersExposed", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.extension_in_public {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("extensionInPublic", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.extension_versions_outdated {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("extensionVersionsOutdated", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.fkey_to_auth_unique {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("fkeyToAuthUnique", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.foreign_table_in_api {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("foreignTableInApi", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.function_search_path_mutable {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("functionSearchPathMutable", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.insecure_queue_exposed_in_api {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("insecureQueueExposedInApi", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.materialized_view_in_api {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("materializedViewInApi", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.policy_exists_rls_disabled {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("policyExistsRlsDisabled", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.rls_disabled_in_public {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("rlsDisabledInPublic", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.rls_enabled_no_policy {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("rlsEnabledNoPolicy", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.rls_references_user_metadata {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("rlsReferencesUserMetadata", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.security_definer_view {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("securityDefinerView", m);
+                }
+            }
+        }
+        if let Some(conf) = &self.unsupported_reg_types {
+            if let Some(options) = conf.get_options_ref() {
+                if !options.ignore.is_empty() {
+                    let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                    for p in &options.ignore {
+                        let _ = m.add_pattern(p);
+                    }
+                    matchers.insert("unsupportedRegTypes", m);
+                }
+            }
+        }
+        matchers
     }
 }
 #[doc = r" Push the configured rules to the analyser"]
