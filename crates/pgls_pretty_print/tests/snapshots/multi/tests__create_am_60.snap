@@ -86,7 +86,7 @@ WHERE
 ORDER BY home_base[0][0];
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -96,7 +96,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -105,9 +105,9 @@ WHERE
   home_base && CAST('(1000,1000,0,0)'
   AS box);
 
-SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
+SELECT "COUNT"(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
-SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
+SELECT "COUNT"(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
 ROLLBACK;
 
@@ -375,10 +375,10 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  COUNT(
+  "COUNT"(
   a
   ),
-  COUNT(
+  "COUNT"(
   1
   )
   FILTER (WHERE
@@ -463,7 +463,18 @@ WHERE
   CAST('heapmv'
   AS REGCLASS);
 
-SELECT COUNT(a), COUNT(1) FILTER (WHERE a = 1) FROM heapmv;
+SELECT
+  "COUNT"(
+  a
+  ),
+  "COUNT"(
+  1
+  )
+  FILTER (WHERE
+    a =
+    1)
+FROM
+  heapmv;
 
 ALTER TABLE heaptable
   SET ACCESS METHOD heap,

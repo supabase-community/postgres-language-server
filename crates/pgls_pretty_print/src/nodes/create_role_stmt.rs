@@ -1,5 +1,6 @@
 use pgls_query::protobuf::{CreateRoleStmt, RoleStmtType};
 
+use super::string::emit_identifier_maybe_quoted;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind, LineType},
@@ -20,7 +21,7 @@ pub(super) fn emit_create_role_stmt(e: &mut EventEmitter, n: &CreateRoleStmt) {
 
     if !n.role.is_empty() {
         e.space();
-        e.token(TokenKind::IDENT(n.role.clone()));
+        emit_identifier_maybe_quoted(e, &n.role);
     }
 
     // Process role options with special formatting

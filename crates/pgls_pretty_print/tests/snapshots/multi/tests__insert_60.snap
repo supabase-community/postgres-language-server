@@ -659,11 +659,11 @@ SELECT
   AS REGCLASS)
   AS TEXT),
   a,
-  MIN(
+  "MIN"(
   b
   )
   AS min_b,
-  MAX(
+  "MAX"(
   b
   )
   AS max_b
@@ -893,10 +893,10 @@ AS REGCLASS),
 SELECT
   a,
   b,
-  MIN(
+  "MIN"(
   c
   ),
-  MAX(
+  "MAX"(
   c
   )
 FROM

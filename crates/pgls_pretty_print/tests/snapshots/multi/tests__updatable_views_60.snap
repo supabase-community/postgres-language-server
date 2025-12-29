@@ -40,17 +40,17 @@ SELECT
 FROM
   base_tbl
 HAVING
-  MAX(
+  "MAX"(
   a
   ) >
   0;
 
-CREATE VIEW ro_view4 AS SELECT COUNT(*) FROM base_tbl;
+CREATE VIEW ro_view4 AS SELECT "COUNT"(*) FROM base_tbl;
 
 CREATE VIEW ro_view5 AS
 SELECT
   a,
-  RANK(
+  "RANK"(
 
   )
   OVER ()
@@ -447,7 +447,7 @@ DELETE FROM rw_view1 WHERE a = 5;
 
 CREATE TABLE base_tbl_hist (
   ts TIMESTAMP WITH TIME ZONE
-  DEFAULT NOW(
+  DEFAULT "NOW"(
 
   ),
   a INT,

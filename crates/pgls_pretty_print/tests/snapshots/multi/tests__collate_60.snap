@@ -303,9 +303,9 @@ SELECT
 FROM
   collate_test10;
 
-SELECT MIN(b), MAX(b) FROM collate_test1;
+SELECT "MIN"(b), "MAX"(b) FROM collate_test1;
 
-SELECT MIN(b), MAX(b) FROM collate_test2;
+SELECT "MIN"(b), "MAX"(b) FROM collate_test2;
 
 SELECT array_agg(b ORDER BY b) FROM collate_test1;
 

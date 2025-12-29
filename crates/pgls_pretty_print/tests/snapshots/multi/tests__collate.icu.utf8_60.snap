@@ -9,7 +9,7 @@ SELECT
   ) <>
   'UTF8' OR
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -502,11 +502,11 @@ SELECT
 FROM
   collate_test10;
 
-SELECT MIN(b), MAX(b) FROM collate_test1;
+SELECT "MIN"(b), "MAX"(b) FROM collate_test1;
 
-SELECT MIN(b), MAX(b) FROM collate_test2;
+SELECT "MIN"(b), "MAX"(b) FROM collate_test2;
 
-SELECT MIN(b), MAX(b) FROM collate_test3;
+SELECT "MIN"(b), "MAX"(b) FROM collate_test3;
 
 SELECT array_agg(b ORDER BY b) FROM collate_test1;
 
@@ -1502,18 +1502,18 @@ SELECT DISTINCT x FROM test3cs ORDER BY x;
 
 RESET enable_hashagg;
 
-SELECT COUNT(DISTINCT x) FROM test3cs;
+SELECT "COUNT"(DISTINCT x) FROM test3cs;
 
-SELECT x, COUNT(*) FROM test3cs GROUP BY x ORDER BY x;
+SELECT x, "COUNT"(*) FROM test3cs GROUP BY x ORDER BY x;
 
 SELECT
   x,
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
   ORDER BY x),
-  RANK(
+  "RANK"(
 
   )
   OVER (
@@ -1604,18 +1604,18 @@ SELECT x FROM test2ci EXCEPT SELECT x FROM test1ci;
 
 SELECT DISTINCT x FROM test3ci ORDER BY x;
 
-SELECT COUNT(DISTINCT x) FROM test3ci;
+SELECT "COUNT"(DISTINCT x) FROM test3ci;
 
-SELECT x, COUNT(*) FROM test3ci GROUP BY x ORDER BY x;
+SELECT x, "COUNT"(*) FROM test3ci GROUP BY x ORDER BY x;
 
 SELECT
   x,
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
   ORDER BY x),
-  RANK(
+  "RANK"(
 
   )
   OVER (
@@ -1715,18 +1715,18 @@ SELECT x FROM test2bpci EXCEPT SELECT x FROM test1bpci;
 
 SELECT DISTINCT x FROM test3bpci ORDER BY x;
 
-SELECT COUNT(DISTINCT x) FROM test3bpci;
+SELECT "COUNT"(DISTINCT x) FROM test3bpci;
 
-SELECT x, COUNT(*) FROM test3bpci GROUP BY x ORDER BY x;
+SELECT x, "COUNT"(*) FROM test3bpci GROUP BY x ORDER BY x;
 
 SELECT
   x,
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
   ORDER BY x),
-  RANK(
+  "RANK"(
 
   )
   OVER (
@@ -1935,7 +1935,7 @@ VALUES (1,
 (4,
 'cÃ´tÃ©');
 
-UPDATE test4nfd SET b = NORMALIZE(b, NFD);
+UPDATE test4nfd SET b = "NORMALIZE"(b, NFD);
 
 SELECT
   a,
@@ -2140,13 +2140,13 @@ INSERT INTO test22 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
     test22_0) =
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2172,13 +2172,13 @@ INSERT INTO test22a VALUES (2, ARRAY['DEF']);
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
     test22a_0) =
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2204,13 +2204,13 @@ INSERT INTO test23 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
     test23_0) <>
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2236,13 +2236,13 @@ INSERT INTO test23a VALUES (2, ARRAY['DEF']);
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
     test23a_0) <>
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2300,13 +2300,13 @@ INSERT INTO test32 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
     test32_0) =
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2332,13 +2332,13 @@ INSERT INTO test33 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
     test33_0) <>
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2386,7 +2386,7 @@ SELECT
   upper(
   c COLLATE "case_insensitive"
   ),
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -2398,7 +2398,7 @@ SELECT
   upper(
   c COLLATE "case_insensitive"
   ),
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -2412,7 +2412,7 @@ SELECT
   upper(
   c COLLATE "case_insensitive"
   ),
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -2424,7 +2424,7 @@ SELECT
   upper(
   c COLLATE "case_insensitive"
   ),
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -2434,7 +2434,7 @@ ORDER BY 1;
 
 SELECT
   c COLLATE "C",
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -2444,7 +2444,7 @@ ORDER BY 1;
 
 SELECT
   c COLLATE "C",
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -2456,7 +2456,7 @@ SET enable_partitionwise_join = false;
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2471,7 +2471,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2488,7 +2488,7 @@ SET enable_partitionwise_join = true;
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2503,7 +2503,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2518,7 +2518,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2533,7 +2533,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2550,7 +2550,7 @@ SET enable_partitionwise_join = false;
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2565,7 +2565,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2619,7 +2619,7 @@ ANALYZE pagg_tab4;
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2636,7 +2636,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2765,7 +2765,7 @@ ANALYZE pagg_tab6;
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2782,7 +2782,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2801,7 +2801,7 @@ SET enable_partitionwise_join = false;
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM
@@ -2818,7 +2818,7 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(
+  "COUNT"(
   t2.c
   )
 FROM

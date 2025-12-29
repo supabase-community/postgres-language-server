@@ -246,9 +246,9 @@ SELECT
 FROM
   inet_tbl;
 
-SELECT MAX(i) AS max, MIN(i) AS min FROM inet_tbl;
+SELECT "MAX"(i) AS max, "MIN"(i) AS min FROM inet_tbl;
 
-SELECT MAX(c) AS max, MIN(c) AS min FROM inet_tbl;
+SELECT "MAX"(c) AS max, "MIN"(c) AS min FROM inet_tbl;
 
 SELECT
   c

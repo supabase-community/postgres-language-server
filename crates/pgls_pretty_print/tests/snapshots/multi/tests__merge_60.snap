@@ -1611,7 +1611,7 @@ CREATE TABLE fs_target (
   c TEXT
 ) WITH (autovacuum_enabled = off);
 
-SELECT COUNT(*) FROM fs_target;
+SELECT "COUNT"(*) FROM fs_target;
 
 DROP TABLE "fs_target";
 

@@ -50,10 +50,10 @@ WHERE t2.unique1 < 1000;',
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t1.unique1
   )
 FROM
@@ -78,10 +78,10 @@ WHERE t1.unique1 < 1000;',
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t2.unique1
   )
 FROM
@@ -113,10 +113,10 @@ WHERE t1.unique1 < 10;',
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t2.t1two
   )
 FROM
@@ -149,10 +149,10 @@ WHERE s.c1 = s.c2 AND t1.unique1 < 1000;',
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t1.twenty
   )
 FROM
@@ -184,10 +184,10 @@ WHERE s.c1 = s.c2 AND t1.unique1 < 1000;',
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t1.twenty
   )
 FROM
@@ -452,10 +452,10 @@ SET parallel_tuple_cost = 0;
 SET max_parallel_workers_per_gather = 2;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t2.unique1
   )
 FROM
@@ -474,10 +474,10 @@ WHERE
   1000;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  AVG(
+  "AVG"(
   t2.unique1
   )
 FROM
@@ -528,7 +528,7 @@ WHERE t2.a IS NULL;',
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

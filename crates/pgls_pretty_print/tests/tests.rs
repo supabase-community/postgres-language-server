@@ -344,6 +344,12 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
                         }
                     }
                 }
+                // Normalize function names to lowercase for case-insensitive comparison
+                for func_name_node in &mut (*n).funcname {
+                    if let Some(pgls_query::NodeEnum::String(s)) = func_name_node.node.as_mut() {
+                        s.sval = s.sval.to_lowercase();
+                    }
+                }
             }
             pgls_query::NodeMut::NamedArgExpr(n) => {
                 (*n).location = 0;
@@ -793,6 +799,52 @@ fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
             for arg in &mut fc.args {
                 if let Some(ref mut n) = arg.node {
                     normalize_a_indirection(n);
+                }
+            }
+            // Normalize NORMALIZE function's second argument:
+            // NFC/NFD/NFKC/NFKD can be emitted as identifier but parsed back as ColumnRef
+            // Convert ColumnRef with these values to AConst string
+            if fc.funcname.len() == 1 {
+                if let Some(pgls_query::NodeEnum::String(s)) =
+                    fc.funcname.first().and_then(|n| n.node.as_ref())
+                {
+                    if s.sval.eq_ignore_ascii_case("normalize") && fc.args.len() == 2 {
+                        if let Some(pgls_query::NodeEnum::ColumnRef(cref)) =
+                            fc.args[1].node.as_ref()
+                        {
+                            if cref.fields.len() == 1 {
+                                if let Some(pgls_query::NodeEnum::String(field_str)) =
+                                    cref.fields[0].node.as_ref()
+                                {
+                                    let form = field_str.sval.to_uppercase();
+                                    if matches!(form.as_str(), "NFC" | "NFD" | "NFKC" | "NFKD") {
+                                        // Convert to AConst string for normalization
+                                        fc.args[1].node = Some(pgls_query::NodeEnum::AConst(
+                                            pgls_query::protobuf::AConst {
+                                                isnull: false,
+                                                location: 0,
+                                                val: Some(pgls_query::protobuf::a_const::Val::Sval(
+                                                    pgls_query::protobuf::String {
+                                                        sval: form.to_lowercase(),
+                                                    },
+                                                )),
+                                            },
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        // Also lowercase AConst values for comparison
+                        if let Some(pgls_query::NodeEnum::AConst(aconst)) =
+                            fc.args[1].node.as_mut()
+                        {
+                            if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) =
+                                aconst.val.as_mut()
+                            {
+                                s.sval = s.sval.to_lowercase();
+                            }
+                        }
+                    }
                 }
             }
         }

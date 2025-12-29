@@ -577,9 +577,9 @@ WHERE
   0.95
   );
 
-SELECT COUNT(*) FROM gist_tbl;
+SELECT "COUNT"(*) FROM gist_tbl;
 
-SELECT COUNT(*) FROM gist_tbl;
+SELECT "COUNT"(*) FROM gist_tbl;
 
 SELECT
   p

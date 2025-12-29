@@ -72,6 +72,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         e.token(TokenKind::IN_KW);
         e.space();
         e.token(TokenKind::SCHEMA_KW);
+        e.space();
     } else if let GrantTargetType::AclTargetDefaults = targtype {
         // For ALTER DEFAULT PRIVILEGES, use plural object types
         match objtype {

@@ -11,9 +11,9 @@ COPY aggtest FROM 'filename';
 
 ANALYZE aggtest;
 
-SELECT AVG(four) AS avg_1 FROM onek;
+SELECT "AVG"(four) AS avg_1 FROM onek;
 
-SELECT AVG(a) AS avg_32 FROM aggtest WHERE a < 100;
+SELECT "AVG"(a) AS avg_32 FROM aggtest WHERE a < 100;
 
 SELECT any_value(v) FROM (VALUES (1), (2), (3)) AS v (v);
 
@@ -30,7 +30,7 @@ FROM
   'world'])) AS v (v);
 
 SELECT
-  CAST(AVG(
+  CAST("AVG"(
   b
   )
   AS NUMERIC(10,
@@ -39,23 +39,23 @@ SELECT
 FROM
   aggtest;
 
-SELECT AVG(gpa) AS avg_3_4 FROM ONLY student;
+SELECT "AVG"(gpa) AS avg_3_4 FROM ONLY student;
 
-SELECT SUM(four) AS sum_1500 FROM onek;
+SELECT "SUM"(four) AS sum_1500 FROM onek;
 
-SELECT SUM(a) AS sum_198 FROM aggtest;
+SELECT "SUM"(a) AS sum_198 FROM aggtest;
 
-SELECT SUM(b) AS avg_431_773 FROM aggtest;
+SELECT "SUM"(b) AS avg_431_773 FROM aggtest;
 
-SELECT SUM(gpa) AS avg_6_8 FROM ONLY student;
+SELECT "SUM"(gpa) AS avg_6_8 FROM ONLY student;
 
-SELECT MAX(four) AS max_3 FROM onek;
+SELECT "MAX"(four) AS max_3 FROM onek;
 
-SELECT MAX(a) AS max_100 FROM aggtest;
+SELECT "MAX"(a) AS max_100 FROM aggtest;
 
-SELECT MAX(aggtest.b) AS max_324_78 FROM aggtest;
+SELECT "MAX"(aggtest.b) AS max_324_78 FROM aggtest;
 
-SELECT MAX(student.gpa) AS max_3_7 FROM student;
+SELECT "MAX"(student.gpa) AS max_3_7 FROM student;
 
 SELECT stddev_pop(b) FROM aggtest;
 
@@ -253,20 +253,29 @@ SELECT
   AS NUMERIC)
   );
 
-SELECT MAX(ROW(a, b)) FROM aggtest;
+SELECT "MAX"(ROW(a, b)) FROM aggtest;
 
-SELECT MAX(ROW(b, a)) FROM aggtest;
+SELECT "MAX"(ROW(b, a)) FROM aggtest;
 
-SELECT MIN(ROW(a, b)) FROM aggtest;
+SELECT "MIN"(ROW(a, b)) FROM aggtest;
 
-SELECT MIN(ROW(b, a)) FROM aggtest;
+SELECT "MIN"(ROW(b, a)) FROM aggtest;
 
-SELECT SUM(CAST(NULL AS INT)) FROM generate_series(1, 3);
-
-SELECT SUM(CAST(NULL AS BIGINT)) FROM generate_series(1, 3);
+SELECT "SUM"(CAST(NULL AS INT)) FROM generate_series(1, 3);
 
 SELECT
-  SUM(
+  "SUM"(
+  CAST(NULL
+  AS BIGINT)
+  )
+FROM
+  generate_series(
+  1,
+  3
+  );
+
+SELECT
+  "SUM"(
   CAST(NULL
   AS NUMERIC)
   )
@@ -277,7 +286,7 @@ FROM
   );
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(NULL
   AS DOUBLE PRECISION)
   )
@@ -287,12 +296,21 @@ FROM
   3
   );
 
-SELECT AVG(CAST(NULL AS INT)) FROM generate_series(1, 3);
-
-SELECT AVG(CAST(NULL AS BIGINT)) FROM generate_series(1, 3);
+SELECT "AVG"(CAST(NULL AS INT)) FROM generate_series(1, 3);
 
 SELECT
-  AVG(
+  "AVG"(
+  CAST(NULL
+  AS BIGINT)
+  )
+FROM
+  generate_series(
+  1,
+  3
+  );
+
+SELECT
+  "AVG"(
   CAST(NULL
   AS NUMERIC)
   )
@@ -303,7 +321,7 @@ FROM
   );
 
 SELECT
-  AVG(
+  "AVG"(
   CAST(NULL
   AS DOUBLE PRECISION)
   )
@@ -314,7 +332,7 @@ FROM
   );
 
 SELECT
-  SUM(
+  "SUM"(
   CAST('NaN'
   AS NUMERIC)
   )
@@ -325,7 +343,7 @@ FROM
   );
 
 SELECT
-  AVG(
+  "AVG"(
   CAST('NaN'
   AS NUMERIC)
   )
@@ -336,11 +354,11 @@ FROM
   );
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -353,11 +371,11 @@ FROM
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -370,11 +388,11 @@ FROM
   ('1')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -387,11 +405,11 @@ FROM
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -404,11 +422,11 @@ FROM
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -421,11 +439,11 @@ FROM
   ('-infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS NUMERIC)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS NUMERIC)
   ),
@@ -438,11 +456,11 @@ FROM
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS NUMERIC)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS NUMERIC)
   ),
@@ -455,11 +473,11 @@ FROM
   ('1')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS NUMERIC)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS NUMERIC)
   ),
@@ -472,11 +490,11 @@ FROM
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS NUMERIC)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS NUMERIC)
   ),
@@ -489,11 +507,11 @@ FROM
   ('infinity')) AS v (x);
 
 SELECT
-  SUM(
+  "SUM"(
   CAST(x
   AS NUMERIC)
   ),
-  AVG(
+  "AVG"(
   CAST(x
   AS NUMERIC)
   ),
@@ -506,7 +524,7 @@ FROM
   ('-infinity')) AS v (x);
 
 SELECT
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -521,7 +539,7 @@ FROM
   (100000007)) AS v (x);
 
 SELECT
-  AVG(
+  "AVG"(
   CAST(x
   AS DOUBLE PRECISION)
   ),
@@ -611,17 +629,17 @@ VALUES (10,
 200);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   x
   ),
   regr_sxx(
   y,
   x
   ),
-  SUM(
+  "SUM"(
   y
   ),
   regr_syy(
@@ -641,17 +659,17 @@ WHERE
   80);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   x
   ),
   regr_sxx(
   y,
   x
   ),
-  SUM(
+  "SUM"(
   y
   ),
   regr_syy(
@@ -681,17 +699,17 @@ SELECT
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   x
   ),
   regr_sxx(
   y,
   x
   ),
-  SUM(
+  "SUM"(
   y
   ),
   regr_syy(
@@ -710,17 +728,17 @@ WHERE
   30);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   x
   ),
   regr_sxx(
   y,
   x
   ),
-  SUM(
+  "SUM"(
   y
   ),
   regr_syy(
@@ -787,16 +805,16 @@ SELECT
 
 DROP TABLE "regr_test";
 
-SELECT COUNT(four) AS cnt_1000 FROM onek;
+SELECT "COUNT"(four) AS cnt_1000 FROM onek;
 
-SELECT COUNT(DISTINCT four) AS cnt_4 FROM onek;
+SELECT "COUNT"(DISTINCT four) AS cnt_4 FROM onek;
 
 SELECT
   ten,
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   four
   )
 FROM
@@ -806,10 +824,10 @@ ORDER BY ten;
 
 SELECT
   ten,
-  COUNT(
+  "COUNT"(
   four
   ),
-  SUM(
+  "SUM"(
   DISTINCT four
   )
 FROM
@@ -829,31 +847,31 @@ SELECT oldcnt(*) AS cnt_1000 FROM onek;
 
 SELECT sum2(q1, q2) FROM int8_tbl;
 
-SELECT SUM(q1 + q2), SUM(q1) + SUM(q2) FROM int8_tbl;
+SELECT "SUM"(q1 + q2), "SUM"(q1) + "SUM"(q2) FROM int8_tbl;
 
 SELECT
-  SUM(
+  "SUM"(
   q1 - q2
   ),
-  SUM(
+  "SUM"(
   q2 - q1
   ),
-  SUM(
+  "SUM"(
   q1
-  ) - SUM(
+  ) - "SUM"(
   q2
   )
 FROM
   int8_tbl;
 
 SELECT
-  SUM(
+  "SUM"(
   q1 * 2000
   ),
-  SUM(
+  "SUM"(
   -q1 * 2000
   ),
-  2000 * SUM(
+  2000 * "SUM"(
   q1
   )
 FROM
@@ -861,7 +879,7 @@ FROM
 
 SELECT
   ten,
-  SUM(
+  "SUM"(
   DISTINCT four
   )
 FROM
@@ -875,14 +893,14 @@ HAVING
     onek
     AS b
   WHERE
-    SUM(
+    "SUM"(
     DISTINCT a.four
     ) =
     b.four);
 
 SELECT
   ten,
-  SUM(
+  "SUM"(
   DISTINCT four
   )
 FROM
@@ -896,14 +914,14 @@ HAVING
     onek
     AS b
   WHERE
-    SUM(
+    "SUM"(
     DISTINCT a.four + b.four
     ) =
     b.four);
 
 SELECT
   (SELECT
-    MAX(
+    "MAX"(
     (SELECT
       i.unique2
     FROM
@@ -928,7 +946,7 @@ FROM
   ) AS s1,
   LATERAL (SELECT
     s2,
-    SUM(
+    "SUM"(
     s1 + s2
     )
     AS sm
@@ -952,7 +970,7 @@ FROM
   ) AS s1,
   LATERAL (SELECT
     s2,
-    SUM(
+    "SUM"(
     s1 + s2
     )
     AS sm
@@ -967,7 +985,7 @@ ORDER BY 1,
 
 SELECT
   ARRAY(SELECT
-    SUM(
+    "SUM"(
     x + y
     )
     AS s
@@ -986,7 +1004,7 @@ FROM
 
 SELECT
   ARRAY(SELECT
-    SUM(
+    "SUM"(
     x + y
     )
     AS s
@@ -1291,44 +1309,44 @@ SELECT
 FROM
   bool_test;
 
-SELECT MIN(unique1) FROM tenk1;
+SELECT "MIN"(unique1) FROM tenk1;
 
-SELECT MIN(unique1) FROM tenk1;
+SELECT "MIN"(unique1) FROM tenk1;
 
-SELECT MAX(unique1) FROM tenk1;
+SELECT "MAX"(unique1) FROM tenk1;
 
-SELECT MAX(unique1) FROM tenk1;
+SELECT "MAX"(unique1) FROM tenk1;
 
-SELECT MAX(unique1) FROM tenk1 WHERE unique1 < 42;
+SELECT "MAX"(unique1) FROM tenk1 WHERE unique1 < 42;
 
-SELECT MAX(unique1) FROM tenk1 WHERE unique1 < 42;
+SELECT "MAX"(unique1) FROM tenk1 WHERE unique1 < 42;
 
-SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42;
+SELECT "MAX"(unique1) FROM tenk1 WHERE unique1 > 42;
 
-SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42;
+SELECT "MAX"(unique1) FROM tenk1 WHERE unique1 > 42;
 
 BEGIN;
 
 SET LOCAL max_parallel_workers_per_gather = 0;
 
-SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42000;
+SELECT "MAX"(unique1) FROM tenk1 WHERE unique1 > 42000;
 
-SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42000;
+SELECT "MAX"(unique1) FROM tenk1 WHERE unique1 > 42000;
 
 ROLLBACK;
 
-SELECT MAX(tenthous) FROM tenk1 WHERE thousand = 33;
+SELECT "MAX"(tenthous) FROM tenk1 WHERE thousand = 33;
 
-SELECT MAX(tenthous) FROM tenk1 WHERE thousand = 33;
+SELECT "MAX"(tenthous) FROM tenk1 WHERE thousand = 33;
 
-SELECT MIN(tenthous) FROM tenk1 WHERE thousand = 33;
+SELECT "MIN"(tenthous) FROM tenk1 WHERE thousand = 33;
 
-SELECT MIN(tenthous) FROM tenk1 WHERE thousand = 33;
+SELECT "MIN"(tenthous) FROM tenk1 WHERE thousand = 33;
 
 SELECT
   f1,
   (SELECT
-    MIN(
+    "MIN"(
     unique1
     )
   FROM
@@ -1343,7 +1361,7 @@ FROM
 SELECT
   f1,
   (SELECT
-    MIN(
+    "MIN"(
     unique1
     )
   FROM
@@ -1355,24 +1373,40 @@ SELECT
 FROM
   int4_tbl;
 
-SELECT DISTINCT MAX(unique2) FROM tenk1;
+SELECT DISTINCT "MAX"(unique2) FROM tenk1;
 
-SELECT DISTINCT MAX(unique2) FROM tenk1;
+SELECT DISTINCT "MAX"(unique2) FROM tenk1;
 
-SELECT MAX(unique2) FROM tenk1 ORDER BY 1;
+SELECT "MAX"(unique2) FROM tenk1 ORDER BY 1;
 
-SELECT MAX(unique2) FROM tenk1 ORDER BY 1;
+SELECT "MAX"(unique2) FROM tenk1 ORDER BY 1;
 
-SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2);
+SELECT "MAX"(unique2) FROM tenk1 ORDER BY "MAX"(unique2);
 
-SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2);
-
-SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2) + 1;
-
-SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2) + 1;
+SELECT "MAX"(unique2) FROM tenk1 ORDER BY "MAX"(unique2);
 
 SELECT
-  MAX(
+  "MAX"(
+  unique2
+  )
+FROM
+  tenk1
+ORDER BY "MAX"(
+  unique2
+  ) + 1;
+
+SELECT
+  "MAX"(
+  unique2
+  )
+FROM
+  tenk1
+ORDER BY "MAX"(
+  unique2
+  ) + 1;
+
+SELECT
+  "MAX"(
   unique2
   ),
   generate_series(
@@ -1385,7 +1419,7 @@ FROM
 ORDER BY g DESC;
 
 SELECT
-  MAX(
+  "MAX"(
   unique2
   ),
   generate_series(
@@ -1397,9 +1431,9 @@ FROM
   tenk1
 ORDER BY g DESC;
 
-SELECT MAX(100) FROM tenk1;
+SELECT "MAX"(100) FROM tenk1;
 
-SELECT MAX(100) FROM tenk1;
+SELECT "MAX"(100) FROM tenk1;
 
 CREATE TABLE minmaxtest ( f1 INT );
 
@@ -1435,13 +1469,13 @@ INSERT INTO minmaxtest2 VALUES (15), (16);
 
 INSERT INTO minmaxtest3 VALUES (17), (18);
 
-SELECT MIN(f1), MAX(f1) FROM minmaxtest;
+SELECT "MIN"(f1), "MAX"(f1) FROM minmaxtest;
 
-SELECT MIN(f1), MAX(f1) FROM minmaxtest;
+SELECT "MIN"(f1), "MAX"(f1) FROM minmaxtest;
 
-SELECT DISTINCT MIN(f1), MAX(f1) FROM minmaxtest;
+SELECT DISTINCT "MIN"(f1), "MAX"(f1) FROM minmaxtest;
 
-SELECT DISTINCT MIN(f1), MAX(f1) FROM minmaxtest;
+SELECT DISTINCT "MIN"(f1), "MAX"(f1) FROM minmaxtest;
 
 DROP TABLE "minmaxtest" CASCADE;
 
@@ -1452,7 +1486,7 @@ SET LOCAL enable_sort = off;
 SELECT
   f1,
   (SELECT DISTINCT
-    MIN(
+    "MIN"(
     t1.f1
     )
   FROM
@@ -1468,7 +1502,7 @@ FROM
 SELECT
   f1,
   (SELECT DISTINCT
-    MIN(
+    "MIN"(
     t1.f1
     )
   FROM
@@ -1483,16 +1517,26 @@ FROM
 
 ROLLBACK;
 
-SELECT MAX(MIN(unique1)) FROM tenk1;
-
-SELECT (SELECT MAX(MIN(unique1)) FROM int8_tbl) FROM tenk1;
+SELECT "MAX"("MIN"(unique1)) FROM tenk1;
 
 SELECT
-  AVG(
   (SELECT
-    AVG(
+    "MAX"(
+    "MIN"(
+    unique1
+    )
+    )
+  FROM
+    int8_tbl)
+FROM
+  tenk1;
+
+SELECT
+  "AVG"(
+  (SELECT
+    "AVG"(
     a1.col1 ORDER BY (SELECT
-      AVG(
+      "AVG"(
       a2.col2
       )
     FROM
@@ -1676,7 +1720,7 @@ GROUP BY f1;
 
 SELECT
   f1,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1692,7 +1736,7 @@ GROUP BY f1;
 
 SELECT
   f2,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1709,84 +1753,84 @@ GROUP BY f2;
 DROP TABLE "t1", "t2";
 
 SELECT
-  SUM(
+  "SUM"(
   two ORDER BY two
   ),
-  MAX(
+  "MAX"(
   four ORDER BY four
   ),
-  MIN(
+  "MIN"(
   four ORDER BY four
   )
 FROM
   tenk1;
 
 SELECT
-  SUM(
+  "SUM"(
   two ORDER BY two
   ),
-  MAX(
+  "MAX"(
   four ORDER BY four
   ),
-  MIN(
+  "MIN"(
   four ORDER BY four
   ),
-  MAX(
-  two ORDER BY two
-  )
-FROM
-  tenk1;
-
-SELECT
-  MAX(
-  four ORDER BY four
-  ),
-  SUM(
-  two ORDER BY two
-  ),
-  MIN(
-  four ORDER BY four
-  ),
-  MAX(
+  "MAX"(
   two ORDER BY two
   )
 FROM
   tenk1;
 
 SELECT
-  MAX(
+  "MAX"(
   four ORDER BY four
   ),
-  SUM(
+  "SUM"(
   two ORDER BY two
   ),
-  MIN(
+  "MIN"(
   four ORDER BY four
   ),
-  MAX(
+  "MAX"(
+  two ORDER BY two
+  )
+FROM
+  tenk1;
+
+SELECT
+  "MAX"(
+  four ORDER BY four
+  ),
+  "SUM"(
   two ORDER BY two
   ),
-  SUM(
+  "MIN"(
+  four ORDER BY four
+  ),
+  "MAX"(
+  two ORDER BY two
+  ),
+  "SUM"(
   ten ORDER BY ten
   ),
-  MIN(
+  "MIN"(
   ten ORDER BY ten
   ),
-  MAX(
+  "MAX"(
   ten ORDER BY ten
   )
 FROM
   tenk1;
 
 SELECT
-  SUM(
+  "SUM"(
   unique1 ORDER BY ten,
   two
   ),
-  SUM(
+  "SUM"(
   unique1 ORDER BY four
   ),
-  SUM(
+  "SUM"(
   unique1 ORDER BY two,
   four
   )
@@ -1795,23 +1839,23 @@ FROM
 GROUP BY ten;
 
 SELECT
-  SUM(
+  "SUM"(
   unique1 ORDER BY two
   ),
-  SUM(
+  "SUM"(
   unique1 ORDER BY four
   ),
-  SUM(
+  "SUM"(
   unique1 ORDER BY four,
   two
   ),
-  SUM(
+  "SUM"(
   unique1 ORDER BY two,
   random(
 
   )
   ),
-  SUM(
+  "SUM"(
   unique1 ORDER BY two,
   random(
 
@@ -1840,12 +1884,12 @@ FROM
 
 SET enable_presorted_aggregate = off;
 
-SELECT SUM(two ORDER BY two) FROM tenk1;
+SELECT "SUM"(two ORDER BY two) FROM tenk1;
 
 RESET enable_presorted_aggregate;
 
 SELECT
-  SUM(
+  "SUM"(
   two ORDER BY two
   )
   FILTER (WHERE
@@ -2249,9 +2293,9 @@ SELECT
   DISTINCT 'a',
   ','
   ),
-  SUM(
+  "SUM"(
   (SELECT
-    SUM(
+    "SUM"(
     1
     )
   FROM
@@ -2645,17 +2689,17 @@ SELECT
 FROM
   bytea_test_table;
 
-SELECT MIN(v) FROM bytea_test_table;
+SELECT "MIN"(v) FROM bytea_test_table;
 
-SELECT MAX(v) FROM bytea_test_table;
+SELECT "MAX"(v) FROM bytea_test_table;
 
 INSERT INTO bytea_test_table VALUES (decode('ffff', 'hex'));
 
 INSERT INTO bytea_test_table VALUES (decode('aaaa', 'hex'));
 
-SELECT MIN(v) FROM bytea_test_table;
+SELECT "MIN"(v) FROM bytea_test_table;
 
-SELECT MAX(v) FROM bytea_test_table;
+SELECT "MAX"(v) FROM bytea_test_table;
 
 DROP TABLE "bytea_test_table";
 
@@ -2692,51 +2736,51 @@ SET max_parallel_workers_per_gather = 2;
 CREATE VIEW v_pagg_test AS
 SELECT
   y,
-  MIN(
+  "MIN"(
   t
   )
   AS tmin,
-  MAX(
+  "MAX"(
   t
   )
   AS tmax,
-  COUNT(
+  "COUNT"(
   DISTINCT t
   )
   AS tndistinct,
-  MIN(
+  "MIN"(
   b
   )
   AS bmin,
-  MAX(
+  "MAX"(
   b
   )
   AS bmax,
-  COUNT(
+  "COUNT"(
   DISTINCT b
   )
   AS bndistinct,
-  MIN(
+  "MIN"(
   a
   )
   AS amin,
-  MAX(
+  "MAX"(
   a
   )
   AS amax,
-  COUNT(
+  "COUNT"(
   DISTINCT a
   )
   AS andistinct,
-  MIN(
+  "MIN"(
   aa
   )
   AS aamin,
-  MAX(
+  "MAX"(
   aa
   )
   AS aamax,
-  COUNT(
+  "COUNT"(
   DISTINCT aa
   )
   AS aandistinct
@@ -2846,13 +2890,21 @@ DROP VIEW "v_pagg_test";
 
 DROP TABLE "pagg_test";
 
-SELECT MIN(unique1) FILTER (WHERE unique1 > 100) FROM tenk1;
+SELECT
+  "MIN"(
+  unique1
+  )
+  FILTER (WHERE
+    unique1 >
+    100)
+FROM
+  tenk1;
 
-SELECT SUM(1 / ten) FILTER (WHERE ten > 0) FROM tenk1;
+SELECT "SUM"(1 / ten) FILTER (WHERE ten > 0) FROM tenk1;
 
 SELECT
   ten,
-  SUM(
+  "SUM"(
   DISTINCT four
   )
   FILTER (WHERE
@@ -2865,7 +2917,7 @@ GROUP BY ten;
 
 SELECT
   ten,
-  SUM(
+  "SUM"(
   DISTINCT four
   )
   FILTER (WHERE
@@ -2882,13 +2934,13 @@ HAVING
     onek
     AS b
   WHERE
-    SUM(
+    "SUM"(
     DISTINCT a.four
     ) =
     b.four);
 
 SELECT
-  MAX(
+  "MAX"(
   foo COLLATE "C"
   )
   FILTER (WHERE
@@ -2913,7 +2965,7 @@ FROM
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2924,7 +2976,7 @@ FROM
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
     FILTER (WHERE
@@ -2938,7 +2990,7 @@ FROM
 
 SELECT
   (SELECT
-    COUNT(
+    "COUNT"(
     inner_c
     )
     FILTER (WHERE
@@ -2952,7 +3004,7 @@ FROM
 
 SELECT
   (SELECT
-    MAX(
+    "MAX"(
     (SELECT
       i.unique2
     FROM
@@ -2970,7 +3022,7 @@ FROM
   AS o;
 
 SELECT
-  SUM(
+  "SUM"(
   unique1
   )
   FILTER (WHERE
@@ -3015,19 +3067,29 @@ FROM
   2
   ) AS i;
 
-SELECT MAX(0) FILTER (WHERE b1) FROM bool_test;
+SELECT "MAX"(0) FILTER (WHERE b1) FROM bool_test;
 
-SELECT (SELECT MAX(0) FILTER (WHERE b1)) FROM bool_test;
+SELECT (SELECT "MAX"(0) FILTER (WHERE b1)) FROM bool_test;
 
-SELECT MAX(unique1) FILTER (WHERE SUM(ten) > 0) FROM tenk1;
+SELECT
+  "MAX"(
+  unique1
+  )
+  FILTER (WHERE
+    "SUM"(
+    ten
+    ) >
+    0)
+FROM
+  tenk1;
 
 SELECT
   (SELECT
-    MAX(
+    "MAX"(
     unique1
     )
     FILTER (WHERE
-      SUM(
+      "SUM"(
       ten
       ) >
       0)
@@ -3037,7 +3099,7 @@ FROM
   tenk1;
 
 SELECT
-  MAX(
+  "MAX"(
   unique1
   )
   FILTER (WHERE
@@ -3050,7 +3112,7 @@ FROM
 
 SELECT
   (SELECT
-    MAX(
+    "MAX"(
     unique1
     )
     FILTER (WHERE
@@ -3090,7 +3152,7 @@ ORDER BY p;
 
 SELECT
   p,
-  SUM(
+  "SUM"(
 
   )
   WITHIN GROUP (ORDER BY CAST(x
@@ -3150,7 +3212,7 @@ SELECT
   0.5
   )
   WITHIN GROUP (ORDER BY b),
-  SUM(
+  "SUM"(
   b
   )
 FROM
@@ -3173,7 +3235,7 @@ FROM
   tenk1;
 
 SELECT
-  RANK(
+  "RANK"(
   3
   )
   WITHIN GROUP (ORDER BY x)
@@ -3187,7 +3249,7 @@ FROM
   (4)) AS v (x);
 
 SELECT
-  CUME_DIST(
+  "CUME_DIST"(
   3
   )
   WITHIN GROUP (ORDER BY x)
@@ -3201,7 +3263,7 @@ FROM
   (4)) AS v (x);
 
 SELECT
-  PERCENT_RANK(
+  "PERCENT_RANK"(
   3
   )
   WITHIN GROUP (ORDER BY x)
@@ -3216,7 +3278,7 @@ FROM
   (5)) AS v (x);
 
 SELECT
-  DENSE_RANK(
+  "DENSE_RANK"(
   3
   )
   WITHIN GROUP (ORDER BY x)
@@ -3346,7 +3408,7 @@ FROM
   tenk1;
 
 SELECT
-  RANK(
+  "RANK"(
   x
   )
   WITHIN GROUP (ORDER BY x)
@@ -3373,8 +3435,8 @@ FROM
   ) AS g (x);
 
 SELECT
-  RANK(
-  SUM(
+  "RANK"(
+  "SUM"(
   x
   )
   )
@@ -3386,7 +3448,7 @@ FROM
   ) AS x;
 
 SELECT
-  RANK(
+  "RANK"(
   3
   )
   WITHIN GROUP (ORDER BY x)
@@ -3395,7 +3457,7 @@ FROM
   ('jim')) AS v (x);
 
 SELECT
-  RANK(
+  "RANK"(
   3
   )
   WITHIN GROUP (ORDER BY stringu1,
@@ -3404,7 +3466,7 @@ FROM
   tenk1;
 
 SELECT
-  RANK(
+  "RANK"(
   'fred'
   )
   WITHIN GROUP (ORDER BY x)
@@ -3415,7 +3477,7 @@ FROM
   ) AS x;
 
 SELECT
-  RANK(
+  "RANK"(
   CAST('adam'
   AS TEXT) COLLATE "C"
   )
@@ -3425,7 +3487,7 @@ FROM
   ('jim')) AS v (x);
 
 SELECT
-  RANK(
+  "RANK"(
   CAST('adam'
   AS VARCHAR)
   )
@@ -3435,7 +3497,7 @@ FROM
   ('jim')) AS v (x);
 
 SELECT
-  RANK(
+  "RANK"(
   '3'
   )
   WITHIN GROUP (ORDER BY x)
@@ -3446,7 +3508,7 @@ FROM
   ) AS x;
 
 SELECT
-  PERCENT_RANK(
+  "PERCENT_RANK"(
   0
   )
   WITHIN GROUP (ORDER BY x)
@@ -3472,7 +3534,7 @@ SELECT
     hundred =
     1)
   AS px,
-  RANK(
+  "RANK"(
   5,
   'AZZZZ',
   50
@@ -3695,11 +3757,11 @@ FROM
   (7)) AS t (a);
 
 SELECT
-  RANK(
+  "RANK"(
   4
   )
   WITHIN GROUP (ORDER BY a),
-  DENSE_RANK(
+  "DENSE_RANK"(
   4
   )
   WITHIN GROUP (ORDER BY a)
@@ -3885,12 +3947,12 @@ SET enable_hashagg = off;
 
 SET enable_seqscan = off;
 
-SELECT COUNT(*) FROM btg GROUP BY y, x;
+SELECT "COUNT"(*) FROM btg GROUP BY y, x;
 
-SELECT COUNT(*) FROM btg GROUP BY z, y, w, x;
+SELECT "COUNT"(*) FROM btg GROUP BY z, y, w, x;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -3912,7 +3974,7 @@ SET enable_hashjoin = off;
 SET enable_nestloop = off;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -3935,7 +3997,7 @@ RESET enable_nestloop;
 RESET enable_hashjoin;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -3950,7 +4012,7 @@ ORDER BY y,
   w;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -4003,7 +4065,7 @@ SET enable_nestloop = off;
 SET enable_hashjoin = off;
 
 SELECT
-  AVG(
+  "AVG"(
   c1.f ORDER BY c1.x,
   c1.y
   )
@@ -4018,7 +4080,7 @@ GROUP BY c1.w,
   c1.z;
 
 SELECT
-  AVG(
+  "AVG"(
   c1.f ORDER BY c1.x,
   c1.y
   )
@@ -4240,7 +4302,7 @@ SELECT
   CAST(unique1
   AS INT)
   ),
-  SUM(
+  "SUM"(
   CAST(unique1
   AS BIGINT)
   ),
@@ -4276,7 +4338,7 @@ SELECT
   CAST(unique1
   AS INT)
   ),
-  SUM(
+  "SUM"(
   CAST(unique1
   AS BIGINT)
   ),
@@ -4312,7 +4374,7 @@ SELECT
   CAST(unique1
   AS BIGINT)
   ),
-  AVG(
+  "AVG"(
   CAST(unique1
   AS NUMERIC)
   )
@@ -4342,7 +4404,7 @@ SELECT
   CAST(unique1
   AS BIGINT)
   ),
-  AVG(
+  "AVG"(
   CAST(unique1
   AS NUMERIC)
   )
@@ -4370,7 +4432,7 @@ FROM
 ROLLBACK;
 
 SELECT
-  DENSE_RANK(
+  "DENSE_RANK"(
   x
   )
   WITHIN GROUP (ORDER BY x)
@@ -4385,7 +4447,7 @@ GROUP BY x
 ORDER BY 1;
 
 SELECT
-  MIN(
+  "MIN"(
   x ORDER BY y
   )
 FROM
@@ -4393,7 +4455,7 @@ FROM
   NULL)) AS d (x,
   y);
 
-SELECT MIN(x ORDER BY y) FROM (VALUES (1, 2)) AS d (x, y);
+SELECT "MIN"(x ORDER BY y) FROM (VALUES (1, 2)) AS d (x, y);
 
 SELECT
   v ||
@@ -4403,7 +4465,7 @@ SELECT
   WHEN 'aa' THEN 1
   ELSE 0
   END,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -4424,7 +4486,7 @@ SELECT
   'aa' THEN 1
   ELSE 0
   END,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -4442,21 +4504,21 @@ SET work_mem = '64kB';
 
 SELECT
   unique1,
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   twothousand
   )
 FROM
   tenk1
 GROUP BY unique1
 HAVING
-  SUM(
+  "SUM"(
   fivethous
   ) >
   4975
-ORDER BY SUM(
+ORDER BY "SUM"(
   twothousand
   );
 
@@ -4495,12 +4557,12 @@ SET jit_above_cost = 0;
 SELECT
   g % 10000
   AS c1,
-  SUM(
+  "SUM"(
   CAST(g
   AS NUMERIC)
   )
   AS c2,
-  COUNT(
+  "COUNT"(
   *
   )
   AS c3
@@ -4512,12 +4574,12 @@ CREATE TABLE agg_group_1 AS
   SELECT
     g % 10000
     AS c1,
-    SUM(
+    "SUM"(
     CAST(g
     AS NUMERIC)
     )
     AS c2,
-    COUNT(
+    "COUNT"(
     *
     )
     AS c3
@@ -4541,7 +4603,7 @@ CREATE TABLE agg_group_2 AS
       AS NUMERIC)
       )
       AS c2,
-      COUNT(
+      "COUNT"(
       *
       )
       AS c3
@@ -4559,12 +4621,12 @@ CREATE TABLE agg_group_3 AS
     CAST(g / 2
     AS NUMERIC)
     AS c1,
-    SUM(
+    "SUM"(
     CAST(7
     AS INT)
     )
     AS c2,
-    COUNT(
+    "COUNT"(
     *
     )
     AS c3
@@ -4582,7 +4644,7 @@ CREATE TABLE agg_group_4 AS
     AS NUMERIC)
     )
     AS c2,
-    COUNT(
+    "COUNT"(
     *
     )
     AS c3
@@ -4599,12 +4661,12 @@ SET jit_above_cost = 0;
 SELECT
   g % 10000
   AS c1,
-  SUM(
+  "SUM"(
   CAST(g
   AS NUMERIC)
   )
   AS c2,
-  COUNT(
+  "COUNT"(
   *
   )
   AS c3
@@ -4616,12 +4678,12 @@ CREATE TABLE agg_hash_1 AS
   SELECT
     g % 10000
     AS c1,
-    SUM(
+    "SUM"(
     CAST(g
     AS NUMERIC)
     )
     AS c2,
-    COUNT(
+    "COUNT"(
     *
     )
     AS c3
@@ -4645,7 +4707,7 @@ CREATE TABLE agg_hash_2 AS
       AS NUMERIC)
       )
       AS c2,
-      COUNT(
+      "COUNT"(
       *
       )
       AS c3
@@ -4663,12 +4725,12 @@ CREATE TABLE agg_hash_3 AS
     CAST(g / 2
     AS NUMERIC)
     AS c1,
-    SUM(
+    "SUM"(
     CAST(7
     AS INT)
     )
     AS c2,
-    COUNT(
+    "COUNT"(
     *
     )
     AS c3
@@ -4686,7 +4748,7 @@ CREATE TABLE agg_hash_4 AS
     AS NUMERIC)
     )
     AS c2,
-    COUNT(
+    "COUNT"(
     *
     )
     AS c3

@@ -186,11 +186,11 @@ SELECT DISTINCT f1 AS two FROM temp_group ORDER BY 1;
 SELECT
   f1
   AS two,
-  MAX(
+  "MAX"(
   f3
   )
   AS max_float,
-  MIN(
+  "MIN"(
   f3
   )
   AS min_float
@@ -204,11 +204,11 @@ ORDER BY two,
 SELECT
   f1
   AS two,
-  MAX(
+  "MAX"(
   f3
   )
   AS max_float,
-  MIN(
+  "MIN"(
   f3
   )
   AS min_float
@@ -222,11 +222,11 @@ ORDER BY two,
 SELECT
   f1
   AS two,
-  MAX(
+  "MAX"(
   f3
   ) + 1
   AS max_plus_1,
-  MIN(
+  "MIN"(
   f3
   ) - 1
   AS min_minus_1
@@ -239,13 +239,13 @@ ORDER BY two,
 SELECT
   f1
   AS two,
-  MAX(
+  "MAX"(
   f2
-  ) + MIN(
+  ) + "MIN"(
   f2
   )
   AS max_plus_min,
-  MIN(
+  "MIN"(
   f3
   ) - 1
   AS min_minus_1

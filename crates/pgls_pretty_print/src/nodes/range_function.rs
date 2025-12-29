@@ -56,15 +56,6 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
             }
         }
 
-        // Emit column definitions if present (for record functions like json_populate_record)
-        if !n.coldeflist.is_empty() {
-            e.space();
-            e.token(TokenKind::AS_KW);
-            e.space();
-            e.token(TokenKind::L_PAREN);
-            emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
-            e.token(TokenKind::R_PAREN);
-        }
     }
 
     if n.ordinality {
@@ -74,9 +65,33 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
         e.token(TokenKind::ORDINALITY_KW);
     }
 
+    // Handle alias and coldeflist
+    // For RangeFunction, when we have both alias and coldeflist:
+    // Correct syntax: func(...) AS aliasname (col1 type1, col2 type2, ...)
     if let Some(ref alias) = n.alias {
+        if !n.coldeflist.is_empty() {
+            // Has both alias and coldeflist - emit alias name first, then coldeflist
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            super::emit_identifier_maybe_quoted(e, &alias.aliasname);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+            e.token(TokenKind::R_PAREN);
+        } else {
+            // Just alias with potential colnames - use emit_alias
+            e.space();
+            super::emit_alias(e, alias);
+        }
+    } else if !n.coldeflist.is_empty() {
+        // No alias but has coldeflist - emit with AS
         e.space();
-        super::emit_alias(e, alias);
+        e.token(TokenKind::AS_KW);
+        e.space();
+        e.token(TokenKind::L_PAREN);
+        emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+        e.token(TokenKind::R_PAREN);
     }
 
     e.group_end();

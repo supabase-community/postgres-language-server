@@ -5,8 +5,25 @@ use crate::{
 };
 use pgls_query::protobuf::FuncCall;
 
+/// Get the last part of the function name (the actual function name without schema)
+fn get_last_func_name(n: &FuncCall) -> Option<&str> {
+    n.funcname.last().and_then(|node| {
+        if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
+            Some(s.sval.as_str())
+        } else {
+            None
+        }
+    })
+}
+
 pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
     e.group_start(GroupKind::FuncCall);
+
+    // Determine if this is a special function that needs uppercase treatment
+    // For normalize, we need to check if it matches the built-in pattern
+    let is_builtin_normalize_call = get_last_func_name(n)
+        .map(|name| name.to_lowercase() == "normalize" && is_builtin_normalize(n))
+        .unwrap_or(false);
 
     // Emit function name (could be qualified like schema.func)
     let mut name_parts = Vec::new();
@@ -19,6 +36,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
             }
 
             // Normalize common function names to uppercase
+            // For normalize, only uppercase if it matches built-in pattern
             let name = match s.sval.to_lowercase().as_str() {
                 "now" => "NOW",
                 "current_timestamp" => "CURRENT_TIMESTAMP",
@@ -50,7 +68,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
                 "position" => "POSITION",
                 "substring" => "SUBSTRING",
                 "trim" => "TRIM",
-                "normalize" => "NORMALIZE",
+                "normalize" if is_builtin_normalize_call => "NORMALIZE",
                 // SQL value functions without parens
                 "system_user" => "SYSTEM_USER",
                 "session_user" => "SESSION_USER",
@@ -65,12 +83,24 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         }
     }
 
+    // Check if this is a user-defined function that shadows a built-in
+    // These need to be quoted to avoid being interpreted as the built-in
+    let needs_explicit_quoting = !is_builtin_normalize_call
+        && get_last_func_name(n)
+            .map(|name| name.to_lowercase() == "normalize")
+            .unwrap_or(false);
+
     // Emit function name with dots
     for (i, part) in name_parts.iter().enumerate() {
         if i > 0 {
             e.token(TokenKind::DOT);
         }
-        e.token(TokenKind::IDENT(part.clone()));
+        // Quote function names that shadow built-ins
+        if needs_explicit_quoting && i == name_parts.len() - 1 {
+            super::emit_identifier(e, part);
+        } else {
+            super::emit_identifier_maybe_quoted(e, part);
+        }
     }
 
     let function_name = name_parts.last().map(|s| s.as_str()).unwrap_or("");
@@ -93,7 +123,14 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
             emit_trim_function(e, n);
         }
         "normalize" => {
-            emit_normalize_function(e, n);
+            // NORMALIZE has special syntax only when second arg is a valid form
+            // If it's a user-defined function with same name, use standard call
+            if is_builtin_normalize(n) {
+                emit_normalize_function(e, n);
+            } else {
+                // This is a user-defined function, use standard call
+                emit_standard_function(e, n);
+            }
         }
         "xmlexists" => {
             emit_xmlexists_function(e, n);
@@ -358,6 +395,28 @@ fn emit_trim_function(e: &mut EventEmitter, n: &FuncCall) {
     }
 
     e.token(TokenKind::R_PAREN);
+}
+
+/// Check if this is a call to the built-in NORMALIZE function
+/// (as opposed to a user-defined function with the same name)
+fn is_builtin_normalize(n: &FuncCall) -> bool {
+    // Built-in NORMALIZE takes 1 or 2 args
+    if n.args.is_empty() || n.args.len() > 2 {
+        return false;
+    }
+
+    // With 2 args, second must be a known normalization form
+    if n.args.len() == 2 {
+        if let Some(pgls_query::NodeEnum::AConst(a_const)) = &n.args[1].node {
+            if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val {
+                return matches!(s.sval.as_str(), "NFC" | "NFD" | "NFKC" | "NFKD");
+            }
+        }
+        return false;
+    }
+
+    // Single argument is fine for built-in
+    true
 }
 
 // NORMALIZE(string [, form])

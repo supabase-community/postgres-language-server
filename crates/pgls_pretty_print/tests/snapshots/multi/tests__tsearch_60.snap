@@ -97,16 +97,16 @@ COPY test_tsvector FROM 'filename';
 
 ANALYZE test_tsvector;
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr&qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr&qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq&yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq&yt';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq|yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq|yt';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -115,7 +115,7 @@ WHERE
   a @@ '(eq&yt)|(wr&qh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -123,10 +123,10 @@ FROM
 WHERE
   a @@ '(eq|yt)&(wr|qh)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -135,7 +135,7 @@ WHERE
   a @@ ANY ('{wr,qh}');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -144,7 +144,7 @@ WHERE
   a @@ 'no_such_lexeme';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -152,22 +152,50 @@ FROM
 WHERE
   a @@ '!no_such_lexeme';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> !yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!yh <-> pl';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qe <2> qt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> !yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!yh <-> pl';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!qe <2> qt';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -176,7 +204,7 @@ WHERE
   a @@ '!(pl <-> yh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -185,7 +213,7 @@ WHERE
   a @@ '!(yh <-> pl)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -193,13 +221,13 @@ FROM
 WHERE
   a @@ '!(qe <2> qt)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 CREATE INDEX "wowidx" ON test_tsvector USING gist ( a);
 
@@ -209,18 +237,18 @@ SET enable_indexscan = on;
 
 SET enable_bitmapscan = off;
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr&qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr&qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq&yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq&yt';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq|yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq|yt';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -229,7 +257,7 @@ WHERE
   a @@ '(eq&yt)|(wr&qh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -237,10 +265,10 @@ FROM
 WHERE
   a @@ '(eq|yt)&(wr|qh)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -249,7 +277,7 @@ WHERE
   a @@ ANY ('{wr,qh}');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -258,7 +286,7 @@ WHERE
   a @@ 'no_such_lexeme';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -266,22 +294,50 @@ FROM
 WHERE
   a @@ '!no_such_lexeme';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> !yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!yh <-> pl';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qe <2> qt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> !yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!yh <-> pl';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!qe <2> qt';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -290,7 +346,7 @@ WHERE
   a @@ '!(pl <-> yh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -299,7 +355,7 @@ WHERE
   a @@ '!(yh <-> pl)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -307,30 +363,30 @@ FROM
 WHERE
   a @@ '!(qe <2> qt)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 SET enable_indexscan = off;
 
 SET enable_bitmapscan = on;
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr&qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr&qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq&yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq&yt';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq|yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq|yt';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -339,7 +395,7 @@ WHERE
   a @@ '(eq&yt)|(wr&qh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -347,10 +403,10 @@ FROM
 WHERE
   a @@ '(eq|yt)&(wr|qh)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -359,7 +415,7 @@ WHERE
   a @@ ANY ('{wr,qh}');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -368,7 +424,7 @@ WHERE
   a @@ 'no_such_lexeme';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -376,22 +432,50 @@ FROM
 WHERE
   a @@ '!no_such_lexeme';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> !yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!yh <-> pl';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qe <2> qt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> !yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!yh <-> pl';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!qe <2> qt';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -400,7 +484,7 @@ WHERE
   a @@ '!(pl <-> yh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -409,7 +493,7 @@ WHERE
   a @@ '!(yh <-> pl)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -417,13 +501,13 @@ FROM
 WHERE
   a @@ '!(qe <2> qt)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 CREATE INDEX "wowidx1" ON test_tsvector USING gist
 (
@@ -459,18 +543,18 @@ CREATE INDEX "wowidx2" ON test_tsvector USING gist
 
 DROP INDEX "wowidx";
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr&qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr&qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq&yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq&yt';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq|yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq|yt';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -479,7 +563,7 @@ WHERE
   a @@ '(eq&yt)|(wr&qh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -487,10 +571,10 @@ FROM
 WHERE
   a @@ '(eq|yt)&(wr|qh)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -499,7 +583,7 @@ WHERE
   a @@ ANY ('{wr,qh}');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -508,7 +592,7 @@ WHERE
   a @@ 'no_such_lexeme';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -516,22 +600,50 @@ FROM
 WHERE
   a @@ '!no_such_lexeme';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> !yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!yh <-> pl';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qe <2> qt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> !yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!yh <-> pl';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!qe <2> qt';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -540,7 +652,7 @@ WHERE
   a @@ '!(pl <-> yh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -549,7 +661,7 @@ WHERE
   a @@ '!(yh <-> pl)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -557,13 +669,13 @@ FROM
 WHERE
   a @@ '!(qe <2> qt)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 DROP INDEX "wowidx2";
 
@@ -572,18 +684,18 @@ CREATE INDEX "wowidx" ON test_tsvector USING gist
   a tsvector_ops(siglen = 484)
 );
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr&qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr&qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq&yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq&yt';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq|yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq|yt';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -592,7 +704,7 @@ WHERE
   a @@ '(eq&yt)|(wr&qh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -600,10 +712,10 @@ FROM
 WHERE
   a @@ '(eq|yt)&(wr|qh)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -612,7 +724,7 @@ WHERE
   a @@ ANY ('{wr,qh}');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -621,7 +733,7 @@ WHERE
   a @@ 'no_such_lexeme';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -629,22 +741,50 @@ FROM
 WHERE
   a @@ '!no_such_lexeme';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> !yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!yh <-> pl';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qe <2> qt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> !yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!yh <-> pl';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!qe <2> qt';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -653,7 +793,7 @@ WHERE
   a @@ '!(pl <-> yh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -662,7 +802,7 @@ WHERE
   a @@ '!(yh <-> pl)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -670,13 +810,13 @@ FROM
 WHERE
   a @@ '!(qe <2> qt)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 RESET enable_seqscan;
 
@@ -690,18 +830,18 @@ CREATE INDEX "wowidx" ON test_tsvector USING gin ( a);
 
 SET enable_seqscan = off;
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr&qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wr&qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq&yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq&yt';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'eq|yt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'eq|yt';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -710,7 +850,7 @@ WHERE
   a @@ '(eq&yt)|(wr&qh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -718,10 +858,10 @@ FROM
 WHERE
   a @@ '(eq|yt)&(wr|qh)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'w:*|q:*';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -730,7 +870,7 @@ WHERE
   a @@ ANY ('{wr,qh}');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -739,7 +879,7 @@ WHERE
   a @@ 'no_such_lexeme';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -747,22 +887,50 @@ FROM
 WHERE
   a @@ '!no_such_lexeme';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'pl <-> yh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'yh <-> pl';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!pl <-> !yh';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!yh <-> pl';
-
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qe <2> qt';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'qe <2> qt';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!pl <-> !yh';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!yh <-> pl';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  test_tsvector
+WHERE
+  a @@ '!qe <2> qt';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -771,7 +939,7 @@ WHERE
   a @@ '!(pl <-> yh)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -780,7 +948,7 @@ WHERE
   a @@ '!(yh <-> pl)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -788,20 +956,20 @@ FROM
 WHERE
   a @@ '!(qe <2> qt)';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ 'wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!qh';
 
-SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!qh';
+SELECT "COUNT"(*) FROM test_tsvector WHERE a @@ '!qh';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -811,7 +979,7 @@ WHERE
   a @@ '!qh';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1632,7 +1800,7 @@ AS TEXT)
 );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1642,7 +1810,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1652,7 +1820,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1662,7 +1830,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1672,7 +1840,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1690,7 +1858,7 @@ INDEX "bt_tsq" ON test_tsquery USING btree
 SET enable_seqscan = off;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1700,7 +1868,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1710,7 +1878,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1720,7 +1888,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1730,7 +1898,7 @@ WHERE
   'new <-> york';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2070,7 +2238,7 @@ EXECUTE FUNCTION tsvector_update_trigger(a,
 t);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2083,7 +2251,7 @@ WHERE
 INSERT INTO test_tsvector (t) VALUES ('345 qwerty');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2096,7 +2264,7 @@ WHERE
 UPDATE test_tsvector SET t = NULL WHERE t = '345 qwerty';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2109,7 +2277,7 @@ WHERE
 INSERT INTO test_tsvector (t) VALUES ('345 qwerty');
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

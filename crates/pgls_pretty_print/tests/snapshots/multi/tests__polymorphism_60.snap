@@ -1413,7 +1413,7 @@ WHERE
   histogram_bounds IS NOT NULL;
 
 SELECT
-  MAX(
+  "MAX"(
   histogram_bounds
   )
 FROM

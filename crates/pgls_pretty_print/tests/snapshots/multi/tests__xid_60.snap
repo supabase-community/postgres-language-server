@@ -146,7 +146,7 @@ VALUES ('0'),
 ('0xffffffffffffffff'),
 ('-1');
 
-SELECT MIN(x), MAX(x) FROM xid8_t1;
+SELECT "MIN"(x), "MAX"(x) FROM xid8_t1;
 
 CREATE INDEX ON xid8_t1 USING btree ( x);
 

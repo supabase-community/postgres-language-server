@@ -783,7 +783,7 @@ SET enable_incremental_sort = off;
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -800,7 +800,7 @@ SET enable_incremental_sort = on;
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -895,7 +895,7 @@ ORDER BY 1,
   2;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -909,7 +909,7 @@ FROM
   AS t3
   ON t2.unique1 =
     t3.unique1
-ORDER BY COUNT(
+ORDER BY "COUNT"(
   *
   );
 

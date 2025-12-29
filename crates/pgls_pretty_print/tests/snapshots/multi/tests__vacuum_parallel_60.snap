@@ -55,7 +55,7 @@ SELECT
   AS leader_will_handle_small_index;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
   AS trigger_parallel_vacuum_nindexes

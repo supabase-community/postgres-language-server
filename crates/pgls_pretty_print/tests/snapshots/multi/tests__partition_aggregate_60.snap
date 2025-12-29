@@ -59,26 +59,26 @@ ANALYZE pagg_tab;
 
 SELECT
   c,
-  SUM(
+  "SUM"(
   a
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MIN(
+  "MIN"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
   pagg_tab
 GROUP BY c
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -88,26 +88,26 @@ ORDER BY 1,
 
 SELECT
   c,
-  SUM(
+  "SUM"(
   a
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MIN(
+  "MIN"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
   pagg_tab
 GROUP BY c
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -117,26 +117,26 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MIN(
+  "MIN"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
   pagg_tab
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -146,26 +146,26 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MIN(
+  "MIN"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
   pagg_tab
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -173,38 +173,38 @@ ORDER BY 1,
   2,
   3;
 
-SELECT a, c, COUNT(*) FROM pagg_tab GROUP BY a, c;
+SELECT a, c, "COUNT"(*) FROM pagg_tab GROUP BY a, c;
 
-SELECT a, c, COUNT(*) FROM pagg_tab GROUP BY c, a;
+SELECT a, c, "COUNT"(*) FROM pagg_tab GROUP BY c, a;
 
-SELECT c, a, COUNT(*) FROM pagg_tab GROUP BY a, c;
+SELECT c, a, "COUNT"(*) FROM pagg_tab GROUP BY a, c;
 
-SELECT c, SUM(a) FROM pagg_tab WHERE 1 = 2 GROUP BY c;
+SELECT c, "SUM"(a) FROM pagg_tab WHERE 1 = 2 GROUP BY c;
 
-SELECT c, SUM(a) FROM pagg_tab WHERE 1 = 2 GROUP BY c;
+SELECT c, "SUM"(a) FROM pagg_tab WHERE 1 = 2 GROUP BY c;
 
-SELECT c, SUM(a) FROM pagg_tab WHERE c = 'x' GROUP BY c;
+SELECT c, "SUM"(a) FROM pagg_tab WHERE c = 'x' GROUP BY c;
 
-SELECT c, SUM(a) FROM pagg_tab WHERE c = 'x' GROUP BY c;
+SELECT c, "SUM"(a) FROM pagg_tab WHERE c = 'x' GROUP BY c;
 
 SET enable_hashagg = false;
 
 SELECT
   c,
-  SUM(
+  "SUM"(
   a
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab
 GROUP BY 1
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -214,20 +214,20 @@ ORDER BY 1,
 
 SELECT
   c,
-  SUM(
+  "SUM"(
   a
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab
 GROUP BY 1
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -237,20 +237,20 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab
 GROUP BY 1
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -260,20 +260,20 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab
 GROUP BY 1
 HAVING
-  AVG(
+  "AVG"(
   d
   ) <
   15
@@ -293,7 +293,7 @@ RESET enable_hashagg;
 
 SELECT
   c,
-  SUM(
+  "SUM"(
   a
   )
 FROM
@@ -304,7 +304,7 @@ ORDER BY 1,
 
 SELECT
   c,
-  SUM(
+  "SUM"(
   b ORDER BY a
   )
 FROM
@@ -315,7 +315,7 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b ORDER BY a
   )
 FROM
@@ -388,10 +388,10 @@ ANALYZE pagg_tab2;
 
 SELECT
   t1.x,
-  SUM(
+  "SUM"(
   t1.y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -409,10 +409,10 @@ ORDER BY 1,
 
 SELECT
   t1.x,
-  SUM(
+  "SUM"(
   t1.y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -430,10 +430,10 @@ ORDER BY 1,
 
 SELECT
   t1.x,
-  SUM(
+  "SUM"(
   t1.y
   ),
-  COUNT(
+  "COUNT"(
   t1
   )
 FROM
@@ -451,10 +451,10 @@ ORDER BY 1,
 
 SELECT
   t1.x,
-  SUM(
+  "SUM"(
   t1.y
   ),
-  COUNT(
+  "COUNT"(
   t1
   )
 FROM
@@ -472,10 +472,10 @@ ORDER BY 1,
 
 SELECT
   t2.y,
-  SUM(
+  "SUM"(
   t1.y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -495,10 +495,10 @@ SET enable_hashagg = false;
 
 SELECT
   t1.y,
-  SUM(
+  "SUM"(
   t1.x
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -511,7 +511,7 @@ WHERE
   t2.y
 GROUP BY t1.y
 HAVING
-  AVG(
+  "AVG"(
   t1.x
   ) >
   10
@@ -521,10 +521,10 @@ ORDER BY 1,
 
 SELECT
   t1.y,
-  SUM(
+  "SUM"(
   t1.x
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -537,7 +537,7 @@ WHERE
   t2.y
 GROUP BY t1.y
 HAVING
-  AVG(
+  "AVG"(
   t1.x
   ) >
   10
@@ -549,7 +549,7 @@ RESET enable_hashagg;
 
 SELECT
   b.y,
-  SUM(
+  "SUM"(
   a.y
   )
 FROM
@@ -564,7 +564,7 @@ ORDER BY 1 NULLS LAST;
 
 SELECT
   b.y,
-  SUM(
+  "SUM"(
   a.y
   )
 FROM
@@ -579,7 +579,7 @@ ORDER BY 1 NULLS LAST;
 
 SELECT
   b.y,
-  SUM(
+  "SUM"(
   a.y
   )
 FROM
@@ -594,7 +594,7 @@ ORDER BY 1 NULLS LAST;
 
 SELECT
   b.y,
-  SUM(
+  "SUM"(
   a.y
   )
 FROM
@@ -609,7 +609,7 @@ ORDER BY 1 NULLS LAST;
 
 SELECT
   a.x,
-  SUM(
+  "SUM"(
   b.x
   )
 FROM
@@ -624,7 +624,7 @@ ORDER BY 1 NULLS LAST;
 
 SELECT
   a.x,
-  SUM(
+  "SUM"(
   b.x
   )
 FROM
@@ -640,7 +640,7 @@ ORDER BY 1 NULLS LAST;
 SELECT
   a.x,
   b.y,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -673,7 +673,7 @@ ORDER BY 1,
 SELECT
   a.x,
   b.y,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -706,7 +706,7 @@ ORDER BY 1,
 SELECT
   a.x,
   b.y,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -739,7 +739,7 @@ ORDER BY 1,
 SELECT
   a.x,
   b.y,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -772,7 +772,7 @@ ORDER BY 1,
 SELECT
   a.x,
   a.y,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -797,7 +797,7 @@ ORDER BY 1,
 SELECT
   a.x,
   a.y,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -860,20 +860,20 @@ ANALYZE pagg_tab_m;
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_m
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   c
   ) <
   22
@@ -883,20 +883,20 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_m
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   c
   ) <
   22
@@ -906,13 +906,13 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -920,7 +920,7 @@ FROM
 GROUP BY a,
   (a + b) / 2
 HAVING
-  SUM(
+  "SUM"(
   b
   ) <
   50
@@ -930,13 +930,13 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -944,7 +944,7 @@ FROM
 GROUP BY a,
   (a + b) / 2
 HAVING
-  SUM(
+  "SUM"(
   b
   ) <
   50
@@ -955,13 +955,13 @@ ORDER BY 1,
 SELECT
   a,
   c,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -970,11 +970,11 @@ GROUP BY (a + b) / 2,
   2,
   1
 HAVING
-  SUM(
+  "SUM"(
   b
   ) =
   50 AND
-  AVG(
+  "AVG"(
   c
   ) >
   25
@@ -985,13 +985,13 @@ ORDER BY 1,
 SELECT
   a,
   c,
-  SUM(
+  "SUM"(
   b
   ),
-  AVG(
+  "AVG"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1000,11 +1000,11 @@ GROUP BY (a + b) / 2,
   2,
   1
 HAVING
-  SUM(
+  "SUM"(
   b
   ) =
   50 AND
-  AVG(
+  "AVG"(
   c
   ) >
   25
@@ -1083,20 +1083,20 @@ SET parallel_setup_cost = 0;
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
   array_agg(
   DISTINCT c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3
@@ -1106,20 +1106,20 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
   array_agg(
   DISTINCT c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3
@@ -1129,20 +1129,20 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
   array_agg(
   DISTINCT c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3;
@@ -1151,17 +1151,17 @@ RESET parallel_setup_cost;
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3
@@ -1171,17 +1171,17 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3
@@ -1191,10 +1191,10 @@ ORDER BY 1,
 
 SELECT
   b,
-  SUM(
+  "SUM"(
   a
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1206,17 +1206,17 @@ ORDER BY 1,
 
 SELECT
   b,
-  SUM(
+  "SUM"(
   a
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY b
 HAVING
-  AVG(
+  "AVG"(
   a
   ) <
   15
@@ -1226,10 +1226,10 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1238,7 +1238,7 @@ GROUP BY a,
   b,
   c
 HAVING
-  AVG(
+  "AVG"(
   b
   ) >
   7
@@ -1248,10 +1248,10 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1260,7 +1260,7 @@ GROUP BY a,
   b,
   c
 HAVING
-  AVG(
+  "AVG"(
   b
   ) >
   7
@@ -1274,17 +1274,17 @@ SET parallel_setup_cost = 0;
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3
@@ -1294,17 +1294,17 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY a
 HAVING
-  AVG(
+  "AVG"(
   b
   ) <
   3
@@ -1314,10 +1314,10 @@ ORDER BY 1,
 
 SELECT
   b,
-  SUM(
+  "SUM"(
   a
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1329,17 +1329,17 @@ ORDER BY 1,
 
 SELECT
   b,
-  SUM(
+  "SUM"(
   a
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_ml
 GROUP BY b
 HAVING
-  AVG(
+  "AVG"(
   a
   ) <
   15
@@ -1349,10 +1349,10 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1361,7 +1361,7 @@ GROUP BY a,
   b,
   c
 HAVING
-  AVG(
+  "AVG"(
   b
   ) >
   7
@@ -1371,10 +1371,10 @@ ORDER BY 1,
 
 SELECT
   a,
-  SUM(
+  "SUM"(
   b
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1383,7 +1383,7 @@ GROUP BY a,
   b,
   c
 HAVING
-  AVG(
+  "AVG"(
   b
   ) >
   7
@@ -1425,20 +1425,20 @@ ANALYZE pagg_tab_para;
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1448,20 +1448,20 @@ ORDER BY 1,
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1471,20 +1471,20 @@ ORDER BY 1,
 
 SELECT
   y,
-  SUM(
+  "SUM"(
   x
   ),
-  AVG(
+  "AVG"(
   x
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY y
 HAVING
-  AVG(
+  "AVG"(
   x
   ) <
   12
@@ -1494,20 +1494,20 @@ ORDER BY 1,
 
 SELECT
   y,
-  SUM(
+  "SUM"(
   x
   ),
-  AVG(
+  "AVG"(
   x
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY y
 HAVING
-  AVG(
+  "AVG"(
   x
   ) <
   12
@@ -1523,23 +1523,23 @@ ANALYZE pagg_tab_para;
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  SUM(
+  "SUM"(
   x + y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1549,23 +1549,23 @@ ORDER BY 1,
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  SUM(
+  "SUM"(
   x + y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1579,23 +1579,23 @@ ANALYZE pagg_tab_para;
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  SUM(
+  "SUM"(
   x + y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1605,23 +1605,23 @@ ORDER BY 1,
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  SUM(
+  "SUM"(
   x + y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1635,20 +1635,20 @@ RESET parallel_setup_cost;
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7
@@ -1658,20 +1658,20 @@ ORDER BY 1,
 
 SELECT
   x,
-  SUM(
+  "SUM"(
   y
   ),
-  AVG(
+  "AVG"(
   y
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
   pagg_tab_para
 GROUP BY x
 HAVING
-  AVG(
+  "AVG"(
   y
   ) <
   7

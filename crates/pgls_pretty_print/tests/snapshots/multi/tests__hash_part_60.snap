@@ -193,10 +193,10 @@ SELECT
   AS REGCLASS),
   4,
   0,
-  VARIADIC ARRAY[NOW(
+  VARIADIC ARRAY["NOW"(
 
   ),
-  NOW(
+  "NOW"(
 
   )]
   );

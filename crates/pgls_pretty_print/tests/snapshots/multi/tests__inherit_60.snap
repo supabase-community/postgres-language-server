@@ -797,7 +797,7 @@ DROP TABLE "some_tab" CASCADE;
 
 CREATE TABLE firstparent (
   tomorrow DATE
-  DEFAULT (CAST(NOW(
+  DEFAULT (CAST("NOW"(
 
   )
   AS DATE) + 1)
@@ -805,7 +805,7 @@ CREATE TABLE firstparent (
 
 CREATE TABLE secondparent (
   tomorrow DATE
-  DEFAULT (CAST(NOW(
+  DEFAULT (CAST("NOW"(
 
   )
   AS DATE) + 1)
@@ -817,7 +817,7 @@ secondparent);
 
 CREATE TABLE thirdparent (
   tomorrow DATE
-  DEFAULT (CAST(NOW(
+  DEFAULT (CAST("NOW"(
 
   )
   AS DATE) - 1)
@@ -829,7 +829,7 @@ thirdparent);
 
 CREATE TABLE otherchild (
   tomorrow DATE
-  DEFAULT NOW(
+  DEFAULT "NOW"(
 
   )
 )
@@ -1404,7 +1404,7 @@ SELECT
 FROM
   (SELECT
     inhrelid,
-    COUNT(
+    "COUNT"(
     *
     )
     AS expected
@@ -1845,9 +1845,9 @@ SELECT * FROM matest0 ORDER BY 1 - id;
 
 SELECT * FROM matest0 ORDER BY 1 - id;
 
-SELECT MIN(1 - id) FROM matest0;
+SELECT "MIN"(1 - id) FROM matest0;
 
-SELECT MIN(1 - id) FROM matest0;
+SELECT "MIN"(1 - id) FROM matest0;
 
 RESET enable_indexscan;
 
@@ -1859,9 +1859,9 @@ SELECT * FROM matest0 ORDER BY 1 - id;
 
 SELECT * FROM matest0 ORDER BY 1 - id;
 
-SELECT MIN(1 - id) FROM matest0;
+SELECT "MIN"(1 - id) FROM matest0;
 
-SELECT MIN(1 - id) FROM matest0;
+SELECT "MIN"(1 - id) FROM matest0;
 
 RESET enable_seqscan;
 
@@ -2003,7 +2003,7 @@ ORDER BY thousand,
   tenthous;
 
 SELECT
-  MIN(
+  "MIN"(
   x
   )
 FROM
@@ -2022,7 +2022,7 @@ FROM
     AS b) AS s;
 
 SELECT
-  MIN(
+  "MIN"(
   y
   )
 FROM
@@ -3264,9 +3264,31 @@ CREATE INDEX "parted_minmax1i" ON parted_minmax1 USING btree
 
 INSERT INTO parted_minmax VALUES (1, '12345');
 
-SELECT MIN(a), MAX(a) FROM parted_minmax WHERE b = '12345';
+SELECT
+  "MIN"(
+  a
+  ),
+  "MAX"(
+  a
+  )
+FROM
+  parted_minmax
+WHERE
+  b =
+  '12345';
 
-SELECT MIN(a), MAX(a) FROM parted_minmax WHERE b = '12345';
+SELECT
+  "MIN"(
+  a
+  ),
+  "MAX"(
+  a
+  )
+FROM
+  parted_minmax
+WHERE
+  b =
+  '12345';
 
 DROP TABLE "parted_minmax";
 

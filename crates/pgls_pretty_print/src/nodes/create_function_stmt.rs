@@ -316,10 +316,13 @@ pub(super) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             }
         }
         "set" => {
-            e.token(TokenKind::SET_KW);
-            e.space();
+            // The arg is a VariableSetStmt which will emit SET/RESET itself
             if let Some(ref arg) = d.arg {
-                super::emit_node(arg, e);
+                if let Some(pgls_query::NodeEnum::VariableSetStmt(setstmt)) = &arg.node {
+                    super::emit_variable_set_stmt_no_semicolon(e, setstmt);
+                } else {
+                    super::emit_node(arg, e);
+                }
             }
         }
         "window" => {

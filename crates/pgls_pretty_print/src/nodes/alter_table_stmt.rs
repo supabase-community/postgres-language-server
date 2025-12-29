@@ -97,7 +97,12 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
         AlterTableType::AtAddColumn => {
             e.token(TokenKind::ADD_KW);
             e.space();
-            e.token(TokenKind::COLUMN_KW);
+            // For ALTER TYPE, use ATTRIBUTE instead of COLUMN
+            if for_type {
+                e.token(TokenKind::IDENT("ATTRIBUTE".to_string()));
+            } else {
+                e.token(TokenKind::COLUMN_KW);
+            }
             if let Some(ref def) = cmd.def {
                 e.space();
                 e.indent_start();

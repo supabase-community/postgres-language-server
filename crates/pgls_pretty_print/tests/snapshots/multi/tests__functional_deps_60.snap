@@ -195,7 +195,7 @@ CREATE TEMPORARY TABLE sales ( product_id INT, units INT );
 SELECT
   product_id,
   p.name,
-  SUM(
+  "SUM"(
   s.units
   ) * p.price
   AS sales
@@ -212,7 +212,7 @@ GROUP BY product_id,
 SELECT
   product_id,
   p.name,
-  SUM(
+  "SUM"(
   s.units
   ) * p.price
   AS sales
@@ -229,7 +229,7 @@ ALTER TABLE products ADD PRIMARY KEY (product_id);
 SELECT
   product_id,
   p.name,
-  SUM(
+  "SUM"(
   s.units
   ) * p.price
   AS sales

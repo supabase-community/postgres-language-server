@@ -9,7 +9,7 @@ FROM
   sessions
 WHERE
   last_seen <
-  NOW(
+  "NOW"(
 
   ) - CAST('30 days'
   AS INTERVAL))

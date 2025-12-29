@@ -38,7 +38,7 @@ FROM
 GROUP BY b,
   c
 HAVING
-  COUNT(
+  "COUNT"(
   *
   ) =
   1
@@ -62,7 +62,7 @@ SELECT
   lower(
   c
   ),
-  COUNT(
+  "COUNT"(
   c
   )
 FROM
@@ -71,14 +71,14 @@ GROUP BY lower(
   c
   )
 HAVING
-  COUNT(
+  "COUNT"(
   *
   ) >
   2 OR
-  MIN(
+  "MIN"(
   a
   ) =
-  MAX(
+  "MAX"(
   a
   )
 ORDER BY lower(
@@ -87,60 +87,60 @@ ORDER BY lower(
 
 SELECT
   c,
-  MAX(
+  "MAX"(
   a
   )
 FROM
   test_having
 GROUP BY c
 HAVING
-  COUNT(
+  "COUNT"(
   *
   ) >
   2 OR
-  MIN(
+  "MIN"(
   a
   ) =
-  MAX(
+  "MAX"(
   a
   )
 ORDER BY c;
 
 SELECT
-  MIN(
+  "MIN"(
   a
   ),
-  MAX(
+  "MAX"(
   a
   )
 FROM
   test_having
 HAVING
-  MIN(
+  "MIN"(
   a
   ) =
-  MAX(
+  "MAX"(
   a
   );
 
 SELECT
-  MIN(
+  "MIN"(
   a
   ),
-  MAX(
+  "MAX"(
   a
   )
 FROM
   test_having
 HAVING
-  MIN(
+  "MIN"(
   a
   ) <
-  MAX(
+  "MAX"(
   a
   );
 
-SELECT a FROM test_having HAVING MIN(a) < MAX(a);
+SELECT a FROM test_having HAVING "MIN"(a) < "MAX"(a);
 
 SELECT 1 AS one FROM test_having HAVING a > 1;
 

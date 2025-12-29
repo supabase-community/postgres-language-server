@@ -79,13 +79,13 @@ TRUNCATE copytest5;
 
 COPY copytest5 FROM STDOUT WITH (FORMAT 'csv', HEADER 4);
 
-SELECT COUNT(*) FROM copytest5;
+SELECT "COUNT"(*) FROM copytest5;
 
 TRUNCATE copytest5;
 
 COPY copytest5 FROM STDOUT WITH (FORMAT 'csv', HEADER 5);
 
-SELECT COUNT(*) FROM copytest5;
+SELECT "COUNT"(*) FROM copytest5;
 
 CREATE TABLE parted_copytest (
   a INT,
@@ -162,10 +162,10 @@ ROLLBACK;
 SELECT
   CAST(tableoid
   AS REGCLASS),
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   a
   )
 FROM
@@ -199,10 +199,10 @@ COPY parted_copytest FROM 'filename';
 SELECT
   CAST(tableoid
   AS REGCLASS),
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   a
   )
 FROM
@@ -352,7 +352,7 @@ SELECT
   id % 2 =
   0
   AS is_even,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

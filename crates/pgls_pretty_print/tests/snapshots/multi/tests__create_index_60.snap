@@ -174,7 +174,7 @@ WHERE
 ORDER BY home_base[0][0];
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -183,10 +183,10 @@ WHERE
   home_base && CAST('(1000,1000,0,0)'
   AS box);
 
-SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
+SELECT "COUNT"(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -196,7 +196,7 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -206,7 +206,7 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -216,7 +216,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -226,7 +226,7 @@ WHERE
   AS box) @> f1;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -236,7 +236,7 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -246,7 +246,7 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -256,7 +256,7 @@ WHERE
   p.f1 << '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -266,7 +266,7 @@ WHERE
   p.f1 >> '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -276,7 +276,7 @@ WHERE
   p.f1 <<| '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -286,7 +286,7 @@ WHERE
   p.f1 |>> '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -365,7 +365,7 @@ WHERE
 ORDER BY home_base[0][0];
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -375,7 +375,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -384,12 +384,12 @@ WHERE
   home_base && CAST('(1000,1000,0,0)'
   AS box);
 
-SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
+SELECT "COUNT"(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
-SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
+SELECT "COUNT"(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -399,7 +399,7 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -409,7 +409,7 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -419,7 +419,7 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -429,7 +429,7 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -439,7 +439,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -449,7 +449,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -459,7 +459,7 @@ WHERE
   AS box) @> f1;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -469,7 +469,7 @@ WHERE
   AS box) @> f1;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -479,7 +479,7 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -489,7 +489,7 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -499,7 +499,7 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -509,7 +509,7 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -519,7 +519,7 @@ WHERE
   p.f1 << '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -529,7 +529,7 @@ WHERE
   p.f1 << '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -539,7 +539,7 @@ WHERE
   p.f1 >> '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -549,7 +549,7 @@ WHERE
   p.f1 >> '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -559,7 +559,7 @@ WHERE
   p.f1 <<| '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -569,7 +569,7 @@ WHERE
   p.f1 <<| '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -579,7 +579,7 @@ WHERE
   p.f1 |>> '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -589,7 +589,7 @@ WHERE
   p.f1 |>> '(0.0, 0.0)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -599,7 +599,7 @@ WHERE
   p.f1 ~= '(-5, -12)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1134,7 +1134,7 @@ CREATE INDEX "array_gin_test_idx" ON array_gin_test USING gin
   a
 );
 
-SELECT COUNT(*) FROM array_gin_test WHERE a @> '{2}';
+SELECT "COUNT"(*) FROM array_gin_test WHERE a @> '{2}';
 
 DROP TABLE "array_gin_test";
 
@@ -1160,14 +1160,14 @@ CREATE INDEX "hash_tuplesort_idx" ON tenk1 USING hash
   stringu1 name_ops
 ) WITH (fillfactor = 10);
 
-SELECT COUNT(*) FROM tenk1 WHERE stringu1 = 'TVAAAA';
+SELECT "COUNT"(*) FROM tenk1 WHERE stringu1 = 'TVAAAA';
 
-SELECT COUNT(*) FROM tenk1 WHERE stringu1 = 'TVAAAA';
+SELECT "COUNT"(*) FROM tenk1 WHERE stringu1 = 'TVAAAA';
 
 SET enable_seqscan = off;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1638,10 +1638,10 @@ SET enable_indexscan = on;
 
 SET enable_bitmapscan = on;
 
-SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
+SELECT "COUNT"(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1651,7 +1651,7 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1660,7 +1660,7 @@ WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1670,7 +1670,7 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1681,7 +1681,7 @@ WHERE
   500;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1712,10 +1712,10 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
   unique1
 );
 
-SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
+SELECT "COUNT"(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1725,7 +1725,7 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1734,7 +1734,7 @@ WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1744,7 +1744,7 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1755,7 +1755,7 @@ WHERE
   500;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1766,7 +1766,7 @@ WHERE
   500;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1798,10 +1798,10 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
   unique1
 );
 
-SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
+SELECT "COUNT"(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1811,7 +1811,7 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1820,7 +1820,7 @@ WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1830,7 +1830,7 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1841,7 +1841,7 @@ WHERE
   500;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1872,10 +1872,10 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
   unique1
 );
 
-SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
+SELECT "COUNT"(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1885,7 +1885,7 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1894,7 +1894,7 @@ WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1904,7 +1904,7 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1915,7 +1915,7 @@ WHERE
   500;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2151,7 +2151,7 @@ WHERE
   AS BIGINT));
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2165,7 +2165,7 @@ WHERE
   99);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2239,7 +2239,7 @@ WHERE
   AS NUMERIC);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2260,7 +2260,7 @@ WHERE
   LIMIT 1);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2281,7 +2281,7 @@ WHERE
   LIMIT 1);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2295,7 +2295,7 @@ WHERE
   99);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2309,7 +2309,7 @@ WHERE
   99);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2327,7 +2327,7 @@ WHERE
   thousand);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2345,7 +2345,7 @@ WHERE
   thousand);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2361,7 +2361,7 @@ WHERE
   41;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2377,7 +2377,7 @@ WHERE
   41;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2395,7 +2395,7 @@ WHERE
   41;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2413,7 +2413,7 @@ WHERE
   41;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2431,7 +2431,7 @@ WHERE
   2);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2449,7 +2449,7 @@ WHERE
   2);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2468,7 +2468,7 @@ WHERE
   tenk1.hundred;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2487,7 +2487,7 @@ WHERE
   tenk1.hundred;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2505,7 +2505,7 @@ FROM
     tenk1.hundred;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2542,7 +2542,7 @@ CREATE INDEX "dupindexcols_i" ON dupindexcols USING btree
 ANALYZE dupindexcols;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2554,7 +2554,7 @@ WHERE
   f1 ~<~ 'YX';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -3768,7 +3768,7 @@ ANALYZE concur_exprs_tab;
 SELECT
   CAST(starelid
   AS REGCLASS),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -3846,7 +3846,7 @@ SELECT
 SELECT
   CAST(starelid
   AS REGCLASS),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

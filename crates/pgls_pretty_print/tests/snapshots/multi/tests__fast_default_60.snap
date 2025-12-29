@@ -511,7 +511,7 @@ INSERT INTO t VALUES (1);
 
 SELECT set('t');
 
-ALTER TABLE t ADD COLUMN c1 TIMESTAMP DEFAULT NOW();
+ALTER TABLE t ADD COLUMN c1 TIMESTAMP DEFAULT "NOW"();
 
 SELECT comp();
 
@@ -629,13 +629,13 @@ ORDER BY pk
 LIMIT 10;
 
 SELECT
-  SUM(
+  "SUM"(
   c_bigint
   ),
-  MAX(
+  "MAX"(
   c_text COLLATE "C"
   ),
-  MIN(
+  "MIN"(
   c_text COLLATE "C"
   )
 FROM
@@ -729,7 +729,7 @@ SELECT
   a,
   stddev(
   CAST((SELECT
-    SUM(
+    "SUM"(
     1
     )
   FROM
@@ -1084,7 +1084,7 @@ ALTER FOREIGN TABLE ft1 ADD COLUMN c8 INT DEFAULT 0;
 ALTER FOREIGN TABLE ft1 ALTER COLUMN c8 TYPE CHAR(10);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

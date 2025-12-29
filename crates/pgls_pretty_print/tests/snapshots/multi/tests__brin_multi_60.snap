@@ -748,45 +748,45 @@ CREATE INDEX "brin_test_multi_1_idx_2" ON brin_test_multi_1 USING brin
 
 SET enable_seqscan = off;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a < 37;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a < 37;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a < 113;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a < 113;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a <= 177;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a <= 177;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a <= 25;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a <= 25;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a > 120;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a > 120;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a >= 180;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a >= 180;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a > 71;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a > 71;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a >= 63;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a >= 63;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a = 207;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a = 207;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a = 177;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a = 177;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b < 73;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b < 73;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b <= 47;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b <= 47;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b < 199;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b < 199;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b <= 150;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b <= 150;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b > 93;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b > 93;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b > 37;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b > 37;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b >= 215;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b >= 215;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b > 201;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b > 201;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b = 88;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b = 88;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b = 103;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b = 103;
 
 TRUNCATE brin_test_multi_1;
 
@@ -806,45 +806,45 @@ FROM
   1000
   ) AS s (i);
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a < 37;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a < 37;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a < 113;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a < 113;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a <= 177;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a <= 177;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a <= 25;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a <= 25;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a > 120;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a > 120;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a >= 180;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a >= 180;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a > 71;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a > 71;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a >= 63;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a >= 63;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a = 207;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a = 207;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE a = 177;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE a = 177;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b < 73;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b < 73;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b <= 47;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b <= 47;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b < 199;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b < 199;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b <= 150;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b <= 150;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b > 93;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b > 93;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b > 37;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b > 37;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b >= 215;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b >= 215;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b > 201;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b > 201;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b = 88;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b = 88;
 
-SELECT COUNT(*) FROM brin_test_multi_1 WHERE b = 103;
+SELECT "COUNT"(*) FROM brin_test_multi_1 WHERE b = 103;
 
 DROP TABLE "brin_test_multi_1";
 
@@ -860,7 +860,7 @@ SELECT
   AS UUID)
 FROM
   (SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -891,7 +891,7 @@ CREATE INDEX "brin_test_multi_2_idx" ON brin_test_multi_2 USING brin
 SET enable_seqscan = off;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -901,7 +901,7 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -911,7 +911,7 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -921,7 +921,7 @@ WHERE
   'f369cb89-fc62-7e66-8987-007d121ed1ea';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -931,7 +931,7 @@ WHERE
   'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -941,7 +941,7 @@ WHERE
   '5feceb66-ffc8-6f38-d952-786c6d696c79';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -958,7 +958,7 @@ SELECT
   AS UUID)
 FROM
   (SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -982,7 +982,7 @@ ORDER BY c + 25 * random(
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -992,7 +992,7 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1002,7 +1002,7 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1012,7 +1012,7 @@ WHERE
   'f369cb89-fc62-7e66-8987-007d121ed1ea';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1022,7 +1022,7 @@ WHERE
   'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1032,7 +1032,7 @@ WHERE
   '5feceb66-ffc8-6f38-d952-786c6d696c79';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

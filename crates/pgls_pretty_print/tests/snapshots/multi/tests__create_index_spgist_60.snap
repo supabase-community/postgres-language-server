@@ -70,14 +70,14 @@ SET enable_indexscan = off;
 
 SET enable_bitmapscan = off;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NOT NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NOT NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl;
+SELECT "COUNT"(*) FROM quad_point_tbl;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -87,7 +87,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -97,7 +97,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -106,7 +106,7 @@ WHERE
   p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -115,7 +115,7 @@ WHERE
   p >> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -124,7 +124,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -133,7 +133,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -143,7 +143,7 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq1 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -157,7 +157,7 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_seq1 AS
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -174,7 +174,7 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2 AS
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq3 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -189,7 +189,7 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_seq3 AS
     p IS NOT NULL;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -199,7 +199,7 @@ WHERE
   'P0123456789abcdef';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -209,7 +209,7 @@ WHERE
   'P0123456789abcde';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -219,7 +219,7 @@ WHERE
   'P0123456789abcdefF';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -229,7 +229,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -238,7 +238,7 @@ WHERE
   t ~<~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -248,7 +248,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -257,7 +257,7 @@ WHERE
   t ~<=~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -267,7 +267,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -277,7 +277,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -287,7 +287,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -296,7 +296,7 @@ WHERE
   t ~>=~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -306,7 +306,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -314,7 +314,7 @@ FROM
 WHERE
   t ~>~ 'Worth                         St  ';
 
-SELECT COUNT(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
+SELECT "COUNT"(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
 
 SET enable_seqscan = off;
 
@@ -322,20 +322,20 @@ SET enable_indexscan = on;
 
 SET enable_bitmapscan = off;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NOT NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NOT NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NOT NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NOT NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl;
+SELECT "COUNT"(*) FROM quad_point_tbl;
 
-SELECT COUNT(*) FROM quad_point_tbl;
+SELECT "COUNT"(*) FROM quad_point_tbl;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -345,7 +345,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -355,7 +355,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -365,7 +365,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -375,7 +375,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -384,7 +384,7 @@ WHERE
   p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -393,7 +393,7 @@ WHERE
   p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -402,7 +402,7 @@ WHERE
   p >> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -411,7 +411,7 @@ WHERE
   p >> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -420,7 +420,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -429,7 +429,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -438,7 +438,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -447,7 +447,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -456,7 +456,7 @@ WHERE
   p ~= '(4585, 365)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -465,7 +465,7 @@ WHERE
   p ~= '(4585, 365)';
 
 SELECT
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -479,7 +479,7 @@ FROM
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx1 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -504,7 +504,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -521,7 +521,7 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx2 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -549,7 +549,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -565,7 +565,7 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx3 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -592,7 +592,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -602,7 +602,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -612,7 +612,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -622,7 +622,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -631,16 +631,44 @@ WHERE
   CAST('(200,200,1000,1000)'
   AS box) @> p;
 
-SELECT COUNT(*) FROM kd_point_tbl WHERE p << '(5000, 4000)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p << '(5000, 4000)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p >> '(5000, 4000)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p >> '(5000, 4000)';
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p << '(5000, 4000)';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p >> '(5000, 4000)';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p >> '(5000, 4000)';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -649,7 +677,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -658,7 +686,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -667,7 +695,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -675,12 +703,26 @@ FROM
 WHERE
   p |>> '(5000, 4000)';
 
-SELECT COUNT(*) FROM kd_point_tbl WHERE p ~= '(4585, 365)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p ~= '(4585, 365)';
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p ~= '(4585, 365)';
 
 SELECT
-  ROW_NUMBER(
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p ~= '(4585, 365)';
+
+SELECT
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -694,7 +736,7 @@ FROM
 
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx1 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -719,7 +761,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -736,7 +778,7 @@ WHERE
 
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx2 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -764,7 +806,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -780,7 +822,7 @@ WHERE
 
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx3 AS
   SELECT
-    ROW_NUMBER(
+    "ROW_NUMBER"(
 
     )
     OVER (
@@ -847,7 +889,7 @@ FROM
   ('1234,5678')) AS pts (pt);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -857,7 +899,7 @@ WHERE
   'P0123456789abcdef';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -867,7 +909,7 @@ WHERE
   'P0123456789abcdef';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -877,7 +919,7 @@ WHERE
   'P0123456789abcde';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -887,7 +929,7 @@ WHERE
   'P0123456789abcde';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -897,7 +939,7 @@ WHERE
   'P0123456789abcdefF';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -907,7 +949,7 @@ WHERE
   'P0123456789abcdefF';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -917,7 +959,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -927,7 +969,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -936,7 +978,7 @@ WHERE
   t ~<~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -945,7 +987,7 @@ WHERE
   t ~<~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -955,7 +997,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -965,7 +1007,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -974,7 +1016,7 @@ WHERE
   t ~<=~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -983,7 +1025,7 @@ WHERE
   t ~<=~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -993,7 +1035,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1003,7 +1045,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1013,7 +1055,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1023,7 +1065,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1033,7 +1075,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1043,7 +1085,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1052,7 +1094,7 @@ WHERE
   t ~>=~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1061,7 +1103,7 @@ WHERE
   t ~>=~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1071,7 +1113,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1081,7 +1123,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1090,7 +1132,7 @@ WHERE
   t ~>~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1098,12 +1140,12 @@ FROM
 WHERE
   t ~>~ 'Worth                         St  ';
 
-SELECT COUNT(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
+SELECT "COUNT"(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
 
-SELECT COUNT(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
+SELECT "COUNT"(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1115,7 +1157,7 @@ WHERE
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1132,20 +1174,20 @@ SET enable_indexscan = off;
 
 SET enable_bitmapscan = on;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NOT NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NOT NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NOT NULL;
+SELECT "COUNT"(*) FROM quad_point_tbl WHERE p IS NOT NULL;
 
-SELECT COUNT(*) FROM quad_point_tbl;
+SELECT "COUNT"(*) FROM quad_point_tbl;
 
-SELECT COUNT(*) FROM quad_point_tbl;
+SELECT "COUNT"(*) FROM quad_point_tbl;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1155,7 +1197,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1165,7 +1207,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1175,7 +1217,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1185,7 +1227,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1194,7 +1236,7 @@ WHERE
   p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1203,7 +1245,7 @@ WHERE
   p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1212,7 +1254,7 @@ WHERE
   p >> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1221,7 +1263,7 @@ WHERE
   p >> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1230,7 +1272,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1239,7 +1281,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1248,7 +1290,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1257,7 +1299,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1266,7 +1308,7 @@ WHERE
   p ~= '(4585, 365)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1275,7 +1317,7 @@ WHERE
   p ~= '(4585, 365)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1285,7 +1327,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1295,7 +1337,7 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1305,7 +1347,7 @@ WHERE
   AS box) @> p;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1314,16 +1356,44 @@ WHERE
   CAST('(200,200,1000,1000)'
   AS box) @> p;
 
-SELECT COUNT(*) FROM kd_point_tbl WHERE p << '(5000, 4000)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p << '(5000, 4000)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p >> '(5000, 4000)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p >> '(5000, 4000)';
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p << '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p << '(5000, 4000)';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p >> '(5000, 4000)';
+
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p >> '(5000, 4000)';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -1332,7 +1402,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1341,7 +1411,7 @@ WHERE
   p <<| '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1350,7 +1420,7 @@ WHERE
   p |>> '(5000, 4000)';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1358,12 +1428,26 @@ FROM
 WHERE
   p |>> '(5000, 4000)';
 
-SELECT COUNT(*) FROM kd_point_tbl WHERE p ~= '(4585, 365)';
-
-SELECT COUNT(*) FROM kd_point_tbl WHERE p ~= '(4585, 365)';
+SELECT
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p ~= '(4585, 365)';
 
 SELECT
-  COUNT(
+  "COUNT"(
+  *
+  )
+FROM
+  kd_point_tbl
+WHERE
+  p ~= '(4585, 365)';
+
+SELECT
+  "COUNT"(
   *
   )
 FROM
@@ -1373,7 +1457,7 @@ WHERE
   'P0123456789abcdef';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1383,7 +1467,7 @@ WHERE
   'P0123456789abcdef';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1393,7 +1477,7 @@ WHERE
   'P0123456789abcde';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1403,7 +1487,7 @@ WHERE
   'P0123456789abcde';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1413,7 +1497,7 @@ WHERE
   'P0123456789abcdefF';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1423,7 +1507,7 @@ WHERE
   'P0123456789abcdefF';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1433,7 +1517,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1443,7 +1527,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1452,7 +1536,7 @@ WHERE
   t ~<~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1461,7 +1545,7 @@ WHERE
   t ~<~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1471,7 +1555,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1481,7 +1565,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1490,7 +1574,7 @@ WHERE
   t ~<=~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1499,7 +1583,7 @@ WHERE
   t ~<=~ 'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1509,7 +1593,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1519,7 +1603,7 @@ WHERE
   'Aztec                         Ct  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1529,7 +1613,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1539,7 +1623,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1549,7 +1633,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1559,7 +1643,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1568,7 +1652,7 @@ WHERE
   t ~>=~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1577,7 +1661,7 @@ WHERE
   t ~>=~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1587,7 +1671,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1597,7 +1681,7 @@ WHERE
   'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1606,7 +1690,7 @@ WHERE
   t ~>~ 'Worth                         St  ';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1614,12 +1698,12 @@ FROM
 WHERE
   t ~>~ 'Worth                         St  ';
 
-SELECT COUNT(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
+SELECT "COUNT"(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
 
-SELECT COUNT(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
+SELECT "COUNT"(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1631,7 +1715,7 @@ WHERE
   );
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM

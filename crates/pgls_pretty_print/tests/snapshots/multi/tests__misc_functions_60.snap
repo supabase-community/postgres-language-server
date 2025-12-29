@@ -262,10 +262,10 @@ WHERE
   name =
   'wal_segment_size';
 
-SELECT COUNT(*) > 0 AS ok FROM pg_ls_waldir();
+SELECT "COUNT"(*) > 0 AS ok FROM pg_ls_waldir();
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ) >
   0
@@ -279,7 +279,7 @@ FROM
 SELECT * FROM pg_ls_waldir() LIMIT 0;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ) >
   0
@@ -310,9 +310,9 @@ WHERE
   24
 LIMIT 1;
 
-SELECT COUNT(*) >= 0 AS ok FROM pg_ls_archive_statusdir();
+SELECT "COUNT"(*) >= 0 AS ok FROM pg_ls_archive_statusdir();
 
-SELECT COUNT(*) >= 0 AS ok FROM pg_ls_summariesdir();
+SELECT "COUNT"(*) >= 0 AS ok FROM pg_ls_summariesdir();
 
 SELECT length(pg_read_file('postmaster.pid')) > 20;
 
@@ -358,7 +358,7 @@ SELECT pg_ls_dir('does not exist', FALSE, FALSE);
 SELECT pg_ls_dir('does not exist', TRUE, FALSE);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ) =
   1
@@ -374,7 +374,7 @@ WHERE
   '.';
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ) =
   1
@@ -402,7 +402,7 @@ WHERE
 LIMIT 1;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   ) >
   0
@@ -714,13 +714,13 @@ SELECT * FROM generate_series(25.0, 2.0, 0.0) g(s);',
   TRUE
   );
 
-SELECT COUNT(*) > 0 AS ok FROM pg_control_checkpoint();
+SELECT "COUNT"(*) > 0 AS ok FROM pg_control_checkpoint();
 
-SELECT COUNT(*) > 0 AS ok FROM pg_control_init();
+SELECT "COUNT"(*) > 0 AS ok FROM pg_control_init();
 
-SELECT COUNT(*) > 0 AS ok FROM pg_control_recovery();
+SELECT "COUNT"(*) > 0 AS ok FROM pg_control_recovery();
 
-SELECT COUNT(*) > 0 AS ok FROM pg_control_system();
+SELECT "COUNT"(*) > 0 AS ok FROM pg_control_system();
 
 SELECT * FROM pg_split_walfile_name(NULL);
 

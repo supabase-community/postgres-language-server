@@ -484,7 +484,7 @@ INSERT INTO foo
 VALUES (5,
 'subquery test')
 RETURNING (SELECT
-  MAX(
+  "MAX"(
   old.f4 + x
   )
 FROM
@@ -494,7 +494,7 @@ FROM
   ) AS x)
 AS old_max,
 (SELECT
-  MAX(
+  "MAX"(
   new.f4 + x
   )
 FROM
@@ -508,7 +508,7 @@ INSERT INTO foo
 VALUES (5,
 'subquery test')
 RETURNING (SELECT
-  MAX(
+  "MAX"(
   old.f4 + x
   )
 FROM
@@ -518,7 +518,7 @@ FROM
   ) AS x)
 AS old_max,
 (SELECT
-  MAX(
+  "MAX"(
   new.f4 + x
   )
 FROM
@@ -537,7 +537,7 @@ RETURNING (SELECT
   old.f4 =
   new.f4),
 (SELECT
-  MAX(
+  "MAX"(
   old.f4 + x
   )
 FROM
@@ -547,7 +547,7 @@ FROM
   ) AS x)
 AS old_max,
 (SELECT
-  MAX(
+  "MAX"(
   new.f4 + x
   )
 FROM
@@ -566,7 +566,7 @@ RETURNING (SELECT
   old.f4 =
   new.f4),
 (SELECT
-  MAX(
+  "MAX"(
   old.f4 + x
   )
 FROM
@@ -576,7 +576,7 @@ FROM
   ) AS x)
 AS old_max,
 (SELECT
-  MAX(
+  "MAX"(
   new.f4 + x
   )
 FROM
@@ -591,7 +591,7 @@ WHERE
   f1 =
   5
 RETURNING (SELECT
-  MAX(
+  "MAX"(
   old.f4 + x
   )
 FROM
@@ -601,7 +601,7 @@ FROM
   ) AS x)
 AS old_max,
 (SELECT
-  MAX(
+  "MAX"(
   new.f4 + x
   )
 FROM
@@ -616,7 +616,7 @@ WHERE
   f1 =
   5
 RETURNING (SELECT
-  MAX(
+  "MAX"(
   old.f4 + x
   )
 FROM
@@ -626,7 +626,7 @@ FROM
   ) AS x)
 AS old_max,
 (SELECT
-  MAX(
+  "MAX"(
   new.f4 + x
   )
 FROM

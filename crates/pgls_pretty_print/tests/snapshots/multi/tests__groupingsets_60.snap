@@ -125,13 +125,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -144,13 +144,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -165,13 +165,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -186,13 +186,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -220,7 +220,7 @@ SELECT
   0.5
   )
   WITHIN GROUP (ORDER BY v),
-  RANK(
+  "RANK"(
   1,
   2,
   12
@@ -241,11 +241,11 @@ SELECT
   array_agg(
   b
   ),
-  RANK(
+  "RANK"(
   a
   )
   WITHIN GROUP (ORDER BY b NULLS FIRST),
-  RANK(
+  "RANK"(
   a
   )
   WITHIN GROUP (ORDER BY b NULLS LAST)
@@ -267,11 +267,11 @@ ORDER BY a;
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   ),
-  SUM(
-  SUM(
+  "SUM"(
+  "SUM"(
   c
   )
   )
@@ -288,7 +288,7 @@ ORDER BY rsum,
   b;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -299,7 +299,7 @@ GROUP BY GROUPING SETS ((),
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -311,7 +311,7 @@ GROUP BY GROUPING SETS ((),
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -321,7 +321,7 @@ GROUP BY GROUPING SETS (GROUPING SETS (ROLLUP (c),
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -332,7 +332,7 @@ GROUP BY GROUPING SETS (a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -342,7 +342,7 @@ GROUP BY GROUPING SETS (GROUPING SETS ((a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -352,7 +352,7 @@ GROUP BY GROUPING SETS (GROUPING SETS ((a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -363,7 +363,7 @@ GROUP BY GROUPING SETS (GROUPING SETS (a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -379,7 +379,7 @@ GROUP BY GROUPING SETS (GROUPING SETS (a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -396,10 +396,10 @@ ORDER BY 1 DESC;
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -411,10 +411,10 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -426,10 +426,10 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -441,10 +441,10 @@ GROUP BY GROUPING SETS ((a,
   ());
 
 SELECT
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -456,10 +456,10 @@ GROUP BY GROUPING SETS ((),
 SELECT
   t1.a,
   t2.b,
-  SUM(
+  "SUM"(
   t1.v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -476,10 +476,10 @@ SELECT
   t2.b,
   GROUPING(t1.a,
   t2.b),
-  SUM(
+  "SUM"(
   t1.v
   ),
-  MAX(
+  "MAX"(
   t2.a
   )
 FROM
@@ -496,10 +496,10 @@ SELECT
   t2.b,
   GROUPING(t1.a,
   t2.b),
-  SUM(
+  "SUM"(
   t1.v
   ),
-  MAX(
+  "MAX"(
   t2.a
   )
 FROM
@@ -518,10 +518,10 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   t1.v
   ),
-  MAX(
+  "MAX"(
   t2.c
   )
 FROM
@@ -612,7 +612,7 @@ ORDER BY four;
 
 SELECT
   (x + y) * 1,
-  SUM(
+  "SUM"(
   z
   )
 FROM
@@ -687,7 +687,7 @@ FROM
     1
     AS x,
     q1,
-    SUM(
+    "SUM"(
     q2
     )
   FROM
@@ -708,7 +708,7 @@ FROM
     1
     AS x,
     q1,
-    SUM(
+    "SUM"(
     q2
     )
   FROM
@@ -775,7 +775,7 @@ GROUP BY ss.x;
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v.x
   )
 FROM
@@ -795,7 +795,7 @@ FROM
   LATERAL (SELECT
     a,
     b,
-    SUM(
+    "SUM"(
     v.x
     )
   FROM
@@ -805,7 +805,7 @@ FROM
   GROUP BY ROLLUP (a,
     b)) AS s;
 
-SELECT MIN(unique1) FROM tenk1 GROUP BY ();
+SELECT "MIN"(unique1) FROM tenk1 GROUP BY ();
 
 CREATE VIEW gstest_view AS
 SELECT
@@ -813,13 +813,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   c
   )
 FROM
@@ -927,13 +927,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -992,11 +992,11 @@ ORDER BY e + 1,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   ),
-  SUM(
-  SUM(
+  "SUM"(
+  "SUM"(
   c
   )
   )
@@ -1015,7 +1015,7 @@ ORDER BY rsum,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   )
 FROM
@@ -1057,7 +1057,7 @@ GROUP BY ROLLUP (a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v.x
   )
 FROM
@@ -1097,10 +1097,10 @@ GROUP BY a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1111,7 +1111,7 @@ GROUP BY GROUPING SETS (ROLLUP (a,
 
 SELECT
   ten,
-  SUM(
+  "SUM"(
   DISTINCT four
   )
 FROM
@@ -1127,14 +1127,14 @@ HAVING
     onek
     AS b
   WHERE
-    SUM(
+    "SUM"(
     DISTINCT a.four
     ) =
     b.four);
 
 SELECT
   a,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1144,7 +1144,7 @@ ORDER BY a;
 
 SELECT
   a,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1156,7 +1156,7 @@ ORDER BY a;
 
 SELECT
   a,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1169,7 +1169,7 @@ ORDER BY a;
 SELECT
   v.c,
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -1185,7 +1185,7 @@ ORDER BY v.c;
 SELECT
   v.c,
   (SELECT
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -1201,7 +1201,7 @@ ORDER BY v.c;
 SELECT
   a,
   b,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1218,7 +1218,7 @@ HAVING
 SELECT
   a,
   b,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1295,7 +1295,7 @@ ORDER BY 2,
 
 SELECT
   ten,
-  SUM(
+  "SUM"(
   DISTINCT four
   )
   FILTER (WHERE
@@ -1315,7 +1315,7 @@ FROM
     v.a,
     four,
     ten,
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -1335,7 +1335,7 @@ SELECT
     (SELECT
       two,
       four,
-      COUNT(
+      "COUNT"(
       *
       )
     FROM
@@ -1349,7 +1349,7 @@ FROM
   (2)) AS v (a);
 
 SELECT
-  SUM(
+  "SUM"(
   ten
   )
 FROM
@@ -1360,7 +1360,7 @@ GROUP BY two,
 ORDER BY 1;
 
 SELECT
-  SUM(
+  "SUM"(
   ten
   )
 FROM
@@ -1373,7 +1373,7 @@ ORDER BY 1;
 SET enable_hashagg = true;
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1396,13 +1396,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -1418,13 +1418,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -1440,13 +1440,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -1462,13 +1462,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -1494,7 +1494,7 @@ GROUP BY CUBE (a,
 
 SELECT
   unsortable_col,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1509,10 +1509,10 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   v
   )
 FROM
@@ -1527,10 +1527,10 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   v
   )
 FROM
@@ -1545,10 +1545,10 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   v
   )
 FROM
@@ -1565,10 +1565,10 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(
+  "COUNT"(
   *
   ),
-  SUM(
+  "SUM"(
   v
   )
 FROM
@@ -1583,10 +1583,10 @@ ORDER BY 3,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1598,10 +1598,10 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1613,10 +1613,10 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1628,10 +1628,10 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1645,10 +1645,10 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1660,10 +1660,10 @@ GROUP BY GROUPING SETS ((a,
   ());
 
 SELECT
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1673,10 +1673,10 @@ GROUP BY GROUPING SETS ((),
   ());
 
 SELECT
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -1714,7 +1714,7 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v.x
   )
 FROM
@@ -1732,7 +1732,7 @@ ORDER BY 1,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v.x
   )
 FROM
@@ -1755,7 +1755,7 @@ FROM
   LATERAL (SELECT
     a,
     b,
-    SUM(
+    "SUM"(
     v.x
     )
   FROM
@@ -1773,7 +1773,7 @@ FROM
   LATERAL (SELECT
     a,
     b,
-    SUM(
+    "SUM"(
     v.x
     )
   FROM
@@ -1788,13 +1788,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -1813,13 +1813,13 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(
+  "SUM"(
   v
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   v
   )
 FROM
@@ -1836,11 +1836,11 @@ ORDER BY 3,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   ),
-  SUM(
-  SUM(
+  "SUM"(
+  "SUM"(
   c
   )
   )
@@ -1859,11 +1859,11 @@ ORDER BY rsum,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   c
   ),
-  SUM(
-  SUM(
+  "SUM"(
+  "SUM"(
   c
   )
   )
@@ -1882,7 +1882,7 @@ ORDER BY rsum,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v.x
   )
 FROM
@@ -1899,7 +1899,7 @@ ORDER BY a,
 SELECT
   a,
   b,
-  SUM(
+  "SUM"(
   v.x
   )
 FROM
@@ -1920,13 +1920,13 @@ SET LOCAL enable_hashagg = false;
 SELECT
   a,
   b,
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
@@ -1940,13 +1940,13 @@ ORDER BY a,
 SELECT
   a,
   b,
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
@@ -1962,13 +1962,13 @@ SET LOCAL enable_seqscan = false;
 SELECT
   a,
   b,
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
@@ -1982,13 +1982,13 @@ ORDER BY a,
 SELECT
   a,
   b,
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   a
   ),
-  MAX(
+  "MAX"(
   b
   )
 FROM
@@ -2010,7 +2010,7 @@ FROM
     v.a,
     four,
     ten,
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2030,7 +2030,7 @@ SELECT
     (SELECT
       two,
       four,
-      COUNT(
+      "COUNT"(
       *
       )
     FROM
@@ -2052,7 +2052,7 @@ FROM
     v.a,
     four,
     ten,
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2072,7 +2072,7 @@ SELECT
     (SELECT
       two,
       four,
-      COUNT(
+      "COUNT"(
       *
       )
     FROM
@@ -2093,25 +2093,25 @@ SET work_mem = '64kB';
 
 SELECT
   unique1,
-  COUNT(
+  "COUNT"(
   two
   ),
-  COUNT(
+  "COUNT"(
   four
   ),
-  COUNT(
+  "COUNT"(
   ten
   ),
-  COUNT(
+  "COUNT"(
   hundred
   ),
-  COUNT(
+  "COUNT"(
   thousand
   ),
-  COUNT(
+  "COUNT"(
   twothousand
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2126,25 +2126,25 @@ GROUP BY GROUPING SETS (unique1,
 
 SELECT
   unique1,
-  COUNT(
+  "COUNT"(
   two
   ),
-  COUNT(
+  "COUNT"(
   four
   ),
-  COUNT(
+  "COUNT"(
   ten
   ),
-  COUNT(
+  "COUNT"(
   hundred
   ),
-  COUNT(
+  "COUNT"(
   thousand
   ),
-  COUNT(
+  "COUNT"(
   twothousand
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2159,25 +2159,25 @@ SET work_mem = '384kB';
 
 SELECT
   unique1,
-  COUNT(
+  "COUNT"(
   two
   ),
-  COUNT(
+  "COUNT"(
   four
   ),
-  COUNT(
+  "COUNT"(
   ten
   ),
-  COUNT(
+  "COUNT"(
   hundred
   ),
-  COUNT(
+  "COUNT"(
   thousand
   ),
-  COUNT(
+  "COUNT"(
   twothousand
   ),
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2198,7 +2198,7 @@ SELECT
   WHEN 1 THEN 1
   ELSE 0
   END,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2224,7 +2224,7 @@ SELECT
   1 THEN 1
   ELSE 0
   END,
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -2276,7 +2276,7 @@ FROM
     a,
     i,
     j,
-    COUNT(
+    "COUNT"(
     *
     )
   FROM
@@ -2323,14 +2323,14 @@ SET jit_above_cost = 0;
 SELECT
   g100,
   g10,
-  SUM(
+  "SUM"(
   CAST(g
   AS NUMERIC)
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   CAST(g
   AS TEXT)
   )
@@ -2344,14 +2344,14 @@ CREATE TABLE gs_group_1 AS
   SELECT
     g100,
     g10,
-    SUM(
+    "SUM"(
     CAST(g
     AS NUMERIC)
     ),
-    COUNT(
+    "COUNT"(
     *
     ),
-    MAX(
+    "MAX"(
     CAST(g
     AS TEXT)
     )
@@ -2368,14 +2368,14 @@ SET enable_sort = false;
 SELECT
   g100,
   g10,
-  SUM(
+  "SUM"(
   CAST(g
   AS NUMERIC)
   ),
-  COUNT(
+  "COUNT"(
   *
   ),
-  MAX(
+  "MAX"(
   CAST(g
   AS TEXT)
   )
@@ -2389,14 +2389,14 @@ CREATE TABLE gs_hash_1 AS
   SELECT
     g100,
     g10,
-    SUM(
+    "SUM"(
     CAST(g
     AS NUMERIC)
     ),
-    COUNT(
+    "COUNT"(
     *
     ),
-    MAX(
+    "MAX"(
     CAST(g
     AS TEXT)
     )
@@ -2941,7 +2941,7 @@ ORDER BY one NULLS FIRST;
 SELECT
   a,
   b,
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (
@@ -2963,7 +2963,7 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  ROW_NUMBER(
+  "ROW_NUMBER"(
 
   )
   OVER (

@@ -1,5 +1,6 @@
 use pgls_query::protobuf::{RoleSpec, RoleSpecType};
 
+use super::string::emit_identifier_maybe_quoted;
 use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
@@ -11,7 +12,7 @@ pub(super) fn emit_role_spec(e: &mut EventEmitter, n: &RoleSpec) {
     match n.roletype() {
         RoleSpecType::RolespecCstring => {
             if !n.rolename.is_empty() {
-                e.token(TokenKind::IDENT(n.rolename.clone()));
+                emit_identifier_maybe_quoted(e, &n.rolename);
             }
         }
         RoleSpecType::RolespecCurrentUser => {
@@ -28,7 +29,7 @@ pub(super) fn emit_role_spec(e: &mut EventEmitter, n: &RoleSpec) {
         }
         RoleSpecType::Undefined => {
             if !n.rolename.is_empty() {
-                e.token(TokenKind::IDENT(n.rolename.clone()));
+                emit_identifier_maybe_quoted(e, &n.rolename);
             }
         }
     }

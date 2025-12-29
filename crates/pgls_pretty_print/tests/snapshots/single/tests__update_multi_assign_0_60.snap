@@ -6,7 +6,7 @@ snapshot_kind: text
 UPDATE accounts
 SET (balance,
 updated_at) = (balance + delta,
-NOW(
+"NOW"(
 
 ))
 FROM adjustments

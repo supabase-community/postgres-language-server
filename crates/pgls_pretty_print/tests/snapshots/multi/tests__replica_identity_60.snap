@@ -185,7 +185,7 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
@@ -208,7 +208,7 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  COUNT(
+  "COUNT"(
   *
   )
 FROM
