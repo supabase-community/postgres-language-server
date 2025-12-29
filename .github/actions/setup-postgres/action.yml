@@ -41,7 +41,8 @@ runs:
         echo "Extension directory: $(pg_config --sharedir)/extension"
         echo "Library directory: $(pg_config --pkglibdir)"
 
-        # Clone and build plpgsql_check (pinned to v2.7.11 for PG15 compatibility)
+        # Clone and build plpgsql_check (clone to /tmp to avoid workspace conflicts, pinned to v2.7.11)
+        cd /tmp
         git clone --branch v2.7.11 --depth 1 https://github.com/okbob/plpgsql_check.git
         cd plpgsql_check
 
@@ -77,8 +78,9 @@ runs:
         # Initialize pgrx for the installed PostgreSQL version
         cargo pgrx init --pg${PG_VERSION} $(which pg_config)
 
-        # Clone and build pglinter
-        git clone https://github.com/pmpetit/pglinter.git
+        # Clone and build pglinter (clone to /tmp, use feat/83/violation_list for rule_messages)
+        cd /tmp
+        git clone -b feat/83/violation_list https://github.com/pmpetit/pglinter.git
         cd pglinter
 
         # Install using pgrx
