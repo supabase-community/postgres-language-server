@@ -59,7 +59,7 @@ runs:
         echo "Extension library files:"
         ls -la "$(pg_config --pkglibdir)/" | grep plpgsql || echo "No plpgsql_check library found"
 
-    # Install the pglinter extension on macOS
+    # Install the pglinter extension on macOS (pgrx-based Rust extension)
     - name: Install and compile pglinter
       if: runner.os == 'macOS'
       shell: bash
@@ -67,16 +67,22 @@ runs:
         # First, ensure we're using the same PostgreSQL that the action installed
         export PATH="$(pg_config --bindir):$PATH"
 
+        # Install cargo-pgrx (version must match pglinter's pgrx dependency)
+        cargo install cargo-pgrx --version 0.16.1 --locked
+
+        # Determine postgres version for pgrx init
+        PG_VERSION=$(pg_config --version | grep -oE '[0-9]+' | head -1)
+        echo "PostgreSQL version: $PG_VERSION"
+
+        # Initialize pgrx for the installed PostgreSQL version
+        cargo pgrx init --pg${PG_VERSION} $(which pg_config)
+
         # Clone and build pglinter
         git clone https://github.com/pmpetit/pglinter.git
         cd pglinter
 
-        # Clean and compile
-        make USE_PGXS=1 clean
-        make USE_PGXS=1 all
-
-        # Install (may need sudo depending on permissions)
-        sudo make USE_PGXS=1 install
+        # Install using pgrx
+        cargo pgrx install --pg-config $(which pg_config) --release
 
         # Verify installation
         echo "Extension control files:"
@@ -99,17 +105,30 @@ runs:
         psql -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
 
     # For Linux, use custom Docker image with plpgsql_check and pglinter
-    - name: Build and start PostgreSQL with extensions
+    - name: Set up Docker Buildx
+      if: runner.os == 'Linux'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build PostgreSQL image with cache
+      if: runner.os == 'Linux'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        load: true
+        tags: postgres-language-server-dev:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Start PostgreSQL container
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        docker build -t postgres-plpgsql-check:latest .
         docker run -d --name postgres \
           -e POSTGRES_USER=postgres \
           -e POSTGRES_PASSWORD=postgres \
           -e POSTGRES_DB=postgres \
           -p 5432:5432 \
-          postgres-plpgsql-check:latest
+          postgres-language-server-dev:latest
         # Wait for postgres to be ready
         for _ in {1..30}; do
           if docker exec postgres pg_isready -U postgres; then
