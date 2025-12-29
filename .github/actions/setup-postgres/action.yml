@@ -139,8 +139,13 @@ runs:
           sleep 1
         done
 
-        # Verify extensions are created, create if missing
-        echo "Verifying extensions..."
+        # Verify extensions are created in template1 (for SQLx test databases)
+        echo "Creating extensions in template1..."
+        docker exec postgres psql -U postgres -d template1 -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check;"
+        docker exec postgres psql -U postgres -d template1 -c "CREATE EXTENSION IF NOT EXISTS pglinter;"
+
+        # Also create in postgres database
+        echo "Creating extensions in postgres database..."
         docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check;"
         docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter;"
 
