@@ -35,7 +35,8 @@ runs:
         echo "Extension directory: $(pg_config --sharedir)/extension"
         echo "Library directory: $(pg_config --pkglibdir)"
 
-        # Clone and build plpgsql_check
+        # Clone and build plpgsql_check (clone to /tmp to avoid workspace conflicts)
+        cd /tmp
         git clone https://github.com/okbob/plpgsql_check.git
         cd plpgsql_check
 
@@ -71,7 +72,8 @@ runs:
         # Initialize pgrx for the installed PostgreSQL version
         cargo pgrx init --pg${PG_VERSION} $(which pg_config)
 
-        # Clone and build pglinter
+        # Clone and build pglinter (clone to /tmp to avoid workspace conflicts)
+        cd /tmp
         git clone https://github.com/pmpetit/pglinter.git
         cd pglinter
 
