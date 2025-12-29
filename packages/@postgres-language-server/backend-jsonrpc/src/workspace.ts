@@ -95,6 +95,28 @@ export type Category =
 	| "lint/safety/requireConcurrentIndexDeletion"
 	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
+	| "pglinter/extensionNotInstalled"
+	| "pglinter/ruleDisabledInExtension"
+	| "pglinter/base/compositePrimaryKeyTooManyColumns"
+	| "pglinter/base/howManyObjectsWithUppercase"
+	| "pglinter/base/howManyRedudantIndex"
+	| "pglinter/base/howManyTableWithoutIndexOnFk"
+	| "pglinter/base/howManyTableWithoutPrimaryKey"
+	| "pglinter/base/howManyTablesNeverSelected"
+	| "pglinter/base/howManyTablesWithFkMismatch"
+	| "pglinter/base/howManyTablesWithFkOutsideSchema"
+	| "pglinter/base/howManyTablesWithReservedKeywords"
+	| "pglinter/base/howManyTablesWithSameTrigger"
+	| "pglinter/base/howManyUnusedIndex"
+	| "pglinter/base/severalTableOwnerInSchema"
+	| "pglinter/cluster/passwordEncryptionIsMd5"
+	| "pglinter/cluster/pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists"
+	| "pglinter/cluster/pgHbaEntriesWithMethodTrustShouldNotExists"
+	| "pglinter/schema/ownerSchemaIsInternalRole"
+	| "pglinter/schema/schemaOwnerDoNotMatchTableOwner"
+	| "pglinter/schema/schemaPrefixedOrSuffixedWithEnvt"
+	| "pglinter/schema/schemaWithDefaultRoleNotGranted"
+	| "pglinter/schema/unsecuredPublicSchema"
 	| "splinter/performance/authRlsInitplan"
 	| "splinter/performance/duplicateIndex"
 	| "splinter/performance/multiplePermissivePolicies"
@@ -136,7 +158,11 @@ export type Category =
 	| "lint/safety"
 	| "splinter"
 	| "splinter/performance"
-	| "splinter/security";
+	| "splinter/security"
+	| "pglinter"
+	| "pglinter/base"
+	| "pglinter/cluster"
+	| "pglinter/schema";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
@@ -318,6 +344,10 @@ export interface PartialConfiguration {
 	 */
 	migrations?: PartialMigrationsConfiguration;
 	/**
+	 * The configuration for pglinter
+	 */
+	pglinter?: PartialPglinterConfiguration;
+	/**
 	 * The configuration for type checking
 	 */
 	plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
@@ -458,6 +488,16 @@ export interface PartialMigrationsConfiguration {
 	 */
 	migrationsDir?: string;
 }
+export interface PartialPglinterConfiguration {
+	/**
+	 * if `false`, it disables the feature and the linter won't be executed. `true` by default
+	 */
+	enabled?: boolean;
+	/**
+	 * List of rules
+	 */
+	rules?: PglinterRules;
+}
 /**
  * The configuration for type checking.
  */
@@ -539,6 +579,19 @@ export interface LinterRules {
 	 */
 	recommended?: boolean;
 	safety?: Safety;
+}
+export interface PglinterRules {
+	/**
+	 * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+	 */
+	all?: boolean;
+	base?: Base;
+	cluster?: Cluster;
+	/**
+	 * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+	 */
+	recommended?: boolean;
+	schema?: Schema;
 }
 export interface SplinterRules {
 	/**
@@ -697,6 +750,125 @@ export interface Safety {
 	 * Detects problematic transaction nesting that could lead to unexpected behavior.
 	 */
 	transactionNesting?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Base {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * CompositePrimaryKeyTooManyColumns (B012): Detect tables with composite primary keys involving more than 4 columns
+	 */
+	compositePrimaryKeyTooManyColumns?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyObjectsWithUppercase (B005): Count number of objects with uppercase in name or in columns.
+	 */
+	howManyObjectsWithUppercase?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyRedudantIndex (B002): Count number of redundant index vs nb index.
+	 */
+	howManyRedudantIndex?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTableWithoutIndexOnFk (B003): Count number of tables without index on foreign key.
+	 */
+	howManyTableWithoutIndexOnFk?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTableWithoutPrimaryKey (B001): Count number of tables without primary key.
+	 */
+	howManyTableWithoutPrimaryKey?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesNeverSelected (B006): Count number of table(s) that has never been selected.
+	 */
+	howManyTablesNeverSelected?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithFkMismatch (B008): Count number of tables with foreign keys that do not match the key reference type.
+	 */
+	howManyTablesWithFkMismatch?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithFkOutsideSchema (B007): Count number of tables with foreign keys outside their schema.
+	 */
+	howManyTablesWithFkOutsideSchema?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithReservedKeywords (B010): Count number of database objects using reserved keywords in their names.
+	 */
+	howManyTablesWithReservedKeywords?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyTablesWithSameTrigger (B009): Count number of tables using the same trigger vs nb table with their own triggers.
+	 */
+	howManyTablesWithSameTrigger?: RuleConfiguration_for_Null;
+	/**
+	 * HowManyUnusedIndex (B004): Count number of unused index vs nb index (base on pg_stat_user_indexes, indexes associated to unique constraints are discard.)
+	 */
+	howManyUnusedIndex?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+	/**
+	 * SeveralTableOwnerInSchema (B011): In a schema there are several tables owned by different owners.
+	 */
+	severalTableOwnerInSchema?: RuleConfiguration_for_Null;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Cluster {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * PasswordEncryptionIsMd5 (C003): This configuration is not secure anymore and will prevent an upgrade to Postgres 18. Warning, you will need to reset all passwords after this is changed to scram-sha-256.
+	 */
+	passwordEncryptionIsMd5?: RuleConfiguration_for_Null;
+	/**
+	 * PgHbaEntriesWithMethodTrustOrPasswordShouldNotExists (C002): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+	 */
+	pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists?: RuleConfiguration_for_Null;
+	/**
+	 * PgHbaEntriesWithMethodTrustShouldNotExists (C001): This configuration is extremely insecure and should only be used in a controlled, non-production environment for testing purposes. In a production environment, you should use more secure authentication methods such as md5, scram-sha-256, or cert, and restrict access to trusted IP addresses only.
+	 */
+	pgHbaEntriesWithMethodTrustShouldNotExists?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+}
+/**
+ * A list of rules that belong to this group
+ */
+export interface Schema {
+	/**
+	 * It enables ALL rules for this group.
+	 */
+	all?: boolean;
+	/**
+	 * OwnerSchemaIsInternalRole (S004): Owner of schema should not be any internal pg roles, or owner is a superuser (not sure it is necesary).
+	 */
+	ownerSchemaIsInternalRole?: RuleConfiguration_for_Null;
+	/**
+	 * It enables the recommended rules for this group
+	 */
+	recommended?: boolean;
+	/**
+	 * SchemaOwnerDoNotMatchTableOwner (S005): The schema owner and tables in the schema do not match.
+	 */
+	schemaOwnerDoNotMatchTableOwner?: RuleConfiguration_for_Null;
+	/**
+	 * SchemaPrefixedOrSuffixedWithEnvt (S002): The schema is prefixed with one of staging,stg,preprod,prod,sandbox,sbox string. Means that when you refresh your preprod, staging environments from production, you have to rename the target schema from prod_ to stg_ or something like. It is possible, but it is never easy.
+	 */
+	schemaPrefixedOrSuffixedWithEnvt?: RuleConfiguration_for_Null;
+	/**
+	 * SchemaWithDefaultRoleNotGranted (S001): The schema has no default role. Means that futur table will not be granted through a role. So you will have to re-execute grants on it.
+	 */
+	schemaWithDefaultRoleNotGranted?: RuleConfiguration_for_Null;
+	/**
+	 * UnsecuredPublicSchema (S003): Only authorized users should be allowed to create objects.
+	 */
+	unsecuredPublicSchema?: RuleConfiguration_for_Null;
 }
 /**
  * A list of rules that belong to this group

@@ -47,6 +47,35 @@ define_categories! {
     "lint/safety/runningStatementWhileHoldingAccessExclusive": "https://pg-language-server.com/latest/reference/rules/running-statement-while-holding-access-exclusive/",
     "lint/safety/transactionNesting": "https://pg-language-server.com/latest/reference/rules/transaction-nesting/",
     // end lint rules
+    // pglinter rules start
+    // Meta diagnostics
+    "pglinter/extensionNotInstalled": "Install the pglinter extension with: CREATE EXTENSION pglinter",
+    "pglinter/ruleDisabledInExtension": "Enable the rule in the extension with: UPDATE pglinter.rules SET enable = true WHERE code = '<code>'",
+    // Base rules (B-series)
+    "pglinter/base/compositePrimaryKeyTooManyColumns": "https://github.com/pmpetit/pglinter#b012",
+    "pglinter/base/howManyObjectsWithUppercase": "https://github.com/pmpetit/pglinter#b005",
+    "pglinter/base/howManyRedudantIndex": "https://github.com/pmpetit/pglinter#b002",
+    "pglinter/base/howManyTableWithoutIndexOnFk": "https://github.com/pmpetit/pglinter#b003",
+    "pglinter/base/howManyTableWithoutPrimaryKey": "https://github.com/pmpetit/pglinter#b001",
+    "pglinter/base/howManyTablesNeverSelected": "https://github.com/pmpetit/pglinter#b006",
+    "pglinter/base/howManyTablesWithFkMismatch": "https://github.com/pmpetit/pglinter#b008",
+    "pglinter/base/howManyTablesWithFkOutsideSchema": "https://github.com/pmpetit/pglinter#b007",
+    "pglinter/base/howManyTablesWithReservedKeywords": "https://github.com/pmpetit/pglinter#b010",
+    "pglinter/base/howManyTablesWithSameTrigger": "https://github.com/pmpetit/pglinter#b009",
+    "pglinter/base/howManyUnusedIndex": "https://github.com/pmpetit/pglinter#b004",
+    "pglinter/base/severalTableOwnerInSchema": "https://github.com/pmpetit/pglinter#b011",
+    // Cluster rules (C-series)
+    "pglinter/cluster/passwordEncryptionIsMd5": "https://github.com/pmpetit/pglinter#c003",
+    "pglinter/cluster/pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists": "https://github.com/pmpetit/pglinter#c002",
+    "pglinter/cluster/pgHbaEntriesWithMethodTrustShouldNotExists": "https://github.com/pmpetit/pglinter#c001",
+    // Schema rules (S-series)
+    "pglinter/schema/ownerSchemaIsInternalRole": "https://github.com/pmpetit/pglinter#s004",
+    "pglinter/schema/schemaOwnerDoNotMatchTableOwner": "https://github.com/pmpetit/pglinter#s005",
+    "pglinter/schema/schemaPrefixedOrSuffixedWithEnvt": "https://github.com/pmpetit/pglinter#s002",
+    "pglinter/schema/schemaWithDefaultRoleNotGranted": "https://github.com/pmpetit/pglinter#s001",
+    "pglinter/schema/unsecuredPublicSchema": "https://github.com/pmpetit/pglinter#s003",
+    // pglinter rules end
+
     // splinter rules start
     "splinter/performance/authRlsInitplan": "https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan",
     "splinter/performance/duplicateIndex": "https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index",
@@ -99,4 +128,11 @@ define_categories! {
     "splinter/performance",
     "splinter/security",
     // Splinter groups end
+
+    // Pglinter groups start
+    "pglinter",
+    "pglinter/base",
+    "pglinter/cluster",
+    "pglinter/schema",
+    // Pglinter groups end
 }

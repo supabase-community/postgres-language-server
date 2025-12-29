@@ -20,6 +20,7 @@ use pgls_configuration::{
     files::FilesConfiguration,
     format::{FormatConfiguration, IndentStyle, KeywordCase},
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
 };
@@ -223,6 +224,9 @@ pub struct Settings {
     /// Formatter settings applied to all files in the workspace
     pub formatter: FormatterSettings,
 
+    /// Pglinter (database linter via pglinter extension) settings for the workspace
+    pub pglinter: PglinterSettings,
+
     /// Type checking settings for the workspace
     pub typecheck: TypecheckSettings,
 
@@ -277,6 +281,11 @@ impl Settings {
             )?;
         }
 
+        // pglinter part
+        if let Some(pglinter) = configuration.pglinter {
+            self.pglinter = to_pglinter_settings(PglinterConfiguration::from(pglinter));
+        }
+
         // typecheck part
         if let Some(typecheck) = configuration.typecheck {
             self.typecheck = to_typecheck_settings(TypecheckConfiguration::from(typecheck));
@@ -312,6 +321,11 @@ impl Settings {
     /// Returns splinter rules.
     pub fn as_splinter_rules(&self) -> Option<Cow<'_, pgls_configuration::splinter::Rules>> {
         self.splinter.rules.as_ref().map(Cow::Borrowed)
+    }
+
+    /// Returns pglinter rules.
+    pub fn as_pglinter_rules(&self) -> Option<Cow<pgls_configuration::pglinter::Rules>> {
+        self.pglinter.rules.as_ref().map(Cow::Borrowed)
     }
 
     /// It retrieves the severity based on the `code` of the rule and the current configuration.
@@ -365,6 +379,13 @@ fn to_formatter_settings(
         ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
         included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
     })
+}
+
+fn to_pglinter_settings(conf: PglinterConfiguration) -> PglinterSettings {
+    PglinterSettings {
+        enabled: conf.enabled,
+        rules: Some(conf.rules),
+    }
 }
 
 fn to_typecheck_settings(conf: TypecheckConfiguration) -> TypecheckSettings {
@@ -567,6 +588,26 @@ impl Default for FormatterSettings {
         }
     }
 }
+
+/// Pglinter (database linter via pglinter extension) settings for the entire workspace
+#[derive(Debug)]
+pub struct PglinterSettings {
+    /// Disabled by default (pglinter extension might not be installed)
+    pub enabled: bool,
+
+    /// List of rules
+    pub rules: Option<pgls_configuration::pglinter::Rules>,
+}
+
+impl Default for PglinterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false, // Disabled by default since pglinter extension might not be installed
+            rules: Some(pgls_configuration::pglinter::Rules::default()),
+        }
+    }
+}
+
 /// Type checking settings for the entire workspace
 #[derive(Debug)]
 pub struct PlPgSqlCheckSettings {

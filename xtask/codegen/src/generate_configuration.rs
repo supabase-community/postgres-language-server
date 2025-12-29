@@ -81,7 +81,7 @@ const TOOLS: &[ToolConfig] = &[
     ToolConfig::new("linter", RuleCategory::Lint, true),
     ToolConfig::new("assists", RuleCategory::Action, true),
     ToolConfig::new("splinter", RuleCategory::Lint, false), // Database linter, doesn't handle files
-    ToolConfig::new("pglinter", RuleCategory::Lint, true),
+    ToolConfig::new("pglinter", RuleCategory::Lint, false), // Database linter via pglinter extension
 ];
 
 /// Visitor that collects rules for a specific category
@@ -121,6 +121,7 @@ impl RegistryVisitor for CategoryRulesVisitor {
 pub fn generate_rules_configuration(mode: Mode) -> Result<()> {
     generate_tool_configuration(mode, "linter")?;
     generate_tool_configuration(mode, "splinter")?;
+    generate_tool_configuration(mode, "pglinter")?;
     Ok(())
 }
 
@@ -140,8 +141,8 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
     match tool.name {
         "linter" => pgls_analyser::visit_registry(&mut visitor),
         "splinter" => pgls_splinter::registry::visit_registry(&mut visitor),
+        "pglinter" => pgls_pglinter::registry::visit_registry(&mut visitor),
         "assists" => unimplemented!("Assists rules not yet implemented"),
-        "pglinter" => unimplemented!("PGLinter rules not yet implemented"),
         _ => unreachable!(),
     }
 
@@ -643,9 +644,12 @@ fn generate_lint_group_struct(
         }
 
         // For splinter rules, use SplinterRuleOptions for the shared ignore patterns
+        // For pglinter rules, use () as options since they don't have configurable options
         // For linter rules, use pgls_analyser::options::#rule_name
         let rule_option_type = if tool_name == "splinter" {
             quote! { crate::splinter::SplinterRuleOptions }
+        } else if tool_name == "pglinter" {
+            quote! { () }
         } else {
             quote! { pgls_analyser::options::#rule_name }
         };
