@@ -139,3 +139,14 @@ runs:
           sleep 1
         done
 
+        # Verify extensions are created, create if missing
+        echo "Verifying extensions..."
+        docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check;"
+        docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS pglinter;"
+
+        # Show extension status
+        docker exec postgres psql -U postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
+
+        # Verify pglinter schema exists
+        docker exec postgres psql -U postgres -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pglinter';"
+
