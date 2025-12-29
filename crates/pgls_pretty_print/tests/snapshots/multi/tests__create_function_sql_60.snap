@@ -11,7 +11,8 @@ GRANT ALL ON SCHEMA temp_func_test TO PUBLIC;
 
 SET search_path TO temp_func_test, public;
 
-CREATE FUNCTION functest_a_1(
+CREATE FUNCTION
+functest_a_1(
   TEXT,
   DATE
 )
@@ -19,14 +20,16 @@ RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'SELECT $1 = ''abcd'' AND $2 > ''2001-01-01''';
 
-CREATE FUNCTION functest_a_2(
+CREATE FUNCTION
+functest_a_2(
   TEXT[]
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1[1]::int';
 
-CREATE FUNCTION functest_a_3()
+CREATE FUNCTION
+functest_a_3()
 RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'SELECT false';
@@ -54,14 +57,16 @@ SELECT functest_a_2(ARRAY['1', '2', '3']);
 
 SELECT functest_a_3();
 
-CREATE FUNCTION functest_b_1(
+CREATE FUNCTION
+functest_b_1(
   INT
 )
 RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'SELECT $1 > 0';
 
-CREATE FUNCTION functest_b_2(
+CREATE FUNCTION
+functest_b_2(
   INT
 )
 RETURNS BOOLEAN
@@ -69,7 +74,8 @@ LANGUAGE "sql"
 IMMUTABLE
 AS 'SELECT $1 > 0';
 
-CREATE FUNCTION functest_b_3(
+CREATE FUNCTION
+functest_b_3(
   INT
 )
 RETURNS BOOLEAN
@@ -77,7 +83,8 @@ LANGUAGE "sql"
 STABLE
 AS 'SELECT $1 = 0';
 
-CREATE FUNCTION functest_b_4(
+CREATE FUNCTION
+functest_b_4(
   INT
 )
 RETURNS BOOLEAN
@@ -121,14 +128,16 @@ WHERE
   AS REGPROC))
 ORDER BY proname;
 
-CREATE FUNCTION functest_c_1(
+CREATE FUNCTION
+functest_c_1(
   INT
 )
 RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'SELECT $1 > 0';
 
-CREATE FUNCTION functest_c_2(
+CREATE FUNCTION
+functest_c_2(
   INT
 )
 RETURNS BOOLEAN
@@ -136,7 +145,8 @@ LANGUAGE "sql"
 SECURITY DEFINER
 AS 'SELECT $1 = 0';
 
-CREATE FUNCTION functest_c_3(
+CREATE FUNCTION
+functest_c_3(
   INT
 )
 RETURNS BOOLEAN
@@ -178,14 +188,16 @@ WHERE
   AS REGPROC))
 ORDER BY proname;
 
-CREATE FUNCTION functest_e_1(
+CREATE FUNCTION
+functest_e_1(
   INT
 )
 RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'SELECT $1 > 100';
 
-CREATE FUNCTION functest_e_2(
+CREATE FUNCTION
+functest_e_2(
   INT
 )
 RETURNS BOOLEAN
@@ -249,7 +261,8 @@ ALTER FUNCTION functest_e_1(INT) NOT LEAKPROOF;
 
 ALTER FUNCTION functest_e_2(INT) LEAKPROOF;
 
-CREATE FUNCTION functest_e_3(
+CREATE FUNCTION
+functest_e_3(
   INT
 )
 RETURNS BOOLEAN
@@ -259,14 +272,16 @@ AS 'SELECT $1 < 200';
 
 RESET session_authorization;
 
-CREATE FUNCTION functest_f_1(
+CREATE FUNCTION
+functest_f_1(
   INT
 )
 RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'SELECT $1 > 50';
 
-CREATE FUNCTION functest_f_2(
+CREATE FUNCTION
+functest_f_2(
   INT
 )
 RETURNS BOOLEAN
@@ -274,7 +289,8 @@ LANGUAGE "sql"
 CALLED ON NULL INPUT
 AS 'SELECT $1 = 50';
 
-CREATE FUNCTION functest_f_3(
+CREATE FUNCTION
+functest_f_3(
   INT
 )
 RETURNS BOOLEAN
@@ -282,7 +298,8 @@ LANGUAGE "sql"
 STRICT
 AS 'SELECT $1 < 50';
 
-CREATE FUNCTION functest_f_4(
+CREATE FUNCTION
+functest_f_4(
   INT
 )
 RETURNS BOOLEAN
@@ -336,7 +353,8 @@ SELECT pg_get_functiondef(CAST('functest_C_3' AS REGPROC));
 
 SELECT pg_get_functiondef(CAST('functest_F_2' AS REGPROC));
 
-CREATE FUNCTION functest_s_1(
+CREATE FUNCTION
+functest_s_1(
   "a" TEXT,
   "b" DATE
 )
@@ -346,13 +364,15 @@ LANGUAGE "sql" RETURN a =
 b >
 '2001-01-01';;
 
-CREATE FUNCTION functest_s_2(
+CREATE FUNCTION
+functest_s_2(
   "a" TEXT[]
 )
 RETURNS INT RETURN CAST(a[1]
 AS INT);;
 
-CREATE FUNCTION functest_s_3()
+CREATE FUNCTION
+functest_s_3()
 RETURNS BOOLEAN RETURN FALSE;;
 
 COMMIT;
@@ -373,20 +393,23 @@ INSERT INTO functest1 SELECT a + $2;
 
 COMMIT;
 
-CREATE FUNCTION functest_s_xxx(
+CREATE FUNCTION
+functest_s_xxx(
   "x" INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS ' SELECT x * 2 ' RETURN x * 3;;
 
-CREATE FUNCTION functest_s_xx(
+CREATE FUNCTION
+functest_s_xx(
   "x" ANYARRAY
 )
 RETURNS ANYELEMENT
 LANGUAGE "sql" RETURN x[1];;
 
-CREATE FUNCTION functest_s_xx(
+CREATE FUNCTION
+functest_s_xx(
   "x" DATE
 )
 RETURNS BOOLEAN
@@ -431,9 +454,12 @@ INSERT INTO functest3 VALUES (1), (2);
 
 CREATE VIEW functestv3 AS SELECT * FROM functest3;
 
-CREATE FUNCTION functest_s_14()
+CREATE FUNCTION
+functest_s_14()
 RETURNS BIGINT RETURN (SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   functestv3);;
 
@@ -441,7 +467,8 @@ SELECT functest_s_14();
 
 DROP TABLE "functest3" CASCADE;
 
-CREATE FUNCTION functest_is_1(
+CREATE FUNCTION
+functest_is_1(
   "a" INT,
   "b" INT DEFAULT 1,
   "c" TEXT DEFAULT 'foo'
@@ -450,7 +477,8 @@ RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1 + $2';
 
-CREATE FUNCTION functest_is_2(
+CREATE FUNCTION
+functest_is_2(
   OUT "a" INT,
   "b" INT DEFAULT 1
 )
@@ -458,7 +486,8 @@ RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1';
 
-CREATE FUNCTION functest_is_3(
+CREATE FUNCTION
+functest_is_3(
   "a" INT DEFAULT 1,
   OUT "b" INT
 )
@@ -491,13 +520,17 @@ DROP FUNCTION functest_is_1(
 functest_is_2(INT),
 functest_is_3(INT);
 
-CREATE FUNCTION functest_is_4a()
+CREATE FUNCTION
+functest_is_4a()
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT 1';
 
-CREATE FUNCTION functest_is_4b(
-  "x" INT DEFAULT functest_is_4a()
+CREATE FUNCTION
+functest_is_4b(
+  "x" INT DEFAULT functest_is_4a(
+
+  )
 )
 RETURNS INT
 LANGUAGE "sql"
@@ -505,23 +538,32 @@ AS 'SELECT x';
 
 CREATE SEQUENCE functest1;
 
-CREATE FUNCTION functest_is_5(
-  "x" INT DEFAULT nextval('functest1')
+CREATE FUNCTION
+functest_is_5(
+  "x" INT DEFAULT nextval(
+  'functest1'
+  )
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT x';
 
-CREATE FUNCTION functest_is_6()
+CREATE FUNCTION
+functest_is_6()
 RETURNS INT
-LANGUAGE "sql" RETURN nextval('functest1');;
+LANGUAGE "sql" RETURN nextval(
+'functest1'
+);;
 
 CREATE TABLE functest2 ( a INT, b INT );
 
-CREATE FUNCTION functest_is_7()
+CREATE FUNCTION
+functest_is_7()
 RETURNS INT
 LANGUAGE "sql" RETURN (SELECT
-  COUNT(a)
+  COUNT(
+  a
+  )
 FROM
   functest2);;
 
@@ -587,7 +629,8 @@ DROP SEQUENCE "functest1" CASCADE;
 
 DROP TABLE "functest2" CASCADE;
 
-CREATE FUNCTION functest_b_2(
+CREATE FUNCTION
+functest_b_2(
   BIGINT
 )
 RETURNS BOOLEAN
@@ -601,14 +644,16 @@ DROP FUNCTION functest_b_1;
 
 DROP FUNCTION functest_b_2;
 
-CREATE FUNCTION functest1(
+CREATE FUNCTION
+functest1(
   "a" INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1';
 
-CREATE OR REPLACE FUNCTION functest1(
+CREATE OR REPLACE FUNCTION
+functest1(
   "a" INT
 )
 RETURNS INT
@@ -616,7 +661,8 @@ LANGUAGE "sql"
 WINDOW
 AS 'SELECT $1';
 
-CREATE OR REPLACE PROCEDURE functest1(
+CREATE OR REPLACE PROCEDURE
+functest1(
   "a" INT
 )
 LANGUAGE "sql"
@@ -624,7 +670,8 @@ AS 'SELECT $1';
 
 DROP FUNCTION functest1(INT);
 
-CREATE FUNCTION functest_srf0()
+CREATE FUNCTION
+functest_srf0()
 RETURNS SETOF INT
 LANGUAGE "sql"
 AS ' SELECT i FROM generate_series(1, 100) i ';
@@ -635,7 +682,8 @@ CREATE TABLE functest3 ( a INT );
 
 INSERT INTO functest3 VALUES (1), (2), (3);
 
-CREATE FUNCTION functest_sri1()
+CREATE FUNCTION
+functest_sri1()
 RETURNS SETOF INT
 LANGUAGE "sql"
 STABLE
@@ -657,7 +705,8 @@ SELECT * FROM functest_sri2();
 
 DROP TABLE "functest3" CASCADE;
 
-CREATE FUNCTION voidtest1(
+CREATE FUNCTION
+voidtest1(
   "a" INT
 )
 RETURNS VOID
@@ -666,7 +715,8 @@ AS ' SELECT a + 1 ';
 
 SELECT voidtest1(42);
 
-CREATE FUNCTION voidtest2(
+CREATE FUNCTION
+voidtest2(
   "a" INT,
   "b" INT
 )
@@ -680,7 +730,8 @@ SELECT voidtest2(11, 22);
 
 CREATE TEMPORARY TABLE sometable ( f1 INT );
 
-CREATE FUNCTION voidtest3(
+CREATE FUNCTION
+voidtest3(
   "a" INT
 )
 RETURNS VOID
@@ -689,7 +740,8 @@ AS ' INSERT INTO sometable VALUES(a + 1) ';
 
 SELECT voidtest3(17);
 
-CREATE FUNCTION voidtest4(
+CREATE FUNCTION
+voidtest4(
   "a" INT
 )
 RETURNS VOID
@@ -700,7 +752,8 @@ SELECT voidtest4(39);
 
 SELECT * FROM sometable;
 
-CREATE FUNCTION voidtest5(
+CREATE FUNCTION
+voidtest5(
   "a" INT
 )
 RETURNS SETOF VOID
@@ -712,7 +765,8 @@ SELECT * FROM voidtest5(3);
 
 SET check_function_bodies = off;
 
-CREATE FUNCTION create_and_insert()
+CREATE FUNCTION
+create_and_insert()
 RETURNS VOID
 LANGUAGE "sql"
 AS '
@@ -724,7 +778,8 @@ SELECT create_and_insert();
 
 SELECT * FROM ddl_test;
 
-CREATE FUNCTION alter_and_insert()
+CREATE FUNCTION
+alter_and_insert()
 RETURNS VOID
 LANGUAGE "sql"
 AS '
@@ -738,7 +793,8 @@ SELECT * FROM ddl_test;
 
 RESET check_function_bodies;
 
-CREATE FUNCTION double_append(
+CREATE FUNCTION
+double_append(
   ANYARRAY,
   ANYELEMENT
 )
@@ -748,9 +804,13 @@ IMMUTABLE
 AS ' SELECT array_append($1, $2) || array_append($1, $2) ';
 
 SELECT
-  double_append(array_append(ARRAY[q1],
-  q2),
-  q3)
+  double_append(
+  array_append(
+  ARRAY[q1],
+  q2
+  ),
+  q3
+  )
 FROM
   (VALUES (1,
   2,
@@ -761,7 +821,8 @@ FROM
   q2,
   q3);
 
-CREATE FUNCTION part_hashint4_error(
+CREATE FUNCTION
+part_hashint4_error(
   "value" INT,
   "seed" BIGINT
 )
@@ -792,42 +853,48 @@ INSERT INTO pt VALUES (1);
 
 INSERT INTO pt VALUES (1);
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT ''not an integer'';';
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'not even SQL';
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT 1, 2, 3;';
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $2;';
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'a', 'b';
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   INT
 )
 RETURNS INT
@@ -836,7 +903,8 @@ AS '';
 
 SET check_function_bodies = off;
 
-CREATE FUNCTION test1(
+CREATE FUNCTION
+test1(
   ANYELEMENT
 )
 RETURNS ANYARRAY

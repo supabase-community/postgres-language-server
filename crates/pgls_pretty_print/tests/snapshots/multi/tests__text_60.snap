@@ -7,13 +7,15 @@ SELECT
   CAST('this is a text string'
   AS TEXT) =
   CAST('this is a text string'
-  AS TEXT) AS "true";
+  AS TEXT)
+  AS "true";
 
 SELECT
   CAST('this is a text string'
   AS TEXT) =
   CAST('this is a text strin'
-  AS TEXT) AS "false";
+  AS TEXT)
+  AS "false";
 
 SELECT * FROM text_tbl;
 
@@ -28,27 +30,35 @@ SELECT 3 || 4.0;
 SELECT concat('one');
 
 SELECT
-  concat(1,
-  2,
-  3,
-  'hello',
-  TRUE,
-  FALSE,
-  to_date('20100309',
-  'YYYYMMDD'));
-
-SELECT concat_ws('#', 'one');
-
-SELECT
-  concat_ws('#',
+  concat(
   1,
   2,
   3,
   'hello',
   TRUE,
   FALSE,
-  to_date('20100309',
-  'YYYYMMDD'));
+  to_date(
+  '20100309',
+  'YYYYMMDD'
+  )
+  );
+
+SELECT concat_ws('#', 'one');
+
+SELECT
+  concat_ws(
+  '#',
+  1,
+  2,
+  3,
+  'hello',
+  TRUE,
+  FALSE,
+  to_date(
+  '20100309',
+  'YYYYMMDD'
+  )
+  );
 
 SELECT concat_ws(',', 10, 20, NULL, 30);
 
@@ -60,13 +70,19 @@ SELECT reverse('abcde');
 
 SELECT
   i,
-  left('ahoj',
-  i),
-  right('ahoj',
-  i)
+  left(
+  'ahoj',
+  i
+  ),
+  right(
+  'ahoj',
+  i
+  )
 FROM
-  generate_series(-5,
-  5) AS t (i)
+  generate_series(
+  -5,
+  5
+  ) AS t (i)
 ORDER BY i;
 
 SELECT quote_literal('');
@@ -104,35 +120,44 @@ SELECT format('Hello %s');
 SELECT format('Hello %x', 20);
 
 SELECT
-  format('INSERT INTO %I VALUES(%L,%L)',
+  format(
+  'INSERT INTO %I VALUES(%L,%L)',
   'mytab',
   10,
-  'Hello');
+  'Hello'
+  );
 
 SELECT format('%s%s%s', 'Hello', NULL, 'World');
 
 SELECT
-  format('INSERT INTO %I VALUES(%L,%L)',
+  format(
+  'INSERT INTO %I VALUES(%L,%L)',
   'mytab',
   10,
-  NULL);
+  NULL
+  );
 
 SELECT
-  format('INSERT INTO %I VALUES(%L,%L)',
+  format(
+  'INSERT INTO %I VALUES(%L,%L)',
   'mytab',
   NULL,
-  'Hello');
+  'Hello'
+  );
 
 SELECT
-  format('INSERT INTO %I VALUES(%L,%L)',
+  format(
+  'INSERT INTO %I VALUES(%L,%L)',
   NULL,
   10,
-  'Hello');
+  'Hello'
+  );
 
 SELECT format('%1$s %3$s', 1, 2, 3);
 
 SELECT
-  format('%1$s %12$s',
+  format(
+  '%1$s %12$s',
   1,
   2,
   3,
@@ -144,12 +169,14 @@ SELECT
   9,
   10,
   11,
-  12);
+  12
+  );
 
 SELECT format('%1$s %4$s', 1, 2, 3);
 
 SELECT
-  format('%1$s %13$s',
+  format(
+  '%1$s %13$s',
   1,
   2,
   3,
@@ -161,7 +188,8 @@ SELECT
   9,
   10,
   11,
-  12);
+  12
+  );
 
 SELECT format('%0$s', 'Hello');
 
@@ -174,9 +202,11 @@ SELECT format('%1$1', 1);
 SELECT format('Hello %s %1$s %s', 'World', 'Hello again');
 
 SELECT
-  format('Hello %s %s, %2$s %2$s',
+  format(
+  'Hello %s %s, %2$s %2$s',
   'World',
-  'Hello again');
+  'Hello again'
+  );
 
 SELECT format('%s, %s', VARIADIC ARRAY['Hello', 'World']);
 
@@ -185,27 +215,39 @@ SELECT format('%s, %s', VARIADIC ARRAY[1, 2]);
 SELECT format('%s, %s', VARIADIC ARRAY[TRUE, FALSE]);
 
 SELECT
-  format('%s, %s',
+  format(
+  '%s, %s',
   VARIADIC CAST(ARRAY[TRUE,
   FALSE]
-  AS TEXT[]));
+  AS TEXT[])
+  );
 
 SELECT
-  format('%2$s, %1$s',
+  format(
+  '%2$s, %1$s',
   VARIADIC ARRAY['first',
-  'second']);
+  'second']
+  );
 
 SELECT format('%2$s, %1$s', VARIADIC ARRAY[1, 2]);
 
 SELECT format('Hello', VARIADIC CAST(NULL AS INT[]));
 
 SELECT
-  format(string_agg('%s',
-  ','),
-  VARIADIC array_agg(i))
+  format(
+  string_agg(
+  '%s',
+  ','
+  ),
+  VARIADIC array_agg(
+  i
+  )
+  )
 FROM
-  generate_series(1,
-  200) AS g (i);
+  generate_series(
+  1,
+  200
+  ) AS g (i);
 
 SELECT format('>>%10s<<', 'Hello');
 

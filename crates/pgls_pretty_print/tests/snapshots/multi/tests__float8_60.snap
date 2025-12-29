@@ -24,8 +24,10 @@ SELECT CAST('10e-400' AS DOUBLE PRECISION);
 SELECT CAST('-10e-400' AS DOUBLE PRECISION);
 
 SELECT
-  float8send(CAST('2.2250738585072014E-308'
-  AS DOUBLE PRECISION));
+  float8send(
+  CAST('2.2250738585072014E-308'
+  AS DOUBLE PRECISION)
+  );
 
 INSERT INTO float8_tbl (f1) VALUES ('');
 
@@ -107,7 +109,8 @@ SELECT f.* FROM float8_tbl AS f WHERE f.f1 <= '1004.3';
 
 SELECT
   f.f1,
-  f.f1 * '-10' AS x
+  f.f1 * '-10'
+  AS x
 FROM
   float8_tbl
   AS f
@@ -117,7 +120,8 @@ WHERE
 
 SELECT
   f.f1,
-  f.f1 + '-10' AS x
+  f.f1 + '-10'
+  AS x
 FROM
   float8_tbl
   AS f
@@ -127,7 +131,8 @@ WHERE
 
 SELECT
   f.f1,
-  f.f1 / '-10' AS x
+  f.f1 / '-10'
+  AS x
 FROM
   float8_tbl
   AS f
@@ -137,7 +142,8 @@ WHERE
 
 SELECT
   f.f1,
-  f.f1 - '-10' AS x
+  f.f1 - '-10'
+  AS x
 FROM
   float8_tbl
   AS f
@@ -146,7 +152,8 @@ WHERE
   '0.0';
 
 SELECT
-  f.f1 ^ '2.0' AS square_f1
+  f.f1 ^ '2.0'
+  AS square_f1
 FROM
   float8_tbl
   AS f
@@ -176,7 +183,8 @@ SELECT |/CAST('64' AS DOUBLE PRECISION) AS eight;
 
 SELECT
   f.f1,
-  |/f.f1 AS sqrt_f1
+  |/f.f1
+  AS sqrt_f1
 FROM
   float8_tbl
   AS f
@@ -185,213 +193,286 @@ WHERE
   '0.0';
 
 SELECT
-  power(CAST('144'
+  power(
+  CAST('144'
   AS DOUBLE PRECISION),
   CAST('0.5'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('NaN'
+  power(
+  CAST('NaN'
   AS DOUBLE PRECISION),
   CAST('0.5'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('144'
+  power(
+  CAST('144'
   AS DOUBLE PRECISION),
   CAST('NaN'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('NaN'
+  power(
+  CAST('NaN'
   AS DOUBLE PRECISION),
   CAST('NaN'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-1'
+  power(
+  CAST('-1'
   AS DOUBLE PRECISION),
   CAST('NaN'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('1'
+  power(
+  CAST('1'
   AS DOUBLE PRECISION),
   CAST('NaN'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('NaN'
+  power(
+  CAST('NaN'
   AS DOUBLE PRECISION),
   CAST('0'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('inf'
+  power(
+  CAST('inf'
   AS DOUBLE PRECISION),
   CAST('0'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('0'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('0'
+  power(
+  CAST('0'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('0'
+  power(
+  CAST('0'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('1'
+  power(
+  CAST('1'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('1'
+  power(
+  CAST('1'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-1'
+  power(
+  CAST('-1'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-1'
+  power(
+  CAST('-1'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('0.1'
+  power(
+  CAST('0.1'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-0.1'
+  power(
+  CAST('-0.1'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('1.1'
+  power(
+  CAST('1.1'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-1.1'
+  power(
+  CAST('-1.1'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('0.1'
+  power(
+  CAST('0.1'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-0.1'
+  power(
+  CAST('-0.1'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('1.1'
+  power(
+  CAST('1.1'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-1.1'
+  power(
+  CAST('-1.1'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('inf'
+  power(
+  CAST('inf'
   AS DOUBLE PRECISION),
   CAST('-2'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('inf'
+  power(
+  CAST('inf'
   AS DOUBLE PRECISION),
   CAST('2'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('inf'
+  power(
+  CAST('inf'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('inf'
+  power(
+  CAST('inf'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('-2'
-  AS DOUBLE PRECISION)) =
+  AS DOUBLE PRECISION)
+  ) =
   '0';
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('-3'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('2'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('3'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('3.5'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
-  power(CAST('-inf'
+  power(
+  CAST('-inf'
   AS DOUBLE PRECISION),
   CAST('-inf'
-  AS DOUBLE PRECISION));
+  AS DOUBLE PRECISION)
+  );
 
 SELECT
   f.f1,
-  exp(ln(f.f1)) AS exp_ln_f1
+  exp(
+  ln(
+  f.f1
+  )
+  )
+  AS exp_ln_f1
 FROM
   float8_tbl
   AS f
@@ -400,12 +481,18 @@ WHERE
   '0.0';
 
 SELECT
-  exp(CAST('inf'
-  AS DOUBLE PRECISION)),
-  exp(CAST('-inf'
-  AS DOUBLE PRECISION)),
-  exp(CAST('nan'
-  AS DOUBLE PRECISION));
+  exp(
+  CAST('inf'
+  AS DOUBLE PRECISION)
+  ),
+  exp(
+  CAST('-inf'
+  AS DOUBLE PRECISION)
+  ),
+  exp(
+  CAST('nan'
+  AS DOUBLE PRECISION)
+  );
 
 SELECT ||/CAST('27' AS DOUBLE PRECISION) AS three;
 
@@ -485,8 +572,12 @@ SET extra_float_digits = -1;
 
 SELECT
   x,
-  erf(x),
-  erfc(x)
+  erf(
+  x
+  ),
+  erfc(
+  x
+  )
 FROM
   (VALUES (CAST('-infinity'
   AS DOUBLE PRECISION)),
@@ -520,8 +611,12 @@ SET extra_float_digits = -1;
 
 SELECT
   x,
-  gamma(x),
-  lgamma(x)
+  gamma(
+  x
+  ),
+  lgamma(
+  x
+  )
 FROM
   (VALUES (0.5),
   (1),
@@ -632,12 +727,17 @@ SELECT
 
 SELECT
   x,
-  sind(x),
-  sind(x) IN (-1,
+  sind(
+  x
+  ),
+  sind(
+  x
+  ) IN (-1,
   -0.5,
   0,
   0.5,
-  1) AS sind_exact
+  1)
+  AS sind_exact
 FROM
   (VALUES (0),
   (30),
@@ -651,12 +751,17 @@ FROM
 
 SELECT
   x,
-  cosd(x),
-  cosd(x) IN (-1,
+  cosd(
+  x
+  ),
+  cosd(
+  x
+  ) IN (-1,
   -0.5,
   0,
   0.5,
-  1) AS cosd_exact
+  1)
+  AS cosd_exact
 FROM
   (VALUES (0),
   (60),
@@ -670,22 +775,32 @@ FROM
 
 SELECT
   x,
-  tand(x),
-  tand(x) IN (CAST('-Infinity'
+  tand(
+  x
+  ),
+  tand(
+  x
+  ) IN (CAST('-Infinity'
   AS DOUBLE PRECISION),
   -1,
   0,
   1,
   CAST('Infinity'
-  AS DOUBLE PRECISION)) AS tand_exact,
-  cotd(x),
-  cotd(x) IN (CAST('-Infinity'
+  AS DOUBLE PRECISION))
+  AS tand_exact,
+  cotd(
+  x
+  ),
+  cotd(
+  x
+  ) IN (CAST('-Infinity'
   AS DOUBLE PRECISION),
   -1,
   0,
   1,
   CAST('Infinity'
-  AS DOUBLE PRECISION)) AS cotd_exact
+  AS DOUBLE PRECISION))
+  AS cotd_exact
 FROM
   (VALUES (0),
   (45),
@@ -699,18 +814,28 @@ FROM
 
 SELECT
   x,
-  asind(x),
-  asind(x) IN (-90,
+  asind(
+  x
+  ),
+  asind(
+  x
+  ) IN (-90,
   -30,
   0,
   30,
-  90) AS asind_exact,
-  acosd(x),
-  acosd(x) IN (0,
+  90)
+  AS asind_exact,
+  acosd(
+  x
+  ),
+  acosd(
+  x
+  ) IN (0,
   60,
   90,
   120,
-  180) AS acosd_exact
+  180)
+  AS acosd_exact
 FROM
   (VALUES (-1),
   (-0.5),
@@ -720,12 +845,17 @@ FROM
 
 SELECT
   x,
-  atand(x),
-  atand(x) IN (-90,
+  atand(
+  x
+  ),
+  atand(
+  x
+  ) IN (-90,
   -45,
   0,
   45,
-  90) AS atand_exact
+  90)
+  AS atand_exact
 FROM
   (VALUES (CAST('-Infinity'
   AS DOUBLE PRECISION)),
@@ -738,26 +868,38 @@ FROM
 SELECT
   x,
   y,
-  atan2d(y,
-  x),
-  atan2d(y,
-  x) IN (-90,
+  atan2d(
+  y,
+  x
+  ),
+  atan2d(
+  y,
+  x
+  ) IN (-90,
   0,
   90,
-  180) AS atan2d_exact
+  180)
+  AS atan2d_exact
 FROM
   (SELECT
-    10 * cosd(a),
-    10 * sind(a)
+    10 * cosd(
+    a
+    ),
+    10 * sind(
+    a
+    )
   FROM
-    generate_series(0,
+    generate_series(
+    0,
     360,
-    90) AS t (a)) AS t (x,
+    90
+    ) AS t (a)) AS t (x,
   y);
 
 CREATE TYPE xfloat8;
 
-CREATE FUNCTION xfloat8in(
+CREATE FUNCTION
+xfloat8in(
   cstring
 )
 RETURNS xfloat8
@@ -766,7 +908,8 @@ STRICT
 LANGUAGE "internal"
 AS 'int8in';
 
-CREATE FUNCTION xfloat8out(
+CREATE FUNCTION
+xfloat8out(
   xfloat8
 )
 RETURNS cstring
@@ -816,14 +959,18 @@ WITH testdata (bits) AS (VALUES (X'0000000000000001'),
 (X'000ffffffffffffe'),
 (X'000fffffffffffff'))
 SELECT
-  float8send(flt) AS ibits,
+  float8send(
+  flt
+  )
+  AS ibits,
   flt
 FROM
   (SELECT
     CAST(CAST(CAST(bits
     AS BIGINT)
     AS xfloat8)
-    AS DOUBLE PRECISION) AS flt
+    AS DOUBLE PRECISION)
+    AS flt
   FROM
     testdata
   OFFSET 0) AS s;
@@ -1038,24 +1185,37 @@ WITH testdata (bits) AS (VALUES (X'0000000000000000'),
 (X'133fffffffffffff'),
 (X'3a6fa7161a4d6e0c'))
 SELECT
-  float8send(flt) AS ibits,
+  float8send(
+  flt
+  )
+  AS ibits,
   flt,
   CAST(CAST(flt
   AS TEXT)
-  AS DOUBLE PRECISION) AS r_flt,
-  float8send(CAST(CAST(flt
+  AS DOUBLE PRECISION)
+  AS r_flt,
+  float8send(
+  CAST(CAST(flt
   AS TEXT)
-  AS DOUBLE PRECISION)) AS obits,
-  float8send(CAST(CAST(flt
+  AS DOUBLE PRECISION)
+  )
+  AS obits,
+  float8send(
+  CAST(CAST(flt
   AS TEXT)
-  AS DOUBLE PRECISION)) =
-  float8send(flt) AS correct
+  AS DOUBLE PRECISION)
+  ) =
+  float8send(
+  flt
+  )
+  AS correct
 FROM
   (SELECT
     CAST(CAST(CAST(bits
     AS BIGINT)
     AS xfloat8)
-    AS DOUBLE PRECISION) AS flt
+    AS DOUBLE PRECISION)
+    AS flt
   FROM
     testdata
   OFFSET 0) AS s;

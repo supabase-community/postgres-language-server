@@ -43,7 +43,8 @@ SELECT
   v,
   b,
   v ||
-  b AS concat
+  b
+  AS concat
 FROM
   bit_table,
   varbit_table
@@ -55,43 +56,55 @@ SELECT v, length(v) AS lv FROM varbit_table;
 
 SELECT
   b,
-  SUBSTRING(b FROM 2 FOR 4) AS sub_2_4,
-  SUBSTRING(b FROM 7 FOR 13) AS sub_7_13,
-  SUBSTRING(b FROM 6) AS sub_6
+  SUBSTRING(b FROM 2 FOR 4)
+  AS sub_2_4,
+  SUBSTRING(b FROM 7 FOR 13)
+  AS sub_7_13,
+  SUBSTRING(b FROM 6)
+  AS sub_6
 FROM
   bit_table;
 
 SELECT
   v,
-  SUBSTRING(v FROM 2 FOR 4) AS sub_2_4,
-  SUBSTRING(v FROM 7 FOR 13) AS sub_7_13,
-  SUBSTRING(v FROM 6) AS sub_6
+  SUBSTRING(v FROM 2 FOR 4)
+  AS sub_2_4,
+  SUBSTRING(v FROM 7 FOR 13)
+  AS sub_7_13,
+  SUBSTRING(v FROM 6)
+  AS sub_6
 FROM
   varbit_table;
 
 SELECT
   SUBSTRING(CAST('01010101'
-  AS BIT(8)) FROM 2 FOR 2147483646) AS "1010101";
+  AS BIT(8)) FROM 2 FOR 2147483646)
+  AS "1010101";
 
 SELECT
   SUBSTRING(CAST('01010101'
-  AS BIT(8)) FROM -10 FOR 2147483646) AS "01010101";
+  AS BIT(8)) FROM -10 FOR 2147483646)
+  AS "01010101";
 
 SELECT
   SUBSTRING(CAST('01010101'
-  AS BIT(8)) FROM -10 FOR -2147483646) AS error;
+  AS BIT(8)) FROM -10 FOR -2147483646)
+  AS error;
 
 SELECT
   SUBSTRING(CAST('01010101'
-  AS BIT VARYING) FROM 2 FOR 2147483646) AS "1010101";
+  AS BIT VARYING) FROM 2 FOR 2147483646)
+  AS "1010101";
 
 SELECT
   SUBSTRING(CAST('01010101'
-  AS BIT VARYING) FROM -10 FOR 2147483646) AS "01010101";
+  AS BIT VARYING) FROM -10 FOR 2147483646)
+  AS "01010101";
 
 SELECT
   SUBSTRING(CAST('01010101'
-  AS BIT VARYING) FROM -10 FOR -2147483646) AS error;
+  AS BIT VARYING) FROM -10 FOR -2147483646)
+  AS error;
 
 DROP TABLE "varbit_table";
 
@@ -103,10 +116,14 @@ CREATE TABLE varbit_table (
 SELECT
   a,
   b,
-  ~a AS "~ a",
-  a & b AS "a & b",
-  a | b AS "a | b",
-  a # b AS "a # b"
+  ~a
+  AS "~ a",
+  a & b
+  AS "a & b",
+  a | b
+  AS "a | b",
+  a # b
+  AS "a # b"
 FROM
   varbit_table;
 
@@ -114,25 +131,33 @@ SELECT
   a,
   b,
   a <
-  b AS "a<b",
+  b
+  AS "a<b",
   a <=
-  b AS "a<=b",
+  b
+  AS "a<=b",
   a =
-  b AS "a=b",
+  b
+  AS "a=b",
   a >=
-  b AS "a>=b",
+  b
+  AS "a>=b",
   a >
-  b AS "a>b",
+  b
+  AS "a>b",
   a <>
-  b AS "a<>b"
+  b
+  AS "a<>b"
 FROM
   varbit_table;
 
 SELECT
   a,
-  a << 4 AS "a<<4",
+  a << 4
+  AS "a<<4",
   b,
-  b >> 2 AS "b>>2"
+  b >> 2
+  AS "b>>2"
 FROM
   varbit_table;
 
@@ -145,10 +170,14 @@ CREATE TABLE bit_table ( a BIT(16), b BIT(16) );
 SELECT
   a,
   b,
-  ~a AS "~ a",
-  a & b AS "a & b",
-  a | b AS "a | b",
-  a # b AS "a # b"
+  ~a
+  AS "~ a",
+  a & b
+  AS "a & b",
+  a | b
+  AS "a | b",
+  a # b
+  AS "a # b"
 FROM
   bit_table;
 
@@ -156,25 +185,33 @@ SELECT
   a,
   b,
   a <
-  b AS "a<b",
+  b
+  AS "a<b",
   a <=
-  b AS "a<=b",
+  b
+  AS "a<=b",
   a =
-  b AS "a=b",
+  b
+  AS "a=b",
   a >=
-  b AS "a>=b",
+  b
+  AS "a>=b",
   a >
-  b AS "a>b",
+  b
+  AS "a>b",
   a <>
-  b AS "a<>b"
+  b
+  AS "a<>b"
 FROM
   bit_table;
 
 SELECT
   a,
-  a << 4 AS "a<<4",
+  a << 4
+  AS "a<<4",
   b,
-  b >> 2 AS "b>>2"
+  b >> 2
+  AS "b>>2"
 FROM
   bit_table;
 
@@ -308,8 +345,10 @@ SELECT b, b >> 1 AS bsr, b << 1 AS bsl FROM bit_shift_table;
 
 SELECT
   b,
-  b >> 8 AS bsr8,
-  b << 8 AS bsl8
+  b >> 8
+  AS bsr8,
+  b << 8
+  AS bsl8
 FROM
   bit_shift_table;
 
@@ -317,9 +356,11 @@ SELECT
   CAST(b
   AS BIT(15)),
   CAST(b
-  AS BIT(15)) >> 1 AS bsr,
+  AS BIT(15)) >> 1
+  AS bsr,
   CAST(b
-  AS BIT(15)) << 1 AS bsl
+  AS BIT(15)) << 1
+  AS bsl
 FROM
   bit_shift_table;
 
@@ -327,9 +368,11 @@ SELECT
   CAST(b
   AS BIT(15)),
   CAST(b
-  AS BIT(15)) >> 8 AS bsr8,
+  AS BIT(15)) >> 8
+  AS bsr8,
   CAST(b
-  AS BIT(15)) << 8 AS bsl8
+  AS BIT(15)) << 8
+  AS bsl8
 FROM
   bit_shift_table;
 
@@ -378,15 +421,19 @@ FROM
 
 SELECT
   v,
-  v >> 1 AS vsr,
-  v << 1 AS vsl
+  v >> 1
+  AS vsr,
+  v << 1
+  AS vsl
 FROM
   varbit_shift_table;
 
 SELECT
   v,
-  v >> 8 AS vsr8,
-  v << 8 AS vsl8
+  v >> 8
+  AS vsr8,
+  v << 8
+  AS vsl8
 FROM
   varbit_shift_table;
 

@@ -83,7 +83,7 @@ where
 {
     for (i, n) in nodes.iter().enumerate() {
         if i > 0 {
-            e.space();
+            e.line(LineType::SoftOrSpace);
         }
         render(n, e);
     }

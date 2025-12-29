@@ -4,7 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/single/func_call_within_group_fi
 snapshot_kind: text
 ---
 SELECT
-  percentile_cont(0.75)
+  percentile_cont(
+  0.75
+  )
   WITHIN GROUP (ORDER BY salary DESC)
   FILTER (WHERE
     salary IS NOT NULL)

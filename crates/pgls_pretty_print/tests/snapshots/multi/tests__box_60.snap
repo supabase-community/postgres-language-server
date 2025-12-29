@@ -171,13 +171,21 @@ CREATE TEMPORARY TABLE box_temp ( f1 box );
 
 INSERT INTO box_temp
 SELECT
-  box(point(i,
-  i),
-  point(i * 2,
-  i * 2))
+  box(
+  point(
+  i,
+  i
+  ),
+  point(
+  i * 2,
+  i * 2
+  )
+  )
 FROM
-  generate_series(1,
-  50) AS i;
+  generate_series(
+  1,
+  50
+  ) AS i;
 
 CREATE INDEX "box_spgist" ON box_temp USING spgist ( f1);
 
@@ -258,23 +266,35 @@ CREATE TABLE quad_box_tbl ( id INT, b box );
 INSERT INTO quad_box_tbl
 SELECT
   (x - 1) * 100 + y,
-  box(point(x * 10,
-  y * 10),
-  point(x * 10 + 5,
-  y * 10 + 5))
+  box(
+  point(
+  x * 10,
+  y * 10
+  ),
+  point(
+  x * 10 + 5,
+  y * 10 + 5
+  )
+  )
 FROM
-  generate_series(1,
-  100) AS x,
-  generate_series(1,
-  100) AS y;
+  generate_series(
+  1,
+  100
+  ) AS x,
+  generate_series(
+  1,
+  100
+  ) AS y;
 
 INSERT INTO quad_box_tbl
 SELECT
   i,
   '((200, 300),(210, 310))'
 FROM
-  generate_series(10001,
-  11000) AS i;
+  generate_series(
+  10001,
+  11000
+  ) AS i;
 
 INSERT INTO quad_box_tbl
 VALUES (11001,
@@ -301,24 +321,32 @@ SET enable_bitmapscan = off;
 
 CREATE TABLE quad_box_tbl_ord_seq1 AS
   SELECT
-    RANK()
+    RANK(
+
+    )
     OVER (
     ORDER BY b <-> CAST('123,456'
-    AS point)) AS n,
+    AS point))
+    AS n,
     b <-> CAST('123,456'
-    AS point) AS dist,
+    AS point)
+    AS dist,
     id
   FROM
     quad_box_tbl;
 
 CREATE TABLE quad_box_tbl_ord_seq2 AS
   SELECT
-    RANK()
+    RANK(
+
+    )
     OVER (
     ORDER BY b <-> CAST('123,456'
-    AS point)) AS n,
+    AS point))
+    AS n,
     b <-> CAST('123,456'
-    AS point) AS dist,
+    AS point)
+    AS dist,
     id
   FROM
     quad_box_tbl
@@ -333,7 +361,9 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = on;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -341,7 +371,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -349,7 +381,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -357,7 +391,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -365,7 +401,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -373,7 +411,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -381,7 +421,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -389,7 +431,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -397,7 +441,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -405,7 +451,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -413,7 +461,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -421,7 +471,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -429,7 +481,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_box_tbl
 WHERE
@@ -441,24 +495,32 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SELECT
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY b <-> CAST('123,456'
-  AS point)) AS n,
+  AS point))
+  AS n,
   b <-> CAST('123,456'
-  AS point) AS dist,
+  AS point)
+  AS dist,
   id
 FROM
   quad_box_tbl;
 
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx1 AS
   SELECT
-    RANK()
+    RANK(
+
+    )
     OVER (
     ORDER BY b <-> CAST('123,456'
-    AS point)) AS n,
+    AS point))
+    AS n,
     b <-> CAST('123,456'
-    AS point) AS dist,
+    AS point)
+    AS dist,
     id
   FROM
     quad_box_tbl;
@@ -483,12 +545,16 @@ WHERE
   idx.id IS NULL;
 
 SELECT
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY b <-> CAST('123,456'
-  AS point)) AS n,
+  AS point))
+  AS n,
   b <-> CAST('123,456'
-  AS point) AS dist,
+  AS point)
+  AS dist,
   id
 FROM
   quad_box_tbl
@@ -498,12 +564,16 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2 AS
   SELECT
-    RANK()
+    RANK(
+
+    )
     OVER (
     ORDER BY b <-> CAST('123,456'
-    AS point)) AS n,
+    AS point))
+    AS n,
     b <-> CAST('123,456'
-    AS point) AS dist,
+    AS point)
+    AS dist,
     id
   FROM
     quad_box_tbl
@@ -545,5 +615,7 @@ SELECT pg_input_is_valid('((200,300),(500, xyz))', 'box');
 SELECT
   *
 FROM
-  pg_input_error_info('((200,300),(500, xyz))',
-  'box');
+  pg_input_error_info(
+  '((200,300),(500, xyz))',
+  'box'
+  );

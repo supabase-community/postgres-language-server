@@ -421,7 +421,9 @@ SELECT SUM(a) FROM a_star;
 
 SELECT
   class,
-  SUM(a)
+  SUM(
+  a
+  )
 FROM
   a_star
 GROUP BY class
@@ -462,7 +464,8 @@ ALTER TABLE a_star ADD COLUMN a TEXT;
 SELECT
   relname,
   reltoastrelid <>
-  0 AS has_toast_table
+  0
+  AS has_toast_table
 FROM
   pg_class
 WHERE

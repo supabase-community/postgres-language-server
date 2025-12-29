@@ -4,7 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/compression_lz4_60.sql
 snapshot_kind: text
 ---
 SELECT
-  NOT enumvals @> '{lz4}' AS skip_test
+  NOT enumvals @> '{lz4}'
+  AS skip_test
 FROM
   pg_settings
 WHERE
@@ -62,7 +63,8 @@ UPDATE cmmove2 SET f1 = cmdata_lz4.f1 FROM cmdata_lz4;
 
 SELECT pg_column_compression(f1) FROM cmmove2;
 
-CREATE OR REPLACE FUNCTION large_val_lz4()
+CREATE OR REPLACE FUNCTION
+large_val_lz4()
 RETURNS TEXT
 LANGUAGE "sql"
 AS 'select array_agg(fipshash(g::text))::text from generate_series(1, 256) g';
@@ -71,9 +73,13 @@ CREATE TABLE cmdata2 ( f1 TEXT COMPRESSION lz4 );
 
 INSERT INTO cmdata2
 SELECT
-  large_val_lz4() ||
-  repeat('a',
-  4000);
+  large_val_lz4(
+
+  ) ||
+  repeat(
+  'a',
+  4000
+  );
 
 SELECT pg_column_compression(f1) FROM cmdata2;
 
@@ -163,13 +169,21 @@ INDEX "idx1" ON cmdata2 USING btree
 
 INSERT INTO cmdata2
 VALUES ((SELECT
-  CAST(array_agg(fipshash(CAST(g
-  AS TEXT)))
+  CAST(array_agg(
+  fipshash(
+  CAST(g
+  AS TEXT)
+  )
+  )
   AS TEXT)
 FROM
-  generate_series(1,
-  50) AS g),
-version());
+  generate_series(
+  1,
+  50
+  ) AS g),
+version(
+
+));
 
 SELECT length(f1) FROM cmdata_pglz;
 

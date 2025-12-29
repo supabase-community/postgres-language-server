@@ -129,7 +129,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test');
+  pg_partition_tree(
+  'ptif_test'
+  );
 
 SELECT
   relid,
@@ -137,7 +139,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test0') AS p
+  pg_partition_tree(
+  'ptif_test0'
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -149,7 +153,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test01') AS p
+  pg_partition_tree(
+  'ptif_test01'
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -161,7 +167,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test3') AS p
+  pg_partition_tree(
+  'ptif_test3'
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -177,7 +185,11 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree(pg_partition_root('ptif_test01')) AS p
+  pg_partition_tree(
+  pg_partition_root(
+  'ptif_test01'
+  )
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -189,7 +201,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test_index');
+  pg_partition_tree(
+  'ptif_test_index'
+  );
 
 SELECT
   relid,
@@ -197,7 +211,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test0_index') AS p
+  pg_partition_tree(
+  'ptif_test0_index'
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -209,7 +225,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test01_index') AS p
+  pg_partition_tree(
+  'ptif_test01_index'
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -221,7 +239,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_test3_index') AS p
+  pg_partition_tree(
+  'ptif_test3_index'
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -233,7 +253,11 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree(pg_partition_root('ptif_test01_index')) AS p
+  pg_partition_tree(
+  pg_partition_root(
+  'ptif_test01_index'
+  )
+  ) AS p
   INNER JOIN pg_class
   AS c
   ON p.relid =
@@ -253,7 +277,9 @@ SELECT
   level,
   isleaf
 FROM
-  pg_partition_tree('ptif_normal_table');
+  pg_partition_tree(
+  'ptif_normal_table'
+  );
 
 SELECT * FROM pg_partition_ancestors('ptif_normal_table');
 

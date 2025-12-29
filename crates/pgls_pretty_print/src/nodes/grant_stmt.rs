@@ -39,7 +39,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         });
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
     e.space();
 

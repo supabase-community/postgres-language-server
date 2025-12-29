@@ -49,21 +49,29 @@ INSERT INTO gist_point_tbl (id,
 p)
 SELECT
   g,
-  point(g * 10,
-  g * 10)
+  point(
+  g * 10,
+  g * 10
+  )
 FROM
-  generate_series(1,
-  10000) AS g;
+  generate_series(
+  1,
+  10000
+  ) AS g;
 
 INSERT INTO gist_point_tbl (id,
 p)
 SELECT
   g + 100000,
-  point(g * 10 + 1,
-  g * 10 + 1)
+  point(
+  g * 10 + 1,
+  g * 10 + 1
+  )
 FROM
-  generate_series(1,
-  10000) AS g;
+  generate_series(
+  1,
+  10000
+  ) AS g;
 
 DELETE FROM gist_point_tbl WHERE id % 2 = 1;
 
@@ -79,18 +87,32 @@ CREATE TABLE gist_tbl ( b box, p point, c circle );
 
 INSERT INTO gist_tbl
 SELECT
-  box(point(0.05 * i,
-  0.05 * i),
-  point(0.05 * i,
-  0.05 * i)),
-  point(0.05 * i,
-  0.05 * i),
-  circle(point(0.05 * i,
-  0.05 * i),
-  1.0)
+  box(
+  point(
+  0.05 * i,
+  0.05 * i
+  ),
+  point(
+  0.05 * i,
+  0.05 * i
+  )
+  ),
+  point(
+  0.05 * i,
+  0.05 * i
+  ),
+  circle(
+  point(
+  0.05 * i,
+  0.05 * i
+  ),
+  1.0
+  )
 FROM
-  generate_series(0,
-  10000) AS i;
+  generate_series(
+  0,
+  10000
+  ) AS i;
 
 VACUUM (ANALYZE) gist_tbl;
 
@@ -110,84 +132,146 @@ SELECT
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(0,
-  0),
-  point(0.5,
-  0.5));
+  p <@ box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  );
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(0,
-  0),
-  point(0.5,
-  0.5));
+  p <@ box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  );
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(0,
-  0),
-  point(0.5,
-  0.5))
-ORDER BY p <-> point(0.201,
-  0.201);
+  p <@ box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  )
+ORDER BY p <-> point(
+  0.201,
+  0.201
+  );
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(0,
-  0),
-  point(0.5,
-  0.5))
-ORDER BY p <-> point(0.201,
-  0.201);
+  p <@ box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  )
+ORDER BY p <-> point(
+  0.201,
+  0.201
+  );
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(0,
-  0),
-  point(0.5,
-  0.5))
-ORDER BY point(0.101,
-  0.101) <-> p;
+  p <@ box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  )
+ORDER BY point(
+  0.101,
+  0.101
+  ) <-> p;
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(0,
-  0),
-  point(0.5,
-  0.5))
-ORDER BY point(0.101,
-  0.101) <-> p;
+  p <@ box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  )
+ORDER BY point(
+  0.101,
+  0.101
+  ) <-> p;
 
 SELECT
   p
 FROM
-  (VALUES (box(point(0,
-  0),
-  point(0.5,
-  0.5))),
-  (box(point(0.5,
-  0.5),
-  point(0.75,
-  0.75))),
-  (box(point(0.8,
-  0.8),
-  point(1.0,
-  1.0)))) AS v (bb)
+  (VALUES (box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  )),
+  (box(
+  point(
+  0.5,
+  0.5
+  ),
+  point(
+  0.75,
+  0.75
+  )
+  )),
+  (box(
+  point(
+  0.8,
+  0.8
+  ),
+  point(
+  1.0,
+  1.0
+  )
+  ))) AS v (bb)
   INNER JOIN LATERAL (SELECT
     p
   FROM
@@ -201,18 +285,36 @@ FROM
 SELECT
   p
 FROM
-  (VALUES (box(point(0,
-  0),
-  point(0.5,
-  0.5))),
-  (box(point(0.5,
-  0.5),
-  point(0.75,
-  0.75))),
-  (box(point(0.8,
-  0.8),
-  point(1.0,
-  1.0)))) AS v (bb)
+  (VALUES (box(
+  point(
+  0,
+  0
+  ),
+  point(
+  0.5,
+  0.5
+  )
+  )),
+  (box(
+  point(
+  0.5,
+  0.5
+  ),
+  point(
+  0.75,
+  0.75
+  )
+  )),
+  (box(
+  point(
+  0.8,
+  0.8
+  ),
+  point(
+  1.0,
+  1.0
+  )
+  ))) AS v (bb)
   INNER JOIN LATERAL (SELECT
     p
   FROM
@@ -235,68 +337,112 @@ SELECT
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(5,
-  5),
-  point(6,
-  6));
+  b <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  );
 
 SELECT
   b
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(5,
-  5),
-  point(6,
-  6));
+  b <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  );
 
 SELECT
   b
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(5,
-  5),
-  point(6,
-  6))
-ORDER BY b <-> point(5.2,
-  5.91);
+  b <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  )
+ORDER BY b <-> point(
+  5.2,
+  5.91
+  );
 
 SELECT
   b
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(5,
-  5),
-  point(6,
-  6))
-ORDER BY b <-> point(5.2,
-  5.91);
+  b <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  )
+ORDER BY b <-> point(
+  5.2,
+  5.91
+  );
 
 SELECT
   b
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(5,
-  5),
-  point(6,
-  6))
-ORDER BY point(5.2,
-  5.91) <-> b;
+  b <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  )
+ORDER BY point(
+  5.2,
+  5.91
+  ) <-> b;
 
 SELECT
   b
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(5,
-  5),
-  point(6,
-  6))
-ORDER BY point(5.2,
-  5.91) <-> b;
+  b <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  )
+ORDER BY point(
+  5.2,
+  5.91
+  ) <-> b;
 
 DROP INDEX "gist_tbl_box_index";
 
@@ -312,10 +458,16 @@ SELECT
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(5,
-  5),
-  point(6,
-  6));
+  p <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  );
 
 SELECT
   b,
@@ -323,65 +475,107 @@ SELECT
 FROM
   gist_tbl
 WHERE
-  b <@ box(point(4.5,
-  4.5),
-  point(5.5,
-  5.5)) AND
-  p <@ box(point(5,
-  5),
-  point(6,
-  6));
+  b <@ box(
+  point(
+  4.5,
+  4.5
+  ),
+  point(
+  5.5,
+  5.5
+  )
+  ) AND
+  p <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  6,
+  6
+  )
+  );
 
 DROP INDEX "gist_tbl_multi_index";
 
 CREATE INDEX "gist_tbl_multi_index" ON gist_tbl USING gist
 (
-  (circle(p,
-  1)),
+  (circle(
+  p,
+  1
+  )),
   p
 );
 
 SELECT
-  circle(p,
-  1)
+  circle(
+  p,
+  1
+  )
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(5,
-  5),
-  point(5.3,
-  5.3));
+  p <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  5.3,
+  5.3
+  )
+  );
 
 SELECT
-  circle(p,
-  1)
+  circle(
+  p,
+  1
+  )
 FROM
   gist_tbl
 WHERE
-  p <@ box(point(5,
-  5),
-  point(5.3,
-  5.3));
+  p <@ box(
+  point(
+  5,
+  5
+  ),
+  point(
+  5.3,
+  5.3
+  )
+  );
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  circle(p,
-  1) @> circle(point(0,
-  0),
-  0.95);
+  circle(
+  p,
+  1
+  ) @> circle(
+  point(
+  0,
+  0
+  ),
+  0.95
+  );
 
 SELECT
   p
 FROM
   gist_tbl
 WHERE
-  circle(p,
-  1) @> circle(point(0,
-  0),
-  0.95);
+  circle(
+  p,
+  1
+  ) @> circle(
+  point(
+  0,
+  0
+  ),
+  0.95
+  );
 
 SELECT COUNT(*) FROM gist_tbl;
 
@@ -391,18 +585,26 @@ SELECT
   p
 FROM
   gist_tbl
-ORDER BY circle(p,
-  1) <-> point(0,
-  0)
+ORDER BY circle(
+  p,
+  1
+  ) <-> point(
+  0,
+  0
+  )
 LIMIT 1;
 
 SELECT
   p
 FROM
   gist_tbl
-ORDER BY circle(p,
-  1) <-> point(0,
-  0)
+ORDER BY circle(
+  p,
+  1
+  ) <-> point(
+  0,
+  0
+  )
 LIMIT 1;
 
 CREATE INDEX "gist_tbl_box_index_forcing_buffering" ON gist_tbl USING gist
@@ -428,10 +630,16 @@ CREATE INDEX "gist_tbl_box_index" ON gist_tbl USING gist
 
 INSERT INTO gist_tbl
 SELECT
-  box(point(0.05 * i,
-  0.05 * i))
+  box(
+  point(
+  0.05 * i,
+  0.05 * i
+  )
+  )
 FROM
-  generate_series(0,
-  10) AS i;
+  generate_series(
+  0,
+  10
+  ) AS i;
 
 DROP TABLE "gist_tbl";

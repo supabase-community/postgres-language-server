@@ -4,10 +4,14 @@ input_file: crates/pgls_pretty_print/tests/data/multi/collate.icu.utf8_60.sql
 snapshot_kind: text
 ---
 SELECT
-  getdatabaseencoding() <>
+  getdatabaseencoding(
+
+  ) <>
   'UTF8' OR
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     pg_collation
   WHERE
@@ -15,7 +19,8 @@ SELECT
     'i' AND
     collname <>
     'unicode') =
-  0 AS skip_test;
+  0
+  AS skip_test;
 
 SET client_encoding TO utf8;
 
@@ -130,11 +135,13 @@ SELECT * FROM collate_test3 ORDER BY b;
 
 SELECT
   'bbc' COLLATE "en-x-icu" >
-  'Ã¤bc' COLLATE "en-x-icu" AS "true";
+  'Ã¤bc' COLLATE "en-x-icu"
+  AS "true";
 
 SELECT
   'bbc' COLLATE "sv-x-icu" >
-  'Ã¤bc' COLLATE "sv-x-icu" AS "false";
+  'Ã¤bc' COLLATE "sv-x-icu"
+  AS "false";
 
 CREATE TABLE collate_test10 (
   a INT,
@@ -152,35 +159,59 @@ VALUES (1,
 
 SELECT
   a,
-  lower(x),
-  lower(y),
-  upper(x),
-  upper(y),
-  initcap(x),
-  initcap(y)
+  lower(
+  x
+  ),
+  lower(
+  y
+  ),
+  upper(
+  x
+  ),
+  upper(
+  y
+  ),
+  initcap(
+  x
+  ),
+  initcap(
+  y
+  )
 FROM
   collate_test10;
 
 SELECT
   a,
-  lower(x COLLATE "C"),
-  lower(y COLLATE "C")
+  lower(
+  x COLLATE "C"
+  ),
+  lower(
+  y COLLATE "C"
+  )
 FROM
   collate_test10;
 
 SELECT a, x, y FROM collate_test10 ORDER BY lower(y), a;
 
 SELECT
-  lower('AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "en-x-icu");
+  lower(
+  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "en-x-icu"
+  );
 
 SELECT
-  casefold('AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "en-x-icu");
+  casefold(
+  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "en-x-icu"
+  );
 
 SELECT
-  lower('AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "tr-x-icu");
+  lower(
+  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "tr-x-icu"
+  );
 
 SELECT
-  casefold('AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "tr-x-icu");
+  casefold(
+  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "tr-x-icu"
+  );
 
 SELECT * FROM collate_test1 WHERE b LIKE 'abc';
 
@@ -195,10 +226,12 @@ SELECT * FROM collate_test1 WHERE b ILIKE 'abc%';
 SELECT * FROM collate_test1 WHERE b ILIKE '%bc%';
 
 SELECT
-  'TÃ¼rkiye' COLLATE "en-x-icu" ILIKE '%KI%' AS "true";
+  'TÃ¼rkiye' COLLATE "en-x-icu" ILIKE '%KI%'
+  AS "true";
 
 SELECT
-  'TÃ¼rkiye' COLLATE "tr-x-icu" ILIKE '%KI%' AS "false";
+  'TÃ¼rkiye' COLLATE "tr-x-icu" ILIKE '%KI%'
+  AS "false";
 
 SELECT 'bÄ±t' ILIKE 'BIT' COLLATE "en-x-icu" AS "false";
 
@@ -247,15 +280,24 @@ VALUES (1,
 
 SELECT
   b,
-  b ~ '^[[:alpha:]]+$' AS is_alpha,
-  b ~ '^[[:upper:]]+$' AS is_upper,
-  b ~ '^[[:lower:]]+$' AS is_lower,
-  b ~ '^[[:digit:]]+$' AS is_digit,
-  b ~ '^[[:alnum:]]+$' AS is_alnum,
-  b ~ '^[[:graph:]]+$' AS is_graph,
-  b ~ '^[[:print:]]+$' AS is_print,
-  b ~ '^[[:punct:]]+$' AS is_punct,
-  b ~ '^[[:space:]]+$' AS is_space
+  b ~ '^[[:alpha:]]+$'
+  AS is_alpha,
+  b ~ '^[[:upper:]]+$'
+  AS is_upper,
+  b ~ '^[[:lower:]]+$'
+  AS is_lower,
+  b ~ '^[[:digit:]]+$'
+  AS is_digit,
+  b ~ '^[[:alnum:]]+$'
+  AS is_alnum,
+  b ~ '^[[:graph:]]+$'
+  AS is_graph,
+  b ~ '^[[:print:]]+$'
+  AS is_print,
+  b ~ '^[[:punct:]]+$'
+  AS is_punct,
+  b ~ '^[[:space:]]+$'
+  AS is_space
 FROM
   collate_test6;
 
@@ -289,8 +331,10 @@ ORDER BY b COLLATE "C";
 CREATE VIEW collview3 AS
 SELECT
   a,
-  lower((x ||
-  x) COLLATE "C")
+  lower(
+  (x ||
+  x) COLLATE "C"
+  )
 FROM
   collate_test10;
 
@@ -311,10 +355,14 @@ SELECT a, COALESCE(b, 'foo') FROM collate_test3 ORDER BY 2;
 
 SELECT
   a,
-  lower(COALESCE(x,
-  'foo')),
-  lower(COALESCE(y,
-  'foo'))
+  lower(
+  COALESCE(x,
+  'foo')
+  ),
+  lower(
+  COALESCE(y,
+  'foo')
+  )
 FROM
   collate_test10;
 
@@ -349,10 +397,14 @@ SELECT
   a,
   x,
   y,
-  lower(GREATEST(x,
-  'foo')),
-  lower(GREATEST(y,
-  'foo'))
+  lower(
+  GREATEST(x,
+  'foo')
+  ),
+  lower(
+  GREATEST(y,
+  'foo')
+  )
 FROM
   collate_test10;
 
@@ -364,8 +416,12 @@ SELECT a, NULLIF(b, 'abc') FROM collate_test3 ORDER BY 2;
 
 SELECT
   a,
-  lower(NULLIF(x, 'foo')),
-  lower(NULLIF(y, 'foo'))
+  lower(
+  NULLIF(x, 'foo')
+  ),
+  lower(
+  NULLIF(y, 'foo')
+  )
 FROM
   collate_test10;
 
@@ -435,10 +491,14 @@ ORDER BY 2;
 
 SELECT
   a,
-  lower(CAST(x
-  AS testdomain)),
-  lower(CAST(y
-  AS testdomain))
+  lower(
+  CAST(x
+  AS testdomain)
+  ),
+  lower(
+  CAST(y
+  AS testdomain)
+  )
 FROM
   collate_test10;
 
@@ -595,7 +655,9 @@ SELECT
 FROM
   foo
 WHERE
-  length(x) <
+  length(
+  x
+  ) <
   10)
 SELECT
   *
@@ -608,7 +670,8 @@ SELECT a, CAST(b AS VARCHAR) FROM collate_test2 ORDER BY 2;
 
 SELECT a, CAST(b AS VARCHAR) FROM collate_test3 ORDER BY 2;
 
-CREATE FUNCTION mylt(
+CREATE FUNCTION
+mylt(
   TEXT,
   TEXT
 )
@@ -616,7 +679,8 @@ RETURNS BOOLEAN
 LANGUAGE "sql"
 AS ' select $1 < $2 ';
 
-CREATE FUNCTION mylt_noninline(
+CREATE FUNCTION
+mylt_noninline(
   TEXT,
   TEXT
 )
@@ -624,7 +688,8 @@ RETURNS BOOLEAN
 LANGUAGE "sql"
 AS ' select $1 < $2 limit 1 ';
 
-CREATE FUNCTION mylt_plpgsql(
+CREATE FUNCTION
+mylt_plpgsql(
   TEXT,
   TEXT
 )
@@ -633,16 +698,25 @@ LANGUAGE "plpgsql"
 AS ' begin return $1 < $2; end ';
 
 SELECT
-  a.b AS a,
-  b.b AS b,
+  a.b
+  AS a,
+  b.b
+  AS b,
   a.b <
-  b.b AS lt,
-  mylt(a.b,
-  b.b),
-  mylt_noninline(a.b,
-  b.b),
-  mylt_plpgsql(a.b,
-  b.b)
+  b.b
+  AS lt,
+  mylt(
+  a.b,
+  b.b
+  ),
+  mylt_noninline(
+  a.b,
+  b.b
+  ),
+  mylt_plpgsql(
+  a.b,
+  b.b
+  )
 FROM
   collate_test1
   AS a,
@@ -652,16 +726,25 @@ ORDER BY a.b,
   b.b;
 
 SELECT
-  a.b AS a,
-  b.b AS b,
+  a.b
+  AS a,
+  b.b
+  AS b,
   a.b <
-  b.b COLLATE "C" AS lt,
-  mylt(a.b,
-  b.b COLLATE "C"),
-  mylt_noninline(a.b,
-  b.b COLLATE "C"),
-  mylt_plpgsql(a.b,
-  b.b COLLATE "C")
+  b.b COLLATE "C"
+  AS lt,
+  mylt(
+  a.b,
+  b.b COLLATE "C"
+  ),
+  mylt_noninline(
+  a.b,
+  b.b COLLATE "C"
+  ),
+  mylt_plpgsql(
+  a.b,
+  b.b COLLATE "C"
+  )
 FROM
   collate_test1
   AS a,
@@ -670,7 +753,8 @@ FROM
 ORDER BY a.b,
   b.b;
 
-CREATE FUNCTION mylt2(
+CREATE FUNCTION
+mylt2(
   "x" TEXT,
   "y" TEXT
 )
@@ -686,12 +770,19 @@ end
 ';
 
 SELECT
-  mylt2('a',
-  'B' COLLATE "en-x-icu") AS t,
-  mylt2('a',
-  'B' COLLATE "C") AS f;
+  mylt2(
+  'a',
+  'B' COLLATE "en-x-icu"
+  )
+  AS t,
+  mylt2(
+  'a',
+  'B' COLLATE "C"
+  )
+  AS f;
 
-CREATE OR REPLACE FUNCTION mylt2(
+CREATE OR REPLACE FUNCTION
+mylt2(
   "x" TEXT,
   "y" TEXT
 )
@@ -715,31 +806,44 @@ SELECT mylt2('a', 'B' COLLATE "POSIX") AS f;
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test1))
+    collate_test1)
+  )
 ORDER BY 1;
 
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test2))
+    collate_test2)
+  )
 ORDER BY 1;
 
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test3))
+    collate_test3)
+  )
 ORDER BY 1;
 
-CREATE FUNCTION dup(
+CREATE FUNCTION
+dup(
   ANYELEMENT
 )
 RETURNS ANYELEMENT
@@ -785,7 +889,9 @@ CREATE INDEX "collate_test1_idx6" ON collate_test1 USING btree
 
 SELECT
   relname,
-  pg_get_indexdef(oid)
+  pg_get_indexdef(
+  oid
+  )
 FROM
   pg_class
 WHERE
@@ -899,8 +1005,10 @@ COMMENT ON COLLATION test0 IS 'US English';
 SELECT
   collname,
   nspname,
-  obj_description(pg_collation.oid,
-  'pg_collation')
+  obj_description(
+  pg_collation.oid,
+  'pg_collation'
+  )
 FROM
   pg_collation
   INNER JOIN pg_namespace
@@ -948,7 +1056,8 @@ CREATE TYPE collate_dep_test2 AS (
 CREATE VIEW collate_dep_test3 AS
 SELECT
   CAST('foo'
-  AS TEXT) COLLATE "test0" AS foo;
+  AS TEXT) COLLATE "test0"
+  AS foo;
 
 CREATE TABLE collate_dep_test4t ( a INT, b TEXT );
 
@@ -1162,62 +1271,78 @@ SELECT strpos(b COLLATE "ctest_det", 'bc') FROM test6;
 SELECT strpos(b COLLATE "ctest_nondet", 'bc') FROM test6;
 
 SELECT
-  replace(b COLLATE "ctest_det",
+  replace(
+  b COLLATE "ctest_det",
   'äb',
-  'X')
+  'X'
+  )
 FROM
   test6;
 
 SELECT
-  replace(b COLLATE "ctest_nondet",
+  replace(
+  b COLLATE "ctest_nondet",
   'äb',
-  'X')
+  'X'
+  )
 FROM
   test6;
 
 SELECT
   a,
-  split_part(b COLLATE "ctest_det",
+  split_part(
+  b COLLATE "ctest_det",
   'äb',
-  2)
+  2
+  )
 FROM
   test6;
 
 SELECT
   a,
-  split_part(b COLLATE "ctest_nondet",
+  split_part(
+  b COLLATE "ctest_nondet",
   'äb',
-  2)
+  2
+  )
 FROM
   test6;
 
 SELECT
   a,
-  split_part(b COLLATE "ctest_det",
+  split_part(
+  b COLLATE "ctest_det",
   'äb',
-  -1)
+  -1
+  )
 FROM
   test6;
 
 SELECT
   a,
-  split_part(b COLLATE "ctest_nondet",
+  split_part(
+  b COLLATE "ctest_nondet",
   'äb',
-  -1)
+  -1
+  )
 FROM
   test6;
 
 SELECT
   a,
-  string_to_array(b COLLATE "ctest_det",
-  'äb')
+  string_to_array(
+  b COLLATE "ctest_det",
+  'äb'
+  )
 FROM
   test6;
 
 SELECT
   a,
-  string_to_array(b COLLATE "ctest_nondet",
-  'äb')
+  string_to_array(
+  b COLLATE "ctest_nondet",
+  'äb'
+  )
 FROM
   test6;
 
@@ -1285,8 +1410,10 @@ SELECT
   'ABC' COLLATE "case_insensitive";
 
 SELECT
-  array_sort(CAST('{a,B}'
-  AS TEXT[]) COLLATE "case_insensitive");
+  array_sort(
+  CAST('{a,B}'
+  AS TEXT[]) COLLATE "case_insensitive"
+  );
 
 SELECT array_sort(CAST('{a,B}' AS TEXT[]) COLLATE "C");
 
@@ -1381,10 +1508,14 @@ SELECT x, COUNT(*) FROM test3cs GROUP BY x ORDER BY x;
 
 SELECT
   x,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY x),
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY x)
 FROM
@@ -1398,14 +1529,18 @@ INSERT INTO test1cs VALUES ('ABC');
 CREATE UNIQUE INDEX ON test3cs USING btree ( x);
 
 SELECT
-  string_to_array('ABC,DEF,GHI' COLLATE "case_sensitive",
+  string_to_array(
+  'ABC,DEF,GHI' COLLATE "case_sensitive",
   ',',
-  'abc');
+  'abc'
+  );
 
 SELECT
-  string_to_array('ABCDEFGHI' COLLATE "case_sensitive",
+  string_to_array(
+  'ABCDEFGHI' COLLATE "case_sensitive",
   NULL,
-  'b');
+  'b'
+  );
 
 CREATE TABLE test1ci ( x TEXT COLLATE "case_insensitive" );
 
@@ -1475,10 +1610,14 @@ SELECT x, COUNT(*) FROM test3ci GROUP BY x ORDER BY x;
 
 SELECT
   x,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY x),
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY x)
 FROM
@@ -1492,14 +1631,18 @@ INSERT INTO test1ci VALUES ('ABC');
 CREATE UNIQUE INDEX ON test3ci USING btree ( x);
 
 SELECT
-  string_to_array('ABC,DEF,GHI' COLLATE "case_insensitive",
+  string_to_array(
+  'ABC,DEF,GHI' COLLATE "case_insensitive",
   ',',
-  'abc');
+  'abc'
+  );
 
 SELECT
-  string_to_array('ABCDEFGHI' COLLATE "case_insensitive",
+  string_to_array(
+  'ABCDEFGHI' COLLATE "case_insensitive",
   NULL,
-  'b');
+  'b'
+  );
 
 CREATE TABLE test1bpci (
   x CHAR(3) COLLATE "case_insensitive"
@@ -1578,10 +1721,14 @@ SELECT x, COUNT(*) FROM test3bpci GROUP BY x ORDER BY x;
 
 SELECT
   x,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY x),
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY x)
 FROM
@@ -1595,16 +1742,20 @@ INSERT INTO test1bpci VALUES ('ABC');
 CREATE UNIQUE INDEX ON test3bpci USING btree ( x);
 
 SELECT
-  string_to_array(CAST('ABC,DEF,GHI'
+  string_to_array(
+  CAST('ABC,DEF,GHI'
   AS CHAR(11)) COLLATE "case_insensitive",
   ',',
-  'abc');
+  'abc'
+  );
 
 SELECT
-  string_to_array(CAST('ABCDEFGHI'
+  string_to_array(
+  CAST('ABCDEFGHI'
   AS CHAR(9)) COLLATE "case_insensitive",
   NULL,
-  'b');
+  'b'
+  );
 
 CREATE TABLE test4c ( x TEXT COLLATE "case_insensitive" );
 
@@ -1789,18 +1940,22 @@ UPDATE test4nfd SET b = NORMALIZE(b, NFD);
 SELECT
   a,
   b,
-  replace(b COLLATE "ignore_accents",
+  replace(
+  b COLLATE "ignore_accents",
   'co',
-  'ma')
+  'ma'
+  )
 FROM
   test4;
 
 SELECT
   a,
   b,
-  replace(b COLLATE "ignore_accents",
+  replace(
+  b COLLATE "ignore_accents",
   'co',
-  'ma')
+  'ma'
+  )
 FROM
   test4nfd;
 
@@ -1985,11 +2140,15 @@ INSERT INTO test22 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test22_0) =
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test22_1);
 
@@ -2013,11 +2172,15 @@ INSERT INTO test22a VALUES (2, ARRAY['DEF']);
 
 SELECT
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test22a_0) =
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test22a_1);
 
@@ -2041,11 +2204,15 @@ INSERT INTO test23 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test23_0) <>
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test23_1);
 
@@ -2069,11 +2236,15 @@ INSERT INTO test23a VALUES (2, ARRAY['DEF']);
 
 SELECT
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test23a_0) <>
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test23a_1);
 
@@ -2129,11 +2300,15 @@ INSERT INTO test32 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test32_0) =
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test32_1);
 
@@ -2157,11 +2332,15 @@ INSERT INTO test33 VALUES (2, 'DEF');
 
 SELECT
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test33_0) <>
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     test33_1);
 
@@ -2188,28 +2367,40 @@ FOR VALUES IN ('B',
 INSERT INTO pagg_tab3
 SELECT
   i % 4 + 1,
-  substr('abAB',
+  substr(
+  'abAB',
   i % 4 + 1,
-  1)
+  1
+  )
 FROM
-  generate_series(0,
-  19) AS i;
+  generate_series(
+  0,
+  19
+  ) AS i;
 
 ANALYZE pagg_tab3;
 
 SET enable_partitionwise_aggregate = false;
 
 SELECT
-  upper(c COLLATE "case_insensitive"),
-  COUNT(c)
+  upper(
+  c COLLATE "case_insensitive"
+  ),
+  COUNT(
+  c
+  )
 FROM
   pagg_tab3
 GROUP BY c COLLATE "case_insensitive"
 ORDER BY 1;
 
 SELECT
-  upper(c COLLATE "case_insensitive"),
-  COUNT(c)
+  upper(
+  c COLLATE "case_insensitive"
+  ),
+  COUNT(
+  c
+  )
 FROM
   pagg_tab3
 GROUP BY c COLLATE "case_insensitive"
@@ -2218,16 +2409,24 @@ ORDER BY 1;
 SET enable_partitionwise_aggregate = true;
 
 SELECT
-  upper(c COLLATE "case_insensitive"),
-  COUNT(c)
+  upper(
+  c COLLATE "case_insensitive"
+  ),
+  COUNT(
+  c
+  )
 FROM
   pagg_tab3
 GROUP BY c COLLATE "case_insensitive"
 ORDER BY 1;
 
 SELECT
-  upper(c COLLATE "case_insensitive"),
-  COUNT(c)
+  upper(
+  c COLLATE "case_insensitive"
+  ),
+  COUNT(
+  c
+  )
 FROM
   pagg_tab3
 GROUP BY c COLLATE "case_insensitive"
@@ -2235,7 +2434,9 @@ ORDER BY 1;
 
 SELECT
   c COLLATE "C",
-  COUNT(c)
+  COUNT(
+  c
+  )
 FROM
   pagg_tab3
 GROUP BY c COLLATE "C"
@@ -2243,7 +2444,9 @@ ORDER BY 1;
 
 SELECT
   c COLLATE "C",
-  COUNT(c)
+  COUNT(
+  c
+  )
 FROM
   pagg_tab3
 GROUP BY c COLLATE "C"
@@ -2253,7 +2456,9 @@ SET enable_partitionwise_join = false;
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2266,7 +2471,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2281,7 +2488,9 @@ SET enable_partitionwise_join = true;
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2294,7 +2503,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2307,7 +2518,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2320,7 +2533,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2335,7 +2550,9 @@ SET enable_partitionwise_join = false;
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2348,7 +2565,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c COLLATE "C",
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2380,21 +2599,29 @@ FOR VALUES IN ('B',
 INSERT INTO pagg_tab4 (b,
 c)
 SELECT
-  substr('abAB',
+  substr(
+  'abAB',
   i % 4 + 1,
-  1),
-  substr('abAB',
+  1
+  ),
+  substr(
+  'abAB',
   i % 2 + 1,
-  1)
+  1
+  )
 FROM
-  generate_series(0,
-  11) AS i;
+  generate_series(
+  0,
+  11
+  ) AS i;
 
 ANALYZE pagg_tab4;
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2409,7 +2636,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab3
   AS t1
@@ -2441,28 +2670,40 @@ FOR VALUES IN ('c',
 INSERT INTO pagg_tab5 (b,
 c)
 SELECT
-  substr('abAB',
+  substr(
+  'abAB',
   i % 4 + 1,
-  1),
-  substr('abAB',
+  1
+  ),
+  substr(
+  'abAB',
   i % 2 + 1,
-  1)
+  1
+  )
 FROM
-  generate_series(0,
-  5) AS i;
+  generate_series(
+  0,
+  5
+  ) AS i;
 
 INSERT INTO pagg_tab5 (b,
 c)
 SELECT
-  substr('cdCD',
+  substr(
+  'cdCD',
   i % 4 + 1,
-  1),
-  substr('cdCD',
+  1
+  ),
+  substr(
+  'cdCD',
   i % 2 + 1,
-  1)
+  1
+  )
 FROM
-  generate_series(0,
-  5) AS i;
+  generate_series(
+  0,
+  5
+  ) AS i;
 
 ANALYZE pagg_tab5;
 
@@ -2485,34 +2726,48 @@ FOR VALUES IN ('c',
 INSERT INTO pagg_tab6 (b,
 c)
 SELECT
-  substr('abAB',
+  substr(
+  'abAB',
   i % 4 + 1,
-  1),
-  substr('abAB',
+  1
+  ),
+  substr(
+  'abAB',
   i % 2 + 1,
-  1)
+  1
+  )
 FROM
-  generate_series(0,
-  5) AS i;
+  generate_series(
+  0,
+  5
+  ) AS i;
 
 INSERT INTO pagg_tab6 (b,
 c)
 SELECT
-  substr('cdCD',
+  substr(
+  'cdCD',
   i % 4 + 1,
-  1),
-  substr('cdCD',
+  1
+  ),
+  substr(
+  'cdCD',
   i % 2 + 1,
-  1)
+  1
+  )
 FROM
-  generate_series(0,
-  5) AS i;
+  generate_series(
+  0,
+  5
+  ) AS i;
 
 ANALYZE pagg_tab6;
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab5
   AS t1
@@ -2527,7 +2782,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab5
   AS t1
@@ -2544,7 +2801,9 @@ SET enable_partitionwise_join = false;
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab5
   AS t1
@@ -2559,7 +2818,9 @@ ORDER BY t1.c COLLATE "C";
 
 SELECT
   t1.c,
-  COUNT(t2.c)
+  COUNT(
+  t2.c
+  )
 FROM
   pagg_tab5
   AS t1

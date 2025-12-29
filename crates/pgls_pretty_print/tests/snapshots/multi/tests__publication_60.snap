@@ -22,8 +22,10 @@ RESET client_min_messages;
 COMMENT ON PUBLICATION testpub_default IS 'test publication';
 
 SELECT
-  obj_description(p.oid,
-  'pg_publication')
+  obj_description(
+  p.oid,
+  'pg_publication'
+  )
 FROM
   pg_publication
   AS p;
@@ -342,9 +344,12 @@ TABLE testpub_rf_tbl3 WHERE (
 ALTER PUBLICATION testpub5 SET
 TABLE testpub_rf_tbl3 WHERE (
   e <
-  AVG(e));
+  AVG(
+  e
+  ));
 
-CREATE FUNCTION testpub_rf_func1(
+CREATE FUNCTION
+testpub_rf_func1(
   INT,
   INT
 )
@@ -359,7 +364,8 @@ RIGHTARG = INT);
 CREATE PUBLICATION testpub6
 FOR TABLE testpub_rf_tbl3 WHERE (e =#> 27);
 
-CREATE FUNCTION testpub_rf_func2()
+CREATE FUNCTION
+testpub_rf_func2()
 RETURNS INT
 IMMUTABLE
 AS ' BEGIN RETURN 123; END; '
@@ -368,12 +374,16 @@ LANGUAGE "plpgsql";
 ALTER PUBLICATION testpub5 ADD
 TABLE testpub_rf_tbl1 WHERE (
   a >=
-  testpub_rf_func2());
+  testpub_rf_func2(
+
+  ));
 
 ALTER PUBLICATION testpub5 ADD
 TABLE testpub_rf_tbl1 WHERE (
   a <
-  random());
+  random(
+
+  ));
 
 CREATE COLLATION user_collation FROM "C";
 
@@ -415,7 +425,9 @@ TABLE testpub_rf_tbl1 WHERE (
 
 ALTER PUBLICATION testpub5 SET
 TABLE testpub_rf_tbl4 WHERE (
-  length(g) <
+  length(
+  g
+  ) <
   6);
 
 CREATE TYPE rf_bug_status AS ENUM ('new', 'open', 'closed');
@@ -437,8 +449,10 @@ DROP TYPE rf_bug_status;
 
 CREATE PUBLICATION testpub6
 FOR TABLE testpub_rf_tbl1 WHERE (a IN (SELECT
-  generate_series(1,
-  5)));
+  generate_series(
+  1,
+  5
+  )));
 
 CREATE PUBLICATION testpub6
 FOR TABLE testpub_rf_tbl1 WHERE (CAST('(0,1)'
@@ -524,7 +538,10 @@ FOR TABLE testpub_rf_tbl7 WHERE (y >
 100);
 
 ALTER TABLE testpub_rf_tbl7
-  ALTER COLUMN y SET EXPRESSION AS (x * testpub_rf_func2());
+  ALTER COLUMN y SET EXPRESSION
+  AS (x * testpub_rf_func2(
+
+  ));
 
 RESET client_min_messages;
 
@@ -1503,7 +1520,8 @@ CREATE PUBLICATION testpub2;
 
 SET ROLE TO regress_publication_user;
 
-GRANT CREATE ON DATABASE regression
+GRANT CREATE
+ON DATABASE regression
 TO regress_publication_user2;
 
 SET ROLE TO regress_publication_user2;
@@ -1564,7 +1582,8 @@ DROP PUBLICATION testpub4;
 
 DROP ROLE regress_publication_user3;
 
-REVOKE CREATE ON DATABASE regression
+REVOKE CREATE
+ON DATABASE regression
 FROM regress_publication_user2;
 
 DROP TABLE "testpub_parted";

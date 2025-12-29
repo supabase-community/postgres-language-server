@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_view_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION interpt_pp(
+CREATE FUNCTION
+interpt_pp(
   path,
   path
 )
@@ -28,7 +29,8 @@ CREATE VIEW street AS
 SELECT
   r.name,
   r.thepath,
-  c.cname AS cname
+  c.cname
+  AS cname
 FROM
   ONLY road
   AS r,
@@ -41,8 +43,11 @@ CREATE VIEW iexit AS
 SELECT
   ih.name,
   ih.thepath,
-  interpt_pp(ih.thepath,
-  r.thepath) AS exit
+  interpt_pp(
+  ih.thepath,
+  r.thepath
+  )
+  AS exit
 FROM
   ihighway
   AS ih,
@@ -56,7 +61,8 @@ SELECT
   name,
   age,
   location,
-  12 * salary AS annualsal
+  12 * salary
+  AS annualsal
 FROM
   emp;
 
@@ -88,7 +94,9 @@ FROM
   view_base_table
 GROUP BY key
 HAVING
-  length(data) >
+  length(
+  data
+  ) >
   0;
 
 CREATE TABLE viewtest_tbl (
@@ -183,7 +191,8 @@ SELECT
   b,
   c,
   d,
-  0 AS e
+  0
+  AS e
 FROM
   viewtest_tbl;
 
@@ -221,8 +230,10 @@ CREATE TEMPORARY VIEW testview AS SELECT 1;
 
 CREATE VIEW v3 AS
 SELECT
-  t1.a AS t1_a,
-  t2.a AS t2_a
+  t1.a
+  AS t1_a,
+  t2.a
+  AS t2_a
 FROM
   base_table
   AS t1,
@@ -234,8 +245,10 @@ WHERE
 
 CREATE VIEW v4_temp AS
 SELECT
-  t1.a AS t1_a,
-  t2.a AS t2_a
+  t1.a
+  AS t1_a,
+  t2.a
+  AS t2_a
 FROM
   base_table
   AS t1,
@@ -247,9 +260,12 @@ WHERE
 
 CREATE VIEW v5_temp AS
 SELECT
-  t1.a AS t1_a,
-  t2.a AS t2_a,
-  t3.a AS t3_a
+  t1.a
+  AS t1_a,
+  t2.a
+  AS t2_a,
+  t3.a
+  AS t3_a
 FROM
   base_table
   AS t1,
@@ -570,7 +586,9 @@ WHERE
       tbl3.f);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_class
 WHERE
@@ -619,7 +637,9 @@ WHERE
       tmptbl.j);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_class
 WHERE
@@ -827,12 +847,17 @@ ORDER BY relname;
 
 CREATE VIEW unspecified_types AS
 SELECT
-  42 AS i,
-  42.5 AS num,
-  'foo' AS u,
+  42
+  AS i,
+  42.5
+  AS num,
+  'foo'
+  AS u,
   CAST('foo'
-  AS unknown) AS u2,
-  NULL AS n;
+  AS unknown)
+  AS u2,
+  NULL
+  AS n;
 
 SELECT * FROM unspecified_types;
 
@@ -944,8 +969,10 @@ ALTER TABLE tmp1 RENAME TO tx1;
 
 CREATE VIEW aliased_order_by AS
 SELECT
-  x1 AS x2,
-  x2 AS x1,
+  x1
+  AS x2,
+  x2
+  AS x1,
   x3
 FROM
   tt1
@@ -1267,10 +1294,14 @@ CREATE VIEW vv2a AS
 SELECT
   *
 FROM
-  (VALUES (NOW(),
+  (VALUES (NOW(
+
+  ),
   2,
   3,
-  NOW(),
+  NOW(
+
+  ),
   5)) AS v (a,
   b,
   c,
@@ -1339,7 +1370,8 @@ INSERT INTO tt14t VALUES ('foo', 'bar', 'baz', '42');
 
 ALTER TABLE tt14t DROP COLUMN f2;
 
-CREATE FUNCTION tt14f()
+CREATE FUNCTION
+tt14f()
 RETURNS SETOF tt14t
 AS '
 declare
@@ -1378,12 +1410,18 @@ WHERE
     '_RETURN') AND
   refobjsubid =
   3
-RETURNING pg_describe_object(classid,
+RETURNING pg_describe_object(
+classid,
 objid,
-objsubid) AS obj,
-pg_describe_object(refclassid,
+objsubid
+)
+AS obj,
+pg_describe_object(
+refclassid,
 refobjid,
-refobjsubid) AS ref,
+refobjsubid
+)
+AS ref,
 deptype;
 
 ALTER TABLE tt14t DROP COLUMN f3;
@@ -1419,12 +1457,18 @@ WHERE
     '_RETURN') AND
   refobjsubid =
   4
-RETURNING pg_describe_object(classid,
+RETURNING pg_describe_object(
+classid,
 objid,
-objsubid) AS obj,
-pg_describe_object(refclassid,
+objsubid
+)
+AS obj,
+pg_describe_object(
+refclassid,
 refobjid,
-refobjsubid) AS ref,
+refobjsubid
+)
+AS ref,
 deptype;
 
 ALTER TABLE tt14t
@@ -1579,14 +1623,16 @@ SELECT
   AS TEXT) = ANY (CAST(ARRAY['abc',
   'def',
   'foo']
-  AS TEXT[])) AS c1,
+  AS TEXT[]))
+  AS c1,
   CAST('foo'
   AS TEXT) = ANY (CAST((SELECT
     CAST(ARRAY['abc',
     'def',
     'foo']
     AS TEXT[]))
-  AS TEXT[])) AS c2;
+  AS TEXT[]))
+  AS c2;
 
 SELECT pg_get_viewdef('tt19v', TRUE);
 
@@ -1596,8 +1642,10 @@ SELECT
 FROM
   COALESCE(1,
   2) AS c,
-  pg_collation_for(CAST('x'
-  AS TEXT)) AS col,
+  pg_collation_for(
+  CAST('x'
+  AS TEXT)
+  ) AS col,
   CURRENT_DATE AS d,
   LOCALTIMESTAMP(3) AS t,
   CAST(1 + 2
@@ -1609,125 +1657,200 @@ SELECT pg_get_viewdef('tt20v', TRUE);
 
 CREATE VIEW tt201v AS
 SELECT
-  timezone('UTC',
+  timezone(
+  'UTC',
   CAST('2022-12-01'
   AS DATE) + CAST('1 day'
-  AS INTERVAL)) AS atz,
-  EXTRACT('day' FROM NOW()) AS extr,
-  overlaps(NOW(),
+  AS INTERVAL)
+  )
+  AS atz,
+  EXTRACT('day' FROM NOW(
+
+  ))
+  AS extr,
+  overlaps(
+  NOW(
+
+  ),
   CAST('1 day'
   AS INTERVAL),
   CURRENT_TIMESTAMP(2),
   CAST('1 day'
-  AS INTERVAL)) AS o,
-  is_normalized('foo') AS isn,
-  is_normalized('foo',
-  'NFKC') AS isnn,
-  NORMALIZE('foo') AS n,
-  NORMALIZE('foo', NFKD) AS nfkd,
-  OVERLAY('foo' PLACING 'bar' FROM 2) AS ovl,
-  OVERLAY('foo' PLACING 'bar' FROM 2 FOR 3) AS ovl2,
-  POSITION('foo' IN 'foobar') AS p,
-  SUBSTRING('foo' FROM 2 FOR 3) AS s,
-  SUBSTRING('foo' FROM 'f' FOR '#') AS ss,
-  SUBSTRING('foo' FROM 'oo') AS ssf,
-  btrim(' foo ',
-  ' ') AS bt,
-  ltrim(' foo ',
-  ' ') AS lt,
-  rtrim(' foo ') AS rt,
-  btrim(CAST('\000Tom\000'
+  AS INTERVAL)
+  )
+  AS o,
+  is_normalized(
+  'foo'
+  )
+  AS isn,
+  is_normalized(
+  'foo',
+  'NFKC'
+  )
+  AS isnn,
+  NORMALIZE('foo')
+  AS n,
+  NORMALIZE('foo', NFKD)
+  AS nfkd,
+  OVERLAY('foo' PLACING 'bar' FROM 2)
+  AS ovl,
+  OVERLAY('foo' PLACING 'bar' FROM 2 FOR 3)
+  AS ovl2,
+  POSITION('foo' IN 'foobar')
+  AS p,
+  SUBSTRING('foo' FROM 2 FOR 3)
+  AS s,
+  SUBSTRING('foo' FROM 'f' FOR '#')
+  AS ss,
+  SUBSTRING('foo' FROM 'oo')
+  AS ssf,
+  btrim(
+  ' foo ',
+  ' '
+  )
+  AS bt,
+  ltrim(
+  ' foo ',
+  ' '
+  )
+  AS lt,
+  rtrim(
+  ' foo '
+  )
+  AS rt,
+  btrim(
+  CAST('\000Tom\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA)) AS btb,
-  ltrim(CAST('\000Tom\000'
+  AS BYTEA)
+  )
+  AS btb,
+  ltrim(
+  CAST('\000Tom\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA)) AS ltb,
-  rtrim(CAST('\000Tom\000'
+  AS BYTEA)
+  )
+  AS ltb,
+  rtrim(
+  CAST('\000Tom\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA)) AS rtb,
-  CURRENT_DATE AS cd,
+  AS BYTEA)
+  )
+  AS rtb,
+  CURRENT_DATE
+  AS cd,
   (SELECT
     *
   FROM
-    CURRENT_DATE) AS cd2,
-  CURRENT_TIME AS ct,
+    CURRENT_DATE)
+  AS cd2,
+  CURRENT_TIME
+  AS ct,
   (SELECT
     *
   FROM
-    CURRENT_TIME) AS ct2,
-  CURRENT_TIME(1) AS ct3,
+    CURRENT_TIME)
+  AS ct2,
+  CURRENT_TIME(1)
+  AS ct3,
   (SELECT
     *
   FROM
-    CURRENT_TIME(1)) AS ct4,
-  CURRENT_TIMESTAMP AS ct5,
+    CURRENT_TIME(1))
+  AS ct4,
+  CURRENT_TIMESTAMP
+  AS ct5,
   (SELECT
     *
   FROM
-    CURRENT_TIMESTAMP) AS ct6,
-  CURRENT_TIMESTAMP(1) AS ct7,
+    CURRENT_TIMESTAMP)
+  AS ct6,
+  CURRENT_TIMESTAMP(1)
+  AS ct7,
   (SELECT
     *
   FROM
-    CURRENT_TIMESTAMP(1)) AS ct8,
-  LOCALTIME AS lt1,
+    CURRENT_TIMESTAMP(1))
+  AS ct8,
+  LOCALTIME
+  AS lt1,
   (SELECT
     *
   FROM
-    LOCALTIME) AS lt2,
-  LOCALTIME(1) AS lt3,
+    LOCALTIME)
+  AS lt2,
+  LOCALTIME(1)
+  AS lt3,
   (SELECT
     *
   FROM
-    LOCALTIME(1)) AS lt4,
-  LOCALTIMESTAMP AS lt5,
+    LOCALTIME(1))
+  AS lt4,
+  LOCALTIMESTAMP
+  AS lt5,
   (SELECT
     *
   FROM
-    LOCALTIMESTAMP) AS lt6,
-  LOCALTIMESTAMP(1) AS lt7,
+    LOCALTIMESTAMP)
+  AS lt6,
+  LOCALTIMESTAMP(1)
+  AS lt7,
   (SELECT
     *
   FROM
-    LOCALTIMESTAMP(1)) AS lt8,
-  CURRENT_CATALOG AS ca,
+    LOCALTIMESTAMP(1))
+  AS lt8,
+  CURRENT_CATALOG
+  AS ca,
   (SELECT
     *
   FROM
-    CURRENT_CATALOG) AS ca2,
-  CURRENT_ROLE AS cr,
+    CURRENT_CATALOG)
+  AS ca2,
+  CURRENT_ROLE
+  AS cr,
   (SELECT
     *
   FROM
-    CURRENT_ROLE) AS cr2,
-  CURRENT_SCHEMA AS cs,
+    CURRENT_ROLE)
+  AS cr2,
+  CURRENT_SCHEMA
+  AS cs,
   (SELECT
     *
   FROM
-    CURRENT_SCHEMA) AS cs2,
-  CURRENT_USER AS cu,
+    CURRENT_SCHEMA)
+  AS cs2,
+  CURRENT_USER
+  AS cu,
   (SELECT
     *
   FROM
-    CURRENT_USER) AS cu2,
-  USER AS us,
+    CURRENT_USER)
+  AS cu2,
+  USER
+  AS us,
   (SELECT
     *
   FROM
-    USER) AS us2,
-  SESSION_USER AS seu,
+    USER)
+  AS us2,
+  SESSION_USER
+  AS seu,
   (SELECT
     *
   FROM
-    SESSION_USER) AS seu2,
-  SYSTEM_USER AS su,
+    SESSION_USER)
+  AS seu2,
+  SYSTEM_USER
+  AS su,
   (SELECT
     *
   FROM
-    SYSTEM_USER) AS su2;
+    SYSTEM_USER)
+  AS su2;
 
 SELECT pg_get_viewdef('tt201v', TRUE);
 
@@ -1747,8 +1870,10 @@ SELECT pg_get_viewdef('tt22v', TRUE);
 CREATE VIEW tt23v (col_a,
 col_b) AS
 SELECT
-  q1 AS other_name1,
-  q2 AS other_name2
+  q1
+  AS other_name1,
+  q2
+  AS other_name2
 FROM
   int8_tbl
 UNION
@@ -1759,8 +1884,10 @@ SELECT
 SELECT pg_get_viewdef('tt23v', TRUE);
 
 SELECT
-  pg_get_ruledef(oid,
-  TRUE)
+  pg_get_ruledef(
+  oid,
+  TRUE
+  )
 FROM
   pg_rewrite
 WHERE
@@ -1771,8 +1898,10 @@ WHERE
   '1';
 
 SELECT
-  r.column2 AS col_a,
-  rr.column2 AS col_b
+  r.column2
+  AS col_a,
+  rr.column2
+  AS col_b
 FROM
   cte
   INNER JOIN (SELECT
@@ -1808,35 +1937,46 @@ FROM
 
 CREATE VIEW tt26v AS
 SELECT
-  x + y + z AS c1,
-  x * y + z AS c2,
-  x + y * z AS c3,
-  (x + y) * z AS c4,
-  x * (y + z) AS c5,
-  x + (y + z) AS c6,
-  x + (y # z) AS c7,
+  x + y + z
+  AS c1,
+  x * y + z
+  AS c2,
+  x + y * z
+  AS c3,
+  (x + y) * z
+  AS c4,
+  x * (y + z)
+  AS c5,
+  x + (y + z)
+  AS c6,
+  x + (y # z)
+  AS c7,
   x >
   y AND
   (y >
   z OR
   x >
-  z) AS c8,
+  z)
+  AS c8,
   x >
   y OR
   y >
   z AND
   NOT x >
-  z AS c9,
+  z
+  AS c9,
   (x,
   y) <> ALL (VALUES (1,
   2),
   (3,
-  4)) AS c10,
+  4))
+  AS c10,
   (x,
   y) <= ANY (VALUES (1,
   2),
   (3,
-  4)) AS c11
+  4))
+  AS c11
 FROM
   (VALUES (1,
   2,

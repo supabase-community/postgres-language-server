@@ -41,14 +41,24 @@ CREATE TABLE quad_poly_tbl ( id INT, p polygon );
 INSERT INTO quad_poly_tbl
 SELECT
   (x - 1) * 100 + y,
-  polygon(circle(point(x * 10,
-  y * 10),
-  1 + (x + y) % 10))
+  polygon(
+  circle(
+  point(
+  x * 10,
+  y * 10
+  ),
+  1 + (x + y) % 10
+  )
+  )
 FROM
-  generate_series(1,
-  100) AS x,
-  generate_series(1,
-  100) AS y;
+  generate_series(
+  1,
+  100
+  ) AS x,
+  generate_series(
+  1,
+  100
+  ) AS y;
 
 INSERT INTO quad_poly_tbl
 SELECT
@@ -56,8 +66,10 @@ SELECT
   CAST('((200, 300),(210, 310),(230, 290))'
   AS polygon)
 FROM
-  generate_series(10001,
-  11000) AS i;
+  generate_series(
+  10001,
+  11000
+  ) AS i;
 
 INSERT INTO quad_poly_tbl
 VALUES (11001,
@@ -80,12 +92,16 @@ SET enable_bitmapscan = off;
 
 CREATE TEMPORARY TABLE quad_poly_tbl_ord_seq2 AS
   SELECT
-    RANK()
+    RANK(
+
+    )
     OVER (
     ORDER BY p <-> CAST('123,456'
-    AS point)) AS n,
+    AS point))
+    AS n,
     p <-> CAST('123,456'
-    AS point) AS dist,
+    AS point)
+    AS dist,
     id
   FROM
     quad_poly_tbl
@@ -100,7 +116,9 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -108,7 +126,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -116,7 +136,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -124,7 +146,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -132,7 +156,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -140,7 +166,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -148,7 +176,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -156,7 +186,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -164,7 +196,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -172,7 +206,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -180,7 +216,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -188,7 +226,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -196,7 +236,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -204,7 +246,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -212,7 +256,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -220,7 +266,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -228,7 +276,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -236,7 +286,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -244,7 +296,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -252,7 +306,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -260,7 +316,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -268,7 +326,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -276,7 +336,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -284,7 +346,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   quad_poly_tbl
 WHERE
@@ -296,12 +360,16 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SELECT
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY p <-> CAST('123,456'
-  AS point)) AS n,
+  AS point))
+  AS n,
   p <-> CAST('123,456'
-  AS point) AS dist,
+  AS point)
+  AS dist,
   id
 FROM
   quad_poly_tbl
@@ -311,12 +379,16 @@ WHERE
 
 CREATE TEMPORARY TABLE quad_poly_tbl_ord_idx2 AS
   SELECT
-    RANK()
+    RANK(
+
+    )
     OVER (
     ORDER BY p <-> CAST('123,456'
-    AS point)) AS n,
+    AS point))
+    AS n,
     p <-> CAST('123,456'
-    AS point) AS dist,
+    AS point)
+    AS dist,
     id
   FROM
     quad_poly_tbl
@@ -354,8 +426,10 @@ SELECT pg_input_is_valid('(2.0,0.8,0.1)', 'polygon');
 SELECT
   *
 FROM
-  pg_input_error_info('(2.0,0.8,0.1)',
-  'polygon');
+  pg_input_error_info(
+  '(2.0,0.8,0.1)',
+  'polygon'
+  );
 
 SELECT pg_input_is_valid('(2.0,xyz)', 'polygon');
 

@@ -37,41 +37,59 @@ autovacuum_enabled = off);
 
 INSERT INTO brintest
 SELECT
-  CAST(repeat(stringu1,
-  8)
+  CAST(repeat(
+  stringu1,
+  8
+  )
   AS BYTEA),
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST(stringu1
   AS NAME),
   142857 * tenthous,
   thousand,
   twothousand,
-  repeat(stringu1,
-  8),
+  repeat(
+  stringu1,
+  8
+  ),
   CAST(unique1
   AS OID),
-  CAST(format('(%s,%s)',
+  CAST(format(
+  '(%s,%s)',
   tenthous,
-  twenty)
+  twenty
+  )
   AS TID),
   (four + 1.0) / (hundred + 1),
   CAST(odd
   AS DOUBLE PRECISION) / (tenthous + 1),
-  CAST(format('%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred))
+  CAST(format(
+  '%s:00:%s:00:%s:00',
+  to_hex(
+  odd
+  ),
+  to_hex(
+  even
+  ),
+  to_hex(
+  hundred
+  )
+  )
   AS MACADDR),
   CAST('10.2.3.4/24'
   AS INET) + tenthous,
   CAST('10.2.3/24'
   AS CIDR) + tenthous,
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST('1995-08-15'
   AS DATE) + tenthous,
@@ -84,8 +102,12 @@ SELECT
   CAST('1972-10-10 03:00'
   AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
   AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes'
-  AS INTERVAL))),
+  justify_days(
+  justify_hours(
+  tenthous * CAST('12 minutes'
+  AS INTERVAL)
+  )
+  ),
   CAST('01:30:20+02'
   AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
   AS INTERVAL),
@@ -97,35 +119,63 @@ SELECT
   CAST(tenthous
   AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
-  CAST(format('%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'))
+  CAST(format(
+  '%s%s-%s-%s-%s-%s%s%s',
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  )
+  )
   AS UUID),
-  int4range(thousand,
-  twothousand),
-  CAST(format('%s/%s%s',
+  int4range(
+  thousand,
+  twothousand
+  ),
+  CAST(format(
+  '%s/%s%s',
   odd,
   even,
-  tenthous)
+  tenthous
+  )
   AS PG_LSN),
-  box(point(odd,
-  even),
-  point(thousand,
-  twothousand))
+  box(
+  point(
+  odd,
+  even
+  ),
+  point(
+  thousand,
+  twothousand
+  )
+  )
 FROM
   tenk1
 ORDER BY unique2
@@ -187,10 +237,18 @@ CREATE TABLE brinopers (
   op TEXT[],
   value TEXT[],
   matches INT[],
-  CHECK (cardinality(op) =
-  cardinality(value)),
-  CHECK (cardinality(op) =
-  cardinality(matches))
+  CHECK (cardinality(
+  op
+  ) =
+  cardinality(
+  value
+  )),
+  CHECK (cardinality(
+  op
+  ) =
+  cardinality(
+  matches
+  ))
 );
 
 INSERT INTO brinopers
@@ -512,41 +570,59 @@ RESET enable_bitmapscan;
 
 INSERT INTO brintest
 SELECT
-  CAST(repeat(stringu1,
-  42)
+  CAST(repeat(
+  stringu1,
+  42
+  )
   AS BYTEA),
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST(stringu1
   AS NAME),
   142857 * tenthous,
   thousand,
   twothousand,
-  repeat(stringu1,
-  42),
+  repeat(
+  stringu1,
+  42
+  ),
   CAST(unique1
   AS OID),
-  CAST(format('(%s,%s)',
+  CAST(format(
+  '(%s,%s)',
   tenthous,
-  twenty)
+  twenty
+  )
   AS TID),
   (four + 1.0) / (hundred + 1),
   CAST(odd
   AS DOUBLE PRECISION) / (tenthous + 1),
-  CAST(format('%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred))
+  CAST(format(
+  '%s:00:%s:00:%s:00',
+  to_hex(
+  odd
+  ),
+  to_hex(
+  even
+  ),
+  to_hex(
+  hundred
+  )
+  )
   AS MACADDR),
   CAST('10.2.3.4'
   AS INET) + tenthous,
   CAST('10.2.3/24'
   AS CIDR) + tenthous,
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST('1995-08-15'
   AS DATE) + tenthous,
@@ -559,8 +635,12 @@ SELECT
   CAST('1972-10-10 03:00'
   AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
   AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes'
-  AS INTERVAL))),
+  justify_days(
+  justify_hours(
+  tenthous * CAST('12 minutes'
+  AS INTERVAL)
+  )
+  ),
   CAST('01:30:20'
   AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
   AS INTERVAL),
@@ -572,35 +652,63 @@ SELECT
   CAST(tenthous
   AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
-  CAST(format('%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'))
+  CAST(format(
+  '%s%s-%s-%s-%s-%s%s%s',
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  )
+  )
   AS UUID),
-  int4range(thousand,
-  twothousand),
-  CAST(format('%s/%s%s',
+  int4range(
+  thousand,
+  twothousand
+  ),
+  CAST(format(
+  '%s/%s%s',
   odd,
   even,
-  tenthous)
+  tenthous
+  )
   AS PG_LSN),
-  box(point(odd,
-  even),
-  point(thousand,
-  twothousand))
+  box(
+  point(
+  odd,
+  even
+  ),
+  point(
+  thousand,
+  twothousand
+  )
+  )
 FROM
   tenk1
 ORDER BY unique2
@@ -656,14 +764,18 @@ SELECT brin_summarize_range('brin_summarize_idx', 1);
 SELECT brin_summarize_range('brin_summarize_idx', 2);
 
 SELECT
-  brin_summarize_range('brin_summarize_idx',
-  4294967295);
+  brin_summarize_range(
+  'brin_summarize_idx',
+  4294967295
+  );
 
 SELECT brin_summarize_range('brin_summarize_idx', -1);
 
 SELECT
-  brin_summarize_range('brin_summarize_idx',
-  4294967296);
+  brin_summarize_range(
+  'brin_summarize_idx',
+  4294967296
+  );
 
 CREATE TABLE brintest_2 ( n NUMRANGE );
 
@@ -672,9 +784,11 @@ CREATE INDEX "brinidx_2" ON brintest_2 USING brin ( n);
 INSERT INTO brintest_2 VALUES ('empty');
 
 INSERT INTO brintest_2
-VALUES (numrange(0,
+VALUES (numrange(
+0,
 2 ^ CAST(1000
-AS NUMERIC)));
+AS NUMERIC)
+));
 
 INSERT INTO brintest_2 VALUES ('(-1, 0)');
 
@@ -691,8 +805,10 @@ SELECT
   x / 100,
   x % 100
 FROM
-  generate_series(1,
-  10000) AS x (x);
+  generate_series(
+  1,
+  10000
+  ) AS x (x);
 
 CREATE INDEX "brin_test_a_idx" ON brin_test USING brin
 (
@@ -713,12 +829,19 @@ SELECT * FROM brin_test WHERE b = 1;
 CREATE TABLE brintest_3 ( a TEXT, b TEXT, c TEXT, d TEXT );
 
 WITH rand_value AS (SELECT
-  string_agg(fipshash(CAST(i
-  AS TEXT)),
-  '') AS val
+  string_agg(
+  fipshash(
+  CAST(i
+  AS TEXT)
+  ),
+  ''
+  )
+  AS val
 FROM
-  generate_series(1,
-  60) AS s (i))
+  generate_series(
+  1,
+  60
+  ) AS s (i))
 INSERT INTO brintest_3
 SELECT
   val,
@@ -747,12 +870,19 @@ DROP INDEX "brin_test_temp_idx";
 VACUUM brintest_3;
 
 WITH rand_value AS (SELECT
-  string_agg(fipshash(CAST(-i
-  AS TEXT)),
-  '') AS val
+  string_agg(
+  fipshash(
+  CAST(-i
+  AS TEXT)
+  ),
+  ''
+  )
+  AS val
 FROM
-  generate_series(1,
-  60) AS s (i))
+  generate_series(
+  1,
+  60
+  ) AS s (i))
 INSERT INTO brintest_3
 SELECT
   val,
@@ -774,7 +904,8 @@ RESET enable_seqscan;
 
 CREATE TABLE brintest_expr ( n INT );
 
-CREATE FUNCTION brintest_func()
+CREATE FUNCTION
+brintest_func()
 RETURNS INT
 LANGUAGE "sql"
 IMMUTABLE RETURN 0;;
@@ -787,7 +918,9 @@ SET LOCAL max_parallel_maintenance_workers = 4;
 
 CREATE INDEX "brintest_expr_idx" ON brintest_expr USING brin
 (
-  (brintest_func())
+  (brintest_func(
+
+  ))
 );
 
 COMMIT;
@@ -804,9 +937,11 @@ CREATE INDEX "brinidx_unlogged" ON brintest_unlogged USING brin
 );
 
 INSERT INTO brintest_unlogged
-VALUES (numrange(0,
+VALUES (numrange(
+0,
 2 ^ CAST(1000
-AS NUMERIC)));
+AS NUMERIC)
+));
 
 DROP TABLE "brintest_unlogged";
 

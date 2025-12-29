@@ -131,7 +131,10 @@ CREATE INDEX "gpointind" ON point_tbl USING gist ( f1);
 
 CREATE TEMPORARY TABLE gpolygon_tbl AS
   SELECT
-    polygon(home_base) AS f1
+    polygon(
+    home_base
+    )
+    AS f1
   FROM
     slow_emp4000;
 
@@ -141,7 +144,10 @@ INSERT INTO gpolygon_tbl VALUES ('(0,1000,1000,1000)');
 
 CREATE TEMPORARY TABLE gcircle_tbl AS
   SELECT
-    circle(home_base) AS f1
+    circle(
+    home_base
+    )
+    AS f1
   FROM
     slow_emp4000;
 
@@ -168,7 +174,9 @@ WHERE
 ORDER BY home_base[0][0];
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   fast_emp4000
 WHERE
@@ -178,7 +186,9 @@ WHERE
 SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gpolygon_tbl
 WHERE
@@ -186,7 +196,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gcircle_tbl
 WHERE
@@ -194,7 +206,9 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -202,7 +216,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -210,7 +226,9 @@ WHERE
   AS box) @> f1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -218,7 +236,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -226,7 +246,9 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -234,7 +256,9 @@ WHERE
   p.f1 << '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -242,7 +266,9 @@ WHERE
   p.f1 >> '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -250,7 +276,9 @@ WHERE
   p.f1 <<| '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -258,7 +286,9 @@ WHERE
   p.f1 |>> '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -295,8 +325,15 @@ ORDER BY f1 <-> CAST('(0,0)'
 LIMIT 10;
 
 SELECT
-  circle_center(f1),
-  round(radius(f1)) AS radius
+  circle_center(
+  f1
+  ),
+  round(
+  radius(
+  f1
+  )
+  )
+  AS radius
 FROM
   gcircle_tbl
 ORDER BY f1 <-> CAST('(200,300)'
@@ -328,7 +365,9 @@ WHERE
 ORDER BY home_base[0][0];
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   fast_emp4000
 WHERE
@@ -336,7 +375,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   fast_emp4000
 WHERE
@@ -348,7 +389,9 @@ SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
 SELECT COUNT(*) FROM fast_emp4000 WHERE home_base IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gpolygon_tbl
 WHERE
@@ -356,7 +399,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gpolygon_tbl
 WHERE
@@ -364,7 +409,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gcircle_tbl
 WHERE
@@ -372,7 +419,9 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gcircle_tbl
 WHERE
@@ -380,7 +429,9 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -388,7 +439,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -396,7 +449,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -404,7 +459,9 @@ WHERE
   AS box) @> f1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -412,7 +469,9 @@ WHERE
   AS box) @> f1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -420,7 +479,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -428,7 +489,9 @@ WHERE
   AS polygon);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -436,7 +499,9 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
 WHERE
@@ -444,7 +509,9 @@ WHERE
   AS circle);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -452,7 +519,9 @@ WHERE
   p.f1 << '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -460,7 +529,9 @@ WHERE
   p.f1 << '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -468,7 +539,9 @@ WHERE
   p.f1 >> '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -476,7 +549,9 @@ WHERE
   p.f1 >> '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -484,7 +559,9 @@ WHERE
   p.f1 <<| '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -492,7 +569,9 @@ WHERE
   p.f1 <<| '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -500,7 +579,9 @@ WHERE
   p.f1 |>> '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -508,7 +589,9 @@ WHERE
   p.f1 |>> '(0.0, 0.0)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -516,7 +599,9 @@ WHERE
   p.f1 ~= '(-5, -12)';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_tbl
   AS p
@@ -582,8 +667,15 @@ ORDER BY f1 <-> CAST('(0,0)'
 LIMIT 10;
 
 SELECT
-  circle_center(f1),
-  round(radius(f1)) AS radius
+  circle_center(
+  f1
+  ),
+  round(
+  radius(
+  f1
+  )
+  )
+  AS radius
 FROM
   gcircle_tbl
 ORDER BY f1 <-> CAST('(200,300)'
@@ -591,8 +683,15 @@ ORDER BY f1 <-> CAST('(200,300)'
 LIMIT 10;
 
 SELECT
-  circle_center(f1),
-  round(radius(f1)) AS radius
+  circle_center(
+  f1
+  ),
+  round(
+  radius(
+  f1
+  )
+  )
+  AS radius
 FROM
   gcircle_tbl
 ORDER BY f1 <-> CAST('(200,300)'
@@ -600,34 +699,48 @@ ORDER BY f1 <-> CAST('(200,300)'
 LIMIT 10;
 
 SELECT
-  point(x,
-  x),
+  point(
+  x,
+  x
+  ),
   (SELECT
     f1
   FROM
     gpolygon_tbl
-  ORDER BY f1 <-> point(x,
-    x)
-  LIMIT 1) AS c
+  ORDER BY f1 <-> point(
+    x,
+    x
+    )
+  LIMIT 1)
+  AS c
 FROM
-  generate_series(0,
+  generate_series(
+  0,
   10,
-  1) AS x;
+  1
+  ) AS x;
 
 SELECT
-  point(x,
-  x),
+  point(
+  x,
+  x
+  ),
   (SELECT
     f1
   FROM
     gpolygon_tbl
-  ORDER BY f1 <-> point(x,
-    x)
-  LIMIT 1) AS c
+  ORDER BY f1 <-> point(
+    x,
+    x
+    )
+  LIMIT 1)
+  AS c
 FROM
-  generate_series(0,
+  generate_series(
+  0,
   10,
-  1) AS x;
+  1
+  ) AS x;
 
 SET enable_seqscan = off;
 
@@ -1011,8 +1124,10 @@ SELECT
   g % 5,
   g]
 FROM
-  generate_series(1,
-  10000) AS g;
+  generate_series(
+  1,
+  10000
+  ) AS g;
 
 CREATE INDEX "array_gin_test_idx" ON array_gin_test USING gin
 (
@@ -1052,7 +1167,9 @@ SELECT COUNT(*) FROM tenk1 WHERE stringu1 = 'TVAAAA';
 SET enable_seqscan = off;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -1133,8 +1250,10 @@ CREATE TABLE func_index_heap ( f1 TEXT, f2 TEXT );
 CREATE UNIQUE
 INDEX "func_index_index" ON func_index_heap USING btree
 (
-  (textcat(f1,
-  f2))
+  (textcat(
+  f1,
+  f2
+  ))
 );
 
 INSERT INTO func_index_heap VALUES ('ABC', 'DEF');
@@ -1289,7 +1408,8 @@ CONCURRENTLY "concur_index7" ON concur_heap USING btree
 
 COMMIT;
 
-CREATE FUNCTION predicate_stable()
+CREATE FUNCTION
+predicate_stable()
 RETURNS BOOLEAN
 IMMUTABLE
 LANGUAGE "plpgsql"
@@ -1304,7 +1424,9 @@ CONCURRENTLY "concur_index8" ON concur_heap USING btree
 (
   f1
 ) WHERE
-  predicate_stable();
+  predicate_stable(
+
+  );
 
 DROP INDEX "concur_index8";
 
@@ -1519,7 +1641,9 @@ SET enable_bitmapscan = on;
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1527,14 +1651,18 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1542,7 +1670,9 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1551,7 +1681,9 @@ WHERE
   500;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1583,7 +1715,9 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1591,14 +1725,18 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1606,7 +1744,9 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1615,7 +1755,9 @@ WHERE
   500;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1624,7 +1766,9 @@ WHERE
   500;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1657,7 +1801,9 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1665,14 +1811,18 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1680,7 +1830,9 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1689,7 +1841,9 @@ WHERE
   500;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1721,7 +1875,9 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1729,14 +1885,18 @@ WHERE
   unique2 IS NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
   unique1 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1744,7 +1904,9 @@ WHERE
   unique2 IS NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1753,7 +1915,9 @@ WHERE
   500;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   onek_with_null
 WHERE
@@ -1987,7 +2151,9 @@ WHERE
   AS BIGINT));
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -1999,7 +2165,9 @@ WHERE
   99);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2071,7 +2239,9 @@ WHERE
   AS NUMERIC);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
   AS t1
@@ -2090,7 +2260,9 @@ WHERE
   LIMIT 1);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
   AS t1
@@ -2109,7 +2281,9 @@ WHERE
   LIMIT 1);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2121,7 +2295,9 @@ WHERE
   99);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2133,7 +2309,9 @@ WHERE
   99);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2149,7 +2327,9 @@ WHERE
   thousand);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2165,7 +2345,9 @@ WHERE
   thousand);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2179,7 +2361,9 @@ WHERE
   41;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2193,7 +2377,9 @@ WHERE
   41;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2209,7 +2395,9 @@ WHERE
   41;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2225,7 +2413,9 @@ WHERE
   41;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2241,7 +2431,9 @@ WHERE
   2);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
 WHERE
@@ -2257,7 +2449,9 @@ WHERE
   2);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1,
   tenk2
@@ -2274,7 +2468,9 @@ WHERE
   tenk1.hundred;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1,
   tenk2
@@ -2291,7 +2487,9 @@ WHERE
   tenk1.hundred;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
   INNER JOIN tenk2
@@ -2307,7 +2505,9 @@ FROM
     tenk1.hundred;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   tenk1
   LEFT OUTER JOIN tenk2
@@ -2324,9 +2524,11 @@ FROM
 
 CREATE TABLE dupindexcols AS
   SELECT
-    unique1 AS id,
+    unique1
+    AS id,
     CAST(stringu2
-    AS TEXT) AS f1
+    AS TEXT)
+    AS f1
   FROM
     tenk1;
 
@@ -2340,7 +2542,9 @@ CREATE INDEX "dupindexcols_i" ON dupindexcols USING btree
 ANALYZE dupindexcols;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   dupindexcols
 WHERE
@@ -2350,7 +2554,9 @@ WHERE
   f1 ~<~ 'YX';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   dupindexcols
 WHERE
@@ -2882,7 +3088,9 @@ CREATE INDEX "concur_reindex_ind2" ON concur_reindex_tab USING btree
 CREATE UNIQUE
 INDEX "concur_reindex_ind3" ON concur_reindex_tab USING btree
 (
-  (abs(c1))
+  (abs(
+  c1
+  ))
 );
 
 CREATE INDEX "concur_reindex_ind4" ON concur_reindex_tab USING btree
@@ -2925,12 +3133,18 @@ CREATE MATERIALIZED VIEW concur_reindex_matview AS
     concur_reindex_tab;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend
@@ -2960,12 +3174,18 @@ REINDEX (CONCURRENTLY) TABLE concur_reindex_tab;
 REINDEX (CONCURRENTLY) TABLE concur_reindex_matview;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend
@@ -2998,23 +3218,29 @@ CREATE INDEX "testcomment_idx1" ON testcomment USING btree
 COMMENT ON INDEX testcomment_idx1 IS 'test comment';
 
 SELECT
-  obj_description(CAST('testcomment_idx1'
+  obj_description(
+  CAST('testcomment_idx1'
   AS REGCLASS),
-  'pg_class');
+  'pg_class'
+  );
 
 REINDEX TABLE testcomment;
 
 SELECT
-  obj_description(CAST('testcomment_idx1'
+  obj_description(
+  CAST('testcomment_idx1'
   AS REGCLASS),
-  'pg_class');
+  'pg_class'
+  );
 
 REINDEX (CONCURRENTLY) TABLE testcomment;
 
 SELECT
-  obj_description(CAST('testcomment_idx1'
+  obj_description(
+  CAST('testcomment_idx1'
   AS REGCLASS),
-  'pg_class');
+  'pg_class'
+  );
 
 DROP TABLE "testcomment";
 
@@ -3174,7 +3400,9 @@ SELECT
   parentrelid,
   level
 FROM
-  pg_partition_tree('concur_reindex_part_index')
+  pg_partition_tree(
+  'concur_reindex_part_index'
+  )
 ORDER BY relid,
   level;
 
@@ -3183,17 +3411,25 @@ SELECT
   parentrelid,
   level
 FROM
-  pg_partition_tree('concur_reindex_part_index')
+  pg_partition_tree(
+  'concur_reindex_part_index'
+  )
 ORDER BY relid,
   level;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend
@@ -3229,7 +3465,9 @@ SELECT
   parentrelid,
   level
 FROM
-  pg_partition_tree('concur_reindex_part_index')
+  pg_partition_tree(
+  'concur_reindex_part_index'
+  )
 ORDER BY relid,
   level;
 
@@ -3238,12 +3476,18 @@ REINDEX (CONCURRENTLY) TABLE concur_reindex_part_0_1;
 REINDEX (CONCURRENTLY) TABLE concur_reindex_part_0_2;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend
@@ -3275,7 +3519,9 @@ SELECT
   parentrelid,
   level
 FROM
-  pg_partition_tree('concur_reindex_part_index')
+  pg_partition_tree(
+  'concur_reindex_part_index'
+  )
 ORDER BY relid,
   level;
 
@@ -3293,7 +3539,8 @@ REINDEX INDEX concur_reindex_part_index;
 
 ROLLBACK;
 
-CREATE OR REPLACE FUNCTION create_relfilenode_part(
+CREATE OR REPLACE FUNCTION
+create_relfilenode_part(
   "relname" TEXT,
   "indname" TEXT
 )
@@ -3311,7 +3558,8 @@ AS '
   '
 LANGUAGE "plpgsql";
 
-CREATE OR REPLACE FUNCTION compare_relfilenode_part(
+CREATE OR REPLACE FUNCTION
+compare_relfilenode_part(
   "tabname" TEXT
 )
 RETURNS TABLE (
@@ -3335,28 +3583,36 @@ AS '
 LANGUAGE "plpgsql";
 
 SELECT
-  create_relfilenode_part('reindex_index_status',
-  'concur_reindex_part_index');
+  create_relfilenode_part(
+  'reindex_index_status',
+  'concur_reindex_part_index'
+  );
 
 REINDEX INDEX concur_reindex_part_index;
 
 SELECT
   *
 FROM
-  compare_relfilenode_part('reindex_index_status');
+  compare_relfilenode_part(
+  'reindex_index_status'
+  );
 
 DROP TABLE "reindex_index_status";
 
 SELECT
-  create_relfilenode_part('reindex_index_status',
-  'concur_reindex_part_index');
+  create_relfilenode_part(
+  'reindex_index_status',
+  'concur_reindex_part_index'
+  );
 
 REINDEX (CONCURRENTLY) INDEX concur_reindex_part_index;
 
 SELECT
   *
 FROM
-  compare_relfilenode_part('reindex_index_status');
+  compare_relfilenode_part(
+  'reindex_index_status'
+  );
 
 DROP TABLE "reindex_index_status";
 
@@ -3375,28 +3631,36 @@ REINDEX TABLE concur_reindex_part;
 ROLLBACK;
 
 SELECT
-  create_relfilenode_part('reindex_index_status',
-  'concur_reindex_part_index');
+  create_relfilenode_part(
+  'reindex_index_status',
+  'concur_reindex_part_index'
+  );
 
 REINDEX TABLE concur_reindex_part;
 
 SELECT
   *
 FROM
-  compare_relfilenode_part('reindex_index_status');
+  compare_relfilenode_part(
+  'reindex_index_status'
+  );
 
 DROP TABLE "reindex_index_status";
 
 SELECT
-  create_relfilenode_part('reindex_index_status',
-  'concur_reindex_part_index');
+  create_relfilenode_part(
+  'reindex_index_status',
+  'concur_reindex_part_index'
+  );
 
 REINDEX (CONCURRENTLY) TABLE concur_reindex_part;
 
 SELECT
   *
 FROM
-  compare_relfilenode_part('reindex_index_status');
+  compare_relfilenode_part(
+  'reindex_index_status'
+  );
 
 DROP TABLE "reindex_index_status";
 
@@ -3504,7 +3768,9 @@ ANALYZE concur_exprs_tab;
 SELECT
   CAST(starelid
   AS REGCLASS),
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_statistic
 WHERE
@@ -3520,49 +3786,69 @@ ORDER BY CAST(CAST(starelid
   AS TEXT);
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_expr'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_expr'
+  AS REGCLASS)
+  );
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_pred'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_pred'
+  AS REGCLASS)
+  );
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_pred_2'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_pred_2'
+  AS REGCLASS)
+  );
 
 REINDEX (CONCURRENTLY) TABLE concur_exprs_tab;
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_expr'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_expr'
+  AS REGCLASS)
+  );
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_pred'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_pred'
+  AS REGCLASS)
+  );
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_pred_2'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_pred_2'
+  AS REGCLASS)
+  );
 
 ALTER TABLE concur_exprs_tab ALTER COLUMN c2 TYPE TEXT;
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_expr'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_expr'
+  AS REGCLASS)
+  );
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_pred'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_pred'
+  AS REGCLASS)
+  );
 
 SELECT
-  pg_get_indexdef(CAST('concur_exprs_index_pred_2'
-  AS REGCLASS));
+  pg_get_indexdef(
+  CAST('concur_exprs_index_pred_2'
+  AS REGCLASS)
+  );
 
 SELECT
   CAST(starelid
   AS REGCLASS),
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_statistic
 WHERE
@@ -3661,8 +3947,11 @@ CREATE TABLE reindex_temp_before AS
     'concur_temp_ind_2');
 
 SELECT
-  CAST(pg_my_temp_schema()
-  AS regnamespace) AS temp_schema_name;
+  CAST(pg_my_temp_schema(
+
+  )
+  AS regnamespace)
+  AS temp_schema_name;
 
 SELECT
   b.relname,
@@ -3714,8 +4003,10 @@ SELECT
   1,
   i
 FROM
-  generate_series(1,
-  1000) AS i;
+  generate_series(
+  1,
+  1000
+  ) AS i;
 
 INSERT INTO bitmap_split_or
 SELECT
@@ -3723,8 +4014,10 @@ SELECT
   2,
   2
 FROM
-  generate_series(1,
-  1000) AS i;
+  generate_series(
+  1,
+  1000
+  ) AS i;
 
 VACUUM (ANALYZE) bitmap_split_or;
 

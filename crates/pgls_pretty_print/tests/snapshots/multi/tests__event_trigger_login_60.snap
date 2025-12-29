@@ -7,7 +7,8 @@ CREATE TABLE user_logins ( id serial, who TEXT );
 
 GRANT SELECT ON TABLE user_logins TO PUBLIC;
 
-CREATE FUNCTION on_login_proc()
+CREATE FUNCTION
+on_login_proc()
 RETURNS event_trigger
 AS '
 BEGIN

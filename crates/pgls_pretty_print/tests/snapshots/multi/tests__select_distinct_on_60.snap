@@ -40,7 +40,12 @@ ORDER BY string4 USING <,
 
 SELECT DISTINCT ON (
   1)
-  floor(random()) AS r,
+  floor(
+  random(
+
+  )
+  )
+  AS r,
   f1
 FROM
   int4_tbl
@@ -101,8 +106,10 @@ SELECT
   i % 10,
   i % 10
 FROM
-  generate_series(1,
-  1000) AS i;
+  generate_series(
+  1,
+  1000
+  ) AS i;
 
 CREATE INDEX "distinct_on_tbl_x_y_idx" ON distinct_on_tbl USING btree
 (

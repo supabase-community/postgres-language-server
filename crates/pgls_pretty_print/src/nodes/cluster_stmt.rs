@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::ClusterStmt;
 
@@ -22,7 +22,7 @@ pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
 
         // Index name
         if !n.indexname.is_empty() {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::USING_KW);
             e.space();
             e.token(TokenKind::IDENT(n.indexname.clone()));

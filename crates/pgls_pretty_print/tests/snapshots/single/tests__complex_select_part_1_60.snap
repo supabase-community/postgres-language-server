@@ -4,10 +4,14 @@ input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_1_60.
 snapshot_kind: text
 ---
 SELECT
-  c.oid AS view_id,
-  n.nspname AS view_schema,
-  c.relname AS view_name,
-  r.ev_action AS view_definition
+  c.oid
+  AS view_id,
+  n.nspname
+  AS view_schema,
+  c.relname
+  AS view_name,
+  r.ev_action
+  AS view_definition
 FROM
   pg_class
   AS c

@@ -256,7 +256,9 @@ CREATE TABLE inhz (
 DROP TABLE "inhz";
 
 ALTER TABLE ctlt1
-  ADD CONSTRAINT "cc" CHECK (length(b) >
+  ADD CONSTRAINT "cc" CHECK (length(
+  b
+  ) >
   100) NOT VALID;
 
 CREATE INDEX "ctlt1_b_key" ON ctlt1 USING btree ( b);
@@ -295,10 +297,14 @@ ON ctlt2 IS 't2_c_not_null';
 
 CREATE TABLE ctlt3 (
   a TEXT
-  CHECK (length(a) <
+  CHECK (length(
+  a
+  ) <
   5),
   c TEXT
-  CHECK (length(c) <
+  CHECK (length(
+  c
+  ) <
   7)
 );
 

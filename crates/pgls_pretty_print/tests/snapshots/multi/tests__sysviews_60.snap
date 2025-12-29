@@ -4,8 +4,11 @@ input_file: crates/pgls_pretty_print/tests/data/multi/sysviews_60.sql
 snapshot_kind: text
 ---
 SELECT
-  COUNT(*) >=
-  0 AS ok
+  COUNT(
+  *
+  ) >=
+  0
+  AS ok
 FROM
   pg_available_extension_versions;
 
@@ -27,15 +30,21 @@ WHERE
 BEGIN;
 
 DECLARE "cur" CURSOR FOR SELECT
-  left(a,
-  10),
+  left(
+  a,
+  10
+  ),
   b
 FROM
-  (VALUES (repeat('a',
-  512 * 1024),
+  (VALUES (repeat(
+  'a',
+  512 * 1024
+  ),
   1),
-  (repeat('b',
-  512),
+  (repeat(
+  'b',
+  512
+  ),
   2)) AS v (a,
   b)
 ORDER BY v.a DESC;;
@@ -64,7 +73,9 @@ WITH contexts AS (SELECT
 FROM
   pg_backend_memory_contexts)
 SELECT
-  COUNT(*) >
+  COUNT(
+  *
+  ) >
   1
 FROM
   contexts
@@ -84,22 +95,34 @@ SELECT COUNT(*) = 0 AS ok FROM pg_cursors;
 SELECT COUNT(*) >= 0 AS ok FROM pg_file_settings;
 
 SELECT
-  COUNT(*) >
-  0 AS ok,
-  COUNT(*)
+  COUNT(
+  *
+  ) >
+  0
+  AS ok,
+  COUNT(
+  *
+  )
   FILTER (WHERE
     error IS NOT NULL) =
-  0 AS no_err
+  0
+  AS no_err
 FROM
   pg_hba_file_rules;
 
 SELECT
-  COUNT(*) >=
-  0 AS ok,
-  COUNT(*)
+  COUNT(
+  *
+  ) >=
+  0
+  AS ok,
+  COUNT(
+  *
+  )
   FILTER (WHERE
     error IS NOT NULL) =
-  0 AS no_err
+  0
+  AS no_err
 FROM
   pg_ident_file_mappings;
 
@@ -125,8 +148,11 @@ WHERE
 
 SELECT
   type,
-  COUNT(*) >
-  0 AS ok
+  COUNT(
+  *
+  ) >
+  0
+  AS ok
 FROM
   pg_wait_events
 WHERE
@@ -136,30 +162,42 @@ GROUP BY type
 ORDER BY type COLLATE "C";
 
 SELECT
-  COUNT(DISTINCT utc_offset) >=
-  24 AS ok
+  COUNT(
+  DISTINCT utc_offset
+  ) >=
+  24
+  AS ok
 FROM
   pg_timezone_names;
 
 SELECT
-  COUNT(DISTINCT utc_offset) >=
-  24 AS ok
+  COUNT(
+  DISTINCT utc_offset
+  ) >=
+  24
+  AS ok
 FROM
   pg_timezone_abbrevs;
 
 SET timezone_abbreviations = Australia;
 
 SELECT
-  COUNT(DISTINCT utc_offset) >=
-  24 AS ok
+  COUNT(
+  DISTINCT utc_offset
+  ) >=
+  24
+  AS ok
 FROM
   pg_timezone_abbrevs;
 
 SET timezone_abbreviations = India;
 
 SELECT
-  COUNT(DISTINCT utc_offset) >=
-  24 AS ok
+  COUNT(
+  DISTINCT utc_offset
+  ) >=
+  24
+  AS ok
 FROM
   pg_timezone_abbrevs;
 

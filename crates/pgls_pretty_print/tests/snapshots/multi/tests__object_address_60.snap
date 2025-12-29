@@ -1,0 +1,758 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/object_address_60.sql
+snapshot_kind: text
+---
+SET client_min_messages = warning;
+
+DROP ROLE IF EXISTS regress_addr_user;
+
+RESET client_min_messages;
+
+CREATE USER regress_addr_user;
+
+CREATE SCHEMA "addr_nsp";
+
+SET search_path TO addr_nsp;
+
+CREATE FOREIGN DATA WRAPPER addr_fdw;
+
+CREATE SERVER addr_fserv FOREIGN DATA WRAPPER addr_fdw;
+
+CREATE TEXT SEARCH DICTIONARY addr_ts_dict
+(
+  template = simple
+);
+
+CREATE TEXT SEARCH CONFIGURATION addr_ts_conf
+(
+  copy = english
+);
+
+CREATE TEXT SEARCH TEMPLATE addr_ts_temp
+(
+  lexize = dsimple_lexize
+);
+
+CREATE TEXT SEARCH PARSER addr_ts_prs
+(
+  start = prsd_start,
+  gettoken = prsd_nexttoken,
+  "end" = prsd_end,
+  lextypes = prsd_lextype
+);
+
+CREATE TABLE addr_nsp.gentable (
+  a serial
+  PRIMARY KEY
+  CONSTRAINT "a_chk" CHECK (a >
+  0),
+  b TEXT
+  DEFAULT 'hello'
+);
+
+CREATE TABLE addr_nsp.parttable (
+  a INT
+  PRIMARY KEY
+)
+PARTITION BY RANGE(a);
+
+CREATE VIEW addr_nsp.genview AS
+SELECT
+  *
+FROM
+  addr_nsp.gentable;
+
+CREATE MATERIALIZED VIEW addr_nsp.genmatview AS
+  SELECT
+    *
+  FROM
+    addr_nsp.gentable;
+
+CREATE TYPE addr_nsp.gencomptype AS ( a INT );
+
+CREATE TYPE addr_nsp.genenum AS ENUM ('one', 'two');
+
+CREATE FOREIGN TABLE addr_nsp.genftable (
+  a INT
+) SERVER addr_fserv;
+
+CREATE AGGREGATE addr_nsp.genaggr (INT)
+(
+  sfunc = int4pl,
+  stype = INT
+);
+
+CREATE DOMAIN addr_nsp.gendomain AS INT
+  CONSTRAINT "domconstr" CHECK (value >
+  0);
+
+CREATE FUNCTION
+addr_nsp.trig()
+RETURNS trigger
+LANGUAGE "plpgsql"
+AS ' BEGIN END; ';
+
+CREATE TRIGGER t
+BEFORE
+INSERT
+ON addr_nsp.gentable
+FOR EACH ROW
+EXECUTE FUNCTION addr_nsp.trig();
+
+CREATE POLICY genpol
+ON addr_nsp.gentable
+AS PERMISSIVE
+FOR ALL
+TO PUBLIC;
+
+CREATE PROCEDURE addr_nsp.proc( INT) LANGUAGE "sql" AS ' ';
+
+CREATE SERVER integer FOREIGN DATA WRAPPER addr_fdw;
+
+CREATE USER MAPPING FOR regress_addr_user SERVER integer;
+
+ALTER DEFAULT PRIVILEGES
+FOR ROLE regress_addr_user
+IN SCHEMA public
+GRANT ALL
+ON TABLES 
+TO regress_addr_user;
+
+ALTER DEFAULT PRIVILEGES
+FOR ROLE regress_addr_user
+REVOKE DELETE
+ON TABLES 
+FROM regress_addr_user;
+
+CREATE TRANSFORM FOR INT LANGUAGE sql
+(FROM SQL WITH FUNCTION prsd_lextype(internal),
+TO SQL WITH FUNCTION int4recv(internal));
+
+SET client_min_messages = ERROR;
+
+CREATE PUBLICATION addr_pub FOR TABLE addr_nsp.gentable;
+
+CREATE PUBLICATION addr_pub_schema
+FOR TABLES IN SCHEMA addr_nsp;
+
+RESET client_min_messages;
+
+CREATE SUBSCRIPTION regress_addr_sub CONNECTION '' PUBLICATION bar WITH (connect = 'false',
+slot_name = 'none');
+
+CREATE STATISTICS addr_nsp.gentable_stat
+ON "a",
+"b" FROM addr_nsp.gentable;
+
+SELECT pg_get_object_address('stone', '{}', '{}');
+
+SELECT pg_get_object_address('table', '{}', '{}');
+
+SELECT pg_get_object_address('table', '{NULL}', '{}');
+
+DO $$
+DECLARE
+    objtype text;
+BEGIN
+    FOR objtype IN VALUES ('toast table'), ('index column'), ('sequence column'),
+        ('toast table column'), ('view column'), ('materialized view column')
+    LOOP
+        BEGIN
+            PERFORM pg_get_object_address(objtype, '{one}', '{}');
+        EXCEPTION WHEN invalid_parameter_value THEN
+            RAISE WARNING 'error for %: %', objtype, sqlerrm;
+        END;
+    END LOOP;
+END;
+$$;
+
+SELECT
+  *
+FROM
+  pg_get_object_address(
+  'operator of access method',
+  '{btree,integer_ops,1}',
+  '{int4,bool}'
+  );
+
+SELECT
+  *
+FROM
+  pg_get_object_address(
+  'operator of access method',
+  '{btree,integer_ops,99}',
+  '{int4,int4}'
+  );
+
+SELECT
+  *
+FROM
+  pg_get_object_address(
+  'function of access method',
+  '{btree,integer_ops,1}',
+  '{int4,bool}'
+  );
+
+SELECT
+  *
+FROM
+  pg_get_object_address(
+  'function of access method',
+  '{btree,integer_ops,99}',
+  '{int4,int4}'
+  );
+
+DO $$
+DECLARE
+    objtype text;
+    names   text[];
+    args    text[];
+BEGIN
+    FOR objtype IN VALUES
+        ('table'), ('index'), ('sequence'), ('view'),
+        ('materialized view'), ('foreign table'),
+        ('table column'), ('foreign table column'),
+        ('aggregate'), ('function'), ('procedure'), ('type'), ('cast'),
+        ('table constraint'), ('domain constraint'), ('conversion'), ('default value'),
+        ('operator'), ('operator class'), ('operator family'), ('rule'), ('trigger'),
+        ('text search parser'), ('text search dictionary'),
+        ('text search template'), ('text search configuration'),
+        ('policy'), ('user mapping'), ('default acl'), ('transform'),
+        ('operator of access method'), ('function of access method'),
+        ('publication namespace'), ('publication relation')
+    LOOP
+        FOR names IN VALUES ('{eins}'), ('{addr_nsp, zwei}'), ('{eins, zwei, drei}')
+        LOOP
+            FOR args IN VALUES ('{}'), ('{integer}')
+            LOOP
+                BEGIN
+                    PERFORM pg_get_object_address(objtype, names, args);
+                EXCEPTION WHEN OTHERS THEN
+                    RAISE WARNING 'error for %,%,%: %', objtype, names, args, sqlerrm;
+                END;
+            END LOOP;
+        END LOOP;
+    END LOOP;
+END;
+$$;
+
+SELECT pg_get_object_address('language', '{one}', '{}');
+
+SELECT pg_get_object_address('language', '{one,two}', '{}');
+
+SELECT pg_get_object_address('large object', '{123}', '{}');
+
+SELECT
+  pg_get_object_address(
+  'large object',
+  '{123,456}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'large object',
+  '{blargh}',
+  '{}'
+  );
+
+SELECT pg_get_object_address('schema', '{one}', '{}');
+
+SELECT pg_get_object_address('schema', '{one,two}', '{}');
+
+SELECT pg_get_object_address('role', '{one}', '{}');
+
+SELECT pg_get_object_address('role', '{one,two}', '{}');
+
+SELECT pg_get_object_address('database', '{one}', '{}');
+
+SELECT pg_get_object_address('database', '{one,two}', '{}');
+
+SELECT pg_get_object_address('tablespace', '{one}', '{}');
+
+SELECT
+  pg_get_object_address(
+  'tablespace',
+  '{one,two}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'foreign-data wrapper',
+  '{one}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'foreign-data wrapper',
+  '{one,two}',
+  '{}'
+  );
+
+SELECT pg_get_object_address('server', '{one}', '{}');
+
+SELECT pg_get_object_address('server', '{one,two}', '{}');
+
+SELECT pg_get_object_address('extension', '{one}', '{}');
+
+SELECT
+  pg_get_object_address(
+  'extension',
+  '{one,two}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'event trigger',
+  '{one}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'event trigger',
+  '{one,two}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'access method',
+  '{one}',
+  '{}'
+  );
+
+SELECT
+  pg_get_object_address(
+  'access method',
+  '{one,two}',
+  '{}'
+  );
+
+SELECT pg_get_object_address('publication', '{one}', '{}');
+
+SELECT
+  pg_get_object_address(
+  'publication',
+  '{one,two}',
+  '{}'
+  );
+
+SELECT pg_get_object_address('subscription', '{one}', '{}');
+
+SELECT
+  pg_get_object_address(
+  'subscription',
+  '{one,two}',
+  '{}'
+  );
+
+WITH objects (type,
+name,
+args) AS (VALUES ('table',
+CAST('{addr_nsp, gentable}'
+AS TEXT[]),
+CAST('{}'
+AS TEXT[])),
+('table',
+CAST('{addr_nsp, parttable}'
+AS TEXT[]),
+CAST('{}'
+AS TEXT[])),
+('index',
+'{addr_nsp, gentable_pkey}',
+'{}'),
+('index',
+'{addr_nsp, parttable_pkey}',
+'{}'),
+('sequence',
+'{addr_nsp, gentable_a_seq}',
+'{}'),
+('view',
+'{addr_nsp, genview}',
+'{}'),
+('materialized view',
+'{addr_nsp, genmatview}',
+'{}'),
+('foreign table',
+'{addr_nsp, genftable}',
+'{}'),
+('table column',
+'{addr_nsp, gentable, b}',
+'{}'),
+('foreign table column',
+'{addr_nsp, genftable, a}',
+'{}'),
+('aggregate',
+'{addr_nsp, genaggr}',
+'{int4}'),
+('function',
+'{pg_catalog, pg_identify_object}',
+'{pg_catalog.oid, pg_catalog.oid, int4}'),
+('procedure',
+'{addr_nsp, proc}',
+'{int4}'),
+('type',
+'{pg_catalog._int4}',
+'{}'),
+('type',
+'{addr_nsp.gendomain}',
+'{}'),
+('type',
+'{addr_nsp.gencomptype}',
+'{}'),
+('type',
+'{addr_nsp.genenum}',
+'{}'),
+('cast',
+'{int8}',
+'{int4}'),
+('collation',
+'{default}',
+'{}'),
+('table constraint',
+'{addr_nsp, gentable, a_chk}',
+'{}'),
+('domain constraint',
+'{addr_nsp.gendomain}',
+'{domconstr}'),
+('conversion',
+'{pg_catalog, koi8_r_to_mic}',
+'{}'),
+('default value',
+'{addr_nsp, gentable, b}',
+'{}'),
+('language',
+'{plpgsql}',
+'{}'),
+('operator',
+'{+}',
+'{int4, int4}'),
+('operator class',
+'{btree, int4_ops}',
+'{}'),
+('operator family',
+'{btree, integer_ops}',
+'{}'),
+('operator of access method',
+'{btree,integer_ops,1}',
+'{integer,integer}'),
+('function of access method',
+'{btree,integer_ops,2}',
+'{integer,integer}'),
+('rule',
+'{addr_nsp, genview, _RETURN}',
+'{}'),
+('trigger',
+'{addr_nsp, gentable, t}',
+'{}'),
+('schema',
+'{addr_nsp}',
+'{}'),
+('text search parser',
+'{addr_ts_prs}',
+'{}'),
+('text search dictionary',
+'{addr_ts_dict}',
+'{}'),
+('text search template',
+'{addr_ts_temp}',
+'{}'),
+('text search configuration',
+'{addr_ts_conf}',
+'{}'),
+('role',
+'{regress_addr_user}',
+'{}'),
+('foreign-data wrapper',
+'{addr_fdw}',
+'{}'),
+('server',
+'{addr_fserv}',
+'{}'),
+('user mapping',
+'{regress_addr_user}',
+'{integer}'),
+('default acl',
+'{regress_addr_user,public}',
+'{r}'),
+('default acl',
+'{regress_addr_user}',
+'{r}'),
+('policy',
+'{addr_nsp, gentable, genpol}',
+'{}'),
+('transform',
+'{int}',
+'{sql}'),
+('access method',
+'{btree}',
+'{}'),
+('publication',
+'{addr_pub}',
+'{}'),
+('publication namespace',
+'{addr_nsp}',
+'{addr_pub_schema}'),
+('publication relation',
+'{addr_nsp, gentable}',
+'{addr_pub}'),
+('subscription',
+'{regress_addr_sub}',
+'{}'),
+('statistics object',
+'{addr_nsp, gentable_stat}',
+'{}'))
+SELECT
+  (pg_identify_object(
+  addr1.classid,
+  addr1.objid,
+  addr1.objsubid
+  )).*,
+  ROW(pg_identify_object(
+  addr1.classid,
+  addr1.objid,
+  addr1.objsubid
+  )) =
+  ROW(pg_identify_object(
+  addr2.classid,
+  addr2.objid,
+  addr2.objsubid
+  ))
+  AS roundtrip
+FROM
+  objects,
+  pg_get_object_address(
+  type,
+  name,
+  args
+  ) AS addr1,
+  pg_identify_object_as_address(
+  classid,
+  objid,
+  objsubid
+  ) AS ioa (typ,
+  nms,
+  args),
+  pg_get_object_address(
+  typ,
+  nms,
+  ioa.args
+  ) AS addr2
+ORDER BY addr1.classid,
+  addr1.objid,
+  addr1.objsubid;
+
+DROP FOREIGN DATA WRAPPER addr_fdw CASCADE;
+
+DROP PUBLICATION addr_pub;
+
+DROP PUBLICATION addr_pub_schema;
+
+DROP SUBSCRIPTION regress_addr_sub RESTRICT;
+
+DROP SCHEMA addr_nsp CASCADE;
+
+DROP OWNED BY regress_addr_user;
+
+DROP ROLE regress_addr_user;
+
+WITH objects (classid,
+objid,
+objsubid) AS (VALUES (CAST('pg_class'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_class'
+AS REGCLASS),
+CAST('pg_class'
+AS REGCLASS),
+100),
+(CAST('pg_proc'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_type'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_cast'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_collation'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_constraint'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_conversion'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_attrdef'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_language'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_largeobject'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_operator'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_opclass'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_opfamily'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_am'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_amop'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_amproc'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_rewrite'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_trigger'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_namespace'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_statistic_ext'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_ts_parser'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_ts_dict'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_ts_template'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_ts_config'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_authid'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_auth_members'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_database'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_tablespace'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_foreign_data_wrapper'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_foreign_server'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_user_mapping'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_default_acl'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_extension'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_event_trigger'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_parameter_acl'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_policy'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_publication'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_publication_namespace'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_publication_rel'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_subscription'
+AS REGCLASS),
+0,
+0),
+(CAST('pg_transform'
+AS REGCLASS),
+0,
+0))
+SELECT
+  ROW(pg_identify_object(
+  objects.classid,
+  objects.objid,
+  objects.objsubid
+  ))
+  AS ident,
+  ROW(pg_identify_object_as_address(
+  objects.classid,
+  objects.objid,
+  objects.objsubid
+  ))
+  AS addr,
+  pg_describe_object(
+  objects.classid,
+  objects.objid,
+  objects.objsubid
+  )
+  AS descr
+FROM
+  objects
+ORDER BY objects.classid,
+  objects.objid,
+  objects.objsubid;

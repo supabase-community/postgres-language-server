@@ -326,14 +326,16 @@ DROP TYPE IF EXISTS no_such_schema.foo;
 
 DROP VIEW IF EXISTS "no_such_schema"."foo";
 
-CREATE FUNCTION test_ambiguous_funcname(
+CREATE FUNCTION
+test_ambiguous_funcname(
   INT
 )
 RETURNS INT
 AS ' select $1; '
 LANGUAGE "sql";
 
-CREATE FUNCTION test_ambiguous_funcname(
+CREATE FUNCTION
+test_ambiguous_funcname(
   TEXT
 )
 RETURNS TEXT
@@ -348,13 +350,15 @@ DROP FUNCTION test_ambiguous_funcname(INT);
 
 DROP FUNCTION test_ambiguous_funcname(TEXT);
 
-CREATE PROCEDURE test_ambiguous_procname(
+CREATE PROCEDURE
+test_ambiguous_procname(
   INT
 )
 AS ' begin end; '
 LANGUAGE "plpgsql";
 
-CREATE PROCEDURE test_ambiguous_procname(
+CREATE PROCEDURE
+test_ambiguous_procname(
   TEXT
 )
 AS ' begin end; '

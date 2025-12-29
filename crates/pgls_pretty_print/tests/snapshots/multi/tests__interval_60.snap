@@ -17,19 +17,23 @@ SELECT CAST('-1 +02:03' AS INTERVAL) AS "22 hours ago...";
 
 SELECT
   CAST('-1 days +02:03'
-  AS INTERVAL) AS "22 hours ago...";
+  AS INTERVAL)
+  AS "22 hours ago...";
 
 SELECT
   CAST('1.5 weeks'
-  AS INTERVAL) AS "Ten days twelve hours";
+  AS INTERVAL)
+  AS "Ten days twelve hours";
 
 SELECT
   CAST('1.5 months'
-  AS INTERVAL) AS "One month 15 days";
+  AS INTERVAL)
+  AS "One month 15 days";
 
 SELECT
   CAST('10 years -11 month -12 days +13:14'
-  AS INTERVAL) AS "9 years...";
+  AS INTERVAL)
+  AS "9 years...";
 
 SELECT CAST('infinity' AS INTERVAL) AS eternity;
 
@@ -78,8 +82,10 @@ SELECT * FROM pg_input_error_info('garbage', 'interval');
 SELECT
   *
 FROM
-  pg_input_error_info('@ 30 eons ago',
-  'interval');
+  pg_input_error_info(
+  '@ 30 eons ago',
+  'interval'
+  );
 
 SELECT * FROM interval_tbl;
 
@@ -263,56 +269,85 @@ SELECT
   AS INTERVAL);
 
 SELECT
-  justify_hours(CAST('6 months 3 days 52 hours 3 minutes 2 seconds'
-  AS INTERVAL)) AS "6 mons 5 days 4 hours 3 mins 2 seconds";
+  justify_hours(
+  CAST('6 months 3 days 52 hours 3 minutes 2 seconds'
+  AS INTERVAL)
+  )
+  AS "6 mons 5 days 4 hours 3 mins 2 seconds";
 
 SELECT
-  justify_days(CAST('6 months 36 days 5 hours 4 minutes 3 seconds'
-  AS INTERVAL)) AS "7 mons 6 days 5 hours 4 mins 3 seconds";
+  justify_days(
+  CAST('6 months 36 days 5 hours 4 minutes 3 seconds'
+  AS INTERVAL)
+  )
+  AS "7 mons 6 days 5 hours 4 mins 3 seconds";
 
 SELECT
-  justify_hours(CAST('2147483647 days 24 hrs'
-  AS INTERVAL));
+  justify_hours(
+  CAST('2147483647 days 24 hrs'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_days(CAST('2147483647 months 30 days'
-  AS INTERVAL));
+  justify_days(
+  CAST('2147483647 months 30 days'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('1 month -1 hour'
-  AS INTERVAL)) AS "1 month -1 hour";
+  justify_interval(
+  CAST('1 month -1 hour'
+  AS INTERVAL)
+  )
+  AS "1 month -1 hour";
 
 SELECT
-  justify_interval(CAST('2147483647 days 24 hrs'
-  AS INTERVAL));
+  justify_interval(
+  CAST('2147483647 days 24 hrs'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('-2147483648 days -24 hrs'
-  AS INTERVAL));
+  justify_interval(
+  CAST('-2147483648 days -24 hrs'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('2147483647 months 30 days'
-  AS INTERVAL));
+  justify_interval(
+  CAST('2147483647 months 30 days'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('-2147483648 months -30 days'
-  AS INTERVAL));
+  justify_interval(
+  CAST('-2147483648 months -30 days'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('2147483647 months 30 days -24 hrs'
-  AS INTERVAL));
+  justify_interval(
+  CAST('2147483647 months 30 days -24 hrs'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('-2147483648 months -30 days 24 hrs'
-  AS INTERVAL));
+  justify_interval(
+  CAST('-2147483648 months -30 days 24 hrs'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('2147483647 months -30 days 1440 hrs'
-  AS INTERVAL));
+  justify_interval(
+  CAST('2147483647 months -30 days 1440 hrs'
+  AS INTERVAL)
+  );
 
 SELECT
-  justify_interval(CAST('-2147483648 months 30 days -1440 hrs'
-  AS INTERVAL));
+  justify_interval(
+  CAST('-2147483648 months 30 days -1440 hrs'
+  AS INTERVAL)
+  );
 
 SET datestyle = ISO;
 
@@ -461,11 +496,13 @@ SELECT
 SELECT
   f1,
   CAST(f1
-  AS INTERVAL DAY TO MINUTE) AS minutes,
+  AS INTERVAL DAY TO MINUTE)
+  AS minutes,
   CAST(CAST(f1 + CAST('1 month'
   AS INTERVAL)
   AS INTERVAL MONTH)
-  AS INTERVAL YEAR) AS years
+  AS INTERVAL YEAR)
+  AS years
 FROM
   interval_tbl;
 
@@ -473,15 +510,20 @@ SET intervalstyle = sql_standard;
 
 SELECT
   CAST('0'
-  AS INTERVAL) AS zero,
+  AS INTERVAL)
+  AS zero,
   CAST('1-2'
-  AS INTERVAL YEAR TO MONTH) AS "year-month",
+  AS INTERVAL YEAR TO MONTH)
+  AS "year-month",
   CAST('1 2:03:04'
-  AS INTERVAL DAY TO SECOND) AS "day-time",
+  AS INTERVAL DAY TO SECOND)
+  AS "day-time",
   -CAST('1-2'
-  AS INTERVAL) AS "negative year-month",
+  AS INTERVAL)
+  AS "negative year-month",
   -CAST('1 2:03:04'
-  AS INTERVAL) AS "negative day-time";
+  AS INTERVAL)
+  AS "negative day-time";
 
 SET intervalstyle = postgres;
 
@@ -533,66 +575,90 @@ SET intervalstyle = iso_8601;
 
 SELECT
   CAST('0'
-  AS INTERVAL) AS zero,
+  AS INTERVAL)
+  AS zero,
   CAST('1-2'
-  AS INTERVAL) AS "a year 2 months",
+  AS INTERVAL)
+  AS "a year 2 months",
   CAST('1 2:03:04'
-  AS INTERVAL) AS "a bit over a day",
+  AS INTERVAL)
+  AS "a bit over a day",
   CAST('2:03:04.45679'
-  AS INTERVAL) AS "a bit over 2 hours",
+  AS INTERVAL)
+  AS "a bit over 2 hours",
   CAST('1-2'
   AS INTERVAL) + CAST('3 4:05:06.7'
-  AS INTERVAL) AS "all fields",
+  AS INTERVAL)
+  AS "all fields",
   CAST('1-2'
   AS INTERVAL) - CAST('3 4:05:06.7'
-  AS INTERVAL) AS "mixed sign",
+  AS INTERVAL)
+  AS "mixed sign",
   -CAST('1-2'
   AS INTERVAL) + CAST('3 4:05:06.7'
-  AS INTERVAL) AS negative;
+  AS INTERVAL)
+  AS negative;
 
 SET intervalstyle = sql_standard;
 
 SELECT
   CAST('P0Y'
-  AS INTERVAL) AS zero,
+  AS INTERVAL)
+  AS zero,
   CAST('P1Y2M'
-  AS INTERVAL) AS "a year 2 months",
+  AS INTERVAL)
+  AS "a year 2 months",
   CAST('P1W'
-  AS INTERVAL) AS "a week",
+  AS INTERVAL)
+  AS "a week",
   CAST('P1DT2H3M4S'
-  AS INTERVAL) AS "a bit over a day",
+  AS INTERVAL)
+  AS "a bit over a day",
   CAST('P1Y2M3DT4H5M6.7S'
-  AS INTERVAL) AS "all fields",
+  AS INTERVAL)
+  AS "all fields",
   CAST('P-1Y-2M-3DT-4H-5M-6.7S'
-  AS INTERVAL) AS negative,
+  AS INTERVAL)
+  AS negative,
   CAST('PT-0.1S'
-  AS INTERVAL) AS "fractional second";
+  AS INTERVAL)
+  AS "fractional second";
 
 SET intervalstyle = postgres;
 
 SELECT
   CAST('P00021015T103020'
-  AS INTERVAL) AS "ISO8601 Basic Format",
+  AS INTERVAL)
+  AS "ISO8601 Basic Format",
   CAST('P0002-10-15T10:30:20'
-  AS INTERVAL) AS "ISO8601 Extended Format";
+  AS INTERVAL)
+  AS "ISO8601 Extended Format";
 
 SELECT
   CAST('P0002'
-  AS INTERVAL) AS "year only",
+  AS INTERVAL)
+  AS "year only",
   CAST('P0002-10'
-  AS INTERVAL) AS "year month",
+  AS INTERVAL)
+  AS "year month",
   CAST('P0002-10-15'
-  AS INTERVAL) AS "year month day",
+  AS INTERVAL)
+  AS "year month day",
   CAST('P0002T1S'
-  AS INTERVAL) AS "year only plus time",
+  AS INTERVAL)
+  AS "year only plus time",
   CAST('P0002-10T1S'
-  AS INTERVAL) AS "year month plus time",
+  AS INTERVAL)
+  AS "year month plus time",
   CAST('P0002-10-15T1S'
-  AS INTERVAL) AS "year month day plus time",
+  AS INTERVAL)
+  AS "year month day plus time",
   CAST('PT10'
-  AS INTERVAL) AS "hour only",
+  AS INTERVAL)
+  AS "hour only",
   CAST('PT10:30'
-  AS INTERVAL) AS "hour minute";
+  AS INTERVAL)
+  AS "hour minute";
 
 SELECT CAST('P1Y0M3DT4H5M6S' AS INTERVAL);
 
@@ -949,8 +1015,10 @@ SELECT make_interval("years" := -178956971);
 SELECT make_interval("years" := 1, "months" := 2147483647);
 
 SELECT
-  make_interval("years" := -1,
-  "months" := -2147483648);
+  make_interval(
+  "years" := -1,
+  "months" := -2147483648
+  );
 
 SELECT make_interval("weeks" := 306783379);
 
@@ -967,12 +1035,16 @@ SELECT make_interval("secs" := 1e18);
 SELECT make_interval("secs" := -1e18);
 
 SELECT
-  make_interval("mins" := 1,
-  "secs" := 9223372036800.0);
+  make_interval(
+  "mins" := 1,
+  "secs" := 9223372036800.0
+  );
 
 SELECT
-  make_interval("mins" := -1,
-  "secs" := -9223372036800.0);
+  make_interval(
+  "mins" := -1,
+  "secs" := -9223372036800.0
+  );
 
 SET intervalstyle = postgres;
 
@@ -1002,49 +1074,67 @@ SELECT
   CAST('30 days'
   AS INTERVAL) =
   CAST('1 month'
-  AS INTERVAL) AS t;
+  AS INTERVAL)
+  AS t;
 
 SELECT
-  interval_hash(CAST('30 days'
-  AS INTERVAL)) =
-  interval_hash(CAST('1 month'
-  AS INTERVAL)) AS t;
+  interval_hash(
+  CAST('30 days'
+  AS INTERVAL)
+  ) =
+  interval_hash(
+  CAST('1 month'
+  AS INTERVAL)
+  )
+  AS t;
 
 SELECT make_interval("years" := 2);
 
 SELECT make_interval("years" := 1, "months" := 6);
 
 SELECT
-  make_interval("years" := 1,
+  make_interval(
+  "years" := 1,
   "months" := -1,
   "weeks" := 5,
   "days" := -7,
   "hours" := 25,
-  "mins" := -180);
+  "mins" := -180
+  );
 
 SELECT
-  make_interval() =
-  make_interval("years" := 0,
+  make_interval(
+
+  ) =
+  make_interval(
+  "years" := 0,
   "months" := 0,
   "weeks" := 0,
   "days" := 0,
   "mins" := 0,
-  "secs" := 0.0);
+  "secs" := 0.0
+  );
 
 SELECT
-  make_interval("hours" := -2,
+  make_interval(
+  "hours" := -2,
   "mins" := -10,
-  "secs" := -25.3);
+  "secs" := -25.3
+  );
 
 SELECT
-  make_interval("years" := CAST(CAST('inf'
+  make_interval(
+  "years" := CAST(CAST('inf'
   AS DOUBLE PRECISION)
-  AS INT));
+  AS INT)
+  );
 
 SELECT
-  make_interval("months" := CAST(CAST('NaN'
+  make_interval(
+  "months" := CAST(CAST('NaN'
   AS DOUBLE PRECISION)
-  AS INT));
+  AS INT)
+  );
 
 SELECT make_interval("secs" := 'inf');
 
@@ -1054,39 +1144,67 @@ SELECT make_interval("secs" := 7e12);
 
 SELECT
   f1,
-  EXTRACT('microsecond' FROM f1) AS microsecond,
-  EXTRACT('millisecond' FROM f1) AS millisecond,
-  EXTRACT('second' FROM f1) AS second,
-  EXTRACT('minute' FROM f1) AS minute,
-  EXTRACT('hour' FROM f1) AS hour,
-  EXTRACT('day' FROM f1) AS day,
-  EXTRACT('week' FROM f1) AS week,
-  EXTRACT('month' FROM f1) AS month,
-  EXTRACT('quarter' FROM f1) AS quarter,
-  EXTRACT('year' FROM f1) AS year,
-  EXTRACT('decade' FROM f1) AS decade,
-  EXTRACT('century' FROM f1) AS century,
-  EXTRACT('millennium' FROM f1) AS millennium,
-  EXTRACT('epoch' FROM f1) AS epoch
+  EXTRACT('microsecond' FROM f1)
+  AS microsecond,
+  EXTRACT('millisecond' FROM f1)
+  AS millisecond,
+  EXTRACT('second' FROM f1)
+  AS second,
+  EXTRACT('minute' FROM f1)
+  AS minute,
+  EXTRACT('hour' FROM f1)
+  AS hour,
+  EXTRACT('day' FROM f1)
+  AS day,
+  EXTRACT('week' FROM f1)
+  AS week,
+  EXTRACT('month' FROM f1)
+  AS month,
+  EXTRACT('quarter' FROM f1)
+  AS quarter,
+  EXTRACT('year' FROM f1)
+  AS year,
+  EXTRACT('decade' FROM f1)
+  AS decade,
+  EXTRACT('century' FROM f1)
+  AS century,
+  EXTRACT('millennium' FROM f1)
+  AS millennium,
+  EXTRACT('epoch' FROM f1)
+  AS epoch
 FROM
   interval_tbl;
 
 SELECT
   -f1,
-  EXTRACT('microsecond' FROM -f1) AS microsecond,
-  EXTRACT('millisecond' FROM -f1) AS millisecond,
-  EXTRACT('second' FROM -f1) AS second,
-  EXTRACT('minute' FROM -f1) AS minute,
-  EXTRACT('hour' FROM -f1) AS hour,
-  EXTRACT('day' FROM -f1) AS day,
-  EXTRACT('week' FROM -f1) AS week,
-  EXTRACT('month' FROM -f1) AS month,
-  EXTRACT('quarter' FROM -f1) AS quarter,
-  EXTRACT('year' FROM -f1) AS year,
-  EXTRACT('decade' FROM -f1) AS decade,
-  EXTRACT('century' FROM -f1) AS century,
-  EXTRACT('millennium' FROM -f1) AS millennium,
-  EXTRACT('epoch' FROM -f1) AS epoch
+  EXTRACT('microsecond' FROM -f1)
+  AS microsecond,
+  EXTRACT('millisecond' FROM -f1)
+  AS millisecond,
+  EXTRACT('second' FROM -f1)
+  AS second,
+  EXTRACT('minute' FROM -f1)
+  AS minute,
+  EXTRACT('hour' FROM -f1)
+  AS hour,
+  EXTRACT('day' FROM -f1)
+  AS day,
+  EXTRACT('week' FROM -f1)
+  AS week,
+  EXTRACT('month' FROM -f1)
+  AS month,
+  EXTRACT('quarter' FROM -f1)
+  AS quarter,
+  EXTRACT('year' FROM -f1)
+  AS year,
+  EXTRACT('decade' FROM -f1)
+  AS decade,
+  EXTRACT('century' FROM -f1)
+  AS century,
+  EXTRACT('millennium' FROM -f1)
+  AS millennium,
+  EXTRACT('epoch' FROM -f1)
+  AS epoch
 FROM
   interval_tbl;
 
@@ -1112,14 +1230,26 @@ SELECT EXTRACT('century' FROM CAST('-100 y' AS INTERVAL));
 
 SELECT
   f1,
-  date_part('microsecond',
-  f1) AS microsecond,
-  date_part('millisecond',
-  f1) AS millisecond,
-  date_part('second',
-  f1) AS second,
-  date_part('epoch',
-  f1) AS epoch
+  date_part(
+  'microsecond',
+  f1
+  )
+  AS microsecond,
+  date_part(
+  'millisecond',
+  f1
+  )
+  AS millisecond,
+  date_part(
+  'second',
+  f1
+  )
+  AS second,
+  date_part(
+  'epoch',
+  f1
+  )
+  AS epoch
 FROM
   interval_tbl;
 
@@ -1152,7 +1282,8 @@ VALUES ('infinity'),
 
 SELECT i, isfinite(i) FROM infinite_interval_tbl;
 
-CREATE FUNCTION eval(
+CREATE FUNCTION
+eval(
   "expr" TEXT
 )
 RETURNS TEXT
@@ -1169,14 +1300,26 @@ END
 LANGUAGE "plpgsql";
 
 SELECT
-  d AS date,
-  i AS interval,
-  eval(format('date %L + interval %L',
+  d
+  AS date,
+  i
+  AS interval,
+  eval(
+  format(
+  'date %L + interval %L',
   d,
-  i)) AS plus,
-  eval(format('date %L - interval %L',
+  i
+  )
+  )
+  AS plus,
+  eval(
+  format(
+  'date %L - interval %L',
   d,
-  i)) AS minus
+  i
+  )
+  )
+  AS minus
 FROM
   (VALUES (CAST('-infinity'
   AS DATE)),
@@ -1190,14 +1333,26 @@ FROM
   AS INTERVAL))) AS t2 (i);
 
 SELECT
-  i1 AS interval1,
-  i2 AS interval2,
-  eval(format('interval %L + interval %L',
+  i1
+  AS interval1,
+  i2
+  AS interval2,
+  eval(
+  format(
+  'interval %L + interval %L',
   i1,
-  i2)) AS plus,
-  eval(format('interval %L - interval %L',
+  i2
+  )
+  )
+  AS plus,
+  eval(
+  format(
+  'interval %L - interval %L',
   i1,
-  i2)) AS minus
+  i2
+  )
+  )
+  AS minus
 FROM
   (VALUES (CAST('-infinity'
   AS INTERVAL)),
@@ -1233,14 +1388,26 @@ SELECT
   AS INTERVAL);
 
 SELECT
-  t AS timestamp,
-  i AS interval,
-  eval(format('timestamp %L + interval %L',
+  t
+  AS timestamp,
+  i
+  AS interval,
+  eval(
+  format(
+  'timestamp %L + interval %L',
   t,
-  i)) AS plus,
-  eval(format('timestamp %L - interval %L',
+  i
+  )
+  )
+  AS plus,
+  eval(
+  format(
+  'timestamp %L - interval %L',
   t,
-  i)) AS minus
+  i
+  )
+  )
+  AS minus
 FROM
   (VALUES (CAST('-infinity'
   AS TIMESTAMP)),
@@ -1254,15 +1421,29 @@ FROM
   AS INTERVAL))) AS t2 (i);
 
 SELECT
-  timezone('GMT',
-  t) AS timestamptz,
-  i AS interval,
-  eval(format('timestamptz %L + interval %L',
+  timezone(
+  'GMT',
+  t
+  )
+  AS timestamptz,
+  i
+  AS interval,
+  eval(
+  format(
+  'timestamptz %L + interval %L',
   t,
-  i)) AS plus,
-  eval(format('timestamptz %L - interval %L',
+  i
+  )
+  )
+  AS plus,
+  eval(
+  format(
+  'timestamptz %L - interval %L',
   t,
-  i)) AS minus
+  i
+  )
+  )
+  AS minus
 FROM
   (VALUES (CAST('-infinity'
   AS TIMESTAMP WITH TIME ZONE)),
@@ -1316,20 +1497,28 @@ SELECT
   AS INTERVAL);
 
 SELECT
-  lhst.i AS lhs,
-  rhst.i AS rhs,
+  lhst.i
+  AS lhs,
+  rhst.i
+  AS rhs,
   lhst.i <
-  rhst.i AS lt,
+  rhst.i
+  AS lt,
   lhst.i <=
-  rhst.i AS le,
+  rhst.i
+  AS le,
   lhst.i =
-  rhst.i AS eq,
+  rhst.i
+  AS eq,
   lhst.i >
-  rhst.i AS gt,
+  rhst.i
+  AS gt,
   lhst.i >=
-  rhst.i AS ge,
+  rhst.i
+  AS ge,
   lhst.i <>
-  rhst.i AS ne
+  rhst.i
+  AS ne
 FROM
   infinite_interval_tbl
   AS lhst
@@ -1337,21 +1526,33 @@ FROM
   AS rhst
   ON TRUE
 WHERE
-  NOT isfinite(lhst.i);
+  NOT isfinite(
+  lhst.i
+  );
 
 SELECT
-  i AS interval,
-  -i AS um,
-  i * 2.0 AS mul,
-  i * -2.0 AS mul_neg,
-  i * 'infinity' AS mul_inf,
-  i * '-infinity' AS mul_inf_neg,
-  i / 3.0 AS div,
-  i / -3.0 AS div_neg
+  i
+  AS interval,
+  -i
+  AS um,
+  i * 2.0
+  AS mul,
+  i * -2.0
+  AS mul_neg,
+  i * 'infinity'
+  AS mul_inf,
+  i * '-infinity'
+  AS mul_inf_neg,
+  i / 3.0
+  AS div,
+  i / -3.0
+  AS div_neg
 FROM
   infinite_interval_tbl
 WHERE
-  NOT isfinite(i);
+  NOT isfinite(
+  i
+  );
 
 SELECT
   -CAST('-2147483647 months -2147483647 days -9223372036854775807 us'
@@ -1406,103 +1607,147 @@ SELECT
   AS INTERVAL) / 0.5;
 
 SELECT
-  date_bin('infinity',
+  date_bin(
+  'infinity',
   CAST('2001-02-16 20:38:40'
   AS TIMESTAMP),
   CAST('2001-02-16 20:05:00'
-  AS TIMESTAMP));
+  AS TIMESTAMP)
+  );
 
 SELECT
-  date_bin('-infinity',
+  date_bin(
+  '-infinity',
   CAST('2001-02-16 20:38:40'
   AS TIMESTAMP),
   CAST('2001-02-16 20:05:00'
-  AS TIMESTAMP));
+  AS TIMESTAMP)
+  );
 
 SELECT
-  i AS interval,
-  date_trunc('hour',
-  i)
+  i
+  AS interval,
+  date_trunc(
+  'hour',
+  i
+  )
 FROM
   infinite_interval_tbl
 WHERE
-  NOT isfinite(i);
+  NOT isfinite(
+  i
+  );
 
 SELECT
-  i AS interval,
-  date_trunc('week',
-  i)
+  i
+  AS interval,
+  date_trunc(
+  'week',
+  i
+  )
 FROM
   infinite_interval_tbl
 WHERE
-  NOT isfinite(i);
+  NOT isfinite(
+  i
+  );
 
 SELECT
-  i AS interval,
-  date_trunc('ago',
-  i)
+  i
+  AS interval,
+  date_trunc(
+  'ago',
+  i
+  )
 FROM
   infinite_interval_tbl
 WHERE
-  NOT isfinite(i);
+  NOT isfinite(
+  i
+  );
 
 SELECT
-  i AS interval,
-  justify_days(i),
-  justify_hours(i),
-  justify_interval(i)
+  i
+  AS interval,
+  justify_days(
+  i
+  ),
+  justify_hours(
+  i
+  ),
+  justify_interval(
+  i
+  )
 FROM
   infinite_interval_tbl
 WHERE
-  NOT isfinite(i);
+  NOT isfinite(
+  i
+  );
 
 SELECT
-  timezone(CAST('infinity'
+  timezone(
+  CAST('infinity'
   AS INTERVAL),
   CAST('1995-08-06 12:12:12'
-  AS TIMESTAMP));
+  AS TIMESTAMP)
+  );
 
 SELECT
-  timezone(CAST('-infinity'
+  timezone(
+  CAST('-infinity'
   AS INTERVAL),
   CAST('1995-08-06 12:12:12'
-  AS TIMESTAMP));
+  AS TIMESTAMP)
+  );
 
 SELECT
-  timezone(CAST('infinity'
+  timezone(
+  CAST('infinity'
   AS INTERVAL),
   CAST('1995-08-06 12:12:12'
-  AS TIMESTAMP WITH TIME ZONE));
+  AS TIMESTAMP WITH TIME ZONE)
+  );
 
 SELECT
-  timezone(CAST('-infinity'
+  timezone(
+  CAST('-infinity'
   AS INTERVAL),
   CAST('1995-08-06 12:12:12'
-  AS TIMESTAMP WITH TIME ZONE));
+  AS TIMESTAMP WITH TIME ZONE)
+  );
 
 SELECT
-  timezone(CAST('infinity'
+  timezone(
+  CAST('infinity'
   AS INTERVAL),
   CAST('12:12:12'
-  AS TIME));
+  AS TIME)
+  );
 
 SELECT
-  timezone(CAST('-infinity'
+  timezone(
+  CAST('-infinity'
   AS INTERVAL),
   CAST('12:12:12'
-  AS TIME));
+  AS TIME)
+  );
 
 SELECT
-  timezone(CAST('infinity'
+  timezone(
+  CAST('infinity'
   AS INTERVAL),
   CAST('12:12:12'
-  AS TIME WITH TIME ZONE));
+  AS TIME WITH TIME ZONE)
+  );
 
 SELECT
-  timezone(CAST('-infinity'
+  timezone(
+  CAST('-infinity'
   AS INTERVAL),
   CAST('12:12:12'
-  AS TIME WITH TIME ZONE));
+  AS TIME WITH TIME ZONE)
+  );
 
 SELECT CAST(CAST('infinity' AS INTERVAL) AS TIME);
 

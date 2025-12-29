@@ -37,56 +37,86 @@ VALUES (4,
 SELECT snap FROM snapshot_test ORDER BY nr;
 
 SELECT
-  txid_snapshot_xmin(snap),
-  txid_snapshot_xmax(snap),
-  txid_snapshot_xip(snap)
+  txid_snapshot_xmin(
+  snap
+  ),
+  txid_snapshot_xmax(
+  snap
+  ),
+  txid_snapshot_xip(
+  snap
+  )
 FROM
   snapshot_test
 ORDER BY nr;
 
 SELECT
   id,
-  txid_visible_in_snapshot(id,
-  snap)
+  txid_visible_in_snapshot(
+  id,
+  snap
+  )
 FROM
   snapshot_test,
-  generate_series(11,
-  21) AS id
+  generate_series(
+  11,
+  21
+  ) AS id
 WHERE
   nr =
   2;
 
 SELECT
   id,
-  txid_visible_in_snapshot(id,
-  snap)
+  txid_visible_in_snapshot(
+  id,
+  snap
+  )
 FROM
   snapshot_test,
-  generate_series(90,
-  160) AS id
+  generate_series(
+  90,
+  160
+  ) AS id
 WHERE
   nr =
   4;
 
 SELECT
-  txid_current() >=
-  txid_snapshot_xmin(txid_current_snapshot());
+  txid_current(
+
+  ) >=
+  txid_snapshot_xmin(
+  txid_current_snapshot(
+
+  )
+  );
 
 SELECT
-  txid_visible_in_snapshot(txid_current(),
-  txid_current_snapshot());
+  txid_visible_in_snapshot(
+  txid_current(
+
+  ),
+  txid_current_snapshot(
+
+  )
+  );
 
 SELECT
   CAST('1000100010001000:1000100010001100:1000100010001012,1000100010001013'
   AS TXID_SNAPSHOT);
 
 SELECT
-  txid_visible_in_snapshot('1000100010001012',
-  '1000100010001000:1000100010001100:1000100010001012,1000100010001013');
+  txid_visible_in_snapshot(
+  '1000100010001012',
+  '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  );
 
 SELECT
-  txid_visible_in_snapshot('1000100010001015',
-  '1000100010001000:1000100010001100:1000100010001012,1000100010001013');
+  txid_visible_in_snapshot(
+  '1000100010001015',
+  '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+  );
 
 SELECT CAST('1:9223372036854775807:3' AS TXID_SNAPSHOT);
 
@@ -99,7 +129,9 @@ SELECT txid_current_if_assigned() IS NULL;
 SELECT txid_current();
 
 SELECT
-  txid_current_if_assigned() IS NOT DISTINCT FROM CAST('txid_current'
+  txid_current_if_assigned(
+
+  ) IS NOT DISTINCT FROM CAST('txid_current'
   AS BIGINT);
 
 COMMIT;
@@ -136,7 +168,8 @@ COMMIT;
 
 BEGIN;
 
-CREATE FUNCTION test_future_xid_status(
+CREATE FUNCTION
+test_future_xid_status(
   BIGINT
 )
 RETURNS VOID

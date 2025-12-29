@@ -185,7 +185,9 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_index
 WHERE
@@ -206,7 +208,9 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_index
 WHERE

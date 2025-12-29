@@ -178,8 +178,10 @@ WHERE
   10;
 
 UPDATE update_test
-SET c = repeat('x',
-10000)
+SET c = repeat(
+'x',
+10000
+)
 WHERE
   c =
   'car';
@@ -223,8 +225,10 @@ SELECT a, b, char_length(c) FROM update_test;
 INSERT INTO upsert_test VALUES (1, 'Boo'), (3, 'Zoo');
 
 WITH aaa AS (SELECT
-  1 AS a,
-  'Foo' AS b)
+  1
+  AS a,
+  'Foo'
+  AS b)
 INSERT INTO upsert_test
 VALUES (1,
 'Bar')
@@ -297,10 +301,14 @@ WHERE
 RETURNING CAST(tableoid
 AS REGCLASS),
 xmin =
-CAST(pg_current_xact_id()
-AS XID) AS xmin_correct,
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmin_correct,
 xmax =
-0 AS xmax_correct;
+0
+AS xmax_correct;
 
 INSERT INTO upsert_test
 VALUES (2,
@@ -321,11 +329,17 @@ WHERE
 RETURNING CAST(tableoid
 AS REGCLASS),
 xmin =
-CAST(pg_current_xact_id()
-AS XID) AS xmin_correct,
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmin_correct,
 xmax =
-CAST(pg_current_xact_id()
-AS XID) AS xmax_correct;
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmax_correct;
 
 DROP TABLE "update_test";
 
@@ -352,8 +366,10 @@ ALTER TABLE upsert_test
 INSERT INTO upsert_test VALUES (1, 'Boo'), (2, 'Zoo');
 
 WITH aaa AS (SELECT
-  1 AS a,
-  'Foo' AS b)
+  1
+  AS a,
+  'Foo'
+  AS b)
 INSERT INTO upsert_test
 VALUES (1,
 'Bar')
@@ -368,8 +384,10 @@ FROM
 RETURNING *;
 
 WITH aaa AS (SELECT
-  1 AS ctea,
-  ' Foo' AS cteb)
+  1
+  AS ctea,
+  ' Foo'
+  AS cteb)
 INSERT INTO upsert_test
 VALUES (1,
 'Bar'),
@@ -456,7 +474,9 @@ CREATE TABLE part_c_100_200 (
   b BIGINT,
   d INT
 )
-PARTITION BY RANGE((abs(d)));
+PARTITION BY RANGE((abs(
+d
+)));
 
 ALTER TABLE part_c_100_200
   DROP COLUMN e,
@@ -565,7 +585,8 @@ WHERE
 RETURNING range_parted,
 *;
 
-CREATE FUNCTION trans_updatetrigfunc()
+CREATE FUNCTION
+trans_updatetrigfunc()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -582,7 +603,8 @@ CREATE TRIGGER trans_updatetrig
 AFTER
 UPDATE
 ON range_parted
-REFERENCING OLD TABLE AS old_table NEW TABLE AS new_table
+REFERENCING OLD TABLE AS old_table
+NEW TABLE AS new_table
 FOR EACH STATEMENT
 EXECUTE FUNCTION trans_updatetrigfunc();
 
@@ -630,7 +652,8 @@ DROP TRIGGER "trans_deletetrig" ON "range_parted";
 
 DROP TRIGGER "trans_inserttrig" ON "range_parted";
 
-CREATE FUNCTION func_parted_mod_b()
+CREATE FUNCTION
+func_parted_mod_b()
 RETURNS trigger
 AS '
 BEGIN
@@ -700,7 +723,8 @@ ALTER TABLE range_parted ENABLE ROW LEVEL SECURITY;
 
 CREATE USER regress_range_parted_user;
 
-GRANT ALL ON TABLE range_parted,
+GRANT ALL
+ON TABLE range_parted,
 mintab
 TO regress_range_parted_user;
 
@@ -733,7 +757,8 @@ WHERE
 
 RESET session_authorization;
 
-CREATE FUNCTION func_d_1_15()
+CREATE FUNCTION
+func_d_1_15()
 RETURNS trigger
 AS '
 BEGIN
@@ -861,7 +886,8 @@ DROP POLICY "policy_range_parted_subplan" ON "range_parted";
 
 DROP POLICY "policy_range_parted_wholerow" ON "range_parted";
 
-REVOKE ALL ON TABLE range_parted,
+REVOKE ALL
+ON TABLE range_parted,
 mintab
 FROM regress_range_parted_user;
 
@@ -869,7 +895,8 @@ DROP ROLE regress_range_parted_user;
 
 DROP TABLE "mintab";
 
-CREATE FUNCTION trigfunc()
+CREATE FUNCTION
+trigfunc()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -1057,8 +1084,11 @@ RETURNING *,
 CAST(tableoid
 AS REGCLASS),
 xmin =
-CAST(pg_current_xact_id()
-AS XID) AS xmin_ok;
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmin_ok;
 
 INSERT INTO utrtest
 VALUES (2,
@@ -1067,8 +1097,11 @@ RETURNING *,
 CAST(tableoid
 AS REGCLASS),
 xmin =
-CAST(pg_current_xact_id()
-AS XID) AS xmin_ok;
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmin_ok;
 
 INSERT INTO utrtest
 VALUES (2,
@@ -1089,8 +1122,11 @@ RETURNING *,
 CAST(tableoid
 AS REGCLASS),
 xmin =
-CAST(pg_current_xact_id()
-AS XID) AS xmin_ok;
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmin_ok;
 
 UPDATE utrtest
 SET a = 3 - a
@@ -1103,8 +1139,11 @@ RETURNING *,
 CAST(tableoid
 AS REGCLASS),
 xmin =
-CAST(pg_current_xact_id()
-AS XID) AS xmin_ok;
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmin_ok;
 
 UPDATE utrtest
 SET a = 3 - a
@@ -1122,8 +1161,11 @@ RETURNING *,
 CAST(tableoid
 AS REGCLASS),
 xmax =
-CAST(pg_current_xact_id()
-AS XID) AS xmax_ok;
+CAST(pg_current_xact_id(
+
+)
+AS XID)
+AS xmax_ok;
 
 DROP TABLE "utrtest";
 
@@ -1197,7 +1239,8 @@ WHERE
   2
 ORDER BY 1;
 
-CREATE FUNCTION func_parted_mod_b()
+CREATE FUNCTION
+func_parted_mod_b()
 RETURNS trigger
 AS '
 BEGIN
@@ -1241,7 +1284,8 @@ ORDER BY 1,
 
 DROP TRIGGER "parted_mod_b" ON "sub_part1";
 
-CREATE OR REPLACE FUNCTION func_parted_mod_b()
+CREATE OR REPLACE FUNCTION
+func_parted_mod_b()
 RETURNS trigger
 AS '
 BEGIN
@@ -1329,7 +1373,8 @@ DROP TABLE "non_parted";
 
 DROP TABLE "list_parted";
 
-CREATE OR REPLACE FUNCTION dummy_hashint4(
+CREATE OR REPLACE FUNCTION
+dummy_hashint4(
   "a" INT,
   "seed" BIGINT
 )

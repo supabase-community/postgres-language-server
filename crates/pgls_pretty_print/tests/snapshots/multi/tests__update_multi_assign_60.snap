@@ -31,7 +31,9 @@ balance,
 updated_at)
 VALUES (1,
 10,
-NOW())
+NOW(
+
+))
 ON CONFLICT (id) DO
 UPDATE
 SET (balance,

@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/alter_generic_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION test_opclass_options_func(
+CREATE FUNCTION
+test_opclass_options_func(
   internal
 )
 RETURNS VOID
@@ -37,14 +38,16 @@ SET search_path TO alt_nsp1, public;
 
 SET SESSION AUTHORIZATION regress_alter_generic_user1;
 
-CREATE FUNCTION alt_func1(
+CREATE FUNCTION
+alt_func1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1 + 1';
 
-CREATE FUNCTION alt_func2(
+CREATE FUNCTION
+alt_func2(
   INT
 )
 RETURNS INT
@@ -102,14 +105,16 @@ ALTER AGGREGATE alt_agg2(INT) SET SCHEMA alt_nsp2;
 
 SET SESSION AUTHORIZATION regress_alter_generic_user2;
 
-CREATE FUNCTION alt_func1(
+CREATE FUNCTION
+alt_func1(
   INT
 )
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1 + 2';
 
-CREATE FUNCTION alt_func2(
+CREATE FUNCTION
+alt_func2(
   INT
 )
 RETURNS INT
@@ -659,7 +664,8 @@ CREATE ROLE regress_alter_generic_user6;
 
 CREATE SCHEMA "alt_nsp6";
 
-REVOKE ALL ON SCHEMA alt_nsp6
+REVOKE ALL
+ON SCHEMA alt_nsp6
 FROM regress_alter_generic_user6;
 
 CREATE OPERATOR FAMILY alt_nsp6.alt_opf6 USING btree;
@@ -725,7 +731,8 @@ BEGIN;
 
 CREATE OPERATOR FAMILY alt_opf12 USING btree;
 
-CREATE FUNCTION fn_opf12(
+CREATE FUNCTION
+fn_opf12(
   INT,
   SMALLINT
 )
@@ -746,7 +753,8 @@ BEGIN;
 
 CREATE OPERATOR FAMILY alt_opf13 USING hash;
 
-CREATE FUNCTION fn_opf13(
+CREATE FUNCTION
+fn_opf13(
   INT
 )
 RETURNS BIGINT
@@ -764,7 +772,8 @@ BEGIN;
 
 CREATE OPERATOR FAMILY alt_opf14 USING btree;
 
-CREATE FUNCTION fn_opf14(
+CREATE FUNCTION
+fn_opf14(
   INT
 )
 RETURNS BIGINT
@@ -782,7 +791,8 @@ BEGIN;
 
 CREATE OPERATOR FAMILY alt_opf15 USING hash;
 
-CREATE FUNCTION fn_opf15(
+CREATE FUNCTION
+fn_opf15(
   INT,
   SMALLINT
 )

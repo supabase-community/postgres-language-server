@@ -240,115 +240,161 @@ SELECT to_regtypemod('timestamp(4)');
 SELECT to_regtypemod('no_such_type(4)');
 
 SELECT
-  format_type(to_regtype('varchar(32)'),
-  to_regtypemod('varchar(32)'));
+  format_type(
+  to_regtype(
+  'varchar(32)'
+  ),
+  to_regtypemod(
+  'varchar(32)'
+  )
+  );
 
 SELECT format_type(to_regtype('bit'), to_regtypemod('bit'));
 
 SELECT
-  format_type(to_regtype('"bit"'),
-  to_regtypemod('"bit"'));
+  format_type(
+  to_regtype(
+  '"bit"'
+  ),
+  to_regtypemod(
+  '"bit"'
+  )
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('ng_catalog.pg_class',
-  'regclass');
+  pg_input_error_info(
+  'ng_catalog.pg_class',
+  'regclass'
+  );
 
 SELECT
-  pg_input_is_valid('ng_catalog."POSIX"',
-  'regcollation');
-
-SELECT
-  *
-FROM
-  pg_input_error_info('no_such_config',
-  'regconfig');
-
-SELECT
-  *
-FROM
-  pg_input_error_info('no_such_dictionary',
-  'regdictionary');
+  pg_input_is_valid(
+  'ng_catalog."POSIX"',
+  'regcollation'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('Nonexistent',
-  'regnamespace');
+  pg_input_error_info(
+  'no_such_config',
+  'regconfig'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('ng_catalog.||/',
-  'regoper');
+  pg_input_error_info(
+  'no_such_dictionary',
+  'regdictionary'
+  );
+
+SELECT
+  *
+FROM
+  pg_input_error_info(
+  'Nonexistent',
+  'regnamespace'
+  );
+
+SELECT
+  *
+FROM
+  pg_input_error_info(
+  'ng_catalog.||/',
+  'regoper'
+  );
 
 SELECT * FROM pg_input_error_info('-', 'regoper');
 
 SELECT
   *
 FROM
-  pg_input_error_info('ng_catalog.+(int4,int4)',
-  'regoperator');
+  pg_input_error_info(
+  'ng_catalog.+(int4,int4)',
+  'regoperator'
+  );
 
 SELECT * FROM pg_input_error_info('-', 'regoperator');
 
 SELECT
   *
 FROM
-  pg_input_error_info('ng_catalog.now',
-  'regproc');
+  pg_input_error_info(
+  'ng_catalog.now',
+  'regproc'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('ng_catalog.abs(numeric)',
-  'regprocedure');
+  pg_input_error_info(
+  'ng_catalog.abs(numeric)',
+  'regprocedure'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('ng_catalog.abs(numeric',
-  'regprocedure');
+  pg_input_error_info(
+  'ng_catalog.abs(numeric',
+  'regprocedure'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('regress_regrole_test',
-  'regrole');
+  pg_input_error_info(
+  'regress_regrole_test',
+  'regrole'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('no_such_type',
-  'regtype');
+  pg_input_error_info(
+  'no_such_type',
+  'regtype'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('Nonexistent',
-  'regdatabase');
+  pg_input_error_info(
+  'Nonexistent',
+  'regdatabase'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('incorrect type name syntax',
-  'regtype');
+  pg_input_error_info(
+  'incorrect type name syntax',
+  'regtype'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('numeric(1,2,3)',
-  'regtype');
+  pg_input_error_info(
+  'numeric(1,2,3)',
+  'regtype'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('way.too.many.names',
-  'regtype');
+  pg_input_error_info(
+  'way.too.many.names',
+  'regtype'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('no_such_catalog.schema.name',
-  'regtype');
+  pg_input_error_info(
+  'no_such_catalog.schema.name',
+  'regtype'
+  );

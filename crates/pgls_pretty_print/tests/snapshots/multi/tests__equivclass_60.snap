@@ -5,7 +5,8 @@ snapshot_kind: text
 ---
 CREATE TYPE int8alias1;
 
-CREATE FUNCTION int8alias1in(
+CREATE FUNCTION
+int8alias1in(
   cstring
 )
 RETURNS int8alias1
@@ -14,7 +15,8 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'int8in';
 
-CREATE FUNCTION int8alias1out(
+CREATE FUNCTION
+int8alias1out(
   int8alias1
 )
 RETURNS cstring
@@ -32,7 +34,8 @@ CREATE TYPE int8alias1
 
 CREATE TYPE int8alias2;
 
-CREATE FUNCTION int8alias2in(
+CREATE FUNCTION
+int8alias2in(
   cstring
 )
 RETURNS int8alias2
@@ -41,7 +44,8 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'int8in';
 
-CREATE FUNCTION int8alias2out(
+CREATE FUNCTION
+int8alias2out(
   int8alias2
 )
 RETURNS cstring
@@ -65,7 +69,8 @@ CREATE CAST (int8alias1 AS BIGINT) WITHOUT FUNCTION;
 
 CREATE CAST (int8alias2 AS BIGINT) WITHOUT FUNCTION;
 
-CREATE FUNCTION int8alias1eq(
+CREATE FUNCTION
+int8alias1eq(
   int8alias1,
   int8alias1
 )
@@ -87,7 +92,8 @@ ALTER OPERATOR FAMILY integer_ops USING btree
   ADD OPERATOR 3 = (int8alias1,
   int8alias1);
 
-CREATE FUNCTION int8alias2eq(
+CREATE FUNCTION
+int8alias2eq(
   int8alias2,
   int8alias2
 )
@@ -109,7 +115,8 @@ ALTER OPERATOR FAMILY integer_ops USING btree
   ADD OPERATOR 3 = (int8alias2,
   int8alias2);
 
-CREATE FUNCTION int8alias1eq(
+CREATE FUNCTION
+int8alias1eq(
   BIGINT,
   int8alias1
 )
@@ -130,7 +137,8 @@ ALTER OPERATOR FAMILY integer_ops USING btree
   ADD OPERATOR 3 = (BIGINT,
   int8alias1);
 
-CREATE FUNCTION int8alias1eq(
+CREATE FUNCTION
+int8alias1eq(
   int8alias1,
   int8alias2
 )
@@ -151,7 +159,8 @@ ALTER OPERATOR FAMILY integer_ops USING btree
   ADD OPERATOR 3 = (int8alias1,
   int8alias2);
 
-CREATE FUNCTION int8alias1lt(
+CREATE FUNCTION
+int8alias1lt(
   int8alias1,
   int8alias1
 )
@@ -169,7 +178,8 @@ ALTER OPERATOR FAMILY integer_ops USING btree
   ADD OPERATOR 1 < (int8alias1,
   int8alias1);
 
-CREATE FUNCTION int8alias1cmp(
+CREATE FUNCTION
+int8alias1cmp(
   BIGINT,
   int8alias1
 )
@@ -342,20 +352,24 @@ SELECT
 FROM
   ec1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss1
 WHERE
@@ -370,20 +384,24 @@ SELECT
 FROM
   ec1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss1
 WHERE
@@ -400,37 +418,45 @@ SELECT
 FROM
   ec1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss2
 WHERE
@@ -451,37 +477,45 @@ SELECT
 FROM
   ec1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss2
 WHERE
@@ -504,20 +538,24 @@ SELECT
 FROM
   ec1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss1
 WHERE
@@ -536,20 +574,24 @@ SELECT
 FROM
   ec1,
   (SELECT
-    ff + 1 AS x
+    ff + 1
+    AS x
   FROM
     (SELECT
-      ff + 2 AS ff
+      ff + 2
+      AS ff
     FROM
       ec1
     UNION ALL
     SELECT
-      ff + 3 AS ff
+      ff + 3
+      AS ff
     FROM
       ec1) AS ss0
   UNION ALL
   SELECT
-    ff + 4 AS x
+    ff + 4
+    AS x
   FROM
     ec1) AS ss1
 WHERE
@@ -679,7 +721,8 @@ CREATE TEMPORARY TABLE undername ( f1 NAME, f2 INT );
 CREATE TEMPORARY VIEW overview AS
 SELECT
   CAST(f1
-  AS information_schema.sql_identifier) AS sqli,
+  AS information_schema.sql_identifier)
+  AS sqli,
   f2
 FROM
   undername;
@@ -710,7 +753,8 @@ ALTER OPERATOR FAMILY integer_ops USING hash
   ADD OPERATOR 1 = (BIGINT,
   int8alias1);
 
-CREATE FUNCTION hashint8alias1(
+CREATE FUNCTION
+hashint8alias1(
   int8alias1
 )
 RETURNS INT

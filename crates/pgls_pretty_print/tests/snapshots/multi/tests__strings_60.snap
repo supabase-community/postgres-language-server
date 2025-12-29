@@ -4,7 +4,8 @@ input_file: crates/pgls_pretty_print/tests/data/multi/strings_60.sql
 snapshot_kind: text
 ---
 SELECT
-  'first line - next line - third line' AS "Three lines to one";
+  'first line - next line - third line'
+  AS "Three lines to one";
 
 SET standard_conforming_strings = on;
 
@@ -95,7 +96,8 @@ SELECT CAST(f1 AS TEXT) AS "text(varchar)" FROM varchar_tbl;
 SELECT
   CAST(CAST('namefield'
   AS NAME)
-  AS TEXT) AS "text(name)";
+  AS TEXT)
+  AS "text(name)";
 
 SELECT CAST(f1 AS CHAR(10)) AS "char(text)" FROM text_tbl;
 
@@ -103,14 +105,16 @@ SELECT CAST(f1 AS CHAR(20)) AS "char(text)" FROM text_tbl;
 
 SELECT
   CAST(f1
-  AS CHAR(10)) AS "char(varchar)"
+  AS CHAR(10))
+  AS "char(varchar)"
 FROM
   varchar_tbl;
 
 SELECT
   CAST(CAST('namefield'
   AS NAME)
-  AS CHAR(10)) AS "char(name)";
+  AS CHAR(10))
+  AS "char(name)";
 
 SELECT CAST(f1 AS VARCHAR) AS "varchar(text)" FROM text_tbl;
 
@@ -119,74 +123,101 @@ SELECT CAST(f1 AS VARCHAR) AS "varchar(char)" FROM char_tbl;
 SELECT
   CAST(CAST('namefield'
   AS NAME)
-  AS VARCHAR) AS "varchar(name)";
+  AS VARCHAR)
+  AS "varchar(name)";
 
 SELECT
-  btrim('  bunch o blanks  ') =
-  'bunch o blanks' AS "bunch o blanks";
+  btrim(
+  '  bunch o blanks  '
+  ) =
+  'bunch o blanks'
+  AS "bunch o blanks";
 
 SELECT
-  ltrim('  bunch o blanks  ') =
-  'bunch o blanks  ' AS "bunch o blanks  ";
+  ltrim(
+  '  bunch o blanks  '
+  ) =
+  'bunch o blanks  '
+  AS "bunch o blanks  ";
 
 SELECT
-  rtrim('  bunch o blanks  ') =
-  '  bunch o blanks' AS "  bunch o blanks";
+  rtrim(
+  '  bunch o blanks  '
+  ) =
+  '  bunch o blanks'
+  AS "  bunch o blanks";
 
 SELECT
-  btrim('xxxxxsome Xsxxxxx',
-  'x') =
-  'some Xs' AS "some Xs";
+  btrim(
+  'xxxxxsome Xsxxxxx',
+  'x'
+  ) =
+  'some Xs'
+  AS "some Xs";
 
 SELECT
   SUBSTRING('1234567890' FROM 3) =
-  '34567890' AS "34567890";
+  '34567890'
+  AS "34567890";
 
 SELECT
   SUBSTRING('1234567890' FROM 4 FOR 3) =
-  '456' AS "456";
+  '456'
+  AS "456";
 
 SELECT SUBSTRING('string' FROM 2 FOR 2147483646) AS tring;
 
 SELECT
-  SUBSTRING('string' FROM -10 FOR 2147483646) AS string;
+  SUBSTRING('string' FROM -10 FOR 2147483646)
+  AS string;
 
 SELECT
-  SUBSTRING('string' FROM -10 FOR -2147483646) AS error;
+  SUBSTRING('string' FROM -10 FOR -2147483646)
+  AS error;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a#"(b_d)#"%' FOR '#') AS bcd;
+  SUBSTRING('abcdefg' FROM 'a#"(b_d)#"%' FOR '#')
+  AS bcd;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a#"(b_d)#"%' FOR '#') AS bcd;
+  SUBSTRING('abcdefg' FROM 'a#"(b_d)#"%' FOR '#')
+  AS bcd;
 
 SELECT
-  SUBSTRING('abcdefg' FROM '#"(b_d)#"%' FOR '#') IS NULL AS "True";
+  SUBSTRING('abcdefg' FROM '#"(b_d)#"%' FOR '#') IS NULL
+  AS "True";
 
 SELECT
-  SUBSTRING('abcdefg' FROM '%' FOR NULL) IS NULL AS "True";
+  SUBSTRING('abcdefg' FROM '%' FOR NULL) IS NULL
+  AS "True";
 
 SELECT SUBSTRING(NULL FROM '%' FOR '#') IS NULL AS "True";
 
 SELECT
-  SUBSTRING('abcdefg' FROM NULL FOR '#') IS NULL AS "True";
+  SUBSTRING('abcdefg' FROM NULL FOR '#') IS NULL
+  AS "True";
 
 SELECT SUBSTRING('abcdefg' FROM 'a#"%#"g' FOR '#') AS bcdef;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a*#"%#"g*' FOR '#') AS abcdefg;
+  SUBSTRING('abcdefg' FROM 'a*#"%#"g*' FOR '#')
+  AS abcdefg;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a|b#"%#"g' FOR '#') AS bcdef;
+  SUBSTRING('abcdefg' FROM 'a|b#"%#"g' FOR '#')
+  AS bcdef;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a#"%#"x|g' FOR '#') AS bcdef;
+  SUBSTRING('abcdefg' FROM 'a#"%#"x|g' FOR '#')
+  AS bcdef;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a#"%|ab#"g' FOR '#') AS bcdef;
+  SUBSTRING('abcdefg' FROM 'a#"%|ab#"g' FOR '#')
+  AS bcdef;
 
 SELECT
-  SUBSTRING('abcdefg' FROM 'a*#"%#"g*#"x' FOR '#') AS error;
+  SUBSTRING('abcdefg' FROM 'a*#"%#"g*#"x' FOR '#')
+  AS error;
 
 SELECT SUBSTRING('abcdefg' FROM 'a#"%g' FOR '#') AS bcdefg;
 
@@ -268,9 +299,11 @@ WHERE
   f1 SIMILAR TO '[|a]%' ESCAPE '|';
 
 SELECT
-  regexp_replace('1112223333',
+  regexp_replace(
+  '1112223333',
   '(\d{3})(\d{3})(\d{4})',
-  '(\1) \2-\3');
+  '(\1) \2-\3'
+  );
 
 SELECT regexp_replace('foobarrbazz', '(.)\1', 'X\&Y', 'g');
 
@@ -279,10 +312,12 @@ SELECT regexp_replace('foobarrbazz', '(.)\1', 'X\\Y', 'g');
 SELECT regexp_replace('foobarrbazz', '(.)\1', 'X\Y\1Z\');
 
 SELECT
-  regexp_replace('AAA   BBB   CCC   ',
+  regexp_replace(
+  'AAA   BBB   CCC   ',
   '\s+',
   ' ',
-  'g');
+  'g'
+  );
 
 SELECT regexp_replace('AAA', '^|$', 'Z', 'g');
 
@@ -291,95 +326,119 @@ SELECT regexp_replace('AAA aaa', 'A+', 'Z', 'gi');
 SELECT regexp_replace('AAA aaa', 'A+', 'Z', 'z');
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'A|e|i|o|u',
   'X',
-  1);
+  1
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'A|e|i|o|u',
   'X',
   1,
-  2);
+  2
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   0,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   1,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   2,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   3,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   9,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'A|e|i|o|u',
   'X',
   7,
   0,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   1,
-  'g');
+  'g'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   -1,
   0,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
   1,
   -1,
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_replace('A PostgreSQL function',
+  regexp_replace(
+  'A PostgreSQL function',
   'a|e|i|o|u',
   'X',
-  '1');
+  '1'
+  );
 
 SELECT regexp_count('123123123123123', '(12)3');
 
@@ -422,112 +481,136 @@ SELECT regexp_instr('abcabcabc', 'a.c', 1, 4);
 SELECT regexp_instr('abcabcabc', 'A.C', 1, 2, 0, 'i');
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   0,
   'i',
-  0);
+  0
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   0,
   'i',
-  1);
+  1
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   0,
   'i',
-  2);
+  2
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   0,
   'i',
-  3);
+  3
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   0,
   'i',
-  4);
+  4
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   0,
   'i',
-  5);
+  5
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   1,
   'i',
-  0);
+  0
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   1,
   'i',
-  1);
+  1
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   1,
   'i',
-  2);
+  2
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   1,
   'i',
-  3);
+  3
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   1,
   'i',
-  4);
+  4
+  );
 
 SELECT
-  regexp_instr('1234567890',
+  regexp_instr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   1,
   'i',
-  5);
+  5
+  );
 
 SELECT regexp_instr('foo', 'foo(bar)?', 1, 1, 0, '', 1);
 
@@ -558,60 +641,76 @@ SELECT regexp_substr('abcabcabc', 'a.c', 1, 4) IS NULL AS t;
 SELECT regexp_substr('abcabcabc', 'A.C', 1, 2, 'i');
 
 SELECT
-  regexp_substr('1234567890',
+  regexp_substr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   'i',
-  0);
+  0
+  );
 
 SELECT
-  regexp_substr('1234567890',
+  regexp_substr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   'i',
-  1);
+  1
+  );
 
 SELECT
-  regexp_substr('1234567890',
+  regexp_substr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   'i',
-  2);
+  2
+  );
 
 SELECT
-  regexp_substr('1234567890',
+  regexp_substr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   'i',
-  3);
+  3
+  );
 
 SELECT
-  regexp_substr('1234567890',
+  regexp_substr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   'i',
-  4);
+  4
+  );
 
 SELECT
-  regexp_substr('1234567890',
+  regexp_substr(
+  '1234567890',
   '(123)(4(56)(78))',
   1,
   1,
   'i',
-  5) IS NULL AS t;
+  5
+  ) IS NULL
+  AS t;
 
 SELECT
-  regexp_substr('foo',
+  regexp_substr(
+  'foo',
   'foo(bar)?',
   1,
   1,
   '',
-  1) IS NULL AS t;
+  1
+  ) IS NULL
+  AS t;
 
 SELECT regexp_substr('abcabcabc', 'a.c', 0, 1);
 
@@ -624,151 +723,239 @@ SELECT regexp_substr('abcabcabc', 'a.c', 1, 1, '', -1);
 SELECT regexp_matches('foobarbequebaz', '(bar)(beque)');
 
 SELECT
-  regexp_matches('foObARbEqUEbAz',
+  regexp_matches(
+  'foObARbEqUEbAz',
   '(bar)(beque)',
-  'i');
+  'i'
+  );
 
 SELECT
-  regexp_matches('foobarbequebazilbarfbonk',
+  regexp_matches(
+  'foobarbequebazilbarfbonk',
   '(b[^b]+)(b[^b]+)',
-  'g');
+  'g'
+  );
 
 SELECT regexp_matches('foobarbequebaz', '(bar)(.*)(beque)');
 
 SELECT regexp_matches('foobarbequebaz', '(bar)(.+)(beque)');
 
 SELECT
-  regexp_matches('foobarbequebaz',
-  '(bar)(.+)?(beque)');
+  regexp_matches(
+  'foobarbequebaz',
+  '(bar)(.+)?(beque)'
+  );
 
 SELECT regexp_matches('foobarbequebaz', 'barbeque');
 
 SELECT
-  regexp_matches('foo' ||
-  chr(10) ||
+  regexp_matches(
+  'foo' ||
+  chr(
+  10
+  ) ||
   'bar' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   'bequq' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   'baz',
   '^',
-  'mg');
+  'mg'
+  );
 
 SELECT
-  regexp_matches('foo' ||
-  chr(10) ||
+  regexp_matches(
+  'foo' ||
+  chr(
+  10
+  ) ||
   'bar' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   'bequq' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   'baz',
   '$',
-  'mg');
+  'mg'
+  );
 
 SELECT
-  regexp_matches('1' ||
-  chr(10) ||
+  regexp_matches(
+  '1' ||
+  chr(
+  10
+  ) ||
   '2' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '3' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '4' ||
-  chr(10),
+  chr(
+  10
+  ),
   '^.?',
-  'mg');
+  'mg'
+  );
 
 SELECT
-  regexp_matches(chr(10) ||
+  regexp_matches(
+  chr(
+  10
+  ) ||
   '1' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '2' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '3' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '4' ||
-  chr(10),
+  chr(
+  10
+  ),
   '.?$',
-  'mg');
+  'mg'
+  );
 
 SELECT
-  regexp_matches(chr(10) ||
+  regexp_matches(
+  chr(
+  10
+  ) ||
   '1' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '2' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '3' ||
-  chr(10) ||
+  chr(
+  10
+  ) ||
   '4',
   '.?$',
-  'mg');
+  'mg'
+  );
 
 SELECT
-  regexp_matches('foobarbequebaz',
+  regexp_matches(
+  'foobarbequebaz',
   '(bar)(beque)',
-  'gz');
+  'gz'
+  );
 
 SELECT regexp_matches('foobarbequebaz', '(barbeque');
 
 SELECT
-  regexp_matches('foobarbequebaz',
-  '(bar)(beque){2,1}');
+  regexp_matches(
+  'foobarbequebaz',
+  '(bar)(beque){2,1}'
+  );
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('the quick brown fox jumps over the lazy dog',
-  '\s+') AS foo;
+  regexp_split_to_table(
+  'the quick brown fox jumps over the lazy dog',
+  '\s+'
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('the quick brown fox jumps over the lazy dog',
-  '\s+');
+  regexp_split_to_array(
+  'the quick brown fox jumps over the lazy dog',
+  '\s+'
+  );
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('the quick brown fox jumps over the lazy dog',
-  '\s*') AS foo;
+  regexp_split_to_table(
+  'the quick brown fox jumps over the lazy dog',
+  '\s*'
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('the quick brown fox jumps over the lazy dog',
-  '\s*');
+  regexp_split_to_array(
+  'the quick brown fox jumps over the lazy dog',
+  '\s*'
+  );
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('the quick brown fox jumps over the lazy dog',
-  '') AS foo;
+  regexp_split_to_table(
+  'the quick brown fox jumps over the lazy dog',
+  ''
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('the quick brown fox jumps over the lazy dog',
-  '');
+  regexp_split_to_array(
+  'the quick brown fox jumps over the lazy dog',
+  ''
+  );
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+  regexp_split_to_table(
+  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
   'e',
-  'i') AS foo;
+  'i'
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+  regexp_split_to_array(
+  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
   'e',
-  'i');
+  'i'
+  );
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('the quick brown fox jumps over the lazy dog',
-  'nomatch') AS foo;
+  regexp_split_to_table(
+  'the quick brown fox jumps over the lazy dog',
+  'nomatch'
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('the quick brown fox jumps over the lazy dog',
-  'nomatch');
+  regexp_split_to_array(
+  'the quick brown fox jumps over the lazy dog',
+  'nomatch'
+  );
 
 SELECT regexp_split_to_array('123456', '1');
 
@@ -784,29 +971,41 @@ SELECT regexp_split_to_array('1', '');
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+  regexp_split_to_table(
+  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
   'e',
-  'zippy') AS foo;
+  'zippy'
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+  regexp_split_to_array(
+  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
   'e',
-  'iz');
+  'iz'
+  );
 
 SELECT
   foo,
-  length(foo)
+  length(
+  foo
+  )
 FROM
-  regexp_split_to_table('thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+  regexp_split_to_table(
+  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
   'e',
-  'g') AS foo;
+  'g'
+  ) AS foo;
 
 SELECT
-  regexp_split_to_array('thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+  regexp_split_to_array(
+  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
   'e',
-  'g');
+  'g'
+  );
 
 SELECT POSITION('4' IN '1234567890') = '4' AS "4";
 
@@ -816,41 +1015,48 @@ SELECT
   POSITION(CAST('\x11'
   AS BYTEA) IN CAST(''
   AS BYTEA)) =
-  0 AS "0";
+  0
+  AS "0";
 
 SELECT
   POSITION(CAST('\x33'
   AS BYTEA) IN CAST('\x1122'
   AS BYTEA)) =
-  0 AS "0";
+  0
+  AS "0";
 
 SELECT
   POSITION(CAST(''
   AS BYTEA) IN CAST('\x1122'
   AS BYTEA)) =
-  1 AS "1";
+  1
+  AS "1";
 
 SELECT
   POSITION(CAST('\x22'
   AS BYTEA) IN CAST('\x1122'
   AS BYTEA)) =
-  2 AS "2";
+  2
+  AS "2";
 
 SELECT
   POSITION(CAST('\x5678'
   AS BYTEA) IN CAST('\x1234567890'
   AS BYTEA)) =
-  3 AS "3";
+  3
+  AS "3";
 
 SELECT OVERLAY('abcdef' PLACING '45' FROM 4) AS abc45f;
 
 SELECT OVERLAY('yabadoo' PLACING 'daba' FROM 5) AS yabadaba;
 
 SELECT
-  OVERLAY('yabadoo' PLACING 'daba' FROM 5 FOR 0) AS yabadabadoo;
+  OVERLAY('yabadoo' PLACING 'daba' FROM 5 FOR 0)
+  AS yabadabadoo;
 
 SELECT
-  OVERLAY('babosa' PLACING 'ubb' FROM 2 FOR 4) AS bubba;
+  OVERLAY('babosa' PLACING 'ubb' FROM 2 FOR 4)
+  AS bubba;
 
 SELECT 'hawkeye' LIKE 'h%' AS "true";
 
@@ -887,12 +1093,14 @@ SELECT CAST('abc' AS NAME) NOT LIKE '_b_' AS "false";
 SELECT
   CAST('abc'
   AS BYTEA) LIKE CAST('_b_'
-  AS BYTEA) AS "true";
+  AS BYTEA)
+  AS "true";
 
 SELECT
   CAST('abc'
   AS BYTEA) NOT LIKE CAST('_b_'
-  AS BYTEA) AS "false";
+  AS BYTEA)
+  AS "false";
 
 SELECT 'hawkeye' LIKE like_escape('h%', '#') AS "true";
 
@@ -901,8 +1109,11 @@ SELECT 'hawkeye' NOT LIKE like_escape('h%', '#') AS "false";
 SELECT 'indio' LIKE like_escape('ind_o', '$') AS "true";
 
 SELECT
-  'indio' NOT LIKE like_escape('ind_o',
-  '$') AS "false";
+  'indio' NOT LIKE like_escape(
+  'ind_o',
+  '$'
+  )
+  AS "false";
 
 SELECT 'h%' LIKE like_escape('h#%', '#') AS "true";
 
@@ -915,54 +1126,81 @@ SELECT 'h%wkeye' NOT LIKE like_escape('h#%', '#') AS "true";
 SELECT 'h%wkeye' LIKE like_escape('h#%%', '#') AS "true";
 
 SELECT
-  'h%wkeye' NOT LIKE like_escape('h#%%',
-  '#') AS "false";
+  'h%wkeye' NOT LIKE like_escape(
+  'h#%%',
+  '#'
+  )
+  AS "false";
 
 SELECT
-  'h%awkeye' LIKE like_escape('h#%a%k%e',
-  '#') AS "true";
+  'h%awkeye' LIKE like_escape(
+  'h#%a%k%e',
+  '#'
+  )
+  AS "true";
 
 SELECT
-  'h%awkeye' NOT LIKE like_escape('h#%a%k%e',
-  '#') AS "false";
+  'h%awkeye' NOT LIKE like_escape(
+  'h#%a%k%e',
+  '#'
+  )
+  AS "false";
 
 SELECT 'indio' LIKE like_escape('_ndio', '$') AS "true";
 
 SELECT
-  'indio' NOT LIKE like_escape('_ndio',
-  '$') AS "false";
+  'indio' NOT LIKE like_escape(
+  '_ndio',
+  '$'
+  )
+  AS "false";
 
 SELECT 'i_dio' LIKE like_escape('i$_d_o', '$') AS "true";
 
 SELECT
-  'i_dio' NOT LIKE like_escape('i$_d_o',
-  '$') AS "false";
+  'i_dio' NOT LIKE like_escape(
+  'i$_d_o',
+  '$'
+  )
+  AS "false";
 
 SELECT 'i_dio' LIKE like_escape('i$_nd_o', '$') AS "false";
 
 SELECT
-  'i_dio' NOT LIKE like_escape('i$_nd_o',
-  '$') AS "true";
+  'i_dio' NOT LIKE like_escape(
+  'i$_nd_o',
+  '$'
+  )
+  AS "true";
 
 SELECT 'i_dio' LIKE like_escape('i$_d%o', '$') AS "true";
 
 SELECT
-  'i_dio' NOT LIKE like_escape('i$_d%o',
-  '$') AS "false";
+  'i_dio' NOT LIKE like_escape(
+  'i$_d%o',
+  '$'
+  )
+  AS "false";
 
 SELECT
   CAST('a_c'
-  AS BYTEA) LIKE like_escape(CAST('a$__'
+  AS BYTEA) LIKE like_escape(
+  CAST('a$__'
   AS BYTEA),
   CAST('$'
-  AS BYTEA)) AS "true";
+  AS BYTEA)
+  )
+  AS "true";
 
 SELECT
   CAST('a_c'
-  AS BYTEA) NOT LIKE like_escape(CAST('a$__'
+  AS BYTEA) NOT LIKE like_escape(
+  CAST('a$__'
   AS BYTEA),
   CAST('$'
-  AS BYTEA)) AS "false";
+  AS BYTEA)
+  )
+  AS "false";
 
 SELECT 'maca' LIKE like_escape('m%aca', '%') AS "true";
 
@@ -971,8 +1209,11 @@ SELECT 'maca' NOT LIKE like_escape('m%aca', '%') AS "false";
 SELECT 'ma%a' LIKE like_escape('m%a%%a', '%') AS "true";
 
 SELECT
-  'ma%a' NOT LIKE like_escape('m%a%%a',
-  '%') AS "false";
+  'ma%a' NOT LIKE like_escape(
+  'm%a%%a',
+  '%'
+  )
+  AS "false";
 
 SELECT 'bear' LIKE like_escape('b_ear', '_') AS "true";
 
@@ -981,8 +1222,11 @@ SELECT 'bear' NOT LIKE like_escape('b_ear', '_') AS "false";
 SELECT 'be_r' LIKE like_escape('b_e__r', '_') AS "true";
 
 SELECT
-  'be_r' NOT LIKE like_escape('b_e__r',
-  '_') AS "false";
+  'be_r' NOT LIKE like_escape(
+  'b_e__r',
+  '_'
+  )
+  AS "false";
 
 SELECT 'be_r' LIKE like_escape('__e__r', '_') AS "false";
 
@@ -1009,24 +1253,36 @@ SELECT CAST('ABC' AS NAME) ILIKE '_b_' AS "true";
 SELECT CAST('ABC' AS NAME) NOT ILIKE '_b_' AS "false";
 
 SELECT
-  'foo' LIKE '_%' AS t,
-  'f' LIKE '_%' AS t,
-  '' LIKE '_%' AS f;
+  'foo' LIKE '_%'
+  AS t,
+  'f' LIKE '_%'
+  AS t,
+  '' LIKE '_%'
+  AS f;
 
 SELECT
-  'foo' LIKE '%_' AS t,
-  'f' LIKE '%_' AS t,
-  '' LIKE '%_' AS f;
+  'foo' LIKE '%_'
+  AS t,
+  'f' LIKE '%_'
+  AS t,
+  '' LIKE '%_'
+  AS f;
 
 SELECT
-  'foo' LIKE '__%' AS t,
-  'foo' LIKE '___%' AS t,
-  'foo' LIKE '____%' AS f;
+  'foo' LIKE '__%'
+  AS t,
+  'foo' LIKE '___%'
+  AS t,
+  'foo' LIKE '____%'
+  AS f;
 
 SELECT
-  'foo' LIKE '%__' AS t,
-  'foo' LIKE '%___' AS t,
-  'foo' LIKE '%____' AS f;
+  'foo' LIKE '%__'
+  AS t,
+  'foo' LIKE '%___'
+  AS t,
+  'foo' LIKE '%____'
+  AS f;
 
 SELECT 'jack' LIKE '%____%' AS t;
 
@@ -1042,29 +1298,34 @@ DROP TABLE "texttest", "byteatest";
 
 SELECT
   'unknown' ||
-  ' and unknown' AS "Concat unknown types";
+  ' and unknown'
+  AS "Concat unknown types";
 
 SELECT
   CAST('text'
   AS TEXT) ||
-  ' and unknown' AS "Concat text to unknown type";
+  ' and unknown'
+  AS "Concat text to unknown type";
 
 SELECT
   CAST('characters'
   AS CHAR(20)) ||
-  ' and text' AS "Concat char to unknown type";
+  ' and text'
+  AS "Concat char to unknown type";
 
 SELECT
   CAST('text'
   AS TEXT) ||
   CAST(' and characters'
-  AS CHAR(20)) AS "Concat text to char";
+  AS CHAR(20))
+  AS "Concat text to char";
 
 SELECT
   CAST('text'
   AS TEXT) ||
   CAST(' and varchar'
-  AS VARCHAR) AS "Concat text to varchar";
+  AS VARCHAR)
+  AS "Concat text to varchar";
 
 CREATE TABLE toasttest ( f1 TEXT );
 
@@ -1097,8 +1358,11 @@ INSERT INTO toasttest VALUES (repeat('1234567890', 300));
 INSERT INTO toasttest VALUES (repeat('1234567890', 300));
 
 SELECT
-  pg_relation_size(reltoastrelid) =
-  0 AS is_empty
+  pg_relation_size(
+  reltoastrelid
+  ) =
+  0
+  AS is_empty
 FROM
   pg_class
 WHERE
@@ -1118,8 +1382,11 @@ INSERT INTO toasttest VALUES (repeat('1234567890', 300));
 INSERT INTO toasttest VALUES (repeat('1234567890', 300));
 
 SELECT
-  pg_relation_size(reltoastrelid) =
-  0 AS is_empty
+  pg_relation_size(
+  reltoastrelid
+  ) =
+  0
+  AS is_empty
 FROM
   pg_class
 WHERE
@@ -1131,26 +1398,42 @@ DROP TABLE "toasttest";
 CREATE TABLE toasttest ( f1 BYTEA );
 
 INSERT INTO toasttest
-VALUES (decode(repeat('1234567890',
-10000),
-'escape'));
+VALUES (decode(
+repeat(
+'1234567890',
+10000
+),
+'escape'
+));
 
 INSERT INTO toasttest
-VALUES (decode(repeat('1234567890',
-10000),
-'escape'));
+VALUES (decode(
+repeat(
+'1234567890',
+10000
+),
+'escape'
+));
 
 ALTER TABLE toasttest ALTER COLUMN f1 SET STORAGE external;
 
 INSERT INTO toasttest
-VALUES (decode(repeat('1234567890',
-10000),
-'escape'));
+VALUES (decode(
+repeat(
+'1234567890',
+10000
+),
+'escape'
+));
 
 INSERT INTO toasttest
-VALUES (decode(repeat('1234567890',
-10000),
-'escape'));
+VALUES (decode(
+repeat(
+'1234567890',
+10000
+),
+'escape'
+));
 
 SELECT substr(f1, -1, 5) FROM toasttest;
 
@@ -1181,14 +1464,19 @@ ALTER TABLE toasttest ALTER COLUMN f1 SET STORAGE external;
 ALTER TABLE toasttest ALTER COLUMN f2 SET STORAGE external;
 
 INSERT INTO toasttest
-VALUES (repeat('1234',
-1000),
-repeat('5678',
-30));
+VALUES (repeat(
+'1234',
+1000
+),
+repeat(
+'5678',
+30
+));
 
 SELECT
   CAST(reltoastrelid
-  AS REGCLASS) AS reltoastname
+  AS REGCLASS)
+  AS reltoastname
 FROM
   pg_class
 WHERE
@@ -1197,18 +1485,30 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  substr(f1,
+  substr(
+  f1,
   5,
-  10) AS f1_data,
-  substr(f2,
+  10
+  )
+  AS f1_data,
+  substr(
+  f2,
   5,
-  10) AS f2_data
+  10
+  )
+  AS f2_data
 FROM
   toasttest;
 
 SELECT
-  pg_column_compression(f1) AS f1_comp,
-  pg_column_compression(f2) AS f2_comp
+  pg_column_compression(
+  f1
+  )
+  AS f1_comp,
+  pg_column_compression(
+  f2
+  )
+  AS f2_comp
 FROM
   toasttest;
 
@@ -1237,102 +1537,153 @@ SELECT split_part('', '@', 1) AS "empty string";
 SELECT split_part('', '@', -1) AS "empty string";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '',
-  1) AS "joeuser@mydatabase";
+  1
+  )
+  AS "joeuser@mydatabase";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '',
-  2) AS "empty string";
+  2
+  )
+  AS "empty string";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '',
-  -1) AS "joeuser@mydatabase";
+  -1
+  )
+  AS "joeuser@mydatabase";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '',
-  -2) AS "empty string";
+  -2
+  )
+  AS "empty string";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@',
-  0) AS "an error";
+  0
+  )
+  AS "an error";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@@',
-  1) AS "joeuser@mydatabase";
+  1
+  )
+  AS "joeuser@mydatabase";
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@@',
-  2) AS "empty string";
+  2
+  )
+  AS "empty string";
 
 SELECT split_part('joeuser@mydatabase', '@', 1) AS joeuser;
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@',
-  2) AS mydatabase;
+  2
+  )
+  AS mydatabase;
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@',
-  3) AS "empty string";
+  3
+  )
+  AS "empty string";
 
 SELECT
-  split_part('@joeuser@mydatabase@',
+  split_part(
+  '@joeuser@mydatabase@',
   '@',
-  2) AS joeuser;
+  2
+  )
+  AS joeuser;
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@',
-  -1) AS mydatabase;
+  -1
+  )
+  AS mydatabase;
 
 SELECT split_part('joeuser@mydatabase', '@', -2) AS joeuser;
 
 SELECT
-  split_part('joeuser@mydatabase',
+  split_part(
+  'joeuser@mydatabase',
   '@',
-  -3) AS "empty string";
+  -3
+  )
+  AS "empty string";
 
 SELECT
-  split_part('@joeuser@mydatabase@',
+  split_part(
+  '@joeuser@mydatabase@',
   '@',
-  -2) AS mydatabase;
+  -2
+  )
+  AS mydatabase;
 
 SELECT to_bin(-1234) AS "11111111111111111111101100101110";
 
 SELECT to_bin(-CAST(1234 AS BIGINT));
 
 SELECT
-  to_bin(256 * 256 * 256 - 1) AS "111111111111111111111111";
+  to_bin(
+  256 * 256 * 256 - 1
+  )
+  AS "111111111111111111111111";
 
 SELECT
-  to_bin(CAST(256
+  to_bin(
+  CAST(256
   AS BIGINT) * CAST(256
   AS BIGINT) * CAST(256
   AS BIGINT) * CAST(256
-  AS BIGINT) - 1) AS "11111111111111111111111111111111";
+  AS BIGINT) - 1
+  )
+  AS "11111111111111111111111111111111";
 
 SELECT to_oct(-1234) AS "37777775456";
 
 SELECT
-  to_oct(-CAST(1234
-  AS BIGINT)) AS "1777777777777777775456";
+  to_oct(
+  -CAST(1234
+  AS BIGINT)
+  )
+  AS "1777777777777777775456";
 
 SELECT to_oct(256 * 256 * 256 - 1) AS "77777777";
 
 SELECT
-  to_oct(CAST(256
+  to_oct(
+  CAST(256
   AS BIGINT) * CAST(256
   AS BIGINT) * CAST(256
   AS BIGINT) * CAST(256
-  AS BIGINT) - 1) AS "37777777777";
+  AS BIGINT) - 1
+  )
+  AS "37777777777";
 
 SELECT to_hex(-1234) AS fffffb2e;
 
@@ -1341,43 +1692,58 @@ SELECT to_hex(-CAST(1234 AS BIGINT)) AS fffffffffffffb2e;
 SELECT to_hex(256 * 256 * 256 - 1) AS ffffff;
 
 SELECT
-  to_hex(CAST(256
+  to_hex(
+  CAST(256
   AS BIGINT) * CAST(256
   AS BIGINT) * CAST(256
   AS BIGINT) * CAST(256
-  AS BIGINT) - 1) AS ffffffff;
+  AS BIGINT) - 1
+  )
+  AS ffffffff;
 
 SET bytea_output = hex;
 
 SELECT sha224('');
 
 SELECT
-  sha224('The quick brown fox jumps over the lazy dog.');
+  sha224(
+  'The quick brown fox jumps over the lazy dog.'
+  );
 
 SELECT sha256('');
 
 SELECT
-  sha256('The quick brown fox jumps over the lazy dog.');
+  sha256(
+  'The quick brown fox jumps over the lazy dog.'
+  );
 
 SELECT sha384('');
 
 SELECT
-  sha384('The quick brown fox jumps over the lazy dog.');
+  sha384(
+  'The quick brown fox jumps over the lazy dog.'
+  );
 
 SELECT sha512('');
 
 SELECT
-  sha512('The quick brown fox jumps over the lazy dog.');
+  sha512(
+  'The quick brown fox jumps over the lazy dog.'
+  );
 
 SELECT crc32('');
 
 SELECT
-  crc32('The quick brown fox jumps over the lazy dog.');
+  crc32(
+  'The quick brown fox jumps over the lazy dog.'
+  );
 
 SELECT crc32c('');
 
 SELECT
-  crc32c('The quick brown fox jumps over the lazy dog.');
+  crc32c(
+  'The quick brown fox jumps over the lazy dog.'
+  );
 
 SELECT crc32c(CAST(repeat('A', 127) AS BYTEA));
 
@@ -1392,26 +1758,40 @@ SELECT encode('\x1234567890abcdef00', 'hex');
 SELECT decode('1234567890abcdef00', 'hex');
 
 SELECT
-  encode(CAST('\x' ||
-  repeat('1234567890abcdef0001',
-  7)
+  encode(
+  CAST('\x' ||
+  repeat(
+  '1234567890abcdef0001',
+  7
+  )
   AS BYTEA),
-  'base64');
+  'base64'
+  );
 
 SELECT
-  decode(encode(CAST('\x' ||
-  repeat('1234567890abcdef0001',
-  7)
+  decode(
+  encode(
+  CAST('\x' ||
+  repeat(
+  '1234567890abcdef0001',
+  7
+  )
   AS BYTEA),
-  'base64'),
-  'base64');
+  'base64'
+  ),
+  'base64'
+  );
 
 SELECT encode('\x1234567890abcdef00', 'escape');
 
 SELECT
-  decode(encode('\x1234567890abcdef00',
-  'escape'),
-  'escape');
+  decode(
+  encode(
+  '\x1234567890abcdef00',
+  'escape'
+  ),
+  'escape'
+  );
 
 SET bytea_output = hex;
 
@@ -1420,9 +1800,13 @@ SELECT encode('\x69b73eff', 'base64url');
 SELECT decode('abc-_w', 'base64url');
 
 SELECT
-  decode(encode('\x1234567890abcdef00',
-  'base64url'),
-  'base64url');
+  decode(
+  encode(
+  '\x1234567890abcdef00',
+  'base64url'
+  ),
+  'base64url'
+  );
 
 SELECT encode('', 'base64url');
 
@@ -1445,34 +1829,64 @@ SELECT encode(CAST('\xdeadbeef' AS BYTEA), 'base64url');
 SELECT decode('3q2-7w', 'base64url');
 
 SELECT
-  encode(decode(encode('\x',
-  'base64url'),
-  'base64url'),
-  'base64url');
+  encode(
+  decode(
+  encode(
+  '\x',
+  'base64url'
+  ),
+  'base64url'
+  ),
+  'base64url'
+  );
 
 SELECT
-  encode(decode(encode('\x00',
-  'base64url'),
-  'base64url'),
-  'base64url');
+  encode(
+  decode(
+  encode(
+  '\x00',
+  'base64url'
+  ),
+  'base64url'
+  ),
+  'base64url'
+  );
 
 SELECT
-  encode(decode(encode('\x0001',
-  'base64url'),
-  'base64url'),
-  'base64url');
+  encode(
+  decode(
+  encode(
+  '\x0001',
+  'base64url'
+  ),
+  'base64url'
+  ),
+  'base64url'
+  );
 
 SELECT
-  encode(decode(encode('\x000102',
-  'base64url'),
-  'base64url'),
-  'base64url');
+  encode(
+  decode(
+  encode(
+  '\x000102',
+  'base64url'
+  ),
+  'base64url'
+  ),
+  'base64url'
+  );
 
 SELECT
-  encode(decode(encode('\x00010203',
-  'base64url'),
-  'base64url'),
-  'base64url');
+  encode(
+  decode(
+  encode(
+  '\x00010203',
+  'base64url'
+  ),
+  'base64url'
+  ),
+  'base64url'
+  );
 
 SELECT decode('QQ@=', 'base64url');
 
@@ -1491,56 +1905,70 @@ SELECT get_bit(CAST('\x1234567890abcdef00' AS BYTEA), 43);
 SELECT get_bit(CAST('\x1234567890abcdef00' AS BYTEA), 99);
 
 SELECT
-  set_bit(CAST('\x1234567890abcdef00'
+  set_bit(
+  CAST('\x1234567890abcdef00'
   AS BYTEA),
   43,
-  0);
+  0
+  );
 
 SELECT
-  set_bit(CAST('\x1234567890abcdef00'
+  set_bit(
+  CAST('\x1234567890abcdef00'
   AS BYTEA),
   99,
-  0);
+  0
+  );
 
 SELECT get_byte(CAST('\x1234567890abcdef00' AS BYTEA), 3);
 
 SELECT get_byte(CAST('\x1234567890abcdef00' AS BYTEA), 99);
 
 SELECT
-  set_byte(CAST('\x1234567890abcdef00'
+  set_byte(
+  CAST('\x1234567890abcdef00'
   AS BYTEA),
   7,
-  11);
+  11
+  );
 
 SELECT
-  set_byte(CAST('\x1234567890abcdef00'
+  set_byte(
+  CAST('\x1234567890abcdef00'
   AS BYTEA),
   99,
-  11);
+  11
+  );
 
 SELECT
   CAST(CAST(4660
   AS SMALLINT)
-  AS BYTEA) AS "\x1234",
+  AS BYTEA)
+  AS "\x1234",
   CAST(CAST(-4660
   AS SMALLINT)
-  AS BYTEA) AS "\xedcc";
+  AS BYTEA)
+  AS "\xedcc";
 
 SELECT
   CAST(CAST(305419896
   AS INT)
-  AS BYTEA) AS "\x12345678",
+  AS BYTEA)
+  AS "\x12345678",
   CAST(CAST(-305419896
   AS INT)
-  AS BYTEA) AS "\xedcba988";
+  AS BYTEA)
+  AS "\xedcba988";
 
 SELECT
   CAST(CAST(0x1122334455667788
   AS BIGINT)
-  AS BYTEA) AS "\x1122334455667788",
+  AS BYTEA)
+  AS "\x1122334455667788",
   CAST(CAST(-0x1122334455667788
   AS BIGINT)
-  AS BYTEA) AS "\xeeddccbbaa998878";
+  AS BYTEA)
+  AS "\xeeddccbbaa998878";
 
 SELECT CAST(CAST('' AS BYTEA) AS SMALLINT) AS "0";
 
@@ -1557,7 +1985,8 @@ SELECT CAST(CAST('\x12' AS BYTEA) AS INT) AS "18";
 SELECT
   CAST(CAST('\x12345678'
   AS BYTEA)
-  AS INT) AS "305419896";
+  AS INT)
+  AS "305419896";
 
 SELECT CAST(CAST('\x123456789A' AS BYTEA) AS INT);
 
@@ -1568,7 +1997,8 @@ SELECT CAST(CAST('\x12' AS BYTEA) AS BIGINT) AS "18";
 SELECT
   CAST(CAST('\x1122334455667788'
   AS BYTEA)
-  AS BIGINT) AS "1234605616436508552";
+  AS BIGINT)
+  AS "1234605616436508552";
 
 SELECT
   CAST(CAST('\x112233445566778899'
@@ -1578,26 +2008,32 @@ SELECT
 SELECT
   CAST(CAST('\x8000'
   AS BYTEA)
-  AS SMALLINT) AS "-32768",
+  AS SMALLINT)
+  AS "-32768",
   CAST(CAST('\x7FFF'
   AS BYTEA)
-  AS SMALLINT) AS "32767";
+  AS SMALLINT)
+  AS "32767";
 
 SELECT
   CAST(CAST('\x80000000'
   AS BYTEA)
-  AS INT) AS "-2147483648",
+  AS INT)
+  AS "-2147483648",
   CAST(CAST('\x7FFFFFFF'
   AS BYTEA)
-  AS INT) AS "2147483647";
+  AS INT)
+  AS "2147483647";
 
 SELECT
   CAST(CAST('\x8000000000000000'
   AS BYTEA)
-  AS BIGINT) AS "-9223372036854775808",
+  AS BIGINT)
+  AS "-9223372036854775808",
   CAST(CAST('\x7FFFFFFFFFFFFFFF'
   AS BYTEA)
-  AS BIGINT) AS "9223372036854775807";
+  AS BIGINT)
+  AS "9223372036854775807";
 
 SET escape_string_warning = off;
 
@@ -1616,12 +2052,18 @@ SHOW "escape_string_warning";
 SHOW "standard_conforming_strings";
 
 SELECT
-  'a\bcd' AS f1,
-  'a\b''cd' AS f2,
-  'a\b''''cd' AS f3,
-  'abcd\' AS f4,
-  'ab\''cd' AS f5,
-  '\\' AS f6;
+  'a\bcd'
+  AS f1,
+  'a\b''cd'
+  AS f2,
+  'a\b''''cd'
+  AS f3,
+  'abcd\'
+  AS f4,
+  'ab\''cd'
+  AS f5,
+  '\\'
+  AS f6;
 
 SET standard_conforming_strings = off;
 
@@ -1673,73 +2115,94 @@ SELECT repeat('Pg', -4);
 
 SELECT
   SUBSTRING(CAST('1234567890'
-  AS BYTEA) FROM 3) AS "34567890";
+  AS BYTEA) FROM 3)
+  AS "34567890";
 
 SELECT
   SUBSTRING(CAST('1234567890'
-  AS BYTEA) FROM 4 FOR 3) AS "456";
+  AS BYTEA) FROM 4 FOR 3)
+  AS "456";
 
 SELECT
   SUBSTRING(CAST('string'
-  AS BYTEA) FROM 2 FOR 2147483646) AS tring;
+  AS BYTEA) FROM 2 FOR 2147483646)
+  AS tring;
 
 SELECT
   SUBSTRING(CAST('string'
-  AS BYTEA) FROM -10 FOR 2147483646) AS string;
+  AS BYTEA) FROM -10 FOR 2147483646)
+  AS string;
 
 SELECT
   SUBSTRING(CAST('string'
-  AS BYTEA) FROM -10 FOR -2147483646) AS error;
+  AS BYTEA) FROM -10 FOR -2147483646)
+  AS error;
 
 SELECT
-  btrim(CAST('\000Tom\000'
+  btrim(
+  CAST('\000Tom\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA));
+  AS BYTEA)
+  );
 
 SELECT
-  ltrim(CAST('\000Tom\000'
+  ltrim(
+  CAST('\000Tom\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA));
+  AS BYTEA)
+  );
 
 SELECT
-  rtrim(CAST('\000Tom\000'
+  rtrim(
+  CAST('\000Tom\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA));
+  AS BYTEA)
+  );
 
 SELECT
-  btrim(CAST('\000trim\000'
+  btrim(
+  CAST('\000trim\000'
   AS BYTEA),
   CAST('\000'
-  AS BYTEA));
+  AS BYTEA)
+  );
 
 SELECT btrim(CAST('' AS BYTEA), CAST('\000' AS BYTEA));
 
 SELECT
-  btrim(CAST('\000trim\000'
+  btrim(
+  CAST('\000trim\000'
   AS BYTEA),
   CAST(''
-  AS BYTEA));
+  AS BYTEA)
+  );
 
 SELECT
-  encode(OVERLAY(CAST('Th\000omas'
+  encode(
+  OVERLAY(CAST('Th\000omas'
   AS BYTEA) PLACING CAST('Th\001omas'
   AS BYTEA) FROM 2),
-  'escape');
+  'escape'
+  );
 
 SELECT
-  encode(OVERLAY(CAST('Th\000omas'
+  encode(
+  OVERLAY(CAST('Th\000omas'
   AS BYTEA) PLACING CAST('\002\003'
   AS BYTEA) FROM 8),
-  'escape');
+  'escape'
+  );
 
 SELECT
-  encode(OVERLAY(CAST('Th\000omas'
+  encode(
+  OVERLAY(CAST('Th\000omas'
   AS BYTEA) PLACING CAST('\002\003'
   AS BYTEA) FROM 5 FOR 3),
-  'escape');
+  'escape'
+  );
 
 SELECT bit_count(CAST('\x1234567890' AS BYTEA));
 

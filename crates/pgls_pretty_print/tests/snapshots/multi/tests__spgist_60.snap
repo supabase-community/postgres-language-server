@@ -14,11 +14,15 @@ INSERT INTO spgist_point_tbl (id,
 p)
 SELECT
   g,
-  point(g * 10,
-  g * 10)
+  point(
+  g * 10,
+  g * 10
+  )
 FROM
-  generate_series(1,
-  10) AS g;
+  generate_series(
+  1,
+  10
+  ) AS g;
 
 DELETE FROM spgist_point_tbl WHERE id < 5;
 
@@ -28,21 +32,29 @@ INSERT INTO spgist_point_tbl (id,
 p)
 SELECT
   g,
-  point(g * 10,
-  g * 10)
+  point(
+  g * 10,
+  g * 10
+  )
 FROM
-  generate_series(1,
-  10000) AS g;
+  generate_series(
+  1,
+  10000
+  ) AS g;
 
 INSERT INTO spgist_point_tbl (id,
 p)
 SELECT
   g + 100000,
-  point(g * 10 + 1,
-  g * 10 + 1)
+  point(
+  g * 10 + 1,
+  g * 10 + 1
+  )
 FROM
-  generate_series(1,
-  10000) AS g;
+  generate_series(
+  1,
+  10000
+  ) AS g;
 
 DELETE FROM spgist_point_tbl WHERE id % 2 = 1;
 
@@ -54,19 +66,31 @@ CREATE TABLE spgist_box_tbl ( id serial, b box );
 
 INSERT INTO spgist_box_tbl (b)
 SELECT
-  box(point(i,
-  j),
-  point(i + s,
-  j + s))
+  box(
+  point(
+  i,
+  j
+  ),
+  point(
+  i + s,
+  j + s
+  )
+  )
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   100,
-  5) AS i,
-  generate_series(1,
+  5
+  ) AS i,
+  generate_series(
+  1,
   100,
-  5) AS j,
-  generate_series(1,
-  10) AS s;
+  5
+  ) AS j,
+  generate_series(
+  1,
+  10
+  ) AS s;
 
 CREATE INDEX "spgist_box_idx" ON spgist_box_tbl USING spgist
 (
@@ -74,14 +98,22 @@ CREATE INDEX "spgist_box_idx" ON spgist_box_tbl USING spgist
 );
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
-  (VALUES (point(5,
-  5)),
-  (point(8,
-  8)),
-  (point(12,
-  12))) AS v (p)
+  (VALUES (point(
+  5,
+  5
+  )),
+  (point(
+  8,
+  8
+  )),
+  (point(
+  12,
+  12
+  ))) AS v (p)
 WHERE
   EXISTS (SELECT
     *
@@ -89,8 +121,10 @@ WHERE
     spgist_box_tbl
     AS b
   WHERE
-    b.b && box(v.p,
-    v.p));
+    b.b && box(
+    v.p,
+    v.p
+    ));
 
 CREATE TABLE spgist_text_tbl ( id INT, t TEXT );
 
@@ -104,32 +138,42 @@ t)
 SELECT
   g,
   'f' ||
-  repeat('o',
-  100) ||
+  repeat(
+  'o',
+  100
+  ) ||
   g
 FROM
-  generate_series(1,
-  10000) AS g
+  generate_series(
+  1,
+  10000
+  ) AS g
 UNION ALL
 SELECT
   g,
   'baaaaaaaaaaaaaar' ||
   g
 FROM
-  generate_series(1,
-  1000) AS g;
+  generate_series(
+  1,
+  1000
+  ) AS g;
 
 INSERT INTO spgist_text_tbl (id,
 t)
 SELECT
   -g,
   'f' ||
-  repeat('o',
-  100 - g) ||
+  repeat(
+  'o',
+  100 - g
+  ) ||
   'surprise'
 FROM
-  generate_series(1,
-  100) AS g;
+  generate_series(
+  1,
+  100
+  ) AS g;
 
 CREATE INDEX "spgist_point_idx2" ON spgist_point_tbl USING spgist
 (
@@ -176,12 +220,20 @@ CREATE INDEX "spgist_unlogged_idx" ON spgist_unlogged_tbl USING spgist
 
 INSERT INTO spgist_unlogged_tbl (b)
 SELECT
-  box(point(i,
-  j))
+  box(
+  point(
+  i,
+  j
+  )
+  )
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   100,
-  5) AS i,
-  generate_series(1,
+  5
+  ) AS i,
+  generate_series(
+  1,
   10,
-  5) AS j;
+  5
+  ) AS j;

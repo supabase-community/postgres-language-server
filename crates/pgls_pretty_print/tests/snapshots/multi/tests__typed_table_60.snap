@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS persons OF person_type;
 
 SELECT * FROM persons;
 
-CREATE FUNCTION get_all_persons()
+CREATE FUNCTION
+get_all_persons()
 RETURNS SETOF person_type
 LANGUAGE "sql"
 AS '
@@ -82,7 +83,8 @@ CREATE TABLE persons OF person_type;
 
 INSERT INTO persons VALUES (1, 'test');
 
-CREATE FUNCTION namelen(
+CREATE FUNCTION
+namelen(
   person_type
 )
 RETURNS INT

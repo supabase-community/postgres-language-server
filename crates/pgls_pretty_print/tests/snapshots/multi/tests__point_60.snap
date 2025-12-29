@@ -75,16 +75,20 @@ WHERE
 SELECT
   p.f1,
   p.f1 <-> CAST('(0,0)'
-  AS point) AS dist
+  AS point)
+  AS dist
 FROM
   point_tbl
   AS p
 ORDER BY dist;
 
 SELECT
-  p1.f1 AS point1,
-  p2.f1 AS point2,
-  p1.f1 <-> p2.f1 AS dist
+  p1.f1
+  AS point1,
+  p2.f1
+  AS point2,
+  p1.f1 <-> p2.f1
+  AS dist
 FROM
   point_tbl
   AS p1,
@@ -95,8 +99,10 @@ ORDER BY dist,
   p2.f1[0];
 
 SELECT
-  p1.f1 AS point1,
-  p2.f1 AS point2
+  p1.f1
+  AS point1,
+  p2.f1
+  AS point2
 FROM
   point_tbl
   AS p1,
@@ -107,9 +113,12 @@ WHERE
   3;
 
 SELECT
-  p1.f1 AS point1,
-  p2.f1 AS point2,
-  p1.f1 <-> p2.f1 AS distance
+  p1.f1
+  AS point1,
+  p2.f1
+  AS point2,
+  p1.f1 <-> p2.f1
+  AS distance
 FROM
   point_tbl
   AS p1,
@@ -124,9 +133,12 @@ ORDER BY distance,
   p2.f1[0];
 
 SELECT
-  p1.f1 AS point1,
-  p2.f1 AS point2,
-  p1.f1 <-> p2.f1 AS distance
+  p1.f1
+  AS point1,
+  p2.f1
+  AS point2,
+  p1.f1 <-> p2.f1
+  AS distance
 FROM
   point_tbl
   AS p1,
@@ -145,8 +157,10 @@ INSERT INTO point_gist_tbl
 SELECT
   '(0,0)'
 FROM
-  generate_series(0,
-  1000);
+  generate_series(
+  0,
+  1000
+  );
 
 CREATE INDEX "point_gist_tbl_index" ON point_gist_tbl USING gist
 (
@@ -162,7 +176,9 @@ SET enable_indexscan = false;
 SET enable_bitmapscan = false;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_gist_tbl
 WHERE
@@ -170,7 +186,9 @@ WHERE
   AS point);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_gist_tbl
 WHERE
@@ -178,7 +196,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_gist_tbl
 WHERE
@@ -192,7 +212,9 @@ SET enable_indexscan = true;
 SET enable_bitmapscan = true;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_gist_tbl
 WHERE
@@ -200,7 +222,9 @@ WHERE
   AS point);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_gist_tbl
 WHERE
@@ -208,7 +232,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   point_gist_tbl
 WHERE

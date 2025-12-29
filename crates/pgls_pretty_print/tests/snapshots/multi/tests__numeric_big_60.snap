@@ -2251,8 +2251,10 @@ INSERT INTO num_result
 SELECT
   t1.id,
   t2.id,
-  round(t1.val + t2.val,
-  10)
+  round(
+  t1.val + t2.val,
+  10
+  )
 FROM
   num_data
   AS t1,
@@ -2263,8 +2265,11 @@ SELECT
   t1.id1,
   t1.id2,
   t1.result,
-  round(t2.expected,
-  10) AS expected
+  round(
+  t2.expected,
+  10
+  )
+  AS expected
 FROM
   num_result
   AS t1,
@@ -2276,8 +2281,10 @@ WHERE
   t1.id2 =
   t2.id2 AND
   t1.result <>
-  round(t2.expected,
-  10);
+  round(
+  t2.expected,
+  10
+  );
 
 DELETE FROM num_result;
 
@@ -2316,8 +2323,10 @@ INSERT INTO num_result
 SELECT
   t1.id,
   t2.id,
-  round(t1.val - t2.val,
-  40)
+  round(
+  t1.val - t2.val,
+  40
+  )
 FROM
   num_data
   AS t1,
@@ -2328,8 +2337,10 @@ SELECT
   t1.id1,
   t1.id2,
   t1.result,
-  round(t2.expected,
-  40)
+  round(
+  t2.expected,
+  40
+  )
 FROM
   num_result
   AS t1,
@@ -2341,8 +2352,10 @@ WHERE
   t1.id2 =
   t2.id2 AND
   t1.result <>
-  round(t2.expected,
-  40);
+  round(
+  t2.expected,
+  40
+  );
 
 DELETE FROM num_result;
 
@@ -2381,8 +2394,10 @@ INSERT INTO num_result
 SELECT
   t1.id,
   t2.id,
-  round(t1.val * t2.val,
-  30)
+  round(
+  t1.val * t2.val,
+  30
+  )
 FROM
   num_data
   AS t1,
@@ -2393,8 +2408,11 @@ SELECT
   t1.id1,
   t1.id2,
   t1.result,
-  round(t2.expected,
-  30) AS expected
+  round(
+  t2.expected,
+  30
+  )
+  AS expected
 FROM
   num_result
   AS t1,
@@ -2406,8 +2424,10 @@ WHERE
   t1.id2 =
   t2.id2 AND
   t1.result <>
-  round(t2.expected,
-  30);
+  round(
+  t2.expected,
+  30
+  );
 
 DELETE FROM num_result;
 
@@ -2449,8 +2469,10 @@ INSERT INTO num_result
 SELECT
   t1.id,
   t2.id,
-  round(t1.val / t2.val,
-  80)
+  round(
+  t1.val / t2.val,
+  80
+  )
 FROM
   num_data
   AS t1,
@@ -2464,8 +2486,11 @@ SELECT
   t1.id1,
   t1.id2,
   t1.result,
-  round(t2.expected,
-  80) AS expected
+  round(
+  t2.expected,
+  80
+  )
+  AS expected
 FROM
   num_result
   AS t1,
@@ -2477,8 +2502,10 @@ WHERE
   t1.id2 =
   t2.id2 AND
   t1.result <>
-  round(t2.expected,
-  80);
+  round(
+  t2.expected,
+  80
+  );
 
 DELETE FROM num_result;
 
@@ -2486,7 +2513,11 @@ INSERT INTO num_result
 SELECT
   id,
   0,
-  sqrt(abs(val))
+  sqrt(
+  abs(
+  val
+  )
+  )
 FROM
   num_data;
 
@@ -2511,7 +2542,11 @@ INSERT INTO num_result
 SELECT
   id,
   0,
-  ln(abs(val))
+  ln(
+  abs(
+  val
+  )
+  )
 FROM
   num_data
 WHERE
@@ -2539,9 +2574,13 @@ INSERT INTO num_result
 SELECT
   id,
   0,
-  log(CAST('10'
+  log(
+  CAST('10'
   AS NUMERIC),
-  abs(val))
+  abs(
+  val
+  )
+  )
 FROM
   num_data
 WHERE
@@ -2569,10 +2608,18 @@ INSERT INTO num_result
 SELECT
   id,
   0,
-  pow(CAST('10'
+  pow(
+  CAST('10'
   AS NUMERIC),
-  ln(abs(round(val,
-  1000))))
+  ln(
+  abs(
+  round(
+  val,
+  1000
+  )
+  )
+  )
+  )
 FROM
   num_data
 WHERE
@@ -2723,8 +2770,10 @@ SELECT
   b,
   p,
   bc_result,
-  b ^ p AS power,
-  b ^ p - bc_result AS diff
+  b ^ p
+  AS power,
+  b ^ p - bc_result
+  AS diff
 FROM
   t;
 
@@ -2857,8 +2906,10 @@ SELECT
   b,
   p,
   bc_result,
-  b ^ p AS power,
-  b ^ p - bc_result AS diff
+  b ^ p
+  AS power,
+  b ^ p - bc_result
+  AS diff
 FROM
   t;
 
@@ -2991,8 +3042,10 @@ SELECT
   b,
   p,
   bc_result,
-  b ^ p AS power,
-  b ^ p - bc_result AS diff
+  b ^ p
+  AS power,
+  b ^ p - bc_result
+  AS diff
 FROM
   t;
 
@@ -3125,8 +3178,10 @@ SELECT
   b,
   p,
   bc_result,
-  b ^ p AS power,
-  b ^ p - bc_result AS diff
+  b ^ p
+  AS power,
+  b ^ p - bc_result
+  AS diff
 FROM
   t;
 
@@ -3142,8 +3197,10 @@ SELECT
   b,
   p,
   bc_result,
-  b ^ p AS power,
-  b ^ p - bc_result AS diff
+  b ^ p
+  AS power,
+  b ^ p - bc_result
+  AS diff
 FROM
   t;
 
@@ -3233,8 +3290,13 @@ bc_result) AS (VALUES (-20.29837,
 SELECT
   x,
   bc_result,
-  exp(x),
-  exp(x) - bc_result AS diff
+  exp(
+  x
+  ),
+  exp(
+  x
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3322,10 +3384,15 @@ bc_result) AS (VALUES ('1.0e-1',
 SELECT
   x,
   bc_result,
-  ln(CAST(x
-  AS NUMERIC)),
-  ln(CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ),
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3414,10 +3481,15 @@ SELECT
   '1-' ||
   x,
   bc_result,
-  ln(1.0 - CAST(x
-  AS NUMERIC)),
-  ln(1.0 - CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  ln(
+  1.0 - CAST(x
+  AS NUMERIC)
+  ),
+  ln(
+  1.0 - CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3506,10 +3578,15 @@ SELECT
   '1+' ||
   x,
   bc_result,
-  ln(1.0 + CAST(x
-  AS NUMERIC)),
-  ln(1.0 + CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  ln(
+  1.0 + CAST(x
+  AS NUMERIC)
+  ),
+  ln(
+  1.0 + CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3597,10 +3674,15 @@ bc_result) AS (VALUES ('1.0e1',
 SELECT
   x,
   bc_result,
-  ln(CAST(x
-  AS NUMERIC)),
-  ln(CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ),
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3628,10 +3710,15 @@ bc_result) AS (VALUES ('1.0e100',
 SELECT
   x,
   bc_result,
-  ln(CAST(x
-  AS NUMERIC)),
-  ln(CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ),
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3643,8 +3730,13 @@ bc_result) AS (VALUES (484990182159328900690402236933516249572671683638747490717
 (93936642222690597390233191619858485419795942047468396309991947772747208870873993801669373075421461116465960407843923269693395211616591453397070258466704654943689268224479477016161636938138334729982904232438440955361656138189836032891825113139184685132178764873033678116450665758561650355252211196676137179184043639278410827092182700922151290703747496962700158844772453483316974221113826173404445159281421213715669245417896170368554410830320000019029956317336703559699859949692222685614036912057150632902650913831404804982509990655560731349634628713944739168096272097122388116038119844786988276635032016787352796502360718569977397214936366251320294621522016.6483354941025384161536675750898007896744690911429670830432784905421638721478353275821072200938900938046264210604940707974410950770029535636602548377806284157951164875821446035013896786653932045182167021839184824627082391478016195098055107001433336586881395912782883663046617432598969149948351689103230162742769845955320418573803127107923535948653168889411316007796459064267436246637115946581149511513369842911210359447262641996566147462977170742544980481275049898092152042927981394239266559286915303786701737610786594006685748456635797125029722684151298695274097006242412384086302106763844070230264910503179385988626477852818174114043927841085089058972074427820150462261941575665882880501074676800316585217150509780489224388148722603385921057007086785238310735038314861960410473809826927329368597558806004392175746233568789445929554890241140656324160187253042639339549705859147930476532359840809944163908006480881926041259363654863689570520534301207043189181147254153307163555433328278834311658232337,
 1510.4332713542154696529645934345554302578243896764921637693542962119938599884313210100957753316832762996428481801312323020427109678979117469716796746760060470871840325255146954580681101106876674367471955788143763250819168311353856748872452260808797135108102729064040463343792765872545182299889360257515315869180266759715933989413256377582681707188367254513700731642913479683031478361835565783219287780434673712341147656477670848734998849030451414278832848680301511646182446524915091598080243532068451726548537866633622180283865668708517173065893429240665300584705585310049892047293928733753369421499719516009692095913169665213597158441636480707309244604139865130782756488091268094213446272360006907802989573582755585110277620911226015342778471352130366770729972784317323917141031824334355639769512749560550167491709646539950725523461943580211843652293561678342656010571108219244870234329176123205423872844099992204896411752620881541000940129833754169391528449211839693800724450201835161044717173715867437))
 SELECT
-  trim_scale(ln(CAST(x
-  AS NUMERIC)) - bc_result) AS diff
+  trim_scale(
+  ln(
+  CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  )
+  AS diff
 FROM
   t;
 
@@ -3652,12 +3744,16 @@ WITH t (x) AS (SELECT
   '1e-' ||
   n
 FROM
-  generate_series(1,
-  100) AS g (n))
+  generate_series(
+  1,
+  100
+  ) AS g (n))
 SELECT
   x,
-  log(CAST(x
-  AS NUMERIC))
+  log(
+  CAST(x
+  AS NUMERIC)
+  )
 FROM
   t;
 
@@ -3713,10 +3809,15 @@ bc_result) AS (VALUES ('9.0e-1',
 SELECT
   x,
   bc_result,
-  log(CAST(x
-  AS NUMERIC)),
-  log(CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  log(
+  CAST(x
+  AS NUMERIC)
+  ),
+  log(
+  CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3761,10 +3862,15 @@ SELECT
   '1-' ||
   x,
   bc_result,
-  log(1.0 - CAST(x
-  AS NUMERIC)),
-  log(1.0 - CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  log(
+  1.0 - CAST(x
+  AS NUMERIC)
+  ),
+  log(
+  1.0 - CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3809,10 +3915,15 @@ SELECT
   '1+' ||
   x,
   bc_result,
-  log(1.0 + CAST(x
-  AS NUMERIC)),
-  log(1.0 + CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  log(
+  1.0 + CAST(x
+  AS NUMERIC)
+  ),
+  log(
+  1.0 + CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;
 
@@ -3820,12 +3931,16 @@ WITH t (x) AS (SELECT
   '1e' ||
   n
 FROM
-  generate_series(1,
-  100) AS g (n))
+  generate_series(
+  1,
+  100
+  ) AS g (n))
 SELECT
   x,
-  log(CAST(x
-  AS NUMERIC))
+  log(
+  CAST(x
+  AS NUMERIC)
+  )
 FROM
   t;
 
@@ -3869,9 +3984,14 @@ bc_result) AS (VALUES ('2.0e10',
 SELECT
   x,
   bc_result,
-  log(CAST(x
-  AS NUMERIC)),
-  log(CAST(x
-  AS NUMERIC)) - bc_result AS diff
+  log(
+  CAST(x
+  AS NUMERIC)
+  ),
+  log(
+  CAST(x
+  AS NUMERIC)
+  ) - bc_result
+  AS diff
 FROM
   t;

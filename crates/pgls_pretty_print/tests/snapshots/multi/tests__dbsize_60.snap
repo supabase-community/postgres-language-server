@@ -5,8 +5,12 @@ snapshot_kind: text
 ---
 SELECT
   size,
-  pg_size_pretty(size),
-  pg_size_pretty(-1 * size)
+  pg_size_pretty(
+  size
+  ),
+  pg_size_pretty(
+  -1 * size
+  )
 FROM
   (VALUES (CAST(10
   AS BIGINT)),
@@ -23,8 +27,12 @@ FROM
 
 SELECT
   size,
-  pg_size_pretty(size),
-  pg_size_pretty(-1 * size)
+  pg_size_pretty(
+  size
+  ),
+  pg_size_pretty(
+  -1 * size
+  )
 FROM
   (VALUES (CAST(10
   AS NUMERIC)),
@@ -53,8 +61,12 @@ FROM
 
 SELECT
   size,
-  pg_size_pretty(size),
-  pg_size_pretty(-1 * size)
+  pg_size_pretty(
+  size
+  ),
+  pg_size_pretty(
+  -1 * size
+  )
 FROM
   (VALUES (CAST(10239
   AS BIGINT)),
@@ -79,8 +91,12 @@ FROM
 
 SELECT
   size,
-  pg_size_pretty(size),
-  pg_size_pretty(-1 * size)
+  pg_size_pretty(
+  size
+  ),
+  pg_size_pretty(
+  -1 * size
+  )
 FROM
   (VALUES (CAST(10239
   AS NUMERIC)),
@@ -108,14 +124,20 @@ FROM
   AS NUMERIC))) AS x (size);
 
 SELECT
-  pg_size_pretty(CAST('-9223372036854775808'
-  AS BIGINT)),
-  pg_size_pretty(CAST('9223372036854775807'
-  AS BIGINT));
+  pg_size_pretty(
+  CAST('-9223372036854775808'
+  AS BIGINT)
+  ),
+  pg_size_pretty(
+  CAST('9223372036854775807'
+  AS BIGINT)
+  );
 
 SELECT
   size,
-  pg_size_bytes(size)
+  pg_size_bytes(
+  size
+  )
 FROM
   (VALUES ('1'),
   ('123bytes'),
@@ -131,7 +153,9 @@ FROM
 
 SELECT
   size,
-  pg_size_bytes(size)
+  pg_size_bytes(
+  size
+  )
 FROM
   (VALUES ('1'),
   ('123bYteS'),
@@ -146,7 +170,9 @@ FROM
 
 SELECT
   size,
-  pg_size_bytes(size)
+  pg_size_bytes(
+  size
+  )
 FROM
   (VALUES ('-1'),
   ('-123bytes'),
@@ -161,7 +187,9 @@ FROM
 
 SELECT
   size,
-  pg_size_bytes(size)
+  pg_size_bytes(
+  size
+  )
 FROM
   (VALUES ('-1.'),
   ('-1.kb'),

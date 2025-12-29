@@ -85,14 +85,21 @@ SELECT DISTINCT
   CAST(i ||
   '/' ||
   j
-  AS PG_LSN) AS f
+  AS PG_LSN)
+  AS f
 FROM
-  generate_series(1,
-  10) AS i,
-  generate_series(1,
-  10) AS j,
-  generate_series(1,
-  5) AS k
+  generate_series(
+  1,
+  10
+  ) AS i,
+  generate_series(
+  1,
+  10
+  ) AS j,
+  generate_series(
+  1,
+  5
+  ) AS k
 WHERE
   i <=
   10 AND
@@ -106,14 +113,21 @@ SELECT DISTINCT
   CAST(i ||
   '/' ||
   j
-  AS PG_LSN) AS f
+  AS PG_LSN)
+  AS f
 FROM
-  generate_series(1,
-  10) AS i,
-  generate_series(1,
-  10) AS j,
-  generate_series(1,
-  5) AS k
+  generate_series(
+  1,
+  10
+  ) AS i,
+  generate_series(
+  1,
+  10
+  ) AS j,
+  generate_series(
+  1,
+  5
+  ) AS k
 WHERE
   i <=
   10 AND

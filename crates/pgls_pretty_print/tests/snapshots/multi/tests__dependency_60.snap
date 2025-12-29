@@ -15,7 +15,8 @@ CREATE TABLE deptest ( f1 serial PRIMARY KEY, f2 TEXT );
 
 GRANT SELECT ON TABLE deptest TO regress_dep_group;
 
-GRANT ALL ON TABLE deptest
+GRANT ALL
+ON TABLE deptest
 TO regress_dep_user,
 regress_dep_user2;
 
@@ -33,7 +34,8 @@ UPDATE,
 DELETE,
 TRUNCATE,
 REFERENCES,
-MAINTAIN ON TABLE deptest
+MAINTAIN
+ON TABLE deptest
 FROM regress_dep_user;
 
 DROP ROLE regress_dep_user;
@@ -74,7 +76,8 @@ DROP OWNED BY regress_dep_user0;
 
 CREATE TABLE deptest1 ( f1 INT UNIQUE );
 
-GRANT ALL ON TABLE deptest1
+GRANT ALL
+ON TABLE deptest1
 TO regress_dep_user1 WITH GRANT OPTION;
 
 SET SESSION AUTHORIZATION regress_dep_user1;
@@ -100,10 +103,12 @@ CREATE TABLE deptest ( a serial PRIMARY KEY, b TEXT );
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_dep_user1
 IN SCHEMA deptest
-GRANT ALL ON TABLES 
+GRANT ALL
+ON TABLES 
 TO regress_dep_user2;
 
-CREATE FUNCTION deptest_func()
+CREATE FUNCTION
+deptest_func()
 RETURNS VOID
 LANGUAGE "plpgsql"
 AS ' BEGIN END; ';
@@ -117,7 +122,9 @@ CREATE TABLE deptest2 ( f1 INT );
 CREATE SEQUENCE ss1;
 
 ALTER TABLE deptest2
-  ALTER COLUMN f1 SET DEFAULT nextval('ss1');
+  ALTER COLUMN f1 SET DEFAULT nextval(
+  'ss1'
+  );
 
 ALTER SEQUENCE ss1 OWNED BY deptest2.f1;
 

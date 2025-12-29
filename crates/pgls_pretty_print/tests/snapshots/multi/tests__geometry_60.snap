@@ -21,9 +21,11 @@ FROM
   point_tbl
   AS p1
 WHERE
-  ishorizontal(p1.f1,
+  ishorizontal(
+  p1.f1,
   CAST('(0,0)'
-  AS point));
+  AS point)
+  );
 
 SELECT
   p1.f1
@@ -40,9 +42,11 @@ FROM
   point_tbl
   AS p1
 WHERE
-  isvertical(p1.f1,
+  isvertical(
+  p1.f1,
   CAST('(5.1,34.5)'
-  AS point));
+  AS point)
+  );
 
 SELECT
   p1.f1
@@ -56,8 +60,10 @@ WHERE
 SELECT
   p1.f1,
   p2.f1,
-  slope(p1.f1,
-  p2.f1)
+  slope(
+  p1.f1,
+  p2.f1
+  )
 FROM
   point_tbl
   AS p1,
@@ -150,8 +156,10 @@ WHERE
 SELECT
   p.f1,
   l.s,
-  p.f1 <-> l.s AS dist_pl,
-  l.s <-> p.f1 AS dist_lp
+  p.f1 <-> l.s
+  AS dist_pl,
+  l.s <-> p.f1
+  AS dist_lp
 FROM
   point_tbl
   AS p,
@@ -161,8 +169,10 @@ FROM
 SELECT
   p.f1,
   l.s,
-  p.f1 <-> l.s AS dist_ps,
-  l.s <-> p.f1 AS dist_sp
+  p.f1 <-> l.s
+  AS dist_ps,
+  l.s <-> p.f1
+  AS dist_sp
 FROM
   point_tbl
   AS p,
@@ -172,8 +182,10 @@ FROM
 SELECT
   p.f1,
   b.f1,
-  p.f1 <-> b.f1 AS dist_pb,
-  b.f1 <-> p.f1 AS dist_bp
+  p.f1 <-> b.f1
+  AS dist_pb,
+  b.f1 <-> p.f1
+  AS dist_bp
 FROM
   point_tbl
   AS p,
@@ -183,8 +195,10 @@ FROM
 SELECT
   p.f1,
   p1.f1,
-  p.f1 <-> p1.f1 AS dist_ppath,
-  p1.f1 <-> p.f1 AS dist_pathp
+  p.f1 <-> p1.f1
+  AS dist_ppath,
+  p1.f1 <-> p.f1
+  AS dist_pathp
 FROM
   point_tbl
   AS p,
@@ -194,8 +208,10 @@ FROM
 SELECT
   p.f1,
   p1.f1,
-  p.f1 <-> p1.f1 AS dist_ppoly,
-  p1.f1 <-> p.f1 AS dist_polyp
+  p.f1 <-> p1.f1
+  AS dist_ppoly,
+  p1.f1 <-> p.f1
+  AS dist_polyp
 FROM
   point_tbl
   AS p,
@@ -205,8 +221,10 @@ FROM
 SELECT
   p1.f1,
   p2.f1,
-  line(p1.f1,
-  p2.f1)
+  line(
+  p1.f1,
+  p2.f1
+  )
 FROM
   point_tbl
   AS p1,
@@ -372,7 +390,8 @@ FROM
 SELECT
   p.f1,
   l.s,
-  l.s # p.f1 AS intersection
+  l.s # p.f1
+  AS intersection
 FROM
   lseg_tbl
   AS l,
@@ -486,8 +505,10 @@ WHERE
 SELECT
   l.s,
   l1.s,
-  l.s <-> l1.s AS dist_sl,
-  l1.s <-> l.s AS dist_ls
+  l.s <-> l1.s
+  AS dist_sl,
+  l1.s <-> l.s
+  AS dist_ls
 FROM
   lseg_tbl
   AS l,
@@ -507,8 +528,10 @@ FROM
 SELECT
   l.s,
   b.f1,
-  l.s <-> b.f1 AS dist_sb,
-  b.f1 <-> l.s AS dist_bs
+  l.s <-> b.f1
+  AS dist_sb,
+  b.f1 <-> l.s
+  AS dist_bs
 FROM
   lseg_tbl
   AS l,
@@ -592,7 +615,8 @@ WHERE
 SELECT box(f1) AS box FROM circle_tbl;
 
 SELECT
-  b.f1 + p.f1 AS translation
+  b.f1 + p.f1
+  AS translation
 FROM
   box_tbl
   AS b,
@@ -600,7 +624,8 @@ FROM
   AS p;
 
 SELECT
-  b.f1 - p.f1 AS translation
+  b.f1 - p.f1
+  AS translation
 FROM
   box_tbl
   AS b,
@@ -647,8 +672,10 @@ WHERE
 SELECT CAST(f1 AS box) FROM point_tbl;
 
 SELECT
-  bound_box(a.f1,
-  b.f1)
+  bound_box(
+  a.f1,
+  b.f1
+  )
 FROM
   box_tbl
   AS a,
@@ -710,7 +737,9 @@ SELECT
 FROM
   path_tbl
 WHERE
-  isclosed(f1);
+  isclosed(
+  f1
+  );
 
 SELECT
   f1,
@@ -719,7 +748,9 @@ SELECT
 FROM
   path_tbl
 WHERE
-  isopen(f1);
+  isopen(
+  f1
+  );
 
 SELECT
   p1.f1,
@@ -859,7 +890,8 @@ FROM
 SELECT
   p.f1,
   poly.f1,
-  poly.f1 @> p.f1 AS contains
+  poly.f1 @> p.f1
+  AS contains
 FROM
   polygon_tbl
   AS poly,
@@ -869,7 +901,8 @@ FROM
 SELECT
   p.f1,
   poly.f1,
-  p.f1 <@ poly.f1 AS contained
+  p.f1 <@ poly.f1
+  AS contained
 FROM
   polygon_tbl
   AS poly,
@@ -877,8 +910,12 @@ FROM
   AS p;
 
 SELECT
-  npoints(f1) AS npoints,
-  f1 AS polygon
+  npoints(
+  f1
+  )
+  AS npoints,
+  f1
+  AS polygon
 FROM
   polygon_tbl;
 
@@ -887,12 +924,20 @@ SELECT polygon(f1) FROM box_tbl;
 SELECT polygon(f1) FROM path_tbl WHERE isclosed(f1);
 
 SELECT
-  f1 AS open_path,
-  polygon(pclose(f1)) AS polygon
+  f1
+  AS open_path,
+  polygon(
+  pclose(
+  f1
+  )
+  )
+  AS polygon
 FROM
   path_tbl
 WHERE
-  isopen(f1);
+  isopen(
+  f1
+  );
 
 SELECT f1, CAST(f1 AS box) FROM polygon_tbl;
 
@@ -1047,9 +1092,12 @@ SELECT circle(f1) FROM box_tbl;
 SELECT circle(f1) FROM polygon_tbl WHERE #f1 >= 3;
 
 SELECT
-  c1.f1 AS circle,
-  p1.f1 AS point,
-  p1.f1 <-> c1.f1 AS distance
+  c1.f1
+  AS circle,
+  p1.f1
+  AS point,
+  p1.f1 <-> c1.f1
+  AS distance
 FROM
   circle_tbl
   AS c1,
@@ -1059,7 +1107,9 @@ WHERE
   p1.f1 <-> c1.f1 >
   0
 ORDER BY distance,
-  area(c1.f1),
+  area(
+  c1.f1
+  ),
   p1.f1[0];
 
 SELECT
@@ -1074,8 +1124,10 @@ WHERE
 
 SELECT
   f1,
-  polygon(8,
-  f1)
+  polygon(
+  8,
+  f1
+  )
 FROM
   circle_tbl
 WHERE
@@ -1084,8 +1136,10 @@ WHERE
 
 SELECT
   f1,
-  polygon(1,
-  f1)
+  polygon(
+  1,
+  f1
+  )
 FROM
   circle_tbl
 WHERE
@@ -1094,8 +1148,10 @@ WHERE
 
 SELECT
   f1,
-  polygon(10,
-  f1)
+  polygon(
+  10,
+  f1
+  )
 FROM
   circle_tbl
 WHERE
@@ -1415,30 +1471,48 @@ SELECT
 FROM
   circle_tbl
 WHERE
-  f1 && circle(point(1,
-  -2),
-  1)
-ORDER BY area(f1);
+  f1 && circle(
+  point(
+  1,
+  -2
+  ),
+  1
+  )
+ORDER BY area(
+  f1
+  );
 
 SELECT
   *
 FROM
   circle_tbl
 WHERE
-  f1 && circle(point(1,
-  -2),
-  1)
-ORDER BY area(f1);
+  f1 && circle(
+  point(
+  1,
+  -2
+  ),
+  1
+  )
+ORDER BY area(
+  f1
+  );
 
 SELECT
   *
 FROM
   circle_tbl
 WHERE
-  f1 && circle(point(1,
-  -2),
-  1)
-ORDER BY area(f1);
+  f1 && circle(
+  point(
+  1,
+  -2
+  ),
+  1
+  )
+ORDER BY area(
+  f1
+  );
 
 CREATE INDEX "gpolygonind" ON polygon_tbl USING gist ( f1);
 
@@ -1449,7 +1523,9 @@ FROM
 WHERE
   f1 @> CAST('((1,1),(2,2),(2,1))'
   AS polygon)
-ORDER BY (poly_center(f1))[0];
+ORDER BY (poly_center(
+  f1
+  ))[0];
 
 SELECT
   *
@@ -1458,7 +1534,9 @@ FROM
 WHERE
   f1 @> CAST('((1,1),(2,2),(2,1))'
   AS polygon)
-ORDER BY (poly_center(f1))[0];
+ORDER BY (poly_center(
+  f1
+  ))[0];
 
 SELECT
   *
@@ -1467,7 +1545,9 @@ FROM
 WHERE
   f1 @> CAST('((1,1),(2,2),(2,1))'
   AS polygon)
-ORDER BY (poly_center(f1))[0];
+ORDER BY (poly_center(
+  f1
+  ))[0];
 
 SELECT pg_input_is_valid('(1', 'circle');
 

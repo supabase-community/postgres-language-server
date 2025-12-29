@@ -89,18 +89,22 @@ SELECT * FROM basictest;
 
 SELECT
   testtext ||
-  testvarchar AS concat,
-  testnumeric + 42 AS sum
+  testvarchar
+  AS concat,
+  testnumeric + 42
+  AS sum
 FROM
   basictest;
 
 SELECT pg_typeof(COALESCE(CAST(4 AS domainint4), 7));
 
 SELECT
-  pg_typeof(COALESCE(CAST(4
+  pg_typeof(
+  COALESCE(CAST(4
   AS domainint4),
   CAST(7
-  AS domainint4)));
+  AS domainint4))
+  );
 
 DROP TABLE "basictest";
 
@@ -179,8 +183,12 @@ SELECT * FROM domarrtest;
 SELECT testint4arr[1], testchar4arr[2:2] FROM domarrtest;
 
 SELECT
-  array_dims(testint4arr),
-  array_dims(testchar4arr)
+  array_dims(
+  testint4arr
+  ),
+  array_dims(
+  testchar4arr
+  )
 FROM
   domarrtest;
 
@@ -291,7 +299,8 @@ DO INSTEAD
     d1.i >
     0;;
 
-CREATE FUNCTION makedcomp(
+CREATE FUNCTION
+makedcomp(
   "r" DOUBLE PRECISION,
   "i" DOUBLE PRECISION
 )
@@ -339,8 +348,10 @@ ALTER TYPE comptype DROP ATTRIBUTE i;
 
 SELECT
   conname,
-  obj_description(oid,
-  'pg_constraint')
+  obj_description(
+  oid,
+  'pg_constraint'
+  )
 FROM
   pg_constraint
 WHERE
@@ -712,7 +723,9 @@ UPDATE domnotnull SET col1 = NULL;
 
 SELECT
   conname,
-  pg_get_constraintdef(oid)
+  pg_get_constraintdef(
+  oid
+  )
 FROM
   pg_constraint
 WHERE
@@ -797,7 +810,9 @@ UPDATE domconnotnulltest SET col2 = 6;
 ALTER DOMAIN connotnull ADD CONSTRAINT "constr1" NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_constraint
 WHERE
@@ -811,7 +826,9 @@ ALTER DOMAIN connotnull
 ADD CONSTRAINT "constr1bis" NOT NULL;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_constraint
 WHERE
@@ -964,7 +981,8 @@ EXECUTE s1 (0);
 
 EXECUTE s1 (NULL);
 
-CREATE FUNCTION doubledecrement(
+CREATE FUNCTION
+doubledecrement(
   "p1" pos_int
 )
 RETURNS pos_int
@@ -977,7 +995,8 @@ LANGUAGE "plpgsql";
 
 SELECT doubledecrement(3);
 
-CREATE OR REPLACE FUNCTION doubledecrement(
+CREATE OR REPLACE FUNCTION
+doubledecrement(
   "p1" pos_int
 )
 RETURNS pos_int
@@ -990,7 +1009,8 @@ LANGUAGE "plpgsql";
 
 SELECT doubledecrement(3);
 
-CREATE OR REPLACE FUNCTION doubledecrement(
+CREATE OR REPLACE FUNCTION
+doubledecrement(
   "p1" pos_int
 )
 RETURNS pos_int
@@ -1090,7 +1110,8 @@ DROP TYPE ddtest1;
 
 DROP DOMAIN posint CASCADE;
 
-CREATE OR REPLACE FUNCTION array_elem_check(
+CREATE OR REPLACE FUNCTION
+array_elem_check(
   NUMERIC
 )
 RETURNS NUMERIC
@@ -1109,7 +1130,8 @@ SELECT array_elem_check(1.23456);
 
 CREATE DOMAIN mynums AS NUMERIC(4, 2)[1];
 
-CREATE OR REPLACE FUNCTION array_elem_check(
+CREATE OR REPLACE FUNCTION
+array_elem_check(
   NUMERIC
 )
 RETURNS NUMERIC
@@ -1128,7 +1150,8 @@ SELECT array_elem_check(1.23456);
 
 CREATE DOMAIN mynums2 AS mynums;
 
-CREATE OR REPLACE FUNCTION array_elem_check(
+CREATE OR REPLACE FUNCTION
+array_elem_check(
   NUMERIC
 )
 RETURNS NUMERIC
@@ -1167,7 +1190,8 @@ UPDATE op SET f1[2] = 0;
 
 SELECT * FROM op;
 
-CREATE OR REPLACE FUNCTION array_elem_check(
+CREATE OR REPLACE FUNCTION
+array_elem_check(
   INT
 )
 RETURNS INT
@@ -1188,7 +1212,8 @@ DROP FUNCTION array_elem_check(INT);
 
 CREATE DOMAIN di AS INT;
 
-CREATE FUNCTION dom_check(
+CREATE FUNCTION
+dom_check(
   INT
 )
 RETURNS di
@@ -1212,7 +1237,8 @@ ALTER DOMAIN di DROP CONSTRAINT pos;
 
 SELECT dom_check(0);
 
-CREATE OR REPLACE FUNCTION dom_check(
+CREATE OR REPLACE FUNCTION
+dom_check(
   INT
 )
 RETURNS di
@@ -1240,7 +1266,8 @@ DROP FUNCTION dom_check(INT);
 
 DROP DOMAIN di;
 
-CREATE FUNCTION sql_is_distinct_from(
+CREATE FUNCTION
+sql_is_distinct_from(
   ANYELEMENT,
   ANYELEMENT
 )
@@ -1249,8 +1276,10 @@ LANGUAGE "sql"
 AS 'select $1 is distinct from $2 limit 1';
 
 CREATE DOMAIN inotnull AS INT
-  CHECK (sql_is_distinct_from(value,
-  NULL));
+  CHECK (sql_is_distinct_from(
+  value,
+  NULL
+  ));
 
 SELECT CAST(1 AS inotnull);
 

@@ -5,7 +5,8 @@ snapshot_kind: text
 ---
 SELECT
   CAST(''
-  AS TEXT) AS two,
+  AS TEXT)
+  AS two,
   unique1,
   unique2,
   stringu1
@@ -19,7 +20,8 @@ LIMIT 2;
 
 SELECT
   CAST(''
-  AS TEXT) AS five,
+  AS TEXT)
+  AS five,
   unique1,
   unique2,
   stringu1
@@ -33,7 +35,8 @@ LIMIT 5;
 
 SELECT
   CAST(''
-  AS TEXT) AS two,
+  AS TEXT)
+  AS two,
   unique1,
   unique2,
   stringu1
@@ -49,7 +52,8 @@ LIMIT 5;
 
 SELECT
   CAST(''
-  AS TEXT) AS three,
+  AS TEXT)
+  AS three,
   unique1,
   unique2,
   stringu1
@@ -64,7 +68,8 @@ OFFSET 20;
 
 SELECT
   CAST(''
-  AS TEXT) AS zero,
+  AS TEXT)
+  AS zero,
   unique1,
   unique2,
   stringu1
@@ -79,7 +84,8 @@ OFFSET 99;
 
 SELECT
   CAST(''
-  AS TEXT) AS eleven,
+  AS TEXT)
+  AS eleven,
   unique1,
   unique2,
   stringu1
@@ -94,7 +100,8 @@ OFFSET 39;
 
 SELECT
   CAST(''
-  AS TEXT) AS ten,
+  AS TEXT)
+  AS ten,
   unique1,
   unique2,
   stringu1
@@ -105,7 +112,8 @@ OFFSET 990;
 
 SELECT
   CAST(''
-  AS TEXT) AS five,
+  AS TEXT)
+  AS five,
   unique1,
   unique2,
   stringu1
@@ -117,7 +125,8 @@ OFFSET 990;
 
 SELECT
   CAST(''
-  AS TEXT) AS five,
+  AS TEXT)
+  AS five,
   unique1,
   unique2,
   stringu1
@@ -132,7 +141,9 @@ SELECT
 FROM
   int8_tbl
 LIMIT CASE
-WHEN random() <
+WHEN random(
+
+) <
 0.5 THEN CAST(NULL
 AS BIGINT)
 END;
@@ -142,7 +153,9 @@ SELECT
 FROM
   int8_tbl
 OFFSET CASE
-WHEN random() <
+WHEN random(
+
+) <
 0.5 THEN CAST(NULL
 AS BIGINT)
 END;

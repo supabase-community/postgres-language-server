@@ -7,7 +7,8 @@ CALL nonexistent();
 
 CALL random();
 
-CREATE FUNCTION cp_testfunc1(
+CREATE FUNCTION
+cp_testfunc1(
   "a" INT
 )
 RETURNS INT
@@ -16,7 +17,8 @@ AS ' SELECT a ';
 
 CREATE TABLE cp_test ( a INT, b TEXT );
 
-CREATE PROCEDURE ptest1(
+CREATE PROCEDURE
+ptest1(
   "x" TEXT
 )
 LANGUAGE "sql"
@@ -32,10 +34,14 @@ CALL ptest1('a');
 
 CALL ptest1('xy' || 'zzy');
 
-CALL ptest1(SUBSTRING(CAST(CAST(random()
+CALL ptest1(
+SUBSTRING(CAST(CAST(random(
+
+)
 AS NUMERIC(20,
 15))
-AS TEXT) FROM 1 FOR 1));
+AS TEXT) FROM 1 FOR 1)
+);
 
 SELECT * FROM cp_test ORDER BY b COLLATE "C";
 
@@ -61,7 +67,8 @@ CALL ptest2();
 
 TRUNCATE cp_test;
 
-CREATE PROCEDURE ptest3(
+CREATE PROCEDURE
+ptest3(
   "y" TEXT
 )
 LANGUAGE "sql"
@@ -74,7 +81,8 @@ CALL ptest3('b');
 
 SELECT * FROM cp_test;
 
-CREATE PROCEDURE ptest4a(
+CREATE PROCEDURE
+ptest4a(
   INOUT "a" INT,
   INOUT "b" INT
 )
@@ -85,7 +93,8 @@ SELECT 1, 2;
 
 CALL ptest4a(NULL, NULL);
 
-CREATE PROCEDURE ptest4b(
+CREATE PROCEDURE
+ptest4b(
   INOUT "b" INT,
   INOUT "a" INT
 )
@@ -94,7 +103,8 @@ AS '
 CALL ptest4a(a, b);  -- error, not supported
 ';
 
-CREATE PROCEDURE ptest4c(
+CREATE PROCEDURE
+ptest4c(
   INOUT "comp" int8_tbl
 )
 LANGUAGE "sql"
@@ -106,7 +116,8 @@ CALL ptest4c(NULL);
 
 DROP PROCEDURE ptest4a, ptest4c;
 
-CREATE OR REPLACE PROCEDURE ptest5(
+CREATE OR REPLACE PROCEDURE
+ptest5(
   "a" INT,
   "b" TEXT,
   "c" INT DEFAULT 100
@@ -129,7 +140,8 @@ CALL ptest5("b" := 'Hello', "a" := 10);
 
 SELECT * FROM cp_test;
 
-CREATE PROCEDURE ptest6(
+CREATE PROCEDURE
+ptest6(
   "a" INT,
   "b" ANYELEMENT
 )
@@ -140,7 +152,8 @@ SELECT NULL::int;
 
 CALL ptest6(1, 2);
 
-CREATE PROCEDURE ptest6a(
+CREATE PROCEDURE
+ptest6a(
   INOUT "a" ANYELEMENT,
   OUT "b" ANYELEMENT
 )
@@ -153,7 +166,8 @@ CALL ptest6a(1, NULL);
 
 CALL ptest6a(1.1, NULL);
 
-CREATE PROCEDURE ptest6b(
+CREATE PROCEDURE
+ptest6b(
   "a" ANYELEMENT,
   OUT "b" ANYELEMENT,
   OUT "c" ANYARRAY
@@ -167,7 +181,8 @@ CALL ptest6b(1, NULL, NULL);
 
 CALL ptest6b(1.1, NULL, NULL);
 
-CREATE PROCEDURE ptest6c(
+CREATE PROCEDURE
+ptest6c(
   INOUT "a" ANYELEMENT,
   INOUT "b" ANYELEMENT
 )
@@ -180,7 +195,8 @@ CALL ptest6c(1, NULL);
 
 CALL ptest6c(1.1, NULL);
 
-CREATE PROCEDURE ptest7(
+CREATE PROCEDURE
+ptest7(
   "a" TEXT,
   "b" TEXT
 )
@@ -191,7 +207,8 @@ SELECT a = b;
 
 CALL ptest7(LEAST('a', 'b'), 'a');
 
-CREATE PROCEDURE ptest8(
+CREATE PROCEDURE
+ptest8(
   "x" TEXT
 ) BEGIN ATOMIC
 
@@ -201,7 +218,8 @@ SELECT pg_get_functiondef(CAST('ptest8' AS REGPROC));
 
 CALL ptest8('');
 
-CREATE PROCEDURE ptest9(
+CREATE PROCEDURE
+ptest9(
   OUT "a" INT
 )
 LANGUAGE "sql"
@@ -216,7 +234,8 @@ CALL ptest9(1 / 0);
 
 CALL ptest9(1. / 0.);
 
-CREATE PROCEDURE ptest10(
+CREATE PROCEDURE
+ptest10(
   OUT "a" INT,
   IN "b" INT,
   IN "c" INT
@@ -234,7 +253,8 @@ CALL ptest10(NULL, "c" := 4, "b" := 11);
 
 CALL ptest10("b" := 8, "c" := 2, "a" := 0);
 
-CREATE PROCEDURE ptest11(
+CREATE PROCEDURE
+ptest11(
   OUT "a" INT,
   VARIADIC "b" INT[]
 )
@@ -243,7 +263,8 @@ AS ' SELECT b[1] + b[2] ';
 
 CALL ptest11(NULL, 11, 12, 13);
 
-CREATE PROCEDURE ptest10(
+CREATE PROCEDURE
+ptest10(
   IN "a" INT,
   IN "b" INT,
   IN "c" INT
@@ -275,24 +296,28 @@ CALL version();
 
 CALL SUM(1);
 
-CREATE PROCEDURE ptestx()
+CREATE PROCEDURE
+ptestx()
 LANGUAGE "sql"
 WINDOW
 AS ' INSERT INTO cp_test VALUES (1, ''a'') ';
 
-CREATE PROCEDURE ptestx()
+CREATE PROCEDURE
+ptestx()
 LANGUAGE "sql"
 STRICT
 AS ' INSERT INTO cp_test VALUES (1, ''a'') ';
 
-CREATE PROCEDURE ptestx(
+CREATE PROCEDURE
+ptestx(
   VARIADIC "a" INT[],
   OUT "b" INT
 )
 LANGUAGE "sql"
 AS ' SELECT a[1] ';
 
-CREATE PROCEDURE ptestx(
+CREATE PROCEDURE
+ptestx(
   "a" INT DEFAULT 42,
   OUT "b" INT
 )

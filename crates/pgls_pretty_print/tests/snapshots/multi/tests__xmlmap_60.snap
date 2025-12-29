@@ -1,6 +1,6 @@
 ---
-source: crates/pgt_pretty_print/tests/tests.rs
-input_file: crates/pgt_pretty_print/tests/data/multi/xmlmap_60.sql
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/xmlmap_60.sql
 snapshot_kind: text
 ---
 CREATE SCHEMA "testxmlschema";
@@ -59,95 +59,125 @@ TRUE,
 'XYZ');
 
 SELECT
-  table_to_xml('testxmlschema.test1',
+  table_to_xml(
+  'testxmlschema.test1',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xml('testxmlschema.test1',
+  table_to_xml(
+  'testxmlschema.test1',
   TRUE,
   FALSE,
-  'foo');
+  'foo'
+  );
 
 SELECT table_to_xml('testxmlschema.test1', FALSE, TRUE, '');
 
 SELECT table_to_xml('testxmlschema.test1', TRUE, TRUE, '');
 
 SELECT
-  table_to_xml('testxmlschema.test2',
+  table_to_xml(
+  'testxmlschema.test2',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xmlschema('testxmlschema.test1',
+  table_to_xmlschema(
+  'testxmlschema.test1',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xmlschema('testxmlschema.test1',
+  table_to_xmlschema(
+  'testxmlschema.test1',
   TRUE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xmlschema('testxmlschema.test1',
+  table_to_xmlschema(
+  'testxmlschema.test1',
   FALSE,
   TRUE,
-  'foo');
+  'foo'
+  );
 
 SELECT
-  table_to_xmlschema('testxmlschema.test1',
+  table_to_xmlschema(
+  'testxmlschema.test1',
   TRUE,
   TRUE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xmlschema('testxmlschema.test2',
+  table_to_xmlschema(
+  'testxmlschema.test2',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xml_and_xmlschema('testxmlschema.test1',
+  table_to_xml_and_xmlschema(
+  'testxmlschema.test1',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xml_and_xmlschema('testxmlschema.test1',
+  table_to_xml_and_xmlschema(
+  'testxmlschema.test1',
   TRUE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xml_and_xmlschema('testxmlschema.test1',
+  table_to_xml_and_xmlschema(
+  'testxmlschema.test1',
   FALSE,
   TRUE,
-  '');
+  ''
+  );
 
 SELECT
-  table_to_xml_and_xmlschema('testxmlschema.test1',
+  table_to_xml_and_xmlschema(
+  'testxmlschema.test1',
   TRUE,
   TRUE,
-  'foo');
+  'foo'
+  );
 
 SELECT
-  query_to_xml('SELECT * FROM testxmlschema.test1',
+  query_to_xml(
+  'SELECT * FROM testxmlschema.test1',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  query_to_xmlschema('SELECT * FROM testxmlschema.test1',
+  query_to_xmlschema(
+  'SELECT * FROM testxmlschema.test1',
   FALSE,
   FALSE,
-  '');
+  ''
+  );
 
 SELECT
-  query_to_xml_and_xmlschema('SELECT * FROM testxmlschema.test1',
+  query_to_xml_and_xmlschema(
+  'SELECT * FROM testxmlschema.test1',
   TRUE,
   TRUE,
-  '');
+  ''
+  );

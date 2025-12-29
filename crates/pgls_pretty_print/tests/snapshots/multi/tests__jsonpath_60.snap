@@ -494,19 +494,27 @@ SELECT CAST('0o_273' AS jsonpath);
 SELECT CAST('0x_42F' AS jsonpath);
 
 SELECT
-  str AS jsonpath,
-  pg_input_is_valid(str,
-  'jsonpath') AS ok,
+  str
+  AS jsonpath,
+  pg_input_is_valid(
+  str,
+  'jsonpath'
+  )
+  AS ok,
   errinfo.sql_error_code,
   errinfo.message,
   errinfo.detail,
   errinfo.hint
 FROM
-  unnest(ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")'
+  unnest(
+  ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")'
   AS TEXT),
   '$ ? (@ like_regex "pattern" flag "a")',
   '@ + 1',
   '00',
-  '1a']) AS str,
-  LATERAL pg_input_error_info(str,
-  'jsonpath') AS errinfo;
+  '1a']
+  ) AS str,
+  LATERAL pg_input_error_info(
+  str,
+  'jsonpath'
+  ) AS errinfo;

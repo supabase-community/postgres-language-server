@@ -248,7 +248,7 @@ fn emit_alter_table_cmd_impl(e: &mut EventEmitter, cmd: &AlterTableCmd, for_type
             e.token(TokenKind::SET_KW);
             e.space();
             e.token(TokenKind::IDENT("EXPRESSION".to_string()));
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);

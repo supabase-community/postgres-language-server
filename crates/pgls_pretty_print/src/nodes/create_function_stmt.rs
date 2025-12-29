@@ -25,7 +25,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
         e.token(TokenKind::FUNCTION_KW);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
 
     // Function name (qualified name)
     emit_dot_separated_list(e, &n.funcname);

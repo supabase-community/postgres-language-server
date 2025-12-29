@@ -240,7 +240,8 @@ CREATE TABLE trunc_trigger_log (
   rowcount BIGINT
 );
 
-CREATE FUNCTION trunctrigger()
+CREATE FUNCTION
+trunctrigger()
 RETURNS trigger
 AS '
 declare c bigint;
@@ -269,7 +270,10 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION trunctrigger("before trigger truncate");
 
 SELECT
-  COUNT(*) AS "Row count in test table"
+  COUNT(
+  *
+  )
+  AS "Row count in test table"
 FROM
   trunc_trigger_test;
 
@@ -278,7 +282,10 @@ SELECT * FROM trunc_trigger_log;
 TRUNCATE trunc_trigger_test;
 
 SELECT
-  COUNT(*) AS "Row count in test table"
+  COUNT(
+  *
+  )
+  AS "Row count in test table"
 FROM
   trunc_trigger_test;
 
@@ -304,7 +311,10 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION trunctrigger("after trigger truncate");
 
 SELECT
-  COUNT(*) AS "Row count in test table"
+  COUNT(
+  *
+  )
+  AS "Row count in test table"
 FROM
   trunc_trigger_test;
 
@@ -313,7 +323,10 @@ SELECT * FROM trunc_trigger_log;
 TRUNCATE trunc_trigger_test;
 
 SELECT
-  COUNT(*) AS "Row count in test table"
+  COUNT(
+  *
+  )
+  AS "Row count in test table"
 FROM
   trunc_trigger_test;
 
@@ -330,7 +343,9 @@ CREATE SEQUENCE truncate_a_id1 START WITH 33;
 CREATE TABLE truncate_a (
   id serial,
   id1 INT
-  DEFAULT nextval('truncate_a_id1')
+  DEFAULT nextval(
+  'truncate_a_id1'
+  )
 );
 
 ALTER SEQUENCE truncate_a_id1 OWNED BY truncate_a.id1;
@@ -426,7 +441,8 @@ TRUNCATE truncparted;
 
 DROP TABLE "truncparted";
 
-CREATE FUNCTION tp_ins_data()
+CREATE FUNCTION
+tp_ins_data()
 RETURNS VOID
 LANGUAGE "plpgsql"
 AS '
@@ -436,7 +452,8 @@ AS '
   END
 ';
 
-CREATE FUNCTION tp_chk_data(
+CREATE FUNCTION
+tp_chk_data(
   OUT "pktb" REGCLASS,
   OUT "pkval" INT,
   OUT "fktb" REGCLASS,

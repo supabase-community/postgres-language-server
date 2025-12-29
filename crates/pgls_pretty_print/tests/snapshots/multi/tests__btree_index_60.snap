@@ -679,8 +679,10 @@ INSERT INTO btree_bpchar
 SELECT
   'foo'
 FROM
-  generate_series(1,
-  1500);
+  generate_series(
+  1,
+  1500
+  );
 
 CREATE TABLE dedup_unique_test_table (
   a INT
@@ -714,8 +716,10 @@ INSERT INTO dedup_unique_test_table
 SELECT
   i
 FROM
-  generate_series(0,
-  450) AS i;
+  generate_series(
+  0,
+  450
+  ) AS i;
 
 CREATE TABLE btree_tall_tbl ( id INT, t TEXT );
 
@@ -730,19 +734,25 @@ CREATE INDEX "btree_tall_idx" ON btree_tall_tbl USING btree
 INSERT INTO btree_tall_tbl
 SELECT
   g,
-  repeat('x',
-  250)
+  repeat(
+  'x',
+  250
+  )
 FROM
-  generate_series(1,
-  130) AS g;
+  generate_series(
+  1,
+  130
+  ) AS g;
 
 INSERT INTO btree_tall_tbl
 SELECT
   g,
   NULL
 FROM
-  generate_series(50,
-  60) AS g;
+  generate_series(
+  50,
+  60
+  ) AS g;
 
 SET enable_seqscan = false;
 
@@ -790,8 +800,10 @@ SELECT
   2,
   3
 FROM
-  generate_series(1,
-  80000) AS i;
+  generate_series(
+  1,
+  80000
+  ) AS i;
 
 ALTER TABLE delete_test_table ADD PRIMARY KEY (a, b, c, d);
 
@@ -806,8 +818,10 @@ SELECT
   2,
   3
 FROM
-  generate_series(1,
-  1000) AS i;
+  generate_series(
+  1,
+  1000
+  ) AS i;
 
 CREATE INDEX ON btree_tall_tbl USING btree
 (
@@ -816,7 +830,8 @@ CREATE INDEX ON btree_tall_tbl USING btree
 
 CREATE TABLE btree_test_expr ( n INT );
 
-CREATE FUNCTION btree_test_func()
+CREATE FUNCTION
+btree_test_func()
 RETURNS INT
 LANGUAGE "sql"
 IMMUTABLE RETURN 0;;
@@ -829,7 +844,9 @@ SET LOCAL max_parallel_maintenance_workers = 4;
 
 CREATE INDEX "btree_test_expr_idx" ON btree_test_expr USING btree
 (
-  (btree_test_func())
+  (btree_test_func(
+
+  ))
 );
 
 COMMIT;

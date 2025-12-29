@@ -86,7 +86,9 @@ WHERE
 ORDER BY home_base[0][0];
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   fast_emp4000
 WHERE
@@ -94,7 +96,9 @@ WHERE
   AS box);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   fast_emp4000
 WHERE
@@ -232,7 +236,8 @@ SELECT
   ELSE CAST(CAST(relname
   AS REGCLASS)
   AS TEXT)
-  END) COLLATE "C" AS relname
+  END) COLLATE "C"
+  AS relname
 FROM
   pg_class
   AS pc,
@@ -248,9 +253,12 @@ ORDER BY 3,
   2;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj
+  objsubid
+  )
+  AS obj
 FROM
   pg_depend,
   pg_am
@@ -269,12 +277,16 @@ ORDER BY classid,
 CREATE TABLE heaptable USING heap AS
   SELECT
     a,
-    repeat(CAST(a
+    repeat(
+    CAST(a
     AS TEXT),
-    100)
+    100
+    )
   FROM
-    generate_series(1,
-    9) AS a;
+    generate_series(
+    1,
+    9
+    ) AS a;
 
 SELECT
   amname
@@ -293,12 +305,18 @@ WHERE
 ALTER TABLE heaptable SET ACCESS METHOD heap2;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend
@@ -315,12 +333,18 @@ ORDER BY 1,
 ALTER TABLE heaptable SET ACCESS METHOD heap;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend
@@ -351,8 +375,12 @@ WHERE
   AS REGCLASS);
 
 SELECT
-  COUNT(a),
-  COUNT(1)
+  COUNT(
+  a
+  ),
+  COUNT(
+  1
+  )
   FILTER (WHERE
     a =
     1)
@@ -460,12 +488,18 @@ CREATE TABLE am_partitioned (
 PARTITION BY HASH(x) USING heap2;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS refobj
+  refobjsubid
+  )
+  AS refobj
 FROM
   pg_depend,
   pg_am
@@ -494,12 +528,18 @@ PARTITION BY HASH(x);
 SELECT relam FROM pg_class WHERE relname = 'am_partitioned';
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS refobj
+  refobjsubid
+  )
+  AS refobj
 FROM
   pg_depend,
   pg_am
@@ -529,12 +569,18 @@ WHERE
   c.relam;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS refobj
+  refobjsubid
+  )
+  AS refobj
 FROM
   pg_depend,
   pg_am
@@ -566,12 +612,18 @@ WHERE
   c.relam;
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS refobj
+  refobjsubid
+  )
+  AS refobj
 FROM
   pg_depend,
   pg_am
@@ -759,7 +811,8 @@ SELECT
   ELSE CAST(CAST(relname
   AS REGCLASS)
   AS TEXT)
-  END) COLLATE "C" AS relname
+  END) COLLATE "C"
+  AS relname
 FROM
   pg_class
   AS pc

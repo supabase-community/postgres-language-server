@@ -170,6 +170,22 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::R_PAREN);
             }
 
+            // INCLUDE (columns)
+            if !n.including.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::IDENT("INCLUDE".to_string()));
+                e.space();
+                e.token(TokenKind::L_PAREN);
+                emit_comma_separated_list(e, &n.including, |node, emitter| {
+                    if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
+                        emit_identifier(emitter, &s.sval);
+                    } else {
+                        super::emit_node(node, emitter);
+                    }
+                });
+                e.token(TokenKind::R_PAREN);
+            }
+
             if !n.indexname.is_empty() {
                 e.space();
                 e.token(TokenKind::USING_KW);
@@ -207,6 +223,22 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.space();
                 e.token(TokenKind::L_PAREN);
                 emit_comma_separated_list(e, &n.keys, super::emit_node);
+                e.token(TokenKind::R_PAREN);
+            }
+
+            // INCLUDE (columns)
+            if !n.including.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::IDENT("INCLUDE".to_string()));
+                e.space();
+                e.token(TokenKind::L_PAREN);
+                emit_comma_separated_list(e, &n.including, |node, emitter| {
+                    if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
+                        emit_identifier(emitter, &s.sval);
+                    } else {
+                        super::emit_node(node, emitter);
+                    }
+                });
                 e.token(TokenKind::R_PAREN);
             }
 
@@ -287,6 +319,22 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                     }
                 }
 
+                e.token(TokenKind::R_PAREN);
+            }
+
+            // INCLUDE (columns)
+            if !n.including.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::IDENT("INCLUDE".to_string()));
+                e.space();
+                e.token(TokenKind::L_PAREN);
+                emit_comma_separated_list(e, &n.including, |node, emitter| {
+                    if let Some(pgls_query::NodeEnum::String(s)) = &node.node {
+                        emit_identifier(emitter, &s.sval);
+                    } else {
+                        super::emit_node(node, emitter);
+                    }
+                });
                 e.token(TokenKind::R_PAREN);
             }
 

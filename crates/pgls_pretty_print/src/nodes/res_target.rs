@@ -17,7 +17,7 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
         emit_node(val, e);
 
         if !n.name.is_empty() {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
             emit_identifier_maybe_quoted(e, &n.name);

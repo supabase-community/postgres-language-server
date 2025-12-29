@@ -46,9 +46,11 @@ SELECT CAST('[1]' AS JSONB) @? 'strict $[1]';
 SELECT jsonb_path_query('[1]', 'strict $[1]');
 
 SELECT
-  jsonb_path_query('[1]',
+  jsonb_path_query(
+  '[1]',
   'strict $[1]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT CAST('[1]' AS JSONB) @? 'lax $[10000000000000000]';
 
@@ -59,8 +61,10 @@ SELECT
 SELECT jsonb_path_query('[1]', 'lax $[10000000000000000]');
 
 SELECT
-  jsonb_path_query('[1]',
-  'strict $[10000000000000000]');
+  jsonb_path_query(
+  '[1]',
+  'strict $[10000000000000000]'
+  );
 
 SELECT CAST('[1]' AS JSONB) @? '$[0]';
 
@@ -103,24 +107,32 @@ SELECT
   AS JSONB) @? '$[0 to 1] ? (@.a > 1)';
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}, 3]',
   'lax $[*].a',
-  "silent" := FALSE);
+  "silent" := FALSE
+  );
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}, 3]',
   'lax $[*].a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}, 3]',
   'strict $[*].a',
-  "silent" := FALSE);
+  "silent" := FALSE
+  );
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}, 3]',
   'strict $[*].a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1', 'lax $.a');
 
@@ -129,32 +141,40 @@ SELECT jsonb_path_query('1', 'strict $.a');
 SELECT jsonb_path_query('1', 'strict $.*');
 
 SELECT
-  jsonb_path_query('1',
+  jsonb_path_query(
+  '1',
   'strict $.a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('1',
+  jsonb_path_query(
+  '1',
   'strict $.*',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', 'lax $.a');
 
 SELECT jsonb_path_query('[]', 'strict $.a');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('{}', 'lax $.a');
 
 SELECT jsonb_path_query('{}', 'strict $.a');
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   'strict $.a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1', 'strict $[1]');
 
@@ -165,24 +185,32 @@ SELECT jsonb_path_query('[]', 'strict $[1]');
 SELECT jsonb_path_query('[]', 'strict $["a"]');
 
 SELECT
-  jsonb_path_query('1',
+  jsonb_path_query(
+  '1',
   'strict $[1]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('1',
+  jsonb_path_query(
+  '1',
   'strict $[*]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $[1]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $["a"]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('{"a": 12, "b": {"a": 13}}', '$.a');
 
@@ -191,44 +219,64 @@ SELECT jsonb_path_query('{"a": 12, "b": {"a": 13}}', '$.b');
 SELECT jsonb_path_query('{"a": 12, "b": {"a": 13}}', '$.*');
 
 SELECT
-  jsonb_path_query('{"a": 12, "b": {"a": 13}}',
-  'lax $.*.a');
+  jsonb_path_query(
+  '{"a": 12, "b": {"a": 13}}',
+  'lax $.*.a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[*].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[*].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[*].*');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[*].*'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[0].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[0].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[1].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[1].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[2].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[2].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[0,1].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[0,1].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[0 to 10].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[0 to 10].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}]',
-  'lax $[0 to 10 / 0].a');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}]',
+  'lax $[0 to 10 / 0].a'
+  );
 
 SELECT
-  jsonb_path_query('[12, {"a": 13}, {"b": 14}, "ccc", true]',
-  '$[2.5 - 1 to $.size() - 2]');
+  jsonb_path_query(
+  '[12, {"a": 13}, {"b": 14}, "ccc", true]',
+  '$[2.5 - 1 to $.size() - 2]'
+  );
 
 SELECT jsonb_path_query('1', 'lax $[0]');
 
@@ -243,9 +291,11 @@ SELECT jsonb_path_query('[1,2,3]', 'lax $[*]');
 SELECT jsonb_path_query('[1,2,3]', 'strict $[*].a');
 
 SELECT
-  jsonb_path_query('[1,2,3]',
+  jsonb_path_query(
+  '[1,2,3]',
   'strict $[*].a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$[last]');
 
@@ -254,9 +304,11 @@ SELECT jsonb_path_query('[]', '$[last ? (exists(last))]');
 SELECT jsonb_path_query('[]', 'strict $[last]');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $[last]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[1]', '$[last]');
 
@@ -265,113 +317,147 @@ SELECT jsonb_path_query('[1,2,3]', '$[last]');
 SELECT jsonb_path_query('[1,2,3]', '$[last - 1]');
 
 SELECT
-  jsonb_path_query('[1,2,3]',
-  '$[last ? (@.type() == "number")]');
+  jsonb_path_query(
+  '[1,2,3]',
+  '$[last ? (@.type() == "number")]'
+  );
 
 SELECT
-  jsonb_path_query('[1,2,3]',
-  '$[last ? (@.type() == "string")]');
+  jsonb_path_query(
+  '[1,2,3]',
+  '$[last ? (@.type() == "string")]'
+  );
 
 SELECT
-  jsonb_path_query('[1,2,3]',
+  jsonb_path_query(
+  '[1,2,3]',
   '$[last ? (@.type() == "string")]',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT * FROM jsonb_path_query('{"a": 10}', '$');
 
 SELECT
   *
 FROM
-  jsonb_path_query('{"a": 10}',
-  '$ ? (@.a < $value)');
+  jsonb_path_query(
+  '{"a": 10}',
+  '$ ? (@.a < $value)'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('{"a": 10}',
+  jsonb_path_query(
+  '{"a": 10}',
   '$ ? (@.a < $value)',
-  '1');
+  '1'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('{"a": 10}',
+  jsonb_path_query(
+  '{"a": 10}',
   '$ ? (@.a < $value)',
-  '[{"value" : 13}]');
+  '[{"value" : 13}]'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('{"a": 10}',
+  jsonb_path_query(
+  '{"a": 10}',
   '$ ? (@.a < $value)',
-  '{"value" : 13}');
+  '{"value" : 13}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('{"a": 10}',
+  jsonb_path_query(
+  '{"a": 10}',
   '$ ? (@.a < $value)',
-  '{"value" : 8}');
+  '{"value" : 8}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('{"a": 10}',
+  jsonb_path_query(
+  '{"a": 10}',
   '$.a ? (@ < $value)',
-  '{"value" : 13}');
+  '{"value" : 13}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[10,11,12,13,14,15]',
+  jsonb_path_query(
+  '[10,11,12,13,14,15]',
   '$[*] ? (@ < $value)',
-  '{"value" : 13}');
+  '{"value" : 13}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[10,11,12,13,14,15]',
+  jsonb_path_query(
+  '[10,11,12,13,14,15]',
   '$[0,1] ? (@ < $x.value)',
-  '{"x": {"value" : 13}}');
+  '{"x": {"value" : 13}}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[10,11,12,13,14,15]',
+  jsonb_path_query(
+  '[10,11,12,13,14,15]',
   '$[0 to 2] ? (@ < $value)',
-  '{"value" : 15}');
+  '{"value" : 15}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[1,"1",2,"2",null]',
-  '$[*] ? (@ == "1")');
+  jsonb_path_query(
+  '[1,"1",2,"2",null]',
+  '$[*] ? (@ == "1")'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[1,"1",2,"2",null]',
+  jsonb_path_query(
+  '[1,"1",2,"2",null]',
   '$[*] ? (@ == $value)',
-  '{"value" : "1"}');
+  '{"value" : "1"}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[1,"1",2,"2",null]',
+  jsonb_path_query(
+  '[1,"1",2,"2",null]',
   '$[*] ? (@ == $value)',
-  '{"value" : null}');
+  '{"value" : null}'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[1, "2", null]',
-  '$[*] ? (@ != null)');
+  jsonb_path_query(
+  '[1, "2", null]',
+  '$[*] ? (@ != null)'
+  );
 
 SELECT
   *
 FROM
-  jsonb_path_query('[1, "2", null]',
-  '$[*] ? (@ == null)');
+  jsonb_path_query(
+  '[1, "2", null]',
+  '$[*] ? (@ == null)'
+  );
 
 SELECT * FROM jsonb_path_query('{}', '$ ? (@ == @)');
 
@@ -382,80 +468,116 @@ SELECT jsonb_path_query('{"a": {"b": 1}}', 'lax $.**');
 SELECT jsonb_path_query('{"a": {"b": 1}}', 'lax $.**{0}');
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{0 to last}');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{0 to last}'
+  );
 
 SELECT jsonb_path_query('{"a": {"b": 1}}', 'lax $.**{1}');
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{1 to last}');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{1 to last}'
+  );
 
 SELECT jsonb_path_query('{"a": {"b": 1}}', 'lax $.**{2}');
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{2 to last}');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{2 to last}'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{3 to last}');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{3 to last}'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{last}');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{last}'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{0}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{0}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{1}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{1}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{0 to last}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{0 to last}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{1 to last}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{1 to last}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"b": 1}}',
-  'lax $.**{1 to 2}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"b": 1}}',
+  'lax $.**{1 to 2}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**{0}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**{0}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**{1}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**{1}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**{0 to last}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**{0 to last}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**{1 to last}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**{1 to last}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**{1 to 2}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**{1 to 2}.b ? (@ > 0)'
+  );
 
 SELECT
-  jsonb_path_query('{"a": {"c": {"b": 1}}}',
-  'lax $.**{2 to 3}.b ? (@ > 0)');
+  jsonb_path_query(
+  '{"a": {"c": {"b": 1}}}',
+  'lax $.**{2 to 3}.b ? (@ > 0)'
+  );
 
 SELECT
   CAST('{"a": {"b": 1}}'
@@ -510,56 +632,81 @@ SELECT
   AS JSONB) @? '$.**{2 to 3}.b ? ( @ > 0)';
 
 SELECT
-  jsonb_path_query('{"g": {"x": 2}}',
-  '$.g ? (exists (@.x))');
+  jsonb_path_query(
+  '{"g": {"x": 2}}',
+  '$.g ? (exists (@.x))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": {"x": 2}}',
-  '$.g ? (exists (@.y))');
+  jsonb_path_query(
+  '{"g": {"x": 2}}',
+  '$.g ? (exists (@.y))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": {"x": 2}}',
-  '$.g ? (exists (@.x ? (@ >= 2) ))');
+  jsonb_path_query(
+  '{"g": {"x": 2}}',
+  '$.g ? (exists (@.x ? (@ >= 2) ))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'lax $.g ? (exists (@.x))');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'lax $.g ? (exists (@.x))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'lax $.g ? (exists (@.x + "3"))');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'lax $.g ? (exists (@.x + "3"))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'lax $.g ? ((exists (@.x + "3")) is unknown)');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'lax $.g ? ((exists (@.x + "3")) is unknown)'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'strict $.g[*] ? (exists (@.x))');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'strict $.g[*] ? (exists (@.x))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'strict $.g[*] ? ((exists (@.x)) is unknown)');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'strict $.g[*] ? ((exists (@.x)) is unknown)'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'strict $.g ? (exists (@[*].x))');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'strict $.g ? (exists (@[*].x))'
+  );
 
 SELECT
-  jsonb_path_query('{"g": [{"x": 2}, {"y": 3}]}',
-  'strict $.g ? ((exists (@[*].x)) is unknown)');
+  jsonb_path_query(
+  '{"g": [{"x": 2}, {"y": 3}]}',
+  'strict $.g ? ((exists (@[*].x)) is unknown)'
+  );
 
 SELECT
   x,
   y,
-  jsonb_path_query('[true, false, null]',
+  jsonb_path_query(
+  '[true, false, null]',
   '$[*] ? (@ == true  &&  ($x == true && $y == true) ||
 				 @ == false && !($x == true && $y == true) ||
 				 @ == null  &&  ($x == true && $y == true) is unknown)',
-  jsonb_build_object('x',
+  jsonb_build_object(
+  'x',
   x,
   'y',
-  y)) AS "x && y"
+  y
+  )
+  )
+  AS "x && y"
 FROM
   (VALUES (CAST('true'
   AS JSONB)),
@@ -573,14 +720,19 @@ FROM
 SELECT
   x,
   y,
-  jsonb_path_query('[true, false, null]',
+  jsonb_path_query(
+  '[true, false, null]',
   '$[*] ? (@ == true  &&  ($x == true || $y == true) ||
 				 @ == false && !($x == true || $y == true) ||
 				 @ == null  &&  ($x == true || $y == true) is unknown)',
-  jsonb_build_object('x',
+  jsonb_build_object(
+  'x',
   x,
   'y',
-  y)) AS "x || y"
+  y
+  )
+  )
+  AS "x || y"
 FROM
   (VALUES (CAST('true'
   AS JSONB)),
@@ -620,20 +772,28 @@ SELECT
   AS JSONB) @? '$.** ? (@.a == @.b)';
 
 SELECT
-  jsonb_path_query('{"c": {"a": 2, "b":1}}',
-  '$.** ? (@.a == 1 + 1)');
+  jsonb_path_query(
+  '{"c": {"a": 2, "b":1}}',
+  '$.** ? (@.a == 1 + 1)'
+  );
 
 SELECT
-  jsonb_path_query('{"c": {"a": 2, "b":1}}',
-  '$.** ? (@.a == (1 + 1))');
+  jsonb_path_query(
+  '{"c": {"a": 2, "b":1}}',
+  '$.** ? (@.a == (1 + 1))'
+  );
 
 SELECT
-  jsonb_path_query('{"c": {"a": 2, "b":1}}',
-  '$.** ? (@.a == @.b + 1)');
+  jsonb_path_query(
+  '{"c": {"a": 2, "b":1}}',
+  '$.** ? (@.a == @.b + 1)'
+  );
 
 SELECT
-  jsonb_path_query('{"c": {"a": 2, "b":1}}',
-  '$.** ? (@.a == (@.b + 1))');
+  jsonb_path_query(
+  '{"c": {"a": 2, "b":1}}',
+  '$.** ? (@.a == (@.b + 1))'
+  );
 
 SELECT
   CAST('{"c": {"a": -1, "b":1}}'
@@ -676,8 +836,10 @@ SELECT CAST('1' AS JSONB) @? '$ ? ($ > 0)';
 SELECT jsonb_path_query('[1,2,0,3]', '$[*] ? (2 / @ > 0)');
 
 SELECT
-  jsonb_path_query('[1,2,0,3]',
-  '$[*] ? ((2 / @ > 0) is unknown)');
+  jsonb_path_query(
+  '[1,2,0,3]',
+  '$[*] ? ((2 / @ > 0) is unknown)'
+  );
 
 SELECT jsonb_path_query('0', '1 / $');
 
@@ -696,16 +858,20 @@ SELECT jsonb_path_query('[1,"2",3]', '+$');
 SELECT jsonb_path_query('1', '$ + "2"', "silent" := TRUE);
 
 SELECT
-  jsonb_path_query('[1, 2]',
+  jsonb_path_query(
+  '[1, 2]',
   '3 * $',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('"a"', '-$', "silent" := TRUE);
 
 SELECT
-  jsonb_path_query('[1,"2",3]',
+  jsonb_path_query(
+  '[1,"2",3]',
   '+$',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT CAST('["1",2,0,3]' AS JSONB) @? '-$[*]';
 
@@ -724,29 +890,39 @@ SELECT jsonb_path_query('{"a": [2, 3, 4]}', 'lax -$.a');
 SELECT jsonb_path_query('{"a": [1, 2]}', 'lax $.a * 3');
 
 SELECT
-  jsonb_path_query('{"a": [1, 2]}',
+  jsonb_path_query(
+  '{"a": [1, 2]}',
   'lax $.a * 3',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{"a": [1,2,3], "b": [3,4,5]}',
-  '$.*');
+  jsonb_path_query(
+  '{"a": [1,2,3], "b": [3,4,5]}',
+  '$.*'
+  );
 
 SELECT jsonb_path_query('[1,2,3]', '$.*');
 
 SELECT
-  jsonb_path_query('[1,2,3,{"b": [3,4,5]}]',
-  'lax $.*');
+  jsonb_path_query(
+  '[1,2,3,{"b": [3,4,5]}]',
+  'lax $.*'
+  );
 
 SELECT
-  jsonb_path_query('[1,2,3,{"b": [3,4,5]}]',
-  'strict $.*');
+  jsonb_path_query(
+  '[1,2,3,{"b": [3,4,5]}]',
+  'strict $.*'
+  );
 
 SELECT
-  jsonb_path_query('[1,2,3,{"b": [3,4,5]}]',
+  jsonb_path_query(
+  '[1,2,3,{"b": [3,4,5]}]',
   'strict $.*',
   NULL,
-  TRUE);
+  TRUE
+  );
 
 SELECT
   CAST('{"a": [1,2,3], "b": [3,4,5]}'
@@ -785,46 +961,64 @@ SELECT CAST('[1,2,3]' AS JSONB) @@ '$[*]';
 SELECT CAST('[]' AS JSONB) @@ '$[*]';
 
 SELECT
-  jsonb_path_match('[[1, true], [2, false]]',
+  jsonb_path_match(
+  '[[1, true], [2, false]]',
   'strict $[*] ? (@[0] > $x) [1]',
-  '{"x": 1}');
+  '{"x": 1}'
+  );
 
 SELECT
-  jsonb_path_match('[[1, true], [2, false]]',
+  jsonb_path_match(
+  '[[1, true], [2, false]]',
   'strict $[*] ? (@[0] < $x) [1]',
-  '{"x": 2}');
+  '{"x": 2}'
+  );
 
 SELECT
-  jsonb_path_match('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_match(
+  '[{"a": 1}, {"a": 2}, 3]',
   'lax exists($[*].a)',
-  "silent" := FALSE);
+  "silent" := FALSE
+  );
 
 SELECT
-  jsonb_path_match('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_match(
+  '[{"a": 1}, {"a": 2}, 3]',
   'lax exists($[*].a)',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_match('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_match(
+  '[{"a": 1}, {"a": 2}, 3]',
   'strict exists($[*].a)',
-  "silent" := FALSE);
+  "silent" := FALSE
+  );
 
 SELECT
-  jsonb_path_match('[{"a": 1}, {"a": 2}, 3]',
+  jsonb_path_match(
+  '[{"a": 1}, {"a": 2}, 3]',
   'strict exists($[*].a)',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('[null,1,true,"a",[],{}]',
-  '$.type()');
+  jsonb_path_query(
+  '[null,1,true,"a",[],{}]',
+  '$.type()'
+  );
 
 SELECT
-  jsonb_path_query('[null,1,true,"a",[],{}]',
-  'lax $.type()');
+  jsonb_path_query(
+  '[null,1,true,"a",[],{}]',
+  'lax $.type()'
+  );
 
 SELECT
-  jsonb_path_query('[null,1,true,"a",[],{}]',
-  '$[*].type()');
+  jsonb_path_query(
+  '[null,1,true,"a",[],{}]',
+  '$[*].type()'
+  );
 
 SELECT jsonb_path_query('null', 'null.type()');
 
@@ -837,82 +1031,116 @@ SELECT jsonb_path_query('null', '"123".type()');
 SELECT jsonb_path_query('{"a": 2}', '($.a - 5).abs() + 10');
 
 SELECT
-  jsonb_path_query('{"a": 2.5}',
-  '-($.a * $.a).floor() % 4.3');
+  jsonb_path_query(
+  '{"a": 2.5}',
+  '-($.a * $.a).floor() % 4.3'
+  );
 
 SELECT
-  jsonb_path_query('[1, 2, 3]',
-  '($[*] > 2) ? (@ == true)');
+  jsonb_path_query(
+  '[1, 2, 3]',
+  '($[*] > 2) ? (@ == true)'
+  );
 
 SELECT jsonb_path_query('[1, 2, 3]', '($[*] > 3).type()');
 
 SELECT jsonb_path_query('[1, 2, 3]', '($[*].a > 3).type()');
 
 SELECT
-  jsonb_path_query('[1, 2, 3]',
-  'strict ($[*].a > 3).type()');
+  jsonb_path_query(
+  '[1, 2, 3]',
+  'strict ($[*].a > 3).type()'
+  );
 
 SELECT
-  jsonb_path_query('[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
-  'strict $[*].size()');
+  jsonb_path_query(
+  '[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
+  'strict $[*].size()'
+  );
 
 SELECT
-  jsonb_path_query('[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
+  jsonb_path_query(
+  '[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
   'strict $[*].size()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
-  'lax $[*].size()');
+  jsonb_path_query(
+  '[1,null,true,"11",[],[1],[1,2,3],{},{"a":1,"b":2}]',
+  'lax $[*].size()'
+  );
 
 SELECT
-  jsonb_path_query('[0, 1, -2, -3.4, 5.6]',
-  '$[*].abs()');
+  jsonb_path_query(
+  '[0, 1, -2, -3.4, 5.6]',
+  '$[*].abs()'
+  );
 
 SELECT
-  jsonb_path_query('[0, 1, -2, -3.4, 5.6]',
-  '$[*].floor()');
+  jsonb_path_query(
+  '[0, 1, -2, -3.4, 5.6]',
+  '$[*].floor()'
+  );
 
 SELECT
-  jsonb_path_query('[0, 1, -2, -3.4, 5.6]',
-  '$[*].ceiling()');
+  jsonb_path_query(
+  '[0, 1, -2, -3.4, 5.6]',
+  '$[*].ceiling()'
+  );
 
 SELECT
-  jsonb_path_query('[0, 1, -2, -3.4, 5.6]',
-  '$[*].ceiling().abs()');
+  jsonb_path_query(
+  '[0, 1, -2, -3.4, 5.6]',
+  '$[*].ceiling().abs()'
+  );
 
 SELECT
-  jsonb_path_query('[0, 1, -2, -3.4, 5.6]',
-  '$[*].ceiling().abs().type()');
+  jsonb_path_query(
+  '[0, 1, -2, -3.4, 5.6]',
+  '$[*].ceiling().abs().type()'
+  );
 
 SELECT jsonb_path_query('[{},1]', '$[*].keyvalue()');
 
 SELECT
-  jsonb_path_query('[{},1]',
+  jsonb_path_query(
+  '[{},1]',
   '$[*].keyvalue()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('{}', '$.keyvalue()');
 
 SELECT
-  jsonb_path_query('{"a": 1, "b": [1, 2], "c": {"a": "bbb"}}',
-  '$.keyvalue()');
+  jsonb_path_query(
+  '{"a": 1, "b": [1, 2], "c": {"a": "bbb"}}',
+  '$.keyvalue()'
+  );
 
 SELECT
-  jsonb_path_query('[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
-  '$[*].keyvalue()');
+  jsonb_path_query(
+  '[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
+  '$[*].keyvalue()'
+  );
 
 SELECT
-  jsonb_path_query('[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
-  'strict $.keyvalue()');
+  jsonb_path_query(
+  '[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
+  'strict $.keyvalue()'
+  );
 
 SELECT
-  jsonb_path_query('[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
-  'lax $.keyvalue()');
+  jsonb_path_query(
+  '[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
+  'lax $.keyvalue()'
+  );
 
 SELECT
-  jsonb_path_query('[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
-  'strict $.keyvalue().a');
+  jsonb_path_query(
+  '[{"a": 1, "b": [1, 2]}, {"c": {"a": "bbb"}}]',
+  'strict $.keyvalue().a'
+  );
 
 SELECT
   CAST('{"a": 1, "b": [1, 2]}'
@@ -927,14 +1155,18 @@ SELECT jsonb_path_query('null', '$.double()');
 SELECT jsonb_path_query('true', '$.double()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.double()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('true',
+  jsonb_path_query(
+  'true',
   '$.double()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.double()');
 
@@ -943,14 +1175,18 @@ SELECT jsonb_path_query('[]', 'strict $.double()');
 SELECT jsonb_path_query('{}', '$.double()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.double()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.double()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1.23', '$.double()');
 
@@ -969,14 +1205,18 @@ SELECT jsonb_path_query('"inf"', '$.double()');
 SELECT jsonb_path_query('"-inf"', '$.double()');
 
 SELECT
-  jsonb_path_query('"inf"',
+  jsonb_path_query(
+  '"inf"',
   '$.double()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"-inf"',
+  jsonb_path_query(
+  '"-inf"',
   '$.double()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('{}', '$.abs()');
 
@@ -987,86 +1227,126 @@ SELECT jsonb_path_query('"1.2"', '$.ceiling()');
 SELECT jsonb_path_query('{}', '$.abs()', "silent" := TRUE);
 
 SELECT
-  jsonb_path_query('true',
+  jsonb_path_query(
+  'true',
   '$.floor()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"1.2"',
+  jsonb_path_query(
+  '"1.2"',
   '$.ceiling()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('["", "a", "abc", "abcabc"]',
-  '$[*] ? (@ starts with "abc")');
+  jsonb_path_query(
+  '["", "a", "abc", "abcabc"]',
+  '$[*] ? (@ starts with "abc")'
+  );
 
 SELECT
-  jsonb_path_query('["", "a", "abc", "abcabc"]',
-  'strict $ ? (@[*] starts with "abc")');
+  jsonb_path_query(
+  '["", "a", "abc", "abcabc"]',
+  'strict $ ? (@[*] starts with "abc")'
+  );
 
 SELECT
-  jsonb_path_query('["", "a", "abd", "abdabc"]',
-  'strict $ ? (@[*] starts with "abc")');
+  jsonb_path_query(
+  '["", "a", "abd", "abdabc"]',
+  'strict $ ? (@[*] starts with "abc")'
+  );
 
 SELECT
-  jsonb_path_query('["abc", "abcabc", null, 1]',
-  'strict $ ? (@[*] starts with "abc")');
+  jsonb_path_query(
+  '["abc", "abcabc", null, 1]',
+  'strict $ ? (@[*] starts with "abc")'
+  );
 
 SELECT
-  jsonb_path_query('["abc", "abcabc", null, 1]',
-  'strict $ ? ((@[*] starts with "abc") is unknown)');
+  jsonb_path_query(
+  '["abc", "abcabc", null, 1]',
+  'strict $ ? ((@[*] starts with "abc") is unknown)'
+  );
 
 SELECT
-  jsonb_path_query('[[null, 1, "abc", "abcabc"]]',
-  'lax $ ? (@[*] starts with "abc")');
+  jsonb_path_query(
+  '[[null, 1, "abc", "abcabc"]]',
+  'lax $ ? (@[*] starts with "abc")'
+  );
 
 SELECT
-  jsonb_path_query('[[null, 1, "abd", "abdabc"]]',
-  'lax $ ? ((@[*] starts with "abc") is unknown)');
+  jsonb_path_query(
+  '[[null, 1, "abd", "abdabc"]]',
+  'lax $ ? ((@[*] starts with "abc") is unknown)'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "abd", "abdabc"]',
-  'lax $[*] ? ((@ starts with "abc") is unknown)');
+  jsonb_path_query(
+  '[null, 1, "abd", "abdabc"]',
+  'lax $[*] ? ((@ starts with "abc") is unknown)'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
-  'lax $[*] ? (@ like_regex "^ab.*c")');
+  jsonb_path_query(
+  '[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
+  'lax $[*] ? (@ like_regex "^ab.*c")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
-  'lax $[*] ? (@ like_regex "^ab.*c" flag "i")');
+  jsonb_path_query(
+  '[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
+  'lax $[*] ? (@ like_regex "^ab.*c" flag "i")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
-  'lax $[*] ? (@ like_regex "^ab.*c" flag "m")');
+  jsonb_path_query(
+  '[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
+  'lax $[*] ? (@ like_regex "^ab.*c" flag "m")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
-  'lax $[*] ? (@ like_regex "^ab.*c" flag "s")');
+  jsonb_path_query(
+  '[null, 1, "abc", "abd", "aBdC", "abdacb", "babc", "adc\nabc", "ab\nadc"]',
+  'lax $[*] ? (@ like_regex "^ab.*c" flag "s")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "a\b", "a\\b", "^a\\b$"]',
-  'lax $[*] ? (@ like_regex "a\\b" flag "q")');
+  jsonb_path_query(
+  '[null, 1, "a\b", "a\\b", "^a\\b$"]',
+  'lax $[*] ? (@ like_regex "a\\b" flag "q")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "a\b", "a\\b", "^a\\b$"]',
-  'lax $[*] ? (@ like_regex "a\\b" flag "")');
+  jsonb_path_query(
+  '[null, 1, "a\b", "a\\b", "^a\\b$"]',
+  'lax $[*] ? (@ like_regex "a\\b" flag "")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "a\b", "a\\b", "^a\\b$"]',
-  'lax $[*] ? (@ like_regex "^a\\b$" flag "q")');
+  jsonb_path_query(
+  '[null, 1, "a\b", "a\\b", "^a\\b$"]',
+  'lax $[*] ? (@ like_regex "^a\\b$" flag "q")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "a\b", "a\\b", "^a\\b$"]',
-  'lax $[*] ? (@ like_regex "^a\\B$" flag "q")');
+  jsonb_path_query(
+  '[null, 1, "a\b", "a\\b", "^a\\b$"]',
+  'lax $[*] ? (@ like_regex "^a\\B$" flag "q")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "a\b", "a\\b", "^a\\b$"]',
-  'lax $[*] ? (@ like_regex "^a\\B$" flag "iq")');
+  jsonb_path_query(
+  '[null, 1, "a\b", "a\\b", "^a\\b$"]',
+  'lax $[*] ? (@ like_regex "^a\\B$" flag "iq")'
+  );
 
 SELECT
-  jsonb_path_query('[null, 1, "a\b", "a\\b", "^a\\b$"]',
-  'lax $[*] ? (@ like_regex "^a\\b$" flag "")');
+  jsonb_path_query(
+  '[null, 1, "a\b", "a\\b", "^a\\b$"]',
+  'lax $[*] ? (@ like_regex "^a\\b$" flag "")'
+  );
 
 SELECT jsonb_path_query('null', '$.datetime()');
 
@@ -1091,62 +1371,88 @@ SELECT
   AS JSONB) @? '$.datetime("dd-mm-yyyy")';
 
 SELECT
-  jsonb_path_query('"10-03-2017"',
-  '$.datetime("dd-mm-yyyy")');
+  jsonb_path_query(
+  '"10-03-2017"',
+  '$.datetime("dd-mm-yyyy")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017"',
-  '$.datetime("dd-mm-yyyy").type()');
+  jsonb_path_query(
+  '"10-03-2017"',
+  '$.datetime("dd-mm-yyyy").type()'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '$.datetime("dd-mm-yyyy")');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '$.datetime("dd-mm-yyyy")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '$.datetime("dd-mm-yyyy").type()');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '$.datetime("dd-mm-yyyy").type()'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '       $.datetime("dd-mm-yyyy HH24:MI").type()');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '       $.datetime("dd-mm-yyyy HH24:MI").type()'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 +05:20"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM").type()');
+  jsonb_path_query(
+  '"10-03-2017 12:34 +05:20"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM").type()'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56"',
-  '$.datetime("HH24:MI:SS").type()');
+  jsonb_path_query(
+  '"12:34:56"',
+  '$.datetime("HH24:MI:SS").type()'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56 +05:20"',
-  '$.datetime("HH24:MI:SS TZH:TZM").type()');
+  jsonb_path_query(
+  '"12:34:56 +05:20"',
+  '$.datetime("HH24:MI:SS TZH:TZM").type()'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017T12:34:56"',
-  '$.datetime("dd-mm-yyyy\"T\"HH24:MI:SS")');
+  jsonb_path_query(
+  '"10-03-2017T12:34:56"',
+  '$.datetime("dd-mm-yyyy\"T\"HH24:MI:SS")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017t12:34:56"',
-  '$.datetime("dd-mm-yyyy\"T\"HH24:MI:SS")');
+  jsonb_path_query(
+  '"10-03-2017t12:34:56"',
+  '$.datetime("dd-mm-yyyy\"T\"HH24:MI:SS")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34:56"',
-  '$.datetime("dd-mm-yyyy\"T\"HH24:MI:SS")');
+  jsonb_path_query(
+  '"10-03-2017 12:34:56"',
+  '$.datetime("dd-mm-yyyy\"T\"HH24:MI:SS")'
+  );
 
 SELECT jsonb_path_query('null', '$.bigint()');
 
 SELECT jsonb_path_query('true', '$.bigint()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.bigint()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('true',
+  jsonb_path_query(
+  'true',
   '$.bigint()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.bigint()');
 
@@ -1155,14 +1461,18 @@ SELECT jsonb_path_query('[]', 'strict $.bigint()');
 SELECT jsonb_path_query('{}', '$.bigint()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.bigint()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.bigint()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('"1.23"', '$.bigint()');
 
@@ -1179,14 +1489,18 @@ SELECT jsonb_path_query('"inf"', '$.bigint()');
 SELECT jsonb_path_query('"-inf"', '$.bigint()');
 
 SELECT
-  jsonb_path_query('"inf"',
+  jsonb_path_query(
+  '"inf"',
   '$.bigint()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"-inf"',
+  jsonb_path_query(
+  '"-inf"',
   '$.bigint()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('123', '$.bigint()');
 
@@ -1201,12 +1515,16 @@ SELECT jsonb_path_query('1234567890123', '$.bigint()');
 SELECT jsonb_path_query('"1234567890123"', '$.bigint()');
 
 SELECT
-  jsonb_path_query('12345678901234567890',
-  '$.bigint()');
+  jsonb_path_query(
+  '12345678901234567890',
+  '$.bigint()'
+  );
 
 SELECT
-  jsonb_path_query('"12345678901234567890"',
-  '$.bigint()');
+  jsonb_path_query(
+  '"12345678901234567890"',
+  '$.bigint()'
+  );
 
 SELECT jsonb_path_query('"+123"', '$.bigint()');
 
@@ -1219,9 +1537,11 @@ SELECT jsonb_path_query('123', '$.bigint() * 2');
 SELECT jsonb_path_query('null', '$.boolean()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.boolean()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.boolean()');
 
@@ -1230,14 +1550,18 @@ SELECT jsonb_path_query('[]', 'strict $.boolean()');
 SELECT jsonb_path_query('{}', '$.boolean()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.boolean()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.boolean()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1.23', '$.boolean()');
 
@@ -1256,14 +1580,18 @@ SELECT jsonb_path_query('"inf"', '$.boolean()');
 SELECT jsonb_path_query('"-inf"', '$.boolean()');
 
 SELECT
-  jsonb_path_query('"inf"',
+  jsonb_path_query(
+  '"inf"',
   '$.boolean()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"-inf"',
+  jsonb_path_query(
+  '"-inf"',
   '$.boolean()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('"100"', '$.boolean()');
 
@@ -1310,8 +1638,10 @@ SELECT jsonb_path_query('123', '$.boolean().type()');
 SELECT jsonb_path_query('"Yes"', '$.boolean().type()');
 
 SELECT
-  jsonb_path_query_array('[1, "yes", false]',
-  '$[*].boolean()');
+  jsonb_path_query_array(
+  '[1, "yes", false]',
+  '$[*].boolean()'
+  );
 
 SELECT jsonb_path_query('null', '$.date()');
 
@@ -1338,16 +1668,22 @@ SELECT jsonb_path_query('"12:34:56"', '$.date()');
 SELECT jsonb_path_query('"12:34:56 +05:30"', '$.date()');
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.date()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.date()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.date()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.date()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.date()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.date()'
+  );
 
 SELECT jsonb_path_query('"2023-08-15"', '$.date(2)');
 
@@ -1356,14 +1692,18 @@ SELECT jsonb_path_query('null', '$.decimal()');
 SELECT jsonb_path_query('true', '$.decimal()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.decimal()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('true',
+  jsonb_path_query(
+  'true',
   '$.decimal()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.decimal()');
 
@@ -1372,14 +1712,18 @@ SELECT jsonb_path_query('[]', 'strict $.decimal()');
 SELECT jsonb_path_query('{}', '$.decimal()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.decimal()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.decimal()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1.23', '$.decimal()');
 
@@ -1398,26 +1742,34 @@ SELECT jsonb_path_query('"inf"', '$.decimal()');
 SELECT jsonb_path_query('"-inf"', '$.decimal()');
 
 SELECT
-  jsonb_path_query('"inf"',
+  jsonb_path_query(
+  '"inf"',
   '$.decimal()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"-inf"',
+  jsonb_path_query(
+  '"-inf"',
   '$.decimal()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('123', '$.decimal()');
 
 SELECT jsonb_path_query('"123"', '$.decimal()');
 
 SELECT
-  jsonb_path_query('12345678901234567890',
-  '$.decimal()');
+  jsonb_path_query(
+  '12345678901234567890',
+  '$.decimal()'
+  );
 
 SELECT
-  jsonb_path_query('"12345678901234567890"',
-  '$.decimal()');
+  jsonb_path_query(
+  '"12345678901234567890"',
+  '$.decimal()'
+  );
 
 SELECT jsonb_path_query('"+12.3"', '$.decimal()');
 
@@ -1466,14 +1818,18 @@ SELECT jsonb_path_query('null', '$.integer()');
 SELECT jsonb_path_query('true', '$.integer()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.integer()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('true',
+  jsonb_path_query(
+  'true',
   '$.integer()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.integer()');
 
@@ -1482,14 +1838,18 @@ SELECT jsonb_path_query('[]', 'strict $.integer()');
 SELECT jsonb_path_query('{}', '$.integer()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.integer()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.integer()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('"1.23"', '$.integer()');
 
@@ -1506,14 +1866,18 @@ SELECT jsonb_path_query('"inf"', '$.integer()');
 SELECT jsonb_path_query('"-inf"', '$.integer()');
 
 SELECT
-  jsonb_path_query('"inf"',
+  jsonb_path_query(
+  '"inf"',
   '$.integer()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"-inf"',
+  jsonb_path_query(
+  '"-inf"',
   '$.integer()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('123', '$.integer()');
 
@@ -1540,14 +1904,18 @@ SELECT jsonb_path_query('null', '$.number()');
 SELECT jsonb_path_query('true', '$.number()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.number()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('true',
+  jsonb_path_query(
+  'true',
   '$.number()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.number()');
 
@@ -1556,14 +1924,18 @@ SELECT jsonb_path_query('[]', 'strict $.number()');
 SELECT jsonb_path_query('{}', '$.number()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.number()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.number()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1.23', '$.number()');
 
@@ -1582,26 +1954,34 @@ SELECT jsonb_path_query('"inf"', '$.number()');
 SELECT jsonb_path_query('"-inf"', '$.number()');
 
 SELECT
-  jsonb_path_query('"inf"',
+  jsonb_path_query(
+  '"inf"',
   '$.number()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('"-inf"',
+  jsonb_path_query(
+  '"-inf"',
   '$.number()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('123', '$.number()');
 
 SELECT jsonb_path_query('"123"', '$.number()');
 
 SELECT
-  jsonb_path_query('12345678901234567890',
-  '$.number()');
+  jsonb_path_query(
+  '12345678901234567890',
+  '$.number()'
+  );
 
 SELECT
-  jsonb_path_query('"12345678901234567890"',
-  '$.number()');
+  jsonb_path_query(
+  '"12345678901234567890"',
+  '$.number()'
+  );
 
 SELECT jsonb_path_query('"+12.3"', '$.number()');
 
@@ -1614,9 +1994,11 @@ SELECT jsonb_path_query('12.3', '$.number() * 2');
 SELECT jsonb_path_query('null', '$.string()');
 
 SELECT
-  jsonb_path_query('null',
+  jsonb_path_query(
+  'null',
   '$.string()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('[]', '$.string()');
 
@@ -1625,14 +2007,18 @@ SELECT jsonb_path_query('[]', 'strict $.string()');
 SELECT jsonb_path_query('{}', '$.string()');
 
 SELECT
-  jsonb_path_query('[]',
+  jsonb_path_query(
+  '[]',
   'strict $.string()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query('{}',
+  jsonb_path_query(
+  '{}',
   '$.string()',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT jsonb_path_query('1.23', '$.string()');
 
@@ -1649,56 +2035,78 @@ SELECT jsonb_path_query('1234', '$.string().type()');
 SELECT jsonb_path_query('[2, true]', '$.string()');
 
 SELECT
-  jsonb_path_query_array('[1.23, "yes", false]',
-  '$[*].string()');
+  jsonb_path_query_array(
+  '[1.23, "yes", false]',
+  '$[*].string()'
+  );
 
 SELECT
-  jsonb_path_query_array('[1.23, "yes", false]',
-  '$[*].string().type()');
+  jsonb_path_query_array(
+  '[1.23, "yes", false]',
+  '$[*].string().type()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +5:30"',
-  '$.timestamp().string()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +5:30"',
+  '$.timestamp().string()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +5:30"',
-  '$.timestamp().string()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +5:30"',
+  '$.timestamp().string()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp_tz().string()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp_tz().string()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56"',
-  '$.timestamp_tz().string()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp_tz().string()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +5:30"',
-  '$.timestamp_tz().string()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +5:30"',
+  '$.timestamp_tz().string()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp().string()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp().string()'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56 +5:30"',
-  '$.time_tz().string()');
+  jsonb_path_query(
+  '"12:34:56 +5:30"',
+  '$.time_tz().string()'
+  );
 
 BEGIN;
 
 SET LOCAL TIME ZONE 'UTC-10';
 
 SELECT
-  jsonb_path_query_tz('"12:34:56"',
-  '$.time_tz().string()');
+  jsonb_path_query_tz(
+  '"12:34:56"',
+  '$.time_tz().string()'
+  );
 
 ROLLBACK;
 
 SELECT jsonb_path_query('"12:34:56"', '$.time().string()');
 
 SELECT
-  jsonb_path_query('"2023-08-15"',
-  '$.date().string()');
+  jsonb_path_query(
+  '"2023-08-15"',
+  '$.date().string()'
+  );
 
 BEGIN;
 
@@ -1707,12 +2115,16 @@ SET LOCAL TIME ZONE UTC;
 SET LOCAL datestyle = German;
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +5:30"',
-  '$.timestamp_tz().string()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +5:30"',
+  '$.timestamp_tz().string()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp().string()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp().string()'
+  );
 
 ROLLBACK;
 
@@ -1743,16 +2155,20 @@ SELECT jsonb_path_query('"12:34:56 +05:30"', '$.time()');
 SELECT jsonb_path_query_tz('"12:34:56 +05:30"', '$.time()');
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.time()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.time()'
+  );
 
 SELECT jsonb_path_query('"12:34:56.789"', '$.time(-1)');
 
 SELECT jsonb_path_query('"12:34:56.789"', '$.time(2.0)');
 
 SELECT
-  jsonb_path_query('"12:34:56.789"',
-  '$.time(12345678901)');
+  jsonb_path_query(
+  '"12:34:56.789"',
+  '$.time(12345678901)'
+  );
 
 SELECT jsonb_path_query('"12:34:56.789"', '$.time(0)');
 
@@ -1783,46 +2199,66 @@ SELECT CAST('"12:34:56 +05:30"' AS JSONB) @? '$.time_tz()';
 SELECT jsonb_path_query('"12:34:56 +05:30"', '$.time_tz()');
 
 SELECT
-  jsonb_path_query('"12:34:56 +05:30"',
-  '$.time_tz().type()');
+  jsonb_path_query(
+  '"12:34:56 +05:30"',
+  '$.time_tz().type()'
+  );
 
 SELECT jsonb_path_query('"2023-08-15"', '$.time_tz()');
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.time_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.time_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(-1)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(-1)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(2.0)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(2.0)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(12345678901)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(12345678901)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(0)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(0)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(2)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(2)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(5)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(5)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789 +05:30"',
-  '$.time_tz(10)');
+  jsonb_path_query(
+  '"12:34:56.789 +05:30"',
+  '$.time_tz(10)'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56.789012 +05:30"',
-  '$.time_tz(8)');
+  jsonb_path_query(
+  '"12:34:56.789012 +05:30"',
+  '$.time_tz(8)'
+  );
 
 SELECT jsonb_path_query('null', '$.timestamp()');
 
@@ -1843,52 +2279,74 @@ SELECT
   AS JSONB) @? '$.timestamp()';
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp().type()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp().type()'
+  );
 
 SELECT jsonb_path_query('"2023-08-15"', '$.timestamp()');
 
 SELECT jsonb_path_query('"12:34:56"', '$.timestamp()');
 
 SELECT
-  jsonb_path_query('"12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query(
+  '"12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(-1)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(-1)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(2.0)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(2.0)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(12345678901)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(12345678901)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(0)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(0)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(2)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(2)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(5)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(5)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789"',
-  '$.timestamp(10)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789"',
+  '$.timestamp(10)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789012"',
-  '$.timestamp(8)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789012"',
+  '$.timestamp(8)'
+  );
 
 SELECT jsonb_path_query('null', '$.timestamp_tz()');
 
@@ -1909,730 +2367,1072 @@ SELECT
   AS JSONB) @? '$.timestamp_tz()';
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp_tz().type()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp_tz().type()'
+  );
 
 SELECT jsonb_path_query('"2023-08-15"', '$.timestamp_tz()');
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15"',
-  '$.timestamp_tz()');
+  jsonb_path_query_tz(
+  '"2023-08-15"',
+  '$.timestamp_tz()'
+  );
 
 SELECT jsonb_path_query('"12:34:56"', '$.timestamp_tz()');
 
 SELECT
-  jsonb_path_query('"12:34:56 +05:30"',
-  '$.timestamp_tz()');
+  jsonb_path_query(
+  '"12:34:56 +05:30"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(-1)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(-1)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(2.0)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(2.0)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(12345678901)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(12345678901)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(0)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(0)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(2)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(2)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(5)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(5)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789 +05:30"',
-  '$.timestamp_tz(10)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789 +05:30"',
+  '$.timestamp_tz(10)'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56.789012 +05:30"',
-  '$.timestamp_tz(8)');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56.789012 +05:30"',
+  '$.timestamp_tz(8)'
+  );
 
 SET TIME ZONE '+00';
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.time()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.time()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.time_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time_tz()'
+  );
 
 SELECT jsonb_path_query('"12:34:56"', '$.time_tz()');
 
 SELECT jsonb_path_query_tz('"12:34:56"', '$.time_tz()');
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56"',
-  '$.timestamp_tz()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '$.datetime("dd-mm-yyyy HH24:MI")');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '$.datetime("dd-mm-yyyy HH24:MI")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH")');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 +05"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 +05"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 -05"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 -05"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 +05:20"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 +05:20"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 -05:20"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 -05:20"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")'
+  );
 
 SELECT jsonb_path_query('"12:34"', '$.datetime("HH24:MI")');
 
 SELECT
-  jsonb_path_query('"12:34"',
-  '$.datetime("HH24:MI TZH")');
+  jsonb_path_query(
+  '"12:34"',
+  '$.datetime("HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 +05"',
-  '$.datetime("HH24:MI TZH")');
+  jsonb_path_query(
+  '"12:34 +05"',
+  '$.datetime("HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 -05"',
-  '$.datetime("HH24:MI TZH")');
+  jsonb_path_query(
+  '"12:34 -05"',
+  '$.datetime("HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 +05:20"',
-  '$.datetime("HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"12:34 +05:20"',
+  '$.datetime("HH24:MI TZH:TZM")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 -05:20"',
-  '$.datetime("HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"12:34 -05:20"',
+  '$.datetime("HH24:MI TZH:TZM")'
+  );
 
 SET TIME ZONE '+10';
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.time()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.time()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.time_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56"',
-  '$.timestamp_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56"',
-  '$.timestamp_tz()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '$.datetime("dd-mm-yyyy HH24:MI")');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '$.datetime("dd-mm-yyyy HH24:MI")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH")');
+  jsonb_path_query(
+  '"10-03-2017 12:34"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 +05"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 +05"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 -05"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 -05"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 +05:20"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 +05:20"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")'
+  );
 
 SELECT
-  jsonb_path_query('"10-03-2017 12:34 -05:20"',
-  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"10-03-2017 12:34 -05:20"',
+  '$.datetime("dd-mm-yyyy HH24:MI TZH:TZM")'
+  );
 
 SELECT jsonb_path_query('"12:34"', '$.datetime("HH24:MI")');
 
 SELECT
-  jsonb_path_query('"12:34"',
-  '$.datetime("HH24:MI TZH")');
+  jsonb_path_query(
+  '"12:34"',
+  '$.datetime("HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 +05"',
-  '$.datetime("HH24:MI TZH")');
+  jsonb_path_query(
+  '"12:34 +05"',
+  '$.datetime("HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 -05"',
-  '$.datetime("HH24:MI TZH")');
+  jsonb_path_query(
+  '"12:34 -05"',
+  '$.datetime("HH24:MI TZH")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 +05:20"',
-  '$.datetime("HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"12:34 +05:20"',
+  '$.datetime("HH24:MI TZH:TZM")'
+  );
 
 SELECT
-  jsonb_path_query('"12:34 -05:20"',
-  '$.datetime("HH24:MI TZH:TZM")');
+  jsonb_path_query(
+  '"12:34 -05:20"',
+  '$.datetime("HH24:MI TZH:TZM")'
+  );
 
 SET timezone TO DEFAULT;
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.time()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.time()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.time_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.time_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query_tz('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp()');
+  jsonb_path_query_tz(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp()'
+  );
 
 SELECT
-  jsonb_path_query('"2023-08-15 12:34:56 +05:30"',
-  '$.timestamp_tz()');
+  jsonb_path_query(
+  '"2023-08-15 12:34:56 +05:30"',
+  '$.timestamp_tz()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"2017-03-10"',
+  '$.datetime().type()'
+  );
 
 SELECT jsonb_path_query('"2017-03-10"', '$.datetime()');
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56"',
+  '$.datetime().type()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56+3"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56+3"',
+  '$.datetime().type()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56+3"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56+3"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56+3:10"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56+3:10"',
+  '$.datetime().type()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56+3:10"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56+3:10"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10T12:34:56+3:10"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10T12:34:56+3:10"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10t12:34:56+3:10"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10t12:34:56+3:10"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10 12:34:56.789+3:10"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10 12:34:56.789+3:10"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10T12:34:56.789+3:10"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10T12:34:56.789+3:10"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10t12:34:56.789+3:10"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10t12:34:56.789+3:10"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10T12:34:56.789EST"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10T12:34:56.789EST"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"2017-03-10T12:34:56.789Z"',
-  '$.datetime()');
+  jsonb_path_query(
+  '"2017-03-10T12:34:56.789Z"',
+  '$.datetime()'
+  );
 
 SELECT
-  jsonb_path_query('"12:34:56"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"12:34:56"',
+  '$.datetime().type()'
+  );
 
 SELECT jsonb_path_query('"12:34:56"', '$.datetime()');
 
 SELECT
-  jsonb_path_query('"12:34:56+3"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"12:34:56+3"',
+  '$.datetime().type()'
+  );
 
 SELECT jsonb_path_query('"12:34:56+3"', '$.datetime()');
 
 SELECT
-  jsonb_path_query('"12:34:56+3:10"',
-  '$.datetime().type()');
+  jsonb_path_query(
+  '"12:34:56+3:10"',
+  '$.datetime().type()'
+  );
 
 SELECT jsonb_path_query('"12:34:56+3:10"', '$.datetime()');
 
 SET TIME ZONE '+00';
 
 SELECT
-  jsonb_path_query('["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ == "10.03.2017".datetime("dd.mm.yyyy"))');
+  jsonb_path_query(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ == "10.03.2017".datetime("dd.mm.yyyy"))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ >= "10.03.2017".datetime("dd.mm.yyyy"))');
+  jsonb_path_query(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ >= "10.03.2017".datetime("dd.mm.yyyy"))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ <  "10.03.2017".datetime("dd.mm.yyyy"))');
+  jsonb_path_query(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ <  "10.03.2017".datetime("dd.mm.yyyy"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ == "10.03.2017".datetime("dd.mm.yyyy"))');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ == "10.03.2017".datetime("dd.mm.yyyy"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ >= "10.03.2017".datetime("dd.mm.yyyy"))');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ >= "10.03.2017".datetime("dd.mm.yyyy"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ <  "10.03.2017".datetime("dd.mm.yyyy"))');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "12:34:56", "01:02:03+04", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ <  "10.03.2017".datetime("dd.mm.yyyy"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ == "2017-03-10".date())');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ == "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ >= "2017-03-10".date())');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ >= "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].datetime() ? (@ <  "2017-03-10".date())');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].datetime() ? (@ <  "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].date() ? (@ == "2017-03-10".date())');
+  jsonb_path_query(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].date() ? (@ == "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].date() ? (@ >= "2017-03-10".date())');
+  jsonb_path_query(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].date() ? (@ >= "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].date() ? (@ <  "2017-03-10".date())');
+  jsonb_path_query(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].date() ? (@ <  "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].date() ? (@ == "2017-03-10".date())');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].date() ? (@ == "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].date() ? (@ >= "2017-03-10".date())');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].date() ? (@ >= "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
-  '$[*].date() ? (@ <  "2017-03-10".date())');
+  jsonb_path_query_tz(
+  '["2017-03-10", "2017-03-11", "2017-03-09", "2017-03-10 00:00:00", "2017-03-10 12:34:56", "2017-03-10 01:02:03+04", "2017-03-10 03:00:00+03"]',
+  '$[*].date() ? (@ <  "2017-03-10".date())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ == "12:35".datetime("HH24:MI"))');
+  jsonb_path_query(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ == "12:35".datetime("HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ >= "12:35".datetime("HH24:MI"))');
+  jsonb_path_query(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ >= "12:35".datetime("HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ <  "12:35".datetime("HH24:MI"))');
+  jsonb_path_query(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ <  "12:35".datetime("HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ == "12:35".datetime("HH24:MI"))');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ == "12:35".datetime("HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ >= "12:35".datetime("HH24:MI"))');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ >= "12:35".datetime("HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ <  "12:35".datetime("HH24:MI"))');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ <  "12:35".datetime("HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ == "12:35:00".time())');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ == "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ >= "12:35:00".time())');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ >= "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].datetime() ? (@ <  "12:35:00".time())');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].datetime() ? (@ <  "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].time() ? (@ == "12:35:00".time())');
+  jsonb_path_query(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].time() ? (@ == "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].time() ? (@ >= "12:35:00".time())');
+  jsonb_path_query(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].time() ? (@ >= "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].time() ? (@ <  "12:35:00".time())');
+  jsonb_path_query(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].time() ? (@ <  "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00.123", "12:35:00.123", "12:36:00.1123", "12:35:00.1123+00", "12:35:00.123+01", "13:35:00.123+01", "2017-03-10 12:35:00.1", "2017-03-10 12:35:00.123+01"]',
-  '$[*].time(2) ? (@ >= "12:35:00.123".time(2))');
+  jsonb_path_query(
+  '["12:34:00.123", "12:35:00.123", "12:36:00.1123", "12:35:00.1123+00", "12:35:00.123+01", "13:35:00.123+01", "2017-03-10 12:35:00.1", "2017-03-10 12:35:00.123+01"]',
+  '$[*].time(2) ? (@ >= "12:35:00.123".time(2))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].time() ? (@ == "12:35:00".time())');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].time() ? (@ == "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].time() ? (@ >= "12:35:00".time())');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].time() ? (@ >= "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
-  '$[*].time() ? (@ <  "12:35:00".time())');
+  jsonb_path_query_tz(
+  '["12:34:00", "12:35:00", "12:36:00", "12:35:00+00", "12:35:00+01", "13:35:00+01", "2017-03-10 12:35:00", "2017-03-10 12:35:00+01"]',
+  '$[*].time() ? (@ <  "12:35:00".time())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00.123", "12:35:00.123", "12:36:00.1123", "12:35:00.1123+00", "12:35:00.123+01", "13:35:00.123+01", "2017-03-10 12:35:00.1", "2017-03-10 12:35:00.123+01"]',
-  '$[*].time(2) ? (@ >= "12:35:00.123".time(2))');
+  jsonb_path_query_tz(
+  '["12:34:00.123", "12:35:00.123", "12:36:00.1123", "12:35:00.1123+00", "12:35:00.123+01", "13:35:00.123+01", "2017-03-10 12:35:00.1", "2017-03-10 12:35:00.123+01"]',
+  '$[*].time(2) ? (@ >= "12:35:00.123".time(2))'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ == "12:35 +1".datetime("HH24:MI TZH"))');
+  jsonb_path_query(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ == "12:35 +1".datetime("HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ >= "12:35 +1".datetime("HH24:MI TZH"))');
+  jsonb_path_query(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ >= "12:35 +1".datetime("HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ <  "12:35 +1".datetime("HH24:MI TZH"))');
+  jsonb_path_query(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ <  "12:35 +1".datetime("HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ == "12:35 +1".datetime("HH24:MI TZH"))');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ == "12:35 +1".datetime("HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ >= "12:35 +1".datetime("HH24:MI TZH"))');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ >= "12:35 +1".datetime("HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ <  "12:35 +1".datetime("HH24:MI TZH"))');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10", "2017-03-10 12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ <  "12:35 +1".datetime("HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ == "12:35:00 +1".time_tz())');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ == "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ >= "12:35:00 +1".time_tz())');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ >= "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].datetime() ? (@ <  "12:35:00 +1".time_tz())');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].datetime() ? (@ <  "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].time_tz() ? (@ == "12:35:00 +1".time_tz())');
+  jsonb_path_query(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].time_tz() ? (@ == "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].time_tz() ? (@ >= "12:35:00 +1".time_tz())');
+  jsonb_path_query(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].time_tz() ? (@ >= "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].time_tz() ? (@ <  "12:35:00 +1".time_tz())');
+  jsonb_path_query(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].time_tz() ? (@ <  "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["12:34:00.123+01", "12:35:00.123+01", "12:36:00.1123+01", "12:35:00.1123+02", "12:35:00.123-02", "10:35:00.123", "11:35:00.1", "12:35:00.123", "2017-03-10 12:35:00.123 +1"]',
-  '$[*].time_tz(2) ? (@ >= "12:35:00.123 +1".time_tz(2))');
+  jsonb_path_query(
+  '["12:34:00.123+01", "12:35:00.123+01", "12:36:00.1123+01", "12:35:00.1123+02", "12:35:00.123-02", "10:35:00.123", "11:35:00.1", "12:35:00.123", "2017-03-10 12:35:00.123 +1"]',
+  '$[*].time_tz(2) ? (@ >= "12:35:00.123 +1".time_tz(2))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].time_tz() ? (@ == "12:35:00 +1".time_tz())');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].time_tz() ? (@ == "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].time_tz() ? (@ >= "12:35:00 +1".time_tz())');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].time_tz() ? (@ >= "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
-  '$[*].time_tz() ? (@ <  "12:35:00 +1".time_tz())');
+  jsonb_path_query_tz(
+  '["12:34:00+01", "12:35:00+01", "12:36:00+01", "12:35:00+02", "12:35:00-02", "10:35:00", "11:35:00", "12:35:00", "2017-03-10 12:35:00 +1"]',
+  '$[*].time_tz() ? (@ <  "12:35:00 +1".time_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["12:34:00.123+01", "12:35:00.123+01", "12:36:00.1123+01", "12:35:00.1123+02", "12:35:00.123-02", "10:35:00.123", "11:35:00.1", "12:35:00.123", "2017-03-10 12:35:00.123 +1"]',
-  '$[*].time_tz(2) ? (@ >= "12:35:00.123 +1".time_tz(2))');
+  jsonb_path_query_tz(
+  '["12:34:00.123+01", "12:35:00.123+01", "12:36:00.1123+01", "12:35:00.1123+02", "12:35:00.123-02", "10:35:00.123", "11:35:00.1", "12:35:00.123", "2017-03-10 12:35:00.123 +1"]',
+  '$[*].time_tz(2) ? (@ >= "12:35:00.123 +1".time_tz(2))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ == "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ == "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ >= "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ >= "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ < "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ < "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ == "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ == "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ >= "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ >= "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ < "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ < "10.03.2017 12:35".datetime("dd.mm.yyyy HH24:MI"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].datetime() ? (@ == "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].datetime() ? (@ == "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].datetime() ? (@ >= "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].datetime() ? (@ >= "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].datetime() ? (@ < "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].datetime() ? (@ < "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp() ? (@ == "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp() ? (@ == "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp() ? (@ >= "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp() ? (@ >= "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp() ? (@ < "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp() ? (@ < "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00.123", "2017-03-10 12:35:00.123", "2017-03-10 12:36:00.1123", "2017-03-10 12:35:00.1123+01", "2017-03-10 13:35:00.123+01", "2017-03-10 12:35:00.1-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp(2) ? (@ >= "2017-03-10 12:35:00.123".timestamp(2))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00.123", "2017-03-10 12:35:00.123", "2017-03-10 12:36:00.1123", "2017-03-10 12:35:00.1123+01", "2017-03-10 13:35:00.123+01", "2017-03-10 12:35:00.1-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp(2) ? (@ >= "2017-03-10 12:35:00.123".timestamp(2))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp() ? (@ == "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp() ? (@ == "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp() ? (@ >= "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp() ? (@ >= "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp() ? (@ < "2017-03-10 12:35:00".timestamp())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00", "2017-03-10 12:35:00", "2017-03-10 12:36:00", "2017-03-10 12:35:00+01", "2017-03-10 13:35:00+01", "2017-03-10 12:35:00-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp() ? (@ < "2017-03-10 12:35:00".timestamp())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00.123", "2017-03-10 12:35:00.123", "2017-03-10 12:36:00.1123", "2017-03-10 12:35:00.1123+01", "2017-03-10 13:35:00.123+01", "2017-03-10 12:35:00.1-01", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp(2) ? (@ >= "2017-03-10 12:35:00.123".timestamp(2))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00.123", "2017-03-10 12:35:00.123", "2017-03-10 12:36:00.1123", "2017-03-10 12:35:00.1123+01", "2017-03-10 13:35:00.123+01", "2017-03-10 12:35:00.1-01", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp(2) ? (@ >= "2017-03-10 12:35:00.123".timestamp(2))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ == "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ == "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ >= "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ >= "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ < "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ < "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ == "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ == "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ >= "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ >= "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
-  '$[*].datetime() ? (@ < "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11", "12:34:56", "12:34:56+01"]',
+  '$[*].datetime() ? (@ < "10.03.2017 12:35 +1".datetime("dd.mm.yyyy HH24:MI TZH"))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].datetime() ? (@ == "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].datetime() ? (@ == "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].datetime() ? (@ >= "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].datetime() ? (@ >= "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].datetime() ? (@ < "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].datetime() ? (@ < "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz() ? (@ == "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz() ? (@ == "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz() ? (@ >= "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz() ? (@ >= "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz() ? (@ < "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz() ? (@ < "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query('["2017-03-10 12:34:00.123+01", "2017-03-10 12:35:00.123+01", "2017-03-10 12:36:00.1123+01", "2017-03-10 12:35:00.1123+02", "2017-03-10 12:35:00.123-02", "2017-03-10 10:35:00.123", "2017-03-10 11:35:00.1", "2017-03-10 12:35:00.123", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz(2) ? (@ >= "2017-03-10 12:35:00.123 +1".timestamp_tz(2))');
+  jsonb_path_query(
+  '["2017-03-10 12:34:00.123+01", "2017-03-10 12:35:00.123+01", "2017-03-10 12:36:00.1123+01", "2017-03-10 12:35:00.1123+02", "2017-03-10 12:35:00.123-02", "2017-03-10 10:35:00.123", "2017-03-10 11:35:00.1", "2017-03-10 12:35:00.123", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz(2) ? (@ >= "2017-03-10 12:35:00.123 +1".timestamp_tz(2))'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz() ? (@ == "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz() ? (@ == "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz() ? (@ >= "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz() ? (@ >= "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz() ? (@ < "2017-03-10 12:35:00 +1".timestamp_tz())');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00+01", "2017-03-10 12:35:00+01", "2017-03-10 12:36:00+01", "2017-03-10 12:35:00+02", "2017-03-10 12:35:00-02", "2017-03-10 10:35:00", "2017-03-10 11:35:00", "2017-03-10 12:35:00", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz() ? (@ < "2017-03-10 12:35:00 +1".timestamp_tz())'
+  );
 
 SELECT
-  jsonb_path_query_tz('["2017-03-10 12:34:00.123+01", "2017-03-10 12:35:00.123+01", "2017-03-10 12:36:00.1123+01", "2017-03-10 12:35:00.1123+02", "2017-03-10 12:35:00.123-02", "2017-03-10 10:35:00.123", "2017-03-10 11:35:00.1", "2017-03-10 12:35:00.123", "2017-03-10", "2017-03-11"]',
-  '$[*].timestamp_tz(2) ? (@ >= "2017-03-10 12:35:00.123 +1".timestamp_tz(2))');
+  jsonb_path_query_tz(
+  '["2017-03-10 12:34:00.123+01", "2017-03-10 12:35:00.123+01", "2017-03-10 12:36:00.1123+01", "2017-03-10 12:35:00.1123+02", "2017-03-10 12:35:00.123-02", "2017-03-10 10:35:00.123", "2017-03-10 11:35:00.1", "2017-03-10 12:35:00.123", "2017-03-10", "2017-03-11"]',
+  '$[*].timestamp_tz(2) ? (@ >= "2017-03-10 12:35:00.123 +1".timestamp_tz(2))'
+  );
 
 SELECT
-  jsonb_path_query('"1000000-01-01"',
+  jsonb_path_query(
+  '"1000000-01-01"',
   CAST('$.datetime() > "2020-01-01 12:00:00".datetime()'
-  AS jsonpath));
+  AS jsonpath)
+  );
 
 SET timezone TO DEFAULT;
 
 SELECT jsonb_path_query('[{"a": 1}, {"a": 2}]', '$[*]');
 
 SELECT
-  jsonb_path_query('[{"a": 1}, {"a": 2}]',
-  '$[*] ? (@.a > 10)');
+  jsonb_path_query(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*] ? (@.a > 10)'
+  );
 
 SELECT jsonb_path_query('[{"a": 1}]', '$undefined_var');
 
 SELECT jsonb_path_query('[{"a": 1}]', 'false');
 
 SELECT
-  jsonb_path_query_array('[{"a": 1}, {"a": 2}, {}]',
-  'strict $[*].a');
+  jsonb_path_query_array(
+  '[{"a": 1}, {"a": 2}, {}]',
+  'strict $[*].a'
+  );
 
 SELECT
-  jsonb_path_query_array('[{"a": 1}, {"a": 2}]',
-  '$[*].a');
+  jsonb_path_query_array(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a'
+  );
 
 SELECT
-  jsonb_path_query_array('[{"a": 1}, {"a": 2}]',
-  '$[*].a ? (@ == 1)');
+  jsonb_path_query_array(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a ? (@ == 1)'
+  );
 
 SELECT
-  jsonb_path_query_array('[{"a": 1}, {"a": 2}]',
-  '$[*].a ? (@ > 10)');
+  jsonb_path_query_array(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a ? (@ > 10)'
+  );
 
 SELECT
-  jsonb_path_query_array('[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
+  jsonb_path_query_array(
+  '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
   '$[*].a ? (@ > $min && @ < $max)',
-  "vars" := '{"min": 1, "max": 4}');
+  "vars" := '{"min": 1, "max": 4}'
+  );
 
 SELECT
-  jsonb_path_query_array('[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
+  jsonb_path_query_array(
+  '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
   '$[*].a ? (@ > $min && @ < $max)',
-  "vars" := '{"min": 3, "max": 4}');
+  "vars" := '{"min": 3, "max": 4}'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}, {}]',
-  'strict $[*].a');
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}, {}]',
+  'strict $[*].a'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}, {}]',
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}, {}]',
   'strict $[*].a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}]',
-  '$[*].a');
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}]',
-  '$[*].a ? (@ == 1)');
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a ? (@ == 1)'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}]',
-  '$[*].a ? (@ > 10)');
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a ? (@ > 10)'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
   '$[*].a ? (@ > $min && @ < $max)',
-  "vars" := '{"min": 1, "max": 4}');
+  "vars" := '{"min": 1, "max": 4}'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
+  jsonb_path_query_first(
+  '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
   '$[*].a ? (@ > $min && @ < $max)',
-  "vars" := '{"min": 3, "max": 4}');
+  "vars" := '{"min": 3, "max": 4}'
+  );
 
 SELECT
-  jsonb_path_query_first('[{"a": 1}]',
-  '$undefined_var');
+  jsonb_path_query_first(
+  '[{"a": 1}]',
+  '$undefined_var'
+  );
 
 SELECT jsonb_path_query_first('[{"a": 1}]', 'false');
 
@@ -2645,18 +3445,24 @@ SELECT
   AS JSONB) @? '$[*] ? (@.a > 2)';
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}]',
-  '$[*].a ? (@ > 1)');
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a ? (@ > 1)'
+  );
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
   '$[*] ? (@.a > $min && @.a < $max)',
-  "vars" := '{"min": 1, "max": 4}');
+  "vars" := '{"min": 1, "max": 4}'
+  );
 
 SELECT
-  jsonb_path_exists('[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
+  jsonb_path_exists(
+  '[{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}]',
   '$[*] ? (@.a > $min && @.a < $max)',
-  "vars" := '{"min": 3, "max": 4}');
+  "vars" := '{"min": 3, "max": 4}'
+  );
 
 SELECT jsonb_path_exists('[{"a": 1}]', '$undefined_var');
 
@@ -2681,19 +3487,25 @@ SELECT jsonb_path_match('[true]', '$', "silent" := FALSE);
 SELECT jsonb_path_match('{}', 'lax $.a', "silent" := FALSE);
 
 SELECT
-  jsonb_path_match('{}',
+  jsonb_path_match(
+  '{}',
   'strict $.a',
-  "silent" := FALSE);
+  "silent" := FALSE
+  );
 
 SELECT
-  jsonb_path_match('{}',
+  jsonb_path_match(
+  '{}',
   'strict $.a',
-  "silent" := TRUE);
+  "silent" := TRUE
+  );
 
 SELECT
-  jsonb_path_match('[true, true]',
+  jsonb_path_match(
+  '[true, true]',
   '$[*]',
-  "silent" := FALSE);
+  "silent" := FALSE
+  );
 
 SELECT
   CAST('[{"a": 1}, {"a": 2}]'
@@ -2704,8 +3516,10 @@ SELECT
   AS JSONB) @@ '$[*].a > 2';
 
 SELECT
-  jsonb_path_match('[{"a": 1}, {"a": 2}]',
-  '$[*].a > 1');
+  jsonb_path_match(
+  '[{"a": 1}, {"a": 2}]',
+  '$[*].a > 1'
+  );
 
 SELECT jsonb_path_match('[{"a": 1}]', '$undefined_var');
 
@@ -2713,31 +3527,50 @@ SELECT jsonb_path_match('[{"a": 1}]', 'false');
 
 WITH str (j,
 num) AS (SELECT
-  jsonb_build_object('s',
-  s),
+  jsonb_build_object(
+  's',
+  s
+  ),
   num
 FROM
-  unnest(CAST('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}'
-  AS TEXT[])) WITH ORDINALITY AS a (s,
+  unnest(
+  CAST('{"", "a", "ab", "abc", "abcd", "b", "A", "AB", "ABC", "ABc", "ABcD", "B"}'
+  AS TEXT[])
+  ) WITH ORDINALITY AS a (s,
   num))
 SELECT
   s1.j,
   s2.j,
-  jsonb_path_query_first(s1.j,
+  jsonb_path_query_first(
+  s1.j,
   '$.s < $s',
-  "vars" := s2.j) AS lt,
-  jsonb_path_query_first(s1.j,
+  "vars" := s2.j
+  )
+  AS lt,
+  jsonb_path_query_first(
+  s1.j,
   '$.s <= $s',
-  "vars" := s2.j) AS le,
-  jsonb_path_query_first(s1.j,
+  "vars" := s2.j
+  )
+  AS le,
+  jsonb_path_query_first(
+  s1.j,
   '$.s == $s',
-  "vars" := s2.j) AS eq,
-  jsonb_path_query_first(s1.j,
+  "vars" := s2.j
+  )
+  AS eq,
+  jsonb_path_query_first(
+  s1.j,
   '$.s >= $s',
-  "vars" := s2.j) AS ge,
-  jsonb_path_query_first(s1.j,
+  "vars" := s2.j
+  )
+  AS ge,
+  jsonb_path_query_first(
+  s1.j,
   '$.s > $s',
-  "vars" := s2.j) AS gt
+  "vars" := s2.j
+  )
+  AS gt
 FROM
   str
   AS s1,

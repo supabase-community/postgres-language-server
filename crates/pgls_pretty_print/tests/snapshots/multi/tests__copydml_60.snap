@@ -164,7 +164,8 @@ COPY (INSERT INTO copydml_test DEFAULT VALUES) TO STDOUT;
 
 DROP RULE "qqq" ON "copydml_test";
 
-CREATE FUNCTION qqq_trig()
+CREATE FUNCTION
+qqq_trig()
 RETURNS trigger
 AS '
 begin

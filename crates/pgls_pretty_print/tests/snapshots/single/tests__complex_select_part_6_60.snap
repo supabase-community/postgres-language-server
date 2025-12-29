@@ -9,7 +9,10 @@ SELECT
   view_name,
   resorigtbl,
   resorigcol,
-  array_agg(attname) AS view_columns
+  array_agg(
+  attname
+  )
+  AS view_columns
 FROM
   recursion
   INNER JOIN pg_attribute

@@ -161,9 +161,11 @@ SELECT 'Programmer' ~ '(\w).*?\1' AS t;
 SELECT regexp_matches('Programmer', '(\w)(.*?\1)', 'g');
 
 SELECT
-  regexp_matches('foo/bar/baz',
+  regexp_matches(
+  'foo/bar/baz',
   '^([^/]+?)(?:/([^/]+?))(?:/([^/]+?))?$',
-  '');
+  ''
+  );
 
 SELECT regexp_matches('llmmmfff', '^(l*)(.*)(f*)$');
 
@@ -172,8 +174,10 @@ SELECT regexp_matches('llmmmfff', '^(l*){1,1}(.*)(f*)$');
 SELECT regexp_matches('llmmmfff', '^(l*){1,1}?(.*)(f*)$');
 
 SELECT
-  regexp_matches('llmmmfff',
-  '^(l*){1,1}?(.*){1,1}?(f*)$');
+  regexp_matches(
+  'llmmmfff',
+  '^(l*){1,1}?(.*){1,1}?(f*)$'
+  );
 
 SELECT regexp_matches('llmmmfff', '^(l*?)(.*)(f*)$');
 
@@ -182,8 +186,10 @@ SELECT regexp_matches('llmmmfff', '^(l*?){1,1}(.*)(f*)$');
 SELECT regexp_matches('llmmmfff', '^(l*?){1,1}?(.*)(f*)$');
 
 SELECT
-  regexp_matches('llmmmfff',
-  '^(l*?){1,1}?(.*){1,1}?(f*)$');
+  regexp_matches(
+  'llmmmfff',
+  '^(l*?){1,1}?(.*){1,1}?(f*)$'
+  );
 
 SELECT 'a' ~ '$()|^\1';
 

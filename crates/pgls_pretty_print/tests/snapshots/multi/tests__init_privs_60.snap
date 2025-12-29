@@ -10,5 +10,6 @@ GRANT SELECT ON TABLE pg_proc TO CURRENT_USER;
 GRANT SELECT (prosrc) ON TABLE pg_proc TO CURRENT_USER;
 
 GRANT SELECT (rolname,
-rolsuper) ON TABLE pg_authid
+rolsuper)
+ON TABLE pg_authid
 TO CURRENT_USER;

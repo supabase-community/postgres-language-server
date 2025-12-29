@@ -155,6 +155,7 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
 fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
     // Emit opening parenthesis
     e.token(TokenKind::L_PAREN);
+    e.line(LineType::Soft);
 
     // Handle DISTINCT if present
     if n.agg_distinct && !n.args.is_empty() {
@@ -205,6 +206,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
         });
     }
 
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 }
 

@@ -8,10 +8,13 @@ SELECT
   view_schema,
   view_name,
   CAST(entry ->> 'resno'
-  AS INT) AS view_column,
+  AS INT)
+  AS view_column,
   CAST(entry ->> 'resorigtbl'
-  AS OID) AS resorigtbl,
+  AS OID)
+  AS resorigtbl,
   CAST(entry ->> 'resorigcol'
-  AS INT) AS resorigcol
+  AS INT)
+  AS resorigcol
 FROM
   target_entries;

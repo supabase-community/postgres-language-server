@@ -4,22 +4,33 @@ input_file: crates/pgls_pretty_print/tests/data/multi/advisory_lock_60.sql
 snapshot_kind: text
 ---
 SELECT
-  oid AS datoid
+  oid
+  AS datoid
 FROM
   pg_database
 WHERE
   datname =
-  current_database();
+  current_database(
+
+  );
 
 BEGIN;
 
 SELECT
-  pg_advisory_xact_lock(1),
-  pg_advisory_xact_lock_shared(2),
-  pg_advisory_xact_lock(1,
-  1),
-  pg_advisory_xact_lock_shared(2,
-  2);
+  pg_advisory_xact_lock(
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2
+  ),
+  pg_advisory_xact_lock(
+  1,
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2,
+  2
+  );
 
 SELECT
   locktype,
@@ -42,7 +53,9 @@ ORDER BY classid,
 SELECT pg_advisory_unlock_all();
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE
@@ -52,17 +65,27 @@ WHERE
   'datoid';
 
 SELECT
-  pg_advisory_unlock(1),
-  pg_advisory_unlock_shared(2),
-  pg_advisory_unlock(1,
-  1),
-  pg_advisory_unlock_shared(2,
-  2);
+  pg_advisory_unlock(
+  1
+  ),
+  pg_advisory_unlock_shared(
+  2
+  ),
+  pg_advisory_unlock(
+  1,
+  1
+  ),
+  pg_advisory_unlock_shared(
+  2,
+  2
+  );
 
 COMMIT;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE
@@ -74,12 +97,20 @@ WHERE
 BEGIN;
 
 SELECT
-  pg_advisory_xact_lock(1),
-  pg_advisory_xact_lock_shared(2),
-  pg_advisory_xact_lock(1,
-  1),
-  pg_advisory_xact_lock_shared(2,
-  2);
+  pg_advisory_xact_lock(
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2
+  ),
+  pg_advisory_xact_lock(
+  1,
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2,
+  2
+  );
 
 SELECT
   locktype,
@@ -100,12 +131,20 @@ ORDER BY classid,
   objsubid;
 
 SELECT
-  pg_advisory_lock(1),
-  pg_advisory_lock_shared(2),
-  pg_advisory_lock(1,
-  1),
-  pg_advisory_lock_shared(2,
-  2);
+  pg_advisory_lock(
+  1
+  ),
+  pg_advisory_lock_shared(
+  2
+  ),
+  pg_advisory_lock(
+  1,
+  1
+  ),
+  pg_advisory_lock_shared(
+  2,
+  2
+  );
 
 ROLLBACK;
 
@@ -128,21 +167,39 @@ ORDER BY classid,
   objsubid;
 
 SELECT
-  pg_advisory_unlock(1),
-  pg_advisory_unlock(1),
-  pg_advisory_unlock_shared(2),
-  pg_advisory_unlock_shared(2),
-  pg_advisory_unlock(1,
-  1),
-  pg_advisory_unlock(1,
-  1),
-  pg_advisory_unlock_shared(2,
-  2),
-  pg_advisory_unlock_shared(2,
-  2);
+  pg_advisory_unlock(
+  1
+  ),
+  pg_advisory_unlock(
+  1
+  ),
+  pg_advisory_unlock_shared(
+  2
+  ),
+  pg_advisory_unlock_shared(
+  2
+  ),
+  pg_advisory_unlock(
+  1,
+  1
+  ),
+  pg_advisory_unlock(
+  1,
+  1
+  ),
+  pg_advisory_unlock_shared(
+  2,
+  2
+  ),
+  pg_advisory_unlock_shared(
+  2,
+  2
+  );
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE
@@ -154,12 +211,20 @@ WHERE
 BEGIN;
 
 SELECT
-  pg_advisory_lock(1),
-  pg_advisory_lock_shared(2),
-  pg_advisory_lock(1,
-  1),
-  pg_advisory_lock_shared(2,
-  2);
+  pg_advisory_lock(
+  1
+  ),
+  pg_advisory_lock_shared(
+  2
+  ),
+  pg_advisory_lock(
+  1,
+  1
+  ),
+  pg_advisory_lock_shared(
+  2,
+  2
+  );
 
 SELECT
   locktype,
@@ -180,12 +245,20 @@ ORDER BY classid,
   objsubid;
 
 SELECT
-  pg_advisory_xact_lock(1),
-  pg_advisory_xact_lock_shared(2),
-  pg_advisory_xact_lock(1,
-  1),
-  pg_advisory_xact_lock_shared(2,
-  2);
+  pg_advisory_xact_lock(
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2
+  ),
+  pg_advisory_xact_lock(
+  1,
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2,
+  2
+  );
 
 ROLLBACK;
 
@@ -210,7 +283,9 @@ ORDER BY classid,
 SELECT pg_advisory_unlock_all();
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE
@@ -222,18 +297,34 @@ WHERE
 BEGIN;
 
 SELECT
-  pg_advisory_xact_lock(1),
-  pg_advisory_xact_lock(1),
-  pg_advisory_xact_lock_shared(2),
-  pg_advisory_xact_lock_shared(2),
-  pg_advisory_xact_lock(1,
-  1),
-  pg_advisory_xact_lock(1,
-  1),
-  pg_advisory_xact_lock_shared(2,
-  2),
-  pg_advisory_xact_lock_shared(2,
-  2);
+  pg_advisory_xact_lock(
+  1
+  ),
+  pg_advisory_xact_lock(
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2
+  ),
+  pg_advisory_xact_lock_shared(
+  2
+  ),
+  pg_advisory_xact_lock(
+  1,
+  1
+  ),
+  pg_advisory_xact_lock(
+  1,
+  1
+  ),
+  pg_advisory_xact_lock_shared(
+  2,
+  2
+  ),
+  pg_advisory_xact_lock_shared(
+  2,
+  2
+  );
 
 SELECT
   locktype,
@@ -256,7 +347,9 @@ ORDER BY classid,
 COMMIT;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE
@@ -266,18 +359,34 @@ WHERE
   'datoid';
 
 SELECT
-  pg_advisory_lock(1),
-  pg_advisory_lock(1),
-  pg_advisory_lock_shared(2),
-  pg_advisory_lock_shared(2),
-  pg_advisory_lock(1,
-  1),
-  pg_advisory_lock(1,
-  1),
-  pg_advisory_lock_shared(2,
-  2),
-  pg_advisory_lock_shared(2,
-  2);
+  pg_advisory_lock(
+  1
+  ),
+  pg_advisory_lock(
+  1
+  ),
+  pg_advisory_lock_shared(
+  2
+  ),
+  pg_advisory_lock_shared(
+  2
+  ),
+  pg_advisory_lock(
+  1,
+  1
+  ),
+  pg_advisory_lock(
+  1,
+  1
+  ),
+  pg_advisory_lock_shared(
+  2,
+  2
+  ),
+  pg_advisory_lock_shared(
+  2,
+  2
+  );
 
 SELECT
   locktype,
@@ -298,21 +407,39 @@ ORDER BY classid,
   objsubid;
 
 SELECT
-  pg_advisory_unlock(1),
-  pg_advisory_unlock(1),
-  pg_advisory_unlock_shared(2),
-  pg_advisory_unlock_shared(2),
-  pg_advisory_unlock(1,
-  1),
-  pg_advisory_unlock(1,
-  1),
-  pg_advisory_unlock_shared(2,
-  2),
-  pg_advisory_unlock_shared(2,
-  2);
+  pg_advisory_unlock(
+  1
+  ),
+  pg_advisory_unlock(
+  1
+  ),
+  pg_advisory_unlock_shared(
+  2
+  ),
+  pg_advisory_unlock_shared(
+  2
+  ),
+  pg_advisory_unlock(
+  1,
+  1
+  ),
+  pg_advisory_unlock(
+  1,
+  1
+  ),
+  pg_advisory_unlock_shared(
+  2,
+  2
+  ),
+  pg_advisory_unlock_shared(
+  2,
+  2
+  );
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE
@@ -322,18 +449,34 @@ WHERE
   'datoid';
 
 SELECT
-  pg_advisory_lock(1),
-  pg_advisory_lock(1),
-  pg_advisory_lock_shared(2),
-  pg_advisory_lock_shared(2),
-  pg_advisory_lock(1,
-  1),
-  pg_advisory_lock(1,
-  1),
-  pg_advisory_lock_shared(2,
-  2),
-  pg_advisory_lock_shared(2,
-  2);
+  pg_advisory_lock(
+  1
+  ),
+  pg_advisory_lock(
+  1
+  ),
+  pg_advisory_lock_shared(
+  2
+  ),
+  pg_advisory_lock_shared(
+  2
+  ),
+  pg_advisory_lock(
+  1,
+  1
+  ),
+  pg_advisory_lock(
+  1,
+  1
+  ),
+  pg_advisory_lock_shared(
+  2,
+  2
+  ),
+  pg_advisory_lock_shared(
+  2,
+  2
+  );
 
 SELECT
   locktype,
@@ -356,7 +499,9 @@ ORDER BY classid,
 SELECT pg_advisory_unlock_all();
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_locks
 WHERE

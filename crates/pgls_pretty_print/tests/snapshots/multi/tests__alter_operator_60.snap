@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/alter_operator_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION alter_op_test_fn(
+CREATE FUNCTION
+alter_op_test_fn(
   BOOLEAN,
   BOOLEAN
 )
@@ -12,7 +13,8 @@ AS ' SELECT NULL::BOOLEAN; '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE FUNCTION customcontsel(
+CREATE FUNCTION
+customcontsel(
   internal,
   OID,
   internal,
@@ -35,9 +37,12 @@ HASHES,
 MERGES);
 
 SELECT
-  pg_describe_object(refclassid,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS ref,
+  refobjsubid
+  )
+  AS ref,
   deptype
 FROM
   pg_depend
@@ -70,9 +75,12 @@ WHERE
   AS REGTYPE);
 
 SELECT
-  pg_describe_object(refclassid,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS ref,
+  refobjsubid
+  )
+  AS ref,
   deptype
 FROM
   pg_depend
@@ -107,9 +115,12 @@ WHERE
   AS REGTYPE);
 
 SELECT
-  pg_describe_object(refclassid,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS ref,
+  refobjsubid
+  )
+  AS ref,
   deptype
 FROM
   pg_depend
@@ -142,9 +153,12 @@ WHERE
   AS REGTYPE);
 
 SELECT
-  pg_describe_object(refclassid,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS ref,
+  refobjsubid
+  )
+  AS ref,
   deptype
 FROM
   pg_depend
@@ -177,9 +191,12 @@ WHERE
   AS REGTYPE);
 
 SELECT
-  pg_describe_object(refclassid,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS ref,
+  refobjsubid
+  )
+  AS ref,
   deptype
 FROM
   pg_depend
@@ -210,7 +227,8 @@ ALTER OPERATOR === (BOOLEAN, BOOLEAN) SET (restrict = NONE);
 
 RESET session_authorization;
 
-CREATE FUNCTION alter_op_test_fn_bool_real(
+CREATE FUNCTION
+alter_op_test_fn_bool_real(
   BOOLEAN,
   REAL
 )
@@ -219,7 +237,8 @@ AS ' SELECT NULL::BOOLEAN; '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE FUNCTION alter_op_test_fn_real_bool(
+CREATE FUNCTION
+alter_op_test_fn_real_bool(
   REAL,
   BOOLEAN
 )
@@ -266,9 +285,12 @@ WHERE
 ALTER OPERATOR === (BOOLEAN, REAL) SET (commutator = ====);
 
 SELECT
-  op.oprname AS operator_name,
-  com.oprname AS commutator_name,
-  com.oprcode AS commutator_func
+  op.oprname
+  AS operator_name,
+  com.oprname
+  AS commutator_name,
+  com.oprcode
+  AS commutator_func
 FROM
   pg_operator
   AS op
@@ -293,9 +315,12 @@ ALTER OPERATOR === (BOOLEAN, REAL) SET (negator = ===);
 ALTER OPERATOR === (BOOLEAN, REAL) SET (negator = !====);
 
 SELECT
-  op.oprname AS operator_name,
-  neg.oprname AS negator_name,
-  neg.oprcode AS negator_func
+  op.oprname
+  AS operator_name,
+  neg.oprname
+  AS negator_name,
+  neg.oprcode
+  AS negator_func
 FROM
   pg_operator
   AS op
@@ -326,14 +351,20 @@ ALTER OPERATOR === (BOOLEAN, REAL) SET (hashes);
 SELECT
   oprcanmerge,
   oprcanhash,
-  pg_describe_object(CAST('pg_operator'
+  pg_describe_object(
+  CAST('pg_operator'
   AS REGCLASS),
   oprcom,
-  0) AS commutator,
-  pg_describe_object(CAST('pg_operator'
+  0
+  )
+  AS commutator,
+  pg_describe_object(
+  CAST('pg_operator'
   AS REGCLASS),
   oprnegate,
-  0) AS negator
+  0
+  )
+  AS negator
 FROM
   pg_operator
 WHERE
@@ -369,14 +400,20 @@ ALTER OPERATOR @!= (BOOLEAN, REAL) SET (negator = ===);
 SELECT
   oprcanmerge,
   oprcanhash,
-  pg_describe_object(CAST('pg_operator'
+  pg_describe_object(
+  CAST('pg_operator'
   AS REGCLASS),
   oprcom,
-  0) AS commutator,
-  pg_describe_object(CAST('pg_operator'
+  0
+  )
+  AS commutator,
+  pg_describe_object(
+  CAST('pg_operator'
   AS REGCLASS),
   oprnegate,
-  0) AS negator
+  0
+  )
+  AS negator
 FROM
   pg_operator
 WHERE

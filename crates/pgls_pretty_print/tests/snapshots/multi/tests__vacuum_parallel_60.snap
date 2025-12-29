@@ -15,8 +15,10 @@ INSERT INTO parallel_vacuum_table
 SELECT
   i
 FROM
-  generate_series(1,
-  10000) AS i;
+  generate_series(
+  1,
+  10000
+  ) AS i;
 
 CREATE INDEX "regular_sized_index" ON parallel_vacuum_table USING btree
 (
@@ -42,11 +44,21 @@ SELECT
     oid =
     CAST('vacuum_in_leader_small_index'
     AS REGCLASS) AND
-    pg_relation_size(oid) <
-    pg_size_bytes(current_setting('min_parallel_index_scan_size'))) AS leader_will_handle_small_index;
+    pg_relation_size(
+    oid
+    ) <
+    pg_size_bytes(
+    current_setting(
+    'min_parallel_index_scan_size'
+    )
+    ))
+  AS leader_will_handle_small_index;
 
 SELECT
-  COUNT(*) AS trigger_parallel_vacuum_nindexes
+  COUNT(
+  *
+  )
+  AS trigger_parallel_vacuum_nindexes
 FROM
   pg_class
 WHERE
@@ -54,8 +66,14 @@ WHERE
   AS REGCLASS),
   CAST('typically_sized_index'
   AS REGCLASS)) AND
-  pg_relation_size(oid) >=
-  pg_size_bytes(current_setting('min_parallel_index_scan_size'));
+  pg_relation_size(
+  oid
+  ) >=
+  pg_size_bytes(
+  current_setting(
+  'min_parallel_index_scan_size'
+  )
+  );
 
 DELETE FROM parallel_vacuum_table;
 
@@ -66,8 +84,10 @@ INSERT INTO parallel_vacuum_table
 SELECT
   i
 FROM
-  generate_series(1,
-  10000) AS i;
+  generate_series(
+  1,
+  10000
+  ) AS i;
 
 RESET max_parallel_maintenance_workers;
 

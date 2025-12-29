@@ -104,7 +104,8 @@ B'0011',
 
 CREATE TEMPORARY TABLE gstest_empty ( a INT, b INT, v INT );
 
-CREATE FUNCTION gstest_data(
+CREATE FUNCTION
+gstest_data(
   "v" INT,
   OUT "a" INT,
   OUT "b" INT
@@ -124,9 +125,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY ROLLUP (a,
@@ -137,9 +144,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY ROLLUP (a,
@@ -152,9 +165,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY ROLLUP (a,
@@ -167,9 +186,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY ROLLUP (a,
@@ -183,15 +208,23 @@ SELECT
   b,
   GROUPING(a,
   b),
-  array_agg(v ORDER BY v),
-  string_agg(CAST(v
+  array_agg(
+  v ORDER BY v
+  ),
+  string_agg(
+  CAST(v
   AS TEXT),
-  ':' ORDER BY v DESC),
-  percentile_disc(0.5)
+  ':' ORDER BY v DESC
+  ),
+  percentile_disc(
+  0.5
+  )
   WITHIN GROUP (ORDER BY v),
-  RANK(1,
+  RANK(
+  1,
   2,
-  12)
+  12
+  )
   WITHIN GROUP (ORDER BY a,
   b,
   v)
@@ -205,10 +238,16 @@ ORDER BY a,
 SELECT
   GROUPING(a),
   a,
-  array_agg(b),
-  RANK(a)
+  array_agg(
+  b
+  ),
+  RANK(
+  a
+  )
   WITHIN GROUP (ORDER BY b NULLS FIRST),
-  RANK(a)
+  RANK(
+  a
+  )
   WITHIN GROUP (ORDER BY b NULLS LAST)
 FROM
   (VALUES (1,
@@ -228,11 +267,18 @@ ORDER BY a;
 SELECT
   a,
   b,
-  SUM(c),
-  SUM(SUM(c))
+  SUM(
+  c
+  ),
+  SUM(
+  SUM(
+  c
+  )
+  )
   OVER (
   ORDER BY a,
-  b) AS rsum
+  b)
+  AS rsum
 FROM
   gstest2
 GROUP BY ROLLUP (a,
@@ -242,7 +288,9 @@ ORDER BY rsum,
   b;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS ((),
@@ -251,7 +299,9 @@ GROUP BY GROUPING SETS ((),
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS ((),
@@ -261,7 +311,9 @@ GROUP BY GROUPING SETS ((),
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (GROUPING SETS (ROLLUP (c),
@@ -269,7 +321,9 @@ GROUP BY GROUPING SETS (GROUPING SETS (ROLLUP (c),
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (a,
@@ -278,7 +332,9 @@ GROUP BY GROUPING SETS (a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (GROUPING SETS ((a,
@@ -286,7 +342,9 @@ GROUP BY GROUPING SETS (GROUPING SETS ((a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (GROUPING SETS ((a,
@@ -294,7 +352,9 @@ GROUP BY GROUPING SETS (GROUPING SETS ((a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (GROUPING SETS (a,
@@ -303,7 +363,9 @@ GROUP BY GROUPING SETS (GROUPING SETS (a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (GROUPING SETS (a,
@@ -317,7 +379,9 @@ GROUP BY GROUPING SETS (GROUPING SETS (a,
 ORDER BY 1 DESC;
 
 SELECT
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS ((a,
@@ -332,8 +396,12 @@ ORDER BY 1 DESC;
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -343,8 +411,12 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -354,8 +426,12 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -365,8 +441,12 @@ GROUP BY GROUPING SETS ((a,
   ());
 
 SELECT
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((),
@@ -376,8 +456,12 @@ GROUP BY GROUPING SETS ((),
 SELECT
   t1.a,
   t2.b,
-  SUM(t1.v),
-  COUNT(*)
+  SUM(
+  t1.v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
   AS t1,
@@ -392,8 +476,12 @@ SELECT
   t2.b,
   GROUPING(t1.a,
   t2.b),
-  SUM(t1.v),
-  MAX(t2.a)
+  SUM(
+  t1.v
+  ),
+  MAX(
+  t2.a
+  )
 FROM
   gstest1
   AS t1,
@@ -408,8 +496,12 @@ SELECT
   t2.b,
   GROUPING(t1.a,
   t2.b),
-  SUM(t1.v),
-  MAX(t2.a)
+  SUM(
+  t1.v
+  ),
+  MAX(
+  t2.a
+  )
 FROM
   gstest1
   AS t1
@@ -426,8 +518,12 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(t1.v),
-  MAX(t2.c)
+  SUM(
+  t1.v
+  ),
+  MAX(
+  t2.c
+  )
 FROM
   gstest1
   AS t1
@@ -454,20 +550,28 @@ GROUP BY GROUPING SETS ((a,
   c));
 
 SELECT
-  g AS alias1,
-  g AS alias2
+  g
+  AS alias1,
+  g
+  AS alias2
 FROM
-  generate_series(1,
-  3) AS g
+  generate_series(
+  1,
+  3
+  ) AS g
 GROUP BY alias1,
   ROLLUP (alias2);
 
 SELECT
-  g AS alias1,
-  g AS alias2
+  g
+  AS alias1,
+  g
+  AS alias2
 FROM
-  generate_series(1,
-  3) AS g
+  generate_series(
+  1,
+  3
+  ) AS g
 GROUP BY alias1,
   ROLLUP (alias2);
 
@@ -479,7 +583,8 @@ FROM
     four,
     ten,
     CAST('foo'
-    AS TEXT) AS x
+    AS TEXT)
+    AS x
   FROM
     tenk1) AS t
 GROUP BY GROUPING SETS (four,
@@ -497,7 +602,8 @@ FROM
     four,
     ten,
     CAST('foo'
-    AS TEXT) AS x
+    AS TEXT)
+    AS x
   FROM
     tenk1) AS t
 GROUP BY GROUPING SETS (four,
@@ -506,24 +612,31 @@ ORDER BY four;
 
 SELECT
   (x + y) * 1,
-  SUM(z)
+  SUM(
+  z
+  )
 FROM
   (SELECT
-    1 AS x,
-    2 AS y,
-    3 AS z) AS s
+    1
+    AS x,
+    2
+    AS y,
+    3
+    AS z) AS s
 GROUP BY GROUPING SETS (x + y,
   x);
 
 SELECT
   x,
-  NOT x AS not_x,
+  NOT x
+  AS not_x,
   q2
 FROM
   (SELECT
     *,
     q1 =
-    1 AS x
+    1
+    AS x
   FROM
     int8_tbl
     AS i1) AS t
@@ -537,8 +650,10 @@ SELECT
   y
 FROM
   (SELECT
-    four AS x,
-    four AS y
+    four
+    AS x,
+    four
+    AS y
   FROM
     tenk1) AS t
 GROUP BY GROUPING SETS (x,
@@ -554,8 +669,10 @@ SELECT
   'y'
 FROM
   (SELECT
-    four AS x,
-    four AS y
+    four
+    AS x,
+    four
+    AS y
   FROM
     tenk1) AS t
 GROUP BY GROUPING SETS (x,
@@ -567,9 +684,12 @@ SELECT
   *
 FROM
   (SELECT
-    1 AS x,
+    1
+    AS x,
     q1,
-    SUM(q2)
+    SUM(
+    q2
+    )
   FROM
     int8_tbl
     AS i1
@@ -585,9 +705,12 @@ SELECT
   *
 FROM
   (SELECT
-    1 AS x,
+    1
+    AS x,
     q1,
-    SUM(q2)
+    SUM(
+    q2
+    )
   FROM
     int8_tbl
     AS i1
@@ -606,7 +729,8 @@ FROM
   AS i1
   INNER JOIN LATERAL (SELECT
     (SELECT
-      i1.q1) AS x) AS ss
+      i1.q1)
+    AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -617,7 +741,8 @@ FROM
   AS i1
   INNER JOIN LATERAL (SELECT
     (SELECT
-      i1.q1) AS x) AS ss
+      i1.q1)
+    AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -629,7 +754,8 @@ FROM
   AS i1
   INNER JOIN LATERAL (SELECT
     (SELECT
-      i1.q1) AS x) AS ss
+      i1.q1)
+    AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -641,18 +767,23 @@ FROM
   AS i1
   INNER JOIN LATERAL (SELECT
     (SELECT
-      i1.q1) AS x) AS ss
+      i1.q1)
+    AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
 SELECT
   a,
   b,
-  SUM(v.x)
+  SUM(
+  v.x
+  )
 FROM
   (VALUES (1),
   (2)) AS v (x),
-  gstest_data(v.x)
+  gstest_data(
+  v.x
+  )
 GROUP BY ROLLUP (a,
   b);
 
@@ -664,9 +795,13 @@ FROM
   LATERAL (SELECT
     a,
     b,
-    SUM(v.x)
+    SUM(
+    v.x
+    )
   FROM
-    gstest_data(v.x)
+    gstest_data(
+    v.x
+    )
   GROUP BY ROLLUP (a,
     b)) AS s;
 
@@ -678,9 +813,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(c),
-  COUNT(*),
-  MAX(c)
+  SUM(
+  c
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  c
+  )
 FROM
   gstest2
 GROUP BY ROLLUP ((a,
@@ -690,9 +831,11 @@ GROUP BY ROLLUP ((a,
   d));
 
 SELECT
-  pg_get_viewdef(CAST('gstest_view'
+  pg_get_viewdef(
+  CAST('gstest_view'
   AS REGCLASS),
-  TRUE);
+  TRUE
+  );
 
 SELECT
   (SELECT
@@ -784,9 +927,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY GROUPING SETS ((a,
@@ -843,11 +992,18 @@ ORDER BY e + 1,
 SELECT
   a,
   b,
-  SUM(c),
-  SUM(SUM(c))
+  SUM(
+  c
+  ),
+  SUM(
+  SUM(
+  c
+  )
+  )
   OVER (
   ORDER BY a,
-  b) AS rsum
+  b)
+  AS rsum
 FROM
   gstest2
 GROUP BY CUBE (a,
@@ -859,7 +1015,9 @@ ORDER BY rsum,
 SELECT
   a,
   b,
-  SUM(c)
+  SUM(
+  c
+  )
 FROM
   (VALUES (1,
   1,
@@ -899,11 +1057,15 @@ GROUP BY ROLLUP (a,
 SELECT
   a,
   b,
-  SUM(v.x)
+  SUM(
+  v.x
+  )
 FROM
   (VALUES (1),
   (2)) AS v (x),
-  gstest_data(v.x)
+  gstest_data(
+  v.x
+  )
 GROUP BY CUBE (a,
   b)
 ORDER BY a,
@@ -935,8 +1097,12 @@ GROUP BY a,
 SELECT
   a,
   b,
-  SUM(c),
-  COUNT(*)
+  SUM(
+  c
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS (ROLLUP (a,
@@ -945,7 +1111,9 @@ GROUP BY GROUPING SETS (ROLLUP (a,
 
 SELECT
   ten,
-  SUM(DISTINCT four)
+  SUM(
+  DISTINCT four
+  )
 FROM
   onek
   AS a
@@ -959,12 +1127,16 @@ HAVING
     onek
     AS b
   WHERE
-    SUM(DISTINCT a.four) =
+    SUM(
+    DISTINCT a.four
+    ) =
     b.four);
 
 SELECT
   a,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest2
 GROUP BY ROLLUP (a)
@@ -972,7 +1144,9 @@ ORDER BY a;
 
 SELECT
   a,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest2
 GROUP BY ROLLUP (a)
@@ -982,7 +1156,9 @@ ORDER BY a;
 
 SELECT
   a,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest2
 GROUP BY ROLLUP (a)
@@ -993,7 +1169,9 @@ ORDER BY a;
 SELECT
   v.c,
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     gstest2
   GROUP BY ()
@@ -1007,7 +1185,9 @@ ORDER BY v.c;
 SELECT
   v.c,
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     gstest2
   GROUP BY ()
@@ -1021,7 +1201,9 @@ ORDER BY v.c;
 SELECT
   a,
   b,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS ((a,
@@ -1036,7 +1218,9 @@ HAVING
 SELECT
   a,
   b,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest2
 GROUP BY GROUPING SETS ((a,
@@ -1111,7 +1295,9 @@ ORDER BY 2,
 
 SELECT
   ten,
-  SUM(DISTINCT four)
+  SUM(
+  DISTINCT four
+  )
   FILTER (WHERE
     CAST(four
     AS TEXT) ~ '123')
@@ -1129,7 +1315,9 @@ FROM
     v.a,
     four,
     ten,
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     onek
   GROUP BY CUBE (four,
@@ -1147,7 +1335,9 @@ SELECT
     (SELECT
       two,
       four,
-      COUNT(*)
+      COUNT(
+      *
+      )
     FROM
       onek
     GROUP BY CUBE (two,
@@ -1159,7 +1349,9 @@ FROM
   (2)) AS v (a);
 
 SELECT
-  SUM(ten)
+  SUM(
+  ten
+  )
 FROM
   onek
 GROUP BY two,
@@ -1168,7 +1360,9 @@ GROUP BY two,
 ORDER BY 1;
 
 SELECT
-  SUM(ten)
+  SUM(
+  ten
+  )
 FROM
   onek
 GROUP BY ROLLUP (CAST(four
@@ -1179,14 +1373,18 @@ ORDER BY 1;
 SET enable_hashagg = true;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest4
 GROUP BY ROLLUP (unhashable_col,
   unsortable_col);
 
 SELECT
-  array_agg(v ORDER BY v)
+  array_agg(
+  v ORDER BY v
+  )
 FROM
   gstest4
 GROUP BY GROUPING SETS ((id,
@@ -1198,9 +1396,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY GROUPING SETS (a,
@@ -1214,9 +1418,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY GROUPING SETS (a,
@@ -1230,9 +1440,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY CUBE (a,
@@ -1246,9 +1462,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY CUBE (a,
@@ -1262,7 +1484,9 @@ SELECT
   b,
   GROUPING(a,
   b),
-  array_agg(v ORDER BY v)
+  array_agg(
+  v ORDER BY v
+  )
 FROM
   gstest1
 GROUP BY CUBE (a,
@@ -1270,7 +1494,9 @@ GROUP BY CUBE (a,
 
 SELECT
   unsortable_col,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   gstest4
 GROUP BY GROUPING SETS (unsortable_col,
@@ -1283,8 +1509,12 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(*),
-  SUM(v)
+  COUNT(
+  *
+  ),
+  SUM(
+  v
+  )
 FROM
   gstest4
 GROUP BY GROUPING SETS (unhashable_col,
@@ -1297,8 +1527,12 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(*),
-  SUM(v)
+  COUNT(
+  *
+  ),
+  SUM(
+  v
+  )
 FROM
   gstest4
 GROUP BY GROUPING SETS (unhashable_col,
@@ -1311,8 +1545,12 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(*),
-  SUM(v)
+  COUNT(
+  *
+  ),
+  SUM(
+  v
+  )
 FROM
   gstest4
 GROUP BY GROUPING SETS ((v,
@@ -1327,8 +1565,12 @@ SELECT
   unsortable_col,
   GROUPING(unhashable_col,
   unsortable_col),
-  COUNT(*),
-  SUM(v)
+  COUNT(
+  *
+  ),
+  SUM(
+  v
+  )
 FROM
   gstest4
 GROUP BY GROUPING SETS ((v,
@@ -1341,8 +1583,12 @@ ORDER BY 3,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -1352,8 +1598,12 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -1363,8 +1613,12 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -1374,8 +1628,12 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -1387,8 +1645,12 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((a,
@@ -1398,8 +1660,12 @@ GROUP BY GROUPING SETS ((a,
   ());
 
 SELECT
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((),
@@ -1407,8 +1673,12 @@ GROUP BY GROUPING SETS ((),
   ());
 
 SELECT
-  SUM(v),
-  COUNT(*)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  )
 FROM
   gstest_empty
 GROUP BY GROUPING SETS ((),
@@ -1444,11 +1714,15 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  SUM(v.x)
+  SUM(
+  v.x
+  )
 FROM
   (VALUES (1),
   (2)) AS v (x),
-  gstest_data(v.x)
+  gstest_data(
+  v.x
+  )
 GROUP BY GROUPING SETS (a,
   b)
 ORDER BY 1,
@@ -1458,11 +1732,15 @@ ORDER BY 1,
 SELECT
   a,
   b,
-  SUM(v.x)
+  SUM(
+  v.x
+  )
 FROM
   (VALUES (1),
   (2)) AS v (x),
-  gstest_data(v.x)
+  gstest_data(
+  v.x
+  )
 GROUP BY GROUPING SETS (a,
   b)
 ORDER BY 3,
@@ -1477,9 +1755,13 @@ FROM
   LATERAL (SELECT
     a,
     b,
-    SUM(v.x)
+    SUM(
+    v.x
+    )
   FROM
-    gstest_data(v.x)
+    gstest_data(
+    v.x
+    )
   GROUP BY GROUPING SETS (a,
     b)) AS s;
 
@@ -1491,9 +1773,13 @@ FROM
   LATERAL (SELECT
     a,
     b,
-    SUM(v.x)
+    SUM(
+    v.x
+    )
   FROM
-    gstest_data(v.x)
+    gstest_data(
+    v.x
+    )
   GROUP BY GROUPING SETS (a,
     b)) AS s;
 
@@ -1502,9 +1788,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY GROUPING SETS ((a,
@@ -1521,9 +1813,15 @@ SELECT
   b,
   GROUPING(a,
   b),
-  SUM(v),
-  COUNT(*),
-  MAX(v)
+  SUM(
+  v
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  v
+  )
 FROM
   gstest1
 GROUP BY GROUPING SETS ((a,
@@ -1538,11 +1836,18 @@ ORDER BY 3,
 SELECT
   a,
   b,
-  SUM(c),
-  SUM(SUM(c))
+  SUM(
+  c
+  ),
+  SUM(
+  SUM(
+  c
+  )
+  )
   OVER (
   ORDER BY a,
-  b) AS rsum
+  b)
+  AS rsum
 FROM
   gstest2
 GROUP BY CUBE (a,
@@ -1554,11 +1859,18 @@ ORDER BY rsum,
 SELECT
   a,
   b,
-  SUM(c),
-  SUM(SUM(c))
+  SUM(
+  c
+  ),
+  SUM(
+  SUM(
+  c
+  )
+  )
   OVER (
   ORDER BY a,
-  b) AS rsum
+  b)
+  AS rsum
 FROM
   gstest2
 GROUP BY CUBE (a,
@@ -1570,11 +1882,15 @@ ORDER BY rsum,
 SELECT
   a,
   b,
-  SUM(v.x)
+  SUM(
+  v.x
+  )
 FROM
   (VALUES (1),
   (2)) AS v (x),
-  gstest_data(v.x)
+  gstest_data(
+  v.x
+  )
 GROUP BY CUBE (a,
   b)
 ORDER BY a,
@@ -1583,11 +1899,15 @@ ORDER BY a,
 SELECT
   a,
   b,
-  SUM(v.x)
+  SUM(
+  v.x
+  )
 FROM
   (VALUES (1),
   (2)) AS v (x),
-  gstest_data(v.x)
+  gstest_data(
+  v.x
+  )
 GROUP BY CUBE (a,
   b)
 ORDER BY a,
@@ -1600,9 +1920,15 @@ SET LOCAL enable_hashagg = false;
 SELECT
   a,
   b,
-  COUNT(*),
-  MAX(a),
-  MAX(b)
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  ),
+  MAX(
+  b
+  )
 FROM
   gstest3
 GROUP BY GROUPING SETS (a,
@@ -1614,9 +1940,15 @@ ORDER BY a,
 SELECT
   a,
   b,
-  COUNT(*),
-  MAX(a),
-  MAX(b)
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  ),
+  MAX(
+  b
+  )
 FROM
   gstest3
 GROUP BY GROUPING SETS (a,
@@ -1630,9 +1962,15 @@ SET LOCAL enable_seqscan = false;
 SELECT
   a,
   b,
-  COUNT(*),
-  MAX(a),
-  MAX(b)
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  ),
+  MAX(
+  b
+  )
 FROM
   gstest3
 GROUP BY GROUPING SETS (a,
@@ -1644,9 +1982,15 @@ ORDER BY a,
 SELECT
   a,
   b,
-  COUNT(*),
-  MAX(a),
-  MAX(b)
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  ),
+  MAX(
+  b
+  )
 FROM
   gstest3
 GROUP BY GROUPING SETS (a,
@@ -1666,7 +2010,9 @@ FROM
     v.a,
     four,
     ten,
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     onek
   GROUP BY CUBE (four,
@@ -1684,7 +2030,9 @@ SELECT
     (SELECT
       two,
       four,
-      COUNT(*)
+      COUNT(
+      *
+      )
     FROM
       onek
     GROUP BY CUBE (two,
@@ -1704,7 +2052,9 @@ FROM
     v.a,
     four,
     ten,
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     onek
   GROUP BY GROUPING SETS (four,
@@ -1722,7 +2072,9 @@ SELECT
     (SELECT
       two,
       four,
-      COUNT(*)
+      COUNT(
+      *
+      )
     FROM
       onek
     GROUP BY GROUPING SETS (two,
@@ -1741,13 +2093,27 @@ SET work_mem = '64kB';
 
 SELECT
   unique1,
-  COUNT(two),
-  COUNT(four),
-  COUNT(ten),
-  COUNT(hundred),
-  COUNT(thousand),
-  COUNT(twothousand),
-  COUNT(*)
+  COUNT(
+  two
+  ),
+  COUNT(
+  four
+  ),
+  COUNT(
+  ten
+  ),
+  COUNT(
+  hundred
+  ),
+  COUNT(
+  thousand
+  ),
+  COUNT(
+  twothousand
+  ),
+  COUNT(
+  *
+  )
 FROM
   tenk1
 GROUP BY GROUPING SETS (unique1,
@@ -1760,13 +2126,27 @@ GROUP BY GROUPING SETS (unique1,
 
 SELECT
   unique1,
-  COUNT(two),
-  COUNT(four),
-  COUNT(ten),
-  COUNT(hundred),
-  COUNT(thousand),
-  COUNT(twothousand),
-  COUNT(*)
+  COUNT(
+  two
+  ),
+  COUNT(
+  four
+  ),
+  COUNT(
+  ten
+  ),
+  COUNT(
+  hundred
+  ),
+  COUNT(
+  thousand
+  ),
+  COUNT(
+  twothousand
+  ),
+  COUNT(
+  *
+  )
 FROM
   tenk1
 GROUP BY GROUPING SETS (unique1,
@@ -1779,13 +2159,27 @@ SET work_mem = '384kB';
 
 SELECT
   unique1,
-  COUNT(two),
-  COUNT(four),
-  COUNT(ten),
-  COUNT(hundred),
-  COUNT(thousand),
-  COUNT(twothousand),
-  COUNT(*)
+  COUNT(
+  two
+  ),
+  COUNT(
+  four
+  ),
+  COUNT(
+  ten
+  ),
+  COUNT(
+  hundred
+  ),
+  COUNT(
+  thousand
+  ),
+  COUNT(
+  twothousand
+  ),
+  COUNT(
+  *
+  )
 FROM
   tenk1
 GROUP BY GROUPING SETS (unique1,
@@ -1804,12 +2198,16 @@ SELECT
   WHEN 1 THEN 1
   ELSE 0
   END,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
-  unnest(ARRAY[1,
+  unnest(
+  ARRAY[1,
   1],
   ARRAY['a',
-  'b']) AS u (i,
+  'b']
+  ) AS u (i,
   v)
 GROUP BY ROLLUP (i,
   v ||
@@ -1826,12 +2224,16 @@ SELECT
   1 THEN 1
   ELSE 0
   END,
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
-  unnest(ARRAY[1,
+  unnest(
+  ARRAY[1,
   1],
   ARRAY['a',
-  'b']) AS u (i,
+  'b']
+  ) AS u (i,
   v)
 GROUP BY ROLLUP (i,
   v ||
@@ -1856,8 +2258,10 @@ SELECT
   g / 10,
   g
 FROM
-  generate_series(1,
-  40) AS g;
+  generate_series(
+  1,
+  40
+  ) AS g;
 
 SET work_mem = '64kB';
 
@@ -1872,7 +2276,9 @@ FROM
     a,
     i,
     j,
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     bug_16784
   GROUP BY CUBE (i,
@@ -1883,13 +2289,18 @@ ORDER BY v.a,
 
 CREATE TABLE gs_data_1 AS
   SELECT
-    g % 1000 AS g1000,
-    g % 100 AS g100,
-    g % 10 AS g10,
+    g % 1000
+    AS g1000,
+    g % 100
+    AS g100,
+    g % 10
+    AS g10,
     g
   FROM
-    generate_series(0,
-    1999) AS g;
+    generate_series(
+    0,
+    1999
+    ) AS g;
 
 ANALYZE gs_data_1;
 
@@ -1912,11 +2323,17 @@ SET jit_above_cost = 0;
 SELECT
   g100,
   g10,
-  SUM(CAST(g
-  AS NUMERIC)),
-  COUNT(*),
-  MAX(CAST(g
-  AS TEXT))
+  SUM(
+  CAST(g
+  AS NUMERIC)
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  CAST(g
+  AS TEXT)
+  )
 FROM
   gs_data_1
 GROUP BY CUBE (g1000,
@@ -1927,11 +2344,17 @@ CREATE TABLE gs_group_1 AS
   SELECT
     g100,
     g10,
-    SUM(CAST(g
-    AS NUMERIC)),
-    COUNT(*),
-    MAX(CAST(g
-    AS TEXT))
+    SUM(
+    CAST(g
+    AS NUMERIC)
+    ),
+    COUNT(
+    *
+    ),
+    MAX(
+    CAST(g
+    AS TEXT)
+    )
   FROM
     gs_data_1
   GROUP BY CUBE (g1000,
@@ -1945,11 +2368,17 @@ SET enable_sort = false;
 SELECT
   g100,
   g10,
-  SUM(CAST(g
-  AS NUMERIC)),
-  COUNT(*),
-  MAX(CAST(g
-  AS TEXT))
+  SUM(
+  CAST(g
+  AS NUMERIC)
+  ),
+  COUNT(
+  *
+  ),
+  MAX(
+  CAST(g
+  AS TEXT)
+  )
 FROM
   gs_data_1
 GROUP BY CUBE (g1000,
@@ -1960,11 +2389,17 @@ CREATE TABLE gs_hash_1 AS
   SELECT
     g100,
     g10,
-    SUM(CAST(g
-    AS NUMERIC)),
-    COUNT(*),
-    MAX(CAST(g
-    AS TEXT))
+    SUM(
+    CAST(g
+    AS NUMERIC)
+    ),
+    COUNT(
+    *
+    ),
+    MAX(
+    CAST(g
+    AS TEXT)
+    )
   FROM
     gs_data_1
   GROUP BY CUBE (g1000,
@@ -2140,8 +2575,10 @@ SELECT
   i,
   i
 FROM
-  generate_series(1,
-  5) AS i;
+  generate_series(
+  1,
+  5
+  ) AS i;
 
 SELECT
   GROUPING((SELECT
@@ -2159,7 +2596,8 @@ SELECT
     AS t2
   WHERE
     id =
-    t1.id) AS s
+    t1.id)
+  AS s
 FROM
   gstest5
   AS t1
@@ -2201,7 +2639,8 @@ SELECT
     AS t2
   WHERE
     id =
-    t1.id) AS s
+    t1.id)
+  AS s
 FROM
   gstest5
   AS t1
@@ -2243,7 +2682,8 @@ SELECT
     AS t2
   WHERE
     id =
-    t1.id) AS s,
+    t1.id)
+  AS s,
   CASE
   WHEN GROUPING((SELECT
     t1.v
@@ -2262,7 +2702,8 @@ SELECT
     id =
     t1.id)
   ELSE NULL
-  END AS o
+  END
+  AS o
 FROM
   gstest5
   AS t1
@@ -2286,7 +2727,8 @@ SELECT
     AS t2
   WHERE
     id =
-    t1.id) AS s,
+    t1.id)
+  AS s,
   CASE
   WHEN GROUPING((SELECT
     t1.v
@@ -2305,7 +2747,8 @@ SELECT
     id =
     t1.id)
   ELSE NULL
-  END AS o
+  END
+  AS o
 FROM
   gstest5
   AS t1
@@ -2484,19 +2927,23 @@ ORDER BY a,
   b NULLS FIRST;
 
 SELECT
-  1 AS one
+  1
+  AS one
 GROUP BY ROLLUP (one)
 ORDER BY one NULLS FIRST;
 
 SELECT
-  1 AS one
+  1
+  AS one
 GROUP BY ROLLUP (one)
 ORDER BY one NULLS FIRST;
 
 SELECT
   a,
   b,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY a,
   b NULLS FIRST)
@@ -2516,7 +2963,9 @@ GROUP BY GROUPING SETS ((a,
 SELECT
   a,
   b,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY a,
   b NULLS FIRST)

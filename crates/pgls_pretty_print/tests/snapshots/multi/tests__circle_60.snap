@@ -46,9 +46,12 @@ SELECT f1 FROM circle_tbl WHERE radius(f1) < 5;
 SELECT f1 FROM circle_tbl WHERE diameter(f1) >= 10;
 
 SELECT
-  c1.f1 AS one,
-  c2.f1 AS two,
-  c1.f1 <-> c2.f1 AS distance
+  c1.f1
+  AS one,
+  c2.f1
+  AS two,
+  c1.f1 <-> c2.f1
+  AS distance
 FROM
   circle_tbl
   AS c1,
@@ -60,5 +63,9 @@ WHERE
   c1.f1 <-> c2.f1 >
   0
 ORDER BY distance,
-  area(c1.f1),
-  area(c2.f1);
+  area(
+  c1.f1
+  ),
+  area(
+  c2.f1
+  );

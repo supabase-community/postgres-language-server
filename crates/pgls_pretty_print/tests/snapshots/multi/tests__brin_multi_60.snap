@@ -33,22 +33,36 @@ SELECT
   twothousand,
   CAST(unique1
   AS OID),
-  CAST(format('(%s,%s)',
+  CAST(format(
+  '(%s,%s)',
   tenthous,
-  twenty)
+  twenty
+  )
   AS TID),
   (four + 1.0) / (hundred + 1),
   CAST(odd
   AS DOUBLE PRECISION) / (tenthous + 1),
-  CAST(format('%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred))
+  CAST(format(
+  '%s:00:%s:00:%s:00',
+  to_hex(
+  odd
+  ),
+  to_hex(
+  even
+  ),
+  to_hex(
+  hundred
+  )
+  )
   AS MACADDR),
-  CAST(substr(fipshash(CAST(unique1
-  AS TEXT)),
+  CAST(substr(
+  fipshash(
+  CAST(unique1
+  AS TEXT)
+  ),
   1,
-  16)
+  16
+  )
   AS MACADDR8),
   CAST('10.2.3.4/24'
   AS INET) + tenthous,
@@ -65,36 +79,60 @@ SELECT
   CAST('1972-10-10 03:00'
   AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
   AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes'
-  AS INTERVAL))),
+  justify_days(
+  justify_hours(
+  tenthous * CAST('12 minutes'
+  AS INTERVAL)
+  )
+  ),
   CAST('01:30:20+02'
   AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
   AS INTERVAL),
   CAST(tenthous
   AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
-  CAST(format('%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'))
+  CAST(format(
+  '%s%s-%s-%s-%s-%s%s%s',
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  )
+  )
   AS UUID),
-  CAST(format('%s/%s%s',
+  CAST(format(
+  '%s/%s%s',
   odd,
   even,
-  tenthous)
+  tenthous
+  )
   AS PG_LSN)
 FROM
   tenk1
@@ -180,10 +218,18 @@ CREATE TABLE brinopers_multi (
   op TEXT[],
   value TEXT[],
   matches INT[],
-  CHECK (cardinality(op) =
-  cardinality(value)),
-  CHECK (cardinality(op) =
-  cardinality(matches))
+  CHECK (cardinality(
+  op
+  ) =
+  cardinality(
+  value
+  )),
+  CHECK (cardinality(
+  op
+  ) =
+  cardinality(
+  matches
+  ))
 );
 
 INSERT INTO brinopers_multi
@@ -435,22 +481,36 @@ SELECT
   twothousand,
   CAST(unique1
   AS OID),
-  CAST(format('(%s,%s)',
+  CAST(format(
+  '(%s,%s)',
   tenthous,
-  twenty)
+  twenty
+  )
   AS TID),
   (four + 1.0) / (hundred + 1),
   CAST(odd
   AS DOUBLE PRECISION) / (tenthous + 1),
-  CAST(format('%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred))
+  CAST(format(
+  '%s:00:%s:00:%s:00',
+  to_hex(
+  odd
+  ),
+  to_hex(
+  even
+  ),
+  to_hex(
+  hundred
+  )
+  )
   AS MACADDR),
-  CAST(substr(fipshash(CAST(unique1
-  AS TEXT)),
+  CAST(substr(
+  fipshash(
+  CAST(unique1
+  AS TEXT)
+  ),
   1,
-  16)
+  16
+  )
   AS MACADDR8),
   CAST('10.2.3.4'
   AS INET) + tenthous,
@@ -467,36 +527,60 @@ SELECT
   CAST('1972-10-10 03:00'
   AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
   AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes'
-  AS INTERVAL))),
+  justify_days(
+  justify_hours(
+  tenthous * CAST('12 minutes'
+  AS INTERVAL)
+  )
+  ),
   CAST('01:30:20'
   AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
   AS INTERVAL),
   CAST(tenthous
   AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
-  CAST(format('%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'))
+  CAST(format(
+  '%s%s-%s-%s-%s-%s%s%s',
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  )
+  )
   AS UUID),
-  CAST(format('%s/%s%s',
+  CAST(format(
+  '%s/%s%s',
   odd,
   even,
-  tenthous)
+  tenthous
+  )
   AS PG_LSN)
 FROM
   tenk1
@@ -551,8 +635,10 @@ INSERT INTO brin_large_range
 SELECT
   i
 FROM
-  generate_series(1,
-  10000) AS s (i);
+  generate_series(
+  1,
+  10000
+  ) AS s (i);
 
 CREATE INDEX "brin_large_range_idx" ON brin_large_range USING brin
 (
@@ -588,14 +674,18 @@ SELECT brin_summarize_range('brin_summarize_multi_idx', 1);
 SELECT brin_summarize_range('brin_summarize_multi_idx', 2);
 
 SELECT
-  brin_summarize_range('brin_summarize_multi_idx',
-  4294967295);
+  brin_summarize_range(
+  'brin_summarize_multi_idx',
+  4294967295
+  );
 
 SELECT brin_summarize_range('brin_summarize_multi_idx', -1);
 
 SELECT
-  brin_summarize_range('brin_summarize_multi_idx',
-  4294967296);
+  brin_summarize_range(
+  'brin_summarize_multi_idx',
+  4294967296
+  );
 
 CREATE TABLE brin_test_multi ( a INT, b INT );
 
@@ -604,8 +694,10 @@ SELECT
   x / 100,
   x % 100
 FROM
-  generate_series(1,
-  10000) AS x (x);
+  generate_series(
+  1,
+  10000
+  ) AS x (x);
 
 CREATE INDEX "brin_test_multi_a_idx" ON brin_test_multi USING brin
 (
@@ -630,13 +722,19 @@ CREATE TABLE brin_test_multi_1 (
 
 INSERT INTO brin_test_multi_1
 SELECT
-  i / 5 + mod(911 * i + 483,
-  25),
-  i / 10 + mod(751 * i + 221,
-  41)
+  i / 5 + mod(
+  911 * i + 483,
+  25
+  ),
+  i / 10 + mod(
+  751 * i + 221,
+  41
+  )
 FROM
-  generate_series(1,
-  1000) AS s (i);
+  generate_series(
+  1,
+  1000
+  ) AS s (i);
 
 CREATE INDEX "brin_test_multi_1_idx_1" ON brin_test_multi_1 USING brin
 (
@@ -694,13 +792,19 @@ TRUNCATE brin_test_multi_1;
 
 INSERT INTO brin_test_multi_1
 SELECT
-  i / 5 + mod(911 * i + 483,
-  25),
-  i / 10 + mod(751 * i + 221,
-  41)
+  i / 5 + mod(
+  911 * i + 483,
+  25
+  ),
+  i / 10 + mod(
+  751 * i + 221,
+  41
+  )
 FROM
-  generate_series(1,
-  1000) AS s (i);
+  generate_series(
+  1,
+  1000
+  ) AS s (i);
 
 SELECT COUNT(*) FROM brin_test_multi_1 WHERE a < 37;
 
@@ -756,18 +860,28 @@ SELECT
   AS UUID)
 FROM
   (SELECT
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    ORDER BY v) AS c,
+    ORDER BY v)
+    AS c,
     v
   FROM
     (SELECT
-      fipshash(CAST(i / 13
-      AS TEXT)) AS v
+      fipshash(
+      CAST(i / 13
+      AS TEXT)
+      )
+      AS v
     FROM
-      generate_series(1,
-      1000) AS s (i)) AS foo) AS bar
-ORDER BY c + 25 * random();
+      generate_series(
+      1,
+      1000
+      ) AS s (i)) AS foo) AS bar
+ORDER BY c + 25 * random(
+
+  );
 
 CREATE INDEX "brin_test_multi_2_idx" ON brin_test_multi_2 USING brin
 (
@@ -777,7 +891,9 @@ CREATE INDEX "brin_test_multi_2_idx" ON brin_test_multi_2 USING brin
 SET enable_seqscan = off;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -785,7 +901,9 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -793,7 +911,9 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -801,7 +921,9 @@ WHERE
   'f369cb89-fc62-7e66-8987-007d121ed1ea';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -809,7 +931,9 @@ WHERE
   'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -817,7 +941,9 @@ WHERE
   '5feceb66-ffc8-6f38-d952-786c6d696c79';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -832,21 +958,33 @@ SELECT
   AS UUID)
 FROM
   (SELECT
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    ORDER BY v) AS c,
+    ORDER BY v)
+    AS c,
     v
   FROM
     (SELECT
-      fipshash(CAST(i / 13
-      AS TEXT)) AS v
+      fipshash(
+      CAST(i / 13
+      AS TEXT)
+      )
+      AS v
     FROM
-      generate_series(1,
-      1000) AS s (i)) AS foo) AS bar
-ORDER BY c + 25 * random();
+      generate_series(
+      1,
+      1000
+      ) AS s (i)) AS foo) AS bar
+ORDER BY c + 25 * random(
+
+  );
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -854,7 +992,9 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -862,7 +1002,9 @@ WHERE
   '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -870,7 +1012,9 @@ WHERE
   'f369cb89-fc62-7e66-8987-007d121ed1ea';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -878,7 +1022,9 @@ WHERE
   'aea92132-c4cb-eb26-3e6a-c2bf6c183b5d';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -886,7 +1032,9 @@ WHERE
   '5feceb66-ffc8-6f38-d952-786c6d696c79';
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   brin_test_multi_2
 WHERE
@@ -910,8 +1058,10 @@ SELECT
   ' seconds'
   AS INTERVAL)
 FROM
-  generate_series(1,
-  30) AS s (i);
+  generate_series(
+  1,
+  30
+  ) AS s (i);
 
 INSERT INTO brin_timestamp_test
 SELECT
@@ -920,8 +1070,10 @@ SELECT
   ' seconds'
   AS INTERVAL)
 FROM
-  generate_series(1,
-  30) AS s (i);
+  generate_series(
+  1,
+  30
+  ) AS s (i);
 
 CREATE INDEX ON brin_timestamp_test USING brin
 (
@@ -937,16 +1089,20 @@ SELECT
   CAST('4713-01-01 BC'
   AS DATE) + i
 FROM
-  generate_series(1,
-  30) AS s (i);
+  generate_series(
+  1,
+  30
+  ) AS s (i);
 
 INSERT INTO brin_date_test
 SELECT
   CAST('5874897-12-01'
   AS DATE) + i
 FROM
-  generate_series(1,
-  30) AS s (i);
+  generate_series(
+  1,
+  30
+  ) AS s (i);
 
 CREATE INDEX ON brin_date_test USING brin
 (
@@ -978,12 +1134,14 @@ INSERT INTO brin_timestamp_test
 SELECT
   i
 FROM
-  generate_series(CAST('2000-01-01'
+  generate_series(
+  CAST('2000-01-01'
   AS TIMESTAMP),
   CAST('2000-02-09'
   AS TIMESTAMP),
   CAST('1 day'
-  AS INTERVAL)) AS s (i);
+  AS INTERVAL)
+  ) AS s (i);
 
 CREATE INDEX ON brin_timestamp_test USING brin
 (
@@ -1025,8 +1183,10 @@ SELECT
   CAST('2000-01-01'
   AS DATE) + i
 FROM
-  generate_series(1,
-  40) AS s (i);
+  generate_series(
+  1,
+  40
+  ) AS s (i);
 
 CREATE INDEX ON brin_date_test USING brin
 (
@@ -1067,8 +1227,10 @@ SELECT
   ' years'
   AS INTERVAL)
 FROM
-  generate_series(-178000000,
-  -177999980) AS s (i);
+  generate_series(
+  -178000000,
+  -177999980
+  ) AS s (i);
 
 INSERT INTO brin_interval_test
 SELECT
@@ -1076,8 +1238,10 @@ SELECT
   ' years'
   AS INTERVAL)
 FROM
-  generate_series(177999980,
-  178000000) AS s (i);
+  generate_series(
+  177999980,
+  178000000
+  ) AS s (i);
 
 CREATE INDEX ON brin_interval_test USING brin
 (
@@ -1120,8 +1284,10 @@ SELECT
   ' days'
   AS INTERVAL)
 FROM
-  generate_series(100,
-  140) AS s (i);
+  generate_series(
+  100,
+  140
+  ) AS s (i);
 
 CREATE INDEX ON brin_interval_test USING brin
 (

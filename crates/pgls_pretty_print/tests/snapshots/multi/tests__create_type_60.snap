@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_type_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION widget_in(
+CREATE FUNCTION
+widget_in(
   cstring
 )
 RETURNS widget
@@ -12,7 +13,8 @@ LANGUAGE "c"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION widget_out(
+CREATE FUNCTION
+widget_out(
   widget
 )
 RETURNS cstring
@@ -21,7 +23,8 @@ LANGUAGE "c"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION int44in(
+CREATE FUNCTION
+int44in(
   cstring
 )
 RETURNS city_budget
@@ -30,7 +33,8 @@ LANGUAGE "c"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION int44out(
+CREATE FUNCTION
+int44out(
   city_budget
 )
 RETURNS cstring
@@ -73,7 +77,8 @@ CREATE TYPE int42;
 
 CREATE TYPE text_w_default;
 
-CREATE FUNCTION int42_in(
+CREATE FUNCTION
+int42_in(
   cstring
 )
 RETURNS int42
@@ -82,7 +87,8 @@ LANGUAGE "internal"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION int42_out(
+CREATE FUNCTION
+int42_out(
   int42
 )
 RETURNS cstring
@@ -91,7 +97,8 @@ LANGUAGE "internal"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION text_w_default_in(
+CREATE FUNCTION
+text_w_default_in(
   cstring
 )
 RETURNS text_w_default
@@ -100,7 +107,8 @@ LANGUAGE "internal"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION text_w_default_out(
+CREATE FUNCTION
+text_w_default_out(
   text_w_default
 )
 RETURNS cstring
@@ -169,7 +177,8 @@ CREATE TYPE default_test_row AS (
   f2 int42
 );
 
-CREATE FUNCTION get_default_test()
+CREATE FUNCTION
+get_default_test()
 RETURNS SETOF default_test_row
 AS '
   SELECT * FROM default_test;
@@ -198,7 +207,8 @@ DROP TABLE "default_test";
 
 CREATE TYPE base_type;
 
-CREATE FUNCTION base_fn_in(
+CREATE FUNCTION
+base_fn_in(
   cstring
 )
 RETURNS base_type
@@ -207,7 +217,8 @@ LANGUAGE "internal"
 IMMUTABLE
 STRICT;
 
-CREATE FUNCTION base_fn_out(
+CREATE FUNCTION
+base_fn_out(
   base_type
 )
 RETURNS cstring
@@ -235,8 +246,10 @@ CREATE TEMPORARY TABLE mytab ( foo widget(42, 13, 7) );
 CREATE TEMPORARY TABLE mytab ( foo widget(42, 13) );
 
 SELECT
-  format_type(atttypid,
-  atttypmod)
+  format_type(
+  atttypid,
+  atttypmod
+  )
 FROM
   pg_attribute
 WHERE
@@ -268,7 +281,8 @@ SELECT pg_input_is_valid('("(1,2,3)")', 'mytab');
 
 SELECT pg_input_is_valid('("(1,2)")', 'mytab');
 
-CREATE FUNCTION pt_in_widget(
+CREATE FUNCTION
+pt_in_widget(
   point,
   widget
 )
@@ -286,10 +300,12 @@ NEGATOR = >=%);
 SELECT
   CAST('(1,2)'
   AS point) <% CAST('(0,0,3)'
-  AS widget) AS t,
+  AS widget)
+  AS t,
   CAST('(1,2)'
   AS point) <% CAST('(0,0,1)'
-  AS widget) AS f;
+  AS widget)
+  AS f;
 
 CREATE TABLE city (
   name NAME,
@@ -309,7 +325,8 @@ SELECT * FROM city;
 
 CREATE TYPE myvarchar;
 
-CREATE FUNCTION myvarcharin(
+CREATE FUNCTION
+myvarcharin(
   cstring,
   OID,
   INT
@@ -321,7 +338,8 @@ PARALLEL SAFE
 STRICT
 AS 'varcharin';
 
-CREATE FUNCTION myvarcharout(
+CREATE FUNCTION
+myvarcharout(
   myvarchar
 )
 RETURNS cstring
@@ -331,7 +349,8 @@ PARALLEL SAFE
 STRICT
 AS 'varcharout';
 
-CREATE FUNCTION myvarcharsend(
+CREATE FUNCTION
+myvarcharsend(
   myvarchar
 )
 RETURNS BYTEA
@@ -341,7 +360,8 @@ PARALLEL SAFE
 STRICT
 AS 'varcharsend';
 
-CREATE FUNCTION myvarcharrecv(
+CREATE FUNCTION
+myvarcharrecv(
   internal,
   OID,
   INT

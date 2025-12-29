@@ -13,7 +13,8 @@ CREATE TEMPORARY TABLE x (
   e TEXT
 );
 
-CREATE FUNCTION fn_x_before()
+CREATE FUNCTION
+fn_x_before()
 RETURNS trigger
 AS '
   BEGIN
@@ -23,7 +24,8 @@ AS '
 '
 LANGUAGE "plpgsql";
 
-CREATE FUNCTION fn_x_after()
+CREATE FUNCTION
+fn_x_after()
 RETURNS trigger
 AS '
   BEGIN

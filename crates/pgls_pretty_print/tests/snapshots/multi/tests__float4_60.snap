@@ -115,7 +115,8 @@ SELECT f.* FROM float4_tbl AS f WHERE f.f1 <= '1004.3';
 
 SELECT
   f.f1,
-  f.f1 * '-10' AS x
+  f.f1 * '-10'
+  AS x
 FROM
   float4_tbl
   AS f
@@ -125,7 +126,8 @@ WHERE
 
 SELECT
   f.f1,
-  f.f1 + '-10' AS x
+  f.f1 + '-10'
+  AS x
 FROM
   float4_tbl
   AS f
@@ -135,7 +137,8 @@ WHERE
 
 SELECT
   f.f1,
-  f.f1 / '-10' AS x
+  f.f1 / '-10'
+  AS x
 FROM
   float4_tbl
   AS f
@@ -145,7 +148,8 @@ WHERE
 
 SELECT
   f.f1,
-  f.f1 - '-10' AS x
+  f.f1 - '-10'
+  AS x
 FROM
   float4_tbl
   AS f
@@ -230,7 +234,8 @@ SELECT float4send(CAST('1.1754944e-38' AS REAL));
 
 CREATE TYPE xfloat4;
 
-CREATE FUNCTION xfloat4in(
+CREATE FUNCTION
+xfloat4in(
   cstring
 )
 RETURNS xfloat4
@@ -239,7 +244,8 @@ STRICT
 LANGUAGE "internal"
 AS 'int4in';
 
-CREATE FUNCTION xfloat4out(
+CREATE FUNCTION
+xfloat4out(
   xfloat4
 )
 RETURNS cstring
@@ -285,14 +291,18 @@ WITH testdata (bits) AS (VALUES (X'00000001'),
 (X'007ffffe'),
 (X'007fffff'))
 SELECT
-  float4send(flt) AS ibits,
+  float4send(
+  flt
+  )
+  AS ibits,
   flt
 FROM
   (SELECT
     CAST(CAST(CAST(bits
     AS INT)
     AS xfloat4)
-    AS REAL) AS flt
+    AS REAL)
+    AS flt
   FROM
     testdata
   OFFSET 0) AS s;
@@ -559,24 +569,37 @@ WITH testdata (bits) AS (VALUES (X'00000000'),
 (X'3f9e0651'),
 (X'03d20cfe'))
 SELECT
-  float4send(flt) AS ibits,
+  float4send(
+  flt
+  )
+  AS ibits,
   flt,
   CAST(CAST(flt
   AS TEXT)
-  AS REAL) AS r_flt,
-  float4send(CAST(CAST(flt
+  AS REAL)
+  AS r_flt,
+  float4send(
+  CAST(CAST(flt
   AS TEXT)
-  AS REAL)) AS obits,
-  float4send(CAST(CAST(flt
+  AS REAL)
+  )
+  AS obits,
+  float4send(
+  CAST(CAST(flt
   AS TEXT)
-  AS REAL)) =
-  float4send(flt) AS correct
+  AS REAL)
+  ) =
+  float4send(
+  flt
+  )
+  AS correct
 FROM
   (SELECT
     CAST(CAST(CAST(bits
     AS INT)
     AS xfloat4)
-    AS REAL) AS flt
+    AS REAL)
+    AS flt
   FROM
     testdata
   OFFSET 0) AS s;

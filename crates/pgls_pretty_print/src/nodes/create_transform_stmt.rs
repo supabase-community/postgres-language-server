@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::CreateTransformStmt;
 
@@ -31,7 +31,7 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     e.space();
     e.token(TokenKind::IDENT(n.lang.clone()));
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::L_PAREN);
 
     let mut has_clause = false;
@@ -51,7 +51,7 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
     if let Some(ref tosql) = n.tosql {
         if has_clause {
             e.token(TokenKind::COMMA);
-            e.space();
+            e.line(LineType::SoftOrSpace);
         }
         e.token(TokenKind::TO_KW);
         e.space();

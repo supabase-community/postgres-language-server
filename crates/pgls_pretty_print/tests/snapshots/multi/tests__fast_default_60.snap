@@ -11,7 +11,8 @@ CREATE TABLE m ( id OID );
 
 INSERT INTO m VALUES (CAST(NULL AS OID));
 
-CREATE FUNCTION set(
+CREATE FUNCTION
+set(
   "tabname" NAME
 )
 RETURNS VOID
@@ -27,7 +28,8 @@ END;
 '
 LANGUAGE "plpgsql";
 
-CREATE FUNCTION comp()
+CREATE FUNCTION
+comp()
 RETURNS TEXT
 AS '
 BEGIN
@@ -43,7 +45,8 @@ END;
 '
 LANGUAGE "plpgsql";
 
-CREATE FUNCTION log_rewrite()
+CREATE FUNCTION
+log_rewrite()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -67,8 +70,10 @@ CREATE TABLE has_volatile AS
   SELECT
     *
   FROM
-    generate_series(1,
-    10) AS id;
+    generate_series(
+    1,
+    10
+    ) AS id;
 
 CREATE EVENT TRIGGER "has_volatile_rewrite"
 ON table_rewrite
@@ -84,7 +89,9 @@ ALTER TABLE has_volatile
 
 ALTER TABLE has_volatile
   ADD COLUMN col4 INT
-    DEFAULT CAST(random() * 10000
+    DEFAULT CAST(random(
+
+    ) * 10000
     AS INT);
 
 ALTER TABLE has_volatile
@@ -186,16 +193,20 @@ INSERT INTO t VALUES (21), (22);
 
 ALTER TABLE t
   ADD COLUMN c_hugetext TEXT
-    DEFAULT repeat('abcdefg',
-    1000),
+    DEFAULT repeat(
+    'abcdefg',
+    1000
+    ),
   ALTER COLUMN c_interval SET DEFAULT '3 hours';
 
 INSERT INTO t VALUES (23), (24);
 
 ALTER TABLE t
   ALTER COLUMN c_interval DROP DEFAULT,
-  ALTER COLUMN c_hugetext SET DEFAULT repeat('poiuyt',
-  1000);
+  ALTER COLUMN c_hugetext SET DEFAULT repeat(
+  'poiuyt',
+  1000
+  );
 
 INSERT INTO t VALUES (25), (26);
 
@@ -229,11 +240,17 @@ SELECT
   c_time,
   c_interval,
   c_hugetext =
-  repeat('abcdefg',
-  1000) AS c_hugetext_origdef,
+  repeat(
+  'abcdefg',
+  1000
+  )
+  AS c_hugetext_origdef,
   c_hugetext =
-  repeat('poiuyt',
-  1000) AS c_hugetext_newdef
+  repeat(
+  'poiuyt',
+  1000
+  )
+  AS c_hugetext_newdef
 FROM
   t
 ORDER BY pk;
@@ -242,7 +259,8 @@ SELECT comp();
 
 DROP TABLE "t";
 
-CREATE OR REPLACE FUNCTION foo(
+CREATE OR REPLACE FUNCTION
+foo(
   "a" INT
 )
 RETURNS TEXT
@@ -265,7 +283,11 @@ CREATE TABLE t (
   NOT NULL
   PRIMARY KEY,
   c_int INT
-  DEFAULT length(foo(6))
+  DEFAULT length(
+  foo(
+  6
+  )
+  )
 );
 
 SELECT set('t');
@@ -274,50 +296,82 @@ INSERT INTO t VALUES (1), (2);
 
 ALTER TABLE t
   ADD COLUMN c_bpchar CHAR(5)
-    DEFAULT foo(4),
-  ALTER COLUMN c_int SET DEFAULT length(foo(8));
+    DEFAULT foo(
+    4
+    ),
+  ALTER COLUMN c_int SET DEFAULT length(
+  foo(
+  8
+  )
+  );
 
 INSERT INTO t VALUES (3), (4);
 
 ALTER TABLE t
   ADD COLUMN c_text TEXT
-    DEFAULT foo(6),
-  ALTER COLUMN c_bpchar SET DEFAULT foo(3);
+    DEFAULT foo(
+    6
+    ),
+  ALTER COLUMN c_bpchar SET DEFAULT foo(
+  3
+  );
 
 INSERT INTO t VALUES (5), (6);
 
 ALTER TABLE t
   ADD COLUMN c_date DATE
     DEFAULT (CAST('2016-06-02'
-    AS DATE) + length(foo(10))),
-  ALTER COLUMN c_text SET DEFAULT foo(12);
+    AS DATE) + length(
+    foo(
+    10
+    )
+    )),
+  ALTER COLUMN c_text SET DEFAULT foo(
+  12
+  );
 
 INSERT INTO t VALUES (7), (8);
 
 ALTER TABLE t
   ADD COLUMN c_timestamp TIMESTAMP
     DEFAULT (CAST('2016-09-01'
-    AS DATE) + length(foo(10))),
+    AS DATE) + length(
+    foo(
+    10
+    )
+    )),
   ALTER COLUMN c_date SET DEFAULT CAST('2010-01-01'
-  AS DATE) - length(foo(4));
+  AS DATE) - length(
+  foo(
+  4
+  )
+  );
 
 INSERT INTO t VALUES (9), (10);
 
 ALTER TABLE t
   ADD COLUMN c_array TEXT[]
     DEFAULT CAST('{"This", "is", "' ||
-    foo(4) ||
+    foo(
+    4
+    ) ||
     '","the", "real", "world"}'
     AS TEXT[]),
   ALTER COLUMN c_timestamp SET DEFAULT CAST('1970-12-31'
-  AS DATE) + length(foo(30));
+  AS DATE) + length(
+  foo(
+  30
+  )
+  );
 
 INSERT INTO t VALUES (11), (12);
 
 ALTER TABLE t
   ALTER COLUMN c_int DROP DEFAULT,
   ALTER COLUMN c_array SET DEFAULT CAST('{"This", "is", "' ||
-  foo(1) ||
+  foo(
+  1
+  ) ||
   '", "fantasy"}'
   AS TEXT[]);
 
@@ -341,14 +395,18 @@ DROP TABLE "t";
 CREATE DOMAIN domain1 AS INT DEFAULT 11;
 
 CREATE DOMAIN domain2 AS INT
-  DEFAULT random("min" := 10,
-  "max" := 100);
+  DEFAULT random(
+  "min" := 10,
+  "max" := 100
+  );
 
 CREATE DOMAIN domain3 AS TEXT DEFAULT foo(4);
 
 CREATE DOMAIN domain4 AS TEXT[]
   DEFAULT CAST('{"This", "is", "' ||
-  foo(4) ||
+  foo(
+  4
+  ) ||
   '","the", "real", "world"}'
   AS TEXT[]);
 
@@ -376,9 +434,13 @@ ORDER BY attnum;
 
 ALTER TABLE t2
   ADD COLUMN c domain3
-    DEFAULT left(CAST(random()
+    DEFAULT left(
+    CAST(random(
+
+    )
     AS TEXT),
-    3);
+    3
+    );
 
 ALTER TABLE t2 ADD COLUMN d domain4;
 
@@ -419,11 +481,15 @@ ORDER BY attnum;
 SELECT
   a,
   b,
-  length(c) =
-  3 AS c_ok,
+  length(
+  c
+  ) =
+  3
+  AS c_ok,
   d,
   e >=
-  10 AS e_ok
+  10
+  AS e_ok
 FROM
   t2;
 
@@ -451,12 +517,17 @@ SELECT comp();
 
 ALTER TABLE t
   ADD COLUMN c2 TIMESTAMP
-    DEFAULT clock_timestamp();
+    DEFAULT clock_timestamp(
+
+    );
 
 SELECT comp();
 
-CREATE FUNCTION foolme(
-  TIMESTAMP WITH TIME ZONE DEFAULT clock_timestamp()
+CREATE FUNCTION
+foolme(
+  TIMESTAMP WITH TIME ZONE DEFAULT clock_timestamp(
+
+  )
 )
 RETURNS TIMESTAMP WITH TIME ZONE
 IMMUTABLE
@@ -465,7 +536,9 @@ LANGUAGE "sql";
 
 ALTER TABLE t
   ADD COLUMN c3 TIMESTAMP WITH TIME ZONE
-    DEFAULT foolme();
+    DEFAULT foolme(
+
+    );
 
 SELECT
   attname,
@@ -501,8 +574,10 @@ SELECT
   b,
   b - 10
 FROM
-  generate_series(11,
-  20) AS a (b);
+  generate_series(
+  11,
+  20
+  ) AS a (b);
 
 ALTER TABLE t ADD COLUMN c_text TEXT DEFAULT 'hello';
 
@@ -513,8 +588,10 @@ SELECT
   CAST(b + 10
   AS TEXT)
 FROM
-  generate_series(21,
-  30) AS a (b);
+  generate_series(
+  21,
+  30
+  ) AS a (b);
 
 SELECT c_bigint, c_text FROM t WHERE c_bigint = -1 LIMIT 1;
 
@@ -552,9 +629,15 @@ ORDER BY pk
 LIMIT 10;
 
 SELECT
-  SUM(c_bigint),
-  MAX(c_text COLLATE "C"),
-  MIN(c_text COLLATE "C")
+  SUM(
+  c_bigint
+  ),
+  MAX(
+  c_text COLLATE "C"
+  ),
+  MIN(
+  c_text COLLATE "C"
+  )
 FROM
   t;
 
@@ -629,34 +712,46 @@ SELECT comp();
 CREATE TABLE t1 AS
   SELECT
     CAST(1
-    AS INT) AS a,
+    AS INT)
+    AS a,
     CAST(2
-    AS INT) AS b
+    AS INT)
+    AS b
   FROM
-    generate_series(1,
-    20) AS q;
+    generate_series(
+    1,
+    20
+    ) AS q;
 
 ALTER TABLE t1 ADD COLUMN c TEXT;
 
 SELECT
   a,
-  stddev(CAST((SELECT
-    SUM(1)
+  stddev(
+  CAST((SELECT
+    SUM(
+    1
+    )
   FROM
-    generate_series(1,
-    20) AS x)
-  AS REAL))
+    generate_series(
+    1,
+    20
+    ) AS x)
+  AS REAL)
+  )
   OVER (
   PARTITION BY a,
   b,
   c
-  ORDER BY b) AS z
+  ORDER BY b)
+  AS z
 FROM
   t1;
 
 DROP TABLE "t";
 
-CREATE FUNCTION test_trigger()
+CREATE FUNCTION
+test_trigger()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -989,7 +1084,9 @@ ALTER FOREIGN TABLE ft1 ADD COLUMN c8 INT DEFAULT 0;
 ALTER FOREIGN TABLE ft1 ALTER COLUMN c8 TYPE CHAR(10);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_attribute
 WHERE

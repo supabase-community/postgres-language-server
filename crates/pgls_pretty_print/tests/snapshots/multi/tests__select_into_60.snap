@@ -17,7 +17,8 @@ CREATE USER regress_selinto_user;
 
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_selinto_user
-REVOKE INSERT ON TABLES 
+REVOKE INSERT
+ON TABLES 
 FROM regress_selinto_user;
 
 GRANT ALL ON SCHEMA selinto_schema TO PUBLIC;
@@ -26,25 +27,33 @@ SET SESSION AUTHORIZATION regress_selinto_user;
 
 CREATE TABLE selinto_schema.tbl_withdata1 (a) AS
   SELECT
-    generate_series(1,
-    3);
+    generate_series(
+    1,
+    3
+    );
 
 INSERT INTO selinto_schema.tbl_withdata1 VALUES (4);
 
 CREATE TABLE selinto_schema.tbl_withdata2 (a) AS
   SELECT
-    generate_series(1,
-    3);
+    generate_series(
+    1,
+    3
+    );
 
 CREATE TABLE selinto_schema.tbl_nodata1 (a) AS
   SELECT
-    generate_series(1,
-    3) WITH NO DATA;
+    generate_series(
+    1,
+    3
+    ) WITH NO DATA;
 
 CREATE TABLE selinto_schema.tbl_nodata2 (a) AS
   SELECT
-    generate_series(1,
-    3) WITH NO DATA;
+    generate_series(
+    1,
+    3
+    ) WITH NO DATA;
 
 PREPARE data_sel AS SELECT generate_series(1, 3);;
 
@@ -64,7 +73,8 @@ RESET session_authorization;
 
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_selinto_user
-GRANT INSERT ON TABLES 
+GRANT INSERT
+ON TABLES 
 TO regress_selinto_user;
 
 SET SESSION AUTHORIZATION regress_selinto_user;
@@ -147,7 +157,8 @@ DROP TABLE "ctas_nodata_3";
 
 DROP TABLE "ctas_nodata_4";
 
-CREATE FUNCTION make_table()
+CREATE FUNCTION
+make_table()
 RETURNS VOID
 AS '
   CREATE TABLE created_table AS SELECT * FROM int8_tbl;

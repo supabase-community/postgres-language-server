@@ -60,20 +60,25 @@ SELECT pg_input_is_valid('12:00:00', 'time');
 SELECT pg_input_is_valid('25:00:00', 'time');
 
 SELECT
-  pg_input_is_valid('15:36:39 America/New_York',
-  'time');
+  pg_input_is_valid(
+  '15:36:39 America/New_York',
+  'time'
+  );
 
 SELECT * FROM pg_input_error_info('25:00:00', 'time');
 
 SELECT
   *
 FROM
-  pg_input_error_info('15:36:39 America/New_York',
-  'time');
+  pg_input_error_info(
+  '15:36:39 America/New_York',
+  'time'
+  );
 
 SELECT
   f1 + CAST('00:01'
-  AS TIME) AS "Illegal"
+  AS TIME)
+  AS "Illegal"
 FROM
   time_tbl;
 
@@ -114,21 +119,29 @@ SELECT
   AS TIME));
 
 SELECT
-  date_part('microsecond',
+  date_part(
+  'microsecond',
   CAST('2020-05-26 13:30:25.575401'
-  AS TIME));
+  AS TIME)
+  );
 
 SELECT
-  date_part('millisecond',
+  date_part(
+  'millisecond',
   CAST('2020-05-26 13:30:25.575401'
-  AS TIME));
+  AS TIME)
+  );
 
 SELECT
-  date_part('second',
+  date_part(
+  'second',
   CAST('2020-05-26 13:30:25.575401'
-  AS TIME));
+  AS TIME)
+  );
 
 SELECT
-  date_part('epoch',
+  date_part(
+  'epoch',
   CAST('2020-05-26 13:30:25.575401'
-  AS TIME));
+  AS TIME)
+  );

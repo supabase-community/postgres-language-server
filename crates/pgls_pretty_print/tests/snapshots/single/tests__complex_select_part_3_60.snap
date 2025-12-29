@@ -7,6 +7,9 @@ SELECT
   view_id,
   view_schema,
   view_name,
-  json_array_elements(view_definition -> 0 -> 'targetList') AS entry
+  json_array_elements(
+  view_definition -> 0 -> 'targetList'
+  )
+  AS entry
 FROM
   transform_json;

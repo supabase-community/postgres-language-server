@@ -53,7 +53,9 @@ CREATE INDEX "hash_f8_index" ON hash_f8_heap USING hash
 CREATE UNIQUE
 INDEX "hash_f8_index_1" ON hash_f8_heap USING btree
 (
-  (abs(random))
+  (abs(
+  random
+  ))
 );
 
 CREATE UNIQUE
@@ -148,8 +150,10 @@ WHERE
   1492;
 
 SELECT
-  h.seqno AS i1492,
-  h.random AS i1
+  h.seqno
+  AS i1492,
+  h.random
+  AS i1
 FROM
   hash_i4_heap
   AS h
@@ -164,7 +168,8 @@ WHERE
   1492795354;
 
 SELECT
-  h.seqno AS i20000
+  h.seqno
+  AS i20000
 FROM
   hash_i4_heap
   AS h
@@ -180,8 +185,10 @@ WHERE
   6543;
 
 SELECT
-  h.seqno AS i6543,
-  h.random AS c0_to_f
+  h.seqno
+  AS i6543,
+  h.random
+  AS c0_to_f
 FROM
   hash_name_heap
   AS h
@@ -198,7 +205,8 @@ WHERE
   AS NAME);
 
 SELECT
-  h.seqno AS emptyset
+  h.seqno
+  AS emptyset
 FROM
   hash_name_heap
   AS h
@@ -215,8 +223,10 @@ WHERE
   4002;
 
 SELECT
-  h.seqno AS i4002,
-  h.random AS c0_to_p
+  h.seqno
+  AS i4002,
+  h.random
+  AS c0_to_p
 FROM
   hash_txt_heap
   AS h
@@ -233,7 +243,8 @@ WHERE
   AS TEXT);
 
 SELECT
-  h.seqno AS t20000
+  h.seqno
+  AS t20000
 FROM
   hash_txt_heap
   AS h
@@ -250,8 +261,10 @@ WHERE
   8906;
 
 SELECT
-  h.seqno AS i8096,
-  h.random AS f1234_1234
+  h.seqno
+  AS i8096,
+  h.random
+  AS f1234_1234
 FROM
   hash_f8_heap
   AS h
@@ -268,7 +281,8 @@ WHERE
   AS DOUBLE PRECISION);
 
 SELECT
-  h.seqno AS f20000
+  h.seqno
+  AS f20000
 FROM
   hash_f8_heap
   AS h
@@ -283,8 +297,10 @@ INSERT INTO hash_split_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  500) AS a;
+  generate_series(
+  1,
+  500
+  ) AS a;
 
 CREATE INDEX "hash_split_index" ON hash_split_heap USING hash
 (
@@ -295,8 +311,10 @@ INSERT INTO hash_split_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  5000) AS a;
+  generate_series(
+  1,
+  5000
+  ) AS a;
 
 BEGIN;
 
@@ -328,8 +346,10 @@ INSERT INTO hash_split_heap
 SELECT
   a / 2
 FROM
-  generate_series(1,
-  25000) AS a;
+  generate_series(
+  1,
+  25000
+  ) AS a;
 
 VACUUM hash_split_heap;
 
@@ -350,8 +370,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  500) AS i;
+  generate_series(
+  1,
+  500
+  ) AS i;
 
 BEGIN;
 
@@ -359,8 +381,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  1000) AS i;
+  generate_series(
+  1,
+  1000
+  ) AS i;
 
 ROLLBACK;
 
@@ -374,8 +398,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  50) AS i;
+  generate_series(
+  1,
+  50
+  ) AS i;
 
 BEGIN;
 
@@ -383,8 +409,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  1500) AS i;
+  generate_series(
+  1,
+  1500
+  ) AS i;
 
 ROLLBACK;
 
@@ -392,8 +420,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  500) AS i;
+  generate_series(
+  1,
+  500
+  ) AS i;
 
 CHECKPOINT;
 
@@ -405,8 +435,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  500) AS i;
+  generate_series(
+  1,
+  500
+  ) AS i;
 
 BEGIN;
 
@@ -414,8 +446,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  1500) AS i;
+  generate_series(
+  1,
+  1500
+  ) AS i;
 
 ROLLBACK;
 
@@ -423,8 +457,10 @@ INSERT INTO hash_cleanup_heap
 SELECT
   1
 FROM
-  generate_series(1,
-  50) AS i;
+  generate_series(
+  1,
+  50
+  ) AS i;
 
 CHECKPOINT;
 

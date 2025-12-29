@@ -83,9 +83,13 @@ INSERT INTO large_tuple_test SELECT 1, NULL;
 INSERT INTO large_tuple_test SELECT 2, repeat('a', 1000);
 
 SELECT
-  pg_size_pretty(pg_relation_size(CAST('large_tuple_test'
+  pg_size_pretty(
+  pg_relation_size(
+  CAST('large_tuple_test'
   AS REGCLASS),
-  'main'));
+  'main'
+  )
+  );
 
 INSERT INTO large_tuple_test SELECT 3, NULL;
 
@@ -442,7 +446,9 @@ CREATE TABLE list_parted (
   a TEXT,
   b INT
 )
-PARTITION BY LIST((lower(a)));
+PARTITION BY LIST((lower(
+a
+)));
 
 CREATE TABLE part_aa_bb
 PARTITION OF list_parted
@@ -631,16 +637,20 @@ SELECT
   'Ff',
   s.a
 FROM
-  generate_series(1,
-  29) AS s (a);
+  generate_series(
+  1,
+  29
+  ) AS s (a);
 
 INSERT INTO list_parted
 SELECT
   'gg',
   s.a
 FROM
-  generate_series(1,
-  9) AS s (a);
+  generate_series(
+  1,
+  9
+  ) AS s (a);
 
 INSERT INTO list_parted (b) VALUES (1);
 
@@ -649,8 +659,14 @@ SELECT
   AS REGCLASS)
   AS TEXT),
   a,
-  MIN(b) AS min_b,
-  MAX(b) AS max_b
+  MIN(
+  b
+  )
+  AS min_b,
+  MAX(
+  b
+  )
+  AS max_b
 FROM
   list_parted
 GROUP BY 1,
@@ -688,9 +704,11 @@ INSERT INTO hpart3 VALUES (11);
 
 SELECT
   CAST(tableoid
-  AS REGCLASS) AS part,
+  AS REGCLASS)
+  AS part,
   a,
-  a % 4 AS "remainder = a % 4"
+  a % 4
+  AS "remainder = a % 4"
 FROM
   hash_parted
 ORDER BY part;
@@ -783,7 +801,8 @@ TRUNCATE mlparted;
 
 ALTER TABLE mlparted ADD CONSTRAINT "check_b" CHECK (b = 3);
 
-CREATE FUNCTION mlparted11_trig_fn()
+CREATE FUNCTION
+mlparted11_trig_fn()
 RETURNS trigger
 AS '
 begin
@@ -864,16 +883,22 @@ SELECT
   s.a,
   1
 FROM
-  generate_series(2,
-  39) AS s (a)
+  generate_series(
+  2,
+  39
+  ) AS s (a)
 RETURNING CAST(tableoid
 AS REGCLASS),
 *)
 SELECT
   a,
   b,
-  MIN(c),
-  MAX(c)
+  MIN(
+  c
+  ),
+  MAX(
+  c
+  )
 FROM
   ins
 GROUP BY a,
@@ -919,7 +944,8 @@ ALTER TABLE mlparted
 
 INSERT INTO mlparted VALUES (1, 45, 'a');
 
-CREATE FUNCTION mlparted5abrtrig_func()
+CREATE FUNCTION
+mlparted5abrtrig_func()
 RETURNS trigger
 AS ' begin new.c = ''b''; return new; end; '
 LANGUAGE "plpgsql";
@@ -1071,7 +1097,8 @@ PARTITION BY RANGE(b);
 
 CREATE USER regress_insert_other_user;
 
-GRANT SELECT (a) ON TABLE key_desc_1
+GRANT SELECT (a)
+ON TABLE key_desc_1
 TO regress_insert_other_user;
 
 GRANT INSERT ON TABLE key_desc TO regress_insert_other_user;
@@ -1082,7 +1109,8 @@ INSERT INTO key_desc VALUES (1, 1);
 
 RESET role;
 
-GRANT SELECT (b) ON TABLE key_desc_1
+GRANT SELECT (b)
+ON TABLE key_desc_1
 TO regress_insert_other_user;
 
 SET ROLE TO regress_insert_other_user;
@@ -1095,7 +1123,8 @@ RESET role;
 
 REVOKE ALL ON TABLE key_desc FROM regress_insert_other_user;
 
-REVOKE ALL ON TABLE key_desc_1
+REVOKE ALL
+ON TABLE key_desc_1
 FROM regress_insert_other_user;
 
 DROP ROLE regress_insert_other_user;
@@ -1108,7 +1137,9 @@ CREATE TABLE mcrparted (
   c INT
 )
 PARTITION BY RANGE(a,
-(abs(b)),
+(abs(
+b
+)),
 c);
 
 CREATE TABLE mcrparted0
@@ -1240,7 +1271,8 @@ CREATE TABLE brtrigpartcon1
 PARTITION OF brtrigpartcon
 FOR VALUES IN (1);
 
-CREATE OR REPLACE FUNCTION brtrigpartcon1trigf()
+CREATE OR REPLACE FUNCTION
+brtrigpartcon1trigf()
 RETURNS trigger
 AS 'begin new.a := 2; return new; end'
 LANGUAGE "plpgsql";
@@ -1270,7 +1302,8 @@ GRANT INSERT ON TABLE inserttest3 TO regress_coldesc_role;
 
 GRANT INSERT ON TABLE brtrigpartcon TO regress_coldesc_role;
 
-REVOKE SELECT ON TABLE brtrigpartcon
+REVOKE SELECT
+ON TABLE brtrigpartcon
 FROM regress_coldesc_role;
 
 SET ROLE TO regress_coldesc_role;
@@ -1315,7 +1348,8 @@ CREATE TABLE donothingbrtrig_test2 (
 
 ALTER TABLE donothingbrtrig_test2 DROP COLUMN c;
 
-CREATE OR REPLACE FUNCTION donothingbrtrig_func()
+CREATE OR REPLACE FUNCTION
+donothingbrtrig_func()
 RETURNS trigger
 AS 'begin raise notice ''b: %'', new.b; return NULL; end'
 LANGUAGE "plpgsql";

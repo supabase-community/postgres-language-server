@@ -26,12 +26,15 @@ INSERT INTO lotest_stash_values (loid) SELECT lo_creat(42);
 BEGIN;
 
 UPDATE lotest_stash_values
-SET fd = lo_open(loid,
+SET fd = lo_open(
+loid,
 CAST(X'20000' | X'40000'
-AS INT));
+AS INT)
+);
 
 SELECT
-  lowrite(fd,
+  lowrite(
+  fd,
   '
 I wandered lonely as a cloud
 That floats on high o''er vales and hills,
@@ -62,7 +65,8 @@ And then my heart with pleasure fills,
 And dances with the daffodils.
 
          -- William Wordsworth
-')
+'
+  )
 FROM
   lotest_stash_values;
 
@@ -71,17 +75,24 @@ SELECT lo_close(fd) FROM lotest_stash_values;
 COMMIT;
 
 SELECT
-  lo_from_bytea(0,
-  lo_get(loid)) AS newloid
+  lo_from_bytea(
+  0,
+  lo_get(
+  loid
+  )
+  )
+  AS newloid
 FROM
   lotest_stash_values;
 
 BEGIN;
 
 UPDATE lotest_stash_values
-SET fd = lo_open(loid,
+SET fd = lo_open(
+loid,
 CAST(X'20000' | X'40000'
-AS INT));
+AS INT)
+);
 
 SELECT lo_lseek(fd, 104, 0) FROM lotest_stash_values;
 
@@ -104,9 +115,11 @@ COMMIT;
 BEGIN;
 
 SELECT
-  lo_open(loid,
+  lo_open(
+  loid,
   CAST(X'40000'
-  AS INT))
+  AS INT)
+  )
 FROM
   lotest_stash_values;
 
@@ -117,9 +130,11 @@ DO $$dobody$$;
 BEGIN;
 
 UPDATE lotest_stash_values
-SET fd = lo_open(loid,
+SET fd = lo_open(
+loid,
 CAST(X'20000' | X'40000'
-AS INT));
+AS INT)
+);
 
 SELECT lo_truncate(fd, 11) FROM lotest_stash_values;
 
@@ -146,14 +161,18 @@ COMMIT;
 BEGIN;
 
 UPDATE lotest_stash_values
-SET fd = lo_open(loid,
+SET fd = lo_open(
+loid,
 CAST(X'20000' | X'40000'
-AS INT));
+AS INT)
+);
 
 SELECT
-  lo_lseek64(fd,
+  lo_lseek64(
+  fd,
   4294967296,
-  0)
+  0
+  )
 FROM
   lotest_stash_values;
 
@@ -168,8 +187,10 @@ SELECT lo_tell64(fd) FROM lotest_stash_values;
 SELECT loread(fd, 10) FROM lotest_stash_values;
 
 SELECT
-  lo_truncate64(fd,
-  5000000000)
+  lo_truncate64(
+  fd,
+  5000000000
+  )
 FROM
   lotest_stash_values;
 
@@ -178,8 +199,10 @@ SELECT lo_lseek64(fd, 0, 2) FROM lotest_stash_values;
 SELECT lo_tell64(fd) FROM lotest_stash_values;
 
 SELECT
-  lo_truncate64(fd,
-  3000000000)
+  lo_truncate64(
+  fd,
+  3000000000
+  )
 FROM
   lotest_stash_values;
 
@@ -197,14 +220,18 @@ TRUNCATE lotest_stash_values;
 
 INSERT INTO lotest_stash_values (loid)
 SELECT
-  lo_import('filename');
+  lo_import(
+  'filename'
+  );
 
 BEGIN;
 
 UPDATE lotest_stash_values
-SET fd = lo_open(loid,
+SET fd = lo_open(
+loid,
 CAST(X'20000' | X'40000'
-AS INT));
+AS INT)
+);
 
 SELECT lo_lseek(fd, 0, 2) FROM lotest_stash_values;
 
@@ -217,8 +244,10 @@ SELECT lo_tell(fd) FROM lotest_stash_values;
 SELECT lo_lseek(fd, -26, 1) FROM lotest_stash_values;
 
 SELECT
-  lowrite(fd,
-  'abcdefghijklmnop')
+  lowrite(
+  fd,
+  'abcdefghijklmnop'
+  )
 FROM
   lotest_stash_values;
 
@@ -260,8 +289,16 @@ TRUNCATE lotest_stash_values;
 SELECT lo_from_bytea(0, lo_get('newloid_1')) AS newloid_2;
 
 SELECT
-  fipshash(lo_get('newloid_1')) =
-  fipshash(lo_get('newloid_2'));
+  fipshash(
+  lo_get(
+  'newloid_1'
+  )
+  ) =
+  fipshash(
+  lo_get(
+  'newloid_2'
+  )
+  );
 
 SELECT lo_get('newloid_1', 0, 20);
 

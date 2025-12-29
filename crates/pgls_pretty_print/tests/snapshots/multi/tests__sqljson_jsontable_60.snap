@@ -1054,10 +1054,14 @@ FROM
 SELECT
   *
 FROM
-  generate_series(1,
-  3) AS x,
-  generate_series(1,
-  3) AS y,
+  generate_series(
+  1,
+  3
+  ) AS x,
+  generate_series(
+  1,
+  3
+  ) AS y,
   JSON_TABLE(
     CAST('[[1,2,3],[2,3,4,5],[3,4,5,6]]'
     AS JSONB),
@@ -1143,8 +1147,10 @@ SELECT
 FROM
   s,
   (VALUES (23)) AS x (x),
-  generate_series(13,
-  13) AS y,
+  generate_series(
+  13,
+  13
+  ) AS y,
   JSON_TABLE(
     js,
     '$' AS c1
@@ -1186,8 +1192,10 @@ SELECT
 FROM
   s,
   (VALUES (23)) AS x (x),
-  generate_series(13,
-  13) AS y,
+  generate_series(
+  13,
+  13
+  ) AS y,
   JSON_TABLE(
     js,
     '$' AS c1
@@ -1217,8 +1225,10 @@ SELECT
 FROM
   s,
   (VALUES (23)) AS x (x),
-  generate_series(13,
-  13) AS y,
+  generate_series(
+  13,
+  13
+  ) AS y,
   JSON_TABLE(
     js,
     '$' AS c1
@@ -1255,8 +1265,10 @@ SELECT
 FROM
   s,
   (VALUES (23)) AS x (x),
-  generate_series(13,
-  13) AS y,
+  generate_series(
+  13,
+  13
+  ) AS y,
   JSON_TABLE(
     js,
     '$' AS c1
@@ -1298,8 +1310,10 @@ SELECT
 FROM
   s,
   (VALUES (23)) AS x (x),
-  generate_series(13,
-  13) AS y,
+  generate_series(
+  13,
+  13
+  ) AS y,
   JSON_TABLE(
     js,
     '$' AS c1

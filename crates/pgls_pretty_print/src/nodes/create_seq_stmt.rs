@@ -2,7 +2,7 @@ use pgls_query::protobuf::CreateSeqStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::node_list::emit_space_separated_list;
@@ -43,7 +43,7 @@ pub(super) fn emit_create_seq_stmt(e: &mut EventEmitter, n: &CreateSeqStmt) {
 
     // Emit sequence options (AS type, INCREMENT BY, MINVALUE, MAXVALUE, START WITH, CACHE, CYCLE, etc.)
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_space_separated_list(e, &n.options, |opt, e| {
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {

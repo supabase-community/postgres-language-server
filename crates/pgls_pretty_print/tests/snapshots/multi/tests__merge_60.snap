@@ -30,7 +30,8 @@ INSERT INTO target VALUES (2, 20);
 INSERT INTO target VALUES (3, 30);
 
 SELECT
-  t.ctid IS NOT NULL AS matched,
+  t.ctid IS NOT NULL
+  AS matched,
   t.*,
   s.*
 FROM
@@ -347,7 +348,8 @@ SELECT * FROM wq_target;
 
 DROP TABLE "wq_target", "wq_source";
 
-CREATE OR REPLACE FUNCTION merge_trigfunc()
+CREATE OR REPLACE FUNCTION
+merge_trigfunc()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -477,7 +479,8 @@ SELECT * FROM target ORDER BY tid;
 
 ROLLBACK;
 
-CREATE OR REPLACE FUNCTION skip_merge_op()
+CREATE OR REPLACE FUNCTION
+skip_merge_op()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -573,7 +576,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION merge_func(
+CREATE FUNCTION
+merge_func(
   "p_id" INT,
   "p_bal" INT
 )
@@ -758,9 +762,12 @@ sid)
 WHEN MATCHED AND
   tid <
   2 THEN DELETE
-RETURNING "mergesupport#25" AS action,
-old AS old_data,
-new AS new_data,
+RETURNING "mergesupport#25"
+AS action,
+old
+AS old_data,
+new
+AS new_data,
 t.*,
 CASE "mergesupport#25"
 WHEN 'INSERT' THEN 'Inserted ' ||
@@ -770,7 +777,8 @@ delta ||
 ' to balance'
 WHEN 'DELETE' THEN 'Removed ' ||
 t
-END AS description),
+END
+AS description),
 m2 AS (MERGE INTO sq_target_merge_log
 AS l
 USING m ON l.tid =
@@ -779,9 +787,12 @@ WHEN MATCHED THEN UPDATE SET last_change = description
 WHEN NOT MATCHED BY TARGET THEN INSERT VALUES (m.tid,
 description)
 RETURNING m.*,
-"mergesupport#25" AS log_action,
-old AS old_log,
-new AS new_log,
+"mergesupport#25"
+AS log_action,
+old
+AS old_log,
+new
+AS new_log,
 l.*)
 SELECT
   *
@@ -816,7 +827,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION merge_into_sq_target(
+CREATE FUNCTION
+merge_into_sq_target(
   "sid" INT,
   "balance" INT,
   "delta" INT,
@@ -857,15 +869,18 @@ FROM
     tid,
     new_balance
   FROM
-    merge_into_sq_target(sid,
+    merge_into_sq_target(
+    sid,
     balance,
-    delta)) AS m;
+    delta
+    )) AS m;
 
 ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION merge_sq_source_into_sq_target()
+CREATE FUNCTION
+merge_sq_source_into_sq_target()
 RETURNS TABLE (
   "action" TEXT,
   "tid" INT,
@@ -891,7 +906,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION merge_into_sq_target(
+CREATE FUNCTION
+merge_into_sq_target(
   "sid" INT,
   "balance" INT,
   "delta" INT,
@@ -934,9 +950,11 @@ FROM
     r_tid,
     r_balance
   FROM
-    merge_into_sq_target(sid,
+    merge_into_sq_target(
+    sid,
     balance,
-    delta)) AS m;
+    delta
+    )) AS m;
 
 ROLLBACK;
 
@@ -955,20 +973,25 @@ SELECT
   i,
   i * 10
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   100,
-  2) AS i;
+  2
+  ) AS i;
 
 INSERT INTO ex_msource
 SELECT
   i,
   i * 10
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   100,
-  1) AS i;
+  1
+  ) AS i;
 
-CREATE FUNCTION explain_merge(
+CREATE FUNCTION
+explain_merge(
   "query" TEXT
 )
 RETURNS SETOF TEXT
@@ -987,60 +1010,76 @@ END;
 ';
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED THEN
-	UPDATE SET b = t.b + 1');
+	UPDATE SET b = t.b + 1'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED AND t.a < 10 THEN
-	UPDATE SET b = t.b + 1');
+	UPDATE SET b = t.b + 1'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED AND t.a < 10 THEN
 	UPDATE SET b = t.b + 1
 WHEN MATCHED AND t.a >= 10 AND t.a <= 20 THEN
-	DELETE');
+	DELETE'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN NOT MATCHED AND s.a < 10 THEN
-	INSERT VALUES (a, b)');
+	INSERT VALUES (a, b)'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED AND t.a < 10 THEN
 	UPDATE SET b = t.b + 1
 WHEN MATCHED AND t.a >= 30 AND t.a <= 40 THEN
 	DELETE
 WHEN NOT MATCHED AND s.a < 20 THEN
-	INSERT VALUES (a, b)');
+	INSERT VALUES (a, b)'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN NOT MATCHED BY SOURCE and t.a < 10 THEN
-	DELETE');
+	DELETE'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN NOT MATCHED BY SOURCE AND t.a < 10 THEN
 	DELETE
 WHEN NOT MATCHED BY TARGET AND s.a < 20 THEN
-	INSERT VALUES (a, b)');
+	INSERT VALUES (a, b)'
+  );
 
 SELECT
-  explain_merge('
+  explain_merge(
+  '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a AND t.a < -1000
 WHEN MATCHED AND t.a < 10 THEN
-	DO NOTHING');
+	DO NOTHING'
+  );
 
 DROP TABLE "ex_msource", "ex_mtarget";
 
@@ -1111,8 +1150,10 @@ SELECT
   id,
   id * 10
 FROM
-  generate_series(1,
-  14) AS id;
+  generate_series(
+  1,
+  14
+  ) AS id;
 
 INSERT INTO pa_target
 SELECT
@@ -1120,9 +1161,11 @@ SELECT
   id * 100,
   'initial'
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   15,
-  2) AS id;
+  2
+  ) AS id;
 
 BEGIN;
 
@@ -1138,7 +1181,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION merge_func()
+CREATE FUNCTION
+merge_func()
 RETURNS INT
 LANGUAGE "plpgsql"
 AS '
@@ -1245,9 +1289,11 @@ SELECT
   id * 100,
   'initial'
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   15,
-  2) AS id;
+  2
+  ) AS id;
 
 BEGIN;
 
@@ -1305,7 +1351,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION trig_fn()
+CREATE FUNCTION
+trig_fn()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS ' BEGIN RETURN NULL; END; ';
@@ -1341,7 +1388,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE FUNCTION trig_fn()
+CREATE FUNCTION
+trig_fn()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS ' BEGIN RETURN NULL; END; ';
@@ -1453,8 +1501,10 @@ SELECT
   id,
   id * 10
 FROM
-  generate_series(1,
-  14) AS id;
+  generate_series(
+  1,
+  14
+  ) AS id;
 
 INSERT INTO pa_target
 SELECT
@@ -1463,9 +1513,11 @@ SELECT
   id * 100,
   'initial'
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   9,
-  3) AS id;
+  3
+  ) AS id;
 
 INSERT INTO pa_target
 SELECT
@@ -1474,9 +1526,11 @@ SELECT
   id * 100,
   'initial'
 FROM
-  generate_series(2,
+  generate_series(
+  2,
   9,
-  3) AS id;
+  3
+  ) AS id;
 
 BEGIN;
 
@@ -1612,7 +1666,8 @@ ALTER TABLE measurement_y2007m01 INHERIT measurement;
 
 INSERT INTO measurement VALUES (0, '2005-07-21', 5, 15);
 
-CREATE OR REPLACE FUNCTION measurement_insert_trigger()
+CREATE OR REPLACE FUNCTION
+measurement_insert_trigger()
 RETURNS trigger
 AS '
 BEGIN

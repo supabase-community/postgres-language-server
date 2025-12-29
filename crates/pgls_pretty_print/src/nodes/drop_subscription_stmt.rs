@@ -25,12 +25,17 @@ pub(super) fn emit_drop_subscription_stmt(e: &mut EventEmitter, n: &DropSubscrip
     }
 
     // Add CASCADE or RESTRICT if specified
-    if n.behavior != 0 {
-        e.space();
-        match n.behavior {
-            1 => e.token(TokenKind::CASCADE_KW),
-            _ => e.token(TokenKind::RESTRICT_KW),
+    // DropBehavior: 0=Undefined, 1=DropRestrict, 2=DropCascade
+    match n.behavior {
+        2 => {
+            e.space();
+            e.token(TokenKind::CASCADE_KW);
         }
+        1 => {
+            e.space();
+            e.token(TokenKind::RESTRICT_KW);
+        }
+        _ => {}
     }
 
     e.token(TokenKind::SEMICOLON);

@@ -21,7 +21,8 @@ CREATE TABLE seclabel_tbl2 ( x INT, y TEXT );
 
 CREATE VIEW seclabel_view1 AS SELECT * FROM seclabel_tbl2;
 
-CREATE FUNCTION seclabel_four()
+CREATE FUNCTION
+seclabel_four()
 RETURNS INT
 AS 'SELECT 4'
 LANGUAGE "sql";

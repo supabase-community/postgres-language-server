@@ -618,6 +618,13 @@ fn needs_parentheses(node: &Node, parent: Option<OperatorInfo>, side: OperandSid
         return false;
     }
 
+    // Same precedence - PostgreSQL comparison operators are non-associative
+    // (you can't chain a < b < c), so always need parens when nesting
+    // comparison expressions at the same level
+    if parent_info.precedence == PREC_COMPARISON && child_info.precedence == PREC_COMPARISON {
+        return true;
+    }
+
     match parent_info.associativity {
         OperatorAssociativity::Left => matches!(side, OperandSide::Right),
         OperatorAssociativity::Right => matches!(side, OperandSide::Left),
@@ -629,6 +636,17 @@ fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
         NodeEnum::AExpr(expr) if matches!(expr.kind(), AExprKind::AexprOp) => {
             operator_info(&expr.name, OperatorArity::from_aexpr(expr))
         }
+        // IS NULL / IS NOT NULL have PREC_IS precedence
+        NodeEnum::NullTest(_) => Some(OperatorInfo {
+            precedence: PREC_IS,
+            associativity: OperatorAssociativity::Left,
+        }),
+        // Boolean expressions (AND/OR) need parens when nested in comparison
+        // Use a low precedence so they get wrapped
+        NodeEnum::BoolExpr(_) => Some(OperatorInfo {
+            precedence: 20, // Lower than PREC_NOT (35)
+            associativity: OperatorAssociativity::Left,
+        }),
         _ => None,
     }
 }

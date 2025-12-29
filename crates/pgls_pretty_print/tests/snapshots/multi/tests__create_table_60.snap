@@ -9,7 +9,8 @@ CREATE TYPE unknown_comptype AS ( u unknown );
 
 CREATE TABLE tas_case WITH (fillfactor = 10) AS
   SELECT
-    1 AS a;
+    1
+    AS a;
 
 CREATE UNLOGGED TABLE unlogged1 ( a INT PRIMARY KEY );
 
@@ -130,14 +131,20 @@ DEALLOCATE select1;
 
 SELECT
   'CREATE TABLE extra_wide_table(firstc text, ' ||
-  array_to_string(array_agg('c' ||
+  array_to_string(
+  array_agg(
+  'c' ||
   i ||
-  ' bool'),
-  ',') ||
+  ' bool'
+  ),
+  ','
+  ) ||
   ', lastc text);'
 FROM
-  generate_series(1,
-  1100) AS g (i);
+  generate_series(
+  1,
+  1100
+  ) AS g (i);
 
 INSERT INTO extra_wide_table (firstc,
 lastc)
@@ -162,8 +169,12 @@ CREATE TEMPORARY TABLE relation_filenode_check ( c1 INT );
 
 SELECT
   relpersistence,
-  pg_filenode_relation(reltablespace,
-  pg_relation_filenode(oid))
+  pg_filenode_relation(
+  reltablespace,
+  pg_relation_filenode(
+  oid
+  )
+  )
 FROM
   pg_class
 WHERE
@@ -178,12 +189,16 @@ CREATE TABLE default_expr_column ( id INT DEFAULT bar.id );
 
 CREATE TABLE default_expr_agg_column (
   id INT
-  DEFAULT AVG(id)
+  DEFAULT AVG(
+  id
+  )
 );
 
 CREATE TABLE default_expr_non_column (
   a INT
-  DEFAULT AVG(non_existent)
+  DEFAULT AVG(
+  non_existent
+  )
 );
 
 CREATE TABLE default_expr_agg ( a INT DEFAULT AVG(1) );
@@ -196,8 +211,10 @@ CREATE TABLE default_expr_agg (
 
 CREATE TABLE default_expr_agg (
   a INT
-  DEFAULT generate_series(1,
-  3)
+  DEFAULT generate_series(
+  1,
+  3
+  )
 );
 
 BEGIN;
@@ -243,7 +260,8 @@ CREATE TABLE partitioned (
 PARTITION BY LIST(a1,
 a2);
 
-CREATE FUNCTION retset(
+CREATE FUNCTION
+retset(
   "a" INT
 )
 RETURNS SETOF INT
@@ -254,20 +272,26 @@ IMMUTABLE;
 CREATE TABLE partitioned (
   a INT
 )
-PARTITION BY RANGE((retset(a)));
+PARTITION BY RANGE((retset(
+a
+)));
 
 DROP FUNCTION retset(INT);
 
 CREATE TABLE partitioned (
   a INT
 )
-PARTITION BY RANGE((AVG(a)));
+PARTITION BY RANGE((AVG(
+a
+)));
 
 CREATE TABLE partitioned (
   a INT,
   b INT
 )
-PARTITION BY RANGE((AVG(a)
+PARTITION BY RANGE((AVG(
+a
+)
 OVER (
 PARTITION BY b)));
 
@@ -279,7 +303,8 @@ PARTITION BY LIST((a LIKE (SELECT
 
 CREATE TABLE partitioned ( a INT ) PARTITION BY RANGE((42));
 
-CREATE FUNCTION const_func()
+CREATE FUNCTION
+const_func()
 RETURNS INT
 AS ' SELECT 1; '
 LANGUAGE "sql"
@@ -288,7 +313,9 @@ IMMUTABLE;
 CREATE TABLE partitioned (
   a INT
 )
-PARTITION BY RANGE((const_func()));
+PARTITION BY RANGE((const_func(
+
+)));
 
 DROP FUNCTION const_func();
 
@@ -310,7 +337,8 @@ CREATE TABLE partitioned (
 PARTITION BY RANGE(a,
 ('unknown'));
 
-CREATE FUNCTION immut_func(
+CREATE FUNCTION
+immut_func(
   "a" INT
 )
 RETURNS INT
@@ -320,7 +348,9 @@ LANGUAGE "sql";
 CREATE TABLE partitioned (
   a INT
 )
-PARTITION BY RANGE((immut_func(a)));
+PARTITION BY RANGE((immut_func(
+a
+)));
 
 DROP FUNCTION immut_func(INT);
 
@@ -345,7 +375,8 @@ CREATE TABLE partitioned (
 )
 PARTITION BY RANGE(a);
 
-CREATE FUNCTION plusone(
+CREATE FUNCTION
+plusone(
   "a" INT
 )
 RETURNS INT
@@ -359,7 +390,9 @@ CREATE TABLE partitioned (
   d TEXT
 )
 PARTITION BY RANGE(a oid_ops,
-(plusone(b)),
+(plusone(
+b
+)),
 c COLLATE "default",
 d COLLATE "C");
 
@@ -372,9 +405,11 @@ CREATE TABLE partitioned2 (
   b TEXT
 )
 PARTITION BY RANGE((a + 1),
-(substr(b,
+(substr(
+b,
 1,
-5)));
+5
+)));
 
 CREATE TABLE fail () INHERITS (partitioned2);
 
@@ -466,7 +501,9 @@ CREATE TABLE partitioned (
   a intdom1,
   b TEXT
 )
-PARTITION BY RANGE((plusone(a)));
+PARTITION BY RANGE((plusone(
+a
+)));
 
 ALTER TABLE partitioned DROP COLUMN a;
 
@@ -508,15 +545,21 @@ FOR VALUES IN (a);
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN (SUM(a));
+FOR VALUES IN (SUM(
+a
+));
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN (SUM(somename));
+FOR VALUES IN (SUM(
+somename
+));
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN (SUM(1));
+FOR VALUES IN (SUM(
+1
+));
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
@@ -525,8 +568,10 @@ FOR VALUES IN ((SELECT
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
-FOR VALUES IN (generate_series(4,
-6));
+FOR VALUES IN (generate_series(
+4,
+6
+));
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF list_parted
@@ -566,8 +611,10 @@ FOR VALUES IN ('11');
 
 CREATE TABLE moneyp_12
 PARTITION OF moneyp
-FOR VALUES IN (CAST(to_char(12,
-'99')
+FOR VALUES IN (CAST(to_char(
+12,
+'99'
+)
 AS INT));
 
 DROP TABLE "moneyp";
@@ -600,16 +647,22 @@ FOR VALUES FROM (a) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM (MAX(a)) TO ('2019-01-01');
+FOR VALUES FROM (MAX(
+a
+)) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM (MAX(somename)) TO ('2019-01-01');
+FOR VALUES FROM (MAX(
+somename
+)) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM (MAX(CAST('2019-02-01'
-AS DATE))) TO ('2019-01-01');
+FOR VALUES FROM (MAX(
+CAST('2019-02-01'
+AS DATE)
+)) TO ('2019-01-01');
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
@@ -618,8 +671,10 @@ FOR VALUES FROM ((SELECT
 
 CREATE TABLE part_bogus_expr_fail
 PARTITION OF range_parted
-FOR VALUES FROM (generate_series(1,
-3)) TO ('2019-01-01');
+FOR VALUES FROM (generate_series(
+1,
+3
+)) TO ('2019-01-01');
 
 CREATE TABLE fail_part
 PARTITION OF range_parted
@@ -904,7 +959,9 @@ CREATE TABLE parted (
   b INT
   NOT NULL
   DEFAULT 0,
-  CONSTRAINT "check_a" CHECK (length(a) >
+  CONSTRAINT "check_a" CHECK (length(
+  a
+  ) >
   0)
 )
 PARTITION BY LIST(a);
@@ -935,7 +992,9 @@ PARTITION OF parted
   b
   CHECK (b >=
   0),
-  CONSTRAINT "check_a" CHECK (length(a) >
+  CONSTRAINT "check_a" CHECK (length(
+  a
+  ) >
   0)
 )
 FOR VALUES IN ('b');
@@ -946,7 +1005,9 @@ PARTITION OF parted
   b
   NOT NULL
   DEFAULT 1,
-  CONSTRAINT "check_a" CHECK (length(a) >
+  CONSTRAINT "check_a" CHECK (length(
+  a
+  ) >
   0),
   CONSTRAINT "check_b" CHECK (b >=
   0)
@@ -1114,8 +1175,12 @@ CREATE TABLE range_parted4 (
   b INT,
   c INT
 )
-PARTITION BY RANGE((abs(a)),
-(abs(b)),
+PARTITION BY RANGE((abs(
+a
+)),
+(abs(
+b
+)),
 c);
 
 CREATE TABLE unbounded_range_part
@@ -1154,7 +1219,8 @@ maxvalue);
 
 DROP TABLE "range_parted4";
 
-CREATE FUNCTION my_int4_sort(
+CREATE FUNCTION
+my_int4_sort(
   INT,
   INT
 )
@@ -1216,8 +1282,10 @@ COMMENT ON TABLE parted_col_comment IS 'Am partitioned table';
 COMMENT ON COLUMN parted_col_comment.a IS 'Partition key';
 
 SELECT
-  obj_description(CAST('parted_col_comment'
-  AS REGCLASS));
+  obj_description(
+  CAST('parted_col_comment'
+  AS REGCLASS)
+  );
 
 DROP TABLE "parted_col_comment";
 
@@ -1271,7 +1339,8 @@ DROP TABLE "temp_parted" CASCADE;
 
 CREATE TABLE tab_part_create ( a INT ) PARTITION BY LIST(a);
 
-CREATE OR REPLACE FUNCTION func_part_create()
+CREATE OR REPLACE FUNCTION
+func_part_create()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '

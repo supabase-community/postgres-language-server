@@ -4,34 +4,46 @@ input_file: crates/pgls_pretty_print/tests/data/multi/expressions_60.sql
 snapshot_kind: text
 ---
 SELECT
-  CAST(date(NOW())
+  CAST(date(
+  NOW(
+
+  )
+  )
   AS TEXT) =
   CAST(CURRENT_DATE
   AS TEXT);
 
 SELECT
-  CAST(CAST(NOW()
+  CAST(CAST(NOW(
+
+  )
   AS TIME WITH TIME ZONE)
   AS TEXT) =
   CAST(CURRENT_TIME
   AS TEXT);
 
 SELECT
-  CAST(CAST(NOW()
+  CAST(CAST(NOW(
+
+  )
   AS TIME(4) WITH TIME ZONE)
   AS TEXT) =
   CAST(CURRENT_TIME(4)
   AS TEXT);
 
 SELECT
-  CAST(CAST(NOW()
+  CAST(CAST(NOW(
+
+  )
   AS TIME)
   AS TEXT) =
   CAST(LOCALTIME
   AS TEXT);
 
 SELECT
-  CAST(CAST(NOW()
+  CAST(CAST(NOW(
+
+  )
   AS TIME(3))
   AS TEXT) =
   CAST(LOCALTIME(3)
@@ -40,13 +52,19 @@ SELECT
 SELECT CURRENT_TIMESTAMP = NOW();
 
 SELECT
-  length(CAST(CURRENT_TIMESTAMP
-  AS TEXT)) >=
-  length(CAST(CURRENT_TIMESTAMP(0)
-  AS TEXT));
+  length(
+  CAST(CURRENT_TIMESTAMP
+  AS TEXT)
+  ) >=
+  length(
+  CAST(CURRENT_TIMESTAMP(0)
+  AS TEXT)
+  );
 
 SELECT
-  CAST(CAST(NOW()
+  CAST(CAST(NOW(
+
+  )
   AS TIMESTAMP)
   AS TEXT) =
   CAST(LOCALTIMESTAMP
@@ -83,15 +101,19 @@ SELECT
   f1,
   CAST(f1
   AS NUMERIC(16,
-  4)) AS f1164,
+  4))
+  AS f1164,
   CAST(f1
-  AS NUMERIC) AS f1n,
+  AS NUMERIC)
+  AS f1n,
   f2,
   CAST(f2
   AS NUMERIC(16,
-  4)) AS f2164,
+  4))
+  AS f2164,
   CAST(f2
-  AS NUMERIC) AS f2n
+  AS NUMERIC)
+  AS f2n
 FROM
   numeric_tbl;
 
@@ -103,14 +125,18 @@ CREATE VIEW bpchar_view AS
 SELECT
   f1,
   CAST(f1
-  AS CHAR(14)) AS f114,
+  AS CHAR(14))
+  AS f114,
   CAST(f1
-  AS CHAR) AS f1n,
+  AS CHAR)
+  AS f1n,
   f2,
   CAST(f2
-  AS CHAR(14)) AS f214,
+  AS CHAR(14))
+  AS f214,
   CAST(f2
-  AS CHAR) AS f2n
+  AS CHAR)
+  AS f2n
 FROM
   bpchar_tbl;
 
@@ -126,12 +152,15 @@ SELECT
   CAST('(0,0)'
   AS point) IN (CAST('(0,0,0,0)'
   AS box),
-  point(0,
-  0));
+  point(
+  0,
+  0
+  ));
 
 BEGIN;
 
-CREATE FUNCTION return_int_input(
+CREATE FUNCTION
+return_int_input(
   INT
 )
 RETURNS INT
@@ -143,7 +172,8 @@ end;
 LANGUAGE "plpgsql"
 STABLE;
 
-CREATE FUNCTION return_text_input(
+CREATE FUNCTION
+return_text_input(
   TEXT
 )
 RETURNS TEXT
@@ -156,7 +186,9 @@ LANGUAGE "plpgsql"
 STABLE;
 
 SELECT
-  return_int_input(1) IN (10,
+  return_int_input(
+  1
+  ) IN (10,
   9,
   2,
   8,
@@ -168,7 +200,9 @@ SELECT
   1);
 
 SELECT
-  return_int_input(1) IN (10,
+  return_int_input(
+  1
+  ) IN (10,
   9,
   2,
   8,
@@ -180,7 +214,9 @@ SELECT
   NULL);
 
 SELECT
-  return_int_input(1) IN (NULL,
+  return_int_input(
+  1
+  ) IN (NULL,
   NULL,
   NULL,
   NULL,
@@ -193,7 +229,9 @@ SELECT
   NULL);
 
 SELECT
-  return_int_input(1) IN (10,
+  return_int_input(
+  1
+  ) IN (10,
   9,
   2,
   8,
@@ -206,8 +244,10 @@ SELECT
   NULL);
 
 SELECT
-  return_int_input(CAST(NULL
-  AS INT)) IN (10,
+  return_int_input(
+  CAST(NULL
+  AS INT)
+  ) IN (10,
   9,
   2,
   8,
@@ -219,8 +259,10 @@ SELECT
   1);
 
 SELECT
-  return_int_input(CAST(NULL
-  AS INT)) IN (10,
+  return_int_input(
+  CAST(NULL
+  AS INT)
+  ) IN (10,
   9,
   2,
   8,
@@ -232,7 +274,9 @@ SELECT
   NULL);
 
 SELECT
-  return_text_input('a') IN ('a',
+  return_text_input(
+  'a'
+  ) IN ('a',
   'b',
   'c',
   'd',
@@ -244,7 +288,9 @@ SELECT
   'j');
 
 SELECT
-  return_int_input(1) NOT IN (10,
+  return_int_input(
+  1
+  ) NOT IN (10,
   9,
   2,
   8,
@@ -256,7 +302,9 @@ SELECT
   1);
 
 SELECT
-  return_int_input(1) NOT IN (10,
+  return_int_input(
+  1
+  ) NOT IN (10,
   9,
   2,
   8,
@@ -268,7 +316,9 @@ SELECT
   0);
 
 SELECT
-  return_int_input(1) NOT IN (10,
+  return_int_input(
+  1
+  ) NOT IN (10,
   9,
   2,
   8,
@@ -281,7 +331,9 @@ SELECT
   NULL);
 
 SELECT
-  return_int_input(1) NOT IN (10,
+  return_int_input(
+  1
+  ) NOT IN (10,
   9,
   2,
   8,
@@ -294,7 +346,9 @@ SELECT
   NULL);
 
 SELECT
-  return_int_input(1) NOT IN (NULL,
+  return_int_input(
+  1
+  ) NOT IN (NULL,
   NULL,
   NULL,
   NULL,
@@ -307,8 +361,10 @@ SELECT
   NULL);
 
 SELECT
-  return_int_input(CAST(NULL
-  AS INT)) NOT IN (10,
+  return_int_input(
+  CAST(NULL
+  AS INT)
+  ) NOT IN (10,
   9,
   2,
   8,
@@ -320,8 +376,10 @@ SELECT
   1);
 
 SELECT
-  return_int_input(CAST(NULL
-  AS INT)) NOT IN (10,
+  return_int_input(
+  CAST(NULL
+  AS INT)
+  ) NOT IN (10,
   9,
   2,
   8,
@@ -333,7 +391,9 @@ SELECT
   NULL);
 
 SELECT
-  return_text_input('a') NOT IN ('a',
+  return_text_input(
+  'a'
+  ) NOT IN ('a',
   'b',
   'c',
   'd',
@@ -350,7 +410,8 @@ BEGIN;
 
 CREATE TYPE myint;
 
-CREATE FUNCTION myintin(
+CREATE FUNCTION
+myintin(
   cstring
 )
 RETURNS myint
@@ -359,7 +420,8 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'int4in';
 
-CREATE FUNCTION myintout(
+CREATE FUNCTION
+myintout(
   myint
 )
 RETURNS cstring
@@ -368,7 +430,8 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'int4out';
 
-CREATE FUNCTION myinthash(
+CREATE FUNCTION
+myinthash(
   myint
 )
 RETURNS INT
@@ -388,7 +451,8 @@ CREATE CAST (INT AS myint) WITHOUT FUNCTION;
 
 CREATE CAST (myint AS INT) WITHOUT FUNCTION;
 
-CREATE FUNCTION myinteq(
+CREATE FUNCTION
+myinteq(
   myint,
   myint
 )
@@ -405,7 +469,8 @@ end;
 LANGUAGE "plpgsql"
 IMMUTABLE;
 
-CREATE FUNCTION myintne(
+CREATE FUNCTION
+myintne(
   myint,
   myint
 )

@@ -18,8 +18,10 @@ SELECT
   'Row ' ||
   i
 FROM
-  generate_series(-2,
-  2) AS g (i);
+  generate_series(
+  -2,
+  2
+  ) AS g (i);
 
 CREATE VIEW ro_view1 AS SELECT DISTINCT a, b FROM base_tbl;
 
@@ -38,7 +40,9 @@ SELECT
 FROM
   base_tbl
 HAVING
-  MAX(a) >
+  MAX(
+  a
+  ) >
   0;
 
 CREATE VIEW ro_view4 AS SELECT COUNT(*) FROM base_tbl;
@@ -46,7 +50,9 @@ CREATE VIEW ro_view4 AS SELECT COUNT(*) FROM base_tbl;
 CREATE VIEW ro_view5 AS
 SELECT
   a,
-  RANK()
+  RANK(
+
+  )
   OVER ()
 FROM
   base_tbl;
@@ -100,8 +106,10 @@ CREATE VIEW ro_view12 AS
 SELECT
   *
 FROM
-  generate_series(1,
-  10) AS g (a);
+  generate_series(
+  1,
+  10
+  ) AS g (a);
 
 CREATE VIEW ro_view13 AS
 SELECT
@@ -135,8 +143,11 @@ CREATE VIEW ro_view20 AS
 SELECT
   a,
   b,
-  generate_series(1,
-  a) AS g
+  generate_series(
+  1,
+  a
+  )
+  AS g
 FROM
   base_tbl;
 
@@ -360,16 +371,22 @@ SELECT
   'Row ' ||
   i
 FROM
-  generate_series(-2,
-  2) AS g (i);
+  generate_series(
+  -2,
+  2
+  ) AS g (i);
 
 CREATE VIEW rw_view1 AS
 SELECT
   *,
-  'Const' AS c,
+  'Const'
+  AS c,
   (SELECT
-    concat('b: ',
-    b)) AS d
+    concat(
+    'b: ',
+    b
+    ))
+  AS d
 FROM
   base_tbl
 WHERE
@@ -430,7 +447,9 @@ DELETE FROM rw_view1 WHERE a = 5;
 
 CREATE TABLE base_tbl_hist (
   ts TIMESTAMP WITH TIME ZONE
-  DEFAULT NOW(),
+  DEFAULT NOW(
+
+  ),
   a INT,
   b TEXT
 );
@@ -474,14 +493,19 @@ SELECT
   'Row ' ||
   i
 FROM
-  generate_series(-2,
-  2) AS g (i);
+  generate_series(
+  -2,
+  2
+  ) AS g (i);
 
 CREATE VIEW rw_view1 AS
 SELECT
-  b AS bb,
-  a AS aa,
-  'Const1' AS c
+  b
+  AS bb,
+  a
+  AS aa,
+  'Const1'
+  AS c
 FROM
   base_tbl
 WHERE
@@ -490,10 +514,14 @@ WHERE
 
 CREATE VIEW rw_view2 AS
 SELECT
-  aa AS aaa,
-  bb AS bbb,
-  c AS c1,
-  'Const2' AS c2
+  aa
+  AS aaa,
+  bb
+  AS bbb,
+  c
+  AS c1,
+  'Const2'
+  AS c2
 FROM
   rw_view1
 WHERE
@@ -565,8 +593,10 @@ SELECT
   'Row ' ||
   i
 FROM
-  generate_series(-2,
-  2) AS g (i);
+  generate_series(
+  -2,
+  2
+  ) AS g (i);
 
 CREATE VIEW rw_view1 AS
 SELECT
@@ -786,13 +816,16 @@ SELECT
   'Row ' ||
   i
 FROM
-  generate_series(-2,
-  2) AS g (i);
+  generate_series(
+  -2,
+  2
+  ) AS g (i);
 
 CREATE VIEW rw_view1 AS
 SELECT
   *,
-  'Const1' AS c1
+  'Const1'
+  AS c1
 FROM
   base_tbl
 WHERE
@@ -803,7 +836,8 @@ OFFSET 0;
 CREATE VIEW rw_view2 AS
 SELECT
   *,
-  'Const2' AS c2
+  'Const2'
+  AS c2
 FROM
   rw_view1
 WHERE
@@ -843,7 +877,8 @@ WHERE
 ORDER BY table_name,
   ordinal_position;
 
-CREATE FUNCTION rw_view1_trig_fn()
+CREATE FUNCTION
+rw_view1_trig_fn()
 RETURNS trigger
 AS '
 BEGIN
@@ -1041,17 +1076,22 @@ SELECT
   'Row ' ||
   i
 FROM
-  generate_series(-2,
-  2) AS g (i);
+  generate_series(
+  -2,
+  2
+  ) AS g (i);
 
 CREATE VIEW rw_view1 AS
 SELECT
-  b AS bb,
-  a AS aa
+  b
+  AS bb,
+  a
+  AS aa
 FROM
   base_tbl;
 
-CREATE FUNCTION rw_view1_aa(
+CREATE FUNCTION
+rw_view1_aa(
   "x" rw_view1
 )
 RETURNS INT
@@ -1062,9 +1102,13 @@ UPDATE rw_view1
 AS v
 SET bb = 'Updated row 2'
 WHERE
-  rw_view1_aa(v) =
+  rw_view1_aa(
+  v
+  ) =
   2
-RETURNING rw_view1_aa(v),
+RETURNING rw_view1_aa(
+v
+),
 v.bb;
 
 SELECT * FROM base_tbl;
@@ -1073,9 +1117,13 @@ UPDATE rw_view1
 AS v
 SET bb = 'Updated row 2'
 WHERE
-  rw_view1_aa(v) =
+  rw_view1_aa(
+  v
+  ) =
   2
-RETURNING rw_view1_aa(v),
+RETURNING rw_view1_aa(
+v
+),
 v.bb;
 
 DROP TABLE "base_tbl" CASCADE;
@@ -1094,9 +1142,12 @@ INSERT INTO base_tbl VALUES (1, 'Row 1', 1.0);
 
 CREATE VIEW rw_view1 AS
 SELECT
-  b AS bb,
-  c AS cc,
-  a AS aa
+  b
+  AS bb,
+  c
+  AS cc,
+  a
+  AS aa
 FROM
   base_tbl;
 
@@ -1109,7 +1160,8 @@ GRANT SELECT ON TABLE rw_view1 TO regress_view_user2;
 GRANT UPDATE (a, c) ON TABLE base_tbl TO regress_view_user2;
 
 GRANT UPDATE (bb,
-cc) ON TABLE rw_view1
+cc)
+ON TABLE rw_view1
 TO regress_view_user2;
 
 RESET session_authorization;
@@ -1118,9 +1170,12 @@ SET SESSION AUTHORIZATION regress_view_user2;
 
 CREATE VIEW rw_view2 AS
 SELECT
-  b AS bb,
-  c AS cc,
-  a AS aa
+  b
+  AS bb,
+  c
+  AS cc,
+  a
+  AS aa
 FROM
   base_tbl;
 
@@ -1159,7 +1214,8 @@ RESET session_authorization;
 SET SESSION AUTHORIZATION regress_view_user1;
 
 GRANT INSERT,
-DELETE ON TABLE base_tbl
+DELETE
+ON TABLE base_tbl
 TO regress_view_user2;
 
 RESET session_authorization;
@@ -1185,11 +1241,13 @@ RESET session_authorization;
 SET SESSION AUTHORIZATION regress_view_user1;
 
 REVOKE INSERT,
-DELETE ON TABLE base_tbl
+DELETE
+ON TABLE base_tbl
 FROM regress_view_user2;
 
 GRANT INSERT,
-DELETE ON TABLE rw_view1
+DELETE
+ON TABLE rw_view1
 TO regress_view_user2;
 
 RESET session_authorization;
@@ -1334,9 +1392,12 @@ INSERT INTO base_tbl VALUES (1, 'Row 1', 1.0);
 
 CREATE VIEW rw_view1 AS
 SELECT
-  b AS bb,
-  c AS cc,
-  a AS aa
+  b
+  AS bb,
+  c
+  AS cc,
+  a
+  AS aa
 FROM
   base_tbl;
 
@@ -1347,7 +1408,8 @@ INSERT INTO rw_view1 VALUES ('Row 2', 2.0, 2);
 GRANT SELECT ON TABLE rw_view1 TO regress_view_user2;
 
 GRANT UPDATE (bb,
-cc) ON TABLE rw_view1
+cc)
+ON TABLE rw_view1
 TO regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user2;
@@ -1393,7 +1455,8 @@ UPDATE rw_view1 SET bb = bb;
 SET SESSION AUTHORIZATION regress_view_user1;
 
 GRANT INSERT,
-DELETE ON TABLE base_tbl
+DELETE
+ON TABLE base_tbl
 TO regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user2;
@@ -1409,11 +1472,13 @@ DELETE FROM rw_view1 WHERE aa = 2;
 SET SESSION AUTHORIZATION regress_view_user1;
 
 REVOKE INSERT,
-DELETE ON TABLE base_tbl
+DELETE
+ON TABLE base_tbl
 FROM regress_view_user2;
 
 GRANT INSERT,
-DELETE ON TABLE rw_view1
+DELETE
+ON TABLE rw_view1
 TO regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user2;
@@ -1425,7 +1490,8 @@ DELETE FROM rw_view1 WHERE aa = 2;
 SET SESSION AUTHORIZATION regress_view_user1;
 
 GRANT INSERT,
-DELETE ON TABLE base_tbl
+DELETE
+ON TABLE base_tbl
 TO regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user2;
@@ -1448,9 +1514,12 @@ SET SESSION AUTHORIZATION regress_view_user1;
 
 CREATE VIEW rw_view1 AS
 SELECT
-  b AS bb,
-  c AS cc,
-  a AS aa
+  b
+  AS bb,
+  c
+  AS cc,
+  a
+  AS aa
 FROM
   base_tbl;
 
@@ -1464,14 +1533,18 @@ SET SESSION AUTHORIZATION regress_view_user2;
 
 CREATE VIEW rw_view2 AS
 SELECT
-  cc AS ccc,
-  aa AS aaa,
-  bb AS bbb
+  cc
+  AS ccc,
+  aa
+  AS aaa,
+  bb
+  AS bbb
 FROM
   rw_view1;
 
 GRANT SELECT,
-UPDATE ON TABLE rw_view2
+UPDATE
+ON TABLE rw_view2
 TO regress_view_user3;
 
 SELECT * FROM rw_view2;
@@ -1509,7 +1582,8 @@ SET SESSION AUTHORIZATION regress_view_user1;
 GRANT SELECT ON TABLE rw_view1 TO regress_view_user2;
 
 GRANT UPDATE (bb,
-cc) ON TABLE rw_view1
+cc)
+ON TABLE rw_view1
 TO regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user2;
@@ -1569,7 +1643,8 @@ UPDATE rw_view2 SET ccc = ccc;
 RESET session_authorization;
 
 REVOKE SELECT,
-UPDATE ON TABLE base_tbl
+UPDATE
+ON TABLE base_tbl
 FROM regress_view_user1;
 
 SET SESSION AUTHORIZATION regress_view_user1;
@@ -1601,7 +1676,8 @@ UPDATE rw_view2 SET ccc = ccc;
 RESET session_authorization;
 
 REVOKE SELECT,
-UPDATE ON TABLE base_tbl
+UPDATE
+ON TABLE base_tbl
 FROM regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user2;
@@ -1650,8 +1726,10 @@ INSERT INTO base_tbl VALUES (3);
 
 CREATE VIEW rw_view1 AS
 SELECT
-  a AS aa,
-  b AS bb
+  a
+  AS aa,
+  b
+  AS bb
 FROM
   base_tbl;
 
@@ -1677,7 +1755,8 @@ INSERT INTO base_tbl VALUES (1, 'Row 1');
 
 INSERT INTO base_tbl VALUES (2, 'Row 2');
 
-CREATE FUNCTION rw_view1_trig_fn()
+CREATE FUNCTION
+rw_view1_trig_fn()
 RETURNS trigger
 AS '
 BEGIN
@@ -1699,8 +1778,10 @@ EXECUTE FUNCTION rw_view1_trig_fn();
 
 CREATE VIEW rw_view1 AS
 SELECT
-  a AS aa,
-  b AS bb
+  a
+  AS aa,
+  b
+  AS bb
 FROM
   base_tbl;
 
@@ -1759,21 +1840,31 @@ INSERT INTO base_tbl
 SELECT
   i / 10.0
 FROM
-  generate_series(1,
-  10) AS g (i);
+  generate_series(
+  1,
+  10
+  ) AS g (i);
 
 CREATE VIEW rw_view1 AS
 SELECT
   ctid,
-  sin(a) AS s,
+  sin(
+  a
+  )
+  AS s,
   a,
-  cos(a) AS c
+  cos(
+  a
+  )
+  AS c
 FROM
   base_tbl
 WHERE
   a <>
   0
-ORDER BY abs(a);
+ORDER BY abs(
+  a
+  );
 
 INSERT INTO rw_view1 VALUES (NULL, NULL, 1.1, NULL);
 
@@ -1798,8 +1889,10 @@ CREATE VIEW rw_view2 AS
 SELECT
   s,
   c,
-  s / c AS t,
-  a AS base_a,
+  s / c
+  AS t,
+  a
+  AS base_a,
   ctid
 FROM
   rw_view1;
@@ -1834,7 +1927,8 @@ CREATE VIEW rw_view3 AS
 SELECT
   s,
   c,
-  s / c AS t,
+  s / c
+  AS t,
   ctid
 FROM
   rw_view1;
@@ -1881,15 +1975,20 @@ ORDER BY table_name,
 
 SELECT
   events & 4 <>
-  0 AS upd,
+  0
+  AS upd,
   events & 8 <>
-  0 AS ins,
+  0
+  AS ins,
   events & 16 <>
-  0 AS del
+  0
+  AS del
 FROM
-  pg_relation_is_updatable(CAST('rw_view3'
+  pg_relation_is_updatable(
+  CAST('rw_view3'
   AS REGCLASS),
-  FALSE) AS t (events);
+  FALSE
+  ) AS t (events);
 
 DROP TABLE "base_tbl" CASCADE;
 
@@ -1935,15 +2034,19 @@ INSERT INTO base_tbl_parent
 SELECT
   *
 FROM
-  generate_series(-8,
-  -1);
+  generate_series(
+  -8,
+  -1
+  );
 
 INSERT INTO base_tbl_child
 SELECT
   *
 FROM
-  generate_series(1,
-  8);
+  generate_series(
+  1,
+  8
+  );
 
 CREATE VIEW rw_view1 AS SELECT * FROM base_tbl_parent;
 
@@ -2238,7 +2341,8 @@ DROP TABLE "base_tbl", "ref_tbl" CASCADE;
 
 CREATE TABLE base_tbl ( a INT, b INT );
 
-CREATE FUNCTION base_tbl_trig_fn()
+CREATE FUNCTION
+base_tbl_trig_fn()
 RETURNS trigger
 AS '
 BEGIN
@@ -2278,7 +2382,8 @@ CREATE TABLE base_tbl ( a INT, b INT );
 
 CREATE VIEW rw_view1 AS SELECT a FROM base_tbl WHERE a < b;
 
-CREATE FUNCTION rw_view1_trig_fn()
+CREATE FUNCTION
+rw_view1_trig_fn()
 RETURNS trigger
 AS '
 BEGIN
@@ -2408,7 +2513,8 @@ WHERE
   visibility =
   'public';
 
-CREATE FUNCTION snoop(
+CREATE FUNCTION
+snoop(
   ANYELEMENT
 )
 RETURNS BOOLEAN
@@ -2421,7 +2527,8 @@ END;
 LANGUAGE "plpgsql"
 COST 0.000001;
 
-CREATE OR REPLACE FUNCTION leakproof(
+CREATE OR REPLACE FUNCTION
+leakproof(
   ANYELEMENT
 )
 RETURNS BOOLEAN
@@ -2491,7 +2598,9 @@ SELECT
 FROM
   rw_view1
 WHERE
-  snoop(person);
+  snoop(
+  person
+  );
 
 SELECT
   table_name,
@@ -2612,8 +2721,10 @@ SELECT
   i,
   't1'
 FROM
-  generate_series(1,
-  10) AS g (i);
+  generate_series(
+  1,
+  10
+  ) AS g (i);
 
 ANALYZE t1;
 
@@ -2628,8 +2739,10 @@ SELECT
   't11',
   't11d'
 FROM
-  generate_series(1,
-  10) AS g (i);
+  generate_series(
+  1,
+  10
+  ) AS g (i);
 
 ANALYZE t11;
 
@@ -2645,8 +2758,10 @@ SELECT
   CAST('{1,2}'
   AS INT[])
 FROM
-  generate_series(1,
-  10) AS g (i);
+  generate_series(
+  1,
+  10
+  ) AS g (i);
 
 ANALYZE t12;
 
@@ -2663,8 +2778,10 @@ SELECT
   CAST('{1,1,1}'
   AS INT[])
 FROM
-  generate_series(1,
-  10) AS g (i);
+  generate_series(
+  1,
+  10
+  ) AS g (i);
 
 ANALYZE t111;
 
@@ -2678,7 +2795,8 @@ SELECT
   WHERE
     t11.a =
     t1.a
-  LIMIT 1) AS d
+  LIMIT 1)
+  AS d
 FROM
   t1
 WHERE
@@ -2699,8 +2817,12 @@ SELECT * FROM v1 WHERE a = 8;
 UPDATE v1
 SET a = 100
 WHERE
-  snoop(a) AND
-  leakproof(a) AND
+  snoop(
+  a
+  ) AND
+  leakproof(
+  a
+  ) AND
   a <
   7 AND
   a <>
@@ -2709,8 +2831,12 @@ WHERE
 UPDATE v1
 SET a = 100
 WHERE
-  snoop(a) AND
-  leakproof(a) AND
+  snoop(
+  a
+  ) AND
+  leakproof(
+  a
+  ) AND
   a <
   7 AND
   a <>
@@ -2723,16 +2849,24 @@ SELECT * FROM t1 WHERE a = 100;
 UPDATE v1
 SET a = a + 1
 WHERE
-  snoop(a) AND
-  leakproof(a) AND
+  snoop(
+  a
+  ) AND
+  leakproof(
+  a
+  ) AND
   a =
   8;
 
 UPDATE v1
 SET a = a + 1
 WHERE
-  snoop(a) AND
-  leakproof(a) AND
+  snoop(
+  a
+  ) AND
+  leakproof(
+  a
+  ) AND
   a =
   8;
 
@@ -3013,29 +3147,38 @@ CREATE VIEW uv_ptv AS SELECT * FROM uv_pt;
 
 SELECT
   events & 4 <>
-  0 AS upd,
+  0
+  AS upd,
   events & 8 <>
-  0 AS ins,
+  0
+  AS ins,
   events & 16 <>
-  0 AS del
+  0
+  AS del
 FROM
-  pg_relation_is_updatable(CAST('uv_pt'
+  pg_relation_is_updatable(
+  CAST('uv_pt'
   AS REGCLASS),
-  FALSE) AS t (events);
+  FALSE
+  ) AS t (events);
 
 SELECT
-  pg_column_is_updatable(CAST('uv_pt'
+  pg_column_is_updatable(
+  CAST('uv_pt'
   AS REGCLASS),
   CAST(1
   AS SMALLINT),
-  FALSE);
+  FALSE
+  );
 
 SELECT
-  pg_column_is_updatable(CAST('uv_pt'
+  pg_column_is_updatable(
+  CAST('uv_pt'
   AS REGCLASS),
   CAST(2
   AS SMALLINT),
-  FALSE);
+  FALSE
+  );
 
 SELECT
   table_name,
@@ -3154,10 +3297,12 @@ INSERT INTO uv_iocu_tab VALUES ('xyxyxy', 0);
 CREATE VIEW uv_iocu_view AS
 SELECT
   b,
-  b + 1 AS c,
+  b + 1
+  AS c,
   a,
   CAST('2.0'
-  AS TEXT) AS two
+  AS TEXT)
+  AS two
 FROM
   uv_iocu_tab;
 
@@ -3224,10 +3369,13 @@ CREATE TABLE uv_iocu_tab ( a INT UNIQUE, b TEXT );
 
 CREATE VIEW uv_iocu_view AS
 SELECT
-  b AS bb,
-  a AS aa,
+  b
+  AS bb,
+  a
+  AS aa,
   CAST(uv_iocu_tab
-  AS TEXT) AS cc
+  AS TEXT)
+  AS cc
 FROM
   uv_iocu_tab;
 
@@ -3329,14 +3477,18 @@ INSERT INTO base_tbl VALUES (1, 'xxx', 1.0);
 
 CREATE VIEW rw_view1 AS
 SELECT
-  b AS bb,
-  c AS cc,
-  a AS aa
+  b
+  AS bb,
+  c
+  AS cc,
+  a
+  AS aa
 FROM
   base_tbl;
 
 GRANT SELECT (aa,
-bb) ON TABLE rw_view1
+bb)
+ON TABLE rw_view1
 TO regress_view_user2;
 
 GRANT INSERT ON TABLE rw_view1 TO regress_view_user2;
@@ -3402,9 +3554,12 @@ SET SESSION AUTHORIZATION regress_view_user2;
 
 CREATE VIEW rw_view2 AS
 SELECT
-  b AS bb,
-  c AS cc,
-  a AS aa
+  b
+  AS bb,
+  c
+  AS cc,
+  a
+  AS aa
 FROM
   base_tbl;
 
@@ -3418,8 +3573,10 @@ SET bb = excluded.bb;
 
 CREATE VIEW rw_view3 AS
 SELECT
-  b AS bb,
-  a AS aa
+  b
+  AS bb,
+  a
+  AS aa
 FROM
   base_tbl;
 
@@ -3545,7 +3702,8 @@ INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a;
 
-CREATE FUNCTION base_tab_def_view_instrig_func()
+CREATE FUNCTION
+base_tab_def_view_instrig_func()
 RETURNS trigger
 AS '
 begin

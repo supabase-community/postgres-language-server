@@ -65,13 +65,15 @@ SELECT
   CAST('t'
   AS BOOLEAN) OR
   CAST('f'
-  AS BOOLEAN) AS "true";
+  AS BOOLEAN)
+  AS "true";
 
 SELECT
   CAST('t'
   AS BOOLEAN) AND
   CAST('f'
-  AS BOOLEAN) AS "false";
+  AS BOOLEAN)
+  AS "false";
 
 SELECT NOT CAST('f' AS BOOLEAN) AS "true";
 
@@ -79,61 +81,73 @@ SELECT
   CAST('t'
   AS BOOLEAN) =
   CAST('f'
-  AS BOOLEAN) AS "false";
+  AS BOOLEAN)
+  AS "false";
 
 SELECT
   CAST('t'
   AS BOOLEAN) <>
   CAST('f'
-  AS BOOLEAN) AS "true";
+  AS BOOLEAN)
+  AS "true";
 
 SELECT
   CAST('t'
   AS BOOLEAN) >
   CAST('f'
-  AS BOOLEAN) AS "true";
+  AS BOOLEAN)
+  AS "true";
 
 SELECT
   CAST('t'
   AS BOOLEAN) >=
   CAST('f'
-  AS BOOLEAN) AS "true";
+  AS BOOLEAN)
+  AS "true";
 
 SELECT
   CAST('f'
   AS BOOLEAN) <
   CAST('t'
-  AS BOOLEAN) AS "true";
+  AS BOOLEAN)
+  AS "true";
 
 SELECT
   CAST('f'
   AS BOOLEAN) <=
   CAST('t'
-  AS BOOLEAN) AS "true";
+  AS BOOLEAN)
+  AS "true";
 
 SELECT
   CAST(CAST('TrUe'
   AS TEXT)
-  AS BOOLEAN) AS "true",
+  AS BOOLEAN)
+  AS "true",
   CAST(CAST('fAlse'
   AS TEXT)
-  AS BOOLEAN) AS "false";
+  AS BOOLEAN)
+  AS "false";
 
 SELECT
   CAST(CAST('    true   '
   AS TEXT)
-  AS BOOLEAN) AS "true",
+  AS BOOLEAN)
+  AS "true",
   CAST(CAST('     FALSE'
   AS TEXT)
-  AS BOOLEAN) AS "false";
+  AS BOOLEAN)
+  AS "false";
 
 SELECT
   CAST(CAST(TRUE
   AS BOOLEAN)
-  AS TEXT) AS "true",
+  AS TEXT)
+  AS "true",
   CAST(CAST(FALSE
   AS BOOLEAN)
-  AS TEXT) AS "false";
+  AS TEXT)
+  AS "false";
 
 SELECT CAST(CAST('  tru e ' AS TEXT) AS BOOLEAN) AS invalid;
 
@@ -172,9 +186,11 @@ SELECT
 FROM
   booltbl1
 WHERE
-  booleq(CAST('false'
+  booleq(
+  CAST('false'
   AS BOOLEAN),
-  f1);
+  f1
+  );
 
 INSERT INTO booltbl1 (f1) VALUES (CAST('f' AS BOOLEAN));
 
@@ -218,8 +234,10 @@ FROM
   booltbl1,
   booltbl2
 WHERE
-  boolne(booltbl2.f1,
-  booltbl1.f1);
+  boolne(
+  booltbl2.f1,
+  booltbl1.f1
+  );
 
 SELECT
   booltbl1.*,
@@ -275,12 +293,18 @@ INSERT INTO booltbl3 (d, b, o) VALUES ('null', NULL, 3);
 
 SELECT
   d,
-  b IS TRUE AS istrue,
-  b IS NOT TRUE AS isnottrue,
-  b IS FALSE AS isfalse,
-  b IS NOT FALSE AS isnotfalse,
-  b IS UNKNOWN AS isunknown,
-  b IS NOT UNKNOWN AS isnotunknown
+  b IS TRUE
+  AS istrue,
+  b IS NOT TRUE
+  AS isnottrue,
+  b IS FALSE
+  AS isfalse,
+  b IS NOT FALSE
+  AS isnotfalse,
+  b IS UNKNOWN
+  AS isunknown,
+  b IS NOT UNKNOWN
+  AS isnotunknown
 FROM
   booltbl3
 ORDER BY o;

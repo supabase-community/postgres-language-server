@@ -4,7 +4,9 @@ input_file: crates/pgls_pretty_print/tests/data/multi/ordered_set_filter_60.sql
 snapshot_kind: text
 ---
 SELECT
-  percentile_disc(0.5)
+  percentile_disc(
+  0.5
+  )
   WITHIN GROUP (ORDER BY score)
   FILTER (WHERE
     score >
@@ -15,7 +17,9 @@ FROM
   (3)) AS scores (score);
 
 SELECT
-  percentile_cont(0.9)
+  percentile_cont(
+  0.9
+  )
   WITHIN GROUP (ORDER BY duration)
   FILTER (WHERE
     duration IS NOT NULL)

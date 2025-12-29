@@ -1,6 +1,6 @@
 ---
-source: crates/pgt_pretty_print/tests/tests.rs
-input_file: crates/pgt_pretty_print/tests/data/multi/oid_60.sql
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/oid_60.sql
 snapshot_kind: text
 ---
 CREATE TABLE oid_tbl ( f1 OID );
@@ -64,8 +64,10 @@ SELECT pg_input_is_valid('01 9999999999', 'oidvector');
 SELECT
   *
 FROM
-  pg_input_error_info('01 9999999999',
-  'oidvector');
+  pg_input_error_info(
+  '01 9999999999',
+  'oidvector'
+  );
 
 SELECT o.* FROM oid_tbl AS o WHERE o.f1 = 1234;
 

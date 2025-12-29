@@ -230,7 +230,8 @@ CREATE TYPE textrange AS RANGE
 (subtype = TEXT,
 collation = "C");
 
-CREATE FUNCTION binary_coercible(
+CREATE FUNCTION
+binary_coercible(
   OID,
   OID
 )
@@ -241,7 +242,8 @@ STRICT
 STABLE
 PARALLEL SAFE;
 
-CREATE FUNCTION part_hashint4_noop(
+CREATE FUNCTION
+part_hashint4_noop(
   "value" INT,
   "seed" BIGINT
 )
@@ -262,7 +264,8 @@ CREATE OPERATOR CLASS part_test_int4_ops
     INT,
     BIGINT);
 
-CREATE FUNCTION part_hashtext_length(
+CREATE FUNCTION
+part_hashtext_length(
   "value" TEXT,
   "seed" BIGINT
 )
@@ -283,27 +286,41 @@ CREATE OPERATOR CLASS part_test_text_ops
     TEXT,
     BIGINT);
 
-CREATE FUNCTION fipshash(
+CREATE FUNCTION
+fipshash(
   BYTEA
 )
 RETURNS TEXT
 STRICT
 IMMUTABLE
 PARALLEL SAFE
-LEAKPROOF RETURN substr(encode(sha256($1),
-'hex'),
+LEAKPROOF RETURN substr(
+encode(
+sha256(
+$1
+),
+'hex'
+),
 1,
-32);;
+32
+);;
 
-CREATE FUNCTION fipshash(
+CREATE FUNCTION
+fipshash(
   TEXT
 )
 RETURNS TEXT
 STRICT
 IMMUTABLE
 PARALLEL SAFE
-LEAKPROOF RETURN substr(encode(sha256(CAST($1
-AS BYTEA)),
-'hex'),
+LEAKPROOF RETURN substr(
+encode(
+sha256(
+CAST($1
+AS BYTEA)
+),
+'hex'
+),
 1,
-32);;
+32
+);;

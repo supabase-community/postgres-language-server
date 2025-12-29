@@ -22,7 +22,9 @@ ORDER BY two USING <,
 SELECT DISTINCT p.age FROM person AS p ORDER BY age USING >;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   (SELECT DISTINCT
     two,
@@ -32,7 +34,9 @@ FROM
     tenk1) AS ss;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   (SELECT DISTINCT
     two,
@@ -53,8 +57,10 @@ CREATE TABLE distinct_group_1 AS
   SELECT DISTINCT
     g % 1000
   FROM
-    generate_series(0,
-    9999) AS g;
+    generate_series(
+    0,
+    9999
+    ) AS g;
 
 SET jit_above_cost = DEFAULT;
 
@@ -63,8 +69,10 @@ CREATE TABLE distinct_group_2 AS
     CAST(g % 1000
     AS TEXT)
   FROM
-    generate_series(0,
-    9999) AS g;
+    generate_series(
+    0,
+    9999
+    ) AS g;
 
 SET enable_seqscan = 0;
 
@@ -84,8 +92,10 @@ CREATE TABLE distinct_hash_1 AS
   SELECT DISTINCT
     g % 1000
   FROM
-    generate_series(0,
-    9999) AS g;
+    generate_series(
+    0,
+    9999
+    ) AS g;
 
 SET jit_above_cost = DEFAULT;
 
@@ -94,8 +104,10 @@ CREATE TABLE distinct_hash_2 AS
     CAST(g % 1000
     AS TEXT)
   FROM
-    generate_series(0,
-    9999) AS g;
+    generate_series(
+    0,
+    9999
+    ) AS g;
 
 SET enable_sort = true;
 
@@ -161,7 +173,8 @@ SELECT DISTINCT four FROM tenk1;
 
 SELECT DISTINCT four FROM tenk1;
 
-CREATE OR REPLACE FUNCTION distinct_func(
+CREATE OR REPLACE FUNCTION
+distinct_func(
   "a" INT
 )
 RETURNS INT
@@ -175,7 +188,8 @@ PARALLEL UNSAFE;
 
 SELECT DISTINCT distinct_func(1) FROM tenk1;
 
-CREATE OR REPLACE FUNCTION distinct_func(
+CREATE OR REPLACE FUNCTION
+distinct_func(
   "a" INT
 )
 RETURNS INT
@@ -237,7 +251,8 @@ SELECT f1, f1 IS DISTINCT FROM 2 AS "not 2" FROM disttable;
 
 SELECT
   f1,
-  f1 IS DISTINCT FROM NULL AS "not null"
+  f1 IS DISTINCT FROM NULL
+  AS "not null"
 FROM
   disttable;
 
@@ -245,7 +260,8 @@ SELECT f1, f1 IS DISTINCT FROM f1 AS "false" FROM disttable;
 
 SELECT
   f1,
-  f1 IS DISTINCT FROM f1 + 1 AS "not null"
+  f1 IS DISTINCT FROM f1 + 1
+  AS "not null"
 FROM
   disttable;
 
@@ -272,8 +288,10 @@ SELECT
   i % 10,
   i % 10
 FROM
-  generate_series(1,
-  1000) AS i;
+  generate_series(
+  1,
+  1000
+  ) AS i;
 
 CREATE INDEX "distinct_tbl_x_y_idx" ON distinct_tbl USING btree
 (

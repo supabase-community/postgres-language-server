@@ -3,7 +3,10 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/database_60.sql
 snapshot_kind: text
 ---
-CREATE DATABASE "regression_tbd" WITH encoding = 'utf8' lc_collate = 'C' lc_ctype = 'C' template = 'template0';
+CREATE DATABASE "regression_tbd" WITH encoding = 'utf8'
+lc_collate = 'C'
+lc_ctype = 'C'
+template = 'template0';
 
 ALTER DATABASE regression_tbd RENAME TO regression_utf8;
 
@@ -16,12 +19,16 @@ ALTER DATABASE regression_utf8 connection_limit = 123;
 BEGIN;
 
 UPDATE pg_database
-SET datacl = array_fill(makeaclitem(10,
+SET datacl = array_fill(
+makeaclitem(
+10,
 10,
 'USAGE',
-FALSE),
+FALSE
+),
 ARRAY[CAST(5e5
-AS INT)])
+AS INT)]
+)
 WHERE
   datname =
   'regression_utf8';

@@ -55,7 +55,8 @@ COMMENT ON AGGREGATE newcnt(*) IS 'an agg(*) comment';
 
 COMMENT ON AGGREGATE newcnt("any") IS 'an agg(any) comment';
 
-CREATE FUNCTION sum3(
+CREATE FUNCTION
+sum3(
   BIGINT,
   BIGINT,
   BIGINT
@@ -76,7 +77,8 @@ BIGINT)
 
 CREATE TYPE aggtype AS ( a INT, b INT, c TEXT );
 
-CREATE FUNCTION aggf_trans(
+CREATE FUNCTION
+aggf_trans(
   aggtype[],
   INT,
   INT,
@@ -88,7 +90,8 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION aggfns_trans(
+CREATE FUNCTION
+aggfns_trans(
   aggtype[],
   INT,
   INT,
@@ -118,7 +121,8 @@ TEXT)
   initcond = '{}'
 );
 
-CREATE FUNCTION least_accum(
+CREATE FUNCTION
+least_accum(
   BIGINT,
   BIGINT
 )
@@ -134,7 +138,8 @@ CREATE AGGREGATE least_agg (INT)
 
 DROP FUNCTION least_accum(BIGINT, BIGINT);
 
-CREATE FUNCTION least_accum(
+CREATE FUNCTION
+least_accum(
   anycompatible,
   anycompatible
 )
@@ -158,7 +163,8 @@ DROP FUNCTION least_accum(
   anycompatible,
   anycompatible) CASCADE;
 
-CREATE FUNCTION least_accum(
+CREATE FUNCTION
+least_accum(
   ANYELEMENT,
   VARIADIC ANYARRAY
 )
@@ -172,7 +178,8 @@ CREATE AGGREGATE least_agg (VARIADIC "items" ANYARRAY)
   sfunc = least_accum
 );
 
-CREATE FUNCTION cleast_accum(
+CREATE FUNCTION
+cleast_accum(
   anycompatible,
   VARIADIC anycompatiblearray
 )
@@ -351,7 +358,8 @@ CREATE OR REPLACE AGGREGATE myavg (NUMERIC)
   sfunc = numeric_add
 );
 
-CREATE FUNCTION sum4(
+CREATE FUNCTION
+sum4(
   BIGINT,
   BIGINT,
   BIGINT,
@@ -382,7 +390,8 @@ CREATE AGGREGATE mysum (INT)
   parallel = pear
 );
 
-CREATE FUNCTION float8mi_n(
+CREATE FUNCTION
+float8mi_n(
   DOUBLE PRECISION,
   DOUBLE PRECISION
 )
@@ -399,7 +408,8 @@ CREATE AGGREGATE invalidsumdouble (DOUBLE PRECISION)
   minvfunc = float8mi_n
 );
 
-CREATE FUNCTION float8mi_int(
+CREATE FUNCTION
+float8mi_int(
   DOUBLE PRECISION,
   DOUBLE PRECISION
 )

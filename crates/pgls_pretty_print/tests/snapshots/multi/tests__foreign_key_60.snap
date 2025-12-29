@@ -765,7 +765,9 @@ CREATE TABLE fktable (
 );
 
 SELECT
-  pg_get_constraintdef(oid)
+  pg_get_constraintdef(
+  oid
+  )
 FROM
   pg_constraint
 WHERE
@@ -2075,10 +2077,14 @@ UPDATE fk_notpartitioned_pk SET b = 2504 WHERE a = 2500;
 SELECT
   conname,
   CAST(tgrelid
-  AS REGCLASS) AS tgrel,
-  regexp_replace(tgname,
+  AS REGCLASS)
+  AS tgrel,
+  regexp_replace(
+  tgname,
   '[0-9]+',
-  'N') AS tgname,
+  'N'
+  )
+  AS tgname,
   tgtype
 FROM
   pg_trigger
@@ -2091,8 +2097,10 @@ WHERE
   tgrelid IN (SELECT
     relid
   FROM
-    pg_partition_tree(CAST('fk_partitioned_fk'
-    AS REGCLASS))
+    pg_partition_tree(
+    CAST('fk_partitioned_fk'
+    AS REGCLASS)
+    )
   UNION ALL
   SELECT
     CAST('fk_notpartitioned_pk'
@@ -2103,10 +2111,14 @@ ORDER BY tgrelid,
 SELECT
   conname,
   CAST(tgrelid
-  AS REGCLASS) AS tgrel,
-  regexp_replace(tgname,
+  AS REGCLASS)
+  AS tgrel,
+  regexp_replace(
+  tgname,
   '[0-9]+',
-  'N') AS tgname,
+  'N'
+  )
+  AS tgname,
   tgtype
 FROM
   pg_trigger
@@ -2119,8 +2131,10 @@ WHERE
   tgrelid IN (SELECT
     relid
   FROM
-    pg_partition_tree(CAST('fk_partitioned_fk'
-    AS REGCLASS))
+    pg_partition_tree(
+    CAST('fk_partitioned_fk'
+    AS REGCLASS)
+    )
   UNION ALL
   SELECT
     CAST('fk_notpartitioned_pk'
@@ -2131,10 +2145,14 @@ ORDER BY tgrelid,
 SELECT
   conname,
   CAST(tgrelid
-  AS REGCLASS) AS tgrel,
-  regexp_replace(tgname,
+  AS REGCLASS)
+  AS tgrel,
+  regexp_replace(
+  tgname,
   '[0-9]+',
-  'N') AS tgname,
+  'N'
+  )
+  AS tgname,
   tgtype
 FROM
   pg_trigger
@@ -2147,8 +2165,10 @@ WHERE
   tgrelid IN (SELECT
     relid
   FROM
-    pg_partition_tree(CAST('fk_partitioned_fk'
-    AS REGCLASS))
+    pg_partition_tree(
+    CAST('fk_partitioned_fk'
+    AS REGCLASS)
+    )
   UNION ALL
   SELECT
     CAST('fk_notpartitioned_pk'
@@ -2996,7 +3016,8 @@ DROP TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
 
 CREATE ROLE regress_other_partitioned_fk_owner;
 
-GRANT REFERENCES ON TABLE fk_notpartitioned_pk
+GRANT REFERENCES
+ON TABLE fk_notpartitioned_pk
 TO regress_other_partitioned_fk_owner;
 
 SET ROLE TO regress_other_partitioned_fk_owner;
@@ -3016,8 +3037,10 @@ SELECT
   2048,
   x
 FROM
-  generate_series(1,
-  10) AS x;
+  generate_series(
+  1,
+  10
+  ) AS x;
 
 ALTER TABLE other_partitioned_fk
   ADD FOREIGN KEY
@@ -3034,8 +3057,10 @@ SELECT
   2048,
   x
 FROM
-  generate_series(1,
-  10) AS x;
+  generate_series(
+  1,
+  10
+  ) AS x;
 
 SET ROLE TO regress_other_partitioned_fk_owner;
 
@@ -3050,7 +3075,8 @@ DROP TABLE "other_partitioned_fk";
 
 RESET role;
 
-REVOKE ALL ON TABLE fk_notpartitioned_pk
+REVOKE ALL
+ON TABLE fk_notpartitioned_pk
 FROM regress_other_partitioned_fk_owner;
 
 DROP ROLE regress_other_partitioned_fk_owner;
@@ -3137,9 +3163,11 @@ SELECT
   cr.relname,
   co.conname,
   co.convalidated,
-  p.conname AS conparent,
+  p.conname
+  AS conparent,
   p.convalidated,
-  cf.relname AS foreignrel
+  cf.relname
+  AS foreignrel
 FROM
   pg_constraint
   AS co
@@ -3161,7 +3189,9 @@ WHERE
   cr.oid IN (SELECT
     relid
   FROM
-    pg_partition_tree('parted_self_fk'))
+    pg_partition_tree(
+    'parted_self_fk'
+    ))
 ORDER BY cr.relname,
   co.conname,
   p.conname;
@@ -3206,9 +3236,11 @@ SELECT
   cr.relname,
   co.conname,
   co.convalidated,
-  p.conname AS conparent,
+  p.conname
+  AS conparent,
   p.convalidated,
-  cf.relname AS foreignrel
+  cf.relname
+  AS foreignrel
 FROM
   pg_constraint
   AS co
@@ -3230,7 +3262,9 @@ WHERE
   cr.oid IN (SELECT
     relid
   FROM
-    pg_partition_tree('parted_self_fk'))
+    pg_partition_tree(
+    'parted_self_fk'
+    ))
 ORDER BY cr.relname,
   co.conname,
   p.conname;
@@ -3715,18 +3749,22 @@ ALTER TABLE fk3 DROP COLUMN b;
 ALTER TABLE fk ATTACH PARTITION fk3 FOR VALUES IN (3);
 
 SELECT
-  pg_describe_object(CAST('pg_constraint'
+  pg_describe_object(
+  CAST('pg_constraint'
   AS REGCLASS),
   oid,
-  0),
+  0
+  ),
   CAST(confrelid
   AS REGCLASS),
   CASE
   WHEN conparentid <>
-  0 THEN pg_describe_object(CAST('pg_constraint'
+  0 THEN pg_describe_object(
+  CAST('pg_constraint'
   AS REGCLASS),
   conparentid,
-  0)
+  0
+  )
   ELSE 'TOP'
   END
 FROM
@@ -3735,7 +3773,9 @@ WHERE
   conrelid IN (SELECT
     relid
   FROM
-    pg_partition_tree('fk'))
+    pg_partition_tree(
+    'fk'
+    ))
 ORDER BY CAST(CAST(conrelid
   AS REGCLASS)
   AS TEXT),
@@ -4500,7 +4540,8 @@ SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk;
 
 DROP TABLE "fkpart11"."fk";
 
-CREATE FUNCTION fkpart11.print_row()
+CREATE FUNCTION
+fkpart11.print_row()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '

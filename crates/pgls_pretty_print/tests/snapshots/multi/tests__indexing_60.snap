@@ -136,8 +136,10 @@ SELECT
   i,
   i
 FROM
-  generate_series(1,
-  50) AS i;
+  generate_series(
+  1,
+  50
+  ) AS i;
 
 ALTER TABLE idxpart ALTER COLUMN c TYPE NUMERIC;
 
@@ -815,16 +817,21 @@ PARTITION OF idxpart
 FOR VALUES FROM (2000) TO (3000);
 
 SELECT
-  relname AS child,
+  relname
+  AS child,
   CAST(inhparent
-  AS REGCLASS) AS parent,
-  pg_get_indexdef AS childdef
+  AS REGCLASS)
+  AS parent,
+  pg_get_indexdef
+  AS childdef
 FROM
   pg_class
   INNER JOIN pg_inherits
   ON inhrelid =
     oid,
-  LATERAL pg_get_indexdef(pg_class.oid)
+  LATERAL pg_get_indexdef(
+  pg_class.oid
+  )
 WHERE
   relkind IN ('i',
   'I') AND
@@ -866,16 +873,21 @@ PARTITION OF idxpart
 FOR VALUES FROM ('ddd') TO ('eee');
 
 SELECT
-  relname AS child,
+  relname
+  AS child,
   CAST(inhparent
-  AS REGCLASS) AS parent,
-  pg_get_indexdef AS childdef
+  AS REGCLASS)
+  AS parent,
+  pg_get_indexdef
+  AS childdef
 FROM
   pg_class
   LEFT OUTER JOIN pg_inherits
   ON inhrelid =
     oid,
-  LATERAL pg_get_indexdef(pg_class.oid)
+  LATERAL pg_get_indexdef(
+  pg_class.oid
+  )
 WHERE
   relkind IN ('i',
   'I') AND
@@ -913,16 +925,21 @@ PARTITION OF idxpart
 FOR VALUES FROM ('ddd') TO ('eee');
 
 SELECT
-  relname AS child,
+  relname
+  AS child,
   CAST(inhparent
-  AS REGCLASS) AS parent,
-  pg_get_indexdef AS childdef
+  AS REGCLASS)
+  AS parent,
+  pg_get_indexdef
+  AS childdef
 FROM
   pg_class
   LEFT OUTER JOIN pg_inherits
   ON inhrelid =
     oid,
-  LATERAL pg_get_indexdef(pg_class.oid)
+  LATERAL pg_get_indexdef(
+  pg_class.oid
+  )
 WHERE
   relkind IN ('i',
   'I') AND
@@ -1021,16 +1038,21 @@ ALTER INDEX idxpart_2_idx ATTACH PARTITION idxpart1_2c_idx;
 ALTER INDEX idxpart_2_idx ATTACH PARTITION idxpart1_2_idx;
 
 SELECT
-  relname AS child,
+  relname
+  AS child,
   CAST(inhparent
-  AS REGCLASS) AS parent,
-  pg_get_indexdef AS childdef
+  AS REGCLASS)
+  AS parent,
+  pg_get_indexdef
+  AS childdef
 FROM
   pg_class
   LEFT OUTER JOIN pg_inherits
   ON inhrelid =
     oid,
-  LATERAL pg_get_indexdef(pg_class.oid)
+  LATERAL pg_get_indexdef(
+  pg_class.oid
+  )
 WHERE
   relkind IN ('i',
   'I') AND
@@ -1070,7 +1092,9 @@ ALTER TABLE idxpart
 
 SELECT
   c.relname,
-  pg_get_indexdef(indexrelid)
+  pg_get_indexdef(
+  indexrelid
+  )
 FROM
   pg_class
   AS c
@@ -1124,7 +1148,9 @@ ALTER TABLE idxpart
 
 SELECT
   c.relname,
-  pg_get_indexdef(indexrelid)
+  pg_get_indexdef(
+  indexrelid
+  )
 FROM
   pg_class
   AS c
@@ -1187,7 +1213,9 @@ CREATE INDEX ON idxpart USING btree ( a) WHERE b > 1000;
 
 SELECT
   c.relname,
-  pg_get_indexdef(indexrelid)
+  pg_get_indexdef(
+  indexrelid
+  )
 FROM
   pg_class
   AS c
@@ -2077,11 +2105,15 @@ VALUES (0,
 INSERT INTO idxpart
 SELECT
   2 ^ g,
-  format('two to power of %s',
-  g)
+  format(
+  'two to power of %s',
+  g
+  )
 FROM
-  generate_series(15,
-  17) AS g;
+  generate_series(
+  15,
+  17
+  ) AS g;
 
 INSERT INTO idxpart VALUES (16, 'sixteen');
 
@@ -2654,7 +2686,8 @@ DROP TABLE "parted_replica_tab";
 
 CREATE TABLE test_pg_index_toast_table ( a INT );
 
-CREATE OR REPLACE FUNCTION test_pg_index_toast_func(
+CREATE OR REPLACE FUNCTION
+test_pg_index_toast_func(
   "a" INT,
   "b" INT[]
 )
@@ -2664,16 +2697,23 @@ LANGUAGE "sql"
 IMMUTABLE;
 
 SELECT
-  array_agg(n) AS b
+  array_agg(
+  n
+  )
+  AS b
 FROM
-  generate_series(1,
-  10000) AS n;
+  generate_series(
+  1,
+  10000
+  ) AS n;
 
 CREATE INDEX
 CONCURRENTLY "test_pg_index_toast_index" ON test_pg_index_toast_table USING btree
 (
-  (test_pg_index_toast_func(a,
-  'b'))
+  (test_pg_index_toast_func(
+  a,
+  'b'
+  ))
 );
 
 REINDEX (CONCURRENTLY) INDEX test_pg_index_toast_index;
@@ -2682,8 +2722,10 @@ DROP INDEX CONCURRENTLY "test_pg_index_toast_index";
 
 CREATE INDEX "test_pg_index_toast_index" ON test_pg_index_toast_table USING btree
 (
-  (test_pg_index_toast_func(a,
-  'b'))
+  (test_pg_index_toast_func(
+  a,
+  'b'
+  ))
 );
 
 REINDEX INDEX test_pg_index_toast_index;

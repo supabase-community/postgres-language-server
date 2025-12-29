@@ -5,7 +5,8 @@ snapshot_kind: text
 ---
 CREATE TYPE casttesttype;
 
-CREATE FUNCTION casttesttype_in(
+CREATE FUNCTION
+casttesttype_in(
   cstring
 )
 RETURNS casttesttype
@@ -14,7 +15,8 @@ LANGUAGE "internal"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION casttesttype_out(
+CREATE FUNCTION
+casttesttype_out(
   casttesttype
 )
 RETURNS cstring
@@ -31,7 +33,8 @@ CREATE TYPE casttesttype
   alignment = INT
 );
 
-CREATE FUNCTION casttestfunc(
+CREATE FUNCTION
+casttestfunc(
   casttesttype
 )
 RETURNS INT
@@ -45,9 +48,11 @@ CREATE CAST (TEXT AS casttesttype) WITHOUT FUNCTION;
 SELECT casttestfunc(CAST('foo' AS TEXT));
 
 SELECT
-  casttestfunc(CAST(CAST('foo'
+  casttestfunc(
+  CAST(CAST('foo'
   AS TEXT)
-  AS casttesttype));
+  AS casttesttype)
+  );
 
 DROP CAST (TEXT AS casttesttype);
 
@@ -65,7 +70,8 @@ SELECT CAST(CAST(1234 AS INT) AS casttesttype);
 
 DROP CAST (INT AS casttesttype);
 
-CREATE FUNCTION int4_casttesttype(
+CREATE FUNCTION
+int4_casttesttype(
   INT
 )
 RETURNS casttesttype
@@ -80,7 +86,8 @@ SELECT CAST(CAST(1234 AS INT) AS casttesttype);
 
 DROP FUNCTION int4_casttesttype(INT) CASCADE;
 
-CREATE FUNCTION bar_int4_text(
+CREATE FUNCTION
+bar_int4_text(
   INT
 )
 RETURNS TEXT
@@ -94,12 +101,18 @@ AS IMPLICIT;
 SELECT CAST(CAST(1234 AS INT) AS casttesttype);
 
 SELECT
-  pg_describe_object(classid,
+  pg_describe_object(
+  classid,
   objid,
-  objsubid) AS obj,
-  pg_describe_object(refclassid,
+  objsubid
+  )
+  AS obj,
+  pg_describe_object(
+  refclassid,
   refobjid,
-  refobjsubid) AS objref,
+  refobjsubid
+  )
+  AS objref,
   deptype
 FROM
   pg_depend

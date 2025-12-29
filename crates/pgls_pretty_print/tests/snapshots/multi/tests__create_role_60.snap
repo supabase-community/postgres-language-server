@@ -11,7 +11,8 @@ CREATE ROLE regress_role_admin
   REPLICATION
   BYPASSRLS;
 
-GRANT CREATE ON DATABASE regression
+GRANT CREATE
+ON DATABASE regression
 TO regress_role_admin WITH GRANT OPTION;
 
 CREATE ROLE regress_role_limited_admin CREATEROLE;
@@ -74,7 +75,8 @@ ALTER ROLE regress_createdb NOSUPERUSER;
 
 CREATE ROLE regress_createrole CREATEROLE NOINHERIT;
 
-GRANT CREATE ON DATABASE regression
+GRANT CREATE
+ON DATABASE regression
 TO regress_createrole WITH GRANT OPTION;
 
 CREATE ROLE regress_login LOGIN;
@@ -276,7 +278,8 @@ DROP ROLE regress_nosuch_admin_recursive;
 
 DROP ROLE regress_plainrole;
 
-REVOKE CREATE ON DATABASE regression
+REVOKE CREATE
+ON DATABASE regression
 FROM regress_createrole CASCADE;
 
 DROP ROLE regress_replication_bypassrls;
@@ -313,7 +316,8 @@ DROP ROLE regress_rolecreator;
 
 RESET session_authorization;
 
-REVOKE CREATE ON DATABASE regression
+REVOKE CREATE
+ON DATABASE regression
 FROM regress_role_admin CASCADE;
 
 DROP INDEX "tenant_idx";

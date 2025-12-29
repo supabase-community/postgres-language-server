@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/foreign_data_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION test_fdw_handler()
+CREATE FUNCTION
+test_fdw_handler()
 RETURNS fdw_handler
 AS 'regresslib', 'test_fdw_handler'
 LANGUAGE "c";
@@ -88,7 +89,8 @@ RESET role;
 CREATE FOREIGN DATA WRAPPER foo
   VALIDATOR postgresql_fdw_validator ;
 
-CREATE FUNCTION invalid_fdw_handler()
+CREATE FUNCTION
+invalid_fdw_handler()
 RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT 1;';
@@ -254,7 +256,8 @@ CREATE SERVER t1 FOREIGN DATA WRAPPER foo;
 
 RESET role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_role;
 
 SET ROLE TO regress_test_role;
@@ -263,10 +266,12 @@ CREATE SERVER t1 FOREIGN DATA WRAPPER foo;
 
 RESET role;
 
-REVOKE USAGE ON FOREIGN DATA WRAPPER foo
+REVOKE USAGE
+ON FOREIGN DATA WRAPPER foo
 FROM regress_test_role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_indirect;
 
 SET ROLE TO regress_test_role;
@@ -297,7 +302,8 @@ ALTER SERVER s3 OPTIONS ("tns name" 'orcl', port '1521');
 
 GRANT USAGE ON FOREIGN SERVER s1 TO regress_test_role;
 
-GRANT USAGE ON FOREIGN SERVER s6
+GRANT USAGE
+ON FOREIGN SERVER s6
 TO regress_test_role2 WITH GRANT OPTION;
 
 SET ROLE TO regress_test_role;
@@ -341,7 +347,8 @@ ALTER SERVER s1 OWNER TO regress_test_indirect;
 
 RESET role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_indirect;
 
 SET ROLE TO regress_test_role;
@@ -853,7 +860,9 @@ SELECT
   *
 FROM
   information_schema.user_mappings
-ORDER BY lower(authorization_identifier),
+ORDER BY lower(
+  authorization_identifier
+  ),
   2,
   3;
 
@@ -861,7 +870,9 @@ SELECT
   *
 FROM
   information_schema.user_mapping_options
-ORDER BY lower(authorization_identifier),
+ORDER BY lower(
+  authorization_identifier
+  ),
   2,
   3,
   4;
@@ -966,7 +977,8 @@ ORDER BY 1,
 RESET role;
 
 SELECT
-  has_foreign_data_wrapper_privilege('regress_test_role',
+  has_foreign_data_wrapper_privilege(
+  'regress_test_role',
   (SELECT
     oid
   FROM
@@ -974,15 +986,19 @@ SELECT
   WHERE
     fdwname =
     'foo'),
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_foreign_data_wrapper_privilege('regress_test_role',
+  has_foreign_data_wrapper_privilege(
+  'regress_test_role',
   'foo',
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_foreign_data_wrapper_privilege((SELECT
+  has_foreign_data_wrapper_privilege(
+  (SELECT
     oid
   FROM
     pg_roles
@@ -996,20 +1012,24 @@ SELECT
   WHERE
     fdwname =
     'foo'),
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_foreign_data_wrapper_privilege((SELECT
+  has_foreign_data_wrapper_privilege(
+  (SELECT
     oid
   FROM
     pg_foreign_data_wrapper
   WHERE
     fdwname =
     'foo'),
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_foreign_data_wrapper_privilege((SELECT
+  has_foreign_data_wrapper_privilege(
+  (SELECT
     oid
   FROM
     pg_roles
@@ -1017,20 +1037,25 @@ SELECT
     rolname =
     'regress_test_role'),
   'foo',
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT has_foreign_data_wrapper_privilege('foo', 'USAGE');
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_role;
 
 SELECT
-  has_foreign_data_wrapper_privilege('regress_test_role',
+  has_foreign_data_wrapper_privilege(
+  'regress_test_role',
   'foo',
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_server_privilege('regress_test_role',
+  has_server_privilege(
+  'regress_test_role',
   (SELECT
     oid
   FROM
@@ -1038,15 +1063,19 @@ SELECT
   WHERE
     srvname =
     's8'),
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_server_privilege('regress_test_role',
+  has_server_privilege(
+  'regress_test_role',
   's8',
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_server_privilege((SELECT
+  has_server_privilege(
+  (SELECT
     oid
   FROM
     pg_roles
@@ -1060,20 +1089,24 @@ SELECT
   WHERE
     srvname =
     's8'),
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_server_privilege((SELECT
+  has_server_privilege(
+  (SELECT
     oid
   FROM
     pg_foreign_server
   WHERE
     srvname =
     's8'),
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT
-  has_server_privilege((SELECT
+  has_server_privilege(
+  (SELECT
     oid
   FROM
     pg_roles
@@ -1081,16 +1114,19 @@ SELECT
     rolname =
     'regress_test_role'),
   's8',
-  'USAGE');
+  'USAGE'
+  );
 
 SELECT has_server_privilege('s8', 'USAGE');
 
 GRANT USAGE ON FOREIGN SERVER s8 TO regress_test_role;
 
 SELECT
-  has_server_privilege('regress_test_role',
+  has_server_privilege(
+  'regress_test_role',
   's8',
-  'USAGE');
+  'USAGE'
+  );
 
 REVOKE USAGE ON FOREIGN SERVER s8 FROM regress_test_role;
 
@@ -1117,7 +1153,8 @@ OWNER TO regress_unprivileged_role;
 
 DROP FOREIGN DATA WRAPPER foo;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_role;
 
 CREATE SERVER s9 FOREIGN DATA WRAPPER foo;
@@ -1139,10 +1176,12 @@ DROP USER MAPPING FOR regress_test_role SERVER s6;
 
 RESET role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER postgresql
+GRANT USAGE
+ON FOREIGN DATA WRAPPER postgresql
 TO regress_unprivileged_role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_unprivileged_role WITH GRANT OPTION;
 
 SET ROLE TO regress_unprivileged_role;
@@ -1153,10 +1192,12 @@ ALTER FOREIGN DATA WRAPPER foo OPTIONS (gotcha 'true');
 
 DROP FOREIGN DATA WRAPPER foo;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER postgresql
+GRANT USAGE
+ON FOREIGN DATA WRAPPER postgresql
 TO regress_test_role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_role;
 
 CREATE SERVER s9 FOREIGN DATA WRAPPER postgresql;
@@ -1180,15 +1221,18 @@ DROP USER MAPPING FOR regress_test_role SERVER s6;
 
 RESET role;
 
-REVOKE USAGE ON FOREIGN DATA WRAPPER foo
+REVOKE USAGE
+ON FOREIGN DATA WRAPPER foo
 FROM regress_unprivileged_role;
 
-REVOKE USAGE ON FOREIGN DATA WRAPPER foo
+REVOKE USAGE
+ON FOREIGN DATA WRAPPER foo
 FROM regress_unprivileged_role CASCADE;
 
 SET ROLE TO regress_unprivileged_role;
 
-GRANT USAGE ON FOREIGN DATA WRAPPER foo
+GRANT USAGE
+ON FOREIGN DATA WRAPPER foo
 TO regress_test_role;
 
 CREATE SERVER s10 FOREIGN DATA WRAPPER foo;
@@ -1205,7 +1249,8 @@ RESET role;
 
 CREATE SERVER s9 FOREIGN DATA WRAPPER foo;
 
-GRANT USAGE ON FOREIGN SERVER s9
+GRANT USAGE
+ON FOREIGN SERVER s9
 TO regress_unprivileged_role;
 
 SET ROLE TO regress_unprivileged_role;
@@ -1238,7 +1283,8 @@ RESET role;
 
 DROP SERVER s10 CASCADE;
 
-CREATE FUNCTION dummy_trigger()
+CREATE FUNCTION
+dummy_trigger()
 RETURNS trigger
 AS '
   BEGIN
@@ -1616,7 +1662,8 @@ DROP ROLE regress_test_role;
 
 DROP ROLE regress_unprivileged_role;
 
-REVOKE ALL ON FOREIGN DATA WRAPPER postgresql
+REVOKE ALL
+ON FOREIGN DATA WRAPPER postgresql
 FROM regress_unprivileged_role;
 
 DROP ROLE regress_unprivileged_role;

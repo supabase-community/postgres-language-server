@@ -399,7 +399,9 @@ FROM
   pg_locks
 WHERE
   pid =
-  pg_backend_pid() AND
+  pg_backend_pid(
+
+  ) AND
   locktype =
   'relation' AND
   CAST(CAST(relation
@@ -427,7 +429,9 @@ FROM
   pg_locks
 WHERE
   pid =
-  pg_backend_pid() AND
+  pg_backend_pid(
+
+  ) AND
   locktype =
   'relation' AND
   CAST(CAST(relation
@@ -455,7 +459,9 @@ FROM
   pg_locks
 WHERE
   pid =
-  pg_backend_pid() AND
+  pg_backend_pid(
+
+  ) AND
   locktype =
   'relation' AND
   CAST(CAST(relation
@@ -722,7 +728,8 @@ DELETE FROM attmp6 WHERE b > 20;
 
 ALTER TABLE attmp3 VALIDATE CONSTRAINT b_le_20;
 
-CREATE FUNCTION boo(
+CREATE FUNCTION
+boo(
   INT
 )
 RETURNS INT
@@ -735,11 +742,15 @@ INSERT INTO attmp7 VALUES (8, 18);
 
 ALTER TABLE attmp7
   ADD CONSTRAINT "identity" CHECK (b =
-  boo(b));
+  boo(
+  b
+  ));
 
 ALTER TABLE attmp3
   ADD CONSTRAINT "identity" CHECK (b =
-  boo(b)) NOT VALID;
+  boo(
+  b
+  )) NOT VALID;
 
 ALTER TABLE attmp3 VALIDATE CONSTRAINT identity;
 
@@ -1370,7 +1381,9 @@ INSERT INTO atacc1 VALUES (1);
 ALTER TABLE atacc1
   ADD COLUMN b DOUBLE PRECISION
     NOT NULL
-    DEFAULT random(),
+    DEFAULT random(
+
+    ),
   ADD PRIMARY KEY (a);
 
 DROP TABLE "atacc1";

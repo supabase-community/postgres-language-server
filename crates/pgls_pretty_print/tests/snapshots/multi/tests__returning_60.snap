@@ -16,18 +16,24 @@ VALUES ('test',
 DEFAULT),
 ('More',
 11),
-(upper('more'),
+(upper(
+'more'
+),
 7 + 9)
 RETURNING *,
-f1 + f3 AS sum;
+f1 + f3
+AS sum;
 
 SELECT * FROM foo;
 
 UPDATE foo
-SET f2 = lower(f2),
+SET f2 = lower(
+f2
+),
 f3 = DEFAULT
 RETURNING foo.*,
-f1 + f3 AS sum13;
+f1 + f3
+AS sum13;
 
 SELECT * FROM foo;
 
@@ -54,11 +60,13 @@ RETURNING *,
 f1 + 112 IN (SELECT
   q1
 FROM
-  int8_tbl) AS subplan,
+  int8_tbl)
+AS subplan,
 EXISTS (SELECT
   *
 FROM
-  int4_tbl) AS initplan;
+  int4_tbl)
+AS initplan;
 
 UPDATE foo
 SET f3 = f3 * 2
@@ -69,11 +77,13 @@ RETURNING *,
 f1 + 112 IN (SELECT
   q1
 FROM
-  int8_tbl) AS subplan,
+  int8_tbl)
+AS subplan,
 EXISTS (SELECT
   *
 FROM
-  int4_tbl) AS initplan;
+  int4_tbl)
+AS initplan;
 
 DELETE FROM foo
 WHERE
@@ -83,11 +93,13 @@ RETURNING *,
 f1 + 112 IN (SELECT
   q1
 FROM
-  int8_tbl) AS subplan,
+  int8_tbl)
+AS subplan,
 EXISTS (SELECT
   *
 FROM
-  int4_tbl) AS initplan;
+  int4_tbl)
+AS initplan;
 
 UPDATE foo
 SET f3 = f3 * 2
@@ -97,7 +109,8 @@ WHERE
   foo.f1 + 123455 =
   i.f1
 RETURNING foo.*,
-i.f1 AS "i.f1";
+i.f1
+AS "i.f1";
 
 SELECT * FROM foo;
 
@@ -108,7 +121,8 @@ WHERE
   foo.f1 + 123455 =
   i.f1
 RETURNING foo.*,
-i.f1 AS "i.f1";
+i.f1
+AS "i.f1";
 
 SELECT * FROM foo;
 
@@ -249,7 +263,8 @@ RETURNING foo_v;
 
 SELECT * FROM foo;
 
-CREATE FUNCTION foo_f()
+CREATE FUNCTION
+foo_f()
 RETURNS SETOF foo
 AS ' SELECT * FROM foo OFFSET 0 '
 LANGUAGE "sql"
@@ -257,7 +272,9 @@ STABLE;
 
 UPDATE foo
 SET f2 = foo_f.f2
-FROM foo_f()
+FROM foo_f(
+
+)
 WHERE
   foo_f.f1 =
   foo.f1
@@ -269,7 +286,8 @@ DROP FUNCTION foo_f();
 
 CREATE TYPE foo_t AS ( f1 INT, f2 TEXT, f3 INT, f4 BIGINT );
 
-CREATE FUNCTION foo_f()
+CREATE FUNCTION
+foo_f()
 RETURNS SETOF foo_t
 AS ' SELECT * FROM foo OFFSET 0 '
 LANGUAGE "sql"
@@ -277,7 +295,9 @@ STABLE;
 
 UPDATE foo
 SET f2 = foo_f.f2
-FROM foo_f()
+FROM foo_f(
+
+)
 WHERE
   foo_f.f1 =
   foo.f1
@@ -407,7 +427,8 @@ CAST(old.f4
 AS TEXT) ||
 '->' ||
 CAST(new.f4
-AS TEXT) AS change;
+AS TEXT)
+AS change;
 
 UPDATE foo
 SET f4 = 100
@@ -428,7 +449,8 @@ CAST(old.f4
 AS TEXT) ||
 '->' ||
 CAST(new.f4
-AS TEXT) AS change;
+AS TEXT)
+AS change;
 
 DELETE FROM foo
 WHERE
@@ -462,29 +484,49 @@ INSERT INTO foo
 VALUES (5,
 'subquery test')
 RETURNING (SELECT
-  MAX(old.f4 + x)
+  MAX(
+  old.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS old_max,
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS old_max,
 (SELECT
-  MAX(new.f4 + x)
+  MAX(
+  new.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS new_max;
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS new_max;
 
 INSERT INTO foo
 VALUES (5,
 'subquery test')
 RETURNING (SELECT
-  MAX(old.f4 + x)
+  MAX(
+  old.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS old_max,
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS old_max,
 (SELECT
-  MAX(new.f4 + x)
+  MAX(
+  new.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS new_max;
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS new_max;
 
 UPDATE foo
 SET f4 = 100
@@ -495,15 +537,25 @@ RETURNING (SELECT
   old.f4 =
   new.f4),
 (SELECT
-  MAX(old.f4 + x)
+  MAX(
+  old.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS old_max,
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS old_max,
 (SELECT
-  MAX(new.f4 + x)
+  MAX(
+  new.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS new_max;
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS new_max;
 
 UPDATE foo
 SET f4 = 100
@@ -514,45 +566,75 @@ RETURNING (SELECT
   old.f4 =
   new.f4),
 (SELECT
-  MAX(old.f4 + x)
+  MAX(
+  old.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS old_max,
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS old_max,
 (SELECT
-  MAX(new.f4 + x)
+  MAX(
+  new.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS new_max;
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS new_max;
 
 DELETE FROM foo
 WHERE
   f1 =
   5
 RETURNING (SELECT
-  MAX(old.f4 + x)
+  MAX(
+  old.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS old_max,
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS old_max,
 (SELECT
-  MAX(new.f4 + x)
+  MAX(
+  new.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS new_max;
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS new_max;
 
 DELETE FROM foo
 WHERE
   f1 =
   5
 RETURNING (SELECT
-  MAX(old.f4 + x)
+  MAX(
+  old.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS old_max,
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS old_max,
 (SELECT
-  MAX(new.f4 + x)
+  MAX(
+  new.f4 + x
+  )
 FROM
-  generate_series(1,
-  10) AS x) AS new_max;
+  generate_series(
+  1,
+  10
+  ) AS x)
+AS new_max;
 
 CREATE RULE foo_del_rule
 AS ON DELETE TO foo
@@ -579,7 +661,8 @@ WHERE
 RETURNING old.*,
 new.*,
 *,
-new.f3 - old.f3 AS delta_f3;
+new.f3 - old.f3
+AS delta_f3;
 
 UPDATE joinview
 SET f3 = f3 + 1
@@ -589,9 +672,11 @@ WHERE
 RETURNING old.*,
 new.*,
 *,
-new.f3 - old.f3 AS delta_f3;
+new.f3 - old.f3
+AS delta_f3;
 
-CREATE FUNCTION joinview_upd_trig_fn()
+CREATE FUNCTION
+joinview_upd_trig_fn()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -622,9 +707,11 @@ WHERE
 RETURNING old.*,
 new.*,
 *,
-new.f3 - old.f3 AS delta_f3;
+new.f3 - old.f3
+AS delta_f3;
 
-CREATE OR REPLACE FUNCTION joinview_upd_trig_fn()
+CREATE OR REPLACE FUNCTION
+joinview_upd_trig_fn()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -646,7 +733,8 @@ WHERE
 RETURNING old.*,
 new.*,
 *,
-new.f3 - old.f3 AS delta_f3;
+new.f3 - old.f3
+AS delta_f3;
 
 UPDATE joinview
 SET f3 = f3 + 1,
@@ -657,7 +745,8 @@ WHERE
 RETURNING old.*,
 new.*,
 *,
-new.f3 - old.f3 AS delta_f3;
+new.f3 - old.f3
+AS delta_f3;
 
 ALTER TABLE foo DROP COLUMN f3 CASCADE;
 
@@ -842,7 +931,8 @@ new.*,
 CREATE VIEW foo_parted_v AS
 SELECT
   *,
-  'xxx' AS dummy
+  'xxx'
+  AS dummy
 FROM
   foo_parted;
 

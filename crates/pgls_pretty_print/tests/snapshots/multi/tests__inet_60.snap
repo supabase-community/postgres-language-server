@@ -89,12 +89,16 @@ VALUES ('1234::1234::1234',
 
 INSERT INTO inet_tbl (c,
 i)
-VALUES (cidr('192.168.1.2/30'),
+VALUES (cidr(
+'192.168.1.2/30'
+),
 '192.168.1.226');
 
 INSERT INTO inet_tbl (c,
 i)
-VALUES (cidr('ffff:ffff:ffff:ffff::/24'),
+VALUES (cidr(
+'ffff:ffff:ffff:ffff::/24'
+),
 '::192.168.1.226');
 
 SELECT c AS cidr, i AS inet FROM inet_tbl;
@@ -102,57 +106,107 @@ SELECT c AS cidr, i AS inet FROM inet_tbl;
 SELECT i AS inet, host(i), text(i), family(i) FROM inet_tbl;
 
 SELECT
-  c AS cidr,
-  abbrev(c) AS "abbrev(cidr)",
-  i AS inet,
-  abbrev(i) AS "abbrev(inet)"
+  c
+  AS cidr,
+  abbrev(
+  c
+  )
+  AS "abbrev(cidr)",
+  i
+  AS inet,
+  abbrev(
+  i
+  )
+  AS "abbrev(inet)"
 FROM
   inet_tbl;
 
 SELECT
-  c AS cidr,
-  broadcast(c) AS "broadcast(cidr)",
-  i AS inet,
-  broadcast(i) AS "broadcast(inet)"
+  c
+  AS cidr,
+  broadcast(
+  c
+  )
+  AS "broadcast(cidr)",
+  i
+  AS inet,
+  broadcast(
+  i
+  )
+  AS "broadcast(inet)"
 FROM
   inet_tbl;
 
 SELECT
-  c AS cidr,
-  network(c) AS "network(cidr)",
-  i AS inet,
-  network(i) AS "network(inet)"
+  c
+  AS cidr,
+  network(
+  c
+  )
+  AS "network(cidr)",
+  i
+  AS inet,
+  network(
+  i
+  )
+  AS "network(inet)"
 FROM
   inet_tbl;
 
 SELECT
-  c AS cidr,
-  masklen(c) AS "masklen(cidr)",
-  i AS inet,
-  masklen(i) AS "masklen(inet)"
+  c
+  AS cidr,
+  masklen(
+  c
+  )
+  AS "masklen(cidr)",
+  i
+  AS inet,
+  masklen(
+  i
+  )
+  AS "masklen(inet)"
 FROM
   inet_tbl;
 
 SELECT
-  c AS cidr,
-  masklen(c) AS "masklen(cidr)",
-  i AS inet,
-  masklen(i) AS "masklen(inet)"
+  c
+  AS cidr,
+  masklen(
+  c
+  )
+  AS "masklen(cidr)",
+  i
+  AS inet,
+  masklen(
+  i
+  )
+  AS "masklen(inet)"
 FROM
   inet_tbl
 WHERE
-  masklen(c) <=
+  masklen(
+  c
+  ) <=
   8;
 
 SELECT
-  i AS inet,
-  netmask(i) AS "netmask(inet)"
+  i
+  AS inet,
+  netmask(
+  i
+  )
+  AS "netmask(inet)"
 FROM
   inet_tbl;
 
 SELECT
-  i AS inet,
-  hostmask(i) AS "hostmask(inet)"
+  i
+  AS inet,
+  hostmask(
+  i
+  )
+  AS "hostmask(inet)"
 FROM
   inet_tbl;
 
@@ -162,22 +216,33 @@ SELECT
   i,
   c,
   i <
-  c AS lt,
+  c
+  AS lt,
   i <=
-  c AS le,
+  c
+  AS le,
   i =
-  c AS eq,
+  c
+  AS eq,
   i >=
-  c AS ge,
+  c
+  AS ge,
   i >
-  c AS gt,
+  c
+  AS gt,
   i <>
-  c AS ne,
-  i << c AS sb,
-  i <<= c AS sbe,
-  i >> c AS sup,
-  i >>= c AS spe,
-  i && c AS ovr
+  c
+  AS ne,
+  i << c
+  AS sb,
+  i <<= c
+  AS sbe,
+  i >> c
+  AS sup,
+  i >>= c
+  AS spe,
+  i && c
+  AS ovr
 FROM
   inet_tbl;
 
@@ -186,22 +251,54 @@ SELECT MAX(i) AS max, MIN(i) AS min FROM inet_tbl;
 SELECT MAX(c) AS max, MIN(c) AS min FROM inet_tbl;
 
 SELECT
-  c AS cidr,
-  set_masklen(cidr(text(c)),
-  24) AS "set_masklen(cidr)",
-  i AS inet,
-  set_masklen(inet(text(i)),
-  24) AS "set_masklen(inet)"
+  c
+  AS cidr,
+  set_masklen(
+  cidr(
+  text(
+  c
+  )
+  ),
+  24
+  )
+  AS "set_masklen(cidr)",
+  i
+  AS inet,
+  set_masklen(
+  inet(
+  text(
+  i
+  )
+  ),
+  24
+  )
+  AS "set_masklen(inet)"
 FROM
   inet_tbl;
 
 SELECT
-  c AS cidr,
-  set_masklen(cidr(text(c)),
-  -1) AS "set_masklen(cidr)",
-  i AS inet,
-  set_masklen(inet(text(i)),
-  -1) AS "set_masklen(inet)"
+  c
+  AS cidr,
+  set_masklen(
+  cidr(
+  text(
+  c
+  )
+  ),
+  -1
+  )
+  AS "set_masklen(cidr)",
+  i
+  AS inet,
+  set_masklen(
+  inet(
+  text(
+  i
+  )
+  ),
+  -1
+  )
+  AS "set_masklen(inet)"
 FROM
   inet_tbl;
 
@@ -603,13 +700,17 @@ INSERT INTO inet_tbl (c, i) VALUES ('10', '10::/8');
 SELECT inet_merge(c, i) FROM inet_tbl;
 
 SELECT
-  inet_merge(c,
-  i)
+  inet_merge(
+  c,
+  i
+  )
 FROM
   inet_tbl
 WHERE
-  inet_same_family(c,
-  i);
+  inet_same_family(
+  c,
+  i
+  );
 
 SELECT
   a
@@ -807,8 +908,10 @@ SELECT pg_input_is_valid('192.168.198.200/24', 'cidr');
 SELECT
   *
 FROM
-  pg_input_error_info('192.168.198.200/24',
-  'cidr');
+  pg_input_error_info(
+  '192.168.198.200/24',
+  'cidr'
+  );
 
 SELECT pg_input_is_valid('1234', 'inet');
 

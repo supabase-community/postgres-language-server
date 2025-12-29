@@ -11,7 +11,8 @@ SET LOCAL parallel_setup_cost = 0;
 
 SET LOCAL enable_hashjoin = on;
 
-CREATE OR REPLACE FUNCTION find_hash(
+CREATE OR REPLACE FUNCTION
+find_hash(
   "node" JSON
 )
 RETURNS JSON
@@ -36,7 +37,8 @@ begin
 end;
 ';
 
-CREATE OR REPLACE FUNCTION hash_join_batches(
+CREATE OR REPLACE FUNCTION
+hash_join_batches(
   "query" TEXT
 )
 RETURNS TABLE (
@@ -62,8 +64,11 @@ end;
 
 CREATE TABLE simple AS
   SELECT
-    generate_series(1,
-    20000) AS id,
+    generate_series(
+    1,
+    20000
+    )
+    AS id,
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 ALTER TABLE simple SET (parallel_workers = 2);
@@ -72,8 +77,11 @@ ANALYZE simple;
 
 CREATE TABLE bigger_than_it_looks AS
   SELECT
-    generate_series(1,
-    20000) AS id,
+    generate_series(
+    1,
+    20000
+    )
+    AS id,
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 ALTER TABLE bigger_than_it_looks
@@ -100,26 +108,37 @@ ANALYZE extremely_skewed;
 
 INSERT INTO extremely_skewed
 SELECT
-  42 AS id,
+  42
+  AS id,
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 FROM
-  generate_series(1,
-  20000);
+  generate_series(
+  1,
+  20000
+  );
 
 UPDATE pg_class
 SET reltuples = 2,
-relpages = pg_relation_size('extremely_skewed') / 8192
+relpages = pg_relation_size(
+'extremely_skewed'
+) / 8192
 WHERE
   relname =
   'extremely_skewed';
 
 CREATE TABLE wide AS
   SELECT
-    generate_series(1,
-    2) AS id,
-    rpad('',
+    generate_series(
+    1,
+    2
+    )
+    AS id,
+    rpad(
+    '',
     320000,
-    'x') AS t;
+    'x'
+    )
+    AS t;
 
 ALTER TABLE wide SET (parallel_workers = 2);
 
@@ -132,7 +151,9 @@ SET LOCAL work_mem = '4MB';
 SET LOCAL hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -141,7 +162,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -151,13 +174,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -172,7 +199,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = off;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -181,7 +210,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -191,13 +222,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -212,7 +247,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = on;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -221,7 +258,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -231,13 +270,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -250,7 +293,9 @@ SET LOCAL work_mem = '128kB';
 SET LOCAL hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -259,7 +304,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -269,13 +316,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -290,7 +341,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = off;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -299,7 +352,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -309,13 +364,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -330,7 +389,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = on;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -339,7 +400,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -349,16 +412,22 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -377,7 +446,9 @@ SET LOCAL work_mem = '128kB';
 SET LOCAL hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -386,7 +457,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -396,13 +469,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) FROM simple r JOIN bigger_than_it_looks s USING (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -417,7 +494,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = off;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -426,7 +505,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -436,13 +517,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join bigger_than_it_looks s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -457,7 +542,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = on;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -466,7 +553,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -476,13 +565,17 @@ FROM
 
 SELECT
   original >
-  1 AS initially_multibatch,
+  1
+  AS initially_multibatch,
   final >
-  original AS increased_batches
+  original
+  AS increased_batches
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join bigger_than_it_looks s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -495,7 +588,9 @@ SET LOCAL work_mem = '128kB';
 SET LOCAL hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -504,7 +599,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -515,9 +612,11 @@ FROM
 SELECT
   *
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join extremely_skewed s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -532,7 +631,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = off;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -541,7 +642,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -552,9 +655,11 @@ FROM
 SELECT
   *
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join extremely_skewed s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -569,7 +674,9 @@ SET LOCAL hash_mem_multiplier = 1.0;
 SET LOCAL enable_parallel_hash = on;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -578,7 +685,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -589,9 +698,11 @@ FROM
 SELECT
   *
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join extremely_skewed s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -608,27 +719,37 @@ SET LOCAL parallel_leader_participation = off;
 SELECT
   *
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from simple r join simple s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
 CREATE TABLE join_foo AS
   SELECT
-    generate_series(1,
-    3) AS id,
+    generate_series(
+    1,
+    3
+    )
+    AS id,
     CAST('xxxxx'
-    AS TEXT) AS t;
+    AS TEXT)
+    AS t;
 
 ALTER TABLE join_foo SET (parallel_workers = 0);
 
 CREATE TABLE join_bar AS
   SELECT
-    generate_series(1,
-    10000) AS id,
+    generate_series(
+    1,
+    10000
+    )
+    AS id,
     CAST('xxxxx'
-    AS TEXT) AS t;
+    AS TEXT)
+    AS t;
 
 ALTER TABLE join_bar SET (parallel_workers = 2);
 
@@ -655,7 +776,9 @@ SET work_mem = '64kB';
 SET hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -673,7 +796,9 @@ FROM
     ss.id - 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -692,13 +817,16 @@ FROM
 
 SELECT
   final >
-  1 AS multibatch
+  1
+  AS multibatch
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -725,7 +853,9 @@ SET work_mem = '4MB';
 SET hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -743,7 +873,9 @@ FROM
     ss.id - 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -762,13 +894,16 @@ FROM
 
 SELECT
   final >
-  1 AS multibatch
+  1
+  AS multibatch
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -795,7 +930,9 @@ SET work_mem = '64kB';
 SET hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -813,7 +950,9 @@ FROM
     ss.id - 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -832,13 +971,16 @@ FROM
 
 SELECT
   final >
-  1 AS multibatch
+  1
+  AS multibatch
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -865,7 +1007,9 @@ SET work_mem = '4MB';
 SET hash_mem_multiplier = 1.0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -883,7 +1027,9 @@ FROM
     ss.id - 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   join_foo
   LEFT OUTER JOIN (SELECT
@@ -902,13 +1048,16 @@ FROM
 
 SELECT
   final >
-  1 AS multibatch
+  1
+  AS multibatch
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -917,7 +1066,9 @@ SAVEPOINT settings;
 SET LOCAL max_parallel_workers_per_gather = 0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -926,7 +1077,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -943,7 +1096,9 @@ SET enable_parallel_hash = off;
 SET LOCAL max_parallel_workers_per_gather = 2;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -952,7 +1107,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -967,7 +1124,9 @@ SAVEPOINT settings;
 SET LOCAL max_parallel_workers_per_gather = 2;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -976,7 +1135,9 @@ FROM
   USING ("id");
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -991,7 +1152,9 @@ SAVEPOINT settings;
 SET LOCAL max_parallel_workers_per_gather = 0;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -1001,7 +1164,9 @@ FROM
     0 - s.id;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -1019,7 +1184,9 @@ SET enable_parallel_hash = off;
 SET LOCAL max_parallel_workers_per_gather = 2;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -1029,7 +1196,9 @@ FROM
     0 - s.id;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -1045,7 +1214,9 @@ SAVEPOINT settings;
 SET LOCAL max_parallel_workers_per_gather = 2;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -1055,7 +1226,9 @@ FROM
     0 - s.id;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   simple
   AS r
@@ -1077,39 +1250,52 @@ SET work_mem = '128kB';
 SET hash_mem_multiplier = 1.0;
 
 SELECT
-  length(MAX(s.t))
+  length(
+  MAX(
+  s.t
+  )
+  )
 FROM
   wide
   LEFT OUTER JOIN (SELECT
     id,
     COALESCE(t,
     '') ||
-    '' AS t
+    ''
+    AS t
   FROM
     wide) AS s
   USING ("id");
 
 SELECT
-  length(MAX(s.t))
+  length(
+  MAX(
+  s.t
+  )
+  )
 FROM
   wide
   LEFT OUTER JOIN (SELECT
     id,
     COALESCE(t,
     '') ||
-    '' AS t
+    ''
+    AS t
   FROM
     wide) AS s
   USING ("id");
 
 SELECT
   final >
-  1 AS multibatch
+  1
+  AS multibatch
 FROM
-  hash_join_batches('
+  hash_join_batches(
+  '
   select length(max(s.t))
   from wide left join (select id, coalesce(t, '''') || '''' as t from wide) s using (id);
-');
+'
+  );
 
 ROLLBACK TO SAVEPOINT settings;
 
@@ -1254,12 +1440,16 @@ VALUES (TRUE,
 1);
 
 SELECT
-  hjtest_1.a AS a1,
-  hjtest_2.a AS a2,
+  hjtest_1.a
+  AS a1,
+  hjtest_2.a
+  AS a2,
   CAST(hjtest_1.tableoid
-  AS REGCLASS) AS t1,
+  AS REGCLASS)
+  AS t1,
   CAST(hjtest_2.tableoid
-  AS REGCLASS) AS t2
+  AS REGCLASS)
+  AS t2
 FROM
   hjtest_1,
   hjtest_2
@@ -1284,12 +1474,16 @@ WHERE
   hjtest_2.b;
 
 SELECT
-  hjtest_1.a AS a1,
-  hjtest_2.a AS a2,
+  hjtest_1.a
+  AS a1,
+  hjtest_2.a
+  AS a2,
   CAST(hjtest_1.tableoid
-  AS REGCLASS) AS t1,
+  AS REGCLASS)
+  AS t1,
   CAST(hjtest_2.tableoid
-  AS REGCLASS) AS t2
+  AS REGCLASS)
+  AS t2
 FROM
   hjtest_1,
   hjtest_2
@@ -1314,12 +1508,16 @@ WHERE
   hjtest_2.b;
 
 SELECT
-  hjtest_1.a AS a1,
-  hjtest_2.a AS a2,
+  hjtest_1.a
+  AS a1,
+  hjtest_2.a
+  AS a2,
   CAST(hjtest_1.tableoid
-  AS REGCLASS) AS t1,
+  AS REGCLASS)
+  AS t1,
   CAST(hjtest_2.tableoid
-  AS REGCLASS) AS t2
+  AS REGCLASS)
+  AS t2
 FROM
   hjtest_2,
   hjtest_1
@@ -1344,12 +1542,16 @@ WHERE
   hjtest_2.b;
 
 SELECT
-  hjtest_1.a AS a1,
-  hjtest_2.a AS a2,
+  hjtest_1.a
+  AS a1,
+  hjtest_2.a
+  AS a2,
   CAST(hjtest_1.tableoid
-  AS REGCLASS) AS t1,
+  AS REGCLASS)
+  AS t1,
   CAST(hjtest_2.tableoid
-  AS REGCLASS) AS t2
+  AS REGCLASS)
+  AS t2
 FROM
   hjtest_2,
   hjtest_1

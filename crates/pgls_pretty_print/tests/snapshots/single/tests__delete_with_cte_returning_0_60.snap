@@ -9,7 +9,9 @@ FROM
   sessions
 WHERE
   last_seen <
-  NOW() - CAST('30 days'
+  NOW(
+
+  ) - CAST('30 days'
   AS INTERVAL))
 DELETE FROM sessions
 USING stale

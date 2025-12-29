@@ -101,7 +101,8 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION fn_op2(
+CREATE OR REPLACE FUNCTION
+fn_op2(
   BOOLEAN,
   BOOLEAN
 )
@@ -142,7 +143,8 @@ CREATE ROLE regress_rol_op3;
 
 CREATE TYPE type_op3 AS ENUM ('new', 'open', 'closed');
 
-CREATE FUNCTION fn_op3(
+CREATE FUNCTION
+fn_op3(
   type_op3,
   BIGINT
 )
@@ -171,7 +173,8 @@ CREATE ROLE regress_rol_op4;
 
 CREATE TYPE type_op4 AS ENUM ('new', 'open', 'closed');
 
-CREATE FUNCTION fn_op4(
+CREATE FUNCTION
+fn_op4(
   BIGINT,
   type_op4
 )
@@ -200,7 +203,8 @@ CREATE ROLE regress_rol_op5;
 
 CREATE TYPE type_op5 AS ENUM ('new', 'open', 'closed');
 
-CREATE FUNCTION fn_op5(
+CREATE FUNCTION
+fn_op5(
   BIGINT,
   BIGINT
 )
@@ -211,12 +215,14 @@ AS '
 LANGUAGE "sql"
 IMMUTABLE;
 
-REVOKE EXECUTE ON FUNCTION fn_op5(
+REVOKE EXECUTE
+ON FUNCTION fn_op5(
   BIGINT,
   BIGINT)
 FROM regress_rol_op5;
 
-REVOKE EXECUTE ON FUNCTION fn_op5(
+REVOKE EXECUTE
+ON FUNCTION fn_op5(
   BIGINT,
   BIGINT)
 FROM PUBLIC;
@@ -235,7 +241,8 @@ CREATE ROLE regress_rol_op6;
 
 CREATE TYPE type_op6 AS ENUM ('new', 'open', 'closed');
 
-CREATE FUNCTION fn_op6(
+CREATE FUNCTION
+fn_op6(
   BIGINT,
   BIGINT
 )

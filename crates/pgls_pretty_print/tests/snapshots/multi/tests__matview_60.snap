@@ -33,7 +33,10 @@ VALUES (1,
 CREATE VIEW mvtest_tv AS
 SELECT
   type,
-  SUM(amt) AS totamt
+  SUM(
+  amt
+  )
+  AS totamt
 FROM
   mvtest_t
 GROUP BY type;
@@ -43,7 +46,10 @@ SELECT * FROM mvtest_tv ORDER BY type;
 CREATE MATERIALIZED VIEW mvtest_tm AS
   SELECT
     type,
-    SUM(amt) AS totamt
+    SUM(
+    amt
+    )
+    AS totamt
   FROM
     mvtest_t
   GROUP BY type WITH NO DATA;
@@ -51,7 +57,10 @@ CREATE MATERIALIZED VIEW mvtest_tm AS
 CREATE MATERIALIZED VIEW mvtest_tm AS
   SELECT
     type,
-    SUM(amt) AS totamt
+    SUM(
+    amt
+    )
+    AS totamt
   FROM
     mvtest_t
   GROUP BY type WITH NO DATA;
@@ -104,13 +113,19 @@ SELECT * FROM mvtest_tvm;
 
 CREATE MATERIALIZED VIEW mvtest_tmm AS
   SELECT
-    SUM(totamt) AS grandtot
+    SUM(
+    totamt
+    )
+    AS grandtot
   FROM
     mvtest_tm;
 
 CREATE MATERIALIZED VIEW mvtest_tvmm AS
   SELECT
-    SUM(totamt) AS grandtot
+    SUM(
+    totamt
+    )
+    AS grandtot
   FROM
     mvtest_tvm;
 
@@ -131,7 +146,10 @@ INDEX "mvtest_tvmm_pred" ON mvtest_tvmm USING btree
 
 CREATE VIEW mvtest_tvv AS
 SELECT
-  SUM(totamt) AS grandtot
+  SUM(
+  totamt
+  )
+  AS grandtot
 FROM
   mvtest_tv;
 

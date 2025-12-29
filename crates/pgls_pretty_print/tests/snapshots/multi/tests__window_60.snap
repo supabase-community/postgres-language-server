@@ -56,7 +56,9 @@ SELECT
   depname,
   empno,
   salary,
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   PARTITION BY depname)
 FROM
@@ -68,7 +70,9 @@ SELECT
   depname,
   empno,
   salary,
-  RANK()
+  RANK(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY salary)
@@ -78,10 +82,16 @@ FROM
 SELECT
   four,
   ten,
-  SUM(SUM(four))
+  SUM(
+  SUM(
+  four
+  )
+  )
   OVER (
   PARTITION BY four),
-  AVG(ten)
+  AVG(
+  ten
+  )
 FROM
   tenk1
 GROUP BY four,
@@ -93,7 +103,9 @@ SELECT
   depname,
   empno,
   salary,
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER w
 FROM
   empsalary
@@ -105,7 +117,9 @@ SELECT
   depname,
   empno,
   salary,
-  RANK()
+  RANK(
+
+  )
   OVER w
 FROM
   empsalary
@@ -113,13 +127,17 @@ WINDOW
   w AS (
   PARTITION BY depname
   ORDER BY salary)
-ORDER BY RANK()
+ORDER BY RANK(
+
+  )
   OVER w;
 
 SELECT COUNT(*) OVER () FROM tenk1 WHERE unique2 < 10;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER w
 FROM
   tenk1
@@ -140,10 +158,13 @@ WINDOW
   PARTITION BY ten);
 
 SELECT
-  SUM(four)
+  SUM(
+  four
+  )
   OVER (
   PARTITION BY ten
-  ORDER BY unique2) AS sum_1,
+  ORDER BY unique2)
+  AS sum_1,
   ten,
   four
 FROM
@@ -153,7 +174,9 @@ WHERE
   10;
 
 SELECT
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY unique2)
 FROM
@@ -163,10 +186,13 @@ WHERE
   10;
 
 SELECT
-  RANK()
+  RANK(
+
+  )
   OVER (
   PARTITION BY four
-  ORDER BY ten) AS rank_1,
+  ORDER BY ten)
+  AS rank_1,
   ten,
   four
 FROM
@@ -176,20 +202,9 @@ WHERE
   10;
 
 SELECT
-  DENSE_RANK()
-  OVER (
-  PARTITION BY four
-  ORDER BY ten),
-  ten,
-  four
-FROM
-  tenk1
-WHERE
-  unique2 <
-  10;
+  DENSE_RANK(
 
-SELECT
-  PERCENT_RANK()
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -202,7 +217,9 @@ WHERE
   10;
 
 SELECT
-  CUME_DIST()
+  PERCENT_RANK(
+
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -215,7 +232,24 @@ WHERE
   10;
 
 SELECT
-  NTILE(3)
+  CUME_DIST(
+
+  )
+  OVER (
+  PARTITION BY four
+  ORDER BY ten),
+  ten,
+  four
+FROM
+  tenk1
+WHERE
+  unique2 <
+  10;
+
+SELECT
+  NTILE(
+  3
+  )
   OVER (
   ORDER BY ten,
   four),
@@ -228,7 +262,9 @@ WHERE
   10;
 
 SELECT
-  NTILE(NULL)
+  NTILE(
+  NULL
+  )
   OVER (
   ORDER BY ten,
   four),
@@ -239,7 +275,9 @@ FROM
 LIMIT 2;
 
 SELECT
-  LAG(ten)
+  LAG(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -252,8 +290,10 @@ WHERE
   10;
 
 SELECT
-  LAG(ten,
-  four)
+  LAG(
+  ten,
+  four
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -266,9 +306,11 @@ WHERE
   10;
 
 SELECT
-  LAG(ten,
+  LAG(
+  ten,
   four,
-  0)
+  0
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -281,9 +323,11 @@ WHERE
   10;
 
 SELECT
-  LAG(ten,
+  LAG(
+  ten,
   four,
-  0.7)
+  0.7
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -298,7 +342,9 @@ ORDER BY four,
   ten;
 
 SELECT
-  LEAD(ten)
+  LEAD(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -311,8 +357,10 @@ WHERE
   10;
 
 SELECT
-  LEAD(ten * 2,
-  1)
+  LEAD(
+  ten * 2,
+  1
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -325,9 +373,11 @@ WHERE
   10;
 
 SELECT
-  LEAD(ten * 2,
+  LEAD(
+  ten * 2,
   1,
-  -1)
+  -1
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -340,9 +390,11 @@ WHERE
   10;
 
 SELECT
-  LEAD(ten * 2,
+  LEAD(
+  ten * 2,
   1,
-  -1.4)
+  -1.4
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -357,7 +409,9 @@ ORDER BY four,
   ten;
 
 SELECT
-  FIRST_VALUE(ten)
+  FIRST_VALUE(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
@@ -370,7 +424,9 @@ WHERE
   10;
 
 SELECT
-  LAST_VALUE(four)
+  LAST_VALUE(
+  four
+  )
   OVER (
   ORDER BY ten),
   ten,
@@ -382,7 +438,9 @@ WHERE
   10;
 
 SELECT
-  LAST_VALUE(ten)
+  LAST_VALUE(
+  ten
+  )
   OVER (
   PARTITION BY four),
   ten,
@@ -401,8 +459,10 @@ ORDER BY four,
   ten;
 
 SELECT
-  NTH_VALUE(ten,
-  four + 1)
+  NTH_VALUE(
+  ten,
+  four + 1
+  )
   OVER (
   PARTITION BY four),
   ten,
@@ -421,18 +481,28 @@ FROM
 SELECT
   ten,
   two,
-  SUM(hundred) AS gsum,
-  SUM(SUM(hundred))
+  SUM(
+  hundred
+  )
+  AS gsum,
+  SUM(
+  SUM(
+  hundred
+  )
+  )
   OVER (
   PARTITION BY two
-  ORDER BY ten) AS wsum
+  ORDER BY ten)
+  AS wsum
 FROM
   tenk1
 GROUP BY ten,
   two;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   PARTITION BY four),
   four
@@ -449,14 +519,19 @@ WHERE
   10;
 
 SELECT
-  CAST(COUNT(*)
+  CAST(COUNT(
+  *
+  )
   OVER (
   PARTITION BY four
-  ORDER BY ten) + SUM(hundred)
+  ORDER BY ten) + SUM(
+  hundred
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten)
-  AS VARCHAR) AS cntsum
+  AS VARCHAR)
+  AS cntsum
 FROM
   tenk1
 WHERE
@@ -467,21 +542,32 @@ SELECT
   *
 FROM
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
     PARTITION BY four
-    ORDER BY ten) + SUM(hundred)
+    ORDER BY ten) + SUM(
+    hundred
+    )
     OVER (
     PARTITION BY two
-    ORDER BY ten) AS total,
-    COUNT(*)
+    ORDER BY ten)
+    AS total,
+    COUNT(
+    *
+    )
     OVER (
     PARTITION BY four
-    ORDER BY ten) AS fourcount,
-    SUM(hundred)
+    ORDER BY ten)
+    AS fourcount,
+    SUM(
+    hundred
+    )
     OVER (
     PARTITION BY two
-    ORDER BY ten) AS twosum
+    ORDER BY ten)
+    AS twosum
   FROM
     tenk1) AS sub
 WHERE
@@ -489,7 +575,9 @@ WHERE
   fourcount + twosum;
 
 SELECT
-  AVG(four)
+  AVG(
+  four
+  )
   OVER (
   PARTITION BY four
   ORDER BY thousand / 100)
@@ -502,9 +590,17 @@ WHERE
 SELECT
   ten,
   two,
-  SUM(hundred) AS gsum,
-  SUM(SUM(hundred))
-  OVER win AS wsum
+  SUM(
+  hundred
+  )
+  AS gsum,
+  SUM(
+  SUM(
+  hundred
+  )
+  )
+  OVER win
+  AS wsum
 FROM
   tenk1
 GROUP BY ten,
@@ -515,11 +611,19 @@ WINDOW
   ORDER BY ten);
 
 SELECT
-  SUM(salary),
-  ROW_NUMBER()
+  SUM(
+  salary
+  ),
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY depname),
-  SUM(SUM(salary))
+  SUM(
+  SUM(
+  salary
+  )
+  )
   OVER (
   ORDER BY depname DESC)
 FROM
@@ -527,9 +631,13 @@ FROM
 GROUP BY depname;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER w1,
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER w2
 FROM
   empsalary
@@ -540,14 +648,16 @@ WINDOW
   ORDER BY salary);
 
 SELECT
-  LEAD(ten,
+  LEAD(
+  ten,
   (SELECT
     two
   FROM
     tenk1
   WHERE
     s.unique2 =
-    unique2))
+    unique2)
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten)
@@ -559,7 +669,9 @@ WHERE
   10;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   PARTITION BY four)
 FROM
@@ -571,9 +683,13 @@ FROM
     FALSE) AS s;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER w,
-  RANK()
+  RANK(
+
+  )
   OVER w
 FROM
   empsalary
@@ -588,10 +704,14 @@ SELECT
   salary,
   bonus,
   depadj,
-  MIN(bonus)
+  MIN(
+  bonus
+  )
   OVER (
   ORDER BY empno),
-  MAX(depadj)
+  MAX(
+  depadj
+  )
   OVER ()
 FROM
   (SELECT
@@ -599,13 +719,17 @@ FROM
     CASE
     WHEN enroll_date <
     '2008-01-01' THEN 2008 - EXTRACT('year' FROM enroll_date)
-    END * 500 AS bonus,
+    END * 500
+    AS bonus,
     CASE
-    WHEN AVG(salary)
+    WHEN AVG(
+    salary
+    )
     OVER (
     PARTITION BY depname) <
     salary THEN 200
-    END AS depadj
+    END
+    AS depadj
   FROM
     empsalary) AS s;
 
@@ -613,53 +737,82 @@ SELECT SUM(COUNT(f1)) OVER () FROM int4_tbl WHERE f1 = 42;
 
 SELECT
   ten,
-  SUM(unique1) + SUM(unique2) AS res,
-  RANK()
+  SUM(
+  unique1
+  ) + SUM(
+  unique2
+  )
+  AS res,
+  RANK(
+
+  )
   OVER (
-  ORDER BY SUM(unique1) + SUM(unique2)) AS rank
+  ORDER BY SUM(
+  unique1
+  ) + SUM(
+  unique2
+  ))
+  AS rank
 FROM
   tenk1
 GROUP BY ten
 ORDER BY ten;
 
 SELECT
-  FIRST_VALUE(MAX(x))
+  FIRST_VALUE(
+  MAX(
+  x
+  )
+  )
   OVER (),
   y
 FROM
   (SELECT
-    unique1 AS x,
-    ten + four AS y
+    unique1
+    AS x,
+    ten + four
+    AS y
   FROM
     tenk1) AS ss
 GROUP BY y;
 
 SELECT
   x,
-  LAG(x,
-  1)
+  LAG(
+  x,
+  1
+  )
   OVER (
   ORDER BY x),
-  LEAD(x,
-  3)
+  LEAD(
+  x,
+  3
+  )
   OVER (
   ORDER BY x)
 FROM
   (SELECT
     CAST(x
-    AS NUMERIC) AS x
+    AS NUMERIC)
+    AS x
   FROM
-    generate_series(1,
-    10) AS x);
+    generate_series(
+    1,
+    10
+    ) AS x);
 
 SELECT
   four,
   ten,
-  SUM(ten)
+  SUM(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten),
-  LAST_VALUE(ten)
+  LAST_VALUE(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten)
@@ -673,7 +826,9 @@ FROM
 SELECT
   four,
   ten,
-  SUM(ten)
+  SUM(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten
@@ -681,7 +836,9 @@ SELECT
   UNBOUNDED PRECEDING
   AND
   CURRENT ROW),
-  LAST_VALUE(ten)
+  LAST_VALUE(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten
@@ -699,7 +856,9 @@ FROM
 SELECT
   four,
   ten,
-  SUM(ten)
+  SUM(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten
@@ -707,7 +866,9 @@ SELECT
   UNBOUNDED PRECEDING
   AND
   UNBOUNDED FOLLOWING),
-  LAST_VALUE(ten)
+  LAST_VALUE(
+  ten
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten
@@ -724,8 +885,11 @@ FROM
 
 SELECT
   four,
-  ten / 4 AS two,
-  SUM(ten / 4)
+  ten / 4
+  AS two,
+  SUM(
+  ten / 4
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten / 4
@@ -733,7 +897,9 @@ SELECT
   UNBOUNDED PRECEDING
   AND
   CURRENT ROW),
-  LAST_VALUE(ten / 4)
+  LAST_VALUE(
+  ten / 4
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten / 4
@@ -750,8 +916,11 @@ FROM
 
 SELECT
   four,
-  ten / 4 AS two,
-  SUM(ten / 4)
+  ten / 4
+  AS two,
+  SUM(
+  ten / 4
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten / 4
@@ -759,7 +928,9 @@ SELECT
   UNBOUNDED PRECEDING
   AND
   CURRENT ROW),
-  LAST_VALUE(ten / 4)
+  LAST_VALUE(
+  ten / 4
+  )
   OVER (
   PARTITION BY four
   ORDER BY ten / 4
@@ -775,7 +946,9 @@ FROM
     tenk1) AS ss;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -791,7 +964,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   CURRENT ROW
@@ -806,7 +981,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   2 PRECEDING
@@ -821,7 +998,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   2 PRECEDING
@@ -836,7 +1015,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   2 PRECEDING
@@ -852,7 +1033,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   2 PRECEDING
@@ -868,7 +1051,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   2 PRECEDING
@@ -884,58 +1069,9 @@ WHERE
   10;
 
 SELECT
-  FIRST_VALUE(unique1)
-  OVER (
-  ORDER BY four
-  ROWS BETWEEN
-  CURRENT ROW
-  AND
-  2 FOLLOWING
-  EXCLUDE CURRENT ROW),
-  unique1,
-  four
-FROM
-  tenk1
-WHERE
-  unique1 <
-  10;
-
-SELECT
-  FIRST_VALUE(unique1)
-  OVER (
-  ORDER BY four
-  ROWS BETWEEN
-  CURRENT ROW
-  AND
-  2 FOLLOWING
-  EXCLUDE GROUP),
-  unique1,
-  four
-FROM
-  tenk1
-WHERE
-  unique1 <
-  10;
-
-SELECT
-  FIRST_VALUE(unique1)
-  OVER (
-  ORDER BY four
-  ROWS BETWEEN
-  CURRENT ROW
-  AND
-  2 FOLLOWING
-  EXCLUDE TIES),
-  unique1,
-  four
-FROM
-  tenk1
-WHERE
-  unique1 <
-  10;
-
-SELECT
-  LAST_VALUE(unique1)
+  FIRST_VALUE(
+  unique1
+  )
   OVER (
   ORDER BY four
   ROWS BETWEEN
@@ -952,7 +1088,9 @@ WHERE
   10;
 
 SELECT
-  LAST_VALUE(unique1)
+  FIRST_VALUE(
+  unique1
+  )
   OVER (
   ORDER BY four
   ROWS BETWEEN
@@ -969,7 +1107,9 @@ WHERE
   10;
 
 SELECT
-  LAST_VALUE(unique1)
+  FIRST_VALUE(
+  unique1
+  )
   OVER (
   ORDER BY four
   ROWS BETWEEN
@@ -986,7 +1126,66 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  LAST_VALUE(
+  unique1
+  )
+  OVER (
+  ORDER BY four
+  ROWS BETWEEN
+  CURRENT ROW
+  AND
+  2 FOLLOWING
+  EXCLUDE CURRENT ROW),
+  unique1,
+  four
+FROM
+  tenk1
+WHERE
+  unique1 <
+  10;
+
+SELECT
+  LAST_VALUE(
+  unique1
+  )
+  OVER (
+  ORDER BY four
+  ROWS BETWEEN
+  CURRENT ROW
+  AND
+  2 FOLLOWING
+  EXCLUDE GROUP),
+  unique1,
+  four
+FROM
+  tenk1
+WHERE
+  unique1 <
+  10;
+
+SELECT
+  LAST_VALUE(
+  unique1
+  )
+  OVER (
+  ORDER BY four
+  ROWS BETWEEN
+  CURRENT ROW
+  AND
+  2 FOLLOWING
+  EXCLUDE TIES),
+  unique1,
+  four
+FROM
+  tenk1
+WHERE
+  unique1 <
+  10;
+
+SELECT
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   2 PRECEDING
@@ -1001,7 +1200,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   1 FOLLOWING
@@ -1016,7 +1217,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   UNBOUNDED PRECEDING
@@ -1031,7 +1234,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   w
   RANGE BETWEEN
@@ -1050,7 +1255,9 @@ WINDOW
   ORDER BY four);
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   w
   RANGE BETWEEN
@@ -1070,7 +1277,9 @@ WINDOW
   ORDER BY four);
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   w
   RANGE BETWEEN
@@ -1090,7 +1299,9 @@ WINDOW
   ORDER BY four);
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   w
   RANGE BETWEEN
@@ -1110,12 +1321,19 @@ WINDOW
   ORDER BY four);
 
 SELECT
-  FIRST_VALUE(unique1)
+  FIRST_VALUE(
+  unique1
+  )
   OVER w,
-  NTH_VALUE(unique1,
-  2)
-  OVER w AS nth_2,
-  LAST_VALUE(unique1)
+  NTH_VALUE(
+  unique1,
+  2
+  )
+  OVER w
+  AS nth_2,
+  LAST_VALUE(
+  unique1
+  )
   OVER w,
   unique1,
   four
@@ -1133,7 +1351,9 @@ WINDOW
   UNBOUNDED FOLLOWING);
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY unique1
   ROWS 
@@ -1153,16 +1373,21 @@ WHERE
 CREATE TEMPORARY VIEW v_window AS
 SELECT
   i,
-  SUM(i)
+  SUM(
+  i
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
   1 PRECEDING
   AND
-  1 FOLLOWING) AS sum_rows
+  1 FOLLOWING)
+  AS sum_rows
 FROM
-  generate_series(1,
-  10) AS i;
+  generate_series(
+  1,
+  10
+  ) AS i;
 
 SELECT * FROM v_window;
 
@@ -1171,36 +1396,22 @@ SELECT pg_get_viewdef('v_window');
 CREATE OR REPLACE TEMPORARY VIEW v_window AS
 SELECT
   i,
-  SUM(i)
-  OVER (
-  ORDER BY i
-  ROWS BETWEEN
-  1 PRECEDING
-  AND
-  1 FOLLOWING
-  EXCLUDE CURRENT ROW) AS sum_rows
-FROM
-  generate_series(1,
-  10) AS i;
-
-SELECT * FROM v_window;
-
-SELECT pg_get_viewdef('v_window');
-
-CREATE OR REPLACE TEMPORARY VIEW v_window AS
-SELECT
-  i,
-  SUM(i)
+  SUM(
+  i
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
   1 PRECEDING
   AND
   1 FOLLOWING
-  EXCLUDE GROUP) AS sum_rows
+  EXCLUDE CURRENT ROW)
+  AS sum_rows
 FROM
-  generate_series(1,
-  10) AS i;
+  generate_series(
+  1,
+  10
+  ) AS i;
 
 SELECT * FROM v_window;
 
@@ -1209,17 +1420,22 @@ SELECT pg_get_viewdef('v_window');
 CREATE OR REPLACE TEMPORARY VIEW v_window AS
 SELECT
   i,
-  SUM(i)
+  SUM(
+  i
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
   1 PRECEDING
   AND
   1 FOLLOWING
-  EXCLUDE TIES) AS sum_rows
+  EXCLUDE GROUP)
+  AS sum_rows
 FROM
-  generate_series(1,
-  10) AS i;
+  generate_series(
+  1,
+  10
+  ) AS i;
 
 SELECT * FROM v_window;
 
@@ -1228,16 +1444,22 @@ SELECT pg_get_viewdef('v_window');
 CREATE OR REPLACE TEMPORARY VIEW v_window AS
 SELECT
   i,
-  SUM(i)
+  SUM(
+  i
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
   1 PRECEDING
   AND
-  1 FOLLOWING) AS sum_rows
+  1 FOLLOWING
+  EXCLUDE TIES)
+  AS sum_rows
 FROM
-  generate_series(1,
-  10) AS i;
+  generate_series(
+  1,
+  10
+  ) AS i;
 
 SELECT * FROM v_window;
 
@@ -1246,16 +1468,44 @@ SELECT pg_get_viewdef('v_window');
 CREATE OR REPLACE TEMPORARY VIEW v_window AS
 SELECT
   i,
-  SUM(i)
+  SUM(
+  i
+  )
+  OVER (
+  ORDER BY i
+  ROWS BETWEEN
+  1 PRECEDING
+  AND
+  1 FOLLOWING)
+  AS sum_rows
+FROM
+  generate_series(
+  1,
+  10
+  ) AS i;
+
+SELECT * FROM v_window;
+
+SELECT pg_get_viewdef('v_window');
+
+CREATE OR REPLACE TEMPORARY VIEW v_window AS
+SELECT
+  i,
+  SUM(
+  i
+  )
   OVER (
   ORDER BY i
   GROUPS BETWEEN
   1 PRECEDING
   AND
-  1 FOLLOWING) AS sum_rows
+  1 FOLLOWING)
+  AS sum_rows
 FROM
-  generate_series(1,
-  10) AS i;
+  generate_series(
+  1,
+  10
+  ) AS i;
 
 SELECT * FROM v_window;
 
@@ -1266,23 +1516,34 @@ DROP VIEW "v_window";
 CREATE TEMPORARY VIEW v_window AS
 SELECT
   i,
-  MIN(i)
+  MIN(
+  i
+  )
   OVER (
   ORDER BY i
   RANGE BETWEEN
   '1 day' PRECEDING
   AND
-  '10 days' FOLLOWING) AS min_i
+  '10 days' FOLLOWING)
+  AS min_i
 FROM
-  generate_series(NOW(),
-  NOW() + CAST('100 days'
+  generate_series(
+  NOW(
+
+  ),
+  NOW(
+
+  ) + CAST('100 days'
   AS INTERVAL),
-  '1 hour') AS i;
+  '1 hour'
+  ) AS i;
 
 SELECT pg_get_viewdef('v_window');
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1300,7 +1561,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four DESC
   RANGE BETWEEN
@@ -1318,7 +1581,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1336,7 +1601,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1355,7 +1622,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1374,7 +1643,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1393,7 +1664,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1412,7 +1685,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   RANGE BETWEEN
@@ -1431,7 +1706,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   PARTITION BY four
   ORDER BY unique1
@@ -1450,7 +1727,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   PARTITION BY four
   ORDER BY unique1
@@ -1470,7 +1749,9 @@ WHERE
   10;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1485,7 +1766,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date DESC
   RANGE BETWEEN
@@ -1500,7 +1783,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date DESC
   RANGE BETWEEN
@@ -1515,7 +1800,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1531,7 +1818,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1547,7 +1836,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1563,22 +1854,28 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
   1000 PRECEDING
   AND
   1000 FOLLOWING),
-  LEAD(salary)
+  LEAD(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
   1000 PRECEDING
   AND
   1000 FOLLOWING),
-  NTH_VALUE(salary,
-  1)
+  NTH_VALUE(
+  salary,
+  1
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1590,14 +1887,18 @@ FROM
   empsalary;
 
 SELECT
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
   1000 PRECEDING
   AND
   1000 FOLLOWING),
-  LAG(salary)
+  LAG(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1609,7 +1910,9 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1617,7 +1920,9 @@ SELECT
   AND
   3000 FOLLOWING
   EXCLUDE CURRENT ROW),
-  LEAD(salary)
+  LEAD(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1625,8 +1930,10 @@ SELECT
   AND
   3000 FOLLOWING
   EXCLUDE TIES),
-  NTH_VALUE(salary,
-  1)
+  NTH_VALUE(
+  salary,
+  1
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1639,7 +1946,9 @@ FROM
   empsalary;
 
 SELECT
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1647,7 +1956,9 @@ SELECT
   AND
   3000 FOLLOWING
   EXCLUDE GROUP),
-  LAG(salary)
+  LAG(
+  salary
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -1660,7 +1971,9 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1669,7 +1982,9 @@ SELECT
   CAST('1 year'
   AS INTERVAL) FOLLOWING
   EXCLUDE TIES),
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1683,7 +1998,9 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1692,7 +2009,9 @@ SELECT
   CAST('1 year'
   AS INTERVAL) FOLLOWING
   EXCLUDE TIES),
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1707,7 +2026,9 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1716,7 +2037,9 @@ SELECT
   CAST('1 year'
   AS INTERVAL) FOLLOWING
   EXCLUDE GROUP),
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1731,7 +2054,9 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1740,7 +2065,9 @@ SELECT
   CAST('1 year'
   AS INTERVAL) FOLLOWING
   EXCLUDE CURRENT ROW),
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -1757,17 +2084,24 @@ FROM
 SELECT
   x,
   y,
-  FIRST_VALUE(y)
+  FIRST_VALUE(
+  y
+  )
   OVER w,
-  LAST_VALUE(y)
+  LAST_VALUE(
+  y
+  )
   OVER w
 FROM
   (SELECT
     x,
-    x AS y
+    x
+    AS y
   FROM
-    generate_series(1,
-    5) AS x
+    generate_series(
+    1,
+    5
+    ) AS x
   UNION ALL
   SELECT
     NULL,
@@ -1787,17 +2121,24 @@ WINDOW
 SELECT
   x,
   y,
-  FIRST_VALUE(y)
+  FIRST_VALUE(
+  y
+  )
   OVER w,
-  LAST_VALUE(y)
+  LAST_VALUE(
+  y
+  )
   OVER w
 FROM
   (SELECT
     x,
-    x AS y
+    x
+    AS y
   FROM
-    generate_series(1,
-    5) AS x
+    generate_series(
+    1,
+    5
+    ) AS x
   UNION ALL
   SELECT
     NULL,
@@ -1817,17 +2158,24 @@ WINDOW
 SELECT
   x,
   y,
-  FIRST_VALUE(y)
+  FIRST_VALUE(
+  y
+  )
   OVER w,
-  LAST_VALUE(y)
+  LAST_VALUE(
+  y
+  )
   OVER w
 FROM
   (SELECT
     x,
-    x AS y
+    x
+    AS y
   FROM
-    generate_series(1,
-    5) AS x
+    generate_series(
+    1,
+    5
+    ) AS x
   UNION ALL
   SELECT
     NULL,
@@ -1847,17 +2195,24 @@ WINDOW
 SELECT
   x,
   y,
-  FIRST_VALUE(y)
+  FIRST_VALUE(
+  y
+  )
   OVER w,
-  LAST_VALUE(y)
+  LAST_VALUE(
+  y
+  )
   OVER w
 FROM
   (SELECT
     x,
-    x AS y
+    x
+    AS y
   FROM
-    generate_series(1,
-    5) AS x
+    generate_series(
+    1,
+    5
+    ) AS x
   UNION ALL
   SELECT
     NULL,
@@ -1875,7 +2230,9 @@ WINDOW
   2 FOLLOWING);
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   x PRECEDING
@@ -1891,7 +2248,8 @@ WHERE
 
 COMMIT;
 
-CREATE FUNCTION unbounded_syntax_test1b(
+CREATE FUNCTION
+unbounded_syntax_test1b(
   "x" INT
 )
 RETURNS TABLE (
@@ -1911,7 +2269,9 @@ SELECT * FROM unbounded_syntax_test1a(2);
 SELECT * FROM unbounded_syntax_test1b(2);
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   UNBOUNDED PRECEDING
@@ -1927,7 +2287,8 @@ WHERE
 
 COMMIT;
 
-CREATE FUNCTION unbounded_syntax_test2b(
+CREATE FUNCTION
+unbounded_syntax_test2b(
   "unbounded" INT
 )
 RETURNS TABLE (
@@ -1951,7 +2312,8 @@ unbounded_syntax_test1b,
 unbounded_syntax_test2a,
 unbounded_syntax_test2b;
 
-CREATE FUNCTION unbounded(
+CREATE FUNCTION
+unbounded(
   "x" INT
 )
 RETURNS INT
@@ -1959,7 +2321,9 @@ LANGUAGE "sql"
 IMMUTABLE RETURN x;;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   1 PRECEDING
@@ -1974,12 +2338,18 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
-  unbounded(1) PRECEDING
+  unbounded(
+  1
+  ) PRECEDING
   AND
-  unbounded(1) FOLLOWING),
+  unbounded(
+  1
+  ) FOLLOWING),
   unique1,
   four
 FROM
@@ -1989,7 +2359,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ROWS BETWEEN
   unbounded.x PRECEDING
@@ -2008,7 +2380,9 @@ DROP FUNCTION unbounded;
 
 SELECT
   x,
-  LAST_VALUE(x)
+  LAST_VALUE(
+  x
+  )
   OVER (
   ORDER BY CAST(x
   AS SMALLINT)
@@ -2017,12 +2391,16 @@ SELECT
   AND
   2147450884 FOLLOWING)
 FROM
-  generate_series(32764,
-  32766) AS x;
+  generate_series(
+  32764,
+  32766
+  ) AS x;
 
 SELECT
   x,
-  LAST_VALUE(x)
+  LAST_VALUE(
+  x
+  )
   OVER (
   ORDER BY CAST(x
   AS SMALLINT) DESC
@@ -2031,12 +2409,16 @@ SELECT
   AND
   2147450885 FOLLOWING)
 FROM
-  generate_series(-32766,
-  -32764) AS x;
+  generate_series(
+  -32766,
+  -32764
+  ) AS x;
 
 SELECT
   x,
-  LAST_VALUE(x)
+  LAST_VALUE(
+  x
+  )
   OVER (
   ORDER BY x
   RANGE BETWEEN
@@ -2044,12 +2426,16 @@ SELECT
   AND
   4 FOLLOWING)
 FROM
-  generate_series(2147483644,
-  2147483646) AS x;
+  generate_series(
+  2147483644,
+  2147483646
+  ) AS x;
 
 SELECT
   x,
-  LAST_VALUE(x)
+  LAST_VALUE(
+  x
+  )
   OVER (
   ORDER BY x DESC
   RANGE BETWEEN
@@ -2057,12 +2443,16 @@ SELECT
   AND
   5 FOLLOWING)
 FROM
-  generate_series(-2147483646,
-  -2147483644) AS x;
+  generate_series(
+  -2147483646,
+  -2147483644
+  ) AS x;
 
 SELECT
   x,
-  LAST_VALUE(x)
+  LAST_VALUE(
+  x
+  )
   OVER (
   ORDER BY x
   RANGE BETWEEN
@@ -2070,12 +2460,16 @@ SELECT
   AND
   4 FOLLOWING)
 FROM
-  generate_series(9223372036854775804,
-  9223372036854775806) AS x;
+  generate_series(
+  9223372036854775804,
+  9223372036854775806
+  ) AS x;
 
 SELECT
   x,
-  LAST_VALUE(x)
+  LAST_VALUE(
+  x
+  )
   OVER (
   ORDER BY x DESC
   RANGE BETWEEN
@@ -2083,8 +2477,10 @@ SELECT
   AND
   5 FOLLOWING)
 FROM
-  generate_series(-9223372036854775806,
-  -9223372036854775804) AS x;
+  generate_series(
+  -9223372036854775806,
+  -9223372036854775804
+  ) AS x;
 
 CREATE TEMPORARY TABLE numerics (
   id INT,
@@ -2138,9 +2534,13 @@ VALUES (0,
 SELECT
   id,
   f_float4,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2155,9 +2555,13 @@ WINDOW
 SELECT
   id,
   f_float4,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2173,9 +2577,13 @@ WINDOW
 SELECT
   id,
   f_float4,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2190,9 +2598,13 @@ WINDOW
 SELECT
   id,
   f_float4,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2207,9 +2619,13 @@ WINDOW
 SELECT
   id,
   f_float4,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2224,9 +2640,13 @@ WINDOW
 SELECT
   id,
   f_float4,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2241,9 +2661,13 @@ WINDOW
 SELECT
   id,
   f_float8,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2258,9 +2682,13 @@ WINDOW
 SELECT
   id,
   f_float8,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2276,9 +2704,13 @@ WINDOW
 SELECT
   id,
   f_float8,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2293,9 +2725,13 @@ WINDOW
 SELECT
   id,
   f_float8,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2310,9 +2746,13 @@ WINDOW
 SELECT
   id,
   f_float8,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2327,9 +2767,13 @@ WINDOW
 SELECT
   id,
   f_float8,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2344,9 +2788,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2361,9 +2809,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2379,9 +2831,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2397,9 +2853,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2414,9 +2874,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2431,9 +2895,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2448,9 +2916,13 @@ WINDOW
 SELECT
   id,
   f_numeric,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   numerics
@@ -2548,9 +3020,13 @@ VALUES (0,
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2567,9 +3043,13 @@ WINDOW
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2584,9 +3064,13 @@ WINDOW
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2601,9 +3085,13 @@ WINDOW
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2620,9 +3108,13 @@ WINDOW
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2639,9 +3131,13 @@ WINDOW
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2658,9 +3154,13 @@ WINDOW
 SELECT
   id,
   f_time,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2677,9 +3177,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2696,9 +3200,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2713,9 +3221,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2730,9 +3242,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2749,9 +3265,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2768,9 +3288,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2787,9 +3311,13 @@ WINDOW
 SELECT
   id,
   f_timetz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2806,9 +3334,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2825,9 +3357,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2842,9 +3378,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2859,9 +3399,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2878,9 +3422,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2897,9 +3445,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2916,9 +3468,13 @@ WINDOW
 SELECT
   id,
   f_interval,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2935,9 +3491,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2954,9 +3514,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2971,9 +3535,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -2988,9 +3556,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3007,9 +3579,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3026,9 +3602,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3045,9 +3625,13 @@ WINDOW
 SELECT
   id,
   f_timestamptz,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3064,9 +3648,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3083,9 +3671,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3100,9 +3692,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3117,9 +3713,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3136,9 +3736,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3155,9 +3759,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3174,9 +3782,13 @@ WINDOW
 SELECT
   id,
   f_timestamp,
-  FIRST_VALUE(id)
+  FIRST_VALUE(
+  id
+  )
   OVER w,
-  LAST_VALUE(id)
+  LAST_VALUE(
+  id
+  )
   OVER w
 FROM
   datetimes
@@ -3191,7 +3803,9 @@ WINDOW
   AS INTERVAL) FOLLOWING);
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY enroll_date,
   salary
@@ -3208,7 +3822,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   RANGE BETWEEN
   CAST('1 year'
@@ -3223,7 +3839,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   ORDER BY depname
   RANGE BETWEEN
@@ -3239,7 +3857,9 @@ FROM
   empsalary;
 
 SELECT
-  MAX(enroll_date)
+  MAX(
+  enroll_date
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -3253,7 +3873,9 @@ FROM
   empsalary;
 
 SELECT
-  MAX(enroll_date)
+  MAX(
+  enroll_date
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -3267,7 +3889,9 @@ FROM
   empsalary;
 
 SELECT
-  MAX(enroll_date)
+  MAX(
+  enroll_date
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -3281,7 +3905,9 @@ FROM
   empsalary;
 
 SELECT
-  MAX(enroll_date)
+  MAX(
+  enroll_date
+  )
   OVER (
   ORDER BY salary
   RANGE BETWEEN
@@ -3297,7 +3923,9 @@ FROM
   empsalary;
 
 SELECT
-  MAX(enroll_date)
+  MAX(
+  enroll_date
+  )
   OVER (
   ORDER BY enroll_date
   RANGE BETWEEN
@@ -3313,7 +3941,9 @@ FROM
   empsalary;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3329,7 +3959,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3345,7 +3977,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3361,7 +3995,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3377,7 +4013,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3393,7 +4031,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3409,7 +4049,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3425,7 +4067,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3441,7 +4085,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3457,7 +4103,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3474,7 +4122,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3491,7 +4141,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   ORDER BY four
   GROUPS BETWEEN
@@ -3508,7 +4160,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   PARTITION BY ten
   ORDER BY four
@@ -3526,7 +4180,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   PARTITION BY ten
   ORDER BY four
@@ -3545,7 +4201,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   PARTITION BY ten
   ORDER BY four
@@ -3564,7 +4222,9 @@ WHERE
   10;
 
 SELECT
-  SUM(unique1)
+  SUM(
+  unique1
+  )
   OVER (
   PARTITION BY ten
   ORDER BY four
@@ -3583,22 +4243,28 @@ WHERE
   10;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
   1 PRECEDING
   AND
   1 FOLLOWING),
-  LEAD(salary)
+  LEAD(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
   1 PRECEDING
   AND
   1 FOLLOWING),
-  NTH_VALUE(salary,
-  1)
+  NTH_VALUE(
+  salary,
+  1
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3611,14 +4277,18 @@ FROM
   empsalary;
 
 SELECT
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
   1 PRECEDING
   AND
   1 FOLLOWING),
-  LAG(salary)
+  LAG(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3631,7 +4301,9 @@ FROM
   empsalary;
 
 SELECT
-  FIRST_VALUE(salary)
+  FIRST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3639,7 +4311,9 @@ SELECT
   AND
   3 FOLLOWING
   EXCLUDE CURRENT ROW),
-  LEAD(salary)
+  LEAD(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3647,8 +4321,10 @@ SELECT
   AND
   3 FOLLOWING
   EXCLUDE TIES),
-  NTH_VALUE(salary,
-  1)
+  NTH_VALUE(
+  salary,
+  1
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3662,7 +4338,9 @@ FROM
   empsalary;
 
 SELECT
-  LAST_VALUE(salary)
+  LAST_VALUE(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3670,7 +4348,9 @@ SELECT
   AND
   3 FOLLOWING
   EXCLUDE GROUP),
-  LAG(salary)
+  LAG(
+  salary
+  )
   OVER (
   ORDER BY enroll_date
   GROUPS BETWEEN
@@ -3686,12 +4366,16 @@ FROM
 WITH cte (x) AS (SELECT
   *
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   35,
-  2))
+  2
+  ))
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER w
 FROM
   cte
@@ -3706,12 +4390,16 @@ WINDOW
 WITH cte (x) AS (SELECT
   *
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   35,
-  2))
+  2
+  ))
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER w
 FROM
   cte
@@ -3726,12 +4414,16 @@ WINDOW
 WITH cte (x) AS (SELECT
   *
 FROM
-  generate_series(1,
+  generate_series(
+  1,
   35,
-  2))
+  2
+  ))
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER w
 FROM
   cte
@@ -3755,12 +4447,16 @@ UNION ALL
 SELECT
   *
 FROM
-  generate_series(5,
+  generate_series(
+  5,
   49,
-  2))
+  2
+  ))
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER w
 FROM
   cte
@@ -3784,12 +4480,16 @@ UNION ALL
 SELECT
   *
 FROM
-  generate_series(5,
+  generate_series(
+  5,
   49,
-  2))
+  2
+  ))
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER w
 FROM
   cte
@@ -3813,12 +4513,16 @@ UNION ALL
 SELECT
   *
 FROM
-  generate_series(5,
+  generate_series(
+  5,
   49,
-  2))
+  2
+  ))
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER w
 FROM
   cte
@@ -3831,7 +4535,9 @@ WINDOW
   1 FOLLOWING);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   PARTITION BY four)
 FROM
@@ -3852,7 +4558,9 @@ INSERT INTO t1 VALUES (1, 1), (1, 2), (2, 2);
 
 SELECT
   f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1
   RANGE BETWEEN
@@ -3867,23 +4575,9 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
-  OVER (
-  PARTITION BY f1
-  ORDER BY f2
-  RANGE BETWEEN
-  1 PRECEDING
-  AND
-  1 FOLLOWING)
-FROM
-  t1
-WHERE
-  f1 =
-  f2;
-
-SELECT
-  f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1
   ORDER BY f2
@@ -3899,7 +4593,27 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
+  OVER (
+  PARTITION BY f1
+  ORDER BY f2
+  RANGE BETWEEN
+  1 PRECEDING
+  AND
+  1 FOLLOWING)
+FROM
+  t1
+WHERE
+  f1 =
+  f2;
+
+SELECT
+  f1,
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1,
   f1
@@ -3916,7 +4630,9 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1,
   f2
@@ -3933,7 +4649,9 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1
   GROUPS BETWEEN
@@ -3948,23 +4666,9 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
-  OVER (
-  PARTITION BY f1
-  ORDER BY f2
-  GROUPS BETWEEN
-  1 PRECEDING
-  AND
-  1 FOLLOWING)
-FROM
-  t1
-WHERE
-  f1 =
-  f2;
-
-SELECT
-  f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1
   ORDER BY f2
@@ -3980,7 +4684,27 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
+  OVER (
+  PARTITION BY f1
+  ORDER BY f2
+  GROUPS BETWEEN
+  1 PRECEDING
+  AND
+  1 FOLLOWING)
+FROM
+  t1
+WHERE
+  f1 =
+  f2;
+
+SELECT
+  f1,
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1,
   f1
@@ -3997,7 +4721,9 @@ WHERE
 
 SELECT
   f1,
-  SUM(f1)
+  SUM(
+  f1
+  )
   OVER (
   PARTITION BY f1,
   f2
@@ -4015,18 +4741,26 @@ WHERE
 SELECT RANK() OVER ( ORDER BY length('abc'));
 
 SELECT
-  RANK()
+  RANK(
+
+  )
   OVER (
-  ORDER BY RANK()
+  ORDER BY RANK(
+
+  )
   OVER (
-  ORDER BY random()));
+  ORDER BY random(
+
+  )));
 
 SELECT
   *
 FROM
   empsalary
 WHERE
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY salary) <
   10;
@@ -4036,34 +4770,50 @@ SELECT
 FROM
   empsalary
   INNER JOIN tenk1
-  ON ROW_NUMBER()
+  ON ROW_NUMBER(
+
+    )
     OVER (
     ORDER BY salary) <
     10;
 
 SELECT
-  RANK()
+  RANK(
+
+  )
   OVER (
   ORDER BY 1),
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   empsalary
 GROUP BY 1;
 
 DELETE FROM empsalary
 WHERE
-  RANK()
+  RANK(
+
+  )
   OVER (
-  ORDER BY random()) >
+  ORDER BY random(
+
+  )) >
   10;
 
 DELETE FROM empsalary
-RETURNING RANK()
+RETURNING RANK(
+
+)
 OVER (
-ORDER BY random());
+ORDER BY random(
+
+));
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER w
 FROM
   tenk1
@@ -4080,8 +4830,10 @@ SELECT generate_series(1, 100) OVER () FROM empsalary;
 SELECT NTILE(0) OVER ( ORDER BY ten), ten, four FROM tenk1;
 
 SELECT
-  NTH_VALUE(four,
-  0)
+  NTH_VALUE(
+  four,
+  0
+  )
   OVER (
   ORDER BY ten),
   ten,
@@ -4090,19 +4842,28 @@ FROM
   tenk1;
 
 SELECT
-  SUM(salary),
-  ROW_NUMBER()
+  SUM(
+  salary
+  ),
+  ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY depname),
-  SUM(SUM(salary)
+  SUM(
+  SUM(
+  salary
+  )
   FILTER (WHERE
     enroll_date >
-    '2007-01-01'))
+    '2007-01-01')
+  )
   FILTER (WHERE
     depname <>
     'sales')
   OVER (
-  ORDER BY depname DESC) AS filtered_sum,
+  ORDER BY depname DESC)
+  AS filtered_sum,
   depname
 FROM
   empsalary
@@ -4111,102 +4872,138 @@ GROUP BY depname;
 SELECT
   empno,
   depname,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS rn,
-  RANK()
+  ORDER BY enroll_date)
+  AS rn,
+  RANK(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   ROWS BETWEEN
   UNBOUNDED PRECEDING
   AND
-  UNBOUNDED FOLLOWING) AS rnk,
-  DENSE_RANK()
+  UNBOUNDED FOLLOWING)
+  AS rnk,
+  DENSE_RANK(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   RANGE BETWEEN
   CURRENT ROW
   AND
-  CURRENT ROW) AS drnk,
-  NTILE(10)
+  CURRENT ROW)
+  AS drnk,
+  NTILE(
+  10
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   RANGE BETWEEN
   CURRENT ROW
   AND
-  UNBOUNDED FOLLOWING) AS nt,
-  PERCENT_RANK()
+  UNBOUNDED FOLLOWING)
+  AS nt,
+  PERCENT_RANK(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   ROWS BETWEEN
   CURRENT ROW
   AND
-  UNBOUNDED FOLLOWING) AS pr,
-  CUME_DIST()
+  UNBOUNDED FOLLOWING)
+  AS pr,
+  CUME_DIST(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   RANGE BETWEEN
   CURRENT ROW
   AND
-  UNBOUNDED FOLLOWING) AS cd
+  UNBOUNDED FOLLOWING)
+  AS cd
 FROM
   empsalary;
 
 SELECT
   empno,
   depname,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS rn,
-  RANK()
+  ORDER BY enroll_date)
+  AS rn,
+  RANK(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   ROWS BETWEEN
   UNBOUNDED PRECEDING
   AND
-  UNBOUNDED FOLLOWING) AS rnk,
-  COUNT(*)
+  UNBOUNDED FOLLOWING)
+  AS rnk,
+  COUNT(
+  *
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   RANGE BETWEEN
   CURRENT ROW
   AND
-  CURRENT ROW) AS cnt
+  CURRENT ROW)
+  AS cnt
 FROM
   empsalary;
 
 SELECT
   empno,
   depname,
-  ROW_NUMBER()
+  ROW_NUMBER(
+
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS rn,
-  RANK()
+  ORDER BY enroll_date)
+  AS rn,
+  RANK(
+
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   ROWS BETWEEN
   UNBOUNDED PRECEDING
   AND
-  UNBOUNDED FOLLOWING) AS rnk,
-  COUNT(*)
+  UNBOUNDED FOLLOWING)
+  AS rnk,
+  COUNT(
+  *
+  )
   OVER (
   PARTITION BY depname
   ORDER BY enroll_date
   RANGE BETWEEN
   CURRENT ROW
   AND
-  CURRENT ROW) AS cnt
+  CURRENT ROW)
+  AS cnt
 FROM
   empsalary;
 
@@ -4215,14 +5012,20 @@ SELECT
 FROM
   (SELECT
     depname,
-    SUM(salary)
+    SUM(
+    salary
+    )
     OVER (
-    PARTITION BY depname) AS depsalary,
-    MIN(salary)
+    PARTITION BY depname)
+    AS depsalary,
+    MIN(
+    salary
+    )
     OVER (
     PARTITION BY depname ||
     'A',
-    depname) AS depminsalary
+    depname)
+    AS depminsalary
   FROM
     empsalary) AS emp
 WHERE
@@ -4234,12 +5037,18 @@ SELECT
 FROM
   (SELECT
     depname,
-    SUM(salary)
+    SUM(
+    salary
+    )
     OVER (
-    PARTITION BY enroll_date) AS enroll_salary,
-    MIN(salary)
+    PARTITION BY enroll_date)
+    AS enroll_salary,
+    MIN(
+    salary
+    )
     OVER (
-    PARTITION BY depname) AS depminsalary
+    PARTITION BY depname)
+    AS depminsalary
   FROM
     empsalary) AS emp
 WHERE
@@ -4251,9 +5060,12 @@ SELECT
 FROM
   (SELECT
     empno,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4265,9 +5077,12 @@ SELECT
 FROM
   (SELECT
     empno,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4279,9 +5094,12 @@ SELECT
 FROM
   (SELECT
     empno,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4293,9 +5111,12 @@ SELECT
 FROM
   (SELECT
     empno,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4308,9 +5129,12 @@ FROM
   (SELECT
     empno,
     salary,
-    RANK()
+    RANK(
+
+    )
     OVER (
-    ORDER BY salary DESC) AS r
+    ORDER BY salary DESC)
+    AS r
   FROM
     empsalary) AS emp
 WHERE
@@ -4323,9 +5147,12 @@ FROM
   (SELECT
     empno,
     salary,
-    RANK()
+    RANK(
+
+    )
     OVER (
-    ORDER BY salary DESC) AS r
+    ORDER BY salary DESC)
+    AS r
   FROM
     empsalary) AS emp
 WHERE
@@ -4338,9 +5165,12 @@ FROM
   (SELECT
     empno,
     salary,
-    DENSE_RANK()
+    DENSE_RANK(
+
+    )
     OVER (
-    ORDER BY salary DESC) AS dr
+    ORDER BY salary DESC)
+    AS dr
   FROM
     empsalary) AS emp
 WHERE
@@ -4353,9 +5183,12 @@ FROM
   (SELECT
     empno,
     salary,
-    DENSE_RANK()
+    DENSE_RANK(
+
+    )
     OVER (
-    ORDER BY salary DESC) AS dr
+    ORDER BY salary DESC)
+    AS dr
   FROM
     empsalary) AS emp
 WHERE
@@ -4368,9 +5201,12 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
-    ORDER BY salary DESC) AS c
+    ORDER BY salary DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4383,9 +5219,12 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
-    ORDER BY salary DESC) AS c
+    ORDER BY salary DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4398,9 +5237,12 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(empno)
+    COUNT(
+    empno
+    )
     OVER (
-    ORDER BY salary DESC) AS c
+    ORDER BY salary DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4413,9 +5255,12 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(empno)
+    COUNT(
+    empno
+    )
     OVER (
-    ORDER BY salary DESC) AS c
+    ORDER BY salary DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4428,13 +5273,16 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
     ORDER BY salary DESC
     ROWS BETWEEN
     CURRENT ROW
     AND
-    UNBOUNDED FOLLOWING) AS c
+    UNBOUNDED FOLLOWING)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4447,8 +5295,11 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
-    OVER () AS c
+    COUNT(
+    *
+    )
+    OVER ()
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4461,12 +5312,18 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
-    ORDER BY salary DESC) AS c,
-    DENSE_RANK()
+    ORDER BY salary DESC)
+    AS c,
+    DENSE_RANK(
+
+    )
     OVER (
-    ORDER BY salary DESC) AS dr
+    ORDER BY salary DESC)
+    AS dr
   FROM
     empsalary) AS emp
 WHERE
@@ -4479,10 +5336,13 @@ FROM
   (SELECT
     empno,
     depname,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4495,10 +5355,13 @@ FROM
   (SELECT
     empno,
     depname,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4512,10 +5375,13 @@ FROM
   (SELECT
     empno,
     depname,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY empno) AS rn
+    ORDER BY empno)
+    AS rn
   FROM
     empsalary) AS emp
 WHERE
@@ -4529,10 +5395,13 @@ FROM
     empno,
     depname,
     salary,
-    COUNT(empno)
+    COUNT(
+    empno
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY salary DESC) AS c
+    ORDER BY salary DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4546,10 +5415,13 @@ FROM
     empno,
     depname,
     salary,
-    COUNT(empno)
+    COUNT(
+    empno
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY salary DESC) AS c
+    ORDER BY salary DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4563,8 +5435,11 @@ FROM
     empno,
     depname,
     salary,
-    COUNT(empno)
-    OVER () AS c
+    COUNT(
+    empno
+    )
+    OVER ()
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4575,13 +5450,19 @@ SELECT
   *
 FROM
   (SELECT
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
-    PARTITION BY salary) AS rn,
-    LEAD(depname)
+    PARTITION BY salary)
+    AS rn,
+    LEAD(
+    depname
+    )
     OVER (
     PARTITION BY salary) ||
-    ' Department' AS n_dep
+    ' Department'
+    AS n_dep
   FROM
     empsalary) AS emp
 WHERE
@@ -4593,23 +5474,38 @@ SELECT
 FROM
   (SELECT
     *,
-    COUNT(salary)
+    COUNT(
+    salary
+    )
     OVER (
     PARTITION BY depname ||
-    '') AS c1,
-    ROW_NUMBER()
+    '')
+    AS c1,
+    ROW_NUMBER(
+
+    )
     OVER (
-    PARTITION BY depname) AS rn,
-    COUNT(*)
+    PARTITION BY depname)
+    AS rn,
+    COUNT(
+    *
+    )
     OVER (
-    PARTITION BY depname) AS c2,
-    COUNT(*)
+    PARTITION BY depname)
+    AS c2,
+    COUNT(
+    *
+    )
     OVER (
     PARTITION BY '' ||
-    depname) AS c3,
-    NTILE(2)
+    depname)
+    AS c3,
+    NTILE(
+    2
+    )
     OVER (
-    PARTITION BY depname) AS nt
+    PARTITION BY depname)
+    AS nt
   FROM
     empsalary) AS e
 WHERE
@@ -4625,23 +5521,38 @@ SELECT
 FROM
   (SELECT
     *,
-    COUNT(salary)
+    COUNT(
+    salary
+    )
     OVER (
     PARTITION BY depname ||
-    '') AS c1,
-    ROW_NUMBER()
+    '')
+    AS c1,
+    ROW_NUMBER(
+
+    )
     OVER (
-    PARTITION BY depname) AS rn,
-    COUNT(*)
+    PARTITION BY depname)
+    AS rn,
+    COUNT(
+    *
+    )
     OVER (
-    PARTITION BY depname) AS c2,
-    COUNT(*)
+    PARTITION BY depname)
+    AS c2,
+    COUNT(
+    *
+    )
     OVER (
     PARTITION BY '' ||
-    depname) AS c3,
-    NTILE(2)
+    depname)
+    AS c3,
+    NTILE(
+    2
+    )
     OVER (
-    PARTITION BY depname) AS nt
+    PARTITION BY depname)
+    AS nt
   FROM
     empsalary) AS e
 WHERE
@@ -4656,9 +5567,12 @@ SELECT
   1
 FROM
   (SELECT
-    NTILE(e2.salary)
+    NTILE(
+    e2.salary
+    )
     OVER (
-    PARTITION BY e1.depname) AS c
+    PARTITION BY e1.depname)
+    AS c
   FROM
     empsalary
     AS e1
@@ -4676,12 +5590,16 @@ SELECT
   1
 FROM
   (SELECT
-    NTILE(s1.x)
-    OVER () AS c
+    NTILE(
+    s1.x
+    )
+    OVER ()
+    AS c
   FROM
     (SELECT
       (SELECT
-        1) AS x) AS s1) AS s
+        1)
+      AS x) AS s1) AS s
 WHERE
   s.c =
   1;
@@ -4692,13 +5610,16 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
     ORDER BY salary DESC
     ROWS BETWEEN
     CURRENT ROW
     AND
-    UNBOUNDED FOLLOWING) AS c
+    UNBOUNDED FOLLOWING)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4711,9 +5632,12 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(*)
+    COUNT(
+    *
+    )
     OVER (
-    ORDER BY salary) AS c
+    ORDER BY salary)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4726,9 +5650,14 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT(random())
+    COUNT(
+    random(
+
+    )
+    )
     OVER (
-    ORDER BY empno DESC) AS c
+    ORDER BY empno DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4741,10 +5670,13 @@ FROM
   (SELECT
     empno,
     salary,
-    COUNT((SELECT
-      1))
+    COUNT(
+    (SELECT
+      1)
+    )
     OVER (
-    ORDER BY empno DESC) AS c
+    ORDER BY empno DESC)
+    AS c
   FROM
     empsalary) AS emp
 WHERE
@@ -4756,15 +5688,21 @@ SELECT
 FROM
   (SELECT
     depname,
-    SUM(salary)
+    SUM(
+    salary
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY empno) AS depsalary,
-    MIN(salary)
+    ORDER BY empno)
+    AS depsalary,
+    MIN(
+    salary
+    )
     OVER (
     PARTITION BY depname,
     empno
-    ORDER BY enroll_date) AS depminsalary
+    ORDER BY enroll_date)
+    AS depminsalary
   FROM
     empsalary) AS emp
 WHERE
@@ -4775,14 +5713,20 @@ SELECT
   empno,
   enroll_date,
   depname,
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY empno) AS depsalary,
-  MIN(salary)
+  ORDER BY empno)
+  AS depsalary,
+  MIN(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS depminsalary
+  ORDER BY enroll_date)
+  AS depminsalary
 FROM
   empsalary
 ORDER BY depname,
@@ -4792,14 +5736,20 @@ SELECT
   empno,
   enroll_date,
   depname,
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY empno) AS depsalary,
-  MIN(salary)
+  ORDER BY empno)
+  AS depsalary,
+  MIN(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS depminsalary
+  ORDER BY enroll_date)
+  AS depminsalary
 FROM
   empsalary
 ORDER BY depname,
@@ -4811,14 +5761,20 @@ SELECT DISTINCT
   empno,
   enroll_date,
   depname,
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY empno) AS depsalary,
-  MIN(salary)
+  ORDER BY empno)
+  AS depsalary,
+  MIN(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS depminsalary
+  ORDER BY enroll_date)
+  AS depminsalary
 FROM
   empsalary
 ORDER BY depname,
@@ -4828,14 +5784,20 @@ SELECT DISTINCT
   empno,
   enroll_date,
   depname,
-  SUM(salary)
+  SUM(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY empno) AS depsalary,
-  MIN(salary)
+  ORDER BY empno)
+  AS depsalary,
+  MIN(
+  salary
+  )
   OVER (
   PARTITION BY depname
-  ORDER BY enroll_date) AS depminsalary
+  ORDER BY enroll_date)
+  AS depminsalary
 FROM
   empsalary
 ORDER BY depname,
@@ -4844,12 +5806,16 @@ ORDER BY depname,
 RESET enable_hashagg;
 
 SELECT
-  LEAD(1)
+  LEAD(
+  1
+  )
   OVER (
   PARTITION BY depname
   ORDER BY salary,
   enroll_date),
-  LAG(1)
+  LAG(
+  1
+  )
   OVER (
   PARTITION BY depname
   ORDER BY salary,
@@ -4866,14 +5832,20 @@ FROM
     empno,
     salary,
     enroll_date,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY enroll_date) AS first_emp,
-    ROW_NUMBER()
+    ORDER BY enroll_date)
+    AS first_emp,
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY enroll_date DESC) AS last_emp
+    ORDER BY enroll_date DESC)
+    AS last_emp
   FROM
     empsalary) AS emp
 WHERE
@@ -4890,14 +5862,20 @@ FROM
     empno,
     salary,
     enroll_date,
-    ROW_NUMBER()
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY enroll_date) AS first_emp,
-    ROW_NUMBER()
+    ORDER BY enroll_date)
+    AS first_emp,
+    ROW_NUMBER(
+
+    )
     OVER (
     PARTITION BY depname
-    ORDER BY enroll_date DESC) AS last_emp
+    ORDER BY enroll_date DESC)
+    AS last_emp
   FROM
     empsalary) AS emp
 WHERE
@@ -4908,7 +5886,8 @@ WHERE
 
 DROP TABLE "empsalary";
 
-CREATE FUNCTION nth_value_def(
+CREATE FUNCTION
+nth_value_def(
   "val" ANYELEMENT,
   "n" INT DEFAULT 1
 )
@@ -4920,8 +5899,10 @@ STRICT
 AS 'window_nth_value';
 
 SELECT
-  nth_value_def("n" := 2,
-  "val" := ten)
+  nth_value_def(
+  "n" := 2,
+  "val" := ten
+  )
   OVER (
   PARTITION BY four),
   ten,
@@ -4938,7 +5919,9 @@ FROM
     ten) AS s;
 
 SELECT
-  nth_value_def(ten)
+  nth_value_def(
+  ten
+  )
   OVER (
   PARTITION BY four),
   ten,
@@ -4954,7 +5937,8 @@ FROM
   ORDER BY four,
     ten) AS s;
 
-CREATE FUNCTION logging_sfunc_nonstrict(
+CREATE FUNCTION
+logging_sfunc_nonstrict(
   TEXT,
   ANYELEMENT
 )
@@ -4963,7 +5947,8 @@ AS ' SELECT COALESCE($1, '''') || ''*'' || quote_nullable($2) '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE FUNCTION logging_msfunc_nonstrict(
+CREATE FUNCTION
+logging_msfunc_nonstrict(
   TEXT,
   ANYELEMENT
 )
@@ -4972,7 +5957,8 @@ AS ' SELECT COALESCE($1, '''') || ''+'' || quote_nullable($2) '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE FUNCTION logging_minvfunc_nonstrict(
+CREATE FUNCTION
+logging_minvfunc_nonstrict(
   TEXT,
   ANYELEMENT
 )
@@ -5001,7 +5987,8 @@ CREATE AGGREGATE logging_agg_nonstrict_initcond (ANYELEMENT)
   minitcond = 'MI'
 );
 
-CREATE FUNCTION logging_sfunc_strict(
+CREATE FUNCTION
+logging_sfunc_strict(
   TEXT,
   ANYELEMENT
 )
@@ -5011,7 +5998,8 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION logging_msfunc_strict(
+CREATE FUNCTION
+logging_msfunc_strict(
   TEXT,
   ANYELEMENT
 )
@@ -5021,7 +6009,8 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE FUNCTION logging_minvfunc_strict(
+CREATE FUNCTION
+logging_minvfunc_strict(
   TEXT,
   ANYELEMENT
 )
@@ -5060,16 +6049,29 @@ SELECT
   ':' ||
   COALESCE(CAST(v
   AS TEXT),
-  'NULL') AS row,
-  logging_agg_nonstrict(v)
-  OVER wnd AS nstrict,
-  logging_agg_nonstrict_initcond(v)
-  OVER wnd AS nstrict_init,
-  logging_agg_strict(CAST(v
-  AS TEXT))
-  OVER wnd AS strict,
-  logging_agg_strict_initcond(v)
-  OVER wnd AS strict_init
+  'NULL')
+  AS row,
+  logging_agg_nonstrict(
+  v
+  )
+  OVER wnd
+  AS nstrict,
+  logging_agg_nonstrict_initcond(
+  v
+  )
+  OVER wnd
+  AS nstrict_init,
+  logging_agg_strict(
+  CAST(v
+  AS TEXT)
+  )
+  OVER wnd
+  AS strict,
+  logging_agg_strict_initcond(
+  v
+  )
+  OVER wnd
+  AS strict_init
 FROM
   (VALUES (1,
   1,
@@ -5123,24 +6125,37 @@ SELECT
   AS TEXT),
   'NULL')
   ELSE '-'
-  END AS row,
-  logging_agg_nonstrict(v)
+  END
+  AS row,
+  logging_agg_nonstrict(
+  v
+  )
   FILTER (WHERE
     f)
-  OVER wnd AS nstrict_filt,
-  logging_agg_nonstrict_initcond(v)
+  OVER wnd
+  AS nstrict_filt,
+  logging_agg_nonstrict_initcond(
+  v
+  )
   FILTER (WHERE
     f)
-  OVER wnd AS nstrict_init_filt,
-  logging_agg_strict(CAST(v
-  AS TEXT))
+  OVER wnd
+  AS nstrict_init_filt,
+  logging_agg_strict(
+  CAST(v
+  AS TEXT)
+  )
   FILTER (WHERE
     f)
-  OVER wnd AS strict_filt,
-  logging_agg_strict_initcond(v)
+  OVER wnd
+  AS strict_filt,
+  logging_agg_strict_initcond(
+  v
+  )
   FILTER (WHERE
     f)
-  OVER wnd AS strict_init_filt
+  OVER wnd
+  AS strict_init_filt
 FROM
   (VALUES (1,
   1,
@@ -5198,18 +6213,27 @@ SELECT
   ':' ||
   COALESCE(CAST(v
   AS TEXT),
-  'NULL') AS row,
-  logging_agg_strict(CAST(v
-  AS TEXT))
-  OVER wnd AS inverse,
-  logging_agg_strict(CAST(v
+  'NULL')
+  AS row,
+  logging_agg_strict(
+  CAST(v
+  AS TEXT)
+  )
+  OVER wnd
+  AS inverse,
+  logging_agg_strict(
+  CAST(v
   AS TEXT) ||
   CASE
-  WHEN random() <
+  WHEN random(
+
+  ) <
   0 THEN '?'
   ELSE ''
-  END)
-  OVER wnd AS noinverse
+  END
+  )
+  OVER wnd
+  AS noinverse
 FROM
   (VALUES (1,
   'a'),
@@ -5233,18 +6257,27 @@ SELECT
   ':' ||
   COALESCE(CAST(v
   AS TEXT),
-  'NULL') AS row,
-  logging_agg_strict(CAST(v
-  AS TEXT))
+  'NULL')
+  AS row,
+  logging_agg_strict(
+  CAST(v
+  AS TEXT)
+  )
   FILTER (WHERE
     TRUE)
-  OVER wnd AS inverse,
-  logging_agg_strict(CAST(v
-  AS TEXT))
+  OVER wnd
+  AS inverse,
+  logging_agg_strict(
+  CAST(v
+  AS TEXT)
+  )
   FILTER (WHERE
-    random() >=
+    random(
+
+    ) >=
     0)
-  OVER wnd AS noinverse
+  OVER wnd
+  AS noinverse
 FROM
   (VALUES (1,
   'a'),
@@ -5263,8 +6296,10 @@ WINDOW
 ORDER BY i;
 
 SELECT
-  logging_agg_strict(CAST(v
-  AS TEXT))
+  logging_agg_strict(
+  CAST(v
+  AS TEXT)
+  )
   OVER wnd
 FROM
   (VALUES (1,
@@ -5283,7 +6318,8 @@ WINDOW
   CURRENT ROW)
 ORDER BY i;
 
-CREATE FUNCTION sum_int_randrestart_minvfunc(
+CREATE FUNCTION
+sum_int_randrestart_minvfunc(
   INT,
   INT
 )
@@ -5303,33 +6339,52 @@ CREATE AGGREGATE sum_int_randomrestart (INT)
 
 WITH vs AS (SELECT
   i,
-  CAST(random() * 100
-  AS INT) AS v
+  CAST(random(
+
+  ) * 100
+  AS INT)
+  AS v
 FROM
-  generate_series(1,
-  100) AS i),
+  generate_series(
+  1,
+  100
+  ) AS i),
 sum_following AS (SELECT
   i,
-  SUM(v)
+  SUM(
+  v
+  )
   OVER (
   ORDER BY i DESC
   ROWS BETWEEN
   UNBOUNDED PRECEDING
   AND
-  CURRENT ROW) AS s
+  CURRENT ROW)
+  AS s
 FROM
   vs)
 SELECT DISTINCT
   sum_following.s =
-  sum_int_randomrestart(v)
-  OVER fwd AS eq1,
+  sum_int_randomrestart(
+  v
+  )
+  OVER fwd
+  AS eq1,
   -sum_following.s =
-  sum_int_randomrestart(-v)
-  OVER fwd AS eq2,
+  sum_int_randomrestart(
+  -v
+  )
+  OVER fwd
+  AS eq2,
   100 * 3 + (vs.i - 1) * 3 =
-  length(logging_agg_nonstrict(CAST(''
-  AS TEXT))
-  OVER fwd) AS eq3
+  length(
+  logging_agg_nonstrict(
+  CAST(''
+  AS TEXT)
+  )
+  OVER fwd
+  )
+  AS eq3
 FROM
   vs
   INNER JOIN sum_following
@@ -5345,8 +6400,10 @@ WINDOW
 
 SELECT
   i,
-  AVG(CAST(v
-  AS BIGINT))
+  AVG(
+  CAST(v
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5366,8 +6423,10 @@ FROM
 
 SELECT
   i,
-  AVG(CAST(v
-  AS INT))
+  AVG(
+  CAST(v
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5387,8 +6446,10 @@ FROM
 
 SELECT
   i,
-  AVG(CAST(v
-  AS SMALLINT))
+  AVG(
+  CAST(v
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5408,8 +6469,10 @@ FROM
 
 SELECT
   i,
-  AVG(CAST(v
-  AS NUMERIC))
+  AVG(
+  CAST(v
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5429,8 +6492,10 @@ FROM
 
 SELECT
   i,
-  AVG(CAST(v
-  AS INTERVAL))
+  AVG(
+  CAST(v
+  AS INTERVAL)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5450,30 +6515,42 @@ FROM
 
 SELECT
   x,
-  AVG(x)
+  AVG(
+  x
+  )
   OVER (
   ROWS BETWEEN
   CURRENT ROW
   AND
-  1 FOLLOWING) AS curr_next_avg,
-  AVG(x)
+  1 FOLLOWING)
+  AS curr_next_avg,
+  AVG(
+  x
+  )
   OVER (
   ROWS BETWEEN
   1 PRECEDING
   AND
-  CURRENT ROW) AS prev_curr_avg,
-  SUM(x)
+  CURRENT ROW)
+  AS prev_curr_avg,
+  SUM(
+  x
+  )
   OVER (
   ROWS BETWEEN
   CURRENT ROW
   AND
-  1 FOLLOWING) AS curr_next_sum,
-  SUM(x)
+  1 FOLLOWING)
+  AS curr_next_sum,
+  SUM(
+  x
+  )
   OVER (
   ROWS BETWEEN
   1 PRECEDING
   AND
-  CURRENT ROW) AS prev_curr_sum
+  CURRENT ROW)
+  AS prev_curr_sum
 FROM
   (VALUES (CAST(NULL
   AS INTERVAL)),
@@ -5496,7 +6573,9 @@ FROM
 
 SELECT
   x,
-  AVG(x)
+  AVG(
+  x
+  )
   OVER (
   ROWS BETWEEN
   CURRENT ROW
@@ -5508,7 +6587,9 @@ FROM
   (CAST('3 days'
   AS INTERVAL)),
   (CAST('infinity'
-  AS TIMESTAMP WITH TIME ZONE) - NOW()),
+  AS TIMESTAMP WITH TIME ZONE) - NOW(
+
+  )),
   (CAST('6 days'
   AS INTERVAL)),
   (CAST('-infinity'
@@ -5516,7 +6597,9 @@ FROM
 
 SELECT
   x,
-  SUM(x)
+  SUM(
+  x
+  )
   OVER (
   ROWS BETWEEN
   CURRENT ROW
@@ -5528,7 +6611,9 @@ FROM
   (CAST('3 days'
   AS INTERVAL)),
   (CAST('infinity'
-  AS TIMESTAMP WITH TIME ZONE) - NOW()),
+  AS TIMESTAMP WITH TIME ZONE) - NOW(
+
+  )),
   (CAST('6 days'
   AS INTERVAL)),
   (CAST('-infinity'
@@ -5536,8 +6621,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS SMALLINT))
+  SUM(
+  CAST(v
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5557,8 +6644,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS INT))
+  SUM(
+  CAST(v
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5578,8 +6667,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS BIGINT))
+  SUM(
+  CAST(v
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5599,8 +6690,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS MONEY))
+  SUM(
+  CAST(v
+  AS MONEY)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5620,8 +6713,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS INTERVAL))
+  SUM(
+  CAST(v
+  AS INTERVAL)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5641,8 +6736,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS NUMERIC))
+  SUM(
+  CAST(v
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5661,8 +6758,10 @@ FROM
   v);
 
 SELECT
-  SUM(CAST(n
-  AS NUMERIC))
+  SUM(
+  CAST(n
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5680,7 +6779,9 @@ FROM
 
 SELECT
   i,
-  COUNT(v)
+  COUNT(
+  v
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5700,7 +6801,9 @@ FROM
 
 SELECT
   i,
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5719,8 +6822,10 @@ FROM
   v);
 
 SELECT
-  var_pop(CAST(n
-  AS BIGINT))
+  var_pop(
+  CAST(n
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5741,8 +6846,10 @@ FROM
   n);
 
 SELECT
-  var_pop(CAST(n
-  AS INT))
+  var_pop(
+  CAST(n
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5763,8 +6870,10 @@ FROM
   n);
 
 SELECT
-  var_pop(CAST(n
-  AS SMALLINT))
+  var_pop(
+  CAST(n
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5785,8 +6894,10 @@ FROM
   n);
 
 SELECT
-  var_pop(CAST(n
-  AS NUMERIC))
+  var_pop(
+  CAST(n
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5807,8 +6918,10 @@ FROM
   n);
 
 SELECT
-  var_samp(CAST(n
-  AS BIGINT))
+  var_samp(
+  CAST(n
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5829,8 +6942,10 @@ FROM
   n);
 
 SELECT
-  var_samp(CAST(n
-  AS INT))
+  var_samp(
+  CAST(n
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5851,8 +6966,10 @@ FROM
   n);
 
 SELECT
-  var_samp(CAST(n
-  AS SMALLINT))
+  var_samp(
+  CAST(n
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5873,8 +6990,10 @@ FROM
   n);
 
 SELECT
-  var_samp(CAST(n
-  AS NUMERIC))
+  var_samp(
+  CAST(n
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5895,8 +7014,10 @@ FROM
   n);
 
 SELECT
-  variance(CAST(n
-  AS BIGINT))
+  variance(
+  CAST(n
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5917,8 +7038,10 @@ FROM
   n);
 
 SELECT
-  variance(CAST(n
-  AS INT))
+  variance(
+  CAST(n
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5939,8 +7062,10 @@ FROM
   n);
 
 SELECT
-  variance(CAST(n
-  AS SMALLINT))
+  variance(
+  CAST(n
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5961,8 +7086,10 @@ FROM
   n);
 
 SELECT
-  variance(CAST(n
-  AS NUMERIC))
+  variance(
+  CAST(n
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -5983,56 +7110,10 @@ FROM
   n);
 
 SELECT
-  stddev_pop(CAST(n
-  AS BIGINT))
-  OVER (
-  ORDER BY i
-  ROWS BETWEEN
-  CURRENT ROW
-  AND
-  UNBOUNDED FOLLOWING)
-FROM
-  (VALUES (1,
-  NULL),
-  (2,
-  600),
-  (3,
-  470),
-  (4,
-  170),
-  (5,
-  430),
-  (6,
-  300)) AS r (i,
-  n);
-
-SELECT
-  stddev_pop(CAST(n
-  AS INT))
-  OVER (
-  ORDER BY i
-  ROWS BETWEEN
-  CURRENT ROW
-  AND
-  UNBOUNDED FOLLOWING)
-FROM
-  (VALUES (1,
-  NULL),
-  (2,
-  600),
-  (3,
-  470),
-  (4,
-  170),
-  (5,
-  430),
-  (6,
-  300)) AS r (i,
-  n);
-
-SELECT
-  stddev_pop(CAST(n
-  AS SMALLINT))
+  stddev_pop(
+  CAST(n
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6055,8 +7136,10 @@ FROM
   n);
 
 SELECT
-  stddev_pop(CAST(n
-  AS NUMERIC))
+  stddev_pop(
+  CAST(n
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6079,8 +7162,10 @@ FROM
   n);
 
 SELECT
-  stddev_samp(CAST(n
-  AS BIGINT))
+  stddev_pop(
+  CAST(n
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6103,8 +7188,10 @@ FROM
   n);
 
 SELECT
-  stddev_samp(CAST(n
-  AS INT))
+  stddev_pop(
+  CAST(n
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6127,8 +7214,10 @@ FROM
   n);
 
 SELECT
-  stddev_samp(CAST(n
-  AS SMALLINT))
+  stddev_samp(
+  CAST(n
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6151,8 +7240,10 @@ FROM
   n);
 
 SELECT
-  stddev_samp(CAST(n
-  AS NUMERIC))
+  stddev_samp(
+  CAST(n
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6175,8 +7266,62 @@ FROM
   n);
 
 SELECT
-  stddev(CAST(n
-  AS BIGINT))
+  stddev_samp(
+  CAST(n
+  AS SMALLINT)
+  )
+  OVER (
+  ORDER BY i
+  ROWS BETWEEN
+  CURRENT ROW
+  AND
+  UNBOUNDED FOLLOWING)
+FROM
+  (VALUES (1,
+  NULL),
+  (2,
+  600),
+  (3,
+  470),
+  (4,
+  170),
+  (5,
+  430),
+  (6,
+  300)) AS r (i,
+  n);
+
+SELECT
+  stddev_samp(
+  CAST(n
+  AS NUMERIC)
+  )
+  OVER (
+  ORDER BY i
+  ROWS BETWEEN
+  CURRENT ROW
+  AND
+  UNBOUNDED FOLLOWING)
+FROM
+  (VALUES (1,
+  NULL),
+  (2,
+  600),
+  (3,
+  470),
+  (4,
+  170),
+  (5,
+  430),
+  (6,
+  300)) AS r (i,
+  n);
+
+SELECT
+  stddev(
+  CAST(n
+  AS BIGINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6199,8 +7344,10 @@ FROM
   n);
 
 SELECT
-  stddev(CAST(n
-  AS INT))
+  stddev(
+  CAST(n
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6223,8 +7370,10 @@ FROM
   n);
 
 SELECT
-  stddev(CAST(n
-  AS SMALLINT))
+  stddev(
+  CAST(n
+  AS SMALLINT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6247,8 +7396,10 @@ FROM
   n);
 
 SELECT
-  stddev(CAST(n
-  AS NUMERIC))
+  stddev(
+  CAST(n
+  AS NUMERIC)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6272,8 +7423,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS INT))
+  SUM(
+  CAST(v
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6293,8 +7446,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS INT))
+  SUM(
+  CAST(v
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6314,8 +7469,10 @@ FROM
 
 SELECT
   i,
-  SUM(CAST(v
-  AS INT))
+  SUM(
+  CAST(v
+  AS INT)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
@@ -6336,7 +7493,9 @@ FROM
 SELECT
   a,
   b,
-  SUM(b)
+  SUM(
+  b
+  )
   OVER (
   ORDER BY a
   ROWS BETWEEN
@@ -6358,15 +7517,19 @@ FROM
   b);
 
 SELECT
-  to_char(SUM(CAST(n
-  AS DOUBLE PRECISION))
+  to_char(
+  SUM(
+  CAST(n
+  AS DOUBLE PRECISION)
+  )
   OVER (
   ORDER BY i
   ROWS BETWEEN
   CURRENT ROW
   AND
   1 FOLLOWING),
-  '999999999999999999999D9')
+  '999999999999999999999D9'
+  )
 FROM
   (VALUES (1,
   1e20),
@@ -6377,9 +7540,13 @@ FROM
 SELECT
   i,
   b,
-  bool_and(b)
+  bool_and(
+  b
+  )
   OVER w,
-  bool_or(b)
+  bool_or(
+  b
+  )
   OVER w
 FROM
   (VALUES (1,
@@ -6402,7 +7569,9 @@ WINDOW
   1 FOLLOWING);
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   ORDER BY t1.unique1)
 FROM
@@ -6415,7 +7584,9 @@ FROM
 LIMIT 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER ()
 FROM
   tenk1
@@ -6430,7 +7601,9 @@ WHERE
 LIMIT 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   ORDER BY t1.unique1
   ROWS BETWEEN
@@ -6447,7 +7620,9 @@ FROM
 LIMIT 1;
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
   OVER (
   ORDER BY t1.unique1
   ROWS BETWEEN
@@ -6464,11 +7639,15 @@ FROM
 LIMIT 1;
 
 SELECT
-  array_agg(i)
+  array_agg(
+  i
+  )
   OVER w
 FROM
-  generate_series(1,
-  5) AS i
+  generate_series(
+  1,
+  5
+  ) AS i
 WINDOW
   w AS (
   ORDER BY i
@@ -6479,7 +7658,8 @@ WINDOW
   AND
   CURRENT ROW);
 
-CREATE FUNCTION pg_temp.f(
+CREATE FUNCTION
+pg_temp.f(
   "group_size" BIGINT
 )
 RETURNS SETOF INT[]

@@ -28,51 +28,65 @@ INSERT INTO case2_tbl VALUES (1, NULL);
 INSERT INTO case2_tbl VALUES (NULL, -6);
 
 SELECT
-  '3' AS "One",
+  '3'
+  AS "One",
   CASE
   WHEN 1 <
   2 THEN 3
-  END AS "Simple WHEN";
+  END
+  AS "Simple WHEN";
 
 SELECT
-  '<NULL>' AS "One",
+  '<NULL>'
+  AS "One",
   CASE
   WHEN 1 >
   2 THEN 3
-  END AS "Simple default";
+  END
+  AS "Simple default";
 
 SELECT
-  '3' AS "One",
+  '3'
+  AS "One",
   CASE
   WHEN 1 <
   2 THEN 3
   ELSE 4
-  END AS "Simple ELSE";
+  END
+  AS "Simple ELSE";
 
 SELECT
-  '4' AS "One",
+  '4'
+  AS "One",
   CASE
   WHEN 1 >
   2 THEN 3
   ELSE 4
-  END AS "ELSE default";
+  END
+  AS "ELSE default";
 
 SELECT
-  '6' AS "One",
+  '6'
+  AS "One",
   CASE
   WHEN 1 >
   2 THEN 3
   WHEN 4 <
   5 THEN 6
   ELSE 7
-  END AS "Two WHEN with default";
+  END
+  AS "Two WHEN with default";
 
 SELECT
-  '7' AS "None",
+  '7'
+  AS "None",
   CASE
-  WHEN random() <
+  WHEN random(
+
+  ) <
   0 THEN 1
-  END AS "NULL on no matches";
+  END
+  AS "NULL on no matches";
 
 SELECT
   CASE
@@ -105,7 +119,8 @@ SELECT
   CASE
   WHEN i >=
   3 THEN i
-  END AS ">= 3 or Null"
+  END
+  AS ">= 3 or Null"
 FROM
   case_tbl;
 
@@ -114,12 +129,14 @@ SELECT
   WHEN i >=
   3 THEN i + i
   ELSE i
-  END AS "Simplest Math"
+  END
+  AS "Simplest Math"
 FROM
   case_tbl;
 
 SELECT
-  i AS "Value",
+  i
+  AS "Value",
   CASE
   WHEN i <
   0 THEN 'small'
@@ -130,7 +147,8 @@ SELECT
   WHEN i =
   2 THEN 'two'
   ELSE 'big'
-  END AS "Category"
+  END
+  AS "Category"
 FROM
   case_tbl;
 
@@ -153,7 +171,8 @@ SELECT
   i =
   2 THEN 'two'
   ELSE 'big'
-  END AS "Category"
+  END
+  AS "Category"
 FROM
   case_tbl;
 
@@ -185,8 +204,10 @@ WHERE
   2;
 
 SELECT
-  NULLIF(a.i, b.i) AS "NULLIF(a.i,b.i)",
-  NULLIF(b.i, 4) AS "NULLIF(b.i,4)"
+  NULLIF(a.i, b.i)
+  AS "NULLIF(a.i,b.i)",
+  NULLIF(b.i, 4)
+  AS "NULLIF(b.i,4)"
 FROM
   case_tbl
   AS a,
@@ -245,7 +266,8 @@ SELECT * FROM case_tbl;
 
 BEGIN;
 
-CREATE FUNCTION vol(
+CREATE FUNCTION
+vol(
   TEXT
 )
 RETURNS TEXT
@@ -254,9 +276,13 @@ LANGUAGE "plpgsql"
 VOLATILE;
 
 SELECT
-  CASE CASE vol('bar')
+  CASE CASE vol(
+  'bar'
+  )
   WHEN 'foo' THEN 'it was foo!'
-  WHEN vol(NULL) THEN 'null input'
+  WHEN vol(
+  NULL
+  ) THEN 'null input'
   WHEN 'bar' THEN 'it was bar!'
   END
   WHEN 'it was foo!' THEN 'foo recognized'
@@ -266,7 +292,8 @@ SELECT
 
 CREATE DOMAIN foodomain AS TEXT;
 
-CREATE FUNCTION volfoo(
+CREATE FUNCTION
+volfoo(
   TEXT
 )
 RETURNS foodomain
@@ -274,7 +301,8 @@ AS 'begin return $1::foodomain; end'
 LANGUAGE "plpgsql"
 VOLATILE;
 
-CREATE FUNCTION inline_eq(
+CREATE FUNCTION
+inline_eq(
   foodomain,
   foodomain
 )
@@ -287,7 +315,9 @@ LEFTARG = foodomain,
 RIGHTARG = foodomain);
 
 SELECT
-  CASE volfoo('bar')
+  CASE volfoo(
+  'bar'
+  )
   WHEN CAST('foo'
   AS foodomain) THEN 'is foo'
   ELSE 'is not foo'
@@ -299,7 +329,8 @@ BEGIN;
 
 CREATE DOMAIN arrdomain AS INT[];
 
-CREATE FUNCTION make_ad(
+CREATE FUNCTION
+make_ad(
   INT,
   INT
 )
@@ -312,7 +343,8 @@ AS 'declare x arrdomain;
 LANGUAGE "plpgsql"
 VOLATILE;
 
-CREATE FUNCTION ad_eq(
+CREATE FUNCTION
+ad_eq(
   arrdomain,
   arrdomain
 )
@@ -325,8 +357,10 @@ LEFTARG = arrdomain,
 RIGHTARG = arrdomain);
 
 SELECT
-  CASE make_ad(1,
-  2)
+  CASE make_ad(
+  1,
+  2
+  )
   WHEN CAST(ARRAY[2,
   4]
   AS arrdomain) THEN 'wrong'
@@ -339,8 +373,10 @@ SELECT
   END;
 
 SELECT
-  NULLIF(make_ad(1,
-  2), CAST(ARRAY[2,
+  NULLIF(make_ad(
+  1,
+  2
+  ), CAST(ARRAY[2,
   3]
   AS arrdomain));
 
@@ -357,8 +393,10 @@ SELECT
   'b',
   'c',
   'd'] ||
-  CAST(enum_range(CAST(NULL
-  AS casetestenum))
+  CAST(enum_range(
+  CAST(NULL
+  AS casetestenum)
+  )
   AS TEXT[])
   ELSE ARRAY['x',
   'y']

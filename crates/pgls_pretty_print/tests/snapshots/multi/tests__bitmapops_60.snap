@@ -15,8 +15,10 @@ SELECT
   r % 59,
   'foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo'
 FROM
-  generate_series(1,
-  70000) AS r;
+  generate_series(
+  1,
+  70000
+  ) AS r;
 
 CREATE INDEX "i_bmtest_a" ON bmscantest USING btree ( a);
 

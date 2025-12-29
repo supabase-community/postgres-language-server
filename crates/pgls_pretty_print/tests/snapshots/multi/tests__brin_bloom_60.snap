@@ -31,37 +31,53 @@ CREATE TABLE brintest_bloom (
 
 INSERT INTO brintest_bloom
 SELECT
-  CAST(repeat(stringu1,
-  8)
+  CAST(repeat(
+  stringu1,
+  8
+  )
   AS BYTEA),
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST(stringu1
   AS NAME),
   142857 * tenthous,
   thousand,
   twothousand,
-  repeat(stringu1,
-  8),
+  repeat(
+  stringu1,
+  8
+  ),
   CAST(unique1
   AS OID),
   (four + 1.0) / (hundred + 1),
   CAST(odd
   AS DOUBLE PRECISION) / (tenthous + 1),
-  CAST(format('%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred))
+  CAST(format(
+  '%s:00:%s:00:%s:00',
+  to_hex(
+  odd
+  ),
+  to_hex(
+  even
+  ),
+  to_hex(
+  hundred
+  )
+  )
   AS MACADDR),
   CAST('10.2.3.4/24'
   AS INET) + tenthous,
   CAST('10.2.3/24'
   AS CIDR) + tenthous,
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST('1995-08-15'
   AS DATE) + tenthous,
@@ -74,36 +90,60 @@ SELECT
   CAST('1972-10-10 03:00'
   AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
   AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes'
-  AS INTERVAL))),
+  justify_days(
+  justify_hours(
+  tenthous * CAST('12 minutes'
+  AS INTERVAL)
+  )
+  ),
   CAST('01:30:20+02'
   AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
   AS INTERVAL),
   CAST(tenthous
   AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
-  CAST(format('%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'))
+  CAST(format(
+  '%s%s-%s-%s-%s-%s%s%s',
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  )
+  )
   AS UUID),
-  CAST(format('%s/%s%s',
+  CAST(format(
+  '%s/%s%s',
   odd,
   even,
-  tenthous)
+  tenthous
+  )
   AS PG_LSN)
 FROM
   tenk1
@@ -171,10 +211,18 @@ CREATE TABLE brinopers_bloom (
   op TEXT[],
   value TEXT[],
   matches INT[],
-  CHECK (cardinality(op) =
-  cardinality(value)),
-  CHECK (cardinality(op) =
-  cardinality(matches))
+  CHECK (cardinality(
+  op
+  ) =
+  cardinality(
+  value
+  )),
+  CHECK (cardinality(
+  op
+  ) =
+  cardinality(
+  matches
+  ))
 );
 
 INSERT INTO brinopers_bloom
@@ -401,37 +449,53 @@ RESET enable_bitmapscan;
 
 INSERT INTO brintest_bloom
 SELECT
-  CAST(repeat(stringu1,
-  42)
+  CAST(repeat(
+  stringu1,
+  42
+  )
   AS BYTEA),
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST(stringu1
   AS NAME),
   142857 * tenthous,
   thousand,
   twothousand,
-  repeat(stringu1,
-  42),
+  repeat(
+  stringu1,
+  42
+  ),
   CAST(unique1
   AS OID),
   (four + 1.0) / (hundred + 1),
   CAST(odd
   AS DOUBLE PRECISION) / (tenthous + 1),
-  CAST(format('%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred))
+  CAST(format(
+  '%s:00:%s:00:%s:00',
+  to_hex(
+  odd
+  ),
+  to_hex(
+  even
+  ),
+  to_hex(
+  hundred
+  )
+  )
   AS MACADDR),
   CAST('10.2.3.4'
   AS INET) + tenthous,
   CAST('10.2.3/24'
   AS CIDR) + tenthous,
-  CAST(substr(stringu1,
+  CAST(substr(
+  stringu1,
   1,
-  1)
+  1
+  )
   AS CHAR),
   CAST('1995-08-15'
   AS DATE) + tenthous,
@@ -444,36 +508,60 @@ SELECT
   CAST('1972-10-10 03:00'
   AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour'
   AS INTERVAL),
-  justify_days(justify_hours(tenthous * CAST('12 minutes'
-  AS INTERVAL))),
+  justify_days(
+  justify_hours(
+  tenthous * CAST('12 minutes'
+  AS INTERVAL)
+  )
+  ),
   CAST('01:30:20'
   AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds'
   AS INTERVAL),
   CAST(tenthous
   AS NUMERIC(36,
   30)) * fivethous * even / (hundred + 1),
-  CAST(format('%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'),
-  to_char(tenthous,
-  'FM0000'))
+  CAST(format(
+  '%s%s-%s-%s-%s-%s%s%s',
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  ),
+  to_char(
+  tenthous,
+  'FM0000'
+  )
+  )
   AS UUID),
-  CAST(format('%s/%s%s',
+  CAST(format(
+  '%s/%s%s',
   odd,
   even,
-  tenthous)
+  tenthous
+  )
   AS PG_LSN)
 FROM
   tenk1
@@ -533,14 +621,18 @@ SELECT brin_summarize_range('brin_summarize_bloom_idx', 1);
 SELECT brin_summarize_range('brin_summarize_bloom_idx', 2);
 
 SELECT
-  brin_summarize_range('brin_summarize_bloom_idx',
-  4294967295);
+  brin_summarize_range(
+  'brin_summarize_bloom_idx',
+  4294967295
+  );
 
 SELECT brin_summarize_range('brin_summarize_bloom_idx', -1);
 
 SELECT
-  brin_summarize_range('brin_summarize_bloom_idx',
-  4294967296);
+  brin_summarize_range(
+  'brin_summarize_bloom_idx',
+  4294967296
+  );
 
 CREATE TABLE brin_test_bloom ( a INT, b INT );
 
@@ -549,8 +641,10 @@ SELECT
   x / 100,
   x % 100
 FROM
-  generate_series(1,
-  10000) AS x (x);
+  generate_series(
+  1,
+  10000
+  ) AS x (x);
 
 CREATE INDEX "brin_test_bloom_a_idx" ON brin_test_bloom USING brin
 (

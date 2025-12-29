@@ -30,8 +30,10 @@ SELECT pg_input_is_valid('10000000000000000000', 'int8');
 SELECT
   *
 FROM
-  pg_input_error_info('10000000000000000000',
-  'int8');
+  pg_input_error_info(
+  '10000000000000000000',
+  'int8'
+  );
 
 SELECT * FROM int8_tbl WHERE q2 = 4567890123456789;
 
@@ -104,7 +106,8 @@ SELECT q1, q2, q1 * q2 AS multiply FROM int8_tbl;
 SELECT
   q1,
   q2,
-  q1 * q2 AS multiply
+  q1 * q2
+  AS multiply
 FROM
   int8_tbl
 WHERE
@@ -118,8 +121,10 @@ WHERE
 SELECT
   q1,
   q2,
-  q1 / q2 AS divide,
-  q1 % q2 AS mod
+  q1 / q2
+  AS divide,
+  q1 % q2
+  AS mod
 FROM
   int8_tbl;
 
@@ -137,49 +142,65 @@ SELECT q1 * 2 AS "twice int4" FROM int8_tbl;
 
 SELECT
   q1 + CAST(42
-  AS INT) AS "8plus4",
+  AS INT)
+  AS "8plus4",
   q1 - CAST(42
-  AS INT) AS "8minus4",
+  AS INT)
+  AS "8minus4",
   q1 * CAST(42
-  AS INT) AS "8mul4",
+  AS INT)
+  AS "8mul4",
   q1 / CAST(42
-  AS INT) AS "8div4"
+  AS INT)
+  AS "8div4"
 FROM
   int8_tbl;
 
 SELECT
   CAST(246
-  AS INT) + q1 AS "4plus8",
+  AS INT) + q1
+  AS "4plus8",
   CAST(246
-  AS INT) - q1 AS "4minus8",
+  AS INT) - q1
+  AS "4minus8",
   CAST(246
-  AS INT) * q1 AS "4mul8",
+  AS INT) * q1
+  AS "4mul8",
   CAST(246
-  AS INT) / q1 AS "4div8"
+  AS INT) / q1
+  AS "4div8"
 FROM
   int8_tbl;
 
 SELECT
   q1 + CAST(42
-  AS SMALLINT) AS "8plus2",
+  AS SMALLINT)
+  AS "8plus2",
   q1 - CAST(42
-  AS SMALLINT) AS "8minus2",
+  AS SMALLINT)
+  AS "8minus2",
   q1 * CAST(42
-  AS SMALLINT) AS "8mul2",
+  AS SMALLINT)
+  AS "8mul2",
   q1 / CAST(42
-  AS SMALLINT) AS "8div2"
+  AS SMALLINT)
+  AS "8div2"
 FROM
   int8_tbl;
 
 SELECT
   CAST(246
-  AS SMALLINT) + q1 AS "2plus8",
+  AS SMALLINT) + q1
+  AS "2plus8",
   CAST(246
-  AS SMALLINT) - q1 AS "2minus8",
+  AS SMALLINT) - q1
+  AS "2minus8",
   CAST(246
-  AS SMALLINT) * q1 AS "2mul8",
+  AS SMALLINT) * q1
+  AS "2mul8",
   CAST(246
-  AS SMALLINT) / q1 AS "2div8"
+  AS SMALLINT) / q1
+  AS "2div8"
 FROM
   int8_tbl;
 
@@ -190,34 +211,50 @@ SELECT MIN(q1), MIN(q2) FROM int8_tbl;
 SELECT MAX(q1), MAX(q2) FROM int8_tbl;
 
 SELECT
-  to_char(q1,
-  '9G999G999G999G999G999'),
-  to_char(q2,
-  '9,999,999,999,999,999')
+  to_char(
+  q1,
+  '9G999G999G999G999G999'
+  ),
+  to_char(
+  q2,
+  '9,999,999,999,999,999'
+  )
 FROM
   int8_tbl;
 
 SELECT
-  to_char(q1,
-  '9G999G999G999G999G999D999G999'),
-  to_char(q2,
-  '9,999,999,999,999,999.999,999')
+  to_char(
+  q1,
+  '9G999G999G999G999G999D999G999'
+  ),
+  to_char(
+  q2,
+  '9,999,999,999,999,999.999,999'
+  )
 FROM
   int8_tbl;
 
 SELECT
-  to_char(q1 * -1,
-  '9999999999999999PR'),
-  to_char(q2 * -1,
-  '9999999999999999.999PR')
+  to_char(
+  q1 * -1,
+  '9999999999999999PR'
+  ),
+  to_char(
+  q2 * -1,
+  '9999999999999999.999PR'
+  )
 FROM
   int8_tbl;
 
 SELECT
-  to_char(q1 * -1,
-  '9999999999999999S'),
-  to_char(q2 * -1,
-  'S9999999999999999')
+  to_char(
+  q1 * -1,
+  '9999999999999999S'
+  ),
+  to_char(
+  q2 * -1,
+  'S9999999999999999'
+  )
 FROM
   int8_tbl;
 
@@ -244,14 +281,18 @@ SELECT to_char(q2, 'L9999999999999999.000') FROM int8_tbl;
 SELECT to_char(q2, 'FM9999999999999999.999') FROM int8_tbl;
 
 SELECT
-  to_char(q2,
-  'S 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9')
+  to_char(
+  q2,
+  'S 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9'
+  )
 FROM
   int8_tbl;
 
 SELECT
-  to_char(q2,
-  '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999')
+  to_char(
+  q2,
+  '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999'
+  )
 FROM
   int8_tbl;
 
@@ -435,10 +476,14 @@ WHERE
 SELECT
   q1,
   q2,
-  q1 & q2 AS "and",
-  q1 | q2 AS "or",
-  q1 # q2 AS xor,
-  ~q1 AS "not"
+  q1 & q2
+  AS "and",
+  q1 | q2
+  AS "or",
+  q1 # q2
+  AS xor,
+  ~q1
+  AS "not"
 FROM
   int8_tbl;
 
@@ -447,28 +492,34 @@ SELECT q1, q1 << 2 AS shl, q1 >> 3 AS shr FROM int8_tbl;
 SELECT
   *
 FROM
-  generate_series(CAST('+4567890123456789'
+  generate_series(
+  CAST('+4567890123456789'
   AS BIGINT),
   CAST('+4567890123456799'
-  AS BIGINT));
+  AS BIGINT)
+  );
 
 SELECT
   *
 FROM
-  generate_series(CAST('+4567890123456789'
+  generate_series(
+  CAST('+4567890123456789'
   AS BIGINT),
   CAST('+4567890123456799'
   AS BIGINT),
-  0);
+  0
+  );
 
 SELECT
   *
 FROM
-  generate_series(CAST('+4567890123456789'
+  generate_series(
+  CAST('+4567890123456789'
   AS BIGINT),
   CAST('+4567890123456799'
   AS BIGINT),
-  2);
+  2
+  );
 
 SELECT CAST(-CAST(1 AS BIGINT) << 63 AS TEXT);
 
@@ -522,7 +573,8 @@ SELECT
 SELECT
   x,
   CAST(x
-  AS BIGINT) AS int8_value
+  AS BIGINT)
+  AS int8_value
 FROM
   (VALUES (-CAST(2.5
   AS DOUBLE PRECISION)),
@@ -542,7 +594,8 @@ FROM
 SELECT
   x,
   CAST(x
-  AS BIGINT) AS int8_value
+  AS BIGINT)
+  AS int8_value
 FROM
   (VALUES (-CAST(2.5
   AS NUMERIC)),
@@ -562,14 +615,22 @@ FROM
 SELECT
   a,
   b,
-  gcd(a,
-  b),
-  gcd(a,
-  -b),
-  gcd(b,
-  a),
-  gcd(-b,
-  a)
+  gcd(
+  a,
+  b
+  ),
+  gcd(
+  a,
+  -b
+  ),
+  gcd(
+  b,
+  a
+  ),
+  gcd(
+  -b,
+  a
+  )
 FROM
   (VALUES (CAST(0
   AS BIGINT),
@@ -602,28 +663,40 @@ FROM
   b);
 
 SELECT
-  gcd(CAST(-9223372036854775808
+  gcd(
+  CAST(-9223372036854775808
   AS BIGINT),
   CAST(0
-  AS BIGINT));
+  AS BIGINT)
+  );
 
 SELECT
-  gcd(CAST(-9223372036854775808
+  gcd(
+  CAST(-9223372036854775808
   AS BIGINT),
   CAST(-9223372036854775808
-  AS BIGINT));
+  AS BIGINT)
+  );
 
 SELECT
   a,
   b,
-  lcm(a,
-  b),
-  lcm(a,
-  -b),
-  lcm(b,
-  a),
-  lcm(-b,
-  a)
+  lcm(
+  a,
+  b
+  ),
+  lcm(
+  a,
+  -b
+  ),
+  lcm(
+  b,
+  a
+  ),
+  lcm(
+  -b,
+  a
+  )
 FROM
   (VALUES (CAST(0
   AS BIGINT),
@@ -652,16 +725,20 @@ FROM
   b);
 
 SELECT
-  lcm(CAST(-9223372036854775808
+  lcm(
+  CAST(-9223372036854775808
   AS BIGINT),
   CAST(1
-  AS BIGINT));
+  AS BIGINT)
+  );
 
 SELECT
-  lcm(CAST(9223372036854775807
+  lcm(
+  CAST(9223372036854775807
   AS BIGINT),
   CAST(9223372036854775806
-  AS BIGINT));
+  AS BIGINT)
+  );
 
 SELECT CAST('0b100101' AS BIGINT);
 

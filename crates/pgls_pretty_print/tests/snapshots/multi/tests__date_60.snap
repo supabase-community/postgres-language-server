@@ -344,76 +344,127 @@ RESET datestyle;
 
 SELECT
   f1 - CAST('2000-01-01'
-  AS DATE) AS "Days From 2K"
+  AS DATE)
+  AS "Days From 2K"
 FROM
   date_tbl;
 
 SELECT
   f1 - CAST('epoch'
-  AS DATE) AS "Days From Epoch"
+  AS DATE)
+  AS "Days From Epoch"
 FROM
   date_tbl;
 
 SELECT
   CAST('yesterday'
   AS DATE) - CAST('today'
-  AS DATE) AS "One day";
+  AS DATE)
+  AS "One day";
 
 SELECT
   CAST('today'
   AS DATE) - CAST('tomorrow'
-  AS DATE) AS "One day";
+  AS DATE)
+  AS "One day";
 
 SELECT
   CAST('yesterday'
   AS DATE) - CAST('tomorrow'
-  AS DATE) AS "Two days";
+  AS DATE)
+  AS "Two days";
 
 SELECT
   CAST('tomorrow'
   AS DATE) - CAST('today'
-  AS DATE) AS "One day";
+  AS DATE)
+  AS "One day";
 
 SELECT
   CAST('today'
   AS DATE) - CAST('yesterday'
-  AS DATE) AS "One day";
+  AS DATE)
+  AS "One day";
 
 SELECT
   CAST('tomorrow'
   AS DATE) - CAST('yesterday'
-  AS DATE) AS "Two days";
+  AS DATE)
+  AS "Two days";
 
 SELECT
-  f1 AS date,
-  date_part('year',
-  f1) AS year,
-  date_part('month',
-  f1) AS month,
-  date_part('day',
-  f1) AS day,
-  date_part('quarter',
-  f1) AS quarter,
-  date_part('decade',
-  f1) AS decade,
-  date_part('century',
-  f1) AS century,
-  date_part('millennium',
-  f1) AS millennium,
-  date_part('isoyear',
-  f1) AS isoyear,
-  date_part('week',
-  f1) AS week,
-  date_part('dow',
-  f1) AS dow,
-  date_part('isodow',
-  f1) AS isodow,
-  date_part('doy',
-  f1) AS doy,
-  date_part('julian',
-  f1) AS julian,
-  date_part('epoch',
-  f1) AS epoch
+  f1
+  AS date,
+  date_part(
+  'year',
+  f1
+  )
+  AS year,
+  date_part(
+  'month',
+  f1
+  )
+  AS month,
+  date_part(
+  'day',
+  f1
+  )
+  AS day,
+  date_part(
+  'quarter',
+  f1
+  )
+  AS quarter,
+  date_part(
+  'decade',
+  f1
+  )
+  AS decade,
+  date_part(
+  'century',
+  f1
+  )
+  AS century,
+  date_part(
+  'millennium',
+  f1
+  )
+  AS millennium,
+  date_part(
+  'isoyear',
+  f1
+  )
+  AS isoyear,
+  date_part(
+  'week',
+  f1
+  )
+  AS week,
+  date_part(
+  'dow',
+  f1
+  )
+  AS dow,
+  date_part(
+  'isodow',
+  f1
+  )
+  AS isodow,
+  date_part(
+  'doy',
+  f1
+  )
+  AS doy,
+  date_part(
+  'julian',
+  f1
+  )
+  AS julian,
+  date_part(
+  'epoch',
+  f1
+  )
+  AS epoch
 FROM
   date_tbl;
 
@@ -552,16 +603,20 @@ SELECT EXTRACT('epoch' FROM CAST('2020-08-11' AS DATE));
 SELECT EXTRACT('julian' FROM CAST('2020-08-11' AS DATE));
 
 SELECT
-  date_trunc('MILLENNIUM',
+  date_trunc(
+  'MILLENNIUM',
   CAST('1970-03-20 04:30:00.00000'
-  AS TIMESTAMP));
+  AS TIMESTAMP)
+  );
 
 SELECT date_trunc('MILLENNIUM', CAST('1970-03-20' AS DATE));
 
 SELECT
-  date_trunc('CENTURY',
+  date_trunc(
+  'CENTURY',
   CAST('1970-03-20 04:30:00.00000'
-  AS TIMESTAMP));
+  AS TIMESTAMP)
+  );
 
 SELECT date_trunc('CENTURY', CAST('1970-03-20' AS DATE));
 
@@ -583,27 +638,36 @@ SELECT
   CAST('infinity'
   AS DATE) >
   CAST('today'
-  AS DATE) AS t;
+  AS DATE)
+  AS t;
 
 SELECT
   CAST('-infinity'
   AS DATE) <
   CAST('today'
-  AS DATE) AS t;
+  AS DATE)
+  AS t;
 
 SELECT
-  isfinite(CAST('infinity'
-  AS DATE)),
-  isfinite(CAST('-infinity'
-  AS DATE)),
-  isfinite(CAST('today'
-  AS DATE));
+  isfinite(
+  CAST('infinity'
+  AS DATE)
+  ),
+  isfinite(
+  CAST('-infinity'
+  AS DATE)
+  ),
+  isfinite(
+  CAST('today'
+  AS DATE)
+  );
 
 SELECT
   CAST('infinity'
   AS DATE) =
   CAST('+infinity'
-  AS DATE) AS t;
+  AS DATE)
+  AS t;
 
 SELECT EXTRACT('day' FROM CAST('infinity' AS DATE));
 

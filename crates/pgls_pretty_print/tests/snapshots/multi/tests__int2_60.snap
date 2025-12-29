@@ -160,7 +160,8 @@ WHERE
 SELECT
   i.f1,
   i.f1 * CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -168,18 +169,22 @@ FROM
 SELECT
   i.f1,
   i.f1 * CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i
 WHERE
-  abs(f1) <
+  abs(
+  f1
+  ) <
   16384;
 
 SELECT
   i.f1,
   i.f1 * CAST('2'
-  AS INT) AS x
+  AS INT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -187,7 +192,8 @@ FROM
 SELECT
   i.f1,
   i.f1 + CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -195,7 +201,8 @@ FROM
 SELECT
   i.f1,
   i.f1 + CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i
@@ -206,7 +213,8 @@ WHERE
 SELECT
   i.f1,
   i.f1 + CAST('2'
-  AS INT) AS x
+  AS INT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -214,7 +222,8 @@ FROM
 SELECT
   i.f1,
   i.f1 - CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -222,7 +231,8 @@ FROM
 SELECT
   i.f1,
   i.f1 - CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i
@@ -233,7 +243,8 @@ WHERE
 SELECT
   i.f1,
   i.f1 - CAST('2'
-  AS INT) AS x
+  AS INT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -241,7 +252,8 @@ FROM
 SELECT
   i.f1,
   i.f1 / CAST('2'
-  AS SMALLINT) AS x
+  AS SMALLINT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -249,7 +261,8 @@ FROM
 SELECT
   i.f1,
   i.f1 / CAST('2'
-  AS INT) AS x
+  AS INT)
+  AS x
 FROM
   int2_tbl
   AS i;
@@ -271,7 +284,8 @@ SELECT CAST(-32768 AS SMALLINT) % CAST(-1 AS SMALLINT);
 SELECT
   x,
   CAST(x
-  AS SMALLINT) AS int2_value
+  AS SMALLINT)
+  AS int2_value
 FROM
   (VALUES (-CAST(2.5
   AS DOUBLE PRECISION)),
@@ -291,7 +305,8 @@ FROM
 SELECT
   x,
   CAST(x
-  AS SMALLINT) AS int2_value
+  AS SMALLINT)
+  AS int2_value
 FROM
   (VALUES (-CAST(2.5
   AS NUMERIC)),

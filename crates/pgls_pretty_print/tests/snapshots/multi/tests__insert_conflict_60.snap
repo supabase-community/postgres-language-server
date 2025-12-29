@@ -36,7 +36,9 @@ CREATE UNIQUE
 INDEX "both_index_expr_key" ON insertconflicttest USING btree
 (
   key,
-  (lower(fruit)) COLLATE "C" text_pattern_ops
+  (lower(
+  fruit
+  )) COLLATE "C" text_pattern_ops
 );
 
 INSERT INTO insertconflicttest
@@ -66,17 +68,25 @@ key) DO NOTHING;
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT ((lower(fruit)),
+ON CONFLICT ((lower(
+fruit
+)),
 key,
-(lower(fruit)),
+(lower(
+fruit
+)),
 key) DO NOTHING;
 
 INSERT INTO insertconflictview
 VALUES (0,
 'Crowberry')
-ON CONFLICT ((lower(fruit)),
+ON CONFLICT ((lower(
+fruit
+)),
 key,
-(lower(fruit)),
+(lower(
+fruit
+)),
 key) DO NOTHING;
 
 INSERT INTO insertconflicttest
@@ -117,7 +127,9 @@ key) DO NOTHING;
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT ((lower(fruit)) COLLATE "C",
+ON CONFLICT ((lower(
+fruit
+)) COLLATE "C",
 key,
 key) DO NOTHING;
 
@@ -132,7 +144,9 @@ key) DO NOTHING;
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT ((lower(fruit)) COLLATE "C" text_pattern_ops,
+ON CONFLICT ((lower(
+fruit
+)) COLLATE "C" text_pattern_ops,
 key,
 key) DO NOTHING;
 
@@ -147,21 +161,33 @@ DROP INDEX "both_index_expr_key";
 CREATE UNIQUE
 INDEX "cross_match" ON insertconflicttest USING btree
 (
-  (lower(fruit)) COLLATE "C",
-  (upper(fruit)) text_pattern_ops
+  (lower(
+  fruit
+  )) COLLATE "C",
+  (upper(
+  fruit
+  )) text_pattern_ops
 );
 
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT ((lower(fruit)) text_pattern_ops,
-(upper(fruit)) COLLATE "C") DO NOTHING;
+ON CONFLICT ((lower(
+fruit
+)) text_pattern_ops,
+(upper(
+fruit
+)) COLLATE "C") DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0,
 'Crowberry')
-ON CONFLICT ((lower(fruit)) COLLATE "C",
-(upper(fruit)) text_pattern_ops) DO NOTHING;
+ON CONFLICT ((lower(
+fruit
+)) COLLATE "C",
+(upper(
+fruit
+)) text_pattern_ops) DO NOTHING;
 
 DROP INDEX "cross_match";
 
@@ -291,7 +317,9 @@ SET fruit = excluded.fruit;
 INSERT INTO insertconflicttest
 VALUES (6,
 'Passionfruit')
-ON CONFLICT ((lower(fruit))) DO
+ON CONFLICT ((lower(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -372,14 +400,18 @@ INSERT INTO insertconflicttest
 VALUES (11,
 'Cherry')
 ON CONFLICT (key,
-(lower(fruit))) DO
+(lower(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (12,
 'Date')
-ON CONFLICT ((lower(fruit)),
+ON CONFLICT ((lower(
+fruit
+)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -399,7 +431,9 @@ CREATE UNIQUE
 INDEX "expr_part_comp_key_index" ON insertconflicttest USING btree
 (
   key,
-  (lower(fruit))
+  (lower(
+  fruit
+  ))
 ) WHERE
   key <
   5;
@@ -440,14 +474,18 @@ INSERT INTO insertconflicttest
 VALUES (17,
 'Mulberry')
 ON CONFLICT (key,
-(lower(fruit))) DO
+(lower(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (18,
 'Pineapple')
-ON CONFLICT ((lower(fruit)),
+ON CONFLICT ((lower(
+fruit
+)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -459,28 +497,38 @@ DROP INDEX "expr_part_comp_key_index";
 CREATE UNIQUE
 INDEX "expr_key_index" ON insertconflicttest USING btree
 (
-  (lower(fruit))
+  (lower(
+  fruit
+  ))
 );
 
 INSERT INTO insertconflicttest
 VALUES (20,
 'Quince')
-ON CONFLICT ((lower(fruit))) DO
+ON CONFLICT ((lower(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (21,
 'Pomegranate')
-ON CONFLICT ((lower(fruit)),
-(lower(fruit))) DO
+ON CONFLICT ((lower(
+fruit
+)),
+(lower(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (22,
 'Apricot')
-ON CONFLICT ((upper(fruit))) DO
+ON CONFLICT ((upper(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -497,29 +545,39 @@ CREATE UNIQUE
 INDEX "expr_comp_key_index" ON insertconflicttest USING btree
 (
   key,
-  (lower(fruit))
+  (lower(
+  fruit
+  ))
 );
 
 CREATE UNIQUE
 INDEX "tricky_expr_comp_key_index" ON insertconflicttest USING btree
 (
   key,
-  (lower(fruit)),
-  (upper(fruit))
+  (lower(
+  fruit
+  )),
+  (upper(
+  fruit
+  ))
 );
 
 INSERT INTO insertconflicttest
 VALUES (24,
 'Plum')
 ON CONFLICT (key,
-(lower(fruit))) DO
+(lower(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (25,
 'Peach')
-ON CONFLICT ((lower(fruit)),
+ON CONFLICT ((lower(
+fruit
+)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -527,9 +585,13 @@ SET fruit = excluded.fruit;
 INSERT INTO insertconflicttest
 VALUES (26,
 'Fig')
-ON CONFLICT ((lower(fruit)),
+ON CONFLICT ((lower(
+fruit
+)),
 key,
-(lower(fruit)),
+(lower(
+fruit
+)),
 key) DO
 UPDATE
 SET fruit = excluded.fruit;
@@ -538,7 +600,9 @@ INSERT INTO insertconflicttest
 VALUES (27,
 'Prune')
 ON CONFLICT (key,
-(upper(fruit))) DO
+(upper(
+fruit
+))) DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -1473,7 +1537,8 @@ WHERE
 
 SELECT * FROM parted_conflict ORDER BY a;
 
-CREATE OR REPLACE FUNCTION parted_conflict_update_func()
+CREATE OR REPLACE FUNCTION
+parted_conflict_update_func()
 RETURNS trigger
 AS '
 declare

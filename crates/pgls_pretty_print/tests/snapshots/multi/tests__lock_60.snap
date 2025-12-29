@@ -400,7 +400,8 @@ DROP ROLE regress_rol_lock1;
 
 RESET search_path;
 
-CREATE FUNCTION test_atomic_ops()
+CREATE FUNCTION
+test_atomic_ops()
 RETURNS BOOLEAN
 AS 'regresslib'
 LANGUAGE "c";

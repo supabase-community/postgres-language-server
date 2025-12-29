@@ -4,10 +4,14 @@ input_file: crates/pgls_pretty_print/tests/data/multi/collate.linux.utf8_60.sql
 snapshot_kind: text
 ---
 SELECT
-  getdatabaseencoding() <>
+  getdatabaseencoding(
+
+  ) <>
   'UTF8' OR
   (SELECT
-    COUNT(*)
+    COUNT(
+    *
+    )
   FROM
     pg_collation
   WHERE
@@ -16,9 +20,14 @@ SELECT
     'sv_SE',
     'tr_TR') AND
     collencoding =
-    pg_char_to_encoding('UTF8')) <>
+    pg_char_to_encoding(
+    'UTF8'
+    )) <>
   4 OR
-  version() !~ 'linux-gnu' AS skip_test;
+  version(
+
+  ) !~ 'linux-gnu'
+  AS skip_test;
 
 SET client_encoding TO utf8;
 
@@ -133,11 +142,13 @@ SELECT * FROM collate_test3 ORDER BY b;
 
 SELECT
   'bbc' COLLATE "en_US" >
-  'Ã¤bc' COLLATE "en_US" AS "true";
+  'Ã¤bc' COLLATE "en_US"
+  AS "true";
 
 SELECT
   'bbc' COLLATE "sv_SE" >
-  'Ã¤bc' COLLATE "sv_SE" AS "false";
+  'Ã¤bc' COLLATE "sv_SE"
+  AS "false";
 
 CREATE TABLE collate_test10 (
   a INT,
@@ -155,19 +166,35 @@ VALUES (1,
 
 SELECT
   a,
-  lower(x),
-  lower(y),
-  upper(x),
-  upper(y),
-  initcap(x),
-  initcap(y)
+  lower(
+  x
+  ),
+  lower(
+  y
+  ),
+  upper(
+  x
+  ),
+  upper(
+  y
+  ),
+  initcap(
+  x
+  ),
+  initcap(
+  y
+  )
 FROM
   collate_test10;
 
 SELECT
   a,
-  lower(x COLLATE "C"),
-  lower(y COLLATE "C")
+  lower(
+  x COLLATE "C"
+  ),
+  lower(
+  y COLLATE "C"
+  )
 FROM
   collate_test10;
 
@@ -236,15 +263,24 @@ VALUES (1,
 
 SELECT
   b,
-  b ~ '^[[:alpha:]]+$' AS is_alpha,
-  b ~ '^[[:upper:]]+$' AS is_upper,
-  b ~ '^[[:lower:]]+$' AS is_lower,
-  b ~ '^[[:digit:]]+$' AS is_digit,
-  b ~ '^[[:alnum:]]+$' AS is_alnum,
-  b ~ '^[[:graph:]]+$' AS is_graph,
-  b ~ '^[[:print:]]+$' AS is_print,
-  b ~ '^[[:punct:]]+$' AS is_punct,
-  b ~ '^[[:space:]]+$' AS is_space
+  b ~ '^[[:alpha:]]+$'
+  AS is_alpha,
+  b ~ '^[[:upper:]]+$'
+  AS is_upper,
+  b ~ '^[[:lower:]]+$'
+  AS is_lower,
+  b ~ '^[[:digit:]]+$'
+  AS is_digit,
+  b ~ '^[[:alnum:]]+$'
+  AS is_alnum,
+  b ~ '^[[:graph:]]+$'
+  AS is_graph,
+  b ~ '^[[:print:]]+$'
+  AS is_print,
+  b ~ '^[[:punct:]]+$'
+  AS is_punct,
+  b ~ '^[[:space:]]+$'
+  AS is_space
 FROM
   collate_test6;
 
@@ -263,16 +299,20 @@ SET lc_time = tr_TR;
 SELECT to_char(CAST('2010-02-01' AS DATE), 'DD TMMON YYYY');
 
 SELECT
-  to_char(CAST('2010-02-01'
+  to_char(
+  CAST('2010-02-01'
   AS DATE),
-  'DD TMMON YYYY' COLLATE "tr_TR");
+  'DD TMMON YYYY' COLLATE "tr_TR"
+  );
 
 SELECT to_char(CAST('2010-04-01' AS DATE), 'DD TMMON YYYY');
 
 SELECT
-  to_char(CAST('2010-04-01'
+  to_char(
+  CAST('2010-04-01'
   AS DATE),
-  'DD TMMON YYYY' COLLATE "tr_TR");
+  'DD TMMON YYYY' COLLATE "tr_TR"
+  );
 
 SELECT to_date('01 ÅUB 2010', 'DD TMMON YYYY');
 
@@ -300,8 +340,10 @@ ORDER BY b COLLATE "C";
 CREATE VIEW collview3 AS
 SELECT
   a,
-  lower((x ||
-  x) COLLATE "C")
+  lower(
+  (x ||
+  x) COLLATE "C"
+  )
 FROM
   collate_test10;
 
@@ -322,10 +364,14 @@ SELECT a, COALESCE(b, 'foo') FROM collate_test3 ORDER BY 2;
 
 SELECT
   a,
-  lower(COALESCE(x,
-  'foo')),
-  lower(COALESCE(y,
-  'foo'))
+  lower(
+  COALESCE(x,
+  'foo')
+  ),
+  lower(
+  COALESCE(y,
+  'foo')
+  )
 FROM
   collate_test10;
 
@@ -360,10 +406,14 @@ SELECT
   a,
   x,
   y,
-  lower(GREATEST(x,
-  'foo')),
-  lower(GREATEST(y,
-  'foo'))
+  lower(
+  GREATEST(x,
+  'foo')
+  ),
+  lower(
+  GREATEST(y,
+  'foo')
+  )
 FROM
   collate_test10;
 
@@ -375,8 +425,12 @@ SELECT a, NULLIF(b, 'abc') FROM collate_test3 ORDER BY 2;
 
 SELECT
   a,
-  lower(NULLIF(x, 'foo')),
-  lower(NULLIF(y, 'foo'))
+  lower(
+  NULLIF(x, 'foo')
+  ),
+  lower(
+  NULLIF(y, 'foo')
+  )
 FROM
   collate_test10;
 
@@ -446,10 +500,14 @@ ORDER BY 2;
 
 SELECT
   a,
-  lower(CAST(x
-  AS testdomain)),
-  lower(CAST(y
-  AS testdomain))
+  lower(
+  CAST(x
+  AS testdomain)
+  ),
+  lower(
+  CAST(y
+  AS testdomain)
+  )
 FROM
   collate_test10;
 
@@ -606,7 +664,9 @@ SELECT
 FROM
   foo
 WHERE
-  length(x) <
+  length(
+  x
+  ) <
   10)
 SELECT
   *
@@ -619,7 +679,8 @@ SELECT a, CAST(b AS VARCHAR) FROM collate_test2 ORDER BY 2;
 
 SELECT a, CAST(b AS VARCHAR) FROM collate_test3 ORDER BY 2;
 
-CREATE FUNCTION mylt(
+CREATE FUNCTION
+mylt(
   TEXT,
   TEXT
 )
@@ -627,7 +688,8 @@ RETURNS BOOLEAN
 LANGUAGE "sql"
 AS ' select $1 < $2 ';
 
-CREATE FUNCTION mylt_noninline(
+CREATE FUNCTION
+mylt_noninline(
   TEXT,
   TEXT
 )
@@ -635,7 +697,8 @@ RETURNS BOOLEAN
 LANGUAGE "sql"
 AS ' select $1 < $2 limit 1 ';
 
-CREATE FUNCTION mylt_plpgsql(
+CREATE FUNCTION
+mylt_plpgsql(
   TEXT,
   TEXT
 )
@@ -644,16 +707,25 @@ LANGUAGE "plpgsql"
 AS ' begin return $1 < $2; end ';
 
 SELECT
-  a.b AS a,
-  b.b AS b,
+  a.b
+  AS a,
+  b.b
+  AS b,
   a.b <
-  b.b AS lt,
-  mylt(a.b,
-  b.b),
-  mylt_noninline(a.b,
-  b.b),
-  mylt_plpgsql(a.b,
-  b.b)
+  b.b
+  AS lt,
+  mylt(
+  a.b,
+  b.b
+  ),
+  mylt_noninline(
+  a.b,
+  b.b
+  ),
+  mylt_plpgsql(
+  a.b,
+  b.b
+  )
 FROM
   collate_test1
   AS a,
@@ -663,16 +735,25 @@ ORDER BY a.b,
   b.b;
 
 SELECT
-  a.b AS a,
-  b.b AS b,
+  a.b
+  AS a,
+  b.b
+  AS b,
   a.b <
-  b.b COLLATE "C" AS lt,
-  mylt(a.b,
-  b.b COLLATE "C"),
-  mylt_noninline(a.b,
-  b.b COLLATE "C"),
-  mylt_plpgsql(a.b,
-  b.b COLLATE "C")
+  b.b COLLATE "C"
+  AS lt,
+  mylt(
+  a.b,
+  b.b COLLATE "C"
+  ),
+  mylt_noninline(
+  a.b,
+  b.b COLLATE "C"
+  ),
+  mylt_plpgsql(
+  a.b,
+  b.b COLLATE "C"
+  )
 FROM
   collate_test1
   AS a,
@@ -681,7 +762,8 @@ FROM
 ORDER BY a.b,
   b.b;
 
-CREATE FUNCTION mylt2(
+CREATE FUNCTION
+mylt2(
   "x" TEXT,
   "y" TEXT
 )
@@ -697,12 +779,19 @@ end
 ';
 
 SELECT
-  mylt2('a',
-  'B' COLLATE "en_US") AS t,
-  mylt2('a',
-  'B' COLLATE "C") AS f;
+  mylt2(
+  'a',
+  'B' COLLATE "en_US"
+  )
+  AS t,
+  mylt2(
+  'a',
+  'B' COLLATE "C"
+  )
+  AS f;
 
-CREATE OR REPLACE FUNCTION mylt2(
+CREATE OR REPLACE FUNCTION
+mylt2(
   "x" TEXT,
   "y" TEXT
 )
@@ -726,31 +815,44 @@ SELECT mylt2('a', 'B' COLLATE "POSIX") AS f;
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test1))
+    collate_test1)
+  )
 ORDER BY 1;
 
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test2))
+    collate_test2)
+  )
 ORDER BY 1;
 
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test3))
+    collate_test3)
+  )
 ORDER BY 1;
 
-CREATE FUNCTION dup(
+CREATE FUNCTION
+dup(
   ANYELEMENT
 )
 RETURNS ANYELEMENT
@@ -796,7 +898,9 @@ CREATE INDEX "collate_test1_idx6" ON collate_test1 USING btree
 
 SELECT
   relname,
-  pg_get_indexdef(oid)
+  pg_get_indexdef(
+  oid
+  )
 FROM
   pg_class
 WHERE
@@ -862,8 +966,10 @@ COMMENT ON COLLATION test0 IS 'US English';
 SELECT
   collname,
   nspname,
-  obj_description(pg_collation.oid,
-  'pg_collation')
+  obj_description(
+  pg_collation.oid,
+  'pg_collation'
+  )
 FROM
   pg_collation
   INNER JOIN pg_namespace
@@ -911,7 +1017,8 @@ CREATE TYPE collate_dep_test2 AS (
 CREATE VIEW collate_dep_test3 AS
 SELECT
   CAST('foo'
-  AS TEXT) COLLATE "test0" AS foo;
+  AS TEXT) COLLATE "test0"
+  AS foo;
 
 CREATE TABLE collate_dep_test4t ( a INT, b TEXT );
 

@@ -114,8 +114,10 @@ SELECT
   1,
   'One'
 FROM
-  generate_series(1,
-  1000) AS x;
+  generate_series(
+  1,
+  1000
+  ) AS x;
 
 INSERT INTO parted_copytest
 SELECT
@@ -123,8 +125,10 @@ SELECT
   2,
   'Two'
 FROM
-  generate_series(1001,
-  1010) AS x;
+  generate_series(
+  1001,
+  1010
+  ) AS x;
 
 INSERT INTO parted_copytest
 SELECT
@@ -132,8 +136,10 @@ SELECT
   1,
   'One'
 FROM
-  generate_series(1011,
-  1020) AS x;
+  generate_series(
+  1011,
+  1020
+  ) AS x;
 
 COPY (SELECT
   *
@@ -156,8 +162,12 @@ ROLLBACK;
 SELECT
   CAST(tableoid
   AS REGCLASS),
-  COUNT(*),
-  SUM(a)
+  COUNT(
+  *
+  ),
+  SUM(
+  a
+  )
 FROM
   parted_copytest
 GROUP BY tableoid
@@ -167,7 +177,8 @@ ORDER BY CAST(CAST(tableoid
 
 TRUNCATE parted_copytest;
 
-CREATE FUNCTION part_ins_func()
+CREATE FUNCTION
+part_ins_func()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -188,8 +199,12 @@ COPY parted_copytest FROM 'filename';
 SELECT
   CAST(tableoid
   AS REGCLASS),
-  COUNT(*),
-  SUM(a)
+  COUNT(
+  *
+  ),
+  SUM(
+  a
+  )
 FROM
   parted_copytest
 GROUP BY tableoid
@@ -219,7 +234,8 @@ CREATE TABLE tab_progress_reporting (
   manager NAME
 );
 
-CREATE FUNCTION notice_after_tab_progress_reporting()
+CREATE FUNCTION
+notice_after_tab_progress_reporting()
 RETURNS trigger
 AS '
 declare report record;
@@ -314,7 +330,9 @@ CREATE TABLE parted_si (
   NOT NULL,
   rand DOUBLE PRECISION
   NOT NULL
-  DEFAULT random()
+  DEFAULT random(
+
+  )
 )
 PARTITION BY LIST((id % 2));
 
@@ -332,8 +350,11 @@ SELECT
   CAST(tableoid
   AS REGCLASS),
   id % 2 =
-  0 AS is_even,
-  COUNT(*)
+  0
+  AS is_even,
+  COUNT(
+  *
+  )
 FROM
   parted_si
 GROUP BY 1,
@@ -357,7 +378,8 @@ COPY copytest_foreign_table FROM STDOUT WITH (FREEZE);
 
 CREATE MATERIALIZED VIEW copytest_mv AS
   SELECT
-    1 AS id WITH NO DATA;
+    1
+    AS id WITH NO DATA;
 
 COPY copytest_mv (id) TO STDOUT;
 

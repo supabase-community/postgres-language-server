@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/indirect_toast_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION make_tuple_indirect(
+CREATE FUNCTION
+make_tuple_indirect(
   RECORD
 )
 RETURNS RECORD
@@ -25,39 +26,53 @@ INSERT INTO indtoasttest (descr,
 f1,
 f2)
 VALUES ('two-compressed',
-repeat('1234567890',
-1000),
-repeat('1234567890',
-1000));
+repeat(
+'1234567890',
+1000
+),
+repeat(
+'1234567890',
+1000
+));
 
 INSERT INTO indtoasttest (descr,
 f1,
 f2)
 VALUES ('two-toasted',
-repeat('1234567890',
-30000),
-repeat('1234567890',
-50000));
+repeat(
+'1234567890',
+30000
+),
+repeat(
+'1234567890',
+50000
+));
 
 INSERT INTO indtoasttest (descr,
 f1,
 f2)
 VALUES ('one-compressed,one-null',
 NULL,
-repeat('1234567890',
-1000));
+repeat(
+'1234567890',
+1000
+));
 
 INSERT INTO indtoasttest (descr,
 f1,
 f2)
 VALUES ('one-toasted,one-null',
 NULL,
-repeat('1234567890',
-50000));
+repeat(
+'1234567890',
+50000
+));
 
 SELECT
   descr,
-  SUBSTRING(CAST(make_tuple_indirect(indtoasttest)
+  SUBSTRING(CAST(make_tuple_indirect(
+  indtoasttest
+  )
   AS TEXT) FROM 1 FOR 200)
 FROM
   indtoasttest;
@@ -102,7 +117,8 @@ SELECT
 FROM
   indtoasttest;
 
-CREATE FUNCTION update_using_indirect()
+CREATE FUNCTION
+update_using_indirect()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -148,8 +164,10 @@ INSERT INTO indtoasttest (descr,
 f1,
 f2)
 VALUES ('one-toasted,one-null, via indirect',
-repeat('1234567890',
-30000),
+repeat(
+'1234567890',
+30000
+),
 NULL);
 
 SELECT

@@ -11,7 +11,9 @@ CREATE TYPE rainbow AS ENUM ('red',
 'purple');
 
 SELECT
-  COUNT(*)
+  COUNT(
+  *
+  )
 FROM
   pg_enum
 WHERE
@@ -32,9 +34,13 @@ SELECT * FROM pg_input_error_info('mauve', 'rainbow');
 SELECT
   *
 FROM
-  pg_input_error_info(repeat('too_long',
-  32),
-  'rainbow');
+  pg_input_error_info(
+  repeat(
+  'too_long',
+  32
+  ),
+  'rainbow'
+  );
 
 CREATE TYPE dup_enum AS ENUM ('foo', 'bar', 'foo');
 
@@ -177,7 +183,8 @@ SELECT
   WHEN enumsortorder >
   20 THEN NULL
   ELSE enumsortorder
-  END AS so
+  END
+  AS so
 FROM
   pg_enum
 WHERE
@@ -297,10 +304,12 @@ SELECT enum_last(CAST('green' AS rainbow));
 SELECT enum_range(CAST(NULL AS rainbow));
 
 SELECT
-  enum_range(CAST('orange'
+  enum_range(
+  CAST('orange'
   AS rainbow),
   CAST('green'
-  AS rainbow));
+  AS rainbow)
+  );
 
 SELECT enum_range(NULL, CAST('green' AS rainbow));
 
@@ -308,7 +317,8 @@ SELECT enum_range(CAST('orange' AS rainbow), NULL);
 
 SELECT enum_range(CAST(NULL AS rainbow), NULL);
 
-CREATE FUNCTION echo_me(
+CREATE FUNCTION
+echo_me(
   ANYENUM
 )
 RETURNS TEXT
@@ -321,7 +331,8 @@ LANGUAGE "plpgsql";
 
 SELECT echo_me(CAST('red' AS rainbow));
 
-CREATE FUNCTION echo_me(
+CREATE FUNCTION
+echo_me(
   rainbow
 )
 RETURNS TEXT

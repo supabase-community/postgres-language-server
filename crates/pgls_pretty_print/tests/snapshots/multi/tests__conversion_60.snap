@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/conversion_60.sql
 snapshot_kind: text
 ---
-CREATE FUNCTION test_enc_setup()
+CREATE FUNCTION
+test_enc_setup()
 RETURNS VOID
 AS 'regresslib', 'test_enc_setup'
 LANGUAGE "c"
@@ -11,7 +12,8 @@ STRICT;
 
 SELECT FROM test_enc_setup();
 
-CREATE FUNCTION test_enc_conversion(
+CREATE FUNCTION
+test_enc_conversion(
   BYTEA,
   NAME,
   NAME,
@@ -49,7 +51,8 @@ RESET session_authorization;
 
 DROP ROLE regress_conversion_user;
 
-CREATE OR REPLACE FUNCTION test_conv(
+CREATE OR REPLACE FUNCTION
+test_conv(
   IN "input" BYTEA,
   IN "src_encoding" TEXT,
   IN "dst_encoding" TEXT,
@@ -134,37 +137,49 @@ VALUES ('\x66006f',
 
 SELECT
   description,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   utf8_verification_inputs;
 
 WITH test_bytes AS (SELECT
   inbytes,
   description,
-  (test_conv(inbytes ||
-  CAST(repeat('.',
-  3)
+  (test_conv(
+  inbytes ||
+  CAST(repeat(
+  '.',
+  3
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   utf8_verification_inputs),
 test_padded AS (SELECT
   description,
-  (test_conv(inbytes ||
-  CAST(repeat('.',
-  64)
+  (test_conv(
+  inbytes ||
+  CAST(repeat(
+  '.',
+  64
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   test_bytes)
 SELECT
   description,
-  b.error AS orig_error,
-  p.error AS error_after_padding
+  b.error
+  AS orig_error,
+  p.error
+  AS error_after_padding
 FROM
   test_padded
   AS p
@@ -178,31 +193,45 @@ ORDER BY description;
 WITH test_bytes AS (SELECT
   inbytes,
   description,
-  (test_conv(inbytes ||
-  CAST(repeat('.',
-  3)
+  (test_conv(
+  inbytes ||
+  CAST(repeat(
+  '.',
+  3
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   utf8_verification_inputs),
 test_padded AS (SELECT
   description,
-  (test_conv(CAST(repeat('.',
-  64 - length(inbytes))
+  (test_conv(
+  CAST(repeat(
+  '.',
+  64 - length(
+  inbytes
+  )
+  )
   AS BYTEA) ||
   inbytes ||
-  CAST(repeat('.',
-  64)
+  CAST(repeat(
+  '.',
+  64
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   test_bytes)
 SELECT
   description,
-  b.error AS orig_error,
-  p.error AS error_after_padding
+  b.error
+  AS orig_error,
+  p.error
+  AS error_after_padding
 FROM
   test_padded
   AS p
@@ -216,31 +245,43 @@ ORDER BY description;
 WITH test_bytes AS (SELECT
   inbytes,
   description,
-  (test_conv(inbytes ||
-  CAST(repeat('.',
-  3)
+  (test_conv(
+  inbytes ||
+  CAST(repeat(
+  '.',
+  3
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   utf8_verification_inputs),
 test_padded AS (SELECT
   description,
-  (test_conv(CAST(repeat('.',
-  64)
+  (test_conv(
+  CAST(repeat(
+  '.',
+  64
+  )
   AS BYTEA) ||
   inbytes ||
-  CAST(repeat('.',
-  3)
+  CAST(repeat(
+  '.',
+  3
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   test_bytes)
 SELECT
   description,
-  b.error AS orig_error,
-  p.error AS error_after_padding
+  b.error
+  AS orig_error,
+  p.error
+  AS error_after_padding
 FROM
   test_padded
   AS p
@@ -254,31 +295,45 @@ ORDER BY description;
 WITH test_bytes AS (SELECT
   inbytes,
   description,
-  (test_conv(inbytes ||
-  CAST(repeat('.',
-  3)
+  (test_conv(
+  inbytes ||
+  CAST(repeat(
+  '.',
+  3
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   utf8_verification_inputs),
 test_padded AS (SELECT
   description,
-  (test_conv(CAST(repeat('.',
-  64 - length(inbytes))
+  (test_conv(
+  CAST(repeat(
+  '.',
+  64 - length(
+  inbytes
+  )
+  )
   AS BYTEA) ||
   inbytes ||
-  CAST(repeat('.',
-  3)
+  CAST(repeat(
+  '.',
+  3
+  )
   AS BYTEA),
   'utf8',
-  'utf8')).error
+  'utf8'
+  )).error
 FROM
   test_bytes)
 SELECT
   description,
-  b.error AS orig_error,
-  p.error AS error_after_padding
+  b.error
+  AS orig_error,
+  p.error
+  AS error_after_padding
 FROM
   test_padded
   AS p
@@ -324,63 +379,77 @@ VALUES ('\x666f6f',
 
 SELECT
   description,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   utf8_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'euc_jis_2004')).*
+  'euc_jis_2004'
+  )).*
 FROM
   utf8_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'latin1')).*
+  'latin1'
+  )).*
 FROM
   utf8_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'latin2')).*
+  'latin2'
+  )).*
 FROM
   utf8_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'latin5')).*
+  'latin5'
+  )).*
 FROM
   utf8_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'koi8r')).*
+  'koi8r'
+  )).*
 FROM
   utf8_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'utf8',
-  'gb18030')).*
+  'gb18030'
+  )).*
 FROM
   utf8_inputs;
 
@@ -410,18 +479,22 @@ VALUES ('\x666f6f',
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'euc_jis_2004',
-  'euc_jis_2004')).*
+  'euc_jis_2004'
+  )).*
 FROM
   euc_jis_2004_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'euc_jis_2004',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   euc_jis_2004_inputs;
 
@@ -453,27 +526,33 @@ VALUES ('\x666f6f',
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'shiftjis2004',
-  'shiftjis2004')).*
+  'shiftjis2004'
+  )).*
 FROM
   shiftjis2004_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'shiftjis2004',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   shiftjis2004_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'shiftjis2004',
-  'euc_jis_2004')).*
+  'euc_jis_2004'
+  )).*
 FROM
   shiftjis2004_inputs;
 
@@ -505,20 +584,24 @@ VALUES ('\x666f6f',
 SELECT
   description,
   inbytes,
-  (test_conv(CAST(CAST(inbytes
+  (test_conv(
+  CAST(CAST(inbytes
   AS TEXT)
   AS BYTEA),
   'gb18030',
-  'gb18030')).*
+  'gb18030'
+  )).*
 FROM
   gb18030_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'gb18030',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   gb18030_inputs;
 
@@ -542,36 +625,44 @@ VALUES ('\x666f6f',
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'iso8859-5',
-  'iso8859-5')).*
+  'iso8859-5'
+  )).*
 FROM
   iso8859_5_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'iso8859-5',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   iso8859_5_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'iso8859-5',
-  'koi8r')).*
+  'koi8r'
+  )).*
 FROM
   iso8859_5_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'iso8859_5',
-  'mule_internal')).*
+  'mule_internal'
+  )).*
 FROM
   iso8859_5_inputs;
 
@@ -595,27 +686,33 @@ VALUES ('\x666f6f',
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'big5',
-  'big5')).*
+  'big5'
+  )).*
 FROM
   big5_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'big5',
-  'utf8')).*
+  'utf8'
+  )).*
 FROM
   big5_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'big5',
-  'mule_internal')).*
+  'mule_internal'
+  )).*
 FROM
   big5_inputs;
 
@@ -646,53 +743,65 @@ VALUES ('\x666f6f',
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'mule_internal',
-  'mule_internal')).*
+  'mule_internal'
+  )).*
 FROM
   mic_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'mule_internal',
-  'koi8r')).*
+  'koi8r'
+  )).*
 FROM
   mic_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'mule_internal',
-  'iso8859-5')).*
+  'iso8859-5'
+  )).*
 FROM
   mic_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'mule_internal',
-  'sjis')).*
+  'sjis'
+  )).*
 FROM
   mic_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'mule_internal',
-  'big5')).*
+  'big5'
+  )).*
 FROM
   mic_inputs;
 
 SELECT
   description,
   inbytes,
-  (test_conv(inbytes,
+  (test_conv(
+  inbytes,
   'mule_internal',
-  'euc_jp')).*
+  'euc_jp'
+  )).*
 FROM
   mic_inputs;

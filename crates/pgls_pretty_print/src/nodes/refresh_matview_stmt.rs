@@ -2,7 +2,7 @@ use pgls_query::protobuf::RefreshMatViewStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_refresh_matview_stmt(e: &mut EventEmitter, n: &RefreshMatViewStmt) {
@@ -19,7 +19,7 @@ pub(super) fn emit_refresh_matview_stmt(e: &mut EventEmitter, n: &RefreshMatView
         e.token(TokenKind::CONCURRENTLY_KW);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);
     }

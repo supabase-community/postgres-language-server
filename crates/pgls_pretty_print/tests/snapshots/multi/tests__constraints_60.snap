@@ -30,7 +30,9 @@ CREATE TABLE defaultexpr_tbl (
   i1 INT
   DEFAULT (100 + (200 - 199) * 2),
   i2 INT
-  DEFAULT nextval('default_seq')
+  DEFAULT nextval(
+  'default_seq'
+  )
 );
 
 INSERT INTO defaultexpr_tbl VALUES (-1, -2);

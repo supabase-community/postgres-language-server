@@ -79,7 +79,9 @@ CREATE TABLE gtest_err_2c (
   a INT
   PRIMARY KEY,
   b INT
-  GENERATED ALWAYS AS (num_nulls(gtest_err_2c)) STORED
+  GENERATED ALWAYS AS (num_nulls(
+  gtest_err_2c
+  )) STORED
 );
 
 CREATE TABLE gtest_err_3 (
@@ -93,7 +95,9 @@ CREATE TABLE gtest_err_4 (
   a INT
   PRIMARY KEY,
   b DOUBLE PRECISION
-  GENERATED ALWAYS AS (random()) STORED
+  GENERATED ALWAYS AS (random(
+
+  )) STORED
 );
 
 CREATE TABLE gtest2 (
@@ -134,14 +138,18 @@ CREATE TABLE gtest_err_7a (
   a INT
   PRIMARY KEY,
   b INT
-  GENERATED ALWAYS AS (AVG(a)) STORED
+  GENERATED ALWAYS AS (AVG(
+  a
+  )) STORED
 );
 
 CREATE TABLE gtest_err_7b (
   a INT
   PRIMARY KEY,
   b INT
-  GENERATED ALWAYS AS (ROW_NUMBER()
+  GENERATED ALWAYS AS (ROW_NUMBER(
+
+  )
   OVER (
   ORDER BY a)) STORED
 );
@@ -158,8 +166,10 @@ CREATE TABLE gtest_err_7d (
   a INT
   PRIMARY KEY,
   b INT
-  GENERATED ALWAYS AS (generate_series(1,
-  a)) STORED
+  GENERATED ALWAYS AS (generate_series(
+  1,
+  a
+  )) STORED
 );
 
 INSERT INTO gtest1 VALUES (1);
@@ -246,8 +256,10 @@ INSERT INTO gtestm (a)
 SELECT
   g
 FROM
-  generate_series(1,
-  10) AS g;
+  generate_series(
+  1,
+  10
+  ) AS g;
 
 DROP TABLE "gtestm";
 
@@ -552,7 +564,8 @@ INSERT INTO gtest11 VALUES (1, 10), (2, 20);
 
 GRANT SELECT (a, c) ON TABLE gtest11 TO regress_user11;
 
-CREATE FUNCTION gf1(
+CREATE FUNCTION
+gf1(
   "a" INT
 )
 RETURNS INT
@@ -567,14 +580,17 @@ CREATE TABLE gtest12 (
   PRIMARY KEY,
   b INT,
   c INT
-  GENERATED ALWAYS AS (gf1(b)) STORED
+  GENERATED ALWAYS AS (gf1(
+  b
+  )) STORED
 );
 
 INSERT INTO gtest12 VALUES (1, 10), (2, 20);
 
 GRANT SELECT (a,
 c),
-INSERT ON TABLE gtest12
+INSERT
+ON TABLE gtest12
 TO regress_user11;
 
 SET ROLE TO regress_user11;
@@ -613,10 +629,12 @@ INSERT INTO gtest20 (a) VALUES (10);
 INSERT INTO gtest20 (a) VALUES (30);
 
 ALTER TABLE gtest20
-  ALTER COLUMN b SET EXPRESSION AS (a * 100);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 100);
 
 ALTER TABLE gtest20
-  ALTER COLUMN b SET EXPRESSION AS (a * 3);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 3);
 
 CREATE TABLE gtest20a (
   a INT
@@ -633,13 +651,17 @@ ALTER TABLE gtest20a ADD CHECK (b < 50);
 
 ALTER TABLE gtest20a
   ADD COLUMN c DOUBLE PRECISION
-    DEFAULT random()
+    DEFAULT random(
+
+    )
     CHECK (b <
     50);
 
 ALTER TABLE gtest20a
   ADD COLUMN c DOUBLE PRECISION
-    DEFAULT random()
+    DEFAULT random(
+
+    )
     CHECK (b <
     61);
 
@@ -767,7 +789,8 @@ SELECT * FROM gtest22c WHERE a = 1 AND b > 0;
 SELECT * FROM gtest22c WHERE a = 1 AND b > 0;
 
 ALTER TABLE gtest22c
-  ALTER COLUMN b SET EXPRESSION AS (a * 4);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 4);
 
 ANALYZE gtest22c;
 
@@ -822,10 +845,12 @@ INSERT INTO gtest23b VALUES (1);
 INSERT INTO gtest23b VALUES (5);
 
 ALTER TABLE gtest23b
-  ALTER COLUMN b SET EXPRESSION AS (a * 5);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 5);
 
 ALTER TABLE gtest23b
-  ALTER COLUMN b SET EXPRESSION AS (a * 1);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 1);
 
 DROP TABLE "gtest23b";
 
@@ -871,8 +896,10 @@ CREATE TABLE gtest24r (
   a INT
   PRIMARY KEY,
   b gtestdomain1range
-  GENERATED ALWAYS AS (gtestdomain1range(a,
-  a + 5)) STORED
+  GENERATED ALWAYS AS (gtestdomain1range(
+  a,
+  a + 5
+  )) STORED
 );
 
 INSERT INTO gtest24r (a) VALUES (4);
@@ -1095,10 +1122,12 @@ ORDER BY 1,
   3;
 
 ALTER TABLE ONLY gtest_parent
-  ALTER COLUMN f3 SET EXPRESSION AS (f2 * 4);
+  ALTER COLUMN f3 SET EXPRESSION
+  AS (f2 * 4);
 
 ALTER TABLE gtest_child
-  ALTER COLUMN f3 SET EXPRESSION AS (f2 * 10);
+  ALTER COLUMN f3 SET EXPRESSION
+  AS (f2 * 10);
 
 SELECT
   CAST(tableoid
@@ -1111,7 +1140,8 @@ ORDER BY 1,
   3;
 
 ALTER TABLE gtest_parent
-  ALTER COLUMN f3 SET EXPRESSION AS (f2 * 2);
+  ALTER COLUMN f3 SET EXPRESSION
+  AS (f2 * 2);
 
 SELECT
   CAST(tableoid
@@ -1148,7 +1178,8 @@ INSERT INTO gtest25 VALUES (3), (4);
 ALTER TABLE gtest25
   ADD COLUMN b INT
     GENERATED ALWAYS AS (a * 2) STORED,
-  ALTER COLUMN b SET EXPRESSION AS (a * 3);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 3);
 
 SELECT * FROM gtest25 ORDER BY a;
 
@@ -1220,7 +1251,8 @@ INSERT INTO gtest29 (a) VALUES (3), (4);
 SELECT * FROM gtest29;
 
 ALTER TABLE gtest29
-  ALTER COLUMN a SET EXPRESSION AS (a * 3);
+  ALTER COLUMN a SET EXPRESSION
+  AS (a * 3);
 
 ALTER TABLE gtest29 ALTER COLUMN a DROP EXPRESSION;
 
@@ -1228,7 +1260,8 @@ ALTER TABLE gtest29
   ALTER COLUMN a DROP EXPRESSION IF EXISTS;
 
 ALTER TABLE gtest29
-  ALTER COLUMN b SET EXPRESSION AS (a * 3);
+  ALTER COLUMN b SET EXPRESSION
+  AS (a * 3);
 
 SELECT * FROM gtest29;
 
@@ -1281,7 +1314,8 @@ ALTER TABLE gtest31_2
   ADD CONSTRAINT "cc" CHECK (y.b IS NOT NULL);
 
 ALTER TABLE gtest31_1
-  ALTER COLUMN b SET EXPRESSION AS ('hello1');
+  ALTER COLUMN b SET EXPRESSION
+  AS ('hello1');
 
 ALTER TABLE gtest31_2 DROP CONSTRAINT cc;
 
@@ -1289,7 +1323,8 @@ CREATE STATISTICS gtest31_2_stat
 ON (y.b IS NOT NULL) FROM gtest31_2;
 
 ALTER TABLE gtest31_1
-  ALTER COLUMN b SET EXPRESSION AS ('hello2');
+  ALTER COLUMN b SET EXPRESSION
+  AS ('hello2');
 
 DROP STATISTICS "gtest31_2_stat";
 
@@ -1299,7 +1334,8 @@ CREATE INDEX "gtest31_2_y_idx" ON gtest31_2 USING btree
 );
 
 ALTER TABLE gtest31_1
-  ALTER COLUMN b SET EXPRESSION AS ('hello3');
+  ALTER COLUMN b SET EXPRESSION
+  AS ('hello3');
 
 DROP TABLE "gtest31_1", "gtest31_2";
 
@@ -1324,7 +1360,8 @@ CREATE TABLE gtest26 (
   GENERATED ALWAYS AS (a * 2) STORED
 );
 
-CREATE FUNCTION gtest_trigger_func()
+CREATE FUNCTION
+gtest_trigger_func()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -1414,7 +1451,8 @@ DROP TRIGGER "gtest2" ON "gtest26";
 
 DROP TRIGGER "gtest3" ON "gtest26";
 
-CREATE FUNCTION gtest_trigger_func3()
+CREATE FUNCTION
+gtest_trigger_func3()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -1438,7 +1476,8 @@ DROP TRIGGER "gtest11" ON "gtest26";
 
 TRUNCATE gtest26;
 
-CREATE FUNCTION gtest_trigger_func4()
+CREATE FUNCTION
+gtest_trigger_func4()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '

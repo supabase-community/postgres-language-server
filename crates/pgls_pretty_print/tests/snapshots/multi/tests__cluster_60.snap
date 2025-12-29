@@ -114,8 +114,10 @@ c,
 d)
 VALUES (6,
 'seis',
-repeat('xyzzy',
-100000));
+repeat(
+'xyzzy',
+100000
+));
 
 CLUSTER clstr_tst USING clstr_tst_c;
 
@@ -125,7 +127,9 @@ SELECT
   c,
   SUBSTRING(d FROM 1 FOR CAST(30
   AS INT)),
-  length(d)
+  length(
+  d
+  )
 FROM
   clstr_tst;
 
@@ -135,7 +139,9 @@ SELECT
   c,
   SUBSTRING(d FROM 1 FOR CAST(30
   AS INT)),
-  length(d)
+  length(
+  d
+  )
 FROM
   clstr_tst
 ORDER BY a;
@@ -146,7 +152,9 @@ SELECT
   c,
   SUBSTRING(d FROM 1 FOR CAST(30
   AS INT)),
-  length(d)
+  length(
+  d
+  )
 FROM
   clstr_tst
 ORDER BY b;
@@ -157,7 +165,9 @@ SELECT
   c,
   SUBSTRING(d FROM 1 FOR CAST(30
   AS INT)),
-  length(d)
+  length(
+  d
+  )
 FROM
   clstr_tst
 ORDER BY c;
@@ -170,7 +180,9 @@ SELECT
   c,
   SUBSTRING(d FROM 1 FOR CAST(30
   AS INT)),
-  length(d)
+  length(
+  d
+  )
 FROM
   clstr_tst;
 
@@ -198,7 +210,8 @@ SELECT
     pg_class
   WHERE
     oid =
-    c.reltoastrelid) AS hastoast
+    c.reltoastrelid)
+  AS hastoast
 FROM
   pg_class
   AS c
@@ -461,8 +474,10 @@ CREATE TEMPORARY TABLE old_cluster_info AS
     relfilenode,
     relkind
   FROM
-    pg_partition_tree(CAST('clstrpart'
-    AS REGCLASS)) AS tree
+    pg_partition_tree(
+    CAST('clstrpart'
+    AS REGCLASS)
+    ) AS tree
     INNER JOIN pg_class
     AS c
     ON c.oid =
@@ -477,8 +492,10 @@ CREATE TEMPORARY TABLE new_cluster_info AS
     relfilenode,
     relkind
   FROM
-    pg_partition_tree(CAST('clstrpart'
-    AS REGCLASS)) AS tree
+    pg_partition_tree(
+    CAST('clstrpart'
+    AS REGCLASS)
+    ) AS tree
     INNER JOIN pg_class
     AS c
     ON c.oid =
@@ -536,7 +553,9 @@ CREATE TEMPORARY TABLE ptnowner_oldnodes AS
     relname,
     relfilenode
   FROM
-    pg_partition_tree('ptnowner') AS tree
+    pg_partition_tree(
+    'ptnowner'
+    ) AS tree
     INNER JOIN pg_class
     AS c
     ON c.oid =
@@ -584,14 +603,23 @@ SELECT
 FROM
   (SELECT
     hundred,
-    LAG(hundred)
-    OVER () AS lhundred,
+    LAG(
+    hundred
+    )
+    OVER ()
+    AS lhundred,
     thousand,
-    LAG(thousand)
-    OVER () AS lthousand,
+    LAG(
+    thousand
+    )
+    OVER ()
+    AS lthousand,
     tenthous,
-    LAG(tenthous)
-    OVER () AS ltenthous
+    LAG(
+    tenthous
+    )
+    OVER ()
+    AS ltenthous
   FROM
     clstr_4) AS ss
 WHERE
@@ -620,8 +648,10 @@ SELECT
   'prefix' ||
   g.i
 FROM
-  generate_series(1,
-  133) AS g (i);
+  generate_series(
+  1,
+  133
+  ) AS g (i);
 
 CREATE INDEX "clstr_expression_minus_a" ON clstr_expression USING btree
 (
@@ -631,7 +661,9 @@ CREATE INDEX "clstr_expression_minus_a" ON clstr_expression USING btree
 
 CREATE INDEX "clstr_expression_upper_b" ON clstr_expression USING btree
 (
-  (upper(b))
+  (upper(
+  b
+  ))
 );
 
 BEGIN;

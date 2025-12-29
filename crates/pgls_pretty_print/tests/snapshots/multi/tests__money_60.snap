@@ -146,8 +146,10 @@ SELECT pg_input_is_valid('192233720368547758.07', 'money');
 SELECT
   *
 FROM
-  pg_input_error_info('192233720368547758.07',
-  'money');
+  pg_input_error_info(
+  '192233720368547758.07',
+  'money'
+  );
 
 SELECT CAST('-92233720368547758.08' AS MONEY);
 

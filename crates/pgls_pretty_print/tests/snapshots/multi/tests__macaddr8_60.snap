@@ -44,8 +44,10 @@ SELECT CAST('08:00:2b:01.02:03:04:05' AS MACADDR8);
 SELECT CAST('08:00:2b:01.02:03:04:05' AS MACADDR8);
 
 SELECT
-  macaddr8_set7bit(CAST('00:08:2b:01:02:03'
-  AS MACADDR8));
+  macaddr8_set7bit(
+  CAST('00:08:2b:01:02:03'
+  AS MACADDR8)
+  );
 
 CREATE TABLE macaddr8_data ( a INT, b MACADDR8 );
 
@@ -270,21 +272,29 @@ SELECT b | '01:02:03:04:05:06' FROM macaddr8_data;
 DROP TABLE "macaddr8_data";
 
 SELECT
-  pg_input_is_valid('08:00:2b:01:02:03:04:ZZ',
-  'macaddr8');
+  pg_input_is_valid(
+  '08:00:2b:01:02:03:04:ZZ',
+  'macaddr8'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('08:00:2b:01:02:03:04:ZZ',
-  'macaddr8');
+  pg_input_error_info(
+  '08:00:2b:01:02:03:04:ZZ',
+  'macaddr8'
+  );
 
 SELECT
-  pg_input_is_valid('08:00:2b:01:02:03:04:',
-  'macaddr8');
+  pg_input_is_valid(
+  '08:00:2b:01:02:03:04:',
+  'macaddr8'
+  );
 
 SELECT
   *
 FROM
-  pg_input_error_info('08:00:2b:01:02:03:04:',
-  'macaddr8');
+  pg_input_error_info(
+  '08:00:2b:01:02:03:04:',
+  'macaddr8'
+  );

@@ -90,7 +90,8 @@ SELECT 'bbc' COLLATE "C" > 'Abc' COLLATE "C" AS "true";
 
 SELECT
   'bbc' COLLATE "POSIX" <
-  'Abc' COLLATE "POSIX" AS "false";
+  'Abc' COLLATE "POSIX"
+  AS "false";
 
 CREATE TABLE collate_test10 (
   a INT,
@@ -108,19 +109,35 @@ VALUES (1,
 
 SELECT
   a,
-  lower(x),
-  lower(y),
-  upper(x),
-  upper(y),
-  initcap(x),
-  initcap(y)
+  lower(
+  x
+  ),
+  lower(
+  y
+  ),
+  upper(
+  x
+  ),
+  upper(
+  y
+  ),
+  initcap(
+  x
+  ),
+  initcap(
+  y
+  )
 FROM
   collate_test10;
 
 SELECT
   a,
-  lower(x COLLATE "C"),
-  lower(y COLLATE "C")
+  lower(
+  x COLLATE "C"
+  ),
+  lower(
+  y COLLATE "C"
+  )
 FROM
   collate_test10;
 
@@ -146,8 +163,10 @@ ORDER BY b COLLATE "C";
 CREATE VIEW collview3 AS
 SELECT
   a,
-  lower((x ||
-  x) COLLATE "POSIX")
+  lower(
+  (x ||
+  x) COLLATE "POSIX"
+  )
 FROM
   collate_test10;
 
@@ -166,10 +185,14 @@ SELECT a, COALESCE(b, 'foo') FROM collate_test2 ORDER BY 2;
 
 SELECT
   a,
-  lower(COALESCE(x,
-  'foo')),
-  lower(COALESCE(y,
-  'foo'))
+  lower(
+  COALESCE(x,
+  'foo')
+  ),
+  lower(
+  COALESCE(y,
+  'foo')
+  )
 FROM
   collate_test10;
 
@@ -195,10 +218,14 @@ SELECT
   a,
   x,
   y,
-  lower(GREATEST(x,
-  'foo')),
-  lower(GREATEST(y,
-  'foo'))
+  lower(
+  GREATEST(x,
+  'foo')
+  ),
+  lower(
+  GREATEST(y,
+  'foo')
+  )
 FROM
   collate_test10;
 
@@ -208,8 +235,12 @@ SELECT a, NULLIF(b, 'abc') FROM collate_test2 ORDER BY 2;
 
 SELECT
   a,
-  lower(NULLIF(x, 'foo')),
-  lower(NULLIF(y, 'foo'))
+  lower(
+  NULLIF(x, 'foo')
+  ),
+  lower(
+  NULLIF(y, 'foo')
+  )
 FROM
   collate_test10;
 
@@ -261,10 +292,14 @@ ORDER BY 2;
 
 SELECT
   a,
-  lower(CAST(x
-  AS testdomain)),
-  lower(CAST(y
-  AS testdomain))
+  lower(
+  CAST(x
+  AS testdomain)
+  ),
+  lower(
+  CAST(y
+  AS testdomain)
+  )
 FROM
   collate_test10;
 
@@ -277,19 +312,25 @@ SELECT array_agg(b ORDER BY b) FROM collate_test1;
 SELECT array_agg(b ORDER BY b) FROM collate_test2;
 
 SELECT
-  string_agg(x COLLATE "C",
-  y COLLATE "POSIX")
+  string_agg(
+  x COLLATE "C",
+  y COLLATE "POSIX"
+  )
 FROM
   collate_test10;
 
 SELECT
-  array_agg(x COLLATE "C" ORDER BY y COLLATE "POSIX")
+  array_agg(
+  x COLLATE "C" ORDER BY y COLLATE "POSIX"
+  )
 FROM
   collate_test10;
 
 SELECT
-  array_agg(a ORDER BY x COLLATE "C",
-  y COLLATE "POSIX")
+  array_agg(
+  a ORDER BY x COLLATE "C",
+  y COLLATE "POSIX"
+  )
 FROM
   collate_test10;
 
@@ -436,7 +477,9 @@ SELECT
 FROM
   foo
 WHERE
-  length(x) <
+  length(
+  x
+  ) <
   10)
 SELECT
   *
@@ -447,7 +490,8 @@ SELECT
   a,
   b,
   a <
-  b AS lt
+  b
+  AS lt
 FROM
   (VALUES ('a',
   'B'),
@@ -495,7 +539,8 @@ SELECT a, CAST(b AS VARCHAR) FROM collate_test1 ORDER BY 2;
 
 SELECT a, CAST(b AS VARCHAR) FROM collate_test2 ORDER BY 2;
 
-CREATE FUNCTION vc(
+CREATE FUNCTION
+vc(
   TEXT
 )
 RETURNS TEXT
@@ -507,22 +552,31 @@ SELECT a, b FROM collate_test1 ORDER BY a, vc(b);
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test1))
+    collate_test1)
+  )
 ORDER BY 1;
 
 SELECT
   *
 FROM
-  unnest((SELECT
-    array_agg(b ORDER BY b)
+  unnest(
+  (SELECT
+    array_agg(
+    b ORDER BY b
+    )
   FROM
-    collate_test2))
+    collate_test2)
+  )
 ORDER BY 1;
 
-CREATE FUNCTION dup(
+CREATE FUNCTION
+dup(
   ANYELEMENT
 )
 RETURNS ANYELEMENT
@@ -566,7 +620,9 @@ CREATE INDEX "collate_test1_idx6" ON collate_test1 USING btree
 
 SELECT
   relname,
-  pg_get_indexdef(oid)
+  pg_get_indexdef(
+  oid
+  )
 FROM
   pg_class
 WHERE
@@ -680,26 +736,32 @@ SELECT pg_collation_for('foo');
 SELECT pg_collation_for(CAST('foo' AS TEXT));
 
 SELECT
-  pg_collation_for((SELECT
+  pg_collation_for(
+  (SELECT
     a
   FROM
     collate_test1
-  LIMIT 1));
+  LIMIT 1)
+  );
 
 SELECT
-  pg_collation_for((SELECT
+  pg_collation_for(
+  (SELECT
     b
   FROM
     collate_test1
-  LIMIT 1));
+  LIMIT 1)
+  );
 
 CREATE VIEW collate_on_int AS
 SELECT
-  c1 + 1 AS c1p
+  c1 + 1
+  AS c1p
 FROM
   (SELECT
     CAST('4' COLLATE "C"
-    AS INT) AS c1) AS ss;
+    AS INT)
+    AS c1) AS ss;
 
 CREATE COLLATION coll_dup_chk
 (

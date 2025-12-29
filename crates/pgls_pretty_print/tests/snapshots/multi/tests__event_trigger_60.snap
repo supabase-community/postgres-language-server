@@ -7,7 +7,8 @@ CREATE EVENT TRIGGER "regress_event_trigger"
 ON ddl_command_start
 EXECUTE FUNCTION pg_backend_pid();
 
-CREATE FUNCTION test_event_trigger()
+CREATE FUNCTION
+test_event_trigger()
 RETURNS event_trigger
 AS '
 BEGIN
@@ -18,14 +19,16 @@ LANGUAGE "plpgsql";
 
 SELECT test_event_trigger();
 
-CREATE FUNCTION test_event_trigger_arg(
+CREATE FUNCTION
+test_event_trigger_arg(
   "name" TEXT
 )
 RETURNS event_trigger
 AS ' BEGIN RETURN 1; END '
 LANGUAGE "plpgsql";
 
-CREATE FUNCTION test_event_trigger_sql()
+CREATE FUNCTION
+test_event_trigger_sql()
 RETURNS event_trigger
 AS '
 SELECT 1 '
@@ -122,7 +125,8 @@ RESET session_replication_role;
 
 CREATE TABLE event_trigger_fire5 ( a INT );
 
-CREATE FUNCTION f1()
+CREATE FUNCTION
+f1()
 RETURNS INT
 LANGUAGE "plpgsql"
 AS '
@@ -133,7 +137,8 @@ end ';
 
 SELECT f1();
 
-CREATE PROCEDURE p1()
+CREATE PROCEDURE
+p1()
 LANGUAGE "plpgsql"
 AS '
 begin
@@ -171,7 +176,8 @@ SERVER useless_server;
 
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_evt_user
-REVOKE DELETE ON TABLES 
+REVOKE DELETE
+ON TABLES 
 FROM regress_evt_user;
 
 ALTER EVENT TRIGGER regress_event_trigger
@@ -228,7 +234,8 @@ CREATE TABLE audit_tbls.schema_two_table_three (
   the_value TEXT
 );
 
-CREATE OR REPLACE FUNCTION schema_two.add(
+CREATE OR REPLACE FUNCTION
+schema_two.add(
   INT,
   INT
 )
@@ -269,7 +276,8 @@ CREATE TABLE dropped_objects (
   normal BOOLEAN
 );
 
-CREATE OR REPLACE FUNCTION undroppable()
+CREATE OR REPLACE FUNCTION
+undroppable()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -295,7 +303,8 @@ CREATE EVENT TRIGGER "undroppable"
 ON sql_drop
 EXECUTE FUNCTION undroppable();
 
-CREATE OR REPLACE FUNCTION test_evtrig_dropped_objects()
+CREATE OR REPLACE FUNCTION
+test_evtrig_dropped_objects()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -362,7 +371,8 @@ DROP EVENT TRIGGER regress_event_trigger_drop_objects;
 
 DROP EVENT TRIGGER undroppable;
 
-CREATE OR REPLACE FUNCTION event_trigger_report_dropped()
+CREATE OR REPLACE FUNCTION
+event_trigger_report_dropped()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -384,7 +394,8 @@ CREATE EVENT TRIGGER "regress_event_trigger_report_dropped"
 ON sql_drop
 EXECUTE FUNCTION event_trigger_report_dropped();
 
-CREATE OR REPLACE FUNCTION event_trigger_report_end()
+CREATE OR REPLACE FUNCTION
+event_trigger_report_end()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -483,7 +494,8 @@ DROP SCHEMA evttrig CASCADE;
 
 DROP TABLE "a_temp_tbl";
 
-CREATE OR REPLACE FUNCTION event_trigger_report_dropped()
+CREATE OR REPLACE FUNCTION
+event_trigger_report_dropped()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -498,7 +510,8 @@ BEGIN
     END LOOP;
 END; ';
 
-CREATE FUNCTION event_trigger_dummy_trigger()
+CREATE FUNCTION
+event_trigger_dummy_trigger()
 RETURNS trigger
 LANGUAGE "plpgsql"
 AS '
@@ -567,7 +580,8 @@ DROP EVENT TRIGGER regress_event_trigger_report_end;
 
 SELECT pg_event_trigger_table_rewrite_oid();
 
-CREATE OR REPLACE FUNCTION test_evtrig_no_rewrite()
+CREATE OR REPLACE FUNCTION
+test_evtrig_no_rewrite()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -591,14 +605,17 @@ INSERT INTO rewriteme
 SELECT
   x * 1.001
 FROM
-  generate_series(1,
-  500) AS t (x);
+  generate_series(
+  1,
+  500
+  ) AS t (x);
 
 ALTER TABLE rewriteme ALTER COLUMN foo TYPE NUMERIC;
 
 ALTER TABLE rewriteme ADD COLUMN baz INT DEFAULT 0;
 
-CREATE OR REPLACE FUNCTION test_evtrig_no_rewrite()
+CREATE OR REPLACE FUNCTION
+test_evtrig_no_rewrite()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -642,7 +659,8 @@ ALTER TABLE rewriteme ALTER COLUMN bar TYPE TIMESTAMP;
 
 ROLLBACK;
 
-CREATE OR REPLACE FUNCTION test_evtrig_no_rewrite()
+CREATE OR REPLACE FUNCTION
+test_evtrig_no_rewrite()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
@@ -671,7 +689,8 @@ DROP EVENT TRIGGER no_rewrite_allowed;
 
 DROP FUNCTION test_evtrig_no_rewrite();
 
-CREATE OR REPLACE FUNCTION reindex_start_command()
+CREATE OR REPLACE FUNCTION
+reindex_start_command()
 RETURNS event_trigger
 AS '
 BEGIN
@@ -685,7 +704,8 @@ ON ddl_command_start
 WHEN TAG IN ('REINDEX')
 EXECUTE FUNCTION reindex_start_command();
 
-CREATE FUNCTION reindex_end_command()
+CREATE FUNCTION
+reindex_end_command()
 RETURNS event_trigger
 AS '
 DECLARE
@@ -705,7 +725,8 @@ ON ddl_command_end
 WHEN TAG IN ('REINDEX')
 EXECUTE FUNCTION reindex_end_command();
 
-CREATE FUNCTION reindex_end_command_snap()
+CREATE FUNCTION
+reindex_end_command_snap()
 RETURNS event_trigger
 AS ' BEGIN PERFORM 1; END '
 LANGUAGE "plpgsql";
@@ -816,7 +837,8 @@ RESET session_authorization;
 
 CREATE TABLE event_trigger_test ( a INT, b TEXT );
 
-CREATE OR REPLACE FUNCTION start_command()
+CREATE OR REPLACE FUNCTION
+start_command()
 RETURNS event_trigger
 AS '
 BEGIN
@@ -825,7 +847,8 @@ END;
 '
 LANGUAGE "plpgsql";
 
-CREATE OR REPLACE FUNCTION end_command()
+CREATE OR REPLACE FUNCTION
+end_command()
 RETURNS event_trigger
 AS '
 BEGIN
@@ -834,7 +857,8 @@ END;
 '
 LANGUAGE "plpgsql";
 
-CREATE OR REPLACE FUNCTION drop_sql_command()
+CREATE OR REPLACE FUNCTION
+drop_sql_command()
 RETURNS event_trigger
 AS '
 BEGIN
@@ -873,26 +897,36 @@ DROP POLICY "p2" ON "event_trigger_test";
 
 SELECT
   e.evtname,
-  pg_describe_object(CAST('pg_event_trigger'
+  pg_describe_object(
+  CAST('pg_event_trigger'
   AS REGCLASS),
   e.oid,
-  0) AS descr,
+  0
+  )
+  AS descr,
   b.type,
   b.object_names,
   b.object_args,
-  pg_identify_object(a.classid,
+  pg_identify_object(
+  a.classid,
   a.objid,
-  a.objsubid) AS ident
+  a.objsubid
+  )
+  AS ident
 FROM
   pg_event_trigger
   AS e,
-  LATERAL pg_identify_object_as_address(CAST('pg_event_trigger'
+  LATERAL pg_identify_object_as_address(
+  CAST('pg_event_trigger'
   AS REGCLASS),
   e.oid,
-  0) AS b,
-  LATERAL pg_get_object_address(b.type,
+  0
+  ) AS b,
+  LATERAL pg_get_object_address(
+  b.type,
   b.object_names,
-  b.object_args) AS a
+  b.object_args
+  ) AS a
 ORDER BY e.evtname;
 
 DROP EVENT TRIGGER start_rls_command;
@@ -901,7 +935,8 @@ DROP EVENT TRIGGER end_rls_command;
 
 DROP EVENT TRIGGER sql_drop_command;
 
-CREATE FUNCTION test_event_trigger_guc()
+CREATE FUNCTION
+test_event_trigger_guc()
 RETURNS event_trigger
 LANGUAGE "plpgsql"
 AS '
