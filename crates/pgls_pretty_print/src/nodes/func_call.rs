@@ -161,13 +161,20 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
         e.space();
         e.token(TokenKind::GROUP_KW);
         e.space();
+        // Wrap in group for compact formatting
+        e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         e.token(TokenKind::ORDER_KW);
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
         emit_comma_separated_list(e, &n.agg_order, super::emit_node);
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
     }
 
     if let Some(ref filter) = n.agg_filter {
@@ -241,9 +248,11 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
         e.space();
         e.token(TokenKind::BY_KW);
         e.space();
+        e.indent_start();
         emit_comma_separated_list(e, &n.agg_order, |node, emitter| {
             super::emit_node(node, emitter)
         });
+        e.indent_end();
     }
 
     e.line(LineType::Soft);

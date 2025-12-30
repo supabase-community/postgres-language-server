@@ -1,0 +1,6 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/set_to_default_0_100.sql
+snapshot_kind: text
+---
+UPDATE t SET a = DEFAULT;

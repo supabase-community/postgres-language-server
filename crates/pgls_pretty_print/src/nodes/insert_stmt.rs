@@ -36,7 +36,11 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
     // Emit column list if present
     if !n.cols.is_empty() {
         e.space();
+        // Wrap column list in a group so it can try to fit on one line
+        e.group_start(GroupKind::InsertStmt);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         emit_comma_separated_list(e, &n.cols, |node, e| {
             if let Some(pgls_query::NodeEnum::ResTarget(res_target)) = node.node.as_ref() {
                 emit_column_name(e, res_target);
@@ -44,7 +48,10 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
                 super::emit_node(node, e);
             }
         });
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
     }
 
     match n.r#override() {

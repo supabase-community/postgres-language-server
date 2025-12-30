@@ -1,0 +1,187 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/tablesample_100.sql
+snapshot_kind: text
+---
+CREATE TABLE test_tablesample (id INT, name TEXT) WITH (fillfactor = 10);
+
+INSERT INTO test_tablesample
+SELECT
+  i,
+  repeat(CAST(i AS TEXT), 200)
+FROM
+  generate_series(0, 9) AS s (i);
+
+SELECT t.id FROM test_tablesample AS t TABLESAMPLE system (50) REPEATABLE (0);
+
+SELECT id FROM test_tablesample TABLESAMPLE system (100.0 / 11) REPEATABLE (0);
+
+SELECT id FROM test_tablesample TABLESAMPLE system (50) REPEATABLE (0);
+
+SELECT id FROM test_tablesample TABLESAMPLE bernoulli (50) REPEATABLE (0);
+
+SELECT id FROM test_tablesample TABLESAMPLE bernoulli (5.5) REPEATABLE (0);
+
+SELECT COUNT(*) FROM test_tablesample TABLESAMPLE system (100);
+
+SELECT COUNT(*) FROM test_tablesample TABLESAMPLE system (100) REPEATABLE (1 + 2);
+
+SELECT COUNT(*) FROM test_tablesample TABLESAMPLE system (100) REPEATABLE (0.4);
+
+CREATE VIEW test_tablesample_v1
+AS SELECT
+  id
+FROM
+  test_tablesample
+  TABLESAMPLE system (10 * 2)
+  REPEATABLE (2);
+
+CREATE VIEW test_tablesample_v2
+AS SELECT
+  id
+FROM
+  test_tablesample TABLESAMPLE system (99);
+
+BEGIN;
+
+DECLARE "tablesample_cur" SCROLL CURSOR FOR SELECT
+  id
+FROM
+  test_tablesample
+  TABLESAMPLE system (50)
+  REPEATABLE (0);;
+
+FETCH ABSOLUTE 1 FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+SELECT id FROM test_tablesample TABLESAMPLE system (50) REPEATABLE (0);
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH ABSOLUTE 1 FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+FETCH NEXT FROM tablesample_cur;
+
+CLOSE tablesample_cur;
+
+COMMIT;
+
+SELECT id FROM test_tablesample TABLESAMPLE system (50) REPEATABLE (2);
+
+SELECT * FROM test_tablesample_v1;
+
+SELECT COUNT(*) FROM person TABLESAMPLE bernoulli (100);
+
+SELECT COUNT(*) FROM person TABLESAMPLE bernoulli (100);
+
+SELECT COUNT(*) FROM person;
+
+SELECT
+  COUNT(*)
+FROM
+  test_tablesample
+  TABLESAMPLE bernoulli (CAST(CAST('1' AS TEXT) < CAST('0' AS TEXT) AS INT));
+
+SELECT
+  *
+FROM
+  (VALUES
+    (0),
+    (100)) AS v (pct),
+  LATERAL (SELECT
+    COUNT(*)
+  FROM
+    tenk1 TABLESAMPLE bernoulli (pct)) AS ss;
+
+SELECT
+  *
+FROM
+  (VALUES
+    (0),
+    (100)) AS v (pct),
+  LATERAL (SELECT
+    COUNT(*)
+  FROM
+    tenk1 TABLESAMPLE system (pct)) AS ss;
+
+SELECT
+  pct,
+  COUNT(unique1)
+FROM
+  (VALUES
+    (0),
+    (100)) AS v (pct),
+  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct)) AS ss
+GROUP BY pct;
+
+SELECT
+  pct,
+  COUNT(unique1)
+FROM
+  (VALUES
+    (0),
+    (100)) AS v (pct),
+  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct)) AS ss
+GROUP BY pct;
+
+SELECT
+  pct,
+  COUNT(unique1)
+FROM
+  (VALUES
+    (0),
+    (100)) AS v (pct),
+  LATERAL (SELECT * FROM tenk1 TABLESAMPLE system (pct)) AS ss
+GROUP BY pct;
+
+SELECT id FROM test_tablesample TABLESAMPLE foobar (1);
+
+SELECT id FROM test_tablesample TABLESAMPLE system (NULL);
+
+SELECT id FROM test_tablesample TABLESAMPLE system (50) REPEATABLE (NULL);
+
+SELECT id FROM test_tablesample TABLESAMPLE bernoulli (-1);
+
+SELECT id FROM test_tablesample TABLESAMPLE bernoulli (200);
+
+SELECT id FROM test_tablesample TABLESAMPLE system (-1);
+
+SELECT id FROM test_tablesample TABLESAMPLE system (200);
+
+SELECT id FROM test_tablesample_v1 TABLESAMPLE bernoulli (1);
+
+INSERT INTO test_tablesample_v1 VALUES (1);
+
+WITH query_select AS (SELECT * FROM test_tablesample)
+SELECT
+  *
+FROM
+  query_select
+  TABLESAMPLE bernoulli (5.5)
+  REPEATABLE (1);
+
+CREATE TABLE parted_sample (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE parted_sample_1 PARTITION OF parted_sample FOR VALUES IN (1);
+
+CREATE TABLE parted_sample_2 PARTITION OF parted_sample FOR VALUES IN (2);
+
+SELECT * FROM parted_sample TABLESAMPLE bernoulli (100);
+
+DROP TABLE "parted_sample", "parted_sample_1", "parted_sample_2";

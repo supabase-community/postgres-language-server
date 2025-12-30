@@ -168,14 +168,16 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         }
     } else {
         // Regular table with columns and constraints
+        // Wrap in group for compact formatting of small tables
         let has_content = !n.table_elts.is_empty() || !n.constraints.is_empty();
 
         e.space();
+        e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
 
         if has_content {
             e.indent_start();
-            e.line(LineType::SoftOrSpace);
 
             let mut first = true;
             for item in &n.table_elts {
@@ -196,14 +198,15 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             }
 
             e.indent_end();
-            e.line(LineType::SoftOrSpace);
         }
 
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
 
         // Add INHERITS clause for regular inheritance
         if !n.inh_relations.is_empty() && !is_partition_table {
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Hard);
             e.token(TokenKind::INHERITS_KW);
             e.space();
             e.token(TokenKind::L_PAREN);
@@ -213,7 +216,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
 
         // Add PARTITION BY clause for regular partitioned tables
         if let Some(ref partspec) = n.partspec {
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Hard);
             super::emit_partition_spec(e, partspec);
         }
     }
@@ -226,14 +229,20 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         super::string::emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
-    // Add WITH options if specified
+    // Add WITH options if specified - use SoftOrSpace to break if needed
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
+        e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         emit_comma_separated_list(e, &n.options, super::emit_node);
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
     }
 
     // Add ON COMMIT clause if specified

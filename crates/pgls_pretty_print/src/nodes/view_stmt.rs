@@ -53,19 +53,21 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     }
 
     if !n.options.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Hard);
+        e.indent_start();
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.options, super::emit_node);
         e.token(TokenKind::R_PAREN);
+        e.indent_end();
     }
 
     // Query
     if let Some(ref query) = n.query {
-        e.space();
+        e.line(LineType::Hard);
         e.token(TokenKind::AS_KW);
-        e.line(LineType::SoftOrSpace);
+        e.space();
 
         if let Some(pgls_query::NodeEnum::SelectStmt(stmt)) = query.node.as_ref() {
             super::emit_select_stmt_no_semicolon(e, stmt);

@@ -30,7 +30,8 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.token(TokenKind::IDENT(n.trigname.clone()));
 
     // Timing: BEFORE (2), AFTER (4), INSTEAD OF (16)
-    e.line(LineType::SoftOrSpace);
+    // After trigger name, break to new line for timing + events + ON table
+    e.line(LineType::Hard);
     let timing = n.timing;
     if timing & (1 << 6) != 0 {
         e.token(TokenKind::INSTEAD_KW);
@@ -43,7 +44,8 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     }
 
     // Events: INSERT (4), DELETE (8), UPDATE (16), TRUNCATE (32)
-    e.line(LineType::SoftOrSpace);
+    // Keep timing + events on same line
+    e.space();
     let mut first_event = true;
     if n.events & 4 != 0 {
         e.token(TokenKind::INSERT_KW);
@@ -76,15 +78,16 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
         e.token(TokenKind::IDENT("TRUNCATE".to_string()));
     }
 
-    // OF columns (for UPDATE triggers)
+    // OF columns (for UPDATE triggers) - keep on same line as events
     if !n.columns.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::OF_KW);
         e.space();
         emit_comma_separated_list(e, &n.columns, super::emit_node);
     }
 
-    e.line(LineType::SoftOrSpace);
+    // ON table - keep on same line as timing + events
+    e.space();
     e.token(TokenKind::ON_KW);
     e.space();
     if let Some(ref relation) = n.relation {
@@ -120,7 +123,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     }
 
     // FOR EACH ROW/STATEMENT
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Hard);
     e.token(TokenKind::FOR_KW);
     e.space();
     e.token(TokenKind::IDENT("EACH".to_string()));
@@ -133,7 +136,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
 
     // WHEN condition
     if let Some(ref when) = n.when_clause {
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Hard);
         e.token(TokenKind::WHEN_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
@@ -142,7 +145,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     }
 
     // EXECUTE FUNCTION
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Hard);
     e.token(TokenKind::IDENT("EXECUTE".to_string()));
     e.space();
     e.token(TokenKind::IDENT("FUNCTION".to_string()));

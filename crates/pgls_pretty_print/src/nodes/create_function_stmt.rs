@@ -9,6 +9,10 @@ use crate::{
 pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunctionStmt) {
     e.group_start(GroupKind::CreateFunctionStmt);
 
+    // Inner group for signature (CREATE [OR REPLACE] FUNCTION name(params))
+    // This allows the signature to fit on one line while RETURNS/options break
+    e.group_start(GroupKind::CreateFunctionStmt);
+
     e.token(TokenKind::CREATE_KW);
     e.space();
 
@@ -47,30 +51,32 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
     e.token(TokenKind::L_PAREN);
     if !regular_params.is_empty() {
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         emit_function_parameter_list(e, &regular_params);
         e.indent_end();
         e.line(LineType::Soft);
     }
     e.token(TokenKind::R_PAREN);
 
+    e.group_end(); // End signature group
+
     // Return type (only for functions, not procedures)
     if !table_params.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Hard);
         e.token(TokenKind::RETURNS_KW);
         e.space();
         e.token(TokenKind::TABLE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         emit_function_parameter_list(e, &table_params);
         e.indent_end();
         e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     } else if !n.is_procedure {
         if let Some(ref return_type) = n.return_type {
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Hard);
             e.token(TokenKind::RETURNS_KW);
             e.space();
             super::emit_type_name(e, return_type);
@@ -80,7 +86,7 @@ pub(super) fn emit_create_function_stmt(e: &mut EventEmitter, n: &CreateFunction
     // Options
     for option in &n.options {
         if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = &option.node {
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Hard);
             format_function_option(e, def_elem);
         }
     }
@@ -142,7 +148,7 @@ pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParamet
 
     // Parameter name
     if !fp.name.is_empty() {
-        super::emit_identifier(e, &fp.name);
+        super::emit_identifier_maybe_quoted(e, &fp.name);
         e.space();
     }
 

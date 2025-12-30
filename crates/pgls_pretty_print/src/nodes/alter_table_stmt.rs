@@ -53,15 +53,15 @@ pub(super) fn emit_alter_table_stmt(e: &mut EventEmitter, n: &AlterTableStmt) {
         }
     }
 
-    // Emit commands
+    // Emit commands - each on its own indented line
     if !n.cmds.is_empty() {
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Hard);
 
         for (i, cmd_node) in n.cmds.iter().enumerate() {
             if i > 0 {
                 e.token(TokenKind::COMMA);
-                e.line(LineType::SoftOrSpace);
+                e.line(LineType::Hard);
             }
 
             // Extract AlterTableCmd from Node

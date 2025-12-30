@@ -1,0 +1,212 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/constraints_100.sql
+snapshot_kind: text
+---
+CREATE TABLE default_tbl (
+  i INT DEFAULT 100,
+  x TEXT DEFAULT 'vadim',
+  f DOUBLE PRECISION DEFAULT 123.456
+);
+
+INSERT INTO default_tbl VALUES (1, 'thomas', 57.0613);
+
+INSERT INTO default_tbl VALUES (1, 'bruce');
+
+INSERT INTO default_tbl (i, f) VALUES (2, 987.654);
+
+INSERT INTO default_tbl (x) VALUES ('marc');
+
+INSERT INTO default_tbl VALUES (3, NULL, 1.0);
+
+SELECT * FROM default_tbl;
+
+CREATE SEQUENCE default_seq;
+
+CREATE TABLE defaultexpr_tbl (
+  i1 INT DEFAULT (100 + (200 - 199) * 2),
+  i2 INT DEFAULT nextval('default_seq')
+);
+
+INSERT INTO defaultexpr_tbl VALUES (-1, -2);
+
+INSERT INTO defaultexpr_tbl (i1) VALUES (-3);
+
+INSERT INTO defaultexpr_tbl (i2) VALUES (-4);
+
+INSERT INTO defaultexpr_tbl (i2) VALUES (NULL);
+
+SELECT * FROM defaultexpr_tbl;
+
+CREATE TABLE error_tbl (b1 BOOLEAN DEFAULT (1 IN (1, 2)));
+
+DROP TABLE "error_tbl";
+
+CREATE TABLE check_tbl (x INT, CONSTRAINT "check_con" CHECK (x > 3));
+
+INSERT INTO check_tbl VALUES (5);
+
+INSERT INTO check_tbl VALUES (4);
+
+INSERT INTO check_tbl VALUES (3);
+
+INSERT INTO check_tbl VALUES (2);
+
+INSERT INTO check_tbl VALUES (6);
+
+INSERT INTO check_tbl VALUES (1);
+
+SELECT * FROM check_tbl;
+
+INSERT INTO ne_check_tbl VALUES (5);
+
+INSERT INTO ne_check_tbl VALUES (4);
+
+INSERT INTO ne_check_tbl VALUES (3);
+
+INSERT INTO ne_check_tbl VALUES (2);
+
+INSERT INTO ne_check_tbl VALUES (6);
+
+INSERT INTO ne_check_tbl VALUES (1);
+
+SELECT * FROM ne_check_tbl;
+
+CREATE SEQUENCE check_seq;
+
+CREATE TABLE check2_tbl (
+  x INT,
+  y TEXT,
+  z INT,
+  CONSTRAINT "sequence_con" CHECK (x > 3 AND y <> 'check failed' AND z < 8)
+);
+
+INSERT INTO check2_tbl VALUES (4, 'check ok', -2);
+
+INSERT INTO check2_tbl VALUES (1, 'x check failed', -2);
+
+INSERT INTO check2_tbl VALUES (5, 'z check failed', 10);
+
+INSERT INTO check2_tbl VALUES (0, 'check failed', -2);
+
+INSERT INTO check2_tbl VALUES (6, 'check failed', 11);
+
+INSERT INTO check2_tbl VALUES (7, 'check ok', 7);
+
+SELECT * FROM check2_tbl;
+
+CREATE SEQUENCE insert_seq;
+
+INSERT INTO insert_tbl (x, z) VALUES (2, -2);
+
+SELECT * FROM insert_tbl;
+
+SELECT 'one' AS one, nextval('insert_seq');
+
+INSERT INTO insert_tbl (y) VALUES ('Y');
+
+INSERT INTO insert_tbl (y) VALUES ('Y');
+
+INSERT INTO insert_tbl (x, z) VALUES (1, -2);
+
+INSERT INTO insert_tbl (z, x) VALUES (-7, 7);
+
+INSERT INTO insert_tbl VALUES (5, 'check failed', -5);
+
+INSERT INTO insert_tbl VALUES (7, '!check failed', -7);
+
+INSERT INTO insert_tbl (y) VALUES ('-!NULL-');
+
+SELECT * FROM insert_tbl;
+
+INSERT INTO insert_tbl (y, z) VALUES ('check failed', 4);
+
+INSERT INTO insert_tbl (x, y) VALUES (5, 'check failed');
+
+INSERT INTO insert_tbl (x, y) VALUES (5, '!check failed');
+
+INSERT INTO insert_tbl (y) VALUES ('-!NULL-');
+
+SELECT * FROM insert_tbl;
+
+SELECT 'seven' AS one, nextval('insert_seq');
+
+INSERT INTO insert_tbl (y) VALUES ('Y');
+
+SELECT 'eight' AS one, currval('insert_seq');
+
+INSERT INTO insert_tbl VALUES (NULL, NULL, NULL);
+
+SELECT * FROM insert_tbl;
+
+CREATE TABLE sys_col_check_tbl (
+  city TEXT,
+  state TEXT,
+  is_capital BOOLEAN,
+  altitude INT,
+  CHECK (NOT (is_capital AND
+  CAST(CAST(tableoid AS REGCLASS) AS TEXT) =
+  'sys_col_check_tbl'))
+);
+
+INSERT INTO sys_col_check_tbl VALUES ('Seattle', 'Washington', FALSE, 100);
+
+INSERT INTO sys_col_check_tbl VALUES ('Olympia', 'Washington', TRUE, 100);
+
+SELECT *, CAST(CAST(tableoid AS REGCLASS) AS TEXT) FROM sys_col_check_tbl;
+
+DROP TABLE "sys_col_check_tbl";
+
+CREATE TABLE sys_col_check_tbl (
+  city TEXT,
+  state TEXT,
+  is_capital BOOLEAN,
+  altitude INT,
+  CHECK (NOT (is_capital AND
+  CAST(ctid AS TEXT) = 'sys_col_check_tbl'))
+);
+
+CREATE TABLE insert_child (cx INT DEFAULT 42, cy INT CHECK (cy > x))
+INHERITS (insert_tbl);
+
+INSERT INTO insert_child (x, z, cy) VALUES (7, -7, 11);
+
+INSERT INTO insert_child (x, z, cy) VALUES (7, -7, 6);
+
+INSERT INTO insert_child (x, z, cy) VALUES (6, -7, 7);
+
+INSERT INTO insert_child (x, y, z, cy) VALUES (6, 'check failed', -6, 7);
+
+SELECT * FROM insert_child;
+
+DROP TABLE "insert_child";
+
+CREATE TABLE atacc1 (test INT CHECK (test > 0) NO INHERIT);
+
+CREATE TABLE atacc2 (test2 INT)
+INHERITS (atacc1);
+
+INSERT INTO atacc2 (test) VALUES (-3);
+
+INSERT INTO atacc1 (test) VALUES (-3);
+
+DROP TABLE "atacc1" CASCADE;
+
+CREATE TABLE atacc1 (test INT, test2 INT CHECK (test > 0), CHECK (test2 > 10) NO INHERIT);
+
+CREATE TABLE atacc2 ()
+INHERITS (atacc1);
+
+INSERT INTO atacc2 (test) VALUES (-3);
+
+INSERT INTO atacc1 (test) VALUES (-3);
+
+INSERT INTO atacc2 (test2) VALUES (3);
+
+INSERT INTO atacc1 (test2) VALUES (3);
+
+DROP TABLE "atacc1" CASCADE;
+
+DELETE FROM insert_tbl;
+
+ALTER SEQUENCE insert_seq RESTART;

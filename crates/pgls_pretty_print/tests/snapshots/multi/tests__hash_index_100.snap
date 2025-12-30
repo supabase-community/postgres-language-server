@@ -1,0 +1,307 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/hash_index_100.sql
+snapshot_kind: text
+---
+CREATE TABLE hash_i4_heap (seqno INT, random INT);
+
+CREATE TABLE hash_name_heap (seqno INT, random NAME);
+
+CREATE TABLE hash_txt_heap (seqno INT, random TEXT);
+
+CREATE TABLE hash_f8_heap (seqno INT, random DOUBLE PRECISION);
+
+COPY hash_i4_heap FROM 'filename';
+
+COPY hash_name_heap FROM 'filename';
+
+COPY hash_txt_heap FROM 'filename';
+
+COPY hash_f8_heap FROM 'filename';
+
+ANALYZE hash_i4_heap;
+
+ANALYZE hash_name_heap;
+
+ANALYZE hash_txt_heap;
+
+ANALYZE hash_f8_heap;
+
+CREATE INDEX "hash_i4_index"
+ON hash_i4_heap
+USING hash
+(
+  random int4_ops
+);
+
+CREATE INDEX "hash_name_index"
+ON hash_name_heap
+USING hash
+(
+  random name_ops
+);
+
+CREATE INDEX "hash_txt_index"
+ON hash_txt_heap
+USING hash
+(
+  random text_ops
+);
+
+CREATE INDEX "hash_f8_index"
+ON hash_f8_heap
+USING hash
+(
+  random float8_ops
+)
+WITH (fillfactor = 60);
+
+CREATE UNIQUE INDEX "hash_f8_index_1"
+ON hash_f8_heap
+USING btree
+(
+  (abs(random))
+);
+
+CREATE UNIQUE INDEX "hash_f8_index_2"
+ON hash_f8_heap
+USING btree
+(
+  (seqno + 1),
+  random
+);
+
+CREATE UNIQUE INDEX "hash_f8_index_3"
+ON hash_f8_heap
+USING btree
+(
+  random
+)
+WHERE
+  seqno > 1000;
+
+SELECT * FROM hash_i4_heap WHERE hash_i4_heap.random = 843938989;
+
+SELECT * FROM hash_i4_heap WHERE hash_i4_heap.random = 66766766;
+
+SELECT * FROM hash_name_heap WHERE hash_name_heap.random = CAST('1505703298' AS NAME);
+
+SELECT * FROM hash_name_heap WHERE hash_name_heap.random = CAST('7777777' AS NAME);
+
+SELECT * FROM hash_txt_heap WHERE hash_txt_heap.random = CAST('1351610853' AS TEXT);
+
+SELECT * FROM hash_txt_heap WHERE hash_txt_heap.random = CAST('111111112222222233333333' AS TEXT);
+
+SELECT * FROM hash_f8_heap WHERE hash_f8_heap.random = CAST('444705537' AS DOUBLE PRECISION);
+
+SELECT * FROM hash_f8_heap WHERE hash_f8_heap.random = CAST('88888888' AS DOUBLE PRECISION);
+
+UPDATE hash_i4_heap SET random = 1 WHERE hash_i4_heap.seqno = 1492;
+
+SELECT h.seqno AS i1492, h.random AS i1 FROM hash_i4_heap AS h WHERE h.random = 1;
+
+UPDATE hash_i4_heap SET seqno = 20000 WHERE hash_i4_heap.random = 1492795354;
+
+SELECT h.seqno AS i20000 FROM hash_i4_heap AS h WHERE h.random = 1492795354;
+
+UPDATE hash_name_heap
+SET random = CAST('0123456789abcdef' AS NAME)
+WHERE
+  hash_name_heap.seqno = 6543;
+
+SELECT
+  h.seqno AS i6543,
+  h.random AS c0_to_f
+FROM
+  hash_name_heap AS h
+WHERE
+  h.random = CAST('0123456789abcdef' AS NAME);
+
+UPDATE hash_name_heap SET seqno = 20000 WHERE hash_name_heap.random = CAST('76652222' AS NAME);
+
+SELECT h.seqno AS emptyset FROM hash_name_heap AS h WHERE h.random = CAST('76652222' AS NAME);
+
+UPDATE hash_txt_heap
+SET random = CAST('0123456789abcdefghijklmnop' AS TEXT)
+WHERE
+  hash_txt_heap.seqno = 4002;
+
+SELECT
+  h.seqno AS i4002,
+  h.random AS c0_to_p
+FROM
+  hash_txt_heap AS h
+WHERE
+  h.random =
+  CAST('0123456789abcdefghijklmnop' AS TEXT);
+
+UPDATE hash_txt_heap SET seqno = 20000 WHERE hash_txt_heap.random = CAST('959363399' AS TEXT);
+
+SELECT h.seqno AS t20000 FROM hash_txt_heap AS h WHERE h.random = CAST('959363399' AS TEXT);
+
+UPDATE hash_f8_heap
+SET random = CAST('-1234.1234' AS DOUBLE PRECISION)
+WHERE
+  hash_f8_heap.seqno = 8906;
+
+SELECT
+  h.seqno AS i8096,
+  h.random AS f1234_1234
+FROM
+  hash_f8_heap AS h
+WHERE
+  h.random = CAST('-1234.1234' AS DOUBLE PRECISION);
+
+UPDATE hash_f8_heap
+SET seqno = 20000
+WHERE
+  hash_f8_heap.random =
+  CAST('488912369' AS DOUBLE PRECISION);
+
+SELECT
+  h.seqno AS f20000
+FROM
+  hash_f8_heap AS h
+WHERE
+  h.random = CAST('488912369' AS DOUBLE PRECISION);
+
+CREATE TABLE hash_split_heap (keycol INT);
+
+INSERT INTO hash_split_heap SELECT 1 FROM generate_series(1, 500) AS a;
+
+CREATE INDEX "hash_split_index"
+ON hash_split_heap
+USING hash
+(
+  keycol
+);
+
+INSERT INTO hash_split_heap SELECT 1 FROM generate_series(1, 5000) AS a;
+
+BEGIN;
+
+SET enable_seqscan = off;
+
+SET enable_bitmapscan = off;
+
+DECLARE "c" CURSOR FOR SELECT * FROM hash_split_heap WHERE keycol = 1;;
+
+MOVE FORWARD ALL FROM c;
+
+MOVE BACKWARD 10000 FROM c;
+
+MOVE BACKWARD ALL FROM c;
+
+CLOSE c;
+
+COMMIT;
+
+DELETE FROM hash_split_heap WHERE keycol = 1;
+
+INSERT INTO hash_split_heap SELECT a / 2 FROM generate_series(1, 25000) AS a;
+
+VACUUM hash_split_heap;
+
+ALTER INDEX hash_split_index
+  SET (fillfactor = 10);
+
+REINDEX INDEX hash_split_index;
+
+DROP TABLE "hash_split_heap";
+
+CREATE TABLE hash_cleanup_heap (keycol INT);
+
+CREATE INDEX "hash_cleanup_index"
+ON hash_cleanup_heap
+USING hash
+(
+  keycol
+);
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 500) AS i;
+
+BEGIN;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 1000) AS i;
+
+ROLLBACK;
+
+CHECKPOINT;
+
+VACUUM hash_cleanup_heap;
+
+TRUNCATE hash_cleanup_heap;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 50) AS i;
+
+BEGIN;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 1500) AS i;
+
+ROLLBACK;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 500) AS i;
+
+CHECKPOINT;
+
+VACUUM hash_cleanup_heap;
+
+TRUNCATE hash_cleanup_heap;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 500) AS i;
+
+BEGIN;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 1500) AS i;
+
+ROLLBACK;
+
+INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 50) AS i;
+
+CHECKPOINT;
+
+VACUUM hash_cleanup_heap;
+
+DROP TABLE "hash_cleanup_heap";
+
+CREATE TEMPORARY TABLE hash_temp_heap (x INT, y INT);
+
+INSERT INTO hash_temp_heap VALUES (1, 1);
+
+CREATE INDEX "hash_idx"
+ON hash_temp_heap
+USING hash
+(
+  x
+);
+
+DROP TABLE "hash_temp_heap" CASCADE;
+
+CREATE TABLE hash_heap_float4 (x REAL, y INT);
+
+INSERT INTO hash_heap_float4 VALUES (1.1, 1);
+
+CREATE INDEX "hash_idx"
+ON hash_heap_float4
+USING hash
+(
+  x
+);
+
+DROP TABLE "hash_heap_float4" CASCADE;
+
+CREATE INDEX "hash_f8_index2"
+ON hash_f8_heap
+USING hash
+(
+  random float8_ops
+)
+WITH (fillfactor = 9);
+
+CREATE INDEX "hash_f8_index2"
+ON hash_f8_heap
+USING hash
+(
+  random float8_ops
+)
+WITH (fillfactor = 101);

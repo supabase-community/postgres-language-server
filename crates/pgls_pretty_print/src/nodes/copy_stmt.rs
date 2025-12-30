@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::{NodeEnum, protobuf::CopyStmt};
 
@@ -18,12 +18,18 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);
 
-        // Column list
+        // Column list - wrap in group for compact formatting
         if !n.attlist.is_empty() {
             e.space();
+            e.group_start(GroupKind::List);
             e.token(TokenKind::L_PAREN);
+            e.line(LineType::Soft);
+            e.indent_start();
             emit_comma_separated_list(e, &n.attlist, super::emit_node);
+            e.indent_end();
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
+            e.group_end();
         }
     } else if let Some(ref query) = n.query {
         e.token(TokenKind::L_PAREN);
@@ -52,7 +58,7 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
     }
 
     // TO or FROM
-    e.space();
+    e.line(LineType::SoftOrSpace);
     if n.is_from {
         e.token(TokenKind::FROM_KW);
     } else {
@@ -72,22 +78,28 @@ pub(super) fn emit_copy_stmt(e: &mut EventEmitter, n: &CopyStmt) {
         emit_keyword(e, "STDOUT");
     }
 
-    // Options
+    // Options - wrap in group for compact formatting
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
+        e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         emit_comma_separated_list(e, &n.options, |n, e| {
             let def_elem = assert_node_variant!(DefElem, n);
             emit_copy_option(e, def_elem);
         });
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
     }
 
     // WHERE clause
     if let Some(ref where_clause) = n.where_clause {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         super::emit_clause_condition(e, where_clause);
     }

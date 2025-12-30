@@ -60,9 +60,13 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
         CmdType::CmdInsert => {
             e.token(TokenKind::INSERT_KW);
 
+            // Column list - wrap in group for compact formatting
             if !clause.target_list.is_empty() {
                 e.space();
+                e.group_start(GroupKind::List);
                 e.token(TokenKind::L_PAREN);
+                e.line(LineType::Soft);
+                e.indent_start();
                 super::node_list::emit_comma_separated_list(
                     e,
                     &clause.target_list,
@@ -73,19 +77,26 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
                         }
                     },
                 );
+                e.indent_end();
+                e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
+                e.group_end();
             }
 
+            // Values list - wrap in group for compact formatting
             if !clause.values.is_empty() {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::VALUES_KW);
                 e.space();
+                e.group_start(GroupKind::List);
                 e.token(TokenKind::L_PAREN);
+                e.line(LineType::Soft);
                 e.indent_start();
-                e.line(LineType::SoftOrSpace);
                 super::node_list::emit_comma_separated_list(e, &clause.values, super::emit_node);
                 e.indent_end();
+                e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
+                e.group_end();
             } else {
                 e.space();
                 e.token(TokenKind::DEFAULT_KW);

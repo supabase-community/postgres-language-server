@@ -24,7 +24,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     e.space();
     e.token(TokenKind::IDENT(n.rulename.clone()));
 
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Hard);
     e.token(TokenKind::AS_KW);
     e.space();
     e.token(TokenKind::ON_KW);
@@ -54,7 +54,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
         super::emit_clause_condition(e, where_clause);
     }
 
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Hard);
     e.token(TokenKind::DO_KW);
 
     if n.instead {
@@ -63,7 +63,7 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     }
 
     e.indent_start();
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Hard);
 
     // Actions - can be NOTHING or a list of statements
     if n.actions.is_empty() {

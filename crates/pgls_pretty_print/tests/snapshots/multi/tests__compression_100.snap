@@ -1,0 +1,103 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/compression_100.sql
+snapshot_kind: text
+---
+CREATE SCHEMA "pglz";
+
+SET search_path TO pglz, public;
+
+SET default_toast_compression = pglz;
+
+CREATE TABLE cmdata (f1 TEXT COMPRESSION pglz);
+
+CREATE INDEX "idx"
+ON cmdata
+USING btree
+(
+  f1
+);
+
+INSERT INTO cmdata VALUES (repeat('1234567890', 1000));
+
+SELECT pg_column_compression(f1) FROM cmdata;
+
+SELECT substr(f1, 200, 5) FROM cmdata;
+
+SELECT * INTO cmmove1 FROM cmdata;
+
+SELECT pg_column_compression(f1) FROM cmmove1;
+
+CREATE TABLE cmdata2 (f1 INT COMPRESSION pglz);
+
+CREATE OR REPLACE FUNCTION large_val()
+RETURNS TEXT
+LANGUAGE "sql"
+AS 'select array_agg(fipshash(g::text))::text from generate_series(1, 256) g';
+
+CREATE TABLE cmdata2 (f1 TEXT COMPRESSION pglz);
+
+INSERT INTO cmdata2 SELECT large_val() || repeat('a', 4000);
+
+SELECT pg_column_compression(f1) FROM cmdata2;
+
+SELECT substr(f1, 200, 5) FROM cmdata2;
+
+DROP TABLE "cmdata2";
+
+CREATE TABLE cmdata2 (f1 INT);
+
+ALTER TABLE cmdata2
+  ALTER COLUMN f1 TYPE VARCHAR;
+
+ALTER TABLE cmdata2
+  ALTER COLUMN f1 TYPE INT USING CAST(f1 AS INT);
+
+ALTER TABLE cmdata2
+  ALTER COLUMN f1 TYPE VARCHAR;
+
+ALTER TABLE cmdata2
+  ALTER COLUMN f1 SET COMPRESSION pglz;
+
+ALTER TABLE cmdata2
+  ALTER COLUMN f1 SET STORAGE plain;
+
+INSERT INTO cmdata2 VALUES (repeat('123456789', 800));
+
+SELECT pg_column_compression(f1) FROM cmdata2;
+
+CREATE TABLE cmdata3 (f1 TEXT);
+
+CREATE TABLE cminh ()
+INHERITS (cmdata,
+cmdata3);
+
+SET default_toast_compression = '';
+
+SET default_toast_compression = 'I do not exist compression';
+
+SET default_toast_compression = pglz;
+
+ALTER TABLE cmdata2
+  ALTER COLUMN f1 SET COMPRESSION "default";
+
+DROP TABLE "cmdata2";
+
+SELECT pg_column_compression(f1) FROM cmdata;
+
+VACUUM (FULL) cmdata;
+
+SELECT pg_column_compression(f1) FROM cmdata;
+
+SELECT length(f1) FROM cmdata;
+
+SELECT length(f1) FROM cmmove1;
+
+CREATE TABLE badcompresstbl (a TEXT COMPRESSION i_do_not_exist_compression);
+
+CREATE TABLE badcompresstbl (a TEXT);
+
+ALTER TABLE badcompresstbl
+  ALTER COLUMN a SET COMPRESSION i_do_not_exist_compression;
+
+DROP TABLE "badcompresstbl";

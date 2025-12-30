@@ -37,7 +37,7 @@ fn test_single(fixture: Fixture<&str>) {
         .split('_')
         .next_back()
         .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(80);
+        .unwrap_or(100);
 
     let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
     let mut ast = parsed.into_root().expect("No root node found");
@@ -103,7 +103,7 @@ fn test_multi(fixture: Fixture<&str>) {
         .split('_')
         .next_back()
         .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(60);
+        .unwrap_or(100);
 
     // Split the content into statements
     let split_result = pgls_statement_splitter::split(content);

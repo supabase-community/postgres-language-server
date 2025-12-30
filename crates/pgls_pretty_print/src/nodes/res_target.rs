@@ -111,8 +111,11 @@ fn emit_multi_assign_clause(
 
     e.group_start(GroupKind::ResTarget);
 
-    // Target columns
+    // Target columns - wrap in group for compact formatting
+    e.group_start(GroupKind::List);
     e.token(TokenKind::L_PAREN);
+    e.line(LineType::Soft);
+    e.indent_start();
     for (idx, node) in nodes[start..end].iter().enumerate() {
         if idx > 0 {
             e.token(TokenKind::COMMA);
@@ -122,16 +125,22 @@ fn emit_multi_assign_clause(
         let target = assert_node_variant!(ResTarget, node);
         emit_column_name_with_indirection(e, target);
     }
+    e.indent_end();
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
+    e.group_end();
 
     e.space();
     e.token(TokenKind::IDENT("=".to_string()));
     e.space();
 
-    // Source expressions
+    // Source expressions - wrap in group for compact formatting
     if expand_tuple {
         if let Some(row_expr) = maybe_row_expr {
+            e.group_start(GroupKind::List);
             e.token(TokenKind::L_PAREN);
+            e.line(LineType::Soft);
+            e.indent_start();
             for (idx, expr) in row_expr.args.iter().enumerate() {
                 if idx > 0 {
                     e.token(TokenKind::COMMA);
@@ -139,7 +148,10 @@ fn emit_multi_assign_clause(
                 }
                 emit_node(expr, e);
             }
+            e.indent_end();
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
+            e.group_end();
         }
     } else {
         emit_node(source_node, e);

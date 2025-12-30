@@ -1,0 +1,272 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/test_setup_100.sql
+snapshot_kind: text
+---
+SET synchronous_commit = 'on';
+
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+SET allow_in_place_tablespaces = 'true';
+
+CREATE TABLESPACE regress_tblspace LOCATION '';
+
+CREATE TABLE char_tbl (f1 CHAR(4));
+
+INSERT INTO char_tbl (f1)
+VALUES
+  ('a'),
+  ('ab'),
+  ('abcd'),
+  ('abcd    ');
+
+VACUUM char_tbl;
+
+CREATE TABLE float8_tbl (f1 DOUBLE PRECISION);
+
+INSERT INTO float8_tbl (f1)
+VALUES
+  ('0.0'),
+  ('-34.84'),
+  ('-1004.30'),
+  ('-1.2345678901234e+200'),
+  ('-1.2345678901234e-200');
+
+VACUUM float8_tbl;
+
+CREATE TABLE int2_tbl (f1 SMALLINT);
+
+INSERT INTO int2_tbl (f1)
+VALUES
+  ('0   '),
+  ('  1234 '),
+  ('    -1234'),
+  ('32767'),
+  ('-32767');
+
+VACUUM int2_tbl;
+
+CREATE TABLE int4_tbl (f1 INT);
+
+INSERT INTO int4_tbl (f1)
+VALUES
+  ('   0  '),
+  ('123456     '),
+  ('    -123456'),
+  ('2147483647'),
+  ('-2147483647');
+
+VACUUM int4_tbl;
+
+CREATE TABLE int8_tbl (q1 BIGINT, q2 BIGINT);
+
+INSERT INTO int8_tbl
+VALUES
+  ('  123   ', '  456'),
+  ('123   ', '4567890123456789'),
+  ('4567890123456789', '123'),
+  (+4567890123456789, '4567890123456789'),
+  ('+4567890123456789', '-4567890123456789');
+
+VACUUM int8_tbl;
+
+CREATE TABLE point_tbl (f1 point);
+
+INSERT INTO point_tbl (f1)
+VALUES
+  ('(0.0,0.0)'),
+  ('(-10.0,0.0)'),
+  ('(-3.0,4.0)'),
+  ('(5.1, 34.5)'),
+  ('(-5.0,-12.0)'),
+  ('(1e-300,-1e-300)'),
+  ('(1e+300,Inf)'),
+  ('(Inf,1e+300)'),
+  (' ( Nan , NaN ) '),
+  ('10.0,10.0');
+
+CREATE TABLE text_tbl (f1 TEXT);
+
+INSERT INTO text_tbl
+VALUES
+  ('doh!'),
+  ('hi de ho neighbor');
+
+VACUUM text_tbl;
+
+CREATE TABLE varchar_tbl (f1 VARCHAR(4));
+
+INSERT INTO varchar_tbl (f1)
+VALUES
+  ('a'),
+  ('ab'),
+  ('abcd'),
+  ('abcd    ');
+
+VACUUM varchar_tbl;
+
+CREATE TABLE onek (
+  unique1 INT,
+  unique2 INT,
+  two INT,
+  four INT,
+  ten INT,
+  twenty INT,
+  hundred INT,
+  thousand INT,
+  twothousand INT,
+  fivethous INT,
+  tenthous INT,
+  odd INT,
+  even INT,
+  stringu1 NAME,
+  stringu2 NAME,
+  string4 NAME
+);
+
+COPY onek FROM 'filename';
+
+VACUUM (ANALYZE) onek;
+
+CREATE TABLE onek2 AS SELECT * FROM onek;
+
+VACUUM (ANALYZE) onek2;
+
+CREATE TABLE tenk1 (
+  unique1 INT,
+  unique2 INT,
+  two INT,
+  four INT,
+  ten INT,
+  twenty INT,
+  hundred INT,
+  thousand INT,
+  twothousand INT,
+  fivethous INT,
+  tenthous INT,
+  odd INT,
+  even INT,
+  stringu1 NAME,
+  stringu2 NAME,
+  string4 NAME
+);
+
+COPY tenk1 FROM 'filename';
+
+VACUUM (ANALYZE) tenk1;
+
+CREATE TABLE tenk2 AS SELECT * FROM tenk1;
+
+VACUUM (ANALYZE) tenk2;
+
+CREATE TABLE person (name TEXT, age INT, location point);
+
+COPY person FROM 'filename';
+
+VACUUM (ANALYZE) person;
+
+CREATE TABLE emp (salary INT, manager NAME)
+INHERITS (person);
+
+COPY emp FROM 'filename';
+
+VACUUM (ANALYZE) emp;
+
+CREATE TABLE student (gpa DOUBLE PRECISION)
+INHERITS (person);
+
+COPY student FROM 'filename';
+
+VACUUM (ANALYZE) student;
+
+CREATE TABLE stud_emp (percent INT)
+INHERITS (emp,
+student);
+
+COPY stud_emp FROM 'filename';
+
+VACUUM (ANALYZE) stud_emp;
+
+CREATE TABLE road (name TEXT, thepath path);
+
+COPY road FROM 'filename';
+
+VACUUM (ANALYZE) road;
+
+CREATE TABLE ihighway ()
+INHERITS (road);
+
+INSERT INTO ihighway SELECT * FROM ONLY road WHERE name ~ 'I- .*';
+
+VACUUM (ANALYZE) ihighway;
+
+CREATE TABLE shighway (surface TEXT)
+INHERITS (road);
+
+INSERT INTO shighway SELECT *, 'asphalt' FROM ONLY road WHERE name ~ 'State Hwy.*';
+
+VACUUM (ANALYZE) shighway;
+
+CREATE TYPE stoplight AS ENUM ('red', 'yellow', 'green');
+
+CREATE TYPE float8range AS RANGE (subtype = DOUBLE PRECISION, subtype_diff = float8mi);
+
+CREATE TYPE textrange AS RANGE (subtype = TEXT, collation = "C");
+
+CREATE FUNCTION binary_coercible(OID, OID)
+RETURNS BOOLEAN
+AS 'regresslib', 'binary_coercible'
+LANGUAGE "c"
+STRICT
+STABLE
+PARALLEL SAFE;
+
+CREATE FUNCTION part_hashint4_noop(value INT, seed BIGINT)
+RETURNS BIGINT
+AS '
+    select value + seed;
+    '
+LANGUAGE "sql"
+STRICT
+IMMUTABLE
+PARALLEL SAFE;
+
+CREATE OPERATOR CLASS part_test_int4_ops
+  FOR TYPE INT
+  USING hash
+  AS OPERATOR 1 =,
+  FUNCTION 2 part_hashint4_noop(INT, BIGINT);
+
+CREATE FUNCTION part_hashtext_length(value TEXT, seed BIGINT)
+RETURNS BIGINT
+AS '
+    select length(coalesce(value, ''''))::int8
+    '
+LANGUAGE "sql"
+STRICT
+IMMUTABLE
+PARALLEL SAFE;
+
+CREATE OPERATOR CLASS part_test_text_ops
+  FOR TYPE TEXT
+  USING hash
+  AS OPERATOR 1 =,
+  FUNCTION 2 part_hashtext_length(TEXT, BIGINT);
+
+CREATE FUNCTION fipshash(BYTEA)
+RETURNS TEXT
+STRICT
+IMMUTABLE
+PARALLEL SAFE
+LEAKPROOF RETURN substr(encode(sha256($1), 'hex'), 1, 32);;
+
+CREATE FUNCTION fipshash(TEXT)
+RETURNS TEXT
+STRICT
+IMMUTABLE
+PARALLEL SAFE
+LEAKPROOF RETURN substr(
+encode(sha256(CAST($1 AS BYTEA)), 'hex'),
+1,
+32
+);;

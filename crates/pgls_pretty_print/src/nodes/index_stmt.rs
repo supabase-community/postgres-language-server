@@ -9,6 +9,9 @@ use crate::{
 pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
     e.group_start(GroupKind::IndexStmt);
 
+    // Inner group for CREATE INDEX name (allows this to stay on one line)
+    e.group_start(GroupKind::IndexStmt);
+
     e.token(TokenKind::CREATE_KW);
     e.space();
 
@@ -39,9 +42,11 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         super::emit_identifier(e, &n.idxname);
     }
 
+    e.group_end(); // End CREATE INDEX name group
+
     // ON table
     if let Some(ref relation) = n.relation {
-        e.space();
+        e.line(crate::emitter::LineType::Hard);
         e.token(TokenKind::ON_KW);
         e.space();
         super::emit_range_var(e, relation);
@@ -49,7 +54,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // USING access_method
     if !n.access_method.is_empty() {
-        e.space();
+        e.line(crate::emitter::LineType::Hard);
         e.token(TokenKind::USING_KW);
         e.space();
         e.token(TokenKind::IDENT(n.access_method.clone()));
@@ -88,7 +93,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // WITH options
     if !n.options.is_empty() {
-        e.space();
+        e.line(crate::emitter::LineType::Hard);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
@@ -98,7 +103,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // TABLESPACE
     if !n.table_space.is_empty() {
-        e.space();
+        e.line(crate::emitter::LineType::Hard);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
         e.token(TokenKind::IDENT(n.table_space.clone()));
@@ -106,7 +111,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // WHERE clause (partial index)
     if let Some(ref where_clause) = n.where_clause {
-        e.space();
+        e.line(crate::emitter::LineType::Hard);
         e.token(TokenKind::WHERE_KW);
         super::emit_clause_condition(e, where_clause);
     }

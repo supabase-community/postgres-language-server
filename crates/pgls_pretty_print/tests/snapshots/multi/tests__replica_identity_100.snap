@@ -1,0 +1,273 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/replica_identity_100.sql
+snapshot_kind: text
+---
+CREATE TABLE test_replica_identity (
+  id serial PRIMARY KEY,
+  keya TEXT NOT NULL,
+  keyb TEXT NOT NULL,
+  nonkey TEXT,
+  CONSTRAINT "test_replica_identity_unique_defer" UNIQUE (keya,
+  keyb) DEFERRABLE,
+  CONSTRAINT "test_replica_identity_unique_nondefer" UNIQUE (keya,
+  keyb)
+);
+
+CREATE TABLE test_replica_identity_othertable (id serial PRIMARY KEY);
+
+CREATE TABLE test_replica_identity_t3 (id serial CONSTRAINT "pk" PRIMARY KEY DEFERRABLE);
+
+CREATE INDEX "test_replica_identity_keyab"
+ON test_replica_identity
+USING btree
+(
+  keya,
+  keyb
+);
+
+CREATE UNIQUE INDEX "test_replica_identity_keyab_key"
+ON test_replica_identity
+USING btree
+(
+  keya,
+  keyb
+);
+
+CREATE UNIQUE INDEX "test_replica_identity_nonkey"
+ON test_replica_identity
+USING btree
+(
+  keya,
+  nonkey
+);
+
+CREATE INDEX "test_replica_identity_hash"
+ON test_replica_identity
+USING hash
+(
+  nonkey
+);
+
+CREATE UNIQUE INDEX "test_replica_identity_expr"
+ON test_replica_identity
+USING btree
+(
+  keya,
+  keyb,
+  (3)
+);
+
+CREATE UNIQUE INDEX "test_replica_identity_partial"
+ON test_replica_identity
+USING btree
+(
+  keya,
+  keyb
+)
+WHERE
+  keyb <> '3';
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('pg_class' AS REGCLASS);
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('pg_constraint' AS REGCLASS);
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_keyab;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_nonkey;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_hash;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_expr;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_partial;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_othertable_pkey;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_unique_defer;
+
+ALTER TABLE test_replica_identity_t3
+  REPLICA IDENTITY USING INDEX pk;
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_pkey;
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_unique_nondefer;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_keyab_key;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity_keyab_key;
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+SELECT
+  COUNT(*)
+FROM
+  pg_index
+WHERE
+  indrelid =
+  CAST('test_replica_identity' AS REGCLASS) AND
+  indisreplident;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY DEFAULT;
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+SELECT
+  COUNT(*)
+FROM
+  pg_index
+WHERE
+  indrelid =
+  CAST('test_replica_identity' AS REGCLASS) AND
+  indisreplident;
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY FULL;
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+ALTER TABLE test_replica_identity
+  REPLICA IDENTITY NOTHING;
+
+SELECT relreplident FROM pg_class WHERE oid = CAST('test_replica_identity' AS REGCLASS);
+
+CREATE TABLE test_replica_identity2 (id INT UNIQUE NOT NULL);
+
+ALTER TABLE test_replica_identity2
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity2_id_key;
+
+ALTER TABLE test_replica_identity2
+  ALTER COLUMN id TYPE BIGINT;
+
+CREATE TABLE test_replica_identity3 (id INT NOT NULL);
+
+CREATE UNIQUE INDEX "test_replica_identity3_id_key"
+ON test_replica_identity3
+USING btree
+(
+  id
+);
+
+ALTER TABLE test_replica_identity3
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity3_id_key;
+
+ALTER TABLE test_replica_identity3
+  ALTER COLUMN id TYPE BIGINT;
+
+ALTER TABLE test_replica_identity3
+  ALTER COLUMN id DROP NOT NULL;
+
+ALTER TABLE test_replica_identity3
+  REPLICA IDENTITY FULL;
+
+ALTER TABLE test_replica_identity3
+  ALTER COLUMN id DROP NOT NULL;
+
+CREATE TABLE test_replica_identity4 (id INT NOT NULL)
+PARTITION BY LIST(id);
+
+CREATE TABLE test_replica_identity4_1 (id INT NOT NULL);
+
+ALTER TABLE ONLY test_replica_identity4
+  ATTACH PARTITION
+  test_replica_identity4_1 FOR VALUES IN (1);
+
+ALTER TABLE ONLY test_replica_identity4
+  ADD CONSTRAINT "test_replica_identity4_pkey" PRIMARY KEY (id);
+
+ALTER TABLE ONLY test_replica_identity4
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity4_pkey;
+
+ALTER TABLE ONLY test_replica_identity4_1
+  ADD CONSTRAINT "test_replica_identity4_1_pkey" PRIMARY KEY (id);
+
+ALTER INDEX test_replica_identity4_pkey
+  ATTACH PARTITION
+  test_replica_identity4_1_pkey;
+
+CREATE TABLE test_replica_identity5 (a INT NOT NULL, b INT, c INT, PRIMARY KEY (b, c));
+
+CREATE UNIQUE INDEX "test_replica_identity5_a_b_key"
+ON test_replica_identity5
+USING btree
+(
+  a,
+  b
+);
+
+ALTER TABLE test_replica_identity5
+  REPLICA IDENTITY
+  USING INDEX
+  test_replica_identity5_a_b_key;
+
+ALTER TABLE test_replica_identity5
+  DROP CONSTRAINT test_replica_identity5_pkey;
+
+ALTER TABLE test_replica_identity5
+  ALTER COLUMN b SET NOT NULL;
+
+ALTER TABLE test_replica_identity5
+  DROP CONSTRAINT test_replica_identity5_pkey;
+
+ALTER TABLE test_replica_identity5
+  ALTER COLUMN b DROP NOT NULL;
+
+DROP TABLE "test_replica_identity";
+
+DROP TABLE "test_replica_identity2";
+
+DROP TABLE "test_replica_identity3";
+
+DROP TABLE "test_replica_identity4";
+
+DROP TABLE "test_replica_identity5";
+
+DROP TABLE "test_replica_identity_othertable";
+
+DROP TABLE "test_replica_identity_t3";

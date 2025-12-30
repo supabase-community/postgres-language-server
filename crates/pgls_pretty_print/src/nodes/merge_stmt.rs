@@ -55,12 +55,14 @@ fn emit_merge_stmt_impl(e: &mut EventEmitter, n: &MergeStmt, with_semicolon: boo
         emit_merge_when_clause(e, when_clause);
     }
 
-    // RETURNING clause
+    // RETURNING clause - wrap in group for compact formatting
     if !n.returning_list.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::RETURNING_KW);
         e.space();
+        e.indent_start();
         super::node_list::emit_comma_separated_list(e, &n.returning_list, super::emit_node);
+        e.indent_end();
     }
 
     if with_semicolon {

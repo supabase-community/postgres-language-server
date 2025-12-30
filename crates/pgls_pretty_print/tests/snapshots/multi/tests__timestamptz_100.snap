@@ -1,0 +1,1200 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/timestamptz_100.sql
+snapshot_kind: text
+---
+CREATE TABLE timestamptz_tbl (d1 TIMESTAMP(2) WITH TIME ZONE);
+
+BEGIN;
+
+INSERT INTO timestamptz_tbl VALUES ('today');
+
+INSERT INTO timestamptz_tbl VALUES ('yesterday');
+
+INSERT INTO timestamptz_tbl VALUES ('tomorrow');
+
+INSERT INTO timestamptz_tbl VALUES ('tomorrow EST');
+
+INSERT INTO timestamptz_tbl VALUES ('tomorrow zulu');
+
+SELECT COUNT(*) AS one FROM timestamptz_tbl WHERE d1 = CAST('today' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT COUNT(*) AS one FROM timestamptz_tbl WHERE d1 = CAST('tomorrow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  COUNT(*) AS one
+FROM
+  timestamptz_tbl
+WHERE
+  d1 = CAST('yesterday' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  COUNT(*) AS one
+FROM
+  timestamptz_tbl
+WHERE
+  d1 =
+  CAST('tomorrow EST' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  COUNT(*) AS one
+FROM
+  timestamptz_tbl
+WHERE
+  d1 =
+  CAST('tomorrow zulu' AS TIMESTAMP WITH TIME ZONE);
+
+COMMIT;
+
+DELETE FROM timestamptz_tbl;
+
+INSERT INTO timestamptz_tbl VALUES ('now');
+
+SELECT pg_sleep(0.1);
+
+BEGIN;
+
+INSERT INTO timestamptz_tbl VALUES ('now');
+
+SELECT pg_sleep(0.1);
+
+INSERT INTO timestamptz_tbl VALUES ('now');
+
+SELECT pg_sleep(0.1);
+
+SELECT COUNT(*) AS two FROM timestamptz_tbl WHERE d1 = CAST('now' AS TIMESTAMP(2) WITH TIME ZONE);
+
+SELECT COUNT(d1) AS three, COUNT(DISTINCT d1) AS two FROM timestamptz_tbl;
+
+COMMIT;
+
+TRUNCATE timestamptz_tbl;
+
+INSERT INTO timestamptz_tbl VALUES ('-infinity');
+
+INSERT INTO timestamptz_tbl VALUES ('infinity');
+
+INSERT INTO timestamptz_tbl VALUES ('epoch');
+
+SELECT
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE) =
+  CAST('+infinity' AS TIMESTAMP WITH TIME ZONE)
+  AS t;
+
+INSERT INTO timestamptz_tbl VALUES ('Mon Feb 10 17:32:01 1997 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('Mon Feb 10 17:32:01.000001 1997 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('Mon Feb 10 17:32:01.999999 1997 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('Mon Feb 10 17:32:01.4 1997 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('Mon Feb 10 17:32:01.5 1997 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('Mon Feb 10 17:32:01.6 1997 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-01-02');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-01-02 03:04:05');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-02-10 17:32:01-08');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-02-10 17:32:01-0800');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-02-10 17:32:01 -08:00');
+
+INSERT INTO timestamptz_tbl VALUES ('19970210 173201 -0800');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-06-10 17:32:01 -07:00');
+
+INSERT INTO timestamptz_tbl VALUES ('2001-09-22T18:19:20');
+
+INSERT INTO timestamptz_tbl VALUES ('2000-03-15 08:14:01 GMT+8');
+
+INSERT INTO timestamptz_tbl VALUES ('2000-03-15 13:14:02 GMT-1');
+
+INSERT INTO timestamptz_tbl VALUES ('2000-03-15 12:14:03 GMT-2');
+
+INSERT INTO timestamptz_tbl VALUES ('2000-03-15 03:14:04 PST+8');
+
+INSERT INTO timestamptz_tbl VALUES ('2000-03-15 02:14:05 MST+7:00');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 10 17:32:01 1997 -0800');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 10 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 10 5:32PM 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('1997/02/10 17:32:01-0800');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-02-10 17:32:01 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb-10-1997 17:32:01 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('02-10-1997 17:32:01 PST');
+
+INSERT INTO timestamptz_tbl VALUES ('19970210 173201 PST');
+
+SET datestyle = ymd;
+
+INSERT INTO timestamptz_tbl VALUES ('97FEB10 5:32:01PM UTC');
+
+INSERT INTO timestamptz_tbl VALUES ('97/02/10 17:32:01 UTC');
+
+RESET datestyle;
+
+INSERT INTO timestamptz_tbl VALUES ('1997.041 17:32:01 UTC');
+
+INSERT INTO timestamptz_tbl VALUES ('19970210 173201 America/New_York');
+
+SELECT timezone('America/New_York', '19970210 173201');
+
+INSERT INTO timestamptz_tbl VALUES ('19970710 173201 America/New_York');
+
+SELECT timezone('America/New_York', '19970710 173201');
+
+INSERT INTO timestamptz_tbl VALUES ('19970710 173201 America/Does_not_exist');
+
+SELECT timezone('America/Does_not_exist', '19970710 173201');
+
+SELECT CAST('20500710 173201 Europe/Helsinki' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('20500110 173201 Europe/Helsinki' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('205000-07-10 17:32:01 Europe/Helsinki' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('205000-01-10 17:32:01 Europe/Helsinki' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Jan 01 00:00:00 1000 LMT' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Jan 01 00:00:00 2024 LMT' AS TIMESTAMP WITH TIME ZONE);
+
+SET TIME ZONE 'Europe/London';
+
+SELECT CAST('Jan 01 00:00:00 1000 LMT' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Jan 01 00:00:00 2024 LMT' AS TIMESTAMP WITH TIME ZONE);
+
+SET TIME ZONE UTC;
+
+SELECT CAST('Jan 01 00:00:00 2024 LMT' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('1912-01-01 00:00 MMT' AS TIMESTAMP WITH TIME ZONE);
+
+SET TIME ZONE 'America/Montevideo';
+
+SELECT CAST('1912-01-01 00:00' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('1912-01-01 00:00 MMT' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT timezone('UTC', CAST('1912-01-01 00:00 MMT' AS TIMESTAMP WITH TIME ZONE));
+
+RESET timezone;
+
+SELECT pg_input_is_valid('now', 'timestamptz');
+
+SELECT pg_input_is_valid('garbage', 'timestamptz');
+
+SELECT pg_input_is_valid('2001-01-01 00:00 Nehwon/Lankhmar', 'timestamptz');
+
+SELECT * FROM pg_input_error_info('garbage', 'timestamptz');
+
+SELECT * FROM pg_input_error_info('2001-01-01 00:00 Nehwon/Lankhmar', 'timestamptz');
+
+INSERT INTO timestamptz_tbl VALUES ('1997-06-10 18:32:01 PDT');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 10 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 11 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 12 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 13 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 14 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 15 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 0097 BC');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 0097');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 0597');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 1097');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 1697');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 1797');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 1897');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 2097');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 28 17:32:01 1996');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 29 17:32:01 1996');
+
+INSERT INTO timestamptz_tbl VALUES ('Mar 01 17:32:01 1996');
+
+INSERT INTO timestamptz_tbl VALUES ('Dec 30 17:32:01 1996');
+
+INSERT INTO timestamptz_tbl VALUES ('Dec 31 17:32:01 1996');
+
+INSERT INTO timestamptz_tbl VALUES ('Jan 01 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 28 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 29 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Mar 01 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Dec 30 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Dec 31 17:32:01 1997');
+
+INSERT INTO timestamptz_tbl VALUES ('Dec 31 17:32:01 1999');
+
+INSERT INTO timestamptz_tbl VALUES ('Jan 01 17:32:01 2000');
+
+INSERT INTO timestamptz_tbl VALUES ('Dec 31 17:32:01 2000');
+
+INSERT INTO timestamptz_tbl VALUES ('Jan 01 17:32:01 2001');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 -0097');
+
+INSERT INTO timestamptz_tbl VALUES ('Feb 16 17:32:01 5097 BC');
+
+SELECT CAST('Wed Jul 11 10:51:14 America/New_York 2001' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Wed Jul 11 10:51:14 GMT-4 2001' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Wed Jul 11 10:51:14 GMT+4 2001' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Wed Jul 11 10:51:14 PST-03:00 2001' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Wed Jul 11 10:51:14 PST+03:00 2001' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl;
+
+SELECT CAST('4714-11-24 00:00:00+00 BC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('4714-11-23 16:00:00-08 BC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('Sun Nov 23 16:00:00 4714 PST BC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('4714-11-23 23:59:59+00 BC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('294276-12-31 23:59:59+00' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('294276-12-31 15:59:59-08' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('294277-01-01 00:00:00+00' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('294277-12-31 16:00:00-08' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl WHERE d1 > CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl WHERE d1 < CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl WHERE d1 = CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl WHERE d1 <> CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl WHERE d1 <= CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT d1 FROM timestamptz_tbl WHERE d1 >= CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  d1 - CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE)
+  AS diff
+FROM
+  timestamptz_tbl
+WHERE
+  d1 BETWEEN '1902-01-01' AND '2038-01-01';
+
+SELECT
+  date_trunc(
+  'week',
+  CAST('2004-02-29 15:44:17.71393'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS week_trunc;
+
+SELECT date_trunc('week', CAST('infinity' AS TIMESTAMP WITH TIME ZONE)) AS inf_trunc;
+
+SELECT
+  date_trunc(
+  'timezone',
+  CAST('2004-02-29 15:44:17.71393'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS notsupp_trunc;
+
+SELECT date_trunc('timezone', CAST('infinity' AS TIMESTAMP WITH TIME ZONE)) AS notsupp_inf_trunc;
+
+SELECT date_trunc('ago', CAST('infinity' AS TIMESTAMP WITH TIME ZONE)) AS invalid_trunc;
+
+SELECT
+  date_trunc(
+  'day',
+  CAST('2001-02-16 20:38:40+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  'Australia/Sydney'
+  )
+  AS sydney_trunc;
+
+SELECT
+  date_trunc(
+  'day',
+  CAST('2001-02-16 20:38:40+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  'GMT'
+  )
+  AS gmt_trunc;
+
+SELECT
+  date_trunc(
+  'day',
+  CAST('2001-02-16 20:38:40+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  'VET'
+  )
+  AS vet_trunc;
+
+SELECT
+  date_trunc(
+  'timezone',
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE),
+  'GMT'
+  )
+  AS notsupp_zone_trunc;
+
+SELECT date_trunc('week', CAST('infinity' AS TIMESTAMP WITH TIME ZONE), 'GMT') AS inf_zone_trunc;
+
+SELECT date_trunc('ago', CAST('infinity' AS TIMESTAMP WITH TIME ZONE), 'GMT') AS invalid_zone_trunc;
+
+SELECT
+  str,
+  interval,
+  date_trunc(str, ts, 'Australia/Sydney') =
+  date_bin(
+  CAST(interval AS INTERVAL),
+  ts,
+  CAST('2001-01-01+11' AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS equal
+FROM
+  (VALUES
+    ('day', '1 d'),
+    ('hour', '1 h'),
+    ('minute', '1 m'),
+    ('second', '1 s'),
+    ('millisecond', '1 ms'),
+    ('microsecond', '1 us')) AS intervals (str, interval),
+  (VALUES (
+    CAST('2020-02-29 15:44:17.71393+00'
+    AS TIMESTAMP WITH TIME ZONE)
+  )) AS ts (ts);
+
+SELECT
+  interval,
+  ts,
+  origin,
+  date_bin(CAST(interval AS INTERVAL), ts, origin)
+FROM
+  (VALUES
+    ('15 days'),
+    ('2 hours'),
+    ('1 hour 30 minutes'),
+    ('15 minutes'),
+    ('10 seconds'),
+    ('100 milliseconds'),
+    ('250 microseconds')) AS intervals (interval),
+  (VALUES (
+    CAST('2020-02-11 15:44:17.71393'
+    AS TIMESTAMP WITH TIME ZONE)
+  )) AS ts (ts),
+  (VALUES (CAST('2001-01-01' AS TIMESTAMP WITH TIME ZONE))) AS origin (origin);
+
+SELECT
+  date_bin(
+  CAST('5 min' AS INTERVAL),
+  CAST('2020-02-01 01:01:01+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2020-02-01 00:02:30+00'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('30 minutes' AS INTERVAL),
+  CAST('2024-02-01 15:00:00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2024-02-01 17:00:00'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('5 months' AS INTERVAL),
+  CAST('2020-02-01 01:01:01+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2001-01-01+00' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('5 years' AS INTERVAL),
+  CAST('2020-02-01 01:01:01+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2001-01-01+00' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('0 days' AS INTERVAL),
+  CAST('1970-01-01 01:00:00+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1970-01-01 00:00:00+00'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('-2 days' AS INTERVAL),
+  CAST('1970-01-01 01:00:00+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1970-01-01 00:00:00+00'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('15 minutes' AS INTERVAL),
+  CAST('294276-12-30' AS TIMESTAMP WITH TIME ZONE),
+  CAST('4000-12-20 BC' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('200000000 days' AS INTERVAL),
+  CAST('2024-02-01' AS TIMESTAMP WITH TIME ZONE),
+  CAST('2024-01-01' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  date_bin(
+  CAST('365000 days' AS INTERVAL),
+  CAST('4400-01-01 BC' AS TIMESTAMP WITH TIME ZONE),
+  CAST('4000-01-01 BC' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  d1 - CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE)
+  AS diff
+FROM
+  timestamptz_tbl
+WHERE
+  d1 BETWEEN CAST('1902-01-01' AS TIMESTAMP WITH TIME ZONE) AND CAST('2038-01-01'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  d1 AS timestamptz,
+  date_part('year', d1) AS year,
+  date_part('month', d1) AS month,
+  date_part('day', d1) AS day,
+  date_part('hour', d1) AS hour,
+  date_part('minute', d1) AS minute,
+  date_part('second', d1) AS second
+FROM
+  timestamptz_tbl;
+
+SELECT
+  d1 AS timestamptz,
+  date_part('quarter', d1) AS quarter,
+  date_part('msec', d1) AS msec,
+  date_part('usec', d1) AS usec
+FROM
+  timestamptz_tbl;
+
+SELECT
+  d1 AS timestamptz,
+  date_part('isoyear', d1) AS isoyear,
+  date_part('week', d1) AS week,
+  date_part('isodow', d1) AS isodow,
+  date_part('dow', d1) AS dow,
+  date_part('doy', d1) AS doy
+FROM
+  timestamptz_tbl;
+
+SELECT
+  d1 AS timestamptz,
+  date_part('decade', d1) AS decade,
+  date_part('century', d1) AS century,
+  date_part('millennium', d1) AS millennium,
+  round(date_part('julian', d1)) AS julian,
+  date_part('epoch', d1) AS epoch
+FROM
+  timestamptz_tbl;
+
+SELECT
+  d1 AS timestamptz,
+  date_part('timezone', d1) AS timezone,
+  date_part('timezone_hour', d1) AS timezone_hour,
+  date_part('timezone_minute', d1)
+  AS timezone_minute
+FROM
+  timestamptz_tbl;
+
+SELECT
+  d1 AS timestamp,
+  EXTRACT('microseconds' FROM d1) AS microseconds,
+  EXTRACT('milliseconds' FROM d1) AS milliseconds,
+  EXTRACT('seconds' FROM d1) AS seconds,
+  round(EXTRACT('julian' FROM d1)) AS julian,
+  EXTRACT('epoch' FROM d1) AS epoch
+FROM
+  timestamptz_tbl;
+
+SELECT date_part('epoch', CAST('294270-01-01 00:00:00+00' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT EXTRACT('epoch' FROM CAST('294270-01-01 00:00:00+00' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT EXTRACT('epoch' FROM CAST('5000-01-01 00:00:00+00' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT
+  CAST('294276-12-31 23:59:59 UTC'
+  AS TIMESTAMP WITH TIME ZONE) - CAST('1999-12-23 19:59:04.224193 UTC'
+  AS TIMESTAMP WITH TIME ZONE)
+  AS ok;
+
+SELECT
+  CAST('294276-12-31 23:59:59 UTC'
+  AS TIMESTAMP WITH TIME ZONE) - CAST('1999-12-23 19:59:04.224192 UTC'
+  AS TIMESTAMP WITH TIME ZONE)
+  AS overflows;
+
+SELECT to_char(d1, 'DAY Day day DY Dy dy MONTH Month month RM MON Mon mon') FROM timestamptz_tbl;
+
+SELECT to_char(d1, 'FMDAY FMDay FMday FMMONTH FMMonth FMmonth FMRM') FROM timestamptz_tbl;
+
+SELECT to_char(d1, 'Y,YYY YYYY YYY YY Y CC Q MM WW DDD DD D J') FROM timestamptz_tbl;
+
+SELECT
+  to_char(
+  d1,
+  'FMY,YYY FMYYYY FMYYY FMYY FMY FMCC FMQ FMMM FMWW FMDDD FMDD FMD FMJ'
+  )
+FROM
+  timestamptz_tbl;
+
+SELECT to_char(d1, 'HH HH12 HH24 MI SS SSSS') FROM timestamptz_tbl;
+
+SELECT to_char(d1, '"HH:MI:SS is" HH:MI:SS "\"text between quote marks\""') FROM timestamptz_tbl;
+
+SELECT to_char(d1, 'HH24--text--MI--text--SS') FROM timestamptz_tbl;
+
+SELECT to_char(d1, 'YYYYTH YYYYth Jth') FROM timestamptz_tbl;
+
+SELECT
+  to_char(
+  d1,
+  'YYYY A.D. YYYY a.d. YYYY bc HH:MI:SS P.M. HH:MI:SS p.m. HH:MI:SS pm'
+  )
+FROM
+  timestamptz_tbl;
+
+SELECT to_char(d1, 'IYYY IYY IY I IW IDDD ID') FROM timestamptz_tbl;
+
+SELECT to_char(d1, 'FMIYYY FMIYY FMIY FMI FMIW FMIDDD FMID') FROM timestamptz_tbl;
+
+SELECT
+  to_char(
+  d,
+  'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US'
+  )
+FROM
+  (VALUES
+    (
+      CAST('2018-11-02 12:34:56'
+      AS TIMESTAMP WITH TIME ZONE)
+    ),
+    ('2018-11-02 12:34:56.78'),
+    ('2018-11-02 12:34:56.78901'),
+    ('2018-11-02 12:34:56.78901234')) AS d (d);
+
+SET TIME ZONE '00:00';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '+02:00';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '-13:00';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '-00:30';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '00:30';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '-04:30';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '04:30';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '-04:15';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+SET TIME ZONE '04:15';
+
+SELECT to_char(NOW(), 'OF') AS "OF", to_char(NOW(), 'TZH:TZM') AS "TZH:TZM";
+
+RESET timezone;
+
+SET TIME ZONE '00:00';
+
+SELECT to_char(NOW(), 'of') AS "Of", to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '+02:00';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '-13:00';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '-00:30';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '00:30';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '-04:30';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '04:30';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '-04:15';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+SET TIME ZONE '04:15';
+
+SELECT to_char(NOW(), 'of') AS of, to_char(NOW(), 'tzh:tzm') AS "tzh:tzm";
+
+RESET timezone;
+
+CREATE TABLE timestamptz_tst (a INT, b TIMESTAMP WITH TIME ZONE);
+
+INSERT INTO timestamptz_tst VALUES (1, 'Sat Mar 12 23:58:48 1000 IST');
+
+INSERT INTO timestamptz_tst VALUES (2, 'Sat Mar 12 23:58:48 10000 IST');
+
+INSERT INTO timestamptz_tst VALUES (3, 'Sat Mar 12 23:58:48 100000 IST');
+
+INSERT INTO timestamptz_tst VALUES (3, '10000 Mar 12 23:58:48 IST');
+
+INSERT INTO timestamptz_tst VALUES (4, '100000312 23:58:48 IST');
+
+INSERT INTO timestamptz_tst VALUES (4, '1000000312 23:58:48 IST');
+
+SELECT * FROM timestamptz_tst ORDER BY a;
+
+DROP TABLE "timestamptz_tst";
+
+SET TIME ZONE 'America/New_York';
+
+SELECT make_timestamptz(1973, 7, 15, 8, 15, 55.33);
+
+SELECT make_timestamptz(1973, 7, 15, 8, 15, 55.33, '+2');
+
+SELECT make_timestamptz(1973, 7, 15, 8, 15, 55.33, '-2');
+
+WITH tzs (tz) AS (
+  VALUES
+    ('+1'),
+    ('+1:'),
+    ('+1:0'),
+    ('+100'),
+    ('+1:00'),
+    ('+01:00'),
+    ('+10'),
+    ('+1000'),
+    ('+10:'),
+    ('+10:0'),
+    ('+10:00'),
+    ('+10:00:'),
+    ('+10:00:1'),
+    ('+10:00:01'),
+    ('+10:00:10')
+)
+SELECT
+  make_timestamptz(2010, 2, 27, 3, 45, 0, tz),
+  tz
+FROM
+  tzs;
+
+SELECT make_timestamptz(1973, 7, 15, 8, 15, 55.33, '2');
+
+SELECT make_timestamptz(2014, 12, 10, 10, 10, 10, '+16');
+
+SELECT make_timestamptz(2014, 12, 10, 10, 10, 10, '-16');
+
+SELECT
+  make_timestamptz(1973, 7, 15, 8, 15, 55.33, '+2') =
+  CAST('1973-07-15 08:15:55.33+02'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  make_timestamptz(
+  2014,
+  12,
+  10,
+  0,
+  0,
+  0,
+  'Europe/Prague'
+  ) =
+  CAST('2014-12-10 00:00:00 Europe/Prague'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SELECT timezone('UTC', make_timestamptz(2014, 12, 10, 0, 0, 0, 'Europe/Prague'));
+
+SELECT timezone('UTC', make_timestamptz(1881, 12, 10, 0, 0, 0, 'Asia/Singapore'));
+
+SELECT timezone('UTC', make_timestamptz(1881, 12, 10, 0, 0, 0, 'Pacific/Honolulu'));
+
+SELECT timezone('UTC', make_timestamptz(1881, 12, 10, 0, 0, 0, 'Europe/Paris'));
+
+SELECT make_timestamptz(1910, 12, 24, 0, 0, 0, 'Nehwon/Lankhmar');
+
+SELECT make_timestamptz(2008, 12, 10, 10, 10, 10, 'EST');
+
+SELECT make_timestamptz(2008, 12, 10, 10, 10, 10, 'EDT');
+
+SELECT make_timestamptz(2014, 12, 10, 10, 10, 10, 'FOO8BAR');
+
+SELECT make_timestamptz(2014, 12, 10, 10, 10, 10, 'PST8PDT,M3.2.0,M11.1.0');
+
+RESET timezone;
+
+SELECT
+  *
+FROM
+  generate_series(
+  CAST('2020-01-01 00:00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2020-01-02 03:00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1 hour' AS INTERVAL)
+  );
+
+SELECT
+  generate_series(
+  CAST('2022-01-01 00:00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE),
+  CAST('1 month' AS INTERVAL)
+  )
+LIMIT 10;
+
+SELECT
+  *
+FROM
+  generate_series(
+  CAST('2020-01-01 00:00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2020-01-02 03:00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('0 hour' AS INTERVAL)
+  );
+
+SELECT
+  generate_series(
+  CAST('1995-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1996-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('infinity' AS INTERVAL)
+  );
+
+SELECT
+  generate_series(
+  CAST('1995-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1996-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('-infinity' AS INTERVAL)
+  );
+
+SET TIME ZONE UTC;
+
+SELECT
+  date_add(
+  CAST('2022-10-30 00:00:00+01'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1 day' AS INTERVAL)
+  );
+
+SELECT
+  date_add(
+  CAST('2021-10-31 00:00:00+02'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1 day' AS INTERVAL),
+  'Europe/Warsaw'
+  );
+
+SELECT
+  date_subtract(
+  CAST('2022-10-30 00:00:00+01'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1 day' AS INTERVAL)
+  );
+
+SELECT
+  date_subtract(
+  CAST('2021-10-31 00:00:00+02'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1 day' AS INTERVAL),
+  'Europe/Warsaw'
+  );
+
+SELECT
+  *
+FROM
+  generate_series(
+  CAST('2021-12-31 23:00:00+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2020-12-31 23:00:00+00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('-1 month' AS INTERVAL),
+  'Europe/Warsaw'
+  );
+
+RESET timezone;
+
+SET TIME ZONE UTC;
+
+SELECT CAST('2011-03-27 00:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 01:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 01:59:59 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 02:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 02:00:01 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 02:59:59 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 03:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 03:00:01 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 04:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 00:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 01:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 01:59:59 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 02:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 02:00:01 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 02:59:59 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 03:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 03:00:01 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 04:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 00:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 00:59:59 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 01:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 01:00:01 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 02:00:00 Europe/Moscow' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 00:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 00:59:59 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 01:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 01:00:01 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-26 02:00:00 MSK' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 00:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 01:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 01:59:59' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 02:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 02:00:01' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 02:59:59' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 03:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 03:00:01' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 04:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 00:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 01:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 01:59:59' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 02:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 02:00:01' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 02:59:59' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 03:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 03:00:01' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2011-03-27 04:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-26 00:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-26 00:59:59' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-26 01:00:00' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-26 01:00:01' AS TIMESTAMP));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-26 02:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2014-10-26 00:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2014-10-26 00:59:59' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2014-10-26 01:00:00' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2014-10-26 01:00:01' AS TIMESTAMP));
+
+SELECT timezone('MSK', CAST('2014-10-26 02:00:00' AS TIMESTAMP));
+
+SELECT make_timestamptz(2014, 10, 26, 0, 0, 0, 'MSK');
+
+SELECT make_timestamptz(2014, 10, 26, 1, 0, 0, 'MSK');
+
+SELECT to_timestamp(0);
+
+SELECT to_timestamp(946684800);
+
+SELECT to_timestamp(1262349296.7890123);
+
+SELECT to_timestamp(-210866803200);
+
+SELECT to_timestamp(CAST(' Infinity' AS DOUBLE PRECISION));
+
+SELECT to_timestamp(CAST('-Infinity' AS DOUBLE PRECISION));
+
+SELECT to_timestamp(CAST('NaN' AS DOUBLE PRECISION));
+
+SET TIME ZONE 'Europe/Moscow';
+
+SELECT CAST('2011-03-26 21:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-26 22:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-26 22:59:59 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-26 23:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-26 23:00:01 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-26 23:59:59 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2011-03-27 00:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-25 21:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-25 21:59:59 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-25 22:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-25 22:00:01 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('2014-10-25 23:00:00 UTC' AS TIMESTAMP WITH TIME ZONE);
+
+RESET timezone;
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-26 21:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-26 22:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-26 22:59:59 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-26 23:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-26 23:00:01 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-26 23:59:59 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2011-03-27 00:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-25 21:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-25 21:59:59 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-25 22:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-25 22:00:01 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('Europe/Moscow', CAST('2014-10-25 23:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-26 21:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-26 22:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-26 22:59:59 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-26 23:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-26 23:00:01 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-26 23:59:59 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2011-03-27 00:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2014-10-25 21:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2014-10-25 21:59:59 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2014-10-25 22:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2014-10-25 22:00:01 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT timezone('MSK', CAST('2014-10-25 23:00:00 UTC' AS TIMESTAMP WITH TIME ZONE));
+
+BEGIN;
+
+SET LOCAL TIME ZONE 'Europe/Paris';
+
+VALUES (timezone(CAST('1978-07-07 19:38 America/New_York' AS TIMESTAMP WITH TIME ZONE)));
+
+VALUES (timezone(CAST('1978-07-07 19:38' AS TIMESTAMP)));
+
+SET LOCAL TIME ZONE 'Australia/Sydney';
+
+VALUES (timezone(CAST('1978-07-07 19:38 America/New_York' AS TIMESTAMP WITH TIME ZONE)));
+
+VALUES (timezone(CAST('1978-07-07 19:38' AS TIMESTAMP)));
+
+SET LOCAL TIME ZONE UTC;
+
+CREATE VIEW timestamp_local_view
+AS SELECT
+  timezone(
+  CAST('1978-07-07 19:38 America/New_York'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS ttz_at_local,
+  timezone(
+  CAST('1978-07-07 19:38 America/New_York'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS ttz_func,
+  timezone(CAST('1978-07-07 19:38' AS TIMESTAMP))
+  AS t_at_local,
+  timezone(CAST('1978-07-07 19:38' AS TIMESTAMP))
+  AS t_func;
+
+SELECT pg_get_viewdef('timestamp_local_view', TRUE);
+
+SELECT * FROM timestamp_local_view;
+
+DROP VIEW "timestamp_local_view";
+
+COMMIT;
+
+CREATE TEMPORARY TABLE tmptz (f1 TIMESTAMP WITH TIME ZONE PRIMARY KEY);
+
+INSERT INTO tmptz VALUES ('2017-01-18 00:00+00');
+
+SELECT * FROM tmptz WHERE timezone('utc', f1) = '2017-01-18 00:00';
+
+SELECT * FROM tmptz WHERE timezone('utc', f1) = '2017-01-18 00:00';
+
+SELECT CAST('infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('infinity' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('-infinity' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('infinity' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('-infinity' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('1995-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SELECT
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('1995-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SELECT age(CAST('infinity' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT age(CAST('-infinity' AS TIMESTAMP WITH TIME ZONE));
+
+SELECT
+  age(
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE),
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  age(
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE),
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  age(
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE),
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  age(
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE),
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT CAST('1999-12-31 24:00:00' AS TIMESTAMP WITH TIME ZONE);
+
+SELECT make_timestamptz(1999, 12, 31, 24, 0, 0);

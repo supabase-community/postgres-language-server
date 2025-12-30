@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/view_stmt_temp_with_options_0_100.sql
+snapshot_kind: text
+---
+CREATE OR REPLACE TEMPORARY VIEW view_with_opts ("ID",
+nickname)
+  WITH (security_barrier)
+AS SELECT id, nickname FROM accounts WITH LOCAL CHECK OPTION;

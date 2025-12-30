@@ -1,0 +1,1219 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/interval_100.sql
+snapshot_kind: text
+---
+SET datestyle = ISO;
+
+SET intervalstyle = postgres;
+
+SELECT CAST('01:00' AS INTERVAL) AS "One hour";
+
+SELECT CAST('+02:00' AS INTERVAL) AS "Two hours";
+
+SELECT CAST('-08:00' AS INTERVAL) AS "Eight hours";
+
+SELECT CAST('-1 +02:03' AS INTERVAL) AS "22 hours ago...";
+
+SELECT CAST('-1 days +02:03' AS INTERVAL) AS "22 hours ago...";
+
+SELECT CAST('1.5 weeks' AS INTERVAL) AS "Ten days twelve hours";
+
+SELECT CAST('1.5 months' AS INTERVAL) AS "One month 15 days";
+
+SELECT CAST('10 years -11 month -12 days +13:14' AS INTERVAL) AS "9 years...";
+
+SELECT CAST('infinity' AS INTERVAL) AS eternity;
+
+SELECT CAST('-infinity' AS INTERVAL) AS "beginning of time";
+
+CREATE TABLE interval_tbl (f1 INTERVAL);
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 1 minute');
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 5 hour');
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 10 day');
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 34 year');
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 3 months');
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 14 seconds ago');
+
+INSERT INTO interval_tbl (f1) VALUES ('1 day 2 hours 3 minutes 4 seconds');
+
+INSERT INTO interval_tbl (f1) VALUES ('6 years');
+
+INSERT INTO interval_tbl (f1) VALUES ('5 months');
+
+INSERT INTO interval_tbl (f1) VALUES ('5 months 12 hours');
+
+INSERT INTO interval_tbl (f1) VALUES ('infinity');
+
+INSERT INTO interval_tbl (f1) VALUES ('-infinity');
+
+INSERT INTO interval_tbl (f1) VALUES ('badly formatted interval');
+
+INSERT INTO interval_tbl (f1) VALUES ('@ 30 eons ago');
+
+SELECT pg_input_is_valid('1.5 weeks', 'interval');
+
+SELECT pg_input_is_valid('garbage', 'interval');
+
+SELECT pg_input_is_valid('@ 30 eons ago', 'interval');
+
+SELECT * FROM pg_input_error_info('garbage', 'interval');
+
+SELECT * FROM pg_input_error_info('@ 30 eons ago', 'interval');
+
+SELECT * FROM interval_tbl;
+
+SELECT * FROM interval_tbl WHERE interval_tbl.f1 <> CAST('@ 10 days' AS INTERVAL);
+
+SELECT * FROM interval_tbl WHERE interval_tbl.f1 <= CAST('@ 5 hours' AS INTERVAL);
+
+SELECT * FROM interval_tbl WHERE interval_tbl.f1 < CAST('@ 1 day' AS INTERVAL);
+
+SELECT * FROM interval_tbl WHERE interval_tbl.f1 = CAST('@ 34 years' AS INTERVAL);
+
+SELECT * FROM interval_tbl WHERE interval_tbl.f1 >= CAST('@ 1 month' AS INTERVAL);
+
+SELECT * FROM interval_tbl WHERE interval_tbl.f1 > CAST('@ 3 seconds ago' AS INTERVAL);
+
+SELECT
+  r1.*,
+  r2.*
+FROM
+  interval_tbl AS r1,
+  interval_tbl AS r2
+WHERE
+  r1.f1 > r2.f1
+ORDER BY r1.f1,
+  r2.f1;
+
+SELECT f1, -f1 FROM interval_tbl;
+
+SELECT -CAST('-2147483648 months' AS INTERVAL);
+
+SELECT -CAST('-2147483647 months' AS INTERVAL);
+
+SELECT -CAST('-2147483648 days' AS INTERVAL);
+
+SELECT -CAST('-2147483647 days' AS INTERVAL);
+
+SELECT -CAST('-9223372036854775808 us' AS INTERVAL);
+
+SELECT -CAST('-9223372036854775807 us' AS INTERVAL);
+
+SELECT -CAST('-2147483647 months -2147483647 days -9223372036854775807 us' AS INTERVAL);
+
+CREATE TEMPORARY TABLE interval_tbl_of (f1 INTERVAL);
+
+INSERT INTO interval_tbl_of (f1)
+VALUES
+  ('2147483647 days 2147483647 months'),
+  ('2147483647 days -2147483648 months'),
+  ('1 year'),
+  ('-2147483648 days 2147483647 months'),
+  ('-2147483648 days -2147483648 months');
+
+INSERT INTO interval_tbl_of (f1) VALUES ('2147483648 days');
+
+INSERT INTO interval_tbl_of (f1) VALUES ('-2147483649 days');
+
+INSERT INTO interval_tbl_of (f1) VALUES ('2147483647 years');
+
+INSERT INTO interval_tbl_of (f1) VALUES ('-2147483648 years');
+
+SELECT
+  EXTRACT('epoch' FROM CAST('256 microseconds' AS INTERVAL) * CAST(2 ^ 55 AS DOUBLE PRECISION));
+
+SELECT
+  r1.*,
+  r2.*
+FROM
+  interval_tbl_of AS r1,
+  interval_tbl_of AS r2
+WHERE
+  r1.f1 > r2.f1
+ORDER BY r1.f1,
+  r2.f1;
+
+CREATE INDEX
+ON interval_tbl_of
+USING btree
+(
+  f1
+);
+
+SET enable_seqscan = 'false';
+
+SELECT f1 FROM interval_tbl_of AS r1 ORDER BY f1;
+
+SELECT f1 FROM interval_tbl_of AS r1 ORDER BY f1;
+
+RESET enable_seqscan;
+
+SELECT f1 - f1 FROM interval_tbl_of;
+
+DROP TABLE "interval_tbl_of";
+
+CREATE TABLE interval_muldiv_tbl (span INTERVAL);
+
+SELECT span * 0.3 AS product FROM interval_muldiv_tbl;
+
+SELECT span * 8.2 AS product FROM interval_muldiv_tbl;
+
+SELECT span / 10 AS quotient FROM interval_muldiv_tbl;
+
+SELECT span / 100 AS quotient FROM interval_muldiv_tbl;
+
+DROP TABLE "interval_muldiv_tbl";
+
+SET datestyle = postgres;
+
+SET intervalstyle = postgres_verbose;
+
+SELECT * FROM interval_tbl;
+
+SELECT CAST('3000000 months' AS INTERVAL) * 1000;
+
+SELECT CAST('3000000 months' AS INTERVAL) / 0.001;
+
+SELECT CAST('3000000 days' AS INTERVAL) * 1000;
+
+SELECT CAST('3000000 days' AS INTERVAL) / 0.001;
+
+SELECT CAST('1 month 2146410 days' AS INTERVAL) * 1000.5002;
+
+SELECT CAST('4611686018427387904 usec' AS INTERVAL) / 0.1;
+
+SELECT AVG(f1) FROM interval_tbl WHERE isfinite(f1);
+
+SELECT
+  CAST('4 millenniums 5 centuries 4 decades 1 year 4 months 4 days 17 minutes 31 seconds'
+  AS INTERVAL);
+
+SELECT CAST('100000000y 10mon -1000000000d -100000h -10min -10.000001s ago' AS INTERVAL);
+
+SELECT
+  justify_hours(
+  CAST('6 months 3 days 52 hours 3 minutes 2 seconds'
+  AS INTERVAL)
+  )
+  AS "6 mons 5 days 4 hours 3 mins 2 seconds";
+
+SELECT
+  justify_days(
+  CAST('6 months 36 days 5 hours 4 minutes 3 seconds'
+  AS INTERVAL)
+  )
+  AS "7 mons 6 days 5 hours 4 mins 3 seconds";
+
+SELECT justify_hours(CAST('2147483647 days 24 hrs' AS INTERVAL));
+
+SELECT justify_days(CAST('2147483647 months 30 days' AS INTERVAL));
+
+SELECT justify_interval(CAST('1 month -1 hour' AS INTERVAL)) AS "1 month -1 hour";
+
+SELECT justify_interval(CAST('2147483647 days 24 hrs' AS INTERVAL));
+
+SELECT justify_interval(CAST('-2147483648 days -24 hrs' AS INTERVAL));
+
+SELECT justify_interval(CAST('2147483647 months 30 days' AS INTERVAL));
+
+SELECT justify_interval(CAST('-2147483648 months -30 days' AS INTERVAL));
+
+SELECT justify_interval(CAST('2147483647 months 30 days -24 hrs' AS INTERVAL));
+
+SELECT justify_interval(CAST('-2147483648 months -30 days 24 hrs' AS INTERVAL));
+
+SELECT justify_interval(CAST('2147483647 months -30 days 1440 hrs' AS INTERVAL));
+
+SELECT justify_interval(CAST('-2147483648 months 30 days -1440 hrs' AS INTERVAL));
+
+SET datestyle = ISO;
+
+SET intervalstyle = postgres;
+
+SELECT
+  CAST('1 millisecond' AS INTERVAL),
+  CAST('1 microsecond' AS INTERVAL),
+  CAST('500 seconds 99 milliseconds 51 microseconds'
+  AS INTERVAL);
+
+SELECT CAST('3 days 5 milliseconds' AS INTERVAL);
+
+SELECT CAST('1 second 2 seconds' AS INTERVAL);
+
+SELECT CAST('10 milliseconds 20 milliseconds' AS INTERVAL);
+
+SELECT CAST('5.5 seconds 3 milliseconds' AS INTERVAL);
+
+SELECT CAST('1:20:05 5 microseconds' AS INTERVAL);
+
+SELECT CAST('1 day 1 day' AS INTERVAL);
+
+SELECT CAST('1-2' AS INTERVAL);
+
+SELECT CAST('999' AS INTERVAL SECOND);
+
+SELECT CAST('999' AS INTERVAL MINUTE);
+
+SELECT CAST('999' AS INTERVAL HOUR);
+
+SELECT CAST('999' AS INTERVAL DAY);
+
+SELECT CAST('999' AS INTERVAL MONTH);
+
+SELECT CAST('1' AS INTERVAL YEAR);
+
+SELECT CAST('2' AS INTERVAL MONTH);
+
+SELECT CAST('3' AS INTERVAL DAY);
+
+SELECT CAST('4' AS INTERVAL HOUR);
+
+SELECT CAST('5' AS INTERVAL MINUTE);
+
+SELECT CAST('6' AS INTERVAL SECOND);
+
+SELECT CAST('1' AS INTERVAL YEAR TO MONTH);
+
+SELECT CAST('1-2' AS INTERVAL YEAR TO MONTH);
+
+SELECT CAST('1 2' AS INTERVAL DAY TO HOUR);
+
+SELECT CAST('1 2:03' AS INTERVAL DAY TO HOUR);
+
+SELECT CAST('1 2:03:04' AS INTERVAL DAY TO HOUR);
+
+SELECT CAST('1 2' AS INTERVAL DAY TO MINUTE);
+
+SELECT CAST('1 2:03' AS INTERVAL DAY TO MINUTE);
+
+SELECT CAST('1 2:03:04' AS INTERVAL DAY TO MINUTE);
+
+SELECT CAST('1 2' AS INTERVAL DAY TO SECOND);
+
+SELECT CAST('1 2:03' AS INTERVAL DAY TO SECOND);
+
+SELECT CAST('1 2:03:04' AS INTERVAL DAY TO SECOND);
+
+SELECT CAST('1 2' AS INTERVAL HOUR TO MINUTE);
+
+SELECT CAST('1 2:03' AS INTERVAL HOUR TO MINUTE);
+
+SELECT CAST('1 2:03:04' AS INTERVAL HOUR TO MINUTE);
+
+SELECT CAST('1 2' AS INTERVAL HOUR TO SECOND);
+
+SELECT CAST('1 2:03' AS INTERVAL HOUR TO SECOND);
+
+SELECT CAST('1 2:03:04' AS INTERVAL HOUR TO SECOND);
+
+SELECT CAST('1 2' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('1 2:03' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('1 2:03:04' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('1 +2:03' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('1 +2:03:04' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('1 -2:03' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('1 -2:03:04' AS INTERVAL MINUTE TO SECOND);
+
+SELECT CAST('123 11' AS INTERVAL DAY TO HOUR);
+
+SELECT CAST('123 11' AS INTERVAL DAY);
+
+SELECT CAST('123 11' AS INTERVAL);
+
+SELECT CAST('123 2:03 -2:04' AS INTERVAL);
+
+SELECT CAST('1 day 01:23:45.6789' AS INTERVAL(0));
+
+SELECT CAST('1 day 01:23:45.6789' AS INTERVAL(2));
+
+SELECT CAST('12:34.5678' AS INTERVAL MINUTE TO SECOND(2));
+
+SELECT CAST('1.234' AS INTERVAL SECOND);
+
+SELECT CAST('1.234' AS INTERVAL SECOND(2));
+
+SELECT CAST('1 2.345' AS INTERVAL DAY TO SECOND(2));
+
+SELECT CAST('1 2:03' AS INTERVAL DAY TO SECOND(2));
+
+SELECT CAST('1 2:03.4567' AS INTERVAL DAY TO SECOND(2));
+
+SELECT CAST('1 2:03:04.5678' AS INTERVAL DAY TO SECOND(2));
+
+SELECT CAST('1 2.345' AS INTERVAL HOUR TO SECOND(2));
+
+SELECT CAST('1 2:03.45678' AS INTERVAL HOUR TO SECOND(2));
+
+SELECT CAST('1 2:03:04.5678' AS INTERVAL HOUR TO SECOND(2));
+
+SELECT CAST('1 2.3456' AS INTERVAL MINUTE TO SECOND(2));
+
+SELECT CAST('1 2:03.5678' AS INTERVAL MINUTE TO SECOND(2));
+
+SELECT CAST('1 2:03:04.5678' AS INTERVAL MINUTE TO SECOND(2));
+
+SELECT CAST('2562047788:00:54.775807' AS INTERVAL SECOND(2));
+
+SELECT CAST('-2562047788:00:54.775807' AS INTERVAL SECOND(2));
+
+SELECT
+  f1,
+  CAST(f1 AS INTERVAL DAY TO MINUTE) AS minutes,
+  CAST(CAST(f1 + CAST('1 month' AS INTERVAL)
+  AS INTERVAL MONTH)
+  AS INTERVAL YEAR)
+  AS years
+FROM
+  interval_tbl;
+
+SET intervalstyle = sql_standard;
+
+SELECT
+  CAST('0' AS INTERVAL) AS zero,
+  CAST('1-2' AS INTERVAL YEAR TO MONTH)
+  AS "year-month",
+  CAST('1 2:03:04' AS INTERVAL DAY TO SECOND)
+  AS "day-time",
+  -CAST('1-2' AS INTERVAL) AS "negative year-month",
+  -CAST('1 2:03:04' AS INTERVAL)
+  AS "negative day-time";
+
+SET intervalstyle = postgres;
+
+SELECT
+  CAST('+1 -1:00:00' AS INTERVAL),
+  CAST('-1 +1:00:00' AS INTERVAL),
+  CAST('+1-2 -3 +4:05:06.789' AS INTERVAL),
+  CAST('-1-2 +3 -4:05:06.789' AS INTERVAL);
+
+SELECT
+  CAST('-23 hours 45 min 12.34 sec' AS INTERVAL),
+  CAST('-1 day 23 hours 45 min 12.34 sec'
+  AS INTERVAL),
+  CAST('-1 year 2 months 1 day 23 hours 45 min 12.34 sec'
+  AS INTERVAL),
+  CAST('-1 year 2 months 1 day 23 hours 45 min +12.34 sec'
+  AS INTERVAL);
+
+SET intervalstyle = sql_standard;
+
+SELECT
+  CAST('1 day -1 hours' AS INTERVAL),
+  CAST('-1 days +1 hours' AS INTERVAL),
+  CAST('1 years 2 months -3 days 4 hours 5 minutes 6.789 seconds'
+  AS INTERVAL),
+  -CAST('1 years 2 months -3 days 4 hours 5 minutes 6.789 seconds'
+  AS INTERVAL);
+
+SELECT
+  CAST('-23 hours 45 min 12.34 sec' AS INTERVAL),
+  CAST('-1 day 23 hours 45 min 12.34 sec'
+  AS INTERVAL),
+  CAST('-1 year 2 months 1 day 23 hours 45 min 12.34 sec'
+  AS INTERVAL),
+  CAST('-1 year 2 months 1 day 23 hours 45 min +12.34 sec'
+  AS INTERVAL);
+
+SELECT CAST('' AS INTERVAL);
+
+SET intervalstyle = iso_8601;
+
+SELECT
+  CAST('0' AS INTERVAL) AS zero,
+  CAST('1-2' AS INTERVAL) AS "a year 2 months",
+  CAST('1 2:03:04' AS INTERVAL)
+  AS "a bit over a day",
+  CAST('2:03:04.45679' AS INTERVAL)
+  AS "a bit over 2 hours",
+  CAST('1-2' AS INTERVAL) + CAST('3 4:05:06.7' AS INTERVAL)
+  AS "all fields",
+  CAST('1-2' AS INTERVAL) - CAST('3 4:05:06.7' AS INTERVAL)
+  AS "mixed sign",
+  -CAST('1-2' AS INTERVAL) + CAST('3 4:05:06.7' AS INTERVAL)
+  AS negative;
+
+SET intervalstyle = sql_standard;
+
+SELECT
+  CAST('P0Y' AS INTERVAL) AS zero,
+  CAST('P1Y2M' AS INTERVAL) AS "a year 2 months",
+  CAST('P1W' AS INTERVAL) AS "a week",
+  CAST('P1DT2H3M4S' AS INTERVAL)
+  AS "a bit over a day",
+  CAST('P1Y2M3DT4H5M6.7S' AS INTERVAL)
+  AS "all fields",
+  CAST('P-1Y-2M-3DT-4H-5M-6.7S' AS INTERVAL)
+  AS negative,
+  CAST('PT-0.1S' AS INTERVAL) AS "fractional second";
+
+SET intervalstyle = postgres;
+
+SELECT
+  CAST('P00021015T103020' AS INTERVAL)
+  AS "ISO8601 Basic Format",
+  CAST('P0002-10-15T10:30:20' AS INTERVAL)
+  AS "ISO8601 Extended Format";
+
+SELECT
+  CAST('P0002' AS INTERVAL) AS "year only",
+  CAST('P0002-10' AS INTERVAL) AS "year month",
+  CAST('P0002-10-15' AS INTERVAL)
+  AS "year month day",
+  CAST('P0002T1S' AS INTERVAL)
+  AS "year only plus time",
+  CAST('P0002-10T1S' AS INTERVAL)
+  AS "year month plus time",
+  CAST('P0002-10-15T1S' AS INTERVAL)
+  AS "year month day plus time",
+  CAST('PT10' AS INTERVAL) AS "hour only",
+  CAST('PT10:30' AS INTERVAL) AS "hour minute";
+
+SELECT CAST('P1Y0M3DT4H5M6S' AS INTERVAL);
+
+SELECT CAST('P1.0Y0M3DT4H5M6S' AS INTERVAL);
+
+SELECT CAST('P1.1Y0M3DT4H5M6S' AS INTERVAL);
+
+SELECT CAST('P1.Y0M3DT4H5M6S' AS INTERVAL);
+
+SELECT CAST('P.1Y0M3DT4H5M6S' AS INTERVAL);
+
+SELECT CAST('P10.5e4Y' AS INTERVAL);
+
+SELECT CAST('P.Y0M3DT4H5M6S' AS INTERVAL);
+
+SET intervalstyle = postgres_verbose;
+
+SELECT CAST('-10 mons -3 days +03:55:06.70' AS INTERVAL);
+
+SELECT CAST('1 year 2 mons 3 days 04:05:06.699999' AS INTERVAL);
+
+SELECT
+  CAST('0:0:0.7' AS INTERVAL),
+  CAST('@ 0.70 secs' AS INTERVAL),
+  CAST('0.7 seconds' AS INTERVAL);
+
+SELECT CAST('2562047788.01521550194 hours' AS INTERVAL);
+
+SELECT CAST('-2562047788.01521550222 hours' AS INTERVAL);
+
+SELECT CAST('153722867280.912930117 minutes' AS INTERVAL);
+
+SELECT CAST('-153722867280.912930133 minutes' AS INTERVAL);
+
+SELECT CAST('9223372036854.775807 seconds' AS INTERVAL);
+
+SELECT CAST('-9223372036854.775808 seconds' AS INTERVAL);
+
+SELECT CAST('9223372036854775.807 milliseconds' AS INTERVAL);
+
+SELECT CAST('-9223372036854775.808 milliseconds' AS INTERVAL);
+
+SELECT CAST('9223372036854775807 microseconds' AS INTERVAL);
+
+SELECT CAST('-9223372036854775808 microseconds' AS INTERVAL);
+
+SELECT CAST('PT2562047788H54.775807S' AS INTERVAL);
+
+SELECT CAST('PT-2562047788H-54.775808S' AS INTERVAL);
+
+SELECT CAST('PT2562047788:00:54.775807' AS INTERVAL);
+
+SELECT CAST('PT2562047788.0152155019444' AS INTERVAL);
+
+SELECT CAST('PT-2562047788.0152155022222' AS INTERVAL);
+
+SELECT CAST('2147483648 years' AS INTERVAL);
+
+SELECT CAST('-2147483649 years' AS INTERVAL);
+
+SELECT CAST('2147483648 months' AS INTERVAL);
+
+SELECT CAST('-2147483649 months' AS INTERVAL);
+
+SELECT CAST('2147483648 days' AS INTERVAL);
+
+SELECT CAST('-2147483649 days' AS INTERVAL);
+
+SELECT CAST('2562047789 hours' AS INTERVAL);
+
+SELECT CAST('-2562047789 hours' AS INTERVAL);
+
+SELECT CAST('153722867281 minutes' AS INTERVAL);
+
+SELECT CAST('-153722867281 minutes' AS INTERVAL);
+
+SELECT CAST('9223372036855 seconds' AS INTERVAL);
+
+SELECT CAST('-9223372036855 seconds' AS INTERVAL);
+
+SELECT CAST('9223372036854777 millisecond' AS INTERVAL);
+
+SELECT CAST('-9223372036854777 millisecond' AS INTERVAL);
+
+SELECT CAST('9223372036854775808 microsecond' AS INTERVAL);
+
+SELECT CAST('-9223372036854775809 microsecond' AS INTERVAL);
+
+SELECT CAST('P2147483648' AS INTERVAL);
+
+SELECT CAST('P-2147483649' AS INTERVAL);
+
+SELECT CAST('P1-2147483647-2147483647' AS INTERVAL);
+
+SELECT CAST('PT2562047789' AS INTERVAL);
+
+SELECT CAST('PT-2562047789' AS INTERVAL);
+
+SELECT CAST('2147483647 weeks' AS INTERVAL);
+
+SELECT CAST('-2147483648 weeks' AS INTERVAL);
+
+SELECT CAST('2147483647 decades' AS INTERVAL);
+
+SELECT CAST('-2147483648 decades' AS INTERVAL);
+
+SELECT CAST('2147483647 centuries' AS INTERVAL);
+
+SELECT CAST('-2147483648 centuries' AS INTERVAL);
+
+SELECT CAST('2147483647 millennium' AS INTERVAL);
+
+SELECT CAST('-2147483648 millennium' AS INTERVAL);
+
+SELECT CAST('1 week 2147483647 days' AS INTERVAL);
+
+SELECT CAST('-1 week -2147483648 days' AS INTERVAL);
+
+SELECT CAST('2147483647 days 1 week' AS INTERVAL);
+
+SELECT CAST('-2147483648 days -1 week' AS INTERVAL);
+
+SELECT CAST('P1W2147483647D' AS INTERVAL);
+
+SELECT CAST('P-1W-2147483648D' AS INTERVAL);
+
+SELECT CAST('P2147483647D1W' AS INTERVAL);
+
+SELECT CAST('P-2147483648D-1W' AS INTERVAL);
+
+SELECT CAST('1 decade 2147483647 years' AS INTERVAL);
+
+SELECT CAST('1 century 2147483647 years' AS INTERVAL);
+
+SELECT CAST('1 millennium 2147483647 years' AS INTERVAL);
+
+SELECT CAST('-1 decade -2147483648 years' AS INTERVAL);
+
+SELECT CAST('-1 century -2147483648 years' AS INTERVAL);
+
+SELECT CAST('-1 millennium -2147483648 years' AS INTERVAL);
+
+SELECT CAST('2147483647 years 1 decade' AS INTERVAL);
+
+SELECT CAST('2147483647 years 1 century' AS INTERVAL);
+
+SELECT CAST('2147483647 years 1 millennium' AS INTERVAL);
+
+SELECT CAST('-2147483648 years -1 decade' AS INTERVAL);
+
+SELECT CAST('-2147483648 years -1 century' AS INTERVAL);
+
+SELECT CAST('-2147483648 years -1 millennium' AS INTERVAL);
+
+SELECT CAST('0.1 millennium 2147483647 months' AS INTERVAL);
+
+SELECT CAST('0.1 centuries 2147483647 months' AS INTERVAL);
+
+SELECT CAST('0.1 decades 2147483647 months' AS INTERVAL);
+
+SELECT CAST('0.1 yrs 2147483647 months' AS INTERVAL);
+
+SELECT CAST('-0.1 millennium -2147483648 months' AS INTERVAL);
+
+SELECT CAST('-0.1 centuries -2147483648 months' AS INTERVAL);
+
+SELECT CAST('-0.1 decades -2147483648 months' AS INTERVAL);
+
+SELECT CAST('-0.1 yrs -2147483648 months' AS INTERVAL);
+
+SELECT CAST('2147483647 months 0.1 millennium' AS INTERVAL);
+
+SELECT CAST('2147483647 months 0.1 centuries' AS INTERVAL);
+
+SELECT CAST('2147483647 months 0.1 decades' AS INTERVAL);
+
+SELECT CAST('2147483647 months 0.1 yrs' AS INTERVAL);
+
+SELECT CAST('-2147483648 months -0.1 millennium' AS INTERVAL);
+
+SELECT CAST('-2147483648 months -0.1 centuries' AS INTERVAL);
+
+SELECT CAST('-2147483648 months -0.1 decades' AS INTERVAL);
+
+SELECT CAST('-2147483648 months -0.1 yrs' AS INTERVAL);
+
+SELECT CAST('0.1 months 2147483647 days' AS INTERVAL);
+
+SELECT CAST('-0.1 months -2147483648 days' AS INTERVAL);
+
+SELECT CAST('2147483647 days 0.1 months' AS INTERVAL);
+
+SELECT CAST('-2147483648 days -0.1 months' AS INTERVAL);
+
+SELECT CAST('0.5 weeks 2147483647 days' AS INTERVAL);
+
+SELECT CAST('-0.5 weeks -2147483648 days' AS INTERVAL);
+
+SELECT CAST('2147483647 days 0.5 weeks' AS INTERVAL);
+
+SELECT CAST('-2147483648 days -0.5 weeks' AS INTERVAL);
+
+SELECT CAST('0.01 months 9223372036854775807 microseconds' AS INTERVAL);
+
+SELECT CAST('-0.01 months -9223372036854775808 microseconds' AS INTERVAL);
+
+SELECT CAST('9223372036854775807 microseconds 0.01 months' AS INTERVAL);
+
+SELECT CAST('-9223372036854775808 microseconds -0.01 months' AS INTERVAL);
+
+SELECT CAST('0.1 weeks 9223372036854775807 microseconds' AS INTERVAL);
+
+SELECT CAST('-0.1 weeks -9223372036854775808 microseconds' AS INTERVAL);
+
+SELECT CAST('9223372036854775807 microseconds 0.1 weeks' AS INTERVAL);
+
+SELECT CAST('-9223372036854775808 microseconds -0.1 weeks' AS INTERVAL);
+
+SELECT CAST('0.1 days 9223372036854775807 microseconds' AS INTERVAL);
+
+SELECT CAST('-0.1 days -9223372036854775808 microseconds' AS INTERVAL);
+
+SELECT CAST('9223372036854775807 microseconds 0.1 days' AS INTERVAL);
+
+SELECT CAST('-9223372036854775808 microseconds -0.1 days' AS INTERVAL);
+
+SELECT CAST('P0.1Y2147483647M' AS INTERVAL);
+
+SELECT CAST('P-0.1Y-2147483648M' AS INTERVAL);
+
+SELECT CAST('P2147483647M0.1Y' AS INTERVAL);
+
+SELECT CAST('P-2147483648M-0.1Y' AS INTERVAL);
+
+SELECT CAST('P0.1M2147483647D' AS INTERVAL);
+
+SELECT CAST('P-0.1M-2147483648D' AS INTERVAL);
+
+SELECT CAST('P2147483647D0.1M' AS INTERVAL);
+
+SELECT CAST('P-2147483648D-0.1M' AS INTERVAL);
+
+SELECT CAST('P0.5W2147483647D' AS INTERVAL);
+
+SELECT CAST('P-0.5W-2147483648D' AS INTERVAL);
+
+SELECT CAST('P2147483647D0.5W' AS INTERVAL);
+
+SELECT CAST('P-2147483648D-0.5W' AS INTERVAL);
+
+SELECT CAST('P0.01MT2562047788H54.775807S' AS INTERVAL);
+
+SELECT CAST('P-0.01MT-2562047788H-54.775808S' AS INTERVAL);
+
+SELECT CAST('P0.1DT2562047788H54.775807S' AS INTERVAL);
+
+SELECT CAST('P-0.1DT-2562047788H-54.775808S' AS INTERVAL);
+
+SELECT CAST('PT2562047788.1H54.775807S' AS INTERVAL);
+
+SELECT CAST('PT-2562047788.1H-54.775808S' AS INTERVAL);
+
+SELECT CAST('PT2562047788H0.1M54.775807S' AS INTERVAL);
+
+SELECT CAST('PT-2562047788H-0.1M-54.775808S' AS INTERVAL);
+
+SELECT CAST('P0.1-2147483647-00' AS INTERVAL);
+
+SELECT CAST('P00-0.1-2147483647' AS INTERVAL);
+
+SELECT CAST('P00-0.01-00T2562047788:00:54.775807' AS INTERVAL);
+
+SELECT CAST('P00-00-0.1T2562047788:00:54.775807' AS INTERVAL);
+
+SELECT CAST('PT2562047788.1:00:54.775807' AS INTERVAL);
+
+SELECT CAST('PT2562047788:01.:54.775807' AS INTERVAL);
+
+SELECT CAST('0.1 2562047788:0:54.775807' AS INTERVAL);
+
+SELECT CAST('0.1 2562047788:0:54.775808 ago' AS INTERVAL);
+
+SELECT CAST('2562047788.1:0:54.775807' AS INTERVAL);
+
+SELECT CAST('2562047788.1:0:54.775808 ago' AS INTERVAL);
+
+SELECT CAST('2562047788:0.1:54.775807' AS INTERVAL);
+
+SELECT CAST('2562047788:0.1:54.775808 ago' AS INTERVAL);
+
+SELECT CAST('-2147483648 months ago' AS INTERVAL);
+
+SELECT CAST('-2147483648 days ago' AS INTERVAL);
+
+SELECT CAST('-9223372036854775808 microseconds ago' AS INTERVAL);
+
+SELECT
+  CAST('-2147483648 months -2147483648 days -9223372036854775808 microseconds ago'
+  AS INTERVAL);
+
+SELECT make_interval("years" := 178956971);
+
+SELECT make_interval("years" := -178956971);
+
+SELECT make_interval("years" := 1, "months" := 2147483647);
+
+SELECT make_interval("years" := -1, "months" := -2147483648);
+
+SELECT make_interval("weeks" := 306783379);
+
+SELECT make_interval("weeks" := -306783379);
+
+SELECT make_interval("weeks" := 1, "days" := 2147483647);
+
+SELECT make_interval("weeks" := -1, "days" := -2147483648);
+
+SELECT make_interval("secs" := 1e308);
+
+SELECT make_interval("secs" := 1e18);
+
+SELECT make_interval("secs" := -1e18);
+
+SELECT make_interval("mins" := 1, "secs" := 9223372036800.0);
+
+SELECT make_interval("mins" := -1, "secs" := -9223372036800.0);
+
+SET intervalstyle = postgres;
+
+SELECT CAST('-2147483647 months -2147483648 days -9223372036854775808 us' AS INTERVAL);
+
+SET intervalstyle = sql_standard;
+
+SELECT CAST('-2147483647 months -2147483648 days -9223372036854775808 us' AS INTERVAL);
+
+SET intervalstyle = iso_8601;
+
+SELECT CAST('-2147483647 months -2147483648 days -9223372036854775808 us' AS INTERVAL);
+
+SET intervalstyle = postgres_verbose;
+
+SELECT CAST('-2147483647 months -2147483648 days -9223372036854775808 us' AS INTERVAL);
+
+SELECT CAST('30 days' AS INTERVAL) = CAST('1 month' AS INTERVAL) AS t;
+
+SELECT interval_hash(CAST('30 days' AS INTERVAL)) = interval_hash(CAST('1 month' AS INTERVAL)) AS t;
+
+SELECT make_interval("years" := 2);
+
+SELECT make_interval("years" := 1, "months" := 6);
+
+SELECT
+  make_interval(
+  "years" := 1,
+  "months" := -1,
+  "weeks" := 5,
+  "days" := -7,
+  "hours" := 25,
+  "mins" := -180
+  );
+
+SELECT
+  make_interval() =
+  make_interval(
+  "years" := 0,
+  "months" := 0,
+  "weeks" := 0,
+  "days" := 0,
+  "mins" := 0,
+  "secs" := 0.0
+  );
+
+SELECT make_interval("hours" := -2, "mins" := -10, "secs" := -25.3);
+
+SELECT make_interval("years" := CAST(CAST('inf' AS DOUBLE PRECISION) AS INT));
+
+SELECT make_interval("months" := CAST(CAST('NaN' AS DOUBLE PRECISION) AS INT));
+
+SELECT make_interval("secs" := 'inf');
+
+SELECT make_interval("secs" := 'NaN');
+
+SELECT make_interval("secs" := 7e12);
+
+SELECT
+  f1,
+  EXTRACT('microsecond' FROM f1) AS microsecond,
+  EXTRACT('millisecond' FROM f1) AS millisecond,
+  EXTRACT('second' FROM f1) AS second,
+  EXTRACT('minute' FROM f1) AS minute,
+  EXTRACT('hour' FROM f1) AS hour,
+  EXTRACT('day' FROM f1) AS day,
+  EXTRACT('week' FROM f1) AS week,
+  EXTRACT('month' FROM f1) AS month,
+  EXTRACT('quarter' FROM f1) AS quarter,
+  EXTRACT('year' FROM f1) AS year,
+  EXTRACT('decade' FROM f1) AS decade,
+  EXTRACT('century' FROM f1) AS century,
+  EXTRACT('millennium' FROM f1) AS millennium,
+  EXTRACT('epoch' FROM f1) AS epoch
+FROM
+  interval_tbl;
+
+SELECT
+  -f1,
+  EXTRACT('microsecond' FROM -f1) AS microsecond,
+  EXTRACT('millisecond' FROM -f1) AS millisecond,
+  EXTRACT('second' FROM -f1) AS second,
+  EXTRACT('minute' FROM -f1) AS minute,
+  EXTRACT('hour' FROM -f1) AS hour,
+  EXTRACT('day' FROM -f1) AS day,
+  EXTRACT('week' FROM -f1) AS week,
+  EXTRACT('month' FROM -f1) AS month,
+  EXTRACT('quarter' FROM -f1) AS quarter,
+  EXTRACT('year' FROM -f1) AS year,
+  EXTRACT('decade' FROM -f1) AS decade,
+  EXTRACT('century' FROM -f1) AS century,
+  EXTRACT('millennium' FROM -f1) AS millennium,
+  EXTRACT('epoch' FROM -f1) AS epoch
+FROM
+  interval_tbl;
+
+SELECT EXTRACT('fortnight' FROM CAST('2 days' AS INTERVAL));
+
+SELECT EXTRACT('timezone' FROM CAST('2 days' AS INTERVAL));
+
+SELECT EXTRACT('decade' FROM CAST('100 y' AS INTERVAL));
+
+SELECT EXTRACT('decade' FROM CAST('99 y' AS INTERVAL));
+
+SELECT EXTRACT('decade' FROM CAST('-99 y' AS INTERVAL));
+
+SELECT EXTRACT('decade' FROM CAST('-100 y' AS INTERVAL));
+
+SELECT EXTRACT('century' FROM CAST('100 y' AS INTERVAL));
+
+SELECT EXTRACT('century' FROM CAST('99 y' AS INTERVAL));
+
+SELECT EXTRACT('century' FROM CAST('-99 y' AS INTERVAL));
+
+SELECT EXTRACT('century' FROM CAST('-100 y' AS INTERVAL));
+
+SELECT
+  f1,
+  date_part('microsecond', f1) AS microsecond,
+  date_part('millisecond', f1) AS millisecond,
+  date_part('second', f1) AS second,
+  date_part('epoch', f1) AS epoch
+FROM
+  interval_tbl;
+
+SELECT EXTRACT('epoch' FROM CAST('1000000000 days' AS INTERVAL));
+
+SELECT CAST('-2147483648 months -2147483648 days -9223372036854775807 us' AS INTERVAL);
+
+SELECT CAST('2147483647 months 2147483647 days 9223372036854775806 us' AS INTERVAL);
+
+SELECT CAST('-2147483648 months -2147483648 days -9223372036854775808 us' AS INTERVAL);
+
+SELECT CAST('2147483647 months 2147483647 days 9223372036854775807 us' AS INTERVAL);
+
+CREATE TABLE infinite_interval_tbl (i INTERVAL);
+
+INSERT INTO infinite_interval_tbl
+VALUES
+  ('infinity'),
+  ('-infinity'),
+  ('1 year 2 days 3 hours');
+
+SELECT i, isfinite(i) FROM infinite_interval_tbl;
+
+CREATE FUNCTION eval(expr TEXT)
+RETURNS TEXT
+AS '
+DECLARE
+  result text;
+BEGIN
+  EXECUTE ''select ''||expr INTO result;
+  RETURN result;
+EXCEPTION WHEN OTHERS THEN
+  RETURN SQLERRM;
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT
+  d AS date,
+  i AS interval,
+  eval(format('date %L + interval %L', d, i))
+  AS plus,
+  eval(format('date %L - interval %L', d, i))
+  AS minus
+FROM
+  (VALUES
+    (CAST('-infinity' AS DATE)),
+    (CAST('1995-08-06' AS DATE)),
+    (CAST('infinity' AS DATE))) AS t1 (d),
+  (VALUES
+    (CAST('-infinity' AS INTERVAL)),
+    (CAST('infinity' AS INTERVAL))) AS t2 (i);
+
+SELECT
+  i1 AS interval1,
+  i2 AS interval2,
+  eval(format('interval %L + interval %L', i1, i2))
+  AS plus,
+  eval(format('interval %L - interval %L', i1, i2))
+  AS minus
+FROM
+  (VALUES
+    (CAST('-infinity' AS INTERVAL)),
+    (CAST('2 months' AS INTERVAL)),
+    (CAST('infinity' AS INTERVAL))) AS t1 (i1),
+  (VALUES
+    (CAST('-infinity' AS INTERVAL)),
+    (CAST('10 days' AS INTERVAL)),
+    (CAST('infinity' AS INTERVAL))) AS t2 (i2);
+
+SELECT
+  CAST('2147483646 months 2147483646 days 9223372036854775806 us'
+  AS INTERVAL) + CAST('1 month 1 day 1 us' AS INTERVAL);
+
+SELECT
+  CAST('-2147483647 months -2147483647 days -9223372036854775807 us'
+  AS INTERVAL) + CAST('-1 month -1 day -1 us' AS INTERVAL);
+
+SELECT
+  CAST('2147483646 months 2147483646 days 9223372036854775806 us'
+  AS INTERVAL) - CAST('-1 month -1 day -1 us' AS INTERVAL);
+
+SELECT
+  CAST('-2147483647 months -2147483647 days -9223372036854775807 us'
+  AS INTERVAL) - CAST('1 month 1 day 1 us' AS INTERVAL);
+
+SELECT
+  t AS timestamp,
+  i AS interval,
+  eval(format('timestamp %L + interval %L', t, i))
+  AS plus,
+  eval(format('timestamp %L - interval %L', t, i))
+  AS minus
+FROM
+  (VALUES
+    (CAST('-infinity' AS TIMESTAMP)),
+    (CAST('1995-08-06 12:30:15' AS TIMESTAMP)),
+    (CAST('infinity' AS TIMESTAMP))) AS t1 (t),
+  (VALUES
+    (CAST('-infinity' AS INTERVAL)),
+    (CAST('infinity' AS INTERVAL))) AS t2 (i);
+
+SELECT
+  timezone('GMT', t) AS timestamptz,
+  i AS interval,
+  eval(format('timestamptz %L + interval %L', t, i))
+  AS plus,
+  eval(format('timestamptz %L - interval %L', t, i))
+  AS minus
+FROM
+  (VALUES
+    (CAST('-infinity' AS TIMESTAMP WITH TIME ZONE)),
+    (
+      CAST('1995-08-06 12:30:15 GMT'
+      AS TIMESTAMP WITH TIME ZONE)
+    ),
+    (CAST('infinity' AS TIMESTAMP WITH TIME ZONE))) AS t1 (t),
+  (VALUES
+    (CAST('-infinity' AS INTERVAL)),
+    (CAST('infinity' AS INTERVAL))) AS t2 (i);
+
+SELECT CAST('11:27:42' AS TIME) + CAST('infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME) + CAST('-infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME) - CAST('infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME) - CAST('-infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME WITH TIME ZONE) + CAST('infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME WITH TIME ZONE) + CAST('-infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME WITH TIME ZONE) - CAST('infinity' AS INTERVAL);
+
+SELECT CAST('11:27:42' AS TIME WITH TIME ZONE) - CAST('-infinity' AS INTERVAL);
+
+SELECT
+  lhst.i AS lhs,
+  rhst.i AS rhs,
+  lhst.i < rhst.i AS lt,
+  lhst.i <= rhst.i AS le,
+  lhst.i = rhst.i AS eq,
+  lhst.i > rhst.i AS gt,
+  lhst.i >= rhst.i AS ge,
+  lhst.i <> rhst.i AS ne
+FROM
+  infinite_interval_tbl AS lhst
+  INNER JOIN infinite_interval_tbl AS rhst
+  ON TRUE
+WHERE
+  NOT isfinite(lhst.i);
+
+SELECT
+  i AS interval,
+  -i AS um,
+  i * 2.0 AS mul,
+  i * -2.0 AS mul_neg,
+  i * 'infinity' AS mul_inf,
+  i * '-infinity' AS mul_inf_neg,
+  i / 3.0 AS div,
+  i / -3.0 AS div_neg
+FROM
+  infinite_interval_tbl
+WHERE
+  NOT isfinite(i);
+
+SELECT -CAST('-2147483647 months -2147483647 days -9223372036854775807 us' AS INTERVAL);
+
+SELECT CAST('infinity' AS INTERVAL) * 'nan';
+
+SELECT CAST('-infinity' AS INTERVAL) * 'nan';
+
+SELECT CAST('-1073741824 months -1073741824 days -4611686018427387904 us' AS INTERVAL) * 2;
+
+SELECT CAST('infinity' AS INTERVAL) * 0;
+
+SELECT CAST('-infinity' AS INTERVAL) * 0;
+
+SELECT CAST('0 days' AS INTERVAL) * CAST('infinity' AS DOUBLE PRECISION);
+
+SELECT CAST('0 days' AS INTERVAL) * CAST('-infinity' AS DOUBLE PRECISION);
+
+SELECT CAST('5 days' AS INTERVAL) * CAST('infinity' AS DOUBLE PRECISION);
+
+SELECT CAST('5 days' AS INTERVAL) * CAST('-infinity' AS DOUBLE PRECISION);
+
+SELECT CAST('infinity' AS INTERVAL) / 'infinity';
+
+SELECT CAST('infinity' AS INTERVAL) / '-infinity';
+
+SELECT CAST('infinity' AS INTERVAL) / 'nan';
+
+SELECT CAST('-infinity' AS INTERVAL) / 'infinity';
+
+SELECT CAST('-infinity' AS INTERVAL) / '-infinity';
+
+SELECT CAST('-infinity' AS INTERVAL) / 'nan';
+
+SELECT CAST('-1073741824 months -1073741824 days -4611686018427387904 us' AS INTERVAL) / 0.5;
+
+SELECT
+  date_bin(
+  'infinity',
+  CAST('2001-02-16 20:38:40' AS TIMESTAMP),
+  CAST('2001-02-16 20:05:00' AS TIMESTAMP)
+  );
+
+SELECT
+  date_bin(
+  '-infinity',
+  CAST('2001-02-16 20:38:40' AS TIMESTAMP),
+  CAST('2001-02-16 20:05:00' AS TIMESTAMP)
+  );
+
+SELECT i AS interval, date_trunc('hour', i) FROM infinite_interval_tbl WHERE NOT isfinite(i);
+
+SELECT i AS interval, date_trunc('week', i) FROM infinite_interval_tbl WHERE NOT isfinite(i);
+
+SELECT i AS interval, date_trunc('ago', i) FROM infinite_interval_tbl WHERE NOT isfinite(i);
+
+SELECT
+  i AS interval,
+  justify_days(i),
+  justify_hours(i),
+  justify_interval(i)
+FROM
+  infinite_interval_tbl
+WHERE
+  NOT isfinite(i);
+
+SELECT timezone(CAST('infinity' AS INTERVAL), CAST('1995-08-06 12:12:12' AS TIMESTAMP));
+
+SELECT timezone(CAST('-infinity' AS INTERVAL), CAST('1995-08-06 12:12:12' AS TIMESTAMP));
+
+SELECT
+  timezone(
+  CAST('infinity' AS INTERVAL),
+  CAST('1995-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  timezone(
+  CAST('-infinity' AS INTERVAL),
+  CAST('1995-08-06 12:12:12'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT timezone(CAST('infinity' AS INTERVAL), CAST('12:12:12' AS TIME));
+
+SELECT timezone(CAST('-infinity' AS INTERVAL), CAST('12:12:12' AS TIME));
+
+SELECT timezone(CAST('infinity' AS INTERVAL), CAST('12:12:12' AS TIME WITH TIME ZONE));
+
+SELECT timezone(CAST('-infinity' AS INTERVAL), CAST('12:12:12' AS TIME WITH TIME ZONE));
+
+SELECT CAST(CAST('infinity' AS INTERVAL) AS TIME);
+
+SELECT CAST(CAST('-infinity' AS INTERVAL) AS TIME);
+
+SELECT to_char(CAST('infinity' AS INTERVAL), 'YYYY');
+
+SELECT to_char(CAST('-infinity' AS INTERVAL), 'YYYY');
+
+SELECT CAST('42 days 2 seconds ago ago' AS INTERVAL);
+
+SELECT CAST('2 minutes ago 5 days' AS INTERVAL);
+
+SELECT CAST('hour 5 months' AS INTERVAL);
+
+SELECT CAST('1 year months days 5 hours' AS INTERVAL);
+
+SELECT CAST('now' AS INTERVAL);
+
+SELECT CAST('today' AS INTERVAL);
+
+SELECT CAST('tomorrow' AS INTERVAL);
+
+SELECT CAST('allballs' AS INTERVAL);
+
+SELECT CAST('epoch' AS INTERVAL);
+
+SELECT CAST('yesterday' AS INTERVAL);
+
+SELECT CAST('infinity years' AS INTERVAL);
+
+SELECT CAST('infinity ago' AS INTERVAL);
+
+SELECT CAST('+infinity -infinity' AS INTERVAL);

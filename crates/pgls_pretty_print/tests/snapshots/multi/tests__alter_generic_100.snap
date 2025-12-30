@@ -1,0 +1,906 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/alter_generic_100.sql
+snapshot_kind: text
+---
+CREATE FUNCTION test_opclass_options_func(internal)
+RETURNS VOID
+AS 'regresslib', 'test_opclass_options_func'
+LANGUAGE "c";
+
+SET client_min_messages = warning;
+
+DROP ROLE IF EXISTS regress_alter_generic_user1;
+
+DROP ROLE IF EXISTS regress_alter_generic_user2;
+
+DROP ROLE IF EXISTS regress_alter_generic_user3;
+
+RESET client_min_messages;
+
+CREATE USER regress_alter_generic_user3;
+
+CREATE USER regress_alter_generic_user2;
+
+CREATE USER regress_alter_generic_user1 IN ROLE regress_alter_generic_user3;
+
+CREATE SCHEMA "alt_nsp1";
+
+CREATE SCHEMA "alt_nsp2";
+
+GRANT ALL ON SCHEMA alt_nsp1, alt_nsp2 TO PUBLIC;
+
+SET search_path TO alt_nsp1, public;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+CREATE FUNCTION alt_func1(INT)
+RETURNS INT
+LANGUAGE "sql"
+AS 'SELECT $1 + 1';
+
+CREATE FUNCTION alt_func2(INT)
+RETURNS INT
+LANGUAGE "sql"
+AS 'SELECT $1 - 1';
+
+CREATE AGGREGATE alt_agg1 ( sfunc1 = int4pl, basetype = INT, stype1 = INT, initcond = 0);
+
+CREATE AGGREGATE alt_agg2 ( sfunc1 = int4mi, basetype = INT, stype1 = INT, initcond = 0);
+
+ALTER AGGREGATE alt_func1(INT) RENAME TO alt_func3;
+
+ALTER AGGREGATE alt_func1(INT) OWNER TO regress_alter_generic_user3;
+
+ALTER AGGREGATE alt_func1(INT) SET SCHEMA alt_nsp2;
+
+ALTER FUNCTION alt_func1(INT) RENAME TO alt_func2;
+
+ALTER FUNCTION alt_func1(INT) RENAME TO alt_func3;
+
+ALTER FUNCTION alt_func2(INT) OWNER TO regress_alter_generic_user2;
+
+ALTER FUNCTION alt_func2(INT) OWNER TO regress_alter_generic_user3;
+
+ALTER FUNCTION alt_func2(INT) SET SCHEMA alt_nsp1;
+
+ALTER FUNCTION alt_func2(INT) SET SCHEMA alt_nsp2;
+
+ALTER AGGREGATE alt_agg1(INT) RENAME TO alt_agg2;
+
+ALTER AGGREGATE alt_agg1(INT) RENAME TO alt_agg3;
+
+ALTER AGGREGATE alt_agg2(INT) OWNER TO regress_alter_generic_user2;
+
+ALTER AGGREGATE alt_agg2(INT) OWNER TO regress_alter_generic_user3;
+
+ALTER AGGREGATE alt_agg2(INT) SET SCHEMA alt_nsp2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+CREATE FUNCTION alt_func1(INT)
+RETURNS INT
+LANGUAGE "sql"
+AS 'SELECT $1 + 2';
+
+CREATE FUNCTION alt_func2(INT)
+RETURNS INT
+LANGUAGE "sql"
+AS 'SELECT $1 - 2';
+
+CREATE AGGREGATE alt_agg1 ( sfunc1 = int4pl, basetype = INT, stype1 = INT, initcond = 100);
+
+CREATE AGGREGATE alt_agg2 ( sfunc1 = int4mi, basetype = INT, stype1 = INT, initcond = -100);
+
+ALTER FUNCTION alt_func3(INT) RENAME TO alt_func4;
+
+ALTER FUNCTION alt_func1(INT) RENAME TO alt_func4;
+
+ALTER FUNCTION alt_func3(INT) OWNER TO regress_alter_generic_user2;
+
+ALTER FUNCTION alt_func2(INT) OWNER TO regress_alter_generic_user3;
+
+ALTER FUNCTION alt_func3(INT) SET SCHEMA alt_nsp2;
+
+ALTER FUNCTION alt_func2(INT) SET SCHEMA alt_nsp2;
+
+ALTER AGGREGATE alt_agg3(INT) RENAME TO alt_agg4;
+
+ALTER AGGREGATE alt_agg1(INT) RENAME TO alt_agg4;
+
+ALTER AGGREGATE alt_agg3(INT) OWNER TO regress_alter_generic_user2;
+
+ALTER AGGREGATE alt_agg2(INT) OWNER TO regress_alter_generic_user3;
+
+ALTER AGGREGATE alt_agg3(INT) SET SCHEMA alt_nsp2;
+
+ALTER AGGREGATE alt_agg2(INT) SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  n.nspname,
+  proname,
+  CAST(prorettype AS REGTYPE),
+  prokind,
+  a.rolname
+FROM
+  pg_proc AS p,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  p.pronamespace = n.oid AND
+  p.proowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  proname;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+CREATE CONVERSION alt_conv1 FOR 'LATIN1' TO 'UTF8' FROM iso8859_1_to_utf8;
+
+CREATE CONVERSION alt_conv2 FOR 'LATIN1' TO 'UTF8' FROM iso8859_1_to_utf8;
+
+ALTER CONVERSION alt_conv1 RENAME TO alt_conv2;
+
+ALTER CONVERSION alt_conv1 RENAME TO alt_conv3;
+
+ALTER CONVERSION alt_conv2 OWNER TO regress_alter_generic_user2;
+
+ALTER CONVERSION alt_conv2 OWNER TO regress_alter_generic_user3;
+
+ALTER CONVERSION alt_conv2 SET SCHEMA alt_nsp2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+CREATE CONVERSION alt_conv1 FOR 'LATIN1' TO 'UTF8' FROM iso8859_1_to_utf8;
+
+CREATE CONVERSION alt_conv2 FOR 'LATIN1' TO 'UTF8' FROM iso8859_1_to_utf8;
+
+ALTER CONVERSION alt_conv3 RENAME TO alt_conv4;
+
+ALTER CONVERSION alt_conv1 RENAME TO alt_conv4;
+
+ALTER CONVERSION alt_conv3 OWNER TO regress_alter_generic_user2;
+
+ALTER CONVERSION alt_conv2 OWNER TO regress_alter_generic_user3;
+
+ALTER CONVERSION alt_conv3 SET SCHEMA alt_nsp2;
+
+ALTER CONVERSION alt_conv2 SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  n.nspname,
+  c.conname,
+  a.rolname
+FROM
+  pg_conversion AS c,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  c.connamespace = n.oid AND
+  c.conowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  conname;
+
+CREATE FOREIGN DATA WRAPPER alt_fdw1;
+
+CREATE FOREIGN DATA WRAPPER alt_fdw2;
+
+CREATE SERVER alt_fserv1 FOREIGN DATA WRAPPER alt_fdw1;
+
+CREATE SERVER alt_fserv2 FOREIGN DATA WRAPPER alt_fdw2;
+
+ALTER FOREIGN DATA WRAPPER alt_fdw1 RENAME TO alt_fdw2;
+
+ALTER FOREIGN DATA WRAPPER alt_fdw1 RENAME TO alt_fdw3;
+
+ALTER SERVER alt_fserv1 RENAME TO alt_fserv2;
+
+ALTER SERVER alt_fserv1 RENAME TO alt_fserv3;
+
+SELECT fdwname FROM pg_foreign_data_wrapper WHERE fdwname LIKE 'alt_fdw%';
+
+SELECT srvname FROM pg_foreign_server WHERE srvname LIKE 'alt_fserv%';
+
+CREATE LANGUAGE alt_lang1 HANDLER plpgsql_call_handler;
+
+CREATE LANGUAGE alt_lang2 HANDLER plpgsql_call_handler;
+
+ALTER LANGUAGE alt_lang1 OWNER TO regress_alter_generic_user1;
+
+ALTER LANGUAGE alt_lang2 OWNER TO regress_alter_generic_user2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+ALTER LANGUAGE alt_lang1 RENAME TO alt_lang2;
+
+ALTER LANGUAGE alt_lang2 RENAME TO alt_lang3;
+
+ALTER LANGUAGE alt_lang1 RENAME TO alt_lang3;
+
+ALTER LANGUAGE alt_lang2 OWNER TO regress_alter_generic_user3;
+
+ALTER LANGUAGE alt_lang3 OWNER TO regress_alter_generic_user2;
+
+ALTER LANGUAGE alt_lang3 OWNER TO regress_alter_generic_user3;
+
+RESET session_authorization;
+
+SELECT
+  lanname,
+  a.rolname
+FROM
+  pg_language AS l,
+  pg_authid AS a
+WHERE
+  l.lanowner = a.oid AND l.lanname LIKE 'alt_lang%'
+ORDER BY lanname;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+CREATE OPERATOR @-@ (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4mi);
+
+CREATE OPERATOR @+@ (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4pl);
+
+ALTER OPERATOR @+@ (INT, INT) OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR @+@ (INT, INT) OWNER TO regress_alter_generic_user3;
+
+ALTER OPERATOR @-@ (INT, INT) SET SCHEMA alt_nsp2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+CREATE OPERATOR @-@ (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4mi);
+
+ALTER OPERATOR @+@ (INT, INT) OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR @-@ (INT, INT) OWNER TO regress_alter_generic_user3;
+
+ALTER OPERATOR @+@ (INT, INT) SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  n.nspname,
+  oprname,
+  a.rolname,
+  CAST(oprleft AS REGTYPE),
+  CAST(oprright AS REGTYPE),
+  CAST(oprcode AS REGPROC)
+FROM
+  pg_operator AS o,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  o.oprnamespace = n.oid AND
+  o.oprowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  oprname;
+
+CREATE OPERATOR FAMILY alt_opf1 USING hash;
+
+CREATE OPERATOR FAMILY alt_opf2 USING hash;
+
+ALTER OPERATOR FAMILY alt_opf1 USING hash OWNER TO regress_alter_generic_user1;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash OWNER TO regress_alter_generic_user1;
+
+CREATE OPERATOR CLASS alt_opc1 FOR TYPE UUID USING hash AS STORAGE UUID;
+
+CREATE OPERATOR CLASS alt_opc2 FOR TYPE UUID USING hash AS STORAGE UUID;
+
+ALTER OPERATOR CLASS alt_opc1 USING hash OWNER TO regress_alter_generic_user1;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash OWNER TO regress_alter_generic_user1;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+ALTER OPERATOR FAMILY alt_opf1 USING hash RENAME TO alt_opf2;
+
+ALTER OPERATOR FAMILY alt_opf1 USING hash RENAME TO alt_opf3;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash OWNER TO regress_alter_generic_user3;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash SET SCHEMA alt_nsp2;
+
+ALTER OPERATOR CLASS alt_opc1 USING hash RENAME TO alt_opc2;
+
+ALTER OPERATOR CLASS alt_opc1 USING hash RENAME TO alt_opc3;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash OWNER TO regress_alter_generic_user3;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+CREATE OPERATOR FAMILY alt_opf1 USING hash;
+
+CREATE OPERATOR FAMILY alt_opf2 USING hash;
+
+ALTER OPERATOR FAMILY alt_opf1 USING hash OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash OWNER TO regress_alter_generic_user2;
+
+CREATE OPERATOR CLASS alt_opc1 FOR TYPE MACADDR USING hash AS STORAGE MACADDR;
+
+CREATE OPERATOR CLASS alt_opc2 FOR TYPE MACADDR USING hash AS STORAGE MACADDR;
+
+ALTER OPERATOR CLASS alt_opc1 USING hash OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash OWNER TO regress_alter_generic_user2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+ALTER OPERATOR FAMILY alt_opf3 USING hash RENAME TO alt_opf4;
+
+ALTER OPERATOR FAMILY alt_opf1 USING hash RENAME TO alt_opf4;
+
+ALTER OPERATOR FAMILY alt_opf3 USING hash OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash OWNER TO regress_alter_generic_user3;
+
+ALTER OPERATOR FAMILY alt_opf3 USING hash SET SCHEMA alt_nsp2;
+
+ALTER OPERATOR FAMILY alt_opf2 USING hash SET SCHEMA alt_nsp2;
+
+ALTER OPERATOR CLASS alt_opc3 USING hash RENAME TO alt_opc4;
+
+ALTER OPERATOR CLASS alt_opc1 USING hash RENAME TO alt_opc4;
+
+ALTER OPERATOR CLASS alt_opc3 USING hash OWNER TO regress_alter_generic_user2;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash OWNER TO regress_alter_generic_user3;
+
+ALTER OPERATOR CLASS alt_opc3 USING hash SET SCHEMA alt_nsp2;
+
+ALTER OPERATOR CLASS alt_opc2 USING hash SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  nspname,
+  opfname,
+  amname,
+  rolname
+FROM
+  pg_opfamily AS o,
+  pg_am AS m,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  o.opfmethod = m.oid AND
+  o.opfnamespace = n.oid AND
+  o.opfowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2') AND
+  NOT opfname LIKE 'alt_opc%'
+ORDER BY nspname,
+  opfname;
+
+SELECT
+  nspname,
+  opcname,
+  amname,
+  rolname
+FROM
+  pg_opclass AS o,
+  pg_am AS m,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  o.opcmethod = m.oid AND
+  o.opcnamespace = n.oid AND
+  o.opcowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  opcname;
+
+BEGIN;
+
+CREATE OPERATOR FAMILY alt_opf4 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree
+  ADD OPERATOR 1 < (INT, SMALLINT),
+  OPERATOR 2 <= (INT, SMALLINT),
+  OPERATOR 3 = (INT, SMALLINT),
+  OPERATOR 4 >= (INT, SMALLINT),
+  OPERATOR 5 > (INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree
+  DROP OPERATOR 1 (INT, SMALLINT),
+  OPERATOR 2 (INT, SMALLINT),
+  OPERATOR 3 (INT, SMALLINT),
+  OPERATOR 4 (INT, SMALLINT),
+  OPERATOR 5 (INT, SMALLINT),
+  FUNCTION 1 (INT, SMALLINT);
+
+DROP OPERATOR FAMILY "alt_opf4" USING "btree";
+
+ROLLBACK;
+
+CREATE OPERATOR FAMILY alt_opf4 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf4 USING invalid_index_method ADD OPERATOR 1 < (INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree ADD OPERATOR 6 < (INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree ADD OPERATOR 0 < (INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree ADD OPERATOR 1 <;
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree ADD FUNCTION 0 btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree ADD FUNCTION 7 btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf4 USING btree ADD STORAGE invalid_storage;
+
+DROP OPERATOR FAMILY "alt_opf4" USING "btree";
+
+BEGIN;
+
+CREATE ROLE regress_alter_generic_user5 NOSUPERUSER;
+
+CREATE OPERATOR FAMILY alt_opf5 USING btree;
+
+SET ROLE TO regress_alter_generic_user5;
+
+ALTER OPERATOR FAMILY alt_opf5 USING btree
+  ADD OPERATOR 1 < (INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+RESET role;
+
+DROP OPERATOR FAMILY "alt_opf5" USING "btree";
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE ROLE regress_alter_generic_user6;
+
+CREATE SCHEMA "alt_nsp6";
+
+REVOKE ALL ON SCHEMA alt_nsp6 FROM regress_alter_generic_user6;
+
+CREATE OPERATOR FAMILY alt_nsp6.alt_opf6 USING btree;
+
+SET ROLE TO regress_alter_generic_user6;
+
+ALTER OPERATOR FAMILY alt_nsp6.alt_opf6 USING btree ADD OPERATOR 1 < (INT, SMALLINT);
+
+ROLLBACK;
+
+CREATE OPERATOR FAMILY alt_opf7 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf7 USING btree ADD OPERATOR 1 < (INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf7 USING btree DROP OPERATOR 1 (INT, SMALLINT, BIGINT);
+
+DROP OPERATOR FAMILY "alt_opf7" USING "btree";
+
+CREATE OPERATOR FAMILY alt_opf8 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf8 USING btree ADD OPERATOR 1 < (INT, INT);
+
+DROP OPERATOR FAMILY "alt_opf8" USING "btree";
+
+CREATE OPERATOR FAMILY alt_opf9 USING gist;
+
+ALTER OPERATOR FAMILY alt_opf9 USING gist ADD OPERATOR 1 < (INT, INT) FOR ORDER BY float_ops;
+
+DROP OPERATOR FAMILY "alt_opf9" USING "gist";
+
+CREATE OPERATOR FAMILY alt_opf10 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf10 USING btree ADD OPERATOR 1 < (INT, INT) FOR ORDER BY float_ops;
+
+DROP OPERATOR FAMILY "alt_opf10" USING "btree";
+
+CREATE OPERATOR FAMILY alt_opf11 USING gist;
+
+ALTER OPERATOR FAMILY alt_opf11 USING gist ADD OPERATOR 1 < (INT, INT) FOR ORDER BY float_ops;
+
+ALTER OPERATOR FAMILY alt_opf11 USING gist DROP OPERATOR 1 (INT, INT);
+
+DROP OPERATOR FAMILY "alt_opf11" USING "gist";
+
+BEGIN;
+
+CREATE OPERATOR FAMILY alt_opf12 USING btree;
+
+CREATE FUNCTION fn_opf12(INT, SMALLINT)
+RETURNS BIGINT
+AS 'SELECT NULL::BIGINT;'
+LANGUAGE "sql";
+
+ALTER OPERATOR FAMILY alt_opf12 USING btree ADD FUNCTION 1 fn_opf12(INT, SMALLINT);
+
+DROP OPERATOR FAMILY "alt_opf12" USING "btree";
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR FAMILY alt_opf13 USING hash;
+
+CREATE FUNCTION fn_opf13(INT)
+RETURNS BIGINT
+AS 'SELECT NULL::BIGINT;'
+LANGUAGE "sql";
+
+ALTER OPERATOR FAMILY alt_opf13 USING hash ADD FUNCTION 1 fn_opf13(INT);
+
+DROP OPERATOR FAMILY "alt_opf13" USING "hash";
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR FAMILY alt_opf14 USING btree;
+
+CREATE FUNCTION fn_opf14(INT)
+RETURNS BIGINT
+AS 'SELECT NULL::BIGINT;'
+LANGUAGE "sql";
+
+ALTER OPERATOR FAMILY alt_opf14 USING btree ADD FUNCTION 1 fn_opf14(INT);
+
+DROP OPERATOR FAMILY "alt_opf14" USING "btree";
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR FAMILY alt_opf15 USING hash;
+
+CREATE FUNCTION fn_opf15(INT, SMALLINT)
+RETURNS BIGINT
+AS 'SELECT NULL::BIGINT;'
+LANGUAGE "sql";
+
+ALTER OPERATOR FAMILY alt_opf15 USING hash ADD FUNCTION 1 fn_opf15(INT, SMALLINT);
+
+DROP OPERATOR FAMILY "alt_opf15" USING "hash";
+
+ROLLBACK;
+
+CREATE OPERATOR FAMILY alt_opf16 USING gist;
+
+ALTER OPERATOR FAMILY alt_opf16 USING gist ADD FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+DROP OPERATOR FAMILY "alt_opf16" USING "gist";
+
+CREATE OPERATOR FAMILY alt_opf17 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf17 USING btree ADD OPERATOR 1 < (INT, INT), OPERATOR 1 < (INT, INT);
+
+ALTER OPERATOR FAMILY alt_opf17 USING btree ADD OPERATOR 1 < (INT, INT);
+
+ALTER OPERATOR FAMILY alt_opf17 USING btree ADD OPERATOR 1 < (INT, INT);
+
+ALTER OPERATOR FAMILY alt_opf17 USING btree
+  ADD OPERATOR 1 < (INT, SMALLINT),
+  OPERATOR 2 <= (INT, SMALLINT),
+  OPERATOR 3 = (INT, SMALLINT),
+  OPERATOR 4 >= (INT, SMALLINT),
+  OPERATOR 5 > (INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf17 USING btree
+  ADD OPERATOR 1 < (INT, SMALLINT),
+  OPERATOR 2 <= (INT, SMALLINT),
+  OPERATOR 3 = (INT, SMALLINT),
+  OPERATOR 4 >= (INT, SMALLINT),
+  OPERATOR 5 > (INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf17 USING btree
+  ADD OPERATOR 1 < (INT, SMALLINT),
+  OPERATOR 2 <= (INT, SMALLINT),
+  OPERATOR 3 = (INT, SMALLINT),
+  OPERATOR 4 >= (INT, SMALLINT),
+  OPERATOR 5 > (INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+DROP OPERATOR FAMILY "alt_opf17" USING "btree";
+
+CREATE OPERATOR FAMILY alt_opf18 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf18 USING btree DROP OPERATOR 1 (INT, INT);
+
+ALTER OPERATOR FAMILY alt_opf18 USING btree
+  ADD OPERATOR 1 < (INT, SMALLINT),
+  OPERATOR 2 <= (INT, SMALLINT),
+  OPERATOR 3 = (INT, SMALLINT),
+  OPERATOR 4 >= (INT, SMALLINT),
+  OPERATOR 5 > (INT, SMALLINT),
+  FUNCTION 1 btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf18 USING btree ADD FUNCTION 4 (INT, SMALLINT) btequalimage(OID);
+
+ALTER OPERATOR FAMILY alt_opf18 USING btree
+  ADD FUNCTION 6 (INT,
+  SMALLINT) btint4skipsupport(internal);
+
+ALTER OPERATOR FAMILY alt_opf18 USING btree DROP FUNCTION 2 (INT, INT);
+
+DROP OPERATOR FAMILY "alt_opf18" USING "btree";
+
+CREATE OPERATOR FAMILY alt_opf19 USING btree;
+
+ALTER OPERATOR FAMILY alt_opf19 USING btree
+  ADD FUNCTION 5 test_opclass_options_func(
+    internal,
+    TEXT[],
+    BOOLEAN);
+
+ALTER OPERATOR FAMILY alt_opf19 USING btree ADD FUNCTION 5 (INT) btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf19 USING btree
+  ADD FUNCTION 5 (INT,
+  SMALLINT) btint42cmp(INT, SMALLINT);
+
+ALTER OPERATOR FAMILY alt_opf19 USING btree
+  ADD FUNCTION 5 (INT) test_opclass_options_func(internal);
+
+ALTER OPERATOR FAMILY alt_opf19 USING btree DROP FUNCTION 5 (INT, INT);
+
+DROP OPERATOR FAMILY "alt_opf19" USING "btree";
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+CREATE TABLE alt_regress_1 (a INT, b INT);
+
+CREATE STATISTICS alt_stat1 ON "a", "b" FROM alt_regress_1;
+
+CREATE STATISTICS alt_stat2 ON "a", "b" FROM alt_regress_1;
+
+ALTER STATISTICS alt_stat1 RENAME TO alt_stat2;
+
+ALTER STATISTICS alt_stat1 RENAME TO alt_stat3;
+
+ALTER STATISTICS alt_stat2 OWNER TO regress_alter_generic_user2;
+
+ALTER STATISTICS alt_stat2 OWNER TO regress_alter_generic_user3;
+
+ALTER STATISTICS alt_stat2 SET SCHEMA alt_nsp2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+CREATE TABLE alt_regress_2 (a INT, b INT);
+
+CREATE STATISTICS alt_stat1 ON "a", "b" FROM alt_regress_2;
+
+CREATE STATISTICS alt_stat2 ON "a", "b" FROM alt_regress_2;
+
+ALTER STATISTICS alt_stat3 RENAME TO alt_stat4;
+
+ALTER STATISTICS alt_stat1 RENAME TO alt_stat4;
+
+ALTER STATISTICS alt_stat3 OWNER TO regress_alter_generic_user2;
+
+ALTER STATISTICS alt_stat2 OWNER TO regress_alter_generic_user3;
+
+ALTER STATISTICS alt_stat3 SET SCHEMA alt_nsp2;
+
+ALTER STATISTICS alt_stat2 SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  nspname,
+  stxname,
+  rolname
+FROM
+  pg_statistic_ext AS s,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  s.stxnamespace = n.oid AND
+  s.stxowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  stxname;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict1 ( template = simple);
+
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict2 ( template = simple);
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict1 RENAME TO alt_ts_dict2;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict1 RENAME TO alt_ts_dict3;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict2 OWNER TO regress_alter_generic_user2;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict2 OWNER TO regress_alter_generic_user3;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict2 SET SCHEMA alt_nsp2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict1 ( template = simple);
+
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict2 ( template = simple);
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict3 RENAME TO alt_ts_dict4;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict1 RENAME TO alt_ts_dict4;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict3 OWNER TO regress_alter_generic_user2;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict2 OWNER TO regress_alter_generic_user3;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict3 SET SCHEMA alt_nsp2;
+
+ALTER TEXT SEARCH DICTIONARY alt_ts_dict2 SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  nspname,
+  dictname,
+  rolname
+FROM
+  pg_ts_dict AS t,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  t.dictnamespace = n.oid AND
+  t.dictowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  dictname;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user1;
+
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf1 ( copy = english);
+
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf2 ( copy = english);
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf1 RENAME TO alt_ts_conf2;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf1 RENAME TO alt_ts_conf3;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf2 OWNER TO regress_alter_generic_user2;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf2 OWNER TO regress_alter_generic_user3;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf2 SET SCHEMA alt_nsp2;
+
+SET SESSION AUTHORIZATION regress_alter_generic_user2;
+
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf1 ( copy = english);
+
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf2 ( copy = english);
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf3 RENAME TO alt_ts_conf4;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf1 RENAME TO alt_ts_conf4;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf3 OWNER TO regress_alter_generic_user2;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf2 OWNER TO regress_alter_generic_user3;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf3 SET SCHEMA alt_nsp2;
+
+ALTER TEXT SEARCH CONFIGURATION alt_ts_conf2 SET SCHEMA alt_nsp2;
+
+RESET session_authorization;
+
+SELECT
+  nspname,
+  cfgname,
+  rolname
+FROM
+  pg_ts_config AS t,
+  pg_namespace AS n,
+  pg_authid AS a
+WHERE
+  t.cfgnamespace = n.oid AND
+  t.cfgowner = a.oid AND
+  n.nspname IN ('alt_nsp1', 'alt_nsp2')
+ORDER BY nspname,
+  cfgname;
+
+CREATE TEXT SEARCH TEMPLATE alt_ts_temp1 ( lexize = dsimple_lexize);
+
+CREATE TEXT SEARCH TEMPLATE alt_ts_temp2 ( lexize = dsimple_lexize);
+
+ALTER TEXT SEARCH TEMPLATE alt_ts_temp1 RENAME TO alt_ts_temp2;
+
+ALTER TEXT SEARCH TEMPLATE alt_ts_temp1 RENAME TO alt_ts_temp3;
+
+ALTER TEXT SEARCH TEMPLATE alt_ts_temp2 SET SCHEMA alt_nsp2;
+
+CREATE TEXT SEARCH TEMPLATE alt_ts_temp2 ( lexize = dsimple_lexize);
+
+ALTER TEXT SEARCH TEMPLATE alt_ts_temp2 SET SCHEMA alt_nsp2;
+
+CREATE TEXT SEARCH TEMPLATE tstemp_case ( "Init" = init_function);
+
+SELECT
+  nspname,
+  tmplname
+FROM
+  pg_ts_template AS t,
+  pg_namespace AS n
+WHERE
+  t.tmplnamespace = n.oid AND
+  nspname LIKE 'alt_nsp%'
+ORDER BY nspname,
+  tmplname;
+
+CREATE TEXT SEARCH PARSER alt_ts_prs1
+(
+  start = prsd_start,
+  gettoken = prsd_nexttoken,
+  "end" = prsd_end,
+  lextypes = prsd_lextype
+);
+
+CREATE TEXT SEARCH PARSER alt_ts_prs2
+(
+  start = prsd_start,
+  gettoken = prsd_nexttoken,
+  "end" = prsd_end,
+  lextypes = prsd_lextype
+);
+
+ALTER TEXT SEARCH PARSER alt_ts_prs1 RENAME TO alt_ts_prs2;
+
+ALTER TEXT SEARCH PARSER alt_ts_prs1 RENAME TO alt_ts_prs3;
+
+ALTER TEXT SEARCH PARSER alt_ts_prs2 SET SCHEMA alt_nsp2;
+
+CREATE TEXT SEARCH PARSER alt_ts_prs2
+(
+  start = prsd_start,
+  gettoken = prsd_nexttoken,
+  "end" = prsd_end,
+  lextypes = prsd_lextype
+);
+
+ALTER TEXT SEARCH PARSER alt_ts_prs2 SET SCHEMA alt_nsp2;
+
+CREATE TEXT SEARCH PARSER tspars_case ( "Start" = start_function);
+
+SELECT
+  nspname,
+  prsname
+FROM
+  pg_ts_parser AS t,
+  pg_namespace AS n
+WHERE
+  t.prsnamespace = n.oid AND nspname LIKE 'alt_nsp%'
+ORDER BY nspname,
+  prsname;
+
+DROP FOREIGN DATA WRAPPER alt_fdw2 CASCADE;
+
+DROP FOREIGN DATA WRAPPER alt_fdw3 CASCADE;
+
+DROP LANGUAGE alt_lang2 CASCADE;
+
+DROP LANGUAGE alt_lang3 CASCADE;
+
+DROP SCHEMA alt_nsp1 CASCADE;
+
+DROP SCHEMA alt_nsp2 CASCADE;
+
+DROP ROLE regress_alter_generic_user1;
+
+DROP ROLE regress_alter_generic_user2;
+
+DROP ROLE regress_alter_generic_user3;

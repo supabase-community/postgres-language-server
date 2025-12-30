@@ -17,7 +17,7 @@ pub struct RenderConfig {
 impl Default for RenderConfig {
     fn default() -> Self {
         Self {
-            max_line_length: 80,
+            max_line_length: 100,
             indent_size: 2,
             indent_style: IndentStyle::Spaces,
         }
@@ -99,6 +99,26 @@ impl<W: Write> Renderer<W> {
         self.render_events_with_breaks(group_events)
     }
 
+    /// Render an inner group, allowing it to try single-line independently of parent's break status.
+    /// This enables nested groups to stay compact even when the parent group is breaking.
+    fn render_inner_group(&mut self, group_events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
+        // Extract inner events (skip GroupStart and GroupEnd markers)
+        let inner_events = &group_events[1..group_events.len() - 1];
+
+        // Try single-line first, independent of parent's break status
+        if let Some(single_line) = self.try_single_line(group_events) {
+            let would_fit =
+                self.current_line_length + single_line.len() <= self.config.max_line_length;
+            if would_fit {
+                self.write_text(&single_line)?;
+                return Ok(());
+            }
+        }
+
+        // Fall back to breaking
+        self.render_events_with_breaks(inner_events)
+    }
+
     fn render_events_with_breaks(&mut self, events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
         let mut i = 0;
         while i < events.len() {
@@ -118,8 +138,35 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::GroupStart { .. } => {
                     let group_end = self.find_group_end(events, i);
-                    let inner_events = &events[i + 1..group_end]; // skip GroupStart/GroupEnd
-                    self.render_events_with_breaks(inner_events)?;
+                    let group_slice = &events[i..=group_end];
+
+                    // Decide whether to try single-line for this nested group.
+                    // We try single-line in two cases:
+                    // 1. Followed by a Hard break (semantic boundary like RETURNS after
+                    //    function signature)
+                    // 2. The group's single-line form is small enough to fit on its own
+                    //    (allows compact column lists, function args, etc.)
+                    let followed_by_hard_break = events
+                        .get(group_end + 1)
+                        .map_or(false, |e| matches!(e, LayoutEvent::Line(LineType::Hard)));
+
+                    let try_single_line = if followed_by_hard_break {
+                        true
+                    } else if let Some(single_line) = self.try_single_line(group_slice) {
+                        // Allow small groups to stay on one line even without Hard break
+                        // This keeps column lists, function args compact
+                        single_line.len() <= self.config.max_line_length / 2
+                    } else {
+                        false
+                    };
+
+                    if try_single_line {
+                        self.render_inner_group(group_slice)?;
+                    } else {
+                        // Force nested group to break
+                        let inner_events = &events[i + 1..group_end];
+                        self.render_events_with_breaks(inner_events)?;
+                    }
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {

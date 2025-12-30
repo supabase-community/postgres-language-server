@@ -481,13 +481,13 @@ Use `pgFormatter` to get ideas about line breaking and formatting decisions:
 
 ```bash
 # Format a test file to see how pgFormatter would handle it
-pg_format tests/data/single/your_test_80.sql
+pg_format tests/data/single/your_test_100.sql
 
 # Format with specific line width
-pg_format -w 60 tests/data/single/your_test_60.sql
+pg_format -w 100 tests/data/single/your_test_100.sql
 
 # Format and output to file for comparison
-pg_format tests/data/single/complex_query_80.sql > /tmp/formatted.sql
+pg_format tests/data/single/complex_query_100.sql > /tmp/formatted.sql
 ```
 
 **When to use pgFormatter for inspiration**:
@@ -505,14 +505,14 @@ pg_format tests/data/single/complex_query_80.sql > /tmp/formatted.sql
 **Example workflow**:
 ```bash
 # 1. Create your test case
-echo "SELECT a, b, c FROM table1 JOIN table2 ON table1.id = table2.id WHERE x > 10" > tests/data/single/join_example_80.sql
+echo "SELECT a, b, c FROM table1 JOIN table2 ON table1.id = table2.id WHERE x > 10" > tests/data/single/join_example_100.sql
 
 # 2. See how pgFormatter would format it
-pg_format -w 80 tests/data/single/join_example_80.sql
+pg_format -w 100 tests/data/single/join_example_100.sql
 
 # 3. Use that as inspiration for your emit_* implementation
 # 4. Run your test to see your output
-cargo test -p pgt_pretty_print test_single__join_example_80 -- --show-output
+cargo test -p pgt_pretty_print test_single__join_example_100 -- --show-output
 
 # 5. Iterate on your implementation
 ```
@@ -536,7 +536,7 @@ Tests are located in `tests/`:
 
 1. **Single Statement Tests** (`tests/data/single/*.sql`)
    - Format: `<description>_<line_length>.sql`
-   - Example: `simple_select_80.sql` → max line length of 80
+   - Example: `simple_select_100.sql` → max line length of 100
    - Each test contains a single SQL statement
 
 2. **Multi Statement Tests** (`tests/data/multi/*.sql`)
@@ -571,23 +571,23 @@ You can and should create new test cases to validate your implementations!
 1. **Create test file**:
    ```bash
    # For single statement tests
-   echo "SELECT * FROM users WHERE age > 18" > tests/data/single/user_query_80.sql
+   echo "SELECT * FROM users WHERE age > 18" > tests/data/single/user_query_100.sql
 
    # For multi-statement tests
-   cat > tests/data/multi/example_queries_60.sql <<'EOF'
+   cat > tests/data/multi/example_queries_100.sql <<'EOF'
    SELECT id FROM users;
    INSERT INTO logs (message) VALUES ('test');
    EOF
    ```
 
 2. **Naming convention**: `<descriptive_name>_<line_length>.sql`
-   - The number at the end is the max line length (e.g., `60`, `80`, `120`)
-   - Examples: `complex_join_80.sql`, `insert_with_cte_60.sql`
+   - The number at the end is the max line length (default: `100`)
+   - Examples: `complex_join_100.sql`, `insert_with_cte_100.sql`
 
 3. **Run specific test**:
    ```bash
    # Run single test with output
-   cargo test -p pgt_pretty_print test_single__user_query_80 -- --show-output
+   cargo test -p pgt_pretty_print test_single__user_query_100 -- --show-output
 
    # Run all tests matching pattern
    cargo test -p pgt_pretty_print test_single -- --show-output
@@ -1110,7 +1110,7 @@ Keep this section focused on durable guidance. When you add new insights, summar
 - Wrap `BoolExpr` children whose precedence is lower than their parent (e.g. OR under AND, AND/OR under NOT) so expressions like `(a OR b) AND c` retain explicit parentheses and keep the original AST structure.
 - Use `emit_clause_condition` to indent boolean clause bodies (`WHERE`, `HAVING`, planner filters) so wrapped predicates align under their keywords instead of hugging the left margin.
 - Emit CTE SEARCH/CYCLE clauses using `LineType::SoftOrSpace` so they stay attached to the CTE block while breaking cleanly when alias lists grow.
-- Introduce `LineType::SoftOrSpace` breaks before `PARTITION OF`, `FOR VALUES`, `PARTITION BY`, and `ATTACH/DETACH PARTITION` clauses so long partition DDL respects 60-character budgets without sacrificing single-line output when space allows.
+- Introduce `LineType::SoftOrSpace` breaks before `PARTITION OF`, `FOR VALUES`, `PARTITION BY`, and `ATTACH/DETACH PARTITION` clauses so long partition DDL respects line width budgets without sacrificing single-line output when space allows.
 
 **Node-Specific Patterns**:
 - Respect `AIndices::is_slice`; emit the colon only when the slice flag is set so single-element subscripts (e.g. `col[1]`) retain their original structure.

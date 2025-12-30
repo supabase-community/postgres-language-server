@@ -1,0 +1,116 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/sysviews_100.sql
+snapshot_kind: text
+---
+SELECT COUNT(*) >= 0 AS ok FROM pg_available_extension_versions;
+
+SELECT COUNT(*) >= 0 AS ok FROM pg_available_extensions;
+
+SELECT
+  type,
+  name,
+  ident,
+  level,
+  total_bytes >= free_bytes
+FROM
+  pg_backend_memory_contexts
+WHERE
+  level = 1;
+
+BEGIN;
+
+DECLARE "cur" CURSOR FOR SELECT
+  left(a, 10),
+  b
+FROM
+  (VALUES
+    (repeat('a', 512 * 1024), 1),
+    (repeat('b', 512), 2)) AS v (a, b)
+ORDER BY v.a DESC;;
+
+FETCH NEXT FROM cur;
+
+SELECT
+  type,
+  name,
+  total_bytes > 0,
+  total_nblocks,
+  free_bytes > 0,
+  free_chunks
+FROM
+  pg_backend_memory_contexts
+WHERE
+  name = 'Caller tuples';
+
+ROLLBACK;
+
+WITH contexts AS (
+  SELECT * FROM pg_backend_memory_contexts
+)
+SELECT
+  COUNT(*) > 1
+FROM
+  contexts AS c1,
+  contexts AS c2
+WHERE
+  c2.name = 'CacheMemoryContext' AND
+  c1.path[c2.level] = c2.path[c2.level];
+
+SELECT COUNT(*) > 20 AS ok FROM pg_config;
+
+SELECT COUNT(*) = 0 AS ok FROM pg_cursors;
+
+SELECT COUNT(*) >= 0 AS ok FROM pg_file_settings;
+
+SELECT
+  COUNT(*) > 0 AS ok,
+  COUNT(*) FILTER (WHERE error IS NOT NULL) = 0
+  AS no_err
+FROM
+  pg_hba_file_rules;
+
+SELECT
+  COUNT(*) >= 0 AS ok,
+  COUNT(*) FILTER (WHERE error IS NOT NULL) = 0
+  AS no_err
+FROM
+  pg_ident_file_mappings;
+
+SELECT COUNT(*) > 0 AS ok FROM pg_locks;
+
+SELECT COUNT(*) = 0 AS ok FROM pg_prepared_statements;
+
+SELECT COUNT(*) >= 0 AS ok FROM pg_prepared_xacts;
+
+SELECT COUNT(*) > 0 AS ok FROM pg_stat_slru;
+
+SELECT COUNT(*) = 1 AS ok FROM pg_stat_wal;
+
+SELECT COUNT(*) = 0 AS ok FROM pg_stat_wal_receiver;
+
+SELECT name, setting FROM pg_settings WHERE name LIKE 'enable%';
+
+SELECT
+  type,
+  COUNT(*) > 0 AS ok
+FROM
+  pg_wait_events
+WHERE
+  type <> 'InjectionPoint'
+GROUP BY type
+ORDER BY type COLLATE "C";
+
+SELECT COUNT(DISTINCT utc_offset) >= 24 AS ok FROM pg_timezone_names;
+
+SELECT COUNT(DISTINCT utc_offset) >= 24 AS ok FROM pg_timezone_abbrevs;
+
+SET timezone_abbreviations = Australia;
+
+SELECT COUNT(DISTINCT utc_offset) >= 24 AS ok FROM pg_timezone_abbrevs;
+
+SET timezone_abbreviations = India;
+
+SELECT COUNT(DISTINCT utc_offset) >= 24 AS ok FROM pg_timezone_abbrevs;
+
+SELECT * FROM pg_timezone_abbrevs WHERE abbrev = 'LMT';

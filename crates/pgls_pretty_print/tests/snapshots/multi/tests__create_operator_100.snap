@@ -1,0 +1,247 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_operator_100.sql
+snapshot_kind: text
+---
+CREATE OPERATOR ## (LEFTARG = path, RIGHTARG = path, FUNCTION = path_inter, COMMUTATOR = ##);
+
+CREATE OPERATOR @#@ (RIGHTARG = BIGINT, PROCEDURE = factorial);
+
+CREATE OPERATOR #%# (LEFTARG = BIGINT, PROCEDURE = factorial);
+
+SELECT @#@24;
+
+SELECT @@##@@24;
+
+SET search_path TO pg_catalog;
+
+SELECT @#@24;
+
+RESET search_path;
+
+SELECT @#@24.0;
+
+COMMENT ON OPERATOR ###### (NONE, INT) IS 'bad prefix';
+
+COMMENT ON OPERATOR ###### (INT, NONE) IS 'bad postfix';
+
+COMMENT ON OPERATOR ###### (INT, BIGINT) IS 'bad infix';
+
+DROP OPERATOR ###### (NONE, INT);
+
+DROP OPERATOR ###### (INT, NONE);
+
+DROP OPERATOR ###### (INT, BIGINT);
+
+CREATE OPERATOR !=- (RIGHTARG = BIGINT, PROCEDURE = factorial);
+
+SELECT !=-10;
+
+SELECT 2 <> 1, 2 <> 2;
+
+SELECT 2 <> 1;
+
+DO $$ -- use DO to protect -- from psql
+  declare r boolean;
+  begin
+    execute $e$ select 2 !=-- comment
+      1 $e$ into r;
+    raise info 'r = %', r;
+  end;
+$$;
+
+SELECT TRUE <> -1 BETWEEN 1 AND 1;
+
+SELECT FALSE <> 1 BETWEEN 1 AND 1;
+
+SELECT FALSE <= -1 BETWEEN 1 AND 1;
+
+SELECT FALSE >= -1 BETWEEN 1 AND 1;
+
+SELECT 2 <= 3, 3 >= 2, 2 <> 3;
+
+SELECT 3 <= 2, 2 >= 3, 2 <> 2;
+
+BEGIN;
+
+CREATE ROLE regress_rol_op1;
+
+CREATE SCHEMA "schema_op1";
+
+GRANT USAGE ON SCHEMA schema_op1 TO PUBLIC;
+
+REVOKE USAGE ON SCHEMA schema_op1 FROM regress_rol_op1;
+
+SET ROLE TO regress_rol_op1;
+
+CREATE OPERATOR schema_op1.#*# (RIGHTARG = BIGINT, PROCEDURE = factorial);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR #*# (LEFTARG = SETOF BIGINT, PROCEDURE = factorial);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR #*# (RIGHTARG = SETOF BIGINT, PROCEDURE = factorial);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION fn_op2(BOOLEAN, BOOLEAN)
+RETURNS BOOLEAN
+AS '
+    SELECT NULL::BOOLEAN;
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+CREATE OPERATOR === (LEFTARG = BOOLEAN,
+RIGHTARG = BOOLEAN,
+PROCEDURE = fn_op2,
+COMMUTATOR = ===,
+NEGATOR = !==,
+RESTRICT = contsel,
+JOIN = contjoinsel,
+SORT1,
+SORT2,
+LTCMP,
+GTCMP,
+HASHES,
+MERGES);
+
+ROLLBACK;
+
+CREATE OPERATOR #@%# (RIGHTARG = BIGINT, PROCEDURE = factorial, INVALID_ATT = BIGINT);
+
+CREATE OPERATOR #@%# (PROCEDURE = factorial);
+
+CREATE OPERATOR #@%# (RIGHTARG = BIGINT);
+
+BEGIN;
+
+CREATE ROLE regress_rol_op3;
+
+CREATE TYPE type_op3 AS ENUM ('new', 'open', 'closed');
+
+CREATE FUNCTION fn_op3(type_op3, BIGINT)
+RETURNS BIGINT
+AS '
+    SELECT NULL::int8;
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+REVOKE USAGE ON TYPE type_op3 FROM regress_rol_op3;
+
+REVOKE USAGE ON TYPE type_op3 FROM PUBLIC;
+
+SET ROLE TO regress_rol_op3;
+
+CREATE OPERATOR #*# (LEFTARG = type_op3, RIGHTARG = BIGINT, PROCEDURE = fn_op3);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE ROLE regress_rol_op4;
+
+CREATE TYPE type_op4 AS ENUM ('new', 'open', 'closed');
+
+CREATE FUNCTION fn_op4(BIGINT, type_op4)
+RETURNS BIGINT
+AS '
+    SELECT NULL::int8;
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+REVOKE USAGE ON TYPE type_op4 FROM regress_rol_op4;
+
+REVOKE USAGE ON TYPE type_op4 FROM PUBLIC;
+
+SET ROLE TO regress_rol_op4;
+
+CREATE OPERATOR #*# (LEFTARG = BIGINT, RIGHTARG = type_op4, PROCEDURE = fn_op4);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE ROLE regress_rol_op5;
+
+CREATE TYPE type_op5 AS ENUM ('new', 'open', 'closed');
+
+CREATE FUNCTION fn_op5(BIGINT, BIGINT)
+RETURNS BIGINT
+AS '
+    SELECT NULL::int8;
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+REVOKE EXECUTE ON FUNCTION fn_op5(BIGINT, BIGINT) FROM regress_rol_op5;
+
+REVOKE EXECUTE ON FUNCTION fn_op5(BIGINT, BIGINT) FROM PUBLIC;
+
+SET ROLE TO regress_rol_op5;
+
+CREATE OPERATOR #*# (LEFTARG = BIGINT, RIGHTARG = BIGINT, PROCEDURE = fn_op5);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE ROLE regress_rol_op6;
+
+CREATE TYPE type_op6 AS ENUM ('new', 'open', 'closed');
+
+CREATE FUNCTION fn_op6(BIGINT, BIGINT)
+RETURNS type_op6
+AS '
+    SELECT NULL::type_op6;
+'
+LANGUAGE "sql"
+IMMUTABLE;
+
+REVOKE USAGE ON TYPE type_op6 FROM regress_rol_op6;
+
+REVOKE USAGE ON TYPE type_op6 FROM PUBLIC;
+
+SET ROLE TO regress_rol_op6;
+
+CREATE OPERATOR #*# (LEFTARG = BIGINT, RIGHTARG = BIGINT, PROCEDURE = fn_op6);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, NEGATOR = ===);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OPERATOR === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, COMMUTATOR = ===!!!);
+
+CREATE OPERATOR ===!!! (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4ne, NEGATOR = ===!!!);
+
+ROLLBACK;
+
+CREATE OPERATOR === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, COMMUTATOR = =);
+
+CREATE OPERATOR === (LEFTARG = INT, RIGHTARG = INT, PROCEDURE = int4eq, NEGATOR = <>);
+
+CREATE OPERATOR === (LEFTARG = box,
+RIGHTARG = box,
+PROCEDURE = area_equal_function,
+COMMUTATOR = ===,
+NEGATOR = !==,
+RESTRICT = area_restriction_function,
+JOIN = area_join_function,
+HASHES,
+MERGES);
