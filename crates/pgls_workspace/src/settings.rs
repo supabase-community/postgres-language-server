@@ -18,6 +18,7 @@ use pgls_configuration::{
     diagnostics::InvalidIgnorePattern,
     files::FilesConfiguration,
     migrations::{MigrationsConfiguration, PartialMigrationsConfiguration},
+    pglinter::PglinterConfiguration,
     plpgsql_check::PlPgSqlCheckConfiguration,
     splinter::SplinterConfiguration,
 };
@@ -217,6 +218,9 @@ pub struct Settings {
     /// Splinter (database linter) settings for the workspace
     pub splinter: SplinterSettings,
 
+    /// Pglinter (database linter via pglinter extension) settings for the workspace
+    pub pglinter: PglinterSettings,
+
     /// Type checking settings for the workspace
     pub typecheck: TypecheckSettings,
 
@@ -263,6 +267,11 @@ impl Settings {
             self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter));
         }
 
+        // pglinter part
+        if let Some(pglinter) = configuration.pglinter {
+            self.pglinter = to_pglinter_settings(PglinterConfiguration::from(pglinter));
+        }
+
         // typecheck part
         if let Some(typecheck) = configuration.typecheck {
             self.typecheck = to_typecheck_settings(TypecheckConfiguration::from(typecheck));
@@ -300,6 +309,11 @@ impl Settings {
         self.splinter.rules.as_ref().map(Cow::Borrowed)
     }
 
+    /// Returns pglinter rules.
+    pub fn as_pglinter_rules(&self) -> Option<Cow<pgls_configuration::pglinter::Rules>> {
+        self.pglinter.rules.as_ref().map(Cow::Borrowed)
+    }
+
     /// It retrieves the severity based on the `code` of the rule and the current configuration.
     ///
     /// The code of the has the following pattern: `{group}/{rule_name}`.
@@ -330,6 +344,13 @@ fn to_linter_settings(
 
 fn to_splinter_settings(conf: SplinterConfiguration) -> SplinterSettings {
     SplinterSettings {
+        enabled: conf.enabled,
+        rules: Some(conf.rules),
+    }
+}
+
+fn to_pglinter_settings(conf: PglinterConfiguration) -> PglinterSettings {
+    PglinterSettings {
         enabled: conf.enabled,
         rules: Some(conf.rules),
     }
@@ -470,6 +491,25 @@ impl Default for SplinterSettings {
         Self {
             enabled: true,
             rules: Some(pgls_configuration::splinter::Rules::default()),
+        }
+    }
+}
+
+/// Pglinter (database linter via pglinter extension) settings for the entire workspace
+#[derive(Debug)]
+pub struct PglinterSettings {
+    /// Disabled by default (pglinter extension might not be installed)
+    pub enabled: bool,
+
+    /// List of rules
+    pub rules: Option<pgls_configuration::pglinter::Rules>,
+}
+
+impl Default for PglinterSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false, // Disabled by default since pglinter extension might not be installed
+            rules: Some(pgls_configuration::pglinter::Rules::default()),
         }
     }
 }
