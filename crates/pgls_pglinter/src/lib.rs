@@ -5,7 +5,6 @@ mod diagnostics;
 pub mod registry;
 pub mod rule;
 pub mod rules;
-pub mod sarif;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
 use pgls_schema_cache::SchemaCache;
@@ -14,7 +13,6 @@ use sqlx::PgPool;
 pub use cache::PglinterCache;
 pub use diagnostics::{PglinterAdvices, PglinterDiagnostic};
 pub use rule::PglinterRule;
-pub use sarif::SarifLog;
 
 /// Parameters for running pglinter
 #[derive(Debug)]
@@ -121,37 +119,25 @@ pub async fn run_pglinter(
     Ok(results)
 }
 
-/// Execute a single pglinter rule using pglinter.check_rule()
+/// Execute a single pglinter rule using pglinter.check(rule_code)
+/// Returns true if the rule detected issues
 async fn execute_rule(
     conn: &PgPool,
     rule_code: &str,
 ) -> Result<Option<Vec<PglinterDiagnostic>>, sqlx::Error> {
-    let result: Option<String> = sqlx::query_scalar("SELECT pglinter.check_rule($1)")
+    let has_issues: bool = sqlx::query_scalar("SELECT pglinter.check($1)")
         .bind(rule_code)
-        .fetch_optional(conn)
+        .fetch_one(conn)
         .await?;
 
-    let Some(sarif_json) = result else {
-        return Ok(None);
-    };
-
-    let sarif = match SarifLog::parse(&sarif_json) {
-        Ok(s) => s,
-        Err(_) => return Ok(None),
-    };
-
-    if !sarif.has_results() {
+    if !has_issues {
         return Ok(None);
     }
 
-    let diags: Vec<_> = sarif
-        .all_results()
-        .filter_map(|result| PglinterDiagnostic::try_from_sarif(result, rule_code).ok())
-        .collect();
-
-    if diags.is_empty() {
-        Ok(None)
+    // Rule fired - create diagnostic from our known metadata
+    if let Some(diag) = PglinterDiagnostic::from_rule_code(rule_code) {
+        Ok(Some(vec![diag]))
     } else {
-        Ok(Some(diags))
+        Ok(None)
     }
 }
