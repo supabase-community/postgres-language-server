@@ -1,6 +1,11 @@
 //! Integration tests for pglinter diagnostics
 //!
 //! These tests configure pglinter thresholds to 0% so rules fire deterministically.
+//!
+//! Note: These tests require the pglinter extension to be installed, which is only
+//! available on Linux (via Docker) and macOS. Windows CI does not have pglinter.
+
+#![cfg(not(target_os = "windows"))]
 
 use pgls_analyse::AnalysisFilter;
 use pgls_console::fmt::{Formatter, HTML};
@@ -86,6 +91,12 @@ struct TestSetup<'a> {
 
 impl TestSetup<'_> {
     async fn test(self) {
+        // Create required extensions (pglinter may depend on plpgsql_check)
+        sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS plpgsql_check")
+            .execute(self.test_db)
+            .await
+            .expect("plpgsql_check extension not available");
+
         sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS pglinter")
             .execute(self.test_db)
             .await
@@ -129,13 +140,8 @@ impl TestSetup<'_> {
                 }
                 // Apply rule filter if specified
                 if !self.rule_filter.is_empty() {
-                    let rule_code = d
-                        .advices
-                        .rule_code
-                        .as_ref()
-                        .map(|s| s.as_str())
-                        .unwrap_or("");
-                    return self.rule_filter.iter().any(|f| rule_code == *f);
+                    let rule_code = d.advices.rule_code.as_deref().unwrap_or("");
+                    return self.rule_filter.contains(&rule_code);
                 }
                 true
             })
@@ -194,6 +200,12 @@ impl TestSetup<'_> {
 /// Test that pglinter extension can be created
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn extension_check(test_db: PgPool) {
+    // Create required extensions (pglinter may depend on plpgsql_check)
+    sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS plpgsql_check")
+        .execute(&test_db)
+        .await
+        .expect("plpgsql_check extension not available");
+
     sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS pglinter")
         .execute(&test_db)
         .await
@@ -210,6 +222,8 @@ async fn extension_check(test_db: PgPool) {
 }
 
 /// Test B001: Table without primary key
+/// Note: pglinter checks ALL tables in the database globally, not just specific tables.
+/// So this test verifies that B001 fires when any table lacks a primary key.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn table_without_primary_key(test_db: PgPool) {
     TestSetup {
@@ -218,24 +232,6 @@ async fn table_without_primary_key(test_db: PgPool) {
             CREATE TABLE public.test_no_pk (
                 name text,
                 value integer
-            );
-        "#,
-        test_db: &test_db,
-        rule_filter: vec!["B001"],
-    }
-    .test()
-    .await;
-}
-
-/// Test with a clean table (has primary key)
-#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-async fn table_with_primary_key(test_db: PgPool) {
-    TestSetup {
-        name: "table_with_primary_key",
-        setup: r#"
-            CREATE TABLE public.test_with_pk (
-                id serial PRIMARY KEY,
-                name text
             );
         "#,
         test_db: &test_db,

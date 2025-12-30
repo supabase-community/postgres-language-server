@@ -80,6 +80,7 @@ pgls_lexer                  = { path = "./crates/pgls_lexer", version = "0.0.0" 
 pgls_lexer_codegen          = { path = "./crates/pgls_lexer_codegen", version = "0.0.0" }
 pgls_lsp                    = { path = "./crates/pgls_lsp", version = "0.0.0" }
 pgls_markup                 = { path = "./crates/pgls_markup", version = "0.0.0" }
+pgls_matcher                = { path = "./crates/pgls_matcher", version = "0.0.0" }
 pgls_pglinter               = { path = "./crates/pgls_pglinter", version = "0.0.0" }
 pgls_plpgsql_check          = { path = "./crates/pgls_plpgsql_check", version = "0.0.0" }
 pgls_pretty_print           = { path = "./crates/pgls_pretty_print", version = "0.0.0" }
