@@ -1,6 +1,6 @@
 //! Integration tests for pglinter diagnostics
 //!
-//! These tests require the pglinter extension to be installed in the test database.
+//! These tests configure pglinter thresholds to 0% so rules fire deterministically.
 
 use pgls_analyse::AnalysisFilter;
 use pgls_console::fmt::{Formatter, HTML};
@@ -49,42 +49,63 @@ impl Visit for TestVisitor {
     }
 }
 
+/// Configure pglinter for deterministic testing:
+/// - Set all thresholds to 0% warning, 1% error so any violation triggers
+/// - Disable cluster-level rules that depend on pg_hba.conf
+async fn configure_pglinter_for_tests(pool: &PgPool) {
+    // Set thresholds to 0% warning for deterministic behavior
+    let rules_to_configure = [
+        "B001", "B002", "B003", "B004", "B005", "B006", "B007", "B008", "B009", "B010", "B011",
+        "B012", "S001", "S002", "S003", "S004", "S005",
+    ];
+
+    for rule in rules_to_configure {
+        let _ = sqlx::query("SELECT pglinter.update_rule_levels($1, 0, 1)")
+            .bind(rule)
+            .execute(pool)
+            .await;
+    }
+
+    // Disable cluster-level rules (depend on pg_hba.conf, not deterministic)
+    for rule in ["C001", "C002", "C003"] {
+        let _ = sqlx::query("SELECT pglinter.disable_rule($1)")
+            .bind(rule)
+            .execute(pool)
+            .await;
+    }
+}
+
 struct TestSetup<'a> {
     name: &'a str,
     setup: &'a str,
     test_db: &'a PgPool,
+    /// Only include rules matching these prefixes (e.g., ["B001", "B005"])
+    /// Empty means include all non-cluster rules
+    rule_filter: Vec<&'a str>,
 }
 
 impl TestSetup<'_> {
     async fn test(self) {
-        // Load schema cache
-        let schema_cache = SchemaCache::load(self.test_db)
+        sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS pglinter")
+            .execute(self.test_db)
             .await
-            .expect("Failed to load schema cache");
+            .expect("pglinter extension not available");
 
-        // Assert pglinter extension is installed
-        assert!(
-            schema_cache.extensions.iter().any(|e| e.name == "pglinter"),
-            "pglinter extension must be installed for tests to run"
-        );
+        configure_pglinter_for_tests(self.test_db).await;
 
-        // Run setup SQL
         sqlx::raw_sql(self.setup)
             .execute(self.test_db)
             .await
             .expect("Failed to setup test database");
 
-        // Reload schema cache after setup
         let schema_cache = SchemaCache::load(self.test_db)
             .await
-            .expect("Failed to reload schema cache");
+            .expect("Failed to load schema cache");
 
-        // Load pglinter cache
         let cache = PglinterCache::load(self.test_db, &schema_cache)
             .await
             .expect("Failed to load pglinter cache");
 
-        // Run pglinter checks with all rules enabled
         let filter = AnalysisFilter::default();
         let diagnostics = run_pglinter(
             PglinterParams {
@@ -97,26 +118,49 @@ impl TestSetup<'_> {
         .await
         .expect("Failed to run pglinter checks");
 
-        let content = if diagnostics.is_empty() {
+        // Filter diagnostics
+        let filtered: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| {
+                let category = d.category().map(|c| c.name()).unwrap_or("");
+                // Exclude cluster-level rules
+                if category.contains("/cluster/") {
+                    return false;
+                }
+                // Apply rule filter if specified
+                if !self.rule_filter.is_empty() {
+                    let rule_code = d
+                        .advices
+                        .rule_code
+                        .as_ref()
+                        .map(|s| s.as_str())
+                        .unwrap_or("");
+                    return self.rule_filter.iter().any(|f| rule_code == *f);
+                }
+                true
+            })
+            .collect();
+
+        // Sort by category for deterministic output
+        let mut sorted = filtered;
+        sorted.sort_by_key(|d| d.category().map(|c| c.name()).unwrap_or("unknown"));
+
+        let content = if sorted.is_empty() {
             String::from("No Diagnostics")
         } else {
             let mut result = String::new();
 
-            for (idx, diagnostic) in diagnostics.iter().enumerate() {
+            for (idx, diagnostic) in sorted.iter().enumerate() {
                 if idx > 0 {
                     writeln!(&mut result).unwrap();
                     writeln!(&mut result, "---").unwrap();
                     writeln!(&mut result).unwrap();
                 }
 
-                // Write category
                 let category_name = diagnostic.category().map(|c| c.name()).unwrap_or("unknown");
                 writeln!(&mut result, "Category: {category_name}").unwrap();
-
-                // Write severity
                 writeln!(&mut result, "Severity: {:?}", diagnostic.severity()).unwrap();
 
-                // Write message
                 let mut msg_content = vec![];
                 let mut writer = HTML::new(&mut msg_content);
                 let mut formatter = Formatter::new(&mut writer);
@@ -128,7 +172,6 @@ impl TestSetup<'_> {
                 )
                 .unwrap();
 
-                // Write advices using custom visitor
                 let mut visitor = TestVisitor::new();
                 diagnostic.advices(&mut visitor).unwrap();
                 let advice_text = visitor.into_string();
@@ -148,16 +191,21 @@ impl TestSetup<'_> {
     }
 }
 
-/// Test that checks extension availability
+/// Test that pglinter extension can be created
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
 async fn extension_check(test_db: PgPool) {
+    sqlx::raw_sql("CREATE EXTENSION IF NOT EXISTS pglinter")
+        .execute(&test_db)
+        .await
+        .expect("pglinter extension not available");
+
     let schema_cache = SchemaCache::load(&test_db)
         .await
         .expect("Failed to load schema cache");
 
     assert!(
         schema_cache.extensions.iter().any(|e| e.name == "pglinter"),
-        "pglinter extension must be installed for tests to run"
+        "pglinter extension not found"
     );
 }
 
@@ -173,6 +221,7 @@ async fn table_without_primary_key(test_db: PgPool) {
             );
         "#,
         test_db: &test_db,
+        rule_filter: vec!["B001"],
     }
     .test()
     .await;
@@ -190,6 +239,7 @@ async fn table_with_primary_key(test_db: PgPool) {
             );
         "#,
         test_db: &test_db,
+        rule_filter: vec!["B001"],
     }
     .test()
     .await;
@@ -207,6 +257,7 @@ async fn objects_with_uppercase(test_db: PgPool) {
             );
         "#,
         test_db: &test_db,
+        rule_filter: vec!["B005"],
     }
     .test()
     .await;
@@ -229,6 +280,7 @@ async fn fk_without_index(test_db: PgPool) {
             );
         "#,
         test_db: &test_db,
+        rule_filter: vec!["B003"],
     }
     .test()
     .await;
@@ -261,6 +313,7 @@ async fn multiple_issues(test_db: PgPool) {
             );
         "#,
         test_db: &test_db,
+        rule_filter: vec!["B001", "B003", "B005"],
     }
     .test()
     .await;

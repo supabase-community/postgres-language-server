@@ -43,12 +43,12 @@ impl PglinterCache {
     }
 }
 
-/// Get disabled rules using pglinter's official API: pglinter.show_rules()
+/// Get disabled rules by querying the pglinter.rules table
+/// Uses the rules table directly since show_rules() only outputs to NOTICE
 pub async fn get_disabled_rules(conn: &PgPool) -> Result<FxHashSet<String>, sqlx::Error> {
-    let rows: Vec<(String, bool)> =
-        sqlx::query_as("SELECT rule_code, enabled FROM pglinter.show_rules()")
-            .fetch_all(conn)
-            .await?;
+    let rows: Vec<(String, bool)> = sqlx::query_as("SELECT code, enable FROM pglinter.rules")
+        .fetch_all(conn)
+        .await?;
 
     Ok(rows
         .into_iter()

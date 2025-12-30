@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyTableWithoutIndexOnFk
+Severity: Warning
+Message: Count number of tables without index on foreign key.
+Advices:
+Count number of tables without index on foreign key.
+[Info] Rule: B003
+How to fix:
+[Info]   1. create a index on foreign key or change warning/error threshold

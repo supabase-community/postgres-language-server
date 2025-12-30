@@ -1,0 +1,13 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: Count number of objects with uppercase in name or in columns.
+Advices:
+Count number of objects with uppercase in name or in columns.
+[Info] Rule: B005
+How to fix:
+[Info]   1. Do not use uppercase for any database objects

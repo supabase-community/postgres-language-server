@@ -139,14 +139,8 @@ runs:
           sleep 1
         done
 
-        # Verify extensions are created in template1 (for SQLx test databases)
-        # Use 'extensions' schema to avoid triggering extensionInPublic lint
-        echo "Creating extensions in template1..."
-        docker exec postgres psql -U postgres -d template1 -c "CREATE SCHEMA IF NOT EXISTS extensions;"
-        docker exec postgres psql -U postgres -d template1 -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check SCHEMA extensions;"
-        docker exec postgres psql -U postgres -d template1 -c "CREATE EXTENSION IF NOT EXISTS pglinter SCHEMA extensions;"
-
-        # Also create in postgres database
+        # Create extensions in postgres database only (NOT template1)
+        # This avoids polluting test databases - tests that need extensions can create them explicitly
         echo "Creating extensions in postgres database..."
         docker exec postgres psql -U postgres -c "CREATE SCHEMA IF NOT EXISTS extensions;"
         docker exec postgres psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check SCHEMA extensions;"
@@ -154,7 +148,4 @@ runs:
 
         # Show extension status
         docker exec postgres psql -U postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('plpgsql_check', 'pglinter');"
-
-        # Verify pglinter schema exists
-        docker exec postgres psql -U postgres -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pglinter';"
 
