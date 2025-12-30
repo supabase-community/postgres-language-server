@@ -73,12 +73,14 @@ UPDATE target SET balance = 0;
 MERGE INTO target
 USING target ON tid =
 tid
-WHEN MATCHED THEN DO NOTHING;
+WHEN MATCHED
+THEN DO NOTHING;
 
 WITH foo AS (
   MERGE INTO target
   USING source ON TRUE
-  WHEN MATCHED THEN DELETE
+  WHEN MATCHED
+  THEN DELETE
 )
 SELECT
   *
@@ -87,7 +89,8 @@ FROM
 
 COPY (MERGE INTO target
 USING source ON TRUE
-WHEN MATCHED THEN DELETE) TO STDOUT;
+WHEN MATCHED
+THEN DELETE) TO STDOUT;
 
 CREATE MATERIALIZED VIEW mv AS SELECT * FROM target;
 
@@ -98,7 +101,8 @@ SET SESSION AUTHORIZATION regress_merge_none;
 MERGE INTO target
 USING (SELECT
   1) ON TRUE
-WHEN MATCHED THEN DO NOTHING;
+WHEN MATCHED
+THEN DO NOTHING;
 
 SET SESSION AUTHORIZATION regress_merge_privs;
 
@@ -125,7 +129,8 @@ AS t
 USING source
 AS s ON t.tid =
 s.sid
-WHEN NOT MATCHED BY TARGET THEN DO NOTHING;
+WHEN NOT MATCHED BY TARGET
+THEN DO NOTHING;
 
 BEGIN;
 
@@ -176,7 +181,8 @@ AS t
 USING source
 AS s ON t.tid =
 s.sid
-WHEN MATCHED THEN DO NOTHING;
+WHEN MATCHED
+THEN DO NOTHING;
 
 SELECT * FROM target ORDER BY tid;
 
@@ -706,13 +712,18 @@ USING v ON tid =
 sid
 WHEN MATCHED AND
   tid >=
-  2 THEN UPDATE SET balance = t.balance + delta
-WHEN NOT MATCHED BY TARGET THEN INSERT (balance,
-tid) VALUES (balance + delta,
-sid)
+  2
+THEN UPDATE SET balance = t.balance + delta
+WHEN NOT MATCHED BY TARGET
+THEN INSERT (balance,
+tid)
+VALUES (
+  balance + delta,
+  sid)
 WHEN MATCHED AND
   tid <
-  2 THEN DELETE;
+  2
+THEN DELETE;
 
 ROLLBACK;
 
@@ -760,13 +771,18 @@ WITH m AS (
   sid
   WHEN MATCHED AND
     tid >=
-    2 THEN UPDATE SET balance = t.balance + delta
-  WHEN NOT MATCHED BY TARGET THEN INSERT (balance,
-  tid) VALUES (balance + delta,
-  sid)
+    2
+  THEN UPDATE SET balance = t.balance + delta
+  WHEN NOT MATCHED BY TARGET
+  THEN INSERT (balance,
+  tid)
+  VALUES (
+    balance + delta,
+    sid)
   WHEN MATCHED AND
     tid <
-    2 THEN DELETE
+    2
+  THEN DELETE
   RETURNING "mergesupport#25"
   AS action,
   old
@@ -790,9 +806,13 @@ m2 AS (
   AS l
   USING m ON l.tid =
   m.tid
-  WHEN MATCHED THEN UPDATE SET last_change = description
-  WHEN NOT MATCHED BY TARGET THEN INSERT VALUES (m.tid,
-  description)
+  WHEN MATCHED
+  THEN UPDATE SET last_change = description
+  WHEN NOT MATCHED BY TARGET
+  THEN INSERT
+  VALUES (
+    m.tid,
+    description)
   RETURNING m.*,
   "mergesupport#25"
   AS log_action,
@@ -820,13 +840,18 @@ AS s ON tid =
 sid
 WHEN MATCHED AND
   tid >=
-  2 THEN UPDATE SET balance = t.balance + delta
-WHEN NOT MATCHED BY TARGET THEN INSERT (balance,
-tid) VALUES (balance + delta,
-sid)
+  2
+THEN UPDATE SET balance = t.balance + delta
+WHEN NOT MATCHED BY TARGET
+THEN INSERT (balance,
+tid)
+VALUES (
+  balance + delta,
+  sid)
 WHEN MATCHED AND
   tid <
-  2 THEN DELETE
+  2
+THEN DELETE
 RETURNING "mergesupport#25",
 old.*,
 new.*) TO STDOUT;

@@ -3,7 +3,8 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_index_spgist_60.sql
 snapshot_kind: text
 ---
-CREATE TABLE quad_point_tbl AS
+CREATE TABLE quad_point_tbl
+AS
   SELECT
     point(
     unique1,
@@ -37,7 +38,8 @@ CREATE INDEX "sp_kd_ind" ON kd_point_tbl USING spgist
   p kd_point_ops
 );
 
-CREATE TABLE radix_text_tbl AS
+CREATE TABLE radix_text_tbl
+AS
   SELECT
     name
     AS t
@@ -64,7 +66,7 @@ CREATE INDEX "sp_radix_ind" ON radix_text_tbl USING spgist
   t
 );
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 SET enable_indexscan = off;
 
@@ -141,7 +143,8 @@ FROM
 WHERE
   p ~= '(4585, 365)';
 
-CREATE TEMPORARY TABLE quad_point_tbl_ord_seq1 AS
+CREATE TEMPORARY TABLE quad_point_tbl_ord_seq1
+AS
   SELECT
     ROW_NUMBER(
 
@@ -155,7 +158,8 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_seq1 AS
   FROM
     quad_point_tbl;
 
-CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2 AS
+CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2
+AS
   SELECT
     ROW_NUMBER(
 
@@ -172,7 +176,8 @@ CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2 AS
     p <@ CAST('(200,200,1000,1000)'
     AS box);
 
-CREATE TEMPORARY TABLE quad_point_tbl_ord_seq3 AS
+CREATE TEMPORARY TABLE quad_point_tbl_ord_seq3
+AS
   SELECT
     ROW_NUMBER(
 
@@ -318,7 +323,7 @@ SELECT COUNT(*) FROM radix_text_tbl WHERE t ^@ 'Worth';
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -477,7 +482,8 @@ SELECT
 FROM
   quad_point_tbl;
 
-CREATE TEMPORARY TABLE quad_point_tbl_ord_idx1 AS
+CREATE TEMPORARY TABLE quad_point_tbl_ord_idx1
+AS
   SELECT
     ROW_NUMBER(
 
@@ -519,7 +525,8 @@ WHERE
   p <@ CAST('(200,200,1000,1000)'
   AS box);
 
-CREATE TEMPORARY TABLE quad_point_tbl_ord_idx2 AS
+CREATE TEMPORARY TABLE quad_point_tbl_ord_idx2
+AS
   SELECT
     ROW_NUMBER(
 
@@ -563,7 +570,8 @@ FROM
 WHERE
   p IS NOT NULL;
 
-CREATE TEMPORARY TABLE quad_point_tbl_ord_idx3 AS
+CREATE TEMPORARY TABLE quad_point_tbl_ord_idx3
+AS
   SELECT
     ROW_NUMBER(
 
@@ -692,7 +700,8 @@ SELECT
 FROM
   kd_point_tbl;
 
-CREATE TEMPORARY TABLE kd_point_tbl_ord_idx1 AS
+CREATE TEMPORARY TABLE kd_point_tbl_ord_idx1
+AS
   SELECT
     ROW_NUMBER(
 
@@ -734,7 +743,8 @@ WHERE
   p <@ CAST('(200,200,1000,1000)'
   AS box);
 
-CREATE TEMPORARY TABLE kd_point_tbl_ord_idx2 AS
+CREATE TEMPORARY TABLE kd_point_tbl_ord_idx2
+AS
   SELECT
     ROW_NUMBER(
 
@@ -778,7 +788,8 @@ FROM
 WHERE
   p IS NOT NULL;
 
-CREATE TEMPORARY TABLE kd_point_tbl_ord_idx3 AS
+CREATE TEMPORARY TABLE kd_point_tbl_ord_idx3
+AS
   SELECT
     ROW_NUMBER(
 
@@ -1130,7 +1141,7 @@ SET enable_seqscan = off;
 
 SET enable_indexscan = off;
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT COUNT(*) FROM quad_point_tbl WHERE p IS NULL;
 

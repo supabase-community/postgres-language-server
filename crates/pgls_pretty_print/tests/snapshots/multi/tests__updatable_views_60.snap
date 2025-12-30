@@ -213,8 +213,10 @@ USING (VALUES (2,
 'Row 2')) AS v (a,
 b) ON t.a =
 v.a
-WHEN MATCHED THEN DO NOTHING
-WHEN NOT MATCHED BY TARGET THEN DO NOTHING;
+WHEN MATCHED
+THEN DO NOTHING
+WHEN NOT MATCHED BY TARGET
+THEN DO NOTHING;
 
 MERGE INTO ro_view13
 AS t
@@ -222,8 +224,10 @@ USING (VALUES (3,
 'Row 3')) AS v (a,
 b) ON t.a =
 v.a
-WHEN MATCHED THEN DO NOTHING
-WHEN NOT MATCHED BY TARGET THEN DO NOTHING;
+WHEN MATCHED
+THEN DO NOTHING
+WHEN NOT MATCHED BY TARGET
+THEN DO NOTHING;
 
 INSERT INTO rw_view14 VALUES (NULL, 3, 'Row 3');
 
@@ -310,7 +314,8 @@ USING (VALUES (1,
 'Row 1')) AS v (a,
 b) ON t.a =
 v.a
-WHEN MATCHED THEN DO NOTHING;
+WHEN MATCHED
+THEN DO NOTHING;
 
 UPDATE ro_view19 SET last_value = 1000;
 
@@ -2592,7 +2597,8 @@ UPDATE rw_view1 SET person = person WHERE snoop(person);
 
 DELETE FROM rw_view1 WHERE NOT snoop(person);
 
-CREATE VIEW rw_view2 WITH (security_barrier = 'true') AS
+CREATE VIEW rw_view2
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -2688,7 +2694,8 @@ DO INSTEAD
     id =
     old.id;;
 
-CREATE VIEW rw_view1 WITH (security_barrier = 'true') AS
+CREATE VIEW rw_view1
+WITH (security_barrier = 'true') AS
 SELECT
   id,
   data
@@ -2785,7 +2792,8 @@ FROM
 
 ANALYZE t111;
 
-CREATE VIEW v1 WITH (security_barrier = 'true') AS
+CREATE VIEW v1
+WITH (security_barrier = 'true') AS
 SELECT
   *,
   (SELECT
@@ -3002,7 +3010,8 @@ CREATE TABLE t2 ( cc INT );
 
 INSERT INTO t2 VALUES (10), (20);
 
-CREATE VIEW v1 WITH (security_barrier = 'true') AS
+CREATE VIEW v1
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -3011,7 +3020,8 @@ WHERE
   a >
   0 WITH CASCADED CHECK OPTION;
 
-CREATE VIEW v2 WITH (security_barrier = 'true') AS
+CREATE VIEW v2
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -3051,7 +3061,8 @@ DROP TABLE "t1";
 
 CREATE TABLE t1 ( a INT );
 
-CREATE VIEW v1 WITH (security_barrier = 'true') AS
+CREATE VIEW v1
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -3066,7 +3077,8 @@ DO INSTEAD
     a =
     old.a;;
 
-CREATE VIEW v2 WITH (security_barrier = 'true') AS
+CREATE VIEW v2
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM

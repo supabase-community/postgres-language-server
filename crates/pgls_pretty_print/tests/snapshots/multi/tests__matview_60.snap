@@ -43,7 +43,8 @@ GROUP BY type;
 
 SELECT * FROM mvtest_tv ORDER BY type;
 
-CREATE MATERIALIZED VIEW mvtest_tm AS
+CREATE MATERIALIZED VIEW mvtest_tm
+AS
   SELECT
     type,
     SUM(
@@ -54,7 +55,8 @@ CREATE MATERIALIZED VIEW mvtest_tm AS
     mvtest_t
   GROUP BY type WITH NO DATA;
 
-CREATE MATERIALIZED VIEW mvtest_tm AS
+CREATE MATERIALIZED VIEW mvtest_tm
+AS
   SELECT
     type,
     SUM(
@@ -95,14 +97,16 @@ INDEX "mvtest_tm_type" ON mvtest_tm USING btree
 
 SELECT * FROM mvtest_tm ORDER BY type;
 
-CREATE MATERIALIZED VIEW mvtest_tvm AS
+CREATE MATERIALIZED VIEW mvtest_tvm
+AS
   SELECT
     *
   FROM
     mvtest_tv
   ORDER BY type;
 
-CREATE MATERIALIZED VIEW mvtest_tvm AS
+CREATE MATERIALIZED VIEW mvtest_tvm
+AS
   SELECT
     *
   FROM
@@ -111,7 +115,8 @@ CREATE MATERIALIZED VIEW mvtest_tvm AS
 
 SELECT * FROM mvtest_tvm;
 
-CREATE MATERIALIZED VIEW mvtest_tmm AS
+CREATE MATERIALIZED VIEW mvtest_tmm
+AS
   SELECT
     SUM(
     totamt
@@ -120,7 +125,8 @@ CREATE MATERIALIZED VIEW mvtest_tmm AS
   FROM
     mvtest_tm;
 
-CREATE MATERIALIZED VIEW mvtest_tvmm AS
+CREATE MATERIALIZED VIEW mvtest_tvmm
+AS
   SELECT
     SUM(
     totamt
@@ -153,13 +159,15 @@ SELECT
 FROM
   mvtest_tv;
 
-CREATE MATERIALIZED VIEW mvtest_tvvm AS
+CREATE MATERIALIZED VIEW mvtest_tvvm
+AS
   SELECT
     *
   FROM
     mvtest_tvv;
 
-CREATE MATERIALIZED VIEW mvtest_tvvm AS
+CREATE MATERIALIZED VIEW mvtest_tvvm
+AS
   SELECT
     *
   FROM
@@ -167,7 +175,8 @@ CREATE MATERIALIZED VIEW mvtest_tvvm AS
 
 CREATE VIEW mvtest_tvvmv AS SELECT * FROM mvtest_tvvm;
 
-CREATE MATERIALIZED VIEW mvtest_bb AS
+CREATE MATERIALIZED VIEW mvtest_bb
+AS
   SELECT
     *
   FROM

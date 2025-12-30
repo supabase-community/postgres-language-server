@@ -5,6 +5,49 @@ For current implementation status and guidance, see [pretty_printer.md](./pretty
 ## Session History
 
 ---
+**Date**: 2025-12-29 (Session 84)
+**Focus**: Completing the pretty printer - fixing all remaining failing tests
+**Progress**: 443/447 → 447/447 tests passing (99.1% → 100.0%) ✅
+
+**Key Fixes**:
+1. **XmlExpr XmlOptionType** - Fixed XMLPARSE/XMLSERIALIZE to use proper enum accessors (`n.xmloption()`) instead of integer comparison. XmloptionDocument=1, XmloptionContent=2 (not 0 and 1).
+
+2. **XmlSerialize INDENT** - Added emission of the `INDENT` keyword when `n.indent: true`.
+
+3. **XMLPI name quoting** - Fixed to use `emit_identifier_maybe_quoted` for names with special characters (e.g., `xml-stylesheet` → `"xml-stylesheet"`).
+
+4. **XMLELEMENT name quoting** - Same fix for element names with special characters.
+
+5. **XMLROOT standalone option** - Decoded the standalone integer values (0=YES, 1=NO, 2=NO VALUE, 3=OMITTED) and emit proper keywords instead of raw integers.
+
+6. **XMLROOT VERSION NO VALUE** - Detect null version AConst and emit `VERSION NO VALUE`.
+
+7. **XMLTABLE line breaking** - Added proper line breaks (`SoftOrSpace`) for row expression, PASSING, and COLUMNS clauses.
+
+8. **XMLTABLE namespaces (XMLNAMESPACES)** - Added emission of namespace declarations including DEFAULT namespace handling.
+
+9. **XMLTABLE complex expression wrapping** - Wrap complex row expressions (AExpr, FuncCall, BoolExpr) in parentheses to keep them valid when line-broken.
+
+10. **MERGE WHEN clause line breaking** - Added `SoftOrSpace` break before THEN keyword and around VALUES clause for long MERGE statements.
+
+11. **BoolExpr flattening in tests** - Added `flatten_bool_expr` normalization function in test harness to handle PostgreSQL's flattening of nested AND/OR expressions (`a AND (b AND c)` → `AND(a, b, c)`).
+
+**Files Modified**:
+- `crates/pgls_pretty_print/src/nodes/xml_expr.rs` - XmlOptionType enum handling, name quoting, XMLROOT standalone
+- `crates/pgls_pretty_print/src/nodes/xml_serialize.rs` - XmlOptionType enum handling, INDENT keyword
+- `crates/pgls_pretty_print/src/nodes/range_table_func.rs` - XMLTABLE line breaking, namespaces, expression wrapping
+- `crates/pgls_pretty_print/src/nodes/merge_action.rs` - MERGE clause line breaking
+- `crates/pgls_pretty_print/tests/tests.rs` - BoolExpr flattening normalization
+
+**Learnings**:
+- Prost enum accessors return typed enums, not integers. Use `n.xmloption()` instead of `n.xmloption == 0`.
+- PostgreSQL parser flattens adjacent AND/OR expressions. Test harness needs to normalize ASTs for comparison.
+- XML identifiers with special characters (hyphens, etc.) need proper quoting.
+- XMLROOT uses integer sentinel values (0-3) for standalone option, not keywords.
+
+**Result**: All 447 tests now pass!
+
+---
 **Date**: 2025-12-29 (Session 83)
 **Focus**: Fixing failing tests to improve pass rate
 **Progress**: 355/447 → 366/447 tests passing (79.4% → 81.8%)

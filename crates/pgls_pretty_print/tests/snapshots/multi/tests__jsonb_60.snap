@@ -151,7 +151,8 @@ SELECT
   AS JSONB)]
   );
 
-CREATE TEMPORARY TABLE rows AS
+CREATE TEMPORARY TABLE rows
+AS
   SELECT
     x,
     'txt' ||
@@ -3537,7 +3538,7 @@ FROM
       testjsonb) AS js
   GROUP BY j) AS js2;
 
-SET enable_hashagg = on;
+SET enable_hashagg = 'on';
 
 SET enable_sort = off;
 
@@ -3569,7 +3570,7 @@ FROM
   AS TEXT)),
   ('{}')) AS v (j);
 
-SET enable_sort = on;
+SET enable_sort = 'on';
 
 RESET enable_hashagg;
 
@@ -3897,7 +3898,7 @@ INSERT INTO nestjsonb (j) VALUES ('[1,[14,2,3]]');
 
 CREATE INDEX ON nestjsonb USING gin ( j jsonb_path_ops);
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -3915,7 +3916,7 @@ SELECT * FROM nestjsonb WHERE j @> '[[14]]';
 
 SET enable_seqscan = off;
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT
   *

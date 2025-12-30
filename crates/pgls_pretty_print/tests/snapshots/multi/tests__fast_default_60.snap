@@ -66,7 +66,8 @@ begin
 end;
 ';
 
-CREATE TABLE has_volatile AS
+CREATE TABLE has_volatile
+AS
   SELECT
     *
   FROM
@@ -709,7 +710,8 @@ SELECT c_text FROM t WHERE c_int = -1;
 
 SELECT comp();
 
-CREATE TABLE t1 AS
+CREATE TABLE t1
+AS
   SELECT
     CAST(1
     AS INT)
@@ -1063,11 +1065,11 @@ CREATE INDEX ON t USING btree ( a);
 
 UPDATE t SET a = NULL;
 
-SET LOCAL enable_seqscan = true;
+SET LOCAL enable_seqscan = 'true';
 
 SELECT * FROM t WHERE a IS NULL;
 
-SET LOCAL enable_seqscan = false;
+SET LOCAL enable_seqscan = 'false';
 
 SELECT * FROM t WHERE a IS NULL;
 

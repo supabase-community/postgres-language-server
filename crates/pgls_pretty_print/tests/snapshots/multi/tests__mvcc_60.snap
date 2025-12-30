@@ -5,11 +5,11 @@ snapshot_kind: text
 ---
 BEGIN;
 
-SET LOCAL enable_seqscan = false;
+SET LOCAL enable_seqscan = 'false';
 
-SET LOCAL enable_indexonlyscan = false;
+SET LOCAL enable_indexonlyscan = 'false';
 
-SET LOCAL enable_bitmapscan = false;
+SET LOCAL enable_bitmapscan = 'false';
 
 CREATE TABLE clean_aborted_self ( key INT, data TEXT );
 

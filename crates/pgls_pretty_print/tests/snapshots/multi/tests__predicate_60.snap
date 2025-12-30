@@ -320,7 +320,7 @@ CREATE TABLE pred_tab2 (
   CONSTRAINT "check_a" CHECK (a IS NOT NULL)
 );
 
-SET constraint_exclusion = on;
+SET constraint_exclusion = 'on';
 
 SELECT
   *

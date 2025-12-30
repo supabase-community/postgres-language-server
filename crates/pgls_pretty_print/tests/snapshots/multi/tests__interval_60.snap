@@ -216,7 +216,7 @@ ORDER BY r1.f1,
 
 CREATE INDEX ON interval_tbl_of USING btree ( f1);
 
-SET enable_seqscan = false;
+SET enable_seqscan = 'false';
 
 SELECT f1 FROM interval_tbl_of AS r1 ORDER BY f1;
 

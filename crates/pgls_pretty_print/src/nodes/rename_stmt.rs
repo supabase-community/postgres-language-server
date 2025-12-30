@@ -43,8 +43,16 @@ pub(super) fn emit_rename_stmt(e: &mut EventEmitter, n: &RenameStmt) {
             emit_keyworded_rename(e, TokenKind::CONSTRAINT_KW, &n.subname, &n.newname);
         }
         ObjectType::ObjectTrigger => {
-            emit_relation_head(e, n);
-            emit_keyworded_rename(e, TokenKind::TRIGGER_KW, &n.subname, &n.newname);
+            // ALTER TRIGGER trigger_name ON table_name RENAME TO new_name
+            e.space();
+            emit_identifier_maybe_quoted(e, &n.subname);
+            if let Some(ref relation) = n.relation {
+                e.space();
+                e.token(TokenKind::ON_KW);
+                e.space();
+                emit_range_var(e, relation);
+            }
+            emit_simple_rename(e, &n.newname);
         }
         ObjectType::ObjectRule => {
             emit_relation_head(e, n);
@@ -195,10 +203,7 @@ fn emit_object_type(e: &mut EventEmitter, object_type: ObjectType) {
 
 fn resolve_alter_target(rename_type: ObjectType, relation_type: ObjectType) -> ObjectType {
     match rename_type {
-        ObjectType::ObjectColumn
-        | ObjectType::ObjectTabconstraint
-        | ObjectType::ObjectTrigger
-        | ObjectType::ObjectRule => {
+        ObjectType::ObjectColumn | ObjectType::ObjectTabconstraint | ObjectType::ObjectRule => {
             // Only accept valid table-like relation types
             match relation_type {
                 ObjectType::ObjectView
@@ -206,6 +211,10 @@ fn resolve_alter_target(rename_type: ObjectType, relation_type: ObjectType) -> O
                 | ObjectType::ObjectForeignTable => relation_type,
                 _ => ObjectType::ObjectTable, // Default to TABLE for others
             }
+        }
+        ObjectType::ObjectTrigger => {
+            // ALTER TRIGGER syntax, not ALTER TABLE
+            ObjectType::ObjectTrigger
         }
         ObjectType::ObjectDomconstraint => {
             // Domain constraint renames should always be ALTER DOMAIN

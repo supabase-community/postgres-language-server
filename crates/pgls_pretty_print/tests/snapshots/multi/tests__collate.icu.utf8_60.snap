@@ -624,7 +624,8 @@ FROM
   collate_test3
 ORDER BY 2;
 
-CREATE TABLE test_u AS
+CREATE TABLE test_u
+AS
   SELECT
     a,
     b
@@ -2382,7 +2383,7 @@ FROM
 
 ANALYZE pagg_tab3;
 
-SET enable_partitionwise_aggregate = false;
+SET enable_partitionwise_aggregate = 'false';
 
 SELECT
   upper(
@@ -2408,7 +2409,7 @@ FROM
 GROUP BY c COLLATE "case_insensitive"
 ORDER BY 1;
 
-SET enable_partitionwise_aggregate = true;
+SET enable_partitionwise_aggregate = 'true';
 
 SELECT
   upper(
@@ -2454,7 +2455,7 @@ FROM
 GROUP BY c COLLATE "C"
 ORDER BY 1;
 
-SET enable_partitionwise_join = false;
+SET enable_partitionwise_join = 'false';
 
 SELECT
   t1.c,
@@ -2486,7 +2487,7 @@ FROM
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
 
-SET enable_partitionwise_join = true;
+SET enable_partitionwise_join = 'true';
 
 SELECT
   t1.c,
@@ -2548,7 +2549,7 @@ FROM
 GROUP BY t1.c COLLATE "C"
 ORDER BY t1.c COLLATE "C";
 
-SET enable_partitionwise_join = false;
+SET enable_partitionwise_join = 'false';
 
 SELECT
   t1.c COLLATE "C",
@@ -2580,7 +2581,7 @@ FROM
 GROUP BY t1.c COLLATE "C"
 ORDER BY t1.c COLLATE "C";
 
-SET enable_partitionwise_join = true;
+SET enable_partitionwise_join = 'true';
 
 CREATE TABLE pagg_tab4 (
   c TEXT COLLATE "case_insensitive",
@@ -2799,7 +2800,7 @@ FROM
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
 
-SET enable_partitionwise_join = false;
+SET enable_partitionwise_join = 'false';
 
 SELECT
   t1.c,

@@ -58,14 +58,16 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     e.token(TokenKind::IDENT("JSON_OBJECTAGG".to_string()));
     e.token(TokenKind::L_PAREN);
 
+    let has_arg = n.arg.is_some();
+
     if let Some(ref arg) = n.arg {
         super::json_key_value::emit_json_key_value(e, arg);
     }
 
     if let Some(ref constructor) = n.constructor {
         if !constructor.agg_order.is_empty() {
-            if n.arg.is_some() {
-                e.space();
+            if has_arg {
+                e.line(crate::emitter::LineType::SoftOrSpace);
             }
             e.token(TokenKind::ORDER_KW);
             e.space();
@@ -79,11 +81,14 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
         }
     }
 
-    e.token(TokenKind::R_PAREN);
-
-    if n.absent_on_null {
-        e.space();
-        e.token(TokenKind::ABSENT_KW);
+    // NULL ON NULL / ABSENT ON NULL goes inside the parentheses
+    if has_arg {
+        e.line(crate::emitter::LineType::SoftOrSpace);
+        if n.absent_on_null {
+            e.token(TokenKind::ABSENT_KW);
+        } else {
+            e.token(TokenKind::NULL_KW);
+        }
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
@@ -91,7 +96,7 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
     }
 
     if n.unique {
-        e.space();
+        e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::UNIQUE_KW);
@@ -99,8 +104,37 @@ pub(super) fn emit_json_object_agg(e: &mut EventEmitter, n: &JsonObjectAgg) {
         e.token(TokenKind::KEYS_KW);
     }
 
+    // RETURNING clause goes inside the parentheses
     if let Some(ref constructor) = n.constructor {
-        emit_json_agg_tail(e, constructor, true);
+        if let Some(ref output) = constructor.output {
+            let mut has_content = has_arg;
+            if has_content {
+                e.line(crate::emitter::LineType::SoftOrSpace);
+            }
+            super::json_value_expr::emit_json_output(e, output, &mut has_content);
+        }
+    }
+
+    e.token(TokenKind::R_PAREN);
+
+    // FILTER and OVER clauses go outside the parentheses
+    if let Some(ref constructor) = n.constructor {
+        if let Some(ref filter) = constructor.agg_filter {
+            e.line(crate::emitter::LineType::SoftOrSpace);
+            e.token(TokenKind::FILTER_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.token(TokenKind::WHERE_KW);
+            super::emit_clause_condition(e, filter);
+            e.token(TokenKind::R_PAREN);
+        }
+
+        if let Some(ref over) = constructor.over {
+            e.line(crate::emitter::LineType::SoftOrSpace);
+            e.token(TokenKind::OVER_KW);
+            e.space();
+            super::emit_window_def(e, over);
+        }
     }
 
     e.group_end();

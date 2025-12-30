@@ -3,11 +3,11 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/test_setup_60.sql
 snapshot_kind: text
 ---
-SET synchronous_commit = on;
+SET synchronous_commit = 'on';
 
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
-SET allow_in_place_tablespaces = true;
+SET allow_in_place_tablespaces = 'true';
 
 CREATE TABLESPACE regress_tblspace LOCATION '';
 

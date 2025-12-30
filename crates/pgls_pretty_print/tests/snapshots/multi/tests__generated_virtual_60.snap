@@ -741,7 +741,8 @@ ALTER TABLE gtest31_1
 ALTER TABLE gtest31_2 DROP CONSTRAINT cc;
 
 CREATE STATISTICS gtest31_2_stat
-ON (y.b IS NOT NULL) FROM gtest31_2;
+ON (y.b IS NOT NULL)
+FROM gtest31_2;
 
 ALTER TABLE gtest31_1
   ALTER COLUMN b SET EXPRESSION
@@ -1134,7 +1135,7 @@ WHERE
 
 DROP TABLE "gtest32";
 
-SET constraint_exclusion = on;
+SET constraint_exclusion = 'on';
 
 SELECT * FROM gtest33 WHERE b < 10;
 

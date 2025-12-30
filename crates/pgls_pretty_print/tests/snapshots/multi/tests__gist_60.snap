@@ -121,7 +121,7 @@ SET enable_seqscan = off;
 
 SET enable_bitmapscan = off;
 
-SET enable_indexonlyscan = on;
+SET enable_indexonlyscan = 'on';
 
 CREATE INDEX "gist_tbl_point_index" ON gist_tbl USING gist
 (

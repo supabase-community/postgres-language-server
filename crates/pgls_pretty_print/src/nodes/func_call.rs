@@ -139,8 +139,8 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
             emit_xmlexists_function(e, n);
         }
         // SQL value functions that don't use parentheses
-        "system_user" | "session_user" | "current_user" | "current_role"
-        | "current_catalog" | "current_schema" | "user" => {
+        "system_user" | "session_user" | "current_user" | "current_role" | "current_catalog"
+        | "current_schema" | "user" => {
             // These SQL standard functions are called without parentheses
             // Already emitted the name above, no parens needed
         }

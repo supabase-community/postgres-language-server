@@ -226,7 +226,7 @@ SELECT * FROM foo ORDER BY f1 DESC NULLS LAST;
 
 CREATE INDEX "fooi" ON foo USING btree ( f1);
 
-SET enable_sort = false;
+SET enable_sort = 'false';
 
 SELECT * FROM foo ORDER BY f1;
 

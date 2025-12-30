@@ -102,7 +102,7 @@ SELECT
   'explain verbose select sum(unique1) over w1, sum(unique2) over (w1 order by hundred), sum(tenthous) over (w1 order by hundred rows 10 preceding) from tenk1 window w1 as (partition by ten)'
   );
 
-SET track_io_timing = on;
+SET track_io_timing = 'on';
 
 SELECT
   explain_filter(
@@ -236,7 +236,7 @@ SELECT
   'explain (verbose) select * from t1 where pg_temp.mysin(f1) < 0.5'
   );
 
-SET compute_query_id = on;
+SET compute_query_id = 'on';
 
 SELECT
   explain_filter(

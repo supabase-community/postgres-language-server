@@ -119,7 +119,8 @@ CREATE INDEX "grect2ind" ON fast_emp4000 USING gist
   home_base
 );
 
-CREATE TEMPORARY TABLE point_tbl AS
+CREATE TEMPORARY TABLE point_tbl
+AS
   SELECT
     *
   FROM
@@ -129,7 +130,8 @@ INSERT INTO point_tbl (f1) VALUES (NULL);
 
 CREATE INDEX "gpointind" ON point_tbl USING gist ( f1);
 
-CREATE TEMPORARY TABLE gpolygon_tbl AS
+CREATE TEMPORARY TABLE gpolygon_tbl
+AS
   SELECT
     polygon(
     home_base
@@ -142,7 +144,8 @@ INSERT INTO gpolygon_tbl VALUES ('(1000,0,0,1000)');
 
 INSERT INTO gpolygon_tbl VALUES ('(0,1000,1000,1000)');
 
-CREATE TEMPORARY TABLE gcircle_tbl AS
+CREATE TEMPORARY TABLE gcircle_tbl
+AS
   SELECT
     circle(
     home_base
@@ -158,7 +161,7 @@ CREATE INDEX "ggpolygonind" ON gpolygon_tbl USING gist
 
 CREATE INDEX "ggcircleind" ON gcircle_tbl USING gist ( f1);
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 SET enable_indexscan = off;
 
@@ -342,7 +345,7 @@ LIMIT 10;
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -746,7 +749,7 @@ SET enable_seqscan = off;
 
 SET enable_indexscan = off;
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT
   *
@@ -819,7 +822,7 @@ SET enable_seqscan = off;
 
 SET enable_indexscan = off;
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 CREATE INDEX "intarrayidx" ON array_index_op_test USING gin
 (
@@ -1605,7 +1608,8 @@ CREATE INDEX ON syscol_table USING btree
 
 DROP TABLE "syscol_table";
 
-CREATE TABLE onek_with_null AS
+CREATE TABLE onek_with_null
+AS
   SELECT
     unique1,
     unique2
@@ -1634,9 +1638,9 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
@@ -1947,7 +1951,7 @@ INDEX "onek_nulltest" ON onek_with_null USING btree
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -2522,7 +2526,8 @@ FROM
     tenk2.hundred =
     tenk1.hundred;
 
-CREATE TABLE dupindexcols AS
+CREATE TABLE dupindexcols
+AS
   SELECT
     unique1
     AS id,
@@ -3126,7 +3131,8 @@ REINDEX (CONCURRENTLY) TABLE concur_reindex_tab3;
 
 INSERT INTO concur_reindex_tab3 VALUES (4, '[2,4]');
 
-CREATE MATERIALIZED VIEW concur_reindex_matview AS
+CREATE MATERIALIZED VIEW concur_reindex_matview
+AS
   SELECT
     *
   FROM
@@ -3934,7 +3940,8 @@ REINDEX (CONCURRENTLY) INDEX concur_temp_ind_3;
 
 COMMIT;
 
-CREATE TABLE reindex_temp_before AS
+CREATE TABLE reindex_temp_before
+AS
   SELECT
     oid,
     relname,
@@ -4065,13 +4072,17 @@ CREATE INDEX "t_b_c_idx" ON bitmap_split_or USING btree
   c
 );
 
-CREATE STATISTICS t_a_b_stat (mcv)
+CREATE STATISTICS t_a_b_stat
+(mcv)
 ON "a",
-"b" FROM bitmap_split_or;
+"b"
+FROM bitmap_split_or;
 
-CREATE STATISTICS t_b_c_stat (mcv)
+CREATE STATISTICS t_b_c_stat
+(mcv)
 ON "b",
-"c" FROM bitmap_split_or;
+"c"
+FROM bitmap_split_or;
 
 ANALYZE bitmap_split_or;
 
@@ -4131,7 +4142,8 @@ CREATE INDEX ON matview USING btree ( col1);
 
 CREATE VIEW view AS SELECT col2 FROM table2;
 
-CREATE TABLE reindex_before AS
+CREATE TABLE reindex_before
+AS
   SELECT
     oid,
     relname,
@@ -4193,7 +4205,8 @@ WHERE
 
 REINDEX SCHEMA schema_to_reindex;
 
-CREATE TABLE reindex_after AS
+CREATE TABLE reindex_after
+AS
   SELECT
     oid,
     relname,

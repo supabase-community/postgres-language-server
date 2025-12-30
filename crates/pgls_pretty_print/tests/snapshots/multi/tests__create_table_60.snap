@@ -7,7 +7,8 @@ CREATE TABLE unknowntab ( u unknown );
 
 CREATE TYPE unknown_comptype AS ( u unknown );
 
-CREATE TABLE tas_case WITH (fillfactor = 10) AS
+CREATE TABLE tas_case WITH (fillfactor = 10)
+AS
   SELECT
     1
     AS a;
@@ -86,7 +87,8 @@ ALTER TABLE unlogged1 SET UNLOGGED;
 
 DROP TABLE "unlogged1";
 
-CREATE TABLE as_select1 AS
+CREATE TABLE as_select1
+AS
   SELECT
     *
   FROM
@@ -95,7 +97,8 @@ CREATE TABLE as_select1 AS
     relkind =
     'r';
 
-CREATE TABLE as_select1 AS
+CREATE TABLE as_select1
+AS
   SELECT
     *
   FROM
@@ -104,7 +107,8 @@ CREATE TABLE as_select1 AS
     relkind =
     'r';
 
-CREATE TABLE IF NOT EXISTS as_select1 AS
+CREATE TABLE IF NOT EXISTS as_select1
+AS
   SELECT
     *
   FROM

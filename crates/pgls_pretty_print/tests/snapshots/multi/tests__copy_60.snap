@@ -377,7 +377,8 @@ CREATE FOREIGN TABLE copytest_foreign_table (
 
 COPY copytest_foreign_table FROM STDOUT WITH (FREEZE);
 
-CREATE MATERIALIZED VIEW copytest_mv AS
+CREATE MATERIALIZED VIEW copytest_mv
+AS
   SELECT
     1
     AS id WITH NO DATA;

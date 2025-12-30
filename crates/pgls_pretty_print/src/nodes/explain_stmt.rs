@@ -1,3 +1,4 @@
+use pgls_query::NodeEnum;
 use pgls_query::protobuf::ExplainStmt;
 
 use crate::{
@@ -10,11 +11,18 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
 
     e.token(TokenKind::EXPLAIN_KW);
 
-    // Options (ANALYZE, VERBOSE, etc.) - simplified for now
+    // Options (ANALYZE, VERBOSE, COSTS, etc.)
+    // EXPLAIN options use "name value" syntax without equals sign
     if !n.options.is_empty() {
         e.space();
         e.token(TokenKind::L_PAREN);
-        super::node_list::emit_comma_separated_list(e, &n.options, super::emit_node);
+        for (idx, opt) in n.options.iter().enumerate() {
+            if idx > 0 {
+                e.token(TokenKind::COMMA);
+                e.space();
+            }
+            emit_explain_option(e, opt);
+        }
         e.token(TokenKind::R_PAREN);
     }
 
@@ -25,4 +33,39 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
     }
 
     e.group_end();
+}
+
+fn emit_explain_option(e: &mut EventEmitter, node: &pgls_query::Node) {
+    if let Some(NodeEnum::DefElem(def)) = &node.node {
+        // Emit the option name in uppercase
+        if !def.defname.is_empty() {
+            e.token(TokenKind::IDENT(def.defname.to_uppercase()));
+        }
+
+        // Emit the option value if present (no equals sign for EXPLAIN)
+        if let Some(ref arg) = def.arg {
+            e.space();
+            if let Some(node_enum) = &arg.node {
+                match node_enum {
+                    NodeEnum::Boolean(b) => {
+                        // Boolean values use TRUE/FALSE keywords
+                        if b.boolval {
+                            e.token(TokenKind::TRUE_KW);
+                        } else {
+                            e.token(TokenKind::FALSE_KW);
+                        }
+                    }
+                    NodeEnum::String(s) => {
+                        // String values should be quoted
+                        super::emit_string_literal(e, s);
+                    }
+                    _ => {
+                        super::emit_node(arg, e);
+                    }
+                }
+            }
+        }
+    } else {
+        super::emit_node(node, e);
+    }
 }

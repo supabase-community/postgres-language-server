@@ -3860,7 +3860,8 @@ SELECT balk(hundred) FROM tenk1;
 
 ROLLBACK;
 
-CREATE TABLE btg AS
+CREATE TABLE btg
+AS
   SELECT
     i % 10
     AS x,
@@ -3978,7 +3979,8 @@ WHERE
 GROUP BY x,
   y;
 
-CREATE TABLE group_agg_pk AS
+CREATE TABLE group_agg_pk
+AS
   SELECT
     i % 10
     AS x,
@@ -4436,7 +4438,7 @@ GROUP BY v ||
   'a'
 ORDER BY 1;
 
-SET enable_sort = false;
+SET enable_sort = 'false';
 
 SET work_mem = '64kB';
 
@@ -4466,7 +4468,8 @@ SET enable_sort = DEFAULT;
 
 SET work_mem = '64kB';
 
-CREATE TABLE agg_data_2k AS
+CREATE TABLE agg_data_2k
+AS
   SELECT
     g
   FROM
@@ -4477,7 +4480,8 @@ CREATE TABLE agg_data_2k AS
 
 ANALYZE agg_data_2k;
 
-CREATE TABLE agg_data_20k AS
+CREATE TABLE agg_data_20k
+AS
   SELECT
     g
   FROM
@@ -4488,7 +4492,7 @@ CREATE TABLE agg_data_20k AS
 
 ANALYZE agg_data_20k;
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SET jit_above_cost = 0;
 
@@ -4508,7 +4512,8 @@ FROM
   agg_data_20k
 GROUP BY g % 10000;
 
-CREATE TABLE agg_group_1 AS
+CREATE TABLE agg_group_1
+AS
   SELECT
     g % 10000
     AS c1,
@@ -4525,7 +4530,8 @@ CREATE TABLE agg_group_1 AS
     agg_data_20k
   GROUP BY g % 10000;
 
-CREATE TABLE agg_group_2 AS
+CREATE TABLE agg_group_2
+AS
   SELECT
     *
   FROM
@@ -4554,7 +4560,8 @@ CREATE TABLE agg_group_2 AS
 
 SET jit_above_cost = DEFAULT;
 
-CREATE TABLE agg_group_3 AS
+CREATE TABLE agg_group_3
+AS
   SELECT
     CAST(g / 2
     AS NUMERIC)
@@ -4572,7 +4579,8 @@ CREATE TABLE agg_group_3 AS
     agg_data_2k
   GROUP BY g / 2;
 
-CREATE TABLE agg_group_4 AS
+CREATE TABLE agg_group_4
+AS
   SELECT
     CAST(g / 2
     AS NUMERIC)
@@ -4590,9 +4598,9 @@ CREATE TABLE agg_group_4 AS
     agg_data_2k
   GROUP BY g / 2;
 
-SET enable_hashagg = true;
+SET enable_hashagg = 'true';
 
-SET enable_sort = false;
+SET enable_sort = 'false';
 
 SET jit_above_cost = 0;
 
@@ -4612,7 +4620,8 @@ FROM
   agg_data_20k
 GROUP BY g % 10000;
 
-CREATE TABLE agg_hash_1 AS
+CREATE TABLE agg_hash_1
+AS
   SELECT
     g % 10000
     AS c1,
@@ -4629,7 +4638,8 @@ CREATE TABLE agg_hash_1 AS
     agg_data_20k
   GROUP BY g % 10000;
 
-CREATE TABLE agg_hash_2 AS
+CREATE TABLE agg_hash_2
+AS
   SELECT
     *
   FROM
@@ -4658,7 +4668,8 @@ CREATE TABLE agg_hash_2 AS
 
 SET jit_above_cost = DEFAULT;
 
-CREATE TABLE agg_hash_3 AS
+CREATE TABLE agg_hash_3
+AS
   SELECT
     CAST(g / 2
     AS NUMERIC)
@@ -4676,7 +4687,8 @@ CREATE TABLE agg_hash_3 AS
     agg_data_2k
   GROUP BY g / 2;
 
-CREATE TABLE agg_hash_4 AS
+CREATE TABLE agg_hash_4
+AS
   SELECT
     CAST(g / 2
     AS NUMERIC)
@@ -4694,7 +4706,7 @@ CREATE TABLE agg_hash_4 AS
     agg_data_2k
   GROUP BY g / 2;
 
-SET enable_sort = true;
+SET enable_sort = 'true';
 
 SET work_mem = DEFAULT;
 

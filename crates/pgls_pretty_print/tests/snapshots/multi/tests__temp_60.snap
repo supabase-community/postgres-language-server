@@ -86,7 +86,8 @@ SELECT * FROM temptest;
 BEGIN;
 
 CREATE TEMPORARY TABLE temptest (col)
-ON COMMIT DROP AS
+ON COMMIT DROP
+AS
   SELECT
     1;
 
@@ -144,12 +145,14 @@ CREATE TEMPORARY TABLE whereami ( f1 TEXT );
 
 INSERT INTO whereami VALUES ('temp');
 
-CREATE FUNCTION public.whoami()
+CREATE FUNCTION
+public.whoami()
 RETURNS TEXT
 AS 'select ''public''::text'
 LANGUAGE "sql";
 
-CREATE FUNCTION pg_temp.whoami()
+CREATE FUNCTION
+pg_temp.whoami()
 RETURNS TEXT
 AS 'select ''temp''::text'
 LANGUAGE "sql";
@@ -285,14 +288,16 @@ DROP TABLE "temp_inh_oncommit_test";
 
 BEGIN;
 
-CREATE FUNCTION pg_temp.twophase_func()
+CREATE FUNCTION
+pg_temp.twophase_func()
 RETURNS VOID
 AS ' select ''2pc_func''::text '
 LANGUAGE "sql";
 
 PREPARE TRANSACTION 'twophase_func';
 
-CREATE FUNCTION pg_temp.twophase_func()
+CREATE FUNCTION
+pg_temp.twophase_func()
 RETURNS VOID
 AS ' select ''2pc_func''::text '
 LANGUAGE "sql";
@@ -359,7 +364,7 @@ SET search_path TO pg_temp;
 
 BEGIN;
 
-SELECT current_schema() ~ 'pg_temp' AS is_temp_schema;
+SELECT CURRENT_SCHEMA ~ 'pg_temp' AS is_temp_schema;
 
 PREPARE TRANSACTION 'twophase_search';
 
@@ -377,18 +382,28 @@ CREATE TEMPORARY TABLE test_temp (
 
 INSERT INTO test_temp
 SELECT
-  generate_series(1,
-  10000) AS id,
-  repeat('a',
-  200),
+  generate_series(
+  1,
+  10000
+  )
+  AS id,
+  repeat(
+  'a',
+  200
+  ),
   0;
 
 SELECT
-  pg_relation_size('test_temp') / CAST(current_setting('block_size')
+  pg_relation_size(
+  'test_temp'
+  ) / CAST(current_setting(
+  'block_size'
+  )
   AS BIGINT) >
   200;
 
-CREATE FUNCTION test_temp_pin(
+CREATE FUNCTION
+test_temp_pin(
   "p_start" INT,
   "p_end" INT
 )
@@ -435,10 +450,21 @@ FETCH NEXT FROM c_3;
 SELECT test_temp_pin(10, 94);
 
 SELECT
-  COUNT(*),
-  MAX(a) AS max_a,
-  MIN(a) AS min_a,
-  MAX(cnt) AS max_cnt
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  )
+  AS max_a,
+  MIN(
+  a
+  )
+  AS min_a,
+  MAX(
+  cnt
+  )
+  AS max_cnt
 FROM
   test_temp;
 
@@ -461,10 +487,21 @@ TRUNCATE test_temp;
 COMMIT;
 
 SELECT
-  COUNT(*),
-  MAX(a) AS max_a,
-  MIN(a) AS min_a,
-  MAX(cnt) AS max_cnt
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  )
+  AS max_a,
+  MIN(
+  a
+  )
+  AS min_a,
+  MAX(
+  cnt
+  )
+  AS max_cnt
 FROM
   test_temp;
 
@@ -479,10 +516,21 @@ DROP TABLE "test_temp";
 ROLLBACK;
 
 SELECT
-  COUNT(*),
-  MAX(a) AS max_a,
-  MIN(a) AS min_a,
-  MAX(cnt) AS max_cnt
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  )
+  AS max_a,
+  MIN(
+  a
+  )
+  AS min_a,
+  MAX(
+  cnt
+  )
+  AS max_cnt
 FROM
   test_temp;
 
@@ -495,10 +543,21 @@ DROP TABLE "test_temp";
 ROLLBACK;
 
 SELECT
-  COUNT(*),
-  MAX(a) AS max_a,
-  MIN(a) AS min_a,
-  MAX(cnt) AS max_cnt
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  )
+  AS max_a,
+  MIN(
+  a
+  )
+  AS min_a,
+  MAX(
+  cnt
+  )
+  AS max_cnt
 FROM
   test_temp;
 
@@ -511,10 +570,21 @@ TRUNCATE test_temp;
 ROLLBACK;
 
 SELECT
-  COUNT(*),
-  MAX(a) AS max_a,
-  MIN(a) AS min_a,
-  MAX(cnt) AS max_cnt
+  COUNT(
+  *
+  ),
+  MAX(
+  a
+  )
+  AS max_a,
+  MIN(
+  a
+  )
+  AS min_a,
+  MAX(
+  cnt
+  )
+  AS max_cnt
 FROM
   test_temp;
 

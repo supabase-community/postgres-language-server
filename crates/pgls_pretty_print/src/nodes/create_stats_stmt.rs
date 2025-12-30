@@ -28,7 +28,7 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
 
     // Statistics types (e.g., ndistinct, dependencies)
     if !n.stat_types.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.stat_types, |node, e| {
             if let Some(NodeEnum::String(s)) = &node.node {
@@ -51,16 +51,12 @@ pub(super) fn emit_create_stats_stmt(e: &mut EventEmitter, n: &CreateStatsStmt) 
         });
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::FROM_KW);
     e.space();
 
-    // Relations (tables)
-    emit_comma_separated_list(e, &n.relations, |node, e| {
-        if let Some(NodeEnum::RangeVar(range_var)) = &node.node {
-            super::emit_range_var(e, range_var);
-        }
-    });
+    // Relations (tables or subselects)
+    emit_comma_separated_list(e, &n.relations, super::emit_node);
 
     e.token(TokenKind::SEMICOLON);
 

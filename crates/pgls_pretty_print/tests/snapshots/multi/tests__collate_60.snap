@@ -446,7 +446,8 @@ FROM
   collate_test2
 ORDER BY 2;
 
-CREATE TABLE test_u AS
+CREATE TABLE test_u
+AS
   SELECT
     a,
     b

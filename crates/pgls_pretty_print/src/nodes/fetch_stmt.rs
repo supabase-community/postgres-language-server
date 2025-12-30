@@ -67,14 +67,20 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
     }
 
     // Emit count
+    // For ABSOLUTE and RELATIVE, the count is always required
+    // For FORWARD/BACKWARD, count is only needed when > 1 (or for ALL)
+    let needs_count = match n.direction {
+        3 | 4 => true, // FetchAbsolute, FetchRelative always need count
+        _ => n.how_many > 1 && !is_all,
+    };
+
     if is_all {
         e.space();
         e.token(TokenKind::ALL_KW);
-    } else if n.how_many > 1 {
+    } else if needs_count {
         e.space();
         e.token(TokenKind::IDENT(n.how_many.to_string()));
     }
-    // how_many == 1 is already handled with NEXT/PRIOR above
 
     // Emit FROM cursor_name
     if !n.portalname.is_empty() {

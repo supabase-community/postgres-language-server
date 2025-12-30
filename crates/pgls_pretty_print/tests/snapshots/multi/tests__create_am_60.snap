@@ -63,7 +63,7 @@ DROP INDEX "grect2ind";
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -153,7 +153,8 @@ INSERT INTO tableam_tbl_heap2 VALUES (1);
 
 SELECT f1 FROM tableam_tbl_heap2 ORDER BY f1;
 
-CREATE TABLE tableam_tblas_heap2 USING heap2 AS
+CREATE TABLE tableam_tblas_heap2 USING heap2
+AS
   SELECT
     *
   FROM
@@ -161,7 +162,8 @@ CREATE TABLE tableam_tblas_heap2 USING heap2 AS
 
 SELECT f1 FROM tableam_tbl_heap2 ORDER BY f1;
 
-CREATE MATERIALIZED VIEW tableam_tblmv_heap2 USING heap2 AS
+CREATE MATERIALIZED VIEW tableam_tblmv_heap2 USING heap2
+AS
   SELECT
     *
   FROM
@@ -274,7 +276,8 @@ ORDER BY classid,
   objid,
   objsubid;
 
-CREATE TABLE heaptable USING heap AS
+CREATE TABLE heaptable USING heap
+AS
   SELECT
     a,
     repeat(
@@ -427,7 +430,8 @@ WHERE
 
 ROLLBACK;
 
-CREATE MATERIALIZED VIEW heapmv USING heap AS
+CREATE MATERIALIZED VIEW heapmv USING heap
+AS
   SELECT
     *
   FROM
@@ -745,7 +749,8 @@ SET LOCAL default_table_access_method = heap2;
 
 CREATE TABLE tableam_tbl_heapx ( f1 INT );
 
-CREATE TABLE tableam_tblas_heapx AS
+CREATE TABLE tableam_tblas_heapx
+AS
   SELECT
     *
   FROM
@@ -756,7 +761,8 @@ INTO tableam_tblselectinto_heapx
 FROM
   tableam_tbl_heapx;
 
-CREATE MATERIALIZED VIEW tableam_tblmv_heapx USING heap2 AS
+CREATE MATERIALIZED VIEW tableam_tblmv_heapx USING heap2
+AS
   SELECT
     *
   FROM

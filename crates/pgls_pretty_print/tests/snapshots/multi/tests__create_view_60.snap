@@ -653,7 +653,8 @@ WHERE
 
 CREATE VIEW mysecview1 AS SELECT * FROM tbl1 WHERE a = 0;
 
-CREATE VIEW mysecview2 WITH (security_barrier = 'true') AS
+CREATE VIEW mysecview2
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -662,7 +663,8 @@ WHERE
   a >
   0;
 
-CREATE VIEW mysecview3 WITH (security_barrier = 'false') AS
+CREATE VIEW mysecview3
+WITH (security_barrier = 'false') AS
 SELECT
   *
 FROM
@@ -671,7 +673,8 @@ WHERE
   a <
   0;
 
-CREATE VIEW mysecview4 WITH (security_barrier) AS
+CREATE VIEW mysecview4
+WITH (security_barrier) AS
 SELECT
   *
 FROM
@@ -680,7 +683,8 @@ WHERE
   a <>
   0;
 
-CREATE VIEW mysecview5 WITH (security_barrier = 100) AS
+CREATE VIEW mysecview5
+WITH (security_barrier = 100) AS
 SELECT
   *
 FROM
@@ -689,7 +693,8 @@ WHERE
   a >
   100;
 
-CREATE VIEW mysecview6 WITH (invalid_option) AS
+CREATE VIEW mysecview6
+WITH (invalid_option) AS
 SELECT
   *
 FROM
@@ -698,7 +703,8 @@ WHERE
   a <
   100;
 
-CREATE VIEW mysecview7 WITH (security_invoker = 'true') AS
+CREATE VIEW mysecview7
+WITH (security_invoker = 'true') AS
 SELECT
   *
 FROM
@@ -707,7 +713,8 @@ WHERE
   a =
   100;
 
-CREATE VIEW mysecview8 WITH (security_invoker = 'false',
+CREATE VIEW mysecview8
+WITH (security_invoker = 'false',
 security_barrier = 'true') AS
 SELECT
   *
@@ -717,7 +724,8 @@ WHERE
   a >
   100;
 
-CREATE VIEW mysecview9 WITH (security_invoker) AS
+CREATE VIEW mysecview9
+WITH (security_invoker) AS
 SELECT
   *
 FROM
@@ -726,7 +734,8 @@ WHERE
   a <
   100;
 
-CREATE VIEW mysecview10 WITH (security_invoker = 100) AS
+CREATE VIEW mysecview10
+WITH (security_invoker = 100) AS
 SELECT
   *
 FROM
@@ -776,7 +785,8 @@ WHERE
   a >
   256;
 
-CREATE OR REPLACE VIEW mysecview3 WITH (security_barrier = 'true') AS
+CREATE OR REPLACE VIEW mysecview3
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -785,7 +795,8 @@ WHERE
   a <
   256;
 
-CREATE OR REPLACE VIEW mysecview4 WITH (security_barrier = 'false') AS
+CREATE OR REPLACE VIEW mysecview4
+WITH (security_barrier = 'false') AS
 SELECT
   *
 FROM
@@ -803,7 +814,8 @@ WHERE
   a >
   256;
 
-CREATE OR REPLACE VIEW mysecview8 WITH (security_invoker = 'true') AS
+CREATE OR REPLACE VIEW mysecview8
+WITH (security_invoker = 'true') AS
 SELECT
   *
 FROM
@@ -812,7 +824,8 @@ WHERE
   a <
   256;
 
-CREATE OR REPLACE VIEW mysecview9 WITH (security_invoker = 'false',
+CREATE OR REPLACE VIEW mysecview9
+WITH (security_invoker = 'false',
 security_barrier = 'true') AS
 SELECT
   *

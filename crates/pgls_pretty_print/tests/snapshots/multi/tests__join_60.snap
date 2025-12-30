@@ -848,7 +848,7 @@ WHERE
 
 BEGIN;
 
-SET geqo = on;
+SET geqo = 'on';
 
 SET geqo_threshold = 2;
 

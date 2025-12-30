@@ -169,11 +169,11 @@ CREATE INDEX "point_gist_tbl_index" ON point_gist_tbl USING gist
 
 INSERT INTO point_gist_tbl VALUES ('(0.0000009,0.0000009)');
 
-SET enable_seqscan = true;
+SET enable_seqscan = 'true';
 
-SET enable_indexscan = false;
+SET enable_indexscan = 'false';
 
-SET enable_bitmapscan = false;
+SET enable_bitmapscan = 'false';
 
 SELECT
   COUNT(
@@ -205,11 +205,11 @@ WHERE
   f1 ~= CAST('(0.0000018,0.0000018)'
   AS point);
 
-SET enable_seqscan = false;
+SET enable_seqscan = 'false';
 
-SET enable_indexscan = true;
+SET enable_indexscan = 'true';
 
-SET enable_bitmapscan = true;
+SET enable_bitmapscan = 'true';
 
 SELECT
   COUNT(

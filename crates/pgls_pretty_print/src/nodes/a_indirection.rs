@@ -30,12 +30,19 @@ pub(super) fn emit_a_indirection(e: &mut EventEmitter, n: &AIndirection) {
             Some(pgls_query::NodeEnum::ColumnRef(_) | pgls_query::NodeEnum::ParamRef(_))
         );
 
-        // Function calls need parens for .* expansion and field access
-        let is_func_call = matches!(arg.node.as_ref(), Some(pgls_query::NodeEnum::FuncCall(_)));
+        // Function calls and type casts need parens for .* expansion and field access
+        let needs_parens_for_field_access = matches!(
+            arg.node.as_ref(),
+            Some(
+                pgls_query::NodeEnum::FuncCall(_)
+                    | pgls_query::NodeEnum::JsonFuncExpr(_)
+                    | pgls_query::NodeEnum::TypeCast(_)
+            )
+        );
 
         matches!(arg.node.as_ref(), Some(pgls_query::NodeEnum::RowExpr(_)))
             || (has_indices && !safe_without_parens)
-            || (has_star_or_field && is_func_call)
+            || (has_star_or_field && needs_parens_for_field_access)
     } else {
         false
     };

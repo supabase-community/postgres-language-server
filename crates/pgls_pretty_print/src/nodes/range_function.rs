@@ -28,12 +28,18 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
                     super::emit_node(&func_list.items[0], e);
 
                     // Emit column definitions if present (items after first)
-                    if func_list.items.len() > 1 {
+                    // Check that there are actual non-empty column definitions
+                    let col_defs: Vec<pgls_query::Node> = func_list.items[1..]
+                        .iter()
+                        .filter(|item| item.node.is_some())
+                        .cloned()
+                        .collect();
+                    if !col_defs.is_empty() {
                         e.space();
                         e.token(TokenKind::AS_KW);
                         e.space();
                         e.token(TokenKind::L_PAREN);
-                        emit_comma_separated_list(e, &func_list.items[1..], super::emit_node);
+                        emit_comma_separated_list(e, &col_defs, super::emit_node);
                         e.token(TokenKind::R_PAREN);
                     }
                 }
@@ -55,7 +61,6 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
                 super::emit_node(&n.functions[0], e);
             }
         }
-
     }
 
     if n.ordinality {

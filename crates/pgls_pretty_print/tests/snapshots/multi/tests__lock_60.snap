@@ -317,7 +317,8 @@ RESET role;
 
 REVOKE UPDATE ON TABLE lock_view1 FROM regress_rol_lock1;
 
-CREATE VIEW lock_view8 WITH (security_invoker) AS
+CREATE VIEW lock_view8
+WITH (security_invoker) AS
 SELECT
   *
 FROM

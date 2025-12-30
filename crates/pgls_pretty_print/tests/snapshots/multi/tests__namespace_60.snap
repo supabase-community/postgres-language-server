@@ -143,7 +143,8 @@ CREATE TABLE test_maint ( i INT );
 
 INSERT INTO test_maint VALUES (1), (2);
 
-CREATE MATERIALIZED VIEW test_maint_mv AS
+CREATE MATERIALIZED VIEW test_maint_mv
+AS
   SELECT
     fn(
     i

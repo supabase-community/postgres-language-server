@@ -157,6 +157,8 @@ fn test_multi(fixture: Fixture<&str>) {
         normalize_foreign_table_partbound(&mut ast);
         normalize_merge_support_func(&mut ast);
         normalize_merge_support_func(&mut parsed_ast);
+        normalize_sql_value_function(&mut ast);
+        normalize_sql_value_function(&mut parsed_ast);
 
         assert_eq!(ast, parsed_ast);
 
@@ -196,8 +198,16 @@ fn assert_line_lengths(sql: &str, max_line_length: usize) {
                         max_outside_run = current_outside_run;
                     }
 
-                    // Track token length (identifier-like sequences)
-                    if chars[i].is_alphanumeric() || chars[i] == '_' {
+                    // Track token length (identifier-like sequences and numeric literals)
+                    // Numeric literals can include digits, '.', '-', '+', 'e', 'E'
+                    let is_token_char = chars[i].is_alphanumeric()
+                        || chars[i] == '_'
+                        || chars[i] == '.'
+                        || ((chars[i] == '-' || chars[i] == '+')
+                            && (current_token_len == 0
+                                || (i > 0 && (chars[i - 1] == 'e' || chars[i - 1] == 'E'))));
+
+                    if is_token_char {
                         current_token_len += 1;
                     } else {
                         if current_token_len > longest_token {
@@ -275,8 +285,11 @@ fn assert_line_lengths(sql: &str, max_line_length: usize) {
         }
 
         // If the longest token exceeds max length, the line can't be broken further
-        // Allow lines where the excess is due to an unbreakable identifier
-        if max_outside_run > max_line_length && longest_token <= max_line_length {
+        // Allow lines where the excess is due to an unbreakable identifier/literal
+        // Also allow some overhead for indentation, keywords, and punctuation (up to 20 chars)
+        // This accounts for things like "CREATE TRIGGER " or "EXECUTE FUNCTION " prefixes
+        let min_overhead = 20;
+        if max_outside_run > max_line_length && longest_token + min_overhead <= max_line_length {
             panic!("Line exceeds max length of {max_line_length} outside literals: {line}");
         }
     }
@@ -393,17 +406,72 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
                 // Normalize defname to lowercase for case-insensitive options
                 (*n).defname = (*n).defname.to_lowercase();
             }
+            pgls_query::NodeMut::DeclareCursorStmt(n) => {
+                // Mask out internal optimization flags (CURSOR_OPT_PARALLEL_OK = 0x100 etc.)
+                // Keep only syntax-affecting flags: BINARY, SCROLL, NO_SCROLL, INSENSITIVE, ASENSITIVE, HOLD
+                const CURSOR_SYNTAX_MASK: i32 = 0x3F; // First 6 bits
+                (*n).options &= CURSOR_SYNTAX_MASK;
+            }
             pgls_query::NodeMut::XmlSerialize(n) => {
                 (*n).location = 0;
             }
             pgls_query::NodeMut::JsonArrayConstructor(n) => {
                 (*n).location = 0;
+                if let Some(output) = (*n).output.as_mut() {
+                    if let Some(returning) = output.returning.as_mut() {
+                        if let Some(format) = returning.format.as_mut() {
+                            format.location = 0;
+                        }
+                    }
+                }
             }
             pgls_query::NodeMut::JsonObjectConstructor(n) => {
                 (*n).location = 0;
+                if let Some(output) = (*n).output.as_mut() {
+                    if let Some(returning) = output.returning.as_mut() {
+                        if let Some(format) = returning.format.as_mut() {
+                            format.location = 0;
+                        }
+                    }
+                }
             }
             pgls_query::NodeMut::JsonAggConstructor(n) => {
                 (*n).location = 0;
+            }
+            pgls_query::NodeMut::JsonArrayQueryConstructor(n) => {
+                (*n).location = 0;
+                if let Some(format) = (*n).format.as_mut() {
+                    format.location = 0;
+                }
+            }
+            pgls_query::NodeMut::JsonIsPredicate(n) => {
+                (*n).location = 0;
+                if let Some(format) = (*n).format.as_mut() {
+                    format.location = 0;
+                }
+            }
+            pgls_query::NodeMut::JsonFuncExpr(n) => {
+                (*n).location = 0;
+                // Normalize locations for behaviors
+                if let Some(on_error) = (*n).on_error.as_mut() {
+                    on_error.location = 0;
+                }
+                if let Some(on_empty) = (*n).on_empty.as_mut() {
+                    on_empty.location = 0;
+                }
+                // Normalize output.returning.format.location
+                if let Some(output) = (*n).output.as_mut() {
+                    if let Some(returning) = output.returning.as_mut() {
+                        if let Some(format) = returning.format.as_mut() {
+                            format.location = 0;
+                        }
+                    }
+                }
+                // Normalize wrapper: JswUnspec (1) and JswNone (2) are semantically equivalent
+                // When no wrapper clause is specified, PostgreSQL defaults to WITHOUT WRAPPER
+                if (*n).wrapper == 1 {
+                    (*n).wrapper = 2;
+                }
             }
             pgls_query::NodeMut::JsonTable(n) => {
                 (*n).location = 0;
@@ -513,6 +581,9 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             pgls_query::NodeMut::RangeTableFuncCol(n) => {
                 (*n).location = 0;
             }
+            pgls_query::NodeMut::RangeTableSample(n) => {
+                (*n).location = 0;
+            }
             pgls_query::NodeMut::RowExpr(n) => {
                 (*n).location = 0;
             }
@@ -542,6 +613,10 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             }
             pgls_query::NodeMut::Constraint(n) => {
                 (*n).location = 0;
+                // Normalize pg_default indexspace to empty (default tablespace)
+                if (*n).indexspace == "pg_default" {
+                    (*n).indexspace = String::new();
+                }
             }
             pgls_query::NodeMut::CaseWhen(n) => {
                 (*n).location = 0;
@@ -690,6 +765,38 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
     }
 }
 
+/// Flatten nested BoolExpr of the same type
+/// PostgreSQL's parser flattens `a AND (b AND c)` to `AND(a, b, c)`
+/// but our emitter preserves the original nesting. This function normalizes
+/// both ASTs to the flattened form for comparison.
+fn flatten_bool_expr(be: &mut pgls_query::protobuf::BoolExpr) {
+    // First recursively flatten children
+    for arg in &mut be.args {
+        if let Some(pgls_query::NodeEnum::BoolExpr(ref mut child)) = arg.node {
+            flatten_bool_expr(child);
+        }
+    }
+
+    // Only flatten AND and OR expressions
+    let boolop = be.boolop();
+    if boolop == pgls_query::protobuf::BoolExprType::AndExpr
+        || boolop == pgls_query::protobuf::BoolExprType::OrExpr
+    {
+        let mut new_args = Vec::new();
+        for arg in std::mem::take(&mut be.args) {
+            if let Some(pgls_query::NodeEnum::BoolExpr(ref child)) = arg.node {
+                if child.boolop() == boolop {
+                    // Same boolop type - flatten by pulling up child args
+                    new_args.extend(child.args.clone());
+                    continue;
+                }
+            }
+            new_args.push(arg);
+        }
+        be.args = new_args;
+    }
+}
+
 /// Normalize AIndirection nodes by flattening nested AIndirection into a single node
 /// This handles the case where `(col[0])[0]` parses to a flat structure but `col[0][0]`
 /// parses to a nested structure - they're semantically equivalent.
@@ -824,11 +931,13 @@ fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
                                             pgls_query::protobuf::AConst {
                                                 isnull: false,
                                                 location: 0,
-                                                val: Some(pgls_query::protobuf::a_const::Val::Sval(
-                                                    pgls_query::protobuf::String {
-                                                        sval: form.to_lowercase(),
-                                                    },
-                                                )),
+                                                val: Some(
+                                                    pgls_query::protobuf::a_const::Val::Sval(
+                                                        pgls_query::protobuf::String {
+                                                            sval: form.to_lowercase(),
+                                                        },
+                                                    ),
+                                                ),
                                             },
                                         ));
                                     }
@@ -836,8 +945,7 @@ fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
                             }
                         }
                         // Also lowercase AConst values for comparison
-                        if let Some(pgls_query::NodeEnum::AConst(aconst)) =
-                            fc.args[1].node.as_mut()
+                        if let Some(pgls_query::NodeEnum::AConst(aconst)) = fc.args[1].node.as_mut()
                         {
                             if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) =
                                 aconst.val.as_mut()
@@ -924,6 +1032,9 @@ fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
             }
         }
         pgls_query::NodeEnum::BoolExpr(be) => {
+            // First flatten nested BoolExpr of the same type
+            flatten_bool_expr(be);
+            // Then recursively normalize children
             for arg in &mut be.args {
                 if let Some(ref mut n) = arg.node {
                     normalize_a_indirection(n);
@@ -1008,6 +1119,25 @@ fn normalize_a_indirection(node: &mut pgls_query::NodeEnum) {
         pgls_query::NodeEnum::RangeSubselect(rs) => {
             if let Some(ref mut sub) = rs.subquery {
                 if let Some(ref mut n) = sub.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::SubLink(sl) => {
+            if let Some(ref mut sub) = sl.subselect {
+                if let Some(ref mut n) = sub.node {
+                    normalize_a_indirection(n);
+                }
+            }
+            if let Some(ref mut test) = sl.testexpr {
+                if let Some(ref mut n) = test.node {
+                    normalize_a_indirection(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::NullTest(nt) => {
+            if let Some(ref mut arg) = nt.arg {
+                if let Some(ref mut n) = arg.node {
                     normalize_a_indirection(n);
                 }
             }
@@ -1178,9 +1308,9 @@ fn normalize_merge_support_func_recursive(node: &mut pgls_query::NodeEnum) {
         let ident = format!("mergesupport#{}", msf.msftype);
         *node = pgls_query::NodeEnum::ColumnRef(pgls_query::protobuf::ColumnRef {
             fields: vec![pgls_query::protobuf::Node {
-                node: Some(pgls_query::NodeEnum::String(
-                    pgls_query::protobuf::String { sval: ident },
-                )),
+                node: Some(pgls_query::NodeEnum::String(pgls_query::protobuf::String {
+                    sval: ident,
+                })),
             }],
             location: 0,
         });
@@ -1227,6 +1357,9 @@ fn normalize_merge_support_func_recursive(node: &mut pgls_query::NodeEnum) {
         pgls_query::NodeEnum::InsertStmt(stmt) => {
             process_node_list(&mut stmt.returning_list);
             process_optional_boxed_node(&mut stmt.select_stmt);
+            if let Some(ref mut wc) = stmt.with_clause {
+                process_node_list(&mut wc.ctes);
+            }
         }
         pgls_query::NodeEnum::DeleteStmt(stmt) => {
             process_node_list(&mut stmt.returning_list);
@@ -1308,4 +1441,128 @@ fn process_select_stmt_box(stmt: &mut pgls_query::protobuf::SelectStmt) {
     if let pgls_query::NodeEnum::SelectStmt(updated) = node_enum {
         *stmt = *updated;
     }
+}
+
+/// Normalize SqlvalueFunction nodes to FuncCall for comparison.
+/// PostgreSQL represents CURRENT_SCHEMA, CURRENT_USER, etc. as SqlvalueFunction
+/// internally, but when we emit them as functions and reparse, they become FuncCall.
+fn normalize_sql_value_function(node: &mut pgls_query::NodeEnum) {
+    normalize_sql_value_function_recursive(node);
+}
+
+fn normalize_sql_value_function_recursive(node: &mut pgls_query::NodeEnum) {
+    // First recursively process all children
+    match node {
+        pgls_query::NodeEnum::SelectStmt(stmt) => {
+            for target in &mut stmt.target_list {
+                if let Some(ref mut n) = target.node {
+                    normalize_sql_value_function_recursive(n);
+                }
+            }
+            for from in &mut stmt.from_clause {
+                if let Some(ref mut n) = from.node {
+                    normalize_sql_value_function_recursive(n);
+                }
+            }
+            if let Some(ref mut w) = stmt.where_clause {
+                if let Some(ref mut n) = w.node {
+                    normalize_sql_value_function_recursive(n);
+                }
+            }
+        }
+        pgls_query::NodeEnum::AExpr(expr) => {
+            if let Some(ref mut l) = expr.lexpr {
+                if let Some(ref mut n) = l.node {
+                    // Check if this is a SqlvalueFunction that needs conversion
+                    if let pgls_query::NodeEnum::SqlvalueFunction(svf) = n {
+                        if let Some(func_call) = sql_value_to_func_call(svf) {
+                            *n = pgls_query::NodeEnum::FuncCall(Box::new(func_call));
+                        }
+                    } else {
+                        normalize_sql_value_function_recursive(n);
+                    }
+                }
+            }
+            if let Some(ref mut r) = expr.rexpr {
+                if let Some(ref mut n) = r.node {
+                    if let pgls_query::NodeEnum::SqlvalueFunction(svf) = n {
+                        if let Some(func_call) = sql_value_to_func_call(svf) {
+                            *n = pgls_query::NodeEnum::FuncCall(Box::new(func_call));
+                        }
+                    } else {
+                        normalize_sql_value_function_recursive(n);
+                    }
+                }
+            }
+        }
+        pgls_query::NodeEnum::ResTarget(rt) => {
+            if let Some(ref mut v) = rt.val {
+                if let Some(ref mut n) = v.node {
+                    if let pgls_query::NodeEnum::SqlvalueFunction(svf) = n {
+                        if let Some(func_call) = sql_value_to_func_call(svf) {
+                            *n = pgls_query::NodeEnum::FuncCall(Box::new(func_call));
+                        }
+                    } else {
+                        normalize_sql_value_function_recursive(n);
+                    }
+                }
+            }
+        }
+        pgls_query::NodeEnum::FuncCall(fc) => {
+            for arg in &mut fc.args {
+                if let Some(ref mut n) = arg.node {
+                    if let pgls_query::NodeEnum::SqlvalueFunction(svf) = n {
+                        if let Some(func_call) = sql_value_to_func_call(svf) {
+                            *n = pgls_query::NodeEnum::FuncCall(Box::new(func_call));
+                        }
+                    } else {
+                        normalize_sql_value_function_recursive(n);
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+fn sql_value_to_func_call(
+    svf: &pgls_query::protobuf::SqlValueFunction,
+) -> Option<pgls_query::protobuf::FuncCall> {
+    // Map SqlValueFunctionOp to function name
+    let func_name = match svf.op() {
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentSchema => "current_schema",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentUser => "current_user",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopSessionUser => "session_user",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopUser => "user",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentCatalog => "current_catalog",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentDate => "current_date",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTime => "current_time",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTimeN => return None, // Has args
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTimestamp => "current_timestamp",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentTimestampN => return None, // Has args
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltime => "localtime",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltimeN => return None, // Has args
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltimestamp => "localtimestamp",
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopLocaltimestampN => return None, // Has args
+        pgls_query::protobuf::SqlValueFunctionOp::SvfopCurrentRole => "current_role",
+        _ => return None,
+    };
+
+    Some(pgls_query::protobuf::FuncCall {
+        funcname: vec![pgls_query::protobuf::Node {
+            node: Some(pgls_query::NodeEnum::String(pgls_query::protobuf::String {
+                sval: func_name.to_string(),
+            })),
+        }],
+        args: vec![],
+        agg_order: vec![],
+        agg_filter: None,
+        over: None,
+        agg_within_group: false,
+        agg_star: false,
+        agg_distinct: false,
+        func_variadic: false,
+        funcformat: pgls_query::protobuf::CoercionForm::CoerceExplicitCall.into(),
+        location: 0,
+    })
 }

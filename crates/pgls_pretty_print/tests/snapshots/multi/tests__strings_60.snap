@@ -7,7 +7,7 @@ SELECT
   'first line - next line - third line'
   AS "Three lines to one";
 
-SET standard_conforming_strings = on;
+SET standard_conforming_strings = 'on';
 
 SELECT 'data' AS data;
 
@@ -2043,9 +2043,9 @@ SHOW "escape_string_warning";
 
 SHOW "standard_conforming_strings";
 
-SET escape_string_warning = on;
+SET escape_string_warning = 'on';
 
-SET standard_conforming_strings = on;
+SET standard_conforming_strings = 'on';
 
 SHOW "escape_string_warning";
 

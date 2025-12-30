@@ -677,7 +677,8 @@ SELECT * FROM atest1;
 
 SET SESSION AUTHORIZATION regress_priv_user1;
 
-CREATE TABLE atest12 AS
+CREATE TABLE atest12
+AS
   SELECT
     x
     AS a,
@@ -708,7 +709,8 @@ RESTRICT = scalarltsel);
 
 CREATE VIEW atest12v AS SELECT * FROM atest12 WHERE b <<< 5;
 
-CREATE VIEW atest12sbv WITH (security_barrier = 'true') AS
+CREATE VIEW atest12sbv
+WITH (security_barrier = 'true') AS
 SELECT
   *
 FROM
@@ -941,7 +943,7 @@ FROM
 WHERE
   FALSE;
 
-SET constraint_exclusion = on;
+SET constraint_exclusion = 'on';
 
 SELECT
   *
@@ -2066,7 +2068,8 @@ ALTER TYPE test8a ADD ATTRIBUTE c priv_testdomain1;
 
 ALTER TYPE test8a ALTER ATTRIBUTE b TYPE priv_testdomain1;
 
-CREATE TABLE test11a AS
+CREATE TABLE test11a
+AS
   SELECT
     CAST(1
     AS priv_testdomain1)
@@ -2136,7 +2139,8 @@ ALTER TYPE test8b ADD ATTRIBUTE c priv_testdomain1;
 
 ALTER TYPE test8b ALTER ATTRIBUTE b TYPE priv_testdomain1;
 
-CREATE TABLE test11b AS
+CREATE TABLE test11b
+AS
   SELECT
     CAST(1
     AS priv_testdomain1)
@@ -2894,7 +2898,8 @@ RETURNS BOOLEAN
 LANGUAGE "sql"
 AS 'DECLARE c CURSOR WITH HOLD FOR SELECT public.unwanted_grant(); SELECT true';
 
-CREATE MATERIALIZED VIEW sro_mv AS
+CREATE MATERIALIZED VIEW sro_mv
+AS
   SELECT
     mv_action(
 
@@ -3269,7 +3274,7 @@ SELECT
   'UPDATE'
   );
 
-SET lo_compat_privileges = false;
+SET lo_compat_privileges = 'false';
 
 SET SESSION AUTHORIZATION regress_priv_user4;
 
@@ -3309,7 +3314,7 @@ SELECT lo_import('/dev/null');
 
 SELECT lo_import('/dev/null', 2003);
 
-SET lo_compat_privileges = true;
+SET lo_compat_privileges = 'true';
 
 SET SESSION AUTHORIZATION regress_priv_user4;
 

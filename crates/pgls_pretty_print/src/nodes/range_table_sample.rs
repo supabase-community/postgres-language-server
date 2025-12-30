@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::{node_list::emit_comma_separated_list, node_list::emit_dot_separated_list},
 };
 use pgls_query::protobuf::RangeTableSample;
@@ -13,7 +13,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
         super::emit_node(relation, e);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IDENT("TABLESAMPLE".to_string()));
     e.space();
 
@@ -30,7 +30,7 @@ pub(super) fn emit_range_table_sample(e: &mut EventEmitter, n: &RangeTableSample
 
     // REPEATABLE clause
     if let Some(ref repeatable) = n.repeatable {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("REPEATABLE".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);

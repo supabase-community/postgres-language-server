@@ -137,14 +137,14 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
 
         // TABLESPACE
         if !into.table_space_name.is_empty() {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::TABLESPACE_KW);
             e.space();
             e.token(TokenKind::IDENT(into.table_space_name.clone()));
         }
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::AS_KW);
     e.indent_start();
     e.line(LineType::SoftOrSpace);

@@ -468,7 +468,7 @@ WHERE
   CAST(42
   AS BIGINT);
 
-SET enable_mergejoin = on;
+SET enable_mergejoin = 'on';
 
 SET enable_nestloop = off;
 
@@ -527,7 +527,7 @@ WHERE
   CAST(42
   AS BIGINT);
 
-SET enable_nestloop = on;
+SET enable_nestloop = 'on';
 
 SET enable_mergejoin = off;
 
@@ -565,7 +565,7 @@ WHERE
   CAST(42
   AS BIGINT);
 
-SET enable_mergejoin = on;
+SET enable_mergejoin = 'on';
 
 SET enable_nestloop = off;
 
@@ -601,7 +601,7 @@ WHERE
   CAST(42
   AS BIGINT);
 
-SET enable_nestloop = on;
+SET enable_nestloop = 'on';
 
 SET enable_mergejoin = off;
 
@@ -735,7 +735,7 @@ CREATE TABLE tbl_nocom ( a BIGINT, b int8alias1 );
 
 SET enable_hashjoin = off;
 
-SET enable_mergejoin = on;
+SET enable_mergejoin = 'on';
 
 SELECT
   *
@@ -766,7 +766,7 @@ AS 'hashint8';
 ALTER OPERATOR FAMILY integer_ops USING hash
   ADD FUNCTION 1 hashint8alias1(int8alias1);
 
-SET enable_hashjoin = on;
+SET enable_hashjoin = 'on';
 
 SET enable_mergejoin = off;
 

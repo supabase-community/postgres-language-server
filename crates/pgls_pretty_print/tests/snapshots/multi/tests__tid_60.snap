@@ -39,7 +39,8 @@ SELECT MAX(ctid) FROM tid_tab;
 
 TRUNCATE tid_tab;
 
-CREATE MATERIALIZED VIEW tid_matview AS
+CREATE MATERIALIZED VIEW tid_matview
+AS
   SELECT
     a
   FROM

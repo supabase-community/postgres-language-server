@@ -412,11 +412,11 @@ WHERE
   tenthous >
   7550;
 
-SET enable_seqscan = false;
+SET enable_seqscan = 'false';
 
-SET enable_indexscan = true;
+SET enable_indexscan = 'true';
 
-SET enable_bitmapscan = false;
+SET enable_bitmapscan = 'false';
 
 SELECT
   hundred,
@@ -526,11 +526,11 @@ WHERE
   tenthous =
   200000;
 
-SET enable_seqscan = false;
+SET enable_seqscan = 'false';
 
-SET enable_indexscan = true;
+SET enable_indexscan = 'true';
 
-SET enable_bitmapscan = false;
+SET enable_bitmapscan = 'false';
 
 SELECT
   proname
@@ -572,9 +572,9 @@ WHERE
   proname ILIKE 'ri%foo'
 ORDER BY 1;
 
-SET enable_indexscan = false;
+SET enable_indexscan = 'false';
 
-SET enable_bitmapscan = true;
+SET enable_bitmapscan = 'true';
 
 SELECT
   proname
@@ -754,9 +754,9 @@ FROM
   60
   ) AS g;
 
-SET enable_seqscan = false;
+SET enable_seqscan = 'false';
 
-SET enable_bitmapscan = false;
+SET enable_bitmapscan = 'false';
 
 SELECT id FROM btree_tall_tbl WHERE id = 55 ORDER BY t, id;
 

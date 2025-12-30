@@ -339,7 +339,7 @@ SELECT * FROM strtest s1 INNER JOIN strtest s2 ON s1.t >= s2.t;',
 
 DROP TABLE "strtest";
 
-SET enable_partitionwise_join = on;
+SET enable_partitionwise_join = 'on';
 
 CREATE TABLE prt ( a INT ) PARTITION BY RANGE(a);
 

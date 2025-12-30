@@ -956,7 +956,7 @@ ON sql_drop
 WHEN TAG IN ('DROP POLICY')
 EXECUTE FUNCTION test_event_trigger_guc();
 
-SET event_triggers = on;
+SET event_triggers = 'on';
 
 CREATE POLICY pguc
 ON event_trigger_test

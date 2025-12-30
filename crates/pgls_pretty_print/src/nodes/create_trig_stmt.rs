@@ -81,7 +81,7 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::OF_KW);
         e.space();
-        emit_dot_separated_list(e, &n.columns);
+        emit_comma_separated_list(e, &n.columns, super::emit_node);
     }
 
     e.line(LineType::SoftOrSpace);
@@ -89,6 +89,14 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     e.space();
     if let Some(ref relation) = n.relation {
         super::emit_range_var(e, relation);
+    }
+
+    // FROM referenced_table_name (for constraint triggers)
+    if let Some(ref constrrel) = n.constrrel {
+        e.line(LineType::SoftOrSpace);
+        e.token(TokenKind::FROM_KW);
+        e.space();
+        super::emit_range_var(e, constrrel);
     }
 
     if n.deferrable {

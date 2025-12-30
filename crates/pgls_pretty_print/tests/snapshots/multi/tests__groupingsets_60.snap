@@ -118,7 +118,7 @@ AS '
   '
 LANGUAGE "plpgsql";
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SELECT
   a,
@@ -1370,7 +1370,7 @@ GROUP BY ROLLUP (CAST(four
   two
 ORDER BY 1;
 
-SET enable_hashagg = true;
+SET enable_hashagg = 'true';
 
 SELECT
   COUNT(
@@ -1915,7 +1915,7 @@ ORDER BY a,
 
 BEGIN;
 
-SET LOCAL enable_hashagg = false;
+SET LOCAL enable_hashagg = 'false';
 
 SELECT
   a,
@@ -1957,7 +1957,7 @@ GROUP BY GROUPING SETS (a,
 ORDER BY a,
   b;
 
-SET LOCAL enable_seqscan = false;
+SET LOCAL enable_seqscan = 'false';
 
 SELECT
   a,
@@ -2085,7 +2085,7 @@ FROM
   (VALUES (1),
   (2)) AS v (a);
 
-SET enable_indexscan = false;
+SET enable_indexscan = 'false';
 
 SET hash_mem_multiplier = 1.0;
 
@@ -2265,7 +2265,7 @@ FROM
 
 SET work_mem = '64kB';
 
-SET enable_sort = false;
+SET enable_sort = 'false';
 
 SELECT
   *
@@ -2287,7 +2287,8 @@ ORDER BY v.a,
   i,
   j;
 
-CREATE TABLE gs_data_1 AS
+CREATE TABLE gs_data_1
+AS
   SELECT
     g % 1000
     AS g1000,
@@ -2314,9 +2315,9 @@ WHERE
 
 SET work_mem = '64kB';
 
-SET enable_sort = true;
+SET enable_sort = 'true';
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SET jit_above_cost = 0;
 
@@ -2340,7 +2341,8 @@ GROUP BY CUBE (g1000,
   g100,
   g10);
 
-CREATE TABLE gs_group_1 AS
+CREATE TABLE gs_group_1
+AS
   SELECT
     g100,
     g10,
@@ -2361,9 +2363,9 @@ CREATE TABLE gs_group_1 AS
     g100,
     g10);
 
-SET enable_hashagg = true;
+SET enable_hashagg = 'true';
 
-SET enable_sort = false;
+SET enable_sort = 'false';
 
 SELECT
   g100,
@@ -2385,7 +2387,8 @@ GROUP BY CUBE (g1000,
   g100,
   g10);
 
-CREATE TABLE gs_hash_1 AS
+CREATE TABLE gs_hash_1
+AS
   SELECT
     g100,
     g10,
@@ -2406,7 +2409,7 @@ CREATE TABLE gs_hash_1 AS
     g100,
     g10);
 
-SET enable_sort = true;
+SET enable_sort = 'true';
 
 SET work_mem = DEFAULT;
 

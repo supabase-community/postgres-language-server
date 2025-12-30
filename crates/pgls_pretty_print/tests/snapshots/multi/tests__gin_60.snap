@@ -263,7 +263,7 @@ ANALYZE t_gin_test_tbl;
 
 SET enable_seqscan = off;
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT COUNT(*) FROM t_gin_test_tbl WHERE j @> ARRAY[50];
 

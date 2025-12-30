@@ -2,7 +2,7 @@ use pgls_query::{NodeEnum, protobuf::ReindexStmt};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 
@@ -10,10 +10,10 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
     e.group_start(GroupKind::ReindexStmt);
 
     e.token(TokenKind::REINDEX_KW);
-    e.space();
 
     // Handle options (CONCURRENTLY, VERBOSE, TABLESPACE, etc.)
     if !n.params.is_empty() {
+        e.space();
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.params, |node, emitter| {
             if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
@@ -29,8 +29,9 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
             }
         });
         e.token(TokenKind::R_PAREN);
-        e.space();
     }
+
+    e.line(LineType::SoftOrSpace);
 
     // ReindexObjectType enum:
     // 0: Undefined

@@ -24,7 +24,7 @@ pub(super) fn emit_alter_table_move_all_stmt(e: &mut EventEmitter, n: &AlterTabl
 
     e.space();
     e.token(TokenKind::ALL_KW);
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IN_KW);
     e.space();
     e.token(TokenKind::IDENT("TABLESPACE".to_string()));

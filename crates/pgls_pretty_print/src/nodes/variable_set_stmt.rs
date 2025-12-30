@@ -47,8 +47,25 @@ fn is_simple_identifier(s: &str) -> bool {
     }
 
     // Rest must be alphanumeric, underscore, or dollar sign
-    s.chars()
+    if !s
+        .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
+    {
+        return false;
+    }
+
+    // Check for reserved keywords that must be quoted
+    // These are common SQL keywords that can't be used as unquoted values
+    let reserved_keywords = [
+        "all", "and", "as", "asc", "between", "by", "case", "check", "create", "default", "delete",
+        "desc", "distinct", "drop", "else", "end", "false", "for", "from", "full", "group",
+        "having", "if", "in", "index", "inner", "insert", "into", "is", "join", "left", "like",
+        "limit", "not", "null", "offset", "on", "or", "order", "outer", "primary", "right",
+        "select", "set", "table", "then", "to", "true", "union", "unique", "update", "using",
+        "values", "when", "where", "with", "any", "some", "none", "only",
+    ];
+
+    !reserved_keywords.contains(&s.to_lowercase().as_str())
 }
 
 /// Emit a dot-separated variable name, quoting parts that need it
@@ -229,9 +246,154 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
         e.token(TokenKind::FROM_KW);
         e.space();
         e.token(TokenKind::CURRENT_KW);
+    } else if n.kind == 4 {
+        // VAR_SET_MULTI - used for SET TRANSACTION/SESSION CHARACTERISTICS
+        // name = "TRANSACTION" or "SESSION CHARACTERISTICS" or "TRANSACTION SNAPSHOT"
+        // args = list of DefElems with transaction options, or a string for SNAPSHOT
+        if n.name.to_uppercase() == "SESSION CHARACTERISTICS" {
+            // Special syntax: SET SESSION CHARACTERISTICS AS TRANSACTION ...
+            e.token(TokenKind::SESSION_KW);
+            e.space();
+            e.token(TokenKind::IDENT("CHARACTERISTICS".to_string()));
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            e.token(TokenKind::TRANSACTION_KW);
+
+            // Emit transaction options from args (DefElems) with soft line breaks
+            for arg in &n.args {
+                if let Some(NodeEnum::DefElem(def)) = &arg.node {
+                    e.line(crate::emitter::LineType::SoftOrSpace);
+                    emit_transaction_option(e, def);
+                }
+            }
+        } else if n.name.to_uppercase() == "TRANSACTION SNAPSHOT" {
+            // SET TRANSACTION SNAPSHOT 'snapshot_id'
+            e.token(TokenKind::TRANSACTION_KW);
+            e.space();
+            e.token(TokenKind::IDENT("SNAPSHOT".to_string()));
+            e.space();
+            // The snapshot id is in args as a string
+            if !n.args.is_empty() {
+                super::emit_node(&n.args[0], e);
+            }
+        } else {
+            emit_variable_name(e, &n.name);
+
+            // Emit transaction options from args (DefElems) with soft line breaks
+            for arg in &n.args {
+                if let Some(NodeEnum::DefElem(def)) = &arg.node {
+                    e.line(crate::emitter::LineType::SoftOrSpace);
+                    emit_transaction_option(e, def);
+                }
+            }
+        }
     } else {
-        // VAR_SET_MULTI, VAR_RESET, VAR_RESET_ALL or other
-        // TODO: Handle these variants properly
+        // Other variants
         emit_variable_name(e, &n.name);
+    }
+}
+
+/// Emit a transaction option from a DefElem (used in SET TRANSACTION)
+fn emit_transaction_option(e: &mut EventEmitter, def: &pgls_query::protobuf::DefElem) {
+    match def.defname.as_str() {
+        "transaction_isolation" => {
+            e.token(TokenKind::ISOLATION_KW);
+            e.space();
+            e.token(TokenKind::LEVEL_KW);
+            e.space();
+            // Value is the isolation level name
+            if let Some(ref arg) = def.arg {
+                if let Some(NodeEnum::AConst(a_const)) = &arg.node {
+                    if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = &a_const.val {
+                        // Emit the isolation level as uppercase keywords
+                        let level = s.sval.to_uppercase();
+                        match level.as_str() {
+                            "SERIALIZABLE" => {
+                                e.token(TokenKind::SERIALIZABLE_KW);
+                            }
+                            "REPEATABLE READ" => {
+                                e.token(TokenKind::REPEATABLE_KW);
+                                e.space();
+                                e.token(TokenKind::READ_KW);
+                            }
+                            "READ COMMITTED" => {
+                                e.token(TokenKind::READ_KW);
+                                e.space();
+                                e.token(TokenKind::COMMITTED_KW);
+                            }
+                            "READ UNCOMMITTED" => {
+                                e.token(TokenKind::READ_KW);
+                                e.space();
+                                e.token(TokenKind::UNCOMMITTED_KW);
+                            }
+                            _ => {
+                                e.token(TokenKind::IDENT(level));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        "transaction_read_only" => {
+            // arg is boolean: true = READ ONLY, false = READ WRITE
+            let is_read_only = if let Some(ref arg) = def.arg {
+                if let Some(NodeEnum::Boolean(b)) = &arg.node {
+                    b.boolval
+                } else if let Some(NodeEnum::Integer(i)) = &arg.node {
+                    i.ival != 0
+                } else if let Some(NodeEnum::AConst(ac)) = &arg.node {
+                    match &ac.val {
+                        Some(pgls_query::protobuf::a_const::Val::Ival(i)) => i.ival != 0,
+                        Some(pgls_query::protobuf::a_const::Val::Boolval(b)) => b.boolval,
+                        _ => true,
+                    }
+                } else {
+                    true
+                }
+            } else {
+                true
+            };
+            e.token(TokenKind::READ_KW);
+            e.space();
+            if is_read_only {
+                e.token(TokenKind::ONLY_KW);
+            } else {
+                e.token(TokenKind::WRITE_KW);
+            }
+        }
+        "transaction_deferrable" => {
+            // arg is boolean: true = DEFERRABLE, false = NOT DEFERRABLE
+            let is_deferrable = if let Some(ref arg) = def.arg {
+                if let Some(NodeEnum::Boolean(b)) = &arg.node {
+                    b.boolval
+                } else if let Some(NodeEnum::Integer(i)) = &arg.node {
+                    i.ival != 0
+                } else if let Some(NodeEnum::AConst(ac)) = &arg.node {
+                    match &ac.val {
+                        Some(pgls_query::protobuf::a_const::Val::Ival(i)) => i.ival != 0,
+                        Some(pgls_query::protobuf::a_const::Val::Boolval(b)) => b.boolval,
+                        _ => true,
+                    }
+                } else {
+                    true
+                }
+            } else {
+                true
+            };
+            if !is_deferrable {
+                e.token(TokenKind::NOT_KW);
+                e.space();
+            }
+            e.token(TokenKind::DEFERRABLE_KW);
+        }
+        _ => {
+            // Unknown transaction option - emit as identifier
+            e.token(TokenKind::IDENT(def.defname.to_uppercase()));
+            if let Some(ref arg) = def.arg {
+                e.space();
+                super::emit_node(arg, e);
+            }
+        }
     }
 }

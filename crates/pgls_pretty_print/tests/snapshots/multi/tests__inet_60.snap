@@ -374,7 +374,7 @@ WHERE
   CAST('192.168.1.0/24'
   AS CIDR) >> i;
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 DROP INDEX "inet_idx1";
 
@@ -508,7 +508,7 @@ WHERE
   AS CIDR)
 ORDER BY i;
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 DROP INDEX "inet_idx2";
 
@@ -639,7 +639,7 @@ WHERE
   AS CIDR)
 ORDER BY i;
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 DROP INDEX "inet_idx3";
 

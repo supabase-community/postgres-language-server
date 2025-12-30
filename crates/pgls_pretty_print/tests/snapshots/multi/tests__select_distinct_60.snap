@@ -47,13 +47,14 @@ FROM
 
 SET work_mem = '64kB';
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SET jit_above_cost = 0;
 
 SELECT DISTINCT g % 1000 FROM generate_series(0, 9999) AS g;
 
-CREATE TABLE distinct_group_1 AS
+CREATE TABLE distinct_group_1
+AS
   SELECT DISTINCT
     g % 1000
   FROM
@@ -64,7 +65,8 @@ CREATE TABLE distinct_group_1 AS
 
 SET jit_above_cost = DEFAULT;
 
-CREATE TABLE distinct_group_2 AS
+CREATE TABLE distinct_group_2
+AS
   SELECT DISTINCT
     CAST(g % 1000
     AS TEXT)
@@ -80,15 +82,16 @@ SELECT DISTINCT hundred, two FROM tenk1;
 
 RESET enable_seqscan;
 
-SET enable_hashagg = true;
+SET enable_hashagg = 'true';
 
-SET enable_sort = false;
+SET enable_sort = 'false';
 
 SET jit_above_cost = 0;
 
 SELECT DISTINCT g % 1000 FROM generate_series(0, 9999) AS g;
 
-CREATE TABLE distinct_hash_1 AS
+CREATE TABLE distinct_hash_1
+AS
   SELECT DISTINCT
     g % 1000
   FROM
@@ -99,7 +102,8 @@ CREATE TABLE distinct_hash_1 AS
 
 SET jit_above_cost = DEFAULT;
 
-CREATE TABLE distinct_hash_2 AS
+CREATE TABLE distinct_hash_2
+AS
   SELECT DISTINCT
     CAST(g % 1000
     AS TEXT)
@@ -109,7 +113,7 @@ CREATE TABLE distinct_hash_2 AS
     9999
     ) AS g;
 
-SET enable_sort = true;
+SET enable_sort = 'true';
 
 SET work_mem = DEFAULT;
 

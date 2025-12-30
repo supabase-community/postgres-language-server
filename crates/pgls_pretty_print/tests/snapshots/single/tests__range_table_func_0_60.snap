@@ -6,4 +6,8 @@ snapshot_kind: text
 SELECT
   *
 FROM
-  XMLTABLE('/root' PASSING '<root><item>value</item></root>' COLUMNS item TEXT PATH 'item');
+  XMLTABLE(
+    '/root'
+    PASSING '<root><item>value</item></root>'
+    COLUMNS
+      item TEXT PATH 'item');

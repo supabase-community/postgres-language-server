@@ -89,7 +89,8 @@ DROP TABLE "cmdata2";
 
 DROP FUNCTION large_val_lz4;
 
-CREATE MATERIALIZED VIEW compressmv (x) AS
+CREATE MATERIALIZED VIEW compressmv (x)
+AS
   SELECT
     *
   FROM

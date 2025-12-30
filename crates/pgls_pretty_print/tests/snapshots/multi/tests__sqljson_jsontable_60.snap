@@ -147,7 +147,8 @@ CREATE DOMAIN jsonb_test_domain AS TEXT
   CHECK (value <>
   'foo');
 
-CREATE TEMPORARY TABLE json_table_test (js) AS
+CREATE TEMPORARY TABLE json_table_test (js)
+AS
   VALUES ('1'),
   ('[]'),
   ('{}'),

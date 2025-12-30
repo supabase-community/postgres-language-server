@@ -160,7 +160,8 @@ WHERE
 GROUP BY x.b
 ORDER BY x.b;
 
-CREATE TABLE test_missing_target2 AS
+CREATE TABLE test_missing_target2
+AS
   SELECT
     COUNT(
     *
@@ -291,7 +292,8 @@ WHERE
   y.a
 GROUP BY x.b / 2;
 
-CREATE TABLE test_missing_target3 AS
+CREATE TABLE test_missing_target3
+AS
   SELECT
     COUNT(
     x.b

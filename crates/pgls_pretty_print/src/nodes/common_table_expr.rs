@@ -3,10 +3,12 @@ use pgls_query::protobuf::{CommonTableExpr, CteMaterialize};
 use crate::TokenKind;
 use crate::emitter::{EventEmitter, GroupKind, LineType};
 
+use super::delete_stmt::emit_delete_stmt_no_semicolon;
 use super::insert_stmt::emit_insert_stmt_no_semicolon;
 use super::merge_stmt::emit_merge_stmt_no_semicolon;
 use super::node_list::emit_comma_separated_list;
 use super::select_stmt::emit_select_stmt_no_semicolon;
+use super::update_stmt::emit_update_stmt_no_semicolon;
 
 pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) {
     e.group_start(GroupKind::CommonTableExpr);
@@ -60,6 +62,12 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
             }
             Some(pgls_query::NodeEnum::InsertStmt(insert_stmt)) => {
                 emit_insert_stmt_no_semicolon(e, insert_stmt);
+            }
+            Some(pgls_query::NodeEnum::UpdateStmt(update_stmt)) => {
+                emit_update_stmt_no_semicolon(e, update_stmt);
+            }
+            Some(pgls_query::NodeEnum::DeleteStmt(delete_stmt)) => {
+                emit_delete_stmt_no_semicolon(e, delete_stmt);
             }
             _ => {
                 super::emit_node(query, e);

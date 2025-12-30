@@ -399,7 +399,7 @@ GROUP BY few.dataa
 ORDER BY 5,
   1;
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SELECT
   dataa,
@@ -536,7 +536,8 @@ FROM
   few
 ORDER BY 1;
 
-CREATE TABLE fewmore AS
+CREATE TABLE fewmore
+AS
   SELECT
     generate_series(
     1,

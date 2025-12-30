@@ -3,7 +3,7 @@ use crate::{
     emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
-use pgls_query::protobuf::XmlExpr;
+use pgls_query::protobuf::{XmlExpr, XmlOptionType};
 
 pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
     e.group_start(GroupKind::XmlExpr);
@@ -32,7 +32,8 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             e.token(TokenKind::L_PAREN);
             e.token(TokenKind::IDENT("NAME".to_string()));
             e.space();
-            e.token(TokenKind::IDENT(n.name.clone()));
+            // Names with special characters need quoting
+            super::emit_identifier_maybe_quoted(e, &n.name);
 
             // Named args represent XML attributes (XMLATTRIBUTES)
             if !n.named_args.is_empty() {
@@ -64,11 +65,14 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // XMLPARSE
             e.token(TokenKind::IDENT("XMLPARSE".to_string()));
             e.token(TokenKind::L_PAREN);
-            // xmloption: 0=XMLOPTION_DOCUMENT, 1=XMLOPTION_CONTENT
-            if n.xmloption == 0 {
-                e.token(TokenKind::IDENT("DOCUMENT".to_string()));
-            } else {
-                e.token(TokenKind::IDENT("CONTENT".to_string()));
+            // XmlOptionType: XmloptionDocument=1, XmloptionContent=2
+            match n.xmloption() {
+                XmlOptionType::XmloptionDocument => {
+                    e.token(TokenKind::IDENT("DOCUMENT".to_string()));
+                }
+                XmlOptionType::XmloptionContent | _ => {
+                    e.token(TokenKind::IDENT("CONTENT".to_string()));
+                }
             }
             e.space();
             if !n.args.is_empty() {
@@ -82,7 +86,8 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             e.token(TokenKind::L_PAREN);
             e.token(TokenKind::IDENT("NAME".to_string()));
             e.space();
-            e.token(TokenKind::IDENT(n.name.clone()));
+            // Names with special characters need quoting
+            super::emit_identifier_maybe_quoted(e, &n.name);
 
             if !n.args.is_empty() {
                 e.token(TokenKind::COMMA);
@@ -104,19 +109,47 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             e.token(TokenKind::IDENT("VERSION".to_string()));
             e.space();
             if n.args.len() > 1 {
-                super::emit_node(&n.args[1], e);
-            } else {
-                e.token(TokenKind::IDENT("NO VALUE".to_string()));
+                // Check if version is NULL (NO VALUE)
+                if let Some(pgls_query::NodeEnum::AConst(ac)) = n.args[1].node.as_ref() {
+                    if ac.isnull {
+                        e.token(TokenKind::IDENT("NO VALUE".to_string()));
+                    } else {
+                        super::emit_node(&n.args[1], e);
+                    }
+                } else {
+                    super::emit_node(&n.args[1], e);
+                }
             }
             // Handle standalone option if there's a 3rd arg
+            // XML_STANDALONE_YES = 0, XML_STANDALONE_NO = 1,
+            // XML_STANDALONE_NO_VALUE = 2, XML_STANDALONE_OMITTED = 3
             if n.args.len() > 2 {
-                e.token(TokenKind::COMMA);
-                e.space();
-                e.token(TokenKind::IDENT("STANDALONE".to_string()));
-                e.space();
-                // The third arg encodes the standalone option
-                // This might need more complex handling based on the actual value
-                super::emit_node(&n.args[2], e);
+                if let Some(pgls_query::NodeEnum::AConst(ac)) = n.args[2].node.as_ref() {
+                    if let Some(pgls_query::protobuf::a_const::Val::Ival(ref ival)) = ac.val {
+                        match ival.ival {
+                            0 => {
+                                // XML_STANDALONE_YES
+                                e.token(TokenKind::COMMA);
+                                e.space();
+                                e.token(TokenKind::IDENT("STANDALONE YES".to_string()));
+                            }
+                            1 => {
+                                // XML_STANDALONE_NO
+                                e.token(TokenKind::COMMA);
+                                e.space();
+                                e.token(TokenKind::IDENT("STANDALONE NO".to_string()));
+                            }
+                            2 => {
+                                // XML_STANDALONE_NO_VALUE
+                                e.token(TokenKind::COMMA);
+                                e.space();
+                                e.token(TokenKind::IDENT("STANDALONE NO VALUE".to_string()));
+                            }
+                            // 3 = XML_STANDALONE_OMITTED - don't emit anything
+                            _ => {}
+                        }
+                    }
+                }
             }
             e.token(TokenKind::R_PAREN);
         }
@@ -125,10 +158,13 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // But we'll handle it here just in case
             e.token(TokenKind::IDENT("XMLSERIALIZE".to_string()));
             e.token(TokenKind::L_PAREN);
-            if n.xmloption == 0 {
-                e.token(TokenKind::IDENT("DOCUMENT".to_string()));
-            } else {
-                e.token(TokenKind::IDENT("CONTENT".to_string()));
+            match n.xmloption() {
+                XmlOptionType::XmloptionDocument => {
+                    e.token(TokenKind::IDENT("DOCUMENT".to_string()));
+                }
+                XmlOptionType::XmloptionContent | _ => {
+                    e.token(TokenKind::IDENT("CONTENT".to_string()));
+                }
             }
             e.space();
             if !n.args.is_empty() {

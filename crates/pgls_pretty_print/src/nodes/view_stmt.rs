@@ -53,7 +53,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     }
 
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

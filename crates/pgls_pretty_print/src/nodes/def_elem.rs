@@ -7,6 +7,12 @@ use crate::emitter::{EventEmitter, GroupKind};
 pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
     e.group_start(GroupKind::DefElem);
 
+    // Emit namespace if present (namespace.name syntax)
+    if !n.defnamespace.is_empty() {
+        super::string::emit_identifier_maybe_quoted(e, &n.defnamespace);
+        e.token(TokenKind::DOT);
+    }
+
     // Emit the option name - use maybe_quoted to preserve case for mixed-case identifiers
     if !n.defname.is_empty() {
         super::string::emit_identifier_maybe_quoted(e, &n.defname);

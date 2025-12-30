@@ -329,11 +329,11 @@ SET special."weird name" = foo;
 
 SHOW "special.weird name";
 
-SET plpgsql.extra_foo_warnings = true;
+SET plpgsql.extra_foo_warnings = 'true';
 
 LOAD 'plpgsql';
 
-SET plpgsql.extra_foo_warnings = true;
+SET plpgsql.extra_foo_warnings = 'true';
 
 SHOW "plpgsql.extra_foo_warnings";
 

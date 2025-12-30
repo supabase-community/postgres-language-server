@@ -3,9 +3,9 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/partition_aggregate_60.sql
 snapshot_kind: text
 ---
-SET enable_partitionwise_aggregate = true;
+SET enable_partitionwise_aggregate = 'true';
 
-SET enable_partitionwise_join = true;
+SET enable_partitionwise_join = 'true';
 
 SET max_parallel_workers_per_gather = 0;
 
@@ -187,7 +187,7 @@ SELECT c, SUM(a) FROM pagg_tab WHERE c = 'x' GROUP BY c;
 
 SELECT c, SUM(a) FROM pagg_tab WHERE c = 'x' GROUP BY c;
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SELECT
   c,
@@ -491,7 +491,7 @@ ORDER BY 1,
   2,
   3;
 
-SET enable_hashagg = false;
+SET enable_hashagg = 'false';
 
 SELECT
   t1.y,

@@ -197,7 +197,7 @@ VALUES (NULL),
 ('(-infinity,0)(0,infinity)'),
 ('(-infinity,-infinity)(infinity,infinity)');
 
-SET enable_seqscan = false;
+SET enable_seqscan = 'false';
 
 SELECT * FROM box_temp WHERE f1 << '(10,20),(30,40)';
 
@@ -313,13 +313,14 @@ CREATE INDEX "quad_box_tbl_idx" ON quad_box_tbl USING spgist
   b
 );
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 SET enable_indexscan = off;
 
 SET enable_bitmapscan = off;
 
-CREATE TABLE quad_box_tbl_ord_seq1 AS
+CREATE TABLE quad_box_tbl_ord_seq1
+AS
   SELECT
     RANK(
 
@@ -335,7 +336,8 @@ CREATE TABLE quad_box_tbl_ord_seq1 AS
   FROM
     quad_box_tbl;
 
-CREATE TABLE quad_box_tbl_ord_seq2 AS
+CREATE TABLE quad_box_tbl_ord_seq2
+AS
   SELECT
     RANK(
 
@@ -356,9 +358,9 @@ CREATE TABLE quad_box_tbl_ord_seq2 AS
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT
   COUNT(
@@ -490,7 +492,7 @@ WHERE
   b ~= CAST('((200,300),(205,305))'
   AS box);
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -509,7 +511,8 @@ SELECT
 FROM
   quad_box_tbl;
 
-CREATE TEMPORARY TABLE quad_box_tbl_ord_idx1 AS
+CREATE TEMPORARY TABLE quad_box_tbl_ord_idx1
+AS
   SELECT
     RANK(
 
@@ -562,7 +565,8 @@ WHERE
   b <@ CAST('((200,300),(500,600))'
   AS box);
 
-CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2 AS
+CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2
+AS
   SELECT
     RANK(
 

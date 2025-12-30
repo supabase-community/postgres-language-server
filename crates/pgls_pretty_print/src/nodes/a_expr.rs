@@ -177,8 +177,14 @@ fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
 
 // expr IS DISTINCT FROM expr2
 fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
+    // IS DISTINCT FROM has PREC_IS (40) precedence
+    let parent_info = Some(OperatorInfo {
+        precedence: PREC_IS,
+        associativity: OperatorAssociativity::Left,
+    });
+
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_operand_with_parens(e, lexpr, parent_info, OperandSide::Left);
         e.space();
     }
 
@@ -190,14 +196,20 @@ fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
     e.space();
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
     }
 }
 
 // expr IS NOT DISTINCT FROM expr2
 fn emit_aexpr_not_distinct(e: &mut EventEmitter, n: &AExpr) {
+    // IS NOT DISTINCT FROM has PREC_IS (40) precedence
+    let parent_info = Some(OperatorInfo {
+        precedence: PREC_IS,
+        associativity: OperatorAssociativity::Left,
+    });
+
     if let Some(ref lexpr) = n.lexpr {
-        super::emit_node(lexpr, e);
+        emit_operand_with_parens(e, lexpr, parent_info, OperandSide::Left);
         e.space();
     }
 
@@ -211,7 +223,7 @@ fn emit_aexpr_not_distinct(e: &mut EventEmitter, n: &AExpr) {
     e.space();
 
     if let Some(ref rexpr) = n.rexpr {
-        super::emit_node(rexpr, e);
+        emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
     }
 }
 

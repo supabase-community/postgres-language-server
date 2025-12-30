@@ -1706,7 +1706,8 @@ ORDER BY 1,
   2;
 
 CREATE TEMPORARY TABLE patest0 (id,
-x) AS
+x)
+AS
   SELECT
     x,
     x
@@ -1953,7 +1954,7 @@ DROP TABLE "matest0" CASCADE;
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 

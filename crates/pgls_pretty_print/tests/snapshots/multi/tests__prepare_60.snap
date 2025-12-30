@@ -140,13 +140,15 @@ WHERE
   $2
 ORDER BY unique1;;
 
-CREATE TEMPORARY TABLE q5_prep_results AS
+CREATE TEMPORARY TABLE q5_prep_results
+AS
   EXECUTE q5 (200,
   'DTAAAA');
 
 SELECT * FROM q5_prep_results;
 
-CREATE TEMPORARY TABLE q5_prep_nodata AS
+CREATE TEMPORARY TABLE q5_prep_nodata
+AS
   EXECUTE q5 (200,
   'DTAAAA') WITH NO DATA;
 

@@ -2,7 +2,7 @@ use crate::{
     TokenKind,
     emitter::{EventEmitter, GroupKind},
 };
-use pgls_query::protobuf::XmlSerialize;
+use pgls_query::protobuf::{XmlOptionType, XmlSerialize};
 
 pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
     e.group_start(GroupKind::XmlSerialize);
@@ -10,13 +10,13 @@ pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
     e.token(TokenKind::IDENT("XMLSERIALIZE".to_string()));
     e.token(TokenKind::L_PAREN);
 
-    // xmloption: DOCUMENT or CONTENT (0 = content, 1 = document)
-    match n.xmloption {
-        1 => {
+    // XmlOptionType: XmloptionDocument=1, XmloptionContent=2
+    match n.xmloption() {
+        XmlOptionType::XmloptionDocument => {
             e.token(TokenKind::IDENT("DOCUMENT".to_string()));
             e.space();
         }
-        _ => {
+        XmlOptionType::XmloptionContent | _ => {
             e.token(TokenKind::IDENT("CONTENT".to_string()));
             e.space();
         }
@@ -33,6 +33,12 @@ pub(super) fn emit_xml_serialize(e: &mut EventEmitter, n: &XmlSerialize) {
         e.token(TokenKind::AS_KW);
         e.space();
         super::emit_type_name(e, type_name);
+    }
+
+    // INDENT option
+    if n.indent {
+        e.space();
+        e.token(TokenKind::IDENT("INDENT".to_string()));
     }
 
     e.token(TokenKind::R_PAREN);

@@ -205,7 +205,7 @@ CREATE INDEX "wowidx" ON test_tsvector USING gist ( a);
 
 SET enable_seqscan = off;
 
-SET enable_indexscan = on;
+SET enable_indexscan = 'on';
 
 SET enable_bitmapscan = off;
 
@@ -317,7 +317,7 @@ SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 SET enable_indexscan = off;
 
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = 'on';
 
 SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
@@ -2198,7 +2198,7 @@ WHERE
   'fat cat'
   );
 
-SET enable_seqscan = on;
+SET enable_seqscan = 'on';
 
 SELECT
   websearch_to_tsquery(

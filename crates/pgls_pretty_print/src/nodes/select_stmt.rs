@@ -33,8 +33,8 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             // Emit left operand - wrap in parentheses if it's a set operation that needs precedence protection
             // or if it has ORDER BY/LIMIT/OFFSET that would be ambiguous
             if let Some(ref larg) = n.larg {
-                let needs_parens_left =
-                    needs_set_operation_parens(n.op(), larg.op(), true) || select_needs_parens(larg);
+                let needs_parens_left = needs_set_operation_parens(n.op(), larg.op(), true)
+                    || select_needs_parens(larg);
                 if needs_parens_left {
                     e.token(TokenKind::L_PAREN);
                 }
@@ -63,8 +63,8 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
             // or if it has ORDER BY/LIMIT/OFFSET that would be ambiguous
             e.line(LineType::SoftOrSpace);
             if let Some(ref rarg) = n.rarg {
-                let needs_parens_right =
-                    needs_set_operation_parens(n.op(), rarg.op(), false) || select_needs_parens(rarg);
+                let needs_parens_right = needs_set_operation_parens(n.op(), rarg.op(), false)
+                    || select_needs_parens(rarg);
                 if needs_parens_right {
                     e.token(TokenKind::L_PAREN);
                 }

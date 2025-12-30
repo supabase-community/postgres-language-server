@@ -131,6 +131,63 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             } else {
                 super::emit_node(object, e);
             }
+        } else if n.objtype == 36 {
+            // ObjectRule (36)
+            // Format: RULE rule_name ON table_name
+            // The list has [table_name, rule_name]
+            if let Some(NodeEnum::List(list)) = object.node.as_ref() {
+                if list.items.len() == 2 {
+                    // Emit rule name first (second element)
+                    super::emit_node(&list.items[1], e);
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::ON_KW);
+                    e.space();
+                    // Then table name (first element)
+                    super::emit_node(&list.items[0], e);
+                } else {
+                    super::emit_node(object, e);
+                }
+            } else {
+                super::emit_node(object, e);
+            }
+        } else if n.objtype == 45 {
+            // ObjectTrigger (45)
+            // Format: TRIGGER trigger_name ON table_name
+            // The list has [table_name, trigger_name]
+            if let Some(NodeEnum::List(list)) = object.node.as_ref() {
+                if list.items.len() == 2 {
+                    // Emit trigger name first (second element)
+                    super::emit_node(&list.items[1], e);
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::ON_KW);
+                    e.space();
+                    // Then table name (first element)
+                    super::emit_node(&list.items[0], e);
+                } else {
+                    super::emit_node(object, e);
+                }
+            } else {
+                super::emit_node(object, e);
+            }
+        } else if n.objtype == 29 {
+            // ObjectPolicy (29)
+            // Format: POLICY policy_name ON table_name
+            // The list has [table_name, policy_name]
+            if let Some(NodeEnum::List(list)) = object.node.as_ref() {
+                if list.items.len() == 2 {
+                    // Emit policy name first (second element)
+                    super::emit_node(&list.items[1], e);
+                    e.line(LineType::SoftOrSpace);
+                    e.token(TokenKind::ON_KW);
+                    e.space();
+                    // Then table name (first element)
+                    super::emit_node(&list.items[0], e);
+                } else {
+                    super::emit_node(object, e);
+                }
+            } else {
+                super::emit_node(object, e);
+            }
         } else if n.objtype == 51 {
             // ObjectUserMapping (51) - requires FOR before the role name
             // COMMENT ON USER MAPPING FOR role_name SERVER server_name IS 'comment'

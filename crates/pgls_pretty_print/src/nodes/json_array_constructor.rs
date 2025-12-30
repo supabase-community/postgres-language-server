@@ -25,8 +25,15 @@ pub(super) fn emit_json_array_constructor(e: &mut EventEmitter, n: &JsonArrayCon
         });
     }
 
-    if n.absent_on_null && !n.exprs.is_empty() {
-        e.token(TokenKind::ABSENT_KW);
+    // The default for JSON_ARRAY without a null clause is ABSENT ON NULL
+    // So we only need to emit NULL ON NULL when absent_on_null is false
+    if !n.exprs.is_empty() {
+        e.line(crate::emitter::LineType::SoftOrSpace);
+        if n.absent_on_null {
+            e.token(TokenKind::ABSENT_KW);
+        } else {
+            e.token(TokenKind::NULL_KW);
+        }
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
@@ -55,19 +62,17 @@ pub(super) fn emit_json_array_query_constructor(
     let mut has_content = false;
 
     if let Some(ref query) = n.query {
-        super::emit_node(query, e);
+        // Emit select without semicolon since it's inside JSON_ARRAY()
+        if let Some(pgls_query::NodeEnum::SelectStmt(select)) = query.node.as_ref() {
+            super::select_stmt::emit_select_stmt_no_semicolon(e, select);
+        } else {
+            super::emit_node(query, e);
+        }
         has_content = true;
     }
 
-    if n.absent_on_null && has_content {
-        e.space();
-        e.token(TokenKind::ABSENT_KW);
-        e.space();
-        e.token(TokenKind::ON_KW);
-        e.space();
-        e.token(TokenKind::NULL_KW);
-        has_content = true;
-    }
+    // Note: For JSON_ARRAY with subquery, ABSENT ON NULL is always the default
+    // and cannot be overridden, so we don't emit it
 
     if let Some(ref format) = n.format {
         super::json_value_expr::emit_json_format(e, format);
@@ -96,7 +101,7 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
     if let Some(ref constructor) = n.constructor {
         if !constructor.agg_order.is_empty() {
             if n.arg.is_some() {
-                e.space();
+                e.line(crate::emitter::LineType::SoftOrSpace);
             }
             e.token(TokenKind::ORDER_KW);
             e.space();
@@ -110,19 +115,49 @@ pub(super) fn emit_json_array_agg(e: &mut EventEmitter, n: &JsonArrayAgg) {
         }
     }
 
-    e.token(TokenKind::R_PAREN);
-
-    if n.absent_on_null {
-        e.space();
-        e.token(TokenKind::ABSENT_KW);
+    // NULL ON NULL / ABSENT ON NULL goes inside the parentheses
+    if n.arg.is_some() {
+        e.line(crate::emitter::LineType::SoftOrSpace);
+        if n.absent_on_null {
+            e.token(TokenKind::ABSENT_KW);
+        } else {
+            e.token(TokenKind::NULL_KW);
+        }
         e.space();
         e.token(TokenKind::ON_KW);
         e.space();
         e.token(TokenKind::NULL_KW);
     }
 
+    // RETURNING clause goes inside the parentheses
     if let Some(ref constructor) = n.constructor {
-        emit_json_agg_tail(e, constructor, true);
+        if let Some(ref output) = constructor.output {
+            let mut has_content = n.arg.is_some();
+            e.line(crate::emitter::LineType::SoftOrSpace);
+            emit_json_output(e, output, &mut has_content);
+        }
+    }
+
+    e.token(TokenKind::R_PAREN);
+
+    // FILTER and OVER clauses go outside the parentheses
+    if let Some(ref constructor) = n.constructor {
+        if let Some(ref filter) = constructor.agg_filter {
+            e.line(crate::emitter::LineType::SoftOrSpace);
+            e.token(TokenKind::FILTER_KW);
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            e.token(TokenKind::WHERE_KW);
+            super::emit_clause_condition(e, filter);
+            e.token(TokenKind::R_PAREN);
+        }
+
+        if let Some(ref over) = constructor.over {
+            e.line(crate::emitter::LineType::SoftOrSpace);
+            e.token(TokenKind::OVER_KW);
+            e.space();
+            super::emit_window_def(e, over);
+        }
     }
 
     e.group_end();

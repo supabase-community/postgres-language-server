@@ -13,7 +13,8 @@ SET min_parallel_table_scan_size = 0;
 
 SET max_parallel_workers_per_gather = 4;
 
-CREATE TABLE parallel_write AS
+CREATE TABLE parallel_write
+AS
   SELECT
     length(
     stringu1
@@ -24,7 +25,8 @@ CREATE TABLE parallel_write AS
     stringu1
     );
 
-CREATE TABLE parallel_write AS
+CREATE TABLE parallel_write
+AS
   SELECT
     length(
     stringu1
@@ -61,7 +63,8 @@ GROUP BY length(
 
 DROP TABLE "parallel_write";
 
-CREATE MATERIALIZED VIEW parallel_mat_view AS
+CREATE MATERIALIZED VIEW parallel_mat_view
+AS
   SELECT
     length(
     stringu1
@@ -72,7 +75,8 @@ CREATE MATERIALIZED VIEW parallel_mat_view AS
     stringu1
     );
 
-CREATE MATERIALIZED VIEW parallel_mat_view AS
+CREATE MATERIALIZED VIEW parallel_mat_view
+AS
   SELECT
     length(
     stringu1

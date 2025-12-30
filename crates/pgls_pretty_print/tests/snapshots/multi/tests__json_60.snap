@@ -304,7 +304,8 @@ FROM
     5
     ) AS y) AS q;
 
-CREATE TEMPORARY TABLE rows AS
+CREATE TEMPORARY TABLE rows
+AS
   SELECT
     x,
     'txt' ||

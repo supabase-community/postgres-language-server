@@ -9,7 +9,7 @@ SET LOCAL min_parallel_table_scan_size = 0;
 
 SET LOCAL parallel_setup_cost = 0;
 
-SET LOCAL enable_hashjoin = on;
+SET LOCAL enable_hashjoin = 'on';
 
 CREATE OR REPLACE FUNCTION
 find_hash(
@@ -62,7 +62,8 @@ begin
 end;
 ';
 
-CREATE TABLE simple AS
+CREATE TABLE simple
+AS
   SELECT
     generate_series(
     1,
@@ -75,7 +76,8 @@ ALTER TABLE simple SET (parallel_workers = 2);
 
 ANALYZE simple;
 
-CREATE TABLE bigger_than_it_looks AS
+CREATE TABLE bigger_than_it_looks
+AS
   SELECT
     generate_series(
     1,
@@ -126,7 +128,8 @@ WHERE
   relname =
   'extremely_skewed';
 
-CREATE TABLE wide AS
+CREATE TABLE wide
+AS
   SELECT
     generate_series(
     1,
@@ -244,7 +247,7 @@ SET LOCAL work_mem = '4MB';
 
 SET LOCAL hash_mem_multiplier = 1.0;
 
-SET LOCAL enable_parallel_hash = on;
+SET LOCAL enable_parallel_hash = 'on';
 
 SELECT
   COUNT(
@@ -386,7 +389,7 @@ SET LOCAL work_mem = '192kB';
 
 SET LOCAL hash_mem_multiplier = 1.0;
 
-SET LOCAL enable_parallel_hash = on;
+SET LOCAL enable_parallel_hash = 'on';
 
 SELECT
   COUNT(
@@ -539,7 +542,7 @@ SET LOCAL work_mem = '192kB';
 
 SET LOCAL hash_mem_multiplier = 1.0;
 
-SET LOCAL enable_parallel_hash = on;
+SET LOCAL enable_parallel_hash = 'on';
 
 SELECT
   COUNT(
@@ -671,7 +674,7 @@ SET LOCAL work_mem = '128kB';
 
 SET LOCAL hash_mem_multiplier = 1.0;
 
-SET LOCAL enable_parallel_hash = on;
+SET LOCAL enable_parallel_hash = 'on';
 
 SELECT
   COUNT(
@@ -727,7 +730,8 @@ FROM
 
 ROLLBACK TO SAVEPOINT settings;
 
-CREATE TABLE join_foo AS
+CREATE TABLE join_foo
+AS
   SELECT
     generate_series(
     1,
@@ -740,7 +744,8 @@ CREATE TABLE join_foo AS
 
 ALTER TABLE join_foo SET (parallel_workers = 0);
 
-CREATE TABLE join_bar AS
+CREATE TABLE join_bar
+AS
   SELECT
     generate_series(
     1,
@@ -909,7 +914,7 @@ ROLLBACK TO SAVEPOINT settings;
 
 SAVEPOINT settings;
 
-SET enable_parallel_hash = on;
+SET enable_parallel_hash = 'on';
 
 SET parallel_leader_participation = off;
 
@@ -986,7 +991,7 @@ ROLLBACK TO SAVEPOINT settings;
 
 SAVEPOINT settings;
 
-SET enable_parallel_hash = on;
+SET enable_parallel_hash = 'on';
 
 SET parallel_leader_participation = off;
 
@@ -1243,7 +1248,7 @@ SAVEPOINT settings;
 
 SET max_parallel_workers_per_gather = 2;
 
-SET enable_parallel_hash = on;
+SET enable_parallel_hash = 'on';
 
 SET work_mem = '128kB';
 
@@ -1301,7 +1306,7 @@ ROLLBACK TO SAVEPOINT settings;
 
 SAVEPOINT settings;
 
-SET enable_parallel_hash = on;
+SET enable_parallel_hash = 'on';
 
 SET min_parallel_table_scan_size = 0;
 
@@ -1579,7 +1584,7 @@ ROLLBACK;
 
 BEGIN;
 
-SET LOCAL enable_hashjoin = on;
+SET LOCAL enable_hashjoin = 'on';
 
 SELECT
   i8.q2,

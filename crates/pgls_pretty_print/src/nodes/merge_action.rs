@@ -45,7 +45,7 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
         super::emit_clause_condition(e, cond);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::THEN_KW);
     e.space();
 
@@ -77,11 +77,14 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
             }
 
             if !clause.values.is_empty() {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::VALUES_KW);
                 e.space();
                 e.token(TokenKind::L_PAREN);
+                e.indent_start();
+                e.line(LineType::SoftOrSpace);
                 super::node_list::emit_comma_separated_list(e, &clause.values, super::emit_node);
+                e.indent_end();
                 e.token(TokenKind::R_PAREN);
             } else {
                 e.space();

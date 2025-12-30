@@ -195,6 +195,18 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 emit_identifier(e, &n.indexname);
             }
 
+            // USING INDEX TABLESPACE for PRIMARY KEY
+            if !n.indexspace.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::USING_KW);
+                e.space();
+                e.token(TokenKind::INDEX_KW);
+                e.space();
+                e.token(TokenKind::TABLESPACE_KW);
+                e.space();
+                emit_identifier(e, &n.indexspace);
+            }
+
             // DEFERRABLE handling for PRIMARY KEY
             if n.deferrable {
                 e.space();
@@ -249,6 +261,18 @@ pub(super) fn emit_constraint(e: &mut EventEmitter, n: &Constraint) {
                 e.token(TokenKind::INDEX_KW);
                 e.space();
                 emit_identifier(e, &n.indexname);
+            }
+
+            // USING INDEX TABLESPACE for UNIQUE
+            if !n.indexspace.is_empty() {
+                e.line(LineType::SoftOrSpace);
+                e.token(TokenKind::USING_KW);
+                e.space();
+                e.token(TokenKind::INDEX_KW);
+                e.space();
+                e.token(TokenKind::TABLESPACE_KW);
+                e.space();
+                emit_identifier(e, &n.indexspace);
             }
 
             // DEFERRABLE handling for UNIQUE
