@@ -1,0 +1,35 @@
+---
+source: crates/pgls_pglinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+Category: pglinter/base/howManyObjectsWithUppercase
+Severity: Warning
+Message: Count number of objects with uppercase in name or in columns.
+Advices:
+Count number of objects with uppercase in name or in columns.
+[Info] Rule: B005
+How to fix:
+[Info]   1. Do not use uppercase for any database objects
+
+---
+
+Category: pglinter/base/howManyTableWithoutIndexOnFk
+Severity: Warning
+Message: Count number of tables without index on foreign key.
+Advices:
+Count number of tables without index on foreign key.
+[Info] Rule: B003
+How to fix:
+[Info]   1. create a index on foreign key or change warning/error threshold
+
+---
+
+Category: pglinter/base/howManyTableWithoutPrimaryKey
+Severity: Warning
+Message: Count number of tables without primary key.
+Advices:
+Count number of tables without primary key.
+[Info] Rule: B001
+How to fix:
+[Info]   1. create a primary key or change warning/error threshold

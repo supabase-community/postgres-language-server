@@ -1,6 +1,7 @@
 ---
 source: crates/pgls_completions/src/test_helper.rs
 expression: final_snapshot
+snapshot_kind: text
 ---
 ***Setup***
 

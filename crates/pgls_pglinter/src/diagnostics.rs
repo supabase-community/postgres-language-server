@@ -1,12 +1,10 @@
-//! Pglinter diagnostic types and conversion from SARIF
+//! Pglinter diagnostic types
 
 use pgls_diagnostics::{
     Advices, Category, DatabaseObjectOwned, Diagnostic, LogCategory, MessageAndDescription,
     Severity, Visit,
 };
 use std::io;
-
-use crate::sarif;
 
 /// A specialized diagnostic for pglinter (database-level linting via pglinter extension).
 #[derive(Debug, Diagnostic, PartialEq)]
@@ -75,72 +73,7 @@ impl Advices for PglinterAdvices {
     }
 }
 
-/// Error when converting SARIF to diagnostics
-#[derive(Debug)]
-pub struct UnknownRuleError {
-    pub rule_code: String,
-}
-
-impl std::fmt::Display for UnknownRuleError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Unknown pglinter rule code: {}", self.rule_code)
-    }
-}
-
-impl std::error::Error for UnknownRuleError {}
-
 impl PglinterDiagnostic {
-    /// Try to convert a single SARIF result to a pglinter diagnostic
-    pub fn try_from_sarif(
-        result: &sarif::Result,
-        rule_code: &str,
-    ) -> Result<PglinterDiagnostic, UnknownRuleError> {
-        let category =
-            crate::registry::get_rule_category(rule_code).ok_or_else(|| UnknownRuleError {
-                rule_code: rule_code.to_string(),
-            })?;
-
-        let metadata = crate::registry::get_rule_metadata_by_code(rule_code);
-
-        let severity = match result.level_str() {
-            "error" => Severity::Error,
-            "warning" => Severity::Warning,
-            "note" => Severity::Information,
-            _ => Severity::Warning,
-        };
-
-        let message = result.message_text().to_string();
-        let description = metadata
-            .map(|m| m.description.to_string())
-            .unwrap_or_else(|| message.clone());
-
-        let fixes = metadata
-            .map(|m| m.fixes.iter().map(|s| s.to_string()).collect())
-            .unwrap_or_default();
-
-        let object_list = {
-            let names = result.logical_location_names();
-            if names.is_empty() {
-                None
-            } else {
-                Some(names.join("\n"))
-            }
-        };
-
-        Ok(PglinterDiagnostic {
-            category,
-            db_object: None,
-            message: message.into(),
-            severity,
-            advices: PglinterAdvices {
-                description,
-                rule_code: Some(rule_code.to_string()),
-                fixes,
-                object_list,
-            },
-        })
-    }
-
     /// Create diagnostic for missing pglinter extension
     pub fn extension_not_installed() -> PglinterDiagnostic {
         PglinterDiagnostic {
@@ -179,5 +112,26 @@ impl PglinterDiagnostic {
                 object_list: None,
             },
         }
+    }
+
+    /// Create diagnostic from rule code using known metadata
+    pub fn from_rule_code(rule_code: &str) -> Option<PglinterDiagnostic> {
+        let category = crate::registry::get_rule_category(rule_code)?;
+        let metadata = crate::registry::get_rule_metadata_by_code(rule_code)?;
+
+        let fixes: Vec<String> = metadata.fixes.iter().map(|s| s.to_string()).collect();
+
+        Some(PglinterDiagnostic {
+            category,
+            db_object: None,
+            message: metadata.description.into(),
+            severity: Severity::Warning,
+            advices: PglinterAdvices {
+                description: metadata.description.to_string(),
+                rule_code: Some(rule_code.to_string()),
+                fixes,
+                object_list: None,
+            },
+        })
     }
 }
