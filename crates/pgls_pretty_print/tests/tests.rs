@@ -72,7 +72,9 @@ fn test_single(fixture: Fixture<&str>) {
         normalize_object_with_args(&mut ast);
         normalize_join_expr(&mut parsed_ast);
         normalize_join_expr(&mut ast);
+        // Apply to both ASTs symmetrically
         normalize_foreign_table_partbound(&mut ast);
+        normalize_foreign_table_partbound(&mut parsed_ast);
 
         assert_eq!(ast, parsed_ast);
 
@@ -153,7 +155,9 @@ fn test_multi(fixture: Fixture<&str>) {
             normalize_object_with_args(&mut ast);
             normalize_join_expr(&mut parsed_ast);
             normalize_join_expr(&mut ast);
+            // Apply to both ASTs symmetrically
             normalize_foreign_table_partbound(&mut ast);
+            normalize_foreign_table_partbound(&mut parsed_ast);
             normalize_merge_support_func(&mut ast);
             normalize_merge_support_func(&mut parsed_ast);
             normalize_sql_value_function(&mut ast);
@@ -563,11 +567,9 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             }
             pgls_query::NodeMut::AConst(n) => {
                 (*n).location = 0;
-                // Normalize string values to lowercase for settings like datestyle
-                // PostgreSQL normalizes case when parsing SET statements
-                if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) = (*n).val.as_mut() {
-                    s.sval = s.sval.to_lowercase();
-                }
+                // NOTE: We do NOT lowercase string values here - they are case-sensitive!
+                // Only specific contexts (like SET statements) are case-insensitive,
+                // and those should be handled in context-specific normalization.
             }
             pgls_query::NodeMut::RangeVar(n) => {
                 (*n).location = 0;
@@ -759,6 +761,20 @@ fn clear_location(node: &mut pgls_query::NodeEnum) {
             }
             pgls_query::NodeMut::XmlExpr(n) => {
                 (*n).location = 0;
+            }
+            pgls_query::NodeMut::VariableSetStmt(n) => {
+                // SET statement values are case-insensitive in PostgreSQL
+                // e.g., SET xmloption = DOCUMENT vs SET xmloption = document
+                for arg in &mut (*n).args {
+                    if let Some(pgls_query::NodeEnum::AConst(aconst)) = arg.node.as_mut() {
+                        aconst.location = 0;
+                        if let Some(pgls_query::protobuf::a_const::Val::Sval(s)) =
+                            aconst.val.as_mut()
+                        {
+                            s.sval = s.sval.to_lowercase();
+                        }
+                    }
+                }
             }
             _ => {}
         });
@@ -1189,7 +1205,7 @@ fn normalize_object_with_args_inner(owa: &mut pgls_query::protobuf::ObjectWithAr
     owa.objfuncargs.clear();
 }
 
-/// Normalize JoinExpr nodes - clear alias and quals for cross joins
+/// Normalize JoinExpr nodes - normalize semantically equivalent forms
 fn normalize_join_expr(node: &mut pgls_query::NodeEnum) {
     match node {
         pgls_query::NodeEnum::JoinExpr(je) => {
@@ -1211,10 +1227,8 @@ fn normalize_join_expr(node: &mut pgls_query::NodeEnum) {
                     je.quals = None;
                 }
             }
-            // Clear join alias (not currently emitted - requires parentheses around join)
-            je.alias = None;
-            // Clear join_using_alias (not currently emitted)
-            je.join_using_alias = None;
+            // NOTE: We do NOT clear join alias or join_using_alias here.
+            // If the emitter doesn't emit them, the test should fail and we need to fix the emitter.
             // Recursively normalize nested joins and subqueries
             if let Some(ref mut larg) = je.larg {
                 if let Some(ref mut n) = larg.node {

@@ -85,17 +85,33 @@ SELECT i, k, t FROM j1_tbl INNER JOIN j2_tbl ON TRUE;
 
 SELECT t1.i, k, t FROM j1_tbl AS t1 INNER JOIN j2_tbl AS t2 ON TRUE;
 
-SELECT ii, tt, kk FROM j1_tbl INNER JOIN j2_tbl ON TRUE;
+SELECT
+  ii,
+  tt,
+  kk
+FROM
+  (j1_tbl
+  INNER JOIN
+    j2_tbl
+  ON TRUE) AS "tx" ("ii",
+  "jj",
+  "tt",
+  "ii2",
+  "kk");
 
 SELECT
   tx.ii,
   tx.jj,
   tx.kk
 FROM
-  j1_tbl AS t1 (a, b, c)
+  (j1_tbl AS t1 (a, b, c)
   INNER JOIN
     j2_tbl AS t2 (d, e)
-  ON TRUE;
+  ON TRUE) AS "tx" ("ii",
+  "jj",
+  "tt",
+  "ii2",
+  "kk");
 
 SELECT
   *
@@ -131,31 +147,69 @@ ORDER BY b,
 
 SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE j1_tbl.t = 'one';
 
-SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE j1_tbl.t = 'one';
+SELECT
+  *
+FROM
+  j1_tbl
+  INNER JOIN
+    j2_tbl
+  USING ("i") AS "x"
+WHERE
+  j1_tbl.t = 'one';
 
-SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE j1_tbl.t = 'one';
+SELECT
+  *
+FROM
+  (j1_tbl
+  INNER JOIN
+    j2_tbl
+  USING ("i")) AS "x"
+WHERE
+  j1_tbl.t = 'one';
 
-SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE x.i = 1;
+SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") AS "x" WHERE x.i = 1;
 
-SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE x.t = 'one';
+SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") AS "x" WHERE x.t = 'one';
 
-SELECT * FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE x.i = 1;
+SELECT
+  *
+FROM
+  (j1_tbl
+  INNER JOIN
+    j2_tbl
+  USING ("i") AS "x") AS "xx"
+WHERE
+  x.i = 1;
 
-SELECT * FROM j1_tbl AS a1 INNER JOIN j2_tbl AS a2 USING ("i");
+SELECT * FROM j1_tbl AS a1 INNER JOIN j2_tbl AS a2 USING ("i") AS "a1";
 
-SELECT x.* FROM j1_tbl INNER JOIN j2_tbl USING ("i") WHERE j1_tbl.t = 'one';
+SELECT
+  x.*
+FROM
+  j1_tbl
+  INNER JOIN
+    j2_tbl
+  USING ("i") AS "x"
+WHERE
+  j1_tbl.t = 'one';
 
 SELECT
   ROW(x.*)
 FROM
-  j1_tbl INNER JOIN j2_tbl USING ("i")
+  j1_tbl
+  INNER JOIN
+    j2_tbl
+  USING ("i") AS "x"
 WHERE
   j1_tbl.t = 'one';
 
 SELECT
   row_to_json(x.*)
 FROM
-  j1_tbl INNER JOIN j2_tbl USING ("i")
+  j1_tbl
+  INNER JOIN
+    j2_tbl
+  USING ("i") AS "x"
 WHERE
   j1_tbl.t = 'one';
 
@@ -1178,7 +1232,7 @@ SELECT
   foo.*,
   unnamed_join.*
 FROM
-  t1 INNER JOIN t2 USING ("a"),
+  t1 INNER JOIN t2 USING ("a") AS "foo",
   t3 AS unnamed_join
 FOR UPDATE OF unnamed_join;
 
@@ -1186,7 +1240,7 @@ SELECT
   foo.*,
   unnamed_join.*
 FROM
-  t1 INNER JOIN t2 USING ("a"),
+  t1 INNER JOIN t2 USING ("a") AS "foo",
   t3 AS unnamed_join
 FOR UPDATE OF foo;
 
@@ -1194,7 +1248,10 @@ SELECT
   bar.*,
   unnamed_join.*
 FROM
-  t1 INNER JOIN t2 USING ("a"),
+  (t1
+  INNER JOIN
+    t2
+  USING ("a") AS "foo") AS "bar",
   t3 AS unnamed_join
 FOR UPDATE OF foo;
 
@@ -1202,7 +1259,10 @@ SELECT
   bar.*,
   unnamed_join.*
 FROM
-  t1 INNER JOIN t2 USING ("a"),
+  (t1
+  INNER JOIN
+    t2
+  USING ("a") AS "foo") AS "bar",
   t3 AS unnamed_join
 FOR UPDATE OF bar;
 

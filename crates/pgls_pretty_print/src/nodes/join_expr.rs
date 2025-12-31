@@ -9,6 +9,12 @@ use super::string::emit_identifier;
 pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
     e.group_start(GroupKind::JoinExpr);
 
+    // If the join has an alias, we need to wrap it in parentheses
+    let has_alias = n.alias.is_some();
+    if has_alias {
+        e.token(TokenKind::L_PAREN);
+    }
+
     // Left side
     if let Some(ref larg) = n.larg {
         super::emit_node(larg, e);
@@ -110,6 +116,15 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
             });
         }
         e.token(TokenKind::R_PAREN);
+
+        // Emit USING alias if present (PostgreSQL 14+)
+        // Format: USING (col1, col2) AS alias
+        if let Some(ref using_alias) = n.join_using_alias {
+            e.space();
+            e.token(TokenKind::AS_KW);
+            e.space();
+            emit_identifier(e, &using_alias.aliasname);
+        }
     } else if let Some(ref quals) = n.quals {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
@@ -126,9 +141,29 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
         e.token(TokenKind::TRUE_KW);
     }
 
-    // Note: Join aliases (e.g., (t1 JOIN t2) AS alias) are not emitted
-    // as they require parentheses around the join expression for the alias to be valid.
-    // This is a limitation of the current emitter architecture.
+    // Emit join alias if present
+    // Format: (t1 JOIN t2 ON ...) AS alias (col1, col2, ...)
+    if let Some(ref alias) = n.alias {
+        e.token(TokenKind::R_PAREN);
+        e.space();
+        e.token(TokenKind::AS_KW);
+        e.space();
+        emit_identifier(e, &alias.aliasname);
+
+        // Emit column aliases if present
+        if !alias.colnames.is_empty() {
+            e.space();
+            e.token(TokenKind::L_PAREN);
+            emit_comma_separated_list(e, &alias.colnames, |node, emitter| {
+                if let Some(pgls_query::NodeEnum::String(s)) = node.node.as_ref() {
+                    emit_identifier(emitter, &s.sval);
+                } else {
+                    super::emit_node(node, emitter);
+                }
+            });
+            e.token(TokenKind::R_PAREN);
+        }
+    }
 
     e.group_end();
 }

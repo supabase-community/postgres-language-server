@@ -740,8 +740,12 @@ CREATE VIEW view_of_joins
 AS SELECT
   *
 FROM
-  (SELECT * FROM tbl1 INNER JOIN tbl2 ON TRUE) AS ss,
-  tbl3 INNER JOIN tbl4 ON TRUE;
+  (SELECT
+    *
+  FROM
+    (tbl1 INNER JOIN tbl2 ON TRUE) AS "same")
+  AS ss,
+  (tbl3 INNER JOIN tbl4 ON TRUE) AS "same";
 
 CREATE TABLE tbl1a (
   a INT,
@@ -752,13 +756,22 @@ CREATE VIEW view_of_joins_2a
 AS SELECT * FROM tbl1 INNER JOIN tbl1a USING ("a");
 
 CREATE VIEW view_of_joins_2b
-AS SELECT * FROM tbl1 INNER JOIN tbl1a USING ("a");
+AS SELECT
+  *
+FROM
+  tbl1 INNER JOIN tbl1a USING ("a") AS "x";
 
 CREATE VIEW view_of_joins_2c
-AS SELECT * FROM tbl1 INNER JOIN tbl1a USING ("a");
+AS SELECT
+  *
+FROM
+  (tbl1 INNER JOIN tbl1a USING ("a")) AS "y";
 
 CREATE VIEW view_of_joins_2d
-AS SELECT * FROM tbl1 INNER JOIN tbl1a USING ("a");
+AS SELECT
+  *
+FROM
+  (tbl1 INNER JOIN tbl1a USING ("a") AS "x") AS "y";
 
 SELECT pg_get_viewdef('view_of_joins_2a', TRUE);
 
@@ -790,7 +803,7 @@ CREATE VIEW v1
 AS SELECT * FROM tt2 NATURAL JOIN tt3;
 
 CREATE VIEW v1a
-AS SELECT * FROM tt2 NATURAL JOIN tt3;
+AS SELECT * FROM (tt2 NATURAL JOIN tt3) AS "j";
 
 CREATE VIEW v2
 AS SELECT
@@ -805,10 +818,10 @@ CREATE VIEW v2a
 AS SELECT
   *
 FROM
-  tt2 INNER JOIN tt3 USING ( "b", "c")
+  (tt2 INNER JOIN tt3 USING ( "b", "c")
   INNER JOIN
     tt4
-  USING ("b");
+  USING ("b")) AS "j";
 
 CREATE VIEW v3
 AS SELECT
@@ -897,7 +910,16 @@ CREATE TABLE tt6 (
 );
 
 CREATE VIEW vv1
-AS SELECT * FROM tt5 INNER JOIN tt6 ON TRUE;
+AS SELECT
+  *
+FROM
+  (tt5
+  INNER JOIN
+    tt6
+  ON TRUE) AS "j" ("aa",
+  "bb",
+  "cc",
+  "dd");
 
 SELECT pg_get_viewdef('vv1', TRUE);
 

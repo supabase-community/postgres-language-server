@@ -891,35 +891,65 @@ SELECT 1 FROM atest5 AS a INNER JOIN atest5 AS b USING ("two");
 
 SELECT 1 FROM atest5 AS a NATURAL JOIN atest5 AS b;
 
-SELECT * FROM atest5 AS a INNER JOIN atest5 AS b USING ("one");
+SELECT * FROM (atest5 AS a INNER JOIN atest5 AS b USING ("one")) AS "j";
 
-SELECT j.* FROM atest5 AS a INNER JOIN atest5 AS b USING ("one");
+SELECT j.* FROM (atest5 AS a INNER JOIN atest5 AS b USING ("one")) AS "j";
 
-SELECT j.* IS NULL FROM atest5 AS a INNER JOIN atest5 AS b USING ("one");
+SELECT
+  j.* IS NULL
+FROM
+  (atest5 AS a
+  INNER JOIN
+    atest5 AS b
+  USING ("one")) AS "j";
 
-SELECT one FROM atest5 AS a INNER JOIN atest5 AS b (one, x, y, z) USING ("one");
+SELECT
+  one
+FROM
+  (atest5 AS a
+  INNER JOIN
+    atest5 AS b (one, x, y, z)
+  USING ("one")) AS "j";
 
 SELECT
   j.one
 FROM
-  atest5 AS a
+  (atest5 AS a
   INNER JOIN
     atest5 AS b (one, x, y, z)
-  USING ("one");
+  USING ("one")) AS "j";
 
-SELECT two FROM atest5 AS a INNER JOIN atest5 AS b (one, x, y, z) USING ("one");
+SELECT
+  two
+FROM
+  (atest5 AS a
+  INNER JOIN
+    atest5 AS b (one, x, y, z)
+  USING ("one")) AS "j";
 
 SELECT
   j.two
 FROM
-  atest5 AS a
+  (atest5 AS a
   INNER JOIN
     atest5 AS b (one, x, y, z)
-  USING ("one");
+  USING ("one")) AS "j";
 
-SELECT y FROM atest5 AS a INNER JOIN atest5 AS b (one, x, y, z) USING ("one");
+SELECT
+  y
+FROM
+  (atest5 AS a
+  INNER JOIN
+    atest5 AS b (one, x, y, z)
+  USING ("one")) AS "j";
 
-SELECT j.y FROM atest5 AS a INNER JOIN atest5 AS b (one, x, y, z) USING ("one");
+SELECT
+  j.y
+FROM
+  (atest5 AS a
+  INNER JOIN
+    atest5 AS b (one, x, y, z)
+  USING ("one")) AS "j";
 
 SELECT * FROM atest5 AS a INNER JOIN atest5 AS b USING ("one");
 
