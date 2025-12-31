@@ -172,8 +172,20 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
     let generated_file = tool.generated_file().trim_end_matches(".rs");
     let generated_file_ident = Ident::new(generated_file, Span::call_site());
 
+    // For splinter, we need to include the options module
+    let options_module = if tool.name == "splinter" {
+        quote! {
+            mod options;
+            pub use options::SplinterRuleOptions;
+        }
+    } else {
+        quote! {}
+    };
+
     let content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
+
+        #options_module
 
         mod #generated_file_ident;
 
@@ -288,6 +300,34 @@ fn generate_lint_rules_file(
     }
 
     let category_prefix = tool.category_prefix();
+
+    // Generate get_ignore_matchers() method for splinter only
+    // We need to generate this method separately in each group struct
+    // because we need direct access to the rule configurations
+    let get_ignore_matchers_method = if tool.name == "splinter" {
+        // Generate code to call each group's get_ignore_matchers method
+        let mut group_matcher_code = Vec::new();
+        for group_ident in group_idents.iter() {
+            group_matcher_code.push(quote! {
+                if let Some(group) = &self.#group_ident {
+                    matchers.extend(group.get_ignore_matchers());
+                }
+            });
+        }
+
+        quote! {
+            /// Build matchers for all rules that have ignore patterns configured.
+            /// Returns a map from rule name (camelCase) to the matcher.
+            pub fn get_ignore_matchers(&self) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+                let mut matchers = rustc_hash::FxHashMap::default();
+                #( #group_matcher_code )*
+                matchers
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     let rules_struct_content = quote! {
         //! Generated file, do not edit by hand, see `xtask/codegen`
 
@@ -425,6 +465,8 @@ fn generate_lint_rules_file(
                 #( #group_as_disabled_rules )*
                 disabled_rules
             }
+
+            #get_ignore_matchers_method
         }
 
         #( #struct_groups )*
@@ -476,6 +518,9 @@ fn generate_lint_group_struct(
     let mut get_rule_configuration_line = Vec::new();
     let mut get_severity_lines = Vec::new();
 
+    // For splinter, generate code to build matchers from ignore patterns
+    let mut splinter_ignore_matcher_lines = Vec::new();
+
     for (index, (rule, metadata)) in rules.iter().enumerate() {
         let summary = extract_summary_from_docs(metadata.docs);
         let rule_position = Literal::u8_unsuffixed(index as u8);
@@ -496,10 +541,28 @@ fn generate_lint_group_struct(
              #rule
         });
 
-        // For splinter rules, use () as options since they don't have configurable options
+        // For splinter, generate code to check each rule's ignore patterns
+        if tool_name == "splinter" {
+            let rule_str = Literal::string(rule);
+            splinter_ignore_matcher_lines.push(quote! {
+                if let Some(conf) = &self.#rule_identifier {
+                    if let Some(options) = conf.get_options_ref() {
+                        if !options.ignore.is_empty() {
+                            let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
+                            for p in &options.ignore {
+                                let _ = m.add_pattern(p);
+                            }
+                            matchers.insert(#rule_str, m);
+                        }
+                    }
+                }
+            });
+        }
+
+        // For splinter rules, use SplinterRuleOptions for the shared ignore patterns
         // For linter rules, use pgls_analyser::options::#rule_name
         let rule_option_type = if tool_name == "splinter" {
-            quote! { () }
+            quote! { crate::splinter::SplinterRuleOptions }
         } else {
             quote! { pgls_analyser::options::#rule_name }
         };
@@ -551,6 +614,20 @@ fn generate_lint_group_struct(
     }
 
     let group_pascal_ident = Ident::new(&to_capitalized(group), Span::call_site());
+
+    // For splinter, generate get_ignore_matchers method
+    let get_ignore_matchers_group_method = if tool_name == "splinter" {
+        quote! {
+            /// Build matchers for rules in this group that have ignore patterns configured
+            pub fn get_ignore_matchers(&self) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+                let mut matchers = rustc_hash::FxHashMap::default();
+                #( #splinter_ignore_matcher_lines )*
+                matchers
+            }
+        }
+    } else {
+        quote! {}
+    };
 
     quote! {
         #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
@@ -652,6 +729,8 @@ fn generate_lint_group_struct(
                     _ => None
                 }
             }
+
+            #get_ignore_matchers_group_method
         }
     }
 }

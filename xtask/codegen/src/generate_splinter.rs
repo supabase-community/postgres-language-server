@@ -90,8 +90,8 @@ fn extract_metadata_from_sql(sql_path: &Path, category: &str) -> Result<SqlRuleM
             break; // Stop at first non-comment line
         }
 
-        if line.starts_with("-- meta:") {
-            let meta_line = &line[8..].trim(); // Remove "-- meta:"
+        if let Some(meta_line) = line.strip_prefix("-- meta:") {
+            let meta_line = meta_line.trim();
 
             if let Some(value) = extract_meta_value(meta_line, "name") {
                 name = Some(value);

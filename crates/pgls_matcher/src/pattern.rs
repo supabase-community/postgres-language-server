@@ -1,8 +1,6 @@
-use crate::matcher::pattern::CharSpecifier::{CharRange, SingleChar};
-use crate::matcher::pattern::MatchResult::{
-    EntirePatternDoesntMatch, Match, SubPatternDoesntMatch,
-};
-use crate::matcher::pattern::PatternToken::{
+use crate::pattern::CharSpecifier::{CharRange, SingleChar};
+use crate::pattern::MatchResult::{EntirePatternDoesntMatch, Match, SubPatternDoesntMatch};
+use crate::pattern::PatternToken::{
     AnyChar, AnyExcept, AnyPattern, AnyRecursiveSequence, AnySequence, AnyWithin, Char,
 };
 use std::error::Error;
