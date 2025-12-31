@@ -75,7 +75,10 @@ SELECT SUBSTRING(CAST('01010101' AS BIT VARYING) FROM -10 FOR -2147483646) AS er
 
 DROP TABLE "varbit_table";
 
-CREATE TABLE varbit_table (a BIT VARYING(16), b BIT VARYING(16));
+CREATE TABLE varbit_table (
+  a BIT VARYING(16),
+  b BIT VARYING(16)
+);
 
 SELECT a, b, ~a AS "~ a", a & b AS "a & b", a | b AS "a | b", a # b AS "a # b" FROM varbit_table;
 
@@ -97,7 +100,10 @@ DROP TABLE "varbit_table";
 
 DROP TABLE "bit_table";
 
-CREATE TABLE bit_table (a BIT(16), b BIT(16));
+CREATE TABLE bit_table (
+  a BIT(16),
+  b BIT(16)
+);
 
 SELECT a, b, ~a AS "~ a", a & b AS "a & b", a | b AS "a | b", a # b AS "a # b" FROM bit_table;
 
@@ -295,8 +301,7 @@ SELECT bit_count(CAST(repeat('01', 500) AS BIT(1000)));
 
 SELECT bit_count(CAST(repeat('10101', 200) AS BIT(1000)));
 
-CREATE TABLE bit_defaults
-(
+CREATE TABLE bit_defaults (
   b1 BIT(4) DEFAULT '1001',
   b2 BIT(4) DEFAULT B'0101',
   b3 BIT VARYING(5) DEFAULT '1001',

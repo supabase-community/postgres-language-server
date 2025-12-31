@@ -103,8 +103,7 @@ SELECT f1 FROM temp_float ORDER BY f1;
 
 CREATE TABLE temp_int4 (f1 INT);
 
-INSERT INTO temp_int4
-(f1)
+INSERT INTO temp_int4 (f1)
 SELECT
   int4(f1)
 FROM
@@ -124,7 +123,11 @@ INSERT INTO temp_int2 (f1) SELECT int2(f1) FROM int4_tbl WHERE f1 >= -32767 AND 
 
 SELECT f1 FROM temp_int2 ORDER BY f1;
 
-CREATE TABLE temp_group (f1 INT, f2 INT, f3 DOUBLE PRECISION);
+CREATE TABLE temp_group (
+  f1 INT,
+  f2 INT,
+  f3 DOUBLE PRECISION
+);
 
 INSERT INTO temp_group SELECT 1, -i.f1, -f.f1 FROM int4_tbl AS i, float8_tbl AS f;
 

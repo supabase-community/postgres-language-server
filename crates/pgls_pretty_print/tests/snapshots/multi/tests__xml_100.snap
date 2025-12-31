@@ -3,7 +3,10 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/xml.sql
 snapshot_kind: text
 ---
-CREATE TABLE xmltest (id INT, data XML);
+CREATE TABLE xmltest (
+  id INT,
+  data XML
+);
 
 INSERT INTO xmltest VALUES (1, '<value>one</value>');
 
@@ -343,29 +346,29 @@ SELECT xpath('', '<!-- error -->');
 
 SELECT
   xpath(
-  '//text()',
-  '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>'
+    '//text()',
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>'
   );
 
 SELECT
   xpath(
-  '//loc:piece/@id',
-  '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>',
-  ARRAY[ARRAY['loc', 'http://127.0.0.1']]
+    '//loc:piece/@id',
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>',
+    ARRAY[ARRAY['loc', 'http://127.0.0.1']]
   );
 
 SELECT
   xpath(
-  '//loc:piece',
-  '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>',
-  ARRAY[ARRAY['loc', 'http://127.0.0.1']]
+    '//loc:piece',
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>',
+    ARRAY[ARRAY['loc', 'http://127.0.0.1']]
   );
 
 SELECT
   xpath(
-  '//loc:piece',
-  '<local:data xmlns:local="http://127.0.0.1" xmlns="http://127.0.0.2"><local:piece id="1"><internal>number one</internal><internal2/></local:piece><local:piece id="2" /></local:data>',
-  ARRAY[ARRAY['loc', 'http://127.0.0.1']]
+    '//loc:piece',
+    '<local:data xmlns:local="http://127.0.0.1" xmlns="http://127.0.0.2"><local:piece id="1"><internal>number one</internal><internal2/></local:piece><local:piece id="2" /></local:data>',
+    ARRAY[ARRAY['loc', 'http://127.0.0.1']]
   );
 
 SELECT xpath('//b', '<a>one <b>two</b> three <b>etc</b></a>');
@@ -434,16 +437,16 @@ SELECT xmlexists('count(/nosuchtag)' PASSING '<root/>');
 
 SELECT
   xpath_exists(
-  '//town[text() = ''Toronto'']',
-  CAST('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
-  AS XML)
+    '//town[text() = ''Toronto'']',
+    CAST('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+    AS XML)
   );
 
 SELECT
   xpath_exists(
-  '//town[text() = ''Cwmbran'']',
-  CAST('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
-  AS XML)
+    '//town[text() = ''Cwmbran'']',
+    CAST('<towns><town>Bidford-on-Avon</town><town>Cwmbran</town><town>Bristol</town></towns>'
+    AS XML)
   );
 
 SELECT xpath_exists('count(/nosuchtag)', CAST('<root/>' AS XML));
@@ -496,9 +499,9 @@ FROM
   xmltest
 WHERE
   xpath_exists(
-  '/myns:menu/myns:beer',
-  data,
-  ARRAY[ARRAY['myns', 'http://myns.com']]
+    '/myns:menu/myns:beer',
+    data,
+    ARRAY[ARRAY['myns', 'http://myns.com']]
   );
 
 SELECT
@@ -507,9 +510,9 @@ FROM
   xmltest
 WHERE
   xpath_exists(
-  '/myns:menu/myns:beers',
-  data,
-  ARRAY[ARRAY['myns', 'http://myns.com']]
+    '/myns:menu/myns:beers',
+    data,
+    ARRAY[ARRAY['myns', 'http://myns.com']]
   );
 
 SELECT
@@ -518,9 +521,9 @@ FROM
   xmltest
 WHERE
   xpath_exists(
-  '/myns:menu/myns:beers/myns:name[text() = ''Molson'']',
-  data,
-  ARRAY[ARRAY['myns', 'http://myns.com']]
+    '/myns:menu/myns:beers/myns:name[text() = ''Molson'']',
+    data,
+    ARRAY[ARRAY['myns', 'http://myns.com']]
   );
 
 CREATE TABLE query (expr TEXT);
@@ -553,7 +556,7 @@ SELECT xml_is_well_formed('<foo><bar>baz</foo>');
 
 SELECT
   xml_is_well_formed(
-  '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>'
+    '<local:data xmlns:local="http://127.0.0.1"><local:piece id="1">number one</local:piece><local:piece id="2" /></local:data>'
   );
 
 SELECT xml_is_well_formed('<pg:foo xmlns:pg="http://postgresql.org/stuff">bar</my:foo>');
@@ -630,6 +633,7 @@ SELECT
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -640,7 +644,8 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  );
 
 CREATE VIEW xmltableview1
 AS SELECT
@@ -648,6 +653,7 @@ AS SELECT
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -658,7 +664,8 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  );
 
 SELECT * FROM xmltableview1;
 
@@ -672,22 +679,26 @@ SELECT
   *
 FROM
   XMLTABLE(
+
     XMLNAMESPACES('http://x.y' AS zz),
     '/zz:rows/zz:row'
     PASSING '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
     COLUMNS
-      a INT PATH 'zz:a');
+      a INT PATH 'zz:a'
+  );
 
 CREATE VIEW xmltableview2
 AS SELECT
   *
 FROM
   XMLTABLE(
+
     XMLNAMESPACES('http://x.y' AS "Zz"),
     '/Zz:rows/Zz:row'
     PASSING '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
     COLUMNS
-      a INT PATH 'Zz:a');
+      a INT PATH 'Zz:a'
+  );
 
 SELECT * FROM xmltableview2;
 
@@ -695,11 +706,13 @@ SELECT
   *
 FROM
   XMLTABLE(
+
     XMLNAMESPACES(DEFAULT 'http://x.y'),
     '/rows/row'
     PASSING '<rows xmlns="http://x.y"><row><a>10</a></row></rows>'
     COLUMNS
-      a INT PATH 'a');
+      a INT PATH 'a'
+  );
 
 SELECT * FROM XMLTABLE( '.' PASSING '<foo/>' COLUMNS a TEXT PATH 'foo/namespace::node()');
 
@@ -709,6 +722,7 @@ AS SELECT
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -719,7 +733,8 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');;
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  );;
 
 EXECUTE pp;
 
@@ -728,132 +743,157 @@ SELECT
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT);
+      "REGION_ID" INT
+  );
 
 SELECT
   xmltable.*
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       id FOR ORDINALITY,
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT);
+      "REGION_ID" INT
+  );
 
 SELECT
   xmltable.*
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       id INT PATH '@id',
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT);
+      "REGION_ID" INT
+  );
 
 SELECT
   xmltable.*
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
-      id INT PATH '@id');
+      id INT PATH '@id'
+  );
 
 SELECT
   xmltable.*
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
-      id FOR ORDINALITY);
+      id FOR ORDINALITY
+  );
 
 SELECT
   xmltable.*
 FROM
   xmldata,
   LATERAL XMLTABLE(
-    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
-    PASSING data
-    COLUMNS
-      id INT PATH '@id',
-      "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT,
-      rawdata XML PATH '.');
 
-SELECT
-  xmltable.*
-FROM
-  xmldata,
-  LATERAL XMLTABLE(
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       id INT PATH '@id',
       "COUNTRY_NAME" TEXT,
       "REGION_ID" INT,
-      rawdata XML PATH './*');
+      rawdata XML PATH '.'
+  );
+
+SELECT
+  xmltable.*
+FROM
+  xmldata,
+  LATERAL XMLTABLE(
+
+    '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
+    PASSING data
+    COLUMNS
+      id INT PATH '@id',
+      "COUNTRY_NAME" TEXT,
+      "REGION_ID" INT,
+      rawdata XML PATH './*'
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '/root'
     PASSING '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
     COLUMNS
-      element TEXT);
+      element TEXT
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '/root'
     PASSING '<root><element>a1a<!-- aaaa -->a2a<?aaaaa?> <!--z-->  bbbb<x>xxx</x>cccc</element></root>'
     COLUMNS
-      element TEXT PATH 'element/text()');
+      element TEXT PATH 'element/text()'
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     'd/r'
     PASSING '<d><r><c><![CDATA[<hello> &"<>!<a>foo</a>]]></c></r><r><c>2</c></r></d>'
     COLUMNS
-      c TEXT);
+      c TEXT
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '/x/a'
     PASSING '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
     COLUMNS
-      ent TEXT);
+      ent TEXT
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '/x/a'
     PASSING '<x><a><ent>&apos;</ent></a><a><ent>&quot;</ent></a><a><ent>&amp;</ent></a><a><ent>&lt;</ent></a><a><ent>&gt;</ent></a></x>'
     COLUMNS
-      ent XML);
+      ent XML
+  );
 
 SELECT
   xmltable.*
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -864,18 +904,21 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  );
 
 SELECT
   xmltable.*
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT)
+      "REGION_ID" INT
+  )
 WHERE
   "COUNTRY_NAME" = 'Japan';
 
@@ -884,11 +927,13 @@ SELECT
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT)
+      "REGION_ID" INT
+  )
   AS f
 WHERE
   "COUNTRY_NAME" = 'Japan';
@@ -898,11 +943,13 @@ SELECT
 FROM
   xmldata,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW[COUNTRY_NAME="Japan" or COUNTRY_NAME="India"]'
     PASSING data
     COLUMNS
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT)
+      "REGION_ID" INT
+  )
   AS f
 WHERE
   "COUNTRY_NAME" = 'Japan';
@@ -949,6 +996,7 @@ SELECT
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -959,13 +1007,15 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  );
 
 SELECT
   xmltable.*
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -976,7 +1026,8 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified')
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  )
 WHERE
   region_id = 2;
 
@@ -985,6 +1036,7 @@ SELECT
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -995,7 +1047,8 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE',
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified')
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  )
 WHERE
   region_id = 2;
 
@@ -1004,6 +1057,7 @@ SELECT
 FROM
   (SELECT data FROM xmldata) AS x,
   LATERAL XMLTABLE(
+
     '/ROWS/ROW'
     PASSING data
     COLUMNS
@@ -1014,7 +1068,8 @@ FROM
       region_id INT PATH 'REGION_ID',
       size DOUBLE PRECISION PATH 'SIZE' NOT NULL,
       unit TEXT PATH 'SIZE/@unit',
-      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');
+      premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified'
+  );
 
 WITH
 x
@@ -1055,6 +1110,7 @@ AS (
   FROM
     y,
     LATERAL XMLTABLE(
+
       '/proc'
       PASSING proc
       COLUMNS
@@ -1063,7 +1119,8 @@ AS (
         procost DOUBLE PRECISION,
         pronargs INT,
         proargnames TEXT,
-        proargtypes TEXT)
+        proargtypes TEXT
+    )
 )
 SELECT * FROM z
 EXCEPT
@@ -1090,12 +1147,12 @@ y
 AS (
   SELECT
     XMLELEMENT(NAME data, xmlagg(
-    XMLELEMENT(NAME proc, XMLFOREST(proname,
-    proowner,
-    procost,
-    pronargs,
-    proargnames,
-    proargtypes))
+      XMLELEMENT(NAME proc, XMLFOREST(proname,
+      proowner,
+      procost,
+      pronargs,
+      proargnames,
+      proargtypes))
     ))
     AS doc
   FROM
@@ -1108,6 +1165,7 @@ AS (
   FROM
     y,
     LATERAL XMLTABLE(
+
       '/data/proc'
       PASSING doc
       COLUMNS
@@ -1116,13 +1174,17 @@ AS (
         procost DOUBLE PRECISION,
         pronargs INT,
         proargnames TEXT,
-        proargtypes TEXT)
+        proargtypes TEXT
+    )
 )
 SELECT * FROM z
 EXCEPT
 SELECT * FROM x;
 
-CREATE TABLE xmltest2 (x XML, _path TEXT);
+CREATE TABLE xmltest2 (
+  x XML,
+  _path TEXT
+);
 
 INSERT INTO xmltest2 VALUES ('<d><r><ac>1</ac></r></d>', 'A');
 
@@ -1137,35 +1199,42 @@ SELECT
 FROM
   xmltest2,
   LATERAL XMLTABLE(
+
     '/d/r'
     PASSING x
     COLUMNS
-      a INT PATH '' || lower(_path) || 'c');
+      a INT PATH '' || lower(_path) || 'c'
+  );
 
 SELECT
   xmltable.*
 FROM
   xmltest2,
   LATERAL XMLTABLE(
+
     ('/d/r/' || lower(_path) || 'c')
     PASSING x
     COLUMNS
-      a INT PATH '.');
+      a INT PATH '.'
+  );
 
 SELECT
   xmltable.*
 FROM
   xmltest2,
   LATERAL XMLTABLE(
+
     ('/d/r/' || lower(_path) || 'c')
     PASSING x
     COLUMNS
-      a INT PATH 'x' DEFAULT ascii(_path) - 54);
+      a INT PATH 'x' DEFAULT ascii(_path) - 54
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '*'
     PASSING '<a>a</a>'
     COLUMNS
@@ -1173,27 +1242,32 @@ FROM
       b TEXT PATH '.',
       c TEXT PATH '"hi"',
       d BOOLEAN PATH '. = "a"',
-      e INT PATH 'string-length(.)');
+      e INT PATH 'string-length(.)'
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '*'
     PASSING '<e>pre<!--c1--><?pi arg?><![CDATA[&ent1]]><n2>&amp;deep</n2>post</e>'
     COLUMNS
       x XML PATH '/e/n2',
-      y XML PATH '/');
+      y XML PATH '/'
+  );
 
 SELECT
   *
 FROM
   XMLTABLE(
+
     '.'
     PASSING XMLELEMENT(NAME a)
     COLUMNS
       a VARCHAR(20) PATH '"<foo/>"',
-      b XML PATH '"<foo/>"');
+      b XML PATH '"<foo/>"'
+  );
 
 SELECT xmltext(NULL);
 

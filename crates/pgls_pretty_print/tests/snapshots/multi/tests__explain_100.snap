@@ -61,7 +61,7 @@ SELECT explain_filter('explain (analyze, buffers, format xml) select * from int8
 
 SELECT
   explain_filter(
-  'explain (analyze, serialize, buffers, format yaml) select * from int8_tbl i8'
+    'explain (analyze, serialize, buffers, format yaml) select * from int8_tbl i8'
   );
 
 SELECT explain_filter('explain (buffers, format text) select * from int8_tbl i8');
@@ -70,12 +70,12 @@ SELECT explain_filter('explain (buffers, format json) select * from int8_tbl i8'
 
 SELECT
   explain_filter(
-  'explain verbose select sum(unique1) over w, sum(unique2) over (w order by hundred), sum(tenthous) over (w order by hundred) from tenk1 window w as (partition by ten)'
+    'explain verbose select sum(unique1) over w, sum(unique2) over (w order by hundred), sum(tenthous) over (w order by hundred) from tenk1 window w as (partition by ten)'
   );
 
 SELECT
   explain_filter(
-  'explain verbose select sum(unique1) over w1, sum(unique2) over (w1 order by hundred), sum(tenthous) over (w1 order by hundred rows 10 preceding) from tenk1 window w1 as (partition by ten)'
+    'explain verbose select sum(unique1) over w1, sum(unique2) over (w1 order by hundred), sum(tenthous) over (w1 order by hundred rows 10 preceding) from tenk1 window w1 as (partition by ten)'
   );
 
 SET track_io_timing = 'on';
@@ -92,7 +92,7 @@ SELECT
   TRUE AS "OK"
 FROM
   explain_filter(
-  'explain (settings) select * from int8_tbl i8'
+    'explain (settings) select * from int8_tbl i8'
   )
   AS ln
 WHERE
@@ -101,7 +101,7 @@ WHERE
 
 SELECT
   explain_filter_to_json(
-  'explain (settings, format json) select * from int8_tbl i8'
+    'explain (settings, format json) select * from int8_tbl i8'
   ) #>
   '{0,Settings,plan_cache_mode}';
 
@@ -111,7 +111,7 @@ SELECT explain_filter('explain (generic_plan) select unique1 from tenk1 where th
 
 SELECT
   explain_filter(
-  'explain (analyze, generic_plan) select unique1 from tenk1 where thousand = $1'
+    'explain (analyze, generic_plan) select unique1 from tenk1 where thousand = $1'
   );
 
 SELECT explain_filter('explain (memory) select * from int8_tbl i8');
@@ -126,8 +126,10 @@ PREPARE int8_query AS SELECT * FROM int8_tbl AS i8;;
 
 SELECT explain_filter('explain (memory) execute int8_query');
 
-CREATE TABLE gen_part
-(key1 INT NOT NULL, key2 INT NOT NULL)
+CREATE TABLE gen_part (
+  key1 INT NOT NULL,
+  key2 INT NOT NULL
+)
 PARTITION BY LIST(key1);
 
 CREATE TABLE gen_part_1 PARTITION OF gen_part FOR VALUES IN (1) PARTITION BY RANGE(key2);
@@ -140,7 +142,7 @@ CREATE TABLE gen_part_2 PARTITION OF gen_part FOR VALUES IN (2);
 
 SELECT
   explain_filter(
-  'explain (generic_plan) select key1, key2 from gen_part where key1 = 1 and key2 = $1'
+    'explain (generic_plan) select key1, key2 from gen_part where key1 = 1 and key2 = $1'
   );
 
 DROP TABLE "gen_part";
@@ -157,14 +159,14 @@ SET max_parallel_workers_per_gather = 4;
 
 SELECT
   jsonb_pretty(
-  explain_filter_to_json(
-  'explain (analyze, verbose, buffers, format json)
+    explain_filter_to_json(
+      'explain (analyze, verbose, buffers, format json)
                          select * from tenk1 order by tenthous'
-  ) #-
-  '{0,Plan,Plans,0,Plans,0,Workers}' #-
-  '{0,Plan,Plans,0,Workers}' #-
-  '{0,Plan,Plans,0,Sort Method}' #-
-  '{0,Plan,Plans,0,Sort Space Type}'
+    ) #-
+    '{0,Plan,Plans,0,Plans,0,Workers}' #-
+    '{0,Plan,Plans,0,Workers}' #-
+    '{0,Plan,Plans,0,Sort Method}' #-
+    '{0,Plan,Plans,0,Sort Space Type}'
   );
 
 ROLLBACK;
@@ -190,34 +192,34 @@ SELECT explain_filter('explain (analyze,buffers off,serialize) select * from int
 
 SELECT
   explain_filter(
-  'explain (analyze,serialize text,buffers,timing off) select * from int8_tbl i8'
+    'explain (analyze,serialize text,buffers,timing off) select * from int8_tbl i8'
   );
 
 SELECT
   explain_filter(
-  'explain (analyze,serialize binary,buffers,timing) select * from int8_tbl i8'
+    'explain (analyze,serialize binary,buffers,timing) select * from int8_tbl i8'
   );
 
 SELECT
   explain_filter(
-  'explain (analyze,buffers off,serialize) create temp table explain_temp as select * from int8_tbl i8'
+    'explain (analyze,buffers off,serialize) create temp table explain_temp as select * from int8_tbl i8'
   );
 
 SELECT
   explain_filter(
-  'explain (analyze,buffers off,costs off) select sum(n) over() from generate_series(1,10) a(n)'
+    'explain (analyze,buffers off,costs off) select sum(n) over() from generate_series(1,10) a(n)'
   );
 
 SET work_mem = 64;
 
 SELECT
   explain_filter(
-  'explain (analyze,buffers off,costs off) select sum(n) over() from generate_series(1,2500) a(n)'
+    'explain (analyze,buffers off,costs off) select sum(n) over() from generate_series(1,2500) a(n)'
   );
 
 SELECT
   explain_filter(
-  'explain (analyze,buffers off,costs off) select sum(n) over(partition by m) from (SELECT n < 3 as m, n from generate_series(1,2500) a(n))'
+    'explain (analyze,buffers off,costs off) select sum(n) over(partition by m) from (SELECT n < 3 as m, n from generate_series(1,2500) a(n))'
   );
 
 RESET work_mem;

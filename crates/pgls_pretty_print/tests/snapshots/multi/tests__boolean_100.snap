@@ -173,7 +173,11 @@ SELECT f1 FROM booltbl2 WHERE f1 IS FALSE;
 
 SELECT f1 FROM booltbl2 WHERE f1 IS NOT TRUE;
 
-CREATE TABLE booltbl3 (d TEXT, b BOOLEAN, o INT);
+CREATE TABLE booltbl3 (
+  d TEXT,
+  b BOOLEAN,
+  o INT
+);
 
 INSERT INTO booltbl3 (d, b, o) VALUES ('true', TRUE, 1);
 
@@ -193,7 +197,11 @@ FROM
   booltbl3
 ORDER BY o;
 
-CREATE TABLE booltbl4 (isfalse BOOLEAN, istrue BOOLEAN, isnul BOOLEAN);
+CREATE TABLE booltbl4 (
+  isfalse BOOLEAN,
+  istrue BOOLEAN,
+  isnul BOOLEAN
+);
 
 INSERT INTO booltbl4 VALUES (FALSE, TRUE, NULL);
 

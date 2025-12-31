@@ -3,7 +3,11 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/insert.sql
 snapshot_kind: text
 ---
-CREATE TABLE inserttest (col1 INT, col2 INT NOT NULL, col3 TEXT DEFAULT 'testing');
+CREATE TABLE inserttest (
+  col1 INT,
+  col2 INT NOT NULL,
+  col3 TEXT DEFAULT 'testing'
+);
 
 INSERT INTO inserttest (col1, col2, col3) VALUES (DEFAULT, DEFAULT, DEFAULT);
 
@@ -45,7 +49,11 @@ SELECT col1, col2, char_length(col3) FROM inserttest;
 
 DROP TABLE "inserttest";
 
-CREATE TABLE large_tuple_test (a INT, b TEXT) WITH (fillfactor = 10);
+CREATE TABLE large_tuple_test (
+  a INT,
+  b TEXT
+)
+WITH (fillfactor = 10);
 
 ALTER TABLE large_tuple_test
   ALTER COLUMN b SET STORAGE plain;
@@ -62,14 +70,18 @@ INSERT INTO large_tuple_test SELECT 4, repeat('a', 8126);
 
 DROP TABLE "large_tuple_test";
 
-CREATE TYPE insert_test_type AS ( if1 INT, if2 TEXT[] );
+CREATE TYPE insert_test_type AS (if1 INT, if2 TEXT[]);
 
-CREATE TABLE inserttest (f1 INT, f2 INT[], f3 insert_test_type, f4 insert_test_type[]);
+CREATE TABLE inserttest (
+  f1 INT,
+  f2 INT[],
+  f3 insert_test_type,
+  f4 insert_test_type[]
+);
 
 INSERT INTO inserttest (f2[1], f2[2]) VALUES (1, 2);
 
-INSERT INTO inserttest
-(f2[1], f2[2])
+INSERT INTO inserttest (f2[1], f2[2])
 VALUES
   (3, 4),
   (5, 6);
@@ -80,8 +92,7 @@ INSERT INTO inserttest (f2[1], f2[2]) VALUES (1, DEFAULT);
 
 INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, ARRAY['foo']);
 
-INSERT INTO inserttest
-(f3."if1", f3."if2")
+INSERT INTO inserttest (f3."if1", f3."if2")
 VALUES
   (1, '{foo}'),
   (2, '{bar}');
@@ -92,8 +103,7 @@ INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, DEFAULT);
 
 INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar');
 
-INSERT INTO inserttest
-(f3."if2"[1], f3."if2"[2])
+INSERT INTO inserttest (f3."if2"[1], f3."if2"[2])
 VALUES
   ('foo', 'bar'),
   ('baz', 'quux');
@@ -102,8 +112,7 @@ INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) SELECT 'bear', 'beer';
 
 INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) VALUES ('foo', 'bar');
 
-INSERT INTO inserttest
-(f4[1]."if2"[1], f4[1]."if2"[2])
+INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2])
 VALUES
   ('foo', 'bar'),
   ('baz', 'quux');
@@ -112,20 +121,21 @@ INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) SELECT 'bear', 'beer';
 
 SELECT * FROM inserttest;
 
-CREATE TABLE inserttest2 (f1 BIGINT, f2 TEXT);
+CREATE TABLE inserttest2 (
+  f1 BIGINT,
+  f2 TEXT
+);
 
 CREATE RULE irule1
 AS ON INSERT TO inserttest2
 DO
-  INSERT INTO inserttest
-  (f3."if2"[1], f3."if2"[2])
+  INSERT INTO inserttest (f3."if2"[1], f3."if2"[2])
   VALUES (new.f1, new.f2);;
 
 CREATE RULE irule2
 AS ON INSERT TO inserttest2
 DO
-  INSERT INTO inserttest
-  (f4[1]."if1", f4[1]."if2"[2])
+  INSERT INTO inserttest (f4[1]."if1", f4[1]."if2"[2])
   VALUES
     (1, 'fool'),
     (new.f1, new.f2);;
@@ -140,14 +150,19 @@ CREATE DOMAIN insert_pos_ints AS INT[] CHECK (value[1] > 0);
 
 CREATE DOMAIN insert_test_domain AS insert_test_type CHECK (value.if2[1] IS NOT NULL);
 
-CREATE TABLE inserttesta (f1 INT, f2 insert_pos_ints);
+CREATE TABLE inserttesta (
+  f1 INT,
+  f2 insert_pos_ints
+);
 
-CREATE TABLE inserttestb (f3 insert_test_domain, f4 insert_test_domain[]);
+CREATE TABLE inserttestb (
+  f3 insert_test_domain,
+  f4 insert_test_domain[]
+);
 
 INSERT INTO inserttesta (f2[1], f2[2]) VALUES (1, 2);
 
-INSERT INTO inserttesta
-(f2[1], f2[2])
+INSERT INTO inserttesta (f2[1], f2[2])
 VALUES
   (3, 4),
   (5, 6);
@@ -158,8 +173,7 @@ INSERT INTO inserttesta (f2[1], f2[2]) VALUES (1, DEFAULT);
 
 INSERT INTO inserttesta (f2[1], f2[2]) VALUES (0, 2);
 
-INSERT INTO inserttesta
-(f2[1], f2[2])
+INSERT INTO inserttesta (f2[1], f2[2])
 VALUES
   (3, 4),
   (0, 6);
@@ -168,8 +182,7 @@ INSERT INTO inserttesta (f2[1], f2[2]) SELECT 0, 8;
 
 INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, ARRAY['foo']);
 
-INSERT INTO inserttestb
-(f3."if1", f3."if2")
+INSERT INTO inserttestb (f3."if1", f3."if2")
 VALUES
   (1, '{foo}'),
   (2, '{bar}');
@@ -180,8 +193,7 @@ INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, DEFAULT);
 
 INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, ARRAY[NULL]);
 
-INSERT INTO inserttestb
-(f3."if1", f3."if2")
+INSERT INTO inserttestb (f3."if1", f3."if2")
 VALUES
   (1, '{null}'),
   (2, '{bar}');
@@ -190,8 +202,7 @@ INSERT INTO inserttestb (f3."if1", f3."if2") SELECT 3, '{null,quux}';
 
 INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar');
 
-INSERT INTO inserttestb
-(f3."if2"[1], f3."if2"[2])
+INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2])
 VALUES
   ('foo', 'bar'),
   ('baz', 'quux');
@@ -200,14 +211,12 @@ INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) SELECT 'bear', 'beer';
 
 INSERT INTO inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2]) VALUES (ROW(1, '{x}'), 'foo', 'bar');
 
-INSERT INTO inserttestb
-(f3, f4[1]."if2"[1], f4[1]."if2"[2])
+INSERT INTO inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
 VALUES
   (ROW(1, '{x}'), 'foo', 'bar'),
   (ROW(2, '{y}'), 'baz', 'quux');
 
-INSERT INTO inserttestb
-(f3, f4[1]."if2"[1], f4[1]."if2"[2])
+INSERT INTO inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
 SELECT
   CAST(ROW(1, '{x}') AS insert_test_domain),
   'bear',
@@ -217,20 +226,21 @@ SELECT * FROM inserttesta;
 
 SELECT * FROM inserttestb;
 
-CREATE TABLE inserttest2 (f1 BIGINT, f2 TEXT);
+CREATE TABLE inserttest2 (
+  f1 BIGINT,
+  f2 TEXT
+);
 
 CREATE RULE irule1
 AS ON INSERT TO inserttest2
 DO
-  INSERT INTO inserttestb
-  (f3."if2"[1], f3."if2"[2])
+  INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2])
   VALUES (new.f1, new.f2);;
 
 CREATE RULE irule2
 AS ON INSERT TO inserttest2
 DO
-  INSERT INTO inserttestb
-  (f4[1]."if1", f4[1]."if2"[2])
+  INSERT INTO inserttestb (f4[1]."if1", f4[1]."if2"[2])
   VALUES
     (1, 'fool'),
     (new.f1, new.f2);;
@@ -272,8 +282,10 @@ DROP DOMAIN insert_nnarray;
 
 DROP TYPE insert_test_type CASCADE;
 
-CREATE TABLE range_parted
-(a TEXT, b INT)
+CREATE TABLE range_parted (
+  a TEXT,
+  b INT
+)
 PARTITION BY RANGE(a, (b + 0));
 
 INSERT INTO range_parted VALUES ('a', 11);
@@ -302,8 +314,10 @@ INSERT INTO part1 VALUES (NULL);
 
 INSERT INTO part1 VALUES (1);
 
-CREATE TABLE list_parted
-(a TEXT, b INT)
+CREATE TABLE list_parted (
+  a TEXT,
+  b INT
+)
 PARTITION BY LIST((lower(a)));
 
 CREATE TABLE part_aa_bb PARTITION OF list_parted FOR VALUES IN ('aa', 'bb');
@@ -458,8 +472,7 @@ GROUP BY 1,
   2
 ORDER BY 1;
 
-CREATE TABLE hash_parted
-(a INT)
+CREATE TABLE hash_parted (a INT)
 PARTITION BY HASH(a part_test_int4_ops);
 
 CREATE TABLE hpart0 PARTITION OF hash_parted FOR VALUES WITH (MODULUS 4, REMAINDER 0);
@@ -493,8 +506,7 @@ DROP TABLE "range_parted", "list_parted";
 
 DROP TABLE "hash_parted";
 
-CREATE TABLE list_parted
-(a INT)
+CREATE TABLE list_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE part_default PARTITION OF list_parted DEFAULT;
@@ -509,12 +521,16 @@ SELECT CAST(tableoid AS REGCLASS), a FROM list_parted;
 
 DROP TABLE "list_parted";
 
-CREATE TABLE mlparted
-(a INT, b INT)
+CREATE TABLE mlparted (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE mlparted1
-(b INT NOT NULL, a INT NOT NULL)
+CREATE TABLE mlparted1 (
+  b INT NOT NULL,
+  a INT NOT NULL
+)
 PARTITION BY RANGE((b + 0));
 
 CREATE TABLE mlparted11 (LIKE mlparted1);
@@ -574,10 +590,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER mlparted11_trig
-BEFORE INSERT
-ON mlparted11
-FOR EACH ROW
-EXECUTE FUNCTION mlparted11_trig_fn();
+  BEFORE INSERT
+  ON mlparted11
+  FOR EACH ROW
+  EXECUTE FUNCTION mlparted11_trig_fn();
 
 INSERT INTO mlparted VALUES (1, 2);
 
@@ -587,8 +603,10 @@ DROP FUNCTION mlparted11_trig_fn();
 
 INSERT INTO mlparted1 (a, b) VALUES (2, 3);
 
-CREATE TABLE lparted_nonullpart
-(a INT, b CHAR(1))
+CREATE TABLE lparted_nonullpart (
+  a INT,
+  b CHAR(1)
+)
 PARTITION BY LIST(b);
 
 CREATE TABLE lparted_nonullpart_a PARTITION OF lparted_nonullpart FOR VALUES IN ('a');
@@ -602,7 +620,10 @@ ALTER TABLE mlparted
 
 CREATE TABLE mlparted12 PARTITION OF mlparted1 FOR VALUES FROM (5) TO (10);
 
-CREATE TABLE mlparted2 (b INT NOT NULL, a INT NOT NULL);
+CREATE TABLE mlparted2 (
+  b INT NOT NULL,
+  a INT NOT NULL
+);
 
 ALTER TABLE mlparted
   ATTACH PARTITION
@@ -627,8 +648,7 @@ ins (a,
 b,
 c)
 AS (
-  INSERT INTO mlparted
-  (b, a)
+  INSERT INTO mlparted (b, a)
   SELECT s.a, 1 FROM generate_series(2, 39) AS s (a)
   RETURNING CAST(tableoid AS REGCLASS),
   *
@@ -647,11 +667,18 @@ ORDER BY 1;
 ALTER TABLE mlparted
   ADD COLUMN c TEXT;
 
-CREATE TABLE mlparted5
-(c TEXT, a INT NOT NULL, b INT NOT NULL)
+CREATE TABLE mlparted5 (
+  c TEXT,
+  a INT NOT NULL,
+  b INT NOT NULL
+)
 PARTITION BY LIST(c);
 
-CREATE TABLE mlparted5a (a INT NOT NULL, c TEXT, b INT NOT NULL);
+CREATE TABLE mlparted5a (
+  a INT NOT NULL,
+  c TEXT,
+  b INT NOT NULL
+);
 
 ALTER TABLE mlparted5
   ATTACH PARTITION
@@ -672,10 +699,10 @@ AS ' begin new.c = ''b''; return new; end; '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER mlparted5abrtrig
-BEFORE INSERT
-ON mlparted5a
-FOR EACH ROW
-EXECUTE FUNCTION mlparted5abrtrig_func();
+  BEFORE INSERT
+  ON mlparted5a
+  FOR EACH ROW
+  EXECUTE FUNCTION mlparted5abrtrig_func();
 
 INSERT INTO mlparted5 (a, b, c) VALUES (1, 40, 'a');
 
@@ -732,7 +759,12 @@ PARTITION BY LIST(c);
 
 CREATE TABLE mlparted5_a PARTITION OF mlparted5_ab FOR VALUES IN ('a');
 
-CREATE TABLE mlparted5_b (d INT, b INT, c TEXT, a INT);
+CREATE TABLE mlparted5_b (
+  d INT,
+  b INT,
+  c TEXT,
+  a INT
+);
 
 ALTER TABLE mlparted5_ab
   ATTACH PARTITION
@@ -781,8 +813,10 @@ ALTER TABLE mlparted
 
 DROP TABLE "mlparted5";
 
-CREATE TABLE key_desc
-(a INT, b INT)
+CREATE TABLE key_desc (
+  a INT,
+  b INT
+)
 PARTITION BY LIST((a + 0));
 
 CREATE TABLE key_desc_1 PARTITION OF key_desc FOR VALUES IN (1) PARTITION BY RANGE(b);
@@ -817,8 +851,11 @@ DROP ROLE regress_insert_other_user;
 
 DROP TABLE "key_desc", "key_desc_1";
 
-CREATE TABLE mcrparted
-(a INT, b INT, c INT)
+CREATE TABLE mcrparted (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a, (abs(b)), c);
 
 CREATE TABLE mcrparted0
@@ -921,8 +958,10 @@ SELECT CAST(CAST(tableoid AS REGCLASS) AS TEXT), * FROM mcrparted ORDER BY 1;
 
 DROP TABLE "mcrparted";
 
-CREATE TABLE brtrigpartcon
-(a INT, b TEXT)
+CREATE TABLE brtrigpartcon (
+  a INT,
+  b TEXT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE brtrigpartcon1 PARTITION OF brtrigpartcon FOR VALUES IN (1);
@@ -933,16 +972,20 @@ AS 'begin new.a := 2; return new; end'
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER brtrigpartcon1trig
-BEFORE INSERT
-ON brtrigpartcon1
-FOR EACH ROW
-EXECUTE FUNCTION brtrigpartcon1trigf();
+  BEFORE INSERT
+  ON brtrigpartcon1
+  FOR EACH ROW
+  EXECUTE FUNCTION brtrigpartcon1trigf();
 
 INSERT INTO brtrigpartcon VALUES (1, 'hi there');
 
 INSERT INTO brtrigpartcon1 VALUES (1, 'hi there');
 
-CREATE TABLE inserttest3 (f1 TEXT DEFAULT 'foo', f2 TEXT DEFAULT 'bar', f3 INT);
+CREATE TABLE inserttest3 (
+  f1 TEXT DEFAULT 'foo',
+  f2 TEXT DEFAULT 'bar',
+  f3 INT
+);
 
 CREATE ROLE regress_coldesc_role;
 
@@ -961,8 +1004,7 @@ AS (
   VALUES (1, 'hi there')
   RETURNING 1
 )
-INSERT INTO inserttest3
-(f3)
+INSERT INTO inserttest3 (f3)
 SELECT * FROM result;
 
 RESET role;
@@ -979,13 +1021,22 @@ DROP TABLE "brtrigpartcon";
 
 DROP FUNCTION brtrigpartcon1trigf();
 
-CREATE TABLE donothingbrtrig_test
-(a INT, b TEXT)
+CREATE TABLE donothingbrtrig_test (
+  a INT,
+  b TEXT
+)
 PARTITION BY LIST(a);
 
-CREATE TABLE donothingbrtrig_test1 (b TEXT, a INT);
+CREATE TABLE donothingbrtrig_test1 (
+  b TEXT,
+  a INT
+);
 
-CREATE TABLE donothingbrtrig_test2 (c TEXT, b TEXT, a INT);
+CREATE TABLE donothingbrtrig_test2 (
+  c TEXT,
+  b TEXT,
+  a INT
+);
 
 ALTER TABLE donothingbrtrig_test2
   DROP COLUMN c;
@@ -996,16 +1047,16 @@ AS 'begin raise notice ''b: %'', new.b; return NULL; end'
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER donothingbrtrig1
-BEFORE INSERT
-ON donothingbrtrig_test1
-FOR EACH ROW
-EXECUTE FUNCTION donothingbrtrig_func();
+  BEFORE INSERT
+  ON donothingbrtrig_test1
+  FOR EACH ROW
+  EXECUTE FUNCTION donothingbrtrig_func();
 
 CREATE TRIGGER donothingbrtrig2
-BEFORE INSERT
-ON donothingbrtrig_test2
-FOR EACH ROW
-EXECUTE FUNCTION donothingbrtrig_func();
+  BEFORE INSERT
+  ON donothingbrtrig_test2
+  FOR EACH ROW
+  EXECUTE FUNCTION donothingbrtrig_func();
 
 ALTER TABLE donothingbrtrig_test
   ATTACH PARTITION
@@ -1028,8 +1079,10 @@ DROP TABLE "donothingbrtrig_test";
 
 DROP FUNCTION donothingbrtrig_func();
 
-CREATE TABLE mcrparted
-(a TEXT, b INT)
+CREATE TABLE mcrparted (
+  a TEXT,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE mcrparted1_lt_b
@@ -1092,8 +1145,7 @@ SELECT CAST(tableoid AS REGCLASS), * FROM mcrparted ORDER BY a, b;
 
 DROP TABLE "mcrparted";
 
-CREATE TABLE returningwrtest
-(a INT)
+CREATE TABLE returningwrtest (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE returningwrtest1 PARTITION OF returningwrtest FOR VALUES IN (1);
@@ -1103,7 +1155,11 @@ INSERT INTO returningwrtest VALUES (1) RETURNING returningwrtest;
 ALTER TABLE returningwrtest
   ADD COLUMN b TEXT;
 
-CREATE TABLE returningwrtest2 (b TEXT, c INT, a INT);
+CREATE TABLE returningwrtest2 (
+  b TEXT,
+  c INT,
+  a INT
+);
 
 ALTER TABLE returningwrtest2
   DROP COLUMN c;

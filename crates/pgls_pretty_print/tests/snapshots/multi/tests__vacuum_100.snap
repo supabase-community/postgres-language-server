@@ -98,12 +98,7 @@ IMMUTABLE
 LANGUAGE "sql"
 AS 'SELECT $1 FROM public.do_analyze()';
 
-CREATE INDEX
-ON vaccluster
-USING btree
-(
-  (wrap_do_analyze(i))
-);
+CREATE INDEX ON vaccluster USING btree ((wrap_do_analyze(i)));
 
 INSERT INTO vaccluster
 VALUES
@@ -130,8 +125,7 @@ BEGIN;
 
 CREATE TABLE past_inh_parent ();
 
-CREATE TABLE past_inh_child
-()
+CREATE TABLE past_inh_child ()
 INHERITS (past_inh_parent);
 
 INSERT INTO past_inh_child DEFAULT VALUES;
@@ -152,8 +146,7 @@ COMMIT;
 
 BEGIN;
 
-CREATE TABLE past_parted
-(i INT)
+CREATE TABLE past_parted (i INT)
 PARTITION BY LIST(i);
 
 CREATE TABLE past_part PARTITION OF past_parted FOR VALUES IN (1);
@@ -187,69 +180,34 @@ VACUUM (FULL) vactst;
 
 VACUUM (DISABLE_PAGE_SKIPPING) vaccluster;
 
-CREATE TABLE pvactst (i INT, a INT[], p point) WITH (autovacuum_enabled = off);
+CREATE TABLE pvactst (
+  i INT,
+  a INT[],
+  p point
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO pvactst SELECT i, ARRAY[1, 2, 3], point(i, i + 1) FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX "btree_pvactst"
-ON pvactst
-USING btree
-(
-  i
-);
+CREATE INDEX "btree_pvactst" ON pvactst USING btree (i);
 
-CREATE INDEX "hash_pvactst"
-ON pvactst
-USING hash
-(
-  i
-);
+CREATE INDEX "hash_pvactst" ON pvactst USING hash (i);
 
-CREATE INDEX "brin_pvactst"
-ON pvactst
-USING brin
-(
-  i
-);
+CREATE INDEX "brin_pvactst" ON pvactst USING brin (i);
 
-CREATE INDEX "gin_pvactst"
-ON pvactst
-USING gin
-(
-  a
-);
+CREATE INDEX "gin_pvactst" ON pvactst USING gin (a);
 
-CREATE INDEX "gist_pvactst"
-ON pvactst
-USING gist
-(
-  p
-);
+CREATE INDEX "gist_pvactst" ON pvactst USING gist (p);
 
-CREATE INDEX "spgist_pvactst"
-ON pvactst
-USING spgist
-(
-  p
-);
+CREATE INDEX "spgist_pvactst" ON pvactst USING spgist (p);
 
 CREATE TABLE pvactst2 (i INT) WITH (autovacuum_enabled = off);
 
 INSERT INTO pvactst2 SELECT generate_series(1, 1000);
 
-CREATE INDEX
-ON pvactst2
-USING btree
-(
-  i
-);
+CREATE INDEX ON pvactst2 USING btree (i);
 
-CREATE INDEX
-ON pvactst2
-USING btree
-(
-  i
-);
+CREATE INDEX ON pvactst2 USING btree (i);
 
 SET min_parallel_index_scan_size = 0;
 
@@ -283,12 +241,7 @@ RESET maintenance_work_mem;
 
 CREATE TEMPORARY TABLE tmp (a INT PRIMARY KEY);
 
-CREATE INDEX "tmp_idx1"
-ON tmp
-USING btree
-(
-  a
-);
+CREATE INDEX "tmp_idx1" ON tmp USING btree (a);
 
 VACUUM (PARALLEL 1, FULL "false") tmp;
 
@@ -300,14 +253,12 @@ DROP TABLE "pvactst";
 
 DROP TABLE "pvactst2";
 
-CREATE TABLE no_index_cleanup (i INT PRIMARY KEY, t TEXT);
-
-CREATE INDEX "no_index_cleanup_idx"
-ON no_index_cleanup
-USING btree
-(
-  t
+CREATE TABLE no_index_cleanup (
+  i INT PRIMARY KEY,
+  t TEXT
 );
+
+CREATE INDEX "no_index_cleanup_idx" ON no_index_cleanup USING btree (t);
 
 ALTER TABLE no_index_cleanup
   ALTER COLUMN t SET STORAGE external;
@@ -357,8 +308,10 @@ VACUUM (INDEX_CLEANUP auto) vactst;
 
 VACUUM (INDEX_CLEANUP "false", FREEZE "true") vaccluster;
 
-CREATE TEMPORARY TABLE vac_truncate_test
-(i INT NOT NULL, j TEXT)
+CREATE TEMPORARY TABLE vac_truncate_test (
+  i INT NOT NULL,
+  j TEXT
+)
 WITH (
   vacuum_truncate = 'true',
   autovacuum_enabled = 'false'
@@ -405,8 +358,10 @@ SELECT pg_relation_size('vac_truncate_test') = 0;
 
 DROP TABLE "vac_truncate_test";
 
-CREATE TABLE vacparted
-(a INT, b CHAR(1))
+CREATE TABLE vacparted (
+  a INT,
+  b CHAR(1)
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE vacparted1 PARTITION OF vacparted FOR VALUES IN (1);
@@ -425,8 +380,10 @@ VACUUM (ANALYZE) vacparted (a, b, a);
 
 ANALYZE vacparted (a, b, b);
 
-CREATE TABLE vacparted_i
-(a INT PRIMARY KEY, b VARCHAR(100))
+CREATE TABLE vacparted_i (
+  a INT PRIMARY KEY,
+  b VARCHAR(100)
+)
 PARTITION BY HASH(a);
 
 CREATE TABLE vacparted_i1 PARTITION OF vacparted_i FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -485,8 +442,10 @@ ANALYZE vactst, vactst;
 
 COMMIT;
 
-CREATE TABLE only_parted
-(a INT, b TEXT)
+CREATE TABLE only_parted (
+  a INT,
+  b TEXT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE only_parted1 PARTITION OF only_parted FOR VALUES IN (1);
@@ -525,14 +484,15 @@ ORDER BY relname;
 
 DROP TABLE "only_parted";
 
-CREATE TABLE only_inh_parent (a INT PRIMARY KEY, b TEXT);
+CREATE TABLE only_inh_parent (
+  a INT PRIMARY KEY,
+  b TEXT
+);
 
-CREATE TABLE only_inh_child
-()
+CREATE TABLE only_inh_child ()
 INHERITS (only_inh_parent);
 
-INSERT INTO only_inh_child
-(a, b)
+INSERT INTO only_inh_child (a, b)
 VALUES
   (1, 'aaa'),
   (2, 'bbb'),
@@ -632,7 +592,10 @@ ANALYZE vactst;
 
 COMMIT;
 
-CREATE TABLE vac_option_tab (a INT, t TEXT);
+CREATE TABLE vac_option_tab (
+  a INT,
+  t TEXT
+);
 
 INSERT INTO vac_option_tab SELECT a, 't' || a FROM generate_series(1, 10) AS a;
 
@@ -742,8 +705,7 @@ DROP TABLE "no_index_cleanup";
 
 CREATE TABLE vacowned (a INT);
 
-CREATE TABLE vacowned_parted
-(a INT)
+CREATE TABLE vacowned_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE vacowned_part1 PARTITION OF vacowned_parted FOR VALUES IN (1);
@@ -879,7 +841,10 @@ DROP TABLE "vacowned_parted";
 
 DROP ROLE regress_vacuum;
 
-CREATE TABLE vac_rewrite_toast (id INT, f1 TEXT STORAGE plain);
+CREATE TABLE vac_rewrite_toast (
+  id INT,
+  f1 TEXT STORAGE plain
+);
 
 INSERT INTO vac_rewrite_toast VALUES (1, repeat('a', 7000));
 

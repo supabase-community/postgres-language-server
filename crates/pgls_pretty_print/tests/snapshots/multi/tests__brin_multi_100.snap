@@ -3,8 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/brin_multi.sql
 snapshot_kind: text
 ---
-CREATE TABLE brintest_multi
-(
+CREATE TABLE brintest_multi (
   int8col BIGINT,
   int2col SMALLINT,
   int4col INT,
@@ -38,10 +37,10 @@ SELECT
   (four + 1.0) / (hundred + 1),
   CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format(
-  '%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred)
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
   )
   AS MACADDR),
   CAST(substr(fipshash(CAST(unique1 AS TEXT)), 1, 16)
@@ -57,9 +56,9 @@ SELECT
   AS TIMESTAMP WITH TIME ZONE) +
   thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
-  justify_hours(
-  tenthous * CAST('12 minutes' AS INTERVAL)
-  )
+    justify_hours(
+      tenthous * CAST('12 minutes' AS INTERVAL)
+    )
   ),
   CAST('01:30:20+02' AS TIME WITH TIME ZONE) +
   hundred * CAST('15 seconds' AS INTERVAL),
@@ -67,15 +66,15 @@ SELECT
   even /
   (hundred + 1),
   CAST(format(
-  '%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000')
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
   )
   AS UUID),
   CAST(format('%s/%s%s', odd, even, tenthous)
@@ -85,8 +84,7 @@ FROM
 ORDER BY unique2
 LIMIT 100;
 
-INSERT INTO brintest_multi
-(inetcol, cidrcol)
+INSERT INTO brintest_multi (inetcol, cidrcol)
 SELECT
   CAST('fe80::6e40:8ff:fea9:8c46' AS INET) +
   tenthous,
@@ -169,8 +167,7 @@ USING brin
 )
 WITH (pages_per_range = 1);
 
-CREATE TABLE brinopers_multi
-(
+CREATE TABLE brinopers_multi (
   colname NAME,
   typ TEXT,
   op TEXT[],
@@ -496,10 +493,10 @@ SELECT
   (four + 1.0) / (hundred + 1),
   CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format(
-  '%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred)
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
   )
   AS MACADDR),
   CAST(substr(fipshash(CAST(unique1 AS TEXT)), 1, 16)
@@ -515,9 +512,9 @@ SELECT
   AS TIMESTAMP WITH TIME ZONE) +
   thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
-  justify_hours(
-  tenthous * CAST('12 minutes' AS INTERVAL)
-  )
+    justify_hours(
+      tenthous * CAST('12 minutes' AS INTERVAL)
+    )
   ),
   CAST('01:30:20' AS TIME WITH TIME ZONE) +
   hundred * CAST('15 seconds' AS INTERVAL),
@@ -525,15 +522,15 @@ SELECT
   even /
   (hundred + 1),
   CAST(format(
-  '%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000')
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
   )
   AS UUID),
   CAST(format('%s/%s%s', odd, even, tenthous)
@@ -556,12 +553,7 @@ UPDATE brintest_multi SET int8col = int8col * int4col;
 
 CREATE TABLE brin_test_inet (a INET);
 
-CREATE INDEX
-ON brin_test_inet
-USING brin
-(
-  a inet_minmax_multi_ops
-);
+CREATE INDEX ON brin_test_inet USING brin (a inet_minmax_multi_ops);
 
 INSERT INTO brin_test_inet VALUES ('127.0.0.1/0');
 
@@ -587,12 +579,7 @@ CREATE TABLE brin_large_range (a INT);
 
 INSERT INTO brin_large_range SELECT i FROM generate_series(1, 10000) AS s (i);
 
-CREATE INDEX "brin_large_range_idx"
-ON brin_large_range
-USING brin
-(
-  a int4_minmax_multi_ops
-);
+CREATE INDEX "brin_large_range_idx" ON brin_large_range USING brin (a int4_minmax_multi_ops);
 
 DROP TABLE "brin_large_range";
 
@@ -629,7 +616,10 @@ SELECT brin_summarize_range('brin_summarize_multi_idx', -1);
 
 SELECT brin_summarize_range('brin_summarize_multi_idx', 4294967296);
 
-CREATE TABLE brin_test_multi (a INT, b INT);
+CREATE TABLE brin_test_multi (
+  a INT,
+  b INT
+);
 
 INSERT INTO brin_test_multi SELECT x / 100, x % 100 FROM generate_series(1, 10000) AS x (x);
 
@@ -655,7 +645,11 @@ SELECT * FROM brin_test_multi WHERE a = 1;
 
 SELECT * FROM brin_test_multi WHERE b = 1;
 
-CREATE TABLE brin_test_multi_1 (a INT, b BIGINT) WITH (fillfactor = 10);
+CREATE TABLE brin_test_multi_1 (
+  a INT,
+  b BIGINT
+)
+WITH (fillfactor = 10);
 
 INSERT INTO brin_test_multi_1
 SELECT
@@ -782,7 +776,7 @@ SELECT
   CAST(v AS UUID)
 FROM
   (SELECT
-    ROW_NUMBER() OVER ( ORDER BY v) AS c,
+    ROW_NUMBER() OVER (ORDER BY v) AS c,
     v
   FROM
     (SELECT
@@ -822,7 +816,7 @@ SELECT
   CAST(v AS UUID)
 FROM
   (SELECT
-    ROW_NUMBER() OVER ( ORDER BY v) AS c,
+    ROW_NUMBER() OVER (ORDER BY v) AS c,
     v
   FROM
     (SELECT
@@ -921,9 +915,9 @@ SELECT
   i
 FROM
   generate_series(
-  CAST('2000-01-01' AS TIMESTAMP),
-  CAST('2000-02-09' AS TIMESTAMP),
-  CAST('1 day' AS INTERVAL)
+    CAST('2000-01-01' AS TIMESTAMP),
+    CAST('2000-02-09' AS TIMESTAMP),
+    CAST('1 day' AS INTERVAL)
   )
   AS s (i);
 

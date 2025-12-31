@@ -15,8 +15,10 @@ SELECT pg_partition_root(NULL);
 
 SELECT pg_partition_root(0);
 
-CREATE TABLE ptif_test
-(a INT, b INT)
+CREATE TABLE ptif_test (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE ptif_test0
@@ -45,74 +47,39 @@ SELECT pg_partition_root('ptif_test01');
 
 SELECT pg_partition_root('ptif_test3');
 
-CREATE INDEX "ptif_test_index"
-ON ONLY ptif_test
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test_index" ON ONLY ptif_test USING btree (a);
 
-CREATE INDEX "ptif_test0_index"
-ON ONLY ptif_test0
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test0_index" ON ONLY ptif_test0 USING btree (a);
 
 ALTER INDEX ptif_test_index
   ATTACH PARTITION
   ptif_test0_index;
 
-CREATE INDEX "ptif_test01_index"
-ON ptif_test01
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test01_index" ON ptif_test01 USING btree (a);
 
 ALTER INDEX ptif_test0_index
   ATTACH PARTITION
   ptif_test01_index;
 
-CREATE INDEX "ptif_test1_index"
-ON ONLY ptif_test1
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test1_index" ON ONLY ptif_test1 USING btree (a);
 
 ALTER INDEX ptif_test_index
   ATTACH PARTITION
   ptif_test1_index;
 
-CREATE INDEX "ptif_test11_index"
-ON ptif_test11
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test11_index" ON ptif_test11 USING btree (a);
 
 ALTER INDEX ptif_test1_index
   ATTACH PARTITION
   ptif_test11_index;
 
-CREATE INDEX "ptif_test2_index"
-ON ptif_test2
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test2_index" ON ptif_test2 USING btree (a);
 
 ALTER INDEX ptif_test_index
   ATTACH PARTITION
   ptif_test2_index;
 
-CREATE INDEX "ptif_test3_index"
-ON ptif_test3
-USING btree
-(
-  a
-);
+CREATE INDEX "ptif_test3_index" ON ptif_test3 USING btree (a);
 
 ALTER INDEX ptif_test_index
   ATTACH PARTITION
@@ -172,7 +139,7 @@ SELECT
   isleaf
 FROM
   pg_partition_tree(
-  pg_partition_root('ptif_test01')
+    pg_partition_root('ptif_test01')
   )
   AS p
   INNER JOIN
@@ -221,7 +188,7 @@ SELECT
   isleaf
 FROM
   pg_partition_tree(
-  pg_partition_root('ptif_test01_index')
+    pg_partition_root('ptif_test01_index')
   )
   AS p
   INNER JOIN
@@ -251,8 +218,7 @@ CREATE MATERIALIZED VIEW ptif_test_matview AS SELECT 1;
 
 CREATE TABLE ptif_li_parent ();
 
-CREATE TABLE ptif_li_child
-()
+CREATE TABLE ptif_li_child ()
 INHERITS (ptif_li_parent);
 
 SELECT * FROM pg_partition_tree('ptif_test_view');

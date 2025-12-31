@@ -13,9 +13,17 @@ DROP TABLE IF EXISTS "target";
 
 DROP TABLE IF EXISTS "source";
 
-CREATE TABLE target (tid INT, balance INT) WITH (autovacuum_enabled = off);
+CREATE TABLE target (
+  tid INT,
+  balance INT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE source (sid INT, delta INT) WITH (autovacuum_enabled = off);
+CREATE TABLE source (
+  sid INT,
+  delta INT
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO target VALUES (1, 10);
 
@@ -41,9 +49,17 @@ ALTER TABLE target
 ALTER TABLE source
   OWNER TO regress_merge_privs;
 
-CREATE TABLE target2 (tid INT, balance INT) WITH (autovacuum_enabled = off);
+CREATE TABLE target2 (
+  tid INT,
+  balance INT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE source2 (sid INT, delta INT) WITH (autovacuum_enabled = off);
+CREATE TABLE source2 (
+  sid INT,
+  delta INT
+)
+WITH (autovacuum_enabled = off);
 
 ALTER TABLE target2
   OWNER TO regress_merge_no_privs;
@@ -257,9 +273,17 @@ BEGIN;
 
 ROLLBACK;
 
-CREATE TABLE wq_target (tid INT NOT NULL, balance INT DEFAULT -1) WITH (autovacuum_enabled = off);
+CREATE TABLE wq_target (
+  tid INT NOT NULL,
+  balance INT DEFAULT -1
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE wq_source (balance INT, sid INT) WITH (autovacuum_enabled = off);
+CREATE TABLE wq_source (
+  balance INT,
+  sid INT
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO wq_source (sid, balance) VALUES (1, 100);
 
@@ -342,76 +366,52 @@ END;
 ';
 
 CREATE TRIGGER merge_bsi
-BEFORE INSERT
-ON target
-FOR EACH STATEMENT
-EXECUTE FUNCTION merge_trigfunc();
+  BEFORE INSERT
+  ON target
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_bsu
-BEFORE UPDATE
-ON target
-FOR EACH STATEMENT
-EXECUTE FUNCTION merge_trigfunc();
+  BEFORE UPDATE
+  ON target
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_bsd
-BEFORE DELETE
-ON target
-FOR EACH STATEMENT
-EXECUTE FUNCTION merge_trigfunc();
+  BEFORE DELETE
+  ON target
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_asi
-AFTER INSERT
-ON target
-FOR EACH STATEMENT
-EXECUTE FUNCTION merge_trigfunc();
+  AFTER INSERT
+  ON target
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_asu
-AFTER UPDATE
-ON target
-FOR EACH STATEMENT
-EXECUTE FUNCTION merge_trigfunc();
+  AFTER UPDATE
+  ON target
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_asd
-AFTER DELETE
-ON target
-FOR EACH STATEMENT
-EXECUTE FUNCTION merge_trigfunc();
+  AFTER DELETE
+  ON target
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION merge_trigfunc();
 
-CREATE TRIGGER merge_bri
-BEFORE INSERT
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION merge_trigfunc();
+CREATE TRIGGER merge_bri BEFORE INSERT ON target FOR EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
-CREATE TRIGGER merge_bru
-BEFORE UPDATE
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION merge_trigfunc();
+CREATE TRIGGER merge_bru BEFORE UPDATE ON target FOR EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
-CREATE TRIGGER merge_brd
-BEFORE DELETE
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION merge_trigfunc();
+CREATE TRIGGER merge_brd BEFORE DELETE ON target FOR EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
-CREATE TRIGGER merge_ari
-AFTER INSERT
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION merge_trigfunc();
+CREATE TRIGGER merge_ari AFTER INSERT ON target FOR EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
-CREATE TRIGGER merge_aru
-AFTER UPDATE
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION merge_trigfunc();
+CREATE TRIGGER merge_aru AFTER UPDATE ON target FOR EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
-CREATE TRIGGER merge_ard
-AFTER DELETE
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION merge_trigfunc();
+CREATE TRIGGER merge_ard AFTER DELETE ON target FOR EACH ROW EXECUTE FUNCTION merge_trigfunc();
 
 BEGIN;
 
@@ -441,10 +441,10 @@ END;
 SELECT * FROM target FULL OUTER JOIN source ON sid = tid;
 
 CREATE TRIGGER merge_skip
-BEFORE INSERT OR DELETE OR UPDATE
-ON target
-FOR EACH ROW
-EXECUTE FUNCTION skip_merge_op();
+  BEFORE INSERT OR DELETE OR UPDATE
+  ON target
+  FOR EACH ROW
+  EXECUTE FUNCTION skip_merge_op();
 
 DO
 $$
@@ -568,19 +568,26 @@ SELECT * FROM target ORDER BY tid;
 
 ROLLBACK;
 
-CREATE TABLE sq_target (tid INT NOT NULL, balance INT) WITH (autovacuum_enabled = off);
+CREATE TABLE sq_target (
+  tid INT NOT NULL,
+  balance INT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE sq_source (delta INT, sid INT, balance INT DEFAULT 0) WITH (autovacuum_enabled = off);
+CREATE TABLE sq_source (
+  delta INT,
+  sid INT,
+  balance INT DEFAULT 0
+)
+WITH (autovacuum_enabled = off);
 
-INSERT INTO sq_target
-(tid, balance)
+INSERT INTO sq_target (tid, balance)
 VALUES
   (1, 100),
   (2, 200),
   (3, 300);
 
-INSERT INTO sq_source
-(sid, delta)
+INSERT INTO sq_source (sid, delta)
 VALUES
   (1, 10),
   (2, 20),
@@ -637,7 +644,10 @@ SELECT * FROM sq_target ORDER BY tid;
 
 BEGIN;
 
-CREATE TABLE merge_actions (action TEXT, abbrev TEXT);
+CREATE TABLE merge_actions (
+  action TEXT,
+  abbrev TEXT
+);
 
 INSERT INTO merge_actions
 VALUES
@@ -651,7 +661,10 @@ SELECT "mergesupport#25" FROM sq_target;
 
 UPDATE sq_target SET balance = balance + 1 RETURNING "mergesupport#25";
 
-CREATE TABLE sq_target_merge_log (tid INT NOT NULL, last_change TEXT);
+CREATE TABLE sq_target_merge_log (
+  tid INT NOT NULL,
+  last_change TEXT
+);
 
 INSERT INTO sq_target_merge_log VALUES (1, 'Original value');
 
@@ -840,9 +853,17 @@ FROM
 
 ROLLBACK;
 
-CREATE TABLE ex_mtarget (a INT, b INT) WITH (autovacuum_enabled = off);
+CREATE TABLE ex_mtarget (
+  a INT,
+  b INT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE ex_msource (a INT, b INT) WITH (autovacuum_enabled = off);
+CREATE TABLE ex_msource (
+  a INT,
+  b INT
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO ex_mtarget SELECT i, i * 10 FROM generate_series(1, 100, 2) AS i;
 
@@ -866,7 +887,7 @@ END;
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED THEN
 	UPDATE SET b = t.b + 1'
@@ -874,7 +895,7 @@ WHEN MATCHED THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED AND t.a < 10 THEN
 	UPDATE SET b = t.b + 1'
@@ -882,7 +903,7 @@ WHEN MATCHED AND t.a < 10 THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED AND t.a < 10 THEN
 	UPDATE SET b = t.b + 1
@@ -892,7 +913,7 @@ WHEN MATCHED AND t.a >= 10 AND t.a <= 20 THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN NOT MATCHED AND s.a < 10 THEN
 	INSERT VALUES (a, b)'
@@ -900,7 +921,7 @@ WHEN NOT MATCHED AND s.a < 10 THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN MATCHED AND t.a < 10 THEN
 	UPDATE SET b = t.b + 1
@@ -912,7 +933,7 @@ WHEN NOT MATCHED AND s.a < 20 THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN NOT MATCHED BY SOURCE and t.a < 10 THEN
 	DELETE'
@@ -920,7 +941,7 @@ WHEN NOT MATCHED BY SOURCE and t.a < 10 THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a
 WHEN NOT MATCHED BY SOURCE AND t.a < 10 THEN
 	DELETE
@@ -930,7 +951,7 @@ WHEN NOT MATCHED BY TARGET AND s.a < 20 THEN
 
 SELECT
   explain_merge(
-  '
+    '
 MERGE INTO ex_mtarget t USING ex_msource s ON t.a = s.a AND t.a < -1000
 WHEN MATCHED AND t.a < 10 THEN
 	DO NOTHING'
@@ -940,11 +961,24 @@ DROP TABLE "ex_msource", "ex_mtarget";
 
 DROP FUNCTION explain_merge(TEXT);
 
-CREATE TABLE src (a INT, b INT, c INT, d INT);
+CREATE TABLE src (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
 
-CREATE TABLE tgt (a INT, b INT, c INT, d INT);
+CREATE TABLE tgt (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
 
-CREATE TABLE ref (ab INT, cd INT);
+CREATE TABLE ref (
+  ab INT,
+  cd INT
+);
 
 DROP TABLE "src", "tgt", "ref";
 
@@ -968,8 +1002,11 @@ ROLLBACK;
 
 DROP TABLE "sq_target", "sq_target_merge_log", "sq_source" CASCADE;
 
-CREATE TABLE pa_target
-(tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE pa_target (
+  tid INT,
+  balance DOUBLE PRECISION,
+  val TEXT
+)
 PARTITION BY LIST(tid);
 
 CREATE TABLE part1 PARTITION OF pa_target FOR VALUES IN (1, 4) WITH (autovacuum_enabled = off);
@@ -980,7 +1017,10 @@ CREATE TABLE part3 PARTITION OF pa_target FOR VALUES IN (3, 8, 9) WITH (autovacu
 
 CREATE TABLE part4 PARTITION OF pa_target DEFAULT WITH (autovacuum_enabled = off);
 
-CREATE TABLE pa_source (sid INT, delta DOUBLE PRECISION);
+CREATE TABLE pa_source (
+  sid INT,
+  delta DOUBLE PRECISION
+);
 
 INSERT INTO pa_source SELECT id, id * 10 FROM generate_series(1, 14) AS id;
 
@@ -1045,18 +1085,35 @@ ROLLBACK;
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE pa_target
-(tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE pa_target (
+  tid INT,
+  balance DOUBLE PRECISION,
+  val TEXT
+)
 PARTITION BY LIST(tid);
 
-CREATE TABLE part1 (tid INT, balance DOUBLE PRECISION, val TEXT) WITH (autovacuum_enabled = off);
+CREATE TABLE part1 (
+  tid INT,
+  balance DOUBLE PRECISION,
+  val TEXT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE part2 (balance DOUBLE PRECISION, tid INT, val TEXT) WITH (autovacuum_enabled = off);
+CREATE TABLE part2 (
+  balance DOUBLE PRECISION,
+  tid INT,
+  val TEXT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE part3 (tid INT, balance DOUBLE PRECISION, val TEXT) WITH (autovacuum_enabled = off);
+CREATE TABLE part3 (
+  tid INT,
+  balance DOUBLE PRECISION,
+  val TEXT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE part4
-(
+CREATE TABLE part4 (
   extraid TEXT,
   tid INT,
   balance DOUBLE PRECISION,
@@ -1148,11 +1205,7 @@ RETURNS trigger
 LANGUAGE "plpgsql"
 AS ' BEGIN RETURN NULL; END; ';
 
-CREATE TRIGGER del_trig
-BEFORE DELETE
-ON pa_target
-FOR EACH ROW
-EXECUTE FUNCTION trig_fn();
+CREATE TRIGGER del_trig BEFORE DELETE ON pa_target FOR EACH ROW EXECUTE FUNCTION trig_fn();
 
 DO
 $$
@@ -1184,11 +1237,7 @@ RETURNS trigger
 LANGUAGE "plpgsql"
 AS ' BEGIN RETURN NULL; END; ';
 
-CREATE TRIGGER ins_trig
-BEFORE INSERT
-ON pa_target
-FOR EACH ROW
-EXECUTE FUNCTION trig_fn();
+CREATE TRIGGER ins_trig BEFORE INSERT ON pa_target FOR EACH ROW EXECUTE FUNCTION trig_fn();
 
 DO
 $$
@@ -1229,8 +1278,12 @@ DROP TABLE "pa_source";
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE pa_target
-(logts TIMESTAMP, tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE pa_target (
+  logts TIMESTAMP,
+  tid INT,
+  balance DOUBLE PRECISION,
+  val TEXT
+)
 PARTITION BY RANGE(logts);
 
 CREATE TABLE part_m01
@@ -1263,7 +1316,11 @@ PARTITION OF part_m02
 FOR VALUES IN (2, 4, 6, 8)
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE pa_source (sid INT, delta DOUBLE PRECISION) WITH (autovacuum_enabled = off);
+CREATE TABLE pa_source (
+  sid INT,
+  delta DOUBLE PRECISION
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO pa_source SELECT id, id * 10 FROM generate_series(1, 14) AS id;
 
@@ -1295,8 +1352,7 @@ DROP TABLE "pa_source";
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE pa_target
-(tid INT PRIMARY KEY)
+CREATE TABLE pa_target (tid INT PRIMARY KEY)
 PARTITION BY LIST(tid);
 
 CREATE TABLE pa_targetp PARTITION OF pa_target DEFAULT;
@@ -1316,13 +1372,25 @@ DROP TABLE "pa_source";
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE cj_target
-(tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE cj_target (
+  tid INT,
+  balance DOUBLE PRECISION,
+  val TEXT
+)
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE cj_source1 (sid1 INT, scat INT, delta INT) WITH (autovacuum_enabled = off);
+CREATE TABLE cj_source1 (
+  sid1 INT,
+  scat INT,
+  delta INT
+)
+WITH (autovacuum_enabled = off);
 
-CREATE TABLE cj_source2 (sid2 INT, sval TEXT) WITH (autovacuum_enabled = off);
+CREATE TABLE cj_source2 (
+  sid2 INT,
+  sval TEXT
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO cj_source1 VALUES (1, 10, 100);
 
@@ -1350,14 +1418,18 @@ TRUNCATE cj_target;
 
 DROP TABLE "cj_source2", "cj_source1", "cj_target";
 
-CREATE TABLE fs_target (a INT, b INT, c TEXT) WITH (autovacuum_enabled = off);
+CREATE TABLE fs_target (
+  a INT,
+  b INT,
+  c TEXT
+)
+WITH (autovacuum_enabled = off);
 
 SELECT COUNT(*) FROM fs_target;
 
 DROP TABLE "fs_target";
 
-CREATE TABLE measurement
-(
+CREATE TABLE measurement (
   city_id INT NOT NULL,
   logdate DATE NOT NULL,
   peaktemp INT,
@@ -1365,18 +1437,21 @@ CREATE TABLE measurement
 )
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE measurement_y2006m02
-(CHECK (logdate >= CAST('2006-02-01' AS DATE) AND logdate < CAST('2006-03-01' AS DATE)))
+CREATE TABLE measurement_y2006m02 (
+  CHECK (logdate >= CAST('2006-02-01' AS DATE) AND
+  logdate < CAST('2006-03-01' AS DATE))
+)
 INHERITS (measurement)
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE measurement_y2006m03
-(CHECK (logdate >= CAST('2006-03-01' AS DATE) AND logdate < CAST('2006-04-01' AS DATE)))
+CREATE TABLE measurement_y2006m03 (
+  CHECK (logdate >= CAST('2006-03-01' AS DATE) AND
+  logdate < CAST('2006-04-01' AS DATE))
+)
 INHERITS (measurement)
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE measurement_y2007m01
-(
+CREATE TABLE measurement_y2007m01 (
   filler TEXT,
   peaktemp INT,
   logdate DATE NOT NULL,
@@ -1418,10 +1493,10 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER insert_measurement_trigger
-BEFORE INSERT
-ON measurement
-FOR EACH ROW
-EXECUTE FUNCTION measurement_insert_trigger();
+  BEFORE INSERT
+  ON measurement
+  FOR EACH ROW
+  EXECUTE FUNCTION measurement_insert_trigger();
 
 INSERT INTO measurement VALUES (1, '2006-02-10', 35, 10);
 
@@ -1501,11 +1576,17 @@ DROP TABLE "measurement", "new_measurement" CASCADE;
 
 DROP FUNCTION measurement_insert_trigger();
 
-CREATE TABLE src (a INT, b TEXT);
+CREATE TABLE src (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO src VALUES (1, 'src row');
 
-CREATE TABLE tgt (a INT, b TEXT);
+CREATE TABLE tgt (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO tgt VALUES (NULL, 'tgt row');
 
@@ -1513,7 +1594,11 @@ SELECT * FROM tgt;
 
 DROP TABLE "src", "tgt";
 
-CREATE TABLE bug18634t (a INT, b INT, c TEXT);
+CREATE TABLE bug18634t (
+  a INT,
+  b INT,
+  c TEXT
+);
 
 INSERT INTO bug18634t
 VALUES
@@ -1528,7 +1613,11 @@ FROM
 WHERE
   EXISTS (SELECT 1 FROM bug18634t);
 
-CREATE TABLE bug18634s (a INT, b INT, c TEXT);
+CREATE TABLE bug18634s (
+  a INT,
+  b INT,
+  c TEXT
+);
 
 INSERT INTO bug18634s VALUES (1, 2, 'src1');
 

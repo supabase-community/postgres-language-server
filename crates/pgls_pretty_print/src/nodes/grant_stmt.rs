@@ -99,7 +99,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
             }
             _ => {}
         }
-        e.space();
+        // No space here - will be added by line break before TO/FROM
     } else {
         // Add explicit object type (singular)
         match objtype {

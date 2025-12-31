@@ -45,7 +45,10 @@ SELECT CAST('08:00:2b:01.02:03:04:05' AS MACADDR8);
 
 SELECT macaddr8_set7bit(CAST('00:08:2b:01:02:03' AS MACADDR8));
 
-CREATE TABLE macaddr8_data (a INT, b MACADDR8);
+CREATE TABLE macaddr8_data (
+  a INT,
+  b MACADDR8
+);
 
 INSERT INTO macaddr8_data VALUES (1, '08:00:2b:01:02:03');
 
@@ -91,19 +94,9 @@ INSERT INTO macaddr8_data VALUES (21, '08002b0102030405');
 
 SELECT * FROM macaddr8_data ORDER BY 1;
 
-CREATE INDEX "macaddr8_data_btree"
-ON macaddr8_data
-USING btree
-(
-  b
-);
+CREATE INDEX "macaddr8_data_btree" ON macaddr8_data USING btree (b);
 
-CREATE INDEX "macaddr8_data_hash"
-ON macaddr8_data
-USING hash
-(
-  b
-);
+CREATE INDEX "macaddr8_data_hash" ON macaddr8_data USING hash (b);
 
 SELECT a, b, trunc(b) FROM macaddr8_data ORDER BY 2, 1;
 

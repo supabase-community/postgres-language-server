@@ -7,13 +7,22 @@ CREATE SCHEMA "collate_tests";
 
 SET search_path TO collate_tests;
 
-CREATE TABLE collate_test1 (a INT, b TEXT COLLATE "C" NOT NULL);
+CREATE TABLE collate_test1 (
+  a INT,
+  b TEXT COLLATE "C" NOT NULL
+);
 
-CREATE TABLE collate_test_fail (a INT COLLATE "C", b TEXT);
+CREATE TABLE collate_test_fail (
+  a INT COLLATE "C",
+  b TEXT
+);
 
 CREATE TABLE collate_test_like (LIKE collate_test1);
 
-CREATE TABLE collate_test2 (a INT, b TEXT COLLATE "POSIX");
+CREATE TABLE collate_test2 (
+  a INT,
+  b TEXT COLLATE "POSIX"
+);
 
 INSERT INTO collate_test1
 VALUES
@@ -36,13 +45,19 @@ CREATE DOMAIN testdomain_p AS TEXT COLLATE "POSIX";
 
 CREATE DOMAIN testdomain_i AS INT COLLATE "POSIX";
 
-CREATE TABLE collate_test4 (a INT, b testdomain_p);
+CREATE TABLE collate_test4 (
+  a INT,
+  b testdomain_p
+);
 
 INSERT INTO collate_test4 SELECT * FROM collate_test1;
 
 SELECT a, b FROM collate_test4 ORDER BY b;
 
-CREATE TABLE collate_test5 (a INT, b testdomain_p COLLATE "C");
+CREATE TABLE collate_test5 (
+  a INT,
+  b testdomain_p COLLATE "C"
+);
 
 INSERT INTO collate_test5 SELECT * FROM collate_test1;
 
@@ -62,7 +77,11 @@ SELECT 'bbc' COLLATE "C" > 'Abc' COLLATE "C" AS "true";
 
 SELECT 'bbc' COLLATE "POSIX" < 'Abc' COLLATE "POSIX" AS "false";
 
-CREATE TABLE collate_test10 (a INT, x TEXT COLLATE "C", y TEXT COLLATE "POSIX");
+CREATE TABLE collate_test10 (
+  a INT,
+  x TEXT COLLATE "C",
+  y TEXT COLLATE "POSIX"
+);
 
 INSERT INTO collate_test10
 VALUES
@@ -262,47 +281,17 @@ SELECT a, dup(b) FROM collate_test1 ORDER BY 2;
 
 SELECT a, dup(b) FROM collate_test2 ORDER BY 2;
 
-CREATE INDEX "collate_test1_idx1"
-ON collate_test1
-USING btree
-(
-  b
-);
+CREATE INDEX "collate_test1_idx1" ON collate_test1 USING btree (b);
 
-CREATE INDEX "collate_test1_idx2"
-ON collate_test1
-USING btree
-(
-  b COLLATE "POSIX"
-);
+CREATE INDEX "collate_test1_idx2" ON collate_test1 USING btree (b COLLATE "POSIX");
 
-CREATE INDEX "collate_test1_idx3"
-ON collate_test1
-USING btree
-(
-  (b COLLATE "POSIX")
-);
+CREATE INDEX "collate_test1_idx3" ON collate_test1 USING btree ((b COLLATE "POSIX"));
 
-CREATE INDEX "collate_test1_idx4"
-ON collate_test1
-USING btree
-(
-  ((b || 'foo') COLLATE "POSIX")
-);
+CREATE INDEX "collate_test1_idx4" ON collate_test1 USING btree (((b || 'foo') COLLATE "POSIX"));
 
-CREATE INDEX "collate_test1_idx5"
-ON collate_test1
-USING btree
-(
-  a COLLATE "POSIX"
-);
+CREATE INDEX "collate_test1_idx5" ON collate_test1 USING btree (a COLLATE "POSIX");
 
-CREATE INDEX "collate_test1_idx6"
-ON collate_test1
-USING btree
-(
-  (a COLLATE "POSIX")
-);
+CREATE INDEX "collate_test1_idx6" ON collate_test1 USING btree ((a COLLATE "POSIX"));
 
 SELECT
   relname,

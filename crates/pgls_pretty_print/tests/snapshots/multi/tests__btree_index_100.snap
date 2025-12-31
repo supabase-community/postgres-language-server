@@ -3,13 +3,25 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/btree_index.sql
 snapshot_kind: text
 ---
-CREATE TABLE bt_i4_heap (seqno INT, random INT);
+CREATE TABLE bt_i4_heap (
+  seqno INT,
+  random INT
+);
 
-CREATE TABLE bt_name_heap (seqno NAME, random INT);
+CREATE TABLE bt_name_heap (
+  seqno NAME,
+  random INT
+);
 
-CREATE TABLE bt_txt_heap (seqno TEXT, random INT);
+CREATE TABLE bt_txt_heap (
+  seqno TEXT,
+  random INT
+);
 
-CREATE TABLE bt_f8_heap (seqno DOUBLE PRECISION, random INT);
+CREATE TABLE bt_f8_heap (
+  seqno DOUBLE PRECISION,
+  random INT
+);
 
 COPY bt_i4_heap FROM 'filename';
 
@@ -27,33 +39,13 @@ ANALYZE bt_txt_heap;
 
 ANALYZE bt_f8_heap;
 
-CREATE INDEX "bt_i4_index"
-ON bt_i4_heap
-USING btree
-(
-  seqno int4_ops
-);
+CREATE INDEX "bt_i4_index" ON bt_i4_heap USING btree (seqno int4_ops);
 
-CREATE INDEX "bt_name_index"
-ON bt_name_heap
-USING btree
-(
-  seqno name_ops
-);
+CREATE INDEX "bt_name_index" ON bt_name_heap USING btree (seqno name_ops);
 
-CREATE INDEX "bt_txt_index"
-ON bt_txt_heap
-USING btree
-(
-  seqno text_ops
-);
+CREATE INDEX "bt_txt_index" ON bt_txt_heap USING btree (seqno text_ops);
 
-CREATE INDEX "bt_f8_index"
-ON bt_f8_heap
-USING btree
-(
-  seqno float8_ops
-);
+CREATE INDEX "bt_f8_index" ON bt_f8_heap USING btree (seqno float8_ops);
 
 SELECT b.* FROM bt_i4_heap AS b WHERE b.seqno < 1;
 
@@ -399,7 +391,10 @@ DELETE FROM dedup_unique_test_table WHERE a = 1;
 
 INSERT INTO dedup_unique_test_table SELECT i FROM generate_series(0, 450) AS i;
 
-CREATE TABLE btree_tall_tbl (id INT, t TEXT);
+CREATE TABLE btree_tall_tbl (
+  id INT,
+  t TEXT
+);
 
 ALTER TABLE btree_tall_tbl
   ALTER COLUMN t SET STORAGE plain;
@@ -433,7 +428,12 @@ RESET enable_seqscan;
 
 RESET enable_bitmapscan;
 
-CREATE TABLE delete_test_table (a BIGINT, b BIGINT, c BIGINT, d BIGINT);
+CREATE TABLE delete_test_table (
+  a BIGINT,
+  b BIGINT,
+  c BIGINT,
+  d BIGINT
+);
 
 INSERT INTO delete_test_table SELECT i, 1, 2, 3 FROM generate_series(1, 80000) AS i;
 
@@ -446,12 +446,7 @@ VACUUM delete_test_table;
 
 INSERT INTO delete_test_table SELECT i, 1, 2, 3 FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX
-ON btree_tall_tbl
-USING btree
-(
-  id int4_ops(foo = 1)
-);
+CREATE INDEX ON btree_tall_tbl USING btree (id int4_ops(foo = 1));
 
 CREATE TABLE btree_test_expr (n INT);
 
@@ -466,12 +461,7 @@ SET LOCAL min_parallel_table_scan_size = 0;
 
 SET LOCAL max_parallel_maintenance_workers = 4;
 
-CREATE INDEX "btree_test_expr_idx"
-ON btree_test_expr
-USING btree
-(
-  (btree_test_func())
-);
+CREATE INDEX "btree_test_expr_idx" ON btree_test_expr USING btree ((btree_test_func()));
 
 COMMIT;
 
@@ -479,28 +469,17 @@ DROP TABLE "btree_test_expr";
 
 DROP FUNCTION btree_test_func();
 
-CREATE INDEX "btree_tall_idx2"
-ON btree_tall_tbl
-USING btree
-(
-  id
-);
+CREATE INDEX "btree_tall_idx2" ON btree_tall_tbl USING btree (id);
 
 ALTER INDEX btree_tall_idx2
   ALTER COLUMN id SET (n_distinct = 100);
 
 DROP INDEX "btree_tall_idx2";
 
-CREATE TABLE btree_part
-(id INT)
+CREATE TABLE btree_part (id INT)
 PARTITION BY RANGE(id);
 
-CREATE INDEX "btree_part_idx"
-ON btree_part
-USING btree
-(
-  id
-);
+CREATE INDEX "btree_part_idx" ON btree_part USING btree (id);
 
 ALTER INDEX btree_part_idx
   ALTER COLUMN id SET (n_distinct = 100);

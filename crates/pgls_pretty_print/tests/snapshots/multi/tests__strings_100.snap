@@ -363,48 +363,48 @@ SELECT regexp_matches('foobarbequebaz', 'barbeque');
 
 SELECT
   regexp_matches(
-  'foo' || chr(10) || 'bar' || chr(10) || 'bequq' ||
-  chr(10) ||
-  'baz',
-  '^',
-  'mg'
+    'foo' || chr(10) || 'bar' || chr(10) || 'bequq' ||
+    chr(10) ||
+    'baz',
+    '^',
+    'mg'
   );
 
 SELECT
   regexp_matches(
-  'foo' || chr(10) || 'bar' || chr(10) || 'bequq' ||
-  chr(10) ||
-  'baz',
-  '$',
-  'mg'
+    'foo' || chr(10) || 'bar' || chr(10) || 'bequq' ||
+    chr(10) ||
+    'baz',
+    '$',
+    'mg'
   );
 
 SELECT
   regexp_matches(
-  '1' || chr(10) || '2' || chr(10) || '3' || chr(10) ||
-  '4' ||
-  chr(10),
-  '^.?',
-  'mg'
+    '1' || chr(10) || '2' || chr(10) || '3' || chr(10) ||
+    '4' ||
+    chr(10),
+    '^.?',
+    'mg'
   );
 
 SELECT
   regexp_matches(
-  chr(10) || '1' || chr(10) || '2' || chr(10) || '3' ||
-  chr(10) ||
-  '4' ||
-  chr(10),
-  '.?$',
-  'mg'
+    chr(10) || '1' || chr(10) || '2' || chr(10) || '3' ||
+    chr(10) ||
+    '4' ||
+    chr(10),
+    '.?$',
+    'mg'
   );
 
 SELECT
   regexp_matches(
-  chr(10) || '1' || chr(10) || '2' || chr(10) || '3' ||
-  chr(10) ||
-  '4',
-  '.?$',
-  'mg'
+    chr(10) || '1' || chr(10) || '2' || chr(10) || '3' ||
+    chr(10) ||
+    '4',
+    '.?$',
+    'mg'
   );
 
 SELECT regexp_matches('foobarbequebaz', '(bar)(beque)', 'gz');
@@ -418,8 +418,8 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'the quick brown fox jumps over the lazy dog',
-  '\s+'
+    'the quick brown fox jumps over the lazy dog',
+    '\s+'
   )
   AS foo;
 
@@ -430,8 +430,8 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'the quick brown fox jumps over the lazy dog',
-  '\s*'
+    'the quick brown fox jumps over the lazy dog',
+    '\s*'
   )
   AS foo;
 
@@ -442,8 +442,8 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'the quick brown fox jumps over the lazy dog',
-  ''
+    'the quick brown fox jumps over the lazy dog',
+    ''
   )
   AS foo;
 
@@ -454,9 +454,9 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
-  'e',
-  'i'
+    'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+    'e',
+    'i'
   )
   AS foo;
 
@@ -467,8 +467,8 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'the quick brown fox jumps over the lazy dog',
-  'nomatch'
+    'the quick brown fox jumps over the lazy dog',
+    'nomatch'
   )
   AS foo;
 
@@ -491,9 +491,9 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
-  'e',
-  'zippy'
+    'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+    'e',
+    'zippy'
   )
   AS foo;
 
@@ -504,9 +504,9 @@ SELECT
   length(foo)
 FROM
   regexp_split_to_table(
-  'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
-  'e',
-  'g'
+    'thE QUick bROWn FOx jUMPs ovEr The lazy dOG',
+    'e',
+    'g'
   )
   AS foo;
 
@@ -614,8 +614,8 @@ SELECT CAST('a_c' AS BYTEA) LIKE like_escape(CAST('a$__' AS BYTEA), CAST('$' AS 
 
 SELECT
   CAST('a_c' AS BYTEA) NOT LIKE like_escape(
-  CAST('a$__' AS BYTEA),
-  CAST('$' AS BYTEA)
+    CAST('a$__' AS BYTEA),
+    CAST('$' AS BYTEA)
   )
   AS "false";
 
@@ -669,11 +669,17 @@ SELECT 'foo' LIKE '%__' AS t, 'foo' LIKE '%___' AS t, 'foo' LIKE '%____' AS f;
 
 SELECT 'jack' LIKE '%____%' AS t;
 
-CREATE TABLE texttest (a TEXT PRIMARY KEY, b INT);
+CREATE TABLE texttest (
+  a TEXT PRIMARY KEY,
+  b INT
+);
 
 SELECT * FROM texttest WHERE a LIKE '%1%';
 
-CREATE TABLE byteatest (a BYTEA PRIMARY KEY, b INT);
+CREATE TABLE byteatest (
+  a BYTEA PRIMARY KEY,
+  b INT
+);
 
 SELECT * FROM byteatest WHERE a LIKE '%1%';
 
@@ -772,7 +778,10 @@ SELECT c FROM toasttest;
 
 DROP TABLE "toasttest";
 
-CREATE TABLE toasttest (f1 TEXT, f2 TEXT);
+CREATE TABLE toasttest (
+  f1 TEXT,
+  f2 TEXT
+);
 
 ALTER TABLE toasttest
   SET (toast_tuple_target = 128);
@@ -858,10 +867,10 @@ SELECT to_bin(256 * 256 * 256 - 1) AS "111111111111111111111111";
 
 SELECT
   to_bin(
-  CAST(256 AS BIGINT) * CAST(256 AS BIGINT) *
-  CAST(256 AS BIGINT) *
-  CAST(256 AS BIGINT) -
-  1
+    CAST(256 AS BIGINT) * CAST(256 AS BIGINT) *
+    CAST(256 AS BIGINT) *
+    CAST(256 AS BIGINT) -
+    1
   )
   AS "11111111111111111111111111111111";
 
@@ -873,10 +882,10 @@ SELECT to_oct(256 * 256 * 256 - 1) AS "77777777";
 
 SELECT
   to_oct(
-  CAST(256 AS BIGINT) * CAST(256 AS BIGINT) *
-  CAST(256 AS BIGINT) *
-  CAST(256 AS BIGINT) -
-  1
+    CAST(256 AS BIGINT) * CAST(256 AS BIGINT) *
+    CAST(256 AS BIGINT) *
+    CAST(256 AS BIGINT) -
+    1
   )
   AS "37777777777";
 
@@ -888,10 +897,10 @@ SELECT to_hex(256 * 256 * 256 - 1) AS ffffff;
 
 SELECT
   to_hex(
-  CAST(256 AS BIGINT) * CAST(256 AS BIGINT) *
-  CAST(256 AS BIGINT) *
-  CAST(256 AS BIGINT) -
-  1
+    CAST(256 AS BIGINT) * CAST(256 AS BIGINT) *
+    CAST(256 AS BIGINT) *
+    CAST(256 AS BIGINT) -
+    1
   )
   AS ffffffff;
 
@@ -1163,20 +1172,20 @@ SELECT btrim(CAST('\000trim\000' AS BYTEA), CAST('' AS BYTEA));
 
 SELECT
   encode(
-  OVERLAY(CAST('Th\000omas' AS BYTEA) PLACING CAST('Th\001omas' AS BYTEA) FROM 2),
-  'escape'
+    OVERLAY(CAST('Th\000omas' AS BYTEA) PLACING CAST('Th\001omas' AS BYTEA) FROM 2),
+    'escape'
   );
 
 SELECT
   encode(
-  OVERLAY(CAST('Th\000omas' AS BYTEA) PLACING CAST('\002\003' AS BYTEA) FROM 8),
-  'escape'
+    OVERLAY(CAST('Th\000omas' AS BYTEA) PLACING CAST('\002\003' AS BYTEA) FROM 8),
+    'escape'
   );
 
 SELECT
   encode(
-  OVERLAY(CAST('Th\000omas' AS BYTEA) PLACING CAST('\002\003' AS BYTEA) FROM 5 FOR 3),
-  'escape'
+    OVERLAY(CAST('Th\000omas' AS BYTEA) PLACING CAST('\002\003' AS BYTEA) FROM 5 FOR 3),
+    'escape'
   );
 
 SELECT bit_count(CAST('\x1234567890' AS BYTEA));

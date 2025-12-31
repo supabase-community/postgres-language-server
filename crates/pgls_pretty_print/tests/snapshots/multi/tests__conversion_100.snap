@@ -72,7 +72,10 @@ begin
 end;
 ';
 
-CREATE TABLE utf8_verification_inputs (inbytes BYTEA, description TEXT PRIMARY KEY);
+CREATE TABLE utf8_verification_inputs (
+  inbytes BYTEA,
+  description TEXT PRIMARY KEY
+);
 
 INSERT INTO utf8_verification_inputs
 VALUES
@@ -109,9 +112,9 @@ AS (
     inbytes,
     description,
     (test_conv(
-    inbytes || CAST(repeat('.', 3) AS BYTEA),
-    'utf8',
-    'utf8'
+      inbytes || CAST(repeat('.', 3) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     utf8_verification_inputs
@@ -121,9 +124,9 @@ AS (
   SELECT
     description,
     (test_conv(
-    inbytes || CAST(repeat('.', 64) AS BYTEA),
-    'utf8',
-    'utf8'
+      inbytes || CAST(repeat('.', 64) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     test_bytes
@@ -148,9 +151,9 @@ AS (
     inbytes,
     description,
     (test_conv(
-    inbytes || CAST(repeat('.', 3) AS BYTEA),
-    'utf8',
-    'utf8'
+      inbytes || CAST(repeat('.', 3) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     utf8_verification_inputs
@@ -160,11 +163,11 @@ AS (
   SELECT
     description,
     (test_conv(
-    CAST(repeat('.', 64 - length(inbytes)) AS BYTEA) ||
-    inbytes ||
-    CAST(repeat('.', 64) AS BYTEA),
-    'utf8',
-    'utf8'
+      CAST(repeat('.', 64 - length(inbytes)) AS BYTEA) ||
+      inbytes ||
+      CAST(repeat('.', 64) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     test_bytes
@@ -189,9 +192,9 @@ AS (
     inbytes,
     description,
     (test_conv(
-    inbytes || CAST(repeat('.', 3) AS BYTEA),
-    'utf8',
-    'utf8'
+      inbytes || CAST(repeat('.', 3) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     utf8_verification_inputs
@@ -201,10 +204,10 @@ AS (
   SELECT
     description,
     (test_conv(
-    CAST(repeat('.', 64) AS BYTEA) || inbytes ||
-    CAST(repeat('.', 3) AS BYTEA),
-    'utf8',
-    'utf8'
+      CAST(repeat('.', 64) AS BYTEA) || inbytes ||
+      CAST(repeat('.', 3) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     test_bytes
@@ -229,9 +232,9 @@ AS (
     inbytes,
     description,
     (test_conv(
-    inbytes || CAST(repeat('.', 3) AS BYTEA),
-    'utf8',
-    'utf8'
+      inbytes || CAST(repeat('.', 3) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     utf8_verification_inputs
@@ -241,11 +244,11 @@ AS (
   SELECT
     description,
     (test_conv(
-    CAST(repeat('.', 64 - length(inbytes)) AS BYTEA) ||
-    inbytes ||
-    CAST(repeat('.', 3) AS BYTEA),
-    'utf8',
-    'utf8'
+      CAST(repeat('.', 64 - length(inbytes)) AS BYTEA) ||
+      inbytes ||
+      CAST(repeat('.', 3) AS BYTEA),
+      'utf8',
+      'utf8'
     )).error
   FROM
     test_bytes
@@ -263,7 +266,10 @@ WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-CREATE TABLE utf8_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE utf8_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO utf8_inputs
 VALUES
@@ -307,7 +313,10 @@ SELECT description, inbytes, (test_conv(inbytes, 'utf8', 'koi8r')).* FROM utf8_i
 
 SELECT description, inbytes, (test_conv(inbytes, 'utf8', 'gb18030')).* FROM utf8_inputs;
 
-CREATE TABLE euc_jis_2004_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE euc_jis_2004_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO euc_jis_2004_inputs
 VALUES
@@ -336,7 +345,10 @@ SELECT
 FROM
   euc_jis_2004_inputs;
 
-CREATE TABLE shiftjis2004_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE shiftjis2004_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO shiftjis2004_inputs
 VALUES
@@ -377,7 +389,10 @@ SELECT
 FROM
   shiftjis2004_inputs;
 
-CREATE TABLE gb18030_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE gb18030_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO gb18030_inputs
 VALUES
@@ -404,16 +419,19 @@ SELECT
   description,
   inbytes,
   (test_conv(
-  CAST(CAST(inbytes AS TEXT) AS BYTEA),
-  'gb18030',
-  'gb18030'
+    CAST(CAST(inbytes AS TEXT) AS BYTEA),
+    'gb18030',
+    'gb18030'
   )).*
 FROM
   gb18030_inputs;
 
 SELECT description, inbytes, (test_conv(inbytes, 'gb18030', 'utf8')).* FROM gb18030_inputs;
 
-CREATE TABLE iso8859_5_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE iso8859_5_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO iso8859_5_inputs
 VALUES
@@ -436,7 +454,10 @@ SELECT
 FROM
   iso8859_5_inputs;
 
-CREATE TABLE big5_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE big5_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO big5_inputs
 VALUES
@@ -452,7 +473,10 @@ SELECT description, inbytes, (test_conv(inbytes, 'big5', 'utf8')).* FROM big5_in
 
 SELECT description, inbytes, (test_conv(inbytes, 'big5', 'mule_internal')).* FROM big5_inputs;
 
-CREATE TABLE mic_inputs (inbytes BYTEA, description TEXT);
+CREATE TABLE mic_inputs (
+  inbytes BYTEA,
+  description TEXT
+);
 
 INSERT INTO mic_inputs
 VALUES
@@ -471,9 +495,9 @@ SELECT
   description,
   inbytes,
   (test_conv(
-  inbytes,
-  'mule_internal',
-  'mule_internal'
+    inbytes,
+    'mule_internal',
+    'mule_internal'
   )).*
 FROM
   mic_inputs;

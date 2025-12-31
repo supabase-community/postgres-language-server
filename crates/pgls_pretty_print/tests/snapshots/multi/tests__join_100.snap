@@ -3,9 +3,16 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/join.sql
 snapshot_kind: text
 ---
-CREATE TABLE j1_tbl (i INT, j INT, t TEXT);
+CREATE TABLE j1_tbl (
+  i INT,
+  j INT,
+  t TEXT
+);
 
-CREATE TABLE j2_tbl (i INT, k INT);
+CREATE TABLE j2_tbl (
+  i INT,
+  k INT
+);
 
 INSERT INTO j1_tbl VALUES (1, 4, 'one');
 
@@ -152,11 +159,20 @@ WHERE
   a.tenthous = b.tenthous AND
   a.tenthous < 5000;
 
-CREATE TABLE t1 (name TEXT, n INT);
+CREATE TABLE t1 (
+  name TEXT,
+  n INT
+);
 
-CREATE TABLE t2 (name TEXT, n INT);
+CREATE TABLE t2 (
+  name TEXT,
+  n INT
+);
 
-CREATE TABLE t3 (name TEXT, n INT);
+CREATE TABLE t3 (
+  name TEXT,
+  n INT
+);
 
 INSERT INTO t1 VALUES ('bb', 11);
 
@@ -253,7 +269,10 @@ FROM
     (SELECT name, 2 AS s2_n FROM t2) AS s2
   ON s1_n = s2_n;
 
-CREATE TEMPORARY TABLE x (x1 INT, x2 INT);
+CREATE TEMPORARY TABLE x (
+  x1 INT,
+  x2 INT
+);
 
 INSERT INTO x VALUES (1, 11);
 
@@ -265,7 +284,10 @@ INSERT INTO x VALUES (4, 44);
 
 INSERT INTO x VALUES (5, NULL);
 
-CREATE TEMPORARY TABLE y (y1 INT, y2 INT);
+CREATE TEMPORARY TABLE y (
+  y1 INT,
+  y2 INT
+);
 
 INSERT INTO y VALUES (1, 111);
 
@@ -889,11 +911,20 @@ DROP TABLE "j1_tbl";
 
 DROP TABLE "j2_tbl";
 
-CREATE TEMPORARY TABLE t1 (a INT, b INT);
+CREATE TEMPORARY TABLE t1 (
+  a INT,
+  b INT
+);
 
-CREATE TEMPORARY TABLE t2 (a INT, b INT);
+CREATE TEMPORARY TABLE t2 (
+  a INT,
+  b INT
+);
 
-CREATE TEMPORARY TABLE t3 (x INT, y INT);
+CREATE TEMPORARY TABLE t3 (
+  x INT,
+  y INT
+);
 
 INSERT INTO t1 VALUES (5, 10);
 
@@ -925,8 +956,7 @@ DELETE FROM t3 USING t3 AS t3_other WHERE t3.x = t3_other.x AND t3.y = t3_other.
 
 SELECT * FROM t3;
 
-CREATE TEMPORARY TABLE t2a
-()
+CREATE TEMPORARY TABLE t2a ()
 INHERITS (t2);
 
 INSERT INTO t2a VALUES (200, 2001);
@@ -976,13 +1006,19 @@ FROM
   t3 AS unnamed_join
 FOR UPDATE OF bar;
 
-CREATE TEMPORARY TABLE tt1 (tt1_id INT, joincol INT);
+CREATE TEMPORARY TABLE tt1 (
+  tt1_id INT,
+  joincol INT
+);
 
 INSERT INTO tt1 VALUES (1, 11);
 
 INSERT INTO tt1 VALUES (2, NULL);
 
-CREATE TEMPORARY TABLE tt2 (tt2_id INT, joincol INT);
+CREATE TEMPORARY TABLE tt2 (
+  tt2_id INT,
+  joincol INT
+);
 
 INSERT INTO tt2 VALUES (21, 11);
 
@@ -1000,16 +1036,14 @@ RESET enable_hashjoin;
 
 RESET enable_nestloop;
 
-CREATE TEMPORARY TABLE tbl_ra (a INT UNIQUE, b INT);
+CREATE TEMPORARY TABLE tbl_ra (
+  a INT UNIQUE,
+  b INT
+);
 
 INSERT INTO tbl_ra SELECT i, i % 100 FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX
-ON tbl_ra
-USING btree
-(
-  b
-);
+CREATE INDEX ON tbl_ra USING btree (b);
 
 ANALYZE tbl_ra;
 
@@ -1039,7 +1073,10 @@ RESET enable_hashjoin;
 
 RESET enable_nestloop;
 
-CREATE TEMPORARY TABLE tbl_rs (a INT, b INT);
+CREATE TEMPORARY TABLE tbl_rs (
+  a INT,
+  b INT
+);
 
 INSERT INTO tbl_rs SELECT i, i FROM generate_series(1, 10) AS i;
 
@@ -1089,7 +1126,10 @@ RESET enable_mergejoin;
 
 RESET enable_memoize;
 
-CREATE TEMPORARY TABLE tt3 (f1 INT, f2 TEXT);
+CREATE TEMPORARY TABLE tt3 (
+  f1 INT,
+  f2 TEXT
+);
 
 INSERT INTO tt3 SELECT x, repeat('xyzzy', 100) FROM generate_series(1, 10000) AS x;
 
@@ -1181,7 +1221,11 @@ WHERE
     a.unique1 = b.unique2
   GROUP BY b.unique1);
 
-CREATE TEMPORARY TABLE tt4x (c1 INT, c2 INT, c3 INT);
+CREATE TEMPORARY TABLE tt4x (
+  c1 INT,
+  c2 INT,
+  c3 INT
+);
 
 SELECT
   *
@@ -1209,9 +1253,15 @@ WHERE
   WHERE
     t1.c1 = t2.c2);
 
-CREATE TEMPORARY TABLE tt5 (f1 INT, f2 INT);
+CREATE TEMPORARY TABLE tt5 (
+  f1 INT,
+  f2 INT
+);
 
-CREATE TEMPORARY TABLE tt6 (f1 INT, f2 INT);
+CREATE TEMPORARY TABLE tt6 (
+  f1 INT,
+  f2 INT
+);
 
 INSERT INTO tt5 VALUES (1, 10);
 
@@ -1227,7 +1277,10 @@ SELECT * FROM tt5, tt6 WHERE tt5.f1 = tt6.f1 AND tt5.f1 = tt5.f2 - tt6.f2;
 
 CREATE TEMPORARY TABLE xx (pkxx INT);
 
-CREATE TEMPORARY TABLE yy (pkyy INT, pkxx INT);
+CREATE TEMPORARY TABLE yy (
+  pkyy INT,
+  pkxx INT
+);
 
 INSERT INTO xx VALUES (1);
 
@@ -1322,7 +1375,10 @@ SET enable_nestloop = 0;
 
 CREATE TEMPORARY TABLE a (i INT);
 
-CREATE TEMPORARY TABLE b (x INT, y INT);
+CREATE TEMPORARY TABLE b (
+  x INT,
+  y INT
+);
 
 SELECT * FROM a LEFT OUTER JOIN b ON i = x AND i = y AND x = i;
 
@@ -1330,16 +1386,11 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE TYPE mycomptype AS ( id INT, v BIGINT );
+CREATE TYPE mycomptype AS (id INT, v BIGINT);
 
 CREATE TEMPORARY TABLE tidv (idv mycomptype);
 
-CREATE INDEX
-ON tidv
-USING btree
-(
-  idv
-);
+CREATE INDEX ON tidv USING btree (idv);
 
 SELECT a.idv, b.idv FROM tidv AS a, tidv AS b WHERE a.idv = b.idv;
 
@@ -1402,16 +1453,22 @@ ORDER BY 1;
 
 BEGIN;
 
-CREATE TEMPORARY TABLE a (code CHAR(1) NOT NULL, CONSTRAINT "a_pk" PRIMARY KEY (code));
+CREATE TEMPORARY TABLE a (
+  code CHAR(1) NOT NULL,
+  CONSTRAINT "a_pk" PRIMARY KEY (code)
+);
 
-CREATE TEMPORARY TABLE b
-(
+CREATE TEMPORARY TABLE b (
   a CHAR(1) NOT NULL,
   num INT NOT NULL,
   CONSTRAINT "b_pk" PRIMARY KEY (a, num)
 );
 
-CREATE TEMPORARY TABLE c (name CHAR(1) NOT NULL, a CHAR(1), CONSTRAINT "c_pk" PRIMARY KEY (name));
+CREATE TEMPORARY TABLE c (
+  name CHAR(1) NOT NULL,
+  a CHAR(1),
+  CONSTRAINT "c_pk" PRIMARY KEY (name)
+);
 
 INSERT INTO a (code) VALUES ('p');
 
@@ -1529,10 +1586,13 @@ FROM
     tenk1 AS c
   ON qq = unique2;
 
-CREATE TEMPORARY TABLE nt1 (id INT PRIMARY KEY, a1 BOOLEAN, a2 BOOLEAN);
+CREATE TEMPORARY TABLE nt1 (
+  id INT PRIMARY KEY,
+  a1 BOOLEAN,
+  a2 BOOLEAN
+);
 
-CREATE TEMPORARY TABLE nt2
-(
+CREATE TEMPORARY TABLE nt2 (
   id INT PRIMARY KEY,
   nt1_id INT,
   b1 BOOLEAN,
@@ -1540,8 +1600,7 @@ CREATE TEMPORARY TABLE nt2
   FOREIGN KEY (nt1_id) REFERENCES nt1 (id)
 );
 
-CREATE TEMPORARY TABLE nt3
-(
+CREATE TEMPORARY TABLE nt3 (
   id INT PRIMARY KEY,
   nt2_id INT,
   c1 BOOLEAN,

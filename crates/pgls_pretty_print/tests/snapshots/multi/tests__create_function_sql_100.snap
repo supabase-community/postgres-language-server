@@ -444,7 +444,10 @@ CREATE FUNCTION functest_is_6()
 RETURNS INT
 LANGUAGE "sql" RETURN nextval('functest1');;
 
-CREATE TABLE functest2 (a INT, b INT);
+CREATE TABLE functest2 (
+  a INT,
+  b INT
+);
 
 CREATE FUNCTION functest_is_7()
 RETURNS INT
@@ -667,8 +670,7 @@ CREATE OPERATOR CLASS part_test_int4_ops_bad
   USING hash
   AS FUNCTION 2 part_hashint4_error(INT, BIGINT);
 
-CREATE TABLE pt
-(i INT)
+CREATE TABLE pt (i INT)
 PARTITION BY HASH(i part_test_int4_ops_bad);
 
 CREATE TABLE p1 PARTITION OF pt FOR VALUES WITH (MODULUS 4, REMAINDER 0);

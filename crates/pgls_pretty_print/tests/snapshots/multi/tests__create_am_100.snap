@@ -9,12 +9,7 @@ CREATE ACCESS METHOD bogus TYPE INDEX HANDLER int4in;
 
 CREATE ACCESS METHOD bogus TYPE INDEX HANDLER heap_tableam_handler;
 
-CREATE INDEX "grect2ind2"
-ON fast_emp4000
-USING gist2
-(
-  home_base
-);
+CREATE INDEX "grect2ind2" ON fast_emp4000 USING gist2 (home_base);
 
 CREATE OPERATOR CLASS box_ops DEFAULT
   FOR TYPE box
@@ -42,12 +37,7 @@ CREATE OPERATOR CLASS box_ops DEFAULT
   FUNCTION 6 gist_box_picksplit(internal, internal),
   FUNCTION 7 gist_box_same(box, box, internal);
 
-CREATE INDEX "grect2ind2"
-ON fast_emp4000
-USING gist2
-(
-  home_base
-);
+CREATE INDEX "grect2ind2" ON fast_emp4000 USING gist2 (home_base);
 
 BEGIN;
 
@@ -123,8 +113,10 @@ CREATE MATERIALIZED VIEW tableam_tblmv_heap2 USING heap2 AS SELECT * FROM tablea
 
 SELECT f1 FROM tableam_tblmv_heap2 ORDER BY f1;
 
-CREATE TABLE tableam_parted_heap2
-(a TEXT, b INT)
+CREATE TABLE tableam_parted_heap2 (
+  a TEXT,
+  b INT
+)
 PARTITION BY LIST(a) USING heap2;
 
 SELECT
@@ -138,8 +130,10 @@ WHERE
 
 DROP TABLE "tableam_parted_heap2";
 
-CREATE TABLE tableam_parted_heap2
-(a TEXT, b INT)
+CREATE TABLE tableam_parted_heap2 (
+  a TEXT,
+  b INT
+)
 PARTITION BY LIST(a);
 
 SET default_table_access_method = heap;
@@ -221,9 +215,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype
@@ -242,9 +236,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype
@@ -343,17 +337,19 @@ DROP MATERIALIZED VIEW "heapmv";
 
 DROP TABLE "heaptable";
 
-CREATE TABLE am_partitioned
-(x INT, y INT)
+CREATE TABLE am_partitioned (
+  x INT,
+  y INT
+)
 PARTITION BY HASH(x) USING heap2;
 
 SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS refobj
 FROM
@@ -371,8 +367,10 @@ BEGIN;
 
 SET LOCAL default_table_access_method = heap;
 
-CREATE TABLE am_partitioned
-(x INT, y INT)
+CREATE TABLE am_partitioned (
+  x INT,
+  y INT
+)
 PARTITION BY HASH(x);
 
 SELECT relam FROM pg_class WHERE relname = 'am_partitioned';
@@ -381,9 +379,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS refobj
 FROM
@@ -410,9 +408,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS refobj
 FROM
@@ -441,9 +439,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS refobj
 FROM
@@ -556,8 +554,10 @@ SELECT INTO tableam_tblselectinto_heapx FROM tableam_tbl_heapx;
 
 CREATE MATERIALIZED VIEW tableam_tblmv_heapx USING heap2 AS SELECT * FROM tableam_tbl_heapx;
 
-CREATE TABLE tableam_parted_heapx
-(a TEXT, b INT)
+CREATE TABLE tableam_parted_heapx (
+  a TEXT,
+  b INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE tableam_parted_1_heapx PARTITION OF tableam_parted_heapx FOR VALUES IN ('a', 'b');

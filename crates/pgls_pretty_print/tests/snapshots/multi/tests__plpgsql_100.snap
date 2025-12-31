@@ -3,102 +3,89 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/plpgsql.sql
 snapshot_kind: text
 ---
-CREATE TABLE room (roomno CHAR(8), comment TEXT);
-
-CREATE UNIQUE INDEX "room_rno"
-ON room
-USING btree
-(
-  roomno bpchar_ops
+CREATE TABLE room (
+  roomno CHAR(8),
+  comment TEXT
 );
 
-CREATE TABLE wslot (slotname CHAR(20), roomno CHAR(8), slotlink CHAR(20), backlink CHAR(20));
+CREATE UNIQUE INDEX "room_rno" ON room USING btree (roomno bpchar_ops);
 
-CREATE UNIQUE INDEX "wslot_name"
-ON wslot
-USING btree
-(
-  slotname bpchar_ops
+CREATE TABLE wslot (
+  slotname CHAR(20),
+  roomno CHAR(8),
+  slotlink CHAR(20),
+  backlink CHAR(20)
 );
 
-CREATE TABLE pfield (name TEXT, comment TEXT);
+CREATE UNIQUE INDEX "wslot_name" ON wslot USING btree (slotname bpchar_ops);
 
-CREATE UNIQUE INDEX "pfield_name"
-ON pfield
-USING btree
-(
-  name text_ops
+CREATE TABLE pfield (
+  name TEXT,
+  comment TEXT
 );
 
-CREATE TABLE pslot (slotname CHAR(20), pfname TEXT, slotlink CHAR(20), backlink CHAR(20));
+CREATE UNIQUE INDEX "pfield_name" ON pfield USING btree (name text_ops);
 
-CREATE UNIQUE INDEX "pslot_name"
-ON pslot
-USING btree
-(
-  slotname bpchar_ops
+CREATE TABLE pslot (
+  slotname CHAR(20),
+  pfname TEXT,
+  slotlink CHAR(20),
+  backlink CHAR(20)
 );
 
-CREATE TABLE pline (slotname CHAR(20), phonenumber CHAR(20), comment TEXT, backlink CHAR(20));
+CREATE UNIQUE INDEX "pslot_name" ON pslot USING btree (slotname bpchar_ops);
 
-CREATE UNIQUE INDEX "pline_name"
-ON pline
-USING btree
-(
-  slotname bpchar_ops
+CREATE TABLE pline (
+  slotname CHAR(20),
+  phonenumber CHAR(20),
+  comment TEXT,
+  backlink CHAR(20)
 );
 
-CREATE TABLE hub (name CHAR(14), comment TEXT, nslots INT);
+CREATE UNIQUE INDEX "pline_name" ON pline USING btree (slotname bpchar_ops);
 
-CREATE UNIQUE INDEX "hub_name"
-ON hub
-USING btree
-(
-  name bpchar_ops
+CREATE TABLE hub (
+  name CHAR(14),
+  comment TEXT,
+  nslots INT
 );
 
-CREATE TABLE hslot (slotname CHAR(20), hubname CHAR(14), slotno INT, slotlink CHAR(20));
+CREATE UNIQUE INDEX "hub_name" ON hub USING btree (name bpchar_ops);
 
-CREATE UNIQUE INDEX "hslot_name"
-ON hslot
-USING btree
-(
-  slotname bpchar_ops
+CREATE TABLE hslot (
+  slotname CHAR(20),
+  hubname CHAR(14),
+  slotno INT,
+  slotlink CHAR(20)
 );
 
-CREATE INDEX "hslot_hubname"
-ON hslot
-USING btree
-(
-  hubname bpchar_ops
+CREATE UNIQUE INDEX "hslot_name" ON hslot USING btree (slotname bpchar_ops);
+
+CREATE INDEX "hslot_hubname" ON hslot USING btree (hubname bpchar_ops);
+
+CREATE TABLE system (
+  name TEXT,
+  comment TEXT
 );
 
-CREATE TABLE system (name TEXT, comment TEXT);
+CREATE UNIQUE INDEX "system_name" ON system USING btree (name text_ops);
 
-CREATE UNIQUE INDEX "system_name"
-ON system
-USING btree
-(
-  name text_ops
+CREATE TABLE iface (
+  slotname CHAR(20),
+  sysname TEXT,
+  ifname TEXT,
+  slotlink CHAR(20)
 );
 
-CREATE TABLE iface (slotname CHAR(20), sysname TEXT, ifname TEXT, slotlink CHAR(20));
+CREATE UNIQUE INDEX "iface_name" ON iface USING btree (slotname bpchar_ops);
 
-CREATE UNIQUE INDEX "iface_name"
-ON iface
-USING btree
-(
-  slotname bpchar_ops
+CREATE TABLE phone (
+  slotname CHAR(20),
+  comment TEXT,
+  slotlink CHAR(20)
 );
 
-CREATE TABLE phone (slotname CHAR(20), comment TEXT, slotlink CHAR(20));
-
-CREATE UNIQUE INDEX "phone_name"
-ON phone
-USING btree
-(
-  slotname bpchar_ops
-);
+CREATE UNIQUE INDEX "phone_name" ON phone USING btree (slotname bpchar_ops);
 
 CREATE FUNCTION tg_room_au()
 RETURNS trigger
@@ -112,11 +99,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_room_au
-AFTER UPDATE
-ON room
-FOR EACH ROW
-EXECUTE FUNCTION tg_room_au();
+CREATE TRIGGER tg_room_au AFTER UPDATE ON room FOR EACH ROW EXECUTE FUNCTION tg_room_au();
 
 CREATE FUNCTION tg_room_ad()
 RETURNS trigger
@@ -128,11 +111,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_room_ad
-AFTER DELETE
-ON room
-FOR EACH ROW
-EXECUTE FUNCTION tg_room_ad();
+CREATE TRIGGER tg_room_ad AFTER DELETE ON room FOR EACH ROW EXECUTE FUNCTION tg_room_ad();
 
 CREATE FUNCTION tg_wslot_biu()
 RETURNS trigger
@@ -147,10 +126,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_wslot_biu
-BEFORE INSERT OR UPDATE
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_wslot_biu();
+  BEFORE INSERT OR UPDATE
+  ON wslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_wslot_biu();
 
 CREATE FUNCTION tg_pfield_au()
 RETURNS trigger
@@ -164,11 +143,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_pfield_au
-AFTER UPDATE
-ON pfield
-FOR EACH ROW
-EXECUTE FUNCTION tg_pfield_au();
+CREATE TRIGGER tg_pfield_au AFTER UPDATE ON pfield FOR EACH ROW EXECUTE FUNCTION tg_pfield_au();
 
 CREATE FUNCTION tg_pfield_ad()
 RETURNS trigger
@@ -180,11 +155,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_pfield_ad
-AFTER DELETE
-ON pfield
-FOR EACH ROW
-EXECUTE FUNCTION tg_pfield_ad();
+CREATE TRIGGER tg_pfield_ad AFTER DELETE ON pfield FOR EACH ROW EXECUTE FUNCTION tg_pfield_ad();
 
 CREATE FUNCTION tg_pslot_biu()
 RETURNS trigger
@@ -203,10 +174,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_pslot_biu
-BEFORE INSERT OR UPDATE
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_pslot_biu();
+  BEFORE INSERT OR UPDATE
+  ON pslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_pslot_biu();
 
 CREATE FUNCTION tg_system_au()
 RETURNS trigger
@@ -220,11 +191,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_system_au
-AFTER UPDATE
-ON system
-FOR EACH ROW
-EXECUTE FUNCTION tg_system_au();
+CREATE TRIGGER tg_system_au AFTER UPDATE ON system FOR EACH ROW EXECUTE FUNCTION tg_system_au();
 
 CREATE FUNCTION tg_iface_biu()
 RETURNS trigger
@@ -250,10 +217,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_iface_biu
-BEFORE INSERT OR UPDATE
-ON iface
-FOR EACH ROW
-EXECUTE FUNCTION tg_iface_biu();
+  BEFORE INSERT OR UPDATE
+  ON iface
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_iface_biu();
 
 CREATE FUNCTION tg_hub_a()
 RETURNS trigger
@@ -282,10 +249,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_hub_a
-AFTER INSERT OR DELETE OR UPDATE
-ON hub
-FOR EACH ROW
-EXECUTE FUNCTION tg_hub_a();
+  AFTER INSERT OR DELETE OR UPDATE
+  ON hub
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_hub_a();
 
 CREATE FUNCTION tg_hub_adjustslots(hname CHAR, oldnslots INT, newnslots INT)
 RETURNS INT
@@ -346,10 +313,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_hslot_biu
-BEFORE INSERT OR UPDATE
-ON hslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_hslot_biu();
+  BEFORE INSERT OR UPDATE
+  ON hslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_hslot_biu();
 
 CREATE FUNCTION tg_hslot_bd()
 RETURNS trigger
@@ -369,11 +336,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_hslot_bd
-BEFORE DELETE
-ON hslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_hslot_bd();
+CREATE TRIGGER tg_hslot_bd BEFORE DELETE ON hslot FOR EACH ROW EXECUTE FUNCTION tg_hslot_bd();
 
 CREATE FUNCTION tg_chkslotname()
 RETURNS trigger
@@ -388,34 +351,34 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_chkslotname
-BEFORE INSERT
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotname("PS");
+  BEFORE INSERT
+  ON pslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotname("PS");
 
 CREATE TRIGGER tg_chkslotname
-BEFORE INSERT
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotname("WS");
+  BEFORE INSERT
+  ON wslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotname("WS");
 
 CREATE TRIGGER tg_chkslotname
-BEFORE INSERT
-ON pline
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotname("PL");
+  BEFORE INSERT
+  ON pline
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotname("PL");
 
 CREATE TRIGGER tg_chkslotname
-BEFORE INSERT
-ON iface
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotname("IF");
+  BEFORE INSERT
+  ON iface
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotname("IF");
 
 CREATE TRIGGER tg_chkslotname
-BEFORE INSERT
-ON phone
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotname("PH");
+  BEFORE INSERT
+  ON phone
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotname("PH");
 
 CREATE FUNCTION tg_chkslotlink()
 RETURNS trigger
@@ -430,34 +393,34 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_chkslotlink
-BEFORE INSERT OR UPDATE
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+  BEFORE INSERT OR UPDATE
+  ON pslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotlink();
 
 CREATE TRIGGER tg_chkslotlink
-BEFORE INSERT OR UPDATE
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+  BEFORE INSERT OR UPDATE
+  ON wslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotlink();
 
 CREATE TRIGGER tg_chkslotlink
-BEFORE INSERT OR UPDATE
-ON iface
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+  BEFORE INSERT OR UPDATE
+  ON iface
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotlink();
 
 CREATE TRIGGER tg_chkslotlink
-BEFORE INSERT OR UPDATE
-ON hslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+  BEFORE INSERT OR UPDATE
+  ON hslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotlink();
 
 CREATE TRIGGER tg_chkslotlink
-BEFORE INSERT OR UPDATE
-ON phone
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkslotlink();
+  BEFORE INSERT OR UPDATE
+  ON phone
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkslotlink();
 
 CREATE FUNCTION tg_chkbacklink()
 RETURNS trigger
@@ -472,22 +435,22 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_chkbacklink
-BEFORE INSERT OR UPDATE
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkbacklink();
+  BEFORE INSERT OR UPDATE
+  ON pslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkbacklink();
 
 CREATE TRIGGER tg_chkbacklink
-BEFORE INSERT OR UPDATE
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkbacklink();
+  BEFORE INSERT OR UPDATE
+  ON wslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkbacklink();
 
 CREATE TRIGGER tg_chkbacklink
-BEFORE INSERT OR UPDATE
-ON pline
-FOR EACH ROW
-EXECUTE FUNCTION tg_chkbacklink();
+  BEFORE INSERT OR UPDATE
+  ON pline
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_chkbacklink();
 
 CREATE FUNCTION tg_pslot_bu()
 RETURNS trigger
@@ -513,11 +476,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_pslot_bu
-BEFORE UPDATE
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_pslot_bu();
+CREATE TRIGGER tg_pslot_bu BEFORE UPDATE ON pslot FOR EACH ROW EXECUTE FUNCTION tg_pslot_bu();
 
 CREATE FUNCTION tg_wslot_bu()
 RETURNS trigger
@@ -543,11 +502,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_wslot_bu
-BEFORE UPDATE
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_wslot_bu();
+CREATE TRIGGER tg_wslot_bu BEFORE UPDATE ON wslot FOR EACH ROW EXECUTE FUNCTION tg_wslot_bu();
 
 CREATE FUNCTION tg_pline_bu()
 RETURNS trigger
@@ -573,11 +528,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_pline_bu
-BEFORE UPDATE
-ON pline
-FOR EACH ROW
-EXECUTE FUNCTION tg_pline_bu();
+CREATE TRIGGER tg_pline_bu BEFORE UPDATE ON pline FOR EACH ROW EXECUTE FUNCTION tg_pline_bu();
 
 CREATE FUNCTION tg_iface_bu()
 RETURNS trigger
@@ -603,11 +554,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_iface_bu
-BEFORE UPDATE
-ON iface
-FOR EACH ROW
-EXECUTE FUNCTION tg_iface_bu();
+CREATE TRIGGER tg_iface_bu BEFORE UPDATE ON iface FOR EACH ROW EXECUTE FUNCTION tg_iface_bu();
 
 CREATE FUNCTION tg_hslot_bu()
 RETURNS trigger
@@ -633,11 +580,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_hslot_bu
-BEFORE UPDATE
-ON hslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_hslot_bu();
+CREATE TRIGGER tg_hslot_bu BEFORE UPDATE ON hslot FOR EACH ROW EXECUTE FUNCTION tg_hslot_bu();
 
 CREATE FUNCTION tg_phone_bu()
 RETURNS trigger
@@ -661,11 +604,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tg_phone_bu
-BEFORE UPDATE
-ON phone
-FOR EACH ROW
-EXECUTE FUNCTION tg_phone_bu();
+CREATE TRIGGER tg_phone_bu BEFORE UPDATE ON phone FOR EACH ROW EXECUTE FUNCTION tg_phone_bu();
 
 CREATE FUNCTION tg_backlink_a()
 RETURNS trigger
@@ -705,22 +644,22 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_backlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_backlink_a("PS");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON pslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_backlink_a("PS");
 
 CREATE TRIGGER tg_backlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_backlink_a("WS");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON wslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_backlink_a("WS");
 
 CREATE TRIGGER tg_backlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON pline
-FOR EACH ROW
-EXECUTE FUNCTION tg_backlink_a("PL");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON pline
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_backlink_a("PL");
 
 CREATE FUNCTION tg_backlink_set(myname CHAR, blname CHAR)
 RETURNS INT
@@ -857,34 +796,34 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tg_slotlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON pslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("PS");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON pslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_slotlink_a("PS");
 
 CREATE TRIGGER tg_slotlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON wslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("WS");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON wslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_slotlink_a("WS");
 
 CREATE TRIGGER tg_slotlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON iface
-FOR EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("IF");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON iface
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_slotlink_a("IF");
 
 CREATE TRIGGER tg_slotlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON hslot
-FOR EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("HS");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON hslot
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_slotlink_a("HS");
 
 CREATE TRIGGER tg_slotlink_a
-AFTER INSERT OR DELETE OR UPDATE
-ON phone
-FOR EACH ROW
-EXECUTE FUNCTION tg_slotlink_a("PH");
+  AFTER INSERT OR DELETE OR UPDATE
+  ON phone
+  FOR EACH ROW
+  EXECUTE FUNCTION tg_slotlink_a("PH");
 
 CREATE FUNCTION tg_slotlink_set(CHAR, CHAR)
 RETURNS INT
@@ -1954,7 +1893,10 @@ SELECT * FROM duplic(textrange('aaa', 'bbb'));
 
 DROP FUNCTION duplic(anycompatiblerange);
 
-CREATE TABLE perform_test (a INT, b INT);
+CREATE TABLE perform_test (
+  a INT,
+  b INT
+);
 
 CREATE FUNCTION perform_simple_func(INT)
 RETURNS BOOLEAN
@@ -1999,7 +1941,10 @@ SELECT * FROM perform_test;
 
 DROP TABLE "perform_test";
 
-CREATE TEMPORARY TABLE users (login TEXT, id serial);
+CREATE TEMPORARY TABLE users (
+  login TEXT,
+  id serial
+);
 
 CREATE FUNCTION sp_id_user(a_login TEXT)
 RETURNS INT
@@ -2051,7 +1996,10 @@ DROP FUNCTION sp_add_user(TEXT);
 
 DROP FUNCTION sp_id_user(TEXT);
 
-CREATE TABLE rc_test (a INT, b INT);
+CREATE TABLE rc_test (
+  a INT,
+  b INT
+);
 
 COPY rc_test FROM STDOUT;
 
@@ -2429,9 +2377,12 @@ DROP FUNCTION void_return_expr();
 
 DROP FUNCTION missing_return_expr();
 
-CREATE TABLE eifoo (i INT, y INT);
+CREATE TABLE eifoo (
+  i INT,
+  y INT
+);
 
-CREATE TYPE eitype AS ( i INT, y INT );
+CREATE TYPE eitype AS (i INT, y INT);
 
 CREATE OR REPLACE FUNCTION execute_into_test(VARCHAR)
 RETURNS RECORD
@@ -2561,7 +2512,10 @@ LANGUAGE "plpgsql";
 
 SELECT multi_datum_use(42);
 
-CREATE TEMPORARY TABLE foo (f1 INT, f2 INT);
+CREATE TEMPORARY TABLE foo (
+  f1 INT,
+  f2 INT
+);
 
 INSERT INTO foo
 VALUES
@@ -3002,7 +2956,11 @@ begin
 end
 $$;
 
-CREATE TABLE test_01 (a INT, b INT, c INT);
+CREATE TABLE test_01 (
+  a INT,
+  b INT,
+  c INT
+);
 
 ALTER TABLE test_01
   DROP COLUMN a;
@@ -3233,7 +3191,7 @@ LANGUAGE "plpgsql";
 
 SELECT * FROM ret_query1();
 
-CREATE TYPE record_type AS ( x TEXT, y INT, z BOOLEAN );
+CREATE TYPE record_type AS (x TEXT, y INT, z BOOLEAN);
 
 CREATE OR REPLACE FUNCTION ret_query2(lim INT)
 RETURNS SETOF record_type
@@ -3420,7 +3378,12 @@ SELECT * FROM return_dquery();
 
 DROP FUNCTION return_dquery();
 
-CREATE TABLE tabwithcols (a INT, b INT, c INT, d INT);
+CREATE TABLE tabwithcols (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
 
 INSERT INTO tabwithcols
 VALUES
@@ -3458,7 +3421,7 @@ DROP FUNCTION returnqueryf();
 
 DROP TABLE "tabwithcols";
 
-CREATE TYPE compostype AS ( x INT, y VARCHAR );
+CREATE TYPE compostype AS (x INT, y VARCHAR);
 
 CREATE OR REPLACE FUNCTION compos()
 RETURNS compostype
@@ -4582,7 +4545,7 @@ SELECT foreach_test(ARRAY[ARRAY[1, 2], ARRAY[3, 4]]);
 
 SELECT foreach_test(ARRAY[ARRAY[ARRAY[1, 2]], ARRAY[ARRAY[3, 4]]]);
 
-CREATE TYPE xy_tuple AS ( x INT, y INT );
+CREATE TYPE xy_tuple AS (x INT, y INT);
 
 CREATE OR REPLACE FUNCTION foreach_test(ANYARRAY)
 RETURNS VOID
@@ -4601,9 +4564,9 @@ SELECT foreach_test(CAST(ARRAY[(10, 20), (40, 69), (35, 78)] AS xy_tuple[]));
 
 SELECT
   foreach_test(
-  CAST(ARRAY[ARRAY[(10, 20), (40, 69)],
-  ARRAY[(35, 78), (88, 76)]]
-  AS xy_tuple[])
+    CAST(ARRAY[ARRAY[(10, 20), (40, 69)],
+    ARRAY[(35, 78), (88, 76)]]
+    AS xy_tuple[])
   );
 
 CREATE OR REPLACE FUNCTION foreach_test(ANYARRAY)
@@ -4623,9 +4586,9 @@ SELECT foreach_test(CAST(ARRAY[(10, 20), (40, 69), (35, 78)] AS xy_tuple[]));
 
 SELECT
   foreach_test(
-  CAST(ARRAY[ARRAY[(10, 20), (40, 69)],
-  ARRAY[(35, 78), (88, 76)]]
-  AS xy_tuple[])
+    CAST(ARRAY[ARRAY[(10, 20), (40, 69)],
+    ARRAY[(35, 78), (88, 76)]]
+    AS xy_tuple[])
   );
 
 CREATE OR REPLACE FUNCTION foreach_test(ANYARRAY)
@@ -4645,16 +4608,19 @@ SELECT foreach_test(CAST(ARRAY[(10, 20), (40, 69), (35, 78)] AS xy_tuple[]));
 
 SELECT
   foreach_test(
-  CAST(ARRAY[ARRAY[(10, 20), (40, 69)],
-  ARRAY[(35, 78), (88, 76)]]
-  AS xy_tuple[])
+    CAST(ARRAY[ARRAY[(10, 20), (40, 69)],
+    ARRAY[(35, 78), (88, 76)]]
+    AS xy_tuple[])
   );
 
 DROP FUNCTION foreach_test(ANYARRAY);
 
 DROP TYPE xy_tuple;
 
-CREATE TEMPORARY TABLE rtype (id INT, ar TEXT[]);
+CREATE TEMPORARY TABLE rtype (
+  id INT,
+  ar TEXT[]
+);
 
 CREATE FUNCTION arrayassign1()
 RETURNS TEXT[]
@@ -5001,7 +4967,10 @@ begin
 end;
 $$;
 
-CREATE TABLE transition_table_base (id INT PRIMARY KEY, val TEXT);
+CREATE TABLE transition_table_base (
+  id INT PRIMARY KEY,
+  val TEXT
+);
 
 CREATE FUNCTION transition_table_base_ins_func()
 RETURNS trigger
@@ -5026,19 +4995,19 @@ END;
 ';
 
 CREATE TRIGGER transition_table_base_ins_trig
-AFTER INSERT
-ON transition_table_base
-REFERENCING OLD TABLE AS oldtable
-NEW TABLE AS newtable
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_base_ins_func();
+  AFTER INSERT
+  ON transition_table_base
+  REFERENCING OLD TABLE AS oldtable
+  NEW TABLE AS newtable
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_base_ins_func();
 
 CREATE TRIGGER transition_table_base_ins_trig
-AFTER INSERT
-ON transition_table_base
-REFERENCING NEW TABLE AS newtable
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_base_ins_func();
+  AFTER INSERT
+  ON transition_table_base
+  REFERENCING NEW TABLE AS newtable
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_base_ins_func();
 
 INSERT INTO transition_table_base
 VALUES
@@ -5073,32 +5042,29 @@ END;
 ';
 
 CREATE TRIGGER transition_table_base_upd_trig
-AFTER UPDATE
-ON transition_table_base
-REFERENCING OLD TABLE AS oldtable
-NEW TABLE AS newtable
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_base_upd_func();
+  AFTER UPDATE
+  ON transition_table_base
+  REFERENCING OLD TABLE AS oldtable
+  NEW TABLE AS newtable
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_base_upd_func();
 
 UPDATE transition_table_base SET val = '*' || val || '*' WHERE id BETWEEN 2 AND 3;
 
-CREATE TABLE transition_table_level1
-(
+CREATE TABLE transition_table_level1 (
   level1_no serial NOT NULL,
   level1_node_name VARCHAR(255),
   PRIMARY KEY (level1_no)
 );
 
-CREATE TABLE transition_table_level2
-(
+CREATE TABLE transition_table_level2 (
   level2_no serial NOT NULL,
   parent_no INT NOT NULL,
   level1_node_name VARCHAR(255),
   PRIMARY KEY (level2_no)
 );
 
-CREATE TABLE transition_table_status
-(
+CREATE TABLE transition_table_status (
   level INT NOT NULL,
   node_no INT NOT NULL,
   status INT,
@@ -5120,11 +5086,11 @@ AS '
 ';
 
 CREATE TRIGGER transition_table_level1_ri_parent_del_trigger
-AFTER DELETE
-ON transition_table_level1
-REFERENCING OLD TABLE AS p
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_level1_ri_parent_del_func();
+  AFTER DELETE
+  ON transition_table_level1
+  REFERENCING OLD TABLE AS p
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_level1_ri_parent_del_func();
 
 CREATE FUNCTION transition_table_level1_ri_parent_upd_func()
 RETURNS trigger
@@ -5150,12 +5116,12 @@ AS '
 ';
 
 CREATE TRIGGER transition_table_level1_ri_parent_upd_trigger
-AFTER UPDATE
-ON transition_table_level1
-REFERENCING OLD TABLE AS d
-NEW TABLE AS i
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_level1_ri_parent_upd_func();
+  AFTER UPDATE
+  ON transition_table_level1
+  REFERENCING OLD TABLE AS d
+  NEW TABLE AS i
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_level1_ri_parent_upd_func();
 
 CREATE FUNCTION transition_table_level2_ri_child_insupd_func()
 RETURNS trigger
@@ -5174,25 +5140,24 @@ AS '
 ';
 
 CREATE TRIGGER transition_table_level2_ri_child_ins_trigger
-AFTER INSERT
-ON transition_table_level2
-REFERENCING NEW TABLE AS i
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
+  AFTER INSERT
+  ON transition_table_level2
+  REFERENCING NEW TABLE AS i
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
 
 CREATE TRIGGER transition_table_level2_ri_child_upd_trigger
-AFTER UPDATE
-ON transition_table_level2
-REFERENCING NEW TABLE AS i
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
+  AFTER UPDATE
+  ON transition_table_level2
+  REFERENCING NEW TABLE AS i
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_level2_ri_child_insupd_func();
 
 INSERT INTO transition_table_level1 (level1_no) SELECT generate_series(1, 200);
 
 ANALYZE transition_table_level1;
 
-INSERT INTO transition_table_level2
-(level2_no, parent_no)
+INSERT INTO transition_table_level2 (level2_no, parent_no)
 SELECT
   level2_no,
   level2_no / 50 + 1 AS parent_no
@@ -5201,8 +5166,7 @@ FROM
 
 ANALYZE transition_table_level2;
 
-INSERT INTO transition_table_status
-(level, node_no, status)
+INSERT INTO transition_table_status (level, node_no, status)
 SELECT
   1,
   level1_no,
@@ -5210,8 +5174,7 @@ SELECT
 FROM
   transition_table_level1;
 
-INSERT INTO transition_table_status
-(level, node_no, status)
+INSERT INTO transition_table_status (level, node_no, status)
 SELECT
   2,
   level2_no,
@@ -5236,11 +5199,11 @@ AS '
 ';
 
 CREATE TRIGGER transition_table_level2_bad_usage_trigger
-AFTER DELETE
-ON transition_table_level2
-REFERENCING OLD TABLE AS dx
-FOR EACH STATEMENT
-EXECUTE FUNCTION transition_table_level2_bad_usage_func();
+  AFTER DELETE
+  ON transition_table_level2
+  REFERENCING OLD TABLE AS dx
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION transition_table_level2_bad_usage_func();
 
 DELETE FROM transition_table_level2 WHERE level2_no BETWEEN 301 AND 305;
 
@@ -5264,7 +5227,10 @@ DELETE FROM transition_table_level2 WHERE level2_no BETWEEN 211 AND 220;
 
 SELECT COUNT(*) FROM transition_table_level2;
 
-CREATE TABLE alter_table_under_transition_tables (id INT PRIMARY KEY, name TEXT);
+CREATE TABLE alter_table_under_transition_tables (
+  id INT PRIMARY KEY,
+  name TEXT
+);
 
 CREATE FUNCTION alter_table_under_transition_tables_upd_func()
 RETURNS trigger
@@ -5280,20 +5246,20 @@ END;
 ';
 
 CREATE TRIGGER alter_table_under_transition_tables_upd_trigger
-AFTER UPDATE OR TRUNCATE
-ON alter_table_under_transition_tables
-REFERENCING OLD TABLE AS d
-NEW TABLE AS i
-FOR EACH STATEMENT
-EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
+  AFTER UPDATE OR TRUNCATE
+  ON alter_table_under_transition_tables
+  REFERENCING OLD TABLE AS d
+  NEW TABLE AS i
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
 
 CREATE TRIGGER alter_table_under_transition_tables_upd_trigger
-AFTER UPDATE
-ON alter_table_under_transition_tables
-REFERENCING OLD TABLE AS d
-NEW TABLE AS i
-FOR EACH STATEMENT
-EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
+  AFTER UPDATE
+  ON alter_table_under_transition_tables
+  REFERENCING OLD TABLE AS d
+  NEW TABLE AS i
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
 
 INSERT INTO alter_table_under_transition_tables
 VALUES
@@ -5332,12 +5298,12 @@ BEGIN
 END';
 
 CREATE TRIGGER my_trigger
-AFTER UPDATE
-ON multi_test
-REFERENCING NEW TABLE AS new_test
-OLD TABLE AS old_test
-FOR EACH STATEMENT
-EXECUTE FUNCTION multi_test_trig();
+  AFTER UPDATE
+  ON multi_test
+  REFERENCING NEW TABLE AS new_test
+  OLD TABLE AS old_test
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION multi_test_trig();
 
 UPDATE multi_test SET i = i;
 
@@ -5345,8 +5311,10 @@ DROP TABLE "multi_test";
 
 DROP FUNCTION multi_test_trig();
 
-CREATE TABLE partitioned_table
-(a INT, b TEXT)
+CREATE TABLE partitioned_table (
+  a INT,
+  b TEXT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE pt_part1 PARTITION OF partitioned_table FOR VALUES IN (1);

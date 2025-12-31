@@ -3,8 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/replica_identity.sql
 snapshot_kind: text
 ---
-CREATE TABLE test_replica_identity
-(
+CREATE TABLE test_replica_identity (
   id serial PRIMARY KEY,
   keya TEXT NOT NULL,
   keyb TEXT NOT NULL,
@@ -19,15 +18,10 @@ CREATE TABLE test_replica_identity_othertable (id serial PRIMARY KEY);
 
 CREATE TABLE test_replica_identity_t3 (id serial CONSTRAINT "pk" PRIMARY KEY DEFERRABLE);
 
-CREATE INDEX "test_replica_identity_keyab"
-ON test_replica_identity
-USING btree
-(
-  keya,
-  keyb
-);
+CREATE INDEX "test_replica_identity_keyab" ON test_replica_identity USING btree (keya, keyb);
 
-CREATE UNIQUE INDEX "test_replica_identity_keyab_key"
+CREATE UNIQUE
+INDEX "test_replica_identity_keyab_key"
 ON test_replica_identity
 USING btree
 (
@@ -43,12 +37,7 @@ USING btree
   nonkey
 );
 
-CREATE INDEX "test_replica_identity_hash"
-ON test_replica_identity
-USING hash
-(
-  nonkey
-);
+CREATE INDEX "test_replica_identity_hash" ON test_replica_identity USING hash (nonkey);
 
 CREATE UNIQUE INDEX "test_replica_identity_expr"
 ON test_replica_identity
@@ -59,7 +48,8 @@ USING btree
   (3)
 );
 
-CREATE UNIQUE INDEX "test_replica_identity_partial"
+CREATE UNIQUE
+INDEX "test_replica_identity_partial"
 ON test_replica_identity
 USING btree
 (
@@ -184,12 +174,7 @@ ALTER TABLE test_replica_identity2
 
 CREATE TABLE test_replica_identity3 (id INT NOT NULL);
 
-CREATE UNIQUE INDEX "test_replica_identity3_id_key"
-ON test_replica_identity3
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "test_replica_identity3_id_key" ON test_replica_identity3 USING btree (id);
 
 ALTER TABLE test_replica_identity3
   REPLICA IDENTITY
@@ -208,8 +193,7 @@ ALTER TABLE test_replica_identity3
 ALTER TABLE test_replica_identity3
   ALTER COLUMN id DROP NOT NULL;
 
-CREATE TABLE test_replica_identity4
-(id INT NOT NULL)
+CREATE TABLE test_replica_identity4 (id INT NOT NULL)
 PARTITION BY LIST(id);
 
 CREATE TABLE test_replica_identity4_1 (id INT NOT NULL);
@@ -233,15 +217,14 @@ ALTER INDEX test_replica_identity4_pkey
   ATTACH PARTITION
   test_replica_identity4_1_pkey;
 
-CREATE TABLE test_replica_identity5 (a INT NOT NULL, b INT, c INT, PRIMARY KEY (b, c));
-
-CREATE UNIQUE INDEX "test_replica_identity5_a_b_key"
-ON test_replica_identity5
-USING btree
-(
-  a,
-  b
+CREATE TABLE test_replica_identity5 (
+  a INT NOT NULL,
+  b INT,
+  c INT,
+  PRIMARY KEY (b, c)
 );
+
+CREATE UNIQUE INDEX "test_replica_identity5_a_b_key" ON test_replica_identity5 USING btree (a, b);
 
 ALTER TABLE test_replica_identity5
   REPLICA IDENTITY

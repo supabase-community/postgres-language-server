@@ -54,19 +54,13 @@ SELECT currtid2(CAST('tid_seq' AS TEXT), CAST('(0,1)' AS TID));
 
 DROP SEQUENCE "tid_seq";
 
-CREATE INDEX "tid_ind"
-ON tid_tab
-USING btree
-(
-  a
-);
+CREATE INDEX "tid_ind" ON tid_tab USING btree (a);
 
 SELECT currtid2(CAST('tid_ind' AS TEXT), CAST('(0,1)' AS TID));
 
 DROP INDEX "tid_ind";
 
-CREATE TABLE tid_part
-(a INT)
+CREATE TABLE tid_part (a INT)
 PARTITION BY RANGE(a);
 
 SELECT currtid2(CAST('tid_part' AS TEXT), CAST('(0,1)' AS TID));

@@ -31,13 +31,16 @@ INSERT INTO polygon_tbl (f1) VALUES ('asdf');
 
 SELECT * FROM polygon_tbl;
 
-CREATE TABLE quad_poly_tbl (id INT, p polygon);
+CREATE TABLE quad_poly_tbl (
+  id INT,
+  p polygon
+);
 
 INSERT INTO quad_poly_tbl
 SELECT
   (x - 1) * 100 + y,
   polygon(
-  circle(point(x * 10, y * 10), 1 + (x + y) % 10)
+    circle(point(x * 10, y * 10), 1 + (x + y) % 10)
   )
 FROM
   generate_series(1, 100) AS x,
@@ -57,12 +60,7 @@ VALUES
   (11002, NULL),
   (11003, NULL);
 
-CREATE INDEX "quad_poly_tbl_idx"
-ON quad_poly_tbl
-USING spgist
-(
-  p
-);
+CREATE INDEX "quad_poly_tbl_idx" ON quad_poly_tbl USING spgist (p);
 
 SET enable_seqscan = 'on';
 
@@ -73,11 +71,10 @@ SET enable_bitmapscan = off;
 CREATE TEMPORARY TABLE quad_poly_tbl_ord_seq2
 AS
   SELECT
-    RANK(
-
-    )
+    RANK()
     OVER (
-    ORDER BY p <-> CAST('123,456' AS point))
+      ORDER BY p <-> CAST('123,456' AS point)
+    )
     AS n,
     p <-> CAST('123,456' AS point) AS dist,
     id
@@ -287,11 +284,10 @@ SET enable_indexscan = 'on';
 SET enable_bitmapscan = off;
 
 SELECT
-  RANK(
-
-  )
+  RANK()
   OVER (
-  ORDER BY p <-> CAST('123,456' AS point))
+    ORDER BY p <-> CAST('123,456' AS point)
+  )
   AS n,
   p <-> CAST('123,456' AS point) AS dist,
   id
@@ -305,11 +301,10 @@ WHERE
 CREATE TEMPORARY TABLE quad_poly_tbl_ord_idx2
 AS
   SELECT
-    RANK(
-
-    )
+    RANK()
     OVER (
-    ORDER BY p <-> CAST('123,456' AS point))
+      ORDER BY p <-> CAST('123,456' AS point)
+    )
     AS n,
     p <-> CAST('123,456' AS point) AS dist,
     id

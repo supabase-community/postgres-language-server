@@ -5,7 +5,10 @@ snapshot_kind: text
 ---
 SET extra_float_digits = 0;
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl SELECT i, 'Row ' || i FROM generate_series(-2, 2) AS g (i);
 
@@ -258,7 +261,10 @@ DROP VIEW "ro_view10", "ro_view12", "ro_view18";
 
 DROP SEQUENCE "uv_seq" CASCADE;
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl SELECT i, 'Row ' || i FROM generate_series(-2, 2) AS g (i);
 
@@ -315,13 +321,16 @@ UPDATE rw_view1 SET a = 6 WHERE a = 5;
 
 DELETE FROM rw_view1 WHERE a = 5;
 
-CREATE TABLE base_tbl_hist (ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(), a INT, b TEXT);
+CREATE TABLE base_tbl_hist (
+  ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  a INT,
+  b TEXT
+);
 
 CREATE RULE base_tbl_log
 AS ON INSERT TO rw_view1
 DO
-  INSERT INTO base_tbl_hist
-  (a, b)
+  INSERT INTO base_tbl_hist (a, b)
   VALUES (new.a, new.b);;
 
 SELECT
@@ -344,7 +353,10 @@ DROP TABLE "base_tbl" CASCADE;
 
 DROP TABLE "base_tbl_hist";
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl SELECT i, 'Row ' || i FROM generate_series(-2, 2) AS g (i);
 
@@ -412,7 +424,10 @@ DELETE FROM rw_view2 WHERE aaa = 4;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl SELECT i, 'Row ' || i FROM generate_series(-2, 2) AS g (i);
 
@@ -595,7 +610,10 @@ DELETE FROM rw_view2 WHERE a = 2;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl SELECT i, 'Row ' || i FROM generate_series(-2, 2) AS g (i);
 
@@ -672,10 +690,10 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER rw_view1_ins_trig
-INSTEAD OF INSERT
-ON rw_view1
-FOR EACH ROW
-EXECUTE FUNCTION rw_view1_trig_fn();
+  INSTEAD OF INSERT
+  ON rw_view1
+  FOR EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
 
 SELECT
   table_name,
@@ -711,10 +729,10 @@ ORDER BY table_name,
   ordinal_position;
 
 CREATE TRIGGER rw_view1_upd_trig
-INSTEAD OF UPDATE
-ON rw_view1
-FOR EACH ROW
-EXECUTE FUNCTION rw_view1_trig_fn();
+  INSTEAD OF UPDATE
+  ON rw_view1
+  FOR EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
 
 SELECT
   table_name,
@@ -750,10 +768,10 @@ ORDER BY table_name,
   ordinal_position;
 
 CREATE TRIGGER rw_view1_del_trig
-INSTEAD OF DELETE
-ON rw_view1
-FOR EACH ROW
-EXECUTE FUNCTION rw_view1_trig_fn();
+  INSTEAD OF DELETE
+  ON rw_view1
+  FOR EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
 
 SELECT
   table_name,
@@ -811,10 +829,10 @@ DROP TRIGGER "rw_view1_del_trig" ON "rw_view1";
 DROP TRIGGER "rw_view1_ins_trig" ON "rw_view1";
 
 CREATE TRIGGER rw_view2_upd_trig
-INSTEAD OF UPDATE
-ON rw_view2
-FOR EACH ROW
-EXECUTE FUNCTION rw_view1_trig_fn();
+  INSTEAD OF UPDATE
+  ON rw_view2
+  FOR EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
 
 SELECT * FROM base_tbl ORDER BY a;
 
@@ -822,7 +840,10 @@ DROP TABLE "base_tbl" CASCADE;
 
 DROP FUNCTION rw_view1_trig_fn();
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl SELECT i, 'Row ' || i FROM generate_series(-2, 2) AS g (i);
 
@@ -860,7 +881,11 @@ CREATE USER regress_view_user3;
 
 SET SESSION AUTHORIZATION regress_view_user1;
 
-CREATE TABLE base_tbl (a INT, b TEXT, c DOUBLE PRECISION);
+CREATE TABLE base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
 
 INSERT INTO base_tbl VALUES (1, 'Row 1', 1.0);
 
@@ -968,7 +993,11 @@ RESET session_authorization;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT, b TEXT, c DOUBLE PRECISION);
+CREATE TABLE base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
 
 INSERT INTO base_tbl VALUES (1, 'Row 1', 1.0);
 
@@ -1084,7 +1113,11 @@ DROP TABLE "base_tbl" CASCADE;
 
 SET SESSION AUTHORIZATION regress_view_user1;
 
-CREATE TABLE base_tbl (a INT, b TEXT, c DOUBLE PRECISION);
+CREATE TABLE base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
 
 INSERT INTO base_tbl VALUES (1, 'Row 1', 1.0);
 
@@ -1182,7 +1215,11 @@ RESET session_authorization;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT, b TEXT, c DOUBLE PRECISION);
+CREATE TABLE base_tbl (
+  a INT,
+  b TEXT,
+  c DOUBLE PRECISION
+);
 
 INSERT INTO base_tbl VALUES (1, 'Row 1', 1.0);
 
@@ -1364,7 +1401,11 @@ DROP ROLE regress_view_user2;
 
 DROP ROLE regress_view_user3;
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified', c serial);
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified',
+  c serial
+);
 
 INSERT INTO base_tbl VALUES (1, 'Row 1');
 
@@ -1386,7 +1427,10 @@ SELECT * FROM base_tbl;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT PRIMARY KEY, b TEXT DEFAULT 'Unspecified');
+CREATE TABLE base_tbl (
+  a INT PRIMARY KEY,
+  b TEXT DEFAULT 'Unspecified'
+);
 
 INSERT INTO base_tbl VALUES (1, 'Row 1');
 
@@ -1406,10 +1450,10 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER rw_view1_ins_trig
-AFTER INSERT
-ON base_tbl
-FOR EACH ROW
-EXECUTE FUNCTION rw_view1_trig_fn();
+  AFTER INSERT
+  ON base_tbl
+  FOR EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
 
 CREATE VIEW rw_view1
 AS SELECT a AS aa, b AS bb FROM base_tbl;
@@ -1426,7 +1470,10 @@ DROP FUNCTION rw_view1_trig_fn();
 
 DROP TABLE "base_tbl";
 
-CREATE TABLE base_tbl (a INT, b INT);
+CREATE TABLE base_tbl (
+  a INT,
+  b INT
+);
 
 INSERT INTO base_tbl
 VALUES
@@ -1451,7 +1498,10 @@ SELECT * FROM rw_view1;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT, arr INT[]);
+CREATE TABLE base_tbl (
+  a INT,
+  arr INT[]
+);
 
 INSERT INTO base_tbl
 VALUES
@@ -1570,14 +1620,17 @@ SELECT
   events & 16 <> 0 AS del
 FROM
   pg_relation_is_updatable(
-  CAST('rw_view3' AS REGCLASS),
-  FALSE
+    CAST('rw_view3' AS REGCLASS),
+    FALSE
   )
   AS t (events);
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (id INT, idplus1 INT GENERATED ALWAYS AS (id + 1) STORED);
+CREATE TABLE base_tbl (
+  id INT,
+  idplus1 INT GENERATED ALWAYS AS (id + 1) STORED
+);
 
 CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl;
@@ -1606,8 +1659,7 @@ DROP TABLE "base_tbl" CASCADE;
 
 CREATE TABLE base_tbl_parent (a INT);
 
-CREATE TABLE base_tbl_child
-(CHECK (a > 0))
+CREATE TABLE base_tbl_child (CHECK (a > 0))
 INHERITS (base_tbl_parent);
 
 INSERT INTO base_tbl_parent SELECT * FROM generate_series(-8, -1);
@@ -1662,8 +1714,7 @@ SELECT * FROM base_tbl_child ORDER BY a;
 
 CREATE TABLE other_tbl_parent (id INT);
 
-CREATE TABLE other_tbl_child
-()
+CREATE TABLE other_tbl_child ()
 INHERITS (other_tbl_parent);
 
 INSERT INTO other_tbl_parent
@@ -1688,7 +1739,10 @@ DROP TABLE "base_tbl_parent", "base_tbl_child" CASCADE;
 
 DROP TABLE "other_tbl_parent" CASCADE;
 
-CREATE TABLE base_tbl (a INT, b INT DEFAULT 10);
+CREATE TABLE base_tbl (
+  a INT,
+  b INT DEFAULT 10
+);
 
 INSERT INTO base_tbl
 VALUES
@@ -1807,7 +1861,10 @@ INSERT INTO rw_view3 VALUES (3);
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT, b INT[]);
+CREATE TABLE base_tbl (
+  a INT,
+  b INT[]
+);
 
 CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl WHERE a = ANY (b)
@@ -1861,7 +1918,10 @@ UPDATE rw_view1 SET a = a + 5;
 
 DROP TABLE "base_tbl", "ref_tbl" CASCADE;
 
-CREATE TABLE base_tbl (a INT, b INT);
+CREATE TABLE base_tbl (
+  a INT,
+  b INT
+);
 
 CREATE FUNCTION base_tbl_trig_fn()
 RETURNS trigger
@@ -1874,10 +1934,10 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER base_tbl_trig
-BEFORE INSERT OR UPDATE
-ON base_tbl
-FOR EACH ROW
-EXECUTE FUNCTION base_tbl_trig_fn();
+  BEFORE INSERT OR UPDATE
+  ON base_tbl
+  FOR EACH ROW
+  EXECUTE FUNCTION base_tbl_trig_fn();
 
 CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl WHERE a < b
@@ -1893,7 +1953,10 @@ DROP TABLE "base_tbl" CASCADE;
 
 DROP FUNCTION base_tbl_trig_fn();
 
-CREATE TABLE base_tbl (a INT, b INT);
+CREATE TABLE base_tbl (
+  a INT,
+  b INT
+);
 
 CREATE VIEW rw_view1
 AS SELECT a FROM base_tbl WHERE a < b;
@@ -1917,10 +1980,10 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER rw_view1_trig
-INSTEAD OF INSERT OR DELETE OR UPDATE
-ON rw_view1
-FOR EACH ROW
-EXECUTE FUNCTION rw_view1_trig_fn();
+  INSTEAD OF INSERT OR DELETE OR UPDATE
+  ON rw_view1
+  FOR EACH ROW
+  EXECUTE FUNCTION rw_view1_trig_fn();
 
 CREATE VIEW rw_view2
 AS SELECT * FROM rw_view1 WHERE a > 0
@@ -1993,7 +2056,10 @@ INSERT INTO rw_view2 VALUES (2, 3);
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (person TEXT, visibility TEXT);
+CREATE TABLE base_tbl (
+  person TEXT,
+  visibility TEXT
+);
 
 INSERT INTO base_tbl
 VALUES
@@ -2113,7 +2179,11 @@ DELETE FROM rw_view2 WHERE NOT snoop(person);
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE base_tbl (id INT PRIMARY KEY, data TEXT, deleted BOOLEAN);
+CREATE TABLE base_tbl (
+  id INT PRIMARY KEY,
+  data TEXT,
+  deleted BOOLEAN
+);
 
 INSERT INTO base_tbl
 VALUES
@@ -2157,60 +2227,41 @@ SELECT * FROM base_tbl;
 
 DROP TABLE "base_tbl" CASCADE;
 
-CREATE TABLE t1 (a INT, b DOUBLE PRECISION, c TEXT);
-
-CREATE INDEX "t1_a_idx"
-ON t1
-USING btree
-(
-  a
+CREATE TABLE t1 (
+  a INT,
+  b DOUBLE PRECISION,
+  c TEXT
 );
+
+CREATE INDEX "t1_a_idx" ON t1 USING btree (a);
 
 INSERT INTO t1 SELECT i, i, 't1' FROM generate_series(1, 10) AS g (i);
 
 ANALYZE t1;
 
-CREATE TABLE t11
-(d TEXT)
+CREATE TABLE t11 (d TEXT)
 INHERITS (t1);
 
-CREATE INDEX "t11_a_idx"
-ON t11
-USING btree
-(
-  a
-);
+CREATE INDEX "t11_a_idx" ON t11 USING btree (a);
 
 INSERT INTO t11 SELECT i, i, 't11', 't11d' FROM generate_series(1, 10) AS g (i);
 
 ANALYZE t11;
 
-CREATE TABLE t12
-(e INT[])
+CREATE TABLE t12 (e INT[])
 INHERITS (t1);
 
-CREATE INDEX "t12_a_idx"
-ON t12
-USING btree
-(
-  a
-);
+CREATE INDEX "t12_a_idx" ON t12 USING btree (a);
 
 INSERT INTO t12 SELECT i, i, 't12', CAST('{1,2}' AS INT[]) FROM generate_series(1, 10) AS g (i);
 
 ANALYZE t12;
 
-CREATE TABLE t111
-()
+CREATE TABLE t111 ()
 INHERITS (t11,
 t12);
 
-CREATE INDEX "t111_a_idx"
-ON t111
-USING btree
-(
-  a
-);
+CREATE INDEX "t111_a_idx" ON t111 USING btree (a);
 
 INSERT INTO t111
 SELECT
@@ -2322,11 +2373,20 @@ DROP TABLE "tx2";
 
 DROP TABLE "tx3";
 
-CREATE TABLE tx1 (a INT, b INT);
+CREATE TABLE tx1 (
+  a INT,
+  b INT
+);
 
-CREATE TABLE tx2 (b INT, c INT);
+CREATE TABLE tx2 (
+  b INT,
+  c INT
+);
 
-CREATE TABLE tx3 (c INT, d INT);
+CREATE TABLE tx3 (
+  c INT,
+  d INT
+);
 
 ALTER TABLE tx1
   DROP COLUMN b;
@@ -2361,7 +2421,11 @@ DROP TABLE "tx2";
 
 DROP TABLE "tx3";
 
-CREATE TABLE t1 (a INT, b TEXT, c INT);
+CREATE TABLE t1 (
+  a INT,
+  b TEXT,
+  c INT
+);
 
 INSERT INTO t1 VALUES (1, 'one', 10);
 
@@ -2434,7 +2498,10 @@ DROP VIEW "v1";
 
 DROP TABLE "t1";
 
-CREATE TABLE t1 (a INT, b TEXT);
+CREATE TABLE t1 (
+  a INT,
+  b TEXT
+);
 
 CREATE VIEW v1
 AS SELECT CAST(NULL AS INT) AS a;
@@ -2451,12 +2518,18 @@ DROP VIEW "v1";
 
 DROP TABLE "t1";
 
-CREATE TABLE uv_pt
-(a INT, b INT, v VARCHAR)
+CREATE TABLE uv_pt (
+  a INT,
+  b INT,
+  v VARCHAR
+)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE uv_pt1
-(b INT NOT NULL, v VARCHAR, a INT NOT NULL)
+CREATE TABLE uv_pt1 (
+  b INT NOT NULL,
+  v VARCHAR,
+  a INT NOT NULL
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE uv_pt11 (LIKE uv_pt1);
@@ -2490,8 +2563,8 @@ SELECT
   events & 16 <> 0 AS del
 FROM
   pg_relation_is_updatable(
-  CAST('uv_pt' AS REGCLASS),
-  FALSE
+    CAST('uv_pt' AS REGCLASS),
+    FALSE
   )
   AS t (events);
 
@@ -2534,8 +2607,7 @@ DROP VIEW "uv_ptv", "uv_ptv_wco";
 
 DROP TABLE "uv_pt", "uv_pt1", "uv_pt11";
 
-CREATE TABLE wcowrtest
-(a INT)
+CREATE TABLE wcowrtest (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE wcowrtest1 PARTITION OF wcowrtest FOR VALUES IN (1);
@@ -2554,7 +2626,11 @@ INSERT INTO wcowrtest_v VALUES (1);
 ALTER TABLE wcowrtest
   ADD COLUMN b TEXT;
 
-CREATE TABLE wcowrtest2 (b TEXT, c INT, a INT);
+CREATE TABLE wcowrtest2 (
+  b TEXT,
+  c INT,
+  a INT
+);
 
 ALTER TABLE wcowrtest2
   DROP COLUMN c;
@@ -2563,7 +2639,10 @@ ALTER TABLE wcowrtest
   ATTACH PARTITION
   wcowrtest2 FOR VALUES IN (2);
 
-CREATE TABLE sometable (a INT, b TEXT);
+CREATE TABLE sometable (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO sometable
 VALUES
@@ -2586,7 +2665,10 @@ DROP VIEW "wcowrtest_v", "wcowrtest_v2";
 
 DROP TABLE "wcowrtest", "sometable";
 
-CREATE TABLE uv_iocu_tab (a TEXT UNIQUE, b DOUBLE PRECISION);
+CREATE TABLE uv_iocu_tab (
+  a TEXT UNIQUE,
+  b DOUBLE PRECISION
+);
 
 INSERT INTO uv_iocu_tab VALUES ('xyxyxy', 0);
 
@@ -2599,8 +2681,7 @@ AS SELECT
 FROM
   uv_iocu_tab;
 
-INSERT INTO uv_iocu_view
-(a, b)
+INSERT INTO uv_iocu_view (a, b)
 VALUES ('xyxyxy', 1)
 ON CONFLICT (a) DO UPDATE SET b = uv_iocu_view.b;
 
@@ -2610,8 +2691,7 @@ INSERT INTO uv_iocu_view (a, b) VALUES ('xyxyxy', 1) ON CONFLICT (a) DO UPDATE S
 
 SELECT * FROM uv_iocu_tab;
 
-INSERT INTO uv_iocu_view
-(a, b)
+INSERT INTO uv_iocu_view (a, b)
 VALUES ('xyxyxy', 3)
 ON CONFLICT
 (a)
@@ -2621,8 +2701,7 @@ SET b = CAST(excluded.two AS DOUBLE PRECISION);
 
 SELECT * FROM uv_iocu_tab;
 
-INSERT INTO uv_iocu_view
-(a, b)
+INSERT INTO uv_iocu_view (a, b)
 VALUES ('xyxyxy', 3)
 ON CONFLICT
 (a)
@@ -2632,8 +2711,7 @@ SET b = excluded.b
 WHERE
   excluded.c > 0;
 
-INSERT INTO uv_iocu_view
-(a, b)
+INSERT INTO uv_iocu_view (a, b)
 VALUES ('xyxyxy', 3)
 ON CONFLICT
 (a)
@@ -2649,7 +2727,10 @@ DROP VIEW "uv_iocu_view";
 
 DROP TABLE "uv_iocu_tab";
 
-CREATE TABLE uv_iocu_tab (a INT UNIQUE, b TEXT);
+CREATE TABLE uv_iocu_tab (
+  a INT UNIQUE,
+  b TEXT
+);
 
 CREATE VIEW uv_iocu_view
 AS SELECT
@@ -2661,8 +2742,7 @@ FROM
 
 INSERT INTO uv_iocu_view (aa, bb) VALUES (1, 'x');
 
-INSERT INTO uv_iocu_view
-(aa, bb)
+INSERT INTO uv_iocu_view (aa, bb)
 VALUES (1, 'y')
 ON CONFLICT
 (aa)
@@ -2674,8 +2754,7 @@ WHERE
   excluded.bb <> '' AND
   excluded.cc IS NOT NULL;
 
-INSERT INTO uv_iocu_view
-(aa, bb)
+INSERT INTO uv_iocu_view (aa, bb)
 VALUES (1, 'y')
 ON CONFLICT
 (aa)
@@ -2693,8 +2772,7 @@ DELETE FROM uv_iocu_view;
 
 INSERT INTO uv_iocu_view (aa, bb) VALUES (1, 'x');
 
-INSERT INTO uv_iocu_view
-(aa)
+INSERT INTO uv_iocu_view (aa)
 VALUES (1)
 ON CONFLICT
 (aa)
@@ -2707,8 +2785,7 @@ SELECT * FROM uv_iocu_view;
 ALTER TABLE uv_iocu_tab
   ALTER COLUMN b SET DEFAULT 'table default';
 
-INSERT INTO uv_iocu_view
-(aa)
+INSERT INTO uv_iocu_view (aa)
 VALUES (1)
 ON CONFLICT
 (aa)
@@ -2721,8 +2798,7 @@ SELECT * FROM uv_iocu_view;
 ALTER VIEW uv_iocu_view
   ALTER COLUMN bb SET DEFAULT 'view default';
 
-INSERT INTO uv_iocu_view
-(aa)
+INSERT INTO uv_iocu_view (aa)
 VALUES (1)
 ON CONFLICT
 (aa)
@@ -2744,7 +2820,11 @@ CREATE USER regress_view_user2;
 
 SET SESSION AUTHORIZATION regress_view_user1;
 
-CREATE TABLE base_tbl (a INT UNIQUE, b TEXT, c DOUBLE PRECISION);
+CREATE TABLE base_tbl (
+  a INT UNIQUE,
+  b TEXT,
+  c DOUBLE PRECISION
+);
 
 INSERT INTO base_tbl VALUES (1, 'xxx', 1.0);
 
@@ -2835,8 +2915,7 @@ DROP ROLE regress_view_user1;
 
 DROP ROLE regress_view_user2;
 
-CREATE TABLE base_tab_def
-(
+CREATE TABLE base_tab_def (
   a INT,
   b TEXT DEFAULT 'Table default',
   c TEXT DEFAULT 'Table default',
@@ -2899,10 +2978,10 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER base_tab_def_view_instrig
-INSTEAD OF INSERT
-ON base_tab_def_view
-FOR EACH ROW
-EXECUTE FUNCTION base_tab_def_view_instrig_func();
+  INSTEAD OF INSERT
+  ON base_tab_def_view
+  FOR EACH ROW
+  EXECUTE FUNCTION base_tab_def_view_instrig_func();
 
 TRUNCATE base_tab_def;
 
@@ -3052,7 +3131,12 @@ DROP VIEW "base_tab_def_view";
 
 DROP TABLE "base_tab_def";
 
-CREATE TABLE base_tab (a serial, b INT[], c TEXT, d TEXT DEFAULT 'Table default');
+CREATE TABLE base_tab (
+  a serial,
+  b INT[],
+  c TEXT,
+  d TEXT DEFAULT 'Table default'
+);
 
 CREATE VIEW base_tab_view
 AS SELECT c, a, b FROM base_tab;
@@ -3060,8 +3144,7 @@ AS SELECT c, a, b FROM base_tab;
 ALTER VIEW base_tab_view
   ALTER COLUMN c SET DEFAULT 'View default';
 
-INSERT INTO base_tab_view
-(b[1], b[2], c, b[5], b[4], a, b[3])
+INSERT INTO base_tab_view (b[1], b[2], c, b[5], b[4], a, b[3])
 VALUES
   (1, 2, DEFAULT, 5, 4, DEFAULT, 3),
   (10, 11, 'C value', 14, 13, 100, 12);

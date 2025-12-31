@@ -605,7 +605,7 @@ WHERE
   CAST(hash_multirange(v) AS BIT(32)) =
   CAST(hash_multirange_extended(v, 1) AS BIT(32));
 
-CREATE TYPE hash_test_t1 AS ( a INT, b TEXT );
+CREATE TYPE hash_test_t1 AS (a INT, b TEXT);
 
 SELECT
   v AS value,
@@ -629,7 +629,7 @@ WHERE
 
 DROP TYPE hash_test_t1;
 
-CREATE TYPE hash_test_t2 AS ( a BIT VARYING, b TEXT );
+CREATE TYPE hash_test_t2 AS (a BIT VARYING, b TEXT);
 
 SELECT
   v AS value,

@@ -3,8 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/brin.sql
 snapshot_kind: text
 ---
-CREATE TABLE brintest
-(
+CREATE TABLE brintest (
   byteacol BYTEA,
   charcol CHAR,
   namecol NAME,
@@ -50,10 +49,10 @@ SELECT
   (four + 1.0) / (hundred + 1),
   CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format(
-  '%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred)
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
   )
   AS MACADDR),
   CAST('10.2.3.4/24' AS INET) + tenthous,
@@ -68,9 +67,9 @@ SELECT
   AS TIMESTAMP WITH TIME ZONE) +
   thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
-  justify_hours(
-  tenthous * CAST('12 minutes' AS INTERVAL)
-  )
+    justify_hours(
+      tenthous * CAST('12 minutes' AS INTERVAL)
+    )
   ),
   CAST('01:30:20+02' AS TIME WITH TIME ZONE) +
   hundred * CAST('15 seconds' AS INTERVAL),
@@ -80,31 +79,30 @@ SELECT
   even /
   (hundred + 1),
   CAST(format(
-  '%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000')
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
   )
   AS UUID),
   int4range(thousand, twothousand),
   CAST(format('%s/%s%s', odd, even, tenthous)
   AS PG_LSN),
   box(
-  point(odd, even),
-  point(thousand, twothousand)
+    point(odd, even),
+    point(thousand, twothousand)
   )
 FROM
   tenk1
 ORDER BY unique2
 LIMIT 100;
 
-INSERT INTO brintest
-(inetcol, cidrcol, int4rangecol)
+INSERT INTO brintest (inetcol, cidrcol, int4rangecol)
 SELECT
   CAST('fe80::6e40:8ff:fea9:8c46' AS INET) +
   tenthous,
@@ -154,8 +152,7 @@ USING brin
 )
 WITH (pages_per_range = 1);
 
-CREATE TABLE brinopers
-(
+CREATE TABLE brinopers (
   colname NAME,
   typ TEXT,
   op TEXT[],
@@ -580,10 +577,10 @@ SELECT
   (four + 1.0) / (hundred + 1),
   CAST(odd AS DOUBLE PRECISION) / (tenthous + 1),
   CAST(format(
-  '%s:00:%s:00:%s:00',
-  to_hex(odd),
-  to_hex(even),
-  to_hex(hundred)
+    '%s:00:%s:00:%s:00',
+    to_hex(odd),
+    to_hex(even),
+    to_hex(hundred)
   )
   AS MACADDR),
   CAST('10.2.3.4' AS INET) + tenthous,
@@ -598,9 +595,9 @@ SELECT
   AS TIMESTAMP WITH TIME ZONE) +
   thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
-  justify_hours(
-  tenthous * CAST('12 minutes' AS INTERVAL)
-  )
+    justify_hours(
+      tenthous * CAST('12 minutes' AS INTERVAL)
+    )
   ),
   CAST('01:30:20' AS TIME WITH TIME ZONE) +
   hundred * CAST('15 seconds' AS INTERVAL),
@@ -610,23 +607,23 @@ SELECT
   even /
   (hundred + 1),
   CAST(format(
-  '%s%s-%s-%s-%s-%s%s%s',
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000'),
-  to_char(tenthous, 'FM0000')
+    '%s%s-%s-%s-%s-%s%s%s',
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000'),
+    to_char(tenthous, 'FM0000')
   )
   AS UUID),
   int4range(thousand, twothousand),
   CAST(format('%s/%s%s', odd, even, tenthous)
   AS PG_LSN),
   box(
-  point(odd, even),
-  point(thousand, twothousand)
+    point(odd, even),
+    point(thousand, twothousand)
   )
 FROM
   tenk1
@@ -691,12 +688,7 @@ SELECT brin_summarize_range('brin_summarize_idx', 4294967296);
 
 CREATE TABLE brintest_2 (n NUMRANGE);
 
-CREATE INDEX "brinidx_2"
-ON brintest_2
-USING brin
-(
-  n
-);
+CREATE INDEX "brinidx_2" ON brintest_2 USING brin (n);
 
 INSERT INTO brintest_2 VALUES ('empty');
 
@@ -710,7 +702,10 @@ SELECT brin_summarize_range('brinidx', 0);
 
 DROP TABLE "brintest_2";
 
-CREATE TABLE brin_test (a INT, b INT);
+CREATE TABLE brin_test (
+  a INT,
+  b INT
+);
 
 INSERT INTO brin_test SELECT x / 100, x % 100 FROM generate_series(1, 10000) AS x (x);
 
@@ -736,7 +731,12 @@ SELECT * FROM brin_test WHERE a = 1;
 
 SELECT * FROM brin_test WHERE b = 1;
 
-CREATE TABLE brintest_3 (a TEXT, b TEXT, c TEXT, d TEXT);
+CREATE TABLE brintest_3 (
+  a TEXT,
+  b TEXT,
+  c TEXT,
+  d TEXT
+);
 
 WITH
 rand_value
@@ -749,22 +749,11 @@ AS (
 INSERT INTO brintest_3
 SELECT val, val, val, val FROM rand_value;
 
-CREATE INDEX "brin_test_toast_idx"
-ON brintest_3
-USING brin
-(
-  b,
-  c
-);
+CREATE INDEX "brin_test_toast_idx" ON brintest_3 USING brin (b, c);
 
 DELETE FROM brintest_3;
 
-CREATE INDEX CONCURRENTLY "brin_test_temp_idx"
-ON brintest_3
-USING btree
-(
-  a
-);
+CREATE INDEX CONCURRENTLY "brin_test_temp_idx" ON brintest_3 USING btree (a);
 
 DROP INDEX "brin_test_temp_idx";
 
@@ -804,12 +793,7 @@ SET LOCAL min_parallel_table_scan_size = 0;
 
 SET LOCAL max_parallel_maintenance_workers = 4;
 
-CREATE INDEX "brintest_expr_idx"
-ON brintest_expr
-USING brin
-(
-  (brintest_func())
-);
+CREATE INDEX "brintest_expr_idx" ON brintest_expr USING brin ((brintest_func()));
 
 COMMIT;
 
@@ -819,12 +803,7 @@ DROP FUNCTION brintest_func();
 
 CREATE UNLOGGED TABLE brintest_unlogged (n NUMRANGE);
 
-CREATE INDEX "brinidx_unlogged"
-ON brintest_unlogged
-USING brin
-(
-  n
-);
+CREATE INDEX "brinidx_unlogged" ON brintest_unlogged USING brin (n);
 
 INSERT INTO brintest_unlogged VALUES (numrange(0, 2 ^ CAST(1000 AS NUMERIC)));
 
@@ -834,12 +813,7 @@ CREATE TABLE brin_insert_optimization (a INT);
 
 INSERT INTO brin_insert_optimization VALUES (1);
 
-CREATE INDEX "brin_insert_optimization_idx"
-ON brin_insert_optimization
-USING brin
-(
-  a
-);
+CREATE INDEX "brin_insert_optimization_idx" ON brin_insert_optimization USING brin (a);
 
 UPDATE brin_insert_optimization SET a = a;
 

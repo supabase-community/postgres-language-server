@@ -3,111 +3,35 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_index.sql
 snapshot_kind: text
 ---
-CREATE INDEX "onek_unique1"
-ON onek
-USING btree
-(
-  unique1 int4_ops
-);
+CREATE INDEX "onek_unique1" ON onek USING btree (unique1 int4_ops);
 
-CREATE INDEX IF NOT EXISTS "onek_unique1"
-ON onek
-USING btree
-(
-  unique1 int4_ops
-);
+CREATE INDEX IF NOT EXISTS "onek_unique1" ON onek USING btree (unique1 int4_ops);
 
-CREATE INDEX "onek_unique2"
-ON onek
-USING btree
-(
-  unique2 int4_ops
-);
+CREATE INDEX "onek_unique2" ON onek USING btree (unique2 int4_ops);
 
-CREATE INDEX "onek_hundred"
-ON onek
-USING btree
-(
-  hundred int4_ops
-);
+CREATE INDEX "onek_hundred" ON onek USING btree (hundred int4_ops);
 
-CREATE INDEX "onek_stringu1"
-ON onek
-USING btree
-(
-  stringu1 name_ops
-);
+CREATE INDEX "onek_stringu1" ON onek USING btree (stringu1 name_ops);
 
-CREATE INDEX "tenk1_unique1"
-ON tenk1
-USING btree
-(
-  unique1 int4_ops
-);
+CREATE INDEX "tenk1_unique1" ON tenk1 USING btree (unique1 int4_ops);
 
-CREATE INDEX "tenk1_unique2"
-ON tenk1
-USING btree
-(
-  unique2 int4_ops
-);
+CREATE INDEX "tenk1_unique2" ON tenk1 USING btree (unique2 int4_ops);
 
-CREATE INDEX "tenk1_hundred"
-ON tenk1
-USING btree
-(
-  hundred int4_ops
-);
+CREATE INDEX "tenk1_hundred" ON tenk1 USING btree (hundred int4_ops);
 
-CREATE INDEX "tenk1_thous_tenthous"
-ON tenk1
-USING btree
-(
-  thousand,
-  tenthous
-);
+CREATE INDEX "tenk1_thous_tenthous" ON tenk1 USING btree (thousand, tenthous);
 
-CREATE INDEX "tenk2_unique1"
-ON tenk2
-USING btree
-(
-  unique1 int4_ops
-);
+CREATE INDEX "tenk2_unique1" ON tenk2 USING btree (unique1 int4_ops);
 
-CREATE INDEX "tenk2_unique2"
-ON tenk2
-USING btree
-(
-  unique2 int4_ops
-);
+CREATE INDEX "tenk2_unique2" ON tenk2 USING btree (unique2 int4_ops);
 
-CREATE INDEX "tenk2_hundred"
-ON tenk2
-USING btree
-(
-  hundred int4_ops
-);
+CREATE INDEX "tenk2_hundred" ON tenk2 USING btree (hundred int4_ops);
 
-CREATE INDEX "rix"
-ON road
-USING btree
-(
-  name text_ops
-);
+CREATE INDEX "rix" ON road USING btree (name text_ops);
 
-CREATE INDEX "iix"
-ON ihighway
-USING btree
-(
-  name text_ops
-);
+CREATE INDEX "iix" ON ihighway USING btree (name text_ops);
 
-CREATE INDEX "six"
-ON shighway
-USING btree
-(
-  name text_ops
-);
+CREATE INDEX "six" ON shighway USING btree (name text_ops);
 
 COMMENT ON INDEX six_wrong IS 'bad index';
 
@@ -154,23 +78,13 @@ ANALYZE slow_emp4000;
 
 ANALYZE fast_emp4000;
 
-CREATE INDEX "grect2ind"
-ON fast_emp4000
-USING gist
-(
-  home_base
-);
+CREATE INDEX "grect2ind" ON fast_emp4000 USING gist (home_base);
 
 CREATE TEMPORARY TABLE point_tbl AS SELECT * FROM public.point_tbl;
 
 INSERT INTO point_tbl (f1) VALUES (NULL);
 
-CREATE INDEX "gpointind"
-ON point_tbl
-USING gist
-(
-  f1
-);
+CREATE INDEX "gpointind" ON point_tbl USING gist (f1);
 
 CREATE TEMPORARY TABLE gpolygon_tbl AS SELECT polygon(home_base) AS f1 FROM slow_emp4000;
 
@@ -180,19 +94,9 @@ INSERT INTO gpolygon_tbl VALUES ('(0,1000,1000,1000)');
 
 CREATE TEMPORARY TABLE gcircle_tbl AS SELECT circle(home_base) AS f1 FROM slow_emp4000;
 
-CREATE INDEX "ggpolygonind"
-ON gpolygon_tbl
-USING gist
-(
-  f1
-);
+CREATE INDEX "ggpolygonind" ON gpolygon_tbl USING gist (f1);
 
-CREATE INDEX "ggcircleind"
-ON gcircle_tbl
-USING gist
-(
-  f1
-);
+CREATE INDEX "ggcircleind" ON gcircle_tbl USING gist (f1);
 
 SET enable_seqscan = 'on';
 
@@ -423,7 +327,11 @@ RESET enable_indexscan;
 
 RESET enable_bitmapscan;
 
-CREATE TABLE array_index_op_test (seqno INT, i INT[], t TEXT[]);
+CREATE TABLE array_index_op_test (
+  seqno INT,
+  i INT[],
+  t TEXT[]
+);
 
 COPY array_index_op_test FROM 'filename';
 
@@ -443,12 +351,7 @@ SET enable_indexscan = off;
 
 SET enable_bitmapscan = 'on';
 
-CREATE INDEX "intarrayidx"
-ON array_index_op_test
-USING gin
-(
-  i
-);
+CREATE INDEX "intarrayidx" ON array_index_op_test USING gin (i);
 
 SELECT * FROM array_index_op_test WHERE i @> '{32}' ORDER BY seqno;
 
@@ -476,12 +379,7 @@ SELECT * FROM array_index_op_test WHERE i && '{}' ORDER BY seqno;
 
 SELECT * FROM array_index_op_test WHERE i <@ '{}' ORDER BY seqno;
 
-CREATE INDEX "textarrayidx"
-ON array_index_op_test
-USING gin
-(
-  t
-);
+CREATE INDEX "textarrayidx" ON array_index_op_test USING gin (t);
 
 SELECT * FROM array_index_op_test WHERE t @> '{AAAAAAAA72908}' ORDER BY seqno;
 
@@ -518,13 +416,7 @@ SELECT * FROM array_index_op_test WHERE t <@ '{}' ORDER BY seqno;
 
 DROP INDEX "intarrayidx", "textarrayidx";
 
-CREATE INDEX "botharrayidx"
-ON array_index_op_test
-USING gin
-(
-  i,
-  t
-);
+CREATE INDEX "botharrayidx" ON array_index_op_test USING gin (i, t);
 
 SELECT * FROM array_index_op_test WHERE i @> '{32}' ORDER BY seqno;
 
@@ -550,12 +442,7 @@ CREATE TABLE array_gin_test (a INT[]);
 
 INSERT INTO array_gin_test SELECT ARRAY[1, g % 5, g] FROM generate_series(1, 10000) AS g;
 
-CREATE INDEX "array_gin_test_idx"
-ON array_gin_test
-USING gin
-(
-  a
-);
+CREATE INDEX "array_gin_test_idx" ON array_gin_test USING gin (a);
 
 SELECT COUNT(*) FROM array_gin_test WHERE a @> '{2}';
 
@@ -572,12 +459,7 @@ gin_pending_list_limit = 128);
 
 CREATE UNLOGGED TABLE unlogged_hash_table (id INT);
 
-CREATE INDEX "unlogged_hash_index"
-ON unlogged_hash_table
-USING hash
-(
-  id int4_ops
-);
+CREATE INDEX "unlogged_hash_index" ON unlogged_hash_table USING hash (id int4_ops);
 
 DROP TABLE "unlogged_hash_table";
 
@@ -605,22 +487,14 @@ DROP INDEX "hash_tuplesort_idx";
 
 RESET maintenance_work_mem;
 
-CREATE TABLE unique_tbl (i INT, t TEXT);
-
-CREATE UNIQUE INDEX "unique_idx1"
-ON unique_tbl
-USING btree
-(
-  i
+CREATE TABLE unique_tbl (
+  i INT,
+  t TEXT
 );
 
-CREATE UNIQUE INDEX "unique_idx2"
-ON unique_tbl
-USING btree
-(
-  i
-)
-NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX "unique_idx1" ON unique_tbl USING btree (i);
+
+CREATE UNIQUE INDEX "unique_idx2" ON unique_tbl USING btree (i) NULLS NOT DISTINCT;
 
 INSERT INTO unique_tbl VALUES (1, 'one');
 
@@ -640,30 +514,13 @@ DROP INDEX "unique_idx1", "unique_idx2";
 
 INSERT INTO unique_tbl (t) VALUES ('seven');
 
-CREATE UNIQUE INDEX "unique_idx3"
-ON unique_tbl
-USING btree
-(
-  i
-);
+CREATE UNIQUE INDEX "unique_idx3" ON unique_tbl USING btree (i);
 
-CREATE UNIQUE INDEX "unique_idx4"
-ON unique_tbl
-USING btree
-(
-  i
-)
-NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX "unique_idx4" ON unique_tbl USING btree (i) NULLS NOT DISTINCT;
 
 DELETE FROM unique_tbl WHERE t = 'seven';
 
-CREATE UNIQUE INDEX "unique_idx4"
-ON unique_tbl
-USING btree
-(
-  i
-)
-NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX "unique_idx4" ON unique_tbl USING btree (i) NULLS NOT DISTINCT;
 
 SELECT pg_get_indexdef(CAST('unique_idx3' AS REGCLASS));
 
@@ -671,14 +528,12 @@ SELECT pg_get_indexdef(CAST('unique_idx4' AS REGCLASS));
 
 DROP TABLE "unique_tbl";
 
-CREATE TABLE func_index_heap (f1 TEXT, f2 TEXT);
-
-CREATE UNIQUE INDEX "func_index_index"
-ON func_index_heap
-USING btree
-(
-  (textcat(f1, f2))
+CREATE TABLE func_index_heap (
+  f1 TEXT,
+  f2 TEXT
 );
+
+CREATE UNIQUE INDEX "func_index_index" ON func_index_heap USING btree ((textcat(f1, f2)));
 
 INSERT INTO func_index_heap VALUES ('ABC', 'DEF');
 
@@ -692,14 +547,12 @@ INSERT INTO func_index_heap VALUES ('QWERTY');
 
 DROP TABLE "func_index_heap";
 
-CREATE TABLE func_index_heap (f1 TEXT, f2 TEXT);
-
-CREATE UNIQUE INDEX "func_index_index"
-ON func_index_heap
-USING btree
-(
-  (f1 || f2) text_ops
+CREATE TABLE func_index_heap (
+  f1 TEXT,
+  f2 TEXT
 );
+
+CREATE UNIQUE INDEX "func_index_index" ON func_index_heap USING btree ((f1 || f2) text_ops);
 
 INSERT INTO func_index_heap VALUES ('ABC', 'DEF');
 
@@ -711,24 +564,15 @@ INSERT INTO func_index_heap VALUES ('ABCD', 'EF');
 
 INSERT INTO func_index_heap VALUES ('QWERTY');
 
-CREATE INDEX
-ON func_index_heap
-USING btree
-(
-  (f1 || f2),
-  (ROW(f1, f2))
+CREATE INDEX ON func_index_heap USING btree ((f1 || f2), (ROW(f1, f2)));
+
+CREATE TABLE covering_index_heap (
+  f1 INT,
+  f2 INT,
+  f3 TEXT
 );
 
-CREATE TABLE covering_index_heap (f1 INT, f2 INT, f3 TEXT);
-
-CREATE UNIQUE INDEX "covering_index_index"
-ON covering_index_heap
-USING btree
-(
-  f1,
-  f2
-)
-INCLUDE (f3);
+CREATE UNIQUE INDEX "covering_index_index" ON covering_index_heap USING btree (f1, f2) INCLUDE (f3);
 
 INSERT INTO covering_index_heap VALUES (1, 1, 'AAA');
 
@@ -738,64 +582,33 @@ INSERT INTO covering_index_heap VALUES (1, 2, 'BBB');
 
 INSERT INTO covering_index_heap VALUES (1, 4, 'AAA');
 
-CREATE UNIQUE INDEX "covering_pkey"
-ON covering_index_heap
-USING btree
-(
-  f1,
-  f2
-)
-INCLUDE (f3);
+CREATE UNIQUE INDEX "covering_pkey" ON covering_index_heap USING btree (f1, f2) INCLUDE (f3);
 
 ALTER TABLE covering_index_heap
   ADD CONSTRAINT "covering_pkey" PRIMARY KEY USING INDEX "covering_pkey";
 
 DROP TABLE "covering_index_heap";
 
-CREATE TABLE concur_heap (f1 TEXT, f2 TEXT);
-
-CREATE INDEX CONCURRENTLY "concur_index1"
-ON concur_heap
-USING btree
-(
-  f2,
-  f1
+CREATE TABLE concur_heap (
+  f1 TEXT,
+  f2 TEXT
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "concur_index1"
-ON concur_heap
-USING btree
-(
-  f2,
-  f1
-);
+CREATE INDEX CONCURRENTLY "concur_index1" ON concur_heap USING btree (f2, f1);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "concur_index1" ON concur_heap USING btree (f2, f1);
 
 INSERT INTO concur_heap VALUES ('a', 'b');
 
 INSERT INTO concur_heap VALUES ('b', 'b');
 
-CREATE UNIQUE INDEX CONCURRENTLY "concur_index2"
-ON concur_heap
-USING btree
-(
-  f1
-);
+CREATE UNIQUE INDEX CONCURRENTLY "concur_index2" ON concur_heap USING btree (f1);
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "concur_index2"
-ON concur_heap
-USING btree
-(
-  f1
-);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "concur_index2" ON concur_heap USING btree (f1);
 
 INSERT INTO concur_heap VALUES ('b', 'x');
 
-CREATE UNIQUE INDEX CONCURRENTLY "concur_index3"
-ON concur_heap
-USING btree
-(
-  f2
-);
+CREATE UNIQUE INDEX CONCURRENTLY "concur_index3" ON concur_heap USING btree (f2);
 
 CREATE INDEX CONCURRENTLY "concur_index4"
 ON concur_heap
@@ -815,21 +628,11 @@ USING btree
 WHERE
   f1 = 'x';
 
-CREATE INDEX CONCURRENTLY
-ON concur_heap
-USING btree
-(
-  (f2 || f1)
-);
+CREATE INDEX CONCURRENTLY ON concur_heap USING btree ((f2 || f1));
 
 BEGIN;
 
-CREATE INDEX CONCURRENTLY "concur_index7"
-ON concur_heap
-USING btree
-(
-  f1
-);
+CREATE INDEX CONCURRENTLY "concur_index7" ON concur_heap USING btree (f1);
 
 COMMIT;
 
@@ -858,12 +661,7 @@ DROP FUNCTION predicate_stable();
 
 BEGIN;
 
-CREATE INDEX "std_index"
-ON concur_heap
-USING btree
-(
-  f2
-);
+CREATE INDEX "std_index" ON concur_heap USING btree (f2);
 
 COMMIT;
 
@@ -877,19 +675,18 @@ VACUUM (FULL) concur_heap;
 
 REINDEX TABLE concur_heap;
 
-CREATE TEMPORARY TABLE concur_temp (f1 INT, f2 TEXT) ON COMMIT PRESERVE ROWS;
+CREATE TEMPORARY TABLE concur_temp (
+  f1 INT,
+  f2 TEXT
+)
+ON COMMIT PRESERVE ROWS;
 
 INSERT INTO concur_temp
 VALUES
   (1, 'foo'),
   (2, 'bar');
 
-CREATE INDEX CONCURRENTLY "concur_temp_ind"
-ON concur_temp
-USING btree
-(
-  f1
-);
+CREATE INDEX CONCURRENTLY "concur_temp_ind" ON concur_temp USING btree (f1);
 
 DROP INDEX CONCURRENTLY "concur_temp_ind";
 
@@ -897,19 +694,18 @@ DROP TABLE "concur_temp";
 
 BEGIN;
 
-CREATE TEMPORARY TABLE concur_temp (f1 INT, f2 TEXT) ON COMMIT DROP;
+CREATE TEMPORARY TABLE concur_temp (
+  f1 INT,
+  f2 TEXT
+)
+ON COMMIT DROP;
 
 INSERT INTO concur_temp
 VALUES
   (1, 'foo'),
   (2, 'bar');
 
-CREATE INDEX CONCURRENTLY "concur_temp_ind"
-ON concur_temp
-USING btree
-(
-  f1
-);
+CREATE INDEX CONCURRENTLY "concur_temp_ind" ON concur_temp USING btree (f1);
 
 COMMIT;
 
@@ -918,12 +714,7 @@ VALUES
   (1, 'foo'),
   (2, 'bar');
 
-CREATE INDEX CONCURRENTLY "concur_temp_ind"
-ON concur_temp
-USING btree
-(
-  f1
-);
+CREATE INDEX CONCURRENTLY "concur_temp_ind" ON concur_temp USING btree (f1);
 
 DROP INDEX CONCURRENTLY "concur_temp_ind";
 
@@ -953,7 +744,11 @@ DROP INDEX CONCURRENTLY "concur_heap_expr_idx";
 
 DROP TABLE "concur_heap";
 
-CREATE TABLE cwi_test (a INT, b VARCHAR(10), c CHAR(1));
+CREATE TABLE cwi_test (
+  a INT,
+  b VARCHAR(10),
+  c CHAR(1)
+);
 
 INSERT INTO cwi_test
 VALUES
@@ -961,24 +756,12 @@ VALUES
   (3, 4),
   (5, 6);
 
-CREATE UNIQUE INDEX "cwi_uniq_idx"
-ON cwi_test
-USING btree
-(
-  a,
-  b
-);
+CREATE UNIQUE INDEX "cwi_uniq_idx" ON cwi_test USING btree (a, b);
 
 ALTER TABLE cwi_test
   ADD PRIMARY KEY USING INDEX "cwi_uniq_idx";
 
-CREATE UNIQUE INDEX "cwi_uniq2_idx"
-ON cwi_test
-USING btree
-(
-  b,
-  a
-);
+CREATE UNIQUE INDEX "cwi_uniq2_idx" ON cwi_test USING btree (b, a);
 
 ALTER TABLE cwi_test
   DROP CONSTRAINT cwi_uniq_idx,
@@ -986,53 +769,34 @@ ALTER TABLE cwi_test
 
 DROP INDEX "cwi_replaced_pkey";
 
-CREATE UNIQUE INDEX "cwi_uniq3_idx"
-ON cwi_test
-USING btree
-(
-  a DESC
-);
+CREATE UNIQUE INDEX "cwi_uniq3_idx" ON cwi_test USING btree (a DESC);
 
 ALTER TABLE cwi_test
   ADD UNIQUE USING INDEX "cwi_uniq3_idx";
 
-CREATE UNIQUE INDEX "cwi_uniq4_idx"
-ON cwi_test
-USING btree
-(
-  b COLLATE "POSIX"
-);
+CREATE UNIQUE INDEX "cwi_uniq4_idx" ON cwi_test USING btree (b COLLATE "POSIX");
 
 ALTER TABLE cwi_test
   ADD UNIQUE USING INDEX "cwi_uniq4_idx";
 
 DROP TABLE "cwi_test";
 
-CREATE TABLE cwi_test
-(a INT)
+CREATE TABLE cwi_test (a INT)
 PARTITION BY HASH(a);
 
-CREATE UNIQUE INDEX
-ON cwi_test
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX ON cwi_test USING btree (a);
 
 ALTER TABLE cwi_test
   ADD PRIMARY KEY USING INDEX "cwi_test_a_idx";
 
 DROP TABLE "cwi_test";
 
-CREATE TABLE cwi_test (a INT, b INT);
+CREATE TABLE cwi_test (
+  a INT,
+  b INT
+);
 
-CREATE UNIQUE INDEX "cwi_a_nnd"
-ON cwi_test
-USING btree
-(
-  a
-)
-NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX "cwi_a_nnd" ON cwi_test USING btree (a) NULLS NOT DISTINCT;
 
 ALTER TABLE cwi_test
   ADD PRIMARY KEY USING INDEX "cwi_a_nnd";
@@ -1041,19 +805,9 @@ DROP TABLE "cwi_test";
 
 CREATE TABLE syscol_table (a INT);
 
-CREATE INDEX
-ON syscol_table
-USING btree
-(
-  ctid
-);
+CREATE INDEX ON syscol_table USING btree (ctid);
 
-CREATE INDEX
-ON syscol_table
-USING btree
-(
-  (ctid >= '(1000,0)')
-);
+CREATE INDEX ON syscol_table USING btree ((ctid >= '(1000,0)'));
 
 CREATE INDEX
 ON syscol_table
@@ -1068,8 +822,7 @@ DROP TABLE "syscol_table";
 
 CREATE TABLE onek_with_null AS SELECT unique1, unique2 FROM onek;
 
-INSERT INTO onek_with_null
-(unique1, unique2)
+INSERT INTO onek_with_null (unique1, unique2)
 VALUES
   (NULL, -1),
   (NULL, 2147483647),
@@ -1077,13 +830,7 @@ VALUES
   (100, NULL),
   (500, NULL);
 
-CREATE UNIQUE INDEX "onek_nulltest"
-ON onek_with_null
-USING btree
-(
-  unique2,
-  unique1
-);
+CREATE UNIQUE INDEX "onek_nulltest" ON onek_with_null USING btree (unique2, unique1);
 
 SET enable_seqscan = off;
 
@@ -1116,13 +863,7 @@ LIMIT 1;
 
 DROP INDEX "onek_nulltest";
 
-CREATE UNIQUE INDEX "onek_nulltest"
-ON onek_with_null
-USING btree
-(
-  unique2 DESC,
-  unique1
-);
+CREATE UNIQUE INDEX "onek_nulltest" ON onek_with_null USING btree (unique2 DESC, unique1);
 
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
@@ -1184,13 +925,7 @@ LIMIT 1;
 
 DROP INDEX "onek_nulltest";
 
-CREATE UNIQUE INDEX "onek_nulltest"
-ON onek_with_null
-USING btree
-(
-  unique2 NULLS FIRST,
-  unique1
-);
+CREATE UNIQUE INDEX "onek_nulltest" ON onek_with_null USING btree (unique2 NULLS FIRST, unique1);
 
 SELECT COUNT(*) FROM onek_with_null WHERE unique1 IS NULL;
 
@@ -1217,12 +952,7 @@ LIMIT 1;
 
 DROP INDEX "onek_nulltest";
 
-CREATE UNIQUE INDEX "onek_nulltest"
-ON onek_with_null
-USING btree
-(
-  unique2
-);
+CREATE UNIQUE INDEX "onek_nulltest" ON onek_with_null USING btree (unique2);
 
 SET enable_seqscan = off;
 
@@ -1508,14 +1238,7 @@ FROM
 
 CREATE TABLE dupindexcols AS SELECT unique1 AS id, CAST(stringu2 AS TEXT) AS f1 FROM tenk1;
 
-CREATE INDEX "dupindexcols_i"
-ON dupindexcols
-USING btree
-(
-  f1,
-  id,
-  f1 text_pattern_ops
-);
+CREATE INDEX "dupindexcols_i" ON dupindexcols USING btree (f1, id, f1 text_pattern_ops);
 
 ANALYZE dupindexcols;
 
@@ -1713,7 +1436,12 @@ LIMIT 2;
 
 SELECT * FROM tenk1 WHERE (thousand, tenthous) IN ((1, 1001), (NULL, NULL));
 
-CREATE TEMPORARY TABLE boolindex (b BOOLEAN, i INT, UNIQUE (b, i), junk DOUBLE PRECISION);
+CREATE TEMPORARY TABLE boolindex (
+  b BOOLEAN,
+  i INT,
+  UNIQUE (b, i),
+  junk DOUBLE PRECISION
+);
 
 SELECT * FROM boolindex ORDER BY b, i LIMIT 10;
 
@@ -1742,35 +1470,13 @@ REINDEX (CONCURRENTLY) TABLE concur_reindex_tab;
 ALTER TABLE concur_reindex_tab
   ADD COLUMN c2 TEXT;
 
-CREATE UNIQUE INDEX "concur_reindex_ind1"
-ON concur_reindex_tab
-USING btree
-(
-  c1
-);
+CREATE UNIQUE INDEX "concur_reindex_ind1" ON concur_reindex_tab USING btree (c1);
 
-CREATE INDEX "concur_reindex_ind2"
-ON concur_reindex_tab
-USING btree
-(
-  c2
-);
+CREATE INDEX "concur_reindex_ind2" ON concur_reindex_tab USING btree (c2);
 
-CREATE UNIQUE INDEX "concur_reindex_ind3"
-ON concur_reindex_tab
-USING btree
-(
-  (abs(c1))
-);
+CREATE UNIQUE INDEX "concur_reindex_ind3" ON concur_reindex_tab USING btree ((abs(c1)));
 
-CREATE INDEX "concur_reindex_ind4"
-ON concur_reindex_tab
-USING btree
-(
-  c1,
-  c1,
-  c2
-);
+CREATE INDEX "concur_reindex_ind4" ON concur_reindex_tab USING btree (c1, c1, c2);
 
 ALTER TABLE concur_reindex_tab
   ADD PRIMARY KEY USING INDEX "concur_reindex_ind1";
@@ -1781,7 +1487,11 @@ INSERT INTO concur_reindex_tab VALUES (1, 'a');
 
 INSERT INTO concur_reindex_tab VALUES (2, 'a');
 
-CREATE TABLE concur_reindex_tab3 (c1 INT, c2 INT4RANGE, EXCLUDE USING gist (c2 WITH &&));
+CREATE TABLE concur_reindex_tab3 (
+  c1 INT,
+  c2 INT4RANGE,
+  EXCLUDE USING gist (c2 WITH &&)
+);
 
 INSERT INTO concur_reindex_tab3 VALUES (3, '[1,2]');
 
@@ -1797,9 +1507,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype
@@ -1829,9 +1539,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype
@@ -1853,12 +1563,7 @@ ORDER BY 1,
 
 CREATE TABLE testcomment (i INT);
 
-CREATE INDEX "testcomment_idx1"
-ON testcomment
-USING btree
-(
-  i
-);
+CREATE INDEX "testcomment_idx1" ON testcomment USING btree (i);
 
 COMMENT ON INDEX testcomment_idx1 IS 'test comment';
 
@@ -1876,12 +1581,7 @@ DROP TABLE "testcomment";
 
 CREATE TABLE concur_clustered (i INT);
 
-CREATE INDEX "concur_clustered_i_idx"
-ON concur_clustered
-USING btree
-(
-  i
-);
+CREATE INDEX "concur_clustered_i_idx" ON concur_clustered USING btree (i);
 
 ALTER TABLE concur_clustered
   CLUSTER ON concur_clustered_i_idx;
@@ -1900,12 +1600,7 @@ DROP TABLE "concur_clustered";
 
 CREATE TABLE concur_replident (i INT NOT NULL);
 
-CREATE UNIQUE INDEX "concur_replident_i_idx"
-ON concur_replident
-USING btree
-(
-  i
-);
+CREATE UNIQUE INDEX "concur_replident_i_idx" ON concur_replident USING btree (i);
 
 ALTER TABLE concur_replident
   REPLICA IDENTITY
@@ -1932,7 +1627,11 @@ WHERE
 
 DROP TABLE "concur_replident";
 
-CREATE TABLE concur_appclass_tab (i TSVECTOR, j TSVECTOR, k TSVECTOR);
+CREATE TABLE concur_appclass_tab (
+  i TSVECTOR,
+  j TSVECTOR,
+  k TSVECTOR
+);
 
 CREATE INDEX "concur_appclass_ind"
 ON concur_appclass_tab
@@ -1954,8 +1653,10 @@ REINDEX (CONCURRENTLY) TABLE concur_appclass_tab;
 
 DROP TABLE "concur_appclass_tab";
 
-CREATE TABLE concur_reindex_part
-(c1 INT, c2 INT)
+CREATE TABLE concur_reindex_part (
+  c1 INT,
+  c2 INT
+)
 PARTITION BY RANGE(c1);
 
 CREATE TABLE concur_reindex_part_0
@@ -1972,52 +1673,27 @@ PARTITION OF concur_reindex_part
 FOR VALUES FROM (10) TO (20)
 PARTITION BY LIST(c2);
 
-CREATE INDEX "concur_reindex_part_index"
-ON ONLY concur_reindex_part
-USING btree
-(
-  c1
-);
+CREATE INDEX "concur_reindex_part_index" ON ONLY concur_reindex_part USING btree (c1);
 
-CREATE INDEX "concur_reindex_part_index_0"
-ON ONLY concur_reindex_part_0
-USING btree
-(
-  c1
-);
+CREATE INDEX "concur_reindex_part_index_0" ON ONLY concur_reindex_part_0 USING btree (c1);
 
 ALTER INDEX concur_reindex_part_index
   ATTACH PARTITION
   concur_reindex_part_index_0;
 
-CREATE INDEX "concur_reindex_part_index_10"
-ON ONLY concur_reindex_part_10
-USING btree
-(
-  c1
-);
+CREATE INDEX "concur_reindex_part_index_10" ON ONLY concur_reindex_part_10 USING btree (c1);
 
 ALTER INDEX concur_reindex_part_index
   ATTACH PARTITION
   concur_reindex_part_index_10;
 
-CREATE INDEX "concur_reindex_part_index_0_1"
-ON ONLY concur_reindex_part_0_1
-USING btree
-(
-  c1
-);
+CREATE INDEX "concur_reindex_part_index_0_1" ON ONLY concur_reindex_part_0_1 USING btree (c1);
 
 ALTER INDEX concur_reindex_part_index_0
   ATTACH PARTITION
   concur_reindex_part_index_0_1;
 
-CREATE INDEX "concur_reindex_part_index_0_2"
-ON ONLY concur_reindex_part_0_2
-USING btree
-(
-  c1
-);
+CREATE INDEX "concur_reindex_part_index_0_2" ON ONLY concur_reindex_part_0_2 USING btree (c1);
 
 ALTER INDEX concur_reindex_part_index_0
   ATTACH PARTITION
@@ -2045,9 +1721,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype
@@ -2090,9 +1766,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype
@@ -2261,12 +1937,7 @@ VALUES
   (1),
   (2);
 
-CREATE UNIQUE INDEX CONCURRENTLY "concur_reindex_ind5"
-ON concur_reindex_tab4
-USING btree
-(
-  c1
-);
+CREATE UNIQUE INDEX CONCURRENTLY "concur_reindex_ind5" ON concur_reindex_tab4 USING btree (c1);
 
 REINDEX (CONCURRENTLY) INDEX concur_reindex_ind5;
 
@@ -2280,10 +1951,12 @@ REINDEX (CONCURRENTLY) INDEX concur_reindex_ind5;
 
 DROP TABLE "concur_reindex_tab4";
 
-CREATE TABLE concur_exprs_tab (c1 INT, c2 BOOLEAN);
+CREATE TABLE concur_exprs_tab (
+  c1 INT,
+  c2 BOOLEAN
+);
 
-INSERT INTO concur_exprs_tab
-(c1, c2)
+INSERT INTO concur_exprs_tab (c1, c2)
 VALUES
   (1369652450, FALSE),
   (414515746, TRUE),
@@ -2391,19 +2064,18 @@ ORDER BY CAST(CAST(attrelid AS REGCLASS) AS TEXT),
 
 DROP TABLE "concur_exprs_tab";
 
-CREATE TEMPORARY TABLE concur_temp_tab_1 (c1 INT, c2 TEXT) ON COMMIT PRESERVE ROWS;
+CREATE TEMPORARY TABLE concur_temp_tab_1 (
+  c1 INT,
+  c2 TEXT
+)
+ON COMMIT PRESERVE ROWS;
 
 INSERT INTO concur_temp_tab_1
 VALUES
   (1, 'foo'),
   (2, 'bar');
 
-CREATE INDEX "concur_temp_ind_1"
-ON concur_temp_tab_1
-USING btree
-(
-  c2
-);
+CREATE INDEX "concur_temp_ind_1" ON concur_temp_tab_1 USING btree (c2);
 
 REINDEX (CONCURRENTLY) TABLE concur_temp_tab_1;
 
@@ -2415,12 +2087,7 @@ REINDEX (CONCURRENTLY) INDEX concur_temp_ind_1;
 
 COMMIT;
 
-CREATE INDEX "concur_temp_ind_2"
-ON concur_temp_tab_2
-USING btree
-(
-  c2
-);
+CREATE INDEX "concur_temp_ind_2" ON concur_temp_tab_2 USING btree (c2);
 
 REINDEX (CONCURRENTLY) TABLE concur_temp_tab_2;
 
@@ -2428,19 +2095,18 @@ REINDEX (CONCURRENTLY) INDEX concur_temp_ind_2;
 
 BEGIN;
 
-CREATE TEMPORARY TABLE concur_temp_tab_3 (c1 INT, c2 TEXT) ON COMMIT PRESERVE ROWS;
+CREATE TEMPORARY TABLE concur_temp_tab_3 (
+  c1 INT,
+  c2 TEXT
+)
+ON COMMIT PRESERVE ROWS;
 
 INSERT INTO concur_temp_tab_3
 VALUES
   (1, 'foo'),
   (2, 'bar');
 
-CREATE INDEX "concur_temp_ind_3"
-ON concur_temp_tab_3
-USING btree
-(
-  c2
-);
+CREATE INDEX "concur_temp_ind_3" ON concur_temp_tab_3 USING btree (c2);
 
 REINDEX (CONCURRENTLY) INDEX concur_temp_ind_3;
 
@@ -2485,7 +2151,11 @@ SELECT * FROM tenk1 WHERE unique1 < 1 OR hundred < 2;
 
 SELECT * FROM tenk1 WHERE unique1 < 1 OR unique1 < 3 OR hundred < 2;
 
-CREATE TABLE bitmap_split_or (a INT NOT NULL, b INT NOT NULL, c INT NOT NULL);
+CREATE TABLE bitmap_split_or (
+  a INT NOT NULL,
+  b INT NOT NULL,
+  c INT NOT NULL
+);
 
 INSERT INTO bitmap_split_or SELECT 1, 1, i FROM generate_series(1, 1000) AS i;
 
@@ -2517,21 +2187,9 @@ DROP INDEX "t_b_partial_1_idx";
 
 DROP INDEX "t_b_partial_2_idx";
 
-CREATE INDEX "t_a_b_idx"
-ON bitmap_split_or
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX "t_a_b_idx" ON bitmap_split_or USING btree (a, b);
 
-CREATE INDEX "t_b_c_idx"
-ON bitmap_split_or
-USING btree
-(
-  b,
-  c
-);
+CREATE INDEX "t_b_c_idx" ON bitmap_split_or USING btree (b, c);
 
 CREATE STATISTICS t_a_b_stat (mcv) ON "a", "b" FROM bitmap_split_or;
 
@@ -2555,25 +2213,18 @@ CREATE TABLE table1 (col1 serial PRIMARY KEY);
 
 INSERT INTO table1 SELECT generate_series(1, 400);
 
-CREATE TABLE table2 (col1 serial PRIMARY KEY, col2 TEXT NOT NULL);
+CREATE TABLE table2 (
+  col1 serial PRIMARY KEY,
+  col2 TEXT NOT NULL
+);
 
 INSERT INTO table2 SELECT generate_series(1, 400), 'abc';
 
-CREATE INDEX
-ON table2
-USING btree
-(
-  col2
-);
+CREATE INDEX ON table2 USING btree (col2);
 
 CREATE MATERIALIZED VIEW matview AS SELECT col1 FROM table2;
 
-CREATE INDEX
-ON matview
-USING btree
-(
-  col1
-);
+CREATE INDEX ON matview USING btree (col1);
 
 CREATE VIEW view
 AS SELECT col2 FROM table2;

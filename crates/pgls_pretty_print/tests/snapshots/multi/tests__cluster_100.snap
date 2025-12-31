@@ -3,10 +3,12 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/cluster.sql
 snapshot_kind: text
 ---
-CREATE TABLE clstr_tst_s (rf_a serial PRIMARY KEY, b INT);
+CREATE TABLE clstr_tst_s (
+  rf_a serial PRIMARY KEY,
+  b INT
+);
 
-CREATE TABLE clstr_tst
-(
+CREATE TABLE clstr_tst (
   a serial PRIMARY KEY,
   b INT,
   c TEXT,
@@ -17,35 +19,13 @@ CREATE TABLE clstr_tst
   REFERENCES clstr_tst_s
 );
 
-CREATE INDEX "clstr_tst_b"
-ON clstr_tst
-USING btree
-(
-  b
-);
+CREATE INDEX "clstr_tst_b" ON clstr_tst USING btree (b);
 
-CREATE INDEX "clstr_tst_c"
-ON clstr_tst
-USING btree
-(
-  c
-);
+CREATE INDEX "clstr_tst_c" ON clstr_tst USING btree (c);
 
-CREATE INDEX "clstr_tst_c_b"
-ON clstr_tst
-USING btree
-(
-  c,
-  b
-);
+CREATE INDEX "clstr_tst_c_b" ON clstr_tst USING btree (c, b);
 
-CREATE INDEX "clstr_tst_b_c"
-ON clstr_tst
-USING btree
-(
-  b,
-  c
-);
+CREATE INDEX "clstr_tst_b_c" ON clstr_tst USING btree (b, c);
 
 INSERT INTO clstr_tst_s (b) VALUES (0);
 
@@ -59,8 +39,7 @@ INSERT INTO clstr_tst_s (b) SELECT b FROM clstr_tst_s;
 
 INSERT INTO clstr_tst_s (b) SELECT b FROM clstr_tst_s;
 
-CREATE TABLE clstr_tst_inh
-()
+CREATE TABLE clstr_tst_inh ()
 INHERITS (clstr_tst);
 
 INSERT INTO clstr_tst (b, c) VALUES (11, 'once');
@@ -309,7 +288,10 @@ COMMIT;
 
 SELECT * FROM clustertest;
 
-CREATE TEMPORARY TABLE clstr_temp (col1 INT PRIMARY KEY, col2 TEXT);
+CREATE TEMPORARY TABLE clstr_temp (
+  col1 INT PRIMARY KEY,
+  col2 TEXT
+);
 
 INSERT INTO clstr_temp
 VALUES
@@ -332,8 +314,7 @@ CLUSTER clustertest USING clustertest_pkey;
 
 CLUSTER clustertest;
 
-CREATE TABLE clstrpart
-(a INT)
+CREATE TABLE clstrpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE clstrpart1 PARTITION OF clstrpart FOR VALUES FROM (1) TO (10) PARTITION BY RANGE(a);
@@ -348,23 +329,13 @@ CREATE TABLE clstrpart3 PARTITION OF clstrpart DEFAULT PARTITION BY RANGE(a);
 
 CREATE TABLE clstrpart33 PARTITION OF clstrpart3 DEFAULT;
 
-CREATE INDEX "clstrpart_only_idx"
-ON ONLY clstrpart
-USING btree
-(
-  a
-);
+CREATE INDEX "clstrpart_only_idx" ON ONLY clstrpart USING btree (a);
 
 CLUSTER clstrpart USING clstrpart_only_idx;
 
 DROP INDEX "clstrpart_only_idx";
 
-CREATE INDEX "clstrpart_idx"
-ON clstrpart
-USING btree
-(
-  a
-);
+CREATE INDEX "clstrpart_idx" ON clstrpart USING btree (a);
 
 CREATE TEMPORARY TABLE old_cluster_info
 AS
@@ -418,16 +389,10 @@ ALTER TABLE clstrpart
 
 DROP TABLE "clstrpart";
 
-CREATE TABLE ptnowner
-(i INT UNIQUE)
+CREATE TABLE ptnowner (i INT UNIQUE)
 PARTITION BY LIST(i);
 
-CREATE INDEX "ptnowner_i_idx"
-ON ptnowner
-USING btree
-(
-  i
-);
+CREATE INDEX "ptnowner_i_idx" ON ptnowner USING btree (i);
 
 CREATE TABLE ptnowner1 PARTITION OF ptnowner FOR VALUES IN (1);
 
@@ -481,14 +446,7 @@ DROP ROLE regress_ptnowner;
 
 CREATE TABLE clstr_4 AS SELECT * FROM tenk1;
 
-CREATE INDEX "cluster_sort"
-ON clstr_4
-USING btree
-(
-  hundred,
-  thousand,
-  tenthous
-);
+CREATE INDEX "cluster_sort" ON clstr_4 USING btree (hundred, thousand, tenthous);
 
 SET enable_indexscan = off;
 
@@ -517,30 +475,22 @@ RESET enable_indexscan;
 
 RESET maintenance_work_mem;
 
-CREATE TABLE clstr_expression (id serial PRIMARY KEY, a INT, b TEXT COLLATE "C");
+CREATE TABLE clstr_expression (
+  id serial PRIMARY KEY,
+  a INT,
+  b TEXT COLLATE "C"
+);
 
-INSERT INTO clstr_expression
-(a, b)
+INSERT INTO clstr_expression (a, b)
 SELECT
   g.i % 42,
   'prefix' || g.i
 FROM
   generate_series(1, 133) AS g (i);
 
-CREATE INDEX "clstr_expression_minus_a"
-ON clstr_expression
-USING btree
-(
-  (-a),
-  b
-);
+CREATE INDEX "clstr_expression_minus_a" ON clstr_expression USING btree ((-a), b);
 
-CREATE INDEX "clstr_expression_upper_b"
-ON clstr_expression
-USING btree
-(
-  (upper(b))
-);
+CREATE INDEX "clstr_expression_upper_b" ON clstr_expression USING btree ((upper(b)));
 
 BEGIN;
 

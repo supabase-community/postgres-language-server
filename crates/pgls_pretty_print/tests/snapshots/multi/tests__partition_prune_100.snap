@@ -22,8 +22,7 @@ end;
 
 SET plan_cache_mode = force_generic_plan;
 
-CREATE TABLE lp
-(a CHAR(1))
+CREATE TABLE lp (a CHAR(1))
 PARTITION BY LIST(a);
 
 CREATE TABLE lp_default PARTITION OF lp DEFAULT;
@@ -62,8 +61,7 @@ SELECT * FROM lp WHERE a <> 'a' AND a <> 'd';
 
 SELECT * FROM lp WHERE a NOT IN ('a', 'd');
 
-CREATE TABLE coll_pruning
-(a TEXT COLLATE "C")
+CREATE TABLE coll_pruning (a TEXT COLLATE "C")
 PARTITION BY LIST(a);
 
 CREATE TABLE coll_pruning_a PARTITION OF coll_pruning FOR VALUES IN ('a');
@@ -76,8 +74,10 @@ SELECT * FROM coll_pruning WHERE a COLLATE "C" = 'a' COLLATE "C";
 
 SELECT * FROM coll_pruning WHERE a COLLATE "POSIX" = 'a' COLLATE "POSIX";
 
-CREATE TABLE rlp
-(a INT, b VARCHAR)
+CREATE TABLE rlp (
+  a INT,
+  b VARCHAR
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE rlp_default PARTITION OF rlp DEFAULT PARTITION BY LIST(a);
@@ -94,8 +94,10 @@ CREATE TABLE rlp1 PARTITION OF rlp FOR VALUES FROM (minvalue) TO (1);
 
 CREATE TABLE rlp2 PARTITION OF rlp FOR VALUES FROM (1) TO (10);
 
-CREATE TABLE rlp3
-(b VARCHAR, a INT)
+CREATE TABLE rlp3 (
+  b VARCHAR,
+  a INT
+)
 PARTITION BY LIST(b varchar_ops);
 
 CREATE TABLE rlp3_default PARTITION OF rlp3 DEFAULT;
@@ -192,8 +194,11 @@ SELECT * FROM rlp WHERE a = 1 AND a = 3;
 
 SELECT * FROM rlp WHERE a = 1 AND a = 3 OR a > 1 AND a = 15;
 
-CREATE TABLE mc3p
-(a INT, b INT, c INT)
+CREATE TABLE mc3p (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a, (abs(b)), c);
 
 CREATE TABLE mc3p_default PARTITION OF mc3p DEFAULT;
@@ -276,8 +281,10 @@ SELECT * FROM mc3p WHERE a = 1 AND abs(b) = 1 OR a = 10 AND abs(b) = 10;
 
 SELECT * FROM mc3p WHERE a = 1 AND abs(b) = 1 OR a = 10 AND abs(b) = 9;
 
-CREATE TABLE mc2p
-(a INT, b INT)
+CREATE TABLE mc2p (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE mc2p_default PARTITION OF mc2p DEFAULT;
@@ -312,8 +319,7 @@ SELECT * FROM mc2p WHERE a IS NULL;
 
 SELECT * FROM mc2p WHERE b IS NULL;
 
-CREATE TABLE boolpart
-(a BOOLEAN)
+CREATE TABLE boolpart (a BOOLEAN)
 PARTITION BY LIST(a);
 
 CREATE TABLE boolpart_default PARTITION OF boolpart DEFAULT;
@@ -388,8 +394,7 @@ SELECT * FROM boolpart WHERE a IS FALSE AND a IS UNKNOWN;
 
 SELECT * FROM boolpart WHERE a IS TRUE AND a IS UNKNOWN;
 
-CREATE TABLE iboolpart
-(a BOOLEAN)
+CREATE TABLE iboolpart (a BOOLEAN)
 PARTITION BY LIST((NOT a));
 
 CREATE TABLE iboolpart_default PARTITION OF iboolpart DEFAULT;
@@ -448,8 +453,11 @@ SELECT * FROM iboolpart WHERE a IS NOT TRUE AND a IS NOT FALSE;
 
 SELECT * FROM iboolpart WHERE a IS NOT FALSE;
 
-CREATE TABLE boolrangep
-(a BOOLEAN, b BOOLEAN, c INT)
+CREATE TABLE boolrangep (
+  a BOOLEAN,
+  b BOOLEAN,
+  c INT
+)
 PARTITION BY RANGE(a, b, c);
 
 CREATE TABLE boolrangep_tf
@@ -492,8 +500,7 @@ SELECT * FROM boolrangep WHERE a IS NOT TRUE AND NOT b AND c = 25;
 
 SELECT * FROM boolrangep WHERE a IS NOT FALSE AND NOT b AND c = 25;
 
-CREATE TABLE coercepart
-(a VARCHAR)
+CREATE TABLE coercepart (a VARCHAR)
 PARTITION BY LIST(a);
 
 CREATE TABLE coercepart_ab PARTITION OF coercepart FOR VALUES IN ('ab');
@@ -528,8 +535,10 @@ SELECT * FROM coercepart WHERE a = ALL (CAST(NULL AS TEXT[]));
 
 DROP TABLE "coercepart";
 
-CREATE TABLE part
-(a INT, b INT)
+CREATE TABLE part (
+  a INT,
+  b INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE part_p1 PARTITION OF part FOR VALUES IN (-2, -1, 0, 1, 2);
@@ -538,7 +547,11 @@ CREATE TABLE part_p2 PARTITION OF part DEFAULT PARTITION BY RANGE(a);
 
 CREATE TABLE part_p2_p1 PARTITION OF part_p2 DEFAULT;
 
-CREATE TABLE part_rev (b INT, c INT, a INT);
+CREATE TABLE part_rev (
+  b INT,
+  c INT,
+  a INT
+);
 
 ALTER TABLE part
   ATTACH PARTITION
@@ -605,8 +618,7 @@ FROM
 WHERE
   t1.a = 1;
 
-CREATE TABLE rp
-(a INT)
+CREATE TABLE rp (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE rp0 PARTITION OF rp FOR VALUES FROM (minvalue) TO (1);
@@ -627,8 +639,7 @@ SELECT * FROM lp WHERE a <> 'a' AND a <> 'd' OR a IS NULL;
 
 SELECT * FROM rlp WHERE a = 15 AND b <> 'ab' AND b <> 'cd' AND b <> 'xy' AND b IS NOT NULL;
 
-CREATE TABLE coll_pruning_multi
-(a TEXT)
+CREATE TABLE coll_pruning_multi (a TEXT)
 PARTITION BY RANGE((substr(a, 1)) COLLATE "POSIX",
 (substr(a, 1)) COLLATE "C");
 
@@ -656,8 +667,7 @@ WHERE
   substr(a, 1) = 'e' COLLATE "C" AND
   substr(a, 1) = 'a' COLLATE "POSIX";
 
-CREATE TABLE like_op_noprune
-(a TEXT)
+CREATE TABLE like_op_noprune (a TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE like_op_noprune1 PARTITION OF like_op_noprune FOR VALUES IN ('ABC');
@@ -666,8 +676,7 @@ CREATE TABLE like_op_noprune2 PARTITION OF like_op_noprune FOR VALUES IN ('BCD')
 
 SELECT * FROM like_op_noprune WHERE a LIKE '%BC';
 
-CREATE TABLE lparted_by_int2
-(a SMALLINT)
+CREATE TABLE lparted_by_int2 (a SMALLINT)
 PARTITION BY LIST(a);
 
 CREATE TABLE lparted_by_int2_1 PARTITION OF lparted_by_int2 FOR VALUES IN (1);
@@ -676,8 +685,7 @@ CREATE TABLE lparted_by_int2_16384 PARTITION OF lparted_by_int2 FOR VALUES IN (1
 
 SELECT * FROM lparted_by_int2 WHERE a = 100_000_000_000_000;
 
-CREATE TABLE rparted_by_int2
-(a SMALLINT)
+CREATE TABLE rparted_by_int2 (a SMALLINT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE rparted_by_int2_1 PARTITION OF rparted_by_int2 FOR VALUES FROM (1) TO (10);
@@ -707,8 +715,7 @@ DROP TABLE
 "lparted_by_int2",
 "rparted_by_int2";
 
-CREATE TABLE asptab
-(id INT PRIMARY KEY)
+CREATE TABLE asptab (id INT PRIMARY KEY)
 PARTITION BY RANGE(id);
 
 CREATE TABLE asptab0 PARTITION OF asptab FOR VALUES FROM (0) TO (1);
@@ -736,8 +743,11 @@ WHERE
 
 DROP TABLE "asptab";
 
-CREATE TABLE hp
-(a INT, b TEXT, c INT)
+CREATE TABLE hp (
+  a INT,
+  b TEXT,
+  c INT
+)
 PARTITION BY HASH(a part_test_int4_ops,
 b part_test_text_ops);
 
@@ -803,8 +813,10 @@ DROP TABLE "hp2";
 
 SELECT * FROM hp WHERE a = 1 AND b = 'abcde' AND (c = 2 OR c = 3);
 
-CREATE TABLE ab
-(a INT NOT NULL, b INT NOT NULL)
+CREATE TABLE ab (
+  a INT NOT NULL,
+  b INT NOT NULL
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE ab_a2 PARTITION OF ab FOR VALUES IN (2) PARTITION BY LIST(b);
@@ -869,8 +881,7 @@ DEALLOCATE hp_q1;
 
 DROP TABLE "hp";
 
-CREATE TABLE list_part
-(a INT)
+CREATE TABLE list_part (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE list_part1 PARTITION OF list_part FOR VALUES IN (1);
@@ -956,7 +967,7 @@ SELECT explain_parallel_append('execute ab_q5 (33, 44, 55)');
 
 SELECT
   explain_parallel_append(
-  'select count(*) from ab where (a = (select 1) or a = (select 3)) and b = 2'
+    'select count(*) from ab where (a = (select 1) or a = (select 3)) and b = 2'
   );
 
 CREATE TABLE lprt_a (a INT NOT NULL);
@@ -970,68 +981,23 @@ VALUES
 
 ANALYZE lprt_a;
 
-CREATE INDEX "ab_a2_b1_a_idx"
-ON ab_a2_b1
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a2_b1_a_idx" ON ab_a2_b1 USING btree (a);
 
-CREATE INDEX "ab_a2_b2_a_idx"
-ON ab_a2_b2
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a2_b2_a_idx" ON ab_a2_b2 USING btree (a);
 
-CREATE INDEX "ab_a2_b3_a_idx"
-ON ab_a2_b3
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a2_b3_a_idx" ON ab_a2_b3 USING btree (a);
 
-CREATE INDEX "ab_a1_b1_a_idx"
-ON ab_a1_b1
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a1_b1_a_idx" ON ab_a1_b1 USING btree (a);
 
-CREATE INDEX "ab_a1_b2_a_idx"
-ON ab_a1_b2
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a1_b2_a_idx" ON ab_a1_b2 USING btree (a);
 
-CREATE INDEX "ab_a1_b3_a_idx"
-ON ab_a1_b3
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a1_b3_a_idx" ON ab_a1_b3 USING btree (a);
 
-CREATE INDEX "ab_a3_b1_a_idx"
-ON ab_a3_b1
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a3_b1_a_idx" ON ab_a3_b1 USING btree (a);
 
-CREATE INDEX "ab_a3_b2_a_idx"
-ON ab_a3_b2
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a3_b2_a_idx" ON ab_a3_b2 USING btree (a);
 
-CREATE INDEX "ab_a3_b3_a_idx"
-ON ab_a3_b3
-USING btree
-(
-  a
-);
+CREATE INDEX "ab_a3_b3_a_idx" ON ab_a3_b3 USING btree (a);
 
 SET enable_hashjoin = 0;
 
@@ -1041,12 +1007,12 @@ SET enable_memoize = 0;
 
 SELECT
   explain_parallel_append(
-  'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(0, 0, 1)'
+    'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(0, 0, 1)'
   );
 
 SELECT
   explain_parallel_append(
-  'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a + 0 where a.a in(0, 0, 1)'
+    'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a + 0 where a.a in(0, 0, 1)'
   );
 
 INSERT INTO lprt_a
@@ -1056,19 +1022,19 @@ VALUES
 
 SELECT
   explain_parallel_append(
-  'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(1, 0, 3)'
+    'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(1, 0, 3)'
   );
 
 SELECT
   explain_parallel_append(
-  'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(1, 0, 0)'
+    'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(1, 0, 0)'
   );
 
 DELETE FROM lprt_a WHERE a = 1;
 
 SELECT
   explain_parallel_append(
-  'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(1, 0, 0)'
+    'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a where a.a in(1, 0, 0)'
   );
 
 RESET enable_hashjoin;
@@ -1101,7 +1067,10 @@ FROM
 WHERE
   b = (SELECT 1);
 
-CREATE TABLE xy_1 (x INT, y INT);
+CREATE TABLE xy_1 (
+  x INT,
+  y INT
+);
 
 INSERT INTO xy_1 VALUES (100, -10);
 
@@ -1172,8 +1141,7 @@ VALUES
   (501),
   (505);
 
-CREATE TABLE tprt
-(col1 INT)
+CREATE TABLE tprt (col1 INT)
 PARTITION BY RANGE(col1);
 
 CREATE TABLE tprt_1 PARTITION OF tprt FOR VALUES FROM (1) TO (501);
@@ -1188,47 +1156,17 @@ CREATE TABLE tprt_5 PARTITION OF tprt FOR VALUES FROM (3001) TO (4001);
 
 CREATE TABLE tprt_6 PARTITION OF tprt FOR VALUES FROM (4001) TO (5001);
 
-CREATE INDEX "tprt1_idx"
-ON tprt_1
-USING btree
-(
-  col1
-);
+CREATE INDEX "tprt1_idx" ON tprt_1 USING btree (col1);
 
-CREATE INDEX "tprt2_idx"
-ON tprt_2
-USING btree
-(
-  col1
-);
+CREATE INDEX "tprt2_idx" ON tprt_2 USING btree (col1);
 
-CREATE INDEX "tprt3_idx"
-ON tprt_3
-USING btree
-(
-  col1
-);
+CREATE INDEX "tprt3_idx" ON tprt_3 USING btree (col1);
 
-CREATE INDEX "tprt4_idx"
-ON tprt_4
-USING btree
-(
-  col1
-);
+CREATE INDEX "tprt4_idx" ON tprt_4 USING btree (col1);
 
-CREATE INDEX "tprt5_idx"
-ON tprt_5
-USING btree
-(
-  col1
-);
+CREATE INDEX "tprt5_idx" ON tprt_5 USING btree (col1);
 
-CREATE INDEX "tprt6_idx"
-ON tprt_6
-USING btree
-(
-  col1
-);
+CREATE INDEX "tprt6_idx" ON tprt_6 USING btree (col1);
 
 INSERT INTO tprt
 VALUES
@@ -1320,19 +1258,32 @@ ORDER BY tbl1.col1,
 
 DROP TABLE "tbl1", "tprt";
 
-CREATE TABLE part_abc
-(a INT NOT NULL, b INT NOT NULL, c INT NOT NULL)
+CREATE TABLE part_abc (
+  a INT NOT NULL,
+  b INT NOT NULL,
+  c INT NOT NULL
+)
 PARTITION BY LIST(a);
 
-CREATE TABLE part_bac
-(b INT NOT NULL, a INT NOT NULL, c INT NOT NULL)
+CREATE TABLE part_bac (
+  b INT NOT NULL,
+  a INT NOT NULL,
+  c INT NOT NULL
+)
 PARTITION BY LIST(b);
 
-CREATE TABLE part_cab
-(c INT NOT NULL, a INT NOT NULL, b INT NOT NULL)
+CREATE TABLE part_cab (
+  c INT NOT NULL,
+  a INT NOT NULL,
+  b INT NOT NULL
+)
 PARTITION BY LIST(c);
 
-CREATE TABLE part_abc_p1 (a INT NOT NULL, b INT NOT NULL, c INT NOT NULL);
+CREATE TABLE part_abc_p1 (
+  a INT NOT NULL,
+  b INT NOT NULL,
+  c INT NOT NULL
+);
 
 ALTER TABLE part_abc
   ATTACH PARTITION
@@ -1355,8 +1306,10 @@ DEALLOCATE part_abc_q1;
 
 DROP TABLE "part_abc";
 
-CREATE TABLE listp
-(a INT, b INT)
+CREATE TABLE listp (
+  a INT,
+  b INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE listp_1 PARTITION OF listp FOR VALUES IN (1) PARTITION BY LIST(b);
@@ -1389,8 +1342,7 @@ SELECT * FROM listp WHERE a = (SELECT CAST(NULL AS INT));
 
 DROP TABLE "listp";
 
-CREATE TABLE stable_qual_pruning
-(a TIMESTAMP)
+CREATE TABLE stable_qual_pruning (a TIMESTAMP)
 PARTITION BY RANGE(a);
 
 CREATE TABLE stable_qual_pruning1
@@ -1453,8 +1405,11 @@ SELECT * FROM stable_qual_pruning WHERE a = ANY (CAST(NULL AS TIMESTAMP WITH TIM
 
 DROP TABLE "stable_qual_pruning";
 
-CREATE TABLE mc3p
-(a INT, b INT, c INT)
+CREATE TABLE mc3p (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a, (abs(b)), c);
 
 CREATE TABLE mc3p0 PARTITION OF mc3p FOR VALUES FROM (0, 0, 0) TO (0, maxvalue, maxvalue);
@@ -1498,8 +1453,7 @@ VALUES
   ('t'),
   ('f');
 
-CREATE TABLE boolp
-(a BOOLEAN)
+CREATE TABLE boolp (a BOOLEAN)
 PARTITION BY LIST(a);
 
 CREATE TABLE boolp_t PARTITION OF boolp FOR VALUES IN ('t');
@@ -1516,8 +1470,10 @@ SET enable_seqscan = off;
 
 SET enable_sort = off;
 
-CREATE TABLE ma_test
-(a INT, b INT)
+CREATE TABLE ma_test (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE ma_test_p1 PARTITION OF ma_test FOR VALUES FROM (0) TO (10);
@@ -1528,12 +1484,7 @@ CREATE TABLE ma_test_p3 PARTITION OF ma_test FOR VALUES FROM (20) TO (30);
 
 INSERT INTO ma_test SELECT x, x FROM generate_series(0, 29) AS t (x);
 
-CREATE INDEX
-ON ma_test
-USING btree
-(
-  b
-);
+CREATE INDEX ON ma_test USING btree (b);
 
 ANALYZE ma_test;
 
@@ -1570,8 +1521,7 @@ DROP TABLE "ma_test";
 
 RESET enable_indexonlyscan;
 
-CREATE TABLE pp_arrpart
-(a INT[])
+CREATE TABLE pp_arrpart (a INT[])
 PARTITION BY LIST(a);
 
 CREATE TABLE pp_arrpart1 PARTITION OF pp_arrpart FOR VALUES IN ('{1}');
@@ -1590,8 +1540,7 @@ DELETE FROM pp_arrpart WHERE a = '{1}';
 
 DROP TABLE "pp_arrpart";
 
-CREATE TABLE pph_arrpart
-(a INT[])
+CREATE TABLE pph_arrpart (a INT[])
 PARTITION BY HASH(a);
 
 CREATE TABLE pph_arrpart1 PARTITION OF pph_arrpart FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1616,8 +1565,7 @@ DROP TABLE "pph_arrpart";
 
 CREATE TYPE pp_colors AS ENUM ('green', 'blue', 'black');
 
-CREATE TABLE pp_enumpart
-(a pp_colors)
+CREATE TABLE pp_enumpart (a pp_colors)
 PARTITION BY LIST(a);
 
 CREATE TABLE pp_enumpart_green PARTITION OF pp_enumpart FOR VALUES IN ('green');
@@ -1632,10 +1580,9 @@ DROP TABLE "pp_enumpart";
 
 DROP TYPE pp_colors;
 
-CREATE TYPE pp_rectype AS ( a INT, b INT );
+CREATE TYPE pp_rectype AS (a INT, b INT);
 
-CREATE TABLE pp_recpart
-(a pp_rectype)
+CREATE TABLE pp_recpart (a pp_rectype)
 PARTITION BY LIST(a);
 
 CREATE TABLE pp_recpart_11 PARTITION OF pp_recpart FOR VALUES IN ('(1,1)');
@@ -1650,8 +1597,7 @@ DROP TABLE "pp_recpart";
 
 DROP TYPE pp_rectype;
 
-CREATE TABLE pp_intrangepart
-(a INT4RANGE)
+CREATE TABLE pp_intrangepart (a INT4RANGE)
 PARTITION BY LIST(a);
 
 CREATE TABLE pp_intrangepart12 PARTITION OF pp_intrangepart FOR VALUES IN ('[1,2]');
@@ -1664,8 +1610,10 @@ SELECT * FROM pp_intrangepart WHERE a = CAST('(1,2)' AS INT4RANGE);
 
 DROP TABLE "pp_intrangepart";
 
-CREATE TABLE pp_lp
-(a INT, value INT)
+CREATE TABLE pp_lp (
+  a INT,
+  value INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE pp_lp1 PARTITION OF pp_lp FOR VALUES IN (1);
@@ -1698,14 +1646,23 @@ DELETE FROM pp_lp WHERE a = 1;
 
 DROP TABLE "pp_lp";
 
-CREATE TABLE inh_lp (a INT, value INT);
+CREATE TABLE inh_lp (
+  a INT,
+  value INT
+);
 
-CREATE TABLE inh_lp1
-(a INT, value INT, CHECK (a = 1))
+CREATE TABLE inh_lp1 (
+  a INT,
+  value INT,
+  CHECK (a = 1)
+)
 INHERITS (inh_lp);
 
-CREATE TABLE inh_lp2
-(a INT, value INT, CHECK (a = 2))
+CREATE TABLE inh_lp2 (
+  a INT,
+  value INT,
+  CHECK (a = 2)
+)
 INHERITS (inh_lp);
 
 SET constraint_exclusion = partition;
@@ -1724,8 +1681,7 @@ RESET enable_partition_pruning;
 
 RESET constraint_exclusion;
 
-CREATE TEMPORARY TABLE pp_temp_parent
-(a INT)
+CREATE TEMPORARY TABLE pp_temp_parent (a INT)
 PARTITION BY LIST(a);
 
 CREATE TEMPORARY TABLE pp_temp_part_1 PARTITION OF pp_temp_parent FOR VALUES IN (1);
@@ -1738,16 +1694,22 @@ SELECT * FROM pp_temp_parent WHERE a = 2;
 
 DROP TABLE "pp_temp_parent";
 
-CREATE TEMPORARY TABLE p
-(a INT, b INT, c INT)
+CREATE TEMPORARY TABLE p (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY LIST(a);
 
 CREATE TEMPORARY TABLE p1 PARTITION OF p FOR VALUES IN (1);
 
 CREATE TEMPORARY TABLE p2 PARTITION OF p FOR VALUES IN (2);
 
-CREATE TEMPORARY TABLE q
-(a INT, b INT, c INT)
+CREATE TEMPORARY TABLE q (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY LIST(a);
 
 CREATE TEMPORARY TABLE q1 PARTITION OF q FOR VALUES IN (1) PARTITION BY LIST(b);
@@ -1803,8 +1765,10 @@ EXECUTE q (1, 1);
 
 DROP TABLE "p", "q";
 
-CREATE TABLE listp
-(a INT, b INT)
+CREATE TABLE listp (
+  a INT,
+  b INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE listp1 PARTITION OF listp FOR VALUES IN (1);
@@ -1839,8 +1803,7 @@ SET parallel_setup_cost = 0;
 
 SET parallel_tuple_cost = 0;
 
-CREATE TABLE listp
-(a INT)
+CREATE TABLE listp (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE listp_12 PARTITION OF listp FOR VALUES IN (1, 2) PARTITION BY LIST(a);
@@ -1856,7 +1819,7 @@ SELECT explain_parallel_append('select * from listp where a = (select 1);');
 
 SELECT
   explain_parallel_append(
-  'select * from listp where a = (select 1)
+    'select * from listp where a = (select 1)
   union all
 select * from listp where a = (select 2);'
   );
@@ -1869,8 +1832,10 @@ RESET parallel_setup_cost;
 
 SET enable_sort = 0;
 
-CREATE TABLE rangep
-(a INT, b INT)
+CREATE TABLE rangep (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE rangep_0_to_100 PARTITION OF rangep FOR VALUES FROM (0) TO (100) PARTITION BY LIST(b);
@@ -1883,12 +1848,7 @@ CREATE TABLE rangep_0_to_100_3 PARTITION OF rangep_0_to_100 FOR VALUES IN (3);
 
 CREATE TABLE rangep_100_to_200 PARTITION OF rangep FOR VALUES FROM (100) TO (200);
 
-CREATE INDEX
-ON rangep
-USING btree
-(
-  a
-);
+CREATE INDEX ON rangep USING btree (a);
 
 SELECT * FROM rangep WHERE b IN ((SELECT 1), (SELECT 2)) ORDER BY a;
 
@@ -1896,8 +1856,10 @@ RESET enable_sort;
 
 DROP TABLE "rangep";
 
-CREATE TABLE rp_prefix_test1
-(a INT, b VARCHAR)
+CREATE TABLE rp_prefix_test1 (
+  a INT,
+  b VARCHAR
+)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE rp_prefix_test1_p1 PARTITION OF rp_prefix_test1 FOR VALUES FROM (1, 'a') TO (1, 'b');
@@ -1906,8 +1868,11 @@ CREATE TABLE rp_prefix_test1_p2 PARTITION OF rp_prefix_test1 FOR VALUES FROM (2,
 
 SELECT * FROM rp_prefix_test1 WHERE a <= 1 AND b = 'a';
 
-CREATE TABLE rp_prefix_test2
-(a INT, b INT, c INT)
+CREATE TABLE rp_prefix_test2 (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a, b, c);
 
 CREATE TABLE rp_prefix_test2_p1
@@ -1920,8 +1885,12 @@ FOR VALUES FROM (2, 2, 0) TO (2, 2, 10);
 
 SELECT * FROM rp_prefix_test2 WHERE a <= 1 AND b = 1 AND c >= 0;
 
-CREATE TABLE rp_prefix_test3
-(a INT, b INT, c INT, d INT)
+CREATE TABLE rp_prefix_test3 (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+)
 PARTITION BY RANGE(a, b, c, d);
 
 CREATE TABLE rp_prefix_test3_p1
@@ -1942,8 +1911,12 @@ DROP TABLE "rp_prefix_test2";
 
 DROP TABLE "rp_prefix_test3";
 
-CREATE TABLE hp_prefix_test
-(a INT, b INT, c INT, d INT)
+CREATE TABLE hp_prefix_test (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+)
 PARTITION BY HASH(a part_test_int4_ops,
 b part_test_int4_ops,
 c part_test_int4_ops,
@@ -1972,12 +1945,12 @@ FROM
 SELECT
   'explain (costs off) select tableoid::regclass,* from hp_prefix_test where ' ||
   string_agg(
-  c.colname ||
-  CASE
-  WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
-  ELSE ' = ' || CAST(colpos + 1 AS TEXT)
-  END,
-  ' and ' ORDER BY c.colpos
+    c.colname ||
+    CASE
+    WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
+    ELSE ' = ' || CAST(colpos + 1 AS TEXT)
+    END,
+    ' and ' ORDER BY c.colpos
   )
 FROM
   (VALUES
@@ -1993,12 +1966,12 @@ ORDER BY g.s;
 SELECT
   'select tableoid::regclass,* from hp_prefix_test where ' ||
   string_agg(
-  c.colname ||
-  CASE
-  WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
-  ELSE ' = ' || CAST(colpos + 1 AS TEXT)
-  END,
-  ' and ' ORDER BY c.colpos
+    c.colname ||
+    CASE
+    WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
+    ELSE ' = ' || CAST(colpos + 1 AS TEXT)
+    END,
+    ' and ' ORDER BY c.colpos
   )
 FROM
   (VALUES
@@ -2021,8 +1994,10 @@ CREATE OPERATOR CLASS part_test_int4_ops2
   AS OPERATOR 1 ===,
   FUNCTION 2 part_hashint4_noop(INT, BIGINT);
 
-CREATE TABLE hp_contradict_test
-(a INT, b INT)
+CREATE TABLE hp_contradict_test (
+  a INT,
+  b INT
+)
 PARTITION BY HASH(a part_test_int4_ops2,
 b part_test_int4_ops2);
 
@@ -2046,13 +2021,24 @@ DROP OPERATOR === (INT, INT);
 
 DROP FUNCTION explain_analyze(TEXT);
 
-CREATE TABLE part_abc
-(a INT, b TEXT, c BOOLEAN)
+CREATE TABLE part_abc (
+  a INT,
+  b TEXT,
+  c BOOLEAN
+)
 PARTITION BY LIST(a);
 
-CREATE TABLE part_abc_1 (b TEXT, a INT, c BOOLEAN);
+CREATE TABLE part_abc_1 (
+  b TEXT,
+  a INT,
+  c BOOLEAN
+);
 
-CREATE TABLE part_abc_2 (a INT, c BOOLEAN, b TEXT);
+CREATE TABLE part_abc_2 (
+  a INT,
+  c BOOLEAN,
+  b TEXT
+);
 
 ALTER TABLE part_abc
   ATTACH PARTITION
@@ -2104,7 +2090,12 @@ ROLLBACK;
 
 BEGIN;
 
-CREATE TABLE part_abc_log (action TEXT, a INT, b TEXT, c BOOLEAN);
+CREATE TABLE part_abc_log (
+  action TEXT,
+  a INT,
+  b TEXT,
+  c BOOLEAN
+);
 
 WITH
 t
@@ -2150,12 +2141,7 @@ SELECT * FROM part_abc_log;
 
 ROLLBACK;
 
-CREATE INDEX
-ON part_abc
-USING btree
-(
-  a
-);
+CREATE INDEX ON part_abc USING btree (a);
 
 ALTER TABLE part_abc
   ADD COLUMN d INT;
@@ -2169,14 +2155,14 @@ CREATE TABLE part_abc_3_2 PARTITION OF part_abc_3 FOR VALUES FROM (1) TO (100);
 CREATE TABLE part_abc_3_3 PARTITION OF part_abc_3 FOR VALUES FROM (100) TO (maxvalue);
 
 SELECT
-  MIN(a) OVER ( PARTITION BY a ORDER BY a)
+  MIN(a) OVER (PARTITION BY a ORDER BY a)
 FROM
   part_abc
 WHERE
   a >= stable_one() + 1 AND d <= stable_one()
 UNION ALL
 SELECT
-  MIN(a) OVER ( PARTITION BY a ORDER BY a)
+  MIN(a) OVER (PARTITION BY a ORDER BY a)
 FROM
   part_abc
 WHERE

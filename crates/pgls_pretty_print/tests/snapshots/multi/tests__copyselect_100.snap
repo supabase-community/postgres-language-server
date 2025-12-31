@@ -3,7 +3,10 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/copyselect.sql
 snapshot_kind: text
 ---
-CREATE TABLE test1 (id serial, t TEXT);
+CREATE TABLE test1 (
+  id serial,
+  t TEXT
+);
 
 INSERT INTO test1 (t) VALUES ('a');
 
@@ -15,7 +18,10 @@ INSERT INTO test1 (t) VALUES ('d');
 
 INSERT INTO test1 (t) VALUES ('e');
 
-CREATE TABLE test2 (id serial, t TEXT);
+CREATE TABLE test2 (
+  id serial,
+  t TEXT
+);
 
 INSERT INTO test2 (t) VALUES ('A');
 

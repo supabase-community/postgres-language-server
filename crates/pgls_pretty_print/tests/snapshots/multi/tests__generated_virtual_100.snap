@@ -87,7 +87,10 @@ SELECT * FROM gtest1;
 
 DELETE FROM gtest1 WHERE a = 2000000000;
 
-CREATE TABLE gtestx (x INT, y INT);
+CREATE TABLE gtestx (
+  x INT,
+  y INT
+);
 
 INSERT INTO gtestx
 VALUES
@@ -166,8 +169,7 @@ DROP VIEW "gtest1v";
 
 WITH foo AS (SELECT * FROM gtest1) SELECT * FROM foo;
 
-CREATE TABLE gtest1_1
-()
+CREATE TABLE gtest1_1 ()
 INHERITS (gtest1);
 
 SELECT * FROM gtest1_1;
@@ -178,23 +180,32 @@ SELECT * FROM gtest1_1;
 
 SELECT * FROM gtest1;
 
-CREATE TABLE gtest_normal (a INT, b INT);
+CREATE TABLE gtest_normal (
+  a INT,
+  b INT
+);
 
 ALTER TABLE gtest_normal_child
   INHERIT gtest_normal;
 
 DROP TABLE "gtest_normal", "gtest_normal_child";
 
-CREATE TABLE gtestx
-(x INT, b INT DEFAULT 10)
+CREATE TABLE gtestx (
+  x INT,
+  b INT DEFAULT 10
+)
 INHERITS (gtest1);
 
-CREATE TABLE gtestx
-(x INT, b INT GENERATED ALWAYS AS IDENTITY)
+CREATE TABLE gtestx (
+  x INT,
+  b INT GENERATED ALWAYS AS IDENTITY
+)
 INHERITS (gtest1);
 
-CREATE TABLE gtestx
-(x INT, b INT GENERATED ALWAYS AS (a * 22) STORED)
+CREATE TABLE gtestx (
+  x INT,
+  b INT GENERATED ALWAYS AS (a * 22) STORED
+)
 INHERITS (gtest1);
 
 INSERT INTO gtestx (a, x) VALUES (11, 22);
@@ -203,7 +214,10 @@ SELECT * FROM gtest1;
 
 SELECT * FROM gtestx;
 
-CREATE TABLE gtestxx_1 (a INT NOT NULL, b INT);
+CREATE TABLE gtestxx_1 (
+  a INT NOT NULL,
+  b INT
+);
 
 ALTER TABLE gtestxx_1
   INHERIT gtest1;
@@ -214,26 +228,29 @@ ALTER TABLE gtestxx_3
 ALTER TABLE gtestxx_4
   INHERIT gtest1;
 
-CREATE TABLE gtesty (x INT, b INT DEFAULT 55);
+CREATE TABLE gtesty (
+  x INT,
+  b INT DEFAULT 55
+);
 
-CREATE TABLE gtest1_y
-()
+CREATE TABLE gtest1_y ()
 INHERITS (gtest0,
 gtesty);
 
 DROP TABLE "gtesty";
 
-CREATE TABLE gtesty (x INT, b INT);
+CREATE TABLE gtesty (
+  x INT,
+  b INT
+);
 
-CREATE TABLE gtest1_y
-()
+CREATE TABLE gtest1_y ()
 INHERITS (gtest1,
 gtesty);
 
 DROP TABLE "gtesty";
 
-CREATE TABLE gtest1_y
-()
+CREATE TABLE gtest1_y ()
 INHERITS (gtest1,
 gtesty);
 
@@ -249,8 +266,7 @@ SELECT * FROM gtestc;
 
 DROP TABLE "gtestp" CASCADE;
 
-INSERT INTO gtest3
-(a)
+INSERT INTO gtest3 (a)
 VALUES
   (1),
   (2),
@@ -263,8 +279,7 @@ UPDATE gtest3 SET a = 22 WHERE a = 2;
 
 SELECT * FROM gtest3 ORDER BY a;
 
-INSERT INTO gtest3a
-(a)
+INSERT INTO gtest3a (a)
 VALUES
   ('a'),
   ('b'),
@@ -279,8 +294,7 @@ SELECT * FROM gtest3a ORDER BY a;
 
 TRUNCATE gtest1;
 
-INSERT INTO gtest1
-(a)
+INSERT INTO gtest1 (a)
 VALUES
   (1),
   (2);
@@ -293,8 +307,7 @@ SELECT * FROM gtest1 ORDER BY a;
 
 TRUNCATE gtest3;
 
-INSERT INTO gtest3
-(a)
+INSERT INTO gtest3 (a)
 VALUES
   (1),
   (2);
@@ -317,7 +330,7 @@ SELECT * FROM gtest_varlena ORDER BY a;
 
 DROP TABLE "gtest_varlena";
 
-CREATE TYPE double_int AS ( a INT, b INT );
+CREATE TYPE double_int AS (a INT, b INT);
 
 DROP TYPE double_int;
 
@@ -437,8 +450,7 @@ ALTER TABLE gtest21b
 
 INSERT INTO gtest21b (a) VALUES (1);
 
-INSERT INTO gtest21b
-(a)
+INSERT INTO gtest21b (a)
 VALUES
   (2),
   (0);
@@ -472,9 +484,15 @@ INSERT INTO gtestnn_parent VALUES (10, 11, DEFAULT);
 
 SELECT * FROM gtestnn_parent ORDER BY f1, f2, f3;
 
-CREATE TABLE gtest23a (x INT PRIMARY KEY, y INT);
+CREATE TABLE gtest23a (
+  x INT PRIMARY KEY,
+  y INT
+);
 
-CREATE TABLE gtest23q (a INT PRIMARY KEY, b INT REFERENCES gtest23p (y));
+CREATE TABLE gtest23q (
+  a INT PRIMARY KEY,
+  b INT REFERENCES gtest23p (y)
+);
 
 CREATE DOMAIN gtestdomain1 AS INT CHECK (value < 10);
 
@@ -487,12 +505,15 @@ ALTER TABLE gtest24ata
 
 CREATE DOMAIN gtestdomainnn AS INT CHECK (value IS NOT NULL);
 
-CREATE TYPE gtest_type AS ( f1 INT, f2 TEXT, f3 BIGINT );
+CREATE TYPE gtest_type AS (f1 INT, f2 TEXT, f3 BIGINT);
 
 DROP TYPE gtest_type CASCADE;
 
-CREATE TABLE gtest_parent
-(f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT)
+CREATE TABLE gtest_parent (
+  f1 DATE NOT NULL,
+  f2 BIGINT,
+  f3 BIGINT
+)
 PARTITION BY RANGE(f1);
 
 ALTER TABLE gtest_parent
@@ -525,7 +546,11 @@ PARTITION OF gtest_parent
 )
 FOR VALUES FROM ('2016-09-01') TO ('2016-10-01');
 
-CREATE TABLE gtest_child3 (f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT);
+CREATE TABLE gtest_child3 (
+  f1 DATE NOT NULL,
+  f2 BIGINT,
+  f3 BIGINT
+);
 
 ALTER TABLE gtest_parent
   ATTACH PARTITION
@@ -534,7 +559,11 @@ ALTER TABLE gtest_parent
 
 DROP TABLE "gtest_child3";
 
-CREATE TABLE gtest_child3 (f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT DEFAULT 42);
+CREATE TABLE gtest_child3 (
+  f1 DATE NOT NULL,
+  f2 BIGINT,
+  f3 BIGINT DEFAULT 42
+);
 
 ALTER TABLE gtest_parent
   ATTACH PARTITION
@@ -543,7 +572,11 @@ ALTER TABLE gtest_parent
 
 DROP TABLE "gtest_child3";
 
-CREATE TABLE gtest_child3 (f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT GENERATED ALWAYS AS IDENTITY);
+CREATE TABLE gtest_child3 (
+  f1 DATE NOT NULL,
+  f2 BIGINT,
+  f3 BIGINT GENERATED ALWAYS AS IDENTITY
+);
 
 ALTER TABLE gtest_parent
   ATTACH PARTITION
@@ -552,8 +585,7 @@ ALTER TABLE gtest_parent
 
 DROP TABLE "gtest_child3";
 
-CREATE TABLE gtest_child3
-(
+CREATE TABLE gtest_child3 (
   f1 DATE NOT NULL,
   f2 BIGINT,
   f3 BIGINT GENERATED ALWAYS AS (f2 * 33) STORED
@@ -619,8 +651,7 @@ ALTER TABLE gtest25
 
 SELECT * FROM gtest25 ORDER BY a;
 
-INSERT INTO gtest27
-(a, b)
+INSERT INTO gtest27 (a, b)
 VALUES
   (3, 7),
   (4, 11);
@@ -649,8 +680,7 @@ ALTER TABLE gtest27
 
 SELECT * FROM gtest27;
 
-INSERT INTO gtest29
-(a)
+INSERT INTO gtest29 (a)
 VALUES
   (3),
   (4);
@@ -682,8 +712,7 @@ INSERT INTO gtest29 (a, b) VALUES (6, 66);
 
 SELECT * FROM gtest29;
 
-CREATE TABLE gtest30_1
-()
+CREATE TABLE gtest30_1 ()
 INHERITS (gtest30);
 
 ALTER TABLE gtest30
@@ -691,8 +720,7 @@ ALTER TABLE gtest30
 
 DROP TABLE "gtest30" CASCADE;
 
-CREATE TABLE gtest30_1
-()
+CREATE TABLE gtest30_1 ()
 INHERITS (gtest30);
 
 ALTER TABLE ONLY gtest30
@@ -701,7 +729,10 @@ ALTER TABLE ONLY gtest30
 ALTER TABLE gtest30_1
   ALTER COLUMN b DROP EXPRESSION;
 
-CREATE TABLE gtest31_2 (x INT, y gtest31_1);
+CREATE TABLE gtest31_2 (
+  x INT,
+  y gtest31_1
+);
 
 ALTER TABLE gtest31_1
   ALTER COLUMN b TYPE VARCHAR;
@@ -724,12 +755,7 @@ ALTER TABLE gtest31_1
 
 DROP STATISTICS "gtest31_2_stat";
 
-CREATE INDEX "gtest31_2_y_idx"
-ON gtest31_2
-USING btree
-(
-  (y.b)
-);
+CREATE INDEX "gtest31_2_y_idx" ON gtest31_2 USING btree ((y.b));
 
 ALTER TABLE gtest31_1
   ALTER COLUMN b SET EXPRESSION
@@ -737,7 +763,10 @@ ALTER TABLE gtest31_1
 
 DROP TABLE "gtest31_1", "gtest31_2";
 
-CREATE TABLE gtest31_2 (x INT, y gtest31_1);
+CREATE TABLE gtest31_2 (
+  x INT,
+  y gtest31_1
+);
 
 ALTER TABLE gtest31_1
   ALTER COLUMN b TYPE VARCHAR;
@@ -764,49 +793,48 @@ END
 ';
 
 CREATE TRIGGER gtest1
-BEFORE DELETE OR UPDATE
-ON gtest26
-FOR EACH ROW
-WHEN (old.b < 0)
-EXECUTE FUNCTION gtest_trigger_func();
+  BEFORE DELETE OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  WHEN (old.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest2a
-BEFORE INSERT OR UPDATE
-ON gtest26
-FOR EACH ROW
-WHEN (new.b < 0)
-EXECUTE FUNCTION gtest_trigger_func();
+  BEFORE INSERT OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  WHEN (new.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest2b
-BEFORE INSERT OR UPDATE
-ON gtest26
-FOR EACH ROW
-WHEN (new.* IS NOT NULL)
-EXECUTE FUNCTION gtest_trigger_func();
+  BEFORE INSERT OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  WHEN (new.* IS NOT NULL)
+  EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest2
-BEFORE INSERT
-ON gtest26
-FOR EACH ROW
-WHEN (new.a < 0)
-EXECUTE FUNCTION gtest_trigger_func();
+  BEFORE INSERT
+  ON gtest26
+  FOR EACH ROW
+  WHEN (new.a < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest3
-AFTER DELETE OR UPDATE
-ON gtest26
-FOR EACH ROW
-WHEN (old.b < 0)
-EXECUTE FUNCTION gtest_trigger_func();
+  AFTER DELETE OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  WHEN (old.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest4
-AFTER INSERT OR UPDATE
-ON gtest26
-FOR EACH ROW
-WHEN (new.b < 0)
-EXECUTE FUNCTION gtest_trigger_func();
+  AFTER INSERT OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  WHEN (new.b < 0)
+  EXECUTE FUNCTION gtest_trigger_func();
 
-INSERT INTO gtest26
-(a)
+INSERT INTO gtest26 (a)
 VALUES
   (-2),
   (0),
@@ -839,10 +867,10 @@ END
 ';
 
 CREATE TRIGGER gtest11
-BEFORE UPDATE OF b
-ON gtest26
-FOR EACH ROW
-EXECUTE FUNCTION gtest_trigger_func3();
+  BEFORE UPDATE OF b
+  ON gtest26
+  FOR EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func3();
 
 UPDATE gtest26 SET a = 1 WHERE a = 0;
 
@@ -862,22 +890,22 @@ END;
 ';
 
 CREATE TRIGGER gtest12_01
-BEFORE INSERT OR UPDATE
-ON gtest26
-FOR EACH ROW
-EXECUTE FUNCTION gtest_trigger_func();
+  BEFORE INSERT OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest12_02
-BEFORE INSERT OR UPDATE
-ON gtest26
-FOR EACH ROW
-EXECUTE FUNCTION gtest_trigger_func4();
+  BEFORE INSERT OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func4();
 
 CREATE TRIGGER gtest12_03
-BEFORE INSERT OR UPDATE
-ON gtest26
-FOR EACH ROW
-EXECUTE FUNCTION gtest_trigger_func();
+  BEFORE INSERT OR UPDATE
+  ON gtest26
+  FOR EACH ROW
+  EXECUTE FUNCTION gtest_trigger_func();
 
 INSERT INTO gtest26 (a) VALUES (1);
 
@@ -902,9 +930,9 @@ VALUES
 ANALYZE gtest32;
 
 SELECT
-  SUM(t2.b) OVER ( PARTITION BY t2.a),
-  SUM(t2.c) OVER ( PARTITION BY t2.a),
-  SUM(t2.d) OVER ( PARTITION BY t2.a)
+  SUM(t2.b) OVER (PARTITION BY t2.a),
+  SUM(t2.c) OVER (PARTITION BY t2.a),
+  SUM(t2.d) OVER (PARTITION BY t2.a)
 FROM
   gtest32 AS t1
   LEFT OUTER JOIN
@@ -913,9 +941,9 @@ FROM
 ORDER BY t1.a;
 
 SELECT
-  SUM(t2.b) OVER ( PARTITION BY t2.a),
-  SUM(t2.c) OVER ( PARTITION BY t2.a),
-  SUM(t2.d) OVER ( PARTITION BY t2.a)
+  SUM(t2.b) OVER (PARTITION BY t2.a),
+  SUM(t2.c) OVER (PARTITION BY t2.a),
+  SUM(t2.d) OVER (PARTITION BY t2.a)
 FROM
   gtest32 AS t1
   LEFT OUTER JOIN

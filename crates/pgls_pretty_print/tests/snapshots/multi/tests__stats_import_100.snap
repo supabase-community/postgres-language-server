@@ -5,10 +5,9 @@ snapshot_kind: text
 ---
 CREATE SCHEMA "stats_import";
 
-CREATE TYPE stats_import.complex_type AS ( a INT, b REAL, c TEXT, d DATE, e JSONB );
+CREATE TYPE stats_import.complex_type AS (a INT, b REAL, c TEXT, d DATE, e JSONB);
 
-CREATE TABLE stats_import.test
-(
+CREATE TABLE stats_import.test (
   id INT PRIMARY KEY,
   name TEXT,
   comp stats_import.complex_type,
@@ -19,26 +18,21 @@ WITH (autovacuum_enabled = 'false');
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'relpages',
-  CAST(18 AS INT),
-  'reltuples',
-  CAST(21 AS REAL),
-  'relallvisible',
-  CAST(24 AS INT),
-  'relallfrozen',
-  CAST(27 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    CAST(18 AS INT),
+    'reltuples',
+    CAST(21 AS REAL),
+    'relallvisible',
+    CAST(24 AS INT),
+    'relallfrozen',
+    CAST(27 AS INT)
   );
 
-CREATE INDEX "test_i"
-ON stats_import.test
-USING btree
-(
-  id
-);
+CREATE INDEX "test_i" ON stats_import.test USING btree (id);
 
 SELECT
   relname,
@@ -60,44 +54,44 @@ SELECT pg_restore_relation_stats('schemaname', 'stats_import', 'relpages', CAST(
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  CAST(3.6 AS DOUBLE PRECISION),
-  'relname',
-  'test',
-  'relpages',
-  CAST(17 AS INT)
+    'schemaname',
+    CAST(3.6 AS DOUBLE PRECISION),
+    'relname',
+    'test',
+    'relpages',
+    CAST(17 AS INT)
   );
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  CAST(0 AS OID),
-  'relpages',
-  CAST(17 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    CAST(0 AS OID),
+    'relpages',
+    CAST(17 AS INT)
   );
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'nope',
-  'relpages',
-  CAST(17 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'nope',
+    'relpages',
+    CAST(17 AS INT)
   );
 
 SELECT pg_restore_relation_stats('schemaname', 'stats_import', 'relname', 'test', 'relallvisible');
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  NULL,
-  CAST('17' AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    NULL,
+    CAST('17' AS INT)
   );
 
 SELECT
@@ -114,12 +108,12 @@ BEGIN;
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test_i',
-  'relpages',
-  CAST(18 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test_i',
+    'relpages',
+    CAST(18 AS INT)
   );
 
 SELECT
@@ -142,8 +136,7 @@ WHERE
 
 COMMIT;
 
-CREATE TABLE stats_import.part_parent
-(i INT)
+CREATE TABLE stats_import.part_parent (i INT)
 PARTITION BY RANGE(i);
 
 CREATE TABLE stats_import.part_child_1
@@ -151,12 +144,7 @@ PARTITION OF stats_import.part_parent
 FOR VALUES FROM (0) TO (10)
 WITH (autovacuum_enabled = 'false');
 
-CREATE INDEX "part_parent_i"
-ON stats_import.part_parent
-USING btree
-(
-  i
-);
+CREATE INDEX "part_parent_i" ON stats_import.part_parent USING btree (i);
 
 ANALYZE stats_import.part_parent;
 
@@ -166,12 +154,12 @@ BEGIN;
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'part_parent_i',
-  'relpages',
-  CAST(2 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'part_parent_i',
+    'relpages',
+    CAST(2 AS INT)
   );
 
 SELECT
@@ -200,20 +188,20 @@ SELECT relpages FROM pg_class WHERE oid = CAST('stats_import.part_parent_i' AS R
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'version',
-  CAST(150000 AS INT),
-  'relpages',
-  CAST('-17' AS INT),
-  'reltuples',
-  CAST(400 AS REAL),
-  'relallvisible',
-  CAST(4 AS INT),
-  'relallfrozen',
-  CAST(2 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'version',
+    CAST(150000 AS INT),
+    'relpages',
+    CAST('-17' AS INT),
+    'reltuples',
+    CAST(400 AS REAL),
+    'relallvisible',
+    CAST(4 AS INT),
+    'relallfrozen',
+    CAST(2 AS INT)
   );
 
 SELECT
@@ -228,12 +216,12 @@ WHERE
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'relpages',
-  CAST('16' AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    CAST('16' AS INT)
   );
 
 SELECT
@@ -248,12 +236,12 @@ WHERE
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'reltuples',
-  CAST('500' AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'reltuples',
+    CAST('500' AS REAL)
   );
 
 SELECT
@@ -268,12 +256,12 @@ WHERE
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'relallvisible',
-  CAST(5 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relallvisible',
+    CAST(5 AS INT)
   );
 
 SELECT
@@ -288,14 +276,14 @@ WHERE
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'version',
-  CAST(150000 AS INT),
-  'relallfrozen',
-  CAST(3 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'version',
+    CAST(150000 AS INT),
+    'relallfrozen',
+    CAST(3 AS INT)
   );
 
 SELECT
@@ -310,18 +298,18 @@ WHERE
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'relpages',
-  CAST('nope' AS TEXT),
-  'reltuples',
-  CAST(400.0 AS REAL),
-  'relallvisible',
-  CAST(4 AS INT),
-  'relallfrozen',
-  CAST(3 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    CAST('nope' AS TEXT),
+    'reltuples',
+    CAST(400.0 AS REAL),
+    'relallvisible',
+    CAST(4 AS INT),
+    'relallfrozen',
+    CAST(3 AS INT)
   );
 
 SELECT
@@ -336,14 +324,14 @@ WHERE
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'relpages',
-  CAST('171' AS INT),
-  'nope',
-  CAST(10 AS INT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'relpages',
+    CAST('171' AS INT),
+    'nope',
+    CAST(10 AS INT)
   );
 
 SELECT
@@ -379,200 +367,176 @@ SELECT pg_clear_relation_stats("schemaname" := 'stats_import', "relname" := 'tes
 
 SELECT
   pg_restore_attribute_stats(
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'nope',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'nope',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'nope',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'nope',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  NULL,
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    NULL,
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  NULL,
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    NULL,
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'nope',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL),
-  'avg_width',
-  CAST(2 AS INT),
-  'n_distinct',
-  CAST(0.3 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'nope',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL),
+    'avg_width',
+    CAST(2 AS INT),
+    'n_distinct',
+    CAST(0.3 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'attnum',
-  CAST(1 AS SMALLINT),
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'attnum',
+    CAST(1 AS SMALLINT),
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'xmin',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'xmin',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(NULL AS BOOLEAN),
-  'null_frac',
-  CAST(0.1 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(NULL AS BOOLEAN),
+    'null_frac',
+    CAST(0.1 AS REAL)
   );
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'version',
-  CAST(150000 AS INT),
-  'null_frac',
-  CAST(0.2 AS REAL),
-  'avg_width',
-  CAST(5 AS INT),
-  'n_distinct',
-  CAST(0.6 AS REAL)
-  );
-
-SELECT
-  *
-FROM
-  pg_stats
-WHERE
-  schemaname = 'stats_import' AND
-  tablename = 'test' AND
-  inherited = FALSE AND
-  attname = 'id';
-
-SELECT
-  pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attnum',
-  CAST(1 AS SMALLINT),
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.4 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'version',
+    CAST(150000 AS INT),
+    'null_frac',
+    CAST(0.2 AS REAL),
+    'avg_width',
+    CAST(5 AS INT),
+    'n_distinct',
+    CAST(0.6 AS REAL)
   );
 
 SELECT
@@ -587,18 +551,16 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.2 AS REAL),
-  'nope',
-  CAST(0.5 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attnum',
+    CAST(1 AS SMALLINT),
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.4 AS REAL)
   );
 
 SELECT
@@ -613,18 +575,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.21 AS REAL),
-  'most_common_freqs',
-  CAST('{0.1,0.2,0.3}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.2 AS REAL),
+    'nope',
+    CAST(0.5 AS REAL)
   );
 
 SELECT
@@ -639,18 +601,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.21 AS REAL),
-  'most_common_vals',
-  CAST('{1,2,3}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.21 AS REAL),
+    'most_common_freqs',
+    CAST('{0.1,0.2,0.3}' AS REAL[])
   );
 
 SELECT
@@ -665,20 +627,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.22 AS REAL),
-  'most_common_vals',
-  CAST('{2,1,3}' AS TEXT),
-  'most_common_freqs',
-  CAST('{0.2,0.1}' AS DOUBLE PRECISION[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.21 AS REAL),
+    'most_common_vals',
+    CAST('{1,2,3}' AS TEXT)
   );
 
 SELECT
@@ -693,20 +653,20 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.23 AS REAL),
-  'most_common_vals',
-  CAST('{2,four,3}' AS TEXT),
-  'most_common_freqs',
-  CAST('{0.3,0.25,0.05}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.22 AS REAL),
+    'most_common_vals',
+    CAST('{2,1,3}' AS TEXT),
+    'most_common_freqs',
+    CAST('{0.2,0.1}' AS DOUBLE PRECISION[])
   );
 
 SELECT
@@ -721,18 +681,20 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'most_common_vals',
-  CAST('{2,1,3}' AS TEXT),
-  'most_common_freqs',
-  CAST('{0.3,0.25,0.05}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.23 AS REAL),
+    'most_common_vals',
+    CAST('{2,four,3}' AS TEXT),
+    'most_common_freqs',
+    CAST('{0.3,0.25,0.05}' AS REAL[])
   );
 
 SELECT
@@ -747,18 +709,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.24 AS REAL),
-  'histogram_bounds',
-  CAST('{1,NULL,3,4}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'most_common_vals',
+    CAST('{2,1,3}' AS TEXT),
+    'most_common_freqs',
+    CAST('{0.3,0.25,0.05}' AS REAL[])
   );
 
 SELECT
@@ -773,16 +735,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'histogram_bounds',
-  CAST('{1,2,3,4}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.24 AS REAL),
+    'histogram_bounds',
+    CAST('{1,NULL,3,4}' AS TEXT)
   );
 
 SELECT
@@ -797,18 +761,42 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'tags',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.25 AS REAL),
-  'elem_count_histogram',
-  CAST('{1,1,NULL,1,1,1,1,1}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'histogram_bounds',
+    CAST('{1,2,3,4}' AS TEXT)
+  );
+
+SELECT
+  *
+FROM
+  pg_stats
+WHERE
+  schemaname = 'stats_import' AND
+  tablename = 'test' AND
+  inherited = FALSE AND
+  attname = 'id';
+
+SELECT
+  pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.25 AS REAL),
+    'elem_count_histogram',
+    CAST('{1,1,NULL,1,1,1,1,1}' AS REAL[])
   );
 
 SELECT
@@ -823,19 +811,19 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'tags',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.26 AS REAL),
-  'elem_count_histogram',
-  CAST('{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}'
-  AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.26 AS REAL),
+    'elem_count_histogram',
+    CAST('{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}'
+    AS REAL[])
   );
 
 SELECT
@@ -850,20 +838,20 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.27 AS REAL),
-  'range_empty_frac',
-  CAST(0.5 AS REAL),
-  'range_length_histogram',
-  CAST('{399,499,Infinity}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.27 AS REAL),
+    'range_empty_frac',
+    CAST(0.5 AS REAL),
+    'range_length_histogram',
+    CAST('{399,499,Infinity}' AS TEXT)
   );
 
 SELECT
@@ -878,18 +866,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'arange',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.28 AS REAL),
-  'range_length_histogram',
-  CAST('{399,499,Infinity}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.28 AS REAL),
+    'range_length_histogram',
+    CAST('{399,499,Infinity}' AS TEXT)
   );
 
 SELECT
@@ -904,18 +892,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'arange',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.29 AS REAL),
-  'range_empty_frac',
-  CAST(0.5 AS REAL)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.29 AS REAL),
+    'range_empty_frac',
+    CAST(0.5 AS REAL)
   );
 
 SELECT
@@ -930,18 +918,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'arange',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'range_empty_frac',
-  CAST(0.5 AS REAL),
-  'range_length_histogram',
-  CAST('{399,499,Infinity}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'range_empty_frac',
+    CAST(0.5 AS REAL),
+    'range_length_histogram',
+    CAST('{399,499,Infinity}' AS TEXT)
   );
 
 SELECT
@@ -956,19 +944,19 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.31 AS REAL),
-  'range_bounds_histogram',
-  CAST('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
-  AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.31 AS REAL),
+    'range_bounds_histogram',
+    CAST('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
+    AS TEXT)
   );
 
 SELECT
@@ -983,17 +971,17 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'arange',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'range_bounds_histogram',
-  CAST('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
-  AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'range_bounds_histogram',
+    CAST('{"[-1,1)","[0,4)","[1,4)","[1,100)"}'
+    AS TEXT)
   );
 
 SELECT
@@ -1008,20 +996,20 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'arange',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.32 AS REAL),
-  'most_common_elems',
-  CAST('{3,1}' AS TEXT),
-  'most_common_elem_freqs',
-  CAST('{0.3,0.2,0.2,0.3,0.0}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'arange',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.32 AS REAL),
+    'most_common_elems',
+    CAST('{3,1}' AS TEXT),
+    'most_common_elem_freqs',
+    CAST('{0.3,0.2,0.2,0.3,0.0}' AS REAL[])
   );
 
 SELECT
@@ -1036,20 +1024,20 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.33 AS REAL),
-  'most_common_elems',
-  CAST('{1,3}' AS TEXT),
-  'most_common_elem_freqs',
-  CAST('{0.3,0.2,0.2,0.3,0.0}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.33 AS REAL),
+    'most_common_elems',
+    CAST('{1,3}' AS TEXT),
+    'most_common_elem_freqs',
+    CAST('{0.3,0.2,0.2,0.3,0.0}' AS REAL[])
   );
 
 SELECT
@@ -1064,18 +1052,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'tags',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.34 AS REAL),
-  'most_common_elems',
-  CAST('{one,two}' AS TEXT)
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.34 AS REAL),
+    'most_common_elems',
+    CAST('{one,two}' AS TEXT)
   );
 
 SELECT
@@ -1090,18 +1078,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'tags',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.35 AS REAL),
-  'most_common_elem_freqs',
-  CAST('{0.3,0.2,0.2,0.3}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.35 AS REAL),
+    'most_common_elem_freqs',
+    CAST('{0.3,0.2,0.2,0.3}' AS REAL[])
   );
 
 SELECT
@@ -1116,18 +1104,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'tags',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'most_common_elems',
-  CAST('{one,three}' AS TEXT),
-  'most_common_elem_freqs',
-  CAST('{0.3,0.2,0.2,0.3,0.0}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'tags',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'most_common_elems',
+    CAST('{one,three}' AS TEXT),
+    'most_common_elem_freqs',
+    CAST('{0.3,0.2,0.2,0.3,0.0}' AS REAL[])
   );
 
 SELECT
@@ -1142,18 +1130,18 @@ WHERE
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  'test',
-  'attname',
-  'id',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.36 AS REAL),
-  'elem_count_histogram',
-  CAST('{1,1,1,1,1,1,1,1,1,1}' AS REAL[])
+    'schemaname',
+    'stats_import',
+    'relname',
+    'test',
+    'attname',
+    'id',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.36 AS REAL),
+    'elem_count_histogram',
+    CAST('{1,1,1,1,1,1,1,1,1,1}' AS REAL[])
   );
 
 SELECT
@@ -1197,23 +1185,13 @@ SELECT
 UNION ALL
 SELECT 4, 'four', NULL, int4range(0, 100), NULL;
 
-CREATE INDEX "is_odd"
-ON stats_import.test
-USING btree
-(
-  (comp.a % 2 = 1)
-);
+CREATE INDEX "is_odd" ON stats_import.test USING btree ((comp.a % 2 = 1));
 
 ANALYZE stats_import.test;
 
 CREATE TABLE stats_import.test_clone (LIKE stats_import.test) WITH (autovacuum_enabled = 'false');
 
-CREATE INDEX "is_odd_clone"
-ON stats_import.test_clone
-USING btree
-(
-  (comp.a % 2 = 1)
-);
+CREATE INDEX "is_odd_clone" ON stats_import.test_clone USING btree ((comp.a % 2 = 1));
 
 SELECT
   s.schemaname,
@@ -1225,42 +1203,42 @@ FROM
   pg_catalog.pg_stats AS s
   INNER JOIN
     LATERAL pg_restore_attribute_stats(
-    'schemaname',
-    'stats_import',
-    'relname',
-    CAST(s.tablename AS TEXT) || '_clone',
-    'attname',
-    CAST(s.attname AS TEXT),
-    'inherited',
-    s.inherited,
-    'version',
-    150000,
-    'null_frac',
-    s.null_frac,
-    'avg_width',
-    s.avg_width,
-    'n_distinct',
-    s.n_distinct,
-    'most_common_vals',
-    CAST(s.most_common_vals AS TEXT),
-    'most_common_freqs',
-    s.most_common_freqs,
-    'histogram_bounds',
-    CAST(s.histogram_bounds AS TEXT),
-    'correlation',
-    s.correlation,
-    'most_common_elems',
-    CAST(s.most_common_elems AS TEXT),
-    'most_common_elem_freqs',
-    s.most_common_elem_freqs,
-    'elem_count_histogram',
-    s.elem_count_histogram,
-    'range_bounds_histogram',
-    CAST(s.range_bounds_histogram AS TEXT),
-    'range_empty_frac',
-    s.range_empty_frac,
-    'range_length_histogram',
-    CAST(s.range_length_histogram AS TEXT)
+      'schemaname',
+      'stats_import',
+      'relname',
+      CAST(s.tablename AS TEXT) || '_clone',
+      'attname',
+      CAST(s.attname AS TEXT),
+      'inherited',
+      s.inherited,
+      'version',
+      150000,
+      'null_frac',
+      s.null_frac,
+      'avg_width',
+      s.avg_width,
+      'n_distinct',
+      s.n_distinct,
+      'most_common_vals',
+      CAST(s.most_common_vals AS TEXT),
+      'most_common_freqs',
+      s.most_common_freqs,
+      'histogram_bounds',
+      CAST(s.histogram_bounds AS TEXT),
+      'correlation',
+      s.correlation,
+      'most_common_elems',
+      CAST(s.most_common_elems AS TEXT),
+      'most_common_elem_freqs',
+      s.most_common_elem_freqs,
+      'elem_count_histogram',
+      s.elem_count_histogram,
+      'range_bounds_histogram',
+      CAST(s.range_bounds_histogram AS TEXT),
+      'range_empty_frac',
+      s.range_empty_frac,
+      'range_length_histogram',
+      CAST(s.range_length_histogram AS TEXT)
     )
     AS r
   ON TRUE
@@ -1627,10 +1605,10 @@ WHERE
 
 SELECT
   pg_clear_attribute_stats(
-  "schemaname" := 'stats_import',
-  "relname" := 'test',
-  "attname" := 'arange',
-  "inherited" := FALSE
+    "schemaname" := 'stats_import',
+    "relname" := 'test',
+    "attname" := 'arange',
+    "inherited" := FALSE
   );
 
 SELECT
@@ -1647,18 +1625,18 @@ CREATE TEMPORARY TABLE stats_temp (i INT);
 
 SELECT
   pg_restore_relation_stats(
-  'schemaname',
-  'pg_temp',
-  'relname',
-  'stats_temp',
-  'relpages',
-  CAST('-19' AS INT),
-  'reltuples',
-  CAST(401 AS REAL),
-  'relallvisible',
-  CAST(5 AS INT),
-  'relallfrozen',
-  CAST(3 AS INT)
+    'schemaname',
+    'pg_temp',
+    'relname',
+    'stats_temp',
+    'relpages',
+    CAST('-19' AS INT),
+    'reltuples',
+    CAST(401 AS REAL),
+    'relallvisible',
+    CAST(5 AS INT),
+    'relallfrozen',
+    CAST(3 AS INT)
   );
 
 SELECT
@@ -1675,16 +1653,16 @@ ORDER BY relname;
 
 SELECT
   pg_restore_attribute_stats(
-  'schemaname',
-  'pg_temp',
-  'relname',
-  'stats_temp',
-  'attname',
-  'i',
-  'inherited',
-  CAST(FALSE AS BOOLEAN),
-  'null_frac',
-  CAST(0.0123 AS REAL)
+    'schemaname',
+    'pg_temp',
+    'relname',
+    'stats_temp',
+    'attname',
+    'i',
+    'inherited',
+    CAST(FALSE AS BOOLEAN),
+    'null_frac',
+    CAST(0.0123 AS REAL)
   );
 
 SELECT

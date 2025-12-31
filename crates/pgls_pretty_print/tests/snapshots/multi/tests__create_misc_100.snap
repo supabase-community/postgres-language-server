@@ -3,27 +3,25 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_misc.sql
 snapshot_kind: text
 ---
-CREATE TABLE a_star (class CHAR(1), a INT);
+CREATE TABLE a_star (
+  class CHAR(1),
+  a INT
+);
 
-CREATE TABLE b_star
-(b TEXT)
+CREATE TABLE b_star (b TEXT)
 INHERITS (a_star);
 
-CREATE TABLE c_star
-(c NAME)
+CREATE TABLE c_star (c NAME)
 INHERITS (a_star);
 
-CREATE TABLE d_star
-(d DOUBLE PRECISION)
+CREATE TABLE d_star (d DOUBLE PRECISION)
 INHERITS (b_star,
 c_star);
 
-CREATE TABLE e_star
-(e SMALLINT)
+CREATE TABLE e_star (e SMALLINT)
 INHERITS (c_star);
 
-CREATE TABLE f_star
-(f polygon)
+CREATE TABLE f_star (f polygon)
 INHERITS (e_star);
 
 INSERT INTO a_star (class, a) VALUES ('a', 1);
@@ -48,8 +46,7 @@ INSERT INTO c_star (class, c) VALUES ('c', CAST('hi paul' AS NAME));
 
 INSERT INTO c_star (class) VALUES ('c');
 
-INSERT INTO d_star
-(class, a, b, c, d)
+INSERT INTO d_star (class, a, b, c, d)
 VALUES (
   'd',
   7,
@@ -58,8 +55,7 @@ VALUES (
   CAST('0.0' AS DOUBLE PRECISION)
 );
 
-INSERT INTO d_star
-(class, a, b, c)
+INSERT INTO d_star (class, a, b, c)
 VALUES (
   'd',
   8,
@@ -67,8 +63,7 @@ VALUES (
   CAST('hi koko' AS NAME)
 );
 
-INSERT INTO d_star
-(class, a, b, d)
+INSERT INTO d_star (class, a, b, d)
 VALUES (
   'd',
   9,
@@ -76,8 +71,7 @@ VALUES (
   CAST('1.1' AS DOUBLE PRECISION)
 );
 
-INSERT INTO d_star
-(class, a, c, d)
+INSERT INTO d_star (class, a, c, d)
 VALUES (
   'd',
   10,
@@ -85,8 +79,7 @@ VALUES (
   CAST('10.01' AS DOUBLE PRECISION)
 );
 
-INSERT INTO d_star
-(class, b, c, d)
+INSERT INTO d_star (class, b, c, d)
 VALUES (
   'd',
   CAST('crumble' AS TEXT),
@@ -102,16 +95,14 @@ INSERT INTO d_star (class, a, d) VALUES ('d', 13, CAST('1000.0001' AS DOUBLE PRE
 
 INSERT INTO d_star (class, b, c) VALUES ('d', CAST('tumble' AS TEXT), CAST('hi andrew' AS NAME));
 
-INSERT INTO d_star
-(class, b, d)
+INSERT INTO d_star (class, b, d)
 VALUES (
   'd',
   CAST('humble' AS TEXT),
   CAST('10000.00001' AS DOUBLE PRECISION)
 );
 
-INSERT INTO d_star
-(class, c, d)
+INSERT INTO d_star (class, c, d)
 VALUES (
   'd',
   CAST('hi ginger' AS NAME),
@@ -128,8 +119,7 @@ INSERT INTO d_star (class, d) VALUES ('d', CAST('1000000.0000001' AS DOUBLE PREC
 
 INSERT INTO d_star (class) VALUES ('d');
 
-INSERT INTO e_star
-(class, a, c, e)
+INSERT INTO e_star (class, a, c, e)
 VALUES (
   'e',
   15,
@@ -149,8 +139,7 @@ INSERT INTO e_star (class, c) VALUES ('e', CAST('hi elisa' AS NAME));
 
 INSERT INTO e_star (class, e) VALUES ('e', CAST('-4' AS SMALLINT));
 
-INSERT INTO f_star
-(class, a, c, e, f)
+INSERT INTO f_star (class, a, c, e, f)
 VALUES (
   'f',
   19,
@@ -159,8 +148,7 @@ VALUES (
   CAST('(1,3),(2,4)' AS polygon)
 );
 
-INSERT INTO f_star
-(class, a, c, e)
+INSERT INTO f_star (class, a, c, e)
 VALUES (
   'f',
   20,
@@ -168,8 +156,7 @@ VALUES (
   CAST('-6' AS SMALLINT)
 );
 
-INSERT INTO f_star
-(class, a, c, f)
+INSERT INTO f_star (class, a, c, f)
 VALUES (
   'f',
   21,
@@ -177,8 +164,7 @@ VALUES (
   CAST('(11,44),(22,55),(33,66)' AS polygon)
 );
 
-INSERT INTO f_star
-(class, a, e, f)
+INSERT INTO f_star (class, a, e, f)
 VALUES (
   'f',
   22,
@@ -187,8 +173,7 @@ VALUES (
   AS polygon)
 );
 
-INSERT INTO f_star
-(class, c, e, f)
+INSERT INTO f_star (class, c, e, f)
 VALUES (
   'f',
   CAST('hi keith' AS NAME),
@@ -204,16 +189,14 @@ INSERT INTO f_star (class, a, f) VALUES ('f', 26, CAST('(11111,33333),(22222,444
 
 INSERT INTO f_star (class, c, e) VALUES ('f', CAST('hi allison' AS NAME), CAST('-10' AS SMALLINT));
 
-INSERT INTO f_star
-(class, c, f)
+INSERT INTO f_star (class, c, f)
 VALUES (
   'f',
   CAST('hi jeff' AS NAME),
   CAST('(111111,333333),(222222,444444)' AS polygon)
 );
 
-INSERT INTO f_star
-(class, e, f)
+INSERT INTO f_star (class, e, f)
 VALUES (
   'f',
   CAST('-11' AS SMALLINT),
@@ -227,8 +210,7 @@ INSERT INTO f_star (class, c) VALUES ('f', CAST('hi carl' AS NAME));
 
 INSERT INTO f_star (class, e) VALUES ('f', CAST('-12' AS SMALLINT));
 
-INSERT INTO f_star
-(class, f)
+INSERT INTO f_star (class, f)
 VALUES (
   'f',
   CAST('(11111111,33333333),(22222222,44444444)'

@@ -3,11 +3,20 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rules.sql
 snapshot_kind: text
 ---
-CREATE TABLE rtest_t1 (a INT, b INT);
+CREATE TABLE rtest_t1 (
+  a INT,
+  b INT
+);
 
-CREATE TABLE rtest_t2 (a INT, b INT);
+CREATE TABLE rtest_t2 (
+  a INT,
+  b INT
+);
 
-CREATE TABLE rtest_t3 (a INT, b INT);
+CREATE TABLE rtest_t3 (
+  a INT,
+  b INT
+);
 
 CREATE VIEW rtest_v1
 AS SELECT * FROM rtest_t1;
@@ -37,13 +46,25 @@ COMMENT ON RULE rtest_v1_del ON rtest_v1 IS 'delete rule';
 
 COMMENT ON RULE rtest_v1_del ON rtest_v1 IS NULL;
 
-CREATE TABLE rtest_system (sysname TEXT, sysdesc TEXT);
+CREATE TABLE rtest_system (
+  sysname TEXT,
+  sysdesc TEXT
+);
 
-CREATE TABLE rtest_interface (sysname TEXT, ifname TEXT);
+CREATE TABLE rtest_interface (
+  sysname TEXT,
+  ifname TEXT
+);
 
-CREATE TABLE rtest_person (pname TEXT, pdesc TEXT);
+CREATE TABLE rtest_person (
+  pname TEXT,
+  pdesc TEXT
+);
 
-CREATE TABLE rtest_admin (pname TEXT, sysname TEXT);
+CREATE TABLE rtest_admin (
+  pname TEXT,
+  sysname TEXT
+);
 
 CREATE RULE rtest_sys_upd
 AS ON UPDATE TO rtest_system
@@ -80,10 +101,12 @@ AS ON DELETE TO rtest_person
 DO
   DELETE FROM rtest_admin WHERE pname = old.pname;;
 
-CREATE TABLE rtest_emp (ename CHAR(20), salary NUMERIC);
+CREATE TABLE rtest_emp (
+  ename CHAR(20),
+  salary NUMERIC
+);
 
-CREATE TABLE rtest_emplog
-(
+CREATE TABLE rtest_emplog (
   ename CHAR(20),
   who NAME,
   action CHAR(10),
@@ -91,7 +114,10 @@ CREATE TABLE rtest_emplog
   oldsal NUMERIC
 );
 
-CREATE TABLE rtest_empmass (ename CHAR(20), salary NUMERIC);
+CREATE TABLE rtest_empmass (
+  ename CHAR(20),
+  salary NUMERIC
+);
 
 CREATE RULE rtest_emp_ins
 AS ON INSERT TO rtest_emp
@@ -130,17 +156,35 @@ DO
     old.salary
   );;
 
-CREATE TABLE rtest_t4 (a INT, b TEXT);
+CREATE TABLE rtest_t4 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_t5 (a INT, b TEXT);
+CREATE TABLE rtest_t5 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_t6 (a INT, b TEXT);
+CREATE TABLE rtest_t6 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_t7 (a INT, b TEXT);
+CREATE TABLE rtest_t7 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_t8 (a INT, b TEXT);
+CREATE TABLE rtest_t8 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_t9 (a INT, b TEXT);
+CREATE TABLE rtest_t9 (
+  a INT,
+  b TEXT
+);
 
 CREATE RULE rtest_t4_ins1
 AS ON INSERT TO rtest_t4 WHERE
@@ -168,7 +212,11 @@ DO INSTEAD
 
 CREATE TABLE rtest_order1 (a INT);
 
-CREATE TABLE rtest_order2 (a INT, b INT, c TEXT);
+CREATE TABLE rtest_order2 (
+  a INT,
+  b INT,
+  c TEXT
+);
 
 CREATE SEQUENCE rtest_seq;
 
@@ -213,13 +261,25 @@ DO INSTEAD
     'rule 1 - this should run 1st'
   );;
 
-CREATE TABLE rtest_nothn1 (a INT, b TEXT);
+CREATE TABLE rtest_nothn1 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_nothn2 (a INT, b TEXT);
+CREATE TABLE rtest_nothn2 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_nothn3 (a INT, b TEXT);
+CREATE TABLE rtest_nothn3 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE rtest_nothn4 (a INT, b TEXT);
+CREATE TABLE rtest_nothn4 (
+  a INT,
+  b TEXT
+);
 
 CREATE RULE rtest_nothn_r1
 AS ON INSERT TO rtest_nothn1 WHERE

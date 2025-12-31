@@ -3,14 +3,12 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/gist.sql
 snapshot_kind: text
 ---
-CREATE TABLE gist_point_tbl (id INT, p point);
-
-CREATE INDEX "gist_pointidx"
-ON gist_point_tbl
-USING gist
-(
-  p
+CREATE TABLE gist_point_tbl (
+  id INT,
+  p point
 );
+
+CREATE INDEX "gist_pointidx" ON gist_point_tbl USING gist (p);
 
 CREATE INDEX "gist_pointidx2"
 ON gist_point_tbl
@@ -63,16 +61,14 @@ USING gist
 )
 WITH (fillfactor = 101);
 
-INSERT INTO gist_point_tbl
-(id, p)
+INSERT INTO gist_point_tbl (id, p)
 SELECT
   g,
   point(g * 10, g * 10)
 FROM
   generate_series(1, 10000) AS g;
 
-INSERT INTO gist_point_tbl
-(id, p)
+INSERT INTO gist_point_tbl (id, p)
 SELECT
   g + 100000,
   point(g * 10 + 1, g * 10 + 1)
@@ -90,13 +86,17 @@ ALTER INDEX gist_pointidx
 
 REINDEX INDEX gist_pointidx;
 
-CREATE TABLE gist_tbl (b box, p point, c circle);
+CREATE TABLE gist_tbl (
+  b box,
+  p point,
+  c circle
+);
 
 INSERT INTO gist_tbl
 SELECT
   box(
-  point(0.05 * i, 0.05 * i),
-  point(0.05 * i, 0.05 * i)
+    point(0.05 * i, 0.05 * i),
+    point(0.05 * i, 0.05 * i)
   ),
   point(0.05 * i, 0.05 * i),
   circle(point(0.05 * i, 0.05 * i), 1.0)
@@ -111,12 +111,7 @@ SET enable_bitmapscan = off;
 
 SET enable_indexonlyscan = 'on';
 
-CREATE INDEX "gist_tbl_point_index"
-ON gist_tbl
-USING gist
-(
-  p
-);
+CREATE INDEX "gist_tbl_point_index" ON gist_tbl USING gist (p);
 
 SELECT p FROM gist_tbl WHERE p <@ box(point(0, 0), point(0.5, 0.5));
 
@@ -196,12 +191,7 @@ FROM
 
 DROP INDEX "gist_tbl_point_index";
 
-CREATE INDEX "gist_tbl_box_index"
-ON gist_tbl
-USING gist
-(
-  b
-);
+CREATE INDEX "gist_tbl_box_index" ON gist_tbl USING gist (b);
 
 SELECT b FROM gist_tbl WHERE b <@ box(point(5, 5), point(6, 6));
 
@@ -217,13 +207,7 @@ SELECT b FROM gist_tbl WHERE b <@ box(point(5, 5), point(6, 6)) ORDER BY point(5
 
 DROP INDEX "gist_tbl_box_index";
 
-CREATE INDEX "gist_tbl_multi_index"
-ON gist_tbl
-USING gist
-(
-  p,
-  c
-);
+CREATE INDEX "gist_tbl_multi_index" ON gist_tbl USING gist (p, c);
 
 SELECT p, c FROM gist_tbl WHERE p <@ box(point(5, 5), point(6, 6));
 
@@ -238,13 +222,7 @@ WHERE
 
 DROP INDEX "gist_tbl_multi_index";
 
-CREATE INDEX "gist_tbl_multi_index"
-ON gist_tbl
-USING gist
-(
-  (circle(p, 1)),
-  p
-);
+CREATE INDEX "gist_tbl_multi_index" ON gist_tbl USING gist ((circle(p, 1)), p);
 
 SELECT circle(p, 1) FROM gist_tbl WHERE p <@ box(point(5, 5), point(5.3, 5.3));
 
@@ -281,12 +259,7 @@ DROP TABLE "gist_tbl";
 
 CREATE UNLOGGED TABLE gist_tbl (b box);
 
-CREATE INDEX "gist_tbl_box_index"
-ON gist_tbl
-USING gist
-(
-  b
-);
+CREATE INDEX "gist_tbl_box_index" ON gist_tbl USING gist (b);
 
 INSERT INTO gist_tbl SELECT box(point(0.05 * i, 0.05 * i)) FROM generate_series(0, 10) AS i;
 

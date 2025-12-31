@@ -774,11 +774,11 @@ SELECT
   CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)
   AS r_flt,
   float8send(
-  CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)
+    CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)
   )
   AS obits,
   float8send(
-  CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)
+    CAST(CAST(flt AS TEXT) AS DOUBLE PRECISION)
   ) =
   float8send(flt)
   AS correct

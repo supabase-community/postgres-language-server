@@ -3,16 +3,14 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/indexing.sql
 snapshot_kind: text
 ---
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
-CREATE INDEX "idxpart_idx"
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX "idxpart_idx" ON idxpart USING btree (a);
 
 SELECT relhassubclass FROM pg_class WHERE relname = 'idxpart_idx';
 
@@ -26,23 +24,13 @@ CREATE TABLE idxpart2 PARTITION OF idxpart FOR VALUES FROM (10) TO (100) PARTITI
 
 CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (0) TO (100);
 
-CREATE INDEX "idxpart_idx"
-ON ONLY idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX "idxpart_idx" ON ONLY idxpart USING btree (a);
 
 SELECT relhassubclass FROM pg_class WHERE relname = 'idxpart_idx';
 
 DROP INDEX "idxpart_idx";
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 SELECT
   relname,
@@ -63,31 +51,23 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (10);
 
-CREATE INDEX CONCURRENTLY
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX CONCURRENTLY ON idxpart USING btree (a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(col1 INT)
+CREATE TABLE idxpart (col1 INT)
 PARTITION BY RANGE(col1);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  col1
-);
+CREATE INDEX ON idxpart USING btree (col1);
 
 CREATE TABLE idxpart_two (col2 INT);
 
@@ -95,20 +75,16 @@ SELECT col2 FROM idxpart_two AS fk LEFT OUTER JOIN idxpart AS pk ON col1 = col2;
 
 DROP TABLE "idxpart", "idxpart_two";
 
-CREATE TABLE idxpart
-(a INT, b TEXT, c INT)
+CREATE TABLE idxpart (
+  a INT,
+  b TEXT,
+  c INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (minvalue) TO (maxvalue);
 
-CREATE INDEX "partidx_abc_idx"
-ON idxpart
-USING btree
-(
-  a,
-  b,
-  c
-);
+CREATE INDEX "partidx_abc_idx" ON idxpart USING btree (a, b, c);
 
 INSERT INTO idxpart (a, b, c) SELECT i, i, i FROM generate_series(1, 50) AS i;
 
@@ -117,24 +93,16 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
-CREATE INDEX "idxparti"
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX "idxparti" ON idxpart USING btree (a);
 
-CREATE INDEX "idxparti2"
-ON idxpart
-USING btree
-(
-  b,
-  c
-);
+CREATE INDEX "idxparti2" ON idxpart USING btree (b, c);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
 
@@ -142,19 +110,9 @@ ALTER TABLE idxpart
   ATTACH PARTITION
   idxpart1 FOR VALUES FROM (0) TO (10);
 
-CREATE INDEX "idxpart_c"
-ON ONLY idxpart
-USING btree
-(
-  c
-);
+CREATE INDEX "idxpart_c" ON ONLY idxpart USING btree (c);
 
-CREATE INDEX "idxpart1_c"
-ON idxpart1
-USING btree
-(
-  c
-);
+CREATE INDEX "idxpart1_c" ON idxpart1 USING btree (c);
 
 ALTER TABLE idxpart_c
   ATTACH PARTITION
@@ -179,27 +137,17 @@ ALTER TABLE idxpart_c
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (10, 10);
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX ON idxpart1 USING btree (a, b);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX ON idxpart USING btree (a, b);
 
 SELECT
   relname,
@@ -220,16 +168,10 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (10);
 
@@ -241,12 +183,7 @@ DROP INDEX "idxpart_a_idx";
 
 SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY relname;
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 DROP TABLE "idxpart1";
 
@@ -254,16 +191,10 @@ SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY rel
 
 DROP TABLE "idxpart";
 
-CREATE TEMPORARY TABLE idxpart_temp
-(a INT)
+CREATE TEMPORARY TABLE idxpart_temp (a INT)
 PARTITION BY RANGE(a);
 
-CREATE INDEX
-ON idxpart_temp
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart_temp USING btree (a);
 
 CREATE TEMPORARY TABLE idxpart1_temp PARTITION OF idxpart_temp FOR VALUES FROM (0) TO (10);
 
@@ -275,42 +206,21 @@ SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart_temp%' ORDER B
 
 DROP TABLE "idxpart_temp";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (10, 10);
 
-CREATE INDEX "idxpart_a_b_idx"
-ON ONLY idxpart
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX "idxpart_a_b_idx" ON ONLY idxpart USING btree (a, b);
 
-CREATE INDEX "idxpart1_a_b_idx"
-ON idxpart1
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX "idxpart1_a_b_idx" ON idxpart1 USING btree (a, b);
 
-CREATE INDEX "idxpart1_tst1"
-ON idxpart1
-USING btree
-(
-  b,
-  a
-);
+CREATE INDEX "idxpart1_tst1" ON idxpart1 USING btree (b, a);
 
-CREATE INDEX "idxpart1_tst2"
-ON idxpart1
-USING hash
-(
-  a
-);
+CREATE INDEX "idxpart1_tst2" ON idxpart1 USING hash (a);
 
 CREATE INDEX "idxpart1_tst3"
 ON idxpart1
@@ -358,13 +268,7 @@ ALTER INDEX idxpart_a_b_idx
   ATTACH PARTITION
   idxpart1_a_b_idx;
 
-CREATE INDEX "idxpart1_2_a_b"
-ON idxpart1
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX "idxpart1_2_a_b" ON idxpart1 USING btree (a, b);
 
 ALTER INDEX idxpart_a_b_idx
   ATTACH PARTITION
@@ -380,18 +284,18 @@ FROM
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%';
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (a INT, b INT);
-
-CREATE INDEX
-ON idxpart1
-USING hash
-(
-  a
+CREATE TABLE idxpart1 (
+  a INT,
+  b INT
 );
+
+CREATE INDEX ON idxpart1 USING hash (a);
 
 CREATE INDEX
 ON idxpart1
@@ -402,27 +306,11 @@ USING btree
 WHERE
   b > 1;
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  (a + 0)
-);
+CREATE INDEX ON idxpart1 USING btree ((a + 0));
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  a,
-  a
-);
+CREATE INDEX ON idxpart1 USING btree (a, a);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -430,8 +318,7 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100);
@@ -442,26 +329,11 @@ CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (100) TO (200);
 
 CREATE TABLE idxpart22 PARTITION OF idxpart2 FOR VALUES FROM (200) TO (300);
 
-CREATE INDEX
-ON idxpart22
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart22 USING btree (a);
 
-CREATE INDEX
-ON ONLY idxpart2
-USING btree
-(
-  a
-);
+CREATE INDEX ON ONLY idxpart2 USING btree (a);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 SELECT
   CAST(indexrelid AS REGCLASS),
@@ -497,12 +369,7 @@ ALTER INDEX idxpart2_a_idx
   ATTACH PARTITION
   idxpart22_a_idx;
 
-CREATE INDEX
-ON idxpart21
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart21 USING btree (a);
 
 ALTER INDEX idxpart2_a_idx
   ATTACH PARTITION
@@ -510,24 +377,17 @@ ALTER INDEX idxpart2_a_idx
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT, d BOOLEAN)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT,
+  d BOOLEAN
+)
 PARTITION BY RANGE(a);
 
-CREATE INDEX "idxparti"
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX "idxparti" ON idxpart USING btree (a);
 
-CREATE INDEX "idxparti2"
-ON idxpart
-USING btree
-(
-  b,
-  c
-);
+CREATE INDEX "idxparti2" ON idxpart USING btree (b, c);
 
 CREATE TABLE idxpart1 (LIKE idxpart INCLUDING INDEXES);
 
@@ -619,27 +479,19 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (1) TO (1000) PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart11 PARTITION OF idxpart1 FOR VALUES FROM (1) TO (100);
 
-CREATE INDEX
-ON ONLY idxpart1
-USING btree
-(
-  a
-);
+CREATE INDEX ON ONLY idxpart1 USING btree (a);
 
-CREATE INDEX
-ON ONLY idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON ONLY idxpart USING btree (a);
 
 SELECT
   relname,
@@ -663,12 +515,7 @@ WHERE
   relname LIKE 'idxpart%'
 ORDER BY relname;
 
-CREATE INDEX
-ON idxpart11
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart11 USING btree (a);
 
 ALTER INDEX idxpart1_a_idx
   ATTACH PARTITION
@@ -685,25 +532,14 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart1 USING btree (a);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 CREATE TABLE idxpart2 (LIKE idxpart);
 
@@ -743,25 +579,14 @@ DROP TABLE "idxpart", "idxpart1", "idxpart2", "idxpart3";
 
 SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY relname;
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart1 USING btree (a);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
 CREATE TABLE idxpart2 (LIKE idxpart);
 
@@ -797,16 +622,14 @@ DROP TABLE "idxpart", "idxpart1", "idxpart2", "idxpart3";
 
 SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY relname;
 
-CREATE TABLE idxpart
-(a INT, b INT, c INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  c
-);
+CREATE INDEX ON idxpart USING btree (c);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (250);
 
@@ -821,25 +644,17 @@ ALTER TABLE idxpart2
 
 DROP TABLE "idxpart", "idxpart2";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  (a + b)
-);
+CREATE INDEX ON idxpart1 USING btree ((a + b));
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  (a + b)
-);
+CREATE INDEX ON idxpart USING btree ((a + b));
 
 CREATE TABLE idxpart2 (LIKE idxpart);
 
@@ -866,34 +681,18 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a TEXT)
+CREATE TABLE idxpart (a TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
 
 CREATE TABLE idxpart2 (LIKE idxpart);
 
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  a COLLATE "POSIX"
-);
+CREATE INDEX ON idxpart2 USING btree (a COLLATE "POSIX");
 
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart2 USING btree (a);
 
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  a COLLATE "C"
-);
+CREATE INDEX ON idxpart2 USING btree (a COLLATE "C");
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -905,12 +704,7 @@ ALTER TABLE idxpart
 
 CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM ('ccc') TO ('ddd');
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a COLLATE "C"
-);
+CREATE INDEX ON idxpart USING btree (a COLLATE "C");
 
 CREATE TABLE idxpart4 PARTITION OF idxpart FOR VALUES FROM ('ddd') TO ('eee');
 
@@ -930,20 +724,14 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a TEXT)
+CREATE TABLE idxpart (a TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
 
 CREATE TABLE idxpart2 (LIKE idxpart);
 
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart2 USING btree (a);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -955,12 +743,7 @@ ALTER TABLE idxpart
 
 CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM ('ccc') TO ('ddd');
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a text_pattern_ops
-);
+CREATE INDEX ON idxpart USING btree (a text_pattern_ops);
 
 CREATE TABLE idxpart4 PARTITION OF idxpart FOR VALUES FROM ('ddd') TO ('eee');
 
@@ -980,12 +763,7 @@ ORDER BY relname;
 
 DROP INDEX "idxpart_a_idx";
 
-CREATE INDEX
-ON ONLY idxpart
-USING btree
-(
-  a text_pattern_ops
-);
+CREATE INDEX ON ONLY idxpart USING btree (a text_pattern_ops);
 
 ALTER INDEX idxpart_a_idx
   ATTACH PARTITION
@@ -993,11 +771,21 @@ ALTER INDEX idxpart_a_idx
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(col1 INT, a INT, col2 INT, b INT)
+CREATE TABLE idxpart (
+  col1 INT,
+  a INT,
+  col2 INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (b INT, col1 INT, col2 INT, col3 INT, a INT);
+CREATE TABLE idxpart1 (
+  b INT,
+  col1 INT,
+  col2 INT,
+  col3 INT,
+  a INT
+);
 
 ALTER TABLE idxpart
   DROP COLUMN col1,
@@ -1012,28 +800,11 @@ ALTER TABLE idxpart
   ATTACH PARTITION
   idxpart1 FOR VALUES FROM (0) TO (1000);
 
-CREATE INDEX "idxpart_1_idx"
-ON ONLY idxpart
-USING btree
-(
-  b,
-  a
-);
+CREATE INDEX "idxpart_1_idx" ON ONLY idxpart USING btree (b, a);
 
-CREATE INDEX "idxpart1_1_idx"
-ON idxpart1
-USING btree
-(
-  b,
-  a
-);
+CREATE INDEX "idxpart1_1_idx" ON idxpart1 USING btree (b, a);
 
-CREATE INDEX "idxpart1_1b_idx"
-ON idxpart1
-USING btree
-(
-  b
-);
+CREATE INDEX "idxpart1_1b_idx" ON idxpart1 USING btree (b);
 
 CREATE INDEX "idxpart_2_idx"
 ON ONLY idxpart
@@ -1107,47 +878,36 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
-CREATE INDEX "idxparti"
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX "idxparti" ON idxpart USING btree (a);
 
-CREATE INDEX "idxparti2"
-ON idxpart
-USING btree
-(
-  c,
-  b
-);
+CREATE INDEX "idxparti2" ON idxpart USING btree (c, b);
 
-CREATE TABLE idxpart1 (c TEXT, a INT, b INT);
+CREATE TABLE idxpart1 (
+  c TEXT,
+  a INT,
+  b INT
+);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
   idxpart1 FOR VALUES FROM (0) TO (10);
 
-CREATE TABLE idxpart2 (c TEXT, a INT, b INT);
-
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  a
+CREATE TABLE idxpart2 (
+  c TEXT,
+  a INT,
+  b INT
 );
 
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  c,
-  b
-);
+CREATE INDEX ON idxpart2 USING btree (a);
+
+CREATE INDEX ON idxpart2 USING btree (c, b);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1167,13 +927,27 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(col1 INT, col2 INT, a INT, b INT)
+CREATE TABLE idxpart (
+  col1 INT,
+  col2 INT,
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (col2 INT, b INT, col1 INT, a INT);
+CREATE TABLE idxpart1 (
+  col2 INT,
+  b INT,
+  col1 INT,
+  a INT
+);
 
-CREATE TABLE idxpart2 (col1 INT, col2 INT, b INT, a INT);
+CREATE TABLE idxpart2 (
+  col1 INT,
+  col2 INT,
+  b INT,
+  a INT
+);
 
 ALTER TABLE idxpart
   DROP COLUMN col1,
@@ -1187,30 +961,15 @@ ALTER TABLE idxpart2
   DROP COLUMN col1,
   DROP COLUMN col2;
 
-CREATE INDEX
-ON idxpart2
-USING btree
-(
-  (abs(b))
-);
+CREATE INDEX ON idxpart2 USING btree ((abs(b)));
 
 ALTER TABLE idxpart
   ATTACH PARTITION
   idxpart2 FOR VALUES FROM (0) TO (1);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  (abs(b))
-);
+CREATE INDEX ON idxpart USING btree ((abs(b)));
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  (b + 1)
-);
+CREATE INDEX ON idxpart USING btree ((b + 1));
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1230,15 +989,26 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(col1 INT, a INT, col3 INT, b INT)
+CREATE TABLE idxpart (
+  col1 INT,
+  a INT,
+  col3 INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
   DROP COLUMN col1,
   DROP COLUMN col3;
 
-CREATE TABLE idxpart1 (col1 INT, col2 INT, col3 INT, col4 INT, b INT, a INT);
+CREATE TABLE idxpart1 (
+  col1 INT,
+  col2 INT,
+  col3 INT,
+  col4 INT,
+  b INT,
+  a INT
+);
 
 ALTER TABLE idxpart1
   DROP COLUMN col1,
@@ -1250,7 +1020,12 @@ ALTER TABLE idxpart
   ATTACH PARTITION
   idxpart1 FOR VALUES FROM (0) TO (1000);
 
-CREATE TABLE idxpart2 (col1 INT, col2 INT, b INT, a INT);
+CREATE TABLE idxpart2 (
+  col1 INT,
+  col2 INT,
+  b INT,
+  a INT
+);
 
 CREATE INDEX
 ON idxpart2
@@ -1292,7 +1067,12 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart1 (drop_1 INT, drop_2 INT, col_keep INT, drop_3 INT);
+CREATE TABLE idxpart1 (
+  drop_1 INT,
+  drop_2 INT,
+  col_keep INT,
+  drop_3 INT
+);
 
 ALTER TABLE idxpart1
   DROP COLUMN drop_1;
@@ -1303,23 +1083,12 @@ ALTER TABLE idxpart1
 ALTER TABLE idxpart1
   DROP COLUMN drop_3;
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  col_keep
-);
+CREATE INDEX ON idxpart1 USING btree (col_keep);
 
-CREATE TABLE idxpart
-(col_keep INT)
+CREATE TABLE idxpart (col_keep INT)
 PARTITION BY RANGE(col_keep);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  col_keep
-);
+CREATE INDEX ON idxpart USING btree (col_keep);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1339,8 +1108,12 @@ ORDER BY CAST(attrelid AS REGCLASS),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(drop_1 INT, drop_2 INT, col_keep INT, drop_3 INT)
+CREATE TABLE idxpart (
+  drop_1 INT,
+  drop_2 INT,
+  col_keep INT,
+  drop_3 INT
+)
 PARTITION BY RANGE(col_keep);
 
 ALTER TABLE idxpart
@@ -1354,19 +1127,9 @@ ALTER TABLE idxpart
 
 CREATE TABLE idxpart1 (col_keep INT);
 
-CREATE INDEX
-ON idxpart1
-USING btree
-(
-  col_keep
-);
+CREATE INDEX ON idxpart1 USING btree (col_keep);
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  col_keep
-);
+CREATE INDEX ON idxpart USING btree (col_keep);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1386,96 +1149,140 @@ ORDER BY CAST(attrelid AS REGCLASS),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT PRIMARY KEY, b INT)
+CREATE TABLE idxpart (
+  a INT PRIMARY KEY,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE failpart PARTITION OF idxpart ( b PRIMARY KEY ) FOR VALUES FROM (0) TO (100);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1pk PARTITION OF idxpart ( a PRIMARY KEY ) FOR VALUES FROM (0) TO (100);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT UNIQUE, b INT)
+CREATE TABLE idxpart (
+  a INT UNIQUE,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE idxpart
-(a INT, b INT UNIQUE)
+CREATE TABLE idxpart (
+  a INT,
+  b INT UNIQUE
+)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE idxpart
-(a INT PRIMARY KEY, b INT)
+CREATE TABLE idxpart (
+  a INT PRIMARY KEY,
+  b INT
+)
 PARTITION BY RANGE(b, a);
 
-CREATE TABLE idxpart
-(a INT, b INT PRIMARY KEY)
+CREATE TABLE idxpart (
+  a INT,
+  b INT PRIMARY KEY
+)
 PARTITION BY RANGE(b, a);
 
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT, PRIMARY KEY (a, b, c))
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT,
+  PRIMARY KEY (a, b, c)
+)
 PARTITION BY RANGE(b, c, a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, EXCLUDE USING gist (a WITH =))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  EXCLUDE USING gist (a WITH =)
+)
 PARTITION BY RANGE(a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH =)
+)
 PARTITION BY RANGE(a, b);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH =)
+)
 PARTITION BY RANGE(a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =)
+)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE idxpart
-(a INT4RANGE, EXCLUDE USING gist (a WITH -|-))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  EXCLUDE USING gist (a WITH -|-)
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH &&))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH &&)
+)
 PARTITION BY RANGE(a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, c INT4RANGE, EXCLUDE USING gist (b WITH =, c WITH &&))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE,
+  EXCLUDE USING gist (b WITH =, c WITH &&)
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, c INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =, c WITH &&))
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH =, c WITH &&)
+)
 PARTITION BY RANGE(a, b);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT PRIMARY KEY, b INT)
+CREATE TABLE idxpart (
+  a INT PRIMARY KEY,
+  b INT
+)
 PARTITION BY RANGE((b + a));
 
-CREATE TABLE idxpart
-(a INT UNIQUE, b INT)
+CREATE TABLE idxpart (
+  a INT UNIQUE,
+  b INT
+)
 PARTITION BY RANGE((b + a));
 
-CREATE TABLE idxpart
-(a INT, b INT, c TEXT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1488,8 +1295,10 @@ CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (1000, 1000
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1500,8 +1309,10 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1509,8 +1320,10 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1518,8 +1331,10 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1527,8 +1342,10 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1536,8 +1353,10 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1545,8 +1364,10 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1554,8 +1375,11 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, c INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1563,8 +1387,11 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT4RANGE, b INT4RANGE, c INT4RANGE)
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1572,8 +1399,11 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (1, 1) TO (10, 10);
@@ -1587,7 +1417,10 @@ CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (10) TO (15);
 
 CREATE TABLE idxpart22 PARTITION OF idxpart2 FOR VALUES FROM (15) TO (20);
 
-CREATE TABLE idxpart3 (b INT NOT NULL, a INT NOT NULL);
+CREATE TABLE idxpart3 (
+  b INT NOT NULL,
+  a INT NOT NULL
+);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1608,20 +1441,28 @@ ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT, PRIMARY KEY (a))
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a)
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart2 PARTITION OF idxpart FOR VALUES FROM (0) TO (1000) PARTITION BY RANGE(b);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT UNIQUE, b INT)
+CREATE TABLE idxpart (
+  a INT UNIQUE,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1
-(a INT NOT NULL, b INT, UNIQUE (a, b))
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT,
+  UNIQUE (a, b)
+)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1630,8 +1471,11 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart", "idxpart1";
 
-CREATE TABLE idxpart
-(a INT, b INT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart2 PARTITION OF idxpart FOR VALUES FROM (0) TO (1000) PARTITION BY RANGE(b);
@@ -1653,8 +1497,7 @@ ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(i INT)
+CREATE TABLE idxpart (i INT)
 PARTITION BY HASH(i);
 
 CREATE TABLE idxpart0 PARTITION OF idxpart ( i ) FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1726,8 +1569,11 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(c1 INT PRIMARY KEY, c2 INT, c3 VARCHAR(10))
+CREATE TABLE idxpart (
+  c1 INT PRIMARY KEY,
+  c2 INT,
+  c3 VARCHAR(10)
+)
 PARTITION BY RANGE(c1);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -1741,15 +1587,23 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart", "idxpart1";
 
-CREATE TABLE idxpart
-(a INT, b INT, PRIMARY KEY (a))
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a)
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1
-(a INT NOT NULL, b INT)
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart11 (a INT NOT NULL, b INT PRIMARY KEY);
+CREATE TABLE idxpart11 (
+  a INT NOT NULL,
+  b INT PRIMARY KEY
+);
 
 ALTER TABLE idxpart1
   ATTACH PARTITION
@@ -1761,8 +1615,7 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart", "idxpart1", "idxpart11";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart0 (LIKE idxpart);
@@ -1827,8 +1680,7 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart0 (LIKE idxpart);
@@ -1855,18 +1707,18 @@ ALTER INDEX idxpart_pkey
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (a INT NOT NULL, b INT);
-
-CREATE UNIQUE INDEX
-ON idxpart1
-USING btree
-(
-  a
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT
 );
+
+CREATE UNIQUE INDEX ON idxpart1 USING btree (a);
 
 ALTER TABLE idxpart
   ADD PRIMARY KEY (a);
@@ -1899,18 +1751,18 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b INT)
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (a INT NOT NULL, b INT);
-
-CREATE UNIQUE INDEX
-ON idxpart1
-USING btree
-(
-  a
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT
 );
+
+CREATE UNIQUE INDEX ON idxpart1 USING btree (a);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1925,25 +1777,26 @@ ALTER INDEX idxpart_pkey
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b TEXT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart (
+  a INT,
+  b TEXT,
+  PRIMARY KEY (a, b)
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100000);
 
-CREATE TABLE idxpart2 (c INT, LIKE idxpart);
+CREATE TABLE idxpart2 (
+  c INT,
+  LIKE idxpart
+);
 
 INSERT INTO idxpart2 (c, a, b) VALUES (42, 572814, 'inserted first');
 
 ALTER TABLE idxpart2
   DROP COLUMN c;
 
-CREATE UNIQUE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX ON idxpart USING btree (a);
 
 ALTER TABLE idxpart
   ATTACH PARTITION
@@ -1959,8 +1812,7 @@ INSERT INTO idxpart SELECT 2 ^ g, format('two to power of %s', g) FROM generate_
 
 INSERT INTO idxpart VALUES (16, 'sixteen');
 
-INSERT INTO idxpart
-(b, a)
+INSERT INTO idxpart (b, a)
 VALUES
   ('one', 142857),
   ('two', 285714);
@@ -1975,42 +1827,30 @@ SELECT CAST(tableoid AS REGCLASS), * FROM idxpart ORDER BY a;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT, b TEXT, c INT[])
+CREATE TABLE idxpart (
+  a INT,
+  b TEXT,
+  c INT[]
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100000);
 
 SET enable_seqscan = off;
 
-CREATE INDEX "idxpart_brin"
-ON idxpart
-USING brin
-(
-  b
-);
+CREATE INDEX "idxpart_brin" ON idxpart USING brin (b);
 
 SELECT * FROM idxpart WHERE b = 'abcd';
 
 DROP INDEX "idxpart_brin";
 
-CREATE INDEX "idxpart_spgist"
-ON idxpart
-USING spgist
-(
-  b
-);
+CREATE INDEX "idxpart_spgist" ON idxpart USING spgist (b);
 
 SELECT * FROM idxpart WHERE b = 'abcd';
 
 DROP INDEX "idxpart_spgist";
 
-CREATE INDEX "idxpart_gin"
-ON idxpart
-USING gin
-(
-  c
-);
+CREATE INDEX "idxpart_gin" ON idxpart USING gin (c);
 
 SELECT * FROM idxpart WHERE c @> ARRAY[42];
 
@@ -2020,8 +1860,7 @@ RESET enable_seqscan;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart
-(a INT)
+CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100);
@@ -2032,39 +1871,30 @@ CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (100) TO (200);
 
 CREATE TABLE idxpart22 PARTITION OF idxpart2 FOR VALUES FROM (200) TO (300);
 
-CREATE INDEX
-ON idxpart22
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart22 USING btree (a);
 
-CREATE INDEX
-ON ONLY idxpart2
-USING btree
-(
-  a
-);
+CREATE INDEX ON ONLY idxpart2 USING btree (a);
 
 ALTER INDEX idxpart2_a_idx
   ATTACH PARTITION
   idxpart22_a_idx;
 
-CREATE INDEX
-ON idxpart
-USING btree
-(
-  a
-);
+CREATE INDEX ON idxpart USING btree (a);
 
-CREATE TABLE idxpart_another
-(a INT, b INT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart_another (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart_another_1 PARTITION OF idxpart_another FOR VALUES FROM (0) TO (100);
 
-CREATE TABLE idxpart3
-(c INT, b INT, a INT)
+CREATE TABLE idxpart3 (
+  c INT,
+  b INT,
+  a INT
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart3
@@ -2083,13 +1913,15 @@ CREATE SCHEMA "regress_indexing";
 
 SET search_path TO regress_indexing;
 
-CREATE TABLE pk
-(a INT PRIMARY KEY)
+CREATE TABLE pk (a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE TABLE pk1 PARTITION OF pk FOR VALUES FROM (0) TO (1000);
 
-CREATE TABLE pk2 (b INT, a INT);
+CREATE TABLE pk2 (
+  b INT,
+  a INT
+);
 
 ALTER TABLE pk2
   DROP COLUMN b;
@@ -2109,8 +1941,7 @@ ALTER TABLE pk
   ATTACH PARTITION
   pk4 FOR VALUES FROM (3000) TO (4000);
 
-CREATE TABLE pk5
-(LIKE pk)
+CREATE TABLE pk5 (LIKE pk)
 PARTITION BY RANGE(a);
 
 CREATE TABLE pk51 PARTITION OF pk5 FOR VALUES FROM (4000) TO (4500);
@@ -2123,17 +1954,13 @@ ALTER TABLE pk
 
 RESET search_path;
 
-CREATE TABLE covidxpart
-(a INT, b INT)
+CREATE TABLE covidxpart (
+  a INT,
+  b INT
+)
 PARTITION BY LIST(a);
 
-CREATE UNIQUE INDEX
-ON covidxpart
-USING btree
-(
-  a
-)
-INCLUDE (b);
+CREATE UNIQUE INDEX ON covidxpart USING btree (a) INCLUDE (b);
 
 CREATE TABLE covidxpart1 PARTITION OF covidxpart FOR VALUES IN (1);
 
@@ -2143,7 +1970,11 @@ INSERT INTO covidxpart VALUES (1, 1);
 
 INSERT INTO covidxpart VALUES (1, 1);
 
-CREATE TABLE covidxpart3 (b INT, c INT, a INT);
+CREATE TABLE covidxpart3 (
+  b INT,
+  c INT,
+  a INT
+);
 
 ALTER TABLE covidxpart3
   DROP COLUMN c;
@@ -2156,22 +1987,14 @@ INSERT INTO covidxpart VALUES (3, 1);
 
 INSERT INTO covidxpart VALUES (3, 1);
 
-CREATE TABLE covidxpart4 (b INT, a INT);
-
-CREATE UNIQUE INDEX
-ON covidxpart4
-USING btree
-(
-  a
-)
-INCLUDE (b);
-
-CREATE UNIQUE INDEX
-ON covidxpart4
-USING btree
-(
-  a
+CREATE TABLE covidxpart4 (
+  b INT,
+  a INT
 );
+
+CREATE UNIQUE INDEX ON covidxpart4 USING btree (a) INCLUDE (b);
+
+CREATE UNIQUE INDEX ON covidxpart4 USING btree (a);
 
 ALTER TABLE covidxpart
   ATTACH PARTITION
@@ -2181,16 +2004,9 @@ INSERT INTO covidxpart VALUES (4, 1);
 
 INSERT INTO covidxpart VALUES (4, 1);
 
-CREATE UNIQUE INDEX
-ON covidxpart
-USING btree
-(
-  b
-)
-INCLUDE (a);
+CREATE UNIQUE INDEX ON covidxpart USING btree (b) INCLUDE (a);
 
-CREATE TABLE parted_pk_detach_test
-(a INT PRIMARY KEY)
+CREATE TABLE parted_pk_detach_test (a INT PRIMARY KEY)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_pk_detach_test1 PARTITION OF parted_pk_detach_test FOR VALUES IN (1);
@@ -2207,8 +2023,7 @@ ALTER TABLE parted_pk_detach_test1
 
 DROP TABLE "parted_pk_detach_test", "parted_pk_detach_test1";
 
-CREATE TABLE parted_uniq_detach_test
-(a INT UNIQUE)
+CREATE TABLE parted_uniq_detach_test (a INT UNIQUE)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_uniq_detach_test1 PARTITION OF parted_uniq_detach_test FOR VALUES IN (1);
@@ -2225,8 +2040,11 @@ ALTER TABLE parted_uniq_detach_test1
 
 DROP TABLE "parted_uniq_detach_test", "parted_uniq_detach_test1";
 
-CREATE TABLE parted_index_col_drop
-(a INT, b INT, c INT)
+CREATE TABLE parted_index_col_drop (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_index_col_drop1
@@ -2241,58 +2059,30 @@ PARTITION BY LIST(a);
 
 CREATE TABLE parted_index_col_drop11 PARTITION OF parted_index_col_drop1 FOR VALUES IN (1);
 
-CREATE INDEX
-ON parted_index_col_drop
-USING btree
-(
-  b
-);
+CREATE INDEX ON parted_index_col_drop USING btree (b);
 
-CREATE INDEX
-ON parted_index_col_drop
-USING btree
-(
-  c
-);
+CREATE INDEX ON parted_index_col_drop USING btree (c);
 
-CREATE INDEX
-ON parted_index_col_drop
-USING btree
-(
-  b,
-  c
-);
+CREATE INDEX ON parted_index_col_drop USING btree (b, c);
 
 ALTER TABLE parted_index_col_drop
   DROP COLUMN c;
 
 DROP TABLE "parted_index_col_drop";
 
-CREATE TABLE parted_inval_tab
-(a INT)
+CREATE TABLE parted_inval_tab (a INT)
 PARTITION BY RANGE(a);
 
-CREATE INDEX "parted_inval_idx"
-ON parted_inval_tab
-USING btree
-(
-  a
-);
+CREATE INDEX "parted_inval_idx" ON parted_inval_tab USING btree (a);
 
-CREATE TABLE parted_inval_tab_1
-(a INT)
+CREATE TABLE parted_inval_tab_1 (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_inval_tab_1_1 PARTITION OF parted_inval_tab_1 FOR VALUES FROM (0) TO (10);
 
 CREATE TABLE parted_inval_tab_1_2 PARTITION OF parted_inval_tab_1 FOR VALUES FROM (10) TO (20);
 
-CREATE INDEX "parted_inval_ixd_1"
-ON ONLY parted_inval_tab_1
-USING btree
-(
-  a
-);
+CREATE INDEX "parted_inval_ixd_1" ON ONLY parted_inval_tab_1 USING btree (a);
 
 ALTER TABLE parted_inval_tab
   ATTACH PARTITION
@@ -2314,8 +2104,10 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "parted_inval_tab";
 
-CREATE TABLE parted_isvalid_tab
-(a INT, b INT)
+CREATE TABLE parted_isvalid_tab (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_isvalid_tab_1
@@ -2334,19 +2126,9 @@ CREATE TABLE parted_isvalid_tab_12 PARTITION OF parted_isvalid_tab_1 FOR VALUES 
 
 INSERT INTO parted_isvalid_tab_11 VALUES (1, 0);
 
-CREATE INDEX CONCURRENTLY "parted_isvalid_idx_11"
-ON parted_isvalid_tab_11
-USING btree
-(
-  (a / b)
-);
+CREATE INDEX CONCURRENTLY "parted_isvalid_idx_11" ON parted_isvalid_tab_11 USING btree ((a / b));
 
-CREATE INDEX "parted_isvalid_idx"
-ON parted_isvalid_tab
-USING btree
-(
-  (a / b)
-);
+CREATE INDEX "parted_isvalid_idx" ON parted_isvalid_tab USING btree ((a / b));
 
 SELECT
   CAST(indexrelid AS REGCLASS),
@@ -2366,8 +2148,7 @@ DROP TABLE "parted_isvalid_tab";
 
 BEGIN;
 
-CREATE TABLE parted_replica_tab
-(id INT NOT NULL)
+CREATE TABLE parted_replica_tab (id INT NOT NULL)
 PARTITION BY RANGE(id);
 
 CREATE TABLE parted_replica_tab_1
@@ -2377,29 +2158,14 @@ PARTITION BY RANGE(id);
 
 CREATE TABLE parted_replica_tab_11 PARTITION OF parted_replica_tab_1 FOR VALUES FROM (1) TO (5);
 
-CREATE UNIQUE INDEX "parted_replica_idx"
-ON ONLY parted_replica_tab
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "parted_replica_idx" ON ONLY parted_replica_tab USING btree (id);
 
-CREATE UNIQUE INDEX "parted_replica_idx_1"
-ON ONLY parted_replica_tab_1
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "parted_replica_idx_1" ON ONLY parted_replica_tab_1 USING btree (id);
 
 ALTER TABLE ONLY parted_replica_tab_1
   REPLICA IDENTITY USING INDEX parted_replica_idx_1;
 
-CREATE UNIQUE INDEX "parted_replica_idx_11"
-ON parted_replica_tab_11
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "parted_replica_idx_11" ON parted_replica_tab_11 USING btree (id);
 
 SELECT
   CAST(indexrelid AS REGCLASS),
@@ -2471,7 +2237,8 @@ IMMUTABLE;
 
 SELECT array_agg(n) AS b FROM generate_series(1, 10000) AS n;
 
-CREATE INDEX CONCURRENTLY "test_pg_index_toast_index"
+CREATE INDEX
+CONCURRENTLY "test_pg_index_toast_index"
 ON test_pg_index_toast_table
 USING btree
 (

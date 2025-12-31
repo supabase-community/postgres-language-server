@@ -78,9 +78,9 @@ SELECT
   pg_describe_object(classid, objid, objsubid)
   AS obj,
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS objref,
   deptype

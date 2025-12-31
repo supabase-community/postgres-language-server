@@ -65,12 +65,7 @@ CREATE TEMPORARY TABLE box_temp (f1 box);
 
 INSERT INTO box_temp SELECT box(point(i, i), point(i * 2, i * 2)) FROM generate_series(1, 50) AS i;
 
-CREATE INDEX "box_spgist"
-ON box_temp
-USING spgist
-(
-  f1
-);
+CREATE INDEX "box_spgist" ON box_temp USING spgist (f1);
 
 INSERT INTO box_temp
 VALUES
@@ -135,14 +130,17 @@ RESET enable_seqscan;
 
 DROP INDEX "box_spgist";
 
-CREATE TABLE quad_box_tbl (id INT, b box);
+CREATE TABLE quad_box_tbl (
+  id INT,
+  b box
+);
 
 INSERT INTO quad_box_tbl
 SELECT
   (x - 1) * 100 + y,
   box(
-  point(x * 10, y * 10),
-  point(x * 10 + 5, y * 10 + 5)
+    point(x * 10, y * 10),
+    point(x * 10 + 5, y * 10 + 5)
   )
 FROM
   generate_series(1, 100) AS x,
@@ -166,12 +164,7 @@ VALUES
   (11004, '((-infinity,100),(-infinity,500))'),
   (11005, '((-infinity,-infinity),(700,infinity))');
 
-CREATE INDEX "quad_box_tbl_idx"
-ON quad_box_tbl
-USING spgist
-(
-  b
-);
+CREATE INDEX "quad_box_tbl_idx" ON quad_box_tbl USING spgist (b);
 
 SET enable_seqscan = 'on';
 
@@ -182,11 +175,10 @@ SET enable_bitmapscan = off;
 CREATE TABLE quad_box_tbl_ord_seq1
 AS
   SELECT
-    RANK(
-
-    )
+    RANK()
     OVER (
-    ORDER BY b <-> CAST('123,456' AS point))
+      ORDER BY b <-> CAST('123,456' AS point)
+    )
     AS n,
     b <-> CAST('123,456' AS point) AS dist,
     id
@@ -196,11 +188,10 @@ AS
 CREATE TABLE quad_box_tbl_ord_seq2
 AS
   SELECT
-    RANK(
-
-    )
+    RANK()
     OVER (
-    ORDER BY b <-> CAST('123,456' AS point))
+      ORDER BY b <-> CAST('123,456' AS point)
+    )
     AS n,
     b <-> CAST('123,456' AS point) AS dist,
     id
@@ -246,11 +237,10 @@ SET enable_indexscan = 'on';
 SET enable_bitmapscan = off;
 
 SELECT
-  RANK(
-
-  )
+  RANK()
   OVER (
-  ORDER BY b <-> CAST('123,456' AS point))
+    ORDER BY b <-> CAST('123,456' AS point)
+  )
   AS n,
   b <-> CAST('123,456' AS point) AS dist,
   id
@@ -260,11 +250,10 @@ FROM
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx1
 AS
   SELECT
-    RANK(
-
-    )
+    RANK()
     OVER (
-    ORDER BY b <-> CAST('123,456' AS point))
+      ORDER BY b <-> CAST('123,456' AS point)
+    )
     AS n,
     b <-> CAST('123,456' AS point) AS dist,
     id
@@ -285,11 +274,10 @@ WHERE
   seq.id IS NULL OR idx.id IS NULL;
 
 SELECT
-  RANK(
-
-  )
+  RANK()
   OVER (
-  ORDER BY b <-> CAST('123,456' AS point))
+    ORDER BY b <-> CAST('123,456' AS point)
+  )
   AS n,
   b <-> CAST('123,456' AS point) AS dist,
   id
@@ -301,11 +289,10 @@ WHERE
 CREATE TEMPORARY TABLE quad_box_tbl_ord_idx2
 AS
   SELECT
-    RANK(
-
-    )
+    RANK()
     OVER (
-    ORDER BY b <-> CAST('123,456' AS point))
+      ORDER BY b <-> CAST('123,456' AS point)
+    )
     AS n,
     b <-> CAST('123,456' AS point) AS dist,
     id

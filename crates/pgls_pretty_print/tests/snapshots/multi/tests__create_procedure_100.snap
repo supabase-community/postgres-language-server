@@ -12,7 +12,10 @@ RETURNS INT
 LANGUAGE "sql"
 AS ' SELECT a ';
 
-CREATE TABLE cp_test (a INT, b TEXT);
+CREATE TABLE cp_test (
+  a INT,
+  b TEXT
+);
 
 CREATE PROCEDURE ptest1(x TEXT)
 LANGUAGE "sql"

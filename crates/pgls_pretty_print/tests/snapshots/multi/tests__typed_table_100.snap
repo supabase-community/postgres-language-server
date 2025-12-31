@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 CREATE TABLE ttable1 OF nothing;
 
-CREATE TYPE person_type AS ( id INT, name TEXT );
+CREATE TYPE person_type AS (id INT, name TEXT);
 
 CREATE TABLE persons OF person_type;
 
@@ -60,7 +60,7 @@ DROP TYPE tt_enum_type;
 
 DROP TABLE "stuff";
 
-CREATE TYPE person_type AS ( id INT, name TEXT );
+CREATE TYPE person_type AS (id INT, name TEXT);
 
 CREATE TABLE persons OF person_type;
 

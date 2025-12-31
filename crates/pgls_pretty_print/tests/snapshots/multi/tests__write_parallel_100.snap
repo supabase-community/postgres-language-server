@@ -41,12 +41,7 @@ AS
     tenk1
   GROUP BY length(stringu1);
 
-CREATE UNIQUE INDEX
-ON parallel_mat_view
-USING btree
-(
-  length
-);
+CREATE UNIQUE INDEX ON parallel_mat_view USING btree (length);
 
 REFRESH MATERIALIZED VIEW parallel_mat_view;
 

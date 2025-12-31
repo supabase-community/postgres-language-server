@@ -9,7 +9,8 @@ use pgls_pretty_print::{
 };
 
 /// Line widths to test - each test file is run at both widths
-const LINE_WIDTHS: [usize; 2] = [60, 100];
+/// Minimum supported line width is 80 (60 is unrealistically narrow)
+const LINE_WIDTHS: [usize; 2] = [80, 100];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum StringState {

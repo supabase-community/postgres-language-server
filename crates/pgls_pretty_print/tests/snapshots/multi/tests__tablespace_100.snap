@@ -19,9 +19,9 @@ DROP TABLESPACE regress_tblspacewith;
 
 SELECT
   regexp_replace(
-  pg_tablespace_location(oid),
-  '(pg_tblspc)/(\d+)',
-  '\1/NNN'
+    pg_tablespace_location(oid),
+    '(pg_tblspc)/(\d+)',
+    '\1/NNN'
   )
 FROM
   pg_tablespace
@@ -56,10 +56,13 @@ REINDEX (TABLESPACE pg_global) TABLE pg_authid;
 
 REINDEX (TABLESPACE pg_global, CONCURRENTLY) TABLE pg_authid;
 
-CREATE TABLE regress_tblspace_test_tbl (num1 BIGINT, num2 DOUBLE PRECISION, t TEXT);
+CREATE TABLE regress_tblspace_test_tbl (
+  num1 BIGINT,
+  num2 DOUBLE PRECISION,
+  t TEXT
+);
 
-INSERT INTO regress_tblspace_test_tbl
-(num1, num2, t)
+INSERT INTO regress_tblspace_test_tbl (num1, num2, t)
 SELECT
   round(random() * 100),
   random(),
@@ -67,12 +70,7 @@ SELECT
 FROM
   generate_series(1, 10) AS s (i);
 
-CREATE INDEX "regress_tblspace_test_tbl_idx"
-ON regress_tblspace_test_tbl
-USING btree
-(
-  num1
-);
+CREATE INDEX "regress_tblspace_test_tbl_idx" ON regress_tblspace_test_tbl USING btree (num1);
 
 REINDEX (TABLESPACE pg_global) INDEX regress_tblspace_test_tbl_idx;
 
@@ -189,8 +187,10 @@ WHERE
 
 DROP TABLE "regress_tblspace_test_tbl";
 
-CREATE TABLE tbspace_reindex_part
-(c1 INT, c2 INT)
+CREATE TABLE tbspace_reindex_part (
+  c1 INT,
+  c2 INT
+)
 PARTITION BY RANGE(c1);
 
 CREATE TABLE tbspace_reindex_part_0
@@ -207,52 +207,27 @@ PARTITION OF tbspace_reindex_part
 FOR VALUES FROM (10) TO (20)
 PARTITION BY LIST(c2);
 
-CREATE INDEX "tbspace_reindex_part_index"
-ON ONLY tbspace_reindex_part
-USING btree
-(
-  c1
-);
+CREATE INDEX "tbspace_reindex_part_index" ON ONLY tbspace_reindex_part USING btree (c1);
 
-CREATE INDEX "tbspace_reindex_part_index_0"
-ON ONLY tbspace_reindex_part_0
-USING btree
-(
-  c1
-);
+CREATE INDEX "tbspace_reindex_part_index_0" ON ONLY tbspace_reindex_part_0 USING btree (c1);
 
 ALTER INDEX tbspace_reindex_part_index
   ATTACH PARTITION
   tbspace_reindex_part_index_0;
 
-CREATE INDEX "tbspace_reindex_part_index_10"
-ON ONLY tbspace_reindex_part_10
-USING btree
-(
-  c1
-);
+CREATE INDEX "tbspace_reindex_part_index_10" ON ONLY tbspace_reindex_part_10 USING btree (c1);
 
 ALTER INDEX tbspace_reindex_part_index
   ATTACH PARTITION
   tbspace_reindex_part_index_10;
 
-CREATE INDEX "tbspace_reindex_part_index_0_1"
-ON ONLY tbspace_reindex_part_0_1
-USING btree
-(
-  c1
-);
+CREATE INDEX "tbspace_reindex_part_index_0_1" ON ONLY tbspace_reindex_part_0_1 USING btree (c1);
 
 ALTER INDEX tbspace_reindex_part_index_0
   ATTACH PARTITION
   tbspace_reindex_part_index_0_1;
 
-CREATE INDEX "tbspace_reindex_part_index_0_2"
-ON ONLY tbspace_reindex_part_0_2
-USING btree
-(
-  c1
-);
+CREATE INDEX "tbspace_reindex_part_index_0_2" ON ONLY tbspace_reindex_part_0_2 USING btree (c1);
 
 ALTER INDEX tbspace_reindex_part_index_0
   ATTACH PARTITION
@@ -363,8 +338,7 @@ FROM
 WHERE
   c.reltablespace = t.oid AND c.relname = 'foo_idx';
 
-CREATE TABLE testschema.part
-(a INT)
+CREATE TABLE testschema.part (a INT)
 PARTITION BY LIST(a);
 
 SET default_tablespace = pg_global;
@@ -436,8 +410,7 @@ RESET default_tablespace;
 
 DROP TABLE "testschema"."part";
 
-CREATE TABLE testschema.part
-(a INT)
+CREATE TABLE testschema.part (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE testschema.part1 PARTITION OF testschema.part FOR VALUES IN (1);
@@ -463,35 +436,29 @@ WHERE
   c.relname LIKE 'part%_idx'
 ORDER BY relname;
 
-CREATE TABLE testschema.dflt
-(a INT PRIMARY KEY)
+CREATE TABLE testschema.dflt (a INT PRIMARY KEY)
 PARTITION BY LIST(a)
 TABLESPACE pg_default;
 
-CREATE TABLE testschema.dflt
-(a INT PRIMARY KEY USING INDEX TABLESPACE "pg_default")
+CREATE TABLE testschema.dflt (a INT PRIMARY KEY USING INDEX TABLESPACE "pg_default")
 PARTITION BY LIST(a);
 
 SET default_tablespace = pg_default;
 
-CREATE TABLE testschema.dflt
-(a INT PRIMARY KEY)
+CREATE TABLE testschema.dflt (a INT PRIMARY KEY)
 PARTITION BY LIST(a)
 TABLESPACE regress_tblspace;
 
-CREATE TABLE testschema.dflt
-(a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
+CREATE TABLE testschema.dflt (a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
 PARTITION BY LIST(a);
 
-CREATE TABLE testschema.dflt
-(a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
+CREATE TABLE testschema.dflt (a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
 PARTITION BY LIST(a)
 TABLESPACE regress_tblspace;
 
 SET default_tablespace = '';
 
-CREATE TABLE testschema.dflt2
-(a INT PRIMARY KEY)
+CREATE TABLE testschema.dflt2 (a INT PRIMARY KEY)
 PARTITION BY LIST(a);
 
 DROP TABLE "testschema"."dflt", "testschema"."dflt2";
@@ -500,12 +467,7 @@ CREATE TABLE testschema.test_default_tab (id BIGINT) TABLESPACE regress_tblspace
 
 INSERT INTO testschema.test_default_tab VALUES (1);
 
-CREATE INDEX "test_index1"
-ON testschema.test_default_tab
-USING btree
-(
-  id
-);
+CREATE INDEX "test_index1" ON testschema.test_default_tab USING btree (id);
 
 CREATE INDEX "test_index2"
 ON testschema.test_default_tab
@@ -544,8 +506,10 @@ ALTER TABLE testschema.test_default_tab
 
 DROP TABLE "testschema"."test_default_tab";
 
-CREATE TABLE testschema.test_default_tab_p
-(id BIGINT, val BIGINT)
+CREATE TABLE testschema.test_default_tab_p (
+  id BIGINT,
+  val BIGINT
+)
 PARTITION BY LIST(id)
 TABLESPACE regress_tblspace;
 
@@ -555,12 +519,7 @@ FOR VALUES IN (1);
 
 INSERT INTO testschema.test_default_tab_p VALUES (1);
 
-CREATE INDEX "test_index1"
-ON testschema.test_default_tab_p
-USING btree
-(
-  val
-);
+CREATE INDEX "test_index1" ON testschema.test_default_tab_p USING btree (val);
 
 CREATE INDEX "test_index2"
 ON testschema.test_default_tab_p
@@ -617,28 +576,22 @@ SELECT * FROM testschema.test_tab;
 
 DROP TABLE "testschema"."test_tab";
 
-CREATE TABLE testschema.test_tab (a INT, b INT, c INT);
+CREATE TABLE testschema.test_tab (
+  a INT,
+  b INT,
+  c INT
+);
 
 SET default_tablespace = regress_tblspace;
 
 ALTER TABLE testschema.test_tab
   ADD CONSTRAINT "test_tab_unique" UNIQUE (a);
 
-CREATE INDEX "test_tab_a_idx"
-ON testschema.test_tab
-USING btree
-(
-  a
-);
+CREATE INDEX "test_tab_a_idx" ON testschema.test_tab USING btree (a);
 
 SET default_tablespace = '';
 
-CREATE INDEX "test_tab_b_idx"
-ON testschema.test_tab
-USING btree
-(
-  b
-);
+CREATE INDEX "test_tab_b_idx" ON testschema.test_tab USING btree (b);
 
 ALTER TABLE testschema.test_tab
   ALTER COLUMN b TYPE BIGINT,
@@ -652,12 +605,7 @@ AS
     (1),
     (2);
 
-CREATE UNIQUE INDEX "anindex"
-ON testschema.atable
-USING btree
-(
-  column1
-);
+CREATE UNIQUE INDEX "anindex" ON testschema.atable USING btree (column1);
 
 ALTER TABLE testschema.atable
   SET TABLESPACE regress_tblspace;

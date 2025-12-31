@@ -324,8 +324,8 @@ SELECT CAST('1994-01-01' AS DATE) + CAST('11:00-5' AS TIME WITH TIME ZONE) AS "J
 
 SELECT
   timestamptz(
-  CAST('1994-01-01' AS DATE),
-  CAST('11:00-5' AS TIME WITH TIME ZONE)
+    CAST('1994-01-01' AS DATE),
+    CAST('11:00-5' AS TIME WITH TIME ZONE)
   )
   AS "Jan_01_1994_8am";
 
@@ -410,22 +410,22 @@ SELECT timestamptz(CAST('1994-01-01' AS DATE), CAST('10:00' AS TIME)) AS "Jan_01
 
 SELECT
   timestamptz(
-  CAST('1994-01-01' AS DATE),
-  CAST('11:00-8' AS TIME WITH TIME ZONE)
+    CAST('1994-01-01' AS DATE),
+    CAST('11:00-8' AS TIME WITH TIME ZONE)
   )
   AS "Jan_01_1994_11am";
 
 SELECT
   timestamptz(
-  CAST('1994-01-01' AS DATE),
-  CAST('10:00-8' AS TIME WITH TIME ZONE)
+    CAST('1994-01-01' AS DATE),
+    CAST('10:00-8' AS TIME WITH TIME ZONE)
   )
   AS "Jan_01_1994_10am";
 
 SELECT
   timestamptz(
-  CAST('1994-01-01' AS DATE),
-  CAST('11:00-5' AS TIME WITH TIME ZONE)
+    CAST('1994-01-01' AS DATE),
+    CAST('11:00-5' AS TIME WITH TIME ZONE)
   )
   AS "Jan_01_1994_8am";
 
@@ -515,157 +515,156 @@ ORDER BY 1,
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-28' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-27 12:00'
-  AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-30' AS TIMESTAMP WITH TIME ZONE)
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-28' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-27 12:00'
+    AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-30' AS TIMESTAMP WITH TIME ZONE)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('2000-11-26' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-27 12:00'
-  AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-30' AS TIMESTAMP WITH TIME ZONE)
+    CAST('2000-11-26' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-27 12:00'
+    AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-30' AS TIMESTAMP WITH TIME ZONE)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-28' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-27 12:00'
-  AS TIMESTAMP WITH TIME ZONE),
-  CAST('1 day' AS INTERVAL)
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-28' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-27 12:00'
+    AS TIMESTAMP WITH TIME ZONE),
+    CAST('1 day' AS INTERVAL)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('12 hours' AS INTERVAL),
-  CAST('2000-11-27 12:00'
-  AS TIMESTAMP WITH TIME ZONE),
-  CAST('2000-11-30' AS TIMESTAMP WITH TIME ZONE)
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('12 hours' AS INTERVAL),
+    CAST('2000-11-27 12:00'
+    AS TIMESTAMP WITH TIME ZONE),
+    CAST('2000-11-30' AS TIMESTAMP WITH TIME ZONE)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('12 hours' AS INTERVAL),
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('12 hours' AS INTERVAL)
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('12 hours' AS INTERVAL),
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('12 hours' AS INTERVAL)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
-  CAST('12 hours' AS INTERVAL),
-  CAST('2000-11-27 12:00'
-  AS TIMESTAMP WITH TIME ZONE),
-  CAST('12 hours' AS INTERVAL)
+    CAST('2000-11-27' AS TIMESTAMP WITH TIME ZONE),
+    CAST('12 hours' AS INTERVAL),
+    CAST('2000-11-27 12:00'
+    AS TIMESTAMP WITH TIME ZONE),
+    CAST('12 hours' AS INTERVAL)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('2000-11-28' AS TIMESTAMP),
-  CAST('2000-11-27 12:00' AS TIMESTAMP),
-  CAST('2000-11-30' AS TIMESTAMP)
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('2000-11-28' AS TIMESTAMP),
+    CAST('2000-11-27 12:00' AS TIMESTAMP),
+    CAST('2000-11-30' AS TIMESTAMP)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('2000-11-26' AS TIMESTAMP),
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('2000-11-27 12:00' AS TIMESTAMP),
-  CAST('2000-11-30' AS TIMESTAMP)
+    CAST('2000-11-26' AS TIMESTAMP),
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('2000-11-27 12:00' AS TIMESTAMP),
+    CAST('2000-11-30' AS TIMESTAMP)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('2000-11-28' AS TIMESTAMP),
-  CAST('2000-11-27 12:00' AS TIMESTAMP),
-  CAST('1 day' AS INTERVAL)
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('2000-11-28' AS TIMESTAMP),
+    CAST('2000-11-27 12:00' AS TIMESTAMP),
+    CAST('1 day' AS INTERVAL)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('12 hours' AS INTERVAL),
-  CAST('2000-11-27 12:00' AS TIMESTAMP),
-  CAST('2000-11-30' AS TIMESTAMP)
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('12 hours' AS INTERVAL),
+    CAST('2000-11-27 12:00' AS TIMESTAMP),
+    CAST('2000-11-30' AS TIMESTAMP)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('12 hours' AS INTERVAL),
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('12 hours' AS INTERVAL)
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('12 hours' AS INTERVAL),
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('12 hours' AS INTERVAL)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('2000-11-27' AS TIMESTAMP),
-  CAST('12 hours' AS INTERVAL),
-  CAST('2000-11-27 12:00' AS TIMESTAMP),
-  CAST('12 hours' AS INTERVAL)
+    CAST('2000-11-27' AS TIMESTAMP),
+    CAST('12 hours' AS INTERVAL),
+    CAST('2000-11-27 12:00' AS TIMESTAMP),
+    CAST('12 hours' AS INTERVAL)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('00:00' AS TIME),
-  CAST('01:00' AS TIME),
-  CAST('00:30' AS TIME),
-  CAST('01:30' AS TIME)
+    CAST('00:00' AS TIME),
+    CAST('01:00' AS TIME),
+    CAST('00:30' AS TIME),
+    CAST('01:30' AS TIME)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('00:00' AS TIME),
-  CAST('1 hour' AS INTERVAL),
-  CAST('00:30' AS TIME),
-  CAST('1 hour' AS INTERVAL)
+    CAST('00:00' AS TIME),
+    CAST('1 hour' AS INTERVAL),
+    CAST('00:30' AS TIME),
+    CAST('1 hour' AS INTERVAL)
   )
   AS "True";
 
 SELECT
   overlaps(
-  CAST('00:00' AS TIME),
-  CAST('1 hour' AS INTERVAL),
-  CAST('01:30' AS TIME),
-  CAST('1 hour' AS INTERVAL)
+    CAST('00:00' AS TIME),
+    CAST('1 hour' AS INTERVAL),
+    CAST('01:30' AS TIME),
+    CAST('1 hour' AS INTERVAL)
   )
   AS "False";
 
 SELECT
   overlaps(
-  CAST('00:00' AS TIME),
-  CAST('1 hour' AS INTERVAL),
-  CAST('01:30' AS TIME),
-  CAST('1 day' AS INTERVAL)
+    CAST('00:00' AS TIME),
+    CAST('1 hour' AS INTERVAL),
+    CAST('01:30' AS TIME),
+    CAST('1 day' AS INTERVAL)
   )
   AS "False";
 
 CREATE TABLE temp_timestamp (f1 TIMESTAMP WITH TIME ZONE);
 
-INSERT INTO temp_timestamp
-(f1)
+INSERT INTO temp_timestamp (f1)
 SELECT
   d1
 FROM
@@ -832,16 +831,16 @@ SELECT to_timestamp('1985 \ 12', 'YYYY \\ DD');
 
 SELECT
   to_timestamp(
-  'My birthday-> Year: 1976, Month: May, Day: 16',
-  '"My birthday-> Year:" YYYY, "Month:" FMMonth, "Day:" DD'
+    'My birthday-> Year: 1976, Month: May, Day: 16',
+    '"My birthday-> Year:" YYYY, "Month:" FMMonth, "Day:" DD'
   );
 
 SELECT to_timestamp('1,582nd VIII 21', 'Y,YYYth FMRM DD');
 
 SELECT
   to_timestamp(
-  '15 "text between quote marks" 98 54 45',
-  'HH24 "\"text between quote marks\"" YY MI SS'
+    '15 "text between quote marks" 98 54 45',
+    'HH24 "\"text between quote marks\"" YY MI SS'
   );
 
 SELECT to_timestamp('05121445482000', 'MMDDHH24MISSYYYY');
@@ -945,8 +944,8 @@ SELECT to_timestamp('2018-11-02 12:34:56.025', 'YYYY-MM-DD HH24:MI:SS.MS');
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -954,8 +953,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.1',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.1',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -963,8 +962,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.12',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.12',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -972,8 +971,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.123',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.123',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -981,8 +980,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.1234',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.1234',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -990,8 +989,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.12345',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.12345',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -999,8 +998,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.123456',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.123456',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -1008,8 +1007,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '2018-11-02 12:34:56.123456789',
-  'YYYY-MM-DD HH24:MI:SS.FF' || i
+    '2018-11-02 12:34:56.123456789',
+    'YYYY-MM-DD HH24:MI:SS.FF' || i
   )
 FROM
   generate_series(1, 6) AS i;
@@ -1017,8 +1016,8 @@ FROM
 SELECT
   i,
   to_timestamp(
-  '20181102123456123456',
-  'YYYYMMDDHH24MISSFF' || i
+    '20181102123456123456',
+    'YYYYMMDDHH24MISSFF' || i
   )
 FROM
   generate_series(1, 6) AS i;

@@ -27,7 +27,7 @@ FROM
     )
   );
 
-CREATE TYPE comp AS ( a INT, b INT );
+CREATE TYPE comp AS (a INT, b INT);
 
 SELECT
   *

@@ -7,39 +7,39 @@ SELECT
   prop,
   pg_indexam_has_property(a.oid, prop) AS "AM",
   pg_index_has_property(
-  CAST('onek_hundred' AS REGCLASS),
-  prop
+    CAST('onek_hundred' AS REGCLASS),
+    prop
   )
   AS "Index",
   pg_index_column_has_property(
-  CAST('onek_hundred' AS REGCLASS),
-  1,
-  prop
+    CAST('onek_hundred' AS REGCLASS),
+    1,
+    prop
   )
   AS "Column"
 FROM
   pg_am AS a,
   unnest(
-  CAST(ARRAY['asc',
-  'desc',
-  'nulls_first',
-  'nulls_last',
-  'orderable',
-  'distance_orderable',
-  'returnable',
-  'search_array',
-  'search_nulls',
-  'clusterable',
-  'index_scan',
-  'bitmap_scan',
-  'backward_scan',
-  'can_order',
-  'can_unique',
-  'can_multi_col',
-  'can_exclude',
-  'can_include',
-  'bogus']
-  AS TEXT[])
+    CAST(ARRAY['asc',
+    'desc',
+    'nulls_first',
+    'nulls_last',
+    'orderable',
+    'distance_orderable',
+    'returnable',
+    'search_array',
+    'search_nulls',
+    'clusterable',
+    'index_scan',
+    'bitmap_scan',
+    'backward_scan',
+    'can_order',
+    'can_unique',
+    'can_multi_col',
+    'can_exclude',
+    'can_include',
+    'bogus']
+    AS TEXT[])
   )
   WITH ORDINALITY
   AS u (prop, ord)
@@ -51,39 +51,39 @@ SELECT
   prop,
   pg_indexam_has_property(a.oid, prop) AS "AM",
   pg_index_has_property(
-  CAST('gcircleind' AS REGCLASS),
-  prop
+    CAST('gcircleind' AS REGCLASS),
+    prop
   )
   AS "Index",
   pg_index_column_has_property(
-  CAST('gcircleind' AS REGCLASS),
-  1,
-  prop
+    CAST('gcircleind' AS REGCLASS),
+    1,
+    prop
   )
   AS "Column"
 FROM
   pg_am AS a,
   unnest(
-  CAST(ARRAY['asc',
-  'desc',
-  'nulls_first',
-  'nulls_last',
-  'orderable',
-  'distance_orderable',
-  'returnable',
-  'search_array',
-  'search_nulls',
-  'clusterable',
-  'index_scan',
-  'bitmap_scan',
-  'backward_scan',
-  'can_order',
-  'can_unique',
-  'can_multi_col',
-  'can_exclude',
-  'can_include',
-  'bogus']
-  AS TEXT[])
+    CAST(ARRAY['asc',
+    'desc',
+    'nulls_first',
+    'nulls_last',
+    'orderable',
+    'distance_orderable',
+    'returnable',
+    'search_array',
+    'search_nulls',
+    'clusterable',
+    'index_scan',
+    'bitmap_scan',
+    'backward_scan',
+    'can_order',
+    'can_unique',
+    'can_multi_col',
+    'can_exclude',
+    'can_include',
+    'bogus']
+    AS TEXT[])
   )
   WITH ORDINALITY
   AS u (prop, ord)
@@ -94,60 +94,60 @@ ORDER BY ord;
 SELECT
   prop,
   pg_index_column_has_property(
-  CAST('onek_hundred' AS REGCLASS),
-  1,
-  prop
+    CAST('onek_hundred' AS REGCLASS),
+    1,
+    prop
   )
   AS btree,
   pg_index_column_has_property(
-  CAST('hash_i4_index' AS REGCLASS),
-  1,
-  prop
+    CAST('hash_i4_index' AS REGCLASS),
+    1,
+    prop
   )
   AS hash,
   pg_index_column_has_property(
-  CAST('gcircleind' AS REGCLASS),
-  1,
-  prop
+    CAST('gcircleind' AS REGCLASS),
+    1,
+    prop
   )
   AS gist,
   pg_index_column_has_property(
-  CAST('sp_radix_ind' AS REGCLASS),
-  1,
-  prop
+    CAST('sp_radix_ind' AS REGCLASS),
+    1,
+    prop
   )
   AS spgist_radix,
   pg_index_column_has_property(
-  CAST('sp_quad_ind' AS REGCLASS),
-  1,
-  prop
+    CAST('sp_quad_ind' AS REGCLASS),
+    1,
+    prop
   )
   AS spgist_quad,
   pg_index_column_has_property(
-  CAST('botharrayidx' AS REGCLASS),
-  1,
-  prop
+    CAST('botharrayidx' AS REGCLASS),
+    1,
+    prop
   )
   AS gin,
   pg_index_column_has_property(
-  CAST('brinidx' AS REGCLASS),
-  1,
-  prop
+    CAST('brinidx' AS REGCLASS),
+    1,
+    prop
   )
   AS brin
 FROM
   unnest(
-  CAST(ARRAY['asc',
-  'desc',
-  'nulls_first',
-  'nulls_last',
-  'orderable',
-  'distance_orderable',
-  'returnable',
-  'search_array',
-  'search_nulls',
-  'bogus']
-  AS TEXT[])
+    CAST(ARRAY['asc',
+    'desc',
+    'nulls_first',
+    'nulls_last',
+    'orderable',
+    'distance_orderable',
+    'returnable',
+    'search_array',
+    'search_nulls',
+    'bogus']
+    AS TEXT[])
   )
   WITH ORDINALITY
   AS u (prop, ord)
@@ -156,43 +156,43 @@ ORDER BY ord;
 SELECT
   prop,
   pg_index_has_property(
-  CAST('onek_hundred' AS REGCLASS),
-  prop
+    CAST('onek_hundred' AS REGCLASS),
+    prop
   )
   AS btree,
   pg_index_has_property(
-  CAST('hash_i4_index' AS REGCLASS),
-  prop
+    CAST('hash_i4_index' AS REGCLASS),
+    prop
   )
   AS hash,
   pg_index_has_property(
-  CAST('gcircleind' AS REGCLASS),
-  prop
+    CAST('gcircleind' AS REGCLASS),
+    prop
   )
   AS gist,
   pg_index_has_property(
-  CAST('sp_radix_ind' AS REGCLASS),
-  prop
+    CAST('sp_radix_ind' AS REGCLASS),
+    prop
   )
   AS spgist,
   pg_index_has_property(
-  CAST('botharrayidx' AS REGCLASS),
-  prop
+    CAST('botharrayidx' AS REGCLASS),
+    prop
   )
   AS gin,
   pg_index_has_property(
-  CAST('brinidx' AS REGCLASS),
-  prop
+    CAST('brinidx' AS REGCLASS),
+    prop
   )
   AS brin
 FROM
   unnest(
-  CAST(ARRAY['clusterable',
-  'index_scan',
-  'bitmap_scan',
-  'backward_scan',
-  'bogus']
-  AS TEXT[])
+    CAST(ARRAY['clusterable',
+    'index_scan',
+    'bitmap_scan',
+    'backward_scan',
+    'bogus']
+    AS TEXT[])
   )
   WITH ORDINALITY
   AS u (prop, ord)
@@ -205,13 +205,13 @@ SELECT
 FROM
   pg_am AS a,
   unnest(
-  CAST(ARRAY['can_order',
-  'can_unique',
-  'can_multi_col',
-  'can_exclude',
-  'can_include',
-  'bogus']
-  AS TEXT[])
+    CAST(ARRAY['can_order',
+    'can_unique',
+    'can_multi_col',
+    'can_exclude',
+    'can_include',
+    'bogus']
+    AS TEXT[])
   )
   WITH ORDINALITY
   AS u (prop, ord)
@@ -220,17 +220,14 @@ WHERE
 ORDER BY amname,
   ord;
 
-CREATE TEMPORARY TABLE foo (f1 INT, f2 INT, f3 INT, f4 INT);
-
-CREATE INDEX "fooindex"
-ON foo
-USING btree
-(
-  f1 DESC,
-  f2 ASC,
-  f3 NULLS FIRST,
-  f4 NULLS LAST
+CREATE TEMPORARY TABLE foo (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  f4 INT
 );
+
+CREATE INDEX "fooindex" ON foo USING btree (f1 DESC, f2 ASC, f3 NULLS FIRST, f4 NULLS LAST);
 
 SELECT
   col,
@@ -250,14 +247,7 @@ FROM
 ORDER BY col,
   idx;
 
-CREATE INDEX "foocover"
-ON foo
-USING btree
-(
-  f1
-)
-INCLUDE (f2,
-f3);
+CREATE INDEX "foocover" ON foo USING btree (f1) INCLUDE (f2, f3);
 
 SELECT
   col,

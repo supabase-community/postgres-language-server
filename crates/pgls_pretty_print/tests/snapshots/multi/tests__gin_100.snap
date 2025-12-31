@@ -53,15 +53,12 @@ SELECT COUNT(*) > 0 AS ok FROM gin_test_tbl WHERE i @> ARRAY[1];
 
 RESET gin_fuzzy_search_limit;
 
-CREATE TEMPORARY TABLE t_gin_test_tbl (i INT[], j INT[]);
-
-CREATE INDEX
-ON t_gin_test_tbl
-USING gin
-(
-  i,
-  j
+CREATE TEMPORARY TABLE t_gin_test_tbl (
+  i INT[],
+  j INT[]
 );
+
+CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
 
 INSERT INTO t_gin_test_tbl
 VALUES
@@ -147,17 +144,17 @@ FROM
     (' i @> ''{1}'' and j @> ''{10}'' '))
   AS q (query),
   LATERAL explain_query_json(
-  'select * from t_gin_test_tbl where ' || query
+    'select * from t_gin_test_tbl where ' || query
   )
   AS js,
   LATERAL execute_text_query_index(
-  'select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
-  query
+    'select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
+    query
   )
   AS res_index,
   LATERAL execute_text_query_heap(
-  'select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
-  query
+    'select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
+    query
   )
   AS res_heap;
 
@@ -208,15 +205,12 @@ RESET enable_bitmapscan;
 
 DROP TABLE "t_gin_test_tbl";
 
-CREATE UNLOGGED TABLE t_gin_test_tbl (i INT[], j INT[]);
-
-CREATE INDEX
-ON t_gin_test_tbl
-USING gin
-(
-  i,
-  j
+CREATE UNLOGGED TABLE t_gin_test_tbl (
+  i INT[],
+  j INT[]
 );
+
+CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
 
 INSERT INTO t_gin_test_tbl
 VALUES

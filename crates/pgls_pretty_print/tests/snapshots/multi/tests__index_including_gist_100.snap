@@ -3,7 +3,12 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/index_including_gist.sql
 snapshot_kind: text
 ---
-CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
+CREATE TABLE tbl_gist (
+  c1 INT,
+  c2 INT,
+  c3 INT,
+  c4 box
+);
 
 INSERT INTO tbl_gist
 SELECT
@@ -14,15 +19,7 @@ SELECT
 FROM
   generate_series(1, 8000) AS x;
 
-CREATE INDEX "tbl_gist_idx"
-ON tbl_gist
-USING gist
-(
-  c4
-)
-INCLUDE (c1,
-c2,
-c3);
+CREATE INDEX "tbl_gist_idx" ON tbl_gist USING gist (c4) INCLUDE (c1, c2, c3);
 
 SELECT
   pg_get_indexdef(i.indexrelid)
@@ -45,17 +42,14 @@ SET enable_bitmapscan = DEFAULT;
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
+CREATE TABLE tbl_gist (
+  c1 INT,
+  c2 INT,
+  c3 INT,
+  c4 box
+);
 
-CREATE INDEX "tbl_gist_idx"
-ON tbl_gist
-USING gist
-(
-  c4
-)
-INCLUDE (c1,
-c2,
-c3);
+CREATE INDEX "tbl_gist_idx" ON tbl_gist USING gist (c4) INCLUDE (c1, c2, c3);
 
 INSERT INTO tbl_gist
 SELECT
@@ -87,7 +81,12 @@ SET enable_bitmapscan = DEFAULT;
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
+CREATE TABLE tbl_gist (
+  c1 INT,
+  c2 INT,
+  c3 INT,
+  c4 box
+);
 
 INSERT INTO tbl_gist
 SELECT
@@ -98,21 +97,18 @@ SELECT
 FROM
   generate_series(1, 10) AS x;
 
-CREATE INDEX CONCURRENTLY "tbl_gist_idx"
-ON tbl_gist
-USING gist
-(
-  c4
-)
-INCLUDE (c1,
-c2,
-c3);
+CREATE INDEX CONCURRENTLY "tbl_gist_idx" ON tbl_gist USING gist (c4) INCLUDE (c1, c2, c3);
 
 SELECT indexdef FROM pg_indexes WHERE tablename = 'tbl_gist' ORDER BY indexname;
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
+CREATE TABLE tbl_gist (
+  c1 INT,
+  c2 INT,
+  c3 INT,
+  c4 box
+);
 
 INSERT INTO tbl_gist
 SELECT
@@ -123,14 +119,7 @@ SELECT
 FROM
   generate_series(1, 10) AS x;
 
-CREATE INDEX "tbl_gist_idx"
-ON tbl_gist
-USING gist
-(
-  c4
-)
-INCLUDE (c1,
-c3);
+CREATE INDEX "tbl_gist_idx" ON tbl_gist USING gist (c4) INCLUDE (c1, c3);
 
 SELECT indexdef FROM pg_indexes WHERE tablename = 'tbl_gist' ORDER BY indexname;
 
@@ -145,7 +134,12 @@ SELECT indexdef FROM pg_indexes WHERE tablename = 'tbl_gist' ORDER BY indexname;
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
+CREATE TABLE tbl_gist (
+  c1 INT,
+  c2 INT,
+  c3 INT,
+  c4 box
+);
 
 INSERT INTO tbl_gist
 SELECT
@@ -156,14 +150,7 @@ SELECT
 FROM
   generate_series(1, 10) AS x;
 
-CREATE INDEX "tbl_gist_idx"
-ON tbl_gist
-USING gist
-(
-  c4
-)
-INCLUDE (c1,
-c3);
+CREATE INDEX "tbl_gist_idx" ON tbl_gist USING gist (c4) INCLUDE (c1, c3);
 
 UPDATE tbl_gist SET c1 = 100 WHERE c1 = 2;
 
@@ -173,7 +160,12 @@ DELETE FROM tbl_gist WHERE c1 = 5 OR c3 = 12;
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
+CREATE TABLE tbl_gist (
+  c1 INT,
+  c2 INT,
+  c3 INT,
+  c4 box
+);
 
 INSERT INTO tbl_gist
 SELECT
@@ -184,14 +176,7 @@ SELECT
 FROM
   generate_series(1, 10) AS x;
 
-CREATE INDEX "tbl_gist_idx"
-ON tbl_gist
-USING gist
-(
-  c4
-)
-INCLUDE (c1,
-c3);
+CREATE INDEX "tbl_gist_idx" ON tbl_gist USING gist (c4) INCLUDE (c1, c3);
 
 ALTER TABLE tbl_gist
   ALTER COLUMN c1 TYPE BIGINT;
@@ -201,8 +186,7 @@ ALTER TABLE tbl_gist
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist
-(
+CREATE TABLE tbl_gist (
   c1 INT,
   c2 INT,
   c3 INT,
@@ -228,8 +212,8 @@ SELECT
   2 * x,
   3 * x,
   box(
-  point(3 * x, 2 * x),
-  point(3 * x + 1, 2 * x + 1)
+    point(3 * x, 2 * x),
+    point(3 * x + 1, 2 * x + 1)
   )
 FROM
   generate_series(1, 10) AS x;

@@ -59,13 +59,13 @@ SELECT num_nonnulls(CAST(NULL AS TEXT), CAST(NULL AS INT));
 
 SELECT
   num_nonnulls(
-  1,
-  2,
-  CAST(NULL AS TEXT),
-  CAST(NULL AS point),
-  '',
-  CAST('9' AS BIGINT),
-  1.0 / NULL
+    1,
+    2,
+    CAST(NULL AS TEXT),
+    CAST(NULL AS point),
+    '',
+    CAST('9' AS BIGINT),
+    1.0 / NULL
   );
 
 SELECT num_nonnulls(VARIADIC CAST('{1,2,NULL,3}' AS INT[]));
@@ -74,10 +74,10 @@ SELECT num_nonnulls(VARIADIC CAST('{"1","2","3","4"}' AS TEXT[]));
 
 SELECT
   num_nonnulls(
-  VARIADIC ARRAY(SELECT
-    CASE WHEN i <> 40 THEN i END
-  FROM
-    generate_series(1, 100) AS i)
+    VARIADIC ARRAY(SELECT
+      CASE WHEN i <> 40 THEN i END
+    FROM
+      generate_series(1, 100) AS i)
   );
 
 SELECT num_nulls(NULL);
@@ -90,13 +90,13 @@ SELECT num_nulls(CAST(NULL AS TEXT), CAST(NULL AS INT));
 
 SELECT
   num_nulls(
-  1,
-  2,
-  CAST(NULL AS TEXT),
-  CAST(NULL AS point),
-  '',
-  CAST('9' AS BIGINT),
-  1.0 / NULL
+    1,
+    2,
+    CAST(NULL AS TEXT),
+    CAST(NULL AS point),
+    '',
+    CAST('9' AS BIGINT),
+    1.0 / NULL
   );
 
 SELECT num_nulls(VARIADIC CAST('{1,2,NULL,3}' AS INT[]));
@@ -105,10 +105,10 @@ SELECT num_nulls(VARIADIC CAST('{"1","2","3","4"}' AS TEXT[]));
 
 SELECT
   num_nulls(
-  VARIADIC ARRAY(SELECT
-    CASE WHEN i <> 40 THEN i END
-  FROM
-    generate_series(1, 100) AS i)
+    VARIADIC ARRAY(SELECT
+      CASE WHEN i <> 40 THEN i END
+    FROM
+      generate_series(1, 100) AS i)
   );
 
 SELECT num_nonnulls(VARIADIC CAST(NULL AS TEXT[]));
@@ -187,18 +187,18 @@ CREATE ROLE regress_log_memory;
 
 SELECT
   has_function_privilege(
-  'regress_log_memory',
-  'pg_log_backend_memory_contexts(integer)',
-  'EXECUTE'
+    'regress_log_memory',
+    'pg_log_backend_memory_contexts(integer)',
+    'EXECUTE'
   );
 
 GRANT EXECUTE ON FUNCTION pg_log_backend_memory_contexts(INT) TO regress_log_memory;
 
 SELECT
   has_function_privilege(
-  'regress_log_memory',
-  'pg_log_backend_memory_contexts(integer)',
-  'EXECUTE'
+    'regress_log_memory',
+    'pg_log_backend_memory_contexts(integer)',
+    'EXECUTE'
   );
 
 SET ROLE TO regress_log_memory;
@@ -354,152 +354,152 @@ SELECT * FROM tenk1 AS a INNER JOIN my_gen_series(1, 10) AS g ON a.unique1 = g;
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'') g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMP ''2024-02-01'', TIMESTAMP ''2024-03-01'', INTERVAL ''1 day'') g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''1 day'', ''UTC'') g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMPTZ ''2024-02-01'', TIMESTAMPTZ ''2024-03-01'', INTERVAL ''7 day'') g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''-1 day'') g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMPTZ ''2024-03-01'', TIMESTAMPTZ ''2024-02-01'', INTERVAL ''1 day'') g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(TIMESTAMPTZ ''-infinity'', TIMESTAMPTZ ''infinity'', INTERVAL ''1 day'') g(s);',
-  FALSE,
-  TRUE,
-  FALSE,
-  TRUE
+    FALSE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   *
 FROM
   generate_series(
-  CAST('2024-02-01' AS TIMESTAMP WITH TIME ZONE),
-  CAST('2024-03-01' AS TIMESTAMP WITH TIME ZONE),
-  CAST('0 day' AS INTERVAL)
+    CAST('2024-02-01' AS TIMESTAMP WITH TIME ZONE),
+    CAST('2024-03-01' AS TIMESTAMP WITH TIME ZONE),
+    CAST('0 day' AS INTERVAL)
   )
   AS g (s);
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(1.0, 25.0) g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(1.0, 25.0, 2.0) g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(25.0, 1.0, -1.0) g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(25.0, 1.0, 1.0) g(s);',
-  TRUE,
-  TRUE,
-  FALSE,
-  TRUE
+    TRUE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(''-infinity''::NUMERIC, ''infinity''::NUMERIC, 1.0) g(s);',
-  FALSE,
-  TRUE,
-  FALSE,
-  TRUE
+    FALSE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(1.0, 25.0, ''NaN''::NUMERIC) g(s);',
-  FALSE,
-  TRUE,
-  FALSE,
-  TRUE
+    FALSE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT
   explain_mask_costs(
-  '
+    '
 SELECT * FROM generate_series(25.0, 2.0, 0.0) g(s);',
-  FALSE,
-  TRUE,
-  FALSE,
-  TRUE
+    FALSE,
+    TRUE,
+    FALSE,
+    TRUE
   );
 
 SELECT COUNT(*) > 0 AS ok FROM pg_control_checkpoint();
@@ -533,7 +533,7 @@ SELECT
   file_offset
 FROM
   pg_walfile_name_offset(
-  CAST('0/0' AS PG_LSN) + 'segment_size'
+    CAST('0/0' AS PG_LSN) + 'segment_size'
   ),
   pg_split_walfile_name(file_name);
 
@@ -542,7 +542,7 @@ SELECT
   file_offset
 FROM
   pg_walfile_name_offset(
-  CAST('0/0' AS PG_LSN) + 'segment_size' + 1
+    CAST('0/0' AS PG_LSN) + 'segment_size' + 1
   ),
   pg_split_walfile_name(file_name);
 
@@ -551,7 +551,7 @@ SELECT
   file_offset = 'segment_size' - 1
 FROM
   pg_walfile_name_offset(
-  CAST('0/0' AS PG_LSN) + 'segment_size' - 1
+    CAST('0/0' AS PG_LSN) + 'segment_size' - 1
   ),
   pg_split_walfile_name(file_name);
 
@@ -565,7 +565,10 @@ SELECT has_function_privilege('regress_current_logfile', 'pg_current_logfile()',
 
 DROP ROLE regress_current_logfile;
 
-CREATE TABLE test_chunk_id (a TEXT, b TEXT STORAGE external);
+CREATE TABLE test_chunk_id (
+  a TEXT,
+  b TEXT STORAGE external
+);
 
 INSERT INTO test_chunk_id VALUES ('x', repeat('x', 8192));
 

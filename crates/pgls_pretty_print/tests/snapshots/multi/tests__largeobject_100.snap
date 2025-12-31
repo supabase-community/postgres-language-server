@@ -19,7 +19,10 @@ COMMENT ON LARGE OBJECT 42 IS 'the ultimate answer';
 
 RESET session_authorization;
 
-CREATE TABLE lotest_stash_values (loid OID, fd INT);
+CREATE TABLE lotest_stash_values (
+  loid OID,
+  fd INT
+);
 
 INSERT INTO lotest_stash_values (loid) SELECT lo_creat(42);
 
@@ -29,8 +32,8 @@ UPDATE lotest_stash_values SET fd = lo_open(loid, CAST(X'20000' | X'40000' AS IN
 
 SELECT
   lowrite(
-  fd,
-  '
+    fd,
+    '
 I wandered lonely as a cloud
 That floats on high o''er vales and hills,
 When all at once I saw a crowd,

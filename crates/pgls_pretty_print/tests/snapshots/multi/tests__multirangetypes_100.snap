@@ -139,12 +139,7 @@ SELECT unnest(textmultirange(textrange('\\\\', repeat('a', 200)), textrange('c',
 
 CREATE TABLE nummultirange_test (nmr nummultirange);
 
-CREATE INDEX "nummultirange_test_btree"
-ON nummultirange_test
-USING btree
-(
-  nmr
-);
+CREATE INDEX "nummultirange_test_btree" ON nummultirange_test USING btree (nmr);
 
 INSERT INTO nummultirange_test VALUES ('{}');
 
@@ -238,11 +233,11 @@ FROM
   nummultirange_test
 WHERE
   multirange_overlaps_multirange(
-  nmr,
-  nummultirange(
-  numrange(4.0, 4.2),
-  numrange(6.0, 7.0)
-  )
+    nmr,
+    nummultirange(
+      numrange(4.0, 4.2),
+      numrange(6.0, 7.0)
+    )
   );
 
 SELECT * FROM nummultirange_test WHERE nmr && nummultirange(numrange(4.0, 4.2), numrange(6.0, 7.0));
@@ -265,8 +260,8 @@ FROM
   nummultirange_test
 WHERE
   multirange_contains_multirange(
-  nmr,
-  '{[4.0,4.2), [6.0, 8.0)}'
+    nmr,
+    '{[4.0,4.2), [6.0, 8.0)}'
   );
 
 SELECT * FROM nummultirange_test WHERE nmr @> CAST('{[4.0,4.2), [6.0, 8.0)}' AS nummultirange);
@@ -285,8 +280,8 @@ FROM
   nummultirange_test
 WHERE
   multirange_contained_by_multirange(
-  '{[4.0,4.2), [6.0, 8.0)}',
-  nmr
+    '{[4.0,4.2), [6.0, 8.0)}',
+    nmr
   );
 
 SELECT * FROM nummultirange_test WHERE CAST('{[4.0,4.2), [6.0, 8.0)}' AS nummultirange) <@ nmr;
@@ -784,9 +779,9 @@ CREATE TABLE test_multirange_gist (mr int4multirange);
 INSERT INTO test_multirange_gist
 SELECT
   int4multirange(
-  int4range(g, g + 10),
-  int4range(g + 20, g + 30),
-  int4range(g + 40, g + 50)
+    int4range(g, g + 10),
+    int4range(g + 20, g + 30),
+    int4range(g + 40, g + 50)
   )
 FROM
   generate_series(1, 2000) AS g;
@@ -806,8 +801,8 @@ FROM
 INSERT INTO test_multirange_gist
 SELECT
   int4multirange(
-  int4range(NULL, g * 10, '(]'),
-  int4range(g * 10, g * 20, '(]')
+    int4range(NULL, g * 10, '(]'),
+    int4range(g * 10, g * 20, '(]')
   )
 FROM
   generate_series(1, 100) AS g;
@@ -815,18 +810,13 @@ FROM
 INSERT INTO test_multirange_gist
 SELECT
   int4multirange(
-  int4range(g * 10, g * 20, '(]'),
-  int4range(g * 20, NULL, '(]')
+    int4range(g * 10, g * 20, '(]'),
+    int4range(g * 20, NULL, '(]')
   )
 FROM
   generate_series(1, 100) AS g;
 
-CREATE INDEX "test_mulrirange_gist_idx"
-ON test_multirange_gist
-USING gist
-(
-  mr
-);
+CREATE INDEX "test_mulrirange_gist_idx" ON test_multirange_gist USING gist (mr);
 
 ANALYZE test_multirange_gist;
 
@@ -879,9 +869,9 @@ FROM
 WHERE
   mr =
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40),
-  int4range(50, 60)
+    int4range(10, 20),
+    int4range(30, 40),
+    int4range(50, 60)
   );
 
 SELECT COUNT(*) FROM test_multirange_gist WHERE mr @> 10;
@@ -911,8 +901,8 @@ FROM
 WHERE
   mr @>
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40)
+    int4range(10, 20),
+    int4range(30, 40)
   );
 
 SELECT
@@ -940,8 +930,8 @@ FROM
 WHERE
   mr <<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -951,8 +941,8 @@ FROM
 WHERE
   mr >>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -962,8 +952,8 @@ FROM
 WHERE
   mr &<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -973,8 +963,8 @@ FROM
 WHERE
   mr &>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -984,8 +974,8 @@ FROM
 WHERE
   mr -|-
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SET enable_seqscan = f;
@@ -1039,9 +1029,9 @@ FROM
 WHERE
   mr =
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40),
-  int4range(50, 60)
+    int4range(10, 20),
+    int4range(30, 40),
+    int4range(50, 60)
   );
 
 SELECT COUNT(*) FROM test_multirange_gist WHERE mr @> 10;
@@ -1071,8 +1061,8 @@ FROM
 WHERE
   mr @>
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40)
+    int4range(10, 20),
+    int4range(30, 40)
   );
 
 SELECT
@@ -1100,8 +1090,8 @@ FROM
 WHERE
   mr <<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -1111,8 +1101,8 @@ FROM
 WHERE
   mr >>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -1122,8 +1112,8 @@ FROM
 WHERE
   mr &<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -1133,8 +1123,8 @@ FROM
 WHERE
   mr &>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -1144,13 +1134,16 @@ FROM
 WHERE
   mr -|-
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 DROP TABLE "test_multirange_gist";
 
-CREATE TABLE reservations (room_id INT NOT NULL, booked_during DATERANGE);
+CREATE TABLE reservations (
+  room_id INT NOT NULL,
+  booked_during DATERANGE
+);
 
 INSERT INTO reservations
 VALUES
@@ -1264,12 +1257,7 @@ SELECT range_intersect_agg(nmr) FROM nummultirange_test WHERE nmr @> 4.0;
 
 CREATE TABLE nummultirange_test2 (nmr nummultirange);
 
-CREATE INDEX "nummultirange_test2_hash_idx"
-ON nummultirange_test2
-USING hash
-(
-  nmr
-);
+CREATE INDEX "nummultirange_test2_hash_idx" ON nummultirange_test2 USING hash (nmr);
 
 INSERT INTO nummultirange_test2 VALUES ('{[, 5)}');
 
@@ -1321,12 +1309,15 @@ DROP TABLE "nummultirange_test2";
 
 SELECT CAST('{[123.001, 5.e9)}' AS float8multirange) @> CAST(888.882 AS DOUBLE PRECISION);
 
-CREATE TABLE float8multirange_test (f8mr float8multirange, i INT);
+CREATE TABLE float8multirange_test (
+  f8mr float8multirange,
+  i INT
+);
 
 INSERT INTO float8multirange_test
 VALUES (
   float8multirange(
-  float8range(-100.00007, '1.111113e9')
+    float8range(-100.00007, '1.111113e9')
   ),
   42
 );
@@ -1357,13 +1348,13 @@ SELECT intr_multirange(intr(1, 10));
 
 DROP TYPE intr;
 
-CREATE TYPE intmultirange AS ( x INT, y INT );
+CREATE TYPE intmultirange AS (x INT, y INT);
 
 CREATE TYPE intrange AS RANGE (subtype = INT);
 
 DROP TYPE intmultirange;
 
-CREATE TYPE intr_multirange AS ( x INT, y INT );
+CREATE TYPE intr_multirange AS (x INT, y INT);
 
 CREATE TYPE intr AS RANGE (subtype = INT);
 
@@ -1372,14 +1363,18 @@ DROP TYPE intr_multirange;
 CREATE TYPE textrange1 AS RANGE (subtype = TEXT, multirange_type_name = INT, collation = "C");
 
 CREATE TYPE textrange1 AS RANGE
-(subtype = TEXT,
-multirange_type_name = multirange_of_text,
-collation = "C");
+(
+  subtype = TEXT,
+  multirange_type_name = multirange_of_text,
+  collation = "C"
+);
 
 CREATE TYPE textrange2 AS RANGE
-(subtype = TEXT,
-multirange_type_name = _textrange1,
-collation = "C");
+(
+  subtype = TEXT,
+  multirange_type_name = _textrange1,
+  collation = "C"
+);
 
 SELECT multirange_of_text(textrange2('a', 'Z'));
 
@@ -1394,9 +1389,11 @@ DROP TYPE textrange1;
 DROP TYPE textrange2;
 
 CREATE TYPE textrange1 AS RANGE
-(subtype = TEXT,
-multirange_type_name = multitextrange1,
-collation = "C");
+(
+  subtype = TEXT,
+  multirange_type_name = multitextrange1,
+  collation = "C"
+);
 
 CREATE ROLE regress_multirange_owner;
 
@@ -1477,8 +1474,8 @@ SELECT anycompatiblearray_anycompatiblemultirange_func(ARRAY[1, 2], multirange(n
 
 SELECT
   anycompatiblearray_anycompatiblemultirange_func(
-  ARRAY[1.1, 2],
-  multirange(int4range(10, 20))
+    ARRAY[1.1, 2],
+    multirange(int4range(10, 20))
   );
 
 DROP FUNCTION
@@ -1497,14 +1494,14 @@ LANGUAGE "sql";
 
 SELECT
   anycompatiblerange_anycompatiblemultirange_func(
-  int4range(1, 2),
-  multirange(int4range(10, 20))
+    int4range(1, 2),
+    multirange(int4range(10, 20))
   );
 
 SELECT
   anycompatiblerange_anycompatiblemultirange_func(
-  numrange(1, 2),
-  multirange(int4range(10, 20))
+    numrange(1, 2),
+    multirange(int4range(10, 20))
   );
 
 DROP FUNCTION
@@ -1519,7 +1516,10 @@ LANGUAGE "sql";
 
 SELECT ARRAY[nummultirange(numrange(1.1, 1.2)), nummultirange(numrange(12.3, 155.5))];
 
-CREATE TABLE i8mr_array (f1 INT, f2 int8multirange[]);
+CREATE TABLE i8mr_array (
+  f1 INT,
+  f2 int8multirange[]
+);
 
 INSERT INTO i8mr_array
 VALUES (
@@ -1540,7 +1540,7 @@ SELECT ARRAY[1, 1] <@ arraymultirange(arrayrange(ARRAY[1, 2], ARRAY[2, 1]));
 
 SELECT ARRAY[1, 3] <@ arraymultirange(arrayrange(ARRAY[1, 2], ARRAY[2, 1]));
 
-CREATE TYPE two_ints AS ( a INT, b INT );
+CREATE TYPE two_ints AS (a INT, b INT);
 
 CREATE TYPE two_ints_range AS RANGE (subtype = two_ints);
 
@@ -1551,12 +1551,12 @@ FROM
   (VALUES
     (
       two_ints_multirange(
-      two_ints_range(ROW(1, 2), ROW(3, 4))
+        two_ints_range(ROW(1, 2), ROW(3, 4))
       )
     ),
     (
       two_ints_multirange(
-      two_ints_range(ROW(5, 6), ROW(7, 8))
+        two_ints_range(ROW(5, 6), ROW(7, 8))
       )
     ))
   AS v (t);

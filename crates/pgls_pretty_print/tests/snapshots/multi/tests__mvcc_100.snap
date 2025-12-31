@@ -11,14 +11,12 @@ SET LOCAL enable_indexonlyscan = 'false';
 
 SET LOCAL enable_bitmapscan = 'false';
 
-CREATE TABLE clean_aborted_self (key INT, data TEXT);
-
-CREATE INDEX "clean_aborted_self_key"
-ON clean_aborted_self
-USING btree
-(
-  key
+CREATE TABLE clean_aborted_self (
+  key INT,
+  data TEXT
 );
+
+CREATE INDEX "clean_aborted_self_key" ON clean_aborted_self USING btree (key);
 
 INSERT INTO clean_aborted_self (key, data) VALUES (-1, 'just to allocate metapage');
 

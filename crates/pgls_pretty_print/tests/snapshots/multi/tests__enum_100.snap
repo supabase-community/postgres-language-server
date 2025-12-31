@@ -196,12 +196,7 @@ SET enable_seqscan = off;
 
 SET enable_bitmapscan = off;
 
-CREATE UNIQUE INDEX "enumtest_btree"
-ON enumtest
-USING btree
-(
-  col
-);
+CREATE UNIQUE INDEX "enumtest_btree" ON enumtest USING btree (col);
 
 SELECT * FROM enumtest WHERE col = 'orange';
 
@@ -223,12 +218,7 @@ SELECT MAX(col) FROM enumtest WHERE col < 'green';
 
 DROP INDEX "enumtest_btree";
 
-CREATE INDEX "enumtest_hash"
-ON enumtest
-USING hash
-(
-  col
-);
+CREATE INDEX "enumtest_hash" ON enumtest USING hash (col);
 
 SELECT * FROM enumtest WHERE col = 'orange';
 

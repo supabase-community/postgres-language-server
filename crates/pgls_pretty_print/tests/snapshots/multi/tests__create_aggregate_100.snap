@@ -41,7 +41,7 @@ IMMUTABLE;
 
 CREATE AGGREGATE sum2 (BIGINT, BIGINT) ( sfunc = sum3, stype = BIGINT, initcond = '0');
 
-CREATE TYPE aggtype AS ( a INT, b INT, c TEXT );
+CREATE TYPE aggtype AS (a INT, b INT, c TEXT);
 
 CREATE FUNCTION aggf_trans(aggtype[], INT, INT, TEXT)
 RETURNS aggtype[]

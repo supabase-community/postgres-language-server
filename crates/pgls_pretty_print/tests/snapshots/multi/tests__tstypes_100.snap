@@ -415,90 +415,90 @@ SELECT strip(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
 
 SELECT
   ts_delete(
-  to_tsvector(
-  'english',
-  'Rebel spaceships, striking from a hidden base'
-  ),
-  'spaceship'
+    to_tsvector(
+      'english',
+      'Rebel spaceships, striking from a hidden base'
+    ),
+    'spaceship'
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  'base'
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    'base'
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  'bas'
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    'bas'
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  'bases'
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    'bases'
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  'spaceship'
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    'spaceship'
   );
 
 SELECT ts_delete(CAST('base hidden rebel spaceship strike' AS TSVECTOR), 'spaceship');
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  ARRAY['spaceship', 'rebel']
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    ARRAY['spaceship', 'rebel']
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  ARRAY['spaceships', 'rebel']
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    ARRAY['spaceships', 'rebel']
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  ARRAY['spaceshi', 'rebel']
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    ARRAY['spaceshi', 'rebel']
   );
 
 SELECT
   ts_delete(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR),
-  ARRAY['spaceship', 'leya', 'rebel']
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR),
+    ARRAY['spaceship', 'leya', 'rebel']
   );
 
 SELECT
   ts_delete(
-  CAST('base hidden rebel spaceship strike'
-  AS TSVECTOR),
-  ARRAY['spaceship', 'leya', 'rebel']
+    CAST('base hidden rebel spaceship strike'
+    AS TSVECTOR),
+    ARRAY['spaceship', 'leya', 'rebel']
   );
 
 SELECT
   ts_delete(
-  CAST('base hidden rebel spaceship strike'
-  AS TSVECTOR),
-  ARRAY['spaceship', 'leya', 'rebel', 'rebel']
+    CAST('base hidden rebel spaceship strike'
+    AS TSVECTOR),
+    ARRAY['spaceship', 'leya', 'rebel', 'rebel']
   );
 
 SELECT
   ts_delete(
-  CAST('base hidden rebel spaceship strike'
-  AS TSVECTOR),
-  ARRAY['spaceship', 'leya', 'rebel', '', NULL]
+    CAST('base hidden rebel spaceship strike'
+    AS TSVECTOR),
+    ARRAY['spaceship', 'leya', 'rebel', '', NULL]
   );
 
 SELECT unnest(CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3' AS TSVECTOR));
@@ -509,8 +509,8 @@ SELECT
   *
 FROM
   unnest(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR)
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR)
   );
 
 SELECT * FROM unnest(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
@@ -520,14 +520,14 @@ SELECT
   positions[1]
 FROM
   unnest(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR)
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR)
   );
 
 SELECT
   tsvector_to_array(
-  CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
-  AS TSVECTOR)
+    CAST('base:7 hidden:6 rebel:1 spaceship:2,33A,34B,35C,36D strike:3'
+    AS TSVECTOR)
   );
 
 SELECT tsvector_to_array(CAST('base hidden rebel spaceship strike' AS TSVECTOR));
@@ -542,9 +542,9 @@ SELECT array_to_tsvector(ARRAY['foo', 'bar', 'baz', 'bar']);
 
 SELECT
   setweight(
-  CAST('w:12B w:13* w:12,5,6 a:1,3* a:3 w asd:1dc asd zxc:81,567,222A'
-  AS TSVECTOR),
-  'c'
+    CAST('w:12B w:13* w:12,5,6 a:1,3* a:3 w asd:1dc asd zxc:81,567,222A'
+    AS TSVECTOR),
+    'c'
   );
 
 SELECT setweight(CAST('a:1,3A asd:1C w:5,6,12B,13A zxc:81,222A,567' AS TSVECTOR), 'c');
@@ -559,9 +559,9 @@ SELECT setweight(CAST('a asd w:5,6,12B,13A zxc' AS TSVECTOR), 'c', ARRAY['a', 'z
 
 SELECT
   ts_filter(
-  CAST('base:7A empir:17 evil:15 first:11 galact:16 hidden:6A rebel:1A spaceship:2A strike:3A victori:12 won:9'
-  AS TSVECTOR),
-  '{a}'
+    CAST('base:7A empir:17 evil:15 first:11 galact:16 hidden:6A rebel:1A spaceship:2A strike:3A victori:12 won:9'
+    AS TSVECTOR),
+    '{a}'
   );
 
 SELECT ts_filter(CAST('base hidden rebel spaceship strike' AS TSVECTOR), '{a}');

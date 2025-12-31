@@ -168,12 +168,7 @@ SELECT * FROM foo ORDER BY f1 DESC;
 
 SELECT * FROM foo ORDER BY f1 DESC NULLS LAST;
 
-CREATE INDEX "fooi"
-ON foo
-USING btree
-(
-  f1
-);
+CREATE INDEX "fooi" ON foo USING btree (f1);
 
 SET enable_sort = 'false';
 
@@ -187,12 +182,7 @@ SELECT * FROM foo ORDER BY f1 DESC NULLS LAST;
 
 DROP INDEX "fooi";
 
-CREATE INDEX "fooi"
-ON foo
-USING btree
-(
-  f1 DESC
-);
+CREATE INDEX "fooi" ON foo USING btree (f1 DESC);
 
 SELECT * FROM foo ORDER BY f1;
 
@@ -204,12 +194,7 @@ SELECT * FROM foo ORDER BY f1 DESC NULLS LAST;
 
 DROP INDEX "fooi";
 
-CREATE INDEX "fooi"
-ON foo
-USING btree
-(
-  f1 DESC NULLS LAST
-);
+CREATE INDEX "fooi" ON foo USING btree (f1 DESC NULLS LAST);
 
 SELECT * FROM foo ORDER BY f1;
 
@@ -298,8 +283,10 @@ FROM
 WHERE
   k = k;
 
-CREATE TABLE list_parted_tbl
-(a INT, b INT)
+CREATE TABLE list_parted_tbl (
+  a INT,
+  b INT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE list_parted_tbl1 PARTITION OF list_parted_tbl FOR VALUES IN (1) PARTITION BY LIST(b);

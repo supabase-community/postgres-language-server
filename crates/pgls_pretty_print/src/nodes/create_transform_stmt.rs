@@ -33,6 +33,8 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
 
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::L_PAREN);
+    e.line(LineType::Soft);
+    e.indent_start();
 
     let mut has_clause = false;
     if let Some(ref fromsql) = n.fromsql {
@@ -64,6 +66,8 @@ pub(super) fn emit_create_transform_stmt(e: &mut EventEmitter, n: &CreateTransfo
         super::emit_object_with_args(e, tosql);
     }
 
+    e.indent_end();
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
     e.token(TokenKind::SEMICOLON);
 

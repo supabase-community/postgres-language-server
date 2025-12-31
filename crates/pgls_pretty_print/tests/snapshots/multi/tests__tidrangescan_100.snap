@@ -5,7 +5,10 @@ snapshot_kind: text
 ---
 SET enable_seqscan = off;
 
-CREATE TABLE tidrangescan (id INT, data TEXT);
+CREATE TABLE tidrangescan (
+  id INT,
+  data TEXT
+);
 
 SELECT ctid FROM tidrangescan WHERE ctid < '(1, 0)';
 

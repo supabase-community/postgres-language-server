@@ -19,7 +19,11 @@ SELECT generate_series(1, generate_series(1, 3)), generate_series(2, 4);
 
 SELECT generate_series(1, generate_series(1, 3)), generate_series(2, 4);
 
-CREATE TABLE few (id INT, dataa TEXT, datab TEXT);
+CREATE TABLE few (
+  id INT,
+  dataa TEXT,
+  datab TEXT
+);
 
 INSERT INTO few
 VALUES
@@ -110,7 +114,7 @@ SELECT MIN(generate_series(1, 3)) FROM few;
 
 SELECT SUM(CAST(3 = ANY (SELECT generate_series(1, 4)) AS INT));
 
-SELECT SUM(CAST(3 = ANY (SELECT LAG(x) OVER ( ORDER BY x) FROM generate_series(1, 4) AS x) AS INT));
+SELECT SUM(CAST(3 = ANY (SELECT LAG(x) OVER (ORDER BY x) FROM generate_series(1, 4) AS x) AS INT));
 
 SELECT MIN(generate_series(1, 3)) OVER () FROM few;
 
@@ -118,11 +122,12 @@ SELECT id, LAG(id) OVER (), COUNT(*) OVER (), generate_series(1, 3) FROM few;
 
 SELECT
   SUM(
-  COUNT(*)
+    COUNT(*)
   )
   OVER (
-  PARTITION BY generate_series(1, 3)
-  ORDER BY generate_series(1, 3)),
+    PARTITION BY generate_series(1, 3)
+    ORDER BY generate_series(1, 3)
+  ),
   generate_series(1, 3) AS g
 FROM
   few

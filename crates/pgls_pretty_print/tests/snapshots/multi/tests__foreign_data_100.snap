@@ -473,52 +473,30 @@ COMMENT ON FOREIGN TABLE ft1 IS 'ft1';
 
 COMMENT ON COLUMN ft1.c1 IS 'ft1.c1';
 
-CREATE INDEX "id_ft1_c2"
-ON ft1
-USING btree
-(
-  c2
-);
+CREATE INDEX "id_ft1_c2" ON ft1 USING btree (c2);
 
 SELECT * FROM ft1;
 
 SELECT * FROM ft1;
 
-CREATE TABLE lt1
-(a INT)
+CREATE TABLE lt1 (a INT)
 PARTITION BY RANGE(a);
 
 CREATE FOREIGN TABLE ft_part1 PARTITION OF lt1 FOR VALUES FROM (0) TO (1000) SERVER s0;
 
-CREATE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE INDEX ON lt1 USING btree (a);
 
-CREATE UNIQUE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX ON lt1 USING btree (a);
 
 ALTER TABLE lt1
   ADD PRIMARY KEY (a);
 
 DROP TABLE "lt1";
 
-CREATE TABLE lt1
-(a INT)
+CREATE TABLE lt1 (a INT)
 PARTITION BY RANGE(a);
 
-CREATE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE INDEX ON lt1 USING btree (a);
 
 CREATE FOREIGN TABLE ft_part1 PARTITION OF lt1 FOR VALUES FROM (0) TO (1000) SERVER s0;
 
@@ -530,12 +508,7 @@ ALTER TABLE lt1
 
 DROP FOREIGN TABLE "ft_part1", "ft_part2";
 
-CREATE UNIQUE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX ON lt1 USING btree (a);
 
 ALTER TABLE lt1
   ADD PRIMARY KEY (a);
@@ -552,16 +525,10 @@ DROP TABLE "lt1";
 
 DROP FOREIGN TABLE "ft_part2";
 
-CREATE TABLE lt1
-(a INT)
+CREATE TABLE lt1 (a INT)
 PARTITION BY RANGE(a);
 
-CREATE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE INDEX ON lt1 USING btree (a);
 
 CREATE TABLE lt1_part1 PARTITION OF lt1 FOR VALUES FROM (0) TO (1000) PARTITION BY RANGE(a);
 
@@ -573,24 +540,14 @@ ALTER TABLE lt1_part1
   ATTACH PARTITION
   ft_part_1_2 FOR VALUES FROM (100) TO (200);
 
-CREATE UNIQUE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX ON lt1 USING btree (a);
 
 ALTER TABLE lt1
   ADD PRIMARY KEY (a);
 
 DROP FOREIGN TABLE "ft_part_1_1", "ft_part_1_2";
 
-CREATE UNIQUE INDEX
-ON lt1
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX ON lt1 USING btree (a);
 
 ALTER TABLE lt1
   ADD PRIMARY KEY (a);
@@ -883,56 +840,56 @@ RESET role;
 
 SELECT
   has_foreign_data_wrapper_privilege(
-  'regress_test_role',
-  (SELECT
-    oid
-  FROM
-    pg_foreign_data_wrapper
-  WHERE
-    fdwname = 'foo'),
-  'USAGE'
+    'regress_test_role',
+    (SELECT
+      oid
+    FROM
+      pg_foreign_data_wrapper
+    WHERE
+      fdwname = 'foo'),
+    'USAGE'
   );
 
 SELECT has_foreign_data_wrapper_privilege('regress_test_role', 'foo', 'USAGE');
 
 SELECT
   has_foreign_data_wrapper_privilege(
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = 'regress_test_role'),
-  (SELECT
-    oid
-  FROM
-    pg_foreign_data_wrapper
-  WHERE
-    fdwname = 'foo'),
-  'USAGE'
+    (SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = 'regress_test_role'),
+    (SELECT
+      oid
+    FROM
+      pg_foreign_data_wrapper
+    WHERE
+      fdwname = 'foo'),
+    'USAGE'
   );
 
 SELECT
   has_foreign_data_wrapper_privilege(
-  (SELECT
-    oid
-  FROM
-    pg_foreign_data_wrapper
-  WHERE
-    fdwname = 'foo'),
-  'USAGE'
+    (SELECT
+      oid
+    FROM
+      pg_foreign_data_wrapper
+    WHERE
+      fdwname = 'foo'),
+    'USAGE'
   );
 
 SELECT
   has_foreign_data_wrapper_privilege(
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = 'regress_test_role'),
-  'foo',
-  'USAGE'
+    (SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = 'regress_test_role'),
+    'foo',
+    'USAGE'
   );
 
 SELECT has_foreign_data_wrapper_privilege('foo', 'USAGE');
@@ -943,47 +900,47 @@ SELECT has_foreign_data_wrapper_privilege('regress_test_role', 'foo', 'USAGE');
 
 SELECT
   has_server_privilege(
-  'regress_test_role',
-  (SELECT
-    oid
-  FROM
-    pg_foreign_server
-  WHERE
-    srvname = 's8'),
-  'USAGE'
+    'regress_test_role',
+    (SELECT
+      oid
+    FROM
+      pg_foreign_server
+    WHERE
+      srvname = 's8'),
+    'USAGE'
   );
 
 SELECT has_server_privilege('regress_test_role', 's8', 'USAGE');
 
 SELECT
   has_server_privilege(
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = 'regress_test_role'),
-  (SELECT
-    oid
-  FROM
-    pg_foreign_server
-  WHERE
-    srvname = 's8'),
-  'USAGE'
+    (SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = 'regress_test_role'),
+    (SELECT
+      oid
+    FROM
+      pg_foreign_server
+    WHERE
+      srvname = 's8'),
+    'USAGE'
   );
 
 SELECT has_server_privilege((SELECT oid FROM pg_foreign_server WHERE srvname = 's8'), 'USAGE');
 
 SELECT
   has_server_privilege(
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = 'regress_test_role'),
-  's8',
-  'USAGE'
+    (SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = 'regress_test_role'),
+    's8',
+    'USAGE'
   );
 
 SELECT has_server_privilege('s8', 'USAGE');
@@ -1130,41 +1087,41 @@ AS '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER trigtest_before_stmt
-BEFORE INSERT OR DELETE OR UPDATE
-ON foreign_schema.foreign_table_1
-FOR EACH STATEMENT
-EXECUTE FUNCTION dummy_trigger();
+  BEFORE INSERT OR DELETE OR UPDATE
+  ON foreign_schema.foreign_table_1
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_after_stmt
-AFTER INSERT OR DELETE OR UPDATE
-ON foreign_schema.foreign_table_1
-FOR EACH STATEMENT
-EXECUTE FUNCTION dummy_trigger();
+  AFTER INSERT OR DELETE OR UPDATE
+  ON foreign_schema.foreign_table_1
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_after_stmt_tt
-AFTER INSERT OR DELETE OR UPDATE
-ON foreign_schema.foreign_table_1
-REFERENCING NEW TABLE AS new_table
-FOR EACH STATEMENT
-EXECUTE FUNCTION dummy_trigger();
+  AFTER INSERT OR DELETE OR UPDATE
+  ON foreign_schema.foreign_table_1
+  REFERENCING NEW TABLE AS new_table
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_before_row
-BEFORE INSERT OR DELETE OR UPDATE
-ON foreign_schema.foreign_table_1
-FOR EACH ROW
-EXECUTE FUNCTION dummy_trigger();
+  BEFORE INSERT OR DELETE OR UPDATE
+  ON foreign_schema.foreign_table_1
+  FOR EACH ROW
+  EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_after_row
-AFTER INSERT OR DELETE OR UPDATE
-ON foreign_schema.foreign_table_1
-FOR EACH ROW
-EXECUTE FUNCTION dummy_trigger();
+  AFTER INSERT OR DELETE OR UPDATE
+  ON foreign_schema.foreign_table_1
+  FOR EACH ROW
+  EXECUTE FUNCTION dummy_trigger();
 
 CREATE CONSTRAINT TRIGGER trigtest_constraint
-AFTER INSERT OR DELETE OR UPDATE
-ON foreign_schema.foreign_table_1
-FOR EACH ROW
-EXECUTE FUNCTION dummy_trigger();
+  AFTER INSERT OR DELETE OR UPDATE
+  ON foreign_schema.foreign_table_1
+  FOR EACH ROW
+  EXECUTE FUNCTION dummy_trigger();
 
 ALTER FOREIGN TABLE foreign_schema.foreign_table_1
   DISABLE TRIGGER trigtest_before_stmt;
@@ -1182,7 +1139,11 @@ DROP TRIGGER "trigtest_after_row" ON "foreign_schema"."foreign_table_1";
 
 DROP FUNCTION dummy_trigger();
 
-CREATE TABLE fd_pt1 (c1 INT NOT NULL, c2 TEXT, c3 DATE);
+CREATE TABLE fd_pt1 (
+  c1 INT NOT NULL,
+  c2 TEXT,
+  c3 DATE
+);
 
 CREATE FOREIGN TABLE ft2
 PARTITION OF fd_pt1
@@ -1203,8 +1164,7 @@ quote '"',
 ALTER FOREIGN TABLE ft2
   INHERIT fd_pt1;
 
-CREATE TABLE ct3
-()
+CREATE TABLE ct3 ()
 INHERITS (ft2);
 
 CREATE FOREIGN TABLE ft3 PARTITION OF ft2 DEFAULT SERVER s0;
@@ -1366,8 +1326,11 @@ DROP OWNED BY regress_test_role2;
 
 DROP OWNED BY regress_test_role2 CASCADE;
 
-CREATE TABLE fd_pt2
-(c1 INT NOT NULL, c2 TEXT, c3 DATE)
+CREATE TABLE fd_pt2 (
+  c1 INT NOT NULL,
+  c2 TEXT,
+  c3 DATE
+)
 PARTITION BY LIST(c1);
 
 CREATE FOREIGN TABLE fd_pt2_1
@@ -1457,8 +1420,7 @@ DROP FOREIGN TABLE "fd_pt2_1";
 
 DROP TABLE "fd_pt2";
 
-CREATE TEMPORARY TABLE temp_parted
-(a INT)
+CREATE TEMPORARY TABLE temp_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE FOREIGN TABLE foreign_part PARTITION OF temp_parted DEFAULT SERVER s0;

@@ -15,7 +15,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
 
     e.token(TokenKind::IDENT("XMLTABLE".to_string()));
     e.token(TokenKind::L_PAREN);
-
+    e.line(LineType::Soft);
     e.indent_start();
 
     // XMLNAMESPACES clause - emitted before row expression
@@ -96,7 +96,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
     }
 
     e.indent_end();
-
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 
     // Alias (emit_alias includes the AS keyword)

@@ -11,34 +11,35 @@ STRICT;
 
 SET default_toast_compression = pglz;
 
-CREATE TABLE indtoasttest (descr TEXT, cnt INT DEFAULT 0, f1 TEXT, f2 TEXT);
+CREATE TABLE indtoasttest (
+  descr TEXT,
+  cnt INT DEFAULT 0,
+  f1 TEXT,
+  f2 TEXT
+);
 
-INSERT INTO indtoasttest
-(descr, f1, f2)
+INSERT INTO indtoasttest (descr, f1, f2)
 VALUES (
   'two-compressed',
   repeat('1234567890', 1000),
   repeat('1234567890', 1000)
 );
 
-INSERT INTO indtoasttest
-(descr, f1, f2)
+INSERT INTO indtoasttest (descr, f1, f2)
 VALUES (
   'two-toasted',
   repeat('1234567890', 30000),
   repeat('1234567890', 50000)
 );
 
-INSERT INTO indtoasttest
-(descr, f1, f2)
+INSERT INTO indtoasttest (descr, f1, f2)
 VALUES (
   'one-compressed,one-null',
   NULL,
   repeat('1234567890', 1000)
 );
 
-INSERT INTO indtoasttest
-(descr, f1, f2)
+INSERT INTO indtoasttest (descr, f1, f2)
 VALUES (
   'one-toasted,one-null',
   NULL,
@@ -96,10 +97,10 @@ BEGIN
 END';
 
 CREATE TRIGGER indtoasttest_update_indirect
-BEFORE INSERT OR UPDATE
-ON indtoasttest
-FOR EACH ROW
-EXECUTE FUNCTION update_using_indirect();
+  BEFORE INSERT OR UPDATE
+  ON indtoasttest
+  FOR EACH ROW
+  EXECUTE FUNCTION update_using_indirect();
 
 UPDATE indtoasttest
 SET cnt = cnt + 1
@@ -128,8 +129,7 @@ RETURNING SUBSTRING(CAST(indtoasttest AS TEXT)
 FROM 1
 FOR 200);
 
-INSERT INTO indtoasttest
-(descr, f1, f2)
+INSERT INTO indtoasttest (descr, f1, f2)
 VALUES (
   'one-toasted,one-null, via indirect',
   repeat('1234567890', 30000),

@@ -164,7 +164,7 @@ CREATE SERVER useless_server FOREIGN DATA WRAPPER useless;
 
 CREATE USER MAPPING FOR regress_evt_user SERVER useless_server;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE regress_evt_user REVOKE DELETE ON TABLES  FROM regress_evt_user;
+ALTER DEFAULT PRIVILEGES FOR ROLE regress_evt_user REVOKE DELETE ON TABLES FROM regress_evt_user;
 
 ALTER EVENT TRIGGER regress_event_trigger OWNER TO regress_evt_user;
 
@@ -208,7 +208,10 @@ CREATE TABLE audit_tbls.schema_one_table_two (the_value TEXT);
 
 CREATE TABLE schema_two.table_two (a INT);
 
-CREATE TABLE schema_two.table_three (a INT, b TEXT);
+CREATE TABLE schema_two.table_three (
+  a INT,
+  b TEXT
+);
 
 CREATE TABLE audit_tbls.schema_two_table_three (the_value TEXT);
 
@@ -222,15 +225,17 @@ CREATE AGGREGATE schema_two.newton ( basetype = INT, sfunc = schema_two.add, sty
 
 RESET session_authorization;
 
-CREATE TABLE undroppable_objs (object_type TEXT, object_identity TEXT);
+CREATE TABLE undroppable_objs (
+  object_type TEXT,
+  object_identity TEXT
+);
 
 INSERT INTO undroppable_objs
 VALUES
   ('table', 'schema_one.table_three'),
   ('table', 'audit_tbls.schema_two_table_three');
 
-CREATE TABLE dropped_objects
-(
+CREATE TABLE dropped_objects (
   object_type TEXT,
   schema_name TEXT,
   object_name TEXT,
@@ -362,21 +367,19 @@ EXECUTE FUNCTION event_trigger_report_end();
 
 CREATE SCHEMA "evttrig";
 
-CREATE TABLE one (col_a serial PRIMARY KEY, col_b TEXT DEFAULT 'forty two', col_c serial);
-
-CREATE INDEX "one_idx"
-ON one
-USING btree
-(
-  col_b
+CREATE TABLE one (
+  col_a serial PRIMARY KEY,
+  col_b TEXT DEFAULT 'forty two',
+  col_c serial
 );
+
+CREATE INDEX "one_idx" ON one USING btree (col_b);
 
 CREATE TABLE two (col_c INT CHECK (col_c > 0) REFERENCES one DEFAULT 42);
 
 CREATE TABLE id (col_d INT NOT NULL GENERATED ALWAYS AS IDENTITY);
 
-CREATE TABLE evttrig.parted
-(id INT PRIMARY KEY)
+CREATE TABLE evttrig.parted (id INT PRIMARY KEY)
 PARTITION BY RANGE(id);
 
 CREATE TABLE evttrig.part_1_10 PARTITION OF evttrig.parted ( id ) FOR VALUES FROM (1) TO (10);
@@ -441,13 +444,16 @@ BEGIN
     RETURN new;
 END; ';
 
-CREATE TABLE evtrg_nontemp_table (f1 INT PRIMARY KEY, f2 INT DEFAULT 42);
+CREATE TABLE evtrg_nontemp_table (
+  f1 INT PRIMARY KEY,
+  f2 INT DEFAULT 42
+);
 
 CREATE TRIGGER evtrg_nontemp_trig
-BEFORE INSERT
-ON evtrg_nontemp_table
-FOR EACH STATEMENT
-EXECUTE FUNCTION event_trigger_dummy_trigger();
+  BEFORE INSERT
+  ON evtrg_nontemp_table
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION event_trigger_dummy_trigger();
 
 CREATE POLICY evtrg_nontemp_pol
 ON evtrg_nontemp_table
@@ -458,13 +464,16 @@ USING (f2 > 0);
 
 DROP TABLE "evtrg_nontemp_table";
 
-CREATE TEMPORARY TABLE a_temp_tbl (f1 INT PRIMARY KEY, f2 INT DEFAULT 42);
+CREATE TEMPORARY TABLE a_temp_tbl (
+  f1 INT PRIMARY KEY,
+  f2 INT DEFAULT 42
+);
 
 CREATE TRIGGER a_temp_trig
-BEFORE INSERT
-ON a_temp_tbl
-FOR EACH STATEMENT
-EXECUTE FUNCTION event_trigger_dummy_trigger();
+  BEFORE INSERT
+  ON a_temp_tbl
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION event_trigger_dummy_trigger();
 
 CREATE POLICY a_temp_pol ON a_temp_tbl AS PERMISSIVE FOR ALL TO PUBLIC USING (f2 > 0);
 
@@ -493,7 +502,11 @@ CREATE EVENT TRIGGER "no_rewrite_allowed"
 ON table_rewrite
 EXECUTE FUNCTION test_evtrig_no_rewrite();
 
-CREATE TABLE rewriteme (id serial PRIMARY KEY, foo DOUBLE PRECISION, bar TIMESTAMP WITH TIME ZONE);
+CREATE TABLE rewriteme (
+  id serial PRIMARY KEY,
+  foo DOUBLE PRECISION,
+  bar TIMESTAMP WITH TIME ZONE
+);
 
 INSERT INTO rewriteme SELECT x * 1.001 FROM generate_series(1, 500) AS t (x);
 
@@ -558,7 +571,7 @@ BEGIN
 END;
 ';
 
-CREATE TYPE rewritetype AS ( a INT );
+CREATE TYPE rewritetype AS (a INT);
 
 CREATE TABLE rewritemetoo1 OF rewritetype;
 
@@ -623,12 +636,7 @@ EXECUTE FUNCTION reindex_end_command_snap();
 
 CREATE TABLE concur_reindex_tab (c1 INT);
 
-CREATE INDEX "concur_reindex_ind"
-ON concur_reindex_tab
-USING btree
-(
-  c1
-);
+CREATE INDEX "concur_reindex_ind" ON concur_reindex_tab USING btree (c1);
 
 REINDEX INDEX concur_reindex_ind;
 
@@ -658,12 +666,7 @@ REINDEX (CONCURRENTLY) SCHEMA concur_reindex_schema;
 
 CREATE TABLE concur_reindex_schema.tab (a INT);
 
-CREATE INDEX "ind"
-ON concur_reindex_schema.tab
-USING btree
-(
-  a
-);
+CREATE INDEX "ind" ON concur_reindex_schema.tab USING btree (a);
 
 REINDEX SCHEMA concur_reindex_schema;
 
@@ -677,8 +680,7 @@ REINDEX (CONCURRENTLY) SCHEMA concur_reindex_schema;
 
 DROP SCHEMA concur_reindex_schema CASCADE;
 
-CREATE TABLE concur_reindex_part
-(id INT)
+CREATE TABLE concur_reindex_part (id INT)
 PARTITION BY RANGE(id);
 
 REINDEX TABLE concur_reindex_part;
@@ -691,12 +693,7 @@ REINDEX TABLE concur_reindex_part;
 
 REINDEX (CONCURRENTLY) TABLE concur_reindex_part;
 
-CREATE INDEX "concur_reindex_partidx"
-ON concur_reindex_part
-USING btree
-(
-  id
-);
+CREATE INDEX "concur_reindex_partidx" ON concur_reindex_part USING btree (id);
 
 REINDEX INDEX concur_reindex_partidx;
 
@@ -724,7 +721,10 @@ DROP TABLE "concur_reindex_tab";
 
 RESET session_authorization;
 
-CREATE TABLE event_trigger_test (a INT, b TEXT);
+CREATE TABLE event_trigger_test (
+  a INT,
+  b TEXT
+);
 
 CREATE OR REPLACE FUNCTION start_command()
 RETURNS event_trigger
@@ -779,9 +779,9 @@ DROP POLICY "p2" ON "event_trigger_test";
 SELECT
   e.evtname,
   pg_describe_object(
-  CAST('pg_event_trigger' AS REGCLASS),
-  e.oid,
-  0
+    CAST('pg_event_trigger' AS REGCLASS),
+    e.oid,
+    0
   )
   AS descr,
   b.type,
@@ -792,15 +792,15 @@ SELECT
 FROM
   pg_event_trigger AS e,
   LATERAL pg_identify_object_as_address(
-  CAST('pg_event_trigger' AS REGCLASS),
-  e.oid,
-  0
+    CAST('pg_event_trigger' AS REGCLASS),
+    e.oid,
+    0
   )
   AS b,
   LATERAL pg_get_object_address(
-  b.type,
-  b.object_names,
-  b.object_args
+    b.type,
+    b.object_names,
+    b.object_args
   )
   AS a
 ORDER BY e.evtname;

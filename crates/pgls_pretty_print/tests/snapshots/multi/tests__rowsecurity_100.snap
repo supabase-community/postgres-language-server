@@ -57,7 +57,10 @@ GRANT EXECUTE ON FUNCTION f_leak(TEXT) TO PUBLIC;
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE uaccount (pguser NAME PRIMARY KEY, seclv INT);
+CREATE TABLE uaccount (
+  pguser NAME PRIMARY KEY,
+  seclv INT
+);
 
 GRANT SELECT ON TABLE uaccount TO PUBLIC;
 
@@ -68,7 +71,10 @@ VALUES
   ('regress_rls_carol', 2),
   ('regress_rls_dave', 3);
 
-CREATE TABLE category (cid INT PRIMARY KEY, cname TEXT);
+CREATE TABLE category (
+  cid INT PRIMARY KEY,
+  cname TEXT
+);
 
 GRANT ALL ON TABLE category TO PUBLIC;
 
@@ -79,8 +85,7 @@ VALUES
   (33, 'technology'),
   (44, 'manga');
 
-CREATE TABLE document
-(
+CREATE TABLE document (
   did INT PRIMARY KEY,
   cid INT REFERENCES category (cid),
   dlevel INT NOT NULL,
@@ -307,20 +312,29 @@ SET SESSION AUTHORIZATION regress_rls_alice;
 
 SET row_security = 'on';
 
-CREATE TABLE t1 (id INT NOT NULL PRIMARY KEY, a INT, junk1 TEXT, b TEXT);
+CREATE TABLE t1 (
+  id INT NOT NULL PRIMARY KEY,
+  a INT,
+  junk1 TEXT,
+  b TEXT
+);
 
 ALTER TABLE t1
   DROP COLUMN junk1;
 
 GRANT ALL ON TABLE t1 TO PUBLIC;
 
-CREATE TABLE t2
-(c DOUBLE PRECISION)
+CREATE TABLE t2 (c DOUBLE PRECISION)
 INHERITS (t1);
 
 GRANT ALL ON TABLE t2 TO PUBLIC;
 
-CREATE TABLE t3 (id INT NOT NULL PRIMARY KEY, c TEXT, b TEXT, a INT);
+CREATE TABLE t3 (
+  id INT NOT NULL PRIMARY KEY,
+  c TEXT,
+  b TEXT,
+  a INT
+);
 
 ALTER TABLE t3
   INHERIT t1;
@@ -389,8 +403,13 @@ SELECT * FROM t1 WHERE f_leak(b);
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE part_document
-(did INT, cid INT, dlevel INT NOT NULL, dauthor NAME, dtitle TEXT)
+CREATE TABLE part_document (
+  did INT,
+  cid INT,
+  dlevel INT NOT NULL,
+  dauthor NAME,
+  dtitle TEXT
+)
 PARTITION BY RANGE(cid);
 
 GRANT ALL ON TABLE part_document TO PUBLIC;
@@ -616,9 +635,15 @@ SET SESSION AUTHORIZATION regress_rls_alice;
 
 SET row_security = 'on';
 
-CREATE TABLE dependee (x INT, y INT);
+CREATE TABLE dependee (
+  x INT,
+  y INT
+);
 
-CREATE TABLE dependent (x INT, y INT);
+CREATE TABLE dependent (
+  x INT,
+  y INT
+);
 
 CREATE POLICY d1
 ON dependent
@@ -635,7 +660,10 @@ SELECT * FROM dependent;
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE rec1 (x INT, y INT);
+CREATE TABLE rec1 (
+  x INT,
+  y INT
+);
 
 CREATE POLICY r1
 ON rec1
@@ -653,7 +681,10 @@ SELECT * FROM rec1;
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE rec2 (a INT, b INT);
+CREATE TABLE rec2 (
+  a INT,
+  b INT
+);
 
 ALTER POLICY r1 ON rec1 USING (x = (SELECT a FROM rec2 WHERE b = y));
 
@@ -723,11 +754,17 @@ SELECT * FROM rec1;
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE s1 (a INT, b TEXT);
+CREATE TABLE s1 (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO s1 SELECT x, public.fipshash(CAST(x AS TEXT)) FROM generate_series(-10, 10) AS x;
 
-CREATE TABLE s2 (x INT, y TEXT);
+CREATE TABLE s2 (
+  x INT,
+  y TEXT
+);
 
 INSERT INTO s2 SELECT x, public.fipshash(CAST(x AS TEXT)) FROM generate_series(-6, 6) AS x;
 
@@ -930,7 +967,10 @@ DELETE FROM t1 WHERE f_leak(b) RETURNING CAST(tableoid AS REGCLASS), *, t1;
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE b1 (a INT, b TEXT);
+CREATE TABLE b1 (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO b1 SELECT x, public.fipshash(CAST(x AS TEXT)) FROM generate_series(-10, 10) AS x;
 
@@ -1314,9 +1354,15 @@ SELECT * FROM document;
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE z1 (a INT, b TEXT);
+CREATE TABLE z1 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE z2 (a INT, b TEXT);
+CREATE TABLE z2 (
+  a INT,
+  b TEXT
+);
 
 GRANT SELECT
 ON TABLE z1,

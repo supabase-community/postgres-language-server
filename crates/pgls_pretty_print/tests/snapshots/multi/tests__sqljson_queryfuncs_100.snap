@@ -498,7 +498,7 @@ FROM
   generate_series(0, 4) AS x,
   generate_series(0, 4) AS y;
 
-CREATE TYPE comp_abc AS ( a TEXT, b INT, c TIMESTAMP );
+CREATE TYPE comp_abc AS (a TEXT, b INT, c TIMESTAMP);
 
 SELECT
   JSON_QUERY(CAST('{"rec": "(abc,42,01.02.2003)"}' AS JSONB), '$.rec'
@@ -518,9 +518,9 @@ SELECT
 
 DROP TYPE comp_abc;
 
-CREATE TYPE sqljsonb_rec AS ( a INT, t TEXT, js JSON, jb JSONB, jsa JSON[] );
+CREATE TYPE sqljsonb_rec AS (a INT, t TEXT, js JSON, jb JSONB, jsa JSON[]);
 
-CREATE TYPE sqljsonb_reca AS ( reca sqljsonb_rec[] );
+CREATE TYPE sqljsonb_reca AS (reca sqljsonb_rec[]);
 
 SELECT
   JSON_QUERY(CAST('[{"a": 1, "b": "foo", "t": "aaa", "js": [1, "2", {}], "jb": {"x": [1, "2", {}]}},  {"a": 2}]'
@@ -542,18 +542,18 @@ SELECT
   *
 FROM
   unnest(
-  (JSON_QUERY(CAST('{"jsa":  [{"a": 1, "b": ["foo"]}, {"a": 2, "c": {}}, 123]}'
-  AS JSONB), '$'
-  RETURNING sqljsonb_rec)).jsa
+    (JSON_QUERY(CAST('{"jsa":  [{"a": 1, "b": ["foo"]}, {"a": 2, "c": {}}, 123]}'
+    AS JSONB), '$'
+    RETURNING sqljsonb_rec)).jsa
   );
 
 SELECT
   *
 FROM
   unnest(
-  (JSON_QUERY(CAST('{"reca": [{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]}'
-  AS JSONB), '$'
-  RETURNING sqljsonb_reca)).reca
+    (JSON_QUERY(CAST('{"reca": [{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]}'
+    AS JSONB), '$'
+    RETURNING sqljsonb_reca)).reca
   );
 
 SELECT
@@ -587,9 +587,9 @@ SELECT
   *
 FROM
   unnest(
-  JSON_QUERY(CAST('[{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]'
-  AS JSONB), '$'
-  RETURNING sqljsonb_rec[])
+    JSON_QUERY(CAST('[{"a": 1, "t": ["foo", []]}, {"a": 2, "jb": [{}, true]}]'
+    AS JSONB), '$'
+    RETURNING sqljsonb_rec[])
   );
 
 SELECT JSON_QUERY(CAST('{"a": 1}' AS JSONB), '$.a'  RETURNING sqljsonb_int_not_null);
@@ -619,8 +619,7 @@ SELECT
   AS TIMESTAMP WITH TIME ZONE) AS ts
   RETURNING JSONB);
 
-CREATE TABLE test_jsonb_constraints
-(
+CREATE TABLE test_jsonb_constraints (
   js TEXT,
   i INT,
   x JSONB
@@ -678,56 +677,24 @@ INSERT INTO test_jsonb_constraints VALUES ('{"a": 10}', 1);
 
 DROP TABLE "test_jsonb_constraints";
 
-CREATE TABLE test_jsonb_mutability (js JSONB, b INT);
-
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$'))
+CREATE TABLE test_jsonb_mutability (
+  js JSONB,
+  b INT
 );
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.a[0]'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.time()'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.a[0]')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.date()'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.time()')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.time_tz()'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.date()')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.timestamp()'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.time_tz()')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.timestamp_tz()'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.timestamp()')));
+
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.timestamp_tz()')));
 
 CREATE INDEX
 ON test_jsonb_mutability
@@ -736,19 +703,9 @@ USING btree
   (JSON_QUERY(js, '$.a ? (@.date() < $.time_tz())'))
 );
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.a ? (@.date() < $.time())'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.a ? (@.date() < $.time())')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.a ? (@.time() < $.time())'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.a ? (@.time() < $.time())')));
 
 CREATE INDEX
 ON test_jsonb_mutability
@@ -836,19 +793,9 @@ USING btree
   (JSON_QUERY(js, '$.a ? (@.timestamp(2) < $.timestamp(3))'))
 );
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.datetime()'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.datetime()')));
 
-CREATE INDEX
-ON test_jsonb_mutability
-USING btree
-(
-  (JSON_QUERY(js, '$.a ? (@ < $.datetime())'))
-);
+CREATE INDEX ON test_jsonb_mutability USING btree ((JSON_QUERY(js, '$.a ? (@ < $.datetime())')));
 
 CREATE INDEX
 ON test_jsonb_mutability
@@ -1038,8 +985,7 @@ SELECT
 
 CREATE TABLE someparent (a INT);
 
-CREATE TABLE somechild
-()
+CREATE TABLE somechild ()
 INHERITS (someparent);
 
 SELECT

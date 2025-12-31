@@ -438,7 +438,8 @@ SELECT
   FILTER (WHERE
     bar > 2)
   OVER (
-  PARTITION BY foo.bar % 2)
+    PARTITION BY foo.bar % 2
+  )
 FROM
   (VALUES
     (NULL),
@@ -591,7 +592,8 @@ SELECT
   NULL ON NULL
   WITH UNIQUE KEYS)
   OVER (
-  ORDER BY k)
+    ORDER BY k
+  )
 FROM
   (VALUES
     (1, 1),
@@ -604,7 +606,8 @@ SELECT
   NULL ON NULL
   WITH UNIQUE KEYS)
   OVER (
-  ORDER BY k)
+    ORDER BY k
+  )
 FROM
   (VALUES
     (1, 1),
@@ -618,7 +621,8 @@ SELECT
   ABSENT ON NULL
   WITH UNIQUE KEYS)
   OVER (
-  ORDER BY k)
+    ORDER BY k
+  )
 FROM
   (VALUES
     (1, 1),
@@ -631,7 +635,8 @@ SELECT
   JSON_OBJECTAGG(k : v
   ABSENT ON NULL)
   OVER (
-  ORDER BY k)
+    ORDER BY k
+  )
 FROM
   (VALUES
     (1, 1),
@@ -644,11 +649,12 @@ SELECT
   JSON_OBJECTAGG(k : v
   ABSENT ON NULL)
   OVER (
-  ORDER BY k
-  RANGE BETWEEN
-  UNBOUNDED PRECEDING
-  AND
-  UNBOUNDED FOLLOWING)
+    ORDER BY k
+    RANGE BETWEEN
+    UNBOUNDED PRECEDING
+    AND
+    UNBOUNDED FOLLOWING
+  )
 FROM
   (VALUES
     (1, 1),
@@ -682,7 +688,8 @@ SELECT
   WITH UNIQUE KEYS
   RETURNING TEXT)
   OVER (
-  PARTITION BY i % 2)
+    PARTITION BY i % 2
+  )
 FROM
   generate_series(1, 5) AS i;
 
@@ -713,7 +720,8 @@ SELECT
   NULL ON NULL
   RETURNING TEXT)
   OVER (
-  PARTITION BY i % 2)
+    PARTITION BY i % 2
+  )
 FROM
   generate_series(1, 5) AS i;
 

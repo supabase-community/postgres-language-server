@@ -88,8 +88,7 @@ ALTER TABLE attmp
 ALTER TABLE attmp
   ADD COLUMN z SMALLINT[];
 
-INSERT INTO attmp
-(
+INSERT INTO attmp (
   a,
   b,
   c,
@@ -210,8 +209,7 @@ ALTER TABLE attmp
 ALTER TABLE attmp
   ADD COLUMN z SMALLINT[];
 
-INSERT INTO attmp
-(
+INSERT INTO attmp (
   a,
   b,
   c,
@@ -262,14 +260,7 @@ VALUES (
 
 SELECT * FROM attmp;
 
-CREATE INDEX "attmp_idx"
-ON attmp
-USING btree
-(
-  a,
-  (d + e),
-  b
-);
+CREATE INDEX "attmp_idx" ON attmp USING btree (a, (d + e), b);
 
 ALTER INDEX attmp_idx
   ALTER COLUMN 1 SET STATISTICS 1000;
@@ -310,8 +301,7 @@ DROP TABLE "attmp_new";
 
 DROP TABLE "attmp_new2";
 
-CREATE TABLE part_attmp
-(a INT PRIMARY KEY)
+CREATE TABLE part_attmp (a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE TABLE part_attmp1 PARTITION OF part_attmp FOR VALUES FROM (0) TO (100);
@@ -382,23 +372,12 @@ RESET role;
 
 CREATE TABLE alter_idx_rename_test (a INT);
 
-CREATE INDEX "alter_idx_rename_test_idx"
-ON alter_idx_rename_test
-USING btree
-(
-  a
-);
+CREATE INDEX "alter_idx_rename_test_idx" ON alter_idx_rename_test USING btree (a);
 
-CREATE TABLE alter_idx_rename_test_parted
-(a INT)
+CREATE TABLE alter_idx_rename_test_parted (a INT)
 PARTITION BY LIST(a);
 
-CREATE INDEX "alter_idx_rename_test_parted_idx"
-ON alter_idx_rename_test_parted
-USING btree
-(
-  a
-);
+CREATE INDEX "alter_idx_rename_test_parted_idx" ON alter_idx_rename_test_parted USING btree (a);
 
 BEGIN;
 
@@ -460,7 +439,9 @@ COMMIT;
 DROP TABLE "alter_idx_rename_test_2";
 
 CREATE VIEW attmp_view
-(unique1)
+(
+  unique1
+)
 AS SELECT unique1 FROM tenk1;
 
 ALTER TABLE attmp_view RENAME TO attmp_view_new;
@@ -515,10 +496,16 @@ DROP INDEX "onek_unique1_constraint_foo";
 ALTER TABLE onek
   DROP CONSTRAINT onek_unique1_constraint_foo;
 
-CREATE TABLE constraint_rename_test (a INT CONSTRAINT "con1" CHECK (a > 0), b INT, c INT);
+CREATE TABLE constraint_rename_test (
+  a INT CONSTRAINT "con1" CHECK (a > 0),
+  b INT,
+  c INT
+);
 
-CREATE TABLE constraint_rename_test2
-(a INT CONSTRAINT "con1" CHECK (a > 0), d INT)
+CREATE TABLE constraint_rename_test2 (
+  a INT CONSTRAINT "con1" CHECK (a > 0),
+  d INT
+)
 INHERITS (constraint_rename_test);
 
 ALTER TABLE constraint_rename_test2 RENAME CONSTRAINT con1 TO con1foo;
@@ -548,7 +535,11 @@ ALTER TABLE IF EXISTS constraint_not_exist RENAME CONSTRAINT con3 TO con3foo;
 ALTER TABLE IF EXISTS constraint_rename_test
   ADD CONSTRAINT "con4" UNIQUE (a);
 
-CREATE TABLE constraint_rename_cache (a INT, CONSTRAINT "chk_a" CHECK (a > 0), PRIMARY KEY (a));
+CREATE TABLE constraint_rename_cache (
+  a INT,
+  CONSTRAINT "chk_a" CHECK (a > 0),
+  PRIMARY KEY (a)
+);
 
 ALTER TABLE constraint_rename_cache RENAME CONSTRAINT chk_a TO chk_a_new;
 
@@ -564,11 +555,21 @@ DROP TABLE "like_constraint_rename_cache";
 
 CREATE TABLE attmp2 (a INT PRIMARY KEY);
 
-CREATE TABLE attmp3 (a INT, b INT);
+CREATE TABLE attmp3 (
+  a INT,
+  b INT
+);
 
-CREATE TABLE attmp4 (a INT, b INT, UNIQUE (a, b));
+CREATE TABLE attmp4 (
+  a INT,
+  b INT,
+  UNIQUE (a, b)
+);
 
-CREATE TABLE attmp5 (a INT, b INT);
+CREATE TABLE attmp5 (
+  a INT,
+  b INT
+);
 
 INSERT INTO attmp2 VALUES (1);
 
@@ -660,12 +661,10 @@ ALTER TABLE attmp3
 
 SELECT * FROM attmp3;
 
-CREATE TABLE attmp6
-()
+CREATE TABLE attmp6 ()
 INHERITS (attmp3);
 
-CREATE TABLE attmp7
-()
+CREATE TABLE attmp7 ()
 INHERITS (attmp3);
 
 INSERT INTO attmp6
@@ -704,8 +703,7 @@ ALTER TABLE attmp3
 
 CREATE TABLE parent_noinh_convalid (a INT);
 
-CREATE TABLE child_noinh_convalid
-()
+CREATE TABLE child_noinh_convalid ()
 INHERITS (parent_noinh_convalid);
 
 INSERT INTO parent_noinh_convalid VALUES (1);
@@ -755,14 +753,15 @@ DROP TABLE "attmp2";
 
 SET constraint_exclusion = partition;
 
-CREATE TABLE nv_parent (d DATE, CHECK (FALSE) NO INHERIT NOT VALID);
+CREATE TABLE nv_parent (
+  d DATE,
+  CHECK (FALSE) NO INHERIT NOT VALID
+);
 
-CREATE TABLE nv_child_2010
-()
+CREATE TABLE nv_child_2010 ()
 INHERITS (nv_parent);
 
-CREATE TABLE nv_child_2011
-()
+CREATE TABLE nv_child_2011 ()
 INHERITS (nv_parent);
 
 ALTER TABLE nv_child_2010
@@ -777,8 +776,11 @@ ALTER TABLE nv_child_2011
 
 SELECT * FROM nv_parent WHERE d BETWEEN '2011-08-01' AND '2011-08-31';
 
-CREATE TABLE nv_child_2009
-(CHECK (d BETWEEN CAST('2009-01-01' AS DATE) AND CAST('2009-12-31' AS DATE)))
+CREATE TABLE nv_child_2009 (
+  CHECK (d
+  BETWEEN CAST('2009-01-01' AS DATE)
+  AND CAST('2009-12-31' AS DATE))
+)
 INHERITS (nv_parent);
 
 SELECT * FROM nv_parent WHERE d BETWEEN CAST('2011-08-01' AS DATE) AND CAST('2011-08-31' AS DATE);
@@ -846,16 +848,26 @@ DROP TABLE "fktable";
 
 DROP TABLE "pktable";
 
-CREATE TEMPORARY TABLE pktable (ptest1 INT, ptest2 INET, PRIMARY KEY (ptest1, ptest2));
+CREATE TEMPORARY TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  PRIMARY KEY (ptest1, ptest2)
+);
 
-CREATE TEMPORARY TABLE fktable (ftest1 CIDR, ftest2 TIMESTAMP);
+CREATE TEMPORARY TABLE fktable (
+  ftest1 CIDR,
+  ftest2 TIMESTAMP
+);
 
 ALTER TABLE fktable
   ADD FOREIGN KEY (ftest1, ftest2) REFERENCES pktable;
 
 DROP TABLE "fktable";
 
-CREATE TEMPORARY TABLE fktable (ftest1 CIDR, ftest2 TIMESTAMP);
+CREATE TEMPORARY TABLE fktable (
+  ftest1 CIDR,
+  ftest2 TIMESTAMP
+);
 
 ALTER TABLE fktable
   ADD FOREIGN KEY
@@ -866,7 +878,10 @@ ALTER TABLE fktable
 
 DROP TABLE "fktable";
 
-CREATE TEMPORARY TABLE fktable (ftest1 INT, ftest2 INET);
+CREATE TEMPORARY TABLE fktable (
+  ftest1 INT,
+  ftest2 INET
+);
 
 ALTER TABLE fktable
   ADD FOREIGN KEY
@@ -1007,7 +1022,11 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test INT, test2 INT, test3 INT);
+CREATE TABLE atacc1 (
+  test INT,
+  test2 INT,
+  test3 INT
+);
 
 ALTER TABLE atacc1
   ADD CONSTRAINT "atacc_test1" CHECK (test + test2 < test3 * 4);
@@ -1018,7 +1037,10 @@ INSERT INTO atacc1 (test, test2, test3) VALUES (4, 4, 5);
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test INT CHECK (test > 3), test2 INT);
+CREATE TABLE atacc1 (
+  test INT CHECK (test > 3),
+  test2 INT
+);
 
 ALTER TABLE atacc1
   ADD CHECK (test2 > test);
@@ -1031,8 +1053,7 @@ CREATE TABLE atacc1 (test INT);
 
 CREATE TABLE atacc2 (test2 INT);
 
-CREATE TABLE atacc3
-(test3 INT)
+CREATE TABLE atacc3 (test3 INT)
 INHERITS (atacc1,
 atacc2);
 
@@ -1057,8 +1078,7 @@ CREATE TABLE atacc1 (test INT);
 
 CREATE TABLE atacc2 (test2 INT);
 
-CREATE TABLE atacc3
-(test3 INT)
+CREATE TABLE atacc3 (test3 INT)
 INHERITS (atacc1,
 atacc2);
 
@@ -1120,8 +1140,7 @@ DROP TABLE "atacc1";
 
 CREATE TABLE atacc1 (test INT);
 
-CREATE TABLE atacc2
-(test2 INT)
+CREATE TABLE atacc2 (test2 INT)
 INHERITS (atacc1);
 
 ALTER TABLE atacc1
@@ -1176,7 +1195,10 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test INT, test2 INT);
+CREATE TABLE atacc1 (
+  test INT,
+  test2 INT
+);
 
 ALTER TABLE atacc1
   ADD CONSTRAINT "atacc_test1" UNIQUE (test, test2);
@@ -1193,7 +1215,11 @@ INSERT INTO atacc1 (test, test2) VALUES (5, 5);
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test INT, test2 INT, UNIQUE (test));
+CREATE TABLE atacc1 (
+  test INT,
+  test2 INT,
+  UNIQUE (test)
+);
 
 ALTER TABLE atacc1
   ADD UNIQUE (test2);
@@ -1204,7 +1230,10 @@ INSERT INTO atacc1 (test2, test) VALUES (2, 3);
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (id serial, test INT);
+CREATE TABLE atacc1 (
+  id serial,
+  test INT
+);
 
 ALTER TABLE atacc1
   ADD CONSTRAINT "atacc_test1" PRIMARY KEY (test);
@@ -1296,7 +1325,10 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (a BIGINT, b INT);
+CREATE TABLE atacc1 (
+  a BIGINT,
+  b INT
+);
 
 INSERT INTO atacc1 VALUES (1, 1);
 
@@ -1309,7 +1341,10 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (a BIGINT, b INT);
+CREATE TABLE atacc1 (
+  a BIGINT,
+  b INT
+);
 
 INSERT INTO atacc1 VALUES (1, 2);
 
@@ -1322,7 +1357,10 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test INT, test2 INT);
+CREATE TABLE atacc1 (
+  test INT,
+  test2 INT
+);
 
 ALTER TABLE atacc1
   ADD CONSTRAINT "atacc_test1" PRIMARY KEY (test, test2);
@@ -1348,7 +1386,11 @@ INSERT INTO atacc1 (test, test2) VALUES (5, 5);
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test INT, test2 INT, PRIMARY KEY (test));
+CREATE TABLE atacc1 (
+  test INT,
+  test2 INT,
+  PRIMARY KEY (test)
+);
 
 INSERT INTO atacc1 (test2, test) VALUES (3, 3);
 
@@ -1413,7 +1455,10 @@ DROP VIEW "myview";
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atacc1 (test_a INT, test_b INT);
+CREATE TABLE atacc1 (
+  test_a INT,
+  test_b INT
+);
 
 INSERT INTO atacc1 VALUES (NULL, 1);
 
@@ -1477,11 +1522,16 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atnnparted
-(id INT, col1 INT)
+CREATE TABLE atnnparted (
+  id INT,
+  col1 INT
+)
 PARTITION BY LIST(id);
 
-CREATE TABLE atnnpart1 (col1 INT, id INT);
+CREATE TABLE atnnpart1 (
+  col1 INT,
+  id INT
+);
 
 ALTER TABLE atnnpart1
   ADD PRIMARY KEY (id);
@@ -1499,8 +1549,7 @@ ROLLBACK;
 
 CREATE TABLE parent (a INT);
 
-CREATE TABLE child
-(b VARCHAR(255))
+CREATE TABLE child (b VARCHAR(255))
 INHERITS (parent);
 
 ALTER TABLE parent
@@ -1527,7 +1576,10 @@ DROP TABLE "child";
 
 DROP TABLE "parent";
 
-CREATE TABLE def_test (c1 INT DEFAULT 5, c2 TEXT DEFAULT 'initial_default');
+CREATE TABLE def_test (
+  c1 INT DEFAULT 5,
+  c2 TEXT DEFAULT 'initial_default'
+);
 
 INSERT INTO def_test DEFAULT VALUES;
 
@@ -1591,7 +1643,12 @@ ALTER TABLE pg_class
 ALTER TABLE nosuchtable
   DROP COLUMN bar;
 
-CREATE TABLE atacc1 (a INT NOT NULL, b INT, c INT NOT NULL, d INT);
+CREATE TABLE atacc1 (
+  a INT NOT NULL,
+  b INT,
+  c INT NOT NULL,
+  d INT
+);
 
 INSERT INTO atacc1 VALUES (1, 2, 3, 4);
 

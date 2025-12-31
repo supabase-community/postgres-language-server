@@ -28,9 +28,9 @@ MERGES);
 
 SELECT
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS ref,
   deptype
@@ -57,9 +57,9 @@ WHERE
 
 SELECT
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS ref,
   deptype
@@ -86,9 +86,9 @@ WHERE
 
 SELECT
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS ref,
   deptype
@@ -113,9 +113,9 @@ WHERE
 
 SELECT
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS ref,
   deptype
@@ -140,9 +140,9 @@ WHERE
 
 SELECT
   pg_describe_object(
-  refclassid,
-  refobjid,
-  refobjsubid
+    refclassid,
+    refobjid,
+    refobjsubid
   )
   AS ref,
   deptype
@@ -249,15 +249,15 @@ SELECT
   oprcanmerge,
   oprcanhash,
   pg_describe_object(
-  CAST('pg_operator' AS REGCLASS),
-  oprcom,
-  0
+    CAST('pg_operator' AS REGCLASS),
+    oprcom,
+    0
   )
   AS commutator,
   pg_describe_object(
-  CAST('pg_operator' AS REGCLASS),
-  oprnegate,
-  0
+    CAST('pg_operator' AS REGCLASS),
+    oprnegate,
+    0
   )
   AS negator
 FROM
@@ -287,15 +287,15 @@ SELECT
   oprcanmerge,
   oprcanhash,
   pg_describe_object(
-  CAST('pg_operator' AS REGCLASS),
-  oprcom,
-  0
+    CAST('pg_operator' AS REGCLASS),
+    oprcom,
+    0
   )
   AS commutator,
   pg_describe_object(
-  CAST('pg_operator' AS REGCLASS),
-  oprnegate,
-  0
+    CAST('pg_operator' AS REGCLASS),
+    oprnegate,
+    0
   )
   AS negator
 FROM

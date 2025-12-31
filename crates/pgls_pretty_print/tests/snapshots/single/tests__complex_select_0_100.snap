@@ -65,78 +65,78 @@ AS (
     view_schema,
     view_name,
     CAST(replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    regexp_replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(
-    replace(CAST(view_definition AS TEXT), '<>', '()'),
-    ',',
-    ''
-    ),
-    '\\{',
-    ''
-    ),
-    '\\}',
-    ''
-    ),
-    ' :targetList ',
-    ',"targetList":'
-    ),
-    ' :resno ',
-    ',"resno":'
-    ),
-    ' :resorigtbl ',
-    ',"resorigtbl":'
-    ),
-    ' :resorigcol ',
-    ',"resorigcol":'
-    ),
-    '{',
-    '{ :'
-    ),
-    '((',
-    '{(('
-    ),
-    '({',
-    '{({'
-    ),
-    ' :[^}{,]+',
-    ',"":',
-    'g'
-    ),
-    ',"":}',
-    '}'
-    ),
-    ',"":,',
-    ','
-    ),
-    '{(',
-    '('
-    ),
-    '{,',
-    '{'
-    ),
-    '(',
-    '['
-    ),
-    ')',
-    ']'
-    ),
-    ' ',
-    ','
+      replace(
+        replace(
+          replace(
+            replace(
+              replace(
+                replace(
+                  regexp_replace(
+                    replace(
+                      replace(
+                        replace(
+                          replace(
+                            replace(
+                              replace(
+                                replace(
+                                  replace(
+                                    replace(
+                                      replace(
+                                        replace(CAST(view_definition AS TEXT), '<>', '()'),
+                                        ',',
+                                        ''
+                                      ),
+                                      '\\{',
+                                      ''
+                                    ),
+                                    '\\}',
+                                    ''
+                                  ),
+                                  ' :targetList ',
+                                  ',"targetList":'
+                                ),
+                                ' :resno ',
+                                ',"resno":'
+                              ),
+                              ' :resorigtbl ',
+                              ',"resorigtbl":'
+                            ),
+                            ' :resorigcol ',
+                            ',"resorigcol":'
+                          ),
+                          '{',
+                          '{ :'
+                        ),
+                        '((',
+                        '{(('
+                      ),
+                      '({',
+                      '{({'
+                    ),
+                    ' :[^}{,]+',
+                    ',"":',
+                    'g'
+                  ),
+                  ',"":}',
+                  '}'
+                ),
+                ',"":,',
+                ','
+              ),
+              '{(',
+              '('
+            ),
+            '{,',
+            '{'
+          ),
+          '(',
+          '['
+        ),
+        ')',
+        ']'
+      ),
+      ' ',
+      ','
     )
     AS JSON)
     AS view_definition
@@ -150,7 +150,7 @@ AS (
     view_schema,
     view_name,
     json_array_elements(
-    view_definition -> 0 -> 'targetList'
+      view_definition -> 0 -> 'targetList'
     )
     AS entry
   FROM
@@ -233,12 +233,12 @@ SELECT
   pks_fks.conname AS constraint_name,
   pks_fks.contype AS constraint_type,
   jsonb_agg(
-  jsonb_build_object(
-  'table_column',
-  col.attname,
-  'view_columns',
-  view_columns
-  ) ORDER BY pks_fks.ord
+    jsonb_build_object(
+      'table_column',
+      col.attname,
+      'view_columns',
+      view_columns
+    ) ORDER BY pks_fks.ord
   )
   AS column_dependencies
 FROM
@@ -268,8 +268,8 @@ GROUP BY sch.nspname,
 HAVING
   ncol =
   array_length(
-  array_agg(
-  ROW(col.attname, view_columns) ORDER BY pks_fks.ord
-  ),
-  1
+    array_agg(
+      ROW(col.attname, view_columns) ORDER BY pks_fks.ord
+    ),
+    1
   );

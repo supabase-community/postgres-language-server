@@ -79,7 +79,10 @@ ANALYZE bigger_than_it_looks;
 
 UPDATE pg_class SET reltuples = 1000 WHERE relname = 'bigger_than_it_looks';
 
-CREATE TABLE extremely_skewed (id INT, t TEXT);
+CREATE TABLE extremely_skewed (
+  id INT,
+  t TEXT
+);
 
 ALTER TABLE extremely_skewed
   SET (autovacuum_enabled = 'false');
@@ -124,7 +127,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join simple s using (id);
 '
   );
@@ -150,7 +153,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join simple s using (id);
 '
   );
@@ -176,7 +179,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join simple s using (id);
 '
   );
@@ -200,7 +203,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join simple s using (id);
 '
   );
@@ -226,7 +229,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join simple s using (id);
 '
   );
@@ -252,7 +255,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join simple s using (id);
 '
   );
@@ -278,7 +281,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) FROM simple r JOIN bigger_than_it_looks s USING (id);
 '
   );
@@ -304,7 +307,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join bigger_than_it_looks s using (id);
 '
   );
@@ -330,7 +333,7 @@ SELECT
   final > original AS increased_batches
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join bigger_than_it_looks s using (id);
 '
   );
@@ -353,7 +356,7 @@ SELECT
   *
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join extremely_skewed s using (id);
 '
   );
@@ -378,7 +381,7 @@ SELECT
   *
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join extremely_skewed s using (id);
 '
   );
@@ -403,7 +406,7 @@ SELECT
   *
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from simple r join extremely_skewed s using (id);
 '
   );
@@ -496,7 +499,7 @@ SELECT
   final > 1 AS multibatch
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
@@ -565,7 +568,7 @@ SELECT
   final > 1 AS multibatch
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
@@ -634,7 +637,7 @@ SELECT
   final > 1 AS multibatch
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
@@ -703,7 +706,7 @@ SELECT
   final > 1 AS multibatch
 FROM
   hash_join_batches(
-  '
+    '
   select count(*) from join_foo
     left join (select b1.id, b1.t from join_bar b1 join join_bar b2 using (id)) ss
     on join_foo.id < ss.id + 1 and join_foo.id > ss.id - 1;
@@ -808,7 +811,7 @@ SELECT
   final > 1 AS multibatch
 FROM
   hash_join_batches(
-  '
+    '
   select length(max(s.t))
   from wide left join (select id, coalesce(t, '''') || '''' as t from wide) s using (id);
 '
@@ -861,9 +864,19 @@ SET LOCAL enable_sort = off;
 
 SET LOCAL from_collapse_limit = 1;
 
-CREATE TABLE hjtest_1 (a TEXT, b INT, id INT, c BOOLEAN);
+CREATE TABLE hjtest_1 (
+  a TEXT,
+  b INT,
+  id INT,
+  c BOOLEAN
+);
 
-CREATE TABLE hjtest_2 (a BOOLEAN, id INT, b TEXT, c INT);
+CREATE TABLE hjtest_2 (
+  a BOOLEAN,
+  id INT,
+  b TEXT,
+  c INT
+);
 
 INSERT INTO hjtest_1 (a, b, id, c) VALUES ('text', 2, 1, FALSE);
 

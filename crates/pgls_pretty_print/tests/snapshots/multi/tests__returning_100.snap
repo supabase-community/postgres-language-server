@@ -3,10 +3,13 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/returning.sql
 snapshot_kind: text
 ---
-CREATE TEMPORARY TABLE foo (f1 serial, f2 TEXT, f3 INT DEFAULT 42);
+CREATE TEMPORARY TABLE foo (
+  f1 serial,
+  f2 TEXT,
+  f3 INT DEFAULT 42
+);
 
-INSERT INTO foo
-(f2, f3)
+INSERT INTO foo (f2, f3)
 VALUES
   ('test', DEFAULT),
   ('More', 11),
@@ -59,8 +62,7 @@ DELETE FROM foo USING int4_tbl AS i WHERE foo.f1 + 123455 = i.f1 RETURNING foo.*
 
 SELECT * FROM foo;
 
-CREATE TEMPORARY TABLE foochild
-(fc INT)
+CREATE TEMPORARY TABLE foochild (fc INT)
 INHERITS (foo);
 
 INSERT INTO foochild VALUES (123, 'child', 999, -123);
@@ -180,7 +182,7 @@ SELECT * FROM foo;
 
 DROP FUNCTION foo_f();
 
-CREATE TYPE foo_t AS ( f1 INT, f2 TEXT, f3 INT, f4 BIGINT );
+CREATE TYPE foo_t AS (f1 INT, f2 TEXT, f3 INT, f4 BIGINT);
 
 CREATE FUNCTION foo_f()
 RETURNS SETOF foo_t
@@ -196,7 +198,10 @@ DROP FUNCTION foo_f();
 
 DROP TYPE foo_t;
 
-CREATE TEMPORARY TABLE joinme (f2j TEXT, other INT);
+CREATE TEMPORARY TABLE joinme (
+  f2j TEXT,
+  other INT
+);
 
 INSERT INTO joinme VALUES ('more', 12345);
 
@@ -269,12 +274,7 @@ new.ctid,
 new.*,
 *;
 
-CREATE UNIQUE INDEX "foo_f1_idx"
-ON foo
-USING btree
-(
-  f1
-);
+CREATE UNIQUE INDEX "foo_f1_idx" ON foo USING btree (f1);
 
 UPDATE foo
 SET f4 = 100
@@ -463,10 +463,10 @@ END;
 ';
 
 CREATE TRIGGER joinview_upd_trig
-INSTEAD OF UPDATE
-ON joinview
-FOR EACH ROW
-EXECUTE FUNCTION joinview_upd_trig_fn();
+  INSTEAD OF UPDATE
+  ON joinview
+  FOR EACH ROW
+  EXECUTE FUNCTION joinview_upd_trig_fn();
 
 DROP RULE "joinview_u" ON "joinview";
 
@@ -543,7 +543,10 @@ ctid,
 
 DROP TABLE "zerocol";
 
-CREATE TABLE public.tt (a INT, b INT);
+CREATE TABLE public.tt (
+  a INT,
+  b INT
+);
 
 INSERT INTO public.tt VALUES (1, 10);
 
@@ -551,21 +554,32 @@ UPDATE public.tt SET b = b * 2 RETURNING a, b, old.b, new.b, tt.b, public.tt.b;
 
 DROP TABLE "public"."tt";
 
-CREATE TABLE foo_parted
-(a INT, b DOUBLE PRECISION, c TEXT)
+CREATE TABLE foo_parted (
+  a INT,
+  b DOUBLE PRECISION,
+  c TEXT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE foo_part_s1 PARTITION OF foo_parted FOR VALUES IN (1);
 
 CREATE TABLE foo_part_s2 PARTITION OF foo_parted FOR VALUES IN (2);
 
-CREATE TABLE foo_part_d1 (c TEXT, a INT, b DOUBLE PRECISION);
+CREATE TABLE foo_part_d1 (
+  c TEXT,
+  a INT,
+  b DOUBLE PRECISION
+);
 
 ALTER TABLE foo_parted
   ATTACH PARTITION
   foo_part_d1 FOR VALUES IN (3);
 
-CREATE TABLE foo_part_d2 (b DOUBLE PRECISION, c TEXT, a INT);
+CREATE TABLE foo_part_d2 (
+  b DOUBLE PRECISION,
+  c TEXT,
+  a INT
+);
 
 ALTER TABLE foo_parted
   ATTACH PARTITION

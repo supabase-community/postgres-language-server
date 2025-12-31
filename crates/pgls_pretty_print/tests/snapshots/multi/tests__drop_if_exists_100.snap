@@ -7,7 +7,10 @@ DROP TABLE "test_exists";
 
 DROP TABLE IF EXISTS "test_exists";
 
-CREATE TABLE test_exists (a INT, b TEXT);
+CREATE TABLE test_exists (
+  a INT,
+  b TEXT
+);
 
 DROP VIEW "test_view_exists";
 
@@ -24,12 +27,7 @@ DROP INDEX "test_index_exists";
 
 DROP INDEX IF EXISTS "test_index_exists";
 
-CREATE INDEX "test_index_exists"
-ON test_exists
-USING btree
-(
-  a
-);
+CREATE INDEX "test_index_exists" ON test_exists USING btree (a);
 
 DROP INDEX IF EXISTS "test_index_exists";
 
@@ -59,7 +57,7 @@ DROP TYPE test_type_exists;
 
 DROP TYPE IF EXISTS test_type_exists;
 
-CREATE TYPE test_type_exists AS ( a INT, b TEXT );
+CREATE TYPE test_type_exists AS (a INT, b TEXT);
 
 DROP TYPE IF EXISTS test_type_exists;
 
@@ -187,10 +185,10 @@ DROP TRIGGER "test_trigger_exists" ON "no_such_schema"."no_such_table";
 DROP TRIGGER IF EXISTS "test_trigger_exists" ON "no_such_schema"."no_such_table";
 
 CREATE TRIGGER test_trigger_exists
-BEFORE UPDATE
-ON test_exists
-FOR EACH ROW
-EXECUTE FUNCTION suppress_redundant_updates_trigger();
+  BEFORE UPDATE
+  ON test_exists
+  FOR EACH ROW
+  EXECUTE FUNCTION suppress_redundant_updates_trigger();
 
 DROP TRIGGER "test_trigger_exists" ON "test_exists";
 

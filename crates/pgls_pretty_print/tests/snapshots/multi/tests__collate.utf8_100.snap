@@ -84,7 +84,7 @@ SELECT 'Î´' ~* '[Î-Î]' COLLATE "pg_c_utf8";
 
 SELECT
   casefold(
-  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_c_utf8"
+    'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_c_utf8"
   );
 
 CREATE COLLATION regress_pg_unicode_fast ( provider = builtin, locale = 'unicode');
@@ -162,5 +162,5 @@ SELECT 'Î´' ~* '[Î-Î]' COLLATE "pg_unicode_fast";
 
 SELECT
   casefold(
-  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_unicode_fast"
+    'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_unicode_fast"
   );

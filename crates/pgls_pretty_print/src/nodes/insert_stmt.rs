@@ -35,7 +35,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
 
     // Emit column list if present
     if !n.cols.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         // Wrap column list in a group so it can try to fit on one line
         e.group_start(GroupKind::InsertStmt);
         e.token(TokenKind::L_PAREN);

@@ -3,8 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/arrays.sql
 snapshot_kind: text
 ---
-CREATE TABLE arrtest
-(
+CREATE TABLE arrtest (
   a SMALLINT[],
   b INT[][][],
   c NAME[],
@@ -14,14 +13,17 @@ CREATE TABLE arrtest
   g VARCHAR(5)[]
 );
 
-CREATE TABLE array_op_test (seqno INT, i INT[], t TEXT[]);
+CREATE TABLE array_op_test (
+  seqno INT,
+  i INT[],
+  t TEXT[]
+);
 
 COPY array_op_test FROM 'filename';
 
 ANALYZE array_op_test;
 
-INSERT INTO arrtest
-(a[1:5], b[1:1][1:2][1:2], c, d, f, g)
+INSERT INTO arrtest (a[1:5], b[1:1][1:2][1:2], c, d, f, g)
 VALUES (
   '{1,2,3,4,5}',
   '{{{0,0},{1,2}}}',
@@ -37,8 +39,7 @@ UPDATE arrtest SET e[1] = '2.2';
 
 INSERT INTO arrtest (f) VALUES ('{"too long"}');
 
-INSERT INTO arrtest
-(a, b[1:2][1:2], c, d, e, f, g)
+INSERT INTO arrtest (a, b[1:2][1:2], c, d, e, f, g)
 VALUES (
   '{11,12,23}',
   '{{3,4},{4,5}}',
@@ -129,7 +130,10 @@ UPDATE arrtest SET c[1:NULL] = '{"can''t assign"}' WHERE array_dims(c) IS NOT NU
 
 SELECT (NOW())[1];
 
-CREATE TEMPORARY TABLE arrtest_s (a SMALLINT[], b SMALLINT[][]);
+CREATE TEMPORARY TABLE arrtest_s (
+  a SMALLINT[],
+  b SMALLINT[][]
+);
 
 INSERT INTO arrtest_s VALUES ('{1,2,3,4,5}', '{{1,2,3}, {4,5,6}, {7,8,9}}');
 
@@ -203,7 +207,10 @@ WHERE
   CAST(CAST('(-10,-10)' AS point) AS TEXT)
 RETURNING *;
 
-CREATE TEMPORARY TABLE arrtest1 (i INT[], t TEXT[]);
+CREATE TEMPORARY TABLE arrtest1 (
+  i INT[],
+  t TEXT[]
+);
 
 INSERT INTO arrtest1 VALUES (ARRAY[1, 2, NULL, 4], ARRAY['one', 'two', NULL, 'four']);
 
@@ -269,8 +276,7 @@ t[0:5] = ARRAY['z', 'p1', 'p2', NULL, 'p4', 'p5'];
 
 SELECT * FROM arrtest1;
 
-CREATE TEMPORARY TABLE arrtest2
-(
+CREATE TEMPORARY TABLE arrtest2 (
   i INT[4],
   f DOUBLE PRECISION[],
   n NUMERIC[],
@@ -293,7 +299,11 @@ VALUES (
   AS TIMESTAMP[])
 );
 
-CREATE TEMPORARY TABLE arrtest_f (f0 INT, f1 TEXT, f2 DOUBLE PRECISION);
+CREATE TEMPORARY TABLE arrtest_f (
+  f0 INT,
+  f1 TEXT,
+  f2 DOUBLE PRECISION
+);
 
 INSERT INTO arrtest_f VALUES (1, 'cat1', 1.21);
 
@@ -313,7 +323,11 @@ INSERT INTO arrtest_f VALUES (8, 'cat2', 1.32);
 
 INSERT INTO arrtest_f VALUES (9, 'cat2', 1.30);
 
-CREATE TEMPORARY TABLE arrtest_i (f0 INT, f1 TEXT, f2 INT);
+CREATE TEMPORARY TABLE arrtest_i (
+  f0 INT,
+  f1 TEXT,
+  f2 INT
+);
 
 INSERT INTO arrtest_i VALUES (1, 'cat1', 21);
 
@@ -397,15 +411,15 @@ SELECT array_positions(ARRAY[1, 2, 3, NULL, 5, 6, 1, 2, 3, NULL, 5, 6], NULL);
 
 SELECT
   array_length(
-  array_positions(
-  ARRAY(SELECT
-    CAST('AAAAAAAAAAAAAAAAAAAAAAAAA' AS TEXT) ||
-    i % 10
-  FROM
-    generate_series(1, 100) AS g (i)),
-  'AAAAAAAAAAAAAAAAAAAAAAAAA5'
-  ),
-  1
+    array_positions(
+      ARRAY(SELECT
+        CAST('AAAAAAAAAAAAAAAAAAAAAAAAA' AS TEXT) ||
+        i % 10
+      FROM
+        generate_series(1, 100) AS g (i)),
+      'AAAAAAAAAAAAAAAAAAAAAAAAA5'
+    ),
+    1
   );
 
 DO
@@ -536,8 +550,8 @@ SELECT CAST(CAST(CAST(ARRAY[1, 2, 3] AS TEXT[]) AS INT[]) AS DOUBLE PRECISION[])
 
 SELECT
   pg_typeof(
-  CAST(CAST(CAST(ARRAY[1, 2, 3] AS TEXT[]) AS INT[])
-  AS DOUBLE PRECISION[])
+    CAST(CAST(CAST(ARRAY[1, 2, 3] AS TEXT[]) AS INT[])
+    AS DOUBLE PRECISION[])
   )
   AS "double precision[]";
 
@@ -549,9 +563,9 @@ SELECT
 
 SELECT
   pg_typeof(
-  CAST(CAST(ARRAY[ARRAY['a', 'bc'], ARRAY['def', 'hijk']]
-  AS TEXT[])
-  AS VARCHAR[])
+    CAST(CAST(ARRAY[ARRAY['a', 'bc'], ARRAY['def', 'hijk']]
+    AS TEXT[])
+    AS VARCHAR[])
   )
   AS "character varying[]";
 
@@ -624,7 +638,10 @@ SELECT * FROM arr_tbl WHERE f1 > '{1,2,3}' AND f1 <= '{1,5,3}';
 
 SELECT * FROM arr_tbl WHERE f1 >= '{1,2,3}' AND f1 < '{1,5,3}';
 
-CREATE TEMPORARY TABLE arr_pk_tbl (pk INT PRIMARY KEY, f1 INT[]);
+CREATE TEMPORARY TABLE arr_pk_tbl (
+  pk INT PRIMARY KEY,
+  f1 INT[]
+);
 
 INSERT INTO arr_pk_tbl VALUES (1, '{1,2,3}');
 
@@ -639,8 +656,7 @@ f1[3] = excluded.f1[3]
 RETURNING pk,
 f1;
 
-INSERT INTO arr_pk_tbl
-(pk, f1[1:2])
+INSERT INTO arr_pk_tbl (pk, f1[1:2])
 VALUES (1, '{6,7,8}')
 ON CONFLICT
 (pk)
@@ -786,7 +802,11 @@ SELECT CAST('[2147483646:2147483646]={1}' AS INT[]);
 
 SELECT CAST('[-2147483648:-2147483647]={1,2}' AS INT[]);
 
-CREATE TEMPORARY TABLE arraggtest (f1 INT[], f2 TEXT[][], f3 DOUBLE PRECISION[]);
+CREATE TEMPORARY TABLE arraggtest (
+  f1 INT[],
+  f2 TEXT[][],
+  f3 DOUBLE PRECISION[]
+);
 
 INSERT INTO arraggtest (f1, f2, f3) VALUES ('{1,2,3,4}', '{{grey,red},{blue,blue}}', '{1.6, 0.0}');
 
@@ -794,8 +814,7 @@ INSERT INTO arraggtest (f1, f2, f3) VALUES ('{1,2,3}', '{{grey,red},{grey,blue}}
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
-INSERT INTO arraggtest
-(f1, f2, f3)
+INSERT INTO arraggtest (f1, f2, f3)
 VALUES (
   '{3,3,2,4,5,6}',
   '{{white,yellow},{pink,orange}}',
@@ -804,8 +823,7 @@ VALUES (
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
-INSERT INTO arraggtest
-(f1, f2, f3)
+INSERT INTO arraggtest (f1, f2, f3)
 VALUES (
   '{2}',
   '{{black,red},{green,orange}}',
@@ -814,8 +832,7 @@ VALUES (
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
-INSERT INTO arraggtest
-(f1, f2, f3)
+INSERT INTO arraggtest (f1, f2, f3)
 VALUES (
   '{4,2,6,7,8,1}',
   '{{red},{black},{purple},{blue},{blue}}',
@@ -824,8 +841,7 @@ VALUES (
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
-INSERT INTO arraggtest
-(f1, f2, f3)
+INSERT INTO arraggtest (f1, f2, f3)
 VALUES (
   '{}',
   '{{pink,white,blue,red,grey,orange}}',
@@ -834,9 +850,12 @@ VALUES (
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
-CREATE TYPE comptype AS ( f1 INT, f2 TEXT );
+CREATE TYPE comptype AS (f1 INT, f2 TEXT);
 
-CREATE TABLE comptable (c1 comptype, c2 comptype[]);
+CREATE TABLE comptable (
+  c1 comptype,
+  c2 comptype[]
+);
 
 INSERT INTO comptable
 VALUES (
@@ -1176,7 +1195,7 @@ CREATE TEMPORARY TABLE src (f1 TEXT);
 
 INSERT INTO src SELECT string_agg(CAST(random() AS TEXT), '') FROM generate_series(1, 10000);
 
-CREATE TYPE textandtext AS ( c1 TEXT, c2 TEXT );
+CREATE TYPE textandtext AS (c1 TEXT, c2 TEXT);
 
 CREATE TEMPORARY TABLE dest (f1 textandtext[]);
 
@@ -1201,33 +1220,33 @@ DROP TYPE textandtext;
 SELECT
   op,
   width_bucket(
-  CAST(op AS NUMERIC),
-  CAST(ARRAY[1, 3, 5, 10.0] AS NUMERIC[])
+    CAST(op AS NUMERIC),
+    CAST(ARRAY[1, 3, 5, 10.0] AS NUMERIC[])
   )
   AS wb_n1,
   width_bucket(
-  CAST(op AS NUMERIC),
-  CAST(ARRAY[0, 5.5, 9.99] AS NUMERIC[])
+    CAST(op AS NUMERIC),
+    CAST(ARRAY[0, 5.5, 9.99] AS NUMERIC[])
   )
   AS wb_n2,
   width_bucket(
-  CAST(op AS NUMERIC),
-  CAST(ARRAY[-6, -5, 2.0] AS NUMERIC[])
+    CAST(op AS NUMERIC),
+    CAST(ARRAY[-6, -5, 2.0] AS NUMERIC[])
   )
   AS wb_n3,
   width_bucket(
-  CAST(op AS DOUBLE PRECISION),
-  CAST(ARRAY[1, 3, 5, 10.0] AS DOUBLE PRECISION[])
+    CAST(op AS DOUBLE PRECISION),
+    CAST(ARRAY[1, 3, 5, 10.0] AS DOUBLE PRECISION[])
   )
   AS wb_f1,
   width_bucket(
-  CAST(op AS DOUBLE PRECISION),
-  CAST(ARRAY[0, 5.5, 9.99] AS DOUBLE PRECISION[])
+    CAST(op AS DOUBLE PRECISION),
+    CAST(ARRAY[0, 5.5, 9.99] AS DOUBLE PRECISION[])
   )
   AS wb_f2,
   width_bucket(
-  CAST(op AS DOUBLE PRECISION),
-  CAST(ARRAY[-6, -5, 2.0] AS DOUBLE PRECISION[])
+    CAST(op AS DOUBLE PRECISION),
+    CAST(ARRAY[-6, -5, 2.0] AS DOUBLE PRECISION[])
   )
   AS wb_f3
 FROM
@@ -1256,9 +1275,9 @@ FROM
 SELECT
   op,
   width_bucket(
-  op,
-  CAST(ARRAY[1, 3, 9, 'NaN', 'NaN']
-  AS DOUBLE PRECISION[])
+    op,
+    CAST(ARRAY[1, 3, 9, 'NaN', 'NaN']
+    AS DOUBLE PRECISION[])
   )
   AS wb
 FROM
@@ -1273,9 +1292,9 @@ SELECT op, width_bucket(op, ARRAY[1, 3, 5, 10]) AS wb_1 FROM generate_series(0, 
 
 SELECT
   width_bucket(
-  NOW(),
-  CAST(ARRAY['yesterday', 'today', 'tomorrow']
-  AS TIMESTAMP WITH TIME ZONE[])
+    NOW(),
+    CAST(ARRAY['yesterday', 'today', 'tomorrow']
+    AS TIMESTAMP WITH TIME ZONE[])
   );
 
 SELECT width_bucket(5, ARRAY[3]);
@@ -1314,10 +1333,10 @@ SELECT array_dims(array_shuffle(CAST('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}' 
 
 SELECT
   array_dims(
-  array_shuffle(
-  CAST('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
-  AS INT[])
-  )
+    array_shuffle(
+      CAST('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
+      AS INT[])
+    )
   );
 
 SELECT array_sample(CAST('{1,2,3,4,5,6}' AS INT[]), 3) <@ '{1,2,3,4,5,6}';
@@ -1328,11 +1347,11 @@ SELECT array_dims(array_sample(CAST('[-1:2][2:3]={{1,2},{3,NULL},{5,6},{7,8}}' A
 
 SELECT
   array_dims(
-  array_sample(
-  CAST('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
-  AS INT[]),
-  2
-  )
+    array_sample(
+      CAST('{{{1,2},{3,NULL}},{{5,6},{7,8}},{{9,10},{11,12}}}'
+      AS INT[]),
+      2
+    )
   );
 
 SELECT array_sample(CAST('{1,2,3,4,5,6}' AS INT[]), -1);
@@ -1363,9 +1382,9 @@ SELECT array_sort(CAST('{foo,bar,null,CCC,Abc,bbc}' AS TEXT[]) COLLATE "C");
 
 SELECT
   array_sort(
-  ARRAY(SELECT CAST('1 4' AS int2vector)
-  UNION ALL
-  SELECT CAST('1 2' AS int2vector))
+    ARRAY(SELECT CAST('1 4' AS int2vector)
+    UNION ALL
+    SELECT CAST('1 2' AS int2vector))
   );
 
 SELECT array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]), TRUE);

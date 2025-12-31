@@ -95,8 +95,10 @@ STABLE;
 
 SELECT sp_test_func() ORDER BY 1;
 
-CREATE TABLE part_pa_test
-(a INT, b INT)
+CREATE TABLE part_pa_test (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE part_pa_test_p1 PARTITION OF part_pa_test FOR VALUES FROM (minvalue) TO (0);
@@ -106,12 +108,12 @@ CREATE TABLE part_pa_test_p2 PARTITION OF part_pa_test FOR VALUES FROM (0) TO (m
 SELECT
   (SELECT
     MAX(
-    (SELECT
-      pa1.b
-    FROM
-      part_pa_test AS pa1
-    WHERE
-      pa1.a = pa2.a)
+      (SELECT
+        pa1.b
+      FROM
+        part_pa_test AS pa1
+      WHERE
+        pa1.a = pa2.a)
     ))
 FROM
   part_pa_test AS pa2;
@@ -393,7 +395,10 @@ SELECT COUNT(*) FROM tenk1, tenk2 WHERE tenk1.hundred > 1 AND tenk2.thousand = 0
 
 SELECT COUNT(*) FROM tenk1, tenk2 WHERE tenk1.hundred > 1 AND tenk2.thousand = 0;
 
-CREATE TABLE bmscantest (a INT, t TEXT);
+CREATE TABLE bmscantest (
+  a INT,
+  t TEXT
+);
 
 INSERT INTO bmscantest
 SELECT
@@ -402,12 +407,7 @@ SELECT
 FROM
   generate_series(1, 100000) AS r;
 
-CREATE INDEX "i_bmtest"
-ON bmscantest
-USING btree
-(
-  a
-);
+CREATE INDEX "i_bmtest" ON bmscantest USING btree (a);
 
 SELECT COUNT(*) FROM bmscantest WHERE a > 1;
 
@@ -780,7 +780,11 @@ AS 'declare x int[];
 LANGUAGE "plpgsql"
 PARALLEL SAFE;
 
-CREATE TABLE fooarr (f1 TEXT, f2 INT[], f3 TEXT);
+CREATE TABLE fooarr (
+  f1 TEXT,
+  f2 INT[],
+  f3 TEXT
+);
 
 INSERT INTO fooarr VALUES ('1', ARRAY[1, 2], 'one');
 
@@ -877,12 +881,7 @@ CREATE OPERATOR CLASS int4_custom_ops
   OPERATOR 5 > (INT, INT),
   FUNCTION 1 my_cmp(INT, INT);
 
-CREATE UNIQUE INDEX "parallel_hang_idx"
-ON parallel_hang
-USING btree
-(
-  i int4_custom_ops
-);
+CREATE UNIQUE INDEX "parallel_hang_idx" ON parallel_hang USING btree (i int4_custom_ops);
 
 SET debug_parallel_query = 'on';
 

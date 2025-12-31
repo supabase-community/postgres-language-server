@@ -412,12 +412,7 @@ WHERE
 
 SELECT c.f1, p.f1, c.f1 <-> p.f1 FROM circle_tbl AS c, polygon_tbl AS p;
 
-CREATE INDEX "gcircleind"
-ON circle_tbl
-USING gist
-(
-  f1
-);
+CREATE INDEX "gcircleind" ON circle_tbl USING gist (f1);
 
 SELECT * FROM circle_tbl WHERE f1 && circle(point(1, -2), 1) ORDER BY area(f1);
 
@@ -425,12 +420,7 @@ SELECT * FROM circle_tbl WHERE f1 && circle(point(1, -2), 1) ORDER BY area(f1);
 
 SELECT * FROM circle_tbl WHERE f1 && circle(point(1, -2), 1) ORDER BY area(f1);
 
-CREATE INDEX "gpolygonind"
-ON polygon_tbl
-USING gist
-(
-  f1
-);
+CREATE INDEX "gpolygonind" ON polygon_tbl USING gist (f1);
 
 SELECT
   *

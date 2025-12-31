@@ -202,60 +202,70 @@ pub(super) fn emit_func_call(e: &mut EventEmitter, n: &FuncCall) {
 fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
     // Emit opening parenthesis
     e.token(TokenKind::L_PAREN);
-    e.line(LineType::Soft);
 
-    // Handle DISTINCT if present
-    if n.agg_distinct && !n.args.is_empty() {
-        e.token(TokenKind::DISTINCT_KW);
-        e.space();
-    }
+    // Check if we have any content
+    let has_content =
+        n.agg_star || !n.args.is_empty() || (!n.agg_order.is_empty() && !n.agg_within_group);
 
-    // Emit arguments
-    if n.agg_star {
-        e.token(TokenKind::IDENT("*".to_string()));
-    } else if !n.args.is_empty() {
-        // Handle VARIADIC - if func_variadic is true, prepend VARIADIC to the last argument
-        if n.func_variadic && !n.args.is_empty() {
-            // Emit non-variadic args first
-            for (idx, arg) in n.args.iter().take(n.args.len() - 1).enumerate() {
-                if idx > 0 {
+    if has_content {
+        e.line(LineType::Soft);
+        e.indent_start();
+
+        // Handle DISTINCT if present
+        if n.agg_distinct && !n.args.is_empty() {
+            e.token(TokenKind::DISTINCT_KW);
+            e.space();
+        }
+
+        // Emit arguments
+        if n.agg_star {
+            e.token(TokenKind::IDENT("*".to_string()));
+        } else if !n.args.is_empty() {
+            // Handle VARIADIC - if func_variadic is true, prepend VARIADIC to the last argument
+            if n.func_variadic && !n.args.is_empty() {
+                // Emit non-variadic args first
+                for (idx, arg) in n.args.iter().take(n.args.len() - 1).enumerate() {
+                    if idx > 0 {
+                        e.token(TokenKind::COMMA);
+                        e.line(LineType::SoftOrSpace);
+                    }
+                    super::emit_node(arg, e);
+                }
+
+                if n.args.len() > 1 {
                     e.token(TokenKind::COMMA);
                     e.line(LineType::SoftOrSpace);
                 }
-                super::emit_node(arg, e);
+
+                // Emit VARIADIC with the last argument
+                e.token(TokenKind::VARIADIC_KW);
+                e.space();
+                super::emit_node(n.args.last().unwrap(), e);
+            } else {
+                emit_comma_separated_list(e, &n.args, super::emit_node);
             }
+        }
 
-            if n.args.len() > 1 {
-                e.token(TokenKind::COMMA);
-                e.line(LineType::SoftOrSpace);
+        // Handle ORDER BY inside function (for aggregates not using WITHIN GROUP)
+        if !n.agg_order.is_empty() && !n.agg_within_group {
+            if !n.args.is_empty() {
+                e.space();
             }
-
-            // Emit VARIADIC with the last argument
-            e.token(TokenKind::VARIADIC_KW);
+            e.token(TokenKind::ORDER_KW);
             e.space();
-            super::emit_node(n.args.last().unwrap(), e);
-        } else {
-            emit_comma_separated_list(e, &n.args, super::emit_node);
-        }
-    }
-
-    // Handle ORDER BY inside function (for aggregates not using WITHIN GROUP)
-    if !n.agg_order.is_empty() && !n.agg_within_group {
-        if !n.args.is_empty() {
+            e.token(TokenKind::BY_KW);
             e.space();
+            e.indent_start();
+            emit_comma_separated_list(e, &n.agg_order, |node, emitter| {
+                super::emit_node(node, emitter)
+            });
+            e.indent_end();
         }
-        e.token(TokenKind::ORDER_KW);
-        e.space();
-        e.token(TokenKind::BY_KW);
-        e.space();
-        e.indent_start();
-        emit_comma_separated_list(e, &n.agg_order, |node, emitter| {
-            super::emit_node(node, emitter)
-        });
+
         e.indent_end();
+        e.line(LineType::Soft);
     }
 
-    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 }
 

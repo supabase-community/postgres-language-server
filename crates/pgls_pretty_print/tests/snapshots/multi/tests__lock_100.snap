@@ -15,8 +15,10 @@ CREATE VIEW lock_view1
 AS SELECT * FROM lock_tbl1;
 
 CREATE VIEW lock_view2
-(a,
-b)
+(
+  a,
+  b
+)
 AS SELECT * FROM lock_tbl1, lock_tbl1a;
 
 CREATE VIEW lock_view3
@@ -201,12 +203,10 @@ LOCK TABLE lock_view7 IN EXCLUSIVE MODE;
 
 ROLLBACK;
 
-CREATE TABLE lock_tbl2
-(b BIGINT)
+CREATE TABLE lock_tbl2 (b BIGINT)
 INHERITS (lock_tbl1);
 
-CREATE TABLE lock_tbl3
-()
+CREATE TABLE lock_tbl3 ()
 INHERITS (lock_tbl2);
 
 BEGIN;

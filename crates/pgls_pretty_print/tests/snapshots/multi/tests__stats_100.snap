@@ -49,11 +49,17 @@ COMMIT;
 
 CREATE TABLE trunc_stats_test (id serial);
 
-CREATE TABLE trunc_stats_test1 (id serial, stuff TEXT);
+CREATE TABLE trunc_stats_test1 (
+  id serial,
+  stuff TEXT
+);
 
 CREATE TABLE trunc_stats_test2 (id serial);
 
-CREATE TABLE trunc_stats_test3 (id serial, stuff TEXT);
+CREATE TABLE trunc_stats_test3 (
+  id serial,
+  stuff TEXT
+);
 
 CREATE TABLE trunc_stats_test4 (id serial);
 
@@ -439,7 +445,10 @@ DROP TABLE "prevstats";
 
 BEGIN;
 
-CREATE TEMPORARY TABLE test_last_scan (idx_col INT PRIMARY KEY, noidx_col INT);
+CREATE TEMPORARY TABLE test_last_scan (
+  idx_col INT PRIMARY KEY,
+  noidx_col INT
+);
 
 INSERT INTO test_last_scan (idx_col, noidx_col) VALUES (1, 1);
 
@@ -815,12 +824,7 @@ SELECT pg_stat_have_stats('database', 'dboid', 0);
 
 CREATE TABLE stats_test_tab1 AS SELECT generate_series(1, 10) AS a;
 
-CREATE INDEX "stats_test_idx1"
-ON stats_test_tab1
-USING btree
-(
-  a
-);
+CREATE INDEX "stats_test_idx1" ON stats_test_tab1 USING btree (a);
 
 SELECT CAST(CAST('stats_test_idx1' AS REGCLASS) AS OID) AS stats_test_idx1_oid;
 
@@ -838,12 +842,7 @@ SELECT pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
 BEGIN;
 
-CREATE INDEX "stats_test_idx1"
-ON stats_test_tab1
-USING btree
-(
-  a
-);
+CREATE INDEX "stats_test_idx1" ON stats_test_tab1 USING btree (a);
 
 SELECT CAST(CAST('stats_test_idx1' AS REGCLASS) AS OID) AS stats_test_idx1_oid;
 
@@ -855,12 +854,7 @@ ROLLBACK;
 
 SELECT pg_stat_have_stats('relation', 'dboid', 'stats_test_idx1_oid');
 
-CREATE INDEX "stats_test_idx1"
-ON stats_test_tab1
-USING btree
-(
-  a
-);
+CREATE INDEX "stats_test_idx1" ON stats_test_tab1 USING btree (a);
 
 SELECT CAST(CAST('stats_test_idx1' AS REGCLASS) AS OID) AS stats_test_idx1_oid;
 
@@ -1064,7 +1058,10 @@ DROP TABLE "test_io_shared";
 
 SET temp_buffers = 100;
 
-CREATE TEMPORARY TABLE test_io_local (a INT, b TEXT);
+CREATE TEMPORARY TABLE test_io_local (
+  a INT,
+  b TEXT
+);
 
 SELECT
   SUM(extends) AS extends,
@@ -1137,7 +1134,11 @@ FROM
 WHERE
   context = 'vacuum';
 
-CREATE TABLE test_io_vac_strategy (a INT, b INT) WITH (autovacuum_enabled = 'false');
+CREATE TABLE test_io_vac_strategy (
+  a INT,
+  b INT
+)
+WITH (autovacuum_enabled = 'false');
 
 INSERT INTO test_io_vac_strategy SELECT i, i FROM generate_series(1, 4500) AS i;
 
@@ -1261,18 +1262,15 @@ SELECT pg_stat_get_backend_io(0);
 
 SELECT pg_stat_get_backend_io('checkpointer_pid');
 
-CREATE TABLE brin_hot
-(id INT PRIMARY KEY, val INT NOT NULL)
+CREATE TABLE brin_hot (
+  id INT PRIMARY KEY,
+  val INT NOT NULL
+)
 WITH (autovacuum_enabled = off, fillfactor = 70);
 
 INSERT INTO brin_hot SELECT *, 0 FROM generate_series(1, 235);
 
-CREATE INDEX "val_brin"
-ON brin_hot
-USING brin
-(
-  val
-);
+CREATE INDEX "val_brin" ON brin_hot USING brin (val);
 
 CREATE FUNCTION wait_for_hot_stats()
 RETURNS VOID
@@ -1308,7 +1306,10 @@ DROP TABLE "brin_hot";
 
 DROP FUNCTION wait_for_hot_stats();
 
-CREATE TABLE brin_hot_2 (a INT, b INT);
+CREATE TABLE brin_hot_2 (
+  a INT,
+  b INT
+);
 
 INSERT INTO brin_hot_2 VALUES (1, 100);
 
@@ -1335,7 +1336,11 @@ SELECT COUNT(*) FROM brin_hot_2 WHERE a = 2 AND b = 100;
 
 DROP TABLE "brin_hot_2";
 
-CREATE TABLE brin_hot_3 (a INT, filler TEXT) WITH (fillfactor = 10);
+CREATE TABLE brin_hot_3 (
+  a INT,
+  filler TEXT
+)
+WITH (fillfactor = 10);
 
 INSERT INTO brin_hot_3 SELECT 1, repeat(' ', 500) FROM generate_series(1, 20);
 

@@ -458,12 +458,12 @@ SELECT
   errinfo.hint
 FROM
   unnest(
-  ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")'
-  AS TEXT),
-  '$ ? (@ like_regex "pattern" flag "a")',
-  '@ + 1',
-  '00',
-  '1a']
+    ARRAY[CAST('$ ? (@ like_regex "pattern" flag "smixq")'
+    AS TEXT),
+    '$ ? (@ like_regex "pattern" flag "a")',
+    '@ + 1',
+    '00',
+    '1a']
   )
   AS str,
   LATERAL pg_input_error_info(str, 'jsonpath')

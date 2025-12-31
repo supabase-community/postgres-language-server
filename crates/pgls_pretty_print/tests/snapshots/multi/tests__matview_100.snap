@@ -3,7 +3,11 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/matview.sql
 snapshot_kind: text
 ---
-CREATE TABLE mvtest_t (id INT NOT NULL PRIMARY KEY, type TEXT NOT NULL, amt NUMERIC NOT NULL);
+CREATE TABLE mvtest_t (
+  id INT NOT NULL PRIMARY KEY,
+  type TEXT NOT NULL,
+  amt NUMERIC NOT NULL
+);
 
 INSERT INTO mvtest_t
 VALUES
@@ -49,12 +53,7 @@ REFRESH MATERIALIZED VIEW mvtest_tm;
 
 SELECT relispopulated FROM pg_class WHERE oid = CAST('mvtest_tm' AS REGCLASS);
 
-CREATE UNIQUE INDEX "mvtest_tm_type"
-ON mvtest_tm
-USING btree
-(
-  type
-);
+CREATE UNIQUE INDEX "mvtest_tm_type" ON mvtest_tm USING btree (type);
 
 SELECT * FROM mvtest_tm ORDER BY type;
 
@@ -68,12 +67,7 @@ CREATE MATERIALIZED VIEW mvtest_tmm AS SELECT SUM(totamt) AS grandtot FROM mvtes
 
 CREATE MATERIALIZED VIEW mvtest_tvmm AS SELECT SUM(totamt) AS grandtot FROM mvtest_tvm;
 
-CREATE UNIQUE INDEX "mvtest_tvmm_expr"
-ON mvtest_tvmm
-USING btree
-(
-  (grandtot > 0)
-);
+CREATE UNIQUE INDEX "mvtest_tvmm_expr" ON mvtest_tvmm USING btree ((grandtot > 0));
 
 CREATE UNIQUE INDEX "mvtest_tvmm_pred"
 ON mvtest_tvmm
@@ -96,12 +90,7 @@ AS SELECT * FROM mvtest_tvvm;
 
 CREATE MATERIALIZED VIEW mvtest_bb AS SELECT * FROM mvtest_tvvmv;
 
-CREATE INDEX "mvtest_aa"
-ON mvtest_bb
-USING btree
-(
-  grandtot
-);
+CREATE INDEX "mvtest_aa" ON mvtest_bb USING btree (grandtot);
 
 CREATE SCHEMA "mvtest_mvschema";
 

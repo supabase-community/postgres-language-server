@@ -133,11 +133,23 @@ AS 'btint8cmp';
 
 ALTER OPERATOR FAMILY integer_ops USING btree ADD FUNCTION 1 int8alias1cmp(BIGINT, int8alias1);
 
-CREATE TABLE ec0 (ff BIGINT PRIMARY KEY, f1 BIGINT, f2 BIGINT);
+CREATE TABLE ec0 (
+  ff BIGINT PRIMARY KEY,
+  f1 BIGINT,
+  f2 BIGINT
+);
 
-CREATE TABLE ec1 (ff BIGINT PRIMARY KEY, f1 int8alias1, f2 int8alias2);
+CREATE TABLE ec1 (
+  ff BIGINT PRIMARY KEY,
+  f1 int8alias1,
+  f2 int8alias2
+);
 
-CREATE TABLE ec2 (xf BIGINT PRIMARY KEY, x1 int8alias1, x2 int8alias2);
+CREATE TABLE ec2 (
+  xf BIGINT PRIMARY KEY,
+  x1 int8alias1,
+  x2 int8alias2
+);
 
 SET enable_hashjoin = off;
 
@@ -161,33 +173,13 @@ SELECT * FROM ec1, ec2 WHERE ff = x1 AND x1 = CAST('42' AS int8alias1);
 
 SELECT * FROM ec1, ec2 WHERE ff = x1 AND x1 = CAST('42' AS int8alias2);
 
-CREATE UNIQUE INDEX "ec1_expr1"
-ON ec1
-USING btree
-(
-  (ff + 1)
-);
+CREATE UNIQUE INDEX "ec1_expr1" ON ec1 USING btree ((ff + 1));
 
-CREATE UNIQUE INDEX "ec1_expr2"
-ON ec1
-USING btree
-(
-  (ff + 2 + 1)
-);
+CREATE UNIQUE INDEX "ec1_expr2" ON ec1 USING btree ((ff + 2 + 1));
 
-CREATE UNIQUE INDEX "ec1_expr3"
-ON ec1
-USING btree
-(
-  (ff + 3 + 1)
-);
+CREATE UNIQUE INDEX "ec1_expr3" ON ec1 USING btree ((ff + 3 + 1));
 
-CREATE UNIQUE INDEX "ec1_expr4"
-ON ec1
-USING btree
-(
-  (ff + 4)
-);
+CREATE UNIQUE INDEX "ec1_expr4" ON ec1 USING btree ((ff + 4));
 
 SELECT
   *
@@ -393,7 +385,10 @@ RESET enable_mergejoin;
 
 SELECT * FROM tenk1 WHERE unique1 = unique1 OR unique2 = unique2;
 
-CREATE TEMPORARY TABLE undername (f1 NAME, f2 INT);
+CREATE TEMPORARY TABLE undername (
+  f1 NAME,
+  f2 INT
+);
 
 CREATE TEMPORARY VIEW overview
 AS SELECT
@@ -407,7 +402,10 @@ SELECT * FROM overview WHERE sqli = 'foo' ORDER BY sqli;
 
 BEGIN;
 
-CREATE TABLE tbl_nocom (a BIGINT, b int8alias1);
+CREATE TABLE tbl_nocom (
+  a BIGINT,
+  b int8alias1
+);
 
 SET enable_hashjoin = off;
 

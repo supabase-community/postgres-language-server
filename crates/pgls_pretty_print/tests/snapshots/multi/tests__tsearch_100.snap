@@ -38,7 +38,10 @@ FROM
 WHERE
   tt.cfgid IS NULL OR tt.tokid IS NULL;
 
-CREATE TABLE test_tsvector (t TEXT, a TSVECTOR);
+CREATE TABLE test_tsvector (
+  t TEXT,
+  a TSVECTOR
+);
 
 COPY test_tsvector FROM 'filename';
 
@@ -92,12 +95,7 @@ SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
 SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
-CREATE INDEX "wowidx"
-ON test_tsvector
-USING gist
-(
-  a
-);
+CREATE INDEX "wowidx" ON test_tsvector USING gist (a);
 
 SET enable_seqscan = off;
 
@@ -209,47 +207,17 @@ SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:A';
 
 SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
-CREATE INDEX "wowidx1"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(foo = 1)
-);
+CREATE INDEX "wowidx1" ON test_tsvector USING gist (a tsvector_ops(foo = 1));
 
-CREATE INDEX "wowidx1"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(siglen = 0)
-);
+CREATE INDEX "wowidx1" ON test_tsvector USING gist (a tsvector_ops(siglen = 0));
 
-CREATE INDEX "wowidx1"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(siglen = 2048)
-);
+CREATE INDEX "wowidx1" ON test_tsvector USING gist (a tsvector_ops(siglen = 2048));
 
-CREATE INDEX "wowidx1"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(siglen = 100, foo = bar)
-);
+CREATE INDEX "wowidx1" ON test_tsvector USING gist (a tsvector_ops(siglen = 100, foo = bar));
 
-CREATE INDEX "wowidx1"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(siglen = 100, siglen = 200)
-);
+CREATE INDEX "wowidx1" ON test_tsvector USING gist (a tsvector_ops(siglen = 100, siglen = 200));
 
-CREATE INDEX "wowidx2"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(siglen = 1)
-);
+CREATE INDEX "wowidx2" ON test_tsvector USING gist (a tsvector_ops(siglen = 1));
 
 DROP INDEX "wowidx";
 
@@ -305,12 +273,7 @@ SELECT COUNT(*) FROM test_tsvector WHERE a @@ '!wd:D';
 
 DROP INDEX "wowidx2";
 
-CREATE INDEX "wowidx"
-ON test_tsvector
-USING gist
-(
-  a tsvector_ops(siglen = 484)
-);
+CREATE INDEX "wowidx" ON test_tsvector USING gist (a tsvector_ops(siglen = 484));
 
 SELECT COUNT(*) FROM test_tsvector WHERE a @@ 'wr|qh';
 
@@ -370,12 +333,7 @@ RESET enable_bitmapscan;
 
 DROP INDEX "wowidx";
 
-CREATE INDEX "wowidx"
-ON test_tsvector
-USING gin
-(
-  a
-);
+CREATE INDEX "wowidx" ON test_tsvector USING gin (a);
 
 SET enable_seqscan = off;
 
@@ -455,36 +413,36 @@ SELECT
   *
 FROM
   ts_parse(
-  'default',
-  '345 qwe@efd.r '' http://www.com/ http://aew.werc.ewr/?ad=qwe&dw 1aew.werc.ewr/?ad=qwe&dw 2aew.werc.ewr http://3aew.werc.ewr/?ad=qwe&dw http://4aew.werc.ewr http://5aew.werc.ewr:8100/?  ad=qwe&dw 6aew.werc.ewr:8100/?ad=qwe&dw 7aew.werc.ewr:8100/?ad=qwe&dw=%20%32 +4.0e-10 qwe qwe qwqwe 234.435 455 5.005 teodor@stack.net teodor@123-stack.net 123_teodor@stack.net 123-teodor@stack.net qwe-wer asdf <fr>qwer jf sdjk<we hjwer <werrwe> ewr1> ewri2 <a href="qwe<qwe>">
+    'default',
+    '345 qwe@efd.r '' http://www.com/ http://aew.werc.ewr/?ad=qwe&dw 1aew.werc.ewr/?ad=qwe&dw 2aew.werc.ewr http://3aew.werc.ewr/?ad=qwe&dw http://4aew.werc.ewr http://5aew.werc.ewr:8100/?  ad=qwe&dw 6aew.werc.ewr:8100/?ad=qwe&dw 7aew.werc.ewr:8100/?ad=qwe&dw=%20%32 +4.0e-10 qwe qwe qwqwe 234.435 455 5.005 teodor@stack.net teodor@123-stack.net 123_teodor@stack.net 123-teodor@stack.net qwe-wer asdf <fr>qwer jf sdjk<we hjwer <werrwe> ewr1> ewri2 <a href="qwe<qwe>">
 /usr/local/fff /awdf/dwqe/4325 rewt/ewr wefjn /wqe-324/ewr gist.h gist.h.c gist.c. readline 4.2 4.2. 4.2, readline-4.2 readline-4.2. 234
 <i <b> wow  < jqw <> qwerty'
   );
 
 SELECT
   to_tsvector(
-  'english',
-  '345 qwe@efd.r '' http://www.com/ http://aew.werc.ewr/?ad=qwe&dw 1aew.werc.ewr/?ad=qwe&dw 2aew.werc.ewr http://3aew.werc.ewr/?ad=qwe&dw http://4aew.werc.ewr http://5aew.werc.ewr:8100/?  ad=qwe&dw 6aew.werc.ewr:8100/?ad=qwe&dw 7aew.werc.ewr:8100/?ad=qwe&dw=%20%32 +4.0e-10 qwe qwe qwqwe 234.435 455 5.005 teodor@stack.net teodor@123-stack.net 123_teodor@stack.net 123-teodor@stack.net qwe-wer asdf <fr>qwer jf sdjk<we hjwer <werrwe> ewr1> ewri2 <a href="qwe<qwe>">
+    'english',
+    '345 qwe@efd.r '' http://www.com/ http://aew.werc.ewr/?ad=qwe&dw 1aew.werc.ewr/?ad=qwe&dw 2aew.werc.ewr http://3aew.werc.ewr/?ad=qwe&dw http://4aew.werc.ewr http://5aew.werc.ewr:8100/?  ad=qwe&dw 6aew.werc.ewr:8100/?ad=qwe&dw 7aew.werc.ewr:8100/?ad=qwe&dw=%20%32 +4.0e-10 qwe qwe qwqwe 234.435 455 5.005 teodor@stack.net teodor@123-stack.net 123_teodor@stack.net 123-teodor@stack.net qwe-wer asdf <fr>qwer jf sdjk<we hjwer <werrwe> ewr1> ewri2 <a href="qwe<qwe>">
 /usr/local/fff /awdf/dwqe/4325 rewt/ewr wefjn /wqe-324/ewr gist.h gist.h.c gist.c. readline 4.2 4.2. 4.2, readline-4.2 readline-4.2. 234
 <i <b> wow  < jqw <> qwerty'
   );
 
 SELECT
   length(
-  to_tsvector(
-  'english',
-  '345 qwe@efd.r '' http://www.com/ http://aew.werc.ewr/?ad=qwe&dw 1aew.werc.ewr/?ad=qwe&dw 2aew.werc.ewr http://3aew.werc.ewr/?ad=qwe&dw http://4aew.werc.ewr http://5aew.werc.ewr:8100/?  ad=qwe&dw 6aew.werc.ewr:8100/?ad=qwe&dw 7aew.werc.ewr:8100/?ad=qwe&dw=%20%32 +4.0e-10 qwe qwe qwqwe 234.435 455 5.005 teodor@stack.net teodor@123-stack.net 123_teodor@stack.net 123-teodor@stack.net qwe-wer asdf <fr>qwer jf sdjk<we hjwer <werrwe> ewr1> ewri2 <a href="qwe<qwe>">
+    to_tsvector(
+      'english',
+      '345 qwe@efd.r '' http://www.com/ http://aew.werc.ewr/?ad=qwe&dw 1aew.werc.ewr/?ad=qwe&dw 2aew.werc.ewr http://3aew.werc.ewr/?ad=qwe&dw http://4aew.werc.ewr http://5aew.werc.ewr:8100/?  ad=qwe&dw 6aew.werc.ewr:8100/?ad=qwe&dw 7aew.werc.ewr:8100/?ad=qwe&dw=%20%32 +4.0e-10 qwe qwe qwqwe 234.435 455 5.005 teodor@stack.net teodor@123-stack.net 123_teodor@stack.net 123-teodor@stack.net qwe-wer asdf <fr>qwer jf sdjk<we hjwer <werrwe> ewr1> ewri2 <a href="qwe<qwe>">
 /usr/local/fff /awdf/dwqe/4325 rewt/ewr wefjn /wqe-324/ewr gist.h gist.h.c gist.c. readline 4.2 4.2. 4.2, readline-4.2 readline-4.2. 234
 <i <b> wow  < jqw <> qwerty'
-  )
+    )
   );
 
 SELECT
   *
 FROM
   ts_debug(
-  'english',
-  '<myns:foo-bar_baz.blurfl>abc&nm1;def&#xa9;ghi&#245;jkl</myns:foo-bar_baz.blurfl>'
+    'english',
+    '<myns:foo-bar_baz.blurfl>abc&nm1;def&#xa9;ghi&#245;jkl</myns:foo-bar_baz.blurfl>'
   );
 
 SELECT * FROM ts_debug('english', 'http://www.harewoodsolutions.co.uk/press.aspx</span>');
@@ -613,9 +571,9 @@ SELECT phraseto_tsquery('english', 'PostgreSQL can be extended by the user in ma
 
 SELECT
   ts_rank_cd(
-  to_tsvector(
-  'english',
-  '
+    to_tsvector(
+      'english',
+      '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -626,15 +584,15 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 '
-  ),
-  to_tsquery('english', 'paint&water')
+    ),
+    to_tsquery('english', 'paint&water')
   );
 
 SELECT
   ts_rank_cd(
-  to_tsvector(
-  'english',
-  '
+    to_tsvector(
+      'english',
+      '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -645,15 +603,15 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 '
-  ),
-  to_tsquery('english', 'breath&motion&water')
+    ),
+    to_tsquery('english', 'breath&motion&water')
   );
 
 SELECT
   ts_rank_cd(
-  to_tsvector(
-  'english',
-  '
+    to_tsvector(
+      'english',
+      '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -664,15 +622,15 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 '
-  ),
-  to_tsquery('english', 'ocean')
+    ),
+    to_tsquery('english', 'ocean')
   );
 
 SELECT
   ts_rank_cd(
-  to_tsvector(
-  'english',
-  '
+    to_tsvector(
+      'english',
+      '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -683,23 +641,23 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 '
-  ),
-  to_tsquery('english', 'painted <-> Ship')
+    ),
+    to_tsquery('english', 'painted <-> Ship')
   );
 
 SELECT ts_rank_cd(strip(to_tsvector('both stripped')), to_tsquery('both & stripped'));
 
 SELECT
   ts_rank_cd(
-  to_tsvector('unstripped') ||
-  strip(to_tsvector('stripped')),
-  to_tsquery('unstripped & stripped')
+    to_tsvector('unstripped') ||
+    strip(to_tsvector('stripped')),
+    to_tsquery('unstripped & stripped')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -710,13 +668,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'paint&water')
+    to_tsquery('english', 'paint&water')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -727,13 +685,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'breath&motion&water')
+    to_tsquery('english', 'breath&motion&water')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -744,13 +702,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'ocean')
+    to_tsquery('english', 'ocean')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -761,13 +719,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'day & drink')
+    to_tsquery('english', 'day & drink')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -778,13 +736,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'day | drink')
+    to_tsquery('english', 'day | drink')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -795,13 +753,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'day | !drink')
+    to_tsquery('english', 'day | !drink')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -812,13 +770,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'painted <-> Ship & drink')
+    to_tsquery('english', 'painted <-> Ship & drink')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -829,13 +787,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'painted <-> Ship | drink')
+    to_tsquery('english', 'painted <-> Ship | drink')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -846,13 +804,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'painted <-> Ship | !drink')
+    to_tsquery('english', 'painted <-> Ship | !drink')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -863,13 +821,13 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  phraseto_tsquery('english', 'painted Ocean')
+    phraseto_tsquery('english', 'painted Ocean')
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -880,33 +838,33 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  phraseto_tsquery(
-  'english',
-  'idle as a painted Ship'
-  )
+    phraseto_tsquery(
+      'english',
+      'idle as a painted Ship'
+    )
   );
 
 SELECT
   ts_headline(
-  'english',
-  'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
-  to_tsquery('english', 'Lorem') &&
-  phraseto_tsquery('english', 'ullamcorper urna'),
-  'MaxWords=100, MinWords=1'
+    'english',
+    'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
+    to_tsquery('english', 'Lorem') &&
+    phraseto_tsquery('english', 'ullamcorper urna'),
+    'MaxWords=100, MinWords=1'
   );
 
 SELECT
   ts_headline(
-  'english',
-  'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
-  phraseto_tsquery('english', 'ullamcorper urna'),
-  'MaxWords=100, MinWords=5'
+    'english',
+    'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
+    phraseto_tsquery('english', 'ullamcorper urna'),
+    'MaxWords=100, MinWords=5'
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 <html>
 <!-- some comment -->
 <body>
@@ -918,8 +876,8 @@ ff-bg
 </script>
 </body>
 </html>',
-  to_tsquery('english', 'sea&foo'),
-  'HighlightAll=true'
+    to_tsquery('english', 'sea&foo'),
+    'HighlightAll=true'
   );
 
 SELECT ts_headline('simple', CAST('1 2 3 1 3' AS TEXT), '1 <-> 3', 'MaxWords=2, MinWords=1');
@@ -930,8 +888,8 @@ SELECT ts_headline('simple', CAST('1 2 3 1 3' AS TEXT), '1 <-> 3', 'MaxWords=4, 
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -942,14 +900,14 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'ocean'),
-  'MaxFragments=1'
+    to_tsquery('english', 'ocean'),
+    'MaxFragments=1'
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -960,14 +918,14 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'Coleridge & stuck'),
-  'MaxFragments=2'
+    to_tsquery('english', 'Coleridge & stuck'),
+    'MaxFragments=2'
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -978,14 +936,14 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'ocean & seahorse'),
-  'MaxFragments=1'
+    to_tsquery('english', 'ocean & seahorse'),
+    'MaxFragments=1'
   );
 
 SELECT
   ts_headline(
-  'english',
-  '
+    'english',
+    '
 Day after day, day after day,
   We stuck, nor breath nor motion,
 As idle as a painted Ship
@@ -996,24 +954,27 @@ Water, water, every where,
   Nor any drop to drink.
 S. T. Coleridge (1772-1834)
 ',
-  to_tsquery('english', 'Coleridge & stuck'),
-  'MaxFragments=2,FragmentDelimiter=***'
+    to_tsquery('english', 'Coleridge & stuck'),
+    'MaxFragments=2,FragmentDelimiter=***'
   );
 
 SELECT
   ts_headline(
-  'english',
-  'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
-  to_tsquery('english', 'Lorem') &&
-  phraseto_tsquery('english', 'ullamcorper urna'),
-  'MaxFragments=100, MaxWords=100, MinWords=1'
+    'english',
+    'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
+    to_tsquery('english', 'Lorem') &&
+    phraseto_tsquery('english', 'ullamcorper urna'),
+    'MaxFragments=100, MaxWords=100, MinWords=1'
   );
 
 SELECT ts_headline('english', '', to_tsquery('english', ''));
 
 SELECT ts_headline('english', 'foo bar', to_tsquery('english', ''));
 
-CREATE TABLE test_tsquery (txtkeyword TEXT, txtsample TEXT);
+CREATE TABLE test_tsquery (
+  txtkeyword TEXT,
+  txtsample TEXT
+);
 
 ALTER TABLE test_tsquery
   ADD COLUMN keyword TSQUERY;
@@ -1035,12 +996,7 @@ SELECT COUNT(*) FROM test_tsquery WHERE keyword >= 'new <-> york';
 
 SELECT COUNT(*) FROM test_tsquery WHERE keyword > 'new <-> york';
 
-CREATE UNIQUE INDEX "bt_tsq"
-ON test_tsquery
-USING btree
-(
-  keyword
-);
+CREATE UNIQUE INDEX "bt_tsq" ON test_tsquery USING btree (keyword);
 
 SET enable_seqscan = off;
 
@@ -1058,9 +1014,9 @@ RESET enable_seqscan;
 
 SELECT
   ts_rewrite(
-  'foo & bar & qq & new & york',
-  CAST('new & york' AS TSQUERY),
-  'big & apple | nyc | new & york & city'
+    'foo & bar & qq & new & york',
+    CAST('new & york' AS TSQUERY),
+    'big & apple | nyc | new & york & city'
   );
 
 SELECT ts_rewrite(ts_rewrite('new & !york ', 'york', '!jersey'), 'jersey', 'mexico');
@@ -1071,9 +1027,9 @@ SELECT ts_rewrite('moscow & hotel', CAST('SELECT keyword, sample FROM test_tsque
 
 SELECT
   ts_rewrite(
-  'bar & qq & foo & (new <-> york)',
-  CAST('SELECT keyword, sample FROM test_tsquery'
-  AS TEXT)
+    'bar & qq & foo & (new <-> york)',
+    CAST('SELECT keyword, sample FROM test_tsquery'
+    AS TEXT)
   );
 
 SELECT ts_rewrite('moscow', 'SELECT keyword, sample FROM test_tsquery');
@@ -1088,9 +1044,9 @@ SELECT ts_rewrite('1 & (2 <2> 3)', CAST('SELECT keyword, sample FROM test_tsquer
 
 SELECT
   ts_rewrite(
-  '5 <-> (1 & (2 <-> 3))',
-  CAST('SELECT keyword, sample FROM test_tsquery'
-  AS TEXT)
+    '5 <-> (1 & (2 <-> 3))',
+    CAST('SELECT keyword, sample FROM test_tsquery'
+    AS TEXT)
   );
 
 SELECT ts_rewrite('5 <-> (6 | 8)', CAST('SELECT keyword, sample FROM test_tsquery' AS TEXT));
@@ -1109,66 +1065,61 @@ SELECT keyword FROM test_tsquery WHERE keyword <@ 'moscow';
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow & hotel') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery(
-  'english',
-  'bar & qq & foo & (new <-> york)'
+    'english',
+    'bar & qq & foo & (new <-> york)'
   )
   AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow & hotel') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery(
-  'english',
-  'bar & qq & foo & (new <-> york)'
+    'english',
+    'bar & qq & foo & (new <-> york)'
   )
   AS query;
 
-CREATE INDEX "qq"
-ON test_tsquery
-USING gist
-(
-  keyword tsquery_ops
-);
+CREATE INDEX "qq" ON test_tsquery USING gist (keyword tsquery_ops);
 
 SET enable_seqscan = off;
 
@@ -1182,57 +1133,57 @@ SELECT keyword FROM test_tsquery WHERE keyword <@ 'moscow';
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow & hotel') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery(
-  'english',
-  'bar & qq & foo & (new <-> york)'
+    'english',
+    'bar & qq & foo & (new <-> york)'
   )
   AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery('english', 'moscow & hotel') AS query;
 
 SELECT
   ts_rewrite(
-  query,
-  'SELECT keyword, sample FROM test_tsquery'
+    query,
+    'SELECT keyword, sample FROM test_tsquery'
   )
 FROM
   to_tsquery(
-  'english',
-  'bar & qq & foo & (new <-> york)'
+    'english',
+    'bar & qq & foo & (new <-> york)'
   )
   AS query;
 
@@ -1261,12 +1212,12 @@ SELECT plainto_tsquery('SKIES My booKs');
 SELECT to_tsquery('SKIES & My | booKs');
 
 CREATE TRIGGER tsvectorupdate
-BEFORE INSERT OR UPDATE
-ON test_tsvector
-FOR EACH ROW
-EXECUTE FUNCTION tsvector_update_trigger(a,
-"pg_catalog.english",
-t);
+  BEFORE INSERT OR UPDATE
+  ON test_tsvector
+  FOR EACH ROW
+  EXECUTE FUNCTION tsvector_update_trigger(a,
+  "pg_catalog.english",
+  t);
 
 SELECT COUNT(*) FROM test_tsvector WHERE a @@ to_tsquery('345&qwerty');
 
@@ -1288,12 +1239,7 @@ SELECT * FROM test_tsquery, to_tsquery('english', 'new') AS q WHERE txtsample @@
 
 CREATE TEMPORARY TABLE pendtest (ts TSVECTOR);
 
-CREATE INDEX "pendtest_idx"
-ON pendtest
-USING gin
-(
-  ts
-);
+CREATE INDEX "pendtest_idx" ON pendtest USING gin (ts);
 
 INSERT INTO pendtest VALUES (to_tsvector('Lore ipsam'));
 
@@ -1315,12 +1261,7 @@ INSERT INTO phrase_index_test VALUES ('A fat cat has just eaten a rat.');
 
 INSERT INTO phrase_index_test VALUES (to_tsvector('english', 'A fat cat has just eaten a rat.'));
 
-CREATE INDEX "phrase_index_test_idx"
-ON phrase_index_test
-USING gin
-(
-  fts
-);
+CREATE INDEX "phrase_index_test_idx" ON phrase_index_test USING gin (fts);
 
 SET enable_seqscan = off;
 
@@ -1457,15 +1398,15 @@ SELECT websearch_to_tsquery('english', '"a fat cat" ate a rat');
 SELECT
   to_tsvector('english', 'A fat cat ate a rat') @@
   websearch_to_tsquery(
-  'english',
-  '"a fat cat" ate a rat'
+    'english',
+    '"a fat cat" ate a rat'
   );
 
 SELECT
   to_tsvector('english', 'A fat grey cat ate a rat') @@
   websearch_to_tsquery(
-  'english',
-  '"a fat cat" ate a rat'
+    'english',
+    '"a fat cat" ate a rat'
   );
 
 SELECT websearch_to_tsquery('''');

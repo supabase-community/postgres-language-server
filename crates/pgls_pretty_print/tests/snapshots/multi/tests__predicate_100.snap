@@ -3,7 +3,11 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/predicate.sql
 snapshot_kind: text
 ---
-CREATE TABLE pred_tab (a INT NOT NULL, b INT, c INT NOT NULL);
+CREATE TABLE pred_tab (
+  a INT NOT NULL,
+  b INT,
+  c INT NOT NULL
+);
 
 SELECT * FROM pred_tab AS t WHERE t.a IS NOT NULL;
 
@@ -111,8 +115,7 @@ DROP TABLE "pred_tab";
 
 CREATE TABLE pred_parent (a INT);
 
-CREATE TABLE pred_child
-()
+CREATE TABLE pred_child ()
 INHERITS (pred_parent);
 
 ALTER TABLE ONLY pred_parent
@@ -134,9 +137,15 @@ SELECT * FROM pred_parent WHERE a IS NULL;
 
 DROP TABLE "pred_parent", "pred_child";
 
-CREATE TABLE pred_tab (a INT, b INT);
+CREATE TABLE pred_tab (
+  a INT,
+  b INT
+);
 
-CREATE TABLE pred_tab_notnull (a INT, b INT NOT NULL);
+CREATE TABLE pred_tab_notnull (
+  a INT,
+  b INT NOT NULL
+);
 
 INSERT INTO pred_tab VALUES (1, 1);
 
@@ -210,9 +219,17 @@ DROP TABLE "pred_tab";
 
 DROP TABLE "pred_tab_notnull";
 
-CREATE TABLE pred_tab1 (a INT NOT NULL, b INT, CONSTRAINT "check_tab1" CHECK (a IS NULL OR b > 2));
+CREATE TABLE pred_tab1 (
+  a INT NOT NULL,
+  b INT,
+  CONSTRAINT "check_tab1" CHECK (a IS NULL OR b > 2)
+);
 
-CREATE TABLE pred_tab2 (a INT, b INT, CONSTRAINT "check_a" CHECK (a IS NOT NULL));
+CREATE TABLE pred_tab2 (
+  a INT,
+  b INT,
+  CONSTRAINT "check_a" CHECK (a IS NOT NULL)
+);
 
 SET constraint_exclusion = 'on';
 

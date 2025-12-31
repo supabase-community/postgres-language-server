@@ -193,17 +193,14 @@ SELECT 2 IS NOT DISTINCT FROM NULL AS no;
 
 SELECT NULL IS NOT DISTINCT FROM NULL AS yes;
 
-CREATE TABLE distinct_tbl (x INT, y INT);
+CREATE TABLE distinct_tbl (
+  x INT,
+  y INT
+);
 
 INSERT INTO distinct_tbl SELECT i % 10, i % 10 FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX "distinct_tbl_x_y_idx"
-ON distinct_tbl
-USING btree
-(
-  x,
-  y
-);
+CREATE INDEX "distinct_tbl_x_y_idx" ON distinct_tbl USING btree (x, y);
 
 ANALYZE distinct_tbl;
 

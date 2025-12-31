@@ -5,7 +5,10 @@ snapshot_kind: text
 ---
 CREATE SCHEMA "testxmlschema";
 
-CREATE TABLE testxmlschema.test1 (a INT, b TEXT);
+CREATE TABLE testxmlschema.test1 (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO testxmlschema.test1
 VALUES
@@ -15,8 +18,7 @@ VALUES
 
 CREATE DOMAIN testxmldomain AS VARCHAR;
 
-CREATE TABLE testxmlschema.test2
-(
+CREATE TABLE testxmlschema.test2 (
   z INT,
   y VARCHAR(500),
   x CHAR(6),

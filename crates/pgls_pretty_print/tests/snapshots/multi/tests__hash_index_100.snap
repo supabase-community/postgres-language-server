@@ -3,13 +3,25 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/hash_index.sql
 snapshot_kind: text
 ---
-CREATE TABLE hash_i4_heap (seqno INT, random INT);
+CREATE TABLE hash_i4_heap (
+  seqno INT,
+  random INT
+);
 
-CREATE TABLE hash_name_heap (seqno INT, random NAME);
+CREATE TABLE hash_name_heap (
+  seqno INT,
+  random NAME
+);
 
-CREATE TABLE hash_txt_heap (seqno INT, random TEXT);
+CREATE TABLE hash_txt_heap (
+  seqno INT,
+  random TEXT
+);
 
-CREATE TABLE hash_f8_heap (seqno INT, random DOUBLE PRECISION);
+CREATE TABLE hash_f8_heap (
+  seqno INT,
+  random DOUBLE PRECISION
+);
 
 COPY hash_i4_heap FROM 'filename';
 
@@ -27,26 +39,11 @@ ANALYZE hash_txt_heap;
 
 ANALYZE hash_f8_heap;
 
-CREATE INDEX "hash_i4_index"
-ON hash_i4_heap
-USING hash
-(
-  random int4_ops
-);
+CREATE INDEX "hash_i4_index" ON hash_i4_heap USING hash (random int4_ops);
 
-CREATE INDEX "hash_name_index"
-ON hash_name_heap
-USING hash
-(
-  random name_ops
-);
+CREATE INDEX "hash_name_index" ON hash_name_heap USING hash (random name_ops);
 
-CREATE INDEX "hash_txt_index"
-ON hash_txt_heap
-USING hash
-(
-  random text_ops
-);
+CREATE INDEX "hash_txt_index" ON hash_txt_heap USING hash (random text_ops);
 
 CREATE INDEX "hash_f8_index"
 ON hash_f8_heap
@@ -56,20 +53,9 @@ USING hash
 )
 WITH (fillfactor = 60);
 
-CREATE UNIQUE INDEX "hash_f8_index_1"
-ON hash_f8_heap
-USING btree
-(
-  (abs(random))
-);
+CREATE UNIQUE INDEX "hash_f8_index_1" ON hash_f8_heap USING btree ((abs(random)));
 
-CREATE UNIQUE INDEX "hash_f8_index_2"
-ON hash_f8_heap
-USING btree
-(
-  (seqno + 1),
-  random
-);
+CREATE UNIQUE INDEX "hash_f8_index_2" ON hash_f8_heap USING btree ((seqno + 1), random);
 
 CREATE UNIQUE INDEX "hash_f8_index_3"
 ON hash_f8_heap
@@ -169,12 +155,7 @@ CREATE TABLE hash_split_heap (keycol INT);
 
 INSERT INTO hash_split_heap SELECT 1 FROM generate_series(1, 500) AS a;
 
-CREATE INDEX "hash_split_index"
-ON hash_split_heap
-USING hash
-(
-  keycol
-);
+CREATE INDEX "hash_split_index" ON hash_split_heap USING hash (keycol);
 
 INSERT INTO hash_split_heap SELECT 1 FROM generate_series(1, 5000) AS a;
 
@@ -211,12 +192,7 @@ DROP TABLE "hash_split_heap";
 
 CREATE TABLE hash_cleanup_heap (keycol INT);
 
-CREATE INDEX "hash_cleanup_index"
-ON hash_cleanup_heap
-USING hash
-(
-  keycol
-);
+CREATE INDEX "hash_cleanup_index" ON hash_cleanup_heap USING hash (keycol);
 
 INSERT INTO hash_cleanup_heap SELECT 1 FROM generate_series(1, 500) AS i;
 
@@ -264,29 +240,25 @@ VACUUM hash_cleanup_heap;
 
 DROP TABLE "hash_cleanup_heap";
 
-CREATE TEMPORARY TABLE hash_temp_heap (x INT, y INT);
+CREATE TEMPORARY TABLE hash_temp_heap (
+  x INT,
+  y INT
+);
 
 INSERT INTO hash_temp_heap VALUES (1, 1);
 
-CREATE INDEX "hash_idx"
-ON hash_temp_heap
-USING hash
-(
-  x
-);
+CREATE INDEX "hash_idx" ON hash_temp_heap USING hash (x);
 
 DROP TABLE "hash_temp_heap" CASCADE;
 
-CREATE TABLE hash_heap_float4 (x REAL, y INT);
+CREATE TABLE hash_heap_float4 (
+  x REAL,
+  y INT
+);
 
 INSERT INTO hash_heap_float4 VALUES (1.1, 1);
 
-CREATE INDEX "hash_idx"
-ON hash_heap_float4
-USING hash
-(
-  x
-);
+CREATE INDEX "hash_idx" ON hash_heap_float4 USING hash (x);
 
 DROP TABLE "hash_heap_float4" CASCADE;
 

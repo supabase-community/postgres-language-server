@@ -7,17 +7,15 @@ SELECT set_config('search_path', ' ', FALSE);
 
 CREATE SCHEMA "test_ns_schema_1";
 
-CREATE UNIQUE INDEX "abc_a_idx"
-ON abc
-USING btree
-(
-  a
-);
+CREATE UNIQUE INDEX "abc_a_idx" ON abc USING btree (a);
 
 CREATE VIEW abc_view
 AS SELECT a + 1 AS a, b + 1 AS b FROM abc;
 
-CREATE TABLE abc (a serial, b INT UNIQUE);
+CREATE TABLE abc (
+  a serial,
+  b INT UNIQUE
+);
 
 SET search_path TO public;
 
@@ -95,7 +93,10 @@ CREATE SCHEMA IF NOT EXISTS "test_ns_schema_renamed";
 
 CREATE SCHEMA IF NOT EXISTS "test_ns_schema_renamed";
 
-CREATE TABLE abc (a serial, b INT UNIQUE);
+CREATE TABLE abc (
+  a serial,
+  b INT UNIQUE
+);
 
 DROP SCHEMA test_ns_schema_renamed CASCADE;
 
@@ -136,12 +137,7 @@ VALUES
 
 CREATE MATERIALIZED VIEW test_maint_mv AS SELECT fn(i) FROM test_maint;
 
-CREATE INDEX "test_maint_idx"
-ON test_maint_search_path.test_maint
-USING btree
-(
-  (fn(i))
-);
+CREATE INDEX "test_maint_idx" ON test_maint_search_path.test_maint USING btree ((fn(i)));
 
 REINDEX TABLE test_maint_search_path.test_maint;
 

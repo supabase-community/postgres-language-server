@@ -18,12 +18,7 @@ SET default_toast_compression = pglz;
 
 CREATE TABLE cmdata_pglz (f1 TEXT COMPRESSION pglz);
 
-CREATE INDEX "idx"
-ON cmdata_pglz
-USING btree
-(
-  f1
-);
+CREATE INDEX "idx" ON cmdata_pglz USING btree (f1);
 
 INSERT INTO cmdata_pglz VALUES (repeat('1234567890', 1000));
 
@@ -86,8 +81,7 @@ SELECT pg_column_compression(f1) FROM cmdata_lz4;
 
 SELECT pg_column_compression(x) FROM compressmv;
 
-CREATE TABLE cmpart
-(f1 TEXT COMPRESSION lz4)
+CREATE TABLE cmpart (f1 TEXT COMPRESSION lz4)
 PARTITION BY HASH(f1);
 
 CREATE TABLE cmpart1 PARTITION OF cmpart FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -102,19 +96,16 @@ SELECT pg_column_compression(f1) FROM cmpart1;
 
 SELECT pg_column_compression(f1) FROM cmpart2;
 
-CREATE TABLE cminh
-()
+CREATE TABLE cminh ()
 INHERITS (cmdata_pglz,
 cmdata_lz4);
 
-CREATE TABLE cminh
-(f1 TEXT COMPRESSION lz4)
+CREATE TABLE cminh (f1 TEXT COMPRESSION lz4)
 INHERITS (cmdata_pglz);
 
 CREATE TABLE cmdata3 (f1 TEXT);
 
-CREATE TABLE cminh
-()
+CREATE TABLE cminh ()
 INHERITS (cmdata_pglz,
 cmdata3);
 
@@ -147,14 +138,12 @@ SELECT pg_column_compression(f1) FROM cmpart1;
 
 SELECT pg_column_compression(f1) FROM cmpart2;
 
-CREATE TABLE cmdata2 (f1 TEXT COMPRESSION pglz, f2 TEXT COMPRESSION lz4);
-
-CREATE UNIQUE INDEX "idx1"
-ON cmdata2
-USING btree
-(
-  (f1 || f2)
+CREATE TABLE cmdata2 (
+  f1 TEXT COMPRESSION pglz,
+  f2 TEXT COMPRESSION lz4
 );
+
+CREATE UNIQUE INDEX "idx1" ON cmdata2 USING btree ((f1 || f2));
 
 INSERT INTO cmdata2
 VALUES (

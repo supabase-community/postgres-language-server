@@ -49,15 +49,20 @@ ALTER PUBLICATION testpub_default SET (publish = 'insert, update, delete');
 
 CREATE SCHEMA "pub_test";
 
-CREATE TABLE testpub_tbl1 (id serial PRIMARY KEY, data TEXT);
+CREATE TABLE testpub_tbl1 (
+  id serial PRIMARY KEY,
+  data TEXT
+);
 
-CREATE TABLE pub_test.testpub_nopk (foo INT, bar INT);
+CREATE TABLE pub_test.testpub_nopk (
+  foo INT,
+  bar INT
+);
 
 CREATE VIEW testpub_view
 AS SELECT 1;
 
-CREATE TABLE testpub_parted
-(a INT)
+CREATE TABLE testpub_parted (a INT)
 PARTITION BY LIST(a);
 
 SET client_min_messages = ERROR;
@@ -68,7 +73,10 @@ RESET client_min_messages;
 
 ALTER PUBLICATION testpub_foralltables SET (publish = 'insert, update');
 
-CREATE TABLE testpub_tbl2 (id serial PRIMARY KEY, data TEXT);
+CREATE TABLE testpub_tbl2 (
+  id serial PRIMARY KEY,
+  data TEXT
+);
 
 ALTER PUBLICATION testpub_foralltables ADD TABLE testpub_tbl2;
 
@@ -120,8 +128,7 @@ DROP PUBLICATION testpub_foralltables, testpub_fortable, testpub_forschema, test
 
 CREATE TABLE testpub_tbl3 (a INT);
 
-CREATE TABLE testpub_tbl3a
-(b TEXT)
+CREATE TABLE testpub_tbl3a (b TEXT)
 INHERITS (testpub_tbl3);
 
 SET client_min_messages = ERROR;
@@ -184,9 +191,15 @@ DROP TABLE "testpub_parted1", "testpub_parted2";
 
 DROP PUBLICATION testpub_forparted, testpub_forparted1;
 
-CREATE TABLE testpub_rf_tbl1 (a INT, b TEXT);
+CREATE TABLE testpub_rf_tbl1 (
+  a INT,
+  b TEXT
+);
 
-CREATE TABLE testpub_rf_tbl2 (c TEXT, d INT);
+CREATE TABLE testpub_rf_tbl2 (
+  c TEXT,
+  d INT
+);
 
 CREATE TABLE testpub_rf_tbl3 (e INT);
 
@@ -310,7 +323,11 @@ ALTER PUBLICATION testpub5 SET TABLE testpub_rf_tbl4 WHERE ( length(g) < 6);
 
 CREATE TYPE rf_bug_status AS ENUM ('new', 'open', 'closed');
 
-CREATE TABLE rf_bug (id serial, description TEXT, status rf_bug_status);
+CREATE TABLE rf_bug (
+  id serial,
+  description TEXT,
+  status rf_bug_status
+);
 
 CREATE PUBLICATION testpub6 FOR TABLE rf_bug WHERE (status = 'open') WITH (publish = 'insert');
 
@@ -404,15 +421,31 @@ DROP FUNCTION testpub_rf_func2();
 
 DROP COLLATION "user_collation";
 
-CREATE TABLE rf_tbl_abcd_nopk (a INT, b INT, c INT, d INT);
+CREATE TABLE rf_tbl_abcd_nopk (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
 
-CREATE TABLE rf_tbl_abcd_pk (a INT, b INT, c INT, d INT, PRIMARY KEY (a, b));
+CREATE TABLE rf_tbl_abcd_pk (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  PRIMARY KEY (a, b)
+);
 
-CREATE TABLE rf_tbl_abcd_part_pk
-(a INT PRIMARY KEY, b INT)
+CREATE TABLE rf_tbl_abcd_part_pk (
+  a INT PRIMARY KEY,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE rf_tbl_abcd_part_pk_1 (b INT, a INT PRIMARY KEY);
+CREATE TABLE rf_tbl_abcd_part_pk_1 (
+  b INT,
+  a INT PRIMARY KEY
+);
 
 ALTER TABLE rf_tbl_abcd_part_pk
   ATTACH PARTITION
@@ -477,12 +510,7 @@ UPDATE rf_tbl_abcd_nopk SET a = 1;
 ALTER TABLE rf_tbl_abcd_pk
   ALTER COLUMN c SET NOT NULL;
 
-CREATE UNIQUE INDEX "idx_abcd_pk_c"
-ON rf_tbl_abcd_pk
-USING btree
-(
-  c
-);
+CREATE UNIQUE INDEX "idx_abcd_pk_c" ON rf_tbl_abcd_pk USING btree (c);
 
 ALTER TABLE rf_tbl_abcd_pk
   REPLICA IDENTITY USING INDEX idx_abcd_pk_c;
@@ -490,12 +518,7 @@ ALTER TABLE rf_tbl_abcd_pk
 ALTER TABLE rf_tbl_abcd_nopk
   ALTER COLUMN c SET NOT NULL;
 
-CREATE UNIQUE INDEX "idx_abcd_nopk_c"
-ON rf_tbl_abcd_nopk
-USING btree
-(
-  c
-);
+CREATE UNIQUE INDEX "idx_abcd_nopk_c" ON rf_tbl_abcd_nopk USING btree (c);
 
 ALTER TABLE rf_tbl_abcd_nopk
   REPLICA IDENTITY USING INDEX idx_abcd_nopk_c;
@@ -558,14 +581,12 @@ DROP TABLE "rf_tbl_abcd_part_pk";
 
 SET client_min_messages = ERROR;
 
-CREATE TABLE testpub_gencol (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED NOT NULL);
-
-CREATE UNIQUE INDEX "testpub_gencol_idx"
-ON testpub_gencol
-USING btree
-(
-  b
+CREATE TABLE testpub_gencol (
+  a INT,
+  b INT GENERATED ALWAYS AS (a + 1) STORED NOT NULL
 );
+
+CREATE UNIQUE INDEX "testpub_gencol_idx" ON testpub_gencol USING btree (b);
 
 ALTER TABLE testpub_gencol
   REPLICA IDENTITY USING INDEX testpub_gencol_idx;
@@ -653,13 +674,7 @@ ALTER TABLE testpub_tbl5
 
 ALTER PUBLICATION testpub_fortable_insert ADD TABLE testpub_tbl5 (b, c);
 
-CREATE UNIQUE INDEX "testpub_tbl5_b_key"
-ON testpub_tbl5
-USING btree
-(
-  b,
-  c
-);
+CREATE UNIQUE INDEX "testpub_tbl5_b_key" ON testpub_tbl5 USING btree (b, c);
 
 ALTER TABLE testpub_tbl5
   ALTER COLUMN b SET NOT NULL,
@@ -706,7 +721,11 @@ UPDATE testpub_tbl5d SET a = 1;
 
 DROP TABLE "testpub_tbl5d";
 
-CREATE TABLE testpub_tbl6 (a INT, b TEXT, c TEXT);
+CREATE TABLE testpub_tbl6 (
+  a INT,
+  b TEXT,
+  c TEXT
+);
 
 ALTER TABLE testpub_tbl6
   REPLICA IDENTITY FULL;
@@ -721,7 +740,11 @@ ALTER PUBLICATION testpub_fortable ADD TABLE testpub_tbl6;
 
 UPDATE testpub_tbl6 SET a = 1;
 
-CREATE TABLE testpub_tbl7 (a INT PRIMARY KEY, b TEXT, c TEXT);
+CREATE TABLE testpub_tbl7 (
+  a INT PRIMARY KEY,
+  b TEXT,
+  c TEXT
+);
 
 ALTER PUBLICATION testpub_fortable ADD TABLE testpub_tbl7 (a, b);
 
@@ -729,8 +752,11 @@ ALTER PUBLICATION testpub_fortable SET TABLE testpub_tbl7 (a, b);
 
 ALTER PUBLICATION testpub_fortable SET TABLE testpub_tbl7 (a, c);
 
-CREATE TABLE testpub_tbl8
-(a INT, b TEXT, c TEXT)
+CREATE TABLE testpub_tbl8 (
+  a INT,
+  b TEXT,
+  c TEXT
+)
 PARTITION BY HASH(a);
 
 CREATE TABLE testpub_tbl8_0 PARTITION OF testpub_tbl8 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -804,13 +830,20 @@ UPDATE testpub_tbl8 SET a = 1;
 
 DROP TABLE "testpub_tbl8";
 
-CREATE TABLE testpub_tbl8
-(a INT, b TEXT, c TEXT)
+CREATE TABLE testpub_tbl8 (
+  a INT,
+  b TEXT,
+  c TEXT
+)
 PARTITION BY HASH(a);
 
 ALTER PUBLICATION testpub_col_list ADD TABLE testpub_tbl8 (a, b);
 
-CREATE TABLE testpub_tbl8_0 (a INT, b TEXT, c TEXT);
+CREATE TABLE testpub_tbl8_0 (
+  a INT,
+  b TEXT,
+  c TEXT
+);
 
 ALTER TABLE testpub_tbl8_0
   ADD PRIMARY KEY (a);
@@ -818,7 +851,11 @@ ALTER TABLE testpub_tbl8_0
 ALTER TABLE testpub_tbl8_0
   REPLICA IDENTITY USING INDEX testpub_tbl8_0_pkey;
 
-CREATE TABLE testpub_tbl8_1 (a INT, b TEXT, c TEXT);
+CREATE TABLE testpub_tbl8_1 (
+  a INT,
+  b TEXT,
+  c TEXT
+);
 
 ALTER TABLE testpub_tbl8_1
   ADD PRIMARY KEY (c);
@@ -868,7 +905,12 @@ CREATE PUBLICATION testpub_both_filters;
 
 RESET client_min_messages;
 
-CREATE TABLE testpub_tbl_both_filters (a INT, b INT, c INT, PRIMARY KEY (a, c));
+CREATE TABLE testpub_tbl_both_filters (
+  a INT,
+  b INT,
+  c INT,
+  PRIMARY KEY (a, c)
+);
 
 ALTER TABLE testpub_tbl_both_filters
   REPLICA IDENTITY
@@ -881,15 +923,31 @@ DROP TABLE "testpub_tbl_both_filters";
 
 DROP PUBLICATION testpub_both_filters;
 
-CREATE TABLE rf_tbl_abcd_nopk (a INT, b INT, c INT, d INT);
+CREATE TABLE rf_tbl_abcd_nopk (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
 
-CREATE TABLE rf_tbl_abcd_pk (a INT, b INT, c INT, d INT, PRIMARY KEY (a, b));
+CREATE TABLE rf_tbl_abcd_pk (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  PRIMARY KEY (a, b)
+);
 
-CREATE TABLE rf_tbl_abcd_part_pk
-(a INT PRIMARY KEY, b INT)
+CREATE TABLE rf_tbl_abcd_part_pk (
+  a INT PRIMARY KEY,
+  b INT
+)
 PARTITION BY RANGE(a);
 
-CREATE TABLE rf_tbl_abcd_part_pk_1 (b INT, a INT PRIMARY KEY);
+CREATE TABLE rf_tbl_abcd_part_pk_1 (
+  b INT,
+  a INT PRIMARY KEY
+);
 
 ALTER TABLE rf_tbl_abcd_part_pk
   ATTACH PARTITION
@@ -954,12 +1012,7 @@ UPDATE rf_tbl_abcd_nopk SET a = 1;
 ALTER TABLE rf_tbl_abcd_pk
   ALTER COLUMN c SET NOT NULL;
 
-CREATE UNIQUE INDEX "idx_abcd_pk_c"
-ON rf_tbl_abcd_pk
-USING btree
-(
-  c
-);
+CREATE UNIQUE INDEX "idx_abcd_pk_c" ON rf_tbl_abcd_pk USING btree (c);
 
 ALTER TABLE rf_tbl_abcd_pk
   REPLICA IDENTITY USING INDEX idx_abcd_pk_c;
@@ -967,12 +1020,7 @@ ALTER TABLE rf_tbl_abcd_pk
 ALTER TABLE rf_tbl_abcd_nopk
   ALTER COLUMN c SET NOT NULL;
 
-CREATE UNIQUE INDEX "idx_abcd_nopk_c"
-ON rf_tbl_abcd_nopk
-USING btree
-(
-  c
-);
+CREATE UNIQUE INDEX "idx_abcd_nopk_c" ON rf_tbl_abcd_nopk USING btree (c);
 
 ALTER TABLE rf_tbl_abcd_nopk
   REPLICA IDENTITY USING INDEX idx_abcd_nopk_c;
@@ -1093,18 +1141,16 @@ ALTER PUBLICATION testpub_default DROP TABLE testpub_tbl1, TABLE pub_test.testpu
 
 ALTER PUBLICATION testpub_default DROP TABLE pub_test.testpub_nopk;
 
-CREATE TABLE pub_test.testpub_addpk (id INT NOT NULL, data INT);
+CREATE TABLE pub_test.testpub_addpk (
+  id INT NOT NULL,
+  data INT
+);
 
 ALTER PUBLICATION testpub_default ADD TABLE pub_test.testpub_addpk;
 
 INSERT INTO pub_test.testpub_addpk VALUES (1, 11);
 
-CREATE UNIQUE INDEX "testpub_addpk_id_idx"
-ON pub_test.testpub_addpk
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "testpub_addpk_id_idx" ON pub_test.testpub_addpk USING btree (id);
 
 UPDATE pub_test.testpub_addpk SET id = 2;
 
@@ -1203,11 +1249,20 @@ CREATE SCHEMA "pub_test3";
 
 CREATE SCHEMA "CURRENT_SCHEMA";
 
-CREATE TABLE pub_test1.tbl (id INT, data TEXT);
+CREATE TABLE pub_test1.tbl (
+  id INT,
+  data TEXT
+);
 
-CREATE TABLE pub_test1.tbl1 (id serial PRIMARY KEY, data TEXT);
+CREATE TABLE pub_test1.tbl1 (
+  id serial PRIMARY KEY,
+  data TEXT
+);
 
-CREATE TABLE pub_test2.tbl1 (id serial PRIMARY KEY, data TEXT);
+CREATE TABLE pub_test2.tbl1 (
+  id serial PRIMARY KEY,
+  data TEXT
+);
 
 CREATE TABLE "CURRENT_SCHEMA"."CURRENT_SCHEMA" (id INT);
 
@@ -1301,8 +1356,7 @@ CREATE SCHEMA "pub_testpart1";
 
 CREATE SCHEMA "pub_testpart2";
 
-CREATE TABLE pub_testpart1.parent1
-(a INT)
+CREATE TABLE pub_testpart1.parent1 (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE pub_testpart2.child_parent1 PARTITION OF pub_testpart1.parent1 FOR VALUES IN (1);
@@ -1323,8 +1377,7 @@ UPDATE pub_testpart2.child_parent1 SET a = 1;
 
 DROP PUBLICATION testpubpart_forschema;
 
-CREATE TABLE pub_testpart2.parent2
-(a INT)
+CREATE TABLE pub_testpart2.parent2 (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE pub_testpart1.child_parent2 PARTITION OF pub_testpart2.parent2 FOR VALUES IN (1);
@@ -1397,8 +1450,7 @@ CREATE SCHEMA "sch1";
 
 CREATE SCHEMA "sch2";
 
-CREATE TABLE sch1.tbl1
-(a INT)
+CREATE TABLE sch1.tbl1 (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE sch2.tbl1_part1 PARTITION OF sch1.tbl1 FOR VALUES FROM (1) TO (10);
@@ -1439,16 +1491,14 @@ DROP TABLE "sch2"."tbl1_part1";
 
 DROP TABLE "sch1"."tbl1";
 
-CREATE TABLE sch1.tbl1
-(a INT)
+CREATE TABLE sch1.tbl1 (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE sch1.tbl1_part1 PARTITION OF sch1.tbl1 FOR VALUES FROM (1) TO (10);
 
 CREATE TABLE sch1.tbl1_part2 PARTITION OF sch1.tbl1 FOR VALUES FROM (10) TO (20);
 
-CREATE TABLE sch1.tbl1_part3
-(a INT)
+CREATE TABLE sch1.tbl1_part3 (a INT)
 PARTITION BY RANGE(a);
 
 ALTER TABLE sch1.tbl1
@@ -1479,7 +1529,10 @@ DROP PUBLICATION pub1;
 
 DROP PUBLICATION pub2;
 
-CREATE TABLE gencols (a INT, gen1 INT GENERATED ALWAYS AS (a * 2) STORED);
+CREATE TABLE gencols (
+  a INT,
+  gen1 INT GENERATED ALWAYS AS (a * 2) STORED
+);
 
 CREATE PUBLICATION pub1 FOR TABLE gencols (a, gen1) WITH (publish_generated_columns = 'none');
 
@@ -1499,10 +1552,15 @@ DROP TABLE "gencols";
 
 RESET client_min_messages;
 
-CREATE TABLE testpub_insert_onconfl_no_ri (a INT UNIQUE, b INT);
+CREATE TABLE testpub_insert_onconfl_no_ri (
+  a INT UNIQUE,
+  b INT
+);
 
-CREATE TABLE testpub_insert_onconfl_parted
-(a INT UNIQUE, b INT)
+CREATE TABLE testpub_insert_onconfl_parted (
+  a INT UNIQUE,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE testpub_insert_onconfl_part_no_ri
@@ -1529,9 +1587,15 @@ DROP TABLE "testpub_insert_onconfl_no_ri";
 
 DROP TABLE "testpub_insert_onconfl_parted";
 
-CREATE TABLE testpub_merge_no_ri (a INT, b INT);
+CREATE TABLE testpub_merge_no_ri (
+  a INT,
+  b INT
+);
 
-CREATE TABLE testpub_merge_pk (a INT PRIMARY KEY, b INT);
+CREATE TABLE testpub_merge_pk (
+  a INT PRIMARY KEY,
+  b INT
+);
 
 SET client_min_messages = ERROR;
 
@@ -1553,13 +1617,19 @@ DROP ROLE regress_publication_user_dummy;
 
 CREATE SCHEMA "pubme";
 
-CREATE TABLE t0 (c INT, d INT);
+CREATE TABLE t0 (
+  c INT,
+  d INT
+);
 
 CREATE TABLE t1 (c INT);
 
 CREATE SCHEMA "pubme2";
 
-CREATE TABLE t0 (c INT, d INT);
+CREATE TABLE t0 (
+  c INT,
+  d INT
+);
 
 SET client_min_messages = ERROR;
 

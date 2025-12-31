@@ -444,8 +444,8 @@ WHERE
     proallargtypes[i]
   FROM
     generate_series(
-    1,
-    array_length(proallargtypes, 1)
+      1,
+      array_length(proallargtypes, 1)
     )
     AS g (i)
   WHERE
@@ -685,9 +685,9 @@ FROM
 WHERE
   condefault AND
   convert(
-  CAST('ABC' AS BYTEA),
-  pg_encoding_to_char(conforencoding),
-  pg_encoding_to_char(contoencoding)
+    CAST('ABC' AS BYTEA),
+    pg_encoding_to_char(conforencoding),
+    pg_encoding_to_char(contoencoding)
   ) <>
   'ABC';
 
@@ -1181,28 +1181,28 @@ WHERE
   END OR
   NOT binary_coercible(ptr.prorettype, a.aggtranstype) OR
   NOT binary_coercible(
-  a.aggtranstype,
-  ptr.proargtypes[0]
+    a.aggtranstype,
+    ptr.proargtypes[0]
   ) OR
   p.pronargs > 0 AND
   NOT binary_coercible(
-  p.proargtypes[0],
-  ptr.proargtypes[1]
+    p.proargtypes[0],
+    ptr.proargtypes[1]
   ) OR
   p.pronargs > 1 AND
   NOT binary_coercible(
-  p.proargtypes[1],
-  ptr.proargtypes[2]
+    p.proargtypes[1],
+    ptr.proargtypes[2]
   ) OR
   p.pronargs > 2 AND
   NOT binary_coercible(
-  p.proargtypes[2],
-  ptr.proargtypes[3]
+    p.proargtypes[2],
+    ptr.proargtypes[3]
   ) OR
   p.pronargs > 3 AND
   NOT binary_coercible(
-  p.proargtypes[3],
-  ptr.proargtypes[4]
+    p.proargtypes[3],
+    ptr.proargtypes[4]
   ) OR
   p.pronargs > 4);
 
@@ -1221,8 +1221,8 @@ WHERE
   (pfn.proretset OR
   NOT binary_coercible(pfn.prorettype, p.prorettype) OR
   NOT binary_coercible(
-  a.aggtranstype,
-  pfn.proargtypes[0]
+    a.aggtranstype,
+    pfn.proargtypes[0]
   ) OR
   CASE
   WHEN a.aggfinalextra
@@ -1231,18 +1231,18 @@ WHERE
   END OR
   pfn.pronargs > 1 AND
   NOT binary_coercible(
-  p.proargtypes[0],
-  pfn.proargtypes[1]
+    p.proargtypes[0],
+    pfn.proargtypes[1]
   ) OR
   pfn.pronargs > 2 AND
   NOT binary_coercible(
-  p.proargtypes[1],
-  pfn.proargtypes[2]
+    p.proargtypes[1],
+    pfn.proargtypes[2]
   ) OR
   pfn.pronargs > 3 AND
   NOT binary_coercible(
-  p.proargtypes[2],
-  pfn.proargtypes[3]
+    p.proargtypes[2],
+    pfn.proargtypes[3]
   ) OR
   pfn.pronargs > 4);
 
@@ -1316,23 +1316,23 @@ WHERE
   END OR
   NOT binary_coercible(ptr.prorettype, a.aggmtranstype) OR
   NOT binary_coercible(
-  a.aggmtranstype,
-  ptr.proargtypes[0]
+    a.aggmtranstype,
+    ptr.proargtypes[0]
   ) OR
   p.pronargs > 0 AND
   NOT binary_coercible(
-  p.proargtypes[0],
-  ptr.proargtypes[1]
+    p.proargtypes[0],
+    ptr.proargtypes[1]
   ) OR
   p.pronargs > 1 AND
   NOT binary_coercible(
-  p.proargtypes[1],
-  ptr.proargtypes[2]
+    p.proargtypes[1],
+    ptr.proargtypes[2]
   ) OR
   p.pronargs > 2 AND
   NOT binary_coercible(
-  p.proargtypes[2],
-  ptr.proargtypes[3]
+    p.proargtypes[2],
+    ptr.proargtypes[3]
   ) OR
   p.pronargs > 3);
 
@@ -1356,23 +1356,23 @@ WHERE
   END OR
   NOT binary_coercible(ptr.prorettype, a.aggmtranstype) OR
   NOT binary_coercible(
-  a.aggmtranstype,
-  ptr.proargtypes[0]
+    a.aggmtranstype,
+    ptr.proargtypes[0]
   ) OR
   p.pronargs > 0 AND
   NOT binary_coercible(
-  p.proargtypes[0],
-  ptr.proargtypes[1]
+    p.proargtypes[0],
+    ptr.proargtypes[1]
   ) OR
   p.pronargs > 1 AND
   NOT binary_coercible(
-  p.proargtypes[1],
-  ptr.proargtypes[2]
+    p.proargtypes[1],
+    ptr.proargtypes[2]
   ) OR
   p.pronargs > 2 AND
   NOT binary_coercible(
-  p.proargtypes[2],
-  ptr.proargtypes[3]
+    p.proargtypes[2],
+    ptr.proargtypes[3]
   ) OR
   p.pronargs > 3);
 
@@ -1391,8 +1391,8 @@ WHERE
   (pfn.proretset OR
   NOT binary_coercible(pfn.prorettype, p.prorettype) OR
   NOT binary_coercible(
-  a.aggmtranstype,
-  pfn.proargtypes[0]
+    a.aggmtranstype,
+    pfn.proargtypes[0]
   ) OR
   CASE
   WHEN a.aggmfinalextra
@@ -1401,18 +1401,18 @@ WHERE
   END OR
   pfn.pronargs > 1 AND
   NOT binary_coercible(
-  p.proargtypes[0],
-  pfn.proargtypes[1]
+    p.proargtypes[0],
+    pfn.proargtypes[1]
   ) OR
   pfn.pronargs > 2 AND
   NOT binary_coercible(
-  p.proargtypes[1],
-  pfn.proargtypes[2]
+    p.proargtypes[1],
+    pfn.proargtypes[2]
   ) OR
   pfn.pronargs > 3 AND
   NOT binary_coercible(
-  p.proargtypes[2],
-  pfn.proargtypes[3]
+    p.proargtypes[2],
+    pfn.proargtypes[3]
   ) OR
   pfn.pronargs > 4);
 
@@ -1431,8 +1431,8 @@ WHERE
   ptr.proisstrict AND
   a.aggminitval IS NULL AND
   NOT binary_coercible(
-  p.proargtypes[0],
-  a.aggmtranstype
+    p.proargtypes[0],
+    a.aggmtranstype
   );
 
 SELECT

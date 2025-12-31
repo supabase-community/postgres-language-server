@@ -93,9 +93,9 @@ SELECT
   polyf(int4range(42, 49), 11, CAST(2 AS SMALLINT))
   AS int,
   polyf(
-  float8range(4.5, 7.8),
-  7.8,
-  CAST(11 AS REAL)
+    float8range(4.5, 7.8),
+    7.8,
+    CAST(11 AS REAL)
   )
   AS num;
 
@@ -112,15 +112,15 @@ LANGUAGE "sql";
 
 SELECT
   polyf(
-  multirange(int4range(42, 49)),
-  11,
-  CAST(2 AS SMALLINT)
+    multirange(int4range(42, 49)),
+    11,
+    CAST(2 AS SMALLINT)
   )
   AS int,
   polyf(
-  multirange(float8range(4.5, 7.8)),
-  7.8,
-  CAST(11 AS REAL)
+    multirange(float8range(4.5, 7.8)),
+    7.8,
+    CAST(11 AS REAL)
   )
   AS num;
 
@@ -685,7 +685,11 @@ CREATE AGGREGATE mysum2
   initcond = '0'
 );
 
-CREATE TEMPORARY TABLE t (f1 INT, f2 INT[], f3 TEXT);
+CREATE TEMPORARY TABLE t (
+  f1 INT,
+  f2 INT[],
+  f3 TEXT
+);
 
 INSERT INTO t VALUES (1, ARRAY[1], 'a');
 
@@ -859,14 +863,15 @@ SELECT first_el_agg_any(x) FROM generate_series(1, 10) AS x;
 
 SELECT
   first_el_agg_f8(
-  CAST(x AS DOUBLE PRECISION)
+    CAST(x AS DOUBLE PRECISION)
   )
   OVER (
-  ORDER BY x)
+    ORDER BY x
+  )
 FROM
   generate_series(1, 10) AS x;
 
-SELECT first_el_agg_any(x) OVER ( ORDER BY x) FROM generate_series(1, 10) AS x;
+SELECT first_el_agg_any(x) OVER (ORDER BY x) FROM generate_series(1, 10) AS x;
 
 SELECT DISTINCT array_ndims(histogram_bounds) FROM pg_stats WHERE histogram_bounds IS NOT NULL;
 
@@ -1543,8 +1548,8 @@ SELECT
   pg_typeof(x)
 FROM
   anyctest(
-  multirange(int4range(11, 12)),
-  multirange(int4range(4, 7))
+    multirange(int4range(11, 12)),
+    multirange(int4range(4, 7))
   )
   AS x;
 
@@ -1553,8 +1558,8 @@ SELECT
   pg_typeof(x)
 FROM
   anyctest(
-  multirange(int4range(11, 12)),
-  multirange(numrange(4, 7))
+    multirange(int4range(11, 12)),
+    multirange(numrange(4, 7))
   )
   AS x;
 

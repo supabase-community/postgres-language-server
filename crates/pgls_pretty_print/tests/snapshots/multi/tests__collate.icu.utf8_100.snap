@@ -20,19 +20,37 @@ CREATE SCHEMA "collate_tests";
 
 SET search_path TO collate_tests;
 
-CREATE TABLE collate_test1 (a INT, b TEXT COLLATE "en-x-icu" NOT NULL);
+CREATE TABLE collate_test1 (
+  a INT,
+  b TEXT COLLATE "en-x-icu" NOT NULL
+);
 
-CREATE TABLE collate_test_fail (a INT, b TEXT COLLATE "ja_JP.eucjp-x-icu");
+CREATE TABLE collate_test_fail (
+  a INT,
+  b TEXT COLLATE "ja_JP.eucjp-x-icu"
+);
 
-CREATE TABLE collate_test_fail (a INT, b TEXT COLLATE "foo-x-icu");
+CREATE TABLE collate_test_fail (
+  a INT,
+  b TEXT COLLATE "foo-x-icu"
+);
 
-CREATE TABLE collate_test_fail (a INT COLLATE "en-x-icu", b TEXT);
+CREATE TABLE collate_test_fail (
+  a INT COLLATE "en-x-icu",
+  b TEXT
+);
 
 CREATE TABLE collate_test_like (LIKE collate_test1);
 
-CREATE TABLE collate_test2 (a INT, b TEXT COLLATE "sv-x-icu");
+CREATE TABLE collate_test2 (
+  a INT,
+  b TEXT COLLATE "sv-x-icu"
+);
 
-CREATE TABLE collate_test3 (a INT, b TEXT COLLATE "C");
+CREATE TABLE collate_test3 (
+  a INT,
+  b TEXT COLLATE "C"
+);
 
 INSERT INTO collate_test1
 VALUES
@@ -65,13 +83,19 @@ CREATE DOMAIN testdomain_sv AS TEXT COLLATE "sv-x-icu";
 
 CREATE DOMAIN testdomain_i AS INT COLLATE "sv-x-icu";
 
-CREATE TABLE collate_test4 (a INT, b testdomain_sv);
+CREATE TABLE collate_test4 (
+  a INT,
+  b testdomain_sv
+);
 
 INSERT INTO collate_test4 SELECT * FROM collate_test1;
 
 SELECT a, b FROM collate_test4 ORDER BY b;
 
-CREATE TABLE collate_test5 (a INT, b testdomain_sv COLLATE "en-x-icu");
+CREATE TABLE collate_test5 (
+  a INT,
+  b testdomain_sv COLLATE "en-x-icu"
+);
 
 INSERT INTO collate_test5 SELECT * FROM collate_test1;
 
@@ -95,7 +119,11 @@ SELECT 'bbc' COLLATE "en-x-icu" > 'Ã¤bc' COLLATE "en-x-icu" AS "true";
 
 SELECT 'bbc' COLLATE "sv-x-icu" > 'Ã¤bc' COLLATE "sv-x-icu" AS "false";
 
-CREATE TABLE collate_test10 (a INT, x TEXT COLLATE "en-x-icu", y TEXT COLLATE "tr-x-icu");
+CREATE TABLE collate_test10 (
+  a INT,
+  x TEXT COLLATE "en-x-icu",
+  y TEXT COLLATE "tr-x-icu"
+);
 
 INSERT INTO collate_test10
 VALUES
@@ -150,7 +178,10 @@ SELECT * FROM collate_test1 WHERE b ~* '^abc';
 
 SELECT * FROM collate_test1 WHERE b ~* 'bc';
 
-CREATE TABLE collate_test6 (a INT, b TEXT COLLATE "en-x-icu");
+CREATE TABLE collate_test6 (
+  a INT,
+  b TEXT COLLATE "en-x-icu"
+);
 
 INSERT INTO collate_test6
 VALUES
@@ -422,47 +453,17 @@ SELECT a, dup(b) FROM collate_test2 ORDER BY 2;
 
 SELECT a, dup(b) FROM collate_test3 ORDER BY 2;
 
-CREATE INDEX "collate_test1_idx1"
-ON collate_test1
-USING btree
-(
-  b
-);
+CREATE INDEX "collate_test1_idx1" ON collate_test1 USING btree (b);
 
-CREATE INDEX "collate_test1_idx2"
-ON collate_test1
-USING btree
-(
-  b COLLATE "C"
-);
+CREATE INDEX "collate_test1_idx2" ON collate_test1 USING btree (b COLLATE "C");
 
-CREATE INDEX "collate_test1_idx3"
-ON collate_test1
-USING btree
-(
-  (b COLLATE "C")
-);
+CREATE INDEX "collate_test1_idx3" ON collate_test1 USING btree ((b COLLATE "C"));
 
-CREATE INDEX "collate_test1_idx4"
-ON collate_test1
-USING btree
-(
-  ((b || 'foo') COLLATE "POSIX")
-);
+CREATE INDEX "collate_test1_idx4" ON collate_test1 USING btree (((b || 'foo') COLLATE "POSIX"));
 
-CREATE INDEX "collate_test1_idx5"
-ON collate_test1
-USING btree
-(
-  a COLLATE "C"
-);
+CREATE INDEX "collate_test1_idx5" ON collate_test1 USING btree (a COLLATE "C");
 
-CREATE INDEX "collate_test1_idx6"
-ON collate_test1
-USING btree
-(
-  (a COLLATE "C")
-);
+CREATE INDEX "collate_test1_idx6" ON collate_test1 USING btree ((a COLLATE "C"));
 
 SELECT
   relname,
@@ -584,23 +585,24 @@ SELECT current_database() AS datname;
 
 CREATE COLLATION test0 FROM "C";
 
-CREATE TABLE collate_dep_test1 (a INT, b TEXT COLLATE "test0");
+CREATE TABLE collate_dep_test1 (
+  a INT,
+  b TEXT COLLATE "test0"
+);
 
 CREATE DOMAIN collate_dep_dom1 AS TEXT COLLATE "test0";
 
-CREATE TYPE collate_dep_test2 AS ( x INT, y TEXT COLLATE "test0" );
+CREATE TYPE collate_dep_test2 AS (x INT, y TEXT COLLATE "test0");
 
 CREATE VIEW collate_dep_test3
 AS SELECT CAST('foo' AS TEXT) COLLATE "test0" AS foo;
 
-CREATE TABLE collate_dep_test4t (a INT, b TEXT);
-
-CREATE INDEX "collate_dep_test4i"
-ON collate_dep_test4t
-USING btree
-(
-  b COLLATE test0
+CREATE TABLE collate_dep_test4t (
+  a INT,
+  b TEXT
 );
+
+CREATE INDEX "collate_dep_test4i" ON collate_dep_test4t USING btree (b COLLATE test0);
 
 DROP COLLATION "test0";
 
@@ -708,7 +710,10 @@ SELECT 'abc' LIKE 'abc' COLLATE "ctest_nondet";
 
 SELECT 'abc' LIKE 'a\bc' COLLATE "ctest_nondet";
 
-CREATE TABLE test6 (a INT, b TEXT);
+CREATE TABLE test6 (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO test6 VALUES (1, 'zyäbc');
 
@@ -744,7 +749,10 @@ SELECT * FROM test6 WHERE b LIKE 'zyÃ¤bc' COLLATE "ctest_det";
 
 SELECT * FROM test6 WHERE b LIKE 'zyÃ¤bc' COLLATE "ctest_nondet";
 
-CREATE TABLE test6a (a INT, b TEXT[]);
+CREATE TABLE test6a (
+  a INT,
+  b TEXT[]
+);
 
 INSERT INTO test6a VALUES (1, ARRAY['äbc']);
 
@@ -844,23 +852,13 @@ SELECT COUNT(DISTINCT x) FROM test3cs;
 
 SELECT x, COUNT(*) FROM test3cs GROUP BY x ORDER BY x;
 
-SELECT x, ROW_NUMBER() OVER ( ORDER BY x), RANK() OVER ( ORDER BY x) FROM test3cs ORDER BY x;
+SELECT x, ROW_NUMBER() OVER (ORDER BY x), RANK() OVER (ORDER BY x) FROM test3cs ORDER BY x;
 
-CREATE UNIQUE INDEX
-ON test1cs
-USING btree
-(
-  x
-);
+CREATE UNIQUE INDEX ON test1cs USING btree (x);
 
 INSERT INTO test1cs VALUES ('ABC');
 
-CREATE UNIQUE INDEX
-ON test3cs
-USING btree
-(
-  x
-);
+CREATE UNIQUE INDEX ON test3cs USING btree (x);
 
 SELECT string_to_array('ABC,DEF,GHI' COLLATE "case_sensitive", ',', 'abc');
 
@@ -872,12 +870,7 @@ CREATE TABLE test2ci (x TEXT COLLATE "case_insensitive");
 
 CREATE TABLE test3ci (x TEXT COLLATE "case_insensitive");
 
-CREATE INDEX
-ON test3ci
-USING btree
-(
-  x text_pattern_ops
-);
+CREATE INDEX ON test3ci USING btree (x text_pattern_ops);
 
 INSERT INTO test1ci
 VALUES
@@ -927,23 +920,13 @@ SELECT COUNT(DISTINCT x) FROM test3ci;
 
 SELECT x, COUNT(*) FROM test3ci GROUP BY x ORDER BY x;
 
-SELECT x, ROW_NUMBER() OVER ( ORDER BY x), RANK() OVER ( ORDER BY x) FROM test3ci ORDER BY x;
+SELECT x, ROW_NUMBER() OVER (ORDER BY x), RANK() OVER (ORDER BY x) FROM test3ci ORDER BY x;
 
-CREATE UNIQUE INDEX
-ON test1ci
-USING btree
-(
-  x
-);
+CREATE UNIQUE INDEX ON test1ci USING btree (x);
 
 INSERT INTO test1ci VALUES ('ABC');
 
-CREATE UNIQUE INDEX
-ON test3ci
-USING btree
-(
-  x
-);
+CREATE UNIQUE INDEX ON test3ci USING btree (x);
 
 SELECT string_to_array('ABC,DEF,GHI' COLLATE "case_insensitive", ',', 'abc');
 
@@ -955,12 +938,7 @@ CREATE TABLE test2bpci (x CHAR(3) COLLATE "case_insensitive");
 
 CREATE TABLE test3bpci (x CHAR(3) COLLATE "case_insensitive");
 
-CREATE INDEX
-ON test3bpci
-USING btree
-(
-  x bpchar_pattern_ops
-);
+CREATE INDEX ON test3bpci USING btree (x bpchar_pattern_ops);
 
 INSERT INTO test1bpci
 VALUES
@@ -1010,23 +988,13 @@ SELECT COUNT(DISTINCT x) FROM test3bpci;
 
 SELECT x, COUNT(*) FROM test3bpci GROUP BY x ORDER BY x;
 
-SELECT x, ROW_NUMBER() OVER ( ORDER BY x), RANK() OVER ( ORDER BY x) FROM test3bpci ORDER BY x;
+SELECT x, ROW_NUMBER() OVER (ORDER BY x), RANK() OVER (ORDER BY x) FROM test3bpci ORDER BY x;
 
-CREATE UNIQUE INDEX
-ON test1bpci
-USING btree
-(
-  x
-);
+CREATE UNIQUE INDEX ON test1bpci USING btree (x);
 
 INSERT INTO test1bpci VALUES ('ABC');
 
-CREATE UNIQUE INDEX
-ON test3bpci
-USING btree
-(
-  x
-);
+CREATE UNIQUE INDEX ON test3bpci USING btree (x);
 
 SELECT string_to_array(CAST('ABC,DEF,GHI' AS CHAR(11)) COLLATE "case_insensitive", ',', 'abc');
 
@@ -1036,12 +1004,7 @@ CREATE TABLE test4c (x TEXT COLLATE "case_insensitive");
 
 INSERT INTO test4c VALUES ('abc');
 
-CREATE INDEX
-ON test4c
-USING btree
-(
-  x
-);
+CREATE INDEX ON test4c USING btree (x);
 
 SET enable_seqscan = off;
 
@@ -1087,7 +1050,10 @@ WHERE
   typname COLLATE "case_insensitive"
 ORDER BY typname;
 
-CREATE TEMPORARY TABLE outer_text (f1 TEXT COLLATE "case_insensitive", f2 TEXT);
+CREATE TEMPORARY TABLE outer_text (
+  f1 TEXT COLLATE "case_insensitive",
+  f2 TEXT
+);
 
 INSERT INTO outer_text VALUES ('a', 'a');
 
@@ -1097,7 +1063,10 @@ INSERT INTO outer_text VALUES ('A', NULL);
 
 INSERT INTO outer_text VALUES ('B', NULL);
 
-CREATE TEMPORARY TABLE inner_text (c1 TEXT COLLATE "case_insensitive", c2 TEXT);
+CREATE TEMPORARY TABLE inner_text (
+  c1 TEXT COLLATE "case_insensitive",
+  c2 TEXT
+);
 
 INSERT INTO inner_text VALUES ('a', NULL);
 
@@ -1114,7 +1083,10 @@ CREATE COLLATION ignore_accents
 
 RESET client_min_messages;
 
-CREATE TABLE test4 (a INT, b TEXT);
+CREATE TABLE test4 (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO test4
 VALUES
@@ -1131,7 +1103,10 @@ SELECT * FROM test4 WHERE b = 'Cote' COLLATE "ignore_accents";
 
 SELECT * FROM test4 WHERE b = 'Cote' COLLATE "case_insensitive";
 
-CREATE TABLE test4nfd (a INT, b TEXT);
+CREATE TABLE test4nfd (
+  a INT,
+  b TEXT
+);
 
 INSERT INTO test4nfd
 VALUES
@@ -1182,8 +1157,7 @@ SELECT 'foox' LIKE 'foo\' COLLATE "ignore_accents";
 
 CREATE TABLE test10pk (x TEXT COLLATE "case_sensitive" PRIMARY KEY);
 
-CREATE TABLE test10fk
-(
+CREATE TABLE test10fk (
   x TEXT
   COLLATE "case_insensitive"
   REFERENCES test10pk (x)
@@ -1193,8 +1167,7 @@ CREATE TABLE test10fk
 
 CREATE TABLE test11pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test11fk
-(
+CREATE TABLE test11fk (
   x TEXT
   COLLATE "case_sensitive"
   REFERENCES test11pk (x)
@@ -1204,7 +1177,12 @@ CREATE TABLE test11fk
 
 CREATE TABLE test12pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test12fk (a INT, b TEXT COLLATE "case_insensitive" REFERENCES test12pk (x));
+CREATE TABLE test12fk (
+  a INT,
+  b TEXT
+  COLLATE "case_insensitive"
+  REFERENCES test12pk (x)
+);
 
 INSERT INTO test12pk VALUES ('abc');
 
@@ -1223,8 +1201,7 @@ DROP TABLE "test12pk", "test12fk";
 
 CREATE TABLE test12pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test12fk
-(
+CREATE TABLE test12fk (
   a INT,
   b TEXT
   COLLATE "case_insensitive"
@@ -1248,8 +1225,7 @@ DROP TABLE "test12pk", "test12fk";
 
 CREATE TABLE test12pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test12fk
-(
+CREATE TABLE test12fk (
   a INT,
   b TEXT
   COLLATE "case_insensitive"
@@ -1271,8 +1247,10 @@ SELECT * FROM test12fk;
 
 DROP TABLE "test12pk", "test12fk";
 
-CREATE TABLE test20
-(a INT, b TEXT COLLATE "case_insensitive")
+CREATE TABLE test20 (
+  a INT,
+  b TEXT COLLATE "case_insensitive"
+)
 PARTITION BY LIST(b);
 
 CREATE TABLE test20_1 PARTITION OF test20 FOR VALUES IN ('abc');
@@ -1283,8 +1261,10 @@ INSERT INTO test20 VALUES (2, 'ABC');
 
 SELECT * FROM test20_1;
 
-CREATE TABLE test21
-(a INT, b TEXT COLLATE "case_insensitive")
+CREATE TABLE test21 (
+  a INT,
+  b TEXT COLLATE "case_insensitive"
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE test21_1 PARTITION OF test21 FOR VALUES FROM ('ABC') TO ('DEF');
@@ -1295,8 +1275,10 @@ INSERT INTO test21 VALUES (2, 'ABC');
 
 SELECT * FROM test21_1;
 
-CREATE TABLE test22
-(a INT, b TEXT COLLATE "case_sensitive")
+CREATE TABLE test22 (
+  a INT,
+  b TEXT COLLATE "case_sensitive"
+)
 PARTITION BY HASH(b);
 
 CREATE TABLE test22_0 PARTITION OF test22 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1309,8 +1291,10 @@ INSERT INTO test22 VALUES (2, 'DEF');
 
 SELECT (SELECT COUNT(*) FROM test22_0) = (SELECT COUNT(*) FROM test22_1);
 
-CREATE TABLE test22a
-(a INT, b TEXT[] COLLATE "case_sensitive")
+CREATE TABLE test22a (
+  a INT,
+  b TEXT[] COLLATE "case_sensitive"
+)
 PARTITION BY HASH(b);
 
 CREATE TABLE test22a_0 PARTITION OF test22a FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1323,8 +1307,10 @@ INSERT INTO test22a VALUES (2, ARRAY['DEF']);
 
 SELECT (SELECT COUNT(*) FROM test22a_0) = (SELECT COUNT(*) FROM test22a_1);
 
-CREATE TABLE test23
-(a INT, b TEXT COLLATE "case_insensitive")
+CREATE TABLE test23 (
+  a INT,
+  b TEXT COLLATE "case_insensitive"
+)
 PARTITION BY HASH(b);
 
 CREATE TABLE test23_0 PARTITION OF test23 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1337,8 +1323,10 @@ INSERT INTO test23 VALUES (2, 'DEF');
 
 SELECT (SELECT COUNT(*) FROM test23_0) <> (SELECT COUNT(*) FROM test23_1);
 
-CREATE TABLE test23a
-(a INT, b TEXT[] COLLATE "case_insensitive")
+CREATE TABLE test23a (
+  a INT,
+  b TEXT[] COLLATE "case_insensitive"
+)
 PARTITION BY HASH(b);
 
 CREATE TABLE test23a_0 PARTITION OF test23a FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1351,8 +1339,10 @@ INSERT INTO test23a VALUES (2, ARRAY['DEF']);
 
 SELECT (SELECT COUNT(*) FROM test23a_0) <> (SELECT COUNT(*) FROM test23a_1);
 
-CREATE TABLE test30
-(a INT, b CHAR(3) COLLATE "case_insensitive")
+CREATE TABLE test30 (
+  a INT,
+  b CHAR(3) COLLATE "case_insensitive"
+)
 PARTITION BY LIST(b);
 
 CREATE TABLE test30_1 PARTITION OF test30 FOR VALUES IN ('abc');
@@ -1363,8 +1353,10 @@ INSERT INTO test30 VALUES (2, 'ABC');
 
 SELECT * FROM test30_1;
 
-CREATE TABLE test31
-(a INT, b CHAR(3) COLLATE "case_insensitive")
+CREATE TABLE test31 (
+  a INT,
+  b CHAR(3) COLLATE "case_insensitive"
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE test31_1 PARTITION OF test31 FOR VALUES FROM ('ABC') TO ('DEF');
@@ -1375,8 +1367,10 @@ INSERT INTO test31 VALUES (2, 'ABC');
 
 SELECT * FROM test31_1;
 
-CREATE TABLE test32
-(a INT, b CHAR(3) COLLATE "case_sensitive")
+CREATE TABLE test32 (
+  a INT,
+  b CHAR(3) COLLATE "case_sensitive"
+)
 PARTITION BY HASH(b);
 
 CREATE TABLE test32_0 PARTITION OF test32 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1389,8 +1383,10 @@ INSERT INTO test32 VALUES (2, 'DEF');
 
 SELECT (SELECT COUNT(*) FROM test32_0) = (SELECT COUNT(*) FROM test32_1);
 
-CREATE TABLE test33
-(a INT, b CHAR(3) COLLATE "case_insensitive")
+CREATE TABLE test33 (
+  a INT,
+  b CHAR(3) COLLATE "case_insensitive"
+)
 PARTITION BY HASH(b);
 
 CREATE TABLE test33_0 PARTITION OF test33 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1407,8 +1403,10 @@ SET max_parallel_workers_per_gather = 0;
 
 SET enable_incremental_sort = off;
 
-CREATE TABLE pagg_tab3
-(a TEXT, c TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab3 (
+  a TEXT,
+  c TEXT COLLATE "case_insensitive"
+)
 PARTITION BY LIST(c COLLATE "C");
 
 CREATE TABLE pagg_tab3_p1 PARTITION OF pagg_tab3 FOR VALUES IN ('a', 'b');
@@ -1560,16 +1558,17 @@ ORDER BY t1.c COLLATE "C";
 
 SET enable_partitionwise_join = 'true';
 
-CREATE TABLE pagg_tab4
-(c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab4 (
+  c TEXT COLLATE "case_insensitive",
+  b TEXT COLLATE "case_insensitive"
+)
 PARTITION BY LIST(b COLLATE "C");
 
 CREATE TABLE pagg_tab4_p1 PARTITION OF pagg_tab4 FOR VALUES IN ('a', 'b');
 
 CREATE TABLE pagg_tab4_p2 PARTITION OF pagg_tab4 FOR VALUES IN ('B', 'A');
 
-INSERT INTO pagg_tab4
-(b, c)
+INSERT INTO pagg_tab4 (b, c)
 SELECT
   substr('abAB', i % 4 + 1, 1),
   substr('abAB', i % 2 + 1, 1)
@@ -1600,24 +1599,24 @@ FROM
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
 
-CREATE TABLE pagg_tab5
-(c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab5 (
+  c TEXT COLLATE "case_insensitive",
+  b TEXT COLLATE "case_insensitive"
+)
 PARTITION BY LIST(c COLLATE case_insensitive);
 
 CREATE TABLE pagg_tab5_p1 PARTITION OF pagg_tab5 FOR VALUES IN ('a', 'b');
 
 CREATE TABLE pagg_tab5_p2 PARTITION OF pagg_tab5 FOR VALUES IN ('c', 'd');
 
-INSERT INTO pagg_tab5
-(b, c)
+INSERT INTO pagg_tab5 (b, c)
 SELECT
   substr('abAB', i % 4 + 1, 1),
   substr('abAB', i % 2 + 1, 1)
 FROM
   generate_series(0, 5) AS i;
 
-INSERT INTO pagg_tab5
-(b, c)
+INSERT INTO pagg_tab5 (b, c)
 SELECT
   substr('cdCD', i % 4 + 1, 1),
   substr('cdCD', i % 2 + 1, 1)
@@ -1626,24 +1625,24 @@ FROM
 
 ANALYZE pagg_tab5;
 
-CREATE TABLE pagg_tab6
-(c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab6 (
+  c TEXT COLLATE "case_insensitive",
+  b TEXT COLLATE "case_insensitive"
+)
 PARTITION BY LIST(b COLLATE case_insensitive);
 
 CREATE TABLE pagg_tab6_p1 PARTITION OF pagg_tab6 FOR VALUES IN ('a', 'b');
 
 CREATE TABLE pagg_tab6_p2 PARTITION OF pagg_tab6 FOR VALUES IN ('c', 'd');
 
-INSERT INTO pagg_tab6
-(b, c)
+INSERT INTO pagg_tab6 (b, c)
 SELECT
   substr('abAB', i % 4 + 1, 1),
   substr('abAB', i % 2 + 1, 1)
 FROM
   generate_series(0, 5) AS i;
 
-INSERT INTO pagg_tab6
-(b, c)
+INSERT INTO pagg_tab6 (b, c)
 SELECT
   substr('cdCD', i % 4 + 1, 1),
   substr('cdCD', i % 2 + 1, 1)
@@ -1712,8 +1711,7 @@ RESET max_parallel_workers_per_gather;
 
 RESET enable_incremental_sort;
 
-INSERT INTO t5
-(a, b)
+INSERT INTO t5 (a, b)
 VALUES
   (1, 'D1'),
   (2, 'D2'),

@@ -5,7 +5,10 @@ snapshot_kind: text
 ---
 SET extra_float_digits = 0;
 
-CREATE TABLE aggtest (a SMALLINT, b REAL);
+CREATE TABLE aggtest (
+  a SMALLINT,
+  b REAL
+);
 
 COPY aggtest FROM 'filename';
 
@@ -277,35 +280,38 @@ SELECT corr(b, a) FROM aggtest;
 
 SELECT
   covar_pop(
-  CAST(1 AS DOUBLE PRECISION),
-  CAST(2 AS DOUBLE PRECISION)
+    CAST(1 AS DOUBLE PRECISION),
+    CAST(2 AS DOUBLE PRECISION)
   ),
   covar_samp(
-  CAST(3 AS DOUBLE PRECISION),
-  CAST(4 AS DOUBLE PRECISION)
+    CAST(3 AS DOUBLE PRECISION),
+    CAST(4 AS DOUBLE PRECISION)
   );
 
 SELECT
   covar_pop(
-  CAST(1 AS DOUBLE PRECISION),
-  CAST('inf' AS DOUBLE PRECISION)
+    CAST(1 AS DOUBLE PRECISION),
+    CAST('inf' AS DOUBLE PRECISION)
   ),
   covar_samp(
-  CAST(3 AS DOUBLE PRECISION),
-  CAST('inf' AS DOUBLE PRECISION)
+    CAST(3 AS DOUBLE PRECISION),
+    CAST('inf' AS DOUBLE PRECISION)
   );
 
 SELECT
   covar_pop(
-  CAST(1 AS DOUBLE PRECISION),
-  CAST('nan' AS DOUBLE PRECISION)
+    CAST(1 AS DOUBLE PRECISION),
+    CAST('nan' AS DOUBLE PRECISION)
   ),
   covar_samp(
-  CAST(3 AS DOUBLE PRECISION),
-  CAST('nan' AS DOUBLE PRECISION)
+    CAST(3 AS DOUBLE PRECISION),
+    CAST('nan' AS DOUBLE PRECISION)
   );
 
-CREATE TABLE regr_test (x DOUBLE PRECISION, y DOUBLE PRECISION);
+CREATE TABLE regr_test (
+  x DOUBLE PRECISION,
+  y DOUBLE PRECISION
+);
 
 INSERT INTO regr_test
 VALUES
@@ -359,42 +365,42 @@ WHERE
 
 SELECT
   float8_combine(
-  CAST('{3,60,200}' AS DOUBLE PRECISION[]),
-  CAST('{0,0,0}' AS DOUBLE PRECISION[])
+    CAST('{3,60,200}' AS DOUBLE PRECISION[]),
+    CAST('{0,0,0}' AS DOUBLE PRECISION[])
   );
 
 SELECT
   float8_combine(
-  CAST('{0,0,0}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200}' AS DOUBLE PRECISION[])
+    CAST('{0,0,0}' AS DOUBLE PRECISION[]),
+    CAST('{2,180,200}' AS DOUBLE PRECISION[])
   );
 
 SELECT
   float8_combine(
-  CAST('{3,60,200}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200}' AS DOUBLE PRECISION[])
+    CAST('{3,60,200}' AS DOUBLE PRECISION[]),
+    CAST('{2,180,200}' AS DOUBLE PRECISION[])
   );
 
 SELECT
   float8_regr_combine(
-  CAST('{3,60,200,750,20000,2000}'
-  AS DOUBLE PRECISION[]),
-  CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[])
+    CAST('{3,60,200,750,20000,2000}'
+    AS DOUBLE PRECISION[]),
+    CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[])
   );
 
 SELECT
   float8_regr_combine(
-  CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[]),
-  CAST('{2,180,200,740,57800,-3400}'
-  AS DOUBLE PRECISION[])
+    CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[]),
+    CAST('{2,180,200,740,57800,-3400}'
+    AS DOUBLE PRECISION[])
   );
 
 SELECT
   float8_regr_combine(
-  CAST('{3,60,200,750,20000,2000}'
-  AS DOUBLE PRECISION[]),
-  CAST('{2,180,200,740,57800,-3400}'
-  AS DOUBLE PRECISION[])
+    CAST('{3,60,200,750,20000,2000}'
+    AS DOUBLE PRECISION[]),
+    CAST('{2,180,200,740,57800,-3400}'
+    AS DOUBLE PRECISION[])
   );
 
 DROP TABLE "regr_test";
@@ -509,7 +515,14 @@ SELECT
 FROM
   generate_series(1, 3) AS x;
 
-CREATE TEMPORARY TABLE bitwise_test (i2 SMALLINT, i4 INT, i8 BIGINT, i INT, x SMALLINT, y BIT(4));
+CREATE TEMPORARY TABLE bitwise_test (
+  i2 SMALLINT,
+  i4 INT,
+  i8 BIGINT,
+  i INT,
+  x SMALLINT,
+  y BIT(4)
+);
 
 SELECT bit_and(i2) AS "?", bit_or(i4) AS "?", bit_xor(i8) AS "?" FROM bitwise_test;
 
@@ -557,7 +570,12 @@ SELECT
   boolor_statefunc(FALSE, TRUE) AS t,
   NOT boolor_statefunc(FALSE, FALSE) AS t;
 
-CREATE TEMPORARY TABLE bool_test (b1 BOOLEAN, b2 BOOLEAN, b3 BOOLEAN, b4 BOOLEAN);
+CREATE TEMPORARY TABLE bool_test (
+  b1 BOOLEAN,
+  b2 BOOLEAN,
+  b3 BOOLEAN,
+  b4 BOOLEAN
+);
 
 SELECT bool_and(b1) AS n, bool_or(b3) AS n FROM bool_test;
 
@@ -655,38 +673,20 @@ SELECT MAX(100) FROM tenk1;
 
 CREATE TABLE minmaxtest (f1 INT);
 
-CREATE TABLE minmaxtest1
-()
+CREATE TABLE minmaxtest1 ()
 INHERITS (minmaxtest);
 
-CREATE TABLE minmaxtest2
-()
+CREATE TABLE minmaxtest2 ()
 INHERITS (minmaxtest);
 
-CREATE TABLE minmaxtest3
-()
+CREATE TABLE minmaxtest3 ()
 INHERITS (minmaxtest);
 
-CREATE INDEX "minmaxtesti"
-ON minmaxtest
-USING btree
-(
-  f1
-);
+CREATE INDEX "minmaxtesti" ON minmaxtest USING btree (f1);
 
-CREATE INDEX "minmaxtest1i"
-ON minmaxtest1
-USING btree
-(
-  f1
-);
+CREATE INDEX "minmaxtest1i" ON minmaxtest1 USING btree (f1);
 
-CREATE INDEX "minmaxtest2i"
-ON minmaxtest2
-USING btree
-(
-  f1 DESC
-);
+CREATE INDEX "minmaxtest2i" ON minmaxtest2 USING btree (f1 DESC);
 
 CREATE INDEX "minmaxtest3i"
 ON minmaxtest3
@@ -743,21 +743,37 @@ SELECT (SELECT MAX(MIN(unique1)) FROM int8_tbl) FROM tenk1;
 
 SELECT
   AVG(
-  (SELECT
-    AVG(
-    a1.col1 ORDER BY (SELECT AVG(a2.col2) FROM tenk1 AS a3)
-    )
-  FROM
-    tenk1 AS a1 (col1))
+    (SELECT
+      AVG(
+        a1.col1 ORDER BY (SELECT AVG(a2.col2) FROM tenk1 AS a3)
+      )
+    FROM
+      tenk1 AS a1 (col1))
   )
 FROM
   tenk1 AS a2 (col2);
 
-CREATE TEMPORARY TABLE t1 (a INT, b INT, c INT, d INT, PRIMARY KEY (a, b));
+CREATE TEMPORARY TABLE t1 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  PRIMARY KEY (a, b)
+);
 
-CREATE TEMPORARY TABLE t2 (x INT, y INT, z INT, PRIMARY KEY (x, y));
+CREATE TEMPORARY TABLE t2 (
+  x INT,
+  y INT,
+  z INT,
+  PRIMARY KEY (x, y)
+);
 
-CREATE TEMPORARY TABLE t3 (a INT, b INT, c INT, PRIMARY KEY (a, b) DEFERRABLE);
+CREATE TEMPORARY TABLE t3 (
+  a INT,
+  b INT,
+  c INT,
+  PRIMARY KEY (a, b) DEFERRABLE
+);
 
 SELECT * FROM t1 GROUP BY a, b, c, d;
 
@@ -790,16 +806,20 @@ GROUP BY t1.a,
 
 SELECT * FROM t3 GROUP BY a, b, c;
 
-CREATE TEMPORARY TABLE t1c
-()
+CREATE TEMPORARY TABLE t1c ()
 INHERITS (t1);
 
 SELECT * FROM t1 GROUP BY a, b, c, d;
 
 SELECT * FROM ONLY t1 GROUP BY a, b, c, d;
 
-CREATE TEMPORARY TABLE p_t1
-(a INT, b INT, c INT, d INT, PRIMARY KEY (a, b))
+CREATE TEMPORARY TABLE p_t1 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  PRIMARY KEY (a, b)
+)
 PARTITION BY LIST(a);
 
 CREATE TEMPORARY TABLE p_t1_1 PARTITION OF p_t1 FOR VALUES IN (1);
@@ -808,12 +828,7 @@ CREATE TEMPORARY TABLE p_t1_2 PARTITION OF p_t1 FOR VALUES IN (2);
 
 SELECT * FROM p_t1 GROUP BY a, b, c, d;
 
-CREATE UNIQUE INDEX "t2_z_uidx"
-ON t2
-USING btree
-(
-  z
-);
+CREATE UNIQUE INDEX "t2_z_uidx" ON t2 USING btree (z);
 
 SELECT y, z FROM t2 GROUP BY y, z;
 
@@ -844,13 +859,7 @@ DROP INDEX "t2_z_uidx";
 ALTER TABLE t2
   ALTER COLUMN z DROP NOT NULL;
 
-CREATE UNIQUE INDEX "t2_z_uidx"
-ON t2
-USING btree
-(
-  z
-)
-NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX "t2_z_uidx" ON t2 USING btree (z) NULLS NOT DISTINCT;
 
 SELECT y, z FROM t2 GROUP BY y, z;
 
@@ -862,9 +871,15 @@ DROP TABLE "t3";
 
 DROP TABLE "p_t1";
 
-CREATE TEMPORARY TABLE t1 (f1 INT, f2 INT);
+CREATE TEMPORARY TABLE t1 (
+  f1 INT,
+  f2 INT
+);
 
-CREATE TEMPORARY TABLE t2 (f1 BIGINT, f2 OID);
+CREATE TEMPORARY TABLE t2 (
+  f1 BIGINT,
+  f2 OID
+);
 
 SELECT f1 FROM t1 LEFT OUTER JOIN t2 USING ("f1") GROUP BY f1;
 
@@ -957,8 +972,8 @@ SELECT string_agg(DISTINCT f1, ',') FILTER (WHERE length(f1) > 1) FROM varchar_t
 
 SELECT
   string_agg(
-  DISTINCT CAST(f1 AS VARCHAR(2)),
-  ','
+    DISTINCT CAST(f1 AS VARCHAR(2)),
+    ','
   )
   FILTER (WHERE
     length(f1) > 1)
@@ -1152,11 +1167,11 @@ FROM
 
 SELECT
   aggfns(
-  DISTINCT a,
-  b,
-  c ORDER BY a,
-    c USING ~<~,
-    b
+    DISTINCT a,
+    b,
+    c ORDER BY a,
+      c USING ~<~,
+      b
   )
 FROM
   (VALUES
@@ -1170,12 +1185,12 @@ FROM
 SELECT
   string_agg(DISTINCT 'a', ','),
   SUM(
-  (SELECT
-    SUM(1)
-  FROM
-    (VALUES (1)) AS b (id)
-  WHERE
-    a.id = b.id)
+    (SELECT
+      SUM(1)
+    FROM
+      (VALUES (1)) AS b (id)
+    WHERE
+      a.id = b.id)
   )
 FROM
   unnest(ARRAY[1]) AS a (id);
@@ -1275,11 +1290,11 @@ SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
 CREATE OR REPLACE VIEW agg_view1
 AS SELECT
   aggfns(
-  DISTINCT a,
-  b,
-  c ORDER BY a,
-    c USING ~<~,
-    b
+    DISTINCT a,
+    b,
+    c ORDER BY a,
+      c USING ~<~,
+      b
   )
 FROM
   (VALUES
@@ -1395,7 +1410,11 @@ SELECT MAX(v) FROM bytea_test_table;
 
 DROP TABLE "bytea_test_table";
 
-CREATE TABLE pagg_test (x INT, y INT) WITH (autovacuum_enabled = off);
+CREATE TABLE pagg_test (
+  x INT,
+  y INT
+)
+WITH (autovacuum_enabled = off);
 
 INSERT INTO pagg_test
 SELECT
@@ -1438,7 +1457,7 @@ FROM
     AS INT)
     AS t,
     unnest(
-    regexp_split_to_array(CAST(a1.b AS TEXT), ',')
+      regexp_split_to_array(CAST(a1.b AS TEXT), ',')
     )
     AS b,
     unnest(a1.a) AS a,
@@ -1495,7 +1514,7 @@ SELECT SUM(1 / ten) FILTER (WHERE ten > 0) FROM tenk1;
 SELECT
   ten,
   SUM(
-  DISTINCT four
+    DISTINCT four
   )
   FILTER (WHERE
     CAST(four AS TEXT) ~ '123')
@@ -1520,7 +1539,7 @@ HAVING
 
 SELECT
   MAX(
-  foo COLLATE "C"
+    foo COLLATE "C"
   )
   FILTER (WHERE
     bar COLLATE "POSIX" > '0')
@@ -1569,12 +1588,12 @@ FROM
 SELECT
   (SELECT
     MAX(
-    (SELECT
-      i.unique2
-    FROM
-      tenk1 AS i
-    WHERE
-      i.unique1 = o.unique1)
+      (SELECT
+        i.unique2
+      FROM
+        tenk1 AS i
+      WHERE
+        i.unique1 = o.unique1)
     )
     FILTER (WHERE
       o.unique1 < 10))
@@ -1583,7 +1602,7 @@ FROM
 
 SELECT
   SUM(
-  unique1
+    unique1
   )
   FILTER (WHERE
     unique1 IN
@@ -1593,11 +1612,11 @@ FROM
 
 SELECT
   aggfns(
-  DISTINCT a,
-  b,
-  c ORDER BY a,
-    c USING ~<~,
-    b
+    DISTINCT a,
+    b,
+    c ORDER BY a,
+      c USING ~<~,
+      b
   )
   FILTER (WHERE
     a > 1)
@@ -1625,7 +1644,7 @@ SELECT (SELECT MAX(unique1) FILTER (WHERE bool_or(ten > 0)) FROM int8_tbl) FROM 
 SELECT
   p,
   percentile_cont(
-  p
+    p
   )
   WITHIN GROUP (ORDER BY CAST(x AS DOUBLE PRECISION))
 FROM
@@ -1646,9 +1665,7 @@ ORDER BY p;
 
 SELECT
   p,
-  SUM(
-
-  )
+  SUM()
   WITHIN GROUP (ORDER BY CAST(x AS DOUBLE PRECISION))
 FROM
   generate_series(1, 5) AS x,
@@ -1748,7 +1765,7 @@ FROM
 
 SELECT
   percentile_disc(
-  ARRAY[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]
+    ARRAY[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]
   )
   WITHIN GROUP (ORDER BY thousand)
 FROM
@@ -1758,8 +1775,8 @@ SELECT percentile_cont(ARRAY[0, 0.25, 0.5, 0.75, 1]) WITHIN GROUP (ORDER BY thou
 
 SELECT
   percentile_disc(
-  ARRAY[ARRAY[NULL, 1, 0.5],
-  ARRAY[0.75, 0.25, NULL]]
+    ARRAY[ARRAY[NULL, 1, 0.5],
+    ARRAY[0.75, 0.25, NULL]]
   )
   WITHIN GROUP (ORDER BY thousand)
 FROM
@@ -1767,17 +1784,17 @@ FROM
 
 SELECT
   percentile_cont(
-  ARRAY[0,
-  1,
-  0.25,
-  0.75,
-  0.5,
-  1,
-  0.3,
-  0.32,
-  0.35,
-  0.38,
-  0.4]
+    ARRAY[0,
+    1,
+    0.25,
+    0.75,
+    0.5,
+    1,
+    0.3,
+    0.32,
+    0.35,
+    0.38,
+    0.4]
   )
   WITHIN GROUP (ORDER BY x)
 FROM
@@ -1787,22 +1804,22 @@ SELECT ten, mode() WITHIN GROUP (ORDER BY string4) FROM tenk1 GROUP BY ten;
 
 SELECT
   percentile_disc(
-  ARRAY[0.25, 0.5, 0.75]
+    ARRAY[0.25, 0.5, 0.75]
   )
   WITHIN GROUP (ORDER BY x)
 FROM
   unnest(
-  CAST('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
-  AS TEXT[])
+    CAST('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
+    AS TEXT[])
   )
   AS u (x);
 
 SELECT
   pg_collation_for(
-  percentile_disc(
-  1
-  )
-  WITHIN GROUP (ORDER BY x COLLATE "POSIX")
+    percentile_disc(
+      1
+    )
+    WITHIN GROUP (ORDER BY x COLLATE "POSIX")
   )
 FROM
   (VALUES
@@ -1855,7 +1872,7 @@ SELECT RANK('fred') WITHIN GROUP (ORDER BY x) FROM generate_series(1, 5) AS x;
 
 SELECT
   RANK(
-  CAST('adam' AS TEXT) COLLATE "C"
+    CAST('adam' AS TEXT) COLLATE "C"
   )
   WITHIN GROUP (ORDER BY x COLLATE "POSIX")
 FROM
@@ -1866,7 +1883,7 @@ FROM
 
 SELECT
   RANK(
-  CAST('adam' AS VARCHAR)
+    CAST('adam' AS VARCHAR)
   )
   WITHIN GROUP (ORDER BY x)
 FROM
@@ -1883,21 +1900,21 @@ CREATE VIEW aggordview1
 AS SELECT
   ten,
   percentile_disc(
-  0.5
+    0.5
   )
   WITHIN GROUP (ORDER BY thousand)
   AS p50,
   percentile_disc(
-  0.5
+    0.5
   )
   WITHIN GROUP (ORDER BY thousand)
   FILTER (WHERE
     hundred = 1)
   AS px,
   RANK(
-  5,
-  'AZZZZ',
-  50
+    5,
+    'AZZZZ',
+    50
   )
   WITHIN GROUP (ORDER BY hundred, string4 DESC, hundred)
 FROM
@@ -1925,7 +1942,7 @@ SELECT pg_typeof(cleast_agg(VARIADIC ARRAY[4.5, f1])) FROM int4_tbl;
 
 BEGIN;
 
-CREATE TYPE avg_state AS ( total BIGINT, count BIGINT );
+CREATE TYPE avg_state AS (total BIGINT, count BIGINT);
 
 CREATE OR REPLACE FUNCTION avg_transfn(state avg_state, n INT)
 RETURNS avg_state
@@ -2215,13 +2232,7 @@ AS
   FROM
     generate_series(1, 100) AS i;
 
-CREATE INDEX "btg_x_y_idx"
-ON btg
-USING btree
-(
-  x,
-  y
-);
+CREATE INDEX "btg_x_y_idx" ON btg USING btree (x, y);
 
 ANALYZE btg;
 
@@ -2258,14 +2269,7 @@ SELECT COUNT(*) FROM btg GROUP BY w, x, z, y ORDER BY y, x, z, w;
 
 SELECT COUNT(*) FROM btg GROUP BY w, x, y, z ORDER BY x * x, z;
 
-CREATE INDEX "btg_y_x_w_idx"
-ON btg
-USING btree
-(
-  y,
-  x,
-  w
-);
+CREATE INDEX "btg_y_x_w_idx" ON btg USING btree (y, x, w);
 
 SELECT y, x, array_agg(DISTINCT w) FROM btg WHERE y < 0 GROUP BY x, y;
 
@@ -2336,14 +2340,12 @@ RESET enable_hashjoin;
 
 DROP TABLE "group_agg_pk";
 
-CREATE TABLE agg_sort_order (c1 INT PRIMARY KEY, c2 INT);
-
-CREATE UNIQUE INDEX "agg_sort_order_c2_idx"
-ON agg_sort_order
-USING btree
-(
-  c2
+CREATE TABLE agg_sort_order (
+  c1 INT PRIMARY KEY,
+  c2 INT
 );
+
+CREATE UNIQUE INDEX "agg_sort_order_c2_idx" ON agg_sort_order USING btree (c2);
 
 INSERT INTO agg_sort_order SELECT i, i FROM generate_series(1, 100) AS i;
 
@@ -2470,8 +2472,8 @@ SELECT
   variance(CAST(unique1 AS INT)),
   SUM(CAST(unique1 AS BIGINT)),
   regr_count(
-  CAST(unique1 AS DOUBLE PRECISION),
-  CAST(unique1 AS DOUBLE PRECISION)
+    CAST(unique1 AS DOUBLE PRECISION),
+    CAST(unique1 AS DOUBLE PRECISION)
   )
 FROM
   (SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk1
@@ -2485,8 +2487,8 @@ SELECT
   variance(CAST(unique1 AS INT)),
   SUM(CAST(unique1 AS BIGINT)),
   regr_count(
-  CAST(unique1 AS DOUBLE PRECISION),
-  CAST(unique1 AS DOUBLE PRECISION)
+    CAST(unique1 AS DOUBLE PRECISION),
+    CAST(unique1 AS DOUBLE PRECISION)
   )
 FROM
   (SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk1

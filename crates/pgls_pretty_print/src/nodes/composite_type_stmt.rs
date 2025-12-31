@@ -26,10 +26,10 @@ pub(super) fn emit_composite_type_stmt(e: &mut EventEmitter, n: &CompositeTypeSt
 
     if !n.coldeflist.is_empty() {
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         super::node_list::emit_comma_separated_list(e, &n.coldeflist, emit_node);
         e.indent_end();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
     }
 
     e.token(TokenKind::R_PAREN);

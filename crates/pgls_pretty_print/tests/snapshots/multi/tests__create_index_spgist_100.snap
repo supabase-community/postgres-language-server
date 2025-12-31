@@ -13,21 +13,11 @@ VALUES
   (NULL),
   (NULL);
 
-CREATE INDEX "sp_quad_ind"
-ON quad_point_tbl
-USING spgist
-(
-  p
-);
+CREATE INDEX "sp_quad_ind" ON quad_point_tbl USING spgist (p);
 
 CREATE TABLE kd_point_tbl AS SELECT * FROM quad_point_tbl;
 
-CREATE INDEX "sp_kd_ind"
-ON kd_point_tbl
-USING spgist
-(
-  p kd_point_ops
-);
+CREATE INDEX "sp_kd_ind" ON kd_point_tbl USING spgist (p kd_point_ops);
 
 CREATE TABLE radix_text_tbl AS SELECT name AS t FROM road WHERE name !~ '^[0-9]';
 
@@ -37,12 +27,7 @@ INSERT INTO radix_text_tbl VALUES ('P0123456789abcde');
 
 INSERT INTO radix_text_tbl VALUES ('P0123456789abcdefF');
 
-CREATE INDEX "sp_radix_ind"
-ON radix_text_tbl
-USING spgist
-(
-  t
-);
+CREATE INDEX "sp_radix_ind" ON radix_text_tbl USING spgist (t);
 
 SET enable_seqscan = 'on';
 
@@ -73,7 +58,7 @@ SELECT COUNT(*) FROM quad_point_tbl WHERE p ~= '(4585, 365)';
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq1
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
     p <-> '0,0' AS dist,
     p
   FROM
@@ -82,7 +67,7 @@ AS
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq2
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
     p <-> '0,0' AS dist,
     p
   FROM
@@ -93,7 +78,7 @@ AS
 CREATE TEMPORARY TABLE quad_point_tbl_ord_seq3
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '333,400') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '333,400') AS n,
     p <-> '333,400' AS dist,
     p
   FROM
@@ -175,12 +160,12 @@ SELECT COUNT(*) FROM quad_point_tbl WHERE p ~= '(4585, 365)';
 
 SELECT COUNT(*) FROM quad_point_tbl WHERE p ~= '(4585, 365)';
 
-SELECT ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n, p <-> '0,0' AS dist, p FROM quad_point_tbl;
+SELECT ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n, p <-> '0,0' AS dist, p FROM quad_point_tbl;
 
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx1
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
     p <-> '0,0' AS dist,
     p
   FROM
@@ -197,7 +182,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+  ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
   p <-> '0,0' AS dist,
   p
 FROM
@@ -208,7 +193,7 @@ WHERE
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx2
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
     p <-> '0,0' AS dist,
     p
   FROM
@@ -227,7 +212,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER() OVER ( ORDER BY p <-> '333,400') AS n,
+  ROW_NUMBER() OVER (ORDER BY p <-> '333,400') AS n,
   p <-> '333,400' AS dist,
   p
 FROM
@@ -238,7 +223,7 @@ WHERE
 CREATE TEMPORARY TABLE quad_point_tbl_ord_idx3
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '333,400') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '333,400') AS n,
     p <-> '333,400' AS dist,
     p
   FROM
@@ -284,12 +269,12 @@ SELECT COUNT(*) FROM kd_point_tbl WHERE p ~= '(4585, 365)';
 
 SELECT COUNT(*) FROM kd_point_tbl WHERE p ~= '(4585, 365)';
 
-SELECT ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n, p <-> '0,0' AS dist, p FROM kd_point_tbl;
+SELECT ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n, p <-> '0,0' AS dist, p FROM kd_point_tbl;
 
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx1
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
     p <-> '0,0' AS dist,
     p
   FROM
@@ -306,7 +291,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+  ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
   p <-> '0,0' AS dist,
   p
 FROM
@@ -317,7 +302,7 @@ WHERE
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx2
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '0,0') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '0,0') AS n,
     p <-> '0,0' AS dist,
     p
   FROM
@@ -336,7 +321,7 @@ WHERE
   seq.dist IS DISTINCT FROM idx.dist;
 
 SELECT
-  ROW_NUMBER() OVER ( ORDER BY p <-> '333,400') AS n,
+  ROW_NUMBER() OVER (ORDER BY p <-> '333,400') AS n,
   p <-> '333,400' AS dist,
   p
 FROM
@@ -347,7 +332,7 @@ WHERE
 CREATE TEMPORARY TABLE kd_point_tbl_ord_idx3
 AS
   SELECT
-    ROW_NUMBER() OVER ( ORDER BY p <-> '333,400') AS n,
+    ROW_NUMBER() OVER (ORDER BY p <-> '333,400') AS n,
     p <-> '333,400' AS dist,
     p
   FROM
@@ -367,13 +352,7 @@ WHERE
 
 SET extra_float_digits = 0;
 
-CREATE INDEX
-ON quad_point_tbl_ord_seq1
-USING spgist
-(
-  p
-)
-INCLUDE (dist);
+CREATE INDEX ON quad_point_tbl_ord_seq1 USING spgist (p) INCLUDE (dist);
 
 SELECT p, dist FROM quad_point_tbl_ord_seq1 ORDER BY p <-> '0,0' LIMIT 10;
 

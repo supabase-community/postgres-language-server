@@ -23,25 +23,60 @@ DROP TABLE "num_exp_power_10_ln";
 
 DROP TABLE "num_result";
 
-CREATE TABLE num_data (id INT, val NUMERIC(1000, 800));
+CREATE TABLE num_data (
+  id INT,
+  val NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_add (id1 INT, id2 INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_add (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_sub (id1 INT, id2 INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_sub (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_div (id1 INT, id2 INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_div (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_mul (id1 INT, id2 INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_mul (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_sqrt (id INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_sqrt (
+  id INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_ln (id INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_ln (
+  id INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_log10 (id INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_log10 (
+  id INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_exp_power_10_ln (id INT, expected NUMERIC(1000, 800));
+CREATE TABLE num_exp_power_10_ln (
+  id INT,
+  expected NUMERIC(1000, 800)
+);
 
-CREATE TABLE num_result (id1 INT, id2 INT, result NUMERIC(1000, 800));
+CREATE TABLE num_result (
+  id1 INT,
+  id2 INT,
+  result NUMERIC(1000, 800)
+);
 
 BEGIN;
 
@@ -2868,65 +2903,21 @@ VALUES (
 
 COMMIT;
 
-CREATE UNIQUE INDEX "num_exp_add_idx"
-ON num_exp_add
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_add_idx" ON num_exp_add USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_sub_idx"
-ON num_exp_sub
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_sub_idx" ON num_exp_sub USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_div_idx"
-ON num_exp_div
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_div_idx" ON num_exp_div USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_mul_idx"
-ON num_exp_mul
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_mul_idx" ON num_exp_mul USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_sqrt_idx"
-ON num_exp_sqrt
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_sqrt_idx" ON num_exp_sqrt USING btree (id);
 
-CREATE UNIQUE INDEX "num_exp_ln_idx"
-ON num_exp_ln
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_ln_idx" ON num_exp_ln USING btree (id);
 
-CREATE UNIQUE INDEX "num_exp_log10_idx"
-ON num_exp_log10
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_log10_idx" ON num_exp_log10 USING btree (id);
 
-CREATE UNIQUE INDEX "num_exp_power_10_ln_idx"
-ON num_exp_power_10_ln
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_power_10_ln_idx" ON num_exp_power_10_ln USING btree (id);
 
 VACUUM (ANALYZE) num_exp_add;
 
@@ -3176,8 +3167,8 @@ SELECT
   id,
   0,
   pow(
-  CAST('10' AS NUMERIC),
-  ln(abs(round(val, 1000)))
+    CAST('10' AS NUMERIC),
+    ln(abs(round(val, 1000)))
   )
 FROM
   num_data

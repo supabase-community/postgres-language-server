@@ -87,19 +87,9 @@ VALUES
 
 SELECT MIN(x), MAX(x) FROM xid8_t1;
 
-CREATE INDEX
-ON xid8_t1
-USING btree
-(
-  x
-);
+CREATE INDEX ON xid8_t1 USING btree (x);
 
-CREATE INDEX
-ON xid8_t1
-USING hash
-(
-  x
-);
+CREATE INDEX ON xid8_t1 USING hash (x);
 
 DROP TABLE "xid8_t1";
 
@@ -127,7 +117,10 @@ SELECT pg_input_is_valid('12:16:14,13', 'pg_snapshot');
 
 SELECT * FROM pg_input_error_info('12:16:14,13', 'pg_snapshot');
 
-CREATE TEMPORARY TABLE snapshot_test (nr INT, snap pg_snapshot);
+CREATE TEMPORARY TABLE snapshot_test (
+  nr INT,
+  snap pg_snapshot
+);
 
 INSERT INTO snapshot_test VALUES (1, '12:13:');
 
@@ -154,8 +147,8 @@ ORDER BY nr;
 SELECT
   id,
   pg_visible_in_snapshot(
-  CAST(CAST(id AS TEXT) AS xid8),
-  snap
+    CAST(CAST(id AS TEXT) AS xid8),
+    snap
   )
 FROM
   snapshot_test,
@@ -166,8 +159,8 @@ WHERE
 SELECT
   id,
   pg_visible_in_snapshot(
-  CAST(CAST(id AS TEXT) AS xid8),
-  snap
+    CAST(CAST(id AS TEXT) AS xid8),
+    snap
   )
 FROM
   snapshot_test,
@@ -183,14 +176,14 @@ SELECT CAST('1000100010001000:1000100010001100:1000100010001012,1000100010001013
 
 SELECT
   pg_visible_in_snapshot(
-  '1000100010001012',
-  '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+    '1000100010001012',
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
   );
 
 SELECT
   pg_visible_in_snapshot(
-  '1000100010001015',
-  '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
+    '1000100010001015',
+    '1000100010001000:1000100010001100:1000100010001012,1000100010001013'
   );
 
 SELECT CAST('1:9223372036854775807:3' AS pg_snapshot);

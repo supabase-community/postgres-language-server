@@ -9,16 +9,10 @@ SET ROLE TO regress_maintain;
 
 CREATE TEMPORARY TABLE past_inh_db_other ();
 
-CREATE TEMPORARY TABLE past_inh_db_child
-()
+CREATE TEMPORARY TABLE past_inh_db_child ()
 INHERITS (past_inh_db_parent);
 
-CREATE INDEX
-ON past_inh_db_parent
-USING btree
-(
-  (1)
-);
+CREATE INDEX ON past_inh_db_parent USING btree ((1));
 
 ANALYZE past_inh_db_parent;
 

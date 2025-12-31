@@ -13,8 +13,7 @@ CREATE TABLESPACE regress_tblspace LOCATION '';
 
 CREATE TABLE char_tbl (f1 CHAR(4));
 
-INSERT INTO char_tbl
-(f1)
+INSERT INTO char_tbl (f1)
 VALUES
   ('a'),
   ('ab'),
@@ -25,8 +24,7 @@ VACUUM char_tbl;
 
 CREATE TABLE float8_tbl (f1 DOUBLE PRECISION);
 
-INSERT INTO float8_tbl
-(f1)
+INSERT INTO float8_tbl (f1)
 VALUES
   ('0.0'),
   ('-34.84'),
@@ -38,8 +36,7 @@ VACUUM float8_tbl;
 
 CREATE TABLE int2_tbl (f1 SMALLINT);
 
-INSERT INTO int2_tbl
-(f1)
+INSERT INTO int2_tbl (f1)
 VALUES
   ('0   '),
   ('  1234 '),
@@ -51,8 +48,7 @@ VACUUM int2_tbl;
 
 CREATE TABLE int4_tbl (f1 INT);
 
-INSERT INTO int4_tbl
-(f1)
+INSERT INTO int4_tbl (f1)
 VALUES
   ('   0  '),
   ('123456     '),
@@ -62,7 +58,10 @@ VALUES
 
 VACUUM int4_tbl;
 
-CREATE TABLE int8_tbl (q1 BIGINT, q2 BIGINT);
+CREATE TABLE int8_tbl (
+  q1 BIGINT,
+  q2 BIGINT
+);
 
 INSERT INTO int8_tbl
 VALUES
@@ -76,8 +75,7 @@ VACUUM int8_tbl;
 
 CREATE TABLE point_tbl (f1 point);
 
-INSERT INTO point_tbl
-(f1)
+INSERT INTO point_tbl (f1)
 VALUES
   ('(0.0,0.0)'),
   ('(-10.0,0.0)'),
@@ -101,8 +99,7 @@ VACUUM text_tbl;
 
 CREATE TABLE varchar_tbl (f1 VARCHAR(4));
 
-INSERT INTO varchar_tbl
-(f1)
+INSERT INTO varchar_tbl (f1)
 VALUES
   ('a'),
   ('ab'),
@@ -111,8 +108,7 @@ VALUES
 
 VACUUM varchar_tbl;
 
-CREATE TABLE onek
-(
+CREATE TABLE onek (
   unique1 INT,
   unique2 INT,
   two INT,
@@ -139,8 +135,7 @@ CREATE TABLE onek2 AS SELECT * FROM onek;
 
 VACUUM (ANALYZE) onek2;
 
-CREATE TABLE tenk1
-(
+CREATE TABLE tenk1 (
   unique1 INT,
   unique2 INT,
   two INT,
@@ -167,30 +162,34 @@ CREATE TABLE tenk2 AS SELECT * FROM tenk1;
 
 VACUUM (ANALYZE) tenk2;
 
-CREATE TABLE person (name TEXT, age INT, location point);
+CREATE TABLE person (
+  name TEXT,
+  age INT,
+  location point
+);
 
 COPY person FROM 'filename';
 
 VACUUM (ANALYZE) person;
 
-CREATE TABLE emp
-(salary INT, manager NAME)
+CREATE TABLE emp (
+  salary INT,
+  manager NAME
+)
 INHERITS (person);
 
 COPY emp FROM 'filename';
 
 VACUUM (ANALYZE) emp;
 
-CREATE TABLE student
-(gpa DOUBLE PRECISION)
+CREATE TABLE student (gpa DOUBLE PRECISION)
 INHERITS (person);
 
 COPY student FROM 'filename';
 
 VACUUM (ANALYZE) student;
 
-CREATE TABLE stud_emp
-(percent INT)
+CREATE TABLE stud_emp (percent INT)
 INHERITS (emp,
 student);
 
@@ -198,22 +197,23 @@ COPY stud_emp FROM 'filename';
 
 VACUUM (ANALYZE) stud_emp;
 
-CREATE TABLE road (name TEXT, thepath path);
+CREATE TABLE road (
+  name TEXT,
+  thepath path
+);
 
 COPY road FROM 'filename';
 
 VACUUM (ANALYZE) road;
 
-CREATE TABLE ihighway
-()
+CREATE TABLE ihighway ()
 INHERITS (road);
 
 INSERT INTO ihighway SELECT * FROM ONLY road WHERE name ~ 'I- .*';
 
 VACUUM (ANALYZE) ihighway;
 
-CREATE TABLE shighway
-(surface TEXT)
+CREATE TABLE shighway (surface TEXT)
 INHERITS (road);
 
 INSERT INTO shighway SELECT *, 'asphalt' FROM ONLY road WHERE name ~ 'State Hwy.*';
@@ -279,7 +279,7 @@ STRICT
 IMMUTABLE
 PARALLEL SAFE
 LEAKPROOF RETURN substr(
-encode(sha256(CAST($1 AS BYTEA)), 'hex'),
-1,
-32
+  encode(sha256(CAST($1 AS BYTEA)), 'hex'),
+  1,
+  32
 );;

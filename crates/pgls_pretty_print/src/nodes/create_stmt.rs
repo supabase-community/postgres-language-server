@@ -168,13 +168,18 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         }
     } else {
         // Regular table with columns and constraints
-        // Wrap in group for compact formatting of small tables
         let has_content = !n.table_elts.is_empty() || !n.constraints.is_empty();
+        let multiple_items = n.table_elts.len() + n.constraints.len() > 1;
 
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
-        e.line(LineType::Soft);
+        // Force break for tables with multiple columns for readability
+        if multiple_items {
+            e.line(LineType::Hard);
+        } else {
+            e.line(LineType::Soft);
+        }
 
         if has_content {
             e.indent_start();
@@ -183,7 +188,11 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             for item in &n.table_elts {
                 if !first {
                     e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    if multiple_items {
+                        e.line(LineType::Hard);
+                    } else {
+                        e.line(LineType::SoftOrSpace);
+                    }
                 }
                 super::emit_node(item, e);
                 first = false;
@@ -191,7 +200,11 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             for item in &n.constraints {
                 if !first {
                     e.token(TokenKind::COMMA);
-                    e.line(LineType::SoftOrSpace);
+                    if multiple_items {
+                        e.line(LineType::Hard);
+                    } else {
+                        e.line(LineType::SoftOrSpace);
+                    }
                 }
                 super::emit_node(item, e);
                 first = false;
@@ -200,7 +213,11 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             e.indent_end();
         }
 
-        e.line(LineType::Soft);
+        if multiple_items {
+            e.line(LineType::Hard);
+        } else {
+            e.line(LineType::Soft);
+        }
         e.token(TokenKind::R_PAREN);
         e.group_end();
 

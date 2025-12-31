@@ -1,0 +1,2484 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/indexing.sql
+snapshot_kind: text
+---
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
+PARTITION BY RANGE(a);
+
+CREATE INDEX "idxpart_idx" ON idxpart USING btree (a);
+
+SELECT relhassubclass FROM pg_class WHERE relname = 'idxpart_idx';
+
+SELECT indexdef FROM pg_indexes WHERE indexname LIKE 'idxpart_idx%';
+
+DROP INDEX "idxpart_idx";
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (10);
+
+CREATE TABLE idxpart2
+PARTITION OF idxpart
+FOR VALUES FROM (10) TO (100)
+PARTITION BY RANGE(b);
+
+CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (0) TO (100);
+
+CREATE INDEX "idxpart_idx" ON ONLY idxpart USING btree (a);
+
+SELECT relhassubclass FROM pg_class WHERE relname = 'idxpart_idx';
+
+DROP INDEX "idxpart_idx";
+
+CREATE INDEX ON idxpart USING btree (a);
+
+SELECT
+  relname,
+  relkind,
+  relhassubclass,
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_index AS ix
+  ON indexrelid = oid
+  LEFT OUTER JOIN
+    pg_inherits
+  ON ix.indexrelid = inhrelid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (10);
+
+CREATE INDEX CONCURRENTLY ON idxpart USING btree (a);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (col1 INT)
+PARTITION BY RANGE(col1);
+
+CREATE INDEX ON idxpart USING btree (col1);
+
+CREATE TABLE idxpart_two (col2 INT);
+
+SELECT col2 FROM idxpart_two AS fk LEFT OUTER JOIN idxpart AS pk ON col1 = col2;
+
+DROP TABLE "idxpart", "idxpart_two";
+
+CREATE TABLE idxpart (
+  a INT,
+  b TEXT,
+  c INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1
+PARTITION OF idxpart
+FOR VALUES FROM (minvalue) TO (maxvalue);
+
+CREATE INDEX "partidx_abc_idx" ON idxpart USING btree (a, b, c);
+
+INSERT INTO idxpart (a, b, c) SELECT i, i, i FROM generate_series(1, 50) AS i;
+
+ALTER TABLE idxpart
+  ALTER COLUMN c TYPE NUMERIC;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
+PARTITION BY RANGE(a);
+
+CREATE INDEX "idxparti" ON idxpart USING btree (a);
+
+CREATE INDEX "idxparti2" ON idxpart USING btree (b, c);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (10);
+
+CREATE INDEX "idxpart_c" ON ONLY idxpart USING btree (c);
+
+CREATE INDEX "idxpart1_c" ON idxpart1 USING btree (c);
+
+ALTER TABLE idxpart_c
+  ATTACH PARTITION
+  idxpart1_c FOR VALUES FROM (10) TO (20);
+
+ALTER INDEX idxpart_c
+  ATTACH PARTITION
+  idxpart1_c;
+
+SELECT
+  relname,
+  relpartbound
+FROM
+  pg_class
+WHERE
+  relname IN ('idxpart_c', 'idxpart1_c')
+ORDER BY relname;
+
+ALTER TABLE idxpart_c
+  DETACH PARTITION
+  idxpart1_c;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (10, 10);
+
+CREATE INDEX ON idxpart1 USING btree (a, b);
+
+CREATE INDEX ON idxpart USING btree (a, b);
+
+SELECT
+  relname,
+  relkind,
+  relhassubclass,
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_index AS ix
+  ON indexrelid = oid
+  LEFT OUTER JOIN
+    pg_inherits
+  ON ix.indexrelid = inhrelid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE INDEX ON idxpart USING btree (a);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (10);
+
+DROP INDEX "idxpart1_a_idx";
+
+DROP INDEX CONCURRENTLY "idxpart_a_idx";
+
+DROP INDEX "idxpart_a_idx";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+CREATE INDEX ON idxpart USING btree (a);
+
+DROP TABLE "idxpart1";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TEMPORARY TABLE idxpart_temp (a INT)
+PARTITION BY RANGE(a);
+
+CREATE INDEX ON idxpart_temp USING btree (a);
+
+CREATE TEMPORARY TABLE idxpart1_temp
+PARTITION OF idxpart_temp
+FOR VALUES FROM (0) TO (10);
+
+DROP INDEX "idxpart1_temp_a_idx";
+
+DROP INDEX CONCURRENTLY "idxpart_temp_a_idx";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart_temp%'
+ORDER BY relname;
+
+DROP TABLE "idxpart_temp";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (10, 10);
+
+CREATE INDEX "idxpart_a_b_idx" ON ONLY idxpart USING btree (a, b);
+
+CREATE INDEX "idxpart1_a_b_idx" ON idxpart1 USING btree (a, b);
+
+CREATE INDEX "idxpart1_tst1" ON idxpart1 USING btree (b, a);
+
+CREATE INDEX "idxpart1_tst2" ON idxpart1 USING hash (a);
+
+CREATE INDEX "idxpart1_tst3"
+ON idxpart1
+USING btree
+(
+  a,
+  b
+)
+WHERE
+  a > 10;
+
+ALTER INDEX idxpart
+  ATTACH PARTITION
+  idxpart1;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart_a_b_idx;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_b_idx;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_tst1;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_tst2;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_tst3;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_a_b_idx;
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_a_b_idx;
+
+CREATE INDEX "idxpart1_2_a_b" ON idxpart1 USING btree (a, b);
+
+ALTER INDEX idxpart_a_b_idx
+  ATTACH PARTITION
+  idxpart1_2_a_b;
+
+DROP TABLE "idxpart";
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  CAST(indrelid AS REGCLASS)
+FROM
+  pg_index
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'idxpart%';
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  a INT,
+  b INT
+);
+
+CREATE INDEX ON idxpart1 USING hash (a);
+
+CREATE INDEX
+ON idxpart1
+USING btree
+(
+  a
+)
+WHERE
+  b > 1;
+
+CREATE INDEX ON idxpart1 USING btree ((a + 0));
+
+CREATE INDEX ON idxpart1 USING btree (a, a);
+
+CREATE INDEX ON idxpart USING btree (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100);
+
+CREATE TABLE idxpart2
+PARTITION OF idxpart
+FOR VALUES FROM (100) TO (1000)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (100) TO (200);
+
+CREATE TABLE idxpart22 PARTITION OF idxpart2 FOR VALUES FROM (200) TO (300);
+
+CREATE INDEX ON idxpart22 USING btree (a);
+
+CREATE INDEX ON ONLY idxpart2 USING btree (a);
+
+CREATE INDEX ON idxpart USING btree (a);
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+ALTER INDEX idxpart2_a_idx
+  ATTACH PARTITION
+  idxpart22_a_idx;
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+ALTER INDEX idxpart2_a_idx
+  ATTACH PARTITION
+  idxpart22_a_idx;
+
+CREATE INDEX ON idxpart21 USING btree (a);
+
+ALTER INDEX idxpart2_a_idx
+  ATTACH PARTITION
+  idxpart21_a_idx;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT,
+  d BOOLEAN
+)
+PARTITION BY RANGE(a);
+
+CREATE INDEX "idxparti" ON idxpart USING btree (a);
+
+CREATE INDEX "idxparti2" ON idxpart USING btree (b, c);
+
+CREATE TABLE idxpart1 (LIKE idxpart INCLUDING INDEXES);
+
+SELECT
+  relname,
+  relkind,
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_index AS ix
+  ON indexrelid = oid
+  LEFT OUTER JOIN
+    pg_inherits
+  ON ix.indexrelid = inhrelid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (10);
+
+SELECT
+  relname,
+  relkind,
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_index AS ix
+  ON indexrelid = oid
+  LEFT OUTER JOIN
+    pg_inherits
+  ON ix.indexrelid = inhrelid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+CREATE INDEX
+ON idxpart1
+USING btree
+(
+  (a + b)
+)
+WHERE
+  d = TRUE;
+
+SELECT
+  relname,
+  relkind,
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_index AS ix
+  ON indexrelid = oid
+  LEFT OUTER JOIN
+    pg_inherits
+  ON ix.indexrelid = inhrelid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+CREATE INDEX "idxparti3"
+ON idxpart
+USING btree
+(
+  (a + b)
+)
+WHERE
+  d = TRUE;
+
+SELECT
+  relname,
+  relkind,
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_index AS ix
+  ON indexrelid = oid
+  LEFT OUTER JOIN
+    pg_inherits
+  ON ix.indexrelid = inhrelid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1
+PARTITION OF idxpart
+FOR VALUES FROM (1) TO (1000)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart11 PARTITION OF idxpart1 FOR VALUES FROM (1) TO (100);
+
+CREATE INDEX ON ONLY idxpart1 USING btree (a);
+
+CREATE INDEX ON ONLY idxpart USING btree (a);
+
+SELECT
+  relname,
+  indisvalid
+FROM
+  pg_class
+  INNER JOIN
+    pg_index
+  ON indexrelid = oid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+ALTER INDEX idxpart_a_idx
+  ATTACH PARTITION
+  idxpart1_a_idx;
+
+SELECT
+  relname,
+  indisvalid
+FROM
+  pg_class
+  INNER JOIN
+    pg_index
+  ON indexrelid = oid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+CREATE INDEX ON idxpart11 USING btree (a);
+
+ALTER INDEX idxpart1_a_idx
+  ATTACH PARTITION
+  idxpart11_a_idx;
+
+SELECT
+  relname,
+  indisvalid
+FROM
+  pg_class
+  INNER JOIN
+    pg_index
+  ON indexrelid = oid
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+CREATE INDEX ON idxpart1 USING btree (a);
+
+CREATE INDEX ON idxpart USING btree (a);
+
+CREATE TABLE idxpart2 (LIKE idxpart);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM (1000) TO (2000);
+
+CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM (2000) TO (3000);
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart1;
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart2;
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart3;
+
+DROP INDEX "idxpart1_a_idx";
+
+DROP INDEX "idxpart2_a_idx";
+
+DROP INDEX "idxpart3_a_idx";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart", "idxpart1", "idxpart2", "idxpart3";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+CREATE INDEX ON idxpart1 USING btree (a);
+
+CREATE INDEX ON idxpart USING btree (a);
+
+CREATE TABLE idxpart2 (LIKE idxpart);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM (1000) TO (2000);
+
+CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM (2000) TO (3000);
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart1;
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart2;
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart3;
+
+DROP INDEX "idxpart_a_idx";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart", "idxpart1", "idxpart2", "idxpart3";
+
+SELECT
+  relname,
+  relkind
+FROM
+  pg_class
+WHERE
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c INT
+)
+PARTITION BY RANGE(a);
+
+CREATE INDEX ON idxpart USING btree (c);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (250);
+
+CREATE TABLE idxpart2 PARTITION OF idxpart FOR VALUES FROM (250) TO (500);
+
+ALTER TABLE idxpart
+  DETACH PARTITION
+  idxpart2;
+
+ALTER TABLE idxpart2
+  DROP COLUMN c;
+
+DROP TABLE "idxpart", "idxpart2";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+CREATE INDEX ON idxpart1 USING btree ((a + b));
+
+CREATE INDEX ON idxpart USING btree ((a + b));
+
+CREATE TABLE idxpart2 (LIKE idxpart);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM (1000) TO (2000);
+
+CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM (2000) TO (3000);
+
+SELECT
+  relname AS child,
+  CAST(inhparent AS REGCLASS) AS parent,
+  pg_get_indexdef AS childdef
+FROM
+  pg_class
+  INNER JOIN
+    pg_inherits
+  ON inhrelid = oid,
+  LATERAL pg_get_indexdef(pg_class.oid)
+WHERE
+  relkind IN ('i', 'I') AND
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a TEXT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+CREATE TABLE idxpart2 (LIKE idxpart);
+
+CREATE INDEX ON idxpart2 USING btree (a COLLATE "POSIX");
+
+CREATE INDEX ON idxpart2 USING btree (a);
+
+CREATE INDEX ON idxpart2 USING btree (a COLLATE "C");
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1
+  FOR VALUES FROM ('aaa') TO ('bbb');
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM ('bbb') TO ('ccc');
+
+CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM ('ccc') TO ('ddd');
+
+CREATE INDEX ON idxpart USING btree (a COLLATE "C");
+
+CREATE TABLE idxpart4 PARTITION OF idxpart FOR VALUES FROM ('ddd') TO ('eee');
+
+SELECT
+  relname AS child,
+  CAST(inhparent AS REGCLASS) AS parent,
+  pg_get_indexdef AS childdef
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_inherits
+  ON inhrelid = oid,
+  LATERAL pg_get_indexdef(pg_class.oid)
+WHERE
+  relkind IN ('i', 'I') AND
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a TEXT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+CREATE TABLE idxpart2 (LIKE idxpart);
+
+CREATE INDEX ON idxpart2 USING btree (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1
+  FOR VALUES FROM ('aaa') TO ('bbb');
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM ('bbb') TO ('ccc');
+
+CREATE TABLE idxpart3 PARTITION OF idxpart FOR VALUES FROM ('ccc') TO ('ddd');
+
+CREATE INDEX ON idxpart USING btree (a text_pattern_ops);
+
+CREATE TABLE idxpart4 PARTITION OF idxpart FOR VALUES FROM ('ddd') TO ('eee');
+
+SELECT
+  relname AS child,
+  CAST(inhparent AS REGCLASS) AS parent,
+  pg_get_indexdef AS childdef
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_inherits
+  ON inhrelid = oid,
+  LATERAL pg_get_indexdef(pg_class.oid)
+WHERE
+  relkind IN ('i', 'I') AND
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP INDEX "idxpart_a_idx";
+
+CREATE INDEX ON ONLY idxpart USING btree (a text_pattern_ops);
+
+ALTER INDEX idxpart_a_idx
+  ATTACH PARTITION
+  idxpart2_a_idx;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  col1 INT,
+  a INT,
+  col2 INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  b INT,
+  col1 INT,
+  col2 INT,
+  col3 INT,
+  a INT
+);
+
+ALTER TABLE idxpart
+  DROP COLUMN col1,
+  DROP COLUMN col2;
+
+ALTER TABLE idxpart1
+  DROP COLUMN col1,
+  DROP COLUMN col2,
+  DROP COLUMN col3;
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+CREATE INDEX "idxpart_1_idx" ON ONLY idxpart USING btree (b, a);
+
+CREATE INDEX "idxpart1_1_idx" ON idxpart1 USING btree (b, a);
+
+CREATE INDEX "idxpart1_1b_idx" ON idxpart1 USING btree (b);
+
+CREATE INDEX "idxpart_2_idx"
+ON ONLY idxpart
+USING btree
+(
+  (b + a)
+)
+WHERE
+  a > 1;
+
+CREATE INDEX "idxpart1_2_idx"
+ON idxpart1
+USING btree
+(
+  (b + a)
+)
+WHERE
+  a > 1;
+
+CREATE INDEX "idxpart1_2b_idx"
+ON idxpart1
+USING btree
+(
+  (a + b)
+)
+WHERE
+  a > 1;
+
+CREATE INDEX "idxpart1_2c_idx"
+ON idxpart1
+USING btree
+(
+  (b + a)
+)
+WHERE
+  b > 1;
+
+ALTER INDEX idxpart_1_idx
+  ATTACH PARTITION
+  idxpart1_1b_idx;
+
+ALTER INDEX idxpart_1_idx
+  ATTACH PARTITION
+  idxpart1_1_idx;
+
+ALTER INDEX idxpart_2_idx
+  ATTACH PARTITION
+  idxpart1_2b_idx;
+
+ALTER INDEX idxpart_2_idx
+  ATTACH PARTITION
+  idxpart1_2c_idx;
+
+ALTER INDEX idxpart_2_idx
+  ATTACH PARTITION
+  idxpart1_2_idx;
+
+SELECT
+  relname AS child,
+  CAST(inhparent AS REGCLASS) AS parent,
+  pg_get_indexdef AS childdef
+FROM
+  pg_class
+  LEFT OUTER JOIN
+    pg_inherits
+  ON inhrelid = oid,
+  LATERAL pg_get_indexdef(pg_class.oid)
+WHERE
+  relkind IN ('i', 'I') AND
+  relname LIKE 'idxpart%'
+ORDER BY relname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
+PARTITION BY RANGE(a);
+
+CREATE INDEX "idxparti" ON idxpart USING btree (a);
+
+CREATE INDEX "idxparti2" ON idxpart USING btree (c, b);
+
+CREATE TABLE idxpart1 (
+  c TEXT,
+  a INT,
+  b INT
+);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (10);
+
+CREATE TABLE idxpart2 (
+  c TEXT,
+  a INT,
+  b INT
+);
+
+CREATE INDEX ON idxpart2 USING btree (a);
+
+CREATE INDEX ON idxpart2 USING btree (c, b);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2 FOR VALUES FROM (10) TO (20);
+
+SELECT
+  c.relname,
+  pg_get_indexdef(indexrelid)
+FROM
+  pg_class AS c
+  INNER JOIN
+    pg_index AS i
+  ON c.oid = i.indexrelid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  col1 INT,
+  col2 INT,
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  col2 INT,
+  b INT,
+  col1 INT,
+  a INT
+);
+
+CREATE TABLE idxpart2 (
+  col1 INT,
+  col2 INT,
+  b INT,
+  a INT
+);
+
+ALTER TABLE idxpart
+  DROP COLUMN col1,
+  DROP COLUMN col2;
+
+ALTER TABLE idxpart1
+  DROP COLUMN col1,
+  DROP COLUMN col2;
+
+ALTER TABLE idxpart2
+  DROP COLUMN col1,
+  DROP COLUMN col2;
+
+CREATE INDEX ON idxpart2 USING btree ((abs(b)));
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2 FOR VALUES FROM (0) TO (1);
+
+CREATE INDEX ON idxpart USING btree ((abs(b)));
+
+CREATE INDEX ON idxpart USING btree ((b + 1));
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (1) TO (2);
+
+SELECT
+  c.relname,
+  pg_get_indexdef(indexrelid)
+FROM
+  pg_class AS c
+  INNER JOIN
+    pg_index AS i
+  ON c.oid = i.indexrelid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  col1 INT,
+  a INT,
+  col3 INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE idxpart
+  DROP COLUMN col1,
+  DROP COLUMN col3;
+
+CREATE TABLE idxpart1 (
+  col1 INT,
+  col2 INT,
+  col3 INT,
+  col4 INT,
+  b INT,
+  a INT
+);
+
+ALTER TABLE idxpart1
+  DROP COLUMN col1,
+  DROP COLUMN col2,
+  DROP COLUMN col3,
+  DROP COLUMN col4;
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+CREATE TABLE idxpart2 (
+  col1 INT,
+  col2 INT,
+  b INT,
+  a INT
+);
+
+CREATE INDEX
+ON idxpart2
+USING btree
+(
+  a
+)
+WHERE
+  b > 1000;
+
+ALTER TABLE idxpart2
+  DROP COLUMN col1,
+  DROP COLUMN col2;
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM (1000) TO (2000);
+
+CREATE INDEX
+ON idxpart
+USING btree
+(
+  a
+)
+WHERE
+  b > 1000;
+
+SELECT
+  c.relname,
+  pg_get_indexdef(indexrelid)
+FROM
+  pg_class AS c
+  INNER JOIN
+    pg_index AS i
+  ON c.oid = i.indexrelid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart1 (
+  drop_1 INT,
+  drop_2 INT,
+  col_keep INT,
+  drop_3 INT
+);
+
+ALTER TABLE idxpart1
+  DROP COLUMN drop_1;
+
+ALTER TABLE idxpart1
+  DROP COLUMN drop_2;
+
+ALTER TABLE idxpart1
+  DROP COLUMN drop_3;
+
+CREATE INDEX ON idxpart1 USING btree (col_keep);
+
+CREATE TABLE idxpart (col_keep INT)
+PARTITION BY RANGE(col_keep);
+
+CREATE INDEX ON idxpart USING btree (col_keep);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+SELECT
+  CAST(attrelid AS REGCLASS),
+  attname,
+  attnum
+FROM
+  pg_attribute
+WHERE
+  CAST(CAST(attrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%' AND
+  attnum > 0
+ORDER BY CAST(attrelid AS REGCLASS),
+  attnum;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  drop_1 INT,
+  drop_2 INT,
+  col_keep INT,
+  drop_3 INT
+)
+PARTITION BY RANGE(col_keep);
+
+ALTER TABLE idxpart
+  DROP COLUMN drop_1;
+
+ALTER TABLE idxpart
+  DROP COLUMN drop_2;
+
+ALTER TABLE idxpart
+  DROP COLUMN drop_3;
+
+CREATE TABLE idxpart1 (col_keep INT);
+
+CREATE INDEX ON idxpart1 USING btree (col_keep);
+
+CREATE INDEX ON idxpart USING btree (col_keep);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (1000);
+
+SELECT
+  CAST(attrelid AS REGCLASS),
+  attname,
+  attnum
+FROM
+  pg_attribute
+WHERE
+  CAST(CAST(attrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%' AND
+  attnum > 0
+ORDER BY CAST(attrelid AS REGCLASS),
+  attnum;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT PRIMARY KEY,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE failpart
+PARTITION OF idxpart
+(
+  b PRIMARY KEY
+)
+FOR VALUES FROM (0) TO (100);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1pk
+PARTITION OF idxpart
+(
+  a PRIMARY KEY
+)
+FOR VALUES FROM (0) TO (100);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT UNIQUE,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT UNIQUE
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE idxpart (
+  a INT PRIMARY KEY,
+  b INT
+)
+PARTITION BY RANGE(b, a);
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT PRIMARY KEY
+)
+PARTITION BY RANGE(b, a);
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT,
+  PRIMARY KEY (a, b, c)
+)
+PARTITION BY RANGE(b, c, a);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  EXCLUDE USING gist (a WITH =)
+)
+PARTITION BY RANGE(a);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH =)
+)
+PARTITION BY RANGE(a, b);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH =)
+)
+PARTITION BY RANGE(a);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =)
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  EXCLUDE USING gist (a WITH -|-)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  EXCLUDE USING gist (a WITH =, b WITH &&)
+)
+PARTITION BY RANGE(a);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE,
+  EXCLUDE USING gist (b WITH =, c WITH &&)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE,
+  EXCLUDE USING gist (a WITH =,
+  b WITH =,
+  c WITH &&)
+)
+PARTITION BY RANGE(a, b);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT PRIMARY KEY,
+  b INT
+)
+PARTITION BY RANGE((b + a));
+
+CREATE TABLE idxpart (
+  a INT UNIQUE,
+  b INT
+)
+PARTITION BY RANGE((b + a));
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  c TEXT
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ADD PRIMARY KEY (a);
+
+ALTER TABLE idxpart
+  ADD PRIMARY KEY (a, b);
+
+CREATE TABLE idxpart1
+PARTITION OF idxpart
+FOR VALUES FROM (0, 0) TO (1000, 1000);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ADD UNIQUE (a);
+
+ALTER TABLE idxpart
+  ADD UNIQUE (b, a);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH =);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH =, b WITH =);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH =, b WITH =);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH =);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH -|-);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH =, b WITH &&);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (b WITH =, c WITH &&);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT4RANGE,
+  b INT4RANGE,
+  c INT4RANGE
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ADD EXCLUDE USING gist (a WITH =,
+  b WITH =,
+  c WITH &&);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (1, 1) TO (10, 10);
+
+CREATE TABLE idxpart2
+PARTITION OF idxpart
+FOR VALUES FROM (10, 10) TO (20, 20)
+PARTITION BY RANGE(b);
+
+CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (10) TO (15);
+
+CREATE TABLE idxpart22 PARTITION OF idxpart2 FOR VALUES FROM (15) TO (20);
+
+CREATE TABLE idxpart3 (
+  b INT NOT NULL,
+  a INT NOT NULL
+);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart3
+  FOR VALUES FROM (20, 20) TO (30, 30);
+
+SELECT
+  conname,
+  contype,
+  CAST(conrelid AS REGCLASS),
+  CAST(conindid AS REGCLASS),
+  conkey
+FROM
+  pg_constraint
+WHERE
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
+  conname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart2
+PARTITION OF idxpart
+FOR VALUES FROM (0) TO (1000)
+PARTITION BY RANGE(b);
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT UNIQUE,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT,
+  UNIQUE (a, b)
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (1) TO (1000);
+
+DROP TABLE "idxpart", "idxpart1";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart2
+PARTITION OF idxpart
+FOR VALUES FROM (0) TO (1000)
+PARTITION BY RANGE(b);
+
+CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (0) TO (1000);
+
+SELECT
+  conname,
+  contype,
+  CAST(conrelid AS REGCLASS),
+  CAST(conindid AS REGCLASS),
+  conkey
+FROM
+  pg_constraint
+WHERE
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
+  conname;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (i INT)
+PARTITION BY HASH(i);
+
+CREATE TABLE idxpart0
+PARTITION OF idxpart
+(
+  i
+)
+FOR VALUES WITH (MODULUS 2, REMAINDER 0);
+
+CREATE TABLE idxpart1
+PARTITION OF idxpart
+(
+  i
+)
+FOR VALUES WITH (MODULUS 2, REMAINDER 1);
+
+ALTER TABLE idxpart0
+  ADD PRIMARY KEY (i);
+
+ALTER TABLE idxpart
+  ADD PRIMARY KEY (i);
+
+SELECT
+  CAST(indrelid AS REGCLASS),
+  CAST(indexrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS),
+  indisvalid,
+  conname,
+  conislocal,
+  coninhcount,
+  connoinherit,
+  convalidated
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+  LEFT OUTER JOIN
+    pg_constraint AS con
+  ON idx.indexrelid = con.conindid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP INDEX "idxpart0_pkey";
+
+DROP INDEX "idxpart1_pkey";
+
+ALTER TABLE idxpart0
+  DROP CONSTRAINT idxpart0_pkey;
+
+ALTER TABLE idxpart1
+  DROP CONSTRAINT idxpart1_pkey;
+
+ALTER TABLE idxpart
+  DROP CONSTRAINT idxpart_pkey;
+
+SELECT
+  CAST(indrelid AS REGCLASS),
+  CAST(indexrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS),
+  indisvalid,
+  conname,
+  conislocal,
+  coninhcount,
+  connoinherit,
+  convalidated
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+  LEFT OUTER JOIN
+    pg_constraint AS con
+  ON idx.indexrelid = con.conindid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  c1 INT PRIMARY KEY,
+  c2 INT,
+  c3 VARCHAR(10)
+)
+PARTITION BY RANGE(c1);
+
+CREATE TABLE idxpart1 (LIKE idxpart);
+
+ALTER TABLE idxpart1
+  ADD PRIMARY KEY (c1, c2);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (100) TO (200);
+
+DROP TABLE "idxpart", "idxpart1";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT,
+  PRIMARY KEY (a)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart11 (
+  a INT NOT NULL,
+  b INT PRIMARY KEY
+);
+
+ALTER TABLE idxpart1
+  ATTACH PARTITION
+  idxpart11 FOR VALUES FROM (0) TO (1000);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (0) TO (10000);
+
+DROP TABLE "idxpart", "idxpart1", "idxpart11";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart0 (LIKE idxpart);
+
+ALTER TABLE idxpart0
+  ADD PRIMARY KEY (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart0 FOR VALUES FROM (0) TO (1000);
+
+ALTER TABLE ONLY idxpart
+  ADD PRIMARY KEY (a);
+
+SELECT
+  CAST(indrelid AS REGCLASS),
+  CAST(indexrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS),
+  indisvalid,
+  conname,
+  conislocal,
+  coninhcount,
+  connoinherit,
+  convalidated
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+  LEFT OUTER JOIN
+    pg_constraint AS con
+  ON idx.indexrelid = con.conindid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+ALTER INDEX idxpart_pkey
+  ATTACH PARTITION
+  idxpart0_pkey;
+
+SELECT
+  CAST(indrelid AS REGCLASS),
+  CAST(indexrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS),
+  indisvalid,
+  conname,
+  conislocal,
+  coninhcount,
+  connoinherit,
+  convalidated
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+  LEFT OUTER JOIN
+    pg_constraint AS con
+  ON idx.indexrelid = con.conindid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart0 (LIKE idxpart);
+
+ALTER TABLE idxpart0
+  ADD UNIQUE (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart0 DEFAULT;
+
+ALTER TABLE ONLY idxpart
+  ADD PRIMARY KEY (a);
+
+ALTER TABLE idxpart0
+  ALTER COLUMN a SET NOT NULL;
+
+ALTER TABLE ONLY idxpart
+  ADD PRIMARY KEY (a);
+
+ALTER INDEX idxpart_pkey
+  ATTACH PARTITION
+  idxpart0_a_key;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT
+);
+
+CREATE UNIQUE INDEX ON idxpart1 USING btree (a);
+
+ALTER TABLE idxpart
+  ADD PRIMARY KEY (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (1) TO (1000);
+
+SELECT
+  CAST(indrelid AS REGCLASS),
+  CAST(indexrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS),
+  indisvalid,
+  conname,
+  conislocal,
+  coninhcount,
+  connoinherit,
+  convalidated
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+  LEFT OUTER JOIN
+    pg_constraint AS con
+  ON idx.indexrelid = con.conindid
+WHERE
+  CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 (
+  a INT NOT NULL,
+  b INT
+);
+
+CREATE UNIQUE INDEX ON idxpart1 USING btree (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart1 FOR VALUES FROM (1) TO (1000);
+
+ALTER TABLE ONLY idxpart
+  ADD PRIMARY KEY (a);
+
+ALTER INDEX idxpart_pkey
+  ATTACH PARTITION
+  idxpart1_a_idx;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b TEXT,
+  PRIMARY KEY (a, b)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100000);
+
+CREATE TABLE idxpart2 (
+  c INT,
+  LIKE idxpart
+);
+
+INSERT INTO idxpart2 (c, a, b) VALUES (42, 572814, 'inserted first');
+
+ALTER TABLE idxpart2
+  DROP COLUMN c;
+
+CREATE UNIQUE INDEX ON idxpart USING btree (a);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart2
+  FOR VALUES FROM (100000) TO (1000000);
+
+INSERT INTO idxpart
+VALUES
+  (0, 'zero'),
+  (42, 'life'),
+  (2 ^ 16, 'sixteen');
+
+INSERT INTO idxpart
+SELECT
+  2 ^ g,
+  format('two to power of %s', g)
+FROM
+  generate_series(15, 17) AS g;
+
+INSERT INTO idxpart VALUES (16, 'sixteen');
+
+INSERT INTO idxpart (b, a)
+VALUES
+  ('one', 142857),
+  ('two', 285714);
+
+INSERT INTO idxpart
+SELECT
+  a * 2,
+  b || b
+FROM
+  idxpart
+WHERE
+  a BETWEEN 2 ^ 16 AND 2 ^ 19;
+
+INSERT INTO idxpart VALUES (572814, 'five');
+
+INSERT INTO idxpart VALUES (857142, 'six');
+
+SELECT CAST(tableoid AS REGCLASS), * FROM idxpart ORDER BY a;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (
+  a INT,
+  b TEXT,
+  c INT[]
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100000);
+
+SET enable_seqscan = off;
+
+CREATE INDEX "idxpart_brin" ON idxpart USING brin (b);
+
+SELECT * FROM idxpart WHERE b = 'abcd';
+
+DROP INDEX "idxpart_brin";
+
+CREATE INDEX "idxpart_spgist" ON idxpart USING spgist (b);
+
+SELECT * FROM idxpart WHERE b = 'abcd';
+
+DROP INDEX "idxpart_spgist";
+
+CREATE INDEX "idxpart_gin" ON idxpart USING gin (c);
+
+SELECT * FROM idxpart WHERE c @> ARRAY[42];
+
+DROP INDEX "idxpart_gin";
+
+RESET enable_seqscan;
+
+DROP TABLE "idxpart";
+
+CREATE TABLE idxpart (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100);
+
+CREATE TABLE idxpart2
+PARTITION OF idxpart
+FOR VALUES FROM (100) TO (1000)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart21 PARTITION OF idxpart2 FOR VALUES FROM (100) TO (200);
+
+CREATE TABLE idxpart22 PARTITION OF idxpart2 FOR VALUES FROM (200) TO (300);
+
+CREATE INDEX ON idxpart22 USING btree (a);
+
+CREATE INDEX ON ONLY idxpart2 USING btree (a);
+
+ALTER INDEX idxpart2_a_idx
+  ATTACH PARTITION
+  idxpart22_a_idx;
+
+CREATE INDEX ON idxpart USING btree (a);
+
+CREATE TABLE idxpart_another (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE idxpart_another_1
+PARTITION OF idxpart_another
+FOR VALUES FROM (0) TO (100);
+
+CREATE TABLE idxpart3 (
+  c INT,
+  b INT,
+  a INT
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE idxpart3
+  DROP COLUMN b,
+  DROP COLUMN c;
+
+CREATE TABLE idxpart31 PARTITION OF idxpart3 FOR VALUES FROM (1000) TO (1200);
+
+CREATE TABLE idxpart32 PARTITION OF idxpart3 FOR VALUES FROM (1200) TO (1400);
+
+ALTER TABLE idxpart
+  ATTACH PARTITION
+  idxpart3
+  FOR VALUES FROM (1000) TO (2000);
+
+CREATE SCHEMA "regress_indexing";
+
+SET search_path TO regress_indexing;
+
+CREATE TABLE pk (a INT PRIMARY KEY)
+PARTITION BY RANGE(a);
+
+CREATE TABLE pk1 PARTITION OF pk FOR VALUES FROM (0) TO (1000);
+
+CREATE TABLE pk2 (
+  b INT,
+  a INT
+);
+
+ALTER TABLE pk2
+  DROP COLUMN b;
+
+ALTER TABLE pk2
+  ALTER COLUMN a SET NOT NULL;
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk2 FOR VALUES FROM (1000) TO (2000);
+
+CREATE TABLE pk3 PARTITION OF pk FOR VALUES FROM (2000) TO (3000);
+
+CREATE TABLE pk4 (LIKE pk);
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk4 FOR VALUES FROM (3000) TO (4000);
+
+CREATE TABLE pk5 (LIKE pk)
+PARTITION BY RANGE(a);
+
+CREATE TABLE pk51 PARTITION OF pk5 FOR VALUES FROM (4000) TO (4500);
+
+CREATE TABLE pk52 PARTITION OF pk5 FOR VALUES FROM (4500) TO (5000);
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk5 FOR VALUES FROM (4000) TO (5000);
+
+RESET search_path;
+
+CREATE TABLE covidxpart (
+  a INT,
+  b INT
+)
+PARTITION BY LIST(a);
+
+CREATE UNIQUE INDEX ON covidxpart USING btree (a) INCLUDE (b);
+
+CREATE TABLE covidxpart1 PARTITION OF covidxpart FOR VALUES IN (1);
+
+CREATE TABLE covidxpart2 PARTITION OF covidxpart FOR VALUES IN (2);
+
+INSERT INTO covidxpart VALUES (1, 1);
+
+INSERT INTO covidxpart VALUES (1, 1);
+
+CREATE TABLE covidxpart3 (
+  b INT,
+  c INT,
+  a INT
+);
+
+ALTER TABLE covidxpart3
+  DROP COLUMN c;
+
+ALTER TABLE covidxpart
+  ATTACH PARTITION
+  covidxpart3 FOR VALUES IN (3);
+
+INSERT INTO covidxpart VALUES (3, 1);
+
+INSERT INTO covidxpart VALUES (3, 1);
+
+CREATE TABLE covidxpart4 (
+  b INT,
+  a INT
+);
+
+CREATE UNIQUE INDEX ON covidxpart4 USING btree (a) INCLUDE (b);
+
+CREATE UNIQUE INDEX ON covidxpart4 USING btree (a);
+
+ALTER TABLE covidxpart
+  ATTACH PARTITION
+  covidxpart4 FOR VALUES IN (4);
+
+INSERT INTO covidxpart VALUES (4, 1);
+
+INSERT INTO covidxpart VALUES (4, 1);
+
+CREATE UNIQUE INDEX ON covidxpart USING btree (b) INCLUDE (a);
+
+CREATE TABLE parted_pk_detach_test (a INT PRIMARY KEY)
+PARTITION BY LIST(a);
+
+CREATE TABLE parted_pk_detach_test1
+PARTITION OF parted_pk_detach_test
+FOR VALUES IN (1);
+
+ALTER TABLE parted_pk_detach_test1
+  DROP CONSTRAINT parted_pk_detach_test1_pkey;
+
+ALTER TABLE parted_pk_detach_test
+  DETACH PARTITION
+  parted_pk_detach_test1;
+
+ALTER TABLE parted_pk_detach_test1
+  DROP CONSTRAINT parted_pk_detach_test1_pkey;
+
+DROP TABLE "parted_pk_detach_test", "parted_pk_detach_test1";
+
+CREATE TABLE parted_uniq_detach_test (a INT UNIQUE)
+PARTITION BY LIST(a);
+
+CREATE TABLE parted_uniq_detach_test1
+PARTITION OF parted_uniq_detach_test
+FOR VALUES IN (1);
+
+ALTER TABLE parted_uniq_detach_test1
+  DROP CONSTRAINT parted_uniq_detach_test1_a_key;
+
+ALTER TABLE parted_uniq_detach_test
+  DETACH PARTITION
+  parted_uniq_detach_test1;
+
+ALTER TABLE parted_uniq_detach_test1
+  DROP CONSTRAINT parted_uniq_detach_test1_a_key;
+
+DROP TABLE "parted_uniq_detach_test", "parted_uniq_detach_test1";
+
+CREATE TABLE parted_index_col_drop (
+  a INT,
+  b INT,
+  c INT
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE parted_index_col_drop1
+PARTITION OF parted_index_col_drop
+FOR VALUES IN (1)
+PARTITION BY LIST(a);
+
+CREATE TABLE parted_index_col_drop2
+PARTITION OF parted_index_col_drop
+FOR VALUES IN (2)
+PARTITION BY LIST(a);
+
+CREATE TABLE parted_index_col_drop11
+PARTITION OF parted_index_col_drop1
+FOR VALUES IN (1);
+
+CREATE INDEX ON parted_index_col_drop USING btree (b);
+
+CREATE INDEX ON parted_index_col_drop USING btree (c);
+
+CREATE INDEX ON parted_index_col_drop USING btree (b, c);
+
+ALTER TABLE parted_index_col_drop
+  DROP COLUMN c;
+
+DROP TABLE "parted_index_col_drop";
+
+CREATE TABLE parted_inval_tab (a INT)
+PARTITION BY RANGE(a);
+
+CREATE INDEX "parted_inval_idx" ON parted_inval_tab USING btree (a);
+
+CREATE TABLE parted_inval_tab_1 (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE parted_inval_tab_1_1
+PARTITION OF parted_inval_tab_1
+FOR VALUES FROM (0) TO (10);
+
+CREATE TABLE parted_inval_tab_1_2
+PARTITION OF parted_inval_tab_1
+FOR VALUES FROM (10) TO (20);
+
+CREATE INDEX "parted_inval_ixd_1" ON ONLY parted_inval_tab_1 USING btree (a);
+
+ALTER TABLE parted_inval_tab
+  ATTACH PARTITION
+  parted_inval_tab_1
+  FOR VALUES FROM (1) TO (100);
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  indisvalid,
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'parted_inval%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "parted_inval_tab";
+
+CREATE TABLE parted_isvalid_tab (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE parted_isvalid_tab_1
+PARTITION OF parted_isvalid_tab
+FOR VALUES FROM (1) TO (10)
+PARTITION BY RANGE(a);
+
+CREATE TABLE parted_isvalid_tab_2
+PARTITION OF parted_isvalid_tab
+FOR VALUES FROM (10) TO (20)
+PARTITION BY RANGE(a);
+
+CREATE TABLE parted_isvalid_tab_11
+PARTITION OF parted_isvalid_tab_1
+FOR VALUES FROM (1) TO (5);
+
+CREATE TABLE parted_isvalid_tab_12
+PARTITION OF parted_isvalid_tab_1
+FOR VALUES FROM (5) TO (10);
+
+INSERT INTO parted_isvalid_tab_11 VALUES (1, 0);
+
+CREATE INDEX
+CONCURRENTLY "parted_isvalid_idx_11"
+ON parted_isvalid_tab_11
+USING btree
+(
+  (a / b)
+);
+
+CREATE INDEX "parted_isvalid_idx" ON parted_isvalid_tab USING btree ((a / b));
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  indisvalid,
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'parted_isvalid%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "parted_isvalid_tab";
+
+BEGIN;
+
+CREATE TABLE parted_replica_tab (id INT NOT NULL)
+PARTITION BY RANGE(id);
+
+CREATE TABLE parted_replica_tab_1
+PARTITION OF parted_replica_tab
+FOR VALUES FROM (1) TO (10)
+PARTITION BY RANGE(id);
+
+CREATE TABLE parted_replica_tab_11
+PARTITION OF parted_replica_tab_1
+FOR VALUES FROM (1) TO (5);
+
+CREATE UNIQUE INDEX "parted_replica_idx"
+ON ONLY parted_replica_tab
+USING btree
+(
+  id
+);
+
+CREATE UNIQUE
+INDEX "parted_replica_idx_1"
+ON ONLY parted_replica_tab_1
+USING btree
+(
+  id
+);
+
+ALTER TABLE ONLY parted_replica_tab_1
+  REPLICA IDENTITY
+  USING INDEX
+  parted_replica_idx_1;
+
+CREATE UNIQUE
+INDEX "parted_replica_idx_11"
+ON parted_replica_tab_11
+USING btree
+(
+  id
+);
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  indisvalid,
+  indisreplident,
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'parted_replica%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+ALTER INDEX parted_replica_idx
+  ATTACH PARTITION
+  parted_replica_idx_1;
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  indisvalid,
+  indisreplident,
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'parted_replica%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+ALTER INDEX parted_replica_idx_1
+  ATTACH PARTITION
+  parted_replica_idx_11;
+
+ALTER TABLE ONLY parted_replica_tab_1
+  REPLICA IDENTITY
+  USING INDEX
+  parted_replica_idx_1;
+
+COMMIT;
+
+SELECT
+  CAST(indexrelid AS REGCLASS),
+  indisvalid,
+  indisreplident,
+  CAST(indrelid AS REGCLASS),
+  CAST(inhparent AS REGCLASS)
+FROM
+  pg_index AS idx
+  LEFT OUTER JOIN
+    pg_inherits AS inh
+  ON idx.indexrelid = inh.inhrelid
+WHERE
+  CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) LIKE 'parted_replica%'
+ORDER BY CAST(CAST(indexrelid AS REGCLASS)
+  AS TEXT) COLLATE "C";
+
+DROP TABLE "parted_replica_tab";
+
+CREATE TABLE test_pg_index_toast_table (a INT);
+
+CREATE OR REPLACE FUNCTION test_pg_index_toast_func(a INT, b INT[])
+RETURNS BOOLEAN
+AS ' select true '
+LANGUAGE "sql"
+IMMUTABLE;
+
+SELECT array_agg(n) AS b FROM generate_series(1, 10000) AS n;
+
+CREATE INDEX
+CONCURRENTLY "test_pg_index_toast_index"
+ON test_pg_index_toast_table
+USING btree
+(
+  (test_pg_index_toast_func(a, 'b'))
+);
+
+REINDEX (CONCURRENTLY) INDEX test_pg_index_toast_index;
+
+DROP INDEX CONCURRENTLY "test_pg_index_toast_index";
+
+CREATE INDEX "test_pg_index_toast_index"
+ON test_pg_index_toast_table
+USING btree
+(
+  (test_pg_index_toast_func(a, 'b'))
+);
+
+REINDEX INDEX test_pg_index_toast_index;
+
+DROP INDEX "test_pg_index_toast_index";
+
+DROP FUNCTION test_pg_index_toast_func;
+
+DROP TABLE "test_pg_index_toast_table";

@@ -62,41 +62,10 @@ pub fn emit_window_definition(e: &mut EventEmitter, n: &WindowDef) {
 fn emit_window_spec(e: &mut EventEmitter, n: &WindowDef) {
     e.token(TokenKind::L_PAREN);
 
-    let mut has_content = false;
-
-    if !n.refname.is_empty() {
-        e.line(LineType::SoftOrSpace);
-        emit_identifier_maybe_quoted(e, &n.refname);
-        has_content = true;
-    }
-
-    if !n.partition_clause.is_empty() {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::PARTITION_KW);
-        e.space();
-        e.token(TokenKind::BY_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.partition_clause, |node, emitter| {
-            super::emit_node(node, emitter)
-        });
-        has_content = true;
-    }
-
-    if !n.order_clause.is_empty() {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::ORDER_KW);
-        e.space();
-        e.token(TokenKind::BY_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.order_clause, |node, emitter| {
-            super::emit_node(node, emitter)
-        });
-        has_content = true;
-    }
-
-    if emit_frame_clause(e, n) {
-        has_content = true;
-    }
+    let has_content = !n.refname.is_empty()
+        || !n.partition_clause.is_empty()
+        || !n.order_clause.is_empty()
+        || (n.frame_options & FRAMEOPTION_NONDEFAULT != 0);
 
     if !has_content {
         // Preserve empty parentheses for OVER ()
@@ -104,6 +73,48 @@ fn emit_window_spec(e: &mut EventEmitter, n: &WindowDef) {
         return;
     }
 
+    e.line(LineType::Soft);
+    e.indent_start();
+
+    let mut first = true;
+
+    if !n.refname.is_empty() {
+        emit_identifier_maybe_quoted(e, &n.refname);
+        first = false;
+    }
+
+    if !n.partition_clause.is_empty() {
+        if !first {
+            e.line(LineType::SoftOrSpace);
+        }
+        e.token(TokenKind::PARTITION_KW);
+        e.space();
+        e.token(TokenKind::BY_KW);
+        e.space();
+        emit_comma_separated_list(e, &n.partition_clause, |node, emitter| {
+            super::emit_node(node, emitter)
+        });
+        first = false;
+    }
+
+    if !n.order_clause.is_empty() {
+        if !first {
+            e.line(LineType::SoftOrSpace);
+        }
+        e.token(TokenKind::ORDER_KW);
+        e.space();
+        e.token(TokenKind::BY_KW);
+        e.space();
+        emit_comma_separated_list(e, &n.order_clause, |node, emitter| {
+            super::emit_node(node, emitter)
+        });
+        first = false;
+    }
+
+    emit_frame_clause(e, n);
+
+    e.indent_end();
+    e.line(LineType::Soft);
     e.token(TokenKind::R_PAREN);
 }
 

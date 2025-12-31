@@ -3,7 +3,13 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/copy2.sql
 snapshot_kind: text
 ---
-CREATE TEMPORARY TABLE x (a serial, b INT, c TEXT NOT NULL DEFAULT 'stuff', d TEXT, e TEXT);
+CREATE TEMPORARY TABLE x (
+  a serial,
+  b INT,
+  c TEXT NOT NULL DEFAULT 'stuff',
+  d TEXT,
+  e TEXT
+);
 
 CREATE FUNCTION fn_x_before()
 RETURNS trigger
@@ -25,17 +31,9 @@ AS '
 '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER trg_x_after
-AFTER INSERT
-ON x
-FOR EACH ROW
-EXECUTE FUNCTION fn_x_after();
+CREATE TRIGGER trg_x_after AFTER INSERT ON x FOR EACH ROW EXECUTE FUNCTION fn_x_after();
 
-CREATE TRIGGER trg_x_before
-BEFORE INSERT
-ON x
-FOR EACH ROW
-EXECUTE FUNCTION fn_x_before();
+CREATE TRIGGER trg_x_before BEFORE INSERT ON x FOR EACH ROW EXECUTE FUNCTION fn_x_before();
 
 SELECT * FROM x;
 

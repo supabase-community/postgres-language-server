@@ -11,7 +11,10 @@ SELECT * FROM (SELECT * FROM tenk1 ORDER BY four) AS t ORDER BY four, ten;
 
 RESET work_mem;
 
-CREATE TABLE t (a INT, b INT);
+CREATE TABLE t (
+  a INT,
+  b INT
+);
 
 CREATE OR REPLACE FUNCTION explain_analyze_without_memory(query TEXT)
 RETURNS TABLE (
@@ -151,25 +154,24 @@ SELECT * FROM (SELECT * FROM t ORDER BY a) AS s ORDER BY a, b LIMIT 55;
 
 SELECT
   explain_analyze_without_memory(
-  'select * from (select * from t order by a) s order by a, b limit 55'
+    'select * from (select * from t order by a) s order by a, b limit 55'
   );
 
 SELECT
   jsonb_pretty(
-  explain_analyze_inc_sort_nodes_without_memory(
-  'select * from (select * from t order by a) s order by a, b limit 55'
-  )
+    explain_analyze_inc_sort_nodes_without_memory(
+      'select * from (select * from t order by a) s order by a, b limit 55'
+    )
   );
 
 SELECT
   explain_analyze_inc_sort_nodes_verify_invariants(
-  'select * from (select * from t order by a) s order by a, b limit 55'
+    'select * from (select * from t order by a) s order by a, b limit 55'
   );
 
 DELETE FROM t;
 
-INSERT INTO t
-(a, b)
+INSERT INTO t (a, b)
 SELECT
   CASE WHEN i < 5 THEN i ELSE 9 END,
   i
@@ -232,19 +234,19 @@ ROLLBACK;
 
 SELECT
   explain_analyze_without_memory(
-  'select * from (select * from t order by a) s order by a, b limit 70'
+    'select * from (select * from t order by a) s order by a, b limit 70'
   );
 
 SELECT
   jsonb_pretty(
-  explain_analyze_inc_sort_nodes_without_memory(
-  'select * from (select * from t order by a) s order by a, b limit 70'
-  )
+    explain_analyze_inc_sort_nodes_without_memory(
+      'select * from (select * from t order by a) s order by a, b limit 70'
+    )
   );
 
 SELECT
   explain_analyze_inc_sort_nodes_verify_invariants(
-  'select * from (select * from t order by a) s order by a, b limit 70'
+    'select * from (select * from t order by a) s order by a, b limit 70'
   );
 
 DELETE FROM t;
@@ -313,16 +315,15 @@ SET parallel_tuple_cost = 0;
 
 SET max_parallel_workers_per_gather = 2;
 
-CREATE TABLE t (a INT, b INT, c INT);
+CREATE TABLE t (
+  a INT,
+  b INT,
+  c INT
+);
 
 INSERT INTO t SELECT mod(i, 10), mod(i, 10), i FROM generate_series(1, 10000) AS s (i);
 
-CREATE INDEX
-ON t
-USING btree
-(
-  a
-);
+CREATE INDEX ON t USING btree (a);
 
 ANALYZE t;
 
@@ -462,14 +463,12 @@ RESET min_parallel_table_scan_size;
 
 RESET min_parallel_index_scan_size;
 
-CREATE TABLE point_table (a point, b INT);
-
-CREATE INDEX "point_table_a_idx"
-ON point_table
-USING gist
-(
-  a
+CREATE TABLE point_table (
+  a point,
+  b INT
 );
+
+CREATE INDEX "point_table_a_idx" ON point_table USING gist (a);
 
 SELECT a, b, a <-> point(5, 5) AS dist FROM point_table ORDER BY dist, b LIMIT 1;
 
@@ -486,8 +485,10 @@ ORDER BY t1.four,
   t1.two
 LIMIT 1;
 
-CREATE TABLE prt_tbl
-(a INT, b INT)
+CREATE TABLE prt_tbl (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt_tbl_1 PARTITION OF prt_tbl FOR VALUES FROM (0) TO (100);
@@ -496,20 +497,9 @@ CREATE TABLE prt_tbl_2 PARTITION OF prt_tbl FOR VALUES FROM (100) TO (200);
 
 INSERT INTO prt_tbl SELECT i % 200, i FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX
-ON prt_tbl_1
-USING btree
-(
-  a
-);
+CREATE INDEX ON prt_tbl_1 USING btree (a);
 
-CREATE INDEX
-ON prt_tbl_2
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX ON prt_tbl_2 USING btree (a, b);
 
 ANALYZE prt_tbl;
 

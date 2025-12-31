@@ -22,19 +22,37 @@ CREATE SCHEMA "collate_tests";
 
 SET search_path TO collate_tests;
 
-CREATE TABLE collate_test1 (a INT, b TEXT COLLATE "en_US" NOT NULL);
+CREATE TABLE collate_test1 (
+  a INT,
+  b TEXT COLLATE "en_US" NOT NULL
+);
 
-CREATE TABLE collate_test_fail (a INT, b TEXT COLLATE "ja_JP.eucjp");
+CREATE TABLE collate_test_fail (
+  a INT,
+  b TEXT COLLATE "ja_JP.eucjp"
+);
 
-CREATE TABLE collate_test_fail (a INT, b TEXT COLLATE "foo");
+CREATE TABLE collate_test_fail (
+  a INT,
+  b TEXT COLLATE "foo"
+);
 
-CREATE TABLE collate_test_fail (a INT COLLATE "en_US", b TEXT);
+CREATE TABLE collate_test_fail (
+  a INT COLLATE "en_US",
+  b TEXT
+);
 
 CREATE TABLE collate_test_like (LIKE collate_test1);
 
-CREATE TABLE collate_test2 (a INT, b TEXT COLLATE "sv_SE");
+CREATE TABLE collate_test2 (
+  a INT,
+  b TEXT COLLATE "sv_SE"
+);
 
-CREATE TABLE collate_test3 (a INT, b TEXT COLLATE "C");
+CREATE TABLE collate_test3 (
+  a INT,
+  b TEXT COLLATE "C"
+);
 
 INSERT INTO collate_test1
 VALUES
@@ -67,13 +85,19 @@ CREATE DOMAIN testdomain_sv AS TEXT COLLATE "sv_SE";
 
 CREATE DOMAIN testdomain_i AS INT COLLATE "sv_SE";
 
-CREATE TABLE collate_test4 (a INT, b testdomain_sv);
+CREATE TABLE collate_test4 (
+  a INT,
+  b testdomain_sv
+);
 
 INSERT INTO collate_test4 SELECT * FROM collate_test1;
 
 SELECT a, b FROM collate_test4 ORDER BY b;
 
-CREATE TABLE collate_test5 (a INT, b testdomain_sv COLLATE "en_US");
+CREATE TABLE collate_test5 (
+  a INT,
+  b testdomain_sv COLLATE "en_US"
+);
 
 INSERT INTO collate_test5 SELECT * FROM collate_test1;
 
@@ -97,7 +121,11 @@ SELECT 'bbc' COLLATE "en_US" > 'Ã¤bc' COLLATE "en_US" AS "true";
 
 SELECT 'bbc' COLLATE "sv_SE" > 'Ã¤bc' COLLATE "sv_SE" AS "false";
 
-CREATE TABLE collate_test10 (a INT, x TEXT COLLATE "en_US", y TEXT COLLATE "tr_TR");
+CREATE TABLE collate_test10 (
+  a INT,
+  x TEXT COLLATE "en_US",
+  y TEXT COLLATE "tr_TR"
+);
 
 INSERT INTO collate_test10
 VALUES
@@ -144,7 +172,10 @@ SELECT * FROM collate_test1 WHERE b ~* '^abc';
 
 SELECT * FROM collate_test1 WHERE b ~* 'bc';
 
-CREATE TABLE collate_test6 (a INT, b TEXT COLLATE "en_US");
+CREATE TABLE collate_test6 (
+  a INT,
+  b TEXT COLLATE "en_US"
+);
 
 INSERT INTO collate_test6
 VALUES
@@ -432,47 +463,17 @@ SELECT a, dup(b) FROM collate_test2 ORDER BY 2;
 
 SELECT a, dup(b) FROM collate_test3 ORDER BY 2;
 
-CREATE INDEX "collate_test1_idx1"
-ON collate_test1
-USING btree
-(
-  b
-);
+CREATE INDEX "collate_test1_idx1" ON collate_test1 USING btree (b);
 
-CREATE INDEX "collate_test1_idx2"
-ON collate_test1
-USING btree
-(
-  b COLLATE "C"
-);
+CREATE INDEX "collate_test1_idx2" ON collate_test1 USING btree (b COLLATE "C");
 
-CREATE INDEX "collate_test1_idx3"
-ON collate_test1
-USING btree
-(
-  (b COLLATE "C")
-);
+CREATE INDEX "collate_test1_idx3" ON collate_test1 USING btree ((b COLLATE "C"));
 
-CREATE INDEX "collate_test1_idx4"
-ON collate_test1
-USING btree
-(
-  ((b || 'foo') COLLATE "POSIX")
-);
+CREATE INDEX "collate_test1_idx4" ON collate_test1 USING btree (((b || 'foo') COLLATE "POSIX"));
 
-CREATE INDEX "collate_test1_idx5"
-ON collate_test1
-USING btree
-(
-  a COLLATE "C"
-);
+CREATE INDEX "collate_test1_idx5" ON collate_test1 USING btree (a COLLATE "C");
 
-CREATE INDEX "collate_test1_idx6"
-ON collate_test1
-USING btree
-(
-  (a COLLATE "C")
-);
+CREATE INDEX "collate_test1_idx6" ON collate_test1 USING btree ((a COLLATE "C"));
 
 SELECT
   relname,
@@ -566,23 +567,24 @@ SELECT current_database() AS datname;
 
 CREATE COLLATION test0 FROM "C";
 
-CREATE TABLE collate_dep_test1 (a INT, b TEXT COLLATE "test0");
+CREATE TABLE collate_dep_test1 (
+  a INT,
+  b TEXT COLLATE "test0"
+);
 
 CREATE DOMAIN collate_dep_dom1 AS TEXT COLLATE "test0";
 
-CREATE TYPE collate_dep_test2 AS ( x INT, y TEXT COLLATE "test0" );
+CREATE TYPE collate_dep_test2 AS (x INT, y TEXT COLLATE "test0");
 
 CREATE VIEW collate_dep_test3
 AS SELECT CAST('foo' AS TEXT) COLLATE "test0" AS foo;
 
-CREATE TABLE collate_dep_test4t (a INT, b TEXT);
-
-CREATE INDEX "collate_dep_test4i"
-ON collate_dep_test4t
-USING btree
-(
-  b COLLATE test0
+CREATE TABLE collate_dep_test4t (
+  a INT,
+  b TEXT
 );
+
+CREATE INDEX "collate_dep_test4i" ON collate_dep_test4t USING btree (b COLLATE test0);
 
 DROP COLLATION "test0";
 

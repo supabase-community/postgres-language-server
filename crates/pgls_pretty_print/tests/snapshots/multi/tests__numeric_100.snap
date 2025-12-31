@@ -3,25 +3,60 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/numeric.sql
 snapshot_kind: text
 ---
-CREATE TABLE num_data (id INT, val NUMERIC(210, 10));
+CREATE TABLE num_data (
+  id INT,
+  val NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_add (id1 INT, id2 INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_add (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_sub (id1 INT, id2 INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_sub (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_div (id1 INT, id2 INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_div (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_mul (id1 INT, id2 INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_mul (
+  id1 INT,
+  id2 INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_sqrt (id INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_sqrt (
+  id INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_ln (id INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_ln (
+  id INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_log10 (id INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_log10 (
+  id INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_exp_power_10_ln (id INT, expected NUMERIC(210, 10));
+CREATE TABLE num_exp_power_10_ln (
+  id INT,
+  expected NUMERIC(210, 10)
+);
 
-CREATE TABLE num_result (id1 INT, id2 INT, result NUMERIC(210, 10));
+CREATE TABLE num_result (
+  id1 INT,
+  id2 INT,
+  result NUMERIC(210, 10)
+);
 
 BEGIN;
 
@@ -947,65 +982,21 @@ INSERT INTO num_data VALUES (9, '-24926804.045047420');
 
 COMMIT;
 
-CREATE UNIQUE INDEX "num_exp_add_idx"
-ON num_exp_add
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_add_idx" ON num_exp_add USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_sub_idx"
-ON num_exp_sub
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_sub_idx" ON num_exp_sub USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_div_idx"
-ON num_exp_div
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_div_idx" ON num_exp_div USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_mul_idx"
-ON num_exp_mul
-USING btree
-(
-  id1,
-  id2
-);
+CREATE UNIQUE INDEX "num_exp_mul_idx" ON num_exp_mul USING btree (id1, id2);
 
-CREATE UNIQUE INDEX "num_exp_sqrt_idx"
-ON num_exp_sqrt
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_sqrt_idx" ON num_exp_sqrt USING btree (id);
 
-CREATE UNIQUE INDEX "num_exp_ln_idx"
-ON num_exp_ln
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_ln_idx" ON num_exp_ln USING btree (id);
 
-CREATE UNIQUE INDEX "num_exp_log10_idx"
-ON num_exp_log10
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_log10_idx" ON num_exp_log10 USING btree (id);
 
-CREATE UNIQUE INDEX "num_exp_power_10_ln_idx"
-ON num_exp_power_10_ln
-USING btree
-(
-  id
-);
+CREATE UNIQUE INDEX "num_exp_power_10_ln_idx" ON num_exp_power_10_ln USING btree (id);
 
 VACUUM (ANALYZE) num_exp_add;
 
@@ -1255,8 +1246,8 @@ SELECT
   id,
   0,
   power(
-  CAST('10' AS NUMERIC),
-  ln(abs(round(val, 200)))
+    CAST('10' AS NUMERIC),
+    ln(abs(round(val, 200)))
   )
 FROM
   num_data
@@ -1556,7 +1547,10 @@ SELECT stddev(val) FROM num_data;
 
 SELECT variance(val) FROM num_data;
 
-CREATE TABLE fract_only (id INT, val NUMERIC(4, 4));
+CREATE TABLE fract_only (
+  id INT,
+  val NUMERIC(4, 4)
+);
 
 INSERT INTO fract_only VALUES (1, '0.0');
 
@@ -1725,36 +1719,36 @@ SELECT width_bucket(3.5, 3.0, 3.0, 888);
 
 SELECT
   width_bucket(
-  CAST(5.0 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(4.0 AS DOUBLE PRECISION),
-  0
+    CAST(5.0 AS DOUBLE PRECISION),
+    CAST(3.0 AS DOUBLE PRECISION),
+    CAST(4.0 AS DOUBLE PRECISION),
+    0
   );
 
 SELECT
   width_bucket(
-  CAST(5.0 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(4.0 AS DOUBLE PRECISION),
-  -5
+    CAST(5.0 AS DOUBLE PRECISION),
+    CAST(3.0 AS DOUBLE PRECISION),
+    CAST(4.0 AS DOUBLE PRECISION),
+    -5
   );
 
 SELECT
   width_bucket(
-  CAST(3.5 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  888
+    CAST(3.5 AS DOUBLE PRECISION),
+    CAST(3.0 AS DOUBLE PRECISION),
+    CAST(3.0 AS DOUBLE PRECISION),
+    888
   );
 
 SELECT width_bucket('NaN', 3.0, 4.0, 888);
 
 SELECT
   width_bucket(
-  CAST('NaN' AS DOUBLE PRECISION),
-  CAST(3.0 AS DOUBLE PRECISION),
-  CAST(4.0 AS DOUBLE PRECISION),
-  888
+    CAST('NaN' AS DOUBLE PRECISION),
+    CAST(3.0 AS DOUBLE PRECISION),
+    CAST(4.0 AS DOUBLE PRECISION),
+    888
   );
 
 SELECT width_bucket(0, 'NaN', 4.0, 888);
@@ -1765,7 +1759,10 @@ SELECT width_bucket(2.0, 3.0, '-inf', 888);
 
 SELECT width_bucket(CAST(0 AS DOUBLE PRECISION), '-inf', CAST(4.0 AS DOUBLE PRECISION), 888);
 
-CREATE TABLE width_bucket_test (operand_num NUMERIC, operand_f8 DOUBLE PRECISION);
+CREATE TABLE width_bucket_test (
+  operand_num NUMERIC,
+  operand_f8 DOUBLE PRECISION
+);
 
 UPDATE width_bucket_test SET operand_f8 = CAST(operand_num AS DOUBLE PRECISION);
 
@@ -1790,16 +1787,16 @@ SELECT width_bucket(CAST(0.0 AS NUMERIC), 5, CAST('-Infinity' AS NUMERIC), 20);
 
 SELECT
   width_bucket(
-  CAST('Infinity' AS NUMERIC),
-  1,
-  10,
-  10
+    CAST('Infinity' AS NUMERIC),
+    1,
+    10,
+    10
   ),
   width_bucket(
-  CAST('-Infinity' AS NUMERIC),
-  1,
-  10,
-  10
+    CAST('-Infinity' AS NUMERIC),
+    1,
+    10,
+    10
   );
 
 SELECT width_bucket(CAST(0.0 AS DOUBLE PRECISION), CAST('Infinity' AS DOUBLE PRECISION), 5, 10);
@@ -1808,16 +1805,16 @@ SELECT width_bucket(CAST(0.0 AS DOUBLE PRECISION), 5, CAST('-Infinity' AS DOUBLE
 
 SELECT
   width_bucket(
-  CAST('Infinity' AS DOUBLE PRECISION),
-  1,
-  10,
-  10
+    CAST('Infinity' AS DOUBLE PRECISION),
+    1,
+    10,
+    10
   ),
   width_bucket(
-  CAST('-Infinity' AS DOUBLE PRECISION),
-  1,
-  10,
-  10
+    CAST('-Infinity' AS DOUBLE PRECISION),
+    1,
+    10,
+    10
   );
 
 DROP TABLE "width_bucket_test";
@@ -1825,10 +1822,10 @@ DROP TABLE "width_bucket_test";
 SELECT
   x,
   width_bucket(
-  CAST(x AS DOUBLE PRECISION),
-  10,
-  100,
-  9
+    CAST(x AS DOUBLE PRECISION),
+    10,
+    100,
+    9
   )
   AS flt,
   width_bucket(CAST(x AS NUMERIC), 10, 100, 9)
@@ -1839,10 +1836,10 @@ FROM
 SELECT
   x,
   width_bucket(
-  CAST(x AS DOUBLE PRECISION),
-  100,
-  10,
-  9
+    CAST(x AS DOUBLE PRECISION),
+    100,
+    10,
+    9
   )
   AS flt,
   width_bucket(CAST(x AS NUMERIC), 100, 10, 9)
@@ -1924,24 +1921,24 @@ SELECT to_char(val, 'FM9999999999999999.99999999999999') FROM num_data;
 
 SELECT
   to_char(
-  val,
-  'S 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9'
+    val,
+    'S 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9'
   )
 FROM
   num_data;
 
 SELECT
   to_char(
-  val,
-  'FMS 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9'
+    val,
+    'FMS 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9'
   )
 FROM
   num_data;
 
 SELECT
   to_char(
-  val,
-  '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999'
+    val,
+    '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999'
   )
 FROM
   num_data;
@@ -1970,8 +1967,8 @@ SELECT
   val,
   to_char(val, '9.999EEEE') AS numeric,
   to_char(
-  CAST(val AS DOUBLE PRECISION),
-  '9.999EEEE'
+    CAST(val AS DOUBLE PRECISION),
+    '9.999EEEE'
   )
   AS float8,
   to_char(CAST(val AS REAL), '9.999EEEE') AS float4
@@ -2008,8 +2005,8 @@ AS (
 SELECT
   exp,
   to_char(
-  CAST('1.2345e' || exp AS NUMERIC),
-  '9.999EEEE'
+    CAST('1.2345e' || exp AS NUMERIC),
+    '9.999EEEE'
   )
   AS numeric
 FROM
@@ -2031,8 +2028,8 @@ SELECT
   val,
   to_char(val, 'MI9999999999.99') AS numeric,
   to_char(
-  CAST(val AS DOUBLE PRECISION),
-  'MI9999999999.99'
+    CAST(val AS DOUBLE PRECISION),
+    'MI9999999999.99'
   )
   AS float8,
   to_char(CAST(val AS REAL), 'MI9999999999.99')

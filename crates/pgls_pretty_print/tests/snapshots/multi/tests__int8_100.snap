@@ -191,8 +191,8 @@ SELECT to_char(q2, 'S 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 . 9 9 9') FROM int8_tbl;
 
 SELECT
   to_char(
-  q2,
-  '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999'
+    q2,
+    '99999 "text" 9999 "9999" 999 "\"text between quote marks\"" 9999'
   )
 FROM
   int8_tbl;
@@ -297,26 +297,26 @@ SELECT
   *
 FROM
   generate_series(
-  CAST('+4567890123456789' AS BIGINT),
-  CAST('+4567890123456799' AS BIGINT)
+    CAST('+4567890123456789' AS BIGINT),
+    CAST('+4567890123456799' AS BIGINT)
   );
 
 SELECT
   *
 FROM
   generate_series(
-  CAST('+4567890123456789' AS BIGINT),
-  CAST('+4567890123456799' AS BIGINT),
-  0
+    CAST('+4567890123456789' AS BIGINT),
+    CAST('+4567890123456799' AS BIGINT),
+    0
   );
 
 SELECT
   *
 FROM
   generate_series(
-  CAST('+4567890123456789' AS BIGINT),
-  CAST('+4567890123456799' AS BIGINT),
-  2
+    CAST('+4567890123456789' AS BIGINT),
+    CAST('+4567890123456799' AS BIGINT),
+    2
   );
 
 SELECT CAST(-CAST(1 AS BIGINT) << 63 AS TEXT);

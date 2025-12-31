@@ -45,10 +45,14 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     if !n.aliases.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         emit_comma_separated_list(e, &n.aliases, |alias_node, emitter| {
             let alias = assert_node_variant!(String, alias_node);
             super::string::emit_identifier_maybe_quoted(emitter, &alias.sval);
         });
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 

@@ -5,21 +5,11 @@ snapshot_kind: text
 ---
 CREATE TABLE temptest (col INT);
 
-CREATE INDEX "i_temptest"
-ON temptest
-USING btree
-(
-  col
-);
+CREATE INDEX "i_temptest" ON temptest USING btree (col);
 
 CREATE TEMPORARY TABLE temptest (tcol INT);
 
-CREATE INDEX "i_temptest"
-ON temptest
-USING btree
-(
-  tcol
-);
+CREATE INDEX "i_temptest" ON temptest USING btree (tcol);
 
 SELECT * FROM temptest;
 
@@ -53,12 +43,7 @@ CREATE TEMPORARY TABLE temptest (col INT);
 
 SELECT * FROM temptest;
 
-CREATE INDEX
-ON temptest
-USING btree
-(
-  (bit_length(''))
-);
+CREATE INDEX ON temptest USING btree ((bit_length('')));
 
 BEGIN;
 
@@ -208,8 +193,7 @@ DROP TABLE "temp_parted_oncommit";
 
 BEGIN;
 
-CREATE TEMPORARY TABLE temp_parted_oncommit_test
-(a INT)
+CREATE TEMPORARY TABLE temp_parted_oncommit_test (a INT)
 PARTITION BY LIST(a)
 ON COMMIT DROP;
 
@@ -264,8 +248,7 @@ SELECT relname FROM pg_class WHERE relname ~ '^temp_inh_oncommit_test';
 
 BEGIN;
 
-CREATE TEMPORARY TABLE temp_inh_oncommit_test1
-()
+CREATE TEMPORARY TABLE temp_inh_oncommit_test1 ()
 INHERITS (temp_inh_oncommit_test)
 ON COMMIT DROP;
 
@@ -309,7 +292,7 @@ PREPARE TRANSACTION 'twophase_operator';
 
 BEGIN;
 
-CREATE TYPE pg_temp.twophase_type AS ( a INT );
+CREATE TYPE pg_temp.twophase_type AS (a INT);
 
 PREPARE TRANSACTION 'twophase_type';
 
@@ -362,7 +345,11 @@ PREPARE TRANSACTION 'twophase_search';
 
 SET temp_buffers = 100;
 
-CREATE TEMPORARY TABLE test_temp (a INT NOT NULL UNIQUE, b TEXT NOT NULL, cnt INT NOT NULL);
+CREATE TEMPORARY TABLE test_temp (
+  a INT NOT NULL UNIQUE,
+  b TEXT NOT NULL,
+  cnt INT NOT NULL
+);
 
 INSERT INTO test_temp SELECT generate_series(1, 10000) AS id, repeat('a', 200), 0;
 

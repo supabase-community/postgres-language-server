@@ -163,8 +163,7 @@ SELECT cachebug();
 
 SELECT cachebug();
 
-CREATE TABLE pc_list_parted
-(a INT)
+CREATE TABLE pc_list_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE pc_list_part_null PARTITION OF pc_list_parted FOR VALUES IN (NULL);
@@ -201,12 +200,7 @@ CREATE TABLE test_mode (a INT);
 
 INSERT INTO test_mode SELECT 1 FROM generate_series(1, 1000) UNION ALL SELECT 2;
 
-CREATE INDEX
-ON test_mode
-USING btree
-(
-  a
-);
+CREATE INDEX ON test_mode USING btree (a);
 
 ANALYZE test_mode;
 

@@ -33,16 +33,14 @@ CREATE TEXT SEARCH PARSER addr_ts_prs
   lextypes = prsd_lextype
 );
 
-CREATE TABLE addr_nsp.gentable
-(
+CREATE TABLE addr_nsp.gentable (
   a serial
   PRIMARY KEY
   CONSTRAINT "a_chk" CHECK (a > 0),
   b TEXT DEFAULT 'hello'
 );
 
-CREATE TABLE addr_nsp.parttable
-(a INT PRIMARY KEY)
+CREATE TABLE addr_nsp.parttable (a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE VIEW addr_nsp.genview
@@ -50,7 +48,7 @@ AS SELECT * FROM addr_nsp.gentable;
 
 CREATE MATERIALIZED VIEW addr_nsp.genmatview AS SELECT * FROM addr_nsp.gentable;
 
-CREATE TYPE addr_nsp.gencomptype AS ( a INT );
+CREATE TYPE addr_nsp.gencomptype AS (a INT);
 
 CREATE TYPE addr_nsp.genenum AS ENUM ('one', 'two');
 
@@ -65,11 +63,7 @@ RETURNS trigger
 LANGUAGE "plpgsql"
 AS ' BEGIN END; ';
 
-CREATE TRIGGER t
-BEFORE INSERT
-ON addr_nsp.gentable
-FOR EACH ROW
-EXECUTE FUNCTION addr_nsp.trig();
+CREATE TRIGGER t BEFORE INSERT ON addr_nsp.gentable FOR EACH ROW EXECUTE FUNCTION addr_nsp.trig();
 
 CREATE POLICY genpol ON addr_nsp.gentable AS PERMISSIVE FOR ALL TO PUBLIC;
 
@@ -84,13 +78,15 @@ CREATE USER MAPPING FOR regress_addr_user SERVER integer;
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_addr_user
 IN SCHEMA public
-GRANT ALL ON TABLES  TO regress_addr_user;
+GRANT ALL ON TABLES TO regress_addr_user;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE regress_addr_user REVOKE DELETE ON TABLES  FROM regress_addr_user;
+ALTER DEFAULT PRIVILEGES FOR ROLE regress_addr_user REVOKE DELETE ON TABLES FROM regress_addr_user;
 
 CREATE TRANSFORM FOR INT LANGUAGE sql
-(FROM SQL WITH FUNCTION prsd_lextype(internal),
-TO SQL WITH FUNCTION int4recv(internal));
+(
+  FROM SQL WITH FUNCTION prsd_lextype(internal),
+  TO SQL WITH FUNCTION int4recv(internal)
+);
 
 SET client_min_messages = ERROR;
 
@@ -132,36 +128,36 @@ SELECT
   *
 FROM
   pg_get_object_address(
-  'operator of access method',
-  '{btree,integer_ops,1}',
-  '{int4,bool}'
+    'operator of access method',
+    '{btree,integer_ops,1}',
+    '{int4,bool}'
   );
 
 SELECT
   *
 FROM
   pg_get_object_address(
-  'operator of access method',
-  '{btree,integer_ops,99}',
-  '{int4,int4}'
+    'operator of access method',
+    '{btree,integer_ops,99}',
+    '{int4,int4}'
   );
 
 SELECT
   *
 FROM
   pg_get_object_address(
-  'function of access method',
-  '{btree,integer_ops,1}',
-  '{int4,bool}'
+    'function of access method',
+    '{btree,integer_ops,1}',
+    '{int4,bool}'
   );
 
 SELECT
   *
 FROM
   pg_get_object_address(
-  'function of access method',
-  '{btree,integer_ops,99}',
-  '{int4,int4}'
+    'function of access method',
+    '{btree,integer_ops,99}',
+    '{int4,int4}'
   );
 
 DO
@@ -370,28 +366,28 @@ AS (
 )
 SELECT
   (pg_identify_object(
-  addr1.classid,
-  addr1.objid,
-  addr1.objsubid
+    addr1.classid,
+    addr1.objid,
+    addr1.objsubid
   )).*,
   ROW(pg_identify_object(
-  addr1.classid,
-  addr1.objid,
-  addr1.objsubid
+    addr1.classid,
+    addr1.objid,
+    addr1.objsubid
   )) =
   ROW(pg_identify_object(
-  addr2.classid,
-  addr2.objid,
-  addr2.objsubid
+    addr2.classid,
+    addr2.objid,
+    addr2.objsubid
   ))
   AS roundtrip
 FROM
   objects,
   pg_get_object_address(type, name, args) AS addr1,
   pg_identify_object_as_address(
-  classid,
-  objid,
-  objsubid
+    classid,
+    objid,
+    objsubid
   )
   AS ioa (typ, nms, args),
   pg_get_object_address(typ, nms, ioa.args) AS addr2
@@ -472,21 +468,21 @@ AS (
 )
 SELECT
   ROW(pg_identify_object(
-  objects.classid,
-  objects.objid,
-  objects.objsubid
+    objects.classid,
+    objects.objid,
+    objects.objsubid
   ))
   AS ident,
   ROW(pg_identify_object_as_address(
-  objects.classid,
-  objects.objid,
-  objects.objsubid
+    objects.classid,
+    objects.objid,
+    objects.objsubid
   ))
   AS addr,
   pg_describe_object(
-  objects.classid,
-  objects.objid,
-  objects.objsubid
+    objects.classid,
+    objects.objid,
+    objects.objsubid
   )
   AS descr
 FROM

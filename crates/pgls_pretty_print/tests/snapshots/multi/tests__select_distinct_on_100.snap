@@ -48,17 +48,15 @@ SELECT DISTINCT ON ( four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1, 2;
 
 SELECT DISTINCT ON ( four) four, hundred FROM tenk1 WHERE four = 0 ORDER BY 1, 2;
 
-CREATE TABLE distinct_on_tbl (x INT, y INT, z INT);
+CREATE TABLE distinct_on_tbl (
+  x INT,
+  y INT,
+  z INT
+);
 
 INSERT INTO distinct_on_tbl SELECT i % 10, i % 10, i % 10 FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX "distinct_on_tbl_x_y_idx"
-ON distinct_on_tbl
-USING btree
-(
-  x,
-  y
-);
+CREATE INDEX "distinct_on_tbl_x_y_idx" ON distinct_on_tbl USING btree (x, y);
 
 ANALYZE distinct_on_tbl;
 

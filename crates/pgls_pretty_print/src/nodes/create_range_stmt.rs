@@ -23,7 +23,11 @@ pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) 
     if !n.params.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         emit_comma_separated_list(e, &n.params, super::emit_node);
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 

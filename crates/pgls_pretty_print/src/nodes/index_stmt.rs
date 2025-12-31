@@ -46,7 +46,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // ON table
     if let Some(ref relation) = n.relation {
-        e.line(crate::emitter::LineType::Hard);
+        e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
         super::emit_range_var(e, relation);
@@ -54,7 +54,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
 
     // USING access_method
     if !n.access_method.is_empty() {
-        e.line(crate::emitter::LineType::Hard);
+        e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
         e.token(TokenKind::IDENT(n.access_method.clone()));
@@ -65,7 +65,7 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         e.line(crate::emitter::LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         e.indent_start();
-        e.line(crate::emitter::LineType::SoftOrSpace);
+        e.line(crate::emitter::LineType::Soft);
         emit_comma_separated_list(e, &n.index_params, super::emit_node);
         e.indent_end();
         e.line(crate::emitter::LineType::Soft);

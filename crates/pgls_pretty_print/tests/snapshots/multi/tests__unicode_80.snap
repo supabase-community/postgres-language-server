@@ -1,0 +1,53 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/unicode.sql
+snapshot_kind: text
+---
+SELECT getdatabaseencoding() <> 'UTF8' AS skip_test;
+
+SELECT 'äbc' <> 'äbc' COLLATE "C" AS sanity_check;
+
+SELECT unicode_version() IS NOT NULL;
+
+SELECT unicode_assigned('abc');
+
+SELECT unicode_assigned('abc􏿿');
+
+SELECT NORMALIZE('');
+
+SELECT NORMALIZE('äⓑc') = 'äⓑc' COLLATE "C" AS test_default;
+
+SELECT NORMALIZE('äⓑc', NFC) = 'äⓑc' COLLATE "C" AS test_nfc;
+
+SELECT NORMALIZE('äbc', NFC) = 'äbc' COLLATE "C" AS test_nfc_idem;
+
+SELECT NORMALIZE('äⓑc', NFD) = 'äⓑc' COLLATE "C" AS test_nfd;
+
+SELECT NORMALIZE('äⓑc', NFKC) = 'äbc' COLLATE "C" AS test_nfkc;
+
+SELECT NORMALIZE('äⓑc', NFKD) = 'äbc' COLLATE "C" AS test_nfkd;
+
+SELECT "normalize"('abc', 'def');
+
+SELECT is_normalized('äⓑc') AS test_default;
+
+SELECT is_normalized('äⓑc', 'NFC') AS test_nfc;
+
+SELECT
+  num,
+  val,
+  is_normalized(val, 'NFC') AS nfc,
+  is_normalized(val, 'NFD') AS nfd,
+  is_normalized(val, 'NFKC') AS nfkc,
+  is_normalized(val, 'NFKD') AS nfkd
+FROM
+  (VALUES
+    (1, 'äbc'),
+    (2, 'äbc'),
+    (3, 'äⓑc'),
+    (4, 'äⓑc'),
+    (5, ''))
+  AS vals (num, val)
+ORDER BY num;
+
+SELECT is_normalized('abc', 'def');

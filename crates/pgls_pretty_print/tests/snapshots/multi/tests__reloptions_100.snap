@@ -3,8 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/reloptions.sql
 snapshot_kind: text
 ---
-CREATE TABLE reloptions_test
-(i INT)
+CREATE TABLE reloptions_test (i INT)
 WITH (
   fillfactor = 30,
   autovacuum_enabled = 'false',
@@ -88,8 +87,10 @@ SELECT reloptions FROM pg_class WHERE oid = CAST('reloptions_test' AS REGCLASS);
 
 DROP TABLE "reloptions_test";
 
-CREATE TEMPORARY TABLE reloptions_test
-(i INT NOT NULL, j TEXT)
+CREATE TEMPORARY TABLE reloptions_test (
+  i INT NOT NULL,
+  j TEXT
+)
 WITH (
   vacuum_truncate = 'false',
   toast.vacuum_truncate = 'false',
@@ -156,8 +157,7 @@ CREATE TABLE reloptions_test2 (i INT) WITH (toast.not_existing_option = 42);
 
 DROP TABLE "reloptions_test";
 
-CREATE TABLE reloptions_test
-(s VARCHAR)
+CREATE TABLE reloptions_test (s VARCHAR)
 WITH (
   toast.autovacuum_vacuum_cost_delay = 23,
   autovacuum_vacuum_cost_delay = 24,
@@ -226,12 +226,7 @@ ALTER INDEX reloptions_test_idx
 
 SELECT reloptions FROM pg_class WHERE oid = CAST('reloptions_test_idx' AS REGCLASS);
 
-CREATE INDEX "reloptions_test_idx3"
-ON reloptions_test
-USING btree
-(
-  s
-);
+CREATE INDEX "reloptions_test_idx3" ON reloptions_test USING btree (s);
 
 ALTER INDEX reloptions_test_idx3
   SET (fillfactor = 40);

@@ -5,7 +5,10 @@ snapshot_kind: text
 ---
 BEGIN;
 
-CREATE TABLE xacttest (a SMALLINT, b REAL);
+CREATE TABLE xacttest (
+  a SMALLINT,
+  b REAL
+);
 
 INSERT INTO xacttest
 VALUES

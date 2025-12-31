@@ -60,7 +60,9 @@ FROM
   t;
 
 CREATE VIEW nums
-(n)
+(
+  n
+)
 AS WITH RECURSIVE
 nums (n)
 AS (
@@ -76,7 +78,9 @@ FROM
 SELECT * FROM nums;
 
 CREATE OR REPLACE VIEW nums
-(n)
+(
+  n
+)
 AS WITH RECURSIVE
 nums (n)
 AS (
@@ -249,8 +253,7 @@ FROM
   outermost
 ORDER BY 1;
 
-CREATE TEMPORARY TABLE department
-(
+CREATE TEMPORARY TABLE department (
   id INT PRIMARY KEY,
   parent_department INT REFERENCES department,
   name TEXT
@@ -488,7 +491,10 @@ LIMIT 32;
 
 SELECT * FROM t;
 
-CREATE TEMPORARY TABLE tree (id INT PRIMARY KEY, parent_id INT REFERENCES tree (id));
+CREATE TEMPORARY TABLE tree (
+  id INT PRIMARY KEY,
+  parent_id INT REFERENCES tree (id)
+);
 
 INSERT INTO tree
 VALUES

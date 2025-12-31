@@ -3,7 +3,10 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/rangefuncs.sql
 snapshot_kind: text
 ---
-CREATE TABLE rngfunc2 (rngfuncid INT, f2 INT);
+CREATE TABLE rngfunc2 (
+  rngfuncid INT,
+  f2 INT
+);
 
 INSERT INTO rngfunc2 VALUES (1, 11);
 
@@ -73,9 +76,9 @@ SELECT
   *
 FROM
   unnest(
-  ARRAY[10, 20],
-  ARRAY['foo', 'bar'],
-  ARRAY[1.0]
+    ARRAY[10, 20],
+    ARRAY['foo', 'bar'],
+    ARRAY[1.0]
   )
   WITH ORDINALITY
   AS z (a, b, c, ord);
@@ -84,9 +87,9 @@ SELECT
   *
 FROM
   ROWS FROM (unnest(
-  ARRAY[10, 20],
-  ARRAY['foo', 'bar'],
-  ARRAY[1.0]
+    ARRAY[10, 20],
+    ARRAY['foo', 'bar'],
+    ARRAY[1.0]
   ))
   WITH ORDINALITY
   AS z (a, b, c, ord);
@@ -104,9 +107,9 @@ AS SELECT
   *
 FROM
   unnest(
-  ARRAY[10, 20],
-  ARRAY['foo', 'bar'],
-  ARRAY[1.0]
+    ARRAY[10, 20],
+    ARRAY['foo', 'bar'],
+    ARRAY[1.0]
   )
   AS z (a, b, c);
 
@@ -121,9 +124,9 @@ AS SELECT
   *
 FROM
   ROWS FROM (unnest(
-  ARRAY[10, 20],
-  ARRAY['foo', 'bar'],
-  ARRAY[1.0]
+    ARRAY[10, 20],
+    ARRAY['foo', 'bar'],
+    ARRAY[1.0]
   ))
   AS z (a, b, c);
 
@@ -246,8 +249,7 @@ ORDER BY 1,
 
 SELECT rngfunct.rngfuncid, rngfunct.f2 FROM rngfunct(CAST(sin(pi() / 2) AS INT)) ORDER BY 1, 2;
 
-CREATE TABLE rngfunc
-(
+CREATE TABLE rngfunc (
   rngfuncid INT,
   rngfuncsubid INT,
   rngfuncname TEXT,
@@ -634,7 +636,7 @@ CREATE TEMPORARY SEQUENCE rngfunc_rescan_seq1;
 
 CREATE TEMPORARY SEQUENCE rngfunc_rescan_seq2;
 
-CREATE TYPE rngfunc_rescan_t AS ( i INT, s BIGINT );
+CREATE TYPE rngfunc_rescan_t AS (i INT, s BIGINT);
 
 CREATE FUNCTION rngfunc_sql(INT, INT)
 RETURNS SETOF rngfunc_rescan_t
@@ -1309,7 +1311,10 @@ SELECT * FROM rngfunc() GROUP BY 1;
 
 DROP FUNCTION rngfunc();
 
-CREATE TEMPORARY TABLE tt (f1 serial, data TEXT);
+CREATE TEMPORARY TABLE tt (
+  f1 serial,
+  data TEXT
+);
 
 CREATE FUNCTION insert_tt(TEXT)
 RETURNS INT
@@ -1355,17 +1360,16 @@ begin
 end '
 LANGUAGE "plpgsql";
 
-CREATE TRIGGER tnoticetrigger
-AFTER INSERT
-ON tt
-FOR EACH ROW
-EXECUTE FUNCTION noticetrigger();
+CREATE TRIGGER tnoticetrigger AFTER INSERT ON tt FOR EACH ROW EXECUTE FUNCTION noticetrigger();
 
 SELECT insert_tt2('foolme', 'barme') LIMIT 1;
 
 SELECT * FROM tt;
 
-CREATE TEMPORARY TABLE tt_log (f1 INT, data TEXT);
+CREATE TEMPORARY TABLE tt_log (
+  f1 INT,
+  data TEXT
+);
 
 CREATE RULE insert_tt_rule
 AS ON INSERT TO tt
@@ -1432,7 +1436,10 @@ SELECT * FROM array_to_set(ARRAY['one', 'two']) AS t (f1 point, f2 TEXT);
 
 SELECT * FROM array_to_set(ARRAY['one', 'two']) AS t (f1 NUMERIC(4, 2), f2 TEXT);
 
-CREATE TEMPORARY TABLE rngfunc (f1 BIGINT, f2 BIGINT);
+CREATE TEMPORARY TABLE rngfunc (
+  f1 BIGINT,
+  f2 BIGINT
+);
 
 CREATE FUNCTION testrngfunc()
 RETURNS RECORD
@@ -1464,7 +1471,7 @@ SELECT * FROM testrngfunc();
 
 DROP FUNCTION testrngfunc();
 
-CREATE TYPE rngfunc_type AS ( f1 NUMERIC(35, 6), f2 NUMERIC(35, 2) );
+CREATE TYPE rngfunc_type AS (f1 NUMERIC(35, 6), f2 NUMERIC(35, 2));
 
 CREATE FUNCTION testrngfunc()
 RETURNS rngfunc_type
@@ -1556,8 +1563,7 @@ SELECT * FROM sin(3) AS t (f1 BIGINT, f2 BIGINT);
 
 DROP TYPE rngfunc_type CASCADE;
 
-CREATE TEMPORARY TABLE users
-(
+CREATE TEMPORARY TABLE users (
   userid TEXT,
   seq INT,
   email TEXT,
@@ -1633,9 +1639,9 @@ WHERE
 RETURNING pg_describe_object(classid, objid, objsubid)
 AS obj,
 pg_describe_object(
-refclassid,
-refobjid,
-refobjsubid
+  refclassid,
+  refobjid,
+  refobjsubid
 )
 AS ref,
 deptype;
@@ -1666,9 +1672,9 @@ WHERE
 RETURNING pg_describe_object(classid, objid, objsubid)
 AS obj,
 pg_describe_object(
-refclassid,
-refobjid,
-refobjsubid
+  refclassid,
+  refobjid,
+  refobjsubid
 )
 AS ref,
 deptype;
@@ -1762,15 +1768,15 @@ SELECT x FROM int8_tbl, extractq2_2_opt(int8_tbl) AS f (x);
 
 SELECT x FROM int8_tbl, extractq2_2_opt(int8_tbl) AS f (x);
 
-CREATE TYPE rngfunc2 AS ( a INT, b TEXT );
+CREATE TYPE rngfunc2 AS (a INT, b TEXT);
 
 SELECT
   *,
   row_to_json(u)
 FROM
   unnest(
-  ARRAY[CAST((1, 'foo') AS rngfunc2),
-  CAST(NULL AS rngfunc2)]
+    ARRAY[CAST((1, 'foo') AS rngfunc2),
+    CAST(NULL AS rngfunc2)]
   )
   AS u;
 
@@ -1781,9 +1787,9 @@ SELECT
   row_to_json(u)
 FROM
   unnest(
-  ARRAY[CAST(NULL AS rngfunc2),
-  CAST((1, 'foo') AS rngfunc2),
-  CAST(NULL AS rngfunc2)]
+    ARRAY[CAST(NULL AS rngfunc2),
+    CAST((1, 'foo') AS rngfunc2),
+    CAST(NULL AS rngfunc2)]
   )
   AS u;
 
@@ -1796,13 +1802,13 @@ SELECT
 FROM
   (SELECT
     jsonb_path_query_array(
-    module -> 'lectures',
-    '$[*]'
+      module -> 'lectures',
+      '$[*]'
     )
     AS lecture
   FROM
     unnest(
-    ARRAY[CAST('{"lectures": [{"id": "1"}]}' AS JSONB)]
+      ARRAY[CAST('{"lectures": [{"id": "1"}]}' AS JSONB)]
     )
     AS unnested_modules (module))
   AS ss,
@@ -1813,13 +1819,13 @@ SELECT
 FROM
   (SELECT
     jsonb_path_query_array(
-    module -> 'lectures',
-    '$[*]'
+      module -> 'lectures',
+      '$[*]'
     )
     AS lecture
   FROM
     unnest(
-    ARRAY[CAST('{"lectures": [{"id": "1"}]}' AS JSONB)]
+      ARRAY[CAST('{"lectures": [{"id": "1"}]}' AS JSONB)]
     )
     AS unnested_modules (module))
   AS ss,

@@ -51,8 +51,7 @@ SELECT CAST('123456' AS domainvarchar);
 
 SELECT CAST('12345' AS domainvarchar);
 
-CREATE TABLE basictest
-(
+CREATE TABLE basictest (
   testint4 domainint4,
   testtext domaintext,
   testvarchar domainvarchar,
@@ -111,7 +110,10 @@ CREATE DOMAIN domainint4arr AS INT[1];
 
 CREATE DOMAIN domainchar4arr AS VARCHAR(4)[2][3];
 
-CREATE TABLE domarrtest (testint4arr domainint4arr, testchar4arr domainchar4arr);
+CREATE TABLE domarrtest (
+  testint4arr domainint4arr,
+  testchar4arr domainchar4arr
+);
 
 INSERT INTO domarrtest VALUES ('{2,2}', '{{"a","b"},{"c","d"}}');
 
@@ -161,7 +163,7 @@ SELECT pg_typeof(CAST('{1,2,3}' AS dia) || 42);
 
 DROP DOMAIN dia;
 
-CREATE TYPE comptype AS ( r DOUBLE PRECISION, i DOUBLE PRECISION );
+CREATE TYPE comptype AS (r DOUBLE PRECISION, i DOUBLE PRECISION);
 
 CREATE DOMAIN dcomptype AS comptype;
 
@@ -235,7 +237,7 @@ DROP TABLE "dcomptable";
 
 DROP TYPE comptype CASCADE;
 
-CREATE TYPE comptype AS ( r DOUBLE PRECISION, i DOUBLE PRECISION );
+CREATE TYPE comptype AS (r DOUBLE PRECISION, i DOUBLE PRECISION);
 
 CREATE DOMAIN dcomptype AS comptype;
 
@@ -267,7 +269,7 @@ WHERE
 
 DROP TYPE comptype CASCADE;
 
-CREATE TYPE comptype AS ( r DOUBLE PRECISION, i DOUBLE PRECISION );
+CREATE TYPE comptype AS (r DOUBLE PRECISION, i DOUBLE PRECISION);
 
 CREATE DOMAIN dcomptypea AS comptype[];
 
@@ -396,7 +398,7 @@ DROP TABLE "dposintatable";
 
 DROP DOMAIN posint CASCADE;
 
-CREATE TYPE comptype AS ( cf1 INT, cf2 INT );
+CREATE TYPE comptype AS (cf1 INT, cf2 INT);
 
 CREATE DOMAIN dcomptype AS comptype CHECK (value.cf1 > 0);
 
@@ -430,8 +432,7 @@ CREATE DOMAIN dnull AS VARCHAR(15);
 
 CREATE DOMAIN dcheck AS VARCHAR(15) NOT NULL CHECK (value = 'a' OR value = 'c' OR value = 'd');
 
-CREATE TABLE nulltest
-(
+CREATE TABLE nulltest (
   col1 dnotnull,
   col2 dnotnull NULL,
   col3 dnull NOT NULL,
@@ -485,8 +486,7 @@ CREATE DOMAIN ddef4 AS INT DEFAULT nextval('ddef4_seq');
 
 CREATE DOMAIN ddef5 AS NUMERIC(8, 2) NOT NULL DEFAULT '12.12';
 
-CREATE TABLE defaulttest
-(
+CREATE TABLE defaulttest (
   col1 ddef1,
   col2 ddef2,
   col3 ddef3,
@@ -522,7 +522,10 @@ DROP TABLE "defaulttest" CASCADE;
 
 CREATE DOMAIN dnotnulltest AS INT;
 
-CREATE TABLE domnotnull (col1 dnotnulltest, col2 dnotnulltest);
+CREATE TABLE domnotnull (
+  col1 dnotnulltest,
+  col2 dnotnulltest
+);
 
 INSERT INTO domnotnull DEFAULT VALUES;
 
@@ -614,7 +617,10 @@ ALTER DOMAIN con DROP CONSTRAINT IF EXISTS nonexistent;
 
 CREATE DOMAIN connotnull AS INT;
 
-CREATE TABLE domconnotnulltest (col1 connotnull, col2 connotnull);
+CREATE TABLE domconnotnulltest (
+  col1 connotnull,
+  col2 connotnull
+);
 
 INSERT INTO domconnotnulltest DEFAULT VALUES;
 
@@ -739,7 +745,10 @@ DROP DOMAIN vchar4 CASCADE;
 
 CREATE DOMAIN str_domain AS TEXT NOT NULL;
 
-CREATE TABLE domain_test (a INT, b INT);
+CREATE TABLE domain_test (
+  a INT,
+  b INT
+);
 
 INSERT INTO domain_test VALUES (1, 2);
 
@@ -809,7 +818,7 @@ SELECT doubledecrement(3);
 
 CREATE DOMAIN posint AS INT;
 
-CREATE TYPE ddtest1 AS ( f1 posint );
+CREATE TYPE ddtest1 AS (f1 posint);
 
 CREATE TABLE ddtest2 (f1 ddtest1);
 

@@ -3,7 +3,11 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/tablesample.sql
 snapshot_kind: text
 ---
-CREATE TABLE test_tablesample (id INT, name TEXT) WITH (fillfactor = 10);
+CREATE TABLE test_tablesample (
+  id INT,
+  name TEXT
+)
+WITH (fillfactor = 10);
 
 INSERT INTO test_tablesample
 SELECT
@@ -188,8 +192,7 @@ FROM
   TABLESAMPLE bernoulli (5.5)
   REPEATABLE (1);
 
-CREATE TABLE parted_sample
-(a INT)
+CREATE TABLE parted_sample (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_sample_1 PARTITION OF parted_sample FOR VALUES IN (1);

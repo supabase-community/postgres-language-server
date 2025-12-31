@@ -5,7 +5,7 @@ snapshot_kind: text
 ---
 CREATE TABLE unknowntab (u unknown);
 
-CREATE TYPE unknown_comptype AS ( u unknown );
+CREATE TYPE unknown_comptype AS (u unknown);
 
 CREATE TABLE tas_case WITH (fillfactor = 10) AS SELECT 1 AS a;
 
@@ -55,12 +55,10 @@ CREATE TEMPORARY TABLE public.temp_to_perm (a INT PRIMARY KEY);
 
 DROP TABLE "unlogged1", "public"."unlogged2";
 
-CREATE UNLOGGED TABLE unlogged1
-(a INT)
+CREATE UNLOGGED TABLE unlogged1 (a INT)
 PARTITION BY RANGE(a);
 
-CREATE TABLE unlogged1
-(a INT)
+CREATE TABLE unlogged1 (a INT)
 PARTITION BY RANGE(a);
 
 ALTER TABLE unlogged1
@@ -96,8 +94,8 @@ DEALLOCATE select1;
 SELECT
   'CREATE TABLE extra_wide_table(firstc text, ' ||
   array_to_string(
-  array_agg('c' || i || ' bool'),
-  ','
+    array_agg('c' || i || ' bool'),
+    ','
   ) ||
   ', lastc text);'
 FROM
@@ -124,8 +122,8 @@ CREATE TEMPORARY TABLE relation_filenode_check (c1 INT);
 SELECT
   relpersistence,
   pg_filenode_relation(
-  reltablespace,
-  pg_relation_filenode(oid)
+    reltablespace,
+    pg_relation_filenode(oid)
   )
 FROM
   pg_class
@@ -179,13 +177,14 @@ COMMIT;
 
 DROP TABLE "remember_node_subid";
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 INHERITS (some_table)
 PARTITION BY LIST(a);
 
-CREATE TABLE partitioned
-(a1 INT, a2 INT)
+CREATE TABLE partitioned (
+  a1 INT,
+  a2 INT
+)
 PARTITION BY LIST(a1, a2);
 
 CREATE FUNCTION retset(a INT)
@@ -194,26 +193,24 @@ AS ' SELECT 1; '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE((retset(a)));
 
 DROP FUNCTION retset(INT);
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE((AVG(a)));
 
-CREATE TABLE partitioned
-(a INT, b INT)
-PARTITION BY RANGE((AVG(a) OVER ( PARTITION BY b)));
+CREATE TABLE partitioned (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE((AVG(a) OVER (PARTITION BY b)));
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY LIST((a LIKE (SELECT 1)));
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE((42));
 
 CREATE FUNCTION const_func()
@@ -222,26 +219,27 @@ AS ' SELECT 1; '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE((const_func()));
 
 DROP FUNCTION const_func();
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE(b);
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE(xmin);
 
-CREATE TABLE partitioned
-(a INT, b INT)
+CREATE TABLE partitioned (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(((a, b)));
 
-CREATE TABLE partitioned
-(a INT, b INT)
+CREATE TABLE partitioned (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, ('unknown'));
 
 CREATE FUNCTION immut_func(a INT)
@@ -249,30 +247,27 @@ RETURNS INT
 AS ' SELECT a + random()::int; '
 LANGUAGE "sql";
 
-CREATE TABLE partitioned
-(a INT)
+CREATE TABLE partitioned (a INT)
 PARTITION BY RANGE((immut_func(a)));
 
 DROP FUNCTION immut_func(INT);
 
-CREATE TABLE partitioned
-(a point)
+CREATE TABLE partitioned (a point)
 PARTITION BY LIST(a);
 
-CREATE TABLE partitioned
-(a point)
+CREATE TABLE partitioned (a point)
 PARTITION BY LIST(a point_ops);
 
-CREATE TABLE partitioned
-(a point)
+CREATE TABLE partitioned (a point)
 PARTITION BY RANGE(a);
 
-CREATE TABLE partitioned
-(a point)
+CREATE TABLE partitioned (a point)
 PARTITION BY RANGE(a point_ops);
 
-CREATE TABLE partitioned
-(a INT, CONSTRAINT "check_a" CHECK (a > 0) NO INHERIT)
+CREATE TABLE partitioned (
+  a INT,
+  CONSTRAINT "check_a" CHECK (a > 0) NO INHERIT
+)
 PARTITION BY RANGE(a);
 
 CREATE FUNCTION plusone(a INT)
@@ -280,8 +275,12 @@ RETURNS INT
 AS ' SELECT a+1; '
 LANGUAGE "sql";
 
-CREATE TABLE partitioned
-(a INT, b INT, c TEXT, d TEXT)
+CREATE TABLE partitioned (
+  a INT,
+  b INT,
+  c TEXT,
+  d TEXT
+)
 PARTITION BY RANGE(a oid_ops,
 (plusone(b)),
 c COLLATE "default",
@@ -291,12 +290,13 @@ SELECT relkind FROM pg_class WHERE relname = 'partitioned';
 
 DROP FUNCTION plusone(INT);
 
-CREATE TABLE partitioned2
-(a INT, b TEXT)
+CREATE TABLE partitioned2 (
+  a INT,
+  b TEXT
+)
 PARTITION BY RANGE((a + 1), (substr(b, 1, 5)));
 
-CREATE TABLE fail
-()
+CREATE TABLE fail ()
 INHERITS (partitioned2);
 
 INSERT INTO partitioned2 VALUES (1, 'hello');
@@ -305,8 +305,10 @@ CREATE TABLE part2_1 PARTITION OF partitioned2 FOR VALUES FROM (-1, 'aaaaa') TO 
 
 DROP TABLE "partitioned", "partitioned2";
 
-CREATE TABLE partitioned
-(a INT, b INT)
+CREATE TABLE partitioned (
+  a INT,
+  b INT
+)
 PARTITION BY LIST((CAST(ROW(a, b) AS partitioned)));
 
 CREATE TABLE partitioned1 PARTITION OF partitioned FOR VALUES IN (CAST('(1,2)' AS partitioned));
@@ -317,8 +319,10 @@ SELECT * FROM partitioned WHERE CAST(ROW(a, b) AS partitioned) = CAST('(1,2)' AS
 
 DROP TABLE "partitioned";
 
-CREATE TABLE partitioned
-(a INT, b INT)
+CREATE TABLE partitioned (
+  a INT,
+  b INT
+)
 PARTITION BY LIST((partitioned));
 
 CREATE TABLE partitioned1 PARTITION OF partitioned FOR VALUES IN ('(1,2)');
@@ -331,8 +335,10 @@ DROP TABLE "partitioned";
 
 CREATE DOMAIN intdom1 AS INT;
 
-CREATE TABLE partitioned
-(a intdom1, b TEXT)
+CREATE TABLE partitioned (
+  a intdom1,
+  b TEXT
+)
 PARTITION BY RANGE(a);
 
 ALTER TABLE partitioned
@@ -346,8 +352,10 @@ SELECT * FROM partitioned;
 
 CREATE DOMAIN intdom1 AS INT;
 
-CREATE TABLE partitioned
-(a intdom1, b TEXT)
+CREATE TABLE partitioned (
+  a intdom1,
+  b TEXT
+)
 PARTITION BY RANGE((plusone(a)));
 
 ALTER TABLE partitioned
@@ -359,8 +367,7 @@ DROP DOMAIN intdom1 CASCADE;
 
 SELECT * FROM partitioned;
 
-CREATE TABLE list_parted
-(a INT)
+CREATE TABLE list_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE part_p1 PARTITION OF list_parted FOR VALUES IN ('1');
@@ -397,16 +404,14 @@ CREATE TABLE part_default PARTITION OF list_parted DEFAULT;
 
 CREATE TABLE fail_default_part PARTITION OF list_parted DEFAULT;
 
-CREATE TABLE bools
-(a BOOLEAN)
+CREATE TABLE bools (a BOOLEAN)
 PARTITION BY LIST(a);
 
 CREATE TABLE bools_true PARTITION OF bools FOR VALUES IN (1);
 
 DROP TABLE "bools";
 
-CREATE TABLE moneyp
-(a MONEY)
+CREATE TABLE moneyp (a MONEY)
 PARTITION BY LIST(a);
 
 CREATE TABLE moneyp_10 PARTITION OF moneyp FOR VALUES IN (10);
@@ -417,8 +422,7 @@ CREATE TABLE moneyp_12 PARTITION OF moneyp FOR VALUES IN (CAST(to_char(12, '99')
 
 DROP TABLE "moneyp";
 
-CREATE TABLE bigintp
-(a BIGINT)
+CREATE TABLE bigintp (a BIGINT)
 PARTITION BY LIST(a);
 
 CREATE TABLE bigintp_10 PARTITION OF bigintp FOR VALUES IN (10);
@@ -427,8 +431,7 @@ CREATE TABLE bigintp_10_2 PARTITION OF bigintp FOR VALUES IN ('10');
 
 DROP TABLE "bigintp";
 
-CREATE TABLE range_parted
-(a DATE)
+CREATE TABLE range_parted (a DATE)
 PARTITION BY RANGE(a);
 
 CREATE TABLE part_bogus_expr_fail
@@ -473,8 +476,7 @@ CREATE TABLE fail_part PARTITION OF range_parted FOR VALUES FROM (NULL) TO (maxv
 
 CREATE TABLE fail_part PARTITION OF range_parted FOR VALUES WITH (MODULUS 10, REMAINDER 1);
 
-CREATE TABLE hash_parted
-(a INT)
+CREATE TABLE hash_parted (a INT)
 PARTITION BY HASH(a);
 
 CREATE TABLE hpart_1 PARTITION OF hash_parted FOR VALUES WITH (MODULUS 10, REMAINDER 0);
@@ -505,16 +507,14 @@ CREATE TABLE fail_part PARTITION OF unparted FOR VALUES WITH (MODULUS 2, REMAIND
 
 DROP TABLE "unparted";
 
-CREATE TEMPORARY TABLE temp_parted
-(a INT)
+CREATE TEMPORARY TABLE temp_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE fail_part PARTITION OF temp_parted FOR VALUES IN ('a');
 
 DROP TABLE "temp_parted";
 
-CREATE TABLE list_parted2
-(a VARCHAR)
+CREATE TABLE list_parted2 (a VARCHAR)
 PARTITION BY LIST(a);
 
 CREATE TABLE part_null_z PARTITION OF list_parted2 FOR VALUES IN (NULL, 'z');
@@ -531,8 +531,7 @@ INSERT INTO list_parted2 VALUES ('X');
 
 CREATE TABLE fail_part PARTITION OF list_parted2 FOR VALUES IN ('W', 'X', 'Y');
 
-CREATE TABLE range_parted2
-(a INT)
+CREATE TABLE range_parted2 (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE fail_part PARTITION OF range_parted2 FOR VALUES FROM (1) TO (0);
@@ -567,8 +566,10 @@ CREATE TABLE fail_part PARTITION OF range_parted2 FOR VALUES FROM (80) TO (90);
 
 CREATE TABLE part4 PARTITION OF range_parted2 FOR VALUES FROM (90) TO (100);
 
-CREATE TABLE range_parted3
-(a INT, b INT)
+CREATE TABLE range_parted3 (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a, (b + 1));
 
 CREATE TABLE part00 PARTITION OF range_parted3 FOR VALUES FROM (0, minvalue) TO (0, maxvalue);
@@ -587,8 +588,7 @@ CREATE TABLE range3_default PARTITION OF range_parted3 DEFAULT;
 
 CREATE TABLE fail_part PARTITION OF range_parted3 FOR VALUES FROM (1, minvalue) TO (1, maxvalue);
 
-CREATE TABLE hash_parted2
-(a VARCHAR)
+CREATE TABLE hash_parted2 (a VARCHAR)
 PARTITION BY HASH(a);
 
 CREATE TABLE h2part_1 PARTITION OF hash_parted2 FOR VALUES WITH (MODULUS 4, REMAINDER 2);
@@ -605,8 +605,11 @@ CREATE TABLE fail_part PARTITION OF hash_parted2 FOR VALUES WITH (MODULUS 0, REM
 
 CREATE TABLE fail_part PARTITION OF hash_parted2 FOR VALUES WITH (MODULUS 8, REMAINDER 8);
 
-CREATE TABLE parted
-(a TEXT, b INT NOT NULL DEFAULT 0, CONSTRAINT "check_a" CHECK (length(a) > 0))
+CREATE TABLE parted (
+  a TEXT,
+  b INT NOT NULL DEFAULT 0,
+  CONSTRAINT "check_a" CHECK (length(a) > 0)
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE part_a PARTITION OF parted FOR VALUES IN ('a');
@@ -699,8 +702,10 @@ PARTITION BY RANGE((b));
 
 CREATE TABLE part_c_1_10 PARTITION OF part_c FOR VALUES FROM (1) TO (10);
 
-CREATE TABLE parted_notnull_inh_test
-(a INT DEFAULT 1, b INT NOT NULL DEFAULT 0)
+CREATE TABLE parted_notnull_inh_test (
+  a INT DEFAULT 1,
+  b INT NOT NULL DEFAULT 0
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_notnull_inh_test1
@@ -715,8 +720,10 @@ INSERT INTO parted_notnull_inh_test (b) VALUES (NULL);
 
 DROP TABLE "parted_notnull_inh_test";
 
-CREATE TABLE parted_boolean_col
-(a BOOLEAN, b TEXT)
+CREATE TABLE parted_boolean_col (
+  a BOOLEAN,
+  b TEXT
+)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_boolean_less PARTITION OF parted_boolean_col FOR VALUES IN ('foo' < 'bar');
@@ -725,8 +732,10 @@ CREATE TABLE parted_boolean_greater PARTITION OF parted_boolean_col FOR VALUES I
 
 DROP TABLE "parted_boolean_col";
 
-CREATE TABLE parted_collate_must_match
-(a TEXT COLLATE "C", b TEXT COLLATE "C")
+CREATE TABLE parted_collate_must_match (
+  a TEXT COLLATE "C",
+  b TEXT COLLATE "C"
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_collate_must_match1
@@ -745,8 +754,7 @@ FOR VALUES FROM ('m') TO ('z');
 
 DROP TABLE "parted_collate_must_match";
 
-CREATE TABLE test_part_coll_posix
-(a TEXT)
+CREATE TABLE test_part_coll_posix (a TEXT)
 PARTITION BY RANGE(a COLLATE "POSIX");
 
 CREATE TABLE test_part_coll
@@ -765,8 +773,11 @@ FOR VALUES FROM (CAST('s' AS NAME)) TO ('z');
 
 DROP TABLE "test_part_coll_posix";
 
-CREATE TABLE range_parted4
-(a INT, b INT, c INT)
+CREATE TABLE range_parted4 (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE((abs(a)), (abs(b)), c);
 
 CREATE TABLE unbounded_range_part
@@ -816,8 +827,7 @@ CREATE OPERATOR CLASS test_int4_ops
   OPERATOR 5 > (INT, INT),
   FUNCTION 1 my_int4_sort(INT, INT);
 
-CREATE TABLE partkey_t
-(a INT)
+CREATE TABLE partkey_t (a INT)
 PARTITION BY RANGE(a test_int4_ops);
 
 CREATE TABLE partkey_t_1 PARTITION OF partkey_t FOR VALUES FROM (0) TO (1000);
@@ -840,8 +850,10 @@ DROP OPERATOR CLASS "test_int4_ops" USING "btree";
 
 DROP FUNCTION my_int4_sort(INT, INT);
 
-CREATE TABLE parted_col_comment
-(a INT, b TEXT)
+CREATE TABLE parted_col_comment (
+  a INT,
+  b TEXT
+)
 PARTITION BY LIST(a);
 
 COMMENT ON TABLE parted_col_comment IS 'Am partitioned table';
@@ -852,21 +864,21 @@ SELECT obj_description(CAST('parted_col_comment' AS REGCLASS));
 
 DROP TABLE "parted_col_comment";
 
-CREATE TABLE parted_col_comment
-(a INT, b TEXT)
+CREATE TABLE parted_col_comment (
+  a INT,
+  b TEXT
+)
 PARTITION BY LIST(a)
 WITH (fillfactor = 100);
 
-CREATE TABLE arrlp
-(a INT[])
+CREATE TABLE arrlp (a INT[])
 PARTITION BY LIST(a);
 
 CREATE TABLE arrlp12 PARTITION OF arrlp FOR VALUES IN ('{1}', '{2}');
 
 DROP TABLE "arrlp";
 
-CREATE TABLE boolspart
-(a BOOLEAN)
+CREATE TABLE boolspart (a BOOLEAN)
 PARTITION BY LIST(a);
 
 CREATE TABLE boolspart_t PARTITION OF boolspart FOR VALUES IN (TRUE);
@@ -875,12 +887,10 @@ CREATE TABLE boolspart_f PARTITION OF boolspart FOR VALUES IN (FALSE);
 
 DROP TABLE "boolspart";
 
-CREATE TABLE perm_parted
-(a INT)
+CREATE TABLE perm_parted (a INT)
 PARTITION BY LIST(a);
 
-CREATE TEMPORARY TABLE temp_parted
-(a INT)
+CREATE TEMPORARY TABLE temp_parted (a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE perm_part PARTITION OF temp_parted DEFAULT;
@@ -893,8 +903,7 @@ DROP TABLE "perm_parted" CASCADE;
 
 DROP TABLE "temp_parted" CASCADE;
 
-CREATE TABLE tab_part_create
-(a INT)
+CREATE TABLE tab_part_create (a INT)
 PARTITION BY LIST(a);
 
 CREATE OR REPLACE FUNCTION func_part_create()
@@ -907,10 +916,10 @@ AS '
   end ';
 
 CREATE TRIGGER trig_part_create
-BEFORE INSERT
-ON tab_part_create
-FOR EACH STATEMENT
-EXECUTE FUNCTION func_part_create();
+  BEFORE INSERT
+  ON tab_part_create
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION func_part_create();
 
 INSERT INTO tab_part_create VALUES (1);
 
@@ -918,8 +927,7 @@ DROP TABLE "tab_part_create";
 
 DROP FUNCTION func_part_create();
 
-CREATE TABLE volatile_partbound_test
-(partkey TIMESTAMP)
+CREATE TABLE volatile_partbound_test (partkey TIMESTAMP)
 PARTITION BY RANGE(partkey);
 
 CREATE TABLE volatile_partbound_test1
@@ -936,11 +944,17 @@ SELECT CAST(tableoid AS REGCLASS) FROM volatile_partbound_test;
 
 DROP TABLE "volatile_partbound_test";
 
-CREATE TABLE defcheck
-(a INT, b INT)
+CREATE TABLE defcheck (
+  a INT,
+  b INT
+)
 PARTITION BY LIST(b);
 
-CREATE TABLE defcheck_def (a INT, c INT, b INT);
+CREATE TABLE defcheck_def (
+  a INT,
+  c INT,
+  b INT
+);
 
 ALTER TABLE defcheck_def
   DROP COLUMN c;
@@ -960,8 +974,14 @@ CREATE TABLE defcheck_0 PARTITION OF defcheck FOR VALUES IN (0);
 
 DROP TABLE "defcheck";
 
-CREATE TABLE part_column_drop
-(useless_1 INT, id INT, useless_2 INT, d INT, b INT, useless_3 INT)
+CREATE TABLE part_column_drop (
+  useless_1 INT,
+  id INT,
+  useless_2 INT,
+  d INT,
+  b INT,
+  useless_3 INT
+)
 PARTITION BY RANGE(id);
 
 ALTER TABLE part_column_drop
@@ -982,12 +1002,7 @@ USING btree
 WHERE
   b = 1;
 
-CREATE INDEX "part_column_drop_b_expr"
-ON part_column_drop
-USING btree
-(
-  (b = 1)
-);
+CREATE INDEX "part_column_drop_b_expr" ON part_column_drop USING btree ((b = 1));
 
 CREATE INDEX "part_column_drop_d_pred"
 ON part_column_drop
@@ -998,12 +1013,7 @@ USING btree
 WHERE
   d = 2;
 
-CREATE INDEX "part_column_drop_d_expr"
-ON part_column_drop
-USING btree
-(
-  (d = 2)
-);
+CREATE INDEX "part_column_drop_d_expr" ON part_column_drop USING btree ((d = 2));
 
 CREATE TABLE part_column_drop_1_10 PARTITION OF part_column_drop FOR VALUES FROM (1) TO (10);
 

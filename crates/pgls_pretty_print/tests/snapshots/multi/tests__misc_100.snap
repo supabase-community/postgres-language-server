@@ -55,12 +55,17 @@ COPY stud_emp_copy FROM 'filename' WITH (FORMAT 'binary');
 
 SELECT * FROM stud_emp_copy;
 
-CREATE TABLE hobbies_r (name TEXT, person TEXT);
+CREATE TABLE hobbies_r (
+  name TEXT,
+  person TEXT
+);
 
-CREATE TABLE equipment_r (name TEXT, hobby TEXT);
+CREATE TABLE equipment_r (
+  name TEXT,
+  hobby TEXT
+);
 
-INSERT INTO hobbies_r
-(name, person)
+INSERT INTO hobbies_r (name, person)
 SELECT
   'posthacking',
   p.name
@@ -69,8 +74,7 @@ FROM
 WHERE
   p.name = 'mike' OR p.name = 'jeff';
 
-INSERT INTO hobbies_r
-(name, person)
+INSERT INTO hobbies_r (name, person)
 SELECT
   'basketball',
   p.name
@@ -170,42 +174,42 @@ SELECT name(equipment(hobby_construct_named(CAST('skywalking' AS TEXT), CAST('me
 
 SELECT
   name(
-  equipment_named(
-  hobby_construct_named(
-  CAST('skywalking' AS TEXT),
-  CAST('mer' AS TEXT)
-  )
-  )
+    equipment_named(
+      hobby_construct_named(
+        CAST('skywalking' AS TEXT),
+        CAST('mer' AS TEXT)
+      )
+    )
   );
 
 SELECT
   name(
-  equipment_named_ambiguous_1a(
-  hobby_construct_named(
-  CAST('skywalking' AS TEXT),
-  CAST('mer' AS TEXT)
-  )
-  )
+    equipment_named_ambiguous_1a(
+      hobby_construct_named(
+        CAST('skywalking' AS TEXT),
+        CAST('mer' AS TEXT)
+      )
+    )
   );
 
 SELECT
   name(
-  equipment_named_ambiguous_1b(
-  hobby_construct_named(
-  CAST('skywalking' AS TEXT),
-  CAST('mer' AS TEXT)
-  )
-  )
+    equipment_named_ambiguous_1b(
+      hobby_construct_named(
+        CAST('skywalking' AS TEXT),
+        CAST('mer' AS TEXT)
+      )
+    )
   );
 
 SELECT
   name(
-  equipment_named_ambiguous_1c(
-  hobby_construct_named(
-  CAST('skywalking' AS TEXT),
-  CAST('mer' AS TEXT)
-  )
-  )
+    equipment_named_ambiguous_1c(
+      hobby_construct_named(
+        CAST('skywalking' AS TEXT),
+        CAST('mer' AS TEXT)
+      )
+    )
   );
 
 SELECT name(equipment_named_ambiguous_2a(CAST('skywalking' AS TEXT)));

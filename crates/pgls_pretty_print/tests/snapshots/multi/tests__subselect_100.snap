@@ -29,7 +29,11 @@ SELECT ((SELECT ARRAY[1, 2, 3]))[2];
 
 SELECT ((SELECT ARRAY[1, 2, 3]))[3];
 
-CREATE TABLE subselect_tbl (f1 INT, f2 INT, f3 DOUBLE PRECISION);
+CREATE TABLE subselect_tbl (
+  f1 INT,
+  f2 INT,
+  f3 DOUBLE PRECISION
+);
 
 INSERT INTO subselect_tbl VALUES (1, 2, 3);
 
@@ -267,7 +271,10 @@ FROM
 
 CREATE TEMPORARY TABLE foo (id INT);
 
-CREATE TEMPORARY TABLE bar (id1 INT, id2 INT);
+CREATE TEMPORARY TABLE bar (
+  id1 INT,
+  id2 INT
+);
 
 INSERT INTO foo VALUES (1);
 
@@ -311,7 +318,11 @@ WHERE
     (SELECT id2 FROM bar UNION SELECT id2 FROM bar)
     AS s);
 
-CREATE TABLE orderstest (approver_ref INT, po_ref INT, ordercanceled BOOLEAN);
+CREATE TABLE orderstest (
+  approver_ref INT,
+  po_ref INT,
+  ordercanceled BOOLEAN
+);
 
 INSERT INTO orderstest VALUES (1, 1, FALSE);
 
@@ -378,9 +389,17 @@ SELECT * FROM orders_view;
 
 DROP TABLE "orderstest" CASCADE;
 
-CREATE TEMPORARY TABLE parts (partnum TEXT, cost DOUBLE PRECISION);
+CREATE TEMPORARY TABLE parts (
+  partnum TEXT,
+  cost DOUBLE PRECISION
+);
 
-CREATE TEMPORARY TABLE shipped (ttype CHAR(2), ordnum INT, partnum TEXT, value DOUBLE PRECISION);
+CREATE TEMPORARY TABLE shipped (
+  ttype CHAR(2),
+  ordnum INT,
+  partnum TEXT,
+  value DOUBLE PRECISION
+);
 
 CREATE TEMPORARY VIEW shipped_view
 AS SELECT * FROM shipped WHERE ttype = 'wt';
@@ -393,8 +412,7 @@ DO INSTEAD
 
 INSERT INTO parts (partnum, cost) VALUES (1, 1234.56);
 
-INSERT INTO shipped_view
-(ordnum, partnum, value)
+INSERT INTO shipped_view (ordnum, partnum, value)
 VALUES (
   0, 1, (SELECT cost FROM parts WHERE partnum = '1')
 );
@@ -484,17 +502,14 @@ SELECT * FROM float_table WHERE float_col IN (SELECT num_col FROM numeric_table)
 
 SELECT * FROM numeric_table WHERE num_col IN (SELECT float_col FROM float_table);
 
-CREATE TABLE semijoin_unique_tbl (a INT, b INT);
+CREATE TABLE semijoin_unique_tbl (
+  a INT,
+  b INT
+);
 
 INSERT INTO semijoin_unique_tbl SELECT i % 10, i % 10 FROM generate_series(1, 1000) AS i;
 
-CREATE INDEX
-ON semijoin_unique_tbl
-USING btree
-(
-  a,
-  b
-);
+CREATE INDEX ON semijoin_unique_tbl USING btree (a, b);
 
 ANALYZE semijoin_unique_tbl;
 
@@ -553,8 +568,10 @@ RESET parallel_setup_cost;
 
 DROP TABLE "semijoin_unique_tbl";
 
-CREATE TABLE unique_tbl_p
-(a INT, b INT)
+CREATE TABLE unique_tbl_p (
+  a INT,
+  b INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE unique_tbl_p1 PARTITION OF unique_tbl_p FOR VALUES FROM (0) TO (5);
@@ -565,26 +582,11 @@ CREATE TABLE unique_tbl_p3 PARTITION OF unique_tbl_p FOR VALUES FROM (10) TO (20
 
 INSERT INTO unique_tbl_p SELECT i % 12, i FROM generate_series(0, 1000) AS i;
 
-CREATE INDEX
-ON unique_tbl_p1
-USING btree
-(
-  a
-);
+CREATE INDEX ON unique_tbl_p1 USING btree (a);
 
-CREATE INDEX
-ON unique_tbl_p2
-USING btree
-(
-  a
-);
+CREATE INDEX ON unique_tbl_p2 USING btree (a);
 
-CREATE INDEX
-ON unique_tbl_p3
-USING btree
-(
-  a
-);
+CREATE INDEX ON unique_tbl_p3 USING btree (a);
 
 ANALYZE unique_tbl_p;
 
@@ -605,13 +607,19 @@ RESET enable_partitionwise_join;
 
 DROP TABLE "unique_tbl_p";
 
-CREATE TEMPORARY TABLE ta (id INT PRIMARY KEY, val INT);
+CREATE TEMPORARY TABLE ta (
+  id INT PRIMARY KEY,
+  val INT
+);
 
 INSERT INTO ta VALUES (1, 1);
 
 INSERT INTO ta VALUES (2, 2);
 
-CREATE TEMPORARY TABLE tb (id INT PRIMARY KEY, aval INT);
+CREATE TEMPORARY TABLE tb (
+  id INT PRIMARY KEY,
+  aval INT
+);
 
 INSERT INTO tb VALUES (1, 1);
 
@@ -621,7 +629,10 @@ INSERT INTO tb VALUES (3, 2);
 
 INSERT INTO tb VALUES (4, 2);
 
-CREATE TEMPORARY TABLE tc (id INT PRIMARY KEY, aid INT);
+CREATE TEMPORARY TABLE tc (
+  id INT PRIMARY KEY,
+  aid INT
+);
 
 INSERT INTO tc VALUES (1, 1);
 
@@ -639,7 +650,10 @@ SELECT
 FROM
   tc;
 
-CREATE TEMPORARY TABLE t1 (f1 NUMERIC(14, 0), f2 VARCHAR(30));
+CREATE TEMPORARY TABLE t1 (
+  f1 NUMERIC(14, 0),
+  f2 VARCHAR(30)
+);
 
 SELECT
   *
@@ -714,7 +728,10 @@ FROM
     int4_tbl AS i4
   ON dummy = i4.f1;
 
-CREATE TEMPORARY TABLE upsert (key INT PRIMARY KEY, val TEXT);
+CREATE TEMPORARY TABLE upsert (
+  key INT PRIMARY KEY,
+  val TEXT
+);
 
 INSERT INTO upsert VALUES (1, 'val') ON CONFLICT (key) DO UPDATE SET val = 'not seen';
 
@@ -746,7 +763,10 @@ UPDATE
 SET val = (SELECT u FROM aa)
 RETURNING *;
 
-CREATE TEMPORARY TABLE outer_7597 (f1 INT, f2 INT);
+CREATE TEMPORARY TABLE outer_7597 (
+  f1 INT,
+  f2 INT
+);
 
 INSERT INTO outer_7597 VALUES (0, 0);
 
@@ -756,13 +776,19 @@ INSERT INTO outer_7597 VALUES (0, NULL);
 
 INSERT INTO outer_7597 VALUES (1, NULL);
 
-CREATE TEMPORARY TABLE inner_7597 (c1 BIGINT, c2 BIGINT);
+CREATE TEMPORARY TABLE inner_7597 (
+  c1 BIGINT,
+  c2 BIGINT
+);
 
 INSERT INTO inner_7597 VALUES (0, NULL);
 
 SELECT * FROM outer_7597 WHERE NOT (f1, f2) IN (SELECT * FROM inner_7597);
 
-CREATE TEMPORARY TABLE outer_text (f1 TEXT, f2 TEXT);
+CREATE TEMPORARY TABLE outer_text (
+  f1 TEXT,
+  f2 TEXT
+);
 
 INSERT INTO outer_text VALUES ('a', 'a');
 
@@ -772,7 +798,10 @@ INSERT INTO outer_text VALUES ('a', NULL);
 
 INSERT INTO outer_text VALUES ('b', NULL);
 
-CREATE TEMPORARY TABLE inner_text (c1 TEXT, c2 TEXT);
+CREATE TEMPORARY TABLE inner_text (
+  c1 TEXT,
+  c2 TEXT
+);
 
 INSERT INTO inner_text VALUES ('a', NULL);
 
@@ -883,8 +912,11 @@ WHERE
   ten < 0) AND
   thousand = 1;
 
-CREATE TEMPORARY TABLE exists_tbl
-(c1 INT, c2 INT, c3 INT)
+CREATE TEMPORARY TABLE exists_tbl (
+  c1 INT,
+  c2 INT,
+  c3 INT
+)
 PARTITION BY LIST(c1);
 
 CREATE TEMPORARY TABLE exists_tbl_null PARTITION OF exists_tbl FOR VALUES IN (NULL);
@@ -1356,7 +1388,11 @@ SELECT * FROM (SELECT 9 AS x, unnest(ARRAY[1, 2, 3, 11, 12, 13]) AS u) AS ss WHE
 
 DROP FUNCTION tattle(INT, INT);
 
-CREATE TABLE sq_limit (pk INT PRIMARY KEY, c1 INT, c2 INT);
+CREATE TABLE sq_limit (
+  pk INT PRIMARY KEY,
+  c1 INT,
+  c2 INT
+);
 
 INSERT INTO sq_limit
 VALUES

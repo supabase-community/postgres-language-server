@@ -3,7 +3,10 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/spgist.sql
 snapshot_kind: text
 ---
-CREATE TABLE spgist_point_tbl (id INT, p point);
+CREATE TABLE spgist_point_tbl (
+  id INT,
+  p point
+);
 
 CREATE INDEX "spgist_point_idx"
 ON spgist_point_tbl
@@ -13,8 +16,7 @@ USING spgist
 )
 WITH (fillfactor = 75);
 
-INSERT INTO spgist_point_tbl
-(id, p)
+INSERT INTO spgist_point_tbl (id, p)
 SELECT
   g,
   point(g * 10, g * 10)
@@ -25,16 +27,14 @@ DELETE FROM spgist_point_tbl WHERE id < 5;
 
 VACUUM spgist_point_tbl;
 
-INSERT INTO spgist_point_tbl
-(id, p)
+INSERT INTO spgist_point_tbl (id, p)
 SELECT
   g,
   point(g * 10, g * 10)
 FROM
   generate_series(1, 10000) AS g;
 
-INSERT INTO spgist_point_tbl
-(id, p)
+INSERT INTO spgist_point_tbl (id, p)
 SELECT
   g + 100000,
   point(g * 10 + 1, g * 10 + 1)
@@ -47,10 +47,12 @@ DELETE FROM spgist_point_tbl WHERE id < 10000;
 
 VACUUM spgist_point_tbl;
 
-CREATE TABLE spgist_box_tbl (id serial, b box);
+CREATE TABLE spgist_box_tbl (
+  id serial,
+  b box
+);
 
-INSERT INTO spgist_box_tbl
-(b)
+INSERT INTO spgist_box_tbl (b)
 SELECT
   box(point(i, j), point(i + s, j + s))
 FROM
@@ -58,12 +60,7 @@ FROM
   generate_series(1, 100, 5) AS j,
   generate_series(1, 10) AS s;
 
-CREATE INDEX "spgist_box_idx"
-ON spgist_box_tbl
-USING spgist
-(
-  b
-);
+CREATE INDEX "spgist_box_idx" ON spgist_box_tbl USING spgist (b);
 
 SELECT
   COUNT(*)
@@ -82,17 +79,14 @@ WHERE
   WHERE
     b.b && box(v.p, v.p));
 
-CREATE TABLE spgist_text_tbl (id INT, t TEXT);
-
-CREATE INDEX "spgist_text_idx"
-ON spgist_text_tbl
-USING spgist
-(
-  t
+CREATE TABLE spgist_text_tbl (
+  id INT,
+  t TEXT
 );
 
-INSERT INTO spgist_text_tbl
-(id, t)
+CREATE INDEX "spgist_text_idx" ON spgist_text_tbl USING spgist (t);
+
+INSERT INTO spgist_text_tbl (id, t)
 SELECT
   g,
   'f' || repeat('o', 100) || g
@@ -105,8 +99,7 @@ SELECT
 FROM
   generate_series(1, 1000) AS g;
 
-INSERT INTO spgist_text_tbl
-(id, t)
+INSERT INTO spgist_text_tbl (id, t)
 SELECT
   -g,
   'f' || repeat('o', 100 - g) || 'surprise'
@@ -138,12 +131,7 @@ CREATE DOMAIN spgist_text AS VARCHAR;
 
 CREATE TABLE spgist_domain_tbl (f1 spgist_text);
 
-CREATE INDEX "spgist_domain_idx"
-ON spgist_domain_tbl
-USING spgist
-(
-  f1
-);
+CREATE INDEX "spgist_domain_idx" ON spgist_domain_tbl USING spgist (f1);
 
 INSERT INTO spgist_domain_tbl
 VALUES
@@ -156,17 +144,14 @@ SELECT * FROM spgist_domain_tbl WHERE f1 = 'fo';
 
 SELECT * FROM spgist_domain_tbl WHERE f1 = 'fo';
 
-CREATE UNLOGGED TABLE spgist_unlogged_tbl (id serial, b box);
-
-CREATE INDEX "spgist_unlogged_idx"
-ON spgist_unlogged_tbl
-USING spgist
-(
-  b
+CREATE UNLOGGED TABLE spgist_unlogged_tbl (
+  id serial,
+  b box
 );
 
-INSERT INTO spgist_unlogged_tbl
-(b)
+CREATE INDEX "spgist_unlogged_idx" ON spgist_unlogged_tbl USING spgist (b);
+
+INSERT INTO spgist_unlogged_tbl (b)
 SELECT
   box(point(i, j))
 FROM

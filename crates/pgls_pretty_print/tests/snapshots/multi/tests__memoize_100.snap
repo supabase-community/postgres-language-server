@@ -38,11 +38,11 @@ SET enable_bitmapscan = off;
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*),AVG(t1.unique1) FROM tenk1 t1
 INNER JOIN tenk1 t2 ON t1.unique1 = t2.twenty
 WHERE t2.unique1 < 1000;',
-  FALSE
+    FALSE
   );
 
 SELECT
@@ -58,12 +58,12 @@ WHERE
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*),AVG(t2.unique1) FROM tenk1 t1,
 LATERAL (SELECT t2.unique1 FROM tenk1 t2
          WHERE t1.twenty = t2.unique1 OFFSET 0) t2
 WHERE t1.unique1 < 1000;',
-  FALSE
+    FALSE
   );
 
 SELECT
@@ -84,14 +84,14 @@ WHERE
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*),AVG(t2.t1two) FROM tenk1 t1 LEFT JOIN
 LATERAL (
     SELECT t1.two as t1two, * FROM tenk1 t2 WHERE t2.unique1 < 4 OFFSET 0
 ) t2
 ON t1.two = t2.two
 WHERE t1.unique1 < 10;',
-  FALSE
+    FALSE
   );
 
 SELECT
@@ -115,11 +115,11 @@ WHERE
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*), AVG(t1.twenty) FROM tenk1 t1 LEFT JOIN
 LATERAL (SELECT t1.two+1 AS c1, t2.unique1 AS c2 FROM tenk1 t2) s ON TRUE
 WHERE s.c1 = s.c2 AND t1.unique1 < 1000;',
-  FALSE
+    FALSE
   );
 
 SELECT
@@ -140,12 +140,12 @@ WHERE
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*), AVG(t1.twenty) FROM tenk1 t1 LEFT JOIN
 LATERAL (SELECT t1.twenty AS c1, t2.unique1 AS c2, t2.two FROM tenk1 t2) s
 ON t1.two = s.two
 WHERE s.c1 = s.c2 AND t1.unique1 < 1000;',
-  FALSE
+    FALSE
   );
 
 SELECT
@@ -167,10 +167,12 @@ WHERE
 
 SET enable_mergejoin = off;
 
-CREATE TABLE expr_key (x NUMERIC, t TEXT);
+CREATE TABLE expr_key (
+  x NUMERIC,
+  t TEXT
+);
 
-INSERT INTO expr_key
-(x, t)
+INSERT INTO expr_key (x, t)
 SELECT
   CAST(d1 AS NUMERIC),
   CAST(d1 AS TEXT)
@@ -183,22 +185,16 @@ FROM
 
 INSERT INTO expr_key SELECT * FROM expr_key;
 
-CREATE INDEX "expr_key_idx_x_t"
-ON expr_key
-USING btree
-(
-  x,
-  t
-);
+CREATE INDEX "expr_key_idx_x_t" ON expr_key USING btree (x, t);
 
 VACUUM (ANALYZE) expr_key;
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT * FROM expr_key t1 INNER JOIN expr_key t2
 ON t1.x = t2.t::numeric AND t1.t::numeric = t2.x;',
-  FALSE
+    FALSE
   );
 
 DROP TABLE "expr_key";
@@ -209,21 +205,16 @@ SET hash_mem_multiplier = 1.0;
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*),AVG(t1.unique1) FROM tenk1 t1
 INNER JOIN tenk1 t2 ON t1.unique1 = t2.thousand
 WHERE t2.unique1 < 1200;',
-  TRUE
+    TRUE
   );
 
 CREATE TABLE flt (f DOUBLE PRECISION);
 
-CREATE INDEX "flt_f_idx"
-ON flt
-USING btree
-(
-  f
-);
+CREATE INDEX "flt_f_idx" ON flt USING btree (f);
 
 INSERT INTO flt
 VALUES
@@ -242,21 +233,14 @@ SELECT * FROM flt f1 INNER JOIN flt f2 ON f1.f >= f2.f;', FALSE);
 
 DROP TABLE "flt";
 
-CREATE TABLE strtest (n NAME, t TEXT);
-
-CREATE INDEX "strtest_n_idx"
-ON strtest
-USING btree
-(
-  n
+CREATE TABLE strtest (
+  n NAME,
+  t TEXT
 );
 
-CREATE INDEX "strtest_t_idx"
-ON strtest
-USING btree
-(
-  t
-);
+CREATE INDEX "strtest_n_idx" ON strtest USING btree (n);
+
+CREATE INDEX "strtest_t_idx" ON strtest USING btree (t);
 
 INSERT INTO strtest
 VALUES
@@ -278,8 +262,7 @@ DROP TABLE "strtest";
 
 SET enable_partitionwise_join = 'on';
 
-CREATE TABLE prt
-(a INT)
+CREATE TABLE prt (a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt_p1 PARTITION OF prt FOR VALUES FROM (0) TO (10);
@@ -300,19 +283,9 @@ VALUES
   (10),
   (10);
 
-CREATE INDEX "iprt_p1_a"
-ON prt_p1
-USING btree
-(
-  a
-);
+CREATE INDEX "iprt_p1_a" ON prt_p1 USING btree (a);
 
-CREATE INDEX "iprt_p2_a"
-ON prt_p2
-USING btree
-(
-  a
-);
+CREATE INDEX "iprt_p2_a" ON prt_p2 USING btree (a);
 
 ANALYZE prt;
 
@@ -323,11 +296,11 @@ SET enable_partitionwise_join = off;
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT * FROM prt_p1 t1 INNER JOIN
 (SELECT * FROM prt_p1 UNION ALL SELECT * FROM prt_p2) t2
 ON t1.a = t2.a;',
-  FALSE
+    FALSE
   );
 
 DROP TABLE "prt";
@@ -428,7 +401,10 @@ RESET parallel_setup_cost;
 
 RESET min_parallel_table_scan_size;
 
-CREATE TABLE tab_anti (a INT, b BOOLEAN);
+CREATE TABLE tab_anti (
+  a INT,
+  b BOOLEAN
+);
 
 INSERT INTO tab_anti SELECT i % 3, FALSE FROM generate_series(1, 100) AS i;
 
@@ -436,12 +412,12 @@ ANALYZE tab_anti;
 
 SELECT
   explain_memoize(
-  '
+    '
 SELECT COUNT(*) FROM tab_anti t1 LEFT JOIN
 LATERAL (SELECT DISTINCT ON (a) a, b, t1.a AS x FROM tab_anti t2) t2
 ON t1.a+1 = t2.a
 WHERE t2.a IS NULL;',
-  FALSE
+    FALSE
   );
 
 SELECT

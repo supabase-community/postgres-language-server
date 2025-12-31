@@ -112,7 +112,10 @@ CREATE TYPE text_w_default
   "default" = 'zippo'
 );
 
-CREATE TABLE default_test (f1 text_w_default, f2 int42);
+CREATE TABLE default_test (
+  f1 text_w_default,
+  f2 int42
+);
 
 INSERT INTO default_test DEFAULT VALUES;
 
@@ -136,7 +139,7 @@ DROP TYPE bogus_type;
 
 CREATE TYPE bogus_type ( input = array_in, output = array_out, element = INT, internallength = 32);
 
-CREATE TYPE default_test_row AS ( f1 text_w_default, f2 int42 );
+CREATE TYPE default_test_row AS (f1 text_w_default, f2 int42);
 
 CREATE FUNCTION get_default_test()
 RETURNS SETOF default_test_row
@@ -248,7 +251,11 @@ SELECT
   CAST('(0,0,1)' AS widget)
   AS f;
 
-CREATE TABLE city (name NAME, location box, budget city_budget);
+CREATE TABLE city (
+  name NAME,
+  location box,
+  budget city_budget
+);
 
 INSERT INTO city
 VALUES

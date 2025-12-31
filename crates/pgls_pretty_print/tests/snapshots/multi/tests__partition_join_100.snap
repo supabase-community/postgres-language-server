@@ -5,8 +5,11 @@ snapshot_kind: text
 ---
 SET enable_partitionwise_join = 'true';
 
-CREATE TABLE prt1
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt1 (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt1_p1 PARTITION OF prt1 FOR VALUES FROM (0) TO (250);
@@ -25,31 +28,19 @@ FROM
 WHERE
   i % 2 = 0;
 
-CREATE INDEX "iprt1_p1_a"
-ON prt1_p1
-USING btree
-(
-  a
-);
+CREATE INDEX "iprt1_p1_a" ON prt1_p1 USING btree (a);
 
-CREATE INDEX "iprt1_p2_a"
-ON prt1_p2
-USING btree
-(
-  a
-);
+CREATE INDEX "iprt1_p2_a" ON prt1_p2 USING btree (a);
 
-CREATE INDEX "iprt1_p3_a"
-ON prt1_p3
-USING btree
-(
-  a
-);
+CREATE INDEX "iprt1_p3_a" ON prt1_p3 USING btree (a);
 
 ANALYZE prt1;
 
-CREATE TABLE prt2
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt2 (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE prt2_p1 PARTITION OF prt2 FOR VALUES FROM (0) TO (250);
@@ -68,26 +59,11 @@ FROM
 WHERE
   i % 3 = 0;
 
-CREATE INDEX "iprt2_p1_b"
-ON prt2_p1
-USING btree
-(
-  b
-);
+CREATE INDEX "iprt2_p1_b" ON prt2_p1 USING btree (b);
 
-CREATE INDEX "iprt2_p2_b"
-ON prt2_p2
-USING btree
-(
-  b
-);
+CREATE INDEX "iprt2_p2_b" ON prt2_p2 USING btree (b);
 
-CREATE INDEX "iprt2_p3_b"
-ON prt2_p3
-USING btree
-(
-  b
-);
+CREATE INDEX "iprt2_p3_b" ON prt2_p3 USING btree (b);
 
 ANALYZE prt2;
 
@@ -572,8 +548,11 @@ FROM
 WHERE
   t1.a IN (SELECT a FROM prt1 AS t3);
 
-CREATE TABLE prt1_e
-(a INT, b INT, c INT)
+CREATE TABLE prt1_e (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(((a + b) / 2));
 
 CREATE TABLE prt1_e_p1 PARTITION OF prt1_e FOR VALUES FROM (0) TO (250);
@@ -584,31 +563,19 @@ CREATE TABLE prt1_e_p3 PARTITION OF prt1_e FOR VALUES FROM (500) TO (600);
 
 INSERT INTO prt1_e SELECT i, i, i % 25 FROM generate_series(0, 599, 2) AS i;
 
-CREATE INDEX "iprt1_e_p1_ab2"
-ON prt1_e_p1
-USING btree
-(
-  ((a + b) / 2)
-);
+CREATE INDEX "iprt1_e_p1_ab2" ON prt1_e_p1 USING btree (((a + b) / 2));
 
-CREATE INDEX "iprt1_e_p2_ab2"
-ON prt1_e_p2
-USING btree
-(
-  ((a + b) / 2)
-);
+CREATE INDEX "iprt1_e_p2_ab2" ON prt1_e_p2 USING btree (((a + b) / 2));
 
-CREATE INDEX "iprt1_e_p3_ab2"
-ON prt1_e_p3
-USING btree
-(
-  ((a + b) / 2)
-);
+CREATE INDEX "iprt1_e_p3_ab2" ON prt1_e_p3 USING btree (((a + b) / 2));
 
 ANALYZE prt1_e;
 
-CREATE TABLE prt2_e
-(a INT, b INT, c INT)
+CREATE TABLE prt2_e (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(((b + a) / 2));
 
 CREATE TABLE prt2_e_p1 PARTITION OF prt2_e FOR VALUES FROM (0) TO (250);
@@ -1111,8 +1078,11 @@ RESET enable_hashjoin;
 
 RESET enable_nestloop;
 
-CREATE TABLE prt1_m
-(a INT, b INT, c INT)
+CREATE TABLE prt1_m (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a, ((a + b) / 2));
 
 CREATE TABLE prt1_m_p1 PARTITION OF prt1_m FOR VALUES FROM (0, 0) TO (250, 250);
@@ -1125,8 +1095,11 @@ INSERT INTO prt1_m SELECT i, i, i % 25 FROM generate_series(0, 599, 2) AS i;
 
 ANALYZE prt1_m;
 
-CREATE TABLE prt2_m
-(a INT, b INT, c INT)
+CREATE TABLE prt2_m (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(((b + a) / 2), b);
 
 CREATE TABLE prt2_m_p1 PARTITION OF prt2_m FOR VALUES FROM (0, 0) TO (250, 250);
@@ -1167,8 +1140,11 @@ FROM
 ORDER BY t1.a,
   t2.b;
 
-CREATE TABLE plt1
-(a INT, b INT, c TEXT)
+CREATE TABLE plt1 (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt1_p1 PARTITION OF plt1 FOR VALUES IN ('0000', '0003', '0004', '0010');
@@ -1181,8 +1157,11 @@ INSERT INTO plt1 SELECT i, i, to_char(i / 50, 'FM0000') FROM generate_series(0, 
 
 ANALYZE plt1;
 
-CREATE TABLE plt2
-(a INT, b INT, c TEXT)
+CREATE TABLE plt2 (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt2_p1 PARTITION OF plt2 FOR VALUES IN ('0000', '0003', '0004', '0010');
@@ -1195,8 +1174,11 @@ INSERT INTO plt2 SELECT i, i, to_char(i / 50, 'FM0000') FROM generate_series(0, 
 
 ANALYZE plt2;
 
-CREATE TABLE plt1_e
-(a INT, b INT, c TEXT)
+CREATE TABLE plt1_e (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST((ltrim(c, 'A')));
 
 CREATE TABLE plt1_e_p1 PARTITION OF plt1_e FOR VALUES IN ('0000', '0003', '0004', '0010');
@@ -1310,8 +1292,11 @@ WHERE
 ORDER BY t1.a,
   t2.b;
 
-CREATE TABLE pht1
-(a INT, b INT, c TEXT)
+CREATE TABLE pht1 (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY HASH(c);
 
 CREATE TABLE pht1_p1 PARTITION OF pht1 FOR VALUES WITH (MODULUS 3, REMAINDER 0);
@@ -1324,8 +1309,11 @@ INSERT INTO pht1 SELECT i, i, to_char(i / 50, 'FM0000') FROM generate_series(0, 
 
 ANALYZE pht1;
 
-CREATE TABLE pht2
-(a INT, b INT, c TEXT)
+CREATE TABLE pht2 (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY HASH(c);
 
 CREATE TABLE pht2_p1 PARTITION OF pht2 FOR VALUES WITH (MODULUS 3, REMAINDER 0);
@@ -1338,8 +1326,11 @@ INSERT INTO pht2 SELECT i, i, to_char(i / 50, 'FM0000') FROM generate_series(0, 
 
 ANALYZE pht2;
 
-CREATE TABLE pht1_e
-(a INT, b INT, c TEXT)
+CREATE TABLE pht1_e (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY HASH((ltrim(c, 'A')));
 
 CREATE TABLE pht1_e_p1 PARTITION OF pht1_e FOR VALUES WITH (MODULUS 3, REMAINDER 0);
@@ -1472,8 +1463,11 @@ GROUP BY t1.c,
 ORDER BY t1.c,
   t2.c;
 
-CREATE TABLE prt1_l
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt1_l (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt1_l_p1 PARTITION OF prt1_l FOR VALUES FROM (0) TO (250);
@@ -1494,8 +1488,11 @@ INSERT INTO prt1_l SELECT i, i % 25, to_char(i % 4, 'FM0000') FROM generate_seri
 
 ANALYZE prt1_l;
 
-CREATE TABLE prt2_l
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt2_l (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE prt2_l_p1 PARTITION OF prt2_l FOR VALUES FROM (0) TO (250);
@@ -1757,8 +1754,11 @@ WHERE
   WHERE
     prt1_l.c IS NULL);
 
-CREATE TABLE prt1_n
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt1_n (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(c);
 
 CREATE TABLE prt1_n_p1 PARTITION OF prt1_n FOR VALUES FROM ('0000') TO ('0250');
@@ -1769,8 +1769,11 @@ INSERT INTO prt1_n SELECT i, i, to_char(i, 'FM0000') FROM generate_series(0, 499
 
 ANALYZE prt1_n;
 
-CREATE TABLE prt2_n
-(a INT, b INT, c TEXT)
+CREATE TABLE prt2_n (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE prt2_n_p1
@@ -1795,8 +1798,11 @@ INSERT INTO prt2_n SELECT i, i, to_char(i / 50, 'FM0000') FROM generate_series(0
 
 ANALYZE prt2_n;
 
-CREATE TABLE prt3_n
-(a INT, b INT, c TEXT)
+CREATE TABLE prt3_n (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE prt3_n_p1 PARTITION OF prt3_n FOR VALUES IN ('0000', '0004', '0006', '0007');
@@ -1809,8 +1815,11 @@ INSERT INTO prt2_n SELECT i, i, to_char(i / 50, 'FM0000') FROM generate_series(0
 
 ANALYZE prt3_n;
 
-CREATE TABLE prt4_n
-(a INT, b INT, c TEXT)
+CREATE TABLE prt4_n (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt4_n_p1 PARTITION OF prt4_n FOR VALUES FROM (0) TO (300);
@@ -1863,8 +1872,11 @@ FROM
 
 SELECT t1.a, t1.c, t2.b, t2.c FROM prt1_n AS t1 FULL OUTER JOIN prt1 AS t2 ON t1.c = t2.c;
 
-CREATE TEMPORARY TABLE prtx1
-(a INT, b INT, c INT)
+CREATE TEMPORARY TABLE prtx1 (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TEMPORARY TABLE prtx1_1 PARTITION OF prtx1 FOR VALUES FROM (1) TO (11);
@@ -1873,8 +1885,11 @@ CREATE TEMPORARY TABLE prtx1_2 PARTITION OF prtx1 FOR VALUES FROM (11) TO (21);
 
 CREATE TEMPORARY TABLE prtx1_3 PARTITION OF prtx1 FOR VALUES FROM (21) TO (31);
 
-CREATE TEMPORARY TABLE prtx2
-(a INT, b INT, c INT)
+CREATE TEMPORARY TABLE prtx2 (
+  a INT,
+  b INT,
+  c INT
+)
 PARTITION BY RANGE(a);
 
 CREATE TEMPORARY TABLE prtx2_1 PARTITION OF prtx2 FOR VALUES FROM (1) TO (11);
@@ -1894,19 +1909,9 @@ FROM
   generate_series(1, 500) AS i,
   generate_series(1, 10) AS j;
 
-CREATE INDEX
-ON prtx2
-USING btree
-(
-  b
-);
+CREATE INDEX ON prtx2 USING btree (b);
 
-CREATE INDEX
-ON prtx2
-USING btree
-(
-  c
-);
+CREATE INDEX ON prtx2 USING btree (c);
 
 ANALYZE prtx1;
 
@@ -1978,8 +1983,11 @@ WHERE
   a < 20 AND
   c = 91;
 
-CREATE TABLE prt1_adv
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt1_adv (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt1_adv_p1 PARTITION OF prt1_adv FOR VALUES FROM (100) TO (200);
@@ -1988,19 +1996,17 @@ CREATE TABLE prt1_adv_p2 PARTITION OF prt1_adv FOR VALUES FROM (200) TO (300);
 
 CREATE TABLE prt1_adv_p3 PARTITION OF prt1_adv FOR VALUES FROM (300) TO (400);
 
-CREATE INDEX "prt1_adv_a_idx"
-ON prt1_adv
-USING btree
-(
-  a
-);
+CREATE INDEX "prt1_adv_a_idx" ON prt1_adv USING btree (a);
 
 INSERT INTO prt1_adv SELECT i, i % 25, to_char(i, 'FM0000') FROM generate_series(100, 399) AS i;
 
 ANALYZE prt1_adv;
 
-CREATE TABLE prt2_adv
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt2_adv (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE prt2_adv_p1 PARTITION OF prt2_adv FOR VALUES FROM (100) TO (150);
@@ -2009,12 +2015,7 @@ CREATE TABLE prt2_adv_p2 PARTITION OF prt2_adv FOR VALUES FROM (200) TO (300);
 
 CREATE TABLE prt2_adv_p3 PARTITION OF prt2_adv FOR VALUES FROM (350) TO (500);
 
-CREATE INDEX "prt2_adv_b_idx"
-ON prt2_adv
-USING btree
-(
-  b
-);
+CREATE INDEX "prt2_adv_b_idx" ON prt2_adv USING btree (b);
 
 INSERT INTO prt2_adv_p1 SELECT i % 25, i, to_char(i, 'FM0000') FROM generate_series(100, 149) AS i;
 
@@ -2587,20 +2588,18 @@ DROP TABLE "prt2_adv_p3";
 
 ANALYZE prt2_adv;
 
-CREATE TABLE prt3_adv
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt3_adv (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt3_adv_p1 PARTITION OF prt3_adv FOR VALUES FROM (200) TO (300);
 
 CREATE TABLE prt3_adv_p2 PARTITION OF prt3_adv FOR VALUES FROM (300) TO (400);
 
-CREATE INDEX "prt3_adv_a_idx"
-ON prt3_adv
-USING btree
-(
-  a
-);
+CREATE INDEX "prt3_adv_a_idx" ON prt3_adv USING btree (a);
 
 INSERT INTO prt3_adv SELECT i, i % 25, to_char(i, 'FM0000') FROM generate_series(200, 399) AS i;
 
@@ -2654,8 +2653,11 @@ DROP TABLE "prt2_adv";
 
 DROP TABLE "prt3_adv";
 
-CREATE TABLE prt1_adv
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt1_adv (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE prt1_adv_p1 PARTITION OF prt1_adv FOR VALUES FROM (100) TO (200);
@@ -2664,31 +2666,24 @@ CREATE TABLE prt1_adv_p2 PARTITION OF prt1_adv FOR VALUES FROM (200) TO (300);
 
 CREATE TABLE prt1_adv_p3 PARTITION OF prt1_adv FOR VALUES FROM (300) TO (400);
 
-CREATE INDEX "prt1_adv_a_idx"
-ON prt1_adv
-USING btree
-(
-  a
-);
+CREATE INDEX "prt1_adv_a_idx" ON prt1_adv USING btree (a);
 
 INSERT INTO prt1_adv SELECT i, i % 25, to_char(i, 'FM0000') FROM generate_series(100, 399) AS i;
 
 ANALYZE prt1_adv;
 
-CREATE TABLE prt2_adv
-(a INT, b INT, c VARCHAR)
+CREATE TABLE prt2_adv (
+  a INT,
+  b INT,
+  c VARCHAR
+)
 PARTITION BY RANGE(b);
 
 CREATE TABLE prt2_adv_p1 PARTITION OF prt2_adv FOR VALUES FROM (100) TO (200);
 
 CREATE TABLE prt2_adv_p2 PARTITION OF prt2_adv FOR VALUES FROM (200) TO (400);
 
-CREATE INDEX "prt2_adv_b_idx"
-ON prt2_adv
-USING btree
-(
-  b
-);
+CREATE INDEX "prt2_adv_b_idx" ON prt2_adv USING btree (b);
 
 INSERT INTO prt2_adv SELECT i % 25, i, to_char(i, 'FM0000') FROM generate_series(100, 399) AS i;
 
@@ -2768,8 +2763,11 @@ DROP TABLE "prt1_adv";
 
 DROP TABLE "prt2_adv";
 
-CREATE TABLE plt1_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt1_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt1_adv_p1 PARTITION OF plt1_adv FOR VALUES IN ('0001', '0003');
@@ -2790,8 +2788,11 @@ WHERE
 
 ANALYZE plt1_adv;
 
-CREATE TABLE plt2_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt2_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt2_adv_p1 PARTITION OF plt2_adv FOR VALUES IN ('0002', '0003');
@@ -3732,8 +3733,11 @@ ALTER TABLE plt2_adv
 
 ANALYZE plt2_adv;
 
-CREATE TABLE plt3_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt3_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt3_adv_p1 PARTITION OF plt3_adv FOR VALUES IN ('0004', '0006');
@@ -3878,8 +3882,11 @@ DROP TABLE "plt2_adv";
 
 DROP TABLE "plt3_adv";
 
-CREATE TABLE plt1_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt1_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt1_adv_p1 PARTITION OF plt1_adv FOR VALUES IN ('0001');
@@ -3904,8 +3911,11 @@ INSERT INTO plt1_adv VALUES (-1, -1, NULL);
 
 ANALYZE plt1_adv;
 
-CREATE TABLE plt2_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt2_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt2_adv_p1 PARTITION OF plt2_adv FOR VALUES IN ('0001', '0002');
@@ -4054,8 +4064,11 @@ DROP TABLE "plt1_adv";
 
 DROP TABLE "plt2_adv";
 
-CREATE TABLE plt1_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt1_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt1_adv_p1 PARTITION OF plt1_adv FOR VALUES IN ('0000', '0001', '0002');
@@ -4066,8 +4079,11 @@ INSERT INTO plt1_adv SELECT i, i, to_char(i % 5, 'FM0000') FROM generate_series(
 
 ANALYZE plt1_adv;
 
-CREATE TABLE plt2_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt2_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt2_adv_p1 PARTITION OF plt2_adv FOR VALUES IN ('0002');
@@ -4086,8 +4102,11 @@ WHERE
 
 ANALYZE plt2_adv;
 
-CREATE TABLE plt3_adv
-(a INT, b INT, c TEXT)
+CREATE TABLE plt3_adv (
+  a INT,
+  b INT,
+  c TEXT
+)
 PARTITION BY LIST(c);
 
 CREATE TABLE plt3_adv_p1 PARTITION OF plt3_adv FOR VALUES IN ('0001');
@@ -4158,8 +4177,11 @@ DROP TABLE "plt2_adv";
 
 DROP TABLE "plt3_adv";
 
-CREATE TABLE alpha
-(a DOUBLE PRECISION, b INT, c TEXT)
+CREATE TABLE alpha (
+  a DOUBLE PRECISION,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE alpha_neg
@@ -4203,8 +4225,11 @@ WHERE
 
 ANALYZE alpha;
 
-CREATE TABLE beta
-(a DOUBLE PRECISION, b INT, c TEXT)
+CREATE TABLE beta (
+  a DOUBLE PRECISION,
+  b INT,
+  c TEXT
+)
 PARTITION BY RANGE(a);
 
 CREATE TABLE beta_neg PARTITION OF beta FOR VALUES FROM (-10.0) TO (0) PARTITION BY RANGE(b);
@@ -4381,8 +4406,10 @@ WHERE
 ORDER BY t1.a,
   t1.b;
 
-CREATE TABLE fract_t
-(id BIGINT, PRIMARY KEY (id))
+CREATE TABLE fract_t (
+  id BIGINT,
+  PRIMARY KEY (id)
+)
 PARTITION BY RANGE(id);
 
 CREATE TABLE fract_t0 PARTITION OF fract_t FOR VALUES FROM ('0') TO ('1000');
@@ -4430,12 +4457,7 @@ FROM
 ORDER BY x.id DESC
 LIMIT 2;
 
-CREATE INDEX "pht1_c_idx"
-ON pht1
-USING btree
-(
-  c
-);
+CREATE INDEX "pht1_c_idx" ON pht1 USING btree (c);
 
 SELECT * FROM pht1 AS p1 INNER JOIN pht1 AS p2 USING ("c") LIMIT 1;
 

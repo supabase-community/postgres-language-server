@@ -43,7 +43,10 @@ RESET search_path;
 
 BEGIN;
 
-CREATE TABLE numeric_tbl (f1 NUMERIC(18, 3), f2 NUMERIC);
+CREATE TABLE numeric_tbl (
+  f1 NUMERIC(18, 3),
+  f2 NUMERIC
+);
 
 CREATE VIEW numeric_view
 AS SELECT
@@ -58,7 +61,10 @@ FROM
 
 SELECT * FROM numeric_view;
 
-CREATE TABLE bpchar_tbl (f1 CHAR(16) UNIQUE, f2 CHAR);
+CREATE TABLE bpchar_tbl (
+  f1 CHAR(16) UNIQUE,
+  f2 CHAR
+);
 
 CREATE VIEW bpchar_view
 AS SELECT

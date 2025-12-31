@@ -4,9 +4,11 @@ input_file: crates/pgls_pretty_print/tests/data/multi/groupingsets.sql
 snapshot_kind: text
 ---
 CREATE TEMPORARY VIEW gstest1
-(a,
-b,
-v)
+(
+  a,
+  b,
+  v
+)
 AS VALUES
   (1, 1, 10),
   (1, 1, 11),
@@ -19,18 +21,37 @@ AS VALUES
   (4, 1, 18),
   (4, 1, 19);
 
-CREATE TEMPORARY TABLE gstest2 (a INT, b INT, c INT, d INT, e INT, f INT, g INT, h INT);
+CREATE TEMPORARY TABLE gstest2 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  e INT,
+  f INT,
+  g INT,
+  h INT
+);
 
 COPY gstest2 FROM STDOUT;
 
-CREATE TEMPORARY TABLE gstest3 (a INT, b INT, c INT, d INT);
+CREATE TEMPORARY TABLE gstest3 (
+  a INT,
+  b INT,
+  c INT,
+  d INT
+);
 
 COPY gstest3 FROM STDOUT;
 
 ALTER TABLE gstest3
   ADD PRIMARY KEY (a);
 
-CREATE TEMPORARY TABLE gstest4 (id INT, v INT, unhashable_col BIT(4), unsortable_col XID);
+CREATE TEMPORARY TABLE gstest4 (
+  id INT,
+  v INT,
+  unhashable_col BIT(4),
+  unsortable_col XID
+);
 
 INSERT INTO gstest4
 VALUES
@@ -43,7 +64,11 @@ VALUES
   (7, 64, B'0010', '1'),
   (8, 128, B'0011', '1');
 
-CREATE TEMPORARY TABLE gstest_empty (a INT, b INT, v INT);
+CREATE TEMPORARY TABLE gstest_empty (
+  a INT,
+  b INT,
+  v INT
+);
 
 CREATE FUNCTION gstest_data(v INT, OUT a INT, OUT b INT)
 RETURNS SETOF RECORD
@@ -131,7 +156,7 @@ SELECT
   a,
   b,
   SUM(c),
-  SUM(SUM(c)) OVER ( ORDER BY a, b) AS rsum
+  SUM(SUM(c)) OVER (ORDER BY a, b) AS rsum
 FROM
   gstest2
 GROUP BY ROLLUP (a, b)
@@ -524,7 +549,7 @@ SELECT
   a,
   b,
   SUM(c),
-  SUM(SUM(c)) OVER ( ORDER BY a, b) AS rsum
+  SUM(SUM(c)) OVER (ORDER BY a, b) AS rsum
 FROM
   gstest2
 GROUP BY CUBE (a, b)
@@ -659,7 +684,7 @@ SELECT ten, GROUPING(ten) FROM onek GROUP BY ten HAVING GROUPING(ten) >= 0 ORDER
 SELECT
   ten,
   SUM(
-  DISTINCT four
+    DISTINCT four
   )
   FILTER (WHERE
     CAST(four AS TEXT) ~ '123')
@@ -949,7 +974,7 @@ SELECT
   a,
   b,
   SUM(c),
-  SUM(SUM(c)) OVER ( ORDER BY a, b) AS rsum
+  SUM(SUM(c)) OVER (ORDER BY a, b) AS rsum
 FROM
   gstest2
 GROUP BY CUBE (a, b)
@@ -961,7 +986,7 @@ SELECT
   a,
   b,
   SUM(c),
-  SUM(SUM(c)) OVER ( ORDER BY a, b) AS rsum
+  SUM(SUM(c)) OVER (ORDER BY a, b) AS rsum
 FROM
   gstest2
 GROUP BY CUBE (a, b)
@@ -1176,7 +1201,10 @@ GROUP BY ROLLUP (i, v || 'a')
 ORDER BY 1,
   3;
 
-CREATE TABLE bug_16784 (i INT, j INT);
+CREATE TABLE bug_16784 (
+  i INT,
+  j INT
+);
 
 ANALYZE bug_16784;
 
@@ -1374,7 +1402,10 @@ SELECT (SELECT GROUPING(v1)) FROM (VALUES ((SELECT 1))) AS v (v1) GROUP BY v1;
 
 SELECT (SELECT GROUPING(v1)) FROM (VALUES ((SELECT 1))) AS v (v1) GROUP BY v1;
 
-CREATE TEMPORARY TABLE gstest5 (id INT PRIMARY KEY, v INT);
+CREATE TEMPORARY TABLE gstest5 (
+  id INT PRIMARY KEY,
+  v INT
+);
 
 INSERT INTO gstest5 SELECT i, i FROM generate_series(1, 5) AS i;
 
@@ -1557,7 +1588,7 @@ SELECT 1 AS one GROUP BY ROLLUP (one) ORDER BY one NULLS FIRST;
 SELECT
   a,
   b,
-  ROW_NUMBER() OVER ( ORDER BY a, b NULLS FIRST)
+  ROW_NUMBER() OVER (ORDER BY a, b NULLS FIRST)
 FROM
   (VALUES
     (1, 1),
@@ -1570,7 +1601,7 @@ GROUP BY GROUPING SETS ((a, b), a);
 SELECT
   a,
   b,
-  ROW_NUMBER() OVER ( ORDER BY a, b NULLS FIRST)
+  ROW_NUMBER() OVER (ORDER BY a, b NULLS FIRST)
 FROM
   (VALUES
     (1, 1),

@@ -110,8 +110,7 @@ SELECT -CAST('-2147483647 months -2147483647 days -9223372036854775807 us' AS IN
 
 CREATE TEMPORARY TABLE interval_tbl_of (f1 INTERVAL);
 
-INSERT INTO interval_tbl_of
-(f1)
+INSERT INTO interval_tbl_of (f1)
 VALUES
   ('2147483647 days 2147483647 months'),
   ('2147483647 days -2147483648 months'),
@@ -142,12 +141,7 @@ WHERE
 ORDER BY r1.f1,
   r2.f1;
 
-CREATE INDEX
-ON interval_tbl_of
-USING btree
-(
-  f1
-);
+CREATE INDEX ON interval_tbl_of USING btree (f1);
 
 SET enable_seqscan = 'false';
 
@@ -201,15 +195,15 @@ SELECT CAST('100000000y 10mon -1000000000d -100000h -10min -10.000001s ago' AS I
 
 SELECT
   justify_hours(
-  CAST('6 months 3 days 52 hours 3 minutes 2 seconds'
-  AS INTERVAL)
+    CAST('6 months 3 days 52 hours 3 minutes 2 seconds'
+    AS INTERVAL)
   )
   AS "6 mons 5 days 4 hours 3 mins 2 seconds";
 
 SELECT
   justify_days(
-  CAST('6 months 36 days 5 hours 4 minutes 3 seconds'
-  AS INTERVAL)
+    CAST('6 months 36 days 5 hours 4 minutes 3 seconds'
+    AS INTERVAL)
   )
   AS "7 mons 6 days 5 hours 4 mins 3 seconds";
 
@@ -837,23 +831,23 @@ SELECT make_interval("years" := 1, "months" := 6);
 
 SELECT
   make_interval(
-  "years" := 1,
-  "months" := -1,
-  "weeks" := 5,
-  "days" := -7,
-  "hours" := 25,
-  "mins" := -180
+    "years" := 1,
+    "months" := -1,
+    "weeks" := 5,
+    "days" := -7,
+    "hours" := 25,
+    "mins" := -180
   );
 
 SELECT
   make_interval() =
   make_interval(
-  "years" := 0,
-  "months" := 0,
-  "weeks" := 0,
-  "days" := 0,
-  "mins" := 0,
-  "secs" := 0.0
+    "years" := 0,
+    "months" := 0,
+    "weeks" := 0,
+    "days" := 0,
+    "mins" := 0,
+    "secs" := 0.0
   );
 
 SELECT make_interval("hours" := -2, "mins" := -10, "secs" := -25.3);
@@ -1148,16 +1142,16 @@ SELECT CAST('-1073741824 months -1073741824 days -4611686018427387904 us' AS INT
 
 SELECT
   date_bin(
-  'infinity',
-  CAST('2001-02-16 20:38:40' AS TIMESTAMP),
-  CAST('2001-02-16 20:05:00' AS TIMESTAMP)
+    'infinity',
+    CAST('2001-02-16 20:38:40' AS TIMESTAMP),
+    CAST('2001-02-16 20:05:00' AS TIMESTAMP)
   );
 
 SELECT
   date_bin(
-  '-infinity',
-  CAST('2001-02-16 20:38:40' AS TIMESTAMP),
-  CAST('2001-02-16 20:05:00' AS TIMESTAMP)
+    '-infinity',
+    CAST('2001-02-16 20:38:40' AS TIMESTAMP),
+    CAST('2001-02-16 20:05:00' AS TIMESTAMP)
   );
 
 SELECT i AS interval, date_trunc('hour', i) FROM infinite_interval_tbl WHERE NOT isfinite(i);
@@ -1182,16 +1176,16 @@ SELECT timezone(CAST('-infinity' AS INTERVAL), CAST('1995-08-06 12:12:12' AS TIM
 
 SELECT
   timezone(
-  CAST('infinity' AS INTERVAL),
-  CAST('1995-08-06 12:12:12'
-  AS TIMESTAMP WITH TIME ZONE)
+    CAST('infinity' AS INTERVAL),
+    CAST('1995-08-06 12:12:12'
+    AS TIMESTAMP WITH TIME ZONE)
   );
 
 SELECT
   timezone(
-  CAST('-infinity' AS INTERVAL),
-  CAST('1995-08-06 12:12:12'
-  AS TIMESTAMP WITH TIME ZONE)
+    CAST('-infinity' AS INTERVAL),
+    CAST('1995-08-06 12:12:12'
+    AS TIMESTAMP WITH TIME ZONE)
   );
 
 SELECT timezone(CAST('infinity' AS INTERVAL), CAST('12:12:12' AS TIME));

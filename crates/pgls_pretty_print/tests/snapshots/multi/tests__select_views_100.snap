@@ -17,11 +17,24 @@ LANGUAGE "plpgsql"
 COST 0.0000001
 AS 'BEGIN RAISE NOTICE ''f_leak => %'', $1; RETURN true; END';
 
-CREATE TABLE customer (cid INT PRIMARY KEY, name TEXT NOT NULL, tel TEXT, passwd TEXT);
+CREATE TABLE customer (
+  cid INT PRIMARY KEY,
+  name TEXT NOT NULL,
+  tel TEXT,
+  passwd TEXT
+);
 
-CREATE TABLE credit_card (cid INT REFERENCES customer (cid), cnum TEXT, climit INT);
+CREATE TABLE credit_card (
+  cid INT REFERENCES customer (cid),
+  cnum TEXT,
+  climit INT
+);
 
-CREATE TABLE credit_usage (cid INT REFERENCES customer (cid), ymd DATE, usage INT);
+CREATE TABLE credit_usage (
+  cid INT REFERENCES customer (cid),
+  ymd DATE,
+  usage INT
+);
 
 INSERT INTO customer
 VALUES

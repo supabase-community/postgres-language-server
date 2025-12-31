@@ -7,8 +7,7 @@ SET max_parallel_maintenance_workers = 0;
 
 SET max_parallel_workers = 0;
 
-CREATE TEMPORARY TABLE abbrev_abort_uuids
-(
+CREATE TEMPORARY TABLE abbrev_abort_uuids (
   id serial NOT NULL,
   abort_increasing UUID,
   abort_decreasing UUID,
@@ -16,8 +15,7 @@ CREATE TEMPORARY TABLE abbrev_abort_uuids
   noabort_decreasing UUID
 );
 
-INSERT INTO abbrev_abort_uuids
-(
+INSERT INTO abbrev_abort_uuids (
   abort_increasing,
   abort_decreasing,
   noabort_increasing,
@@ -51,8 +49,7 @@ INSERT INTO abbrev_abort_uuids DEFAULT VALUES;
 
 INSERT INTO abbrev_abort_uuids DEFAULT VALUES;
 
-INSERT INTO abbrev_abort_uuids
-(
+INSERT INTO abbrev_abort_uuids (
   abort_increasing,
   abort_decreasing,
   noabort_increasing,
@@ -455,25 +452,25 @@ COMMIT;
 SELECT
   (array_agg(id ORDER BY id DESC NULLS FIRST))[0:5],
   (array_agg(
-  abort_increasing ORDER BY abort_increasing DESC NULLS LAST
+    abort_increasing ORDER BY abort_increasing DESC NULLS LAST
   ))[0:5],
   (array_agg(
-  CAST(id AS TEXT) ORDER BY CAST(id AS TEXT) DESC NULLS LAST
+    CAST(id AS TEXT) ORDER BY CAST(id AS TEXT) DESC NULLS LAST
   ))[0:5],
   percentile_disc(0.99) WITHIN GROUP (ORDER BY id),
   percentile_disc(0.01) WITHIN GROUP (ORDER BY id),
   percentile_disc(
-  0.8
+    0.8
   )
   WITHIN GROUP (ORDER BY abort_increasing),
   percentile_disc(
-  0.2
+    0.2
   )
   WITHIN GROUP (ORDER BY CAST(id AS TEXT)),
   RANK(
-  '00000000-0000-0000-0000-000000000000',
-  '2',
-  '2'
+    '00000000-0000-0000-0000-000000000000',
+    '2',
+    '2'
   )
   WITHIN GROUP (
     ORDER BY noabort_increasing,
@@ -493,25 +490,25 @@ SET LOCAL work_mem = '100kB';
 SELECT
   (array_agg(id ORDER BY id DESC NULLS FIRST))[0:5],
   (array_agg(
-  abort_increasing ORDER BY abort_increasing DESC NULLS LAST
+    abort_increasing ORDER BY abort_increasing DESC NULLS LAST
   ))[0:5],
   (array_agg(
-  CAST(id AS TEXT) ORDER BY CAST(id AS TEXT) DESC NULLS LAST
+    CAST(id AS TEXT) ORDER BY CAST(id AS TEXT) DESC NULLS LAST
   ))[0:5],
   percentile_disc(0.99) WITHIN GROUP (ORDER BY id),
   percentile_disc(0.01) WITHIN GROUP (ORDER BY id),
   percentile_disc(
-  0.8
+    0.8
   )
   WITHIN GROUP (ORDER BY abort_increasing),
   percentile_disc(
-  0.2
+    0.2
   )
   WITHIN GROUP (ORDER BY CAST(id AS TEXT)),
   RANK(
-  '00000000-0000-0000-0000-000000000000',
-  '2',
-  '2'
+    '00000000-0000-0000-0000-000000000000',
+    '2',
+    '2'
   )
   WITHIN GROUP (
     ORDER BY noabort_increasing,
@@ -526,10 +523,13 @@ FROM
 
 ROLLBACK;
 
-CREATE TEMPORARY TABLE test_mark_restore (col1 INT, col2 INT, col12 INT);
+CREATE TEMPORARY TABLE test_mark_restore (
+  col1 INT,
+  col2 INT,
+  col12 INT
+);
 
-INSERT INTO test_mark_restore
-(col1, col2, col12)
+INSERT INTO test_mark_restore (col1, col2, col12)
 SELECT
   a.i,
   b.i,

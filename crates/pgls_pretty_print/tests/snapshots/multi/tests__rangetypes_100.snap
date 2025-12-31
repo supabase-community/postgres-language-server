@@ -87,12 +87,7 @@ SELECT * FROM pg_input_error_info('[2000-01-01,5874897-12-31]', 'daterange');
 
 CREATE TABLE numrange_test (nr NUMRANGE);
 
-CREATE INDEX "numrange_test_btree"
-ON numrange_test
-USING btree
-(
-  nr
-);
+CREATE INDEX "numrange_test_btree" ON numrange_test USING btree (nr);
 
 INSERT INTO numrange_test VALUES ('[,)');
 
@@ -216,12 +211,7 @@ ANALYZE numrange_test;
 
 CREATE TABLE numrange_test2 (nr NUMRANGE);
 
-CREATE INDEX "numrange_test2_hash_idx"
-ON numrange_test2
-USING hash
-(
-  nr
-);
+CREATE INDEX "numrange_test2_hash_idx" ON numrange_test2 USING hash (nr);
 
 INSERT INTO numrange_test2 VALUES ('[, 5)');
 
@@ -273,12 +263,7 @@ DROP TABLE "numrange_test2";
 
 CREATE TABLE textrange_test (tr textrange);
 
-CREATE INDEX "textrange_test_btree"
-ON textrange_test
-USING btree
-(
-  tr
-);
+CREATE INDEX "textrange_test_btree" ON textrange_test USING btree (tr);
 
 INSERT INTO textrange_test VALUES ('[,)');
 
@@ -344,12 +329,7 @@ SELECT daterange(CAST('2000-01-01' AS DATE), CAST('infinity' AS DATE), '[]');
 
 CREATE TABLE test_range_gist (ir INT4RANGE);
 
-CREATE INDEX "test_range_gist_idx"
-ON test_range_gist
-USING gist
-(
-  ir
-);
+CREATE INDEX "test_range_gist_idx" ON test_range_gist USING gist (ir);
 
 INSERT INTO test_range_gist SELECT int4range(g, g + 10) FROM generate_series(1, 2000) AS g;
 
@@ -404,8 +384,8 @@ FROM
 WHERE
   ir @>
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40)
+    int4range(10, 20),
+    int4range(30, 40)
   );
 
 SELECT
@@ -433,8 +413,8 @@ FROM
 WHERE
   ir <<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -444,8 +424,8 @@ FROM
 WHERE
   ir >>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -455,8 +435,8 @@ FROM
 WHERE
   ir &<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -466,8 +446,8 @@ FROM
 WHERE
   ir &>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -477,8 +457,8 @@ FROM
 WHERE
   ir -|-
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SET enable_seqscan = f;
@@ -518,8 +498,8 @@ FROM
 WHERE
   ir @>
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40)
+    int4range(10, 20),
+    int4range(30, 40)
   );
 
 SELECT
@@ -547,8 +527,8 @@ FROM
 WHERE
   ir <<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -558,8 +538,8 @@ FROM
 WHERE
   ir >>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -569,8 +549,8 @@ FROM
 WHERE
   ir &<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -580,8 +560,8 @@ FROM
 WHERE
   ir &>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -591,18 +571,13 @@ FROM
 WHERE
   ir -|-
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 DROP INDEX "test_range_gist_idx";
 
-CREATE INDEX "test_range_gist_idx"
-ON test_range_gist
-USING gist
-(
-  ir
-);
+CREATE INDEX "test_range_gist_idx" ON test_range_gist USING gist (ir);
 
 SELECT COUNT(*) FROM test_range_gist WHERE ir @> CAST('empty' AS INT4RANGE);
 
@@ -635,8 +610,8 @@ FROM
 WHERE
   ir @>
   int4multirange(
-  int4range(10, 20),
-  int4range(30, 40)
+    int4range(10, 20),
+    int4range(30, 40)
   );
 
 SELECT
@@ -664,8 +639,8 @@ FROM
 WHERE
   ir <<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -675,8 +650,8 @@ FROM
 WHERE
   ir >>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -686,8 +661,8 @@ FROM
 WHERE
   ir &<
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -697,8 +672,8 @@ FROM
 WHERE
   ir &>
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 SELECT
@@ -708,18 +683,13 @@ FROM
 WHERE
   ir -|-
   int4multirange(
-  int4range(100, 200),
-  int4range(400, 500)
+    int4range(100, 200),
+    int4range(400, 500)
   );
 
 CREATE TABLE test_range_spgist (ir INT4RANGE);
 
-CREATE INDEX "test_range_spgist_idx"
-ON test_range_spgist
-USING spgist
-(
-  ir
-);
+CREATE INDEX "test_range_spgist_idx" ON test_range_spgist USING spgist (ir);
 
 INSERT INTO test_range_spgist SELECT int4range(g, g + 10) FROM generate_series(1, 2000) AS g;
 
@@ -801,12 +771,7 @@ SELECT COUNT(*) FROM test_range_spgist WHERE ir -|- int4range(100, 500);
 
 DROP INDEX "test_range_spgist_idx";
 
-CREATE INDEX "test_range_spgist_idx"
-ON test_range_spgist
-USING spgist
-(
-  ir
-);
+CREATE INDEX "test_range_spgist_idx" ON test_range_spgist USING spgist (ir);
 
 SELECT COUNT(*) FROM test_range_spgist WHERE ir @> CAST('empty' AS INT4RANGE);
 
@@ -842,12 +807,7 @@ RESET enable_bitmapscan;
 
 CREATE TABLE test_range_elem (i INT);
 
-CREATE INDEX "test_range_elem_idx"
-ON test_range_elem
-USING btree
-(
-  i
-);
+CREATE INDEX "test_range_elem_idx" ON test_range_elem USING btree (i);
 
 INSERT INTO test_range_elem SELECT i FROM generate_series(1, 100) AS i;
 
@@ -855,12 +815,7 @@ SET enable_seqscan = f;
 
 SELECT COUNT(*) FROM test_range_elem WHERE i <@ int4range(10, 50);
 
-CREATE INDEX
-ON test_range_elem
-USING spgist
-(
-  (int4range(i, i + 10))
-);
+CREATE INDEX ON test_range_elem USING spgist ((int4range(i, i + 10)));
 
 SELECT COUNT(*) FROM test_range_elem WHERE int4range(i, i + 10) <@ int4range(10, 30);
 
@@ -870,8 +825,7 @@ RESET enable_seqscan;
 
 DROP TABLE "test_range_elem";
 
-CREATE TABLE test_range_excl
-(
+CREATE TABLE test_range_excl (
   room INT4RANGE,
   speaker INT4RANGE,
   during TSRANGE,
@@ -929,7 +883,10 @@ CREATE TYPE bogus_float8range AS RANGE (subtype = DOUBLE PRECISION, subtype_diff
 
 SELECT CAST('[123.001, 5.e9)' AS float8range) @> CAST(888.882 AS DOUBLE PRECISION);
 
-CREATE TABLE float8range_test (f8r float8range, i INT);
+CREATE TABLE float8range_test (
+  f8r float8range,
+  i INT
+);
 
 INSERT INTO float8range_test VALUES (float8range(-100.00007, '1.111113e9'), 42);
 
@@ -1029,7 +986,10 @@ LANGUAGE "sql";
 
 SELECT ARRAY[numrange(1.1, 1.2), numrange(12.3, 155.5)];
 
-CREATE TABLE i8r_array (f1 INT, f2 INT8RANGE[]);
+CREATE TABLE i8r_array (
+  f1 INT,
+  f2 INT8RANGE[]
+);
 
 INSERT INTO i8r_array VALUES (42, ARRAY[int8range(1, 10), int8range(2, 20)]);
 
@@ -1047,7 +1007,7 @@ SELECT ARRAY[1, 1] <@ arrayrange(ARRAY[1, 2], ARRAY[2, 1]);
 
 SELECT ARRAY[1, 3] <@ arrayrange(ARRAY[1, 2], ARRAY[2, 1]);
 
-CREATE TYPE two_ints AS ( a INT, b INT );
+CREATE TYPE two_ints AS (a INT, b INT);
 
 CREATE TYPE two_ints_range AS RANGE (subtype = two_ints);
 

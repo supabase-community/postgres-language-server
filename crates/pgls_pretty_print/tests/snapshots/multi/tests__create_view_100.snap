@@ -9,7 +9,11 @@ AS 'regresslib'
 LANGUAGE "c"
 STRICT;
 
-CREATE TABLE real_city (pop INT, cname TEXT, outline path);
+CREATE TABLE real_city (
+  pop INT,
+  cname TEXT,
+  outline path
+);
 
 COPY real_city FROM 'filename';
 
@@ -54,7 +58,10 @@ COMMENT ON VIEW toyemp IS 'is a view';
 
 COMMENT ON VIEW toyemp IS NULL;
 
-CREATE TABLE view_base_table (key INT PRIMARY KEY, data VARCHAR(20));
+CREATE TABLE view_base_table (
+  key INT PRIMARY KEY,
+  data VARCHAR(20)
+);
 
 CREATE VIEW key_dependent_view
 AS SELECT * FROM view_base_table GROUP BY key;
@@ -70,7 +77,12 @@ GROUP BY key
 HAVING
   length(data) > 0;
 
-CREATE TABLE viewtest_tbl (a INT, b INT, c NUMERIC(10, 1), d TEXT COLLATE "C");
+CREATE TABLE viewtest_tbl (
+  a INT,
+  b INT,
+  c NUMERIC(10, 1),
+  d TEXT COLLATE "C"
+);
 
 CREATE OR REPLACE VIEW viewtest
 AS SELECT * FROM viewtest_tbl;
@@ -136,13 +148,22 @@ DROP TABLE "viewtest_tbl";
 
 CREATE SCHEMA "temp_view_test";
 
-CREATE TABLE base_table (a INT, id INT);
+CREATE TABLE base_table (
+  a INT,
+  id INT
+);
 
-CREATE TABLE base_table2 (a INT, id INT);
+CREATE TABLE base_table2 (
+  a INT,
+  id INT
+);
 
 SET search_path TO temp_view_test, public;
 
-CREATE TEMPORARY TABLE temp_table (a INT, id INT);
+CREATE TEMPORARY TABLE temp_table (
+  a INT,
+  id INT
+);
 
 CREATE VIEW v1
 AS SELECT * FROM base_table;
@@ -321,11 +342,20 @@ CREATE SCHEMA "testviewschm2";
 
 SET search_path TO testviewschm2, public;
 
-CREATE TABLE t1 (num INT, name TEXT);
+CREATE TABLE t1 (
+  num INT,
+  name TEXT
+);
 
-CREATE TABLE t2 (num2 INT, value TEXT);
+CREATE TABLE t2 (
+  num2 INT,
+  value TEXT
+);
 
-CREATE TEMPORARY TABLE tt (num2 INT, value TEXT);
+CREATE TEMPORARY TABLE tt (
+  num2 INT,
+  value TEXT
+);
 
 CREATE VIEW nontemp1
 AS SELECT * FROM t1 INNER JOIN t2 ON TRUE;
@@ -399,15 +429,30 @@ WHERE
     nspname LIKE 'pg_temp%')
 ORDER BY relname;
 
-CREATE TABLE tbl1 (a INT, b INT);
+CREATE TABLE tbl1 (
+  a INT,
+  b INT
+);
 
-CREATE TABLE tbl2 (c INT, d INT);
+CREATE TABLE tbl2 (
+  c INT,
+  d INT
+);
 
-CREATE TABLE tbl3 (e INT, f INT);
+CREATE TABLE tbl3 (
+  e INT,
+  f INT
+);
 
-CREATE TABLE tbl4 (g INT, h INT);
+CREATE TABLE tbl4 (
+  g INT,
+  h INT
+);
 
-CREATE TEMPORARY TABLE tmptbl (i INT, j INT);
+CREATE TEMPORARY TABLE tmptbl (
+  i INT,
+  j INT
+);
 
 CREATE VIEW pubview
 AS SELECT
@@ -611,11 +656,23 @@ SELECT CAST(a AS VARCHAR(3)) FROM tt1;
 
 DROP VIEW "tt1";
 
-CREATE TABLE tt1 (f1 INT, f2 INT, f3 TEXT);
+CREATE TABLE tt1 (
+  f1 INT,
+  f2 INT,
+  f3 TEXT
+);
 
-CREATE TABLE tx1 (x1 INT, x2 INT, x3 TEXT);
+CREATE TABLE tx1 (
+  x1 INT,
+  x2 INT,
+  x3 TEXT
+);
 
-CREATE TABLE temp_view_test.tt1 (y1 INT, f2 INT, f3 TEXT);
+CREATE TABLE temp_view_test.tt1 (
+  y1 INT,
+  f2 INT,
+  f3 TEXT
+);
 
 CREATE VIEW aliased_view_1
 AS SELECT
@@ -686,7 +743,10 @@ FROM
   (SELECT * FROM tbl1 INNER JOIN tbl2 ON TRUE) AS ss,
   tbl3 INNER JOIN tbl4 ON TRUE;
 
-CREATE TABLE tbl1a (a INT, c INT);
+CREATE TABLE tbl1a (
+  a INT,
+  c INT
+);
 
 CREATE VIEW view_of_joins_2a
 AS SELECT * FROM tbl1 INNER JOIN tbl1a USING ("a");
@@ -708,11 +768,23 @@ SELECT pg_get_viewdef('view_of_joins_2c', TRUE);
 
 SELECT pg_get_viewdef('view_of_joins_2d', TRUE);
 
-CREATE TABLE tt2 (a INT, b INT, c INT);
+CREATE TABLE tt2 (
+  a INT,
+  b INT,
+  c INT
+);
 
-CREATE TABLE tt3 (ax BIGINT, b SMALLINT, c NUMERIC);
+CREATE TABLE tt3 (
+  ax BIGINT,
+  b SMALLINT,
+  c NUMERIC
+);
 
-CREATE TABLE tt4 (ay INT, b INT, q INT);
+CREATE TABLE tt4 (
+  ay INT,
+  b INT,
+  q INT
+);
 
 CREATE VIEW v1
 AS SELECT * FROM tt2 NATURAL JOIN tt3;
@@ -814,9 +886,15 @@ SELECT pg_get_viewdef('v2a', TRUE);
 
 SELECT pg_get_viewdef('v3', TRUE);
 
-CREATE TABLE tt5 (a INT, b INT);
+CREATE TABLE tt5 (
+  a INT,
+  b INT
+);
 
-CREATE TABLE tt6 (c INT, d INT);
+CREATE TABLE tt6 (
+  c INT,
+  d INT
+);
 
 CREATE VIEW vv1
 AS SELECT * FROM tt5 INNER JOIN tt6 ON TRUE;
@@ -847,12 +925,19 @@ SELECT pg_get_viewdef('v1', TRUE);
 
 SELECT pg_get_viewdef('v4', TRUE);
 
-CREATE TABLE tt7 (x INT, xx INT, y INT);
+CREATE TABLE tt7 (
+  x INT,
+  xx INT,
+  y INT
+);
 
 ALTER TABLE tt7
   DROP COLUMN xx;
 
-CREATE TABLE tt8 (x INT, z INT);
+CREATE TABLE tt8 (
+  x INT,
+  z INT
+);
 
 CREATE VIEW vv2
 AS SELECT
@@ -925,12 +1010,19 @@ SELECT pg_get_viewdef('vv3', TRUE);
 
 SELECT pg_get_viewdef('vv4', TRUE);
 
-CREATE TABLE tt7a (x DATE, xx INT, y INT);
+CREATE TABLE tt7a (
+  x DATE,
+  xx INT,
+  y INT
+);
 
 ALTER TABLE tt7a
   DROP COLUMN xx;
 
-CREATE TABLE tt8a (x TIMESTAMP WITH TIME ZONE, z INT);
+CREATE TABLE tt8a (
+  x TIMESTAMP WITH TIME ZONE,
+  z INT
+);
 
 CREATE VIEW vv2a
 AS SELECT
@@ -947,9 +1039,16 @@ FROM
 
 SELECT pg_get_viewdef('vv2a', TRUE);
 
-CREATE TABLE tt9 (x INT, xx INT, y INT);
+CREATE TABLE tt9 (
+  x INT,
+  xx INT,
+  y INT
+);
 
-CREATE TABLE tt10 (x INT, z INT);
+CREATE TABLE tt10 (
+  x INT,
+  z INT
+);
 
 CREATE VIEW vv5
 AS SELECT
@@ -966,11 +1065,20 @@ ALTER TABLE tt9
 
 SELECT pg_get_viewdef('vv5', TRUE);
 
-CREATE TABLE tt11 (x INT, y INT);
+CREATE TABLE tt11 (
+  x INT,
+  y INT
+);
 
-CREATE TABLE tt12 (x INT, z INT);
+CREATE TABLE tt12 (
+  x INT,
+  z INT
+);
 
-CREATE TABLE tt13 (z INT, q INT);
+CREATE TABLE tt13 (
+  z INT,
+  q INT
+);
 
 CREATE VIEW vv6
 AS SELECT
@@ -991,7 +1099,12 @@ ALTER TABLE tt11
 
 SELECT pg_get_viewdef('vv6', TRUE);
 
-CREATE TABLE tt14t (f1 TEXT, f2 TEXT, f3 TEXT, f4 TEXT);
+CREATE TABLE tt14t (
+  f1 TEXT,
+  f2 TEXT,
+  f3 TEXT,
+  f4 TEXT
+);
 
 INSERT INTO tt14t VALUES ('foo', 'bar', 'baz', '42');
 
@@ -1038,9 +1151,9 @@ WHERE
 RETURNING pg_describe_object(classid, objid, objsubid)
 AS obj,
 pg_describe_object(
-refclassid,
-refobjid,
-refobjsubid
+  refclassid,
+  refobjid,
+  refobjsubid
 )
 AS ref,
 deptype;
@@ -1077,9 +1190,9 @@ WHERE
 RETURNING pg_describe_object(classid, objid, objsubid)
 AS obj,
 pg_describe_object(
-refclassid,
-refobjid,
-refobjsubid
+  refclassid,
+  refobjid,
+  refobjsubid
 )
 AS ref,
 deptype;
@@ -1113,7 +1226,7 @@ SELECT * FROM tt14v;
 
 SELECT * FROM tt14v;
 
-CREATE TYPE nestedcomposite AS ( x int8_tbl );
+CREATE TYPE nestedcomposite AS (x int8_tbl);
 
 CREATE VIEW tt15v
 AS SELECT
@@ -1154,7 +1267,11 @@ SELECT pg_get_viewdef('tt17v', TRUE);
 
 SELECT * FROM int8_tbl AS i WHERE i.* IN (VALUES (CAST(i.* AS int8_tbl)));
 
-CREATE TABLE tt15v_log (o tt15v, n tt15v, incr BOOLEAN);
+CREATE TABLE tt15v_log (
+  o tt15v,
+  n tt15v,
+  incr BOOLEAN
+);
 
 CREATE RULE updlog
 AS ON UPDATE TO tt15v
@@ -1213,17 +1330,17 @@ SELECT pg_get_viewdef('tt20v', TRUE);
 CREATE VIEW tt201v
 AS SELECT
   timezone(
-  'UTC',
-  CAST('2022-12-01' AS DATE) +
-  CAST('1 day' AS INTERVAL)
+    'UTC',
+    CAST('2022-12-01' AS DATE) +
+    CAST('1 day' AS INTERVAL)
   )
   AS atz,
   EXTRACT('day' FROM NOW()) AS extr,
   overlaps(
-  NOW(),
-  CAST('1 day' AS INTERVAL),
-  CURRENT_TIMESTAMP(2),
-  CAST('1 day' AS INTERVAL)
+    NOW(),
+    CAST('1 day' AS INTERVAL),
+    CURRENT_TIMESTAMP(2),
+    CAST('1 day' AS INTERVAL)
   )
   AS o,
   is_normalized('foo') AS isn,
@@ -1240,18 +1357,18 @@ AS SELECT
   ltrim(' foo ', ' ') AS lt,
   rtrim(' foo ') AS rt,
   btrim(
-  CAST('\000Tom\000' AS BYTEA),
-  CAST('\000' AS BYTEA)
+    CAST('\000Tom\000' AS BYTEA),
+    CAST('\000' AS BYTEA)
   )
   AS btb,
   ltrim(
-  CAST('\000Tom\000' AS BYTEA),
-  CAST('\000' AS BYTEA)
+    CAST('\000Tom\000' AS BYTEA),
+    CAST('\000' AS BYTEA)
   )
   AS ltb,
   rtrim(
-  CAST('\000Tom\000' AS BYTEA),
-  CAST('\000' AS BYTEA)
+    CAST('\000Tom\000' AS BYTEA),
+    CAST('\000' AS BYTEA)
   )
   AS rtb,
   CURRENT_DATE AS cd,
@@ -1300,8 +1417,10 @@ AS SELECT * FROM tt5 NATURAL LEFT JOIN tt6;
 SELECT pg_get_viewdef('tt22v', TRUE);
 
 CREATE VIEW tt23v
-(col_a,
-col_b)
+(
+  col_a,
+  col_b
+)
 AS SELECT
   q1 AS other_name1,
   q2 AS other_name2

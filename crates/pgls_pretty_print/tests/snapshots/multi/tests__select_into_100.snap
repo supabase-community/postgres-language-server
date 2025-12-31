@@ -17,9 +17,7 @@ CREATE USER regress_selinto_user;
 
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_selinto_user
-REVOKE INSERT
-ON TABLES 
-FROM regress_selinto_user;
+REVOKE INSERT ON TABLES FROM regress_selinto_user;
 
 GRANT ALL ON SCHEMA selinto_schema TO PUBLIC;
 
@@ -49,7 +47,7 @@ RESET session_authorization;
 
 ALTER DEFAULT PRIVILEGES
 FOR ROLE regress_selinto_user
-GRANT INSERT ON TABLES  TO regress_selinto_user;
+GRANT INSERT ON TABLES TO regress_selinto_user;
 
 SET SESSION AUTHORIZATION regress_selinto_user;
 
@@ -61,7 +59,10 @@ DROP SCHEMA selinto_schema CASCADE;
 
 DROP ROLE regress_selinto_user;
 
-CREATE TABLE ctas_base (i INT, j INT);
+CREATE TABLE ctas_base (
+  i INT,
+  j INT
+);
 
 INSERT INTO ctas_base VALUES (1, 2);
 
