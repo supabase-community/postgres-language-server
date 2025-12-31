@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterEnumStmt;
 
 use super::node_list::emit_dot_separated_list;
@@ -18,7 +18,7 @@ pub(super) fn emit_alter_enum_stmt(e: &mut EventEmitter, n: &AlterEnumStmt) {
         emit_dot_separated_list(e, &n.type_name);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
 
     // Check if this is ADD VALUE or RENAME VALUE
     if !n.old_val.is_empty() {
@@ -54,7 +54,7 @@ pub(super) fn emit_alter_enum_stmt(e: &mut EventEmitter, n: &AlterEnumStmt) {
 
         // Optional BEFORE/AFTER clause
         if !n.new_val_neighbor.is_empty() {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             if n.new_val_is_after {
                 emit_keyword(e, "AFTER");
             } else {

@@ -24,7 +24,7 @@ pub(super) fn emit_common_table_expr(e: &mut EventEmitter, n: &CommonTableExpr) 
         e.token(TokenKind::R_PAREN);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::AS_KW);
     e.space();
 

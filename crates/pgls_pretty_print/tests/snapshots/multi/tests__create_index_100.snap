@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_index_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_index.sql
 snapshot_kind: text
 ---
 CREATE INDEX "onek_unique1"
@@ -225,7 +225,8 @@ SELECT
 FROM
   point_tbl
 WHERE
-  f1 <@ CAST('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
+  f1 <@
+  CAST('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
   AS polygon);
 
 SELECT COUNT(*) FROM point_tbl WHERE f1 <@ CAST('<(50,50),50>' AS circle);
@@ -309,7 +310,8 @@ SELECT
 FROM
   point_tbl
 WHERE
-  f1 <@ CAST('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
+  f1 <@
+  CAST('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
   AS polygon);
 
 SELECT
@@ -317,7 +319,8 @@ SELECT
 FROM
   point_tbl
 WHERE
-  f1 <@ CAST('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
+  f1 <@
+  CAST('(0,0),(0,100),(100,100),(50,50),(100,0),(0,0)'
   AS polygon);
 
 SELECT COUNT(*) FROM point_tbl WHERE f1 <@ CAST('<(50,50),50>' AS circle);
@@ -499,7 +502,8 @@ SELECT
 FROM
   array_index_op_test
 WHERE
-  t <@ '{AAAAAAAA72908,AAAAAAAAAAAAAAAAAAA17075,AA88409,AAAAAAAAAAAAAAAAAA36842,AAAAAAA48038,AAAAAAAAAAAAAA10611}'
+  t <@
+  '{AAAAAAAA72908,AAAAAAAAAAAAAAAAAAA17075,AA88409,AAAAAAAAAAAAAAAAAA36842,AAAAAAA48038,AAAAAAAAAAAAAA10611}'
 ORDER BY seqno;
 
 SELECT * FROM array_index_op_test WHERE t = '{AAAAAAAAAA646,A87088}' ORDER BY seqno;
@@ -1004,7 +1008,8 @@ ALTER TABLE cwi_test
 
 DROP TABLE "cwi_test";
 
-CREATE TABLE cwi_test (a INT)
+CREATE TABLE cwi_test
+(a INT)
 PARTITION BY HASH(a);
 
 CREATE UNIQUE INDEX
@@ -1063,7 +1068,8 @@ DROP TABLE "syscol_table";
 
 CREATE TABLE onek_with_null AS SELECT unique1, unique2 FROM onek;
 
-INSERT INTO onek_with_null (unique1, unique2)
+INSERT INTO onek_with_null
+(unique1, unique2)
 VALUES
   (NULL, -1),
   (NULL, 2147483647),
@@ -1480,7 +1486,8 @@ SELECT
   COUNT(*)
 FROM
   tenk1
-  INNER JOIN tenk2
+  INNER JOIN
+    tenk2
   ON tenk1.hundred = 42 AND
     (tenk2.thousand = 42 OR
     tenk2.thousand = 41 OR
@@ -1491,7 +1498,8 @@ SELECT
   COUNT(*)
 FROM
   tenk1
-  LEFT OUTER JOIN tenk2
+  LEFT OUTER JOIN
+    tenk2
   ON tenk1.hundred = 42 AND
     (tenk2.thousand = 42 OR
     tenk2.thousand = 41 OR
@@ -1799,12 +1807,15 @@ FROM
   pg_depend
 WHERE
   classid = CAST('pg_class' AS REGCLASS) AND
-  objid IN (CAST('concur_reindex_tab' AS REGCLASS),
-  CAST('concur_reindex_ind1' AS REGCLASS),
-  CAST('concur_reindex_ind2' AS REGCLASS),
-  CAST('concur_reindex_ind3' AS REGCLASS),
-  CAST('concur_reindex_ind4' AS REGCLASS),
-  CAST('concur_reindex_matview' AS REGCLASS))
+  objid
+  IN (
+    CAST('concur_reindex_tab' AS REGCLASS),
+    CAST('concur_reindex_ind1' AS REGCLASS),
+    CAST('concur_reindex_ind2' AS REGCLASS),
+    CAST('concur_reindex_ind3' AS REGCLASS),
+    CAST('concur_reindex_ind4' AS REGCLASS),
+    CAST('concur_reindex_matview' AS REGCLASS)
+  )
 ORDER BY 1,
   2;
 
@@ -1828,12 +1839,15 @@ FROM
   pg_depend
 WHERE
   classid = CAST('pg_class' AS REGCLASS) AND
-  objid IN (CAST('concur_reindex_tab' AS REGCLASS),
-  CAST('concur_reindex_ind1' AS REGCLASS),
-  CAST('concur_reindex_ind2' AS REGCLASS),
-  CAST('concur_reindex_ind3' AS REGCLASS),
-  CAST('concur_reindex_ind4' AS REGCLASS),
-  CAST('concur_reindex_matview' AS REGCLASS))
+  objid
+  IN (
+    CAST('concur_reindex_tab' AS REGCLASS),
+    CAST('concur_reindex_ind1' AS REGCLASS),
+    CAST('concur_reindex_ind2' AS REGCLASS),
+    CAST('concur_reindex_ind3' AS REGCLASS),
+    CAST('concur_reindex_ind4' AS REGCLASS),
+    CAST('concur_reindex_matview' AS REGCLASS)
+  )
 ORDER BY 1,
   2;
 
@@ -1940,7 +1954,8 @@ REINDEX (CONCURRENTLY) TABLE concur_appclass_tab;
 
 DROP TABLE "concur_appclass_tab";
 
-CREATE TABLE concur_reindex_part (c1 INT, c2 INT)
+CREATE TABLE concur_reindex_part
+(c1 INT, c2 INT)
 PARTITION BY RANGE(c1);
 
 CREATE TABLE concur_reindex_part_0
@@ -2040,14 +2055,17 @@ FROM
   pg_depend
 WHERE
   classid = CAST('pg_class' AS REGCLASS) AND
-  objid IN (CAST('concur_reindex_part' AS REGCLASS),
-  CAST('concur_reindex_part_0' AS REGCLASS),
-  CAST('concur_reindex_part_0_1' AS REGCLASS),
-  CAST('concur_reindex_part_0_2' AS REGCLASS),
-  CAST('concur_reindex_part_index' AS REGCLASS),
-  CAST('concur_reindex_part_index_0' AS REGCLASS),
-  CAST('concur_reindex_part_index_0_1' AS REGCLASS),
-  CAST('concur_reindex_part_index_0_2' AS REGCLASS))
+  objid
+  IN (
+    CAST('concur_reindex_part' AS REGCLASS),
+    CAST('concur_reindex_part_0' AS REGCLASS),
+    CAST('concur_reindex_part_0_1' AS REGCLASS),
+    CAST('concur_reindex_part_0_2' AS REGCLASS),
+    CAST('concur_reindex_part_index' AS REGCLASS),
+    CAST('concur_reindex_part_index_0' AS REGCLASS),
+    CAST('concur_reindex_part_index_0_1' AS REGCLASS),
+    CAST('concur_reindex_part_index_0_2' AS REGCLASS)
+  )
 ORDER BY 1,
   2;
 
@@ -2082,14 +2100,17 @@ FROM
   pg_depend
 WHERE
   classid = CAST('pg_class' AS REGCLASS) AND
-  objid IN (CAST('concur_reindex_part' AS REGCLASS),
-  CAST('concur_reindex_part_0' AS REGCLASS),
-  CAST('concur_reindex_part_0_1' AS REGCLASS),
-  CAST('concur_reindex_part_0_2' AS REGCLASS),
-  CAST('concur_reindex_part_index' AS REGCLASS),
-  CAST('concur_reindex_part_index_0' AS REGCLASS),
-  CAST('concur_reindex_part_index_0_1' AS REGCLASS),
-  CAST('concur_reindex_part_index_0_2' AS REGCLASS))
+  objid
+  IN (
+    CAST('concur_reindex_part' AS REGCLASS),
+    CAST('concur_reindex_part_0' AS REGCLASS),
+    CAST('concur_reindex_part_0_1' AS REGCLASS),
+    CAST('concur_reindex_part_0_2' AS REGCLASS),
+    CAST('concur_reindex_part_index' AS REGCLASS),
+    CAST('concur_reindex_part_index_0' AS REGCLASS),
+    CAST('concur_reindex_part_index_0_1' AS REGCLASS),
+    CAST('concur_reindex_part_index_0_2' AS REGCLASS)
+  )
 ORDER BY 1,
   2;
 
@@ -2261,7 +2282,8 @@ DROP TABLE "concur_reindex_tab4";
 
 CREATE TABLE concur_exprs_tab (c1 INT, c2 BOOLEAN);
 
-INSERT INTO concur_exprs_tab (c1, c2)
+INSERT INTO concur_exprs_tab
+(c1, c2)
 VALUES
   (1369652450, FALSE),
   (414515746, TRUE),
@@ -2304,9 +2326,12 @@ SELECT
 FROM
   pg_statistic
 WHERE
-  starelid IN (CAST('concur_exprs_index_expr' AS REGCLASS),
-  CAST('concur_exprs_index_pred' AS REGCLASS),
-  CAST('concur_exprs_index_pred_2' AS REGCLASS))
+  starelid
+  IN (
+    CAST('concur_exprs_index_expr' AS REGCLASS),
+    CAST('concur_exprs_index_pred' AS REGCLASS),
+    CAST('concur_exprs_index_pred_2' AS REGCLASS)
+  )
 GROUP BY starelid
 ORDER BY CAST(CAST(starelid AS REGCLASS) AS TEXT);
 
@@ -2339,9 +2364,12 @@ SELECT
 FROM
   pg_statistic
 WHERE
-  starelid IN (CAST('concur_exprs_index_expr' AS REGCLASS),
-  CAST('concur_exprs_index_pred' AS REGCLASS),
-  CAST('concur_exprs_index_pred_2' AS REGCLASS))
+  starelid
+  IN (
+    CAST('concur_exprs_index_expr' AS REGCLASS),
+    CAST('concur_exprs_index_pred' AS REGCLASS),
+    CAST('concur_exprs_index_pred_2' AS REGCLASS)
+  )
 GROUP BY starelid
 ORDER BY CAST(CAST(starelid AS REGCLASS) AS TEXT);
 
@@ -2352,9 +2380,12 @@ SELECT
 FROM
   pg_attribute
 WHERE
-  attrelid IN (CAST('concur_exprs_index_expr' AS REGCLASS),
-  CAST('concur_exprs_index_pred' AS REGCLASS),
-  CAST('concur_exprs_index_pred_2' AS REGCLASS))
+  attrelid
+  IN (
+    CAST('concur_exprs_index_expr' AS REGCLASS),
+    CAST('concur_exprs_index_pred' AS REGCLASS),
+    CAST('concur_exprs_index_pred_2' AS REGCLASS)
+  )
 ORDER BY CAST(CAST(attrelid AS REGCLASS) AS TEXT),
   attnum;
 
@@ -2426,7 +2457,10 @@ AS
   FROM
     pg_class
   WHERE
-    relname IN ('concur_temp_ind_1', 'concur_temp_ind_2');
+    relname
+    IN (
+      'concur_temp_ind_1', 'concur_temp_ind_2'
+    );
 
 SELECT CAST(pg_my_temp_schema() AS regnamespace) AS temp_schema_name;
 
@@ -2434,12 +2468,14 @@ SELECT
   b.relname,
   b.relkind,
   CASE
-  WHEN a.relfilenode = b.relfilenode THEN 'relfilenode is unchanged'
+  WHEN a.relfilenode = b.relfilenode
+  THEN 'relfilenode is unchanged'
   ELSE 'relfilenode has changed'
   END
 FROM
   reindex_temp_before AS b
-  INNER JOIN pg_class AS a
+  INNER JOIN
+    pg_class AS a
   ON b.oid = a.oid
 ORDER BY 1;
 
@@ -2571,7 +2607,8 @@ SELECT
 FROM
   pg_class
 WHERE
-  oid IN (SELECT
+  oid IN
+  (SELECT
     reltoastrelid
   FROM
     reindex_before
@@ -2588,12 +2625,14 @@ SELECT
 FROM
   pg_class
 WHERE
-  oid IN (SELECT
+  oid IN
+  (SELECT
     indexrelid
   FROM
     pg_index
   WHERE
-    indrelid IN (SELECT
+    indrelid IN
+    (SELECT
       reltoastrelid
     FROM
       reindex_before
@@ -2624,12 +2663,14 @@ SELECT
   b.relname,
   b.relkind,
   CASE
-  WHEN a.relfilenode = b.relfilenode THEN 'relfilenode is unchanged'
+  WHEN a.relfilenode = b.relfilenode
+  THEN 'relfilenode is unchanged'
   ELSE 'relfilenode has changed'
   END
 FROM
   reindex_before AS b
-  INNER JOIN pg_class AS a
+  INNER JOIN
+    pg_class AS a
   ON b.oid = a.oid
 ORDER BY 1;
 

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/alter_table_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/alter_table.sql
 snapshot_kind: text
 ---
 SET client_min_messages = warning;
@@ -88,7 +88,8 @@ ALTER TABLE attmp
 ALTER TABLE attmp
   ADD COLUMN z SMALLINT[];
 
-INSERT INTO attmp (
+INSERT INTO attmp
+(
   a,
   b,
   c,
@@ -209,7 +210,8 @@ ALTER TABLE attmp
 ALTER TABLE attmp
   ADD COLUMN z SMALLINT[];
 
-INSERT INTO attmp (
+INSERT INTO attmp
+(
   a,
   b,
   c,
@@ -308,7 +310,8 @@ DROP TABLE "attmp_new";
 
 DROP TABLE "attmp_new2";
 
-CREATE TABLE part_attmp (a INT PRIMARY KEY)
+CREATE TABLE part_attmp
+(a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE TABLE part_attmp1 PARTITION OF part_attmp FOR VALUES FROM (0) TO (100);
@@ -386,7 +389,8 @@ USING btree
   a
 );
 
-CREATE TABLE alter_idx_rename_test_parted (a INT)
+CREATE TABLE alter_idx_rename_test_parted
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE INDEX "alter_idx_rename_test_parted_idx"
@@ -455,7 +459,8 @@ COMMIT;
 
 DROP TABLE "alter_idx_rename_test_2";
 
-CREATE VIEW attmp_view (unique1)
+CREATE VIEW attmp_view
+(unique1)
 AS SELECT unique1 FROM tenk1;
 
 ALTER TABLE attmp_view RENAME TO attmp_view_new;
@@ -512,7 +517,8 @@ ALTER TABLE onek
 
 CREATE TABLE constraint_rename_test (a INT CONSTRAINT "con1" CHECK (a > 0), b INT, c INT);
 
-CREATE TABLE constraint_rename_test2 (a INT CONSTRAINT "con1" CHECK (a > 0), d INT)
+CREATE TABLE constraint_rename_test2
+(a INT CONSTRAINT "con1" CHECK (a > 0), d INT)
 INHERITS (constraint_rename_test);
 
 ALTER TABLE constraint_rename_test2 RENAME CONSTRAINT con1 TO con1foo;
@@ -654,10 +660,12 @@ ALTER TABLE attmp3
 
 SELECT * FROM attmp3;
 
-CREATE TABLE attmp6 ()
+CREATE TABLE attmp6
+()
 INHERITS (attmp3);
 
-CREATE TABLE attmp7 ()
+CREATE TABLE attmp7
+()
 INHERITS (attmp3);
 
 INSERT INTO attmp6
@@ -696,7 +704,8 @@ ALTER TABLE attmp3
 
 CREATE TABLE parent_noinh_convalid (a INT);
 
-CREATE TABLE child_noinh_convalid ()
+CREATE TABLE child_noinh_convalid
+()
 INHERITS (parent_noinh_convalid);
 
 INSERT INTO parent_noinh_convalid VALUES (1);
@@ -748,23 +757,28 @@ SET constraint_exclusion = partition;
 
 CREATE TABLE nv_parent (d DATE, CHECK (FALSE) NO INHERIT NOT VALID);
 
-CREATE TABLE nv_child_2010 ()
+CREATE TABLE nv_child_2010
+()
 INHERITS (nv_parent);
 
-CREATE TABLE nv_child_2011 ()
+CREATE TABLE nv_child_2011
+()
 INHERITS (nv_parent);
 
 ALTER TABLE nv_child_2010
-  ADD CHECK (d BETWEEN CAST('2010-01-01' AS DATE) AND CAST('2010-12-31' AS DATE)) NOT VALID;
+  ADD CHECK (d
+  BETWEEN CAST('2010-01-01' AS DATE)
+  AND CAST('2010-12-31' AS DATE)) NOT VALID;
 
 ALTER TABLE nv_child_2011
-  ADD CHECK (d BETWEEN CAST('2011-01-01' AS DATE) AND CAST('2011-12-31' AS DATE)) NOT VALID;
+  ADD CHECK (d
+  BETWEEN CAST('2011-01-01' AS DATE)
+  AND CAST('2011-12-31' AS DATE)) NOT VALID;
 
 SELECT * FROM nv_parent WHERE d BETWEEN '2011-08-01' AND '2011-08-31';
 
-CREATE TABLE nv_child_2009 (
-  CHECK (d BETWEEN CAST('2009-01-01' AS DATE) AND CAST('2009-12-31' AS DATE))
-)
+CREATE TABLE nv_child_2009
+(CHECK (d BETWEEN CAST('2009-01-01' AS DATE) AND CAST('2009-12-31' AS DATE)))
 INHERITS (nv_parent);
 
 SELECT * FROM nv_parent WHERE d BETWEEN CAST('2011-08-01' AS DATE) AND CAST('2011-08-31' AS DATE);
@@ -777,7 +791,9 @@ ALTER TABLE nv_child_2011
 SELECT * FROM nv_parent WHERE d BETWEEN CAST('2009-08-01' AS DATE) AND CAST('2009-08-31' AS DATE);
 
 ALTER TABLE nv_parent
-  ADD CHECK (d BETWEEN CAST('2001-01-01' AS DATE) AND CAST('2099-12-31' AS DATE)) NOT VALID;
+  ADD CHECK (d
+  BETWEEN CAST('2001-01-01' AS DATE)
+  AND CAST('2099-12-31' AS DATE)) NOT VALID;
 
 CREATE TEMPORARY TABLE pktable (ptest1 INT PRIMARY KEY);
 
@@ -936,7 +952,8 @@ SELECT
   tginitdeferred
 FROM
   pg_trigger
-  INNER JOIN pg_constraint AS con
+  INNER JOIN
+    pg_constraint AS con
   ON con.oid = tgconstraint
 WHERE
   tgrelid = CAST('pktable' AS REGCLASS)
@@ -952,7 +969,8 @@ SELECT
   tginitdeferred
 FROM
   pg_trigger
-  INNER JOIN pg_constraint AS con
+  INNER JOIN
+    pg_constraint AS con
   ON con.oid = tgconstraint
 WHERE
   tgrelid = CAST('fktable' AS REGCLASS)
@@ -1013,7 +1031,8 @@ CREATE TABLE atacc1 (test INT);
 
 CREATE TABLE atacc2 (test2 INT);
 
-CREATE TABLE atacc3 (test3 INT)
+CREATE TABLE atacc3
+(test3 INT)
 INHERITS (atacc1,
 atacc2);
 
@@ -1038,7 +1057,8 @@ CREATE TABLE atacc1 (test INT);
 
 CREATE TABLE atacc2 (test2 INT);
 
-CREATE TABLE atacc3 (test3 INT)
+CREATE TABLE atacc3
+(test3 INT)
 INHERITS (atacc1,
 atacc2);
 
@@ -1100,7 +1120,8 @@ DROP TABLE "atacc1";
 
 CREATE TABLE atacc1 (test INT);
 
-CREATE TABLE atacc2 (test2 INT)
+CREATE TABLE atacc2
+(test2 INT)
 INHERITS (atacc1);
 
 ALTER TABLE atacc1
@@ -1456,7 +1477,8 @@ ALTER TABLE atacc1
 
 DROP TABLE "atacc1";
 
-CREATE TABLE atnnparted (id INT, col1 INT)
+CREATE TABLE atnnparted
+(id INT, col1 INT)
 PARTITION BY LIST(id);
 
 CREATE TABLE atnnpart1 (col1 INT, id INT);
@@ -1477,7 +1499,8 @@ ROLLBACK;
 
 CREATE TABLE parent (a INT);
 
-CREATE TABLE child (b VARCHAR(255))
+CREATE TABLE child
+(b VARCHAR(255))
 INHERITS (parent);
 
 ALTER TABLE parent

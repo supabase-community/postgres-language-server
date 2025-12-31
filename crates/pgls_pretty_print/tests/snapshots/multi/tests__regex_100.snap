@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/regex_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/regex.sql
 snapshot_kind: text
 ---
 SET standard_conforming_strings = 'on';

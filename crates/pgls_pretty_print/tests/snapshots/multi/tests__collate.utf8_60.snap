@@ -1,0 +1,222 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.utf8.sql
+snapshot_kind: text
+---
+SELECT getdatabaseencoding() <> 'UTF8' AS skip_test;
+
+SET client_encoding TO utf8;
+
+CREATE COLLATION regress_builtin_c
+(
+  provider = builtin,
+  locale = 'C'
+);
+
+SELECT lower('Á' COLLATE "regress_builtin_c") = 'Á';
+
+SELECT upper('á' COLLATE "regress_builtin_c") = 'á';
+
+SELECT 'Áá' !~ '[[:alpha:]]' COLLATE "regress_builtin_c";
+
+DROP COLLATION "regress_builtin_c";
+
+CREATE COLLATION regress_pg_c_utf8
+(
+  provider = builtin,
+  locale = 'C_UTF8'
+);
+
+CREATE COLLATION regress_pg_c_utf8
+(
+  provider = builtin,
+  locale = 'C.UTF8'
+);
+
+DROP COLLATION "regress_pg_c_utf8";
+
+CREATE COLLATION regress_pg_c_utf8
+(
+  provider = builtin,
+  locale = 'C.UTF-8'
+);
+
+CREATE TABLE test_pg_c_utf8 (t TEXT COLLATE "pg_c_utf8");
+
+INSERT INTO test_pg_c_utf8
+VALUES
+  ('abc DEF 123abc'),
+  (
+    'Ã¡bc sÃs Ãss DÃF'
+  ),
+  (
+    'ÇxxÇ ÇxxÇ ÇxxÇ'
+  ),
+  ('ÎÎ» 1a １a'),
+  ('ÈºÈºÈº'),
+  ('â±¥â±¥â±¥'),
+  ('â±¥Èº');
+
+SELECT
+  t,
+  lower(t),
+  initcap(t),
+  upper(t),
+  length(convert_to(t, 'UTF8'))
+  AS t_bytes,
+  length(
+  convert_to(lower(t), 'UTF8')
+  )
+  AS lower_t_bytes,
+  length(
+  convert_to(initcap(t), 'UTF8')
+  )
+  AS initcap_t_bytes,
+  length(
+  convert_to(upper(t), 'UTF8')
+  )
+  AS upper_t_bytes
+FROM
+  test_pg_c_utf8;
+
+DROP TABLE "test_pg_c_utf8";
+
+SELECT lower('ÎÎ£' COLLATE "pg_c_utf8");
+
+SELECT lower('ÎÍºÎ£Íº' COLLATE "pg_c_utf8");
+
+SELECT lower('ÎÎÎ£Î' COLLATE "pg_c_utf8");
+
+SELECT 'xyz' ~ '[[:alnum:]]' COLLATE "pg_c_utf8";
+
+SELECT 'xyz' !~ '[[:upper:]]' COLLATE "pg_c_utf8";
+
+SELECT '@' !~ '[[:alnum:]]' COLLATE "pg_c_utf8";
+
+SELECT '=' ~ '[[:punct:]]' COLLATE "pg_c_utf8";
+
+SELECT 'a8a' ~ '[[:digit:]]' COLLATE "pg_c_utf8";
+
+SELECT 'àµ§' !~ '\d' COLLATE "pg_c_utf8";
+
+SELECT 'xYz' ~* 'XyZ' COLLATE "pg_c_utf8";
+
+SELECT 'xAb' ~* '[W-Y]' COLLATE "pg_c_utf8";
+
+SELECT 'xAb' !~* '[c-d]' COLLATE "pg_c_utf8";
+
+SELECT 'Î' ~* '[Î³-Î»]' COLLATE "pg_c_utf8";
+
+SELECT 'Î´' ~* '[Î-Î]' COLLATE "pg_c_utf8";
+
+SELECT
+  casefold(
+  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_c_utf8"
+  );
+
+CREATE COLLATION regress_pg_unicode_fast
+(
+  provider = builtin,
+  locale = 'unicode'
+);
+
+CREATE COLLATION regress_pg_unicode_fast
+(
+  provider = builtin,
+  locale = 'PG_UNICODE_FAST'
+);
+
+CREATE TABLE test_pg_unicode_fast
+(
+  t TEXT
+  COLLATE "pg_unicode_fast"
+);
+
+INSERT INTO test_pg_unicode_fast
+VALUES
+  ('abc DEF 123abc'),
+  (
+    'Ã¡bc sÃs Ãss DÃF'
+  ),
+  (
+    'ÇxxÇ ÇxxÇ ÇxxÇ'
+  ),
+  ('ÎÎ» 1a １a'),
+  ('ÈºÈºÈº'),
+  ('â±¥â±¥â±¥'),
+  ('â±¥Èº');
+
+SELECT
+  t,
+  lower(t),
+  initcap(t),
+  upper(t),
+  length(convert_to(t, 'UTF8'))
+  AS t_bytes,
+  length(
+  convert_to(lower(t), 'UTF8')
+  )
+  AS lower_t_bytes,
+  length(
+  convert_to(initcap(t), 'UTF8')
+  )
+  AS initcap_t_bytes,
+  length(
+  convert_to(upper(t), 'UTF8')
+  )
+  AS upper_t_bytes
+FROM
+  test_pg_unicode_fast;
+
+DROP TABLE "test_pg_unicode_fast";
+
+SELECT lower('ÎÎ£' COLLATE "pg_unicode_fast");
+
+SELECT lower('ÎÎ£0' COLLATE "pg_unicode_fast");
+
+SELECT lower('ÎÍÎ£Í' COLLATE "pg_unicode_fast");
+
+SELECT lower('ÎÍÎ£Í' COLLATE "pg_unicode_fast");
+
+SELECT lower('Î£' COLLATE "pg_unicode_fast");
+
+SELECT lower('0Î£' COLLATE "pg_unicode_fast");
+
+SELECT lower('ÎÎ£Î' COLLATE "pg_unicode_fast");
+
+SELECT
+  lower(
+  'ÎÍÎ£ÍÎ' COLLATE "pg_unicode_fast"
+  );
+
+SELECT
+  lower(
+  'ÎÍÎ£ÍÎ' COLLATE "pg_unicode_fast"
+  );
+
+SELECT 'xyz' ~ '[[:alnum:]]' COLLATE "pg_unicode_fast";
+
+SELECT 'xyz' !~ '[[:upper:]]' COLLATE "pg_unicode_fast";
+
+SELECT '@' !~ '[[:alnum:]]' COLLATE "pg_unicode_fast";
+
+SELECT '=' !~ '[[:punct:]]' COLLATE "pg_unicode_fast";
+
+SELECT 'a8a' ~ '[[:digit:]]' COLLATE "pg_unicode_fast";
+
+SELECT 'àµ§' ~ '\d' COLLATE "pg_unicode_fast";
+
+SELECT 'xYz' ~* 'XyZ' COLLATE "pg_unicode_fast";
+
+SELECT 'xAb' ~* '[W-Y]' COLLATE "pg_unicode_fast";
+
+SELECT 'xAb' !~* '[c-d]' COLLATE "pg_unicode_fast";
+
+SELECT 'Î' ~* '[Î³-Î»]' COLLATE "pg_unicode_fast";
+
+SELECT 'Î´' ~* '[Î-Î]' COLLATE "pg_unicode_fast";
+
+SELECT
+  casefold(
+  'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_unicode_fast"
+  );

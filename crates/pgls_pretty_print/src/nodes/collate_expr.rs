@@ -2,7 +2,7 @@ use pgls_query::protobuf::CollateExpr;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_collate_expr(e: &mut EventEmitter, n: &CollateExpr) {
@@ -10,7 +10,7 @@ pub(super) fn emit_collate_expr(e: &mut EventEmitter, n: &CollateExpr) {
 
     if let Some(ref arg) = n.arg {
         super::emit_node(arg, e);
-        e.space();
+        e.line(LineType::SoftOrSpace);
     }
 
     e.token(TokenKind::COLLATE_KW);

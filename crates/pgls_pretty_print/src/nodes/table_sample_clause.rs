@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 use pgls_query::protobuf::TableSampleClause;
@@ -24,7 +24,7 @@ pub(super) fn emit_table_sample_clause(e: &mut EventEmitter, clause: &TableSampl
     }
 
     if let Some(repeatable) = clause.repeatable.as_ref() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("REPEATABLE".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);

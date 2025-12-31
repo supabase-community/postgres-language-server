@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/with_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/with.sql
 snapshot_kind: text
 ---
 WITH q1 (x, y) AS (SELECT 1, 2) SELECT * FROM q1, q1 AS q2;
@@ -8,14 +8,19 @@ WITH q1 (x, y) AS (SELECT 1, 2) SELECT * FROM q1, q1 AS q2;
 SELECT
   COUNT(*)
 FROM
-  (WITH q1 (x) AS (
+  (WITH
+  q1 (x)
+  AS (
     SELECT random() FROM generate_series(1, 5)
   )
   SELECT * FROM q1
   UNION
-  SELECT * FROM q1) AS ss;
+  SELECT * FROM q1)
+  AS ss;
 
-WITH RECURSIVE t (n) AS (
+WITH RECURSIVE
+t (n)
+AS (
   VALUES (1)
   UNION ALL
   SELECT n + 1 FROM t WHERE n < 100
@@ -25,7 +30,9 @@ SELECT
 FROM
   t;
 
-WITH RECURSIVE t (n) AS (
+WITH RECURSIVE
+t (n)
+AS (
   SELECT (VALUES (1))
   UNION ALL
   SELECT n + 1 FROM t WHERE n < 5
@@ -35,7 +42,9 @@ SELECT
 FROM
   t;
 
-WITH RECURSIVE t (n) AS (
+WITH RECURSIVE
+t (n)
+AS (
   VALUES (CAST('01' AS BIT VARYING))
   UNION
   SELECT
@@ -50,8 +59,11 @@ SELECT
 FROM
   t;
 
-CREATE VIEW nums (n)
-AS WITH RECURSIVE nums (n) AS (
+CREATE VIEW nums
+(n)
+AS WITH RECURSIVE
+nums (n)
+AS (
   VALUES (1)
   UNION ALL
   SELECT n + 1 FROM nums WHERE n < 5
@@ -63,8 +75,11 @@ FROM
 
 SELECT * FROM nums;
 
-CREATE OR REPLACE VIEW nums (n)
-AS WITH RECURSIVE nums (n) AS (
+CREATE OR REPLACE VIEW nums
+(n)
+AS WITH RECURSIVE
+nums (n)
+AS (
   VALUES (1)
   UNION ALL
   SELECT n + 1 FROM nums WHERE n < 6
@@ -84,7 +99,9 @@ WITH RECURSIVE t (n) AS (SELECT 1 UNION SELECT n + 1 FROM t) SELECT * FROM t LIM
 
 WITH q AS (SELECT 'foo' AS x) SELECT x, pg_typeof(x) FROM q;
 
-WITH RECURSIVE t (n) AS (
+WITH RECURSIVE
+t (n)
+AS (
   SELECT 'foo'
   UNION ALL
   SELECT n || ' bar' FROM t WHERE length(n) < 20
@@ -95,7 +112,9 @@ SELECT
 FROM
   t;
 
-WITH RECURSIVE t (n) AS (
+WITH RECURSIVE
+t (n)
+AS (
   SELECT '7'
   UNION ALL
   SELECT n + 1 FROM t WHERE n < 10
@@ -106,13 +125,27 @@ SELECT
 FROM
   t;
 
-WITH RECURSIVE w1 (c1) AS (
-  WITH w2 (c2) AS (
-    WITH w3 (c3) AS (
-      WITH w4 (c4) AS (
-        WITH w5 (c5) AS (
-          WITH RECURSIVE w6 (c6) AS (
-            WITH w6 (c6) AS (
+WITH RECURSIVE
+w1 (c1)
+AS (
+  WITH
+  w2 (c2)
+  AS (
+    WITH
+    w3 (c3)
+    AS (
+      WITH
+      w4 (c4)
+      AS (
+        WITH
+        w5 (c5)
+        AS (
+          WITH RECURSIVE
+          w6 (c6)
+          AS (
+            WITH
+            w6 (c6)
+            AS (
               WITH w8 (c8) AS (SELECT 1) SELECT * FROM w8
             )
             SELECT
@@ -150,22 +183,34 @@ SELECT
 FROM
   w1;
 
-WITH RECURSIVE outermost (x) AS (
+WITH RECURSIVE
+outermost (x)
+AS (
   SELECT 1
   UNION
-  (WITH innermost1 AS (
+  (WITH
+  innermost1
+  AS (
     SELECT 2
     UNION
-    (WITH innermost2 AS (
+    (WITH
+    innermost2
+    AS (
       SELECT 3
       UNION
-      (WITH innermost3 AS (
+      (WITH
+      innermost3
+      AS (
         SELECT 4
         UNION
-        (WITH innermost4 AS (
+        (WITH
+        innermost4
+        AS (
           SELECT 5
           UNION
-          (WITH innermost5 AS (
+          (WITH
+          innermost5
+          AS (
             SELECT 6
             UNION
             (WITH innermost6 AS (SELECT 7)
@@ -204,7 +249,8 @@ FROM
   outermost
 ORDER BY 1;
 
-CREATE TEMPORARY TABLE department (
+CREATE TEMPORARY TABLE department
+(
   id INT PRIMARY KEY,
   parent_department INT REFERENCES department,
   name TEXT
@@ -226,7 +272,9 @@ INSERT INTO department VALUES (6, 4, 'F');
 
 INSERT INTO department VALUES (7, 5, 'G');
 
-WITH RECURSIVE subdepartment AS (
+WITH RECURSIVE
+subdepartment
+AS (
   SELECT
     name AS root_name,
     *
@@ -250,10 +298,12 @@ FROM
   subdepartment
 ORDER BY name;
 
-WITH RECURSIVE subdepartment (level,
+WITH RECURSIVE
+subdepartment (level,
 id,
 parent_department,
-name) AS (
+name)
+AS (
   SELECT 1, * FROM department WHERE name = 'A'
   UNION ALL
   SELECT
@@ -271,10 +321,12 @@ FROM
   subdepartment
 ORDER BY name;
 
-WITH RECURSIVE subdepartment (level,
+WITH RECURSIVE
+subdepartment (level,
 id,
 parent_department,
-name) AS (
+name)
+AS (
   SELECT 1, * FROM department WHERE name = 'A'
   UNION ALL
   SELECT
@@ -294,7 +346,9 @@ WHERE
   level >= 2
 ORDER BY name;
 
-WITH RECURSIVE subdepartment AS (
+WITH RECURSIVE
+subdepartment
+AS (
   SELECT * FROM department WHERE name = 'A'
 )
 SELECT
@@ -303,7 +357,9 @@ FROM
   subdepartment
 ORDER BY name;
 
-WITH RECURSIVE subdepartment AS (
+WITH RECURSIVE
+subdepartment
+AS (
   SELECT
     id,
     parent_department,
@@ -319,7 +375,8 @@ WITH RECURSIVE subdepartment AS (
     d.name
   FROM
     department AS d
-    INNER JOIN subdepartment AS sd
+    INNER JOIN
+      subdepartment AS sd
     ON d.parent_department = sd.id
 )
 SELECT
@@ -331,7 +388,9 @@ ORDER BY name;
 SELECT
   COUNT(*)
 FROM
-  (WITH RECURSIVE t (n) AS (
+  (WITH RECURSIVE
+  t (n)
+  AS (
     SELECT 1
     UNION ALL
     SELECT n + 1 FROM t WHERE n < 500
@@ -339,13 +398,16 @@ FROM
   SELECT
     *
   FROM
-    t) AS t
+    t)
+  AS t
 WHERE
   n <
   (SELECT
     COUNT(*)
   FROM
-    (WITH RECURSIVE t (n) AS (
+    (WITH RECURSIVE
+    t (n)
+    AS (
       SELECT 1
       UNION ALL
       SELECT n + 1 FROM t WHERE n < 100
@@ -355,12 +417,15 @@ WHERE
     FROM
       t
     WHERE
-      n < 50000) AS t
+      n < 50000)
+    AS t
   WHERE
     n < 100);
 
-WITH q1 (x,
-y) AS (
+WITH
+q1 (x,
+y)
+AS (
   SELECT
     hundred,
     SUM(ten)
@@ -385,7 +450,9 @@ SELECT pg_get_viewdef(CAST('vsubdepartment' AS REGCLASS), TRUE);
 
 SELECT SUM(n) FROM t;
 
-WITH RECURSIVE q AS (
+WITH RECURSIVE
+q
+AS (
   SELECT * FROM department
   UNION ALL
   (WITH x AS (SELECT * FROM q) SELECT * FROM x)
@@ -396,10 +463,14 @@ FROM
   q
 LIMIT 24;
 
-WITH RECURSIVE q AS (
+WITH RECURSIVE
+q
+AS (
   SELECT * FROM department
   UNION ALL
-  (WITH RECURSIVE x AS (
+  (WITH RECURSIVE
+  x
+  AS (
     SELECT * FROM department
     UNION ALL
     (SELECT * FROM q UNION ALL SELECT * FROM x)
@@ -438,8 +509,10 @@ VALUES
   (15, 11),
   (16, 11);
 
-WITH RECURSIVE t (id,
-path) AS (
+WITH RECURSIVE
+t (id,
+path)
+AS (
   VALUES (1, CAST(ARRAY[] AS INT[]))
   UNION ALL
   SELECT
@@ -453,15 +526,18 @@ SELECT
   t2.*
 FROM
   t AS t1
-  INNER JOIN t AS t2
+  INNER JOIN
+    t AS t2
   ON t1.path[1] = t2.path[1] AND
     array_upper(t1.path, 1) = 1 AND
     array_upper(t2.path, 1) > 1
 ORDER BY t1.id,
   t2.id;
 
-WITH RECURSIVE t (id,
-path) AS (
+WITH RECURSIVE
+t (id,
+path)
+AS (
   VALUES (1, CAST(ARRAY[] AS INT[]))
   UNION ALL
   SELECT
@@ -475,15 +551,18 @@ SELECT
   COUNT(t2.*)
 FROM
   t AS t1
-  INNER JOIN t AS t2
+  INNER JOIN
+    t AS t2
   ON t1.path[1] = t2.path[1] AND
     array_upper(t1.path, 1) = 1 AND
     array_upper(t2.path, 1) > 1
 GROUP BY t1.id
 ORDER BY t1.id;
 
-WITH RECURSIVE t (id,
-path) AS (
+WITH RECURSIVE
+t (id,
+path)
+AS (
   VALUES (1, CAST(ARRAY[] AS INT[]))
   UNION ALL
   SELECT

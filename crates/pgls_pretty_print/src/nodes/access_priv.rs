@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AccessPriv;
 
 use super::node_list::emit_comma_separated_list;
@@ -18,7 +18,7 @@ pub(super) fn emit_access_priv(e: &mut EventEmitter, n: &AccessPriv) {
 
     // Optional column list for column-level privileges
     if !n.cols.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.cols, super::emit_node);
         e.token(TokenKind::R_PAREN);

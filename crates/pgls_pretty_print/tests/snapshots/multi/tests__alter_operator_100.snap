@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/alter_operator_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/alter_operator.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION alter_op_test_fn(BOOLEAN, BOOLEAN)
@@ -211,7 +211,8 @@ SELECT
   com.oprcode AS commutator_func
 FROM
   pg_operator AS op
-  INNER JOIN pg_operator AS com
+  INNER JOIN
+    pg_operator AS com
   ON op.oid = com.oprcom AND op.oprcom = com.oid
 WHERE
   op.oprname = '===' AND
@@ -228,7 +229,8 @@ SELECT
   neg.oprcode AS negator_func
 FROM
   pg_operator AS op
-  INNER JOIN pg_operator AS neg
+  INNER JOIN
+    pg_operator AS neg
   ON op.oid = neg.oprnegate AND op.oprnegate = neg.oid
 WHERE
   op.oprname = '===' AND

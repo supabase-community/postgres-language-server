@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/truncate_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/truncate.sql
 snapshot_kind: text
 ---
 CREATE TABLE truncate_a (col1 INT PRIMARY KEY);
@@ -120,17 +120,20 @@ INSERT INTO trunc_f VALUES (1);
 
 INSERT INTO trunc_f VALUES (2);
 
-CREATE TABLE trunc_fa (col2a TEXT)
+CREATE TABLE trunc_fa
+(col2a TEXT)
 INHERITS (trunc_f);
 
 INSERT INTO trunc_fa VALUES (3, 'three');
 
-CREATE TABLE trunc_fb (col2b INT)
+CREATE TABLE trunc_fb
+(col2b INT)
 INHERITS (trunc_f);
 
 INSERT INTO trunc_fb VALUES (4, 444);
 
-CREATE TABLE trunc_faa (col3 TEXT)
+CREATE TABLE trunc_faa
+(col3 TEXT)
 INHERITS (trunc_fa);
 
 INSERT INTO trunc_faa VALUES (5, 'five', 'FIVE');
@@ -195,7 +198,8 @@ DROP TABLE "trunc_f" CASCADE;
 
 CREATE TABLE trunc_trigger_test (f1 INT, f2 TEXT, f3 TEXT);
 
-CREATE TABLE trunc_trigger_log (
+CREATE TABLE trunc_trigger_log
+(
   tgop TEXT,
   tglevel TEXT,
   tgwhen TEXT,
@@ -223,7 +227,8 @@ VALUES
   (2, 'baz', 'quux');
 
 CREATE TRIGGER t
-BEFORE TRUNCATE ON trunc_trigger_test
+BEFORE TRUNCATE
+ON trunc_trigger_test
 FOR EACH STATEMENT
 EXECUTE FUNCTION trunctrigger("before trigger truncate");
 
@@ -247,7 +252,8 @@ VALUES
   (2, 'baz', 'quux');
 
 CREATE TRIGGER tt
-AFTER TRUNCATE ON trunc_trigger_test
+AFTER TRUNCATE
+ON trunc_trigger_test
 FOR EACH STATEMENT
 EXECUTE FUNCTION trunctrigger("after trigger truncate");
 
@@ -339,7 +345,8 @@ DROP TABLE "truncate_a";
 
 SELECT nextval('truncate_a_id1');
 
-CREATE TABLE truncparted (a INT, b CHAR(1))
+CREATE TABLE truncparted
+(a INT, b CHAR(1))
 PARTITION BY LIST(a);
 
 TRUNCATE ONLY truncparted;
@@ -378,7 +385,8 @@ AS '
 
 CREATE TABLE truncprim (a INT PRIMARY KEY);
 
-CREATE TABLE truncpart (a INT REFERENCES truncprim)
+CREATE TABLE truncpart
+(a INT REFERENCES truncprim)
 PARTITION BY RANGE(a);
 
 CREATE TABLE truncpart_1 PARTITION OF truncpart FOR VALUES FROM (0) TO (100);
@@ -416,7 +424,8 @@ DROP TABLE "truncprim", "truncpart";
 
 DROP FUNCTION tp_ins_data(), tp_chk_data();
 
-CREATE TABLE trunc_a (a INT PRIMARY KEY)
+CREATE TABLE trunc_a
+(a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE TABLE trunc_a1 PARTITION OF trunc_a FOR VALUES FROM (0) TO (10);
@@ -455,7 +464,8 @@ SELECT a FROM ref_b;
 
 DROP TABLE "ref_b";
 
-CREATE TABLE ref_c (c INT PRIMARY KEY, a INT REFERENCES trunc_a (a) ON DELETE CASCADE)
+CREATE TABLE ref_c
+(c INT PRIMARY KEY, a INT REFERENCES trunc_a (a) ON DELETE CASCADE)
 PARTITION BY RANGE(c);
 
 CREATE TABLE ref_c1 PARTITION OF ref_c FOR VALUES FROM (100) TO (200);

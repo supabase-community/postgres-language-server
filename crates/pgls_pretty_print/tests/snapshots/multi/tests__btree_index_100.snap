@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/btree_index_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/btree_index.sql
 snapshot_kind: text
 ---
 CREATE TABLE bt_i4_heap (seqno INT, random INT);
@@ -384,7 +384,8 @@ USING btree
 )
 WITH (deduplicate_items = off);
 
-DO $$
+DO
+$$
 BEGIN
     FOR r IN 1..1350 LOOP
         DELETE FROM dedup_unique_test_table;
@@ -490,7 +491,8 @@ ALTER INDEX btree_tall_idx2
 
 DROP INDEX "btree_tall_idx2";
 
-CREATE TABLE btree_part (id INT)
+CREATE TABLE btree_part
+(id INT)
 PARTITION BY RANGE(id);
 
 CREATE INDEX "btree_part_idx"

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/xml_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/xml.sql
 snapshot_kind: text
 ---
 CREATE TABLE xmltest (id INT, data XML);
@@ -388,7 +388,8 @@ SELECT xpath('/nosuchtag', '<root/>');
 
 SELECT xpath('root', '<root/>');
 
-DO $$
+DO
+$$
 DECLARE
   xml_declaration text := '<?xml version="1.0" encoding="ISO-8859-1"?>';
   degree_symbol text;
@@ -702,7 +703,8 @@ FROM
 
 SELECT * FROM XMLTABLE( '.' PASSING '<foo/>' COLUMNS a TEXT PATH 'foo/namespace::node()');
 
-PREPARE pp AS SELECT
+PREPARE pp
+AS SELECT
   xmltable.*
 FROM
   (SELECT data FROM xmldata) AS x,
@@ -886,7 +888,8 @@ FROM
     PASSING data
     COLUMNS
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT) AS f
+      "REGION_ID" INT)
+  AS f
 WHERE
   "COUNTRY_NAME" = 'Japan';
 
@@ -899,7 +902,8 @@ FROM
     PASSING data
     COLUMNS
       "COUNTRY_NAME" TEXT,
-      "REGION_ID" INT) AS f
+      "REGION_ID" INT)
+  AS f
 WHERE
   "COUNTRY_NAME" = 'Japan';
 
@@ -1012,7 +1016,9 @@ FROM
       unit TEXT PATH 'SIZE/@unit',
       premier_name TEXT PATH 'PREMIER_NAME' DEFAULT 'not specified');
 
-WITH x AS (
+WITH
+x
+AS (
   SELECT
     proname,
     proowner,
@@ -1020,7 +1026,8 @@ WITH x AS (
     pronargs,
     array_to_string(proargnames, ',') AS proargnames,
     CASE
-    WHEN proargtypes <> '' THEN array_to_string(CAST(proargtypes AS OID[]), ',')
+    WHEN proargtypes <> ''
+    THEN array_to_string(CAST(proargtypes AS OID[]), ',')
     END
     AS proargtypes
   FROM
@@ -1028,7 +1035,8 @@ WITH x AS (
   WHERE
     proname = 'f_leak'
 ),
-y AS (
+y
+AS (
   SELECT
     XMLELEMENT(NAME proc, XMLFOREST(proname,
     proowner,
@@ -1040,7 +1048,8 @@ y AS (
   FROM
     x
 ),
-z AS (
+z
+AS (
   SELECT
     xmltable.*
   FROM
@@ -1060,7 +1069,9 @@ SELECT * FROM z
 EXCEPT
 SELECT * FROM x;
 
-WITH x AS (
+WITH
+x
+AS (
   SELECT
     proname,
     proowner,
@@ -1068,13 +1079,15 @@ WITH x AS (
     pronargs,
     array_to_string(proargnames, ',') AS proargnames,
     CASE
-    WHEN proargtypes <> '' THEN array_to_string(CAST(proargtypes AS OID[]), ',')
+    WHEN proargtypes <> ''
+    THEN array_to_string(CAST(proargtypes AS OID[]), ',')
     END
     AS proargtypes
   FROM
     pg_proc
 ),
-y AS (
+y
+AS (
   SELECT
     XMLELEMENT(NAME data, xmlagg(
     XMLELEMENT(NAME proc, XMLFOREST(proname,
@@ -1088,7 +1101,8 @@ y AS (
   FROM
     x
 ),
-z AS (
+z
+AS (
   SELECT
     xmltable.*
   FROM

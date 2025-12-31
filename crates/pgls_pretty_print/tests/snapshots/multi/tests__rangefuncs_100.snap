@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/rangefuncs_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/rangefuncs.sql
 snapshot_kind: text
 ---
 CREATE TABLE rngfunc2 (rngfuncid INT, f2 INT);
@@ -37,7 +37,8 @@ AS SELECT
   *
 FROM
   (VALUES (1)) AS v (n)
-  INNER JOIN rngfunct(1) WITH ORDINALITY AS z (a, b, ord)
+  INNER JOIN
+    rngfunct(1) WITH ORDINALITY AS z (a, b, ord)
   ON n = ord;
 
 SELECT * FROM vw_ord;
@@ -53,8 +54,11 @@ AS SELECT
   *
 FROM
   (VALUES (1)) AS v (n)
-  INNER JOIN ROWS FROM (rngfunct(1),
-  rngfunct(2)) WITH ORDINALITY AS z (a, b, c, d, ord)
+  INNER JOIN
+    ROWS FROM (rngfunct(1),
+    rngfunct(2))
+    WITH ORDINALITY
+    AS z (a, b, c, d, ord)
   ON n = ord;
 
 SELECT * FROM vw_ord;
@@ -72,7 +76,9 @@ FROM
   ARRAY[10, 20],
   ARRAY['foo', 'bar'],
   ARRAY[1.0]
-  ) WITH ORDINALITY AS z (a, b, c, ord);
+  )
+  WITH ORDINALITY
+  AS z (a, b, c, ord);
 
 SELECT
   *
@@ -81,13 +87,17 @@ FROM
   ARRAY[10, 20],
   ARRAY['foo', 'bar'],
   ARRAY[1.0]
-  )) WITH ORDINALITY AS z (a, b, c, ord);
+  ))
+  WITH ORDINALITY
+  AS z (a, b, c, ord);
 
 SELECT
   *
 FROM
   ROWS FROM (unnest(ARRAY[10, 20], ARRAY['foo', 'bar']),
-  generate_series(101, 102)) WITH ORDINALITY AS z (a, b, c, ord);
+  generate_series(101, 102))
+  WITH ORDINALITY
+  AS z (a, b, c, ord);
 
 CREATE TEMPORARY VIEW vw_ord
 AS SELECT
@@ -97,7 +107,8 @@ FROM
   ARRAY[10, 20],
   ARRAY['foo', 'bar'],
   ARRAY[1.0]
-  ) AS z (a, b, c);
+  )
+  AS z (a, b, c);
 
 SELECT * FROM vw_ord;
 
@@ -113,7 +124,8 @@ FROM
   ARRAY[10, 20],
   ARRAY['foo', 'bar'],
   ARRAY[1.0]
-  )) AS z (a, b, c);
+  ))
+  AS z (a, b, c);
 
 SELECT * FROM vw_ord;
 
@@ -126,7 +138,8 @@ AS SELECT
   *
 FROM
   ROWS FROM (unnest(ARRAY[10, 20], ARRAY['foo', 'bar']),
-  generate_series(1, 2)) AS z (a, b, c);
+  generate_series(1, 2))
+  AS z (a, b, c);
 
 SELECT * FROM vw_ord;
 
@@ -136,11 +149,15 @@ DROP VIEW "vw_ord";
 
 BEGIN;
 
-DECLARE "rf_cur" SCROLL CURSOR FOR SELECT
+DECLARE "rf_cur" SCROLL
+CURSOR
+FOR SELECT
   *
 FROM
   ROWS FROM (generate_series(1, 5),
-  generate_series(1, 2)) WITH ORDINALITY AS g (i, j, o);;
+  generate_series(1, 2))
+  WITH ORDINALITY
+  AS g (i, j, o);;
 
 FETCH FORWARD ALL FROM rf_cur;
 
@@ -176,7 +193,9 @@ SELECT
   *
 FROM
   rngfunc2,
-  rngfunct(rngfunc2.rngfuncid) WITH ORDINALITY AS z (rngfuncid, f2, ord)
+  rngfunct(rngfunc2.rngfuncid)
+  WITH ORDINALITY
+  AS z (rngfuncid, f2, ord)
 WHERE
   rngfunc2.f2 = z.f2;
 
@@ -185,7 +204,8 @@ SELECT
 FROM
   rngfunc2
 WHERE
-  f2 IN (SELECT
+  f2 IN
+  (SELECT
     f2
   FROM
     rngfunct(rngfunc2.rngfuncid) AS z
@@ -199,7 +219,8 @@ SELECT
 FROM
   rngfunc2
 WHERE
-  f2 IN (SELECT
+  f2 IN
+  (SELECT
     f2
   FROM
     rngfunct(1) AS z
@@ -213,7 +234,8 @@ SELECT
 FROM
   rngfunc2
 WHERE
-  f2 IN (SELECT
+  f2 IN
+  (SELECT
     f2
   FROM
     rngfunct(rngfunc2.rngfuncid) AS z
@@ -224,7 +246,8 @@ ORDER BY 1,
 
 SELECT rngfunct.rngfuncid, rngfunct.f2 FROM rngfunct(CAST(sin(pi() / 2) AS INT)) ORDER BY 1, 2;
 
-CREATE TABLE rngfunc (
+CREATE TABLE rngfunc
+(
   rngfuncid INT,
   rngfuncsubid INT,
   rngfuncname TEXT,
@@ -377,15 +400,19 @@ SELECT * FROM getrngfunc6(1) AS t1 (rngfuncid INT, rngfuncsubid INT, rngfuncname
 SELECT
   *
 FROM
-  ROWS FROM (getrngfunc6(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT)) WITH ORDINALITY;
+  ROWS FROM (getrngfunc6(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT))
+  WITH ORDINALITY;
 
 CREATE VIEW vw_getrngfunc
 AS SELECT
   *
 FROM
-  getrngfunc6(1) AS (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT);
+  getrngfunc6(1) AS
+  (
+    rngfuncid INT,
+    rngfuncsubid INT,
+    rngfuncname TEXT
+  );
 
 SELECT * FROM vw_getrngfunc;
 
@@ -395,7 +422,8 @@ CREATE VIEW vw_getrngfunc
 AS SELECT
   *
 FROM
-  ROWS FROM (getrngfunc6(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT)) WITH ORDINALITY;
+  ROWS FROM (getrngfunc6(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT))
+  WITH ORDINALITY;
 
 SELECT * FROM vw_getrngfunc;
 
@@ -411,15 +439,19 @@ SELECT * FROM getrngfunc7(1) AS t1 (rngfuncid INT, rngfuncsubid INT, rngfuncname
 SELECT
   *
 FROM
-  ROWS FROM (getrngfunc7(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT)) WITH ORDINALITY;
+  ROWS FROM (getrngfunc7(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT))
+  WITH ORDINALITY;
 
 CREATE VIEW vw_getrngfunc
 AS SELECT
   *
 FROM
-  getrngfunc7(1) AS (rngfuncid INT,
-  rngfuncsubid INT,
-  rngfuncname TEXT);
+  getrngfunc7(1) AS
+  (
+    rngfuncid INT,
+    rngfuncsubid INT,
+    rngfuncname TEXT
+  );
 
 SELECT * FROM vw_getrngfunc;
 
@@ -429,7 +461,8 @@ CREATE VIEW vw_getrngfunc
 AS SELECT
   *
 FROM
-  ROWS FROM (getrngfunc7(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT)) WITH ORDINALITY;
+  ROWS FROM (getrngfunc7(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT))
+  WITH ORDINALITY;
 
 SELECT * FROM vw_getrngfunc;
 
@@ -498,7 +531,10 @@ FROM
   getrngfunc6(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT),
   getrngfunc7(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT),
   getrngfunc8(1),
-  getrngfunc9(1)) WITH ORDINALITY AS t1 (a,
+  getrngfunc9(1))
+  WITH ORDINALITY
+  AS t1
+  (a,
   b,
   c,
   d,
@@ -530,7 +566,10 @@ FROM
   getrngfunc4(1),
   getrngfunc3(1),
   getrngfunc2(1),
-  getrngfunc1(1)) WITH ORDINALITY AS t1 (a,
+  getrngfunc1(1))
+  WITH ORDINALITY
+  AS t1
+  (a,
   b,
   c,
   d,
@@ -557,7 +596,9 @@ AS SELECT
 FROM
   ROWS FROM (getrngfunc9(1),
   getrngfunc7(1) AS (rngfuncid INT, rngfuncsubid INT, rngfuncname TEXT),
-  getrngfunc1(1)) WITH ORDINALITY AS t1 (a, b, c, d, e, f, g, n);
+  getrngfunc1(1))
+  WITH ORDINALITY
+  AS t1 (a, b, c, d, e, f, g, n);
 
 SELECT * FROM vw_rngfunc;
 
@@ -613,8 +654,10 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN rngfunc_sql(11, 13)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    rngfunc_sql(11, 13)
   ON r + i < 100;
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -625,8 +668,10 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN rngfunc_sql(11, 13) WITH ORDINALITY AS f (i, s, o)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    rngfunc_sql(11, 13) WITH ORDINALITY AS f (i, s, o)
   ON r + i < 100;
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -637,8 +682,10 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN rngfunc_mat(11, 13)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    rngfunc_mat(11, 13)
   ON r + i < 100;
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -649,8 +696,10 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN rngfunc_mat(11, 13) WITH ORDINALITY AS f (i, s, o)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    rngfunc_mat(11, 13) WITH ORDINALITY AS f (i, s, o)
   ON r + i < 100;
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -661,9 +710,13 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN ROWS FROM (rngfunc_sql(11, 13),
-  rngfunc_mat(11, 13)) WITH ORDINALITY AS f (i1, s1, i2, s2, o)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    ROWS FROM (rngfunc_sql(11, 13),
+    rngfunc_mat(11, 13))
+    WITH ORDINALITY
+    AS f (i1, s1, i2, s2, o)
   ON r + i1 + i2 < 100;
 
 SELECT
@@ -672,8 +725,10 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN generate_series(11, 13) AS f (i)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    generate_series(11, 13) AS f (i)
   ON r + i < 100;
 
 SELECT
@@ -682,8 +737,12 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN generate_series(11, 13) WITH ORDINALITY AS f (i, o)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    generate_series(11, 13)
+    WITH ORDINALITY
+    AS f (i, o)
   ON r + i < 100;
 
 SELECT
@@ -692,8 +751,10 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN unnest(ARRAY[10, 20, 30]) AS f (i)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    unnest(ARRAY[10, 20, 30]) AS f (i)
   ON r + i < 100;
 
 SELECT
@@ -702,8 +763,12 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r)
-  LEFT OUTER JOIN unnest(ARRAY[10, 20, 30]) WITH ORDINALITY AS f (i, o)
+    (3))
+  AS v (r)
+  LEFT OUTER JOIN
+    unnest(ARRAY[10, 20, 30])
+    WITH ORDINALITY
+    AS f (i, o)
   ON r + i < 100;
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -714,7 +779,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   rngfunc_sql(10 + r, 13);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -725,8 +791,11 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
-  rngfunc_sql(10 + r, 13) WITH ORDINALITY AS f (i, s, o);
+    (3))
+  AS v (r),
+  rngfunc_sql(10 + r, 13)
+  WITH ORDINALITY
+  AS f (i, s, o);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
 
@@ -736,7 +805,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   rngfunc_sql(11, 10 + r);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -747,8 +817,11 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
-  rngfunc_sql(11, 10 + r) WITH ORDINALITY AS f (i, s, o);
+    (3))
+  AS v (r),
+  rngfunc_sql(11, 10 + r)
+  WITH ORDINALITY
+  AS f (i, s, o);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
 
@@ -758,7 +831,8 @@ FROM
   (VALUES
     (11, 12),
     (13, 15),
-    (16, 20)) AS v (r1, r2),
+    (16, 20))
+  AS v (r1, r2),
   rngfunc_sql(r1, r2);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -769,7 +843,8 @@ FROM
   (VALUES
     (11, 12),
     (13, 15),
-    (16, 20)) AS v (r1, r2),
+    (16, 20))
+  AS v (r1, r2),
   rngfunc_sql(r1, r2) WITH ORDINALITY AS f (i, s, o);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -780,7 +855,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   rngfunc_mat(10 + r, 13);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -791,8 +867,11 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
-  rngfunc_mat(10 + r, 13) WITH ORDINALITY AS f (i, s, o);
+    (3))
+  AS v (r),
+  rngfunc_mat(10 + r, 13)
+  WITH ORDINALITY
+  AS f (i, s, o);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
 
@@ -802,7 +881,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   rngfunc_mat(11, 10 + r);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -813,8 +893,11 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
-  rngfunc_mat(11, 10 + r) WITH ORDINALITY AS f (i, s, o);
+    (3))
+  AS v (r),
+  rngfunc_mat(11, 10 + r)
+  WITH ORDINALITY
+  AS f (i, s, o);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
 
@@ -824,7 +907,8 @@ FROM
   (VALUES
     (11, 12),
     (13, 15),
-    (16, 20)) AS v (r1, r2),
+    (16, 20))
+  AS v (r1, r2),
   rngfunc_mat(r1, r2);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -835,7 +919,8 @@ FROM
   (VALUES
     (11, 12),
     (13, 15),
-    (16, 20)) AS v (r1, r2),
+    (16, 20))
+  AS v (r1, r2),
   rngfunc_mat(r1, r2) WITH ORDINALITY AS f (i, s, o);
 
 SELECT setval('rngfunc_rescan_seq1', 1, FALSE), setval('rngfunc_rescan_seq2', 1, FALSE);
@@ -846,7 +931,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   ROWS FROM (rngfunc_sql(11, 11),
   rngfunc_mat(10 + r, 13));
 
@@ -858,7 +944,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   ROWS FROM (rngfunc_sql(10 + r, 13),
   rngfunc_mat(11, 11));
 
@@ -870,7 +957,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   ROWS FROM (rngfunc_sql(10 + r, 13),
   rngfunc_mat(10 + r, 13));
 
@@ -890,7 +978,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   generate_series(10 + r, 20 - r) AS f (i);
 
 SELECT
@@ -899,8 +988,11 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
-  generate_series(10 + r, 20 - r) WITH ORDINALITY AS f (i, o);
+    (3))
+  AS v (r),
+  generate_series(10 + r, 20 - r)
+  WITH ORDINALITY
+  AS f (i, o);
 
 SELECT
   *
@@ -908,7 +1000,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
+    (3))
+  AS v (r),
   unnest(ARRAY[r * 10, r * 20, r * 30]) AS f (i);
 
 SELECT
@@ -917,8 +1010,11 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (r),
-  unnest(ARRAY[r * 10, r * 20, r * 30]) WITH ORDINALITY AS f (i, o);
+    (3))
+  AS v (r),
+  unnest(ARRAY[r * 10, r * 20, r * 30])
+  WITH ORDINALITY
+  AS f (i, o);
 
 SELECT
   *
@@ -926,7 +1022,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v1 (r1),
+    (3))
+  AS v1 (r1),
   LATERAL (SELECT
     r1,
     *
@@ -934,10 +1031,13 @@ FROM
     (VALUES
       (10),
       (20),
-      (30)) AS v2 (r2)
-    LEFT OUTER JOIN generate_series(21, 23) AS f (i)
+      (30))
+    AS v2 (r2)
+    LEFT OUTER JOIN
+      generate_series(21, 23) AS f (i)
     ON r2 + i < 100
-  OFFSET 0) AS s1;
+  OFFSET 0)
+  AS s1;
 
 SELECT
   *
@@ -945,7 +1045,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v1 (r1),
+    (3))
+  AS v1 (r1),
   LATERAL (SELECT
     r1,
     *
@@ -953,10 +1054,13 @@ FROM
     (VALUES
       (10),
       (20),
-      (30)) AS v2 (r2)
-    LEFT OUTER JOIN generate_series(20 + r1, 23) AS f (i)
+      (30))
+    AS v2 (r2)
+    LEFT OUTER JOIN
+      generate_series(20 + r1, 23) AS f (i)
     ON r2 + i < 100
-  OFFSET 0) AS s1;
+  OFFSET 0)
+  AS s1;
 
 SELECT
   *
@@ -964,7 +1068,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v1 (r1),
+    (3))
+  AS v1 (r1),
   LATERAL (SELECT
     r1,
     *
@@ -972,10 +1077,13 @@ FROM
     (VALUES
       (10),
       (20),
-      (30)) AS v2 (r2)
-    LEFT OUTER JOIN generate_series(r2, r2 + 3) AS f (i)
+      (30))
+    AS v2 (r2)
+    LEFT OUTER JOIN
+      generate_series(r2, r2 + 3) AS f (i)
     ON r2 + i < 100
-  OFFSET 0) AS s1;
+  OFFSET 0)
+  AS s1;
 
 SELECT
   *
@@ -983,7 +1091,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v1 (r1),
+    (3))
+  AS v1 (r1),
   LATERAL (SELECT
     r1,
     *
@@ -991,30 +1100,40 @@ FROM
     (VALUES
       (10),
       (20),
-      (30)) AS v2 (r2)
-    LEFT OUTER JOIN generate_series(r1, 2 + r2 / 5) AS f (i)
+      (30))
+    AS v2 (r2)
+    LEFT OUTER JOIN
+      generate_series(r1, 2 + r2 / 5) AS f (i)
     ON r2 + i < 100
-  OFFSET 0) AS s1;
+  OFFSET 0)
+  AS s1;
 
 SELECT
   *
 FROM
   (VALUES
     (1),
-    (2)) AS v1 (r1)
-  LEFT OUTER JOIN LATERAL (SELECT
-    *
-  FROM
-    generate_series(1, v1.r1) AS gs1
-    LEFT OUTER JOIN LATERAL (SELECT
+    (2))
+  AS v1 (r1)
+  LEFT OUTER JOIN
+    LATERAL (SELECT
       *
     FROM
-      generate_series(1, gs1) AS gs2
-      LEFT OUTER JOIN generate_series(1, gs2) AS gs3
-      ON TRUE) AS ss1
-    ON TRUE
-    FULL OUTER JOIN generate_series(1, v1.r1) AS gs4
-    ON FALSE) AS ss0
+      generate_series(1, v1.r1) AS gs1
+      LEFT OUTER JOIN
+        LATERAL (SELECT
+          *
+        FROM
+          generate_series(1, gs1) AS gs2
+          LEFT OUTER JOIN
+            generate_series(1, gs2) AS gs3
+          ON TRUE)
+        AS ss1
+      ON TRUE
+      FULL OUTER JOIN
+        generate_series(1, v1.r1) AS gs4
+      ON FALSE)
+    AS ss0
   ON TRUE;
 
 DROP FUNCTION rngfunc_sql(INT, INT);
@@ -1237,7 +1356,8 @@ end '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER tnoticetrigger
-AFTER INSERT ON tt
+AFTER INSERT
+ON tt
 FOR EACH ROW
 EXECUTE FUNCTION noticetrigger();
 
@@ -1436,7 +1556,8 @@ SELECT * FROM sin(3) AS t (f1 BIGINT, f2 BIGINT);
 
 DROP TYPE rngfunc_type CASCADE;
 
-CREATE TEMPORARY TABLE users (
+CREATE TEMPORARY TABLE users
+(
   userid TEXT,
   seq INT,
   email TEXT,
@@ -1483,7 +1604,8 @@ AS SELECT
   *
 FROM
   ROWS FROM (get_users(),
-  generate_series(10, 11)) WITH ORDINALITY;
+  generate_series(10, 11))
+  WITH ORDINALITY;
 
 SELECT * FROM usersview;
 
@@ -1649,7 +1771,8 @@ FROM
   unnest(
   ARRAY[CAST((1, 'foo') AS rngfunc2),
   CAST(NULL AS rngfunc2)]
-  ) AS u;
+  )
+  AS u;
 
 SELECT *, row_to_json(u) FROM unnest(ARRAY[CAST(NULL AS rngfunc2), CAST(NULL AS rngfunc2)]) AS u;
 
@@ -1661,7 +1784,8 @@ FROM
   ARRAY[CAST(NULL AS rngfunc2),
   CAST((1, 'foo') AS rngfunc2),
   CAST(NULL AS rngfunc2)]
-  ) AS u;
+  )
+  AS u;
 
 SELECT *, row_to_json(u) FROM unnest(CAST(ARRAY[] AS rngfunc2[])) AS u;
 
@@ -1679,7 +1803,9 @@ FROM
   FROM
     unnest(
     ARRAY[CAST('{"lectures": [{"id": "1"}]}' AS JSONB)]
-    ) AS unnested_modules (module)) AS ss,
+    )
+    AS unnested_modules (module))
+  AS ss,
   jsonb_to_recordset(ss.lecture) AS j (id TEXT);
 
 SELECT
@@ -1694,7 +1820,9 @@ FROM
   FROM
     unnest(
     ARRAY[CAST('{"lectures": [{"id": "1"}]}' AS JSONB)]
-    ) AS unnested_modules (module)) AS ss,
+    )
+    AS unnested_modules (module))
+  AS ss,
   jsonb_to_recordset(ss.lecture) AS j (id TEXT);
 
 WITH a (b) AS (VALUES (ROW(1, 2, 3))) SELECT * FROM a, COALESCE(b) AS c (d INT, e INT);
@@ -1711,8 +1839,8 @@ SELECT
   *
 FROM
   a,
-  COALESCE(b) AS c (d INT,
-  e INT,
-  f DOUBLE PRECISION);
+  COALESCE(b)
+  AS c
+  (d INT, e INT, f DOUBLE PRECISION);
 
 SELECT * FROM int8_tbl, COALESCE(ROW(1)) AS (a INT, b INT);

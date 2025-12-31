@@ -2,7 +2,7 @@ use pgls_query::protobuf::{BoolTestType, BooleanTest};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_boolean_test(e: &mut EventEmitter, n: &BooleanTest) {
@@ -13,7 +13,7 @@ pub(super) fn emit_boolean_test(e: &mut EventEmitter, n: &BooleanTest) {
         super::emit_node(arg, e);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IS_KW);
     e.space();
 

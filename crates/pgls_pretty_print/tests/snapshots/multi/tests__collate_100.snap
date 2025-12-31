@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/collate_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.sql
 snapshot_kind: text
 ---
 CREATE SCHEMA "collate_tests";
@@ -183,13 +183,16 @@ SELECT x || y FROM collate_test10;
 
 SELECT x, y FROM collate_test10 ORDER BY x || y;
 
-WITH RECURSIVE foo (x) AS (
+WITH RECURSIVE
+foo (x)
+AS (
   SELECT
     x
   FROM
     (VALUES
       ('a' COLLATE "C"),
-      ('b')) AS t (x)
+      ('b'))
+    AS t (x)
   UNION ALL
   SELECT
     (x || 'c') COLLATE "POSIX"
@@ -210,7 +213,8 @@ SELECT
 FROM
   (VALUES
     ('a', 'B'),
-    ('A', 'b' COLLATE "C")) AS v (a, b);
+    ('A', 'b' COLLATE "C"))
+  AS v (a, b);
 
 SELECT * FROM collate_test10 WHERE NOT (x, y) IN (SELECT y, x FROM collate_test10);
 
@@ -219,14 +223,16 @@ SELECT
 FROM
   collate_test10
 WHERE
-  NOT (x COLLATE "POSIX", y COLLATE "C") IN (SELECT y, x FROM collate_test10);
+  NOT (x COLLATE "POSIX", y COLLATE "C") IN
+  (SELECT y, x FROM collate_test10);
 
 SELECT
   *
 FROM
   collate_test10
 WHERE
-  NOT (x, y) IN (SELECT
+  NOT (x, y) IN
+  (SELECT
     y COLLATE "C",
     x COLLATE "POSIX"
   FROM

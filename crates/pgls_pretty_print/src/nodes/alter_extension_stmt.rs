@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterExtensionStmt;
 
 use super::node_list::emit_comma_separated_list;
@@ -17,7 +17,7 @@ pub(super) fn emit_alter_extension_stmt(e: &mut EventEmitter, n: &AlterExtension
     }
 
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         // ALTER EXTENSION has special syntax for UPDATE TO version
         // Check if options contain "new_version" - if so, emit UPDATE TO syntax
         let has_update_to = n.options.iter().any(|opt| {

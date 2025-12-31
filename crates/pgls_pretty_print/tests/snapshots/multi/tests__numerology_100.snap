@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/numerology_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/numerology.sql
 snapshot_kind: text
 ---
 SELECT 37;
@@ -79,7 +79,8 @@ SELECT .000_005;
 
 SELECT 1_000.5e0_1;
 
-DO $$
+DO
+$$
 DECLARE
   i int;
 BEGIN
@@ -102,7 +103,8 @@ SELECT f1 FROM temp_float ORDER BY f1;
 
 CREATE TABLE temp_int4 (f1 INT);
 
-INSERT INTO temp_int4 (f1)
+INSERT INTO temp_int4
+(f1)
 SELECT
   int4(f1)
 FROM

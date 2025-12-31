@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_0_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_0.sql
 snapshot_kind: text
 ---
 SELECT
@@ -12,7 +12,10 @@ SELECT
   ord
 FROM
   pg_constraint
-  LEFT OUTER JOIN LATERAL unnest(conkey) WITH ORDINALITY AS _ (col, ord)
+  LEFT OUTER JOIN
+    LATERAL unnest(conkey)
+    WITH ORDINALITY
+    AS _ (col, ord)
   ON TRUE
 WHERE
   contype IN ('p', 'f')
@@ -26,7 +29,10 @@ SELECT
   ord
 FROM
   pg_constraint
-  LEFT OUTER JOIN LATERAL unnest(confkey) WITH ORDINALITY AS _ (col, ord)
+  LEFT OUTER JOIN
+    LATERAL unnest(confkey)
+    WITH ORDINALITY
+    AS _ (col, ord)
   ON TRUE
 WHERE
   contype = 'f';

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/select_views_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/select_views.sql
 snapshot_kind: text
 ---
 SELECT * FROM street;
@@ -88,7 +88,8 @@ AS SELECT
   *
 FROM
   my_credit_card_secure AS l
-  NATURAL JOIN credit_usage AS r;
+  NATURAL JOIN
+    credit_usage AS r;
 
 CREATE VIEW my_credit_card_usage_secure
   WITH (security_barrier)
@@ -96,7 +97,8 @@ AS SELECT
   *
 FROM
   my_credit_card_secure AS l
-  NATURAL JOIN credit_usage AS r;
+  NATURAL JOIN
+    credit_usage AS r;
 
 GRANT SELECT ON TABLE my_property_normal TO PUBLIC;
 

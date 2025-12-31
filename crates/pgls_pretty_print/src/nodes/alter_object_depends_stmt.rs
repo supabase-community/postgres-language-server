@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::{AlterObjectDependsStmt, ObjectType};
 
 pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObjectDependsStmt) {
@@ -23,7 +23,7 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
         super::emit_node(object, e);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
 
     if n.remove {
         e.token(TokenKind::IDENT("NO".to_string()));

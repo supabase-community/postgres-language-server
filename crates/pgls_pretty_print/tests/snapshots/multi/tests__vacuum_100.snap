@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/vacuum_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/vacuum.sql
 snapshot_kind: text
 ---
 CREATE TABLE vactst (i INT);
@@ -130,7 +130,8 @@ BEGIN;
 
 CREATE TABLE past_inh_parent ();
 
-CREATE TABLE past_inh_child ()
+CREATE TABLE past_inh_child
+()
 INHERITS (past_inh_parent);
 
 INSERT INTO past_inh_child DEFAULT VALUES;
@@ -151,7 +152,8 @@ COMMIT;
 
 BEGIN;
 
-CREATE TABLE past_parted (i INT)
+CREATE TABLE past_parted
+(i INT)
 PARTITION BY LIST(i);
 
 CREATE TABLE past_part PARTITION OF past_parted FOR VALUES IN (1);
@@ -355,7 +357,8 @@ VACUUM (INDEX_CLEANUP auto) vactst;
 
 VACUUM (INDEX_CLEANUP "false", FREEZE "true") vaccluster;
 
-CREATE TEMPORARY TABLE vac_truncate_test (i INT NOT NULL, j TEXT)
+CREATE TEMPORARY TABLE vac_truncate_test
+(i INT NOT NULL, j TEXT)
 WITH (
   vacuum_truncate = 'true',
   autovacuum_enabled = 'false'
@@ -402,7 +405,8 @@ SELECT pg_relation_size('vac_truncate_test') = 0;
 
 DROP TABLE "vac_truncate_test";
 
-CREATE TABLE vacparted (a INT, b CHAR(1))
+CREATE TABLE vacparted
+(a INT, b CHAR(1))
 PARTITION BY LIST(a);
 
 CREATE TABLE vacparted1 PARTITION OF vacparted FOR VALUES IN (1);
@@ -421,7 +425,8 @@ VACUUM (ANALYZE) vacparted (a, b, a);
 
 ANALYZE vacparted (a, b, b);
 
-CREATE TABLE vacparted_i (a INT PRIMARY KEY, b VARCHAR(100))
+CREATE TABLE vacparted_i
+(a INT PRIMARY KEY, b VARCHAR(100))
 PARTITION BY HASH(a);
 
 CREATE TABLE vacparted_i1 PARTITION OF vacparted_i FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -480,7 +485,8 @@ ANALYZE vactst, vactst;
 
 COMMIT;
 
-CREATE TABLE only_parted (a INT, b TEXT)
+CREATE TABLE only_parted
+(a INT, b TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE only_parted1 PARTITION OF only_parted FOR VALUES IN (1);
@@ -494,8 +500,11 @@ SELECT
 FROM
   pg_stat_user_tables
 WHERE
-  relid IN (CAST('only_parted' AS REGCLASS),
-  CAST('only_parted1' AS REGCLASS))
+  relid
+  IN (
+    CAST('only_parted' AS REGCLASS),
+    CAST('only_parted1' AS REGCLASS)
+  )
 ORDER BY relname;
 
 ANALYZE only_parted;
@@ -507,18 +516,23 @@ SELECT
 FROM
   pg_stat_user_tables
 WHERE
-  relid IN (CAST('only_parted' AS REGCLASS),
-  CAST('only_parted1' AS REGCLASS))
+  relid
+  IN (
+    CAST('only_parted' AS REGCLASS),
+    CAST('only_parted1' AS REGCLASS)
+  )
 ORDER BY relname;
 
 DROP TABLE "only_parted";
 
 CREATE TABLE only_inh_parent (a INT PRIMARY KEY, b TEXT);
 
-CREATE TABLE only_inh_child ()
+CREATE TABLE only_inh_child
+()
 INHERITS (only_inh_parent);
 
-INSERT INTO only_inh_child (a, b)
+INSERT INTO only_inh_child
+(a, b)
 VALUES
   (1, 'aaa'),
   (2, 'bbb'),
@@ -531,8 +545,11 @@ SELECT
 FROM
   pg_stat_user_tables
 WHERE
-  relid IN (CAST('only_inh_parent' AS REGCLASS),
-  CAST('only_inh_child' AS REGCLASS))
+  relid
+  IN (
+    CAST('only_inh_parent' AS REGCLASS),
+    CAST('only_inh_child' AS REGCLASS)
+  )
 ORDER BY relname;
 
 ANALYZE only_inh_parent;
@@ -544,8 +561,11 @@ SELECT
 FROM
   pg_stat_user_tables
 WHERE
-  relid IN (CAST('only_inh_parent' AS REGCLASS),
-  CAST('only_inh_child' AS REGCLASS))
+  relid
+  IN (
+    CAST('only_inh_parent' AS REGCLASS),
+    CAST('only_inh_child' AS REGCLASS)
+  )
 ORDER BY relname;
 
 SELECT
@@ -555,8 +575,11 @@ SELECT
 FROM
   pg_stat_user_tables
 WHERE
-  relid IN (CAST('only_inh_parent' AS REGCLASS),
-  CAST('only_inh_child' AS REGCLASS))
+  relid
+  IN (
+    CAST('only_inh_parent' AS REGCLASS),
+    CAST('only_inh_child' AS REGCLASS)
+  )
 ORDER BY relname;
 
 VACUUM only_inh_parent;
@@ -568,8 +591,11 @@ SELECT
 FROM
   pg_stat_user_tables
 WHERE
-  relid IN (CAST('only_inh_parent' AS REGCLASS),
-  CAST('only_inh_child' AS REGCLASS))
+  relid
+  IN (
+    CAST('only_inh_parent' AS REGCLASS),
+    CAST('only_inh_child' AS REGCLASS)
+  )
 ORDER BY relname;
 
 DROP TABLE "only_inh_parent" CASCADE;
@@ -623,7 +649,8 @@ AS SELECT
   s.vacuum_count
 FROM
   pg_stat_all_tables AS s
-  LEFT OUTER JOIN pg_class AS c
+  LEFT OUTER JOIN
+    pg_class AS c
   ON s.relid = c.reltoastrelid
 WHERE
   c.relname = 'vac_option_tab' OR
@@ -715,7 +742,8 @@ DROP TABLE "no_index_cleanup";
 
 CREATE TABLE vacowned (a INT);
 
-CREATE TABLE vacowned_parted (a INT)
+CREATE TABLE vacowned_parted
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE vacowned_part1 PARTITION OF vacowned_parted FOR VALUES IN (1);

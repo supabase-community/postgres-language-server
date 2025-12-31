@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/int2_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/int2.sql
 snapshot_kind: text
 ---
 INSERT INTO int2_tbl (f1) VALUES ('34.5');
@@ -110,7 +110,8 @@ FROM
     (CAST(0.0 AS DOUBLE PRECISION)),
     (CAST(0.5 AS DOUBLE PRECISION)),
     (CAST(1.5 AS DOUBLE PRECISION)),
-    (CAST(2.5 AS DOUBLE PRECISION))) AS t (x);
+    (CAST(2.5 AS DOUBLE PRECISION)))
+  AS t (x);
 
 SELECT
   x,
@@ -123,7 +124,8 @@ FROM
     (CAST(0.0 AS NUMERIC)),
     (CAST(0.5 AS NUMERIC)),
     (CAST(1.5 AS NUMERIC)),
-    (CAST(2.5 AS NUMERIC))) AS t (x);
+    (CAST(2.5 AS NUMERIC)))
+  AS t (x);
 
 SELECT CAST('0b100101' AS SMALLINT);
 

@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::{AlterExtensionContentsStmt, ObjectType};
 
 pub(super) fn emit_alter_extension_contents_stmt(
@@ -17,7 +17,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
         e.token(TokenKind::IDENT(n.extname.clone()));
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
 
     // action: 1=ADD, -1=DROP
     if n.action == 1 {

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tid_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tid.sql
 snapshot_kind: text
 ---
 SELECT
@@ -65,7 +65,8 @@ SELECT currtid2(CAST('tid_ind' AS TEXT), CAST('(0,1)' AS TID));
 
 DROP INDEX "tid_ind";
 
-CREATE TABLE tid_part (a INT)
+CREATE TABLE tid_part
+(a INT)
 PARTITION BY RANGE(a);
 
 SELECT currtid2(CAST('tid_part' AS TEXT), CAST('(0,1)' AS TID));

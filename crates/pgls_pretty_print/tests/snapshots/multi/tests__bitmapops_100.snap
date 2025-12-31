@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/bitmapops_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/bitmapops.sql
 snapshot_kind: text
 ---
 CREATE TABLE bmscantest (a INT, b INT, t TEXT) WITH (autovacuum_enabled = 'false');

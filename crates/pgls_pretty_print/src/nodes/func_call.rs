@@ -353,14 +353,14 @@ fn emit_substring_function(e: &mut EventEmitter, n: &FuncCall) {
     // First arg: string
     super::emit_node(&n.args[0], e);
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::FROM_KW);
     e.space();
     // Second arg: start position
     super::emit_node(&n.args[1], e);
 
     if n.args.len() == 3 {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
         e.space();
         // Third arg: length

@@ -35,7 +35,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
 
     // Emit column list if present
     if !n.cols.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         // Wrap column list in a group so it can try to fit on one line
         e.group_start(GroupKind::InsertStmt);
         e.token(TokenKind::L_PAREN);
@@ -56,7 +56,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
 
     match n.r#override() {
         OverridingKind::OverridingUserValue => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::OVERRIDING_KW);
             e.space();
             e.token(TokenKind::USER_KW);
@@ -64,7 +64,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
             e.token(TokenKind::VALUE_KW);
         }
         OverridingKind::OverridingSystemValue => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::OVERRIDING_KW);
             e.space();
             e.token(TokenKind::SYSTEM_KW);
@@ -85,7 +85,7 @@ fn emit_insert_stmt_impl(e: &mut EventEmitter, n: &InsertStmt, with_semicolon: b
         }
     } else {
         // No select_stmt means DEFAULT VALUES
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::DEFAULT_KW);
         e.space();
         e.token(TokenKind::VALUES_KW);

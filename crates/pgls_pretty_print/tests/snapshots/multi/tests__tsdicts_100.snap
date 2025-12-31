@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tsdicts_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tsdicts.sql
 snapshot_kind: text
 ---
 CREATE TEXT SEARCH DICTIONARY ispell

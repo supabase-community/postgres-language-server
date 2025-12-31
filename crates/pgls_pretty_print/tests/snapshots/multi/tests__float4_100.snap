@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/float4_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/float4.sql
 snapshot_kind: text
 ---
 CREATE TABLE float4_tbl (f1 REAL);
@@ -207,7 +207,9 @@ CREATE CAST (xfloat4 AS INT) WITHOUT FUNCTION;
 
 CREATE CAST (INT AS xfloat4) WITHOUT FUNCTION;
 
-WITH testdata (bits) AS (
+WITH
+testdata (bits)
+AS (
   VALUES
     (X'00000001'),
     (X'00000002'),
@@ -240,9 +242,12 @@ FROM
     AS flt
   FROM
     testdata
-  OFFSET 0) AS s;
+  OFFSET 0)
+  AS s;
 
-WITH testdata (bits) AS (
+WITH
+testdata (bits)
+AS (
   VALUES
     (X'00000000'),
     (X'00800000'),
@@ -521,6 +526,7 @@ FROM
     AS flt
   FROM
     testdata
-  OFFSET 0) AS s;
+  OFFSET 0)
+  AS s;
 
 DROP TYPE xfloat4 CASCADE;

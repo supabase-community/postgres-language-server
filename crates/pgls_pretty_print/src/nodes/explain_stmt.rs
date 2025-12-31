@@ -3,7 +3,7 @@ use pgls_query::protobuf::ExplainStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
@@ -28,7 +28,7 @@ pub(super) fn emit_explain_stmt(e: &mut EventEmitter, n: &ExplainStmt) {
 
     // The query to explain
     if let Some(ref query) = n.query {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_node(query, e);
     }
 

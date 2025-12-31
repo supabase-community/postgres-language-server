@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/matview_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/matview.sql
 snapshot_kind: text
 ---
 CREATE TABLE mvtest_t (id INT NOT NULL PRIMARY KEY, type TEXT NOT NULL, amt NUMERIC NOT NULL);

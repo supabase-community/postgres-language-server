@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/expressions_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/expressions.sql
 snapshot_kind: text
 ---
 SELECT CAST(date(NOW()) AS TEXT) = CAST(CURRENT_DATE AS TEXT);
@@ -126,17 +126,20 @@ SELECT return_int_input(1) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 2, NULL);
 SELECT return_int_input(1) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1, NULL);
 
 SELECT
-  return_int_input(1) NOT IN (NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL);
+  return_int_input(1)
+  NOT IN (
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  );
 
 SELECT return_int_input(CAST(NULL AS INT)) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
 
@@ -237,83 +240,101 @@ SELECT
 FROM
   inttest
 WHERE
-  a IN (CAST(1 AS myint),
-  CAST(2 AS myint),
-  CAST(3 AS myint),
-  CAST(4 AS myint),
-  CAST(5 AS myint),
-  CAST(6 AS myint),
-  CAST(7 AS myint),
-  CAST(8 AS myint),
-  CAST(9 AS myint),
-  NULL);
+  a
+  IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    CAST(6 AS myint),
+    CAST(7 AS myint),
+    CAST(8 AS myint),
+    CAST(9 AS myint),
+    NULL
+  );
 
 SELECT
   *
 FROM
   inttest
 WHERE
-  a NOT IN (CAST(1 AS myint),
-  CAST(2 AS myint),
-  CAST(3 AS myint),
-  CAST(4 AS myint),
-  CAST(5 AS myint),
-  CAST(6 AS myint),
-  CAST(7 AS myint),
-  CAST(8 AS myint),
-  CAST(9 AS myint),
-  NULL);
+  a
+  NOT IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    CAST(6 AS myint),
+    CAST(7 AS myint),
+    CAST(8 AS myint),
+    CAST(9 AS myint),
+    NULL
+  );
 
 SELECT
   *
 FROM
   inttest
 WHERE
-  a NOT IN (CAST(0 AS myint),
-  CAST(2 AS myint),
-  CAST(3 AS myint),
-  CAST(4 AS myint),
-  CAST(5 AS myint),
-  CAST(6 AS myint),
-  CAST(7 AS myint),
-  CAST(8 AS myint),
-  CAST(9 AS myint),
-  NULL);
+  a
+  NOT IN (
+    CAST(0 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    CAST(6 AS myint),
+    CAST(7 AS myint),
+    CAST(8 AS myint),
+    CAST(9 AS myint),
+    NULL
+  );
 
 SELECT
   *
 FROM
   inttest
 WHERE
-  a IN (CAST(1 AS myint),
-  CAST(2 AS myint),
-  CAST(3 AS myint),
-  CAST(4 AS myint),
-  CAST(5 AS myint),
-  NULL);
+  a
+  IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    NULL
+  );
 
 SELECT
   *
 FROM
   inttest
 WHERE
-  a NOT IN (CAST(1 AS myint),
-  CAST(2 AS myint),
-  CAST(3 AS myint),
-  CAST(4 AS myint),
-  CAST(5 AS myint),
-  NULL);
+  a
+  NOT IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    NULL
+  );
 
 SELECT
   *
 FROM
   inttest
 WHERE
-  a NOT IN (CAST(0 AS myint),
-  CAST(2 AS myint),
-  CAST(3 AS myint),
-  CAST(4 AS myint),
-  CAST(5 AS myint),
-  NULL);
+  a
+  NOT IN (
+    CAST(0 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    NULL
+  );
 
 ROLLBACK;

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/conversion_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/conversion.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION test_enc_setup()
@@ -102,7 +102,9 @@ VALUES
 
 SELECT description, (test_conv(inbytes, 'utf8', 'utf8')).* FROM utf8_verification_inputs;
 
-WITH test_bytes AS (
+WITH
+test_bytes
+AS (
   SELECT
     inbytes,
     description,
@@ -114,7 +116,8 @@ WITH test_bytes AS (
   FROM
     utf8_verification_inputs
 ),
-test_padded AS (
+test_padded
+AS (
   SELECT
     description,
     (test_conv(
@@ -131,13 +134,16 @@ SELECT
   p.error AS error_after_padding
 FROM
   test_padded AS p
-  INNER JOIN test_bytes AS b
+  INNER JOIN
+    test_bytes AS b
   USING ("description")
 WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-WITH test_bytes AS (
+WITH
+test_bytes
+AS (
   SELECT
     inbytes,
     description,
@@ -149,7 +155,8 @@ WITH test_bytes AS (
   FROM
     utf8_verification_inputs
 ),
-test_padded AS (
+test_padded
+AS (
   SELECT
     description,
     (test_conv(
@@ -168,13 +175,16 @@ SELECT
   p.error AS error_after_padding
 FROM
   test_padded AS p
-  INNER JOIN test_bytes AS b
+  INNER JOIN
+    test_bytes AS b
   USING ("description")
 WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-WITH test_bytes AS (
+WITH
+test_bytes
+AS (
   SELECT
     inbytes,
     description,
@@ -186,7 +196,8 @@ WITH test_bytes AS (
   FROM
     utf8_verification_inputs
 ),
-test_padded AS (
+test_padded
+AS (
   SELECT
     description,
     (test_conv(
@@ -204,13 +215,16 @@ SELECT
   p.error AS error_after_padding
 FROM
   test_padded AS p
-  INNER JOIN test_bytes AS b
+  INNER JOIN
+    test_bytes AS b
   USING ("description")
 WHERE
   p.error IS DISTINCT FROM b.error
 ORDER BY description;
 
-WITH test_bytes AS (
+WITH
+test_bytes
+AS (
   SELECT
     inbytes,
     description,
@@ -222,7 +236,8 @@ WITH test_bytes AS (
   FROM
     utf8_verification_inputs
 ),
-test_padded AS (
+test_padded
+AS (
   SELECT
     description,
     (test_conv(
@@ -241,7 +256,8 @@ SELECT
   p.error AS error_after_padding
 FROM
   test_padded AS p
-  INNER JOIN test_bytes AS b
+  INNER JOIN
+    test_bytes AS b
   USING ("description")
 WHERE
   p.error IS DISTINCT FROM b.error

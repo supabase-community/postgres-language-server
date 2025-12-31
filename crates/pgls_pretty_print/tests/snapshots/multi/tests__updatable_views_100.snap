@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/updatable_views_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/updatable_views.sql
 snapshot_kind: text
 ---
 SET extra_float_digits = 0;
@@ -139,12 +139,14 @@ UPDATE ro_view12 SET a = a + 1;
 INSERT INTO ro_view13 VALUES (3, 'Row 3');
 
 MERGE INTO ro_view13 AS t
-USING (VALUES (2, 'Row 2')) AS v (a, b) ON t.a = v.a
+USING (VALUES (2, 'Row 2')) AS v (a, b)
+ON t.a = v.a
 WHEN MATCHED THEN DO NOTHING
 WHEN NOT MATCHED BY TARGET THEN DO NOTHING;
 
 MERGE INTO ro_view13 AS t
-USING (VALUES (3, 'Row 3')) AS v (a, b) ON t.a = v.a
+USING (VALUES (3, 'Row 3')) AS v (a, b)
+ON t.a = v.a
 WHEN MATCHED THEN DO NOTHING
 WHEN NOT MATCHED BY TARGET THEN DO NOTHING;
 
@@ -218,7 +220,8 @@ INSERT INTO ro_view17 VALUES (3, 'ROW 3');
 DELETE FROM ro_view18;
 
 MERGE INTO ro_view18 AS t
-USING (VALUES (1, 'Row 1')) AS v (a, b) ON t.a = v.a
+USING (VALUES (1, 'Row 1')) AS v (a, b)
+ON t.a = v.a
 WHEN MATCHED THEN DO NOTHING;
 
 UPDATE ro_view19 SET last_value = 1000;
@@ -317,7 +320,8 @@ CREATE TABLE base_tbl_hist (ts TIMESTAMP WITH TIME ZONE DEFAULT NOW(), a INT, b 
 CREATE RULE base_tbl_log
 AS ON INSERT TO rw_view1
 DO
-  INSERT INTO base_tbl_hist (a, b)
+  INSERT INTO base_tbl_hist
+  (a, b)
   VALUES (new.a, new.b);;
 
 SELECT
@@ -668,7 +672,8 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER rw_view1_ins_trig
-INSTEAD OF INSERT ON rw_view1
+INSTEAD OF INSERT
+ON rw_view1
 FOR EACH ROW
 EXECUTE FUNCTION rw_view1_trig_fn();
 
@@ -706,7 +711,8 @@ ORDER BY table_name,
   ordinal_position;
 
 CREATE TRIGGER rw_view1_upd_trig
-INSTEAD OF UPDATE ON rw_view1
+INSTEAD OF UPDATE
+ON rw_view1
 FOR EACH ROW
 EXECUTE FUNCTION rw_view1_trig_fn();
 
@@ -744,7 +750,8 @@ ORDER BY table_name,
   ordinal_position;
 
 CREATE TRIGGER rw_view1_del_trig
-INSTEAD OF DELETE ON rw_view1
+INSTEAD OF DELETE
+ON rw_view1
 FOR EACH ROW
 EXECUTE FUNCTION rw_view1_trig_fn();
 
@@ -804,7 +811,8 @@ DROP TRIGGER "rw_view1_del_trig" ON "rw_view1";
 DROP TRIGGER "rw_view1_ins_trig" ON "rw_view1";
 
 CREATE TRIGGER rw_view2_upd_trig
-INSTEAD OF UPDATE ON rw_view2
+INSTEAD OF UPDATE
+ON rw_view2
 FOR EACH ROW
 EXECUTE FUNCTION rw_view1_trig_fn();
 
@@ -1398,7 +1406,8 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER rw_view1_ins_trig
-AFTER INSERT ON base_tbl
+AFTER INSERT
+ON base_tbl
 FOR EACH ROW
 EXECUTE FUNCTION rw_view1_trig_fn();
 
@@ -1563,7 +1572,8 @@ FROM
   pg_relation_is_updatable(
   CAST('rw_view3' AS REGCLASS),
   FALSE
-  ) AS t (events);
+  )
+  AS t (events);
 
 DROP TABLE "base_tbl" CASCADE;
 
@@ -1596,7 +1606,8 @@ DROP TABLE "base_tbl" CASCADE;
 
 CREATE TABLE base_tbl_parent (a INT);
 
-CREATE TABLE base_tbl_child (CHECK (a > 0))
+CREATE TABLE base_tbl_child
+(CHECK (a > 0))
 INHERITS (base_tbl_parent);
 
 INSERT INTO base_tbl_parent SELECT * FROM generate_series(-8, -1);
@@ -1651,7 +1662,8 @@ SELECT * FROM base_tbl_child ORDER BY a;
 
 CREATE TABLE other_tbl_parent (id INT);
 
-CREATE TABLE other_tbl_child ()
+CREATE TABLE other_tbl_child
+()
 INHERITS (other_tbl_parent);
 
 INSERT INTO other_tbl_parent
@@ -1685,7 +1697,8 @@ VALUES
   (1, -1);
 
 CREATE VIEW rw_view1
-AS SELECT * FROM base_tbl WHERE a < b WITH LOCAL CHECK OPTION;
+AS SELECT * FROM base_tbl WHERE a < b
+WITH LOCAL CHECK OPTION;
 
 SELECT * FROM information_schema.views WHERE table_name = 'rw_view1';
 
@@ -1715,7 +1728,8 @@ CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl WHERE a > 0;
 
 CREATE VIEW rw_view2
-AS SELECT * FROM rw_view1 WHERE a < 10 WITH CASCADED CHECK OPTION;
+AS SELECT * FROM rw_view1 WHERE a < 10
+WITH CASCADED CHECK OPTION;
 
 SELECT * FROM information_schema.views WHERE table_name = 'rw_view2';
 
@@ -1732,7 +1746,8 @@ UPDATE rw_view2 SET a = a - 10;
 UPDATE rw_view2 SET a = a + 10;
 
 CREATE OR REPLACE VIEW rw_view2
-AS SELECT * FROM rw_view1 WHERE a < 10 WITH LOCAL CHECK OPTION;
+AS SELECT * FROM rw_view1 WHERE a < 10
+WITH LOCAL CHECK OPTION;
 
 SELECT * FROM information_schema.views WHERE table_name = 'rw_view2';
 
@@ -1766,13 +1781,15 @@ DROP TABLE "base_tbl" CASCADE;
 CREATE TABLE base_tbl (a INT);
 
 CREATE VIEW rw_view1
-AS SELECT * FROM base_tbl WITH CASCADED CHECK OPTION;
+AS SELECT * FROM base_tbl
+WITH CASCADED CHECK OPTION;
 
 CREATE VIEW rw_view2
 AS SELECT * FROM rw_view1 WHERE a > 0;
 
 CREATE VIEW rw_view3
-AS SELECT * FROM rw_view2 WITH CASCADED CHECK OPTION;
+AS SELECT * FROM rw_view2
+WITH CASCADED CHECK OPTION;
 
 SELECT * FROM information_schema.views WHERE table_name LIKE 'rw\_view_' ORDER BY table_name;
 
@@ -1793,7 +1810,8 @@ DROP TABLE "base_tbl" CASCADE;
 CREATE TABLE base_tbl (a INT, b INT[]);
 
 CREATE VIEW rw_view1
-AS SELECT * FROM base_tbl WHERE a = ANY (b) WITH CASCADED CHECK OPTION;
+AS SELECT * FROM base_tbl WHERE a = ANY (b)
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO rw_view1 VALUES (1, ARRAY[1, 2, 3]);
 
@@ -1825,7 +1843,9 @@ AS SELECT
 FROM
   base_tbl AS b
 WHERE
-  EXISTS (SELECT 1 FROM ref_tbl AS r WHERE r.a = b.a) WITH CASCADED CHECK OPTION;
+  EXISTS
+  (SELECT 1 FROM ref_tbl AS r WHERE r.a = b.a)
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO rw_view1 VALUES (5);
 
@@ -1854,12 +1874,14 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER base_tbl_trig
-BEFORE INSERT OR UPDATE ON base_tbl
+BEFORE INSERT OR UPDATE
+ON base_tbl
 FOR EACH ROW
 EXECUTE FUNCTION base_tbl_trig_fn();
 
 CREATE VIEW rw_view1
-AS SELECT * FROM base_tbl WHERE a < b WITH CASCADED CHECK OPTION;
+AS SELECT * FROM base_tbl WHERE a < b
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO rw_view1 VALUES (5, 0);
 
@@ -1895,12 +1917,14 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER rw_view1_trig
-INSTEAD OF INSERT OR DELETE OR UPDATE ON rw_view1
+INSTEAD OF INSERT OR DELETE OR UPDATE
+ON rw_view1
 FOR EACH ROW
 EXECUTE FUNCTION rw_view1_trig_fn();
 
 CREATE VIEW rw_view2
-AS SELECT * FROM rw_view1 WHERE a > 0 WITH LOCAL CHECK OPTION;
+AS SELECT * FROM rw_view1 WHERE a > 0
+WITH LOCAL CHECK OPTION;
 
 INSERT INTO rw_view2 VALUES (-5);
 
@@ -1962,7 +1986,8 @@ DO INSTEAD
   INSERT INTO base_tbl VALUES (new.a);;
 
 CREATE VIEW rw_view2
-AS SELECT * FROM rw_view1 WHERE a > b WITH LOCAL CHECK OPTION;
+AS SELECT * FROM rw_view1 WHERE a > b
+WITH LOCAL CHECK OPTION;
 
 INSERT INTO rw_view2 VALUES (2, 3);
 
@@ -2097,7 +2122,8 @@ VALUES
 
 CREATE RULE base_tbl_ins_rule
 AS ON INSERT TO base_tbl WHERE
-  EXISTS (SELECT 1 FROM base_tbl AS t WHERE t.id = new.id)
+  EXISTS
+  (SELECT 1 FROM base_tbl AS t WHERE t.id = new.id)
 DO INSTEAD
   UPDATE base_tbl
   SET data = new.data,
@@ -2144,7 +2170,8 @@ INSERT INTO t1 SELECT i, i, 't1' FROM generate_series(1, 10) AS g (i);
 
 ANALYZE t1;
 
-CREATE TABLE t11 (d TEXT)
+CREATE TABLE t11
+(d TEXT)
 INHERITS (t1);
 
 CREATE INDEX "t11_a_idx"
@@ -2158,7 +2185,8 @@ INSERT INTO t11 SELECT i, i, 't11', 't11d' FROM generate_series(1, 10) AS g (i);
 
 ANALYZE t11;
 
-CREATE TABLE t12 (e INT[])
+CREATE TABLE t12
+(e INT[])
 INHERITS (t1);
 
 CREATE INDEX "t12_a_idx"
@@ -2172,7 +2200,8 @@ INSERT INTO t12 SELECT i, i, 't12', CAST('{1,2}' AS INT[]) FROM generate_series(
 
 ANALYZE t12;
 
-CREATE TABLE t111 ()
+CREATE TABLE t111
+()
 INHERITS (t11,
 t12);
 
@@ -2345,7 +2374,8 @@ VALUES
 
 CREATE VIEW v1
   WITH (security_barrier = 'true')
-AS SELECT * FROM t1 WHERE a > 0 WITH CASCADED CHECK OPTION;
+AS SELECT * FROM t1 WHERE a > 0
+WITH CASCADED CHECK OPTION;
 
 CREATE VIEW v2
   WITH (security_barrier = 'true')
@@ -2354,7 +2384,8 @@ AS SELECT
 FROM
   v1
 WHERE
-  EXISTS (SELECT 1 FROM t2 WHERE t2.cc = v1.c) WITH CASCADED CHECK OPTION;
+  EXISTS (SELECT 1 FROM t2 WHERE t2.cc = v1.c)
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO v2 VALUES (2, 'two', 20);
 
@@ -2409,7 +2440,8 @@ CREATE VIEW v1
 AS SELECT CAST(NULL AS INT) AS a;
 
 CREATE OR REPLACE VIEW v1
-AS SELECT * FROM t1 WHERE a > 0 WITH CASCADED CHECK OPTION;
+AS SELECT * FROM t1 WHERE a > 0
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO v1 VALUES (1, 'ok');
 
@@ -2419,10 +2451,12 @@ DROP VIEW "v1";
 
 DROP TABLE "t1";
 
-CREATE TABLE uv_pt (a INT, b INT, v VARCHAR)
+CREATE TABLE uv_pt
+(a INT, b INT, v VARCHAR)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE uv_pt1 (b INT NOT NULL, v VARCHAR, a INT NOT NULL)
+CREATE TABLE uv_pt1
+(b INT NOT NULL, v VARCHAR, a INT NOT NULL)
 PARTITION BY RANGE(b);
 
 CREATE TABLE uv_pt11 (LIKE uv_pt1);
@@ -2458,7 +2492,8 @@ FROM
   pg_relation_is_updatable(
   CAST('uv_pt' AS REGCLASS),
   FALSE
-  ) AS t (events);
+  )
+  AS t (events);
 
 SELECT pg_column_is_updatable(CAST('uv_pt' AS REGCLASS), CAST(1 AS SMALLINT), FALSE);
 
@@ -2488,7 +2523,8 @@ INSERT INTO uv_ptv VALUES (1, 2);
 SELECT CAST(tableoid AS REGCLASS), * FROM uv_pt;
 
 CREATE VIEW uv_ptv_wco
-AS SELECT * FROM uv_pt WHERE a = 0 WITH CASCADED CHECK OPTION;
+AS SELECT * FROM uv_pt WHERE a = 0
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO uv_ptv_wco VALUES (1, 2);
 
@@ -2498,7 +2534,8 @@ DROP VIEW "uv_ptv", "uv_ptv_wco";
 
 DROP TABLE "uv_pt", "uv_pt1", "uv_pt11";
 
-CREATE TABLE wcowrtest (a INT)
+CREATE TABLE wcowrtest
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE wcowrtest1 PARTITION OF wcowrtest FOR VALUES IN (1);
@@ -2509,7 +2546,8 @@ AS SELECT
 FROM
   wcowrtest
 WHERE
-  wcowrtest = CAST('(2)' AS wcowrtest) WITH CASCADED CHECK OPTION;
+  wcowrtest = CAST('(2)' AS wcowrtest)
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO wcowrtest_v VALUES (1);
 
@@ -2538,7 +2576,9 @@ AS SELECT
 FROM
   wcowrtest AS r
 WHERE
-  r IN (SELECT s FROM sometable AS s WHERE r.a = s.a) WITH CASCADED CHECK OPTION;
+  r IN
+  (SELECT s FROM sometable AS s WHERE r.a = s.a)
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO wcowrtest_v2 VALUES (2, 'no such row in sometable');
 
@@ -2559,7 +2599,8 @@ AS SELECT
 FROM
   uv_iocu_tab;
 
-INSERT INTO uv_iocu_view (a, b)
+INSERT INTO uv_iocu_view
+(a, b)
 VALUES ('xyxyxy', 1)
 ON CONFLICT (a) DO UPDATE SET b = uv_iocu_view.b;
 
@@ -2569,25 +2610,34 @@ INSERT INTO uv_iocu_view (a, b) VALUES ('xyxyxy', 1) ON CONFLICT (a) DO UPDATE S
 
 SELECT * FROM uv_iocu_tab;
 
-INSERT INTO uv_iocu_view (a, b)
+INSERT INTO uv_iocu_view
+(a, b)
 VALUES ('xyxyxy', 3)
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = CAST(excluded.two AS DOUBLE PRECISION);
 
 SELECT * FROM uv_iocu_tab;
 
-INSERT INTO uv_iocu_view (a, b)
+INSERT INTO uv_iocu_view
+(a, b)
 VALUES ('xyxyxy', 3)
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = excluded.b
 WHERE
   excluded.c > 0;
 
-INSERT INTO uv_iocu_view (a, b)
+INSERT INTO uv_iocu_view
+(a, b)
 VALUES ('xyxyxy', 3)
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = excluded.b
 WHERE
@@ -2611,9 +2661,12 @@ FROM
 
 INSERT INTO uv_iocu_view (aa, bb) VALUES (1, 'x');
 
-INSERT INTO uv_iocu_view (aa, bb)
+INSERT INTO uv_iocu_view
+(aa, bb)
 VALUES (1, 'y')
-ON CONFLICT (aa) DO
+ON CONFLICT
+(aa)
+DO
 UPDATE
 SET bb = 'Rejected: ' || excluded.*
 WHERE
@@ -2621,9 +2674,12 @@ WHERE
   excluded.bb <> '' AND
   excluded.cc IS NOT NULL;
 
-INSERT INTO uv_iocu_view (aa, bb)
+INSERT INTO uv_iocu_view
+(aa, bb)
 VALUES (1, 'y')
-ON CONFLICT (aa) DO
+ON CONFLICT
+(aa)
+DO
 UPDATE
 SET bb = 'Rejected: ' || excluded.*
 WHERE
@@ -2637,9 +2693,12 @@ DELETE FROM uv_iocu_view;
 
 INSERT INTO uv_iocu_view (aa, bb) VALUES (1, 'x');
 
-INSERT INTO uv_iocu_view (aa)
+INSERT INTO uv_iocu_view
+(aa)
 VALUES (1)
-ON CONFLICT (aa) DO
+ON CONFLICT
+(aa)
+DO
 UPDATE
 SET bb = 'Rejected: ' || excluded.*;
 
@@ -2648,9 +2707,12 @@ SELECT * FROM uv_iocu_view;
 ALTER TABLE uv_iocu_tab
   ALTER COLUMN b SET DEFAULT 'table default';
 
-INSERT INTO uv_iocu_view (aa)
+INSERT INTO uv_iocu_view
+(aa)
 VALUES (1)
-ON CONFLICT (aa) DO
+ON CONFLICT
+(aa)
+DO
 UPDATE
 SET bb = 'Rejected: ' || excluded.*;
 
@@ -2659,9 +2721,12 @@ SELECT * FROM uv_iocu_view;
 ALTER VIEW uv_iocu_view
   ALTER COLUMN bb SET DEFAULT 'view default';
 
-INSERT INTO uv_iocu_view (aa)
+INSERT INTO uv_iocu_view
+(aa)
 VALUES (1)
-ON CONFLICT (aa) DO
+ON CONFLICT
+(aa)
+DO
 UPDATE
 SET bb = 'Rejected: ' || excluded.*;
 
@@ -2702,7 +2767,9 @@ INSERT INTO rw_view1 VALUES ('yyy', 2.0, 1) ON CONFLICT (aa) DO UPDATE SET bb = 
 
 INSERT INTO rw_view1
 VALUES ('zzz', 2.0, 1)
-ON CONFLICT (aa) DO
+ON CONFLICT
+(aa)
+DO
 UPDATE
 SET bb = rw_view1.bb || 'xxx';
 
@@ -2768,7 +2835,8 @@ DROP ROLE regress_view_user1;
 
 DROP ROLE regress_view_user2;
 
-CREATE TABLE base_tab_def (
+CREATE TABLE base_tab_def
+(
   a INT,
   b TEXT DEFAULT 'Table default',
   c TEXT DEFAULT 'Table default',
@@ -2831,7 +2899,8 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER base_tab_def_view_instrig
-INSTEAD OF INSERT ON base_tab_def_view
+INSTEAD OF INSERT
+ON base_tab_def_view
 FOR EACH ROW
 EXECUTE FUNCTION base_tab_def_view_instrig_func();
 
@@ -2991,7 +3060,8 @@ AS SELECT c, a, b FROM base_tab;
 ALTER VIEW base_tab_view
   ALTER COLUMN c SET DEFAULT 'View default';
 
-INSERT INTO base_tab_view (b[1], b[2], c, b[5], b[4], a, b[3])
+INSERT INTO base_tab_view
+(b[1], b[2], c, b[5], b[4], a, b[3])
 VALUES
   (1, 2, DEFAULT, 5, 4, DEFAULT, 3),
   (10, 11, 'C value', 14, 13, 100, 12);

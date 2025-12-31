@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/collate.icu.utf8_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.icu.utf8.sql
 snapshot_kind: text
 ---
 SELECT
@@ -303,13 +303,16 @@ SELECT x || y FROM collate_test10;
 
 SELECT x, y FROM collate_test10 ORDER BY x || y;
 
-WITH RECURSIVE foo (x) AS (
+WITH RECURSIVE
+foo (x)
+AS (
   SELECT
     x
   FROM
     (VALUES
       ('a' COLLATE "en-x-icu"),
-      ('b')) AS t (x)
+      ('b'))
+    AS t (x)
   UNION ALL
   SELECT
     (x || 'c') COLLATE "de-x-icu"
@@ -490,7 +493,8 @@ SET client_min_messages = warning;
 
 SET icu_validation_level = disabled;
 
-DO $$
+DO
+$$
 BEGIN
   EXECUTE 'CREATE COLLATION test0 (provider = icu, locale = ' ||
           quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
@@ -499,7 +503,8 @@ $$;
 
 CREATE COLLATION test0 FROM "C";
 
-DO $$
+DO
+$$
 BEGIN
   EXECUTE 'CREATE COLLATION test1 (provider = icu, locale = ' ||
           quote_literal((SELECT CASE WHEN datlocprovider='i' THEN datlocale ELSE datcollate END FROM pg_database WHERE datname = current_database())) || ');';
@@ -554,7 +559,8 @@ SELECT
   obj_description(pg_collation.oid, 'pg_collation')
 FROM
   pg_collation
-  INNER JOIN pg_namespace
+  INNER JOIN
+    pg_namespace
   ON collnamespace = pg_namespace.oid
 WHERE
   collname LIKE 'test%'
@@ -1176,8 +1182,10 @@ SELECT 'foox' LIKE 'foo\' COLLATE "ignore_accents";
 
 CREATE TABLE test10pk (x TEXT COLLATE "case_sensitive" PRIMARY KEY);
 
-CREATE TABLE test10fk (
-  x TEXT COLLATE "case_insensitive"
+CREATE TABLE test10fk
+(
+  x TEXT
+  COLLATE "case_insensitive"
   REFERENCES test10pk (x)
   ON DELETE CASCADE
   ON UPDATE CASCADE
@@ -1185,8 +1193,10 @@ CREATE TABLE test10fk (
 
 CREATE TABLE test11pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test11fk (
-  x TEXT COLLATE "case_sensitive"
+CREATE TABLE test11fk
+(
+  x TEXT
+  COLLATE "case_sensitive"
   REFERENCES test11pk (x)
   ON DELETE CASCADE
   ON UPDATE CASCADE
@@ -1213,9 +1223,11 @@ DROP TABLE "test12pk", "test12fk";
 
 CREATE TABLE test12pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test12fk (
+CREATE TABLE test12fk
+(
   a INT,
-  b TEXT COLLATE "case_insensitive"
+  b TEXT
+  COLLATE "case_insensitive"
   REFERENCES test12pk (x) ON UPDATE RESTRICT
 );
 
@@ -1236,9 +1248,11 @@ DROP TABLE "test12pk", "test12fk";
 
 CREATE TABLE test12pk (x TEXT COLLATE "case_insensitive" PRIMARY KEY);
 
-CREATE TABLE test12fk (
+CREATE TABLE test12fk
+(
   a INT,
-  b TEXT COLLATE "case_insensitive"
+  b TEXT
+  COLLATE "case_insensitive"
   REFERENCES test12pk (x) ON UPDATE CASCADE
 );
 
@@ -1257,7 +1271,8 @@ SELECT * FROM test12fk;
 
 DROP TABLE "test12pk", "test12fk";
 
-CREATE TABLE test20 (a INT, b TEXT COLLATE "case_insensitive")
+CREATE TABLE test20
+(a INT, b TEXT COLLATE "case_insensitive")
 PARTITION BY LIST(b);
 
 CREATE TABLE test20_1 PARTITION OF test20 FOR VALUES IN ('abc');
@@ -1268,7 +1283,8 @@ INSERT INTO test20 VALUES (2, 'ABC');
 
 SELECT * FROM test20_1;
 
-CREATE TABLE test21 (a INT, b TEXT COLLATE "case_insensitive")
+CREATE TABLE test21
+(a INT, b TEXT COLLATE "case_insensitive")
 PARTITION BY RANGE(b);
 
 CREATE TABLE test21_1 PARTITION OF test21 FOR VALUES FROM ('ABC') TO ('DEF');
@@ -1279,7 +1295,8 @@ INSERT INTO test21 VALUES (2, 'ABC');
 
 SELECT * FROM test21_1;
 
-CREATE TABLE test22 (a INT, b TEXT COLLATE "case_sensitive")
+CREATE TABLE test22
+(a INT, b TEXT COLLATE "case_sensitive")
 PARTITION BY HASH(b);
 
 CREATE TABLE test22_0 PARTITION OF test22 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1292,7 +1309,8 @@ INSERT INTO test22 VALUES (2, 'DEF');
 
 SELECT (SELECT COUNT(*) FROM test22_0) = (SELECT COUNT(*) FROM test22_1);
 
-CREATE TABLE test22a (a INT, b TEXT[] COLLATE "case_sensitive")
+CREATE TABLE test22a
+(a INT, b TEXT[] COLLATE "case_sensitive")
 PARTITION BY HASH(b);
 
 CREATE TABLE test22a_0 PARTITION OF test22a FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1305,7 +1323,8 @@ INSERT INTO test22a VALUES (2, ARRAY['DEF']);
 
 SELECT (SELECT COUNT(*) FROM test22a_0) = (SELECT COUNT(*) FROM test22a_1);
 
-CREATE TABLE test23 (a INT, b TEXT COLLATE "case_insensitive")
+CREATE TABLE test23
+(a INT, b TEXT COLLATE "case_insensitive")
 PARTITION BY HASH(b);
 
 CREATE TABLE test23_0 PARTITION OF test23 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1318,7 +1337,8 @@ INSERT INTO test23 VALUES (2, 'DEF');
 
 SELECT (SELECT COUNT(*) FROM test23_0) <> (SELECT COUNT(*) FROM test23_1);
 
-CREATE TABLE test23a (a INT, b TEXT[] COLLATE "case_insensitive")
+CREATE TABLE test23a
+(a INT, b TEXT[] COLLATE "case_insensitive")
 PARTITION BY HASH(b);
 
 CREATE TABLE test23a_0 PARTITION OF test23a FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1331,7 +1351,8 @@ INSERT INTO test23a VALUES (2, ARRAY['DEF']);
 
 SELECT (SELECT COUNT(*) FROM test23a_0) <> (SELECT COUNT(*) FROM test23a_1);
 
-CREATE TABLE test30 (a INT, b CHAR(3) COLLATE "case_insensitive")
+CREATE TABLE test30
+(a INT, b CHAR(3) COLLATE "case_insensitive")
 PARTITION BY LIST(b);
 
 CREATE TABLE test30_1 PARTITION OF test30 FOR VALUES IN ('abc');
@@ -1342,7 +1363,8 @@ INSERT INTO test30 VALUES (2, 'ABC');
 
 SELECT * FROM test30_1;
 
-CREATE TABLE test31 (a INT, b CHAR(3) COLLATE "case_insensitive")
+CREATE TABLE test31
+(a INT, b CHAR(3) COLLATE "case_insensitive")
 PARTITION BY RANGE(b);
 
 CREATE TABLE test31_1 PARTITION OF test31 FOR VALUES FROM ('ABC') TO ('DEF');
@@ -1353,7 +1375,8 @@ INSERT INTO test31 VALUES (2, 'ABC');
 
 SELECT * FROM test31_1;
 
-CREATE TABLE test32 (a INT, b CHAR(3) COLLATE "case_sensitive")
+CREATE TABLE test32
+(a INT, b CHAR(3) COLLATE "case_sensitive")
 PARTITION BY HASH(b);
 
 CREATE TABLE test32_0 PARTITION OF test32 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1366,7 +1389,8 @@ INSERT INTO test32 VALUES (2, 'DEF');
 
 SELECT (SELECT COUNT(*) FROM test32_0) = (SELECT COUNT(*) FROM test32_1);
 
-CREATE TABLE test33 (a INT, b CHAR(3) COLLATE "case_insensitive")
+CREATE TABLE test33
+(a INT, b CHAR(3) COLLATE "case_insensitive")
 PARTITION BY HASH(b);
 
 CREATE TABLE test33_0 PARTITION OF test33 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1383,7 +1407,8 @@ SET max_parallel_workers_per_gather = 0;
 
 SET enable_incremental_sort = off;
 
-CREATE TABLE pagg_tab3 (a TEXT, c TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab3
+(a TEXT, c TEXT COLLATE "case_insensitive")
 PARTITION BY LIST(c COLLATE "C");
 
 CREATE TABLE pagg_tab3_p1 PARTITION OF pagg_tab3 FOR VALUES IN ('a', 'b');
@@ -1446,7 +1471,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1456,7 +1482,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1468,7 +1495,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1478,7 +1506,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1488,7 +1517,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
 ORDER BY t1.c COLLATE "C";
@@ -1498,7 +1528,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
 ORDER BY t1.c COLLATE "C";
@@ -1510,7 +1541,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
 ORDER BY t1.c COLLATE "C";
@@ -1520,21 +1552,24 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab3 AS t2
+  INNER JOIN
+    pagg_tab3 AS t2
   ON t1.c = t2.c COLLATE "C"
 GROUP BY t1.c COLLATE "C"
 ORDER BY t1.c COLLATE "C";
 
 SET enable_partitionwise_join = 'true';
 
-CREATE TABLE pagg_tab4 (c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab4
+(c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
 PARTITION BY LIST(b COLLATE "C");
 
 CREATE TABLE pagg_tab4_p1 PARTITION OF pagg_tab4 FOR VALUES IN ('a', 'b');
 
 CREATE TABLE pagg_tab4_p2 PARTITION OF pagg_tab4 FOR VALUES IN ('B', 'A');
 
-INSERT INTO pagg_tab4 (b, c)
+INSERT INTO pagg_tab4
+(b, c)
 SELECT
   substr('abAB', i % 4 + 1, 1),
   substr('abAB', i % 2 + 1, 1)
@@ -1548,7 +1583,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab4 AS t2
+  INNER JOIN
+    pagg_tab4 AS t2
   ON t1.c = t2.c AND t1.c = t2.b
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1558,26 +1594,30 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab3 AS t1
-  INNER JOIN pagg_tab4 AS t2
+  INNER JOIN
+    pagg_tab4 AS t2
   ON t1.c = t2.c AND t1.c = t2.b
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
 
-CREATE TABLE pagg_tab5 (c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab5
+(c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
 PARTITION BY LIST(c COLLATE case_insensitive);
 
 CREATE TABLE pagg_tab5_p1 PARTITION OF pagg_tab5 FOR VALUES IN ('a', 'b');
 
 CREATE TABLE pagg_tab5_p2 PARTITION OF pagg_tab5 FOR VALUES IN ('c', 'd');
 
-INSERT INTO pagg_tab5 (b, c)
+INSERT INTO pagg_tab5
+(b, c)
 SELECT
   substr('abAB', i % 4 + 1, 1),
   substr('abAB', i % 2 + 1, 1)
 FROM
   generate_series(0, 5) AS i;
 
-INSERT INTO pagg_tab5 (b, c)
+INSERT INTO pagg_tab5
+(b, c)
 SELECT
   substr('cdCD', i % 4 + 1, 1),
   substr('cdCD', i % 2 + 1, 1)
@@ -1586,21 +1626,24 @@ FROM
 
 ANALYZE pagg_tab5;
 
-CREATE TABLE pagg_tab6 (c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
+CREATE TABLE pagg_tab6
+(c TEXT COLLATE "case_insensitive", b TEXT COLLATE "case_insensitive")
 PARTITION BY LIST(b COLLATE case_insensitive);
 
 CREATE TABLE pagg_tab6_p1 PARTITION OF pagg_tab6 FOR VALUES IN ('a', 'b');
 
 CREATE TABLE pagg_tab6_p2 PARTITION OF pagg_tab6 FOR VALUES IN ('c', 'd');
 
-INSERT INTO pagg_tab6 (b, c)
+INSERT INTO pagg_tab6
+(b, c)
 SELECT
   substr('abAB', i % 4 + 1, 1),
   substr('abAB', i % 2 + 1, 1)
 FROM
   generate_series(0, 5) AS i;
 
-INSERT INTO pagg_tab6 (b, c)
+INSERT INTO pagg_tab6
+(b, c)
 SELECT
   substr('cdCD', i % 4 + 1, 1),
   substr('cdCD', i % 2 + 1, 1)
@@ -1614,7 +1657,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  INNER JOIN
+    pagg_tab6 AS t2
   ON t1.c = t2.c AND t1.c = t2.b
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1624,7 +1668,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  INNER JOIN
+    pagg_tab6 AS t2
   ON t1.c = t2.c AND t1.c = t2.b
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1636,7 +1681,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  INNER JOIN
+    pagg_tab6 AS t2
   ON t1.c = t2.c AND t1.c = t2.b
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1646,7 +1692,8 @@ SELECT
   COUNT(t2.c)
 FROM
   pagg_tab5 AS t1
-  INNER JOIN pagg_tab6 AS t2
+  INNER JOIN
+    pagg_tab6 AS t2
   ON t1.c = t2.c AND t1.c = t2.b
 GROUP BY 1
 ORDER BY t1.c COLLATE "C";
@@ -1665,7 +1712,8 @@ RESET max_parallel_workers_per_gather;
 
 RESET enable_incremental_sort;
 
-INSERT INTO t5 (a, b)
+INSERT INTO t5
+(a, b)
 VALUES
   (1, 'D1'),
   (2, 'D2'),

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/point_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/point.sql
 snapshot_kind: text
 ---
 SET extra_float_digits = 0;
@@ -111,7 +111,8 @@ SELECT
 FROM
   point_gist_tbl
 WHERE
-  f1 <@ CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)'
+  f1 <@
+  CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)'
   AS box);
 
 SELECT COUNT(*) FROM point_gist_tbl WHERE f1 ~= CAST('(0.0000018,0.0000018)' AS point);
@@ -129,7 +130,8 @@ SELECT
 FROM
   point_gist_tbl
 WHERE
-  f1 <@ CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)'
+  f1 <@
+  CAST('(0.0000009,0.0000009),(0.0000009,0.0000009)'
   AS box);
 
 SELECT COUNT(*) FROM point_gist_tbl WHERE f1 ~= CAST('(0.0000018,0.0000018)' AS point);

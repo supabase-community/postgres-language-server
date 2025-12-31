@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::PublicationTable;
 
@@ -19,7 +19,7 @@ pub(super) fn emit_publication_table(e: &mut EventEmitter, n: &PublicationTable)
     }
 
     if let Some(ref where_clause) = n.where_clause {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

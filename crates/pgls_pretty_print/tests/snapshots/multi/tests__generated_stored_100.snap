@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/generated_stored_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/generated_stored.sql
 snapshot_kind: text
 ---
 CREATE SCHEMA "generated_stored_tests";
@@ -39,7 +39,8 @@ ORDER BY 1,
   2,
   3;
 
-CREATE TABLE gtest_err_1 (
+CREATE TABLE gtest_err_1
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (a * 2) STORED
@@ -48,13 +49,15 @@ CREATE TABLE gtest_err_1 (
 
 CREATE TABLE gtest_err_2a (a INT PRIMARY KEY, b INT GENERATED ALWAYS AS (b * 2) STORED);
 
-CREATE TABLE gtest_err_2b (
+CREATE TABLE gtest_err_2b
+(
   a INT PRIMARY KEY,
   b INT GENERATED ALWAYS AS (a * 2) STORED,
   c INT GENERATED ALWAYS AS (b * 3) STORED
 );
 
-CREATE TABLE gtest_err_2c (
+CREATE TABLE gtest_err_2c
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (num_nulls(gtest_err_2c)) STORED
@@ -62,7 +65,8 @@ CREATE TABLE gtest_err_2c (
 
 CREATE TABLE gtest_err_3 (a INT PRIMARY KEY, b INT GENERATED ALWAYS AS (c * 2) STORED);
 
-CREATE TABLE gtest_err_4 (
+CREATE TABLE gtest_err_4
+(
   a INT PRIMARY KEY,
   b DOUBLE PRECISION
   GENERATED ALWAYS AS (random()) STORED
@@ -74,7 +78,8 @@ DROP TABLE "gtest2";
 
 CREATE TABLE gtest_err_5a (a INT PRIMARY KEY, b INT DEFAULT 5 GENERATED ALWAYS AS (a * 2) STORED);
 
-CREATE TABLE gtest_err_5b (
+CREATE TABLE gtest_err_5b
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS IDENTITY
@@ -85,7 +90,8 @@ CREATE TABLE gtest_err_6a (a INT PRIMARY KEY, b BOOLEAN GENERATED ALWAYS AS (xmi
 
 CREATE TABLE gtest_err_7a (a INT PRIMARY KEY, b INT GENERATED ALWAYS AS (AVG(a)) STORED);
 
-CREATE TABLE gtest_err_7b (
+CREATE TABLE gtest_err_7b
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (ROW_NUMBER() OVER ( ORDER BY a)) STORED
@@ -93,7 +99,8 @@ CREATE TABLE gtest_err_7b (
 
 CREATE TABLE gtest_err_7c (a INT PRIMARY KEY, b INT GENERATED ALWAYS AS ((SELECT a)) STORED);
 
-CREATE TABLE gtest_err_7d (
+CREATE TABLE gtest_err_7d
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (generate_series(1, a)) STORED
@@ -171,7 +178,8 @@ DELETE FROM gtest1 WHERE b = 2;
 
 SELECT * FROM gtest1 ORDER BY a;
 
-CREATE TABLE gtestm (
+CREATE TABLE gtestm
+(
   id INT PRIMARY KEY,
   f1 INT,
   f2 INT,
@@ -238,7 +246,8 @@ DROP VIEW "gtest1v";
 
 WITH foo AS (SELECT * FROM gtest1) SELECT * FROM foo;
 
-CREATE TABLE gtest1_1 ()
+CREATE TABLE gtest1_1
+()
 INHERITS (gtest1);
 
 SELECT * FROM gtest1_1;
@@ -251,7 +260,8 @@ SELECT * FROM gtest1;
 
 CREATE TABLE gtest_normal (a INT, b INT);
 
-CREATE TABLE gtest_normal_child (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED)
+CREATE TABLE gtest_normal_child
+(a INT, b INT GENERATED ALWAYS AS (a * 2) STORED)
 INHERITS (gtest_normal);
 
 CREATE TABLE gtest_normal_child (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED);
@@ -261,13 +271,16 @@ ALTER TABLE gtest_normal_child
 
 DROP TABLE "gtest_normal", "gtest_normal_child";
 
-CREATE TABLE gtestx (x INT, b INT DEFAULT 10)
+CREATE TABLE gtestx
+(x INT, b INT DEFAULT 10)
 INHERITS (gtest1);
 
-CREATE TABLE gtestx (x INT, b INT GENERATED ALWAYS AS IDENTITY)
+CREATE TABLE gtestx
+(x INT, b INT GENERATED ALWAYS AS IDENTITY)
 INHERITS (gtest1);
 
-CREATE TABLE gtestx (x INT, b INT GENERATED ALWAYS AS (a * 22) STORED)
+CREATE TABLE gtestx
+(x INT, b INT GENERATED ALWAYS AS (a * 22) STORED)
 INHERITS (gtest1);
 
 INSERT INTO gtestx (a, x) VALUES (11, 22);
@@ -293,7 +306,8 @@ ALTER TABLE gtestxx_4
 
 CREATE TABLE gtesty (x INT, b INT DEFAULT 55);
 
-CREATE TABLE gtest1_y ()
+CREATE TABLE gtest1_y
+()
 INHERITS (gtest0,
 gtesty);
 
@@ -301,7 +315,8 @@ DROP TABLE "gtesty";
 
 CREATE TABLE gtesty (x INT, b INT);
 
-CREATE TABLE gtest1_y ()
+CREATE TABLE gtest1_y
+()
 INHERITS (gtest1,
 gtesty);
 
@@ -309,17 +324,20 @@ DROP TABLE "gtesty";
 
 CREATE TABLE gtesty (x INT, b INT GENERATED ALWAYS AS (x * 22) STORED);
 
-CREATE TABLE gtest1_y ()
+CREATE TABLE gtest1_y
+()
 INHERITS (gtest1,
 gtesty);
 
-CREATE TABLE gtest1_y (b INT GENERATED ALWAYS AS (x + 1) STORED)
+CREATE TABLE gtest1_y
+(b INT GENERATED ALWAYS AS (x + 1) STORED)
 INHERITS (gtest1,
 gtesty);
 
 CREATE TABLE gtestp (f1 INT);
 
-CREATE TABLE gtestc (f2 INT GENERATED ALWAYS AS (f1 + 1) STORED)
+CREATE TABLE gtestc
+(f2 INT GENERATED ALWAYS AS (f1 + 1) STORED)
 INHERITS (gtestp);
 
 INSERT INTO gtestc VALUES (42);
@@ -334,7 +352,8 @@ DROP TABLE "gtestp" CASCADE;
 
 CREATE TABLE gtest3 (a INT, b INT GENERATED ALWAYS AS (a * 3) STORED);
 
-INSERT INTO gtest3 (a)
+INSERT INTO gtest3
+(a)
 VALUES
   (1),
   (2),
@@ -349,7 +368,8 @@ SELECT * FROM gtest3 ORDER BY a;
 
 CREATE TABLE gtest3a (a TEXT, b TEXT GENERATED ALWAYS AS (a || '+' || a) STORED);
 
-INSERT INTO gtest3a (a)
+INSERT INTO gtest3a
+(a)
 VALUES
   ('a'),
   ('b'),
@@ -364,7 +384,8 @@ SELECT * FROM gtest3a ORDER BY a;
 
 TRUNCATE gtest1;
 
-INSERT INTO gtest1 (a)
+INSERT INTO gtest1
+(a)
 VALUES
   (1),
   (2);
@@ -377,7 +398,8 @@ SELECT * FROM gtest1 ORDER BY a;
 
 TRUNCATE gtest3;
 
-INSERT INTO gtest3 (a)
+INSERT INTO gtest3
+(a)
 VALUES
   (1),
   (2);
@@ -419,7 +441,8 @@ DROP TABLE "gtest4";
 
 DROP TYPE double_int;
 
-CREATE TABLE gtest_tableoid (
+CREATE TABLE gtest_tableoid
+(
   a INT PRIMARY KEY,
   b BOOLEAN
   GENERATED ALWAYS AS (tableoid = CAST('gtest_tableoid' AS REGCLASS)) STORED
@@ -664,21 +687,24 @@ VALUES
   (2, 22),
   (3, 33);
 
-CREATE TABLE gtest23x (
+CREATE TABLE gtest23x
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (a * 2) STORED
   REFERENCES gtest23a (x) ON UPDATE CASCADE
 );
 
-CREATE TABLE gtest23x (
+CREATE TABLE gtest23x
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (a * 2) STORED
   REFERENCES gtest23a (x) ON DELETE SET NULL
 );
 
-CREATE TABLE gtest23b (
+CREATE TABLE gtest23b
+(
   a INT PRIMARY KEY,
   b INT
   GENERATED ALWAYS AS (a * 2) STORED
@@ -725,7 +751,8 @@ INSERT INTO gtest24 (a) VALUES (6);
 
 CREATE TYPE gtestdomain1range AS RANGE (subtype = gtestdomain1);
 
-CREATE TABLE gtest24r (
+CREATE TABLE gtest24r
+(
   a INT PRIMARY KEY,
   b gtestdomain1range
   GENERATED ALWAYS AS (gtestdomain1range(a, a + 5)) STORED
@@ -749,7 +776,8 @@ CREATE TABLE gtest28 OF gtest_type ( f1 WITH OPTIONS GENERATED ALWAYS AS (f2 * 2
 
 DROP TYPE gtest_type CASCADE;
 
-CREATE TABLE gtest_parent (f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT)
+CREATE TABLE gtest_parent
+(f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT)
 PARTITION BY RANGE(f1);
 
 CREATE TABLE gtest_child
@@ -759,7 +787,8 @@ PARTITION OF gtest_parent
 )
 FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');
 
-CREATE TABLE gtest_child (
+CREATE TABLE gtest_child
+(
   f1 DATE NOT NULL,
   f2 BIGINT,
   f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED
@@ -772,11 +801,8 @@ ALTER TABLE gtest_parent
 
 DROP TABLE "gtest_parent", "gtest_child";
 
-CREATE TABLE gtest_parent (
-  f1 DATE NOT NULL,
-  f2 BIGINT,
-  f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED
-)
+CREATE TABLE gtest_parent
+(f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED)
 PARTITION BY RANGE(f1);
 
 CREATE TABLE gtest_child PARTITION OF gtest_parent FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');
@@ -836,7 +862,8 @@ ALTER TABLE gtest_parent
 
 DROP TABLE "gtest_child3";
 
-CREATE TABLE gtest_child3 (
+CREATE TABLE gtest_child3
+(
   f1 DATE NOT NULL,
   f2 BIGINT,
   f3 BIGINT GENERATED ALWAYS AS (f2 * 33) STORED
@@ -881,18 +908,12 @@ ALTER TABLE gtest_parent
 
 SELECT CAST(tableoid AS REGCLASS), * FROM gtest_parent ORDER BY 1, 2, 3;
 
-CREATE TABLE gtest_part_key (
-  f1 DATE NOT NULL,
-  f2 BIGINT,
-  f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED
-)
+CREATE TABLE gtest_part_key
+(f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED)
 PARTITION BY RANGE(f3);
 
-CREATE TABLE gtest_part_key (
-  f1 DATE NOT NULL,
-  f2 BIGINT,
-  f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED
-)
+CREATE TABLE gtest_part_key
+(f1 DATE NOT NULL, f2 BIGINT, f3 BIGINT GENERATED ALWAYS AS (f2 * 2) STORED)
 PARTITION BY RANGE((f3 * 3));
 
 CREATE TABLE gtest25 (a INT PRIMARY KEY);
@@ -931,7 +952,8 @@ SELECT * FROM gtest25 ORDER BY a;
 
 CREATE TABLE gtest27 (a INT, b INT, x INT GENERATED ALWAYS AS ((a + b) * 2) STORED);
 
-INSERT INTO gtest27 (a, b)
+INSERT INTO gtest27
+(a, b)
 VALUES
   (3, 7),
   (4, 11);
@@ -964,7 +986,8 @@ SELECT * FROM gtest27;
 
 CREATE TABLE gtest29 (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED);
 
-INSERT INTO gtest29 (a)
+INSERT INTO gtest29
+(a)
 VALUES
   (3),
   (4);
@@ -1001,7 +1024,8 @@ ALTER TABLE gtest29
 
 CREATE TABLE gtest30 (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED);
 
-CREATE TABLE gtest30_1 ()
+CREATE TABLE gtest30_1
+()
 INHERITS (gtest30);
 
 ALTER TABLE gtest30
@@ -1011,7 +1035,8 @@ DROP TABLE "gtest30" CASCADE;
 
 CREATE TABLE gtest30 (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED);
 
-CREATE TABLE gtest30_1 ()
+CREATE TABLE gtest30_1
+()
 INHERITS (gtest30);
 
 ALTER TABLE ONLY gtest30
@@ -1058,7 +1083,8 @@ ALTER TABLE gtest31_1
 
 DROP TABLE "gtest31_1", "gtest31_2";
 
-CREATE TABLE gtest31_1 (a INT, b TEXT GENERATED ALWAYS AS ('hello') STORED, c TEXT)
+CREATE TABLE gtest31_1
+(a INT, b TEXT GENERATED ALWAYS AS ('hello') STORED, c TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE gtest31_2 (x INT, y gtest31_1);
@@ -1090,42 +1116,49 @@ END
 ';
 
 CREATE TRIGGER gtest1
-BEFORE DELETE OR UPDATE ON gtest26
+BEFORE DELETE OR UPDATE
+ON gtest26
 FOR EACH ROW
 WHEN (old.b < 0)
 EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest2a
-BEFORE INSERT OR UPDATE ON gtest26
+BEFORE INSERT OR UPDATE
+ON gtest26
 FOR EACH ROW
 WHEN (new.b < 0)
 EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest2b
-BEFORE INSERT OR UPDATE ON gtest26
+BEFORE INSERT OR UPDATE
+ON gtest26
 FOR EACH ROW
 WHEN (new.* IS NOT NULL)
 EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest2
-BEFORE INSERT ON gtest26
+BEFORE INSERT
+ON gtest26
 FOR EACH ROW
 WHEN (new.a < 0)
 EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest3
-AFTER DELETE OR UPDATE ON gtest26
+AFTER DELETE OR UPDATE
+ON gtest26
 FOR EACH ROW
 WHEN (old.b < 0)
 EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest4
-AFTER INSERT OR UPDATE ON gtest26
+AFTER INSERT OR UPDATE
+ON gtest26
 FOR EACH ROW
 WHEN (new.b < 0)
 EXECUTE FUNCTION gtest_trigger_func();
 
-INSERT INTO gtest26 (a)
+INSERT INTO gtest26
+(a)
 VALUES
   (-2),
   (0),
@@ -1158,7 +1191,8 @@ END
 ';
 
 CREATE TRIGGER gtest11
-BEFORE UPDATE OF b ON gtest26
+BEFORE UPDATE OF b
+ON gtest26
 FOR EACH ROW
 EXECUTE FUNCTION gtest_trigger_func3();
 
@@ -1180,17 +1214,20 @@ END;
 ';
 
 CREATE TRIGGER gtest12_01
-BEFORE INSERT OR UPDATE ON gtest26
+BEFORE INSERT OR UPDATE
+ON gtest26
 FOR EACH ROW
 EXECUTE FUNCTION gtest_trigger_func();
 
 CREATE TRIGGER gtest12_02
-BEFORE INSERT OR UPDATE ON gtest26
+BEFORE INSERT OR UPDATE
+ON gtest26
 FOR EACH ROW
 EXECUTE FUNCTION gtest_trigger_func4();
 
 CREATE TRIGGER gtest12_03
-BEFORE INSERT OR UPDATE ON gtest26
+BEFORE INSERT OR UPDATE
+ON gtest26
 FOR EACH ROW
 EXECUTE FUNCTION gtest_trigger_func();
 

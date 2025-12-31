@@ -1,9 +1,11 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/update_with_cte_returning_0_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/update_with_cte_returning_0.sql
 snapshot_kind: text
 ---
-WITH pending AS (
+WITH
+pending
+AS (
   SELECT id FROM invoices WHERE status = 'pending'
 )
 UPDATE invoices AS inv

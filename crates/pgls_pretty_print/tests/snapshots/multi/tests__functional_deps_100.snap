@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/functional_deps.sql
 snapshot_kind: text
 ---
-CREATE TEMPORARY TABLE articles (
+CREATE TEMPORARY TABLE articles
+(
   id INT CONSTRAINT "articles_pkey" PRIMARY KEY,
   keywords TEXT,
   title TEXT UNIQUE NOT NULL,
@@ -11,7 +12,8 @@ CREATE TEMPORARY TABLE articles (
   created DATE
 );
 
-CREATE TEMPORARY TABLE articles_in_category (
+CREATE TEMPORARY TABLE articles_in_category
+(
   article_id INT,
   category_id INT,
   changed DATE,
@@ -63,7 +65,8 @@ SELECT
   a.created
 FROM
   articles AS a
-  INNER JOIN articles_in_category AS aic
+  INNER JOIN
+    articles_in_category AS aic
   ON a.id = aic.article_id
 WHERE
   aic.category_id IN (14, 62, 70, 53, 138)
@@ -77,7 +80,8 @@ SELECT
   a.created
 FROM
   articles AS a
-  INNER JOIN articles_in_category AS aic
+  INNER JOIN
+    articles_in_category AS aic
   ON a.id = aic.article_id
 WHERE
   aic.category_id IN (14, 62, 70, 53, 138)
@@ -88,7 +92,8 @@ SELECT
   aic.changed
 FROM
   articles AS a
-  INNER JOIN articles_in_category AS aic
+  INNER JOIN
+    articles_in_category AS aic
   ON a.id = aic.article_id
 WHERE
   aic.category_id IN (14, 62, 70, 53, 138)
@@ -99,7 +104,8 @@ SELECT
   aic.changed
 FROM
   articles AS a
-  INNER JOIN articles_in_category AS aic
+  INNER JOIN
+    articles_in_category AS aic
   ON a.id = aic.article_id
 WHERE
   aic.category_id IN (14, 62, 70, 53, 138)
@@ -115,7 +121,8 @@ SELECT
   SUM(s.units) * p.price AS sales
 FROM
   products AS p
-  LEFT OUTER JOIN sales AS s
+  LEFT OUTER JOIN
+    sales AS s
   USING ("product_id")
 GROUP BY product_id,
   p.name,
@@ -127,7 +134,8 @@ SELECT
   SUM(s.units) * p.price AS sales
 FROM
   products AS p
-  LEFT OUTER JOIN sales AS s
+  LEFT OUTER JOIN
+    sales AS s
   USING ("product_id")
 GROUP BY product_id;
 
@@ -140,11 +148,13 @@ SELECT
   SUM(s.units) * p.price AS sales
 FROM
   products AS p
-  LEFT OUTER JOIN sales AS s
+  LEFT OUTER JOIN
+    sales AS s
   USING ("product_id")
 GROUP BY product_id;
 
-CREATE TEMPORARY TABLE node (
+CREATE TEMPORARY TABLE node
+(
   nid serial,
   vid INT NOT NULL DEFAULT '0',
   type VARCHAR(32) NOT NULL DEFAULT '',
@@ -155,7 +165,8 @@ CREATE TEMPORARY TABLE node (
   PRIMARY KEY (nid, vid)
 );
 
-CREATE TEMPORARY TABLE users (
+CREATE TEMPORARY TABLE users
+(
   uid INT NOT NULL DEFAULT '0',
   name VARCHAR(60) NOT NULL DEFAULT '',
   pass VARCHAR(32) NOT NULL DEFAULT '',
@@ -218,7 +229,8 @@ AS SELECT
   aic.changed
 FROM
   articles AS a
-  INNER JOIN articles_in_category AS aic
+  INNER JOIN
+    articles_in_category AS aic
   ON a.id = aic.article_id
 WHERE
   aic.category_id IN (14, 62, 70, 53, 138)

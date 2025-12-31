@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/timestamptz_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/timestamptz.sql
 snapshot_kind: text
 ---
 CREATE TABLE timestamptz_tbl (d1 TIMESTAMP(2) WITH TIME ZONE);
@@ -310,7 +310,8 @@ SELECT d1 FROM timestamptz_tbl WHERE d1 <= CAST('1997-01-02' AS TIMESTAMP WITH T
 SELECT d1 FROM timestamptz_tbl WHERE d1 >= CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE);
 
 SELECT
-  d1 - CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE)
+  d1 -
+  CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE)
   AS diff
 FROM
   timestamptz_tbl
@@ -395,11 +396,13 @@ FROM
     ('minute', '1 m'),
     ('second', '1 s'),
     ('millisecond', '1 ms'),
-    ('microsecond', '1 us')) AS intervals (str, interval),
+    ('microsecond', '1 us'))
+  AS intervals (str, interval),
   (VALUES (
     CAST('2020-02-29 15:44:17.71393+00'
     AS TIMESTAMP WITH TIME ZONE)
-  )) AS ts (ts);
+  ))
+  AS ts (ts);
 
 SELECT
   interval,
@@ -414,12 +417,15 @@ FROM
     ('15 minutes'),
     ('10 seconds'),
     ('100 milliseconds'),
-    ('250 microseconds')) AS intervals (interval),
+    ('250 microseconds'))
+  AS intervals (interval),
   (VALUES (
     CAST('2020-02-11 15:44:17.71393'
     AS TIMESTAMP WITH TIME ZONE)
-  )) AS ts (ts),
-  (VALUES (CAST('2001-01-01' AS TIMESTAMP WITH TIME ZONE))) AS origin (origin);
+  ))
+  AS ts (ts),
+  (VALUES (CAST('2001-01-01' AS TIMESTAMP WITH TIME ZONE)))
+  AS origin (origin);
 
 SELECT
   date_bin(
@@ -495,13 +501,15 @@ SELECT
   );
 
 SELECT
-  d1 - CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE)
+  d1 -
+  CAST('1997-01-02' AS TIMESTAMP WITH TIME ZONE)
   AS diff
 FROM
   timestamptz_tbl
 WHERE
-  d1 BETWEEN CAST('1902-01-01' AS TIMESTAMP WITH TIME ZONE) AND CAST('2038-01-01'
-  AS TIMESTAMP WITH TIME ZONE);
+  d1
+  BETWEEN CAST('1902-01-01' AS TIMESTAMP WITH TIME ZONE)
+  AND CAST('2038-01-01' AS TIMESTAMP WITH TIME ZONE);
 
 SELECT
   d1 AS timestamptz,
@@ -569,13 +577,15 @@ SELECT EXTRACT('epoch' FROM CAST('5000-01-01 00:00:00+00' AS TIMESTAMP WITH TIME
 
 SELECT
   CAST('294276-12-31 23:59:59 UTC'
-  AS TIMESTAMP WITH TIME ZONE) - CAST('1999-12-23 19:59:04.224193 UTC'
+  AS TIMESTAMP WITH TIME ZONE) -
+  CAST('1999-12-23 19:59:04.224193 UTC'
   AS TIMESTAMP WITH TIME ZONE)
   AS ok;
 
 SELECT
   CAST('294276-12-31 23:59:59 UTC'
-  AS TIMESTAMP WITH TIME ZONE) - CAST('1999-12-23 19:59:04.224192 UTC'
+  AS TIMESTAMP WITH TIME ZONE) -
+  CAST('1999-12-23 19:59:04.224192 UTC'
   AS TIMESTAMP WITH TIME ZONE)
   AS overflows;
 
@@ -626,7 +636,8 @@ FROM
     ),
     ('2018-11-02 12:34:56.78'),
     ('2018-11-02 12:34:56.78901'),
-    ('2018-11-02 12:34:56.78901234')) AS d (d);
+    ('2018-11-02 12:34:56.78901234'))
+  AS d (d);
 
 SET TIME ZONE '00:00';
 
@@ -730,7 +741,9 @@ SELECT make_timestamptz(1973, 7, 15, 8, 15, 55.33, '+2');
 
 SELECT make_timestamptz(1973, 7, 15, 8, 15, 55.33, '-2');
 
-WITH tzs (tz) AS (
+WITH
+tzs (tz)
+AS (
   VALUES
     ('+1'),
     ('+1:'),
@@ -1157,14 +1170,17 @@ SELECT CAST('infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('-infinity' AS TIMEST
 SELECT CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('infinity' AS TIMESTAMP WITH TIME ZONE);
 
 SELECT
-  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('-infinity' AS TIMESTAMP WITH TIME ZONE);
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) -
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE);
 
 SELECT
-  CAST('infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('1995-08-06 12:12:12'
+  CAST('infinity' AS TIMESTAMP WITH TIME ZONE) -
+  CAST('1995-08-06 12:12:12'
   AS TIMESTAMP WITH TIME ZONE);
 
 SELECT
-  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) - CAST('1995-08-06 12:12:12'
+  CAST('-infinity' AS TIMESTAMP WITH TIME ZONE) -
+  CAST('1995-08-06 12:12:12'
   AS TIMESTAMP WITH TIME ZONE);
 
 SELECT age(CAST('infinity' AS TIMESTAMP WITH TIME ZONE));

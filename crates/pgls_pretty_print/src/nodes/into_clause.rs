@@ -56,21 +56,21 @@ pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
     }
 
     if !n.table_space_name.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
         emit_identifier_maybe_quoted(e, &n.table_space_name);
     }
 
     if !n.access_method.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::USING_KW);
         e.space();
         emit_identifier_maybe_quoted(e, &n.access_method);
     }
 
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
@@ -87,7 +87,7 @@ pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
 
     match OnCommitAction::try_from(n.on_commit).unwrap_or(OnCommitAction::Undefined) {
         OnCommitAction::OncommitPreserveRows => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::ON_KW);
             e.space();
             e.token(TokenKind::COMMIT_KW);
@@ -97,7 +97,7 @@ pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
             e.token(TokenKind::ROWS_KW);
         }
         OnCommitAction::OncommitDeleteRows => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::ON_KW);
             e.space();
             e.token(TokenKind::COMMIT_KW);
@@ -107,7 +107,7 @@ pub(super) fn emit_into_clause(e: &mut EventEmitter, n: &IntoClause) {
             e.token(TokenKind::ROWS_KW);
         }
         OnCommitAction::OncommitDrop => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::ON_KW);
             e.space();
             e.token(TokenKind::COMMIT_KW);

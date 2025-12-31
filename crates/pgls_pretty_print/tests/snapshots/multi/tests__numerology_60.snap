@@ -1,0 +1,222 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/numerology.sql
+snapshot_kind: text
+---
+SELECT 37;
+
+SELECT 187;
+
+SELECT 1071;
+
+SELECT 2147483647;
+
+SELECT 0b10000000000000000000000000000000;
+
+SELECT 2147483647;
+
+SELECT 0o20000000000;
+
+SELECT 2147483647;
+
+SELECT 0x80000000;
+
+SELECT -0b10000000000000000000000000000000;
+
+SELECT -0b10000000000000000000000000000001;
+
+SELECT -0o20000000000;
+
+SELECT -0o20000000001;
+
+SELECT -0x80000000;
+
+SELECT -0x80000001;
+
+SELECT
+  0b111111111111111111111111111111111111111111111111111111111111111;
+
+SELECT
+  0b1000000000000000000000000000000000000000000000000000000000000000;
+
+SELECT 0o777777777777777777777;
+
+SELECT 0o1000000000000000000000;
+
+SELECT 0x7FFFFFFFFFFFFFFF;
+
+SELECT 0x8000000000000000;
+
+SELECT
+  -0b1000000000000000000000000000000000000000000000000000000000000000;
+
+SELECT
+  -0b1000000000000000000000000000000000000000000000000000000000000001;
+
+SELECT -0o1000000000000000000000;
+
+SELECT -0o1000000000000000000001;
+
+SELECT -0x8000000000000000;
+
+SELECT -0x8000000000000001;
+
+PREPARE p1 AS SELECT $1 AS a;;
+
+PREPARE p1 AS SELECT $2147483648;;
+
+SELECT 1000000;
+
+SELECT 123;
+
+SELECT 518979583;
+
+SELECT 187;
+
+SELECT 37;
+
+SELECT 1_000.000_005;
+
+SELECT 1_000.;
+
+SELECT .000_005;
+
+SELECT 1_000.5e0_1;
+
+DO
+$$
+DECLARE
+  i int;
+BEGIN
+  FOR i IN 1_001..1_003 LOOP
+    RAISE NOTICE 'i = %', i;
+  END LOOP;
+END $$;
+
+SELECT _100;
+
+PREPARE p1 AS SELECT $0 AS _1;;
+
+CREATE TABLE temp_float (f1 DOUBLE PRECISION);
+
+INSERT INTO temp_float (f1) SELECT float8(f1) FROM int4_tbl;
+
+INSERT INTO temp_float (f1) SELECT float8(f1) FROM int2_tbl;
+
+SELECT f1 FROM temp_float ORDER BY f1;
+
+CREATE TABLE temp_int4 (f1 INT);
+
+INSERT INTO temp_int4
+(f1)
+SELECT
+  int4(f1)
+FROM
+  float8_tbl
+WHERE
+  f1 > -2147483647 AND
+  f1 < 2147483647;
+
+INSERT INTO temp_int4 (f1) SELECT int4(f1) FROM int2_tbl;
+
+SELECT f1 FROM temp_int4 ORDER BY f1;
+
+CREATE TABLE temp_int2 (f1 SMALLINT);
+
+INSERT INTO temp_int2
+(f1)
+SELECT
+  int2(f1)
+FROM
+  float8_tbl
+WHERE
+  f1 >= -32767 AND f1 <= 32767;
+
+INSERT INTO temp_int2
+(f1)
+SELECT
+  int2(f1)
+FROM
+  int4_tbl
+WHERE
+  f1 >= -32767 AND f1 <= 32767;
+
+SELECT f1 FROM temp_int2 ORDER BY f1;
+
+CREATE TABLE temp_group
+(
+  f1 INT,
+  f2 INT,
+  f3 DOUBLE PRECISION
+);
+
+INSERT INTO temp_group
+SELECT
+  1,
+  -i.f1,
+  -f.f1
+FROM
+  int4_tbl AS i,
+  float8_tbl AS f;
+
+INSERT INTO temp_group
+SELECT
+  2,
+  i.f1,
+  f.f1
+FROM
+  int4_tbl AS i,
+  float8_tbl AS f;
+
+SELECT DISTINCT f1 AS two FROM temp_group ORDER BY 1;
+
+SELECT
+  f1 AS two,
+  MAX(f3) AS max_float,
+  MIN(f3) AS min_float
+FROM
+  temp_group
+GROUP BY f1
+ORDER BY two,
+  max_float,
+  min_float;
+
+SELECT
+  f1 AS two,
+  MAX(f3) AS max_float,
+  MIN(f3) AS min_float
+FROM
+  temp_group
+GROUP BY two
+ORDER BY two,
+  max_float,
+  min_float;
+
+SELECT
+  f1 AS two,
+  MAX(f3) + 1 AS max_plus_1,
+  MIN(f3) - 1 AS min_minus_1
+FROM
+  temp_group
+GROUP BY f1
+ORDER BY two,
+  min_minus_1;
+
+SELECT
+  f1 AS two,
+  MAX(f2) + MIN(f2)
+  AS max_plus_min,
+  MIN(f3) - 1 AS min_minus_1
+FROM
+  temp_group
+GROUP BY f1
+ORDER BY two,
+  min_minus_1;
+
+DROP TABLE "temp_int2";
+
+DROP TABLE "temp_int4";
+
+DROP TABLE "temp_float";
+
+DROP TABLE "temp_group";

@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/brin_multi_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/brin_multi.sql
 snapshot_kind: text
 ---
-CREATE TABLE brintest_multi (
+CREATE TABLE brintest_multi
+(
   int8col BIGINT,
   int2col SMALLINT,
   int4col INT,
@@ -48,17 +49,23 @@ SELECT
   CAST('10.2.3.4/24' AS INET) + tenthous,
   CAST('10.2.3/24' AS CIDR) + tenthous,
   CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
+  CAST('01:20:30' AS TIME) +
+  thousand * CAST('18.5 second' AS INTERVAL),
+  CAST('1942-07-23 03:05:09' AS TIMESTAMP) +
+  tenthous * CAST('36.38 hours' AS INTERVAL),
   CAST('1972-10-10 03:00'
-  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
+  AS TIMESTAMP WITH TIME ZONE) +
+  thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
   justify_hours(
   tenthous * CAST('12 minutes' AS INTERVAL)
   )
   ),
-  CAST('01:30:20+02' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(tenthous AS NUMERIC(36, 30)) * fivethous * even / (hundred + 1),
+  CAST('01:30:20+02' AS TIME WITH TIME ZONE) +
+  hundred * CAST('15 seconds' AS INTERVAL),
+  CAST(tenthous AS NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
   CAST(format(
   '%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous, 'FM0000'),
@@ -78,10 +85,13 @@ FROM
 ORDER BY unique2
 LIMIT 100;
 
-INSERT INTO brintest_multi (inetcol, cidrcol)
+INSERT INTO brintest_multi
+(inetcol, cidrcol)
 SELECT
-  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) + tenthous,
-  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) + tenthous
+  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) +
+  tenthous,
+  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) +
+  tenthous
 FROM
   tenk1
 ORDER BY thousand,
@@ -92,14 +102,16 @@ CREATE INDEX "brinidx_multi"
 ON brintest_multi
 USING brin
 (
-  int8col int8_minmax_multi_ops(values_per_range = 7)
+  int8col
+  int8_minmax_multi_ops(values_per_range = 7)
 );
 
 CREATE INDEX "brinidx_multi"
 ON brintest_multi
 USING brin
 (
-  int8col int8_minmax_multi_ops(values_per_range = 257)
+  int8col
+  int8_minmax_multi_ops(values_per_range = 257)
 );
 
 CREATE INDEX "brinidx_multi"
@@ -157,7 +169,8 @@ USING brin
 )
 WITH (pages_per_range = 1);
 
-CREATE TABLE brinopers_multi (
+CREATE TABLE brinopers_multi
+(
   colname NAME,
   typ TEXT,
   op TEXT[],
@@ -387,7 +400,8 @@ VALUES
     '{100, 100, 1, 100, 100, 25, 100}'
   );
 
-DO $$
+DO
+$$
 DECLARE
 	r record;
 	r2 record;
@@ -493,17 +507,23 @@ SELECT
   CAST('10.2.3.4' AS INET) + tenthous,
   CAST('10.2.3/24' AS CIDR) + tenthous,
   CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
+  CAST('01:20:30' AS TIME) +
+  thousand * CAST('18.5 second' AS INTERVAL),
+  CAST('1942-07-23 03:05:09' AS TIMESTAMP) +
+  tenthous * CAST('36.38 hours' AS INTERVAL),
   CAST('1972-10-10 03:00'
-  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
+  AS TIMESTAMP WITH TIME ZONE) +
+  thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
   justify_hours(
   tenthous * CAST('12 minutes' AS INTERVAL)
   )
   ),
-  CAST('01:30:20' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(tenthous AS NUMERIC(36, 30)) * fivethous * even / (hundred + 1),
+  CAST('01:30:20' AS TIME WITH TIME ZONE) +
+  hundred * CAST('15 seconds' AS INTERVAL),
+  CAST(tenthous AS NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
   CAST(format(
   '%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous, 'FM0000'),
@@ -586,7 +606,8 @@ USING brin
 )
 WITH (pages_per_range = 2);
 
-DO $$
+DO
+$$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -767,7 +788,9 @@ FROM
     (SELECT
       fipshash(CAST(i / 13 AS TEXT)) AS v
     FROM
-      generate_series(1, 1000) AS s (i)) AS foo) AS bar
+      generate_series(1, 1000) AS s (i))
+    AS foo)
+  AS bar
 ORDER BY c + 25 * random();
 
 CREATE INDEX "brin_test_multi_2_idx"
@@ -805,7 +828,9 @@ FROM
     (SELECT
       fipshash(CAST(i / 13 AS TEXT)) AS v
     FROM
-      generate_series(1, 1000) AS s (i)) AS foo) AS bar
+      generate_series(1, 1000) AS s (i))
+    AS foo)
+  AS bar
 ORDER BY c + 25 * random();
 
 SELECT COUNT(*) FROM brin_test_multi_2 WHERE a < '3d914f93-48c9-cc0f-f8a7-9716700b9fcd';
@@ -831,14 +856,16 @@ SET datestyle = iso;
 INSERT INTO brin_timestamp_test
 SELECT
   CAST('4713-01-01 00:00:01 BC'
-  AS TIMESTAMP WITH TIME ZONE) + CAST(i || ' seconds' AS INTERVAL)
+  AS TIMESTAMP WITH TIME ZONE) +
+  CAST(i || ' seconds' AS INTERVAL)
 FROM
   generate_series(1, 30) AS s (i);
 
 INSERT INTO brin_timestamp_test
 SELECT
   CAST('294276-12-01 00:00:01'
-  AS TIMESTAMP WITH TIME ZONE) + CAST(i || ' seconds' AS INTERVAL)
+  AS TIMESTAMP WITH TIME ZONE) +
+  CAST(i || ' seconds' AS INTERVAL)
 FROM
   generate_series(1, 30) AS s (i);
 
@@ -897,7 +924,8 @@ FROM
   CAST('2000-01-01' AS TIMESTAMP),
   CAST('2000-02-09' AS TIMESTAMP),
   CAST('1 day' AS INTERVAL)
-  ) AS s (i);
+  )
+  AS s (i);
 
 CREATE INDEX
 ON brin_timestamp_test

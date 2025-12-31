@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/privileges_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/privileges.sql
 snapshot_kind: text
 ---
 SET client_min_messages = warning;
@@ -656,7 +656,8 @@ SELECT
 FROM
   ((SELECT a.q1 AS x FROM int8_tbl AS a OFFSET 0)
   UNION ALL
-  (SELECT b.q2 AS x FROM int8_tbl AS b OFFSET 0)) AS ss
+  (SELECT b.q2 AS x FROM int8_tbl AS b OFFSET 0))
+  AS ss
 WHERE
   FALSE;
 
@@ -679,7 +680,8 @@ FROM
   FROM
     int8_tbl AS b
   WHERE
-    q2 > 0) AS ss
+    q2 > 0)
+  AS ss
 WHERE
   x < 0;
 
@@ -830,7 +832,8 @@ UPDATE atest5 SET three = 5, one = 2;
 
 INSERT INTO atest5 (two) VALUES (6) ON CONFLICT (two) DO UPDATE SET three = 10;
 
-INSERT INTO atest5 (two)
+INSERT INTO atest5
+(two)
 VALUES (6)
 ON CONFLICT (two) DO UPDATE SET three = 10
 RETURNING atest5.three;
@@ -855,9 +858,12 @@ SET SESSION AUTHORIZATION regress_priv_user4;
 
 INSERT INTO atest5 (four) VALUES (4) ON CONFLICT (four) DO UPDATE SET three = 3;
 
-INSERT INTO atest5 (four)
+INSERT INTO atest5
+(four)
 VALUES (4)
-ON CONFLICT ON CONSTRAINT atest5_four_key DO
+ON CONFLICT
+ON CONSTRAINT atest5_four_key
+DO
 UPDATE
 SET three = 3;
 
@@ -871,9 +877,12 @@ SET SESSION AUTHORIZATION regress_priv_user4;
 
 INSERT INTO atest5 (four) VALUES (4) ON CONFLICT (four) DO UPDATE SET three = 3;
 
-INSERT INTO atest5 (four)
+INSERT INTO atest5
+(four)
 VALUES (4)
-ON CONFLICT ON CONSTRAINT atest5_four_key DO
+ON CONFLICT
+ON CONSTRAINT atest5_four_key
+DO
 UPDATE
 SET three = 3;
 
@@ -984,7 +993,8 @@ SET SESSION AUTHORIZATION regress_priv_user1;
 
 DROP TABLE "t1";
 
-CREATE TABLE errtst (a TEXT, b TEXT NOT NULL, c TEXT, secret1 TEXT, secret2 TEXT)
+CREATE TABLE errtst
+(a TEXT, b TEXT NOT NULL, c TEXT, secret1 TEXT, secret2 TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE errtst_part_1 (secret2 TEXT, c TEXT, a TEXT, b TEXT NOT NULL, secret1 TEXT);
@@ -1005,7 +1015,8 @@ GRANT UPDATE (a, b, c) ON TABLE errtst TO regress_priv_user2;
 
 GRANT INSERT (a, b, c) ON TABLE errtst TO regress_priv_user2;
 
-INSERT INTO errtst_part_1 (a, b, c, secret1, secret2)
+INSERT INTO errtst_part_1
+(a, b, c, secret1, secret2)
 VALUES (
   'aaa', 'bbb', 'ccc', 'the body', 'is in the attic'
 );
@@ -1081,7 +1092,8 @@ CREATE TABLE atestp1 (f1 INT, f2 INT);
 
 CREATE TABLE atestp2 (fx INT, fy INT);
 
-CREATE TABLE atestc (fz INT)
+CREATE TABLE atestc
+(fz INT)
 INHERITS (atestp1,
 atestp2);
 
@@ -1228,7 +1240,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS _ (x);
+    (3))
+  AS _ (x);
 
 CALL priv_testproc1(6);
 
@@ -1242,7 +1255,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS _ (x);
+    (3))
+  AS _ (x);
 
 CALL priv_testproc1(6);
 
@@ -1260,7 +1274,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS _ (x);
+    (3))
+  AS _ (x);
 
 CALL priv_testproc1(6);
 
@@ -1484,7 +1499,8 @@ FROM
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(t2.oid, 'pg_authid', 'delete')
@@ -1494,7 +1510,8 @@ FROM
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(
@@ -1508,7 +1525,8 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_authid') AS t1;
+    relname = 'pg_authid')
+  AS t1;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'select')
@@ -1518,13 +1536,15 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_authid') AS t1,
+    relname = 'pg_authid')
+  AS t1,
   (SELECT
     oid
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'insert')
@@ -1534,13 +1554,15 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_authid') AS t1,
+    relname = 'pg_authid')
+  AS t1,
   (SELECT
     oid
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT has_table_privilege('pg_authid', 'update');
 
@@ -1556,7 +1578,8 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_authid') AS t1;
+    relname = 'pg_authid')
+  AS t1;
 
 SELECT
   has_table_privilege(t1.oid, 'trigger')
@@ -1566,7 +1589,8 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_authid') AS t1;
+    relname = 'pg_authid')
+  AS t1;
 
 SET SESSION AUTHORIZATION regress_priv_user3;
 
@@ -1582,7 +1606,8 @@ FROM
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(t2.oid, 'pg_class', 'delete')
@@ -1592,7 +1617,8 @@ FROM
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(
@@ -1606,7 +1632,8 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_class') AS t1;
+    relname = 'pg_class')
+  AS t1;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'select')
@@ -1616,13 +1643,15 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_class') AS t1,
+    relname = 'pg_class')
+  AS t1,
   (SELECT
     oid
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'insert')
@@ -1632,13 +1661,15 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_class') AS t1,
+    relname = 'pg_class')
+  AS t1,
   (SELECT
     oid
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT has_table_privilege('pg_class', 'update');
 
@@ -1654,7 +1685,8 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_class') AS t1;
+    relname = 'pg_class')
+  AS t1;
 
 SELECT
   has_table_privilege(t1.oid, 'trigger')
@@ -1664,7 +1696,8 @@ FROM
   FROM
     pg_class
   WHERE
-    relname = 'pg_class') AS t1;
+    relname = 'pg_class')
+  AS t1;
 
 SELECT has_table_privilege(CURRENT_USER, 'atest1', 'select');
 
@@ -1678,7 +1711,8 @@ FROM
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(t2.oid, 'atest1', 'delete')
@@ -1688,7 +1722,8 @@ FROM
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(
@@ -1697,29 +1732,34 @@ SELECT
   'references'
   )
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1') AS t1;
+  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  AS t1;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'select')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1') AS t1,
+  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  AS t1,
   (SELECT
     oid
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'insert')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1') AS t1,
+  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  AS t1,
   (SELECT
     oid
   FROM
     pg_roles
   WHERE
-    rolname = CURRENT_USER) AS t2;
+    rolname = CURRENT_USER)
+  AS t2;
 
 SELECT has_table_privilege('atest1', 'update');
 
@@ -1730,12 +1770,14 @@ SELECT has_table_privilege('atest1', 'truncate');
 SELECT
   has_table_privilege(t1.oid, 'select')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1') AS t1;
+  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  AS t1;
 
 SELECT
   has_table_privilege(t1.oid, 'trigger')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1') AS t1;
+  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  AS t1;
 
 SELECT has_column_privilege('pg_authid', NULL, 'select');
 
@@ -1880,7 +1922,8 @@ SELECT brin_summarize_range('sro_brin', 0);
 
 DROP TABLE "sro_tab";
 
-CREATE TABLE sro_ptab (a INT)
+CREATE TABLE sro_ptab
+(a INT)
 PARTITION BY RANGE(a);
 
 ALTER TABLE sro_ptab
@@ -1938,7 +1981,8 @@ LANGUAGE "plpgsql"
 AS 'BEGIN PERFORM public.unwanted_grant(); RETURN NULL; END';
 
 CREATE CONSTRAINT TRIGGER t
-AFTER INSERT ON sro_trojan_table
+AFTER INSERT
+ON sro_trojan_table
 DEFERRABLE
 INITIALLY DEFERRED
 FOR EACH ROW
@@ -2249,7 +2293,8 @@ FROM
   pg_stat_activity
 WHERE
   CASE
-  WHEN COALESCE(usesysid, 10) = 10 THEN terminate_nothrow(pid)
+  WHEN COALESCE(usesysid, 10) = 10
+  THEN terminate_nothrow(pid)
   END;
 
 ROLLBACK;
@@ -2289,7 +2334,8 @@ SELECT
 
 BEGIN;
 
-DO $$BEGIN EXECUTE format(
+DO
+$$BEGIN EXECUTE format(
 	'ALTER DATABASE %I OWNER TO regress_priv_group2', current_catalog); END$$;
 
 SELECT
@@ -2610,7 +2656,8 @@ SELECT
   COUNT(*)
 FROM
   pg_default_acl AS d
-  LEFT OUTER JOIN pg_namespace AS n
+  LEFT OUTER JOIN
+    pg_namespace AS n
   ON defaclnamespace = n.oid
 WHERE
   nspname = 'testns';
@@ -2629,7 +2676,8 @@ SELECT
   d.*
 FROM
   pg_default_acl AS d
-  LEFT OUTER JOIN pg_namespace AS n
+  LEFT OUTER JOIN
+    pg_namespace AS n
   ON defaclnamespace = n.oid
 WHERE
   nspname IS NULL AND defaclnamespace <> 0;

@@ -86,8 +86,8 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
         emit_comma_separated_list(e, &n.columns, super::emit_node);
     }
 
-    // ON table - keep on same line as timing + events
-    e.space();
+    // ON table - allow break before ON for long table names
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
     e.space();
     if let Some(ref relation) = n.relation {

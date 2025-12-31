@@ -1,7 +1,7 @@
 use super::node_list::emit_comma_separated_list;
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::CreateExtensionStmt;
 
@@ -25,7 +25,7 @@ pub(super) fn emit_create_extension_stmt(e: &mut EventEmitter, n: &CreateExtensi
     e.token(TokenKind::IDENT(n.extname.clone()));
 
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("WITH".to_string()));
         e.space();
         emit_comma_separated_list(e, &n.options, super::emit_node);

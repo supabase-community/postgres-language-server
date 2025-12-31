@@ -16,11 +16,11 @@ pub(super) fn emit_on_conflict_clause(e: &mut EventEmitter, n: &OnConflictClause
     e.token(TokenKind::CONFLICT_KW);
 
     if let Some(ref infer) = n.infer {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_infer_clause(e, infer);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::DO_KW);
 
     match n.action() {

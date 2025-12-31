@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterSeqStmt;
 
 pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
@@ -24,7 +24,7 @@ pub(super) fn emit_alter_seq_stmt(e: &mut EventEmitter, n: &AlterSeqStmt) {
     // Emit sequence options with proper SQL syntax (not comma-separated)
     if !n.options.is_empty() {
         for opt in &n.options {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             // Use specialized sequence option emission
             if let Some(pgls_query::NodeEnum::DefElem(def_elem)) = opt.node.as_ref() {
                 super::emit_sequence_option(e, def_elem);

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/partition_aggregate_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/partition_aggregate.sql
 snapshot_kind: text
 ---
 SET enable_partitionwise_aggregate = 'true';
@@ -11,7 +11,8 @@ SET max_parallel_workers_per_gather = 0;
 
 SET enable_incremental_sort = off;
 
-CREATE TABLE pagg_tab (a INT, b INT, c TEXT, d INT)
+CREATE TABLE pagg_tab
+(a INT, b INT, c TEXT, d INT)
 PARTITION BY LIST(c);
 
 CREATE TABLE pagg_tab_p1
@@ -141,7 +142,8 @@ SELECT c, SUM(b ORDER BY a) FROM pagg_tab GROUP BY c ORDER BY 1, 2;
 
 SELECT a, SUM(b ORDER BY a) FROM pagg_tab GROUP BY a ORDER BY 1, 2;
 
-CREATE TABLE pagg_tab1 (x INT, y INT)
+CREATE TABLE pagg_tab1
+(x INT, y INT)
 PARTITION BY RANGE(x);
 
 CREATE TABLE pagg_tab1_p1 PARTITION OF pagg_tab1 FOR VALUES FROM (0) TO (10);
@@ -150,7 +152,8 @@ CREATE TABLE pagg_tab1_p2 PARTITION OF pagg_tab1 FOR VALUES FROM (10) TO (20);
 
 CREATE TABLE pagg_tab1_p3 PARTITION OF pagg_tab1 FOR VALUES FROM (20) TO (30);
 
-CREATE TABLE pagg_tab2 (x INT, y INT)
+CREATE TABLE pagg_tab2
+(x INT, y INT)
 PARTITION BY RANGE(y);
 
 CREATE TABLE pagg_tab2_p1 PARTITION OF pagg_tab2 FOR VALUES FROM (0) TO (10);
@@ -278,7 +281,8 @@ SELECT
   SUM(a.y)
 FROM
   pagg_tab1 AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  LEFT OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY b.y
 ORDER BY 1 NULLS LAST;
@@ -288,7 +292,8 @@ SELECT
   SUM(a.y)
 FROM
   pagg_tab1 AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  LEFT OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY b.y
 ORDER BY 1 NULLS LAST;
@@ -298,7 +303,8 @@ SELECT
   SUM(a.y)
 FROM
   pagg_tab1 AS a
-  RIGHT OUTER JOIN pagg_tab2 AS b
+  RIGHT OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY b.y
 ORDER BY 1 NULLS LAST;
@@ -308,7 +314,8 @@ SELECT
   SUM(a.y)
 FROM
   pagg_tab1 AS a
-  RIGHT OUTER JOIN pagg_tab2 AS b
+  RIGHT OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY b.y
 ORDER BY 1 NULLS LAST;
@@ -318,7 +325,8 @@ SELECT
   SUM(b.x)
 FROM
   pagg_tab1 AS a
-  FULL OUTER JOIN pagg_tab2 AS b
+  FULL OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY a.x
 ORDER BY 1 NULLS LAST;
@@ -328,7 +336,8 @@ SELECT
   SUM(b.x)
 FROM
   pagg_tab1 AS a
-  FULL OUTER JOIN pagg_tab2 AS b
+  FULL OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY a.x
 ORDER BY 1 NULLS LAST;
@@ -339,7 +348,8 @@ SELECT
   COUNT(*)
 FROM
   (SELECT * FROM pagg_tab1 WHERE x < 20) AS a
-  LEFT OUTER JOIN (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
+  LEFT OUTER JOIN
+    (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
   ON a.x = b.y
 WHERE
   a.x > 5 OR b.y < 20
@@ -354,7 +364,8 @@ SELECT
   COUNT(*)
 FROM
   (SELECT * FROM pagg_tab1 WHERE x < 20) AS a
-  LEFT OUTER JOIN (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
+  LEFT OUTER JOIN
+    (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
   ON a.x = b.y
 WHERE
   a.x > 5 OR b.y < 20
@@ -369,7 +380,8 @@ SELECT
   COUNT(*)
 FROM
   (SELECT * FROM pagg_tab1 WHERE x < 20) AS a
-  FULL OUTER JOIN (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
+  FULL OUTER JOIN
+    (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
   ON a.x = b.y
 WHERE
   a.x > 5 OR b.y < 20
@@ -384,7 +396,8 @@ SELECT
   COUNT(*)
 FROM
   (SELECT * FROM pagg_tab1 WHERE x < 20) AS a
-  FULL OUTER JOIN (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
+  FULL OUTER JOIN
+    (SELECT * FROM pagg_tab2 WHERE y > 10) AS b
   ON a.x = b.y
 WHERE
   a.x > 5 OR b.y < 20
@@ -398,8 +411,10 @@ SELECT
   a.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2) AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  (SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2)
+  AS a
+  LEFT OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY a.x,
   a.y
@@ -411,15 +426,18 @@ SELECT
   a.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2) AS a
-  LEFT OUTER JOIN pagg_tab2 AS b
+  (SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2)
+  AS a
+  LEFT OUTER JOIN
+    pagg_tab2 AS b
   ON a.x = b.y
 GROUP BY a.x,
   a.y
 ORDER BY 1,
   2;
 
-CREATE TABLE pagg_tab_m (a INT, b INT, c INT)
+CREATE TABLE pagg_tab_m
+(a INT, b INT, c INT)
 PARTITION BY RANGE(a, ((a + b) / 2));
 
 CREATE TABLE pagg_tab_m_p1 PARTITION OF pagg_tab_m FOR VALUES FROM (0, 0) TO (12, 12);
@@ -500,7 +518,8 @@ ORDER BY 1,
   2,
   3;
 
-CREATE TABLE pagg_tab_ml (a INT, b INT, c TEXT)
+CREATE TABLE pagg_tab_ml
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE pagg_tab_ml_p1 PARTITION OF pagg_tab_ml FOR VALUES FROM (0) TO (12);
@@ -514,7 +533,8 @@ CREATE TABLE pagg_tab_ml_p2_s1 PARTITION OF pagg_tab_ml_p2 FOR VALUES IN ('0000'
 
 CREATE TABLE pagg_tab_ml_p2_s2 PARTITION OF pagg_tab_ml_p2 FOR VALUES IN ('0003');
 
-CREATE TABLE pagg_tab_ml_p3 (b INT, c TEXT, a INT)
+CREATE TABLE pagg_tab_ml_p3
+(b INT, c TEXT, a INT)
 PARTITION BY RANGE(b);
 
 CREATE TABLE pagg_tab_ml_p3_s1 (c TEXT, a INT, b INT);
@@ -605,7 +625,8 @@ SELECT a, SUM(b), COUNT(*) FROM pagg_tab_ml GROUP BY a, b, c HAVING AVG(b) > 7 O
 
 SET parallel_setup_cost = 10;
 
-CREATE TABLE pagg_tab_para (x INT, y INT)
+CREATE TABLE pagg_tab_para
+(x INT, y INT)
 PARTITION BY RANGE(x);
 
 CREATE TABLE pagg_tab_para_p1 PARTITION OF pagg_tab_para FOR VALUES FROM (0) TO (12);

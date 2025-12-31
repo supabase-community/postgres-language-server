@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/object_address_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/object_address.sql
 snapshot_kind: text
 ---
 SET client_min_messages = warning;
@@ -33,14 +33,16 @@ CREATE TEXT SEARCH PARSER addr_ts_prs
   lextypes = prsd_lextype
 );
 
-CREATE TABLE addr_nsp.gentable (
+CREATE TABLE addr_nsp.gentable
+(
   a serial
   PRIMARY KEY
   CONSTRAINT "a_chk" CHECK (a > 0),
   b TEXT DEFAULT 'hello'
 );
 
-CREATE TABLE addr_nsp.parttable (a INT PRIMARY KEY)
+CREATE TABLE addr_nsp.parttable
+(a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE VIEW addr_nsp.genview
@@ -64,7 +66,8 @@ LANGUAGE "plpgsql"
 AS ' BEGIN END; ';
 
 CREATE TRIGGER t
-BEFORE INSERT ON addr_nsp.gentable
+BEFORE INSERT
+ON addr_nsp.gentable
 FOR EACH ROW
 EXECUTE FUNCTION addr_nsp.trig();
 
@@ -108,7 +111,8 @@ SELECT pg_get_object_address('table', '{}', '{}');
 
 SELECT pg_get_object_address('table', '{NULL}', '{}');
 
-DO $$
+DO
+$$
 DECLARE
     objtype text;
 BEGIN
@@ -160,7 +164,8 @@ FROM
   '{int4,int4}'
   );
 
-DO $$
+DO
+$$
 DECLARE
     objtype text;
     names   text[];
@@ -248,9 +253,11 @@ SELECT pg_get_object_address('subscription', '{one}', '{}');
 
 SELECT pg_get_object_address('subscription', '{one,two}', '{}');
 
-WITH objects (type,
+WITH
+objects (type,
 name,
-args) AS (
+args)
+AS (
   VALUES
     (
       'table',
@@ -385,7 +392,8 @@ FROM
   classid,
   objid,
   objsubid
-  ) AS ioa (typ, nms, args),
+  )
+  AS ioa (typ, nms, args),
   pg_get_object_address(typ, nms, ioa.args) AS addr2
 ORDER BY addr1.classid,
   addr1.objid,
@@ -405,9 +413,11 @@ DROP OWNED BY regress_addr_user;
 
 DROP ROLE regress_addr_user;
 
-WITH objects (classid,
+WITH
+objects (classid,
 objid,
-objsubid) AS (
+objsubid)
+AS (
   VALUES
     (CAST('pg_class' AS REGCLASS), 0, 0),
     (

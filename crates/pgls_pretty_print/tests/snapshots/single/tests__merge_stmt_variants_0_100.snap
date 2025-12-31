@@ -1,10 +1,11 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/merge_stmt_variants_0_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/merge_stmt_variants_0.sql
 snapshot_kind: text
 ---
 MERGE INTO inventories AS t
-USING staging_inventory AS s ON t.sku = s.sku
+USING staging_inventory AS s
+ON t.sku = s.sku
 WHEN MATCHED AND
   s.operation = 'delete'
 THEN DELETE

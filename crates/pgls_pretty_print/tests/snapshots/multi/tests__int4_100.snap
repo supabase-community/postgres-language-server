@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/int4_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/int4.sql
 snapshot_kind: text
 ---
 INSERT INTO int4_tbl (f1) VALUES ('34.5');
@@ -143,7 +143,8 @@ FROM
     (CAST(0.0 AS DOUBLE PRECISION)),
     (CAST(0.5 AS DOUBLE PRECISION)),
     (CAST(1.5 AS DOUBLE PRECISION)),
-    (CAST(2.5 AS DOUBLE PRECISION))) AS t (x);
+    (CAST(2.5 AS DOUBLE PRECISION)))
+  AS t (x);
 
 SELECT
   x,
@@ -156,7 +157,8 @@ FROM
     (CAST(0.0 AS NUMERIC)),
     (CAST(0.5 AS NUMERIC)),
     (CAST(1.5 AS NUMERIC)),
-    (CAST(2.5 AS NUMERIC))) AS t (x);
+    (CAST(2.5 AS NUMERIC)))
+  AS t (x);
 
 SELECT
   a,
@@ -177,7 +179,8 @@ FROM
     ),
     (
       CAST(-2147483648 AS INT), CAST(1073741824 AS INT)
-    )) AS v (a, b);
+    ))
+  AS v (a, b);
 
 SELECT gcd(CAST(-2147483648 AS INT), CAST(0 AS INT));
 
@@ -197,7 +200,8 @@ FROM
     (CAST(42 AS INT), CAST(42 AS INT)),
     (CAST(330 AS INT), CAST(462 AS INT)),
     (-CAST(330 AS INT), CAST(462 AS INT)),
-    (CAST(-2147483648 AS INT), CAST(0 AS INT))) AS v (a, b);
+    (CAST(-2147483648 AS INT), CAST(0 AS INT)))
+  AS v (a, b);
 
 SELECT lcm(CAST(-2147483648 AS INT), CAST(1 AS INT));
 

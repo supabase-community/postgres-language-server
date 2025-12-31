@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/drop_if_exists_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/drop_if_exists.sql
 snapshot_kind: text
 ---
 DROP TABLE "test_exists";
@@ -187,7 +187,8 @@ DROP TRIGGER "test_trigger_exists" ON "no_such_schema"."no_such_table";
 DROP TRIGGER IF EXISTS "test_trigger_exists" ON "no_such_schema"."no_such_table";
 
 CREATE TRIGGER test_trigger_exists
-BEFORE UPDATE ON test_exists
+BEFORE UPDATE
+ON test_exists
 FOR EACH ROW
 EXECUTE FUNCTION suppress_redundant_updates_trigger();
 

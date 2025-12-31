@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/aggregates_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/aggregates.sql
 snapshot_kind: text
 ---
 SET extra_float_digits = 0;
@@ -21,7 +21,8 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (v);
+    (3))
+  AS v (v);
 
 SELECT any_value(v) FROM (VALUES (NULL)) AS v (v);
 
@@ -31,7 +32,8 @@ FROM
   (VALUES
     (NULL),
     (1),
-    (2)) AS v (v);
+    (2))
+  AS v (v);
 
 SELECT any_value(v) FROM (VALUES (ARRAY['hello', 'world'])) AS v (v);
 
@@ -142,7 +144,8 @@ SELECT
 FROM
   (VALUES
     ('1'),
-    ('infinity')) AS v (x);
+    ('infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS DOUBLE PRECISION)),
@@ -151,7 +154,8 @@ SELECT
 FROM
   (VALUES
     ('infinity'),
-    ('1')) AS v (x);
+    ('1'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS DOUBLE PRECISION)),
@@ -160,7 +164,8 @@ SELECT
 FROM
   (VALUES
     ('infinity'),
-    ('infinity')) AS v (x);
+    ('infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS DOUBLE PRECISION)),
@@ -169,7 +174,8 @@ SELECT
 FROM
   (VALUES
     ('-infinity'),
-    ('infinity')) AS v (x);
+    ('infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS DOUBLE PRECISION)),
@@ -178,7 +184,8 @@ SELECT
 FROM
   (VALUES
     ('-infinity'),
-    ('-infinity')) AS v (x);
+    ('-infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS NUMERIC)),
@@ -187,7 +194,8 @@ SELECT
 FROM
   (VALUES
     ('1'),
-    ('infinity')) AS v (x);
+    ('infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS NUMERIC)),
@@ -196,7 +204,8 @@ SELECT
 FROM
   (VALUES
     ('infinity'),
-    ('1')) AS v (x);
+    ('1'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS NUMERIC)),
@@ -205,7 +214,8 @@ SELECT
 FROM
   (VALUES
     ('infinity'),
-    ('infinity')) AS v (x);
+    ('infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS NUMERIC)),
@@ -214,7 +224,8 @@ SELECT
 FROM
   (VALUES
     ('-infinity'),
-    ('infinity')) AS v (x);
+    ('infinity'))
+  AS v (x);
 
 SELECT
   SUM(CAST(x AS NUMERIC)),
@@ -223,7 +234,8 @@ SELECT
 FROM
   (VALUES
     ('-infinity'),
-    ('-infinity')) AS v (x);
+    ('-infinity'))
+  AS v (x);
 
 SELECT
   AVG(CAST(x AS DOUBLE PRECISION)),
@@ -233,7 +245,8 @@ FROM
     (100000003),
     (100000004),
     (100000006),
-    (100000007)) AS v (x);
+    (100000007))
+  AS v (x);
 
 SELECT
   AVG(CAST(x AS DOUBLE PRECISION)),
@@ -241,7 +254,8 @@ SELECT
 FROM
   (VALUES
     (7000000000005),
-    (7000000000007)) AS v (x);
+    (7000000000007))
+  AS v (x);
 
 SELECT regr_count(b, a) FROM aggtest;
 
@@ -418,7 +432,8 @@ FROM
   onek AS a
 GROUP BY ten
 HAVING
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     onek AS b
@@ -432,7 +447,8 @@ FROM
   onek AS a
 GROUP BY ten
 HAVING
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     onek AS b
@@ -452,7 +468,8 @@ FROM
     SUM(s1 + s2) AS sm
   FROM
     generate_series(1, 3) AS s2
-  GROUP BY s2) AS ss
+  GROUP BY s2)
+  AS ss
 ORDER BY 1,
   2;
 
@@ -467,7 +484,8 @@ FROM
     SUM(s1 + s2) AS sm
   FROM
     generate_series(1, 3) AS s2
-  GROUP BY s2) AS ss
+  GROUP BY s2)
+  AS ss
 ORDER BY 1,
   2;
 
@@ -637,13 +655,16 @@ SELECT MAX(100) FROM tenk1;
 
 CREATE TABLE minmaxtest (f1 INT);
 
-CREATE TABLE minmaxtest1 ()
+CREATE TABLE minmaxtest1
+()
 INHERITS (minmaxtest);
 
-CREATE TABLE minmaxtest2 ()
+CREATE TABLE minmaxtest2
+()
 INHERITS (minmaxtest);
 
-CREATE TABLE minmaxtest3 ()
+CREATE TABLE minmaxtest3
+()
 INHERITS (minmaxtest);
 
 CREATE INDEX "minmaxtesti"
@@ -769,14 +790,16 @@ GROUP BY t1.a,
 
 SELECT * FROM t3 GROUP BY a, b, c;
 
-CREATE TEMPORARY TABLE t1c ()
+CREATE TEMPORARY TABLE t1c
+()
 INHERITS (t1);
 
 SELECT * FROM t1 GROUP BY a, b, c, d;
 
 SELECT * FROM ONLY t1 GROUP BY a, b, c, d;
 
-CREATE TEMPORARY TABLE p_t1 (a INT, b INT, c INT, d INT, PRIMARY KEY (a, b))
+CREATE TEMPORARY TABLE p_t1
+(a INT, b INT, c INT, d INT, PRIMARY KEY (a, b))
 PARTITION BY LIST(a);
 
 CREATE TEMPORARY TABLE p_t1_1 PARTITION OF p_t1 FOR VALUES IN (1);
@@ -856,7 +879,8 @@ SELECT
   COUNT(*)
 FROM
   t1 AS x (x0, x1)
-  LEFT OUTER JOIN t1 LEFT OUTER JOIN t2 USING ("f1")
+  LEFT OUTER JOIN
+    t1 LEFT OUTER JOIN t2 USING ("f1")
   ON x0 = 0
 GROUP BY f1;
 
@@ -865,7 +889,8 @@ SELECT
   COUNT(*)
 FROM
   t1 AS x (x0, x1)
-  LEFT OUTER JOIN t1 LEFT OUTER JOIN t2 USING ("f2")
+  LEFT OUTER JOIN
+    t1 LEFT OUTER JOIN t2 USING ("f2")
   ON x0 = 0
 GROUP BY f2;
 
@@ -947,7 +972,8 @@ FROM
     (1, 4),
     (2, 3),
     (3, 1),
-    (4, 2)) AS v (a, b);
+    (4, 2))
+  AS v (a, b);
 
 SELECT
   array_agg(a ORDER BY a)
@@ -956,7 +982,8 @@ FROM
     (1, 4),
     (2, 3),
     (3, 1),
-    (4, 2)) AS v (a, b);
+    (4, 2))
+  AS v (a, b);
 
 SELECT
   array_agg(a ORDER BY a DESC)
@@ -965,7 +992,8 @@ FROM
     (1, 4),
     (2, 3),
     (3, 1),
-    (4, 2)) AS v (a, b);
+    (4, 2))
+  AS v (a, b);
 
 SELECT
   array_agg(b ORDER BY a DESC)
@@ -974,7 +1002,8 @@ FROM
     (1, 4),
     (2, 3),
     (3, 1),
-    (4, 2)) AS v (a, b);
+    (4, 2))
+  AS v (a, b);
 
 SELECT
   array_agg(DISTINCT a)
@@ -985,7 +1014,8 @@ FROM
     (1),
     (3),
     (NULL),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SELECT
   array_agg(DISTINCT a ORDER BY a)
@@ -996,7 +1026,8 @@ FROM
     (1),
     (3),
     (NULL),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SELECT
   array_agg(DISTINCT a ORDER BY a DESC)
@@ -1007,7 +1038,8 @@ FROM
     (1),
     (3),
     (NULL),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SELECT
   array_agg(DISTINCT a ORDER BY a DESC NULLS LAST)
@@ -1018,7 +1050,8 @@ FROM
     (1),
     (3),
     (NULL),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SELECT
   aggfstr(a, b, c)
@@ -1027,7 +1060,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c);
+    (3, 1, 'baz'))
+  AS v (a, b, c);
 
 SELECT
   aggfns(a, b, c)
@@ -1036,7 +1070,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c);
+    (3, 1, 'baz'))
+  AS v (a, b, c);
 
 SELECT
   aggfstr(DISTINCT a, b, c)
@@ -1045,7 +1080,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 3) AS i;
 
 SELECT
@@ -1055,7 +1091,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 3) AS i;
 
 SELECT
@@ -1065,7 +1102,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 3) AS i;
 
 SELECT
@@ -1075,7 +1113,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 3) AS i;
 
 SELECT
@@ -1085,7 +1124,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 2) AS i;
 
 SELECT
@@ -1095,7 +1135,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 2) AS i;
 
 SELECT
@@ -1105,7 +1146,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 2) AS i;
 
 SELECT
@@ -1121,7 +1163,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 2) AS i;
 
 SELECT
@@ -1145,7 +1188,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c);
+    (3, 1, 'baz'))
+  AS v (a, b, c);
 
 SELECT * FROM agg_view1;
 
@@ -1159,7 +1203,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 3) AS i;
 
 SELECT * FROM agg_view1;
@@ -1174,7 +1219,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 3) AS i;
 
 SELECT * FROM agg_view1;
@@ -1189,7 +1235,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c);
+    (3, 1, 'baz'))
+  AS v (a, b, c);
 
 SELECT * FROM agg_view1;
 
@@ -1203,7 +1250,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c);
+    (3, 1, 'baz'))
+  AS v (a, b, c);
 
 SELECT * FROM agg_view1;
 
@@ -1217,7 +1265,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c);
+    (3, 1, 'baz'))
+  AS v (a, b, c);
 
 SELECT * FROM agg_view1;
 
@@ -1237,7 +1286,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 2) AS i;
 
 SELECT * FROM agg_view1;
@@ -1276,7 +1326,8 @@ FROM
   (VALUES
     ('aaaa'),
     ('bbbb'),
-    ('cccc')) AS g (a);
+    ('cccc'))
+  AS g (a);
 
 SELECT
   string_agg(a, ',')
@@ -1285,7 +1336,8 @@ FROM
     ('aaaa'),
     (NULL),
     ('bbbb'),
-    ('cccc')) AS g (a);
+    ('cccc'))
+  AS g (a);
 
 SELECT
   string_agg(a, 'AB')
@@ -1294,14 +1346,16 @@ FROM
     (NULL),
     (NULL),
     ('bbbb'),
-    ('cccc')) AS g (a);
+    ('cccc'))
+  AS g (a);
 
 SELECT
   string_agg(a, ',')
 FROM
   (VALUES
     (NULL),
-    (NULL)) AS g (a);
+    (NULL))
+  AS g (a);
 
 SELECT string_agg(DISTINCT f1, ',' ORDER BY f1) FROM varchar_tbl;
 
@@ -1399,7 +1453,9 @@ FROM
       array_agg(ARRAY[x]) AS aa
     FROM
       pagg_test
-    GROUP BY y) AS a1) AS a2
+    GROUP BY y)
+    AS a1)
+  AS a2
 GROUP BY y;
 
 SELECT * FROM v_pagg_test ORDER BY y;
@@ -1454,7 +1510,8 @@ FROM
   onek AS a
 GROUP BY ten
 HAVING
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     onek AS b
@@ -1476,14 +1533,16 @@ FROM
   (VALUES
     (1),
     (2),
-    (3)) AS v (v);
+    (3))
+  AS v (v);
 
 SELECT
   (SELECT COUNT(*) FROM (VALUES (1)) AS t0 (inner_c))
 FROM
   (VALUES
     (2),
-    (3)) AS t1 (outer_c);
+    (3))
+  AS t1 (outer_c);
 
 SELECT
   (SELECT
@@ -1493,7 +1552,8 @@ SELECT
 FROM
   (VALUES
     (2),
-    (3)) AS t1 (outer_c);
+    (3))
+  AS t1 (outer_c);
 
 SELECT
   (SELECT
@@ -1503,7 +1563,8 @@ SELECT
 FROM
   (VALUES
     (2),
-    (3)) AS t1 (outer_c);
+    (3))
+  AS t1 (outer_c);
 
 SELECT
   (SELECT
@@ -1525,7 +1586,8 @@ SELECT
   unique1
   )
   FILTER (WHERE
-    unique1 IN (SELECT unique1 FROM onek WHERE unique1 < 100))
+    unique1 IN
+    (SELECT unique1 FROM onek WHERE unique1 < 100))
 FROM
   tenk1;
 
@@ -1544,7 +1606,8 @@ FROM
     (1, 3, 'foo'),
     (0, NULL, NULL),
     (2, 2, 'bar'),
-    (3, 1, 'baz')) AS v (a, b, c),
+    (3, 1, 'baz'))
+  AS v (a, b, c),
   generate_series(1, 2) AS i;
 
 SELECT MAX(0) FILTER (WHERE b1) FROM bool_test;
@@ -1576,7 +1639,8 @@ FROM
     (0.6),
     (0.75),
     (0.9),
-    (1)) AS v (p)
+    (1))
+  AS v (p)
 GROUP BY p
 ORDER BY p;
 
@@ -1597,7 +1661,8 @@ FROM
     (0.6),
     (0.75),
     (0.9),
-    (1)) AS v (p)
+    (1))
+  AS v (p)
 GROUP BY p
 ORDER BY p;
 
@@ -1615,7 +1680,8 @@ FROM
     (0.6),
     (0.75),
     (0.9),
-    (1)) AS v (p)
+    (1))
+  AS v (p)
 GROUP BY p
 ORDER BY p;
 
@@ -1637,7 +1703,8 @@ FROM
     (2),
     (3),
     (3),
-    (4)) AS v (x);
+    (4))
+  AS v (x);
 
 SELECT
   CUME_DIST(3) WITHIN GROUP (ORDER BY x)
@@ -1649,7 +1716,8 @@ FROM
     (2),
     (3),
     (3),
-    (4)) AS v (x);
+    (4))
+  AS v (x);
 
 SELECT
   PERCENT_RANK(3) WITHIN GROUP (ORDER BY x)
@@ -1662,7 +1730,8 @@ FROM
     (3),
     (3),
     (4),
-    (5)) AS v (x);
+    (5))
+  AS v (x);
 
 SELECT
   DENSE_RANK(3) WITHIN GROUP (ORDER BY x)
@@ -1674,7 +1743,8 @@ FROM
     (2),
     (3),
     (3),
-    (4)) AS v (x);
+    (4))
+  AS v (x);
 
 SELECT
   percentile_disc(
@@ -1724,7 +1794,8 @@ FROM
   unnest(
   CAST('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
   AS TEXT[])
-  ) AS u (x);
+  )
+  AS u (x);
 
 SELECT
   pg_collation_for(
@@ -1736,7 +1807,8 @@ SELECT
 FROM
   (VALUES
     ('fred'),
-    ('jim')) AS v (x);
+    ('jim'))
+  AS v (x);
 
 SELECT
   test_rank(3) WITHIN GROUP (ORDER BY x)
@@ -1748,7 +1820,8 @@ FROM
     (2),
     (3),
     (3),
-    (4)) AS v (x);
+    (4))
+  AS v (x);
 
 SELECT test_percentile_disc(0.5) WITHIN GROUP (ORDER BY thousand) FROM tenk1;
 
@@ -1760,7 +1833,8 @@ SELECT
   FROM
     (VALUES
       (0.3),
-      (0.7)) AS v (a)
+      (0.7))
+    AS v (a)
   GROUP BY a)
 FROM
   generate_series(1, 5) AS g (x);
@@ -1772,7 +1846,8 @@ SELECT
 FROM
   (VALUES
     ('fred'),
-    ('jim')) AS v (x);
+    ('jim'))
+  AS v (x);
 
 SELECT RANK(3) WITHIN GROUP (ORDER BY stringu1, stringu2) FROM tenk1;
 
@@ -1786,7 +1861,8 @@ SELECT
 FROM
   (VALUES
     ('fred'),
-    ('jim')) AS v (x);
+    ('jim'))
+  AS v (x);
 
 SELECT
   RANK(
@@ -1796,7 +1872,8 @@ SELECT
 FROM
   (VALUES
     ('fred'),
-    ('jim')) AS v (x);
+    ('jim'))
+  AS v (x);
 
 SELECT RANK('3') WITHIN GROUP (ORDER BY x) FROM generate_series(1, 5) AS x;
 
@@ -1910,7 +1987,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (3)) AS t (one);
+    (3))
+  AS t (one);
 
 SELECT
   my_avg(one),
@@ -1918,7 +1996,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (3)) AS t (one);
+    (3))
+  AS t (one);
 
 SELECT
   my_avg(DISTINCT one),
@@ -1927,7 +2006,8 @@ FROM
   (VALUES
     (1),
     (3),
-    (1)) AS t (one);
+    (1))
+  AS t (one);
 
 SELECT
   my_avg(DISTINCT one),
@@ -1935,7 +2015,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (3)) AS t (one);
+    (3))
+  AS t (one);
 
 SELECT
   my_avg(one) FILTER (WHERE one > 1),
@@ -1943,7 +2024,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (3)) AS t (one);
+    (3))
+  AS t (one);
 
 SELECT
   my_avg(one),
@@ -1951,7 +2033,8 @@ SELECT
 FROM
   (VALUES
     (1, 2),
-    (3, 4)) AS t (one, two);
+    (3, 4))
+  AS t (one, two);
 
 SELECT
   percentile_cont(0.5) WITHIN GROUP (ORDER BY a),
@@ -1961,7 +2044,8 @@ FROM
     (CAST(1 AS DOUBLE PRECISION)),
     (3),
     (5),
-    (7)) AS t (a);
+    (7))
+  AS t (a);
 
 SELECT
   percentile_cont(0.25) WITHIN GROUP (ORDER BY a),
@@ -1971,7 +2055,8 @@ FROM
     (CAST(1 AS DOUBLE PRECISION)),
     (3),
     (5),
-    (7)) AS t (a);
+    (7))
+  AS t (a);
 
 SELECT
   RANK(4) WITHIN GROUP (ORDER BY a),
@@ -1981,9 +2066,13 @@ FROM
     (1),
     (3),
     (5),
-    (7)) AS t (a);
+    (7))
+  AS t (a);
 
-CREATE AGGREGATE my_sum_init (INT)
+CREATE AGGREGATE my_sum_init
+(
+  INT
+)
 (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -1991,7 +2080,10 @@ CREATE AGGREGATE my_sum_init (INT)
   initcond = '(10,0)'
 );
 
-CREATE AGGREGATE my_avg_init (INT)
+CREATE AGGREGATE my_avg_init
+(
+  INT
+)
 (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -1999,7 +2091,10 @@ CREATE AGGREGATE my_avg_init (INT)
   initcond = '(10,0)'
 );
 
-CREATE AGGREGATE my_avg_init2 (INT)
+CREATE AGGREGATE my_avg_init2
+(
+  INT
+)
 (
   stype = avg_state,
   sfunc = avg_transfn,
@@ -2013,7 +2108,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (3)) AS t (one);
+    (3))
+  AS t (one);
 
 SELECT
   my_sum_init(one),
@@ -2021,7 +2117,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (3)) AS t (one);
+    (3))
+  AS t (one);
 
 ROLLBACK;
 
@@ -2074,7 +2171,8 @@ FROM
     (1),
     (2),
     (3),
-    (4)) AS t (one);
+    (4))
+  AS t (one);
 
 ROLLBACK;
 
@@ -2092,7 +2190,10 @@ BEGIN
     RETURN NULL;
 END';
 
-CREATE AGGREGATE balk (INT)
+CREATE AGGREGATE balk
+(
+  INT
+)
 (
   sfunc = balkifnull(int8, int4),
   stype = BIGINT,
@@ -2142,7 +2243,8 @@ SELECT
   COUNT(*)
 FROM
   btg AS t1
-  INNER JOIN btg AS t2
+  INNER JOIN
+    btg AS t2
   ON t1.w = t2.w AND t1.x = t2.x AND t1.z = t2.z
 GROUP BY t1.w,
   t1.z,
@@ -2188,7 +2290,8 @@ SELECT
   AVG(c1.f ORDER BY c1.x, c1.y)
 FROM
   group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  INNER JOIN
+    group_agg_pk AS c2
   ON c1.x = c2.x
 GROUP BY c1.w,
   c1.z;
@@ -2197,7 +2300,8 @@ SELECT
   AVG(c1.f ORDER BY c1.x, c1.y)
 FROM
   group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  INNER JOIN
+    group_agg_pk AS c2
   ON c1.x = c2.x
 GROUP BY c1.w,
   c1.z;
@@ -2207,7 +2311,8 @@ SELECT
   c1.x
 FROM
   group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  INNER JOIN
+    group_agg_pk AS c2
   ON c1.x = c2.x
 GROUP BY c1.y,
   c1.x,
@@ -2218,7 +2323,8 @@ SELECT
   c1.x
 FROM
   group_agg_pk AS c1
-  INNER JOIN group_agg_pk AS c2
+  INNER JOIN
+    group_agg_pk AS c2
   ON c1.x = c2.x
 GROUP BY c1.y,
   c2.x,
@@ -2268,7 +2374,10 @@ BEGIN
     RETURN NULL;
 END';
 
-CREATE AGGREGATE balk (INT)
+CREATE AGGREGATE balk
+(
+  INT
+)
 (
   sfunc = int4_sum(int8, int4),
   stype = BIGINT,
@@ -2317,7 +2426,10 @@ BEGIN
 END;
 ';
 
-CREATE AGGREGATE rwagg (ANYARRAY)
+CREATE AGGREGATE rwagg
+(
+  ANYARRAY
+)
 (
   stype = ANYARRAY,
   sfunc = rwagg_sfunc,
@@ -2366,7 +2478,8 @@ FROM
   UNION ALL
   SELECT * FROM tenk1
   UNION ALL
-  SELECT * FROM tenk1) AS u;
+  SELECT * FROM tenk1)
+  AS u;
 
 SELECT
   variance(CAST(unique1 AS INT)),
@@ -2380,7 +2493,8 @@ FROM
   UNION ALL
   SELECT * FROM tenk1
   UNION ALL
-  SELECT * FROM tenk1) AS u;
+  SELECT * FROM tenk1)
+  AS u;
 
 SELECT
   variance(CAST(unique1 AS BIGINT)),
@@ -2390,7 +2504,8 @@ FROM
   UNION ALL
   SELECT * FROM tenk1
   UNION ALL
-  SELECT * FROM tenk1) AS u;
+  SELECT * FROM tenk1)
+  AS u;
 
 SELECT
   variance(CAST(unique1 AS BIGINT)),
@@ -2400,7 +2515,8 @@ FROM
   UNION ALL
   SELECT * FROM tenk1
   UNION ALL
-  SELECT * FROM tenk1) AS u;
+  SELECT * FROM tenk1)
+  AS u;
 
 ROLLBACK;
 
@@ -2413,7 +2529,8 @@ FROM
     (2),
     (2),
     (3),
-    (3)) AS v (x)
+    (3))
+  AS v (x)
 GROUP BY x
 ORDER BY 1;
 
@@ -2498,7 +2615,8 @@ AS
     (VALUES
       (100),
       (300),
-      (500)) AS r (a),
+      (500))
+    AS r (a),
     LATERAL (SELECT
       CAST(g / 2 AS NUMERIC) AS c1,
       array_agg(CAST(g AS NUMERIC)) AS c2,
@@ -2507,7 +2625,8 @@ AS
       agg_data_2k
     WHERE
       g < r.a
-    GROUP BY g / 2) AS s;
+    GROUP BY g / 2)
+    AS s;
 
 SET jit_above_cost = DEFAULT;
 
@@ -2563,7 +2682,8 @@ AS
     (VALUES
       (100),
       (300),
-      (500)) AS r (a),
+      (500))
+    AS r (a),
     LATERAL (SELECT
       CAST(g / 2 AS NUMERIC) AS c1,
       array_agg(CAST(g AS NUMERIC)) AS c2,
@@ -2572,7 +2692,8 @@ AS
       agg_data_2k
     WHERE
       g < r.a
-    GROUP BY g / 2) AS s;
+    GROUP BY g / 2)
+    AS s;
 
 SET jit_above_cost = DEFAULT;
 

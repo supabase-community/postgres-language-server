@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/select_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/select.sql
 snapshot_kind: text
 ---
 SELECT * FROM onek WHERE onek.unique1 < 10 ORDER BY onek.unique1;
@@ -85,7 +85,8 @@ FROM
   onek,
   (VALUES
     (147, 'RFAAAA'),
-    (931, 'VJAAAA')) AS v (i, j)
+    (931, 'VJAAAA'))
+  AS v (i, j)
 WHERE
   onek.unique1 = v.i AND onek.stringu1 = v.j;
 
@@ -103,10 +104,12 @@ FROM
         (389),
         (1000),
         (2000),
-        ((SELECT 10029))) AS foo (i)
+        ((SELECT 10029)))
+      AS foo (i)
     ORDER BY i ASC
     LIMIT 1)
-  )) AS bar (i)
+  ))
+  AS bar (i)
 WHERE
   onek.unique1 = bar.i;
 
@@ -115,7 +118,8 @@ SELECT
 FROM
   onek
 WHERE
-  (unique1, ten) IN (VALUES
+  (unique1, ten) IN
+  (VALUES
     (1, 1),
     (20, 0),
     (99, 9),
@@ -277,7 +281,8 @@ FROM
   (VALUES
     (2),
     (NULL),
-    (1)) AS v (k)
+    (1))
+  AS v (k)
 WHERE
   k = k
 ORDER BY k;
@@ -288,11 +293,13 @@ FROM
   (VALUES
     (2),
     (NULL),
-    (1)) AS v (k)
+    (1))
+  AS v (k)
 WHERE
   k = k;
 
-CREATE TABLE list_parted_tbl (a INT, b INT)
+CREATE TABLE list_parted_tbl
+(a INT, b INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE list_parted_tbl1 PARTITION OF list_parted_tbl FOR VALUES IN (1) PARTITION BY LIST(b);

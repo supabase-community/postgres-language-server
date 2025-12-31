@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_jsontable_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_jsontable.sql
 snapshot_kind: text
 ---
 SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS ( js2 INT PATH '$' ) DEFAULT 1 ON ERROR );
@@ -65,77 +65,81 @@ SELECT
   *
 FROM
   json_table_test AS vals
-  LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
-    'lax $[*]'
-    COLUMNS (
-      id FOR ORDINALITY,
-      int INT PATH '$',
-      text text PATH '$',
-      "char(4)" CHAR(4) PATH '$',
-      bool bool PATH '$',
-      numeric NUMERIC PATH '$',
-      domain jsonb_test_domain PATH '$',
-      js JSON PATH '$',
-      jb jsonb PATH '$'
-    )
-  ) AS jt
+  LEFT OUTER JOIN
+    JSON_TABLE(
+      CAST(vals.js AS JSONB),
+      'lax $[*]'
+      COLUMNS (
+        id FOR ORDINALITY,
+        int INT PATH '$',
+        text text PATH '$',
+        "char(4)" CHAR(4) PATH '$',
+        bool bool PATH '$',
+        numeric NUMERIC PATH '$',
+        domain jsonb_test_domain PATH '$',
+        js JSON PATH '$',
+        jb jsonb PATH '$'
+      )
+    ) AS jt
   ON TRUE;
 
 SELECT
   *
 FROM
   json_table_test AS vals
-  LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
-    'lax $[*]'
-    COLUMNS (
-      id FOR ORDINALITY,
-      jst text FORMAT JSON PATH '$',
-      jsc CHAR(4) FORMAT JSON PATH '$',
-      jsv VARCHAR(4) FORMAT JSON PATH '$',
-      jsb jsonb FORMAT JSON PATH '$',
-      jsbq jsonb FORMAT JSON PATH '$' OMIT QUOTES
-    )
-  ) AS jt
+  LEFT OUTER JOIN
+    JSON_TABLE(
+      CAST(vals.js AS JSONB),
+      'lax $[*]'
+      COLUMNS (
+        id FOR ORDINALITY,
+        jst text FORMAT JSON PATH '$',
+        jsc CHAR(4) FORMAT JSON PATH '$',
+        jsv VARCHAR(4) FORMAT JSON PATH '$',
+        jsb jsonb FORMAT JSON PATH '$',
+        jsbq jsonb FORMAT JSON PATH '$' OMIT QUOTES
+      )
+    ) AS jt
   ON TRUE;
 
 SELECT
   *
 FROM
   json_table_test AS vals
-  LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
-    'lax $[*]'
-    COLUMNS (
-      id FOR ORDINALITY,
-      exists1 bool EXISTS PATH '$.aaa',
-      exists2 INT EXISTS PATH '$.aaa',
-      exists3 INT EXISTS PATH 'strict $.aaa' UNKNOWN ON ERROR,
-      exists4 text EXISTS PATH 'strict $.aaa' FALSE ON ERROR
-    )
-  ) AS jt
+  LEFT OUTER JOIN
+    JSON_TABLE(
+      CAST(vals.js AS JSONB),
+      'lax $[*]'
+      COLUMNS (
+        id FOR ORDINALITY,
+        exists1 bool EXISTS PATH '$.aaa',
+        exists2 INT EXISTS PATH '$.aaa',
+        exists3 INT EXISTS PATH 'strict $.aaa' UNKNOWN ON ERROR,
+        exists4 text EXISTS PATH 'strict $.aaa' FALSE ON ERROR
+      )
+    ) AS jt
   ON TRUE;
 
 SELECT
   *
 FROM
   json_table_test AS vals
-  LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
-    'lax $[*]'
-    COLUMNS (
-      id FOR ORDINALITY,
-      aaa INT,
-      aaa1 INT PATH '$.aaa',
-      js2 JSON PATH '$',
-      jsb2w jsonb PATH '$' WITH UNCONDITIONAL WRAPPER,
-      jsb2q jsonb PATH '$' OMIT QUOTES,
-      ia INT[] PATH '$',
-      ta TEXT[] PATH '$',
-      jba JSONB[] PATH '$'
-    )
-  ) AS jt
+  LEFT OUTER JOIN
+    JSON_TABLE(
+      CAST(vals.js AS JSONB),
+      'lax $[*]'
+      COLUMNS (
+        id FOR ORDINALITY,
+        aaa INT,
+        aaa1 INT PATH '$.aaa',
+        js2 JSON PATH '$',
+        jsb2w jsonb PATH '$' WITH UNCONDITIONAL WRAPPER,
+        jsb2q jsonb PATH '$' OMIT QUOTES,
+        ia INT[] PATH '$',
+        ta TEXT[] PATH '$',
+        jba JSONB[] PATH '$'
+      )
+    ) AS jt
   ON TRUE;
 
 SELECT
@@ -364,7 +368,8 @@ SELECT
 FROM
   (VALUES
     ('1'),
-    ('"err"')) AS vals (js),
+    ('"err"'))
+  AS vals (js),
   JSON_TABLE(
     CAST(vals.js AS JSONB),
     '$'
@@ -378,14 +383,16 @@ SELECT
 FROM
   (VALUES
     ('1'),
-    ('"err"')) AS vals (js)
-  LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
-    '$'
-    COLUMNS (
-      a INT PATH '$' ERROR ON ERROR
-    )
-  ) AS jt
+    ('"err"'))
+  AS vals (js)
+  LEFT OUTER JOIN
+    JSON_TABLE(
+      CAST(vals.js AS JSONB),
+      '$'
+      COLUMNS (
+        a INT PATH '$' ERROR ON ERROR
+      )
+    ) AS jt
   ON TRUE;
 
 SELECT
@@ -393,14 +400,16 @@ SELECT
 FROM
   (VALUES
     ('1'),
-    ('"err"')) AS vals (js)
-  LEFT OUTER JOIN JSON_TABLE(
-    CAST(vals.js AS JSONB),
-    '$'
-    COLUMNS (
-      a INT PATH '$' ERROR ON ERROR
-    )
-  ) AS jt
+    ('"err"'))
+  AS vals (js)
+  LEFT OUTER JOIN
+    JSON_TABLE(
+      CAST(vals.js AS JSONB),
+      '$'
+      COLUMNS (
+        a INT PATH '$' ERROR ON ERROR
+      )
+    ) AS jt
   ON TRUE;
 
 SELECT

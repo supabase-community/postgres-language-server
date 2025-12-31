@@ -2,7 +2,7 @@ use pgls_query::protobuf::InferClause;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::{node_list::emit_comma_separated_list, string::emit_identifier_maybe_quoted};
@@ -23,7 +23,7 @@ pub(super) fn emit_infer_clause(e: &mut EventEmitter, n: &InferClause) {
     }
 
     if let Some(ref where_clause) = n.where_clause {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WHERE_KW);
         super::emit_clause_condition(e, where_clause);
     }

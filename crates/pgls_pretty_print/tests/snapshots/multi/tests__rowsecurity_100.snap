@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/rowsecurity_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/rowsecurity.sql
 snapshot_kind: text
 ---
 SET client_min_messages = warning;
@@ -79,7 +79,8 @@ VALUES
   (33, 'technology'),
   (44, 'manga');
 
-CREATE TABLE document (
+CREATE TABLE document
+(
   did INT PRIMARY KEY,
   cid INT REFERENCES category (cid),
   dlevel INT NOT NULL,
@@ -230,8 +231,10 @@ AS PERMISSIVE
 FOR ALL
 TO PUBLIC
 USING (CASE
-WHEN CURRENT_USER = 'regress_rls_bob' THEN cid IN (11, 33)
-WHEN CURRENT_USER = 'regress_rls_carol' THEN cid IN (22, 44)
+WHEN CURRENT_USER = 'regress_rls_bob'
+THEN cid IN (11, 33)
+WHEN CURRENT_USER = 'regress_rls_carol'
+THEN cid IN (22, 44)
 ELSE FALSE
 END);
 
@@ -311,7 +314,8 @@ ALTER TABLE t1
 
 GRANT ALL ON TABLE t1 TO PUBLIC;
 
-CREATE TABLE t2 (c DOUBLE PRECISION)
+CREATE TABLE t2
+(c DOUBLE PRECISION)
 INHERITS (t1);
 
 GRANT ALL ON TABLE t2 TO PUBLIC;
@@ -385,7 +389,8 @@ SELECT * FROM t1 WHERE f_leak(b);
 
 SET SESSION AUTHORIZATION regress_rls_alice;
 
-CREATE TABLE part_document (did INT, cid INT, dlevel INT NOT NULL, dauthor NAME, dtitle TEXT)
+CREATE TABLE part_document
+(did INT, cid INT, dlevel INT NOT NULL, dauthor NAME, dtitle TEXT)
 PARTITION BY RANGE(cid);
 
 GRANT ALL ON TABLE part_document TO PUBLIC;
@@ -940,7 +945,8 @@ SET SESSION AUTHORIZATION regress_rls_bob;
 
 CREATE VIEW bv1
   WITH (security_barrier)
-AS SELECT * FROM b1 WHERE a > 0 WITH CASCADED CHECK OPTION;
+AS SELECT * FROM b1 WHERE a > 0
+WITH CASCADED CHECK OPTION;
 
 GRANT ALL ON TABLE bv1 TO regress_rls_carol;
 
@@ -999,7 +1005,9 @@ VALUES (
   'regress_rls_carol',
   'my first novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle,
 dauthor = excluded.dauthor;
@@ -1014,7 +1022,9 @@ VALUES (
   'regress_rls_bob',
   'Some novel, replaces sci-fi'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle;
 
@@ -1026,7 +1036,9 @@ VALUES (
   'regress_rls_bob',
   'my first novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle
 RETURNING *;
@@ -1039,7 +1051,9 @@ VALUES (
   'regress_rls_bob',
   'some technology novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle,
 cid = 33
@@ -1053,7 +1067,9 @@ VALUES (
   'regress_rls_bob',
   'some technology novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle,
 cid = 33
@@ -1067,7 +1083,9 @@ VALUES (
   'regress_rls_bob',
   'some technology novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle,
 cid = 33
@@ -1086,7 +1104,9 @@ VALUES (
   'regress_rls_bob',
   'technology book, can only insert'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle
 RETURNING *;
@@ -1104,7 +1124,9 @@ VALUES (
   'regress_rls_bob',
   'technology book, can only insert'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle
 RETURNING *;
@@ -1140,7 +1162,9 @@ VALUES (
   'regress_rls_bob',
   'technology book, can only insert'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle
 RETURNING *;
@@ -1158,7 +1182,9 @@ VALUES (
   'regress_rls_bob',
   'my first novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET cid = excluded.cid,
 dtitle = excluded.dtitle
@@ -1187,7 +1213,9 @@ VALUES (
   'regress_rls_carol',
   'my first novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle,
 cid = 33;
@@ -1200,7 +1228,9 @@ VALUES (
   'regress_rls_bob',
   'my first novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dtitle = excluded.dtitle;
 
@@ -1212,7 +1242,9 @@ VALUES (
   'regress_rls_bob',
   'my first novel'
 )
-ON CONFLICT (did) DO
+ON CONFLICT
+(did)
+DO
 UPDATE
 SET dauthor = 'regress_rls_carol';
 

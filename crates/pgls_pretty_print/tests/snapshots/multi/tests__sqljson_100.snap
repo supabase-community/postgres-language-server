@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/sqljson.sql
 snapshot_kind: text
 ---
 SELECT JSON(NULL);
@@ -305,7 +305,8 @@ SELECT
       (1),
       (2),
       (NULL),
-      (4)) AS foo (i));
+      (4))
+    AS foo (i));
 
 SELECT
   JSON_ARRAY(SELECT
@@ -317,7 +318,8 @@ SELECT
       (NULL),
       (NULL),
       ('{3,4}'),
-      (NULL)) AS foo (i));
+      (NULL))
+    AS foo (i));
 
 SELECT
   JSON_ARRAY(SELECT
@@ -329,7 +331,8 @@ SELECT
       (NULL),
       (NULL),
       ('{3,4}'),
-      (NULL)) AS foo (i) RETURNING JSONB);
+      (NULL))
+    AS foo (i) RETURNING JSONB);
 
 SELECT
   JSON_ARRAY(SELECT
@@ -339,7 +342,8 @@ SELECT
       (3),
       (1),
       (NULL),
-      (2)) AS foo (i)
+      (2))
+    AS foo (i)
   ORDER BY i);
 
 SELECT JSON_ARRAY(WITH x AS (SELECT 1) VALUES (TRUE));
@@ -424,7 +428,8 @@ FROM
     (5),
     (2),
     (4),
-    (NULL)) AS foo (bar);
+    (NULL))
+  AS foo (bar);
 
 SELECT
   bar,
@@ -446,7 +451,8 @@ FROM
     (4),
     (NULL),
     (5),
-    (4)) AS foo (bar);
+    (4))
+  AS foo (bar);
 
 SELECT
   JSON_OBJECTAGG('key' : 1 NULL ON NULL) IS NULL,
@@ -486,7 +492,8 @@ FROM
     (1, 1),
     (1, NULL),
     (2, NULL),
-    (3, 3)) AS foo (k, v);
+    (3, 3))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -496,7 +503,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS foo (k, v);
+    (2, 2))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -506,7 +514,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS foo (k, v);
+    (2, 2))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -518,7 +527,8 @@ FROM
     (0, NULL),
     (3, NULL),
     (2, 2),
-    (4, NULL)) AS foo (k, v);
+    (4, NULL))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -529,7 +539,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS foo (k, v);
+    (2, 2))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -540,7 +551,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS foo (k, v);
+    (2, 2))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -554,7 +566,8 @@ FROM
     (4, NULL),
     (5, NULL),
     (6, NULL),
-    (2, 2)) AS foo (k, v);
+    (2, 2))
+  AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(mod(i, 100) : CAST(i AS TEXT) FORMAT JSON
@@ -582,7 +595,8 @@ SELECT
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS a (k, v);
+    (2, 2))
+  AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -595,7 +609,8 @@ FROM
   (VALUES
     (1, 1),
     (1, 2),
-    (2, 2)) AS a (k, v);
+    (2, 2))
+  AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -608,7 +623,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS a (k, v);
+    (2, 2))
+  AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -620,7 +636,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS a (k, v);
+    (2, 2))
+  AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -636,7 +653,8 @@ FROM
   (VALUES
     (1, 1),
     (1, NULL),
-    (2, 2)) AS a (k, v);
+    (2, 2))
+  AS a (k, v);
 
 SELECT JSON_ARRAY('1' FORMAT JSON, 2 ABSENT ON NULL RETURNING JSON);
 
@@ -719,7 +737,8 @@ SELECT
       (1),
       (2),
       (NULL),
-      (4)) AS foo (i) RETURNING JSONB);
+      (4))
+    AS foo (i) RETURNING JSONB);
 
 CREATE VIEW json_array_subquery_view
 AS SELECT
@@ -730,7 +749,8 @@ AS SELECT
       (1),
       (2),
       (NULL),
-      (4)) AS foo (i) RETURNING JSONB);
+      (4))
+    AS foo (i) RETURNING JSONB);
 
 DROP VIEW "json_array_subquery_view";
 

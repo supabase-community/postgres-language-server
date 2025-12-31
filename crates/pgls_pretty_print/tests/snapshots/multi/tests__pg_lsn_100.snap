@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/pg_lsn_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/pg_lsn.sql
 snapshot_kind: text
 ---
 CREATE TABLE pg_lsn_tbl (f1 PG_LSN);
@@ -56,7 +56,9 @@ SELECT CAST('0/1' AS PG_LSN) - CAST(2 AS NUMERIC);
 SELECT CAST('0/0' AS PG_LSN) + (CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) - CAST('0/0' AS PG_LSN));
 
 SELECT
-  CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) - (CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) - CAST('0/0' AS PG_LSN));
+  CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) -
+  (CAST('FFFFFFFF/FFFFFFFF' AS PG_LSN) -
+  CAST('0/0' AS PG_LSN));
 
 SELECT CAST('0/16AE7F7' AS PG_LSN) + CAST('NaN' AS NUMERIC);
 

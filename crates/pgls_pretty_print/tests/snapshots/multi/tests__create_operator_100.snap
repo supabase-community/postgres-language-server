@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_operator_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_operator.sql
 snapshot_kind: text
 ---
 CREATE OPERATOR ## (LEFTARG = path, RIGHTARG = path, FUNCTION = path_inter, COMMUTATOR = ##);
@@ -41,7 +41,8 @@ SELECT 2 <> 1, 2 <> 2;
 
 SELECT 2 <> 1;
 
-DO $$ -- use DO to protect -- from psql
+DO
+$$ -- use DO to protect -- from psql
   declare r boolean;
   begin
     execute $e$ select 2 !=-- comment

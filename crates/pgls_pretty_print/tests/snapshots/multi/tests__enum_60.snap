@@ -1,0 +1,484 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/enum.sql
+snapshot_kind: text
+---
+CREATE TYPE rainbow AS ENUM ('red',
+'orange',
+'yellow',
+'green',
+'blue',
+'purple');
+
+SELECT
+  COUNT(*)
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('rainbow' AS REGTYPE);
+
+SELECT CAST('red' AS rainbow);
+
+SELECT CAST('mauve' AS rainbow);
+
+SELECT pg_input_is_valid('red', 'rainbow');
+
+SELECT pg_input_is_valid('mauve', 'rainbow');
+
+SELECT * FROM pg_input_error_info('mauve', 'rainbow');
+
+SELECT
+  *
+FROM
+  pg_input_error_info(
+  repeat('too_long', 32),
+  'rainbow'
+  );
+
+CREATE TYPE dup_enum AS ENUM ('foo', 'bar', 'foo');
+
+CREATE TYPE planets AS ENUM ('venus', 'earth', 'mars');
+
+SELECT
+  enumlabel,
+  enumsortorder
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('planets' AS REGTYPE)
+ORDER BY 2;
+
+ALTER TYPE planets ADD VALUE 'uranus';
+
+SELECT
+  enumlabel,
+  enumsortorder
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('planets' AS REGTYPE)
+ORDER BY 2;
+
+ALTER TYPE planets ADD VALUE 'mercury' BEFORE 'venus';
+
+ALTER TYPE planets ADD VALUE 'saturn' BEFORE 'uranus';
+
+ALTER TYPE planets ADD VALUE 'jupiter' AFTER 'mars';
+
+ALTER TYPE planets ADD VALUE 'neptune' AFTER 'uranus';
+
+SELECT
+  enumlabel,
+  enumsortorder
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('planets' AS REGTYPE)
+ORDER BY 2;
+
+SELECT
+  enumlabel,
+  enumsortorder
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('planets' AS REGTYPE)
+ORDER BY CAST(enumlabel AS planets);
+
+ALTER TYPE planets
+ADD VALUE 'plutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutopluto';
+
+ALTER TYPE planets ADD VALUE 'pluto' AFTER 'zeus';
+
+ALTER TYPE planets ADD VALUE 'mercury';
+
+ALTER TYPE planets ADD VALUE IF NOT EXISTS 'mercury';
+
+SELECT enum_last(CAST(NULL AS planets));
+
+ALTER TYPE planets ADD VALUE IF NOT EXISTS 'pluto';
+
+SELECT enum_last(CAST(NULL AS planets));
+
+CREATE TYPE insenum AS ENUM ('L1', 'L2');
+
+ALTER TYPE insenum ADD VALUE 'i1' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i2' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i3' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i4' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i5' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i6' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i7' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i8' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i9' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i10' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i11' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i12' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i13' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i14' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i15' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i16' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i17' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i18' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i19' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i20' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i21' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i22' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i23' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i24' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i25' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i26' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i27' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i28' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i29' BEFORE 'L2';
+
+ALTER TYPE insenum ADD VALUE 'i30' BEFORE 'L2';
+
+SELECT
+  enumlabel,
+  CASE
+  WHEN enumsortorder > 20
+  THEN NULL
+  ELSE enumsortorder
+  END
+  AS so
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('insenum' AS REGTYPE)
+ORDER BY enumsortorder;
+
+CREATE TABLE enumtest (col rainbow);
+
+INSERT INTO enumtest
+VALUES
+  ('red'),
+  ('orange'),
+  ('yellow'),
+  ('green');
+
+SELECT * FROM enumtest;
+
+SELECT * FROM enumtest WHERE col = 'orange';
+
+SELECT * FROM enumtest WHERE col <> 'orange' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col > 'yellow' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col >= 'yellow' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col < 'green' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col <= 'green' ORDER BY col;
+
+SELECT CAST(CAST('red' AS rainbow) AS TEXT) || 'hithere';
+
+SELECT
+  CAST(CAST('red' AS TEXT)
+  AS rainbow) =
+  CAST('red' AS rainbow);
+
+SELECT MIN(col) FROM enumtest;
+
+SELECT MAX(col) FROM enumtest;
+
+SELECT MAX(col) FROM enumtest WHERE col < 'green';
+
+SET enable_seqscan = off;
+
+SET enable_bitmapscan = off;
+
+CREATE UNIQUE INDEX "enumtest_btree"
+ON enumtest
+USING btree
+(
+  col
+);
+
+SELECT * FROM enumtest WHERE col = 'orange';
+
+SELECT * FROM enumtest WHERE col <> 'orange' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col > 'yellow' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col >= 'yellow' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col < 'green' ORDER BY col;
+
+SELECT * FROM enumtest WHERE col <= 'green' ORDER BY col;
+
+SELECT MIN(col) FROM enumtest;
+
+SELECT MAX(col) FROM enumtest;
+
+SELECT MAX(col) FROM enumtest WHERE col < 'green';
+
+DROP INDEX "enumtest_btree";
+
+CREATE INDEX "enumtest_hash"
+ON enumtest
+USING hash
+(
+  col
+);
+
+SELECT * FROM enumtest WHERE col = 'orange';
+
+DROP INDEX "enumtest_hash";
+
+RESET enable_seqscan;
+
+RESET enable_bitmapscan;
+
+CREATE DOMAIN rgb AS rainbow
+  CHECK (value
+  IN (
+    'red', 'green', 'blue'
+  ));
+
+SELECT CAST('red' AS rgb);
+
+SELECT CAST('purple' AS rgb);
+
+SELECT CAST(CAST('purple' AS rainbow) AS rgb);
+
+DROP DOMAIN rgb;
+
+SELECT CAST('{red,green,blue}' AS rainbow[]);
+
+SELECT (CAST('{red,green,blue}' AS rainbow[]))[2];
+
+SELECT 'red' = ANY (CAST('{red,green,blue}' AS rainbow[]));
+
+SELECT
+  'yellow' = ANY (CAST('{red,green,blue}'
+  AS rainbow[]));
+
+SELECT 'red' = ALL (CAST('{red,green,blue}' AS rainbow[]));
+
+SELECT 'red' = ALL (CAST('{red,red}' AS rainbow[]));
+
+SELECT enum_first(CAST(NULL AS rainbow));
+
+SELECT enum_last(CAST('green' AS rainbow));
+
+SELECT enum_range(CAST(NULL AS rainbow));
+
+SELECT
+  enum_range(
+  CAST('orange' AS rainbow),
+  CAST('green' AS rainbow)
+  );
+
+SELECT enum_range(NULL, CAST('green' AS rainbow));
+
+SELECT enum_range(CAST('orange' AS rainbow), NULL);
+
+SELECT enum_range(CAST(NULL AS rainbow), NULL);
+
+CREATE FUNCTION echo_me(ANYENUM)
+RETURNS TEXT
+AS '
+BEGIN
+RETURN $1::text || ''omg'';
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT echo_me(CAST('red' AS rainbow));
+
+CREATE FUNCTION echo_me(rainbow)
+RETURNS TEXT
+AS '
+BEGIN
+RETURN $1::text || ''wtf'';
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT echo_me(CAST('red' AS rainbow));
+
+DROP FUNCTION echo_me(ANYENUM);
+
+SELECT echo_me('red');
+
+DROP FUNCTION echo_me(rainbow);
+
+CREATE TABLE enumtest_parent (id rainbow PRIMARY KEY);
+
+CREATE TABLE enumtest_child
+(
+  parent rainbow
+  REFERENCES enumtest_parent
+);
+
+INSERT INTO enumtest_parent VALUES ('red');
+
+INSERT INTO enumtest_child VALUES ('red');
+
+INSERT INTO enumtest_child VALUES ('blue');
+
+DELETE FROM enumtest_parent;
+
+CREATE TYPE bogus AS ENUM ('good', 'bad', 'ugly');
+
+CREATE TABLE enumtest_bogus_child
+(
+  parent bogus
+  REFERENCES enumtest_parent
+);
+
+DROP TYPE bogus;
+
+ALTER TYPE rainbow RENAME VALUE 'red' TO 'crimson';
+
+SELECT
+  enumlabel,
+  enumsortorder
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('rainbow' AS REGTYPE)
+ORDER BY 2;
+
+ALTER TYPE rainbow RENAME VALUE 'red' TO 'crimson';
+
+ALTER TYPE rainbow RENAME VALUE 'blue' TO 'green';
+
+CREATE TYPE bogus AS ENUM ('good');
+
+BEGIN;
+
+ALTER TYPE bogus ADD VALUE 'new';
+
+SAVEPOINT x;
+
+SELECT CAST('new' AS bogus);
+
+ROLLBACK TO SAVEPOINT x;
+
+SELECT enum_first(CAST(NULL AS bogus));
+
+SELECT enum_last(CAST(NULL AS bogus));
+
+ROLLBACK TO SAVEPOINT x;
+
+SELECT enum_range(CAST(NULL AS bogus));
+
+ROLLBACK TO SAVEPOINT x;
+
+COMMIT;
+
+SELECT CAST('new' AS bogus);
+
+SELECT
+  enumlabel,
+  enumsortorder
+FROM
+  pg_enum
+WHERE
+  enumtypid =
+  CAST('bogus' AS REGTYPE)
+ORDER BY 2;
+
+BEGIN;
+
+ALTER TYPE bogus RENAME TO bogon;
+
+ALTER TYPE bogon ADD VALUE 'bad';
+
+SELECT CAST('bad' AS bogon);
+
+ROLLBACK;
+
+BEGIN;
+
+ALTER TYPE bogus RENAME VALUE 'good' TO 'bad';
+
+SELECT CAST('bad' AS bogus);
+
+ROLLBACK;
+
+DROP TYPE bogus;
+
+BEGIN;
+
+CREATE TYPE bogus AS ENUM ('good', 'bad', 'ugly');
+
+ALTER TYPE bogus RENAME TO bogon;
+
+SELECT enum_range(CAST(NULL AS bogon));
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE TYPE bogus AS ENUM ('good');
+
+ALTER TYPE bogus RENAME TO bogon;
+
+ALTER TYPE bogon ADD VALUE 'bad';
+
+ALTER TYPE bogon ADD VALUE 'ugly';
+
+SELECT enum_range(CAST(NULL AS bogon));
+
+ROLLBACK;
+
+DROP TABLE "enumtest_child";
+
+DROP TABLE "enumtest_parent";
+
+DROP TABLE "enumtest";
+
+DROP TYPE rainbow;
+
+SELECT COUNT(*) FROM pg_type WHERE typname = 'rainbow';
+
+SELECT
+  *
+FROM
+  pg_enum
+WHERE
+  NOT EXISTS
+  (SELECT
+    1
+  FROM
+    pg_type
+  WHERE
+    pg_type.oid = enumtypid);

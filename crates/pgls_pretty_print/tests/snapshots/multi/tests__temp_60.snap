@@ -1,0 +1,545 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/temp.sql
+snapshot_kind: text
+---
+CREATE TABLE temptest (col INT);
+
+CREATE INDEX "i_temptest"
+ON temptest
+USING btree
+(
+  col
+);
+
+CREATE TEMPORARY TABLE temptest (tcol INT);
+
+CREATE INDEX "i_temptest"
+ON temptest
+USING btree
+(
+  tcol
+);
+
+SELECT * FROM temptest;
+
+DROP INDEX "i_temptest";
+
+DROP TABLE "temptest";
+
+SELECT * FROM temptest;
+
+DROP INDEX "i_temptest";
+
+DROP TABLE "temptest";
+
+CREATE TABLE temptest (col INT);
+
+INSERT INTO temptest VALUES (1);
+
+CREATE TEMPORARY TABLE temptest (tcol DOUBLE PRECISION);
+
+INSERT INTO temptest VALUES (2.1);
+
+SELECT * FROM temptest;
+
+DROP TABLE "temptest";
+
+SELECT * FROM temptest;
+
+DROP TABLE "temptest";
+
+CREATE TEMPORARY TABLE temptest (col INT);
+
+SELECT * FROM temptest;
+
+CREATE INDEX
+ON temptest
+USING btree
+(
+  (bit_length(''))
+);
+
+BEGIN;
+
+INSERT INTO temptest VALUES (1);
+
+INSERT INTO temptest VALUES (2);
+
+SELECT * FROM temptest;
+
+COMMIT;
+
+SELECT * FROM temptest;
+
+DROP TABLE "temptest";
+
+BEGIN;
+
+SELECT * FROM temptest;
+
+COMMIT;
+
+SELECT * FROM temptest;
+
+DROP TABLE "temptest";
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temptest (col INT) ON COMMIT DROP;
+
+INSERT INTO temptest VALUES (1);
+
+INSERT INTO temptest VALUES (2);
+
+SELECT * FROM temptest;
+
+COMMIT;
+
+SELECT * FROM temptest;
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temptest (col)
+ON COMMIT DROP
+AS
+  SELECT 1;
+
+SELECT * FROM temptest;
+
+COMMIT;
+
+SELECT * FROM temptest;
+
+BEGIN;
+
+DO
+$$
+begin
+  execute format($cmd$
+    CREATE TEMP TABLE temptest (col text CHECK (col < %L)) ON COMMIT DROP
+  $cmd$,
+    (SELECT string_agg(g.i::text || ':' || random()::text, '|')
+     FROM generate_series(1, 100) g(i)));
+end$$;
+
+SELECT * FROM temptest;
+
+COMMIT;
+
+SELECT * FROM temptest;
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temptest1 (col INT PRIMARY KEY);
+
+INSERT INTO temptest1 VALUES (1);
+
+INSERT INTO temptest2 VALUES (1);
+
+COMMIT;
+
+SELECT * FROM temptest1;
+
+SELECT * FROM temptest2;
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temptest4
+(col INT REFERENCES temptest3);
+
+COMMIT;
+
+CREATE TABLE public.whereami (f1 TEXT);
+
+INSERT INTO public.whereami VALUES ('public');
+
+CREATE TEMPORARY TABLE whereami (f1 TEXT);
+
+INSERT INTO whereami VALUES ('temp');
+
+CREATE FUNCTION public.whoami()
+RETURNS TEXT
+AS 'select ''public''::text'
+LANGUAGE "sql";
+
+CREATE FUNCTION pg_temp.whoami()
+RETURNS TEXT
+AS 'select ''temp''::text'
+LANGUAGE "sql";
+
+SELECT * FROM whereami;
+
+SELECT whoami();
+
+SET search_path TO pg_temp, public;
+
+SELECT * FROM whereami;
+
+SELECT whoami();
+
+SET search_path TO public, pg_temp;
+
+SELECT * FROM whereami;
+
+SELECT whoami();
+
+SELECT pg_temp.whoami();
+
+DROP TABLE "public"."whereami";
+
+SET search_path TO pg_temp, public;
+
+CREATE DOMAIN pg_temp.nonempty AS TEXT CHECK (value <> '');
+
+SELECT nonempty('');
+
+SELECT pg_temp.nonempty('');
+
+SELECT CAST('' AS nonempty);
+
+RESET search_path;
+
+BEGIN;
+
+INSERT INTO temp_parted_oncommit VALUES (1);
+
+COMMIT;
+
+SELECT * FROM temp_parted_oncommit;
+
+DROP TABLE "temp_parted_oncommit";
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temp_parted_oncommit_test
+(a INT)
+PARTITION BY LIST(a)
+ON COMMIT DROP;
+
+CREATE TEMPORARY TABLE temp_parted_oncommit_test2
+PARTITION OF temp_parted_oncommit_test
+FOR VALUES IN (2)
+ON COMMIT DROP;
+
+INSERT INTO temp_parted_oncommit_test
+VALUES
+  (1),
+  (2);
+
+COMMIT;
+
+SELECT
+  relname
+FROM
+  pg_class
+WHERE
+  relname ~
+  '^temp_parted_oncommit_test';
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temp_parted_oncommit_test1
+PARTITION OF temp_parted_oncommit_test
+FOR VALUES IN (1)
+ON COMMIT PRESERVE ROWS;
+
+CREATE TEMPORARY TABLE temp_parted_oncommit_test2
+PARTITION OF temp_parted_oncommit_test
+FOR VALUES IN (2)
+ON COMMIT DROP;
+
+INSERT INTO temp_parted_oncommit_test
+VALUES
+  (1),
+  (2);
+
+COMMIT;
+
+SELECT * FROM temp_parted_oncommit_test;
+
+SELECT
+  relname
+FROM
+  pg_class
+WHERE
+  relname ~
+  '^temp_parted_oncommit_test'
+ORDER BY relname;
+
+DROP TABLE "temp_parted_oncommit_test";
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temp_inh_oncommit_test
+(a INT)
+ON COMMIT DROP;
+
+INSERT INTO temp_inh_oncommit_test1 VALUES (1);
+
+COMMIT;
+
+SELECT
+  relname
+FROM
+  pg_class
+WHERE
+  relname ~
+  '^temp_inh_oncommit_test';
+
+BEGIN;
+
+CREATE TEMPORARY TABLE temp_inh_oncommit_test1
+()
+INHERITS (temp_inh_oncommit_test)
+ON COMMIT DROP;
+
+INSERT INTO temp_inh_oncommit_test1 VALUES (1);
+
+INSERT INTO temp_inh_oncommit_test VALUES (1);
+
+COMMIT;
+
+SELECT * FROM temp_inh_oncommit_test;
+
+SELECT
+  relname
+FROM
+  pg_class
+WHERE
+  relname ~
+  '^temp_inh_oncommit_test';
+
+DROP TABLE "temp_inh_oncommit_test";
+
+BEGIN;
+
+CREATE FUNCTION pg_temp.twophase_func()
+RETURNS VOID
+AS ' select ''2pc_func''::text '
+LANGUAGE "sql";
+
+PREPARE TRANSACTION 'twophase_func';
+
+CREATE FUNCTION pg_temp.twophase_func()
+RETURNS VOID
+AS ' select ''2pc_func''::text '
+LANGUAGE "sql";
+
+BEGIN;
+
+DROP FUNCTION pg_temp.twophase_func();
+
+PREPARE TRANSACTION 'twophase_func';
+
+BEGIN;
+
+CREATE OPERATOR pg_temp.@@ (LEFTARG = INT,
+RIGHTARG = INT,
+PROCEDURE = int4mi);
+
+PREPARE TRANSACTION 'twophase_operator';
+
+BEGIN;
+
+CREATE TYPE pg_temp.twophase_type AS ( a INT );
+
+PREPARE TRANSACTION 'twophase_type';
+
+BEGIN;
+
+CREATE VIEW pg_temp.twophase_view
+AS SELECT 1;
+
+PREPARE TRANSACTION 'twophase_view';
+
+BEGIN;
+
+CREATE SEQUENCE pg_temp.twophase_seq;
+
+PREPARE TRANSACTION 'twophase_sequence';
+
+CREATE TEMPORARY TABLE twophase_tab (a INT);
+
+BEGIN;
+
+SELECT a FROM twophase_tab;
+
+PREPARE TRANSACTION 'twophase_tab';
+
+BEGIN;
+
+INSERT INTO twophase_tab VALUES (1);
+
+PREPARE TRANSACTION 'twophase_tab';
+
+BEGIN;
+
+LOCK TABLE twophase_tab IN ACCESS EXCLUSIVE MODE;
+
+PREPARE TRANSACTION 'twophase_tab';
+
+BEGIN;
+
+DROP TABLE "twophase_tab";
+
+PREPARE TRANSACTION 'twophase_tab';
+
+SET search_path TO pg_temp;
+
+BEGIN;
+
+SELECT CURRENT_SCHEMA ~ 'pg_temp' AS is_temp_schema;
+
+PREPARE TRANSACTION 'twophase_search';
+
+SET temp_buffers = 100;
+
+CREATE TEMPORARY TABLE test_temp
+(
+  a INT NOT NULL UNIQUE,
+  b TEXT NOT NULL,
+  cnt INT NOT NULL
+);
+
+INSERT INTO test_temp
+SELECT
+  generate_series(1, 10000)
+  AS id,
+  repeat('a', 200),
+  0;
+
+SELECT
+  pg_relation_size('test_temp') /
+  CAST(current_setting('block_size')
+  AS BIGINT) >
+  200;
+
+CREATE FUNCTION test_temp_pin(p_start INT, p_end INT)
+RETURNS VOID
+LANGUAGE "plpgsql"
+AS '
+  DECLARE
+      cursorname text;
+      query text;
+  BEGIN
+    FOR i IN p_start..p_end LOOP
+       cursorname = ''c_''||i;
+       query = format($q$DECLARE %I CURSOR FOR SELECT ctid FROM test_temp WHERE ctid >= ''( %s, 1)''::tid $q$, cursorname, i);
+       EXECUTE query;
+       EXECUTE ''FETCH NEXT FROM ''||cursorname;
+       -- for test development
+       -- RAISE NOTICE ''%: %'', cursorname, query;
+    END LOOP;
+  END;
+';
+
+BEGIN;
+
+SELECT test_temp_pin(0, 9);
+
+SELECT test_temp_pin(10, 105);
+
+ROLLBACK;
+
+BEGIN;
+
+SELECT test_temp_pin(0, 9);
+
+FETCH NEXT FROM c_3;
+
+SAVEPOINT rescue_me;
+
+SELECT test_temp_pin(10, 105);
+
+ROLLBACK TO SAVEPOINT rescue_me;
+
+FETCH NEXT FROM c_3;
+
+SELECT test_temp_pin(10, 94);
+
+SELECT
+  COUNT(*),
+  MAX(a) AS max_a,
+  MIN(a) AS min_a,
+  MAX(cnt) AS max_cnt
+FROM
+  test_temp;
+
+ROLLBACK;
+
+BEGIN;
+
+SELECT test_temp_pin(0, 1);
+
+DROP TABLE "test_temp";
+
+COMMIT;
+
+BEGIN;
+
+SELECT test_temp_pin(0, 1);
+
+TRUNCATE test_temp;
+
+COMMIT;
+
+SELECT
+  COUNT(*),
+  MAX(a) AS max_a,
+  MIN(a) AS min_a,
+  MAX(cnt) AS max_cnt
+FROM
+  test_temp;
+
+INSERT INTO test_temp (a, b, cnt) VALUES (-1, '', 0);
+
+BEGIN;
+
+INSERT INTO test_temp (a, b, cnt) VALUES (-2, '', 0);
+
+DROP TABLE "test_temp";
+
+ROLLBACK;
+
+SELECT
+  COUNT(*),
+  MAX(a) AS max_a,
+  MIN(a) AS min_a,
+  MAX(cnt) AS max_cnt
+FROM
+  test_temp;
+
+UPDATE test_temp SET cnt = cnt + 1 WHERE a = -1;
+
+BEGIN;
+
+DROP TABLE "test_temp";
+
+ROLLBACK;
+
+SELECT
+  COUNT(*),
+  MAX(a) AS max_a,
+  MIN(a) AS min_a,
+  MAX(cnt) AS max_cnt
+FROM
+  test_temp;
+
+UPDATE test_temp SET cnt = cnt + 1 WHERE a = -1;
+
+BEGIN;
+
+TRUNCATE test_temp;
+
+ROLLBACK;
+
+SELECT
+  COUNT(*),
+  MAX(a) AS max_a,
+  MIN(a) AS min_a,
+  MAX(cnt) AS max_cnt
+FROM
+  test_temp;
+
+DROP FUNCTION test_temp_pin(INT, INT);

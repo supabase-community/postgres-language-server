@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/jsonpath_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/jsonpath.sql
 snapshot_kind: text
 ---
 SELECT CAST('' AS jsonpath);
@@ -464,5 +464,7 @@ FROM
   '@ + 1',
   '00',
   '1a']
-  ) AS str,
-  LATERAL pg_input_error_info(str, 'jsonpath') AS errinfo;
+  )
+  AS str,
+  LATERAL pg_input_error_info(str, 'jsonpath')
+  AS errinfo;

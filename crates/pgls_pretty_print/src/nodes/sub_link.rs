@@ -1,7 +1,7 @@
 use pgls_query::protobuf::{SubLink, SubLinkType};
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
     e.group_start(GroupKind::SubLink);
@@ -10,7 +10,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
         x if x == SubLinkType::ExistsSublink as i32 => {
             // EXISTS(subquery)
             e.token(TokenKind::EXISTS_KW);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::L_PAREN);
             if let Some(ref subselect) = n.subselect {
                 emit_subquery(e, subselect);
@@ -31,7 +31,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
             }
 
             e.token(TokenKind::ALL_KW);
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::L_PAREN);
             if let Some(ref subselect) = n.subselect {
                 emit_subquery(e, subselect);
@@ -54,10 +54,10 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
                     e.token(TokenKind::ANY_KW);
                 }
 
-                e.space();
+                e.line(LineType::SoftOrSpace);
             } else {
                 e.token(TokenKind::ANY_KW);
-                e.space();
+                e.line(LineType::SoftOrSpace);
             }
 
             e.token(TokenKind::L_PAREN);

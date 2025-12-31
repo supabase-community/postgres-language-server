@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/name_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/name.sql
 snapshot_kind: text
 ---
 SELECT CAST('name string' AS NAME) = CAST('name string' AS NAME) AS "True";
@@ -9,12 +9,14 @@ SELECT CAST('name string' AS NAME) = CAST('name string ' AS NAME) AS "False";
 
 CREATE TABLE name_tbl (f1 NAME);
 
-INSERT INTO name_tbl (f1)
+INSERT INTO name_tbl
+(f1)
 VALUES (
   '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQR'
 );
 
-INSERT INTO name_tbl (f1)
+INSERT INTO name_tbl
+(f1)
 VALUES (
   '1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr'
 );
@@ -27,7 +29,8 @@ INSERT INTO name_tbl (f1) VALUES ('d34aaasdf');
 
 INSERT INTO name_tbl (f1) VALUES ('');
 
-INSERT INTO name_tbl (f1)
+INSERT INTO name_tbl
+(f1)
 VALUES (
   '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 );
@@ -92,7 +95,8 @@ SELECT c.f1 FROM name_tbl AS c WHERE c.f1 ~ '.*asdf.*';
 
 DROP TABLE "name_tbl";
 
-DO $$
+DO
+$$
 DECLARE r text[];
 BEGIN
   r := parse_ident('Schemax.Tabley');
@@ -124,7 +128,8 @@ SELECT
 FROM
   parse_ident(
   '"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'
-  ) AS a;
+  )
+  AS a;
 
 SELECT parse_ident(' first . "  second  " ."   third   ". "  ' || repeat('x', 66) || '"');
 

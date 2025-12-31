@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_type_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_type.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION widget_in(cstring)
@@ -241,9 +241,11 @@ COMMUTATOR = >%,
 NEGATOR = >=%);
 
 SELECT
-  CAST('(1,2)' AS point) <% CAST('(0,0,3)' AS widget)
+  CAST('(1,2)' AS point) <%
+  CAST('(0,0,3)' AS widget)
   AS t,
-  CAST('(1,2)' AS point) <% CAST('(0,0,1)' AS widget)
+  CAST('(1,2)' AS point) <%
+  CAST('(0,0,1)' AS widget)
   AS f;
 
 CREATE TABLE city (name NAME, location box, budget city_budget);
@@ -309,7 +311,8 @@ ALTER TYPE myvarchar SET (storage = plain);
 
 ALTER TYPE myvarchar SET (storage = extended);
 
-ALTER TYPE myvarchar SET (send = myvarcharsend,
+ALTER TYPE myvarchar
+SET (send = myvarcharsend,
 receive = myvarcharrecv,
 typmod_in = varchartypmodin,
 typmod_out = varchartypmodout,

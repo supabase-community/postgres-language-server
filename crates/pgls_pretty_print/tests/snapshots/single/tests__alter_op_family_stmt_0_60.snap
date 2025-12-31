@@ -1,0 +1,7 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/alter_op_family_stmt_0.sql
+snapshot_kind: text
+---
+ALTER OPERATOR FAMILY myopfamily USING btree
+  ADD OPERATOR 1 < (INT, INT);

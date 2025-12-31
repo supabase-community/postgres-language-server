@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/boolean_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/boolean.sql
 snapshot_kind: text
 ---
 SELECT 1 AS one;

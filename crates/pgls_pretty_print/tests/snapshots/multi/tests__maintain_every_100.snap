@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/maintain_every_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/maintain_every.sql
 snapshot_kind: text
 ---
 CREATE ROLE regress_maintain;
@@ -9,7 +9,8 @@ SET ROLE TO regress_maintain;
 
 CREATE TEMPORARY TABLE past_inh_db_other ();
 
-CREATE TEMPORARY TABLE past_inh_db_child ()
+CREATE TEMPORARY TABLE past_inh_db_child
+()
 INHERITS (past_inh_db_parent);
 
 CREATE INDEX

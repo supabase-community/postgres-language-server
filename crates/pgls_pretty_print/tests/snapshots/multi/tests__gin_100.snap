@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/gin_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/gin.sql
 snapshot_kind: text
 ---
 CREATE TABLE gin_test_tbl (i INT[]) WITH (autovacuum_enabled = off);
@@ -127,7 +127,8 @@ SELECT
   query,
   js -> 0 -> 'Plan' -> 'Plans' -> 0 -> 'Actual Rows'
   AS "return by index",
-  js -> 0 -> 'Plan' -> 'Rows Removed by Index Recheck'
+  js -> 0 -> 'Plan' ->
+  'Rows Removed by Index Recheck'
   AS "removed by recheck",
   res_index = res_heap AS match
 FROM
@@ -143,18 +144,22 @@ FROM
     (
       ' j @> ''{10}'' and j @> ''{}'' and i @> ''{}'' '
     ),
-    (' i @> ''{1}'' and j @> ''{10}'' ')) AS q (query),
+    (' i @> ''{1}'' and j @> ''{10}'' '))
+  AS q (query),
   LATERAL explain_query_json(
   'select * from t_gin_test_tbl where ' || query
-  ) AS js,
+  )
+  AS js,
   LATERAL execute_text_query_index(
   'select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
   query
-  ) AS res_index,
+  )
+  AS res_index,
   LATERAL execute_text_query_heap(
   'select string_agg((i, j)::text, '' '') from t_gin_test_tbl where ' ||
   query
-  ) AS res_heap;
+  )
+  AS res_heap;
 
 RESET enable_seqscan;
 

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/gist_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/gist.sql
 snapshot_kind: text
 ---
 CREATE TABLE gist_point_tbl (id INT, p point);
@@ -63,14 +63,16 @@ USING gist
 )
 WITH (fillfactor = 101);
 
-INSERT INTO gist_point_tbl (id, p)
+INSERT INTO gist_point_tbl
+(id, p)
 SELECT
   g,
   point(g * 10, g * 10)
 FROM
   generate_series(1, 10000) AS g;
 
-INSERT INTO gist_point_tbl (id, p)
+INSERT INTO gist_point_tbl
+(id, p)
 SELECT
   g + 100000,
   point(g * 10 + 1, g * 10 + 1)
@@ -158,15 +160,18 @@ FROM
   (VALUES
     (box(point(0, 0), point(0.5, 0.5))),
     (box(point(0.5, 0.5), point(0.75, 0.75))),
-    (box(point(0.8, 0.8), point(1.0, 1.0)))) AS v (bb)
-  INNER JOIN LATERAL (SELECT
-    p
-  FROM
-    gist_tbl
-  WHERE
-    p <@ bb
-  ORDER BY p <-> bb[0]
-  LIMIT 2) AS ss
+    (box(point(0.8, 0.8), point(1.0, 1.0))))
+  AS v (bb)
+  INNER JOIN
+    LATERAL (SELECT
+      p
+    FROM
+      gist_tbl
+    WHERE
+      p <@ bb
+    ORDER BY p <-> bb[0]
+    LIMIT 2)
+    AS ss
   ON TRUE;
 
 SELECT
@@ -175,15 +180,18 @@ FROM
   (VALUES
     (box(point(0, 0), point(0.5, 0.5))),
     (box(point(0.5, 0.5), point(0.75, 0.75))),
-    (box(point(0.8, 0.8), point(1.0, 1.0)))) AS v (bb)
-  INNER JOIN LATERAL (SELECT
-    p
-  FROM
-    gist_tbl
-  WHERE
-    p <@ bb
-  ORDER BY p <-> bb[0]
-  LIMIT 2) AS ss
+    (box(point(0.8, 0.8), point(1.0, 1.0))))
+  AS v (bb)
+  INNER JOIN
+    LATERAL (SELECT
+      p
+    FROM
+      gist_tbl
+    WHERE
+      p <@ bb
+    ORDER BY p <-> bb[0]
+    LIMIT 2)
+    AS ss
   ON TRUE;
 
 DROP INDEX "gist_tbl_point_index";

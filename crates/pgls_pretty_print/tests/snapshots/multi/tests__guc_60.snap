@@ -1,0 +1,344 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/guc.sql
+snapshot_kind: text
+---
+SHOW "datestyle";
+
+SET intervalstyle = asd;
+
+SET vacuum_cost_delay = 40;
+
+SET datestyle = 'ISO, YMD';
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SET LOCAL vacuum_cost_delay = 50;
+
+SHOW "vacuum_cost_delay";
+
+SET LOCAL datestyle = SQL;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+BEGIN;
+
+SET LOCAL vacuum_cost_delay = 50;
+
+SHOW "vacuum_cost_delay";
+
+SET LOCAL datestyle = SQL;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+COMMIT;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+BEGIN;
+
+SET vacuum_cost_delay = 60;
+
+SHOW "vacuum_cost_delay";
+
+SET datestyle = German;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+BEGIN;
+
+SET vacuum_cost_delay = 70;
+
+SET datestyle = MDY;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SAVEPOINT first_sp;
+
+SET vacuum_cost_delay = 80.1;
+
+SHOW "vacuum_cost_delay";
+
+SET datestyle = 'German, DMY';
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK TO SAVEPOINT first_sp;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SAVEPOINT second_sp;
+
+SET vacuum_cost_delay = '900us';
+
+SET datestyle = 'SQL, YMD';
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SAVEPOINT third_sp;
+
+SET vacuum_cost_delay = 100;
+
+SHOW "vacuum_cost_delay";
+
+SET datestyle = 'Postgres, MDY';
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK TO SAVEPOINT third_sp;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK TO SAVEPOINT second_sp;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+BEGIN;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SAVEPOINT sp;
+
+SET LOCAL vacuum_cost_delay = 30;
+
+SHOW "vacuum_cost_delay";
+
+SET LOCAL datestyle = 'Postgres, MDY';
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK TO SAVEPOINT sp;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+BEGIN;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SAVEPOINT sp;
+
+SET LOCAL vacuum_cost_delay = 30;
+
+SHOW "vacuum_cost_delay";
+
+SET LOCAL datestyle = 'Postgres, MDY';
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+RELEASE SAVEPOINT sp;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+ROLLBACK;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+BEGIN;
+
+SET vacuum_cost_delay = 40;
+
+SET LOCAL vacuum_cost_delay = 50;
+
+SHOW "vacuum_cost_delay";
+
+SET datestyle = 'ISO, DMY';
+
+SET LOCAL datestyle = 'Postgres, MDY';
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+COMMIT;
+
+SHOW "vacuum_cost_delay";
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SET datestyle = iso, ymd;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+RESET datestyle;
+
+SHOW "datestyle";
+
+SELECT
+  CAST('2006-08-13 12:34:56'
+  AS TIMESTAMP WITH TIME ZONE);
+
+SET seq_page_cost = NaN;
+
+SET vacuum_cost_delay = '10s';
+
+SET no_such_variable = 42;
+
+SHOW "custom.my_guc";
+
+SET custom.my_guc = 42;
+
+SHOW "custom.my_guc";
+
+RESET custom.my_guc;
+
+SHOW "custom.my_guc";
+
+SET custom.my.qualified.guc = foo;
+
+SHOW "custom.my.qualified.guc";
+
+SET custom."bad-guc" = 42;
+
+SHOW "custom.bad-guc";
+
+SET special."weird name" = foo;
+
+SHOW "special.weird name";
+
+SET plpgsql.extra_foo_warnings = 'true';
+
+LOAD 'plpgsql';
+
+SET plpgsql.extra_foo_warnings = 'true';
+
+SHOW "plpgsql.extra_foo_warnings";
+
+SELECT relname FROM pg_class WHERE relname = 'reset_test';
+
+DISCARD TEMP;
+
+SELECT relname FROM pg_class WHERE relname = 'reset_test';

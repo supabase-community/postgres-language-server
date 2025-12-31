@@ -42,7 +42,7 @@ fn emit_merge_stmt_impl(e: &mut EventEmitter, n: &MergeStmt, with_semicolon: boo
 
     // ON condition
     if let Some(ref condition) = n.join_condition {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
         emit_node(condition, e);

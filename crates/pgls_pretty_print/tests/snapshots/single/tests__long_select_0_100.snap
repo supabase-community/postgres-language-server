@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/long_select_0_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/long_select_0.sql
 snapshot_kind: text
 ---
 SELECT first_name, last_name, email, phone_number, address FROM customers WHERE city = 'New York';

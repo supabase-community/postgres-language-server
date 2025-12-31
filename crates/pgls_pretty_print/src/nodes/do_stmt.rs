@@ -2,7 +2,7 @@ use pgls_query::{NodeEnum, protobuf::DoStmt};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::string::{emit_dollar_quoted_str, emit_identifier_maybe_quoted, emit_keyword};
@@ -64,22 +64,22 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
 
     if language_first {
         if let Some((lang, _)) = &language {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             emit_keyword(e, "LANGUAGE");
             e.space();
             emit_identifier_maybe_quoted(e, lang);
         }
         if let Some((code, _)) = &body {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             emit_dollar_quoted_str(e, code);
         }
     } else {
         if let Some((code, _)) = &body {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             emit_dollar_quoted_str(e, code);
         }
         if let Some((lang, _)) = &language {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             emit_keyword(e, "LANGUAGE");
             e.space();
             emit_identifier_maybe_quoted(e, lang);

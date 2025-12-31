@@ -1,0 +1,192 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/tidrangescan.sql
+snapshot_kind: text
+---
+SET enable_seqscan = off;
+
+CREATE TABLE tidrangescan (id INT, data TEXT);
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(1, 0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(1, 0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid > '(9, 0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid > '(9, 0)';
+
+INSERT INTO tidrangescan
+SELECT
+  i,
+  repeat('x', 100)
+FROM
+  generate_series(1, 200)
+  AS s (i);
+
+DELETE FROM tidrangescan
+WHERE
+  CAST(SUBSTRING(CAST(ctid AS TEXT)
+  FROM ',(\d+)\)')
+  AS INT) >
+  10 OR
+  CAST(SUBSTRING(CAST(ctid AS TEXT)
+  FROM '\((\d+),')
+  AS INT) >
+  2;
+
+VACUUM tidrangescan;
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(1,0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(1,0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid <= '(1,5)';
+
+SELECT ctid FROM tidrangescan WHERE ctid <= '(1,5)';
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(0,0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(0,0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid > '(2,8)';
+
+SELECT ctid FROM tidrangescan WHERE ctid > '(2,8)';
+
+SELECT ctid FROM tidrangescan WHERE '(2,8)' < ctid;
+
+SELECT ctid FROM tidrangescan WHERE '(2,8)' < ctid;
+
+SELECT ctid FROM tidrangescan WHERE ctid >= '(2,8)';
+
+SELECT ctid FROM tidrangescan WHERE ctid >= '(2,8)';
+
+SELECT ctid FROM tidrangescan WHERE ctid >= '(100,0)';
+
+SELECT ctid FROM tidrangescan WHERE ctid >= '(100,0)';
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid > '(1,4)' AND
+  '(1,7)' >= ctid;
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid > '(1,4)' AND
+  '(1,7)' >= ctid;
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  '(1,7)' >= ctid AND
+  ctid > '(1,4)';
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  '(1,7)' >= ctid AND
+  ctid > '(1,4)';
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid > '(0,65535)' AND
+  ctid < '(1,0)'
+LIMIT 1;
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(0,0)' LIMIT 1;
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid > '(4294967295,65535)';
+
+SELECT ctid FROM tidrangescan WHERE ctid < '(0,0)';
+
+SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid >=
+  (SELECT CAST(NULL AS TID));
+
+SELECT
+  t.ctid,
+  t2.c
+FROM
+  tidrangescan AS t,
+  LATERAL (SELECT
+    COUNT(*) AS c
+  FROM
+    tidrangescan AS t2
+  WHERE
+    t2.ctid <= t.ctid)
+  AS t2
+WHERE
+  t.ctid < '(1,0)';
+
+SELECT
+  t.ctid,
+  t2.c
+FROM
+  tidrangescan AS t,
+  LATERAL (SELECT
+    COUNT(*) AS c
+  FROM
+    tidrangescan AS t2
+  WHERE
+    t2.ctid <= t.ctid)
+  AS t2
+WHERE
+  t.ctid < '(1,0)';
+
+EXPLAIN (COSTS 'off')
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid < '(1,0)';;
+
+BEGIN;
+
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
+  ctid
+FROM
+  tidrangescan
+WHERE
+  ctid < '(1,0)';;
+
+FETCH NEXT FROM c;
+
+FETCH NEXT FROM c;
+
+FETCH PRIOR FROM c;
+
+FETCH ABSOLUTE 1 FROM c;
+
+FETCH ABSOLUTE -1 FROM c;
+
+COMMIT;
+
+DROP TABLE "tidrangescan";
+
+RESET enable_seqscan;

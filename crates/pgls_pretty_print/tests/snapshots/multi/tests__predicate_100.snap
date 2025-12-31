@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/predicate_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/predicate.sql
 snapshot_kind: text
 ---
 CREATE TABLE pred_tab (a INT NOT NULL, b INT, c INT NOT NULL);
@@ -27,9 +27,11 @@ SELECT
   *
 FROM
   pred_tab AS t1
-  FULL OUTER JOIN pred_tab AS t2
+  FULL OUTER JOIN
+    pred_tab AS t2
   ON t1.a = t2.a
-  LEFT OUTER JOIN pred_tab AS t3
+  LEFT OUTER JOIN
+    pred_tab AS t3
   ON t2.a IS NOT NULL;
 
 SELECT * FROM pred_tab AS t1 LEFT OUTER JOIN pred_tab AS t2 ON t1.a IS NULL;
@@ -38,9 +40,11 @@ SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
+  LEFT OUTER JOIN
+    pred_tab AS t2
   ON t1.a = 1
-  LEFT OUTER JOIN pred_tab AS t3
+  LEFT OUTER JOIN
+    pred_tab AS t3
   ON t2.a IS NULL;
 
 SELECT * FROM pred_tab AS t1 LEFT OUTER JOIN pred_tab AS t2 ON t1.a IS NOT NULL OR t2.b = 1;
@@ -49,9 +53,11 @@ SELECT
   *
 FROM
   pred_tab AS t1
-  FULL OUTER JOIN pred_tab AS t2
+  FULL OUTER JOIN
+    pred_tab AS t2
   ON t1.a = t2.a
-  LEFT OUTER JOIN pred_tab AS t3
+  LEFT OUTER JOIN
+    pred_tab AS t3
   ON t2.a IS NOT NULL OR t2.b = 1;
 
 SELECT * FROM pred_tab AS t1 LEFT OUTER JOIN pred_tab AS t2 ON t1.a IS NULL OR t1.c IS NULL;
@@ -60,17 +66,21 @@ SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
+  LEFT OUTER JOIN
+    pred_tab AS t2
   ON t1.a = 1
-  LEFT OUTER JOIN pred_tab AS t3
+  LEFT OUTER JOIN
+    pred_tab AS t3
   ON t2.a IS NULL OR t2.c IS NULL;
 
 SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
-  ON EXISTS (SELECT
+  LEFT OUTER JOIN
+    pred_tab AS t2
+  ON EXISTS
+    (SELECT
       1
     FROM
       pred_tab AS t3,
@@ -84,8 +94,10 @@ SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
-  ON EXISTS (SELECT
+  LEFT OUTER JOIN
+    pred_tab AS t2
+  ON EXISTS
+    (SELECT
       1
     FROM
       pred_tab AS t3,
@@ -99,7 +111,8 @@ DROP TABLE "pred_tab";
 
 CREATE TABLE pred_parent (a INT);
 
-CREATE TABLE pred_child ()
+CREATE TABLE pred_child
+()
 INHERITS (pred_parent);
 
 ALTER TABLE ONLY pred_parent
@@ -141,44 +154,56 @@ SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
+  LEFT OUTER JOIN
+    pred_tab AS t2
   ON TRUE
-  LEFT OUTER JOIN pred_tab_notnull AS t3
+  LEFT OUTER JOIN
+    pred_tab_notnull AS t3
   ON t2.a = t3.a
-  LEFT OUTER JOIN pred_tab AS t4
+  LEFT OUTER JOIN
+    pred_tab AS t4
   ON t3.b IS NOT NULL;
 
 SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
+  LEFT OUTER JOIN
+    pred_tab AS t2
   ON TRUE
-  LEFT OUTER JOIN pred_tab_notnull AS t3
+  LEFT OUTER JOIN
+    pred_tab_notnull AS t3
   ON t2.a = t3.a
-  LEFT OUTER JOIN pred_tab AS t4
+  LEFT OUTER JOIN
+    pred_tab AS t4
   ON t3.b IS NOT NULL;
 
 SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
+  LEFT OUTER JOIN
+    pred_tab AS t2
   ON TRUE
-  LEFT OUTER JOIN pred_tab_notnull AS t3
+  LEFT OUTER JOIN
+    pred_tab_notnull AS t3
   ON t2.a = t3.a
-  LEFT OUTER JOIN pred_tab AS t4
+  LEFT OUTER JOIN
+    pred_tab AS t4
   ON t3.b IS NULL AND t3.a IS NOT NULL;
 
 SELECT
   *
 FROM
   pred_tab AS t1
-  LEFT OUTER JOIN pred_tab AS t2
+  LEFT OUTER JOIN
+    pred_tab AS t2
   ON TRUE
-  LEFT OUTER JOIN pred_tab_notnull AS t3
+  LEFT OUTER JOIN
+    pred_tab_notnull AS t3
   ON t2.a = t3.a
-  LEFT OUTER JOIN pred_tab AS t4
+  LEFT OUTER JOIN
+    pred_tab AS t4
   ON t3.b IS NULL AND t3.a IS NOT NULL;
 
 DROP TABLE "pred_tab";

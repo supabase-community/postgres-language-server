@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/timetz_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/timetz.sql
 snapshot_kind: text
 ---
 CREATE TABLE timetz_tbl (f1 TIME(2) WITH TIME ZONE);

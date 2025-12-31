@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/float8_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/float8.sql
 snapshot_kind: text
 ---
 CREATE TEMPORARY TABLE float8_tbl (f1 DOUBLE PRECISION);
@@ -297,7 +297,8 @@ FROM
     (6),
     (28),
     (CAST('infinity' AS DOUBLE PRECISION)),
-    (CAST('nan' AS DOUBLE PRECISION))) AS t (x);
+    (CAST('nan' AS DOUBLE PRECISION)))
+  AS t (x);
 
 RESET extra_float_digits;
 
@@ -316,7 +317,8 @@ FROM
     (4),
     (5),
     (CAST('infinity' AS DOUBLE PRECISION)),
-    (CAST('nan' AS DOUBLE PRECISION))) AS t (x);
+    (CAST('nan' AS DOUBLE PRECISION)))
+  AS t (x);
 
 SELECT gamma(CAST('-infinity' AS DOUBLE PRECISION));
 
@@ -392,7 +394,8 @@ FROM
     (210),
     (270),
     (330),
-    (360)) AS t (x);
+    (360))
+  AS t (x);
 
 SELECT
   x,
@@ -408,23 +411,30 @@ FROM
     (240),
     (270),
     (300),
-    (360)) AS t (x);
+    (360))
+  AS t (x);
 
 SELECT
   x,
   tand(x),
-  tand(x) IN (CAST('-Infinity' AS DOUBLE PRECISION),
-  -1,
-  0,
-  1,
-  CAST('Infinity' AS DOUBLE PRECISION))
+  tand(x)
+  IN (
+    CAST('-Infinity' AS DOUBLE PRECISION),
+    -1,
+    0,
+    1,
+    CAST('Infinity' AS DOUBLE PRECISION)
+  )
   AS tand_exact,
   cotd(x),
-  cotd(x) IN (CAST('-Infinity' AS DOUBLE PRECISION),
-  -1,
-  0,
-  1,
-  CAST('Infinity' AS DOUBLE PRECISION))
+  cotd(x)
+  IN (
+    CAST('-Infinity' AS DOUBLE PRECISION),
+    -1,
+    0,
+    1,
+    CAST('Infinity' AS DOUBLE PRECISION)
+  )
   AS cotd_exact
 FROM
   (VALUES
@@ -436,7 +446,8 @@ FROM
     (225),
     (270),
     (315),
-    (360)) AS t (x);
+    (360))
+  AS t (x);
 
 SELECT
   x,
@@ -450,7 +461,8 @@ FROM
     (-0.5),
     (0),
     (0.5),
-    (1)) AS t (x);
+    (1))
+  AS t (x);
 
 SELECT
   x,
@@ -462,7 +474,8 @@ FROM
     (-1),
     (0),
     (1),
-    (CAST('Infinity' AS DOUBLE PRECISION))) AS t (x);
+    (CAST('Infinity' AS DOUBLE PRECISION)))
+  AS t (x);
 
 SELECT
   x,
@@ -474,7 +487,8 @@ FROM
     10 * cosd(a),
     10 * sind(a)
   FROM
-    generate_series(0, 360, 90) AS t (a)) AS t (x, y);
+    generate_series(0, 360, 90) AS t (a))
+  AS t (x, y);
 
 CREATE TYPE xfloat8;
 
@@ -504,7 +518,9 @@ CREATE CAST (xfloat8 AS BIGINT) WITHOUT FUNCTION;
 
 CREATE CAST (BIGINT AS xfloat8) WITHOUT FUNCTION;
 
-WITH testdata (bits) AS (
+WITH
+testdata (bits)
+AS (
   VALUES
     (X'0000000000000001'),
     (X'0000000000000002'),
@@ -535,9 +551,12 @@ FROM
     AS flt
   FROM
     testdata
-  OFFSET 0) AS s;
+  OFFSET 0)
+  AS s;
 
-WITH testdata (bits) AS (
+WITH
+testdata (bits)
+AS (
   VALUES
     (X'0000000000000000'),
     (X'0010000000000000'),
@@ -770,6 +789,7 @@ FROM
     AS flt
   FROM
     testdata
-  OFFSET 0) AS s;
+  OFFSET 0)
+  AS s;
 
 DROP TYPE xfloat8 CASCADE;

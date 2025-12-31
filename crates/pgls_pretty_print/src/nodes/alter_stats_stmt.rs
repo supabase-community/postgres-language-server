@@ -1,7 +1,7 @@
 use super::node_list::emit_dot_separated_list;
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::AlterStatsStmt;
 
@@ -26,7 +26,7 @@ pub(super) fn emit_alter_stats_stmt(e: &mut EventEmitter, n: &AlterStatsStmt) {
 
     // SET STATISTICS target
     if let Some(ref target) = n.stxstattarget {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
         e.token(TokenKind::IDENT("STATISTICS".to_string()));

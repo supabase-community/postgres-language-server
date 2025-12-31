@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/amutils_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/amutils.sql
 snapshot_kind: text
 ---
 SELECT
@@ -40,7 +40,9 @@ FROM
   'can_include',
   'bogus']
   AS TEXT[])
-  ) WITH ORDINALITY AS u (prop, ord)
+  )
+  WITH ORDINALITY
+  AS u (prop, ord)
 WHERE
   a.amname = 'btree'
 ORDER BY ord;
@@ -82,7 +84,9 @@ FROM
   'can_include',
   'bogus']
   AS TEXT[])
-  ) WITH ORDINALITY AS u (prop, ord)
+  )
+  WITH ORDINALITY
+  AS u (prop, ord)
 WHERE
   a.amname = 'gist'
 ORDER BY ord;
@@ -144,7 +148,9 @@ FROM
   'search_nulls',
   'bogus']
   AS TEXT[])
-  ) WITH ORDINALITY AS u (prop, ord)
+  )
+  WITH ORDINALITY
+  AS u (prop, ord)
 ORDER BY ord;
 
 SELECT
@@ -187,7 +193,9 @@ FROM
   'backward_scan',
   'bogus']
   AS TEXT[])
-  ) WITH ORDINALITY AS u (prop, ord)
+  )
+  WITH ORDINALITY
+  AS u (prop, ord)
 ORDER BY ord;
 
 SELECT
@@ -204,7 +212,9 @@ FROM
   'can_include',
   'bogus']
   AS TEXT[])
-  ) WITH ORDINALITY AS u (prop, ord)
+  )
+  WITH ORDINALITY
+  AS u (prop, ord)
 WHERE
   amtype = 'i'
 ORDER BY amname,
@@ -234,7 +244,8 @@ FROM
     (3, 'desc'),
     (4, 'nulls_first'),
     (5, 'nulls_last'),
-    (6, 'bogus')) AS v2 (idx, prop),
+    (6, 'bogus'))
+  AS v2 (idx, prop),
   generate_series(1, 4) AS col
 ORDER BY col,
   idx;
@@ -262,7 +273,8 @@ FROM
     (5, 'nulls_last'),
     (6, 'distance_orderable'),
     (7, 'returnable'),
-    (8, 'bogus')) AS v2 (idx, prop),
+    (8, 'bogus'))
+  AS v2 (idx, prop),
   generate_series(1, 3) AS col
 ORDER BY col,
   idx;

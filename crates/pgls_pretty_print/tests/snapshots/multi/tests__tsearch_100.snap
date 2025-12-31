@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tsearch_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tsearch.sql
 snapshot_kind: text
 ---
 SELECT
@@ -30,8 +30,10 @@ FROM
     oid AS cfgid,
     (ts_token_type(cfgparser)).tokid AS tokid
   FROM
-    pg_ts_config) AS tt
-  RIGHT OUTER JOIN pg_ts_config_map AS m
+    pg_ts_config)
+  AS tt
+  RIGHT OUTER JOIN
+    pg_ts_config_map AS m
   ON tt.cfgid = m.mapcfg AND tt.tokid = m.maptokentype
 WHERE
   tt.cfgid IS NULL OR tt.tokid IS NULL;
@@ -888,7 +890,8 @@ SELECT
   ts_headline(
   'english',
   'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
-  to_tsquery('english', 'Lorem') && phraseto_tsquery('english', 'ullamcorper urna'),
+  to_tsquery('english', 'Lorem') &&
+  phraseto_tsquery('english', 'ullamcorper urna'),
   'MaxWords=100, MinWords=1'
   );
 
@@ -1001,7 +1004,8 @@ SELECT
   ts_headline(
   'english',
   'Lorem ipsum urna.  Nullam nullam ullamcorper urna.',
-  to_tsquery('english', 'Lorem') && phraseto_tsquery('english', 'ullamcorper urna'),
+  to_tsquery('english', 'Lorem') &&
+  phraseto_tsquery('english', 'ullamcorper urna'),
   'MaxFragments=100, MaxWords=100, MinWords=1'
   );
 
@@ -1128,7 +1132,8 @@ FROM
   to_tsquery(
   'english',
   'bar & qq & foo & (new <-> york)'
-  ) AS query;
+  )
+  AS query;
 
 SELECT
   ts_rewrite(
@@ -1155,7 +1160,8 @@ FROM
   to_tsquery(
   'english',
   'bar & qq & foo & (new <-> york)'
-  ) AS query;
+  )
+  AS query;
 
 CREATE INDEX "qq"
 ON test_tsquery
@@ -1199,7 +1205,8 @@ FROM
   to_tsquery(
   'english',
   'bar & qq & foo & (new <-> york)'
-  ) AS query;
+  )
+  AS query;
 
 SELECT
   ts_rewrite(
@@ -1226,7 +1233,8 @@ FROM
   to_tsquery(
   'english',
   'bar & qq & foo & (new <-> york)'
-  ) AS query;
+  )
+  AS query;
 
 SELECT ts_rewrite(tsquery_phrase('foo', 'foo'), 'foo', 'bar | baz');
 
@@ -1253,7 +1261,8 @@ SELECT plainto_tsquery('SKIES My booKs');
 SELECT to_tsquery('SKIES & My | booKs');
 
 CREATE TRIGGER tsvectorupdate
-BEFORE INSERT OR UPDATE ON test_tsvector
+BEFORE INSERT OR UPDATE
+ON test_tsvector
 FOR EACH ROW
 EXECUTE FUNCTION tsvector_update_trigger(a,
 "pg_catalog.english",
@@ -1446,13 +1455,15 @@ SELECT websearch_to_tsquery('english', '"A the" OR just on');
 SELECT websearch_to_tsquery('english', '"a fat cat" ate a rat');
 
 SELECT
-  to_tsvector('english', 'A fat cat ate a rat') @@ websearch_to_tsquery(
+  to_tsvector('english', 'A fat cat ate a rat') @@
+  websearch_to_tsquery(
   'english',
   '"a fat cat" ate a rat'
   );
 
 SELECT
-  to_tsvector('english', 'A fat grey cat ate a rat') @@ websearch_to_tsquery(
+  to_tsvector('english', 'A fat grey cat ate a rat') @@
+  websearch_to_tsquery(
   'english',
   '"a fat cat" ate a rat'
   );

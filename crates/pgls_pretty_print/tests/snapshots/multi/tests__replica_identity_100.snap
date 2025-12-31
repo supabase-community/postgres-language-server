@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/replica_identity_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/replica_identity.sql
 snapshot_kind: text
 ---
-CREATE TABLE test_replica_identity (
+CREATE TABLE test_replica_identity
+(
   id serial PRIMARY KEY,
   keya TEXT NOT NULL,
   keyb TEXT NOT NULL,
@@ -207,7 +208,8 @@ ALTER TABLE test_replica_identity3
 ALTER TABLE test_replica_identity3
   ALTER COLUMN id DROP NOT NULL;
 
-CREATE TABLE test_replica_identity4 (id INT NOT NULL)
+CREATE TABLE test_replica_identity4
+(id INT NOT NULL)
 PARTITION BY LIST(id);
 
 CREATE TABLE test_replica_identity4_1 (id INT NOT NULL);

@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/groupingsets_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/groupingsets.sql
 snapshot_kind: text
 ---
-CREATE TEMPORARY VIEW gstest1 (a,
+CREATE TEMPORARY VIEW gstest1
+(a,
 b,
 v)
 AS VALUES
@@ -121,7 +122,8 @@ FROM
     (1, 4),
     (1, 5),
     (3, 1),
-    (3, 2)) AS v (a, b)
+    (3, 2))
+  AS v (a, b)
 GROUP BY ROLLUP (a)
 ORDER BY a;
 
@@ -233,7 +235,8 @@ SELECT
   MAX(t2.a)
 FROM
   gstest1 AS t1
-  INNER JOIN gstest2 AS t2
+  INNER JOIN
+    gstest2 AS t2
   ON t1.a = t2.a
 GROUP BY GROUPING SETS ((t1.a, t2.b), ());
 
@@ -245,7 +248,8 @@ SELECT
   MAX(t2.c)
 FROM
   gstest1 AS t1
-  INNER JOIN gstest2 AS t2
+  INNER JOIN
+    gstest2 AS t2
   USING (
     "a",
     "b")
@@ -266,7 +270,8 @@ FROM
     ten,
     CAST('foo' AS TEXT) AS x
   FROM
-    tenk1) AS t
+    tenk1)
+  AS t
 GROUP BY GROUPING SETS (four, x)
 HAVING
   x = 'foo';
@@ -280,7 +285,8 @@ FROM
     ten,
     CAST('foo' AS TEXT) AS x
   FROM
-    tenk1) AS t
+    tenk1)
+  AS t
 GROUP BY GROUPING SETS (four, x)
 ORDER BY four;
 
@@ -330,7 +336,8 @@ FROM
     SUM(q2)
   FROM
     int8_tbl AS i1
-  GROUP BY GROUPING SETS (1, 2)) AS ss
+  GROUP BY GROUPING SETS (1, 2))
+  AS ss
 WHERE
   x = 1 AND q1 = 123;
 
@@ -343,7 +350,8 @@ FROM
     SUM(q2)
   FROM
     int8_tbl AS i1
-  GROUP BY GROUPING SETS (1, 2)) AS ss
+  GROUP BY GROUPING SETS (1, 2))
+  AS ss
 WHERE
   x = 1 AND q1 = 123;
 
@@ -351,7 +359,8 @@ SELECT
   GROUPING(ss.x)
 FROM
   int8_tbl AS i1
-  INNER JOIN LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
+  INNER JOIN
+    LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -359,7 +368,8 @@ SELECT
   GROUPING(ss.x)
 FROM
   int8_tbl AS i1
-  INNER JOIN LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
+  INNER JOIN
+    LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -367,7 +377,8 @@ SELECT
   (SELECT GROUPING(ss.x))
 FROM
   int8_tbl AS i1
-  INNER JOIN LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
+  INNER JOIN
+    LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -375,7 +386,8 @@ SELECT
   (SELECT GROUPING(ss.x))
 FROM
   int8_tbl AS i1
-  INNER JOIN LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
+  INNER JOIN
+    LATERAL (SELECT (SELECT i1.q1) AS x) AS ss
   ON TRUE
 GROUP BY ss.x;
 
@@ -386,7 +398,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   gstest_data(v.x)
 GROUP BY ROLLUP (a, b);
 
@@ -395,14 +408,16 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   LATERAL (SELECT
     a,
     b,
     SUM(v.x)
   FROM
     gstest_data(v.x)
-  GROUP BY ROLLUP (a, b)) AS s;
+  GROUP BY ROLLUP (a, b))
+  AS s;
 
 SELECT MIN(unique1) FROM tenk1 GROUP BY ();
 
@@ -462,7 +477,8 @@ SELECT
 FROM
   (VALUES
     (1, 2),
-    (2, 3)) AS v (a, b)
+    (2, 3))
+  AS v (a, b)
 GROUP BY a,
   b,
   GROUPING SETS (a);
@@ -531,7 +547,8 @@ FROM
     (3, 3, 16),
     (3, 4, 17),
     (4, 1, 18),
-    (4, 1, 19)) AS v (a, b, c)
+    (4, 1, 19))
+  AS v (a, b, c)
 GROUP BY ROLLUP (a, b);
 
 SELECT
@@ -541,7 +558,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   gstest_data(v.x)
 GROUP BY CUBE (a, b)
 ORDER BY a,
@@ -560,7 +578,8 @@ FROM
   onek AS a
 GROUP BY GROUPING SETS ((ten, four), ten)
 HAVING
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     onek AS b
@@ -585,7 +604,8 @@ SELECT
 FROM
   (VALUES
     (FALSE),
-    (TRUE)) AS v (c)
+    (TRUE))
+  AS v (c)
 ORDER BY v.c;
 
 SELECT
@@ -600,7 +620,8 @@ SELECT
 FROM
   (VALUES
     (FALSE),
-    (TRUE)) AS v (c)
+    (TRUE))
+  AS v (c)
 ORDER BY v.c;
 
 SELECT a, b, COUNT(*) FROM gstest2 GROUP BY GROUPING SETS ((a, b), a) HAVING a > 1 AND b > 1;
@@ -651,15 +672,18 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (a)
-  LEFT OUTER JOIN LATERAL (SELECT
-    v.a,
-    four,
-    ten,
-    COUNT(*)
-  FROM
-    onek
-  GROUP BY CUBE (four, ten)) AS s
+    (2))
+  AS v (a)
+  LEFT OUTER JOIN
+    LATERAL (SELECT
+      v.a,
+      four,
+      ten,
+      COUNT(*)
+    FROM
+      onek
+    GROUP BY CUBE (four, ten))
+    AS s
   ON TRUE
 ORDER BY v.a,
   four,
@@ -677,11 +701,13 @@ SELECT
       onek
     GROUP BY CUBE (two, four)
     ORDER BY two,
-      four) AS s1)
+      four)
+    AS s1)
 FROM
   (VALUES
     (1),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SELECT SUM(ten) FROM onek GROUP BY two, ROLLUP (CAST(four AS TEXT)) ORDER BY 1;
 
@@ -834,7 +860,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   gstest_data(v.x)
 GROUP BY GROUPING SETS (a, b)
 ORDER BY 1,
@@ -848,7 +875,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   gstest_data(v.x)
 GROUP BY GROUPING SETS (a, b)
 ORDER BY 3,
@@ -860,28 +888,32 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   LATERAL (SELECT
     a,
     b,
     SUM(v.x)
   FROM
     gstest_data(v.x)
-  GROUP BY GROUPING SETS (a, b)) AS s;
+  GROUP BY GROUPING SETS (a, b))
+  AS s;
 
 SELECT
   *
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   LATERAL (SELECT
     a,
     b,
     SUM(v.x)
   FROM
     gstest_data(v.x)
-  GROUP BY GROUPING SETS (a, b)) AS s;
+  GROUP BY GROUPING SETS (a, b))
+  AS s;
 
 SELECT
   a,
@@ -944,7 +976,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   gstest_data(v.x)
 GROUP BY CUBE (a, b)
 ORDER BY a,
@@ -957,7 +990,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (x),
+    (2))
+  AS v (x),
   gstest_data(v.x)
 GROUP BY CUBE (a, b)
 ORDER BY a,
@@ -984,15 +1018,18 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (a)
-  LEFT OUTER JOIN LATERAL (SELECT
-    v.a,
-    four,
-    ten,
-    COUNT(*)
-  FROM
-    onek
-  GROUP BY CUBE (four, ten)) AS s
+    (2))
+  AS v (a)
+  LEFT OUTER JOIN
+    LATERAL (SELECT
+      v.a,
+      four,
+      ten,
+      COUNT(*)
+    FROM
+      onek
+    GROUP BY CUBE (four, ten))
+    AS s
   ON TRUE
 ORDER BY v.a,
   four,
@@ -1010,26 +1047,31 @@ SELECT
       onek
     GROUP BY CUBE (two, four)
     ORDER BY two,
-      four) AS s1)
+      four)
+    AS s1)
 FROM
   (VALUES
     (1),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SELECT
   *
 FROM
   (VALUES
     (1),
-    (2)) AS v (a)
-  LEFT OUTER JOIN LATERAL (SELECT
-    v.a,
-    four,
-    ten,
-    COUNT(*)
-  FROM
-    onek
-  GROUP BY GROUPING SETS (four, ten)) AS s
+    (2))
+  AS v (a)
+  LEFT OUTER JOIN
+    LATERAL (SELECT
+      v.a,
+      four,
+      ten,
+      COUNT(*)
+    FROM
+      onek
+    GROUP BY GROUPING SETS (four, ten))
+    AS s
   ON TRUE
 ORDER BY v.a,
   four,
@@ -1047,11 +1089,13 @@ SELECT
       onek
     GROUP BY GROUPING SETS (two, four)
     ORDER BY two,
-      four) AS s1)
+      four)
+    AS s1)
 FROM
   (VALUES
     (1),
-    (2)) AS v (a);
+    (2))
+  AS v (a);
 
 SET enable_indexscan = 'false';
 
@@ -1152,7 +1196,8 @@ SELECT
 FROM
   (VALUES
     (1),
-    (2)) AS v (a),
+    (2))
+  AS v (a),
   LATERAL (SELECT
     a,
     i,
@@ -1160,7 +1205,8 @@ FROM
     COUNT(*)
   FROM
     bug_16784
-  GROUP BY CUBE (i, j)) AS s
+  GROUP BY CUBE (i, j))
+  AS s
 ORDER BY v.a,
   i,
   j;
@@ -1264,7 +1310,8 @@ FROM
   (VALUES
     (1, 2, 3),
     (4, NULL, 6),
-    (7, 8, 9)) AS t (a, b, c)
+    (7, 8, 9))
+  AS t (a, b, c)
 GROUP BY ROLLUP (a, b),
   ROLLUP (a, c)
 ORDER BY a,
@@ -1279,7 +1326,8 @@ FROM
   (VALUES
     (1, 2, 3),
     (4, NULL, 6),
-    (7, 8, 9)) AS t (a, b, c)
+    (7, 8, 9))
+  AS t (a, b, c)
 GROUP BY ROLLUP (a, b),
   ROLLUP (a, c)
 ORDER BY a,
@@ -1294,7 +1342,8 @@ FROM
   (VALUES
     (1, 2, 3),
     (4, NULL, 6),
-    (7, 8, 9)) AS t (a, b, c)
+    (7, 8, 9))
+  AS t (a, b, c)
 GROUP BY DISTINCT ROLLUP (a, b),
   ROLLUP (a, c)
 ORDER BY a,
@@ -1309,7 +1358,8 @@ FROM
   (VALUES
     (1, 2, 3),
     (4, NULL, 6),
-    (7, 8, 9)) AS t (a, b, c)
+    (7, 8, 9))
+  AS t (a, b, c)
 GROUP BY ROLLUP (a, b),
   ROLLUP (a, c)
 ORDER BY a,
@@ -1337,7 +1387,8 @@ FROM
 GROUP BY GROUPING SETS (v, s)
 ORDER BY CASE
   WHEN GROUPING((SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)) =
-  0 THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
+  0
+  THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
   ELSE NULL
   END NULLS FIRST;
 
@@ -1350,7 +1401,8 @@ FROM
 GROUP BY GROUPING SETS (v, s)
 ORDER BY CASE
   WHEN GROUPING((SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)) =
-  0 THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
+  0
+  THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
   ELSE NULL
   END NULLS FIRST;
 
@@ -1360,7 +1412,8 @@ SELECT
   AS s,
   CASE
   WHEN GROUPING((SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)) =
-  0 THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
+  0
+  THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
   ELSE NULL
   END
   AS o
@@ -1375,7 +1428,8 @@ SELECT
   AS s,
   CASE
   WHEN GROUPING((SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)) =
-  0 THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
+  0
+  THEN (SELECT t1.v FROM gstest5 AS t2 WHERE id = t1.id)
   ELSE NULL
   END
   AS o
@@ -1412,7 +1466,8 @@ SELECT DISTINCT ON (
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS t (a, b)
+    (2, 2))
+  AS t (a, b)
 WHERE
   a = b
 GROUP BY GROUPING SETS ((a, b), a)
@@ -1427,7 +1482,8 @@ SELECT DISTINCT ON (
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS t (a, b)
+    (2, 2))
+  AS t (a, b)
 WHERE
   a = b
 GROUP BY GROUPING SETS ((a, b), a)
@@ -1442,7 +1498,8 @@ SELECT DISTINCT ON (
 FROM
   (VALUES
     (1, 0),
-    (2, 1)) AS t (a, b)
+    (2, 1))
+  AS t (a, b)
 WHERE
   a = b + 1
 GROUP BY GROUPING SETS ((a, b + 1), a)
@@ -1457,7 +1514,8 @@ SELECT DISTINCT ON (
 FROM
   (VALUES
     (1, 0),
-    (2, 1)) AS t (a, b)
+    (2, 1))
+  AS t (a, b)
 WHERE
   a = b + 1
 GROUP BY GROUPING SETS ((a, b + 1), a)
@@ -1470,7 +1528,8 @@ SELECT
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS t (a, b)
+    (2, 2))
+  AS t (a, b)
 WHERE
   a = b
 GROUP BY GROUPING SETS ((a, b), a)
@@ -1483,7 +1542,8 @@ SELECT
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS t (a, b)
+    (2, 2))
+  AS t (a, b)
 WHERE
   a = b
 GROUP BY GROUPING SETS ((a, b), a)
@@ -1501,7 +1561,8 @@ SELECT
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS t (a, b)
+    (2, 2))
+  AS t (a, b)
 WHERE
   a = b
 GROUP BY GROUPING SETS ((a, b), a);
@@ -1513,7 +1574,8 @@ SELECT
 FROM
   (VALUES
     (1, 1),
-    (2, 2)) AS t (a, b)
+    (2, 2))
+  AS t (a, b)
 WHERE
   a = b
 GROUP BY GROUPING SETS ((a, b), a);

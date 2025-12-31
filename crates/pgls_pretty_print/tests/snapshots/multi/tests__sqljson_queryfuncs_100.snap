@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_queryfuncs_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_queryfuncs.sql
 snapshot_kind: text
 ---
 SELECT JSON_EXISTS(CAST(NULL AS JSONB), '$');
@@ -289,7 +289,8 @@ FROM
     ('true'),
     ('"aaa"'),
     ('[1, null, "2"]'),
-    ('{"a": 1, "b": [2]}')) AS foo (js);
+    ('{"a": 1, "b": [2]}'))
+  AS foo (js);
 
 SELECT
   JSON_QUERY(js, 'strict $[*]') AS unspec,
@@ -314,7 +315,8 @@ FROM
     ('["aaa"]'),
     ('[[1, 2, 3]]'),
     ('[{"a": 1, "b": [2]}]'),
-    ('[1, "2", null, [3]]')) AS foo (js);
+    ('[1, "2", null, [3]]'))
+  AS foo (js);
 
 SELECT JSON_QUERY(CAST('"aaa"' AS JSONB), '$'  RETURNING TEXT);
 
@@ -617,7 +619,8 @@ SELECT
   AS TIMESTAMP WITH TIME ZONE) AS ts
   RETURNING JSONB);
 
-CREATE TABLE test_jsonb_constraints (
+CREATE TABLE test_jsonb_constraints
+(
   js TEXT,
   i INT,
   x JSONB
@@ -1035,7 +1038,8 @@ SELECT
 
 CREATE TABLE someparent (a INT);
 
-CREATE TABLE somechild ()
+CREATE TABLE somechild
+()
 INHERITS (someparent);
 
 SELECT

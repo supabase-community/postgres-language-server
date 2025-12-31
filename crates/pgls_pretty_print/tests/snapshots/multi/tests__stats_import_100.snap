@@ -1,13 +1,14 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/stats_import_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/stats_import.sql
 snapshot_kind: text
 ---
 CREATE SCHEMA "stats_import";
 
 CREATE TYPE stats_import.complex_type AS ( a INT, b REAL, c TEXT, d DATE, e JSONB );
 
-CREATE TABLE stats_import.test (
+CREATE TABLE stats_import.test
+(
   id INT PRIMARY KEY,
   name TEXT,
   comp stats_import.complex_type,
@@ -141,7 +142,8 @@ WHERE
 
 COMMIT;
 
-CREATE TABLE stats_import.part_parent (i INT)
+CREATE TABLE stats_import.part_parent
+(i INT)
 PARTITION BY RANGE(i);
 
 CREATE TABLE stats_import.part_child_1
@@ -1221,44 +1223,46 @@ SELECT
   r.*
 FROM
   pg_catalog.pg_stats AS s
-  INNER JOIN LATERAL pg_restore_attribute_stats(
-  'schemaname',
-  'stats_import',
-  'relname',
-  CAST(s.tablename AS TEXT) || '_clone',
-  'attname',
-  CAST(s.attname AS TEXT),
-  'inherited',
-  s.inherited,
-  'version',
-  150000,
-  'null_frac',
-  s.null_frac,
-  'avg_width',
-  s.avg_width,
-  'n_distinct',
-  s.n_distinct,
-  'most_common_vals',
-  CAST(s.most_common_vals AS TEXT),
-  'most_common_freqs',
-  s.most_common_freqs,
-  'histogram_bounds',
-  CAST(s.histogram_bounds AS TEXT),
-  'correlation',
-  s.correlation,
-  'most_common_elems',
-  CAST(s.most_common_elems AS TEXT),
-  'most_common_elem_freqs',
-  s.most_common_elem_freqs,
-  'elem_count_histogram',
-  s.elem_count_histogram,
-  'range_bounds_histogram',
-  CAST(s.range_bounds_histogram AS TEXT),
-  'range_empty_frac',
-  s.range_empty_frac,
-  'range_length_histogram',
-  CAST(s.range_length_histogram AS TEXT)
-  ) AS r
+  INNER JOIN
+    LATERAL pg_restore_attribute_stats(
+    'schemaname',
+    'stats_import',
+    'relname',
+    CAST(s.tablename AS TEXT) || '_clone',
+    'attname',
+    CAST(s.attname AS TEXT),
+    'inherited',
+    s.inherited,
+    'version',
+    150000,
+    'null_frac',
+    s.null_frac,
+    'avg_width',
+    s.avg_width,
+    'n_distinct',
+    s.n_distinct,
+    'most_common_vals',
+    CAST(s.most_common_vals AS TEXT),
+    'most_common_freqs',
+    s.most_common_freqs,
+    'histogram_bounds',
+    CAST(s.histogram_bounds AS TEXT),
+    'correlation',
+    s.correlation,
+    'most_common_elems',
+    CAST(s.most_common_elems AS TEXT),
+    'most_common_elem_freqs',
+    s.most_common_elem_freqs,
+    'elem_count_histogram',
+    s.elem_count_histogram,
+    'range_bounds_histogram',
+    CAST(s.range_bounds_histogram AS TEXT),
+    'range_empty_frac',
+    s.range_empty_frac,
+    'range_length_histogram',
+    CAST(s.range_length_histogram AS TEXT)
+    )
+    AS r
   ON TRUE
 WHERE
   s.schemaname = 'stats_import' AND
@@ -1272,12 +1276,16 @@ SELECT
   COUNT(*) AS num_stats
 FROM
   pg_class AS c
-  INNER JOIN pg_statistic AS s
+  INNER JOIN
+    pg_statistic AS s
   ON s.starelid = c.oid
 WHERE
   c.relnamespace =
   CAST('stats_import' AS regnamespace) AND
-  c.relname IN ('test', 'test_clone', 'is_odd', 'is_odd_clone')
+  c.relname
+  IN (
+    'test', 'test_clone', 'is_odd', 'is_odd_clone'
+  )
 GROUP BY c.relname
 ORDER BY c.relname;
 
@@ -1315,7 +1323,8 @@ SELECT
   'test' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid = CAST('stats_import.test' AS REGCLASS)
@@ -1354,7 +1363,8 @@ SELECT
   'test' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid =
@@ -1394,7 +1404,8 @@ SELECT
   'test_clone' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid =
@@ -1434,7 +1445,8 @@ SELECT
   'test_clone' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid = CAST('stats_import.test' AS REGCLASS);
@@ -1473,7 +1485,8 @@ SELECT
   'is_odd' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid =
@@ -1513,7 +1526,8 @@ SELECT
   'is_odd' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid =
@@ -1553,7 +1567,8 @@ SELECT
   'is_odd_clone' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid =
@@ -1593,7 +1608,8 @@ SELECT
   'is_odd_clone' AS direction
 FROM
   pg_statistic AS s
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON a.attrelid = s.starelid AND a.attnum = s.staattnum
 WHERE
   s.starelid =

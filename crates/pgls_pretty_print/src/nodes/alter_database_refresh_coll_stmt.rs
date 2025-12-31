@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDatabaseRefreshCollStmt;
 
 pub(super) fn emit_alter_database_refresh_coll_stmt(
@@ -17,7 +17,7 @@ pub(super) fn emit_alter_database_refresh_coll_stmt(
         e.token(TokenKind::IDENT(n.dbname.clone()));
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IDENT("REFRESH".to_string()));
     e.space();
     e.token(TokenKind::IDENT("COLLATION".to_string()));

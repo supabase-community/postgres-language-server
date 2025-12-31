@@ -39,7 +39,7 @@ pub(super) fn emit_aggref(e: &mut EventEmitter, n: &Aggref) {
     e.token(TokenKind::R_PAREN);
 
     if !n.aggorder.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ORDER_KW);
         e.space();
         e.token(TokenKind::BY_KW);
@@ -48,7 +48,7 @@ pub(super) fn emit_aggref(e: &mut EventEmitter, n: &Aggref) {
     }
 
     if let Some(ref filter) = n.aggfilter {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FILTER_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

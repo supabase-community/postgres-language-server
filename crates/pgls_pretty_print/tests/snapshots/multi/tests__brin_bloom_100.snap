@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/brin_bloom_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/brin_bloom.sql
 snapshot_kind: text
 ---
-CREATE TABLE brintest_bloom (
+CREATE TABLE brintest_bloom
+(
   byteacol BYTEA,
   charcol CHAR,
   namecol NAME,
@@ -53,17 +54,23 @@ SELECT
   CAST('10.2.3/24' AS CIDR) + tenthous,
   CAST(substr(stringu1, 1, 1) AS CHAR),
   CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
+  CAST('01:20:30' AS TIME) +
+  thousand * CAST('18.5 second' AS INTERVAL),
+  CAST('1942-07-23 03:05:09' AS TIMESTAMP) +
+  tenthous * CAST('36.38 hours' AS INTERVAL),
   CAST('1972-10-10 03:00'
-  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
+  AS TIMESTAMP WITH TIME ZONE) +
+  thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
   justify_hours(
   tenthous * CAST('12 minutes' AS INTERVAL)
   )
   ),
-  CAST('01:30:20+02' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(tenthous AS NUMERIC(36, 30)) * fivethous * even / (hundred + 1),
+  CAST('01:30:20+02' AS TIME WITH TIME ZONE) +
+  hundred * CAST('15 seconds' AS INTERVAL),
+  CAST(tenthous AS NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
   CAST(format(
   '%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous, 'FM0000'),
@@ -83,10 +90,13 @@ FROM
 ORDER BY unique2
 LIMIT 100;
 
-INSERT INTO brintest_bloom (inetcol, cidrcol)
+INSERT INTO brintest_bloom
+(inetcol, cidrcol)
 SELECT
-  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) + tenthous,
-  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) + tenthous
+  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) +
+  tenthous,
+  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) +
+  tenthous
 FROM
   tenk1
 ORDER BY thousand,
@@ -97,21 +107,24 @@ CREATE INDEX "brinidx_bloom"
 ON brintest_bloom
 USING brin
 (
-  byteacol bytea_bloom_ops(n_distinct_per_range = -1.1)
+  byteacol
+  bytea_bloom_ops(n_distinct_per_range = -1.1)
 );
 
 CREATE INDEX "brinidx_bloom"
 ON brintest_bloom
 USING brin
 (
-  byteacol bytea_bloom_ops(false_positive_rate = 0.00009)
+  byteacol
+  bytea_bloom_ops(false_positive_rate = 0.00009)
 );
 
 CREATE INDEX "brinidx_bloom"
 ON brintest_bloom
 USING brin
 (
-  byteacol bytea_bloom_ops(false_positive_rate = 0.26)
+  byteacol
+  bytea_bloom_ops(false_positive_rate = 0.26)
 );
 
 CREATE INDEX "brinidx_bloom"
@@ -144,7 +157,8 @@ USING brin
 )
 WITH (pages_per_range = 1);
 
-CREATE TABLE brinopers_bloom (
+CREATE TABLE brinopers_bloom
+(
   colname NAME,
   typ TEXT,
   op TEXT[],
@@ -268,7 +282,8 @@ VALUES
     '{1, 25, 100}'
   );
 
-DO $$
+DO
+$$
 DECLARE
 	r record;
 	r2 record;
@@ -376,17 +391,23 @@ SELECT
   CAST('10.2.3/24' AS CIDR) + tenthous,
   CAST(substr(stringu1, 1, 1) AS CHAR),
   CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
+  CAST('01:20:30' AS TIME) +
+  thousand * CAST('18.5 second' AS INTERVAL),
+  CAST('1942-07-23 03:05:09' AS TIMESTAMP) +
+  tenthous * CAST('36.38 hours' AS INTERVAL),
   CAST('1972-10-10 03:00'
-  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
+  AS TIMESTAMP WITH TIME ZONE) +
+  thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
   justify_hours(
   tenthous * CAST('12 minutes' AS INTERVAL)
   )
   ),
-  CAST('01:30:20' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
-  CAST(tenthous AS NUMERIC(36, 30)) * fivethous * even / (hundred + 1),
+  CAST('01:30:20' AS TIME WITH TIME ZONE) +
+  hundred * CAST('15 seconds' AS INTERVAL),
+  CAST(tenthous AS NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
   CAST(format(
   '%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous, 'FM0000'),
@@ -439,7 +460,8 @@ USING brin
 )
 WITH (pages_per_range = 2);
 
-DO $$
+DO
+$$
 DECLARE curtid tid;
 BEGIN
   LOOP

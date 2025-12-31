@@ -74,10 +74,12 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
 
     emit_join_token(TokenKind::JOIN_KW, e);
 
-    // Right side
+    // Right side - allow break after JOIN keyword for narrow widths
     if let Some(ref rarg) = n.rarg {
-        e.space();
+        e.line(LineType::SoftOrSpace);
+        e.indent_start();
         super::emit_node(rarg, e);
+        e.indent_end();
     }
 
     // Join qualification

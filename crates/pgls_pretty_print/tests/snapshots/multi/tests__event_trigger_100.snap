@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/event_trigger_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/event_trigger.sql
 snapshot_kind: text
 ---
 CREATE EVENT TRIGGER "regress_event_trigger" ON ddl_command_start EXECUTE FUNCTION pg_backend_pid();
@@ -229,7 +229,8 @@ VALUES
   ('table', 'schema_one.table_three'),
   ('table', 'audit_tbls.schema_two_table_three');
 
-CREATE TABLE dropped_objects (
+CREATE TABLE dropped_objects
+(
   object_type TEXT,
   schema_name TEXT,
   object_name TEXT,
@@ -374,7 +375,8 @@ CREATE TABLE two (col_c INT CHECK (col_c > 0) REFERENCES one DEFAULT 42);
 
 CREATE TABLE id (col_d INT NOT NULL GENERATED ALWAYS AS IDENTITY);
 
-CREATE TABLE evttrig.parted (id INT PRIMARY KEY)
+CREATE TABLE evttrig.parted
+(id INT PRIMARY KEY)
 PARTITION BY RANGE(id);
 
 CREATE TABLE evttrig.part_1_10 PARTITION OF evttrig.parted ( id ) FOR VALUES FROM (1) TO (10);
@@ -442,7 +444,8 @@ END; ';
 CREATE TABLE evtrg_nontemp_table (f1 INT PRIMARY KEY, f2 INT DEFAULT 42);
 
 CREATE TRIGGER evtrg_nontemp_trig
-BEFORE INSERT ON evtrg_nontemp_table
+BEFORE INSERT
+ON evtrg_nontemp_table
 FOR EACH STATEMENT
 EXECUTE FUNCTION event_trigger_dummy_trigger();
 
@@ -458,7 +461,8 @@ DROP TABLE "evtrg_nontemp_table";
 CREATE TEMPORARY TABLE a_temp_tbl (f1 INT PRIMARY KEY, f2 INT DEFAULT 42);
 
 CREATE TRIGGER a_temp_trig
-BEFORE INSERT ON a_temp_tbl
+BEFORE INSERT
+ON a_temp_tbl
 FOR EACH STATEMENT
 EXECUTE FUNCTION event_trigger_dummy_trigger();
 
@@ -673,7 +677,8 @@ REINDEX (CONCURRENTLY) SCHEMA concur_reindex_schema;
 
 DROP SCHEMA concur_reindex_schema CASCADE;
 
-CREATE TABLE concur_reindex_part (id INT)
+CREATE TABLE concur_reindex_part
+(id INT)
 PARTITION BY RANGE(id);
 
 REINDEX TABLE concur_reindex_part;
@@ -790,12 +795,14 @@ FROM
   CAST('pg_event_trigger' AS REGCLASS),
   e.oid,
   0
-  ) AS b,
+  )
+  AS b,
   LATERAL pg_get_object_address(
   b.type,
   b.object_names,
   b.object_args
-  ) AS a
+  )
+  AS a
 ORDER BY e.evtname;
 
 DROP EVENT TRIGGER start_rls_command;

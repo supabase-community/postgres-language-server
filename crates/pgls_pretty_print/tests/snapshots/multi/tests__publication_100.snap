@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/publication_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/publication.sql
 snapshot_kind: text
 ---
 CREATE ROLE regress_publication_user LOGIN SUPERUSER;
@@ -56,7 +56,8 @@ CREATE TABLE pub_test.testpub_nopk (foo INT, bar INT);
 CREATE VIEW testpub_view
 AS SELECT 1;
 
-CREATE TABLE testpub_parted (a INT)
+CREATE TABLE testpub_parted
+(a INT)
 PARTITION BY LIST(a);
 
 SET client_min_messages = ERROR;
@@ -119,7 +120,8 @@ DROP PUBLICATION testpub_foralltables, testpub_fortable, testpub_forschema, test
 
 CREATE TABLE testpub_tbl3 (a INT);
 
-CREATE TABLE testpub_tbl3a (b TEXT)
+CREATE TABLE testpub_tbl3a
+(b TEXT)
 INHERITS (testpub_tbl3);
 
 SET client_min_messages = ERROR;
@@ -323,13 +325,15 @@ CREATE PUBLICATION testpub6 FOR TABLE testpub_rf_tbl1 WHERE (CAST('(0,1)' AS TID
 ALTER PUBLICATION testpub5 SET TABLE testpub_rf_tbl5 WHERE ( a IS DOCUMENT);
 
 ALTER PUBLICATION testpub5 SET
-TABLE testpub_rf_tbl5 WHERE (
+TABLE testpub_rf_tbl5
+WHERE (
   xmlexists('//foo[text() = ''bar'']' PASSING a));
 
 ALTER PUBLICATION testpub5 SET TABLE testpub_rf_tbl1 WHERE ( NULLIF(1, 2) = a);
 
 ALTER PUBLICATION testpub5 SET
-TABLE testpub_rf_tbl1 WHERE (
+TABLE testpub_rf_tbl1
+WHERE (
   CASE a WHEN 5 THEN TRUE ELSE FALSE END);
 
 ALTER PUBLICATION testpub5 SET TABLE testpub_rf_tbl1 WHERE ( COALESCE(b, 'foo') = 'foo');
@@ -404,7 +408,8 @@ CREATE TABLE rf_tbl_abcd_nopk (a INT, b INT, c INT, d INT);
 
 CREATE TABLE rf_tbl_abcd_pk (a INT, b INT, c INT, d INT, PRIMARY KEY (a, b));
 
-CREATE TABLE rf_tbl_abcd_part_pk (a INT PRIMARY KEY, b INT)
+CREATE TABLE rf_tbl_abcd_part_pk
+(a INT PRIMARY KEY, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE rf_tbl_abcd_part_pk_1 (b INT, a INT PRIMARY KEY);
@@ -724,7 +729,8 @@ ALTER PUBLICATION testpub_fortable SET TABLE testpub_tbl7 (a, b);
 
 ALTER PUBLICATION testpub_fortable SET TABLE testpub_tbl7 (a, c);
 
-CREATE TABLE testpub_tbl8 (a INT, b TEXT, c TEXT)
+CREATE TABLE testpub_tbl8
+(a INT, b TEXT, c TEXT)
 PARTITION BY HASH(a);
 
 CREATE TABLE testpub_tbl8_0 PARTITION OF testpub_tbl8 FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -798,7 +804,8 @@ UPDATE testpub_tbl8 SET a = 1;
 
 DROP TABLE "testpub_tbl8";
 
-CREATE TABLE testpub_tbl8 (a INT, b TEXT, c TEXT)
+CREATE TABLE testpub_tbl8
+(a INT, b TEXT, c TEXT)
 PARTITION BY HASH(a);
 
 ALTER PUBLICATION testpub_col_list ADD TABLE testpub_tbl8 (a, b);
@@ -878,7 +885,8 @@ CREATE TABLE rf_tbl_abcd_nopk (a INT, b INT, c INT, d INT);
 
 CREATE TABLE rf_tbl_abcd_pk (a INT, b INT, c INT, d INT, PRIMARY KEY (a, b));
 
-CREATE TABLE rf_tbl_abcd_part_pk (a INT PRIMARY KEY, b INT)
+CREATE TABLE rf_tbl_abcd_part_pk
+(a INT PRIMARY KEY, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE rf_tbl_abcd_part_pk_1 (b INT, a INT PRIMARY KEY);
@@ -1293,7 +1301,8 @@ CREATE SCHEMA "pub_testpart1";
 
 CREATE SCHEMA "pub_testpart2";
 
-CREATE TABLE pub_testpart1.parent1 (a INT)
+CREATE TABLE pub_testpart1.parent1
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE pub_testpart2.child_parent1 PARTITION OF pub_testpart1.parent1 FOR VALUES IN (1);
@@ -1314,7 +1323,8 @@ UPDATE pub_testpart2.child_parent1 SET a = 1;
 
 DROP PUBLICATION testpubpart_forschema;
 
-CREATE TABLE pub_testpart2.parent2 (a INT)
+CREATE TABLE pub_testpart2.parent2
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE pub_testpart1.child_parent2 PARTITION OF pub_testpart2.parent2 FOR VALUES IN (1);
@@ -1387,7 +1397,8 @@ CREATE SCHEMA "sch1";
 
 CREATE SCHEMA "sch2";
 
-CREATE TABLE sch1.tbl1 (a INT)
+CREATE TABLE sch1.tbl1
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE sch2.tbl1_part1 PARTITION OF sch1.tbl1 FOR VALUES FROM (1) TO (10);
@@ -1428,14 +1439,16 @@ DROP TABLE "sch2"."tbl1_part1";
 
 DROP TABLE "sch1"."tbl1";
 
-CREATE TABLE sch1.tbl1 (a INT)
+CREATE TABLE sch1.tbl1
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE sch1.tbl1_part1 PARTITION OF sch1.tbl1 FOR VALUES FROM (1) TO (10);
 
 CREATE TABLE sch1.tbl1_part2 PARTITION OF sch1.tbl1 FOR VALUES FROM (10) TO (20);
 
-CREATE TABLE sch1.tbl1_part3 (a INT)
+CREATE TABLE sch1.tbl1_part3
+(a INT)
 PARTITION BY RANGE(a);
 
 ALTER TABLE sch1.tbl1
@@ -1488,7 +1501,8 @@ RESET client_min_messages;
 
 CREATE TABLE testpub_insert_onconfl_no_ri (a INT UNIQUE, b INT);
 
-CREATE TABLE testpub_insert_onconfl_parted (a INT UNIQUE, b INT)
+CREATE TABLE testpub_insert_onconfl_parted
+(a INT UNIQUE, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE testpub_insert_onconfl_part_no_ri

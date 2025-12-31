@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tablespace_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tablespace.sql
 snapshot_kind: text
 ---
 CREATE TABLESPACE regress_tblspace LOCATION 'relative';
@@ -58,7 +58,8 @@ REINDEX (TABLESPACE pg_global, CONCURRENTLY) TABLE pg_authid;
 
 CREATE TABLE regress_tblspace_test_tbl (num1 BIGINT, num2 DOUBLE PRECISION, t TEXT);
 
-INSERT INTO regress_tblspace_test_tbl (num1, num2, t)
+INSERT INTO regress_tblspace_test_tbl
+(num1, num2, t)
 SELECT
   round(random() * 100),
   random(),
@@ -188,7 +189,8 @@ WHERE
 
 DROP TABLE "regress_tblspace_test_tbl";
 
-CREATE TABLE tbspace_reindex_part (c1 INT, c2 INT)
+CREATE TABLE tbspace_reindex_part
+(c1 INT, c2 INT)
 PARTITION BY RANGE(c1);
 
 CREATE TABLE tbspace_reindex_part_0
@@ -282,18 +284,21 @@ REINDEX (TABLESPACE regress_tblspace, CONCURRENTLY) TABLE tbspace_reindex_part;
 SELECT
   b.relname,
   CASE
-  WHEN a.relfilenode = b.relfilenode THEN 'relfilenode is unchanged'
+  WHEN a.relfilenode = b.relfilenode
+  THEN 'relfilenode is unchanged'
   ELSE 'relfilenode has changed'
   END
   AS filenode,
   CASE
-  WHEN a.reltablespace = b.reltablespace THEN 'reltablespace is unchanged'
+  WHEN a.reltablespace = b.reltablespace
+  THEN 'reltablespace is unchanged'
   ELSE 'reltablespace has changed'
   END
   AS tbspace
 FROM
   reindex_temp_before AS b
-  INNER JOIN pg_class AS a
+  INNER JOIN
+    pg_class AS a
   ON b.relname = a.relname
 ORDER BY 1;
 
@@ -358,7 +363,8 @@ FROM
 WHERE
   c.reltablespace = t.oid AND c.relname = 'foo_idx';
 
-CREATE TABLE testschema.part (a INT)
+CREATE TABLE testschema.part
+(a INT)
 PARTITION BY LIST(a);
 
 SET default_tablespace = pg_global;
@@ -400,7 +406,8 @@ PARTITION BY LIST(a);
 CREATE TABLE testschema.part_910
 PARTITION OF testschema.part
 FOR VALUES IN (9, 10)
-PARTITION BY LIST(a) TABLESPACE regress_tblspace;
+PARTITION BY LIST(a)
+TABLESPACE regress_tblspace;
 
 RESET default_tablespace;
 
@@ -414,9 +421,11 @@ SELECT
   spcname
 FROM
   pg_catalog.pg_class AS c
-  INNER JOIN pg_catalog.pg_namespace AS n
+  INNER JOIN
+    pg_catalog.pg_namespace AS n
   ON c.relnamespace = n.oid
-  LEFT OUTER JOIN pg_catalog.pg_tablespace AS t
+  LEFT OUTER JOIN
+    pg_catalog.pg_tablespace AS t
   ON c.reltablespace = t.oid
 WHERE
   c.relname LIKE 'part%' AND
@@ -427,7 +436,8 @@ RESET default_tablespace;
 
 DROP TABLE "testschema"."part";
 
-CREATE TABLE testschema.part (a INT)
+CREATE TABLE testschema.part
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE testschema.part1 PARTITION OF testschema.part FOR VALUES IN (1);
@@ -453,26 +463,35 @@ WHERE
   c.relname LIKE 'part%_idx'
 ORDER BY relname;
 
-CREATE TABLE testschema.dflt (a INT PRIMARY KEY)
-PARTITION BY LIST(a) TABLESPACE pg_default;
+CREATE TABLE testschema.dflt
+(a INT PRIMARY KEY)
+PARTITION BY LIST(a)
+TABLESPACE pg_default;
 
-CREATE TABLE testschema.dflt (a INT PRIMARY KEY USING INDEX TABLESPACE "pg_default")
+CREATE TABLE testschema.dflt
+(a INT PRIMARY KEY USING INDEX TABLESPACE "pg_default")
 PARTITION BY LIST(a);
 
 SET default_tablespace = pg_default;
 
-CREATE TABLE testschema.dflt (a INT PRIMARY KEY)
-PARTITION BY LIST(a) TABLESPACE regress_tblspace;
+CREATE TABLE testschema.dflt
+(a INT PRIMARY KEY)
+PARTITION BY LIST(a)
+TABLESPACE regress_tblspace;
 
-CREATE TABLE testschema.dflt (a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
+CREATE TABLE testschema.dflt
+(a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
 PARTITION BY LIST(a);
 
-CREATE TABLE testschema.dflt (a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
-PARTITION BY LIST(a) TABLESPACE regress_tblspace;
+CREATE TABLE testschema.dflt
+(a INT PRIMARY KEY USING INDEX TABLESPACE "regress_tblspace")
+PARTITION BY LIST(a)
+TABLESPACE regress_tblspace;
 
 SET default_tablespace = '';
 
-CREATE TABLE testschema.dflt2 (a INT PRIMARY KEY)
+CREATE TABLE testschema.dflt2
+(a INT PRIMARY KEY)
 PARTITION BY LIST(a);
 
 DROP TABLE "testschema"."dflt", "testschema"."dflt2";
@@ -525,8 +544,10 @@ ALTER TABLE testschema.test_default_tab
 
 DROP TABLE "testschema"."test_default_tab";
 
-CREATE TABLE testschema.test_default_tab_p (id BIGINT, val BIGINT)
-PARTITION BY LIST(id) TABLESPACE regress_tblspace;
+CREATE TABLE testschema.test_default_tab_p
+(id BIGINT, val BIGINT)
+PARTITION BY LIST(id)
+TABLESPACE regress_tblspace;
 
 CREATE TABLE testschema.test_default_tab_p1
 PARTITION OF testschema.test_default_tab_p

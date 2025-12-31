@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/select_fetch_with_ties_0.sql
+snapshot_kind: text
+---
+SELECT
+  name
+FROM
+  leaderboard
+ORDER BY score DESC
+OFFSET 3 ROWS
+FETCH FIRST 10 ROWS WITH TIES;

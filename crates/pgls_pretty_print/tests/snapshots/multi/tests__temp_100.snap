@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/temp_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/temp.sql
 snapshot_kind: text
 ---
 CREATE TABLE temptest (col INT);
@@ -110,7 +110,8 @@ SELECT * FROM temptest;
 
 BEGIN;
 
-DO $$
+DO
+$$
 begin
   execute format($cmd$
     CREATE TEMP TABLE temptest (col text CHECK (col < %L)) ON COMMIT DROP
@@ -207,12 +208,15 @@ DROP TABLE "temp_parted_oncommit";
 
 BEGIN;
 
-CREATE TEMPORARY TABLE temp_parted_oncommit_test (a INT)
-PARTITION BY LIST(a) ON COMMIT DROP;
+CREATE TEMPORARY TABLE temp_parted_oncommit_test
+(a INT)
+PARTITION BY LIST(a)
+ON COMMIT DROP;
 
 CREATE TEMPORARY TABLE temp_parted_oncommit_test2
 PARTITION OF temp_parted_oncommit_test
-FOR VALUES IN (2) ON COMMIT DROP;
+FOR VALUES IN (2)
+ON COMMIT DROP;
 
 INSERT INTO temp_parted_oncommit_test
 VALUES
@@ -227,11 +231,13 @@ BEGIN;
 
 CREATE TEMPORARY TABLE temp_parted_oncommit_test1
 PARTITION OF temp_parted_oncommit_test
-FOR VALUES IN (1) ON COMMIT PRESERVE ROWS;
+FOR VALUES IN (1)
+ON COMMIT PRESERVE ROWS;
 
 CREATE TEMPORARY TABLE temp_parted_oncommit_test2
 PARTITION OF temp_parted_oncommit_test
-FOR VALUES IN (2) ON COMMIT DROP;
+FOR VALUES IN (2)
+ON COMMIT DROP;
 
 INSERT INTO temp_parted_oncommit_test
 VALUES
@@ -258,8 +264,10 @@ SELECT relname FROM pg_class WHERE relname ~ '^temp_inh_oncommit_test';
 
 BEGIN;
 
-CREATE TEMPORARY TABLE temp_inh_oncommit_test1 ()
-INHERITS (temp_inh_oncommit_test) ON COMMIT DROP;
+CREATE TEMPORARY TABLE temp_inh_oncommit_test1
+()
+INHERITS (temp_inh_oncommit_test)
+ON COMMIT DROP;
 
 INSERT INTO temp_inh_oncommit_test1 VALUES (1);
 

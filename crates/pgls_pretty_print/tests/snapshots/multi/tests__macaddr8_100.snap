@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/macaddr8_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/macaddr8.sql
 snapshot_kind: text
 ---
 SELECT CAST('08:00:2b:01:02:03     ' AS MACADDR8);

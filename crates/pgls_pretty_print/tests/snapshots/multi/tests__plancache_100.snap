@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/plancache_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/plancache.sql
 snapshot_kind: text
 ---
 CREATE TEMPORARY TABLE pcachetest AS SELECT * FROM int8_tbl;
@@ -163,7 +163,8 @@ SELECT cachebug();
 
 SELECT cachebug();
 
-CREATE TABLE pc_list_parted (a INT)
+CREATE TABLE pc_list_parted
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE pc_list_part_null PARTITION OF pc_list_parted FOR VALUES IN (NULL);

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/case_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/case.sql
 snapshot_kind: text
 ---
 CREATE TABLE case_tbl (i INT, f DOUBLE PRECISION);
@@ -177,7 +177,8 @@ CREATE OPERATOR = (PROCEDURE = ad_eq, LEFTARG = arrdomain, RIGHTARG = arrdomain)
 SELECT
   CASE make_ad(1, 2)
   WHEN CAST(ARRAY[2, 4] AS arrdomain) THEN 'wrong'
-  WHEN CAST(ARRAY[2, 5] AS arrdomain) THEN 'still wrong'
+  WHEN CAST(ARRAY[2, 5] AS arrdomain)
+  THEN 'still wrong'
   WHEN CAST(ARRAY[1, 2] AS arrdomain) THEN 'right'
   END;
 
@@ -191,7 +192,8 @@ CREATE TYPE casetestenum AS ENUM ('e', 'f', 'g');
 
 SELECT
   CASE CAST('foo' AS TEXT)
-  WHEN 'foo' THEN ARRAY['a', 'b', 'c', 'd'] ||
+  WHEN 'foo'
+  THEN ARRAY['a', 'b', 'c', 'd'] ||
   CAST(enum_range(CAST(NULL AS casetestenum))
   AS TEXT[])
   ELSE ARRAY['x', 'y']

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_4_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_4.sql
 snapshot_kind: text
 ---
 SELECT

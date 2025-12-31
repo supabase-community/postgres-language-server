@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/equivclass_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/equivclass.sql
 snapshot_kind: text
 ---
 CREATE TYPE int8alias1;
@@ -198,9 +198,11 @@ FROM
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss1
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss1
 WHERE
   ss1.x = ec1.f1 AND ec1.ff = CAST(42 AS BIGINT);
 
@@ -213,9 +215,11 @@ FROM
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss1
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss1
 WHERE
   ss1.x = ec1.f1 AND
   ec1.ff = CAST(42 AS BIGINT) AND
@@ -230,17 +234,21 @@ FROM
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss1,
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss1,
   (SELECT
     ff + 1 AS x
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss2
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss2
 WHERE
   ss1.x = ec1.f1 AND
   ss1.x = ss2.x AND
@@ -259,17 +267,21 @@ FROM
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss1,
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss1,
   (SELECT
     ff + 1 AS x
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss2
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss2
 WHERE
   ss1.x = ec1.f1 AND
   ss1.x = ss2.x AND
@@ -290,9 +302,11 @@ FROM
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss1
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss1
 WHERE
   ss1.x = ec1.f1 AND ec1.ff = CAST(42 AS BIGINT);
 
@@ -309,9 +323,11 @@ FROM
   FROM
     (SELECT ff + 2 AS ff FROM ec1
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1) AS ss0
+    SELECT ff + 3 AS ff FROM ec1)
+    AS ss0
   UNION ALL
-  SELECT ff + 4 AS x FROM ec1) AS ss1
+  SELECT ff + 4 AS x FROM ec1)
+  AS ss1
 WHERE
   ss1.x = ec1.f1 AND ec1.ff = CAST(42 AS BIGINT);
 
@@ -368,7 +384,8 @@ SELECT
   *
 FROM
   ec0 AS m INNER JOIN ec0 AS n ON m.ff = n.ff
-  INNER JOIN ec1 AS p
+  INNER JOIN
+    ec1 AS p
   ON CAST(p.f1 AS BIGINT) =
     CAST(m.ff + n.ff AS int8alias1);
 

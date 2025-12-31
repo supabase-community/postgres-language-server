@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterCollationStmt;
 
 use super::node_list::emit_dot_separated_list;
@@ -16,7 +16,7 @@ pub(super) fn emit_alter_collation_stmt(e: &mut EventEmitter, n: &AlterCollation
         emit_dot_separated_list(e, &n.collname);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IDENT("REFRESH".to_string()));
     e.space();
     e.token(TokenKind::IDENT("VERSION".to_string()));

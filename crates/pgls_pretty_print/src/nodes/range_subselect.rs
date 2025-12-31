@@ -1,7 +1,7 @@
 use pgls_query::protobuf::RangeSubselect;
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 pub(super) fn emit_range_subselect(e: &mut EventEmitter, n: &RangeSubselect) {
     e.group_start(GroupKind::RangeSubselect);
@@ -23,7 +23,7 @@ pub(super) fn emit_range_subselect(e: &mut EventEmitter, n: &RangeSubselect) {
     e.token(TokenKind::R_PAREN);
 
     if let Some(ref alias) = n.alias {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_alias(e, alias);
     }
 

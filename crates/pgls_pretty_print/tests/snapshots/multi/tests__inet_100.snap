@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/inet_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/inet.sql
 snapshot_kind: text
 ---
 DROP TABLE "inet_tbl";
@@ -468,7 +468,8 @@ FROM
     (
       CAST('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128'
       AS INET)
-    )) AS i (a)
+    ))
+  AS i (a)
 ORDER BY a;
 
 SELECT pg_input_is_valid('1234', 'cidr');

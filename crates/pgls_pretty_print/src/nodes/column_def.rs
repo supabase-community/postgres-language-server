@@ -51,14 +51,14 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
 
     // Add collation if specified
     if let Some(ref coll_clause) = n.coll_clause {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_collate_clause(e, coll_clause);
     }
 
     // Add column-level FDW OPTIONS clause (for foreign tables) - must come before constraints
-    // Uses Space (not SoftOrSpace) to keep options on same line
+    // Uses SoftOrSpace to allow break if needed
     if !n.fdwoptions.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("OPTIONS".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);

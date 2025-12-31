@@ -3,7 +3,7 @@ use pgls_query::protobuf::{AlterOperatorStmt, DefElem, List, ObjectWithArgs};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 
@@ -29,7 +29,7 @@ pub(super) fn emit_alter_operator_stmt(e: &mut EventEmitter, n: &AlterOperatorSt
     }
 
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

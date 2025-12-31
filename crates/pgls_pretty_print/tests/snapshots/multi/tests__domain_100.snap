@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/domain_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/domain.sql
 snapshot_kind: text
 ---
 CREATE DOMAIN domaindroptest AS INT;
@@ -51,7 +51,8 @@ SELECT CAST('123456' AS domainvarchar);
 
 SELECT CAST('12345' AS domainvarchar);
 
-CREATE TABLE basictest (
+CREATE TABLE basictest
+(
   testint4 domainint4,
   testtext domaintext,
   testvarchar domainvarchar,
@@ -429,7 +430,8 @@ CREATE DOMAIN dnull AS VARCHAR(15);
 
 CREATE DOMAIN dcheck AS VARCHAR(15) NOT NULL CHECK (value = 'a' OR value = 'c' OR value = 'd');
 
-CREATE TABLE nulltest (
+CREATE TABLE nulltest
+(
   col1 dnotnull,
   col2 dnotnull NULL,
   col3 dnull NOT NULL,
@@ -483,7 +485,8 @@ CREATE DOMAIN ddef4 AS INT DEFAULT nextval('ddef4_seq');
 
 CREATE DOMAIN ddef5 AS NUMERIC(8, 2) NOT NULL DEFAULT '12.12';
 
-CREATE TABLE defaulttest (
+CREATE TABLE defaulttest
+(
   col1 ddef1,
   col2 ddef2,
   col3 ddef3,
@@ -1104,7 +1107,8 @@ SELECT
 FROM
   information_schema.check_constraints
 WHERE
-  (constraint_schema, constraint_name) IN (SELECT
+  (constraint_schema, constraint_name) IN
+  (SELECT
     constraint_schema,
     constraint_name
   FROM

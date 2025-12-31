@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/bit_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/bit.sql
 snapshot_kind: text
 ---
 CREATE TABLE bit_table (b BIT(11));
@@ -295,7 +295,8 @@ SELECT bit_count(CAST(repeat('01', 500) AS BIT(1000)));
 
 SELECT bit_count(CAST(repeat('10101', 200) AS BIT(1000)));
 
-CREATE TABLE bit_defaults (
+CREATE TABLE bit_defaults
+(
   b1 BIT(4) DEFAULT '1001',
   b2 BIT(4) DEFAULT B'0101',
   b3 BIT VARYING(5) DEFAULT '1001',

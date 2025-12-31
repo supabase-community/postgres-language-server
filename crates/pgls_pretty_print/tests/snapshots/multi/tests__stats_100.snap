@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/stats_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/stats.sql
 snapshot_kind: text
 ---
 SHOW "track_counts";
@@ -992,7 +992,10 @@ SELECT 'io_sum_wal_normal_after_writes' > 'io_sum_wal_normal_before_writes';
 
 SELECT
   current_setting('fsync') = 'off' OR
-  current_setting('wal_sync_method') IN ('open_sync', 'open_datasync') OR
+  current_setting('wal_sync_method')
+  IN (
+    'open_sync', 'open_datasync'
+  ) OR
   'io_sum_wal_normal_after_fsyncs' >
   'io_sum_wal_normal_before_fsyncs';
 
@@ -1156,8 +1159,10 @@ WHERE
 SELECT 'io_sum_vac_strategy_after_reads' > 'io_sum_vac_strategy_before_reads';
 
 SELECT
-  'io_sum_vac_strategy_after_reuses' + 'io_sum_vac_strategy_after_evictions' >
-  'io_sum_vac_strategy_before_reuses' + 'io_sum_vac_strategy_before_evictions';
+  'io_sum_vac_strategy_after_reuses' +
+  'io_sum_vac_strategy_after_evictions' >
+  'io_sum_vac_strategy_before_reuses' +
+  'io_sum_vac_strategy_before_evictions';
 
 RESET wal_skip_threshold;
 
@@ -1186,17 +1191,23 @@ SELECT 'io_sum_bulkwrite_strategy_extends_after' > 'io_sum_bulkwrite_strategy_ex
 SELECT pg_stat_have_stats('io', 0, 0);
 
 SELECT
-  SUM(evictions) + SUM(reuses) + SUM(extends) + SUM(fsyncs) + SUM(reads) + SUM(writes) + SUM(
-  writebacks
-  ) + SUM(hits)
+  SUM(evictions) + SUM(reuses) + SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
   AS io_stats_pre_reset
 FROM
   pg_stat_io;
 
 SELECT
-  SUM(evictions) + SUM(reuses) + SUM(extends) + SUM(fsyncs) + SUM(reads) + SUM(writes) + SUM(
-  writebacks
-  ) + SUM(hits)
+  SUM(evictions) + SUM(reuses) + SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
   AS my_io_stats_pre_reset
 FROM
   pg_stat_get_backend_io(pg_backend_pid());
@@ -1204,9 +1215,12 @@ FROM
 SELECT pg_stat_reset_shared('io');
 
 SELECT
-  SUM(evictions) + SUM(reuses) + SUM(extends) + SUM(fsyncs) + SUM(reads) + SUM(writes) + SUM(
-  writebacks
-  ) + SUM(hits)
+  SUM(evictions) + SUM(reuses) + SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
   AS io_stats_post_reset
 FROM
   pg_stat_io;
@@ -1214,9 +1228,12 @@ FROM
 SELECT 'io_stats_post_reset' < 'io_stats_pre_reset';
 
 SELECT
-  SUM(evictions) + SUM(reuses) + SUM(extends) + SUM(fsyncs) + SUM(reads) + SUM(writes) + SUM(
-  writebacks
-  ) + SUM(hits)
+  SUM(evictions) + SUM(reuses) + SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
   AS my_io_stats_post_reset
 FROM
   pg_stat_get_backend_io(pg_backend_pid());
@@ -1226,9 +1243,12 @@ SELECT 'my_io_stats_pre_reset' <= 'my_io_stats_post_reset';
 SELECT pg_stat_reset_backend_stats(pg_backend_pid());
 
 SELECT
-  SUM(evictions) + SUM(reuses) + SUM(extends) + SUM(fsyncs) + SUM(reads) + SUM(writes) + SUM(
-  writebacks
-  ) + SUM(hits)
+  SUM(evictions) + SUM(reuses) + SUM(extends) +
+  SUM(fsyncs) +
+  SUM(reads) +
+  SUM(writes) +
+  SUM(writebacks) +
+  SUM(hits)
   AS my_io_stats_post_backend_reset
 FROM
   pg_stat_get_backend_io(pg_backend_pid());
@@ -1241,7 +1261,8 @@ SELECT pg_stat_get_backend_io(0);
 
 SELECT pg_stat_get_backend_io('checkpointer_pid');
 
-CREATE TABLE brin_hot (id INT PRIMARY KEY, val INT NOT NULL)
+CREATE TABLE brin_hot
+(id INT PRIMARY KEY, val INT NOT NULL)
 WITH (autovacuum_enabled = off, fillfactor = 70);
 
 INSERT INTO brin_hot SELECT *, 0 FROM generate_series(1, 235);

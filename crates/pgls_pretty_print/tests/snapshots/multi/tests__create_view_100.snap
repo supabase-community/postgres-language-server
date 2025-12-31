@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_view_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_view.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION interpt_pp(path, path)
@@ -308,7 +308,8 @@ FROM
   pg_class
 WHERE
   relname LIKE 'v%' AND
-  relnamespace IN (SELECT
+  relnamespace IN
+  (SELECT
     oid
   FROM
     pg_namespace
@@ -355,7 +356,8 @@ AS SELECT
   *
 FROM
   t1
-  LEFT OUTER JOIN t2
+  LEFT OUTER JOIN
+    t2
   ON t1.num = t2.num2 AND t2.value = 'xxx';
 
 CREATE VIEW temporal4
@@ -363,7 +365,8 @@ AS SELECT
   *
 FROM
   t1
-  LEFT OUTER JOIN tt
+  LEFT OUTER JOIN
+    tt
   ON t1.num = tt.num2 AND tt.value = 'xxx';
 
 SELECT
@@ -387,7 +390,8 @@ FROM
   pg_class
 WHERE
   relname LIKE 'temporal%' AND
-  relnamespace IN (SELECT
+  relnamespace IN
+  (SELECT
     oid
   FROM
     pg_namespace
@@ -411,8 +415,11 @@ AS SELECT
 FROM
   tbl1
 WHERE
-  tbl1.a BETWEEN (SELECT d FROM tbl2 WHERE c = 1) AND (SELECT e FROM tbl3 WHERE f = 2) AND
-  EXISTS (SELECT
+  tbl1.a
+  BETWEEN (SELECT d FROM tbl2 WHERE c = 1)
+  AND (SELECT e FROM tbl3 WHERE f = 2) AND
+  EXISTS
+  (SELECT
     g
   FROM
     tbl4 LEFT OUTER JOIN tbl3 ON tbl4.h = tbl3.f);
@@ -423,7 +430,8 @@ FROM
   pg_class
 WHERE
   relname = 'pubview' AND
-  relnamespace IN (SELECT
+  relnamespace IN
+  (SELECT
     oid
   FROM
     pg_namespace
@@ -436,12 +444,16 @@ AS SELECT
 FROM
   tbl1
 WHERE
-  tbl1.a BETWEEN (SELECT d FROM tbl2 WHERE c = 1) AND (SELECT e FROM tbl3 WHERE f = 2) AND
-  EXISTS (SELECT
+  tbl1.a
+  BETWEEN (SELECT d FROM tbl2 WHERE c = 1)
+  AND (SELECT e FROM tbl3 WHERE f = 2) AND
+  EXISTS
+  (SELECT
     g
   FROM
     tbl4 LEFT OUTER JOIN tbl3 ON tbl4.h = tbl3.f) AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     g
   FROM
     tbl4 LEFT OUTER JOIN tmptbl ON tbl4.h = tmptbl.j);
@@ -452,7 +464,8 @@ FROM
   pg_class
 WHERE
   relname LIKE 'mytempview' AND
-  relnamespace IN (SELECT
+  relnamespace IN
+  (SELECT
     oid
   FROM
     pg_namespace
@@ -506,13 +519,16 @@ SELECT
 FROM
   pg_class
 WHERE
-  oid IN (CAST('mysecview1' AS REGCLASS),
-  CAST('mysecview2' AS REGCLASS),
-  CAST('mysecview3' AS REGCLASS),
-  CAST('mysecview4' AS REGCLASS),
-  CAST('mysecview7' AS REGCLASS),
-  CAST('mysecview8' AS REGCLASS),
-  CAST('mysecview9' AS REGCLASS))
+  oid
+  IN (
+    CAST('mysecview1' AS REGCLASS),
+    CAST('mysecview2' AS REGCLASS),
+    CAST('mysecview3' AS REGCLASS),
+    CAST('mysecview4' AS REGCLASS),
+    CAST('mysecview7' AS REGCLASS),
+    CAST('mysecview8' AS REGCLASS),
+    CAST('mysecview9' AS REGCLASS)
+  )
 ORDER BY relname;
 
 CREATE OR REPLACE VIEW mysecview1
@@ -548,13 +564,16 @@ SELECT
 FROM
   pg_class
 WHERE
-  oid IN (CAST('mysecview1' AS REGCLASS),
-  CAST('mysecview2' AS REGCLASS),
-  CAST('mysecview3' AS REGCLASS),
-  CAST('mysecview4' AS REGCLASS),
-  CAST('mysecview7' AS REGCLASS),
-  CAST('mysecview8' AS REGCLASS),
-  CAST('mysecview9' AS REGCLASS))
+  oid
+  IN (
+    CAST('mysecview1' AS REGCLASS),
+    CAST('mysecview2' AS REGCLASS),
+    CAST('mysecview3' AS REGCLASS),
+    CAST('mysecview4' AS REGCLASS),
+    CAST('mysecview7' AS REGCLASS),
+    CAST('mysecview8' AS REGCLASS),
+    CAST('mysecview9' AS REGCLASS)
+  )
 ORDER BY relname;
 
 CREATE VIEW unspecified_types
@@ -583,7 +602,8 @@ FROM
       CAST('abc' AS VARCHAR(3)),
       42.12,
       CAST('abc' AS VARCHAR(4))
-    )) AS vv (a, b, c, d);
+    ))
+  AS vv (a, b, c, d);
 
 SELECT * FROM tt1;
 
@@ -619,7 +639,8 @@ AS SELECT
 FROM
   tt1
 WHERE
-  EXISTS (SELECT 1 FROM tx1 AS a2 WHERE tt1.f1 = a2.x1);
+  EXISTS
+  (SELECT 1 FROM tx1 AS a2 WHERE tt1.f1 = a2.x1);
 
 CREATE VIEW aliased_view_4
 AS SELECT
@@ -627,7 +648,8 @@ AS SELECT
 FROM
   temp_view_test.tt1
 WHERE
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     tt1
@@ -703,7 +725,8 @@ AS SELECT
   *
 FROM
   tt2 INNER JOIN tt3 USING ( "b", "c")
-  INNER JOIN tt4
+  INNER JOIN
+    tt4
   USING ("b");
 
 CREATE VIEW v2a
@@ -711,7 +734,8 @@ AS SELECT
   *
 FROM
   tt2 INNER JOIN tt3 USING ( "b", "c")
-  INNER JOIN tt4
+  INNER JOIN
+    tt4
   USING ("b");
 
 CREATE VIEW v3
@@ -719,7 +743,8 @@ AS SELECT
   *
 FROM
   tt2 INNER JOIN tt3 USING ( "b", "c")
-  FULL OUTER JOIN tt4
+  FULL OUTER JOIN
+    tt4
   USING ("b");
 
 SELECT pg_get_viewdef('v1', TRUE);
@@ -847,14 +872,16 @@ CREATE VIEW vv3
 AS SELECT
   *
 FROM
-  (VALUES (1, 2, 3, 4, 5, 6)) AS v (a, b, c, x, e, f)
+  (VALUES (1, 2, 3, 4, 5, 6))
+  AS v (a, b, c, x, e, f)
 UNION ALL
 SELECT
   *
 FROM
   tt7 FULL OUTER JOIN tt8 USING ("x"),
   tt7 AS tt7x
-  FULL OUTER JOIN tt8 AS tt8x
+  FULL OUTER JOIN
+    tt8 AS tt8x
   USING ("x");
 
 SELECT pg_get_viewdef('vv3', TRUE);
@@ -863,16 +890,19 @@ CREATE VIEW vv4
 AS SELECT
   *
 FROM
-  (VALUES (1, 2, 3, 4, 5, 6, 7)) AS v (a, b, c, x, e, f, g)
+  (VALUES (1, 2, 3, 4, 5, 6, 7))
+  AS v (a, b, c, x, e, f, g)
 UNION ALL
 SELECT
   *
 FROM
   tt7 FULL OUTER JOIN tt8 USING ("x"),
   tt7 AS tt7x
-  FULL OUTER JOIN tt8 AS tt8x
+  FULL OUTER JOIN
+    tt8 AS tt8x
   USING ("x")
-  FULL OUTER JOIN tt8 AS tt8y
+  FULL OUTER JOIN
+    tt8 AS tt8y
   USING ("x");
 
 SELECT pg_get_viewdef('vv4', TRUE);
@@ -906,7 +936,8 @@ CREATE VIEW vv2a
 AS SELECT
   *
 FROM
-  (VALUES (NOW(), 2, 3, NOW(), 5)) AS v (a, b, c, d, e)
+  (VALUES (NOW(), 2, 3, NOW(), 5))
+  AS v (a, b, c, d, e)
 UNION ALL
 SELECT
   *
@@ -949,7 +980,8 @@ AS SELECT
   q
 FROM
   tt11 INNER JOIN tt12 USING ("x")
-  INNER JOIN tt13
+  INNER JOIN
+    tt13
   USING ("z");
 
 SELECT pg_get_viewdef('vv6', TRUE);
@@ -1182,7 +1214,8 @@ CREATE VIEW tt201v
 AS SELECT
   timezone(
   'UTC',
-  CAST('2022-12-01' AS DATE) + CAST('1 day' AS INTERVAL)
+  CAST('2022-12-01' AS DATE) +
+  CAST('1 day' AS INTERVAL)
   )
   AS atz,
   EXTRACT('day' FROM NOW()) AS extr,
@@ -1266,7 +1299,8 @@ AS SELECT * FROM tt5 NATURAL LEFT JOIN tt6;
 
 SELECT pg_get_viewdef('tt22v', TRUE);
 
-CREATE VIEW tt23v (col_a,
+CREATE VIEW tt23v
+(col_a,
 col_b)
 AS SELECT
   q1 AS other_name1,
@@ -1291,13 +1325,16 @@ SELECT
   rr.column2 AS col_b
 FROM
   cte
-  INNER JOIN (SELECT
-    rr
-  FROM
-    (VALUES
-      (1, 7),
-      (3, 8)) AS rr
-  LIMIT 2) AS ss
+  INNER JOIN
+    (SELECT
+      rr
+    FROM
+      (VALUES
+        (1, 7),
+        (3, 8))
+      AS rr
+    LIMIT 2)
+    AS ss
   ON r.column1 = rr.column1;
 
 SELECT pg_get_viewdef('tt24v', TRUE);
@@ -1316,8 +1353,10 @@ FROM
   FROM
     (VALUES
       (1, 2),
-      (3, 4)) AS r
-  LIMIT 1) AS ss;
+      (3, 4))
+    AS r
+  LIMIT 1)
+  AS ss;
 
 CREATE VIEW tt26v
 AS SELECT
@@ -1330,11 +1369,13 @@ AS SELECT
   x + (y # z) AS c7,
   x > y AND (y > z OR x > z) AS c8,
   x > y OR y > z AND NOT x > z AS c9,
-  (x, y) <> ALL (VALUES
+  (x, y) <> ALL
+  (VALUES
     (1, 2),
     (3, 4))
   AS c10,
-  (x, y) <= ANY (VALUES
+  (x, y) <= ANY
+  (VALUES
     (1, 2),
     (3, 4))
   AS c11

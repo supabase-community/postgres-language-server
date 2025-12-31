@@ -1,0 +1,694 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/random.sql
+snapshot_kind: text
+---
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random() AS r
+  FROM
+    generate_series(1, 1000))
+  AS ss
+GROUP BY r
+HAVING
+  COUNT(*) > 1;
+
+SELECT
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < 0 OR r >= 1)
+  AS out_of_range,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < 0.01) >
+  0
+  AS has_small,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r > 0.99) >
+  0
+  AS has_large
+FROM
+  (SELECT
+    random() AS r
+  FROM
+    generate_series(1, 2000))
+  AS ss;
+
+CREATE FUNCTION ks_test_uniform_random()
+RETURNS BOOLEAN
+AS '
+DECLARE
+  n int := 1000;        -- Number of samples
+  c float8 := 1.94947;  -- Critical value for 99.9% confidence
+  ok boolean;
+BEGIN
+  ok := (
+    WITH samples AS (
+      SELECT random() r FROM generate_series(1, n) ORDER BY 1
+    ), indexed_samples AS (
+      SELECT (row_number() OVER())-1.0 i, r FROM samples
+    )
+    SELECT max(abs(i/n-r)) < c / sqrt(n) FROM indexed_samples
+  );
+  RETURN ok;
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT
+  ks_test_uniform_random() OR
+  ks_test_uniform_random() OR
+  ks_test_uniform_random()
+  AS uniform;
+
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random_normal() AS r
+  FROM
+    generate_series(1, 1000))
+  AS ss
+GROUP BY r
+HAVING
+  COUNT(*) > 1;
+
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random_normal(10, 0) AS r
+  FROM
+    generate_series(1, 100))
+  AS ss
+GROUP BY r;
+
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random_normal(-10, 0) AS r
+  FROM
+    generate_series(1, 100))
+  AS ss
+GROUP BY r;
+
+CREATE FUNCTION ks_test_normal_random()
+RETURNS BOOLEAN
+AS '
+DECLARE
+  n int := 1000;        -- Number of samples
+  c float8 := 1.94947;  -- Critical value for 99.9% confidence
+  ok boolean;
+BEGIN
+  ok := (
+    WITH samples AS (
+      SELECT random_normal() r FROM generate_series(1, n) ORDER BY 1
+    ), indexed_samples AS (
+      SELECT (row_number() OVER())-1.0 i, r FROM samples
+    )
+    SELECT max(abs((1+erf(r/sqrt(2)))/2 - i/n)) < c / sqrt(n)
+    FROM indexed_samples
+  );
+  RETURN ok;
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT
+  ks_test_normal_random() OR
+  ks_test_normal_random() OR
+  ks_test_normal_random()
+  AS standard_normal;
+
+SELECT random(1, 0);
+
+SELECT random(1000000000001, 1000000000000);
+
+SELECT random(-2.0, -3.0);
+
+SELECT random(CAST('NaN' AS NUMERIC), 10);
+
+SELECT random(CAST('-Inf' AS NUMERIC), 0);
+
+SELECT random(0, CAST('NaN' AS NUMERIC));
+
+SELECT random(0, CAST('Inf' AS NUMERIC));
+
+SELECT random(101, 101);
+
+SELECT random(1000000000001, 1000000000001);
+
+SELECT random(3.14, 3.14);
+
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random(
+    -2147483648,
+    2147483647
+    )
+    AS r
+  FROM
+    generate_series(1, 1000))
+  AS ss
+GROUP BY r
+HAVING
+  COUNT(*) > 2;
+
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random_normal(
+    -9223372036854775808,
+    9223372036854775807
+    )
+    AS r
+  FROM
+    generate_series(1, 1000))
+  AS ss
+GROUP BY r
+HAVING
+  COUNT(*) > 1;
+
+SELECT
+  r,
+  COUNT(*)
+FROM
+  (SELECT
+    random_normal(0, 1 - 1e-15)
+    AS r
+  FROM
+    generate_series(1, 1000))
+  AS ss
+GROUP BY r
+HAVING
+  COUNT(*) > 1;
+
+SELECT
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -2104533975) >
+  0
+  AS has_small,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r > 2104533974) >
+  0
+  AS has_large
+FROM
+  (SELECT
+    random(
+    -2147483648,
+    2147483647
+    )
+    AS r
+  FROM
+    generate_series(1, 2000))
+  AS ss;
+
+SELECT
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -1500000000 OR
+    r > 1500000000)
+  AS out_of_range,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -1470000000) >
+  0
+  AS has_small,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r > 1470000000) >
+  0
+  AS has_large
+FROM
+  (SELECT
+    random(
+    -1500000000,
+    1500000000
+    )
+    AS r
+  FROM
+    generate_series(1, 2000))
+  AS ss;
+
+SELECT
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -9038904596117680292) >
+  0
+  AS has_small,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r > 9038904596117680291) >
+  0
+  AS has_large
+FROM
+  (SELECT
+    random(
+    -9223372036854775808,
+    9223372036854775807
+    )
+    AS r
+  FROM
+    generate_series(1, 2000))
+  AS ss;
+
+SELECT
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -1500000000000000 OR
+    r > 1500000000000000)
+  AS out_of_range,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -1470000000000000) >
+  0
+  AS has_small,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r > 1470000000000000) >
+  0
+  AS has_large
+FROM
+  (SELECT
+    random(
+    -1500000000000000,
+    1500000000000000
+    )
+    AS r
+  FROM
+    generate_series(1, 2000))
+  AS ss;
+
+SELECT
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -1.5 OR r > 1.5)
+  AS out_of_range,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r < -1.47) >
+  0
+  AS has_small,
+  COUNT(
+  *
+  )
+  FILTER (WHERE
+    r > 1.47) >
+  0
+  AS has_large
+FROM
+  (SELECT
+    random(
+    -1.500000000000000,
+    1.500000000000000
+    )
+    AS r
+  FROM
+    generate_series(1, 2000))
+  AS ss;
+
+SELECT
+  MIN(r),
+  MAX(r),
+  COUNT(r)
+FROM
+  (SELECT DISTINCT
+    random(-50, 49) AS r
+  FROM
+    generate_series(1, 2500));
+
+SELECT
+  MIN(r),
+  MAX(r),
+  COUNT(r)
+FROM
+  (SELECT DISTINCT
+    random(
+    123000000000,
+    123000000099
+    )
+    AS r
+  FROM
+    generate_series(1, 2500));
+
+SELECT
+  MIN(r),
+  MAX(r),
+  COUNT(r)
+FROM
+  (SELECT DISTINCT
+    random(-0.5, 0.49) AS r
+  FROM
+    generate_series(1, 2500));
+
+CREATE FUNCTION ks_test_uniform_random_int_in_range()
+RETURNS BOOLEAN
+AS '
+DECLARE
+  n int := 1000;        -- Number of samples
+  c float8 := 1.94947;  -- Critical value for 99.9% confidence
+  ok boolean;
+BEGIN
+  ok := (
+    WITH samples AS (
+      SELECT random(0, 999999) / 1000000.0 r FROM generate_series(1, n) ORDER BY 1
+    ), indexed_samples AS (
+      SELECT (row_number() OVER())-1.0 i, r FROM samples
+    )
+    SELECT max(abs(i/n-r)) < c / sqrt(n) FROM indexed_samples
+  );
+  RETURN ok;
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT
+  ks_test_uniform_random_int_in_range(
+
+  ) OR
+  ks_test_uniform_random_int_in_range(
+
+  ) OR
+  ks_test_uniform_random_int_in_range(
+
+  )
+  AS uniform_int;
+
+CREATE FUNCTION ks_test_uniform_random_bigint_in_range()
+RETURNS BOOLEAN
+AS '
+DECLARE
+  n int := 1000;        -- Number of samples
+  c float8 := 1.94947;  -- Critical value for 99.9% confidence
+  ok boolean;
+BEGIN
+  ok := (
+    WITH samples AS (
+      SELECT random(0, 999999999999) / 1000000000000.0 r FROM generate_series(1, n) ORDER BY 1
+    ), indexed_samples AS (
+      SELECT (row_number() OVER())-1.0 i, r FROM samples
+    )
+    SELECT max(abs(i/n-r)) < c / sqrt(n) FROM indexed_samples
+  );
+  RETURN ok;
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT
+  ks_test_uniform_random_bigint_in_range(
+
+  ) OR
+  ks_test_uniform_random_bigint_in_range(
+
+  ) OR
+  ks_test_uniform_random_bigint_in_range(
+
+  )
+  AS uniform_bigint;
+
+CREATE FUNCTION ks_test_uniform_random_numeric_in_range()
+RETURNS BOOLEAN
+AS '
+DECLARE
+  n int := 1000;        -- Number of samples
+  c float8 := 1.94947;  -- Critical value for 99.9% confidence
+  ok boolean;
+BEGIN
+  ok := (
+    WITH samples AS (
+      SELECT random(0, 0.999999) r FROM generate_series(1, n) ORDER BY 1
+    ), indexed_samples AS (
+      SELECT (row_number() OVER())-1.0 i, r FROM samples
+    )
+    SELECT max(abs(i/n-r)) < c / sqrt(n) FROM indexed_samples
+  );
+  RETURN ok;
+END
+'
+LANGUAGE "plpgsql";
+
+SELECT
+  ks_test_uniform_random_numeric_in_range(
+
+  ) OR
+  ks_test_uniform_random_numeric_in_range(
+
+  ) OR
+  ks_test_uniform_random_numeric_in_range(
+
+  )
+  AS uniform_numeric;
+
+SELECT setseed(0.5);
+
+SELECT random() FROM generate_series(1, 10);
+
+SET extra_float_digits = -1;
+
+SELECT random_normal() FROM generate_series(1, 10);
+
+SELECT
+  random_normal(
+  "mean" := 1,
+  "stddev" := 0.1
+  )
+  AS r
+FROM
+  generate_series(1, 10);
+
+SELECT random(1, 6) FROM generate_series(1, 10);
+
+SELECT
+  random(
+  -2147483648,
+  2147483647
+  )
+FROM
+  generate_series(1, 10);
+
+SELECT
+  random(
+  -9223372036854775808,
+  9223372036854775807
+  )
+FROM
+  generate_series(1, 10);
+
+SELECT random(-1e30, 1e30) FROM generate_series(1, 10);
+
+SELECT random(-0.4, 0.4) FROM generate_series(1, 10);
+
+SELECT random(0, 1 - 1e-30) FROM generate_series(1, 10);
+
+SELECT
+  n,
+  random(
+  0,
+  trim_scale(abs(1 - 10.0 ^ -n))
+  )
+FROM
+  generate_series(-20, 20) AS n;
+
+SELECT
+  random(
+  CAST('1979-02-08' AS DATE),
+  CAST('2025-07-03' AS DATE)
+  )
+  AS random_date_multiple_years;
+
+SELECT
+  random(
+  CAST('4714-11-24 BC' AS DATE),
+  CAST('5874897-12-31 AD'
+  AS DATE)
+  )
+  AS random_date_maximum_range;
+
+SELECT
+  random(
+  CAST('1979-02-08' AS DATE),
+  CAST('1979-02-08' AS DATE)
+  )
+  AS random_date_empty_range;
+
+SELECT
+  random(
+  CAST('2024-12-31' AS DATE),
+  CAST('2024-01-01' AS DATE)
+  );
+
+SELECT
+  random(
+  CAST('-infinity' AS DATE),
+  CAST('2024-01-01' AS DATE)
+  );
+
+SELECT
+  random(
+  CAST('2024-12-31' AS DATE),
+  CAST('infinity' AS DATE)
+  );
+
+SELECT
+  random(
+  CAST('1979-02-08'
+  AS TIMESTAMP),
+  CAST('2025-07-03'
+  AS TIMESTAMP)
+  )
+  AS random_timestamp_multiple_years;
+
+SELECT
+  random(
+  CAST('4714-11-24 BC'
+  AS TIMESTAMP),
+  CAST('294276-12-31 23:59:59.999999'
+  AS TIMESTAMP)
+  )
+  AS random_timestamp_maximum_range;
+
+SELECT
+  random(
+  CAST('2024-07-01 12:00:00.000001'
+  AS TIMESTAMP),
+  CAST('2024-07-01 12:00:00.999999'
+  AS TIMESTAMP)
+  )
+  AS random_narrow_range;
+
+SELECT
+  random(
+  CAST('1979-02-08'
+  AS TIMESTAMP),
+  CAST('1979-02-08'
+  AS TIMESTAMP)
+  )
+  AS random_timestamp_empty_range;
+
+SELECT
+  random(
+  CAST('2024-12-31'
+  AS TIMESTAMP),
+  CAST('2024-01-01'
+  AS TIMESTAMP)
+  );
+
+SELECT
+  random(
+  CAST('-infinity' AS TIMESTAMP),
+  CAST('2024-01-01'
+  AS TIMESTAMP)
+  );
+
+SELECT
+  random(
+  CAST('2024-12-31'
+  AS TIMESTAMP),
+  CAST('infinity' AS TIMESTAMP)
+  );
+
+SELECT
+  random(
+  CAST('1979-02-08 +01'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2025-07-03 +02'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS random_timestamptz_multiple_years;
+
+SELECT
+  random(
+  CAST('4714-11-24 BC +00'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('294276-12-31 23:59:59.999999 +00'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS random_timestamptz_maximum_range;
+
+SELECT
+  random(
+  CAST('2024-07-01 12:00:00.000001 +04'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2024-07-01 12:00:00.999999 +04'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS random_timestamptz_narrow_range;
+
+SELECT
+  random(
+  CAST('1979-02-08 +05'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('1979-02-08 +05'
+  AS TIMESTAMP WITH TIME ZONE)
+  )
+  AS random_timestamptz_empty_range;
+
+SELECT
+  random(
+  CAST('2024-01-01 +06'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2024-01-01 +07'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  random(
+  CAST('-infinity'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('2024-01-01 +07'
+  AS TIMESTAMP WITH TIME ZONE)
+  );
+
+SELECT
+  random(
+  CAST('2024-01-01 +06'
+  AS TIMESTAMP WITH TIME ZONE),
+  CAST('infinity'
+  AS TIMESTAMP WITH TIME ZONE)
+  );

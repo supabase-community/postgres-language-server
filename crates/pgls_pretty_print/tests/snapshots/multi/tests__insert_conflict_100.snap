@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/insert_conflict_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/insert_conflict.sql
 snapshot_kind: text
 ---
 CREATE TABLE insertconflicttest (key INT, fruit TEXT);
@@ -52,19 +52,26 @@ ON CONFLICT (fruit, key, fruit, key) DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT ((lower(fruit)), key, (lower(fruit)), key) DO NOTHING;
+ON CONFLICT
+((lower(fruit)), key, (lower(fruit)), key)
+DO NOTHING;
 
 INSERT INTO insertconflictview
 VALUES (0, 'Crowberry')
-ON CONFLICT ((lower(fruit)), key, (lower(fruit)), key) DO NOTHING;
+ON CONFLICT
+((lower(fruit)), key, (lower(fruit)), key)
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT (key, fruit) DO
+ON CONFLICT
+(key, fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     insertconflicttest AS ii
@@ -73,7 +80,9 @@ WHERE
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT (key, fruit text_pattern_ops) DO NOTHING;
+ON CONFLICT
+(key, fruit text_pattern_ops)
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
@@ -81,21 +90,29 @@ ON CONFLICT (key, fruit COLLATE "C") DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT (fruit COLLATE "C" text_pattern_ops, key) DO NOTHING;
+ON CONFLICT
+(fruit COLLATE "C" text_pattern_ops, key)
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT ((lower(fruit)) COLLATE "C", key, key) DO NOTHING;
+ON CONFLICT
+((lower(fruit)) COLLATE "C", key, key)
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT (fruit, key, fruit text_pattern_ops, key) DO NOTHING;
+ON CONFLICT
+(fruit, key, fruit text_pattern_ops, key)
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT ((lower(fruit)) COLLATE "C" text_pattern_ops,
+ON CONFLICT
+((lower(fruit)) COLLATE "C" text_pattern_ops,
 key,
-key) DO NOTHING;
+key)
+DO NOTHING;
 
 DROP INDEX "op_index_key";
 
@@ -115,13 +132,17 @@ USING btree
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT ((lower(fruit)) text_pattern_ops,
-(upper(fruit)) COLLATE "C") DO NOTHING;
+ON CONFLICT
+((lower(fruit)) text_pattern_ops,
+(upper(fruit)) COLLATE "C")
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT ((lower(fruit)) COLLATE "C",
-(upper(fruit)) text_pattern_ops) DO NOTHING;
+ON CONFLICT
+((lower(fruit)) COLLATE "C",
+(upper(fruit)) text_pattern_ops)
+DO NOTHING;
 
 DROP INDEX "cross_match";
 
@@ -134,13 +155,17 @@ USING btree
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Bilberry')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Bilberry')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -148,7 +173,9 @@ WHERE
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Crowberry')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -156,7 +183,9 @@ WHERE
 
 INSERT INTO insertconflicttest
 VALUES (0, 'Bilberry')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -167,13 +196,17 @@ INSERT INTO insertconflicttest VALUES (1, 'Apple') ON CONFLICT DO UPDATE SET fru
 
 INSERT INTO insertconflicttest
 VALUES (1, 'Apple')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (2, 'Orange')
-ON CONFLICT (key, key, key) DO
+ON CONFLICT
+(key, key, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -181,56 +214,74 @@ INSERT INTO insertconflicttest
 VALUES
   (1, 'Apple'),
   (2, 'Orange')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET (fruit, key) = (excluded.fruit, excluded.key);
 
 INSERT INTO insertconflicttest
 VALUES (1, 'Apple')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 RETURNING excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (1, 'Apple')
-ON CONFLICT (keyy) DO
+ON CONFLICT
+(keyy)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (1, 'Apple')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruitt;
 
 INSERT INTO insertconflicttest
 VALUES (3, 'Kiwi')
-ON CONFLICT (key, fruit) DO
+ON CONFLICT
+(key, fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (4, 'Mango')
-ON CONFLICT (fruit, key) DO
+ON CONFLICT
+(fruit, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (5, 'Lemon')
-ON CONFLICT (fruit) DO
+ON CONFLICT
+(fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (6, 'Passionfruit')
-ON CONFLICT ((lower(fruit))) DO
+ON CONFLICT
+((lower(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest AS ict
 VALUES (6, 'Passionfruit')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -240,13 +291,17 @@ ON CONFLICT (key) DO UPDATE SET fruit = ict.fruit;
 
 INSERT INTO insertconflicttest AS ict
 VALUES (6, 'Passionfruit')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = insertconflicttest.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (3, 'Kiwi')
-ON CONFLICT (key, fruit) DO
+ON CONFLICT
+(key, fruit)
+DO
 UPDATE
 SET insertconflicttest."fruit" = 'Mango';
 
@@ -262,37 +317,49 @@ USING btree
 
 INSERT INTO insertconflicttest
 VALUES (7, 'Raspberry')
-ON CONFLICT (key, fruit) DO
+ON CONFLICT
+(key, fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (8, 'Lime')
-ON CONFLICT (fruit, key) DO
+ON CONFLICT
+(fruit, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (9, 'Banana')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (10, 'Blueberry')
-ON CONFLICT (key, key, key) DO
+ON CONFLICT
+(key, key, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (11, 'Cherry')
-ON CONFLICT (key, (lower(fruit))) DO
+ON CONFLICT
+(key, (lower(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (12, 'Date')
-ON CONFLICT ((lower(fruit)), key) DO
+ON CONFLICT
+((lower(fruit)), key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -320,37 +387,49 @@ WHERE
 
 INSERT INTO insertconflicttest
 VALUES (13, 'Grape')
-ON CONFLICT (key, fruit) DO
+ON CONFLICT
+(key, fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (14, 'Raisin')
-ON CONFLICT (fruit, key) DO
+ON CONFLICT
+(fruit, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (15, 'Cranberry')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (16, 'Melon')
-ON CONFLICT (key, key, key) DO
+ON CONFLICT
+(key, key, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (17, 'Mulberry')
-ON CONFLICT (key, (lower(fruit))) DO
+ON CONFLICT
+(key, (lower(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (18, 'Pineapple')
-ON CONFLICT ((lower(fruit)), key) DO
+ON CONFLICT
+((lower(fruit)), key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -367,25 +446,33 @@ USING btree
 
 INSERT INTO insertconflicttest
 VALUES (20, 'Quince')
-ON CONFLICT ((lower(fruit))) DO
+ON CONFLICT
+((lower(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (21, 'Pomegranate')
-ON CONFLICT ((lower(fruit)), (lower(fruit))) DO
+ON CONFLICT
+((lower(fruit)), (lower(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (22, 'Apricot')
-ON CONFLICT ((upper(fruit))) DO
+ON CONFLICT
+((upper(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (23, 'Blackberry')
-ON CONFLICT (fruit) DO
+ON CONFLICT
+(fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -410,37 +497,49 @@ USING btree
 
 INSERT INTO insertconflicttest
 VALUES (24, 'Plum')
-ON CONFLICT (key, (lower(fruit))) DO
+ON CONFLICT
+(key, (lower(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (25, 'Peach')
-ON CONFLICT ((lower(fruit)), key) DO
+ON CONFLICT
+((lower(fruit)), key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (26, 'Fig')
-ON CONFLICT ((lower(fruit)), key, (lower(fruit)), key) DO
+ON CONFLICT
+((lower(fruit)), key, (lower(fruit)), key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (27, 'Prune')
-ON CONFLICT (key, (upper(fruit))) DO
+ON CONFLICT
+(key, (upper(fruit)))
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (28, 'Redcurrant')
-ON CONFLICT (fruit, key) DO
+ON CONFLICT
+(fruit, key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (29, 'Nectarine')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -464,19 +563,25 @@ USING btree
 
 INSERT INTO insertconflicttest
 VALUES (26, 'Fig')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (26, 'Peach')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (25, 'Fig')
-ON CONFLICT (fruit) DO
+ON CONFLICT
+(fruit)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -495,36 +600,51 @@ WHERE
 
 INSERT INTO insertconflicttest
 VALUES (23, 'Blackberry')
-ON CONFLICT (key) WHERE fruit LIKE '%berry' DO
+ON CONFLICT
+(key) WHERE fruit LIKE '%berry'
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest AS t
 VALUES (23, 'Blackberry')
-ON CONFLICT (key) WHERE
+ON CONFLICT
+(key)
+WHERE
   fruit LIKE '%berry' AND
-  t.fruit = 'inconsequential' DO NOTHING;
+  t.fruit = 'inconsequential'
+DO NOTHING;
 
 INSERT INTO insertconflictview AS t
 VALUES (23, 'Blackberry')
-ON CONFLICT (key) WHERE
+ON CONFLICT
+(key)
+WHERE
   fruit LIKE '%berry' AND
-  t.fruit = 'inconsequential' DO NOTHING;
+  t.fruit = 'inconsequential'
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (23, 'Blackberry')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
 INSERT INTO insertconflicttest
 VALUES (23, 'Blackberry')
-ON CONFLICT (key) WHERE
-  fruit LIKE '%berry' OR fruit = 'consequential' DO NOTHING;
+ON CONFLICT
+(key)
+WHERE
+  fruit LIKE '%berry' OR fruit = 'consequential'
+DO NOTHING;
 
 INSERT INTO insertconflicttest
 VALUES (23, 'Blackberry')
-ON CONFLICT (fruit) WHERE fruit LIKE '%berry' DO
+ON CONFLICT
+(fruit) WHERE fruit LIKE '%berry'
+DO
 UPDATE
 SET fruit = excluded.fruit;
 
@@ -539,7 +659,9 @@ USING btree
 
 INSERT INTO insertconflicttest AS i
 VALUES (23, 'Jackfruit')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -548,7 +670,9 @@ RETURNING *;
 
 INSERT INTO insertconflicttest AS i
 VALUES (23, 'Jackfruit')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -557,7 +681,9 @@ RETURNING *;
 
 INSERT INTO insertconflicttest AS i
 VALUES (23, 'Jackfruit')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -566,14 +692,18 @@ RETURNING *;
 
 INSERT INTO insertconflicttest AS i
 VALUES (23, 'Avocado')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = CAST(excluded.* AS TEXT)
 RETURNING *;
 
 INSERT INTO insertconflicttest AS i
 VALUES (23, 'Avocado')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = excluded.fruit
 WHERE
@@ -581,7 +711,9 @@ WHERE
 
 INSERT INTO insertconflicttest AS i
 VALUES (23, 'Avocado')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET fruit = CAST(excluded.* AS TEXT);
 
@@ -597,7 +729,9 @@ INSERT INTO syscolconflicttest VALUES (1);
 
 INSERT INTO syscolconflicttest
 VALUES (1)
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET data = CAST(excluded.ctid AS TEXT);
 
@@ -632,7 +766,8 @@ DROP TABLE "insertconflict";
 CREATE TABLE insertconflict (f1 INT PRIMARY KEY, f2 TEXT);
 
 CREATE VIEW insertconflictv
-AS SELECT * FROM insertconflict WITH CASCADED CHECK OPTION;
+AS SELECT * FROM insertconflict
+WITH CASCADED CHECK OPTION;
 
 INSERT INTO insertconflictv VALUES (1, 'foo') ON CONFLICT (f1) DO UPDATE SET f2 = excluded.f2;
 
@@ -648,7 +783,8 @@ DROP TABLE "insertconflict";
 
 CREATE TABLE cities (name TEXT, population DOUBLE PRECISION, altitude INT);
 
-CREATE TABLE capitals (state CHAR(2))
+CREATE TABLE capitals
+(state CHAR(2))
 INHERITS (cities);
 
 CREATE UNIQUE INDEX "cities_names_unique"
@@ -681,7 +817,9 @@ INSERT INTO cities VALUES ('Las Vegas', 2.583E+5, 2174) ON CONFLICT DO NOTHING;
 
 INSERT INTO capitals
 VALUES ('Sacramento', 4664.E+5, 30, 'CA')
-ON CONFLICT (name) DO
+ON CONFLICT
+(name)
+DO
 UPDATE
 SET population = excluded.population;
 
@@ -691,7 +829,9 @@ SELECT * FROM capitals;
 
 INSERT INTO cities
 VALUES ('Las Vegas', 5.83E+5, 2001)
-ON CONFLICT (name) DO
+ON CONFLICT
+(name)
+DO
 UPDATE
 SET population = excluded.population,
 altitude = excluded.altitude;
@@ -700,7 +840,9 @@ SELECT CAST(tableoid AS REGCLASS), * FROM cities;
 
 INSERT INTO capitals
 VALUES ('Las Vegas', 5.83E+5, 2222, 'NV')
-ON CONFLICT (name) DO
+ON CONFLICT
+(name)
+DO
 UPDATE
 SET population = excluded.population;
 
@@ -710,7 +852,9 @@ SELECT CAST(tableoid AS REGCLASS), * FROM cities;
 
 INSERT INTO cities
 VALUES ('Las Vegas', 5.86E+5, 2223)
-ON CONFLICT (name) DO
+ON CONFLICT
+(name)
+DO
 UPDATE
 SET population = excluded.population,
 altitude = excluded.altitude;
@@ -727,14 +871,18 @@ INSERT INTO excluded VALUES (1, '1');
 
 INSERT INTO excluded
 VALUES (1, '2')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET data = excluded.data
 RETURNING *;
 
 INSERT INTO excluded AS target
 VALUES (1, '2')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET data = excluded.data
 RETURNING *;
@@ -748,7 +896,8 @@ INSERT INTO excluded VALUES (1, '2') ON CONFLICT (key) DO UPDATE SET data = 3 RE
 
 DROP TABLE "excluded";
 
-CREATE TABLE dropcol (
+CREATE TABLE dropcol
+(
   key INT PRIMARY KEY,
   drop1 INT,
   keep1 TEXT,
@@ -758,9 +907,12 @@ CREATE TABLE dropcol (
 
 INSERT INTO dropcol (key, drop1, keep1, drop2, keep2) VALUES (1, 1, '1', '1', 1);
 
-INSERT INTO dropcol (key, drop1, keep1, drop2, keep2)
+INSERT INTO dropcol
+(key, drop1, keep1, drop2, keep2)
 VALUES (1, 2, '2', '2', 2)
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET drop1 = excluded.drop1,
 keep1 = excluded.keep1,
@@ -777,9 +929,12 @@ WHERE
   dropcol.keep2 IS NOT NULL
 RETURNING *;
 
-INSERT INTO dropcol (key, drop1, keep1, drop2, keep2)
+INSERT INTO dropcol
+(key, drop1, keep1, drop2, keep2)
 VALUES (1, 3, '3', '3', 3)
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET drop1 = dropcol.drop1,
 keep1 = dropcol.keep1,
@@ -791,9 +946,12 @@ ALTER TABLE dropcol
   DROP COLUMN drop1,
   DROP COLUMN drop2;
 
-INSERT INTO dropcol (key, keep1, keep2)
+INSERT INTO dropcol
+(key, keep1, keep2)
 VALUES (1, '4', 4)
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET keep1 = excluded.keep1,
 keep2 = excluded.keep2
@@ -804,9 +962,12 @@ WHERE
   dropcol.keep2 IS NOT NULL
 RETURNING *;
 
-INSERT INTO dropcol (key, keep1, keep2)
+INSERT INTO dropcol
+(key, keep1, keep2)
 VALUES (1, '5', 5)
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET keep1 = dropcol.keep1,
 keep2 = dropcol.keep2
@@ -824,11 +985,15 @@ INSERT INTO twoconstraints VALUES (2, '((0,0),(1,2))');
 
 INSERT INTO twoconstraints
 VALUES (2, '((0,0),(1,2))')
-ON CONFLICT ON CONSTRAINT twoconstraints_f1_key DO NOTHING;
+ON CONFLICT
+ON CONSTRAINT twoconstraints_f1_key
+DO NOTHING;
 
 INSERT INTO twoconstraints
 VALUES (2, '((0,0),(1,2))')
-ON CONFLICT ON CONSTRAINT twoconstraints_f2_excl DO NOTHING;
+ON CONFLICT
+ON CONSTRAINT twoconstraints_f2_excl
+DO NOTHING;
 
 SELECT * FROM twoconstraints;
 
@@ -900,7 +1065,8 @@ SELECT * FROM selfconflict;
 
 DROP TABLE "selfconflict";
 
-CREATE TABLE parted_conflict_test (a INT UNIQUE, b CHAR(1))
+CREATE TABLE parted_conflict_test
+(a INT UNIQUE, b CHAR(1))
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_conflict_test_1
@@ -948,13 +1114,17 @@ CREATE TABLE parted_conflict_test_3 PARTITION OF parted_conflict_test FOR VALUES
 
 TRUNCATE parted_conflict_test;
 
-INSERT INTO parted_conflict_test (a, b)
+INSERT INTO parted_conflict_test
+(a, b)
 VALUES (4, 'a')
 ON CONFLICT (a) DO UPDATE SET b = excluded.b;
 
-INSERT INTO parted_conflict_test (a, b)
+INSERT INTO parted_conflict_test
+(a, b)
 VALUES (4, 'b')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = excluded.b
 WHERE
@@ -971,13 +1141,17 @@ CREATE TABLE parted_conflict_test_4_1 PARTITION OF parted_conflict_test_4 FOR VA
 
 TRUNCATE parted_conflict_test;
 
-INSERT INTO parted_conflict_test (a, b)
+INSERT INTO parted_conflict_test
+(a, b)
 VALUES (5, 'a')
 ON CONFLICT (a) DO UPDATE SET b = excluded.b;
 
-INSERT INTO parted_conflict_test (a, b)
+INSERT INTO parted_conflict_test
+(a, b)
 VALUES (5, 'b')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = excluded.b
 WHERE
@@ -987,23 +1161,29 @@ SELECT * FROM parted_conflict_test ORDER BY a;
 
 TRUNCATE parted_conflict_test;
 
-INSERT INTO parted_conflict_test (a, b)
+INSERT INTO parted_conflict_test
+(a, b)
 VALUES
   (1, 'a'),
   (2, 'a'),
   (4, 'a')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = excluded.b
 WHERE
   excluded.b = 'b';
 
-INSERT INTO parted_conflict_test (a, b)
+INSERT INTO parted_conflict_test
+(a, b)
 VALUES
   (1, 'b'),
   (2, 'c'),
   (4, 'b')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET b = excluded.b
 WHERE
@@ -1013,7 +1193,8 @@ SELECT * FROM parted_conflict_test ORDER BY a;
 
 DROP TABLE "parted_conflict_test";
 
-CREATE TABLE parted_conflict (a INT PRIMARY KEY, b TEXT)
+CREATE TABLE parted_conflict
+(a INT PRIMARY KEY, b TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1
@@ -1029,7 +1210,8 @@ INSERT INTO parted_conflict_1 VALUES (40, 'cuarenta') ON CONFLICT (a) DO UPDATE 
 
 DROP TABLE "parted_conflict";
 
-CREATE TABLE parted_conflict (a INT, b TEXT)
+CREATE TABLE parted_conflict
+(a INT, b TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1
@@ -1063,7 +1245,8 @@ INSERT INTO parted_conflict_1 VALUES (40, 'cuarenta') ON CONFLICT (a) DO UPDATE 
 
 DROP TABLE "parted_conflict";
 
-CREATE TABLE parted_conflict (a INT, b TEXT, c INT)
+CREATE TABLE parted_conflict
+(a INT, b TEXT, c INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_conflict_1 (drp TEXT, c INT, a INT, b TEXT);
@@ -1089,7 +1272,9 @@ INSERT INTO parted_conflict VALUES (50, 'cincuenta', 1);
 
 INSERT INTO parted_conflict
 VALUES (50, 'cincuenta', 2)
-ON CONFLICT (a, b) DO
+ON CONFLICT
+(a, b)
+DO
 UPDATE
 SET (a, b, c) = ROW(excluded.*)
 WHERE
@@ -1114,7 +1299,8 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER parted_conflict_update
-AFTER UPDATE ON parted_conflict
+AFTER UPDATE
+ON parted_conflict
 REFERENCING NEW TABLE AS inserted
 FOR EACH STATEMENT
 EXECUTE FUNCTION parted_conflict_update_func();
@@ -1125,7 +1311,9 @@ INSERT INTO parted_conflict VALUES (0, 'cero', 1);
 
 INSERT INTO parted_conflict
 VALUES (0, 'cero', 1)
-ON CONFLICT (a, b) DO
+ON CONFLICT
+(a, b)
+DO
 UPDATE
 SET c = parted_conflict.c + 1;
 

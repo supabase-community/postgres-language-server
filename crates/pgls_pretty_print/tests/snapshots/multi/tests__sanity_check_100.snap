@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/sanity_check_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/sanity_check.sql
 snapshot_kind: text
 ---
 VACUUM;
@@ -10,15 +10,18 @@ SELECT
   nspname
 FROM
   pg_class AS c
-  LEFT OUTER JOIN pg_namespace AS n
+  LEFT OUTER JOIN
+    pg_namespace AS n
   ON n.oid = relnamespace
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON attrelid = c.oid AND attname = 'oid'
 WHERE
   relkind = 'r' AND
   c.oid < 16384 AND
   nspname ~ '^pg_' IS NOT FALSE AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_index AS i

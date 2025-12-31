@@ -2,7 +2,7 @@ use pgls_query::{NodeEnum, protobuf::VacuumStmt};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::node_list::emit_comma_separated_list;
@@ -38,7 +38,7 @@ pub(super) fn emit_vacuum_stmt(e: &mut EventEmitter, n: &VacuumStmt) {
 
     // Relations to vacuum/analyze
     if !n.rels.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.rels, super::emit_node);
     }
 

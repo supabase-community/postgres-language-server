@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/sequence_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/sequence.sql
 snapshot_kind: text
 ---
 CREATE SEQUENCE sequence_testx INCREMENT BY 0;
@@ -93,7 +93,8 @@ CREATE TABLE serialtest2 (f1 TEXT, f2 serial, f3 smallserial, f4 serial2, f5 big
 
 INSERT INTO serialtest2 (f1) VALUES ('test_defaults');
 
-INSERT INTO serialtest2 (f1, f2, f3, f4, f5, f6)
+INSERT INTO serialtest2
+(f1, f2, f3, f4, f5, f6)
 VALUES
   (
     'test_max_vals',
@@ -198,7 +199,8 @@ CREATE TEMPORARY SEQUENCE myseq2;
 
 CREATE TEMPORARY SEQUENCE myseq3;
 
-CREATE TEMPORARY TABLE t1 (
+CREATE TEMPORARY TABLE t1
+(
   f1 serial,
   f2 INT DEFAULT nextval('myseq2'),
   f3 INT DEFAULT nextval(CAST('myseq3' AS TEXT))

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/prepare_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/prepare.sql
 snapshot_kind: text
 ---
 SELECT name, statement, parameter_types, result_types FROM pg_prepared_statements;
@@ -31,7 +31,9 @@ DEALLOCATE q2;
 
 SELECT name, statement, parameter_types, result_types FROM pg_prepared_statements;
 
-PREPARE q2 (TEXT) AS SELECT
+PREPARE q2
+(TEXT)
+AS SELECT
   datname,
   datistemplate,
   datallowconn
@@ -42,11 +44,13 @@ WHERE
 
 EXECUTE q2 ('postgres');
 
-PREPARE q3 (TEXT,
+PREPARE q3
+(TEXT,
 INT,
 DOUBLE PRECISION,
 BOOLEAN,
-SMALLINT) AS SELECT
+SMALLINT)
+AS SELECT
   *
 FROM
   tenk1
@@ -58,7 +62,8 @@ WHERE
   odd = CAST($5 AS INT))
 ORDER BY unique1;;
 
-EXECUTE q3 ('AAAAxx',
+EXECUTE q3
+('AAAAxx',
 CAST(5 AS SMALLINT),
 CAST(10.5 AS DOUBLE PRECISION),
 FALSE,
@@ -66,7 +71,8 @@ CAST(4 AS BIGINT));
 
 EXECUTE q3 ('bool');
 
-EXECUTE q3 ('bytea',
+EXECUTE q3
+('bytea',
 CAST(5 AS SMALLINT),
 CAST(10.5 AS DOUBLE PRECISION),
 FALSE,

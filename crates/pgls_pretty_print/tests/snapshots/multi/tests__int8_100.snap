@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/int8_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/int8.sql
 snapshot_kind: text
 ---
 INSERT INTO int8_tbl (q1) VALUES ('      ');
@@ -352,7 +352,8 @@ FROM
     (CAST(0.0 AS DOUBLE PRECISION)),
     (CAST(0.5 AS DOUBLE PRECISION)),
     (CAST(1.5 AS DOUBLE PRECISION)),
-    (CAST(2.5 AS DOUBLE PRECISION))) AS t (x);
+    (CAST(2.5 AS DOUBLE PRECISION)))
+  AS t (x);
 
 SELECT
   x,
@@ -365,7 +366,8 @@ FROM
     (CAST(0.0 AS NUMERIC)),
     (CAST(0.5 AS NUMERIC)),
     (CAST(1.5 AS NUMERIC)),
-    (CAST(2.5 AS NUMERIC))) AS t (x);
+    (CAST(2.5 AS NUMERIC)))
+  AS t (x);
 
 SELECT
   a,
@@ -397,7 +399,8 @@ FROM
     (
       CAST(-9223372036854775808 AS BIGINT),
       CAST(4611686018427387904 AS BIGINT)
-    )) AS v (a, b);
+    ))
+  AS v (a, b);
 
 SELECT gcd(CAST(-9223372036854775808 AS BIGINT), CAST(0 AS BIGINT));
 
@@ -429,7 +432,8 @@ FROM
     (
       CAST(-9223372036854775808 AS BIGINT),
       CAST(0 AS BIGINT)
-    )) AS v (a, b);
+    ))
+  AS v (a, b);
 
 SELECT lcm(CAST(-9223372036854775808 AS BIGINT), CAST(1 AS BIGINT));
 

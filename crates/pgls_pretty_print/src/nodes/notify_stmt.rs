@@ -2,7 +2,7 @@ use pgls_query::protobuf::NotifyStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::string::emit_single_quoted_str;
@@ -19,7 +19,7 @@ pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
 
     // Optional payload
     if !n.payload.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::COMMA);
         e.space();
         emit_single_quoted_str(e, &n.payload);

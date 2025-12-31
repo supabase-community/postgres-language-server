@@ -1,13 +1,14 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tuplesort_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tuplesort.sql
 snapshot_kind: text
 ---
 SET max_parallel_maintenance_workers = 0;
 
 SET max_parallel_workers = 0;
 
-CREATE TEMPORARY TABLE abbrev_abort_uuids (
+CREATE TEMPORARY TABLE abbrev_abort_uuids
+(
   id serial NOT NULL,
   abort_increasing UUID,
   abort_decreasing UUID,
@@ -15,7 +16,8 @@ CREATE TEMPORARY TABLE abbrev_abort_uuids (
   noabort_decreasing UUID
 );
 
-INSERT INTO abbrev_abort_uuids (
+INSERT INTO abbrev_abort_uuids
+(
   abort_increasing,
   abort_decreasing,
   noabort_increasing,
@@ -49,7 +51,8 @@ INSERT INTO abbrev_abort_uuids DEFAULT VALUES;
 
 INSERT INTO abbrev_abort_uuids DEFAULT VALUES;
 
-INSERT INTO abbrev_abort_uuids (
+INSERT INTO abbrev_abort_uuids
+(
   abort_increasing,
   abort_decreasing,
   noabort_increasing,
@@ -341,20 +344,26 @@ SELECT
 FROM
   (VALUES
     (repeat('a', 512 * 1024), 1),
-    (repeat('b', 512 * 1024), 2)) AS v (a, b)
+    (repeat('b', 512 * 1024), 2))
+  AS v (a, b)
 ORDER BY v.a DESC;
 
 BEGIN;
 
 SET LOCAL enable_indexscan = 'false';
 
-EXPLAIN (COSTS 'off') DECLARE "c" SCROLL CURSOR FOR SELECT
+EXPLAIN (COSTS 'off')
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
   noabort_decreasing
 FROM
   abbrev_abort_uuids
 ORDER BY noabort_decreasing;;
 
-DECLARE "c" SCROLL CURSOR FOR SELECT
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
   noabort_decreasing
 FROM
   abbrev_abort_uuids
@@ -396,13 +405,18 @@ SET LOCAL enable_indexscan = 'false';
 
 SET LOCAL work_mem = '100kB';
 
-EXPLAIN (COSTS 'off') DECLARE "c" SCROLL CURSOR FOR SELECT
+EXPLAIN (COSTS 'off')
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
   noabort_decreasing
 FROM
   abbrev_abort_uuids
 ORDER BY noabort_decreasing;;
 
-DECLARE "c" SCROLL CURSOR FOR SELECT
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
   noabort_decreasing
 FROM
   abbrev_abort_uuids
@@ -469,7 +483,8 @@ SELECT
 FROM
   (SELECT * FROM abbrev_abort_uuids
   UNION ALL
-  SELECT NULL, NULL, NULL, NULL, NULL) AS s;
+  SELECT NULL, NULL, NULL, NULL, NULL)
+  AS s;
 
 BEGIN;
 
@@ -506,13 +521,15 @@ SELECT
 FROM
   (SELECT * FROM abbrev_abort_uuids
   UNION ALL
-  SELECT NULL, NULL, NULL, NULL, NULL) AS s;
+  SELECT NULL, NULL, NULL, NULL, NULL)
+  AS s;
 
 ROLLBACK;
 
 CREATE TEMPORARY TABLE test_mark_restore (col1 INT, col2 INT, col12 INT);
 
-INSERT INTO test_mark_restore (col1, col2, col12)
+INSERT INTO test_mark_restore
+(col1, col2, col12)
 SELECT
   a.i,
   b.i,

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/interval_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/interval.sql
 snapshot_kind: text
 ---
 SET datestyle = ISO;
@@ -110,7 +110,8 @@ SELECT -CAST('-2147483647 months -2147483647 days -9223372036854775807 us' AS IN
 
 CREATE TEMPORARY TABLE interval_tbl_of (f1 INTERVAL);
 
-INSERT INTO interval_tbl_of (f1)
+INSERT INTO interval_tbl_of
+(f1)
 VALUES
   ('2147483647 days 2147483647 months'),
   ('2147483647 days -2147483648 months'),
@@ -127,7 +128,8 @@ INSERT INTO interval_tbl_of (f1) VALUES ('2147483647 years');
 INSERT INTO interval_tbl_of (f1) VALUES ('-2147483648 years');
 
 SELECT
-  EXTRACT('epoch' FROM CAST('256 microseconds' AS INTERVAL) * CAST(2 ^ 55 AS DOUBLE PRECISION));
+  EXTRACT('epoch' FROM CAST('256 microseconds' AS INTERVAL) *
+  CAST(2 ^ 55 AS DOUBLE PRECISION));
 
 SELECT
   r1.*,
@@ -438,11 +440,14 @@ SELECT
   AS "a bit over a day",
   CAST('2:03:04.45679' AS INTERVAL)
   AS "a bit over 2 hours",
-  CAST('1-2' AS INTERVAL) + CAST('3 4:05:06.7' AS INTERVAL)
+  CAST('1-2' AS INTERVAL) +
+  CAST('3 4:05:06.7' AS INTERVAL)
   AS "all fields",
-  CAST('1-2' AS INTERVAL) - CAST('3 4:05:06.7' AS INTERVAL)
+  CAST('1-2' AS INTERVAL) -
+  CAST('3 4:05:06.7' AS INTERVAL)
   AS "mixed sign",
-  -CAST('1-2' AS INTERVAL) + CAST('3 4:05:06.7' AS INTERVAL)
+  -CAST('1-2' AS INTERVAL) +
+  CAST('3 4:05:06.7' AS INTERVAL)
   AS negative;
 
 SET intervalstyle = sql_standard;
@@ -975,10 +980,12 @@ FROM
   (VALUES
     (CAST('-infinity' AS DATE)),
     (CAST('1995-08-06' AS DATE)),
-    (CAST('infinity' AS DATE))) AS t1 (d),
+    (CAST('infinity' AS DATE)))
+  AS t1 (d),
   (VALUES
     (CAST('-infinity' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL))) AS t2 (i);
+    (CAST('infinity' AS INTERVAL)))
+  AS t2 (i);
 
 SELECT
   i1 AS interval1,
@@ -991,27 +998,33 @@ FROM
   (VALUES
     (CAST('-infinity' AS INTERVAL)),
     (CAST('2 months' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL))) AS t1 (i1),
+    (CAST('infinity' AS INTERVAL)))
+  AS t1 (i1),
   (VALUES
     (CAST('-infinity' AS INTERVAL)),
     (CAST('10 days' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL))) AS t2 (i2);
+    (CAST('infinity' AS INTERVAL)))
+  AS t2 (i2);
 
 SELECT
   CAST('2147483646 months 2147483646 days 9223372036854775806 us'
-  AS INTERVAL) + CAST('1 month 1 day 1 us' AS INTERVAL);
+  AS INTERVAL) +
+  CAST('1 month 1 day 1 us' AS INTERVAL);
 
 SELECT
   CAST('-2147483647 months -2147483647 days -9223372036854775807 us'
-  AS INTERVAL) + CAST('-1 month -1 day -1 us' AS INTERVAL);
+  AS INTERVAL) +
+  CAST('-1 month -1 day -1 us' AS INTERVAL);
 
 SELECT
   CAST('2147483646 months 2147483646 days 9223372036854775806 us'
-  AS INTERVAL) - CAST('-1 month -1 day -1 us' AS INTERVAL);
+  AS INTERVAL) -
+  CAST('-1 month -1 day -1 us' AS INTERVAL);
 
 SELECT
   CAST('-2147483647 months -2147483647 days -9223372036854775807 us'
-  AS INTERVAL) - CAST('1 month 1 day 1 us' AS INTERVAL);
+  AS INTERVAL) -
+  CAST('1 month 1 day 1 us' AS INTERVAL);
 
 SELECT
   t AS timestamp,
@@ -1024,10 +1037,12 @@ FROM
   (VALUES
     (CAST('-infinity' AS TIMESTAMP)),
     (CAST('1995-08-06 12:30:15' AS TIMESTAMP)),
-    (CAST('infinity' AS TIMESTAMP))) AS t1 (t),
+    (CAST('infinity' AS TIMESTAMP)))
+  AS t1 (t),
   (VALUES
     (CAST('-infinity' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL))) AS t2 (i);
+    (CAST('infinity' AS INTERVAL)))
+  AS t2 (i);
 
 SELECT
   timezone('GMT', t) AS timestamptz,
@@ -1043,10 +1058,12 @@ FROM
       CAST('1995-08-06 12:30:15 GMT'
       AS TIMESTAMP WITH TIME ZONE)
     ),
-    (CAST('infinity' AS TIMESTAMP WITH TIME ZONE))) AS t1 (t),
+    (CAST('infinity' AS TIMESTAMP WITH TIME ZONE)))
+  AS t1 (t),
   (VALUES
     (CAST('-infinity' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL))) AS t2 (i);
+    (CAST('infinity' AS INTERVAL)))
+  AS t2 (i);
 
 SELECT CAST('11:27:42' AS TIME) + CAST('infinity' AS INTERVAL);
 
@@ -1075,7 +1092,8 @@ SELECT
   lhst.i <> rhst.i AS ne
 FROM
   infinite_interval_tbl AS lhst
-  INNER JOIN infinite_interval_tbl AS rhst
+  INNER JOIN
+    infinite_interval_tbl AS rhst
   ON TRUE
 WHERE
   NOT isfinite(lhst.i);

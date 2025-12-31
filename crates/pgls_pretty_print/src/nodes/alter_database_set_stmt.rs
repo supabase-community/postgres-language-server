@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDatabaseSetStmt;
 
 pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDatabaseSetStmt) {
@@ -15,7 +15,7 @@ pub(super) fn emit_alter_database_set_stmt(e: &mut EventEmitter, n: &AlterDataba
     }
 
     if let Some(ref setstmt) = n.setstmt {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_variable_set_stmt(e, setstmt);
     }
 

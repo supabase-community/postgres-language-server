@@ -194,7 +194,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 
     // WITH GRANT OPTION (for grant)
     if n.is_grant && n.grant_option {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::GRANT_KW);
@@ -204,7 +204,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 
     // GRANTED BY
     if let Some(ref grantor) = n.grantor {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("GRANTED".to_string()));
         e.space();
         e.token(TokenKind::BY_KW);
@@ -214,7 +214,7 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
 
     // CASCADE/RESTRICT (for revoke)
     if !n.is_grant && matches!(n.behavior(), DropBehavior::DropCascade) {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::CASCADE_KW);
     }
 

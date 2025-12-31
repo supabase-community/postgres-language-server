@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/copydml_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/copydml.sql
 snapshot_kind: text
 ---
 CREATE TABLE copydml_test (id serial, t TEXT);
@@ -166,12 +166,14 @@ end
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER qqqbef
-BEFORE INSERT OR DELETE OR UPDATE ON copydml_test
+BEFORE INSERT OR DELETE OR UPDATE
+ON copydml_test
 FOR EACH ROW
 EXECUTE FUNCTION qqq_trig();
 
 CREATE TRIGGER qqqaf
-AFTER INSERT OR DELETE OR UPDATE ON copydml_test
+AFTER INSERT OR DELETE OR UPDATE
+ON copydml_test
 FOR EACH ROW
 EXECUTE FUNCTION qqq_trig();
 

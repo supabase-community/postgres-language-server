@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/misc_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/misc.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION overpaid(emp)
@@ -59,7 +59,8 @@ CREATE TABLE hobbies_r (name TEXT, person TEXT);
 
 CREATE TABLE equipment_r (name TEXT, hobby TEXT);
 
-INSERT INTO hobbies_r (name, person)
+INSERT INTO hobbies_r
+(name, person)
 SELECT
   'posthacking',
   p.name
@@ -68,7 +69,8 @@ FROM
 WHERE
   p.name = 'mike' OR p.name = 'jeff';
 
-INSERT INTO hobbies_r (name, person)
+INSERT INTO hobbies_r
+(name, person)
 SELECT
   'basketball',
   p.name

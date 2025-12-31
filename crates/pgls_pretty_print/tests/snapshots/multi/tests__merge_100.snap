@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/merge_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/merge.sql
 snapshot_kind: text
 ---
 CREATE USER regress_merge_privs;
@@ -29,7 +29,8 @@ SELECT
   s.*
 FROM
   source AS s
-  FULL OUTER JOIN target AS t
+  FULL OUTER JOIN
+    target AS t
   ON s.sid = t.tid
 ORDER BY t.tid,
   s.sid;
@@ -93,7 +94,8 @@ SELECT * FROM source ORDER BY sid;
 SELECT * FROM target ORDER BY tid;
 
 MERGE INTO target AS t
-USING source AS s ON t.tid = s.sid
+USING source AS s
+ON t.tid = s.sid
 WHEN NOT MATCHED BY TARGET THEN DO NOTHING;
 
 BEGIN;
@@ -340,62 +342,74 @@ END;
 ';
 
 CREATE TRIGGER merge_bsi
-BEFORE INSERT ON target
+BEFORE INSERT
+ON target
 FOR EACH STATEMENT
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_bsu
-BEFORE UPDATE ON target
+BEFORE UPDATE
+ON target
 FOR EACH STATEMENT
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_bsd
-BEFORE DELETE ON target
+BEFORE DELETE
+ON target
 FOR EACH STATEMENT
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_asi
-AFTER INSERT ON target
+AFTER INSERT
+ON target
 FOR EACH STATEMENT
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_asu
-AFTER UPDATE ON target
+AFTER UPDATE
+ON target
 FOR EACH STATEMENT
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_asd
-AFTER DELETE ON target
+AFTER DELETE
+ON target
 FOR EACH STATEMENT
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_bri
-BEFORE INSERT ON target
+BEFORE INSERT
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_bru
-BEFORE UPDATE ON target
+BEFORE UPDATE
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_brd
-BEFORE DELETE ON target
+BEFORE DELETE
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_ari
-AFTER INSERT ON target
+AFTER INSERT
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_aru
-AFTER UPDATE ON target
+AFTER UPDATE
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION merge_trigfunc();
 
 CREATE TRIGGER merge_ard
-AFTER DELETE ON target
+AFTER DELETE
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION merge_trigfunc();
 
@@ -427,11 +441,13 @@ END;
 SELECT * FROM target FULL OUTER JOIN source ON sid = tid;
 
 CREATE TRIGGER merge_skip
-BEFORE INSERT OR DELETE OR UPDATE ON target
+BEFORE INSERT OR DELETE OR UPDATE
+ON target
 FOR EACH ROW
 EXECUTE FUNCTION skip_merge_op();
 
-DO $$
+DO
+$$
 DECLARE
   result integer;
 BEGIN
@@ -459,7 +475,9 @@ DROP FUNCTION skip_merge_op();
 
 BEGIN;
 
-DO LANGUAGE plpgsql $$
+DO
+LANGUAGE plpgsql
+$$
 BEGIN
 MERGE INTO target t
 USING source AS s
@@ -554,13 +572,15 @@ CREATE TABLE sq_target (tid INT NOT NULL, balance INT) WITH (autovacuum_enabled 
 
 CREATE TABLE sq_source (delta INT, sid INT, balance INT DEFAULT 0) WITH (autovacuum_enabled = off);
 
-INSERT INTO sq_target (tid, balance)
+INSERT INTO sq_target
+(tid, balance)
 VALUES
   (1, 100),
   (2, 200),
   (3, 300);
 
-INSERT INTO sq_source (sid, delta)
+INSERT INTO sq_source
+(sid, delta)
 VALUES
   (1, 10),
   (2, 20),
@@ -599,7 +619,8 @@ INSERT INTO sq_source (sid, balance, delta) VALUES (-1, -1, -10);
 
 WITH targq AS (SELECT * FROM v)
 MERGE INTO sq_target AS t
-USING v ON tid = sid
+USING v
+ON tid = sid
 WHEN MATCHED AND
   tid >= 2
 THEN UPDATE SET balance = t.balance + delta
@@ -636,9 +657,12 @@ INSERT INTO sq_target_merge_log VALUES (1, 'Original value');
 
 BEGIN;
 
-WITH m AS (
+WITH
+m
+AS (
   MERGE INTO sq_target AS t
-  USING sq_source AS s ON tid = sid
+  USING sq_source AS s
+  ON tid = sid
   WHEN MATCHED AND
     tid >= 2
   THEN UPDATE SET balance = t.balance + delta
@@ -652,14 +676,17 @@ WITH m AS (
     t.*,
     CASE "mergesupport#25"
     WHEN 'INSERT' THEN 'Inserted ' || t
-    WHEN 'UPDATE' THEN 'Added ' || delta || ' to balance'
+    WHEN 'UPDATE'
+    THEN 'Added ' || delta || ' to balance'
     WHEN 'DELETE' THEN 'Removed ' || t
     END
     AS description
 ),
-m2 AS (
+m2
+AS (
   MERGE INTO sq_target_merge_log AS l
-  USING m ON l.tid = m.tid
+  USING m
+  ON l.tid = m.tid
   WHEN MATCHED
   THEN UPDATE SET last_change = description
   WHEN NOT MATCHED BY TARGET
@@ -683,7 +710,8 @@ ROLLBACK;
 BEGIN;
 
 COPY (MERGE INTO sq_target AS t
-USING sq_source AS s ON tid = sid
+USING sq_source AS s
+ON tid = sid
 WHEN MATCHED AND
   tid >= 2
 THEN UPDATE SET balance = t.balance + delta
@@ -729,13 +757,15 @@ FROM
   (VALUES
     (1, 0, 0),
     (3, 0, 20),
-    (4, 100, 10)) AS v (sid, balance, delta),
+    (4, 100, 10))
+  AS v (sid, balance, delta),
   LATERAL (SELECT
     action,
     tid,
     new_balance
   FROM
-    merge_into_sq_target(sid, balance, delta)) AS m;
+    merge_into_sq_target(sid, balance, delta))
+  AS m;
 
 ROLLBACK;
 
@@ -798,13 +828,15 @@ FROM
   (VALUES
     (1, 0, 0),
     (3, 0, 20),
-    (4, 100, 10)) AS v (sid, balance, delta),
+    (4, 100, 10))
+  AS v (sid, balance, delta),
   LATERAL (SELECT
     r_action,
     r_tid,
     r_balance
   FROM
-    merge_into_sq_target(sid, balance, delta)) AS m;
+    merge_into_sq_target(sid, balance, delta))
+  AS m;
 
 ROLLBACK;
 
@@ -936,7 +968,8 @@ ROLLBACK;
 
 DROP TABLE "sq_target", "sq_target_merge_log", "sq_source" CASCADE;
 
-CREATE TABLE pa_target (tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE pa_target
+(tid INT, balance DOUBLE PRECISION, val TEXT)
 PARTITION BY LIST(tid);
 
 CREATE TABLE part1 PARTITION OF pa_target FOR VALUES IN (1, 4) WITH (autovacuum_enabled = off);
@@ -1012,7 +1045,8 @@ ROLLBACK;
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE pa_target (tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE pa_target
+(tid INT, balance DOUBLE PRECISION, val TEXT)
 PARTITION BY LIST(tid);
 
 CREATE TABLE part1 (tid INT, balance DOUBLE PRECISION, val TEXT) WITH (autovacuum_enabled = off);
@@ -1021,7 +1055,8 @@ CREATE TABLE part2 (balance DOUBLE PRECISION, tid INT, val TEXT) WITH (autovacuu
 
 CREATE TABLE part3 (tid INT, balance DOUBLE PRECISION, val TEXT) WITH (autovacuum_enabled = off);
 
-CREATE TABLE part4 (
+CREATE TABLE part4
+(
   extraid TEXT,
   tid INT,
   balance DOUBLE PRECISION,
@@ -1052,7 +1087,8 @@ INSERT INTO pa_target SELECT id, id * 100, 'initial' FROM generate_series(1, 15,
 
 BEGIN;
 
-DO $$
+DO
+$$
 DECLARE
   result integer;
 BEGIN
@@ -1082,7 +1118,8 @@ ROLLBACK;
 
 BEGIN;
 
-DO $$
+DO
+$$
 DECLARE
   result integer;
 BEGIN
@@ -1112,11 +1149,13 @@ LANGUAGE "plpgsql"
 AS ' BEGIN RETURN NULL; END; ';
 
 CREATE TRIGGER del_trig
-BEFORE DELETE ON pa_target
+BEFORE DELETE
+ON pa_target
 FOR EACH ROW
 EXECUTE FUNCTION trig_fn();
 
-DO $$
+DO
+$$
 DECLARE
   result integer;
 BEGIN
@@ -1146,11 +1185,13 @@ LANGUAGE "plpgsql"
 AS ' BEGIN RETURN NULL; END; ';
 
 CREATE TRIGGER ins_trig
-BEFORE INSERT ON pa_target
+BEFORE INSERT
+ON pa_target
 FOR EACH ROW
 EXECUTE FUNCTION trig_fn();
 
-DO $$
+DO
+$$
 DECLARE
   result integer;
 BEGIN
@@ -1188,7 +1229,8 @@ DROP TABLE "pa_source";
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE pa_target (logts TIMESTAMP, tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE pa_target
+(logts TIMESTAMP, tid INT, balance DOUBLE PRECISION, val TEXT)
 PARTITION BY RANGE(logts);
 
 CREATE TABLE part_m01
@@ -1253,7 +1295,8 @@ DROP TABLE "pa_source";
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE pa_target (tid INT PRIMARY KEY)
+CREATE TABLE pa_target
+(tid INT PRIMARY KEY)
 PARTITION BY LIST(tid);
 
 CREATE TABLE pa_targetp PARTITION OF pa_target DEFAULT;
@@ -1273,7 +1316,8 @@ DROP TABLE "pa_source";
 
 DROP TABLE "pa_target" CASCADE;
 
-CREATE TABLE cj_target (tid INT, balance DOUBLE PRECISION, val TEXT)
+CREATE TABLE cj_target
+(tid INT, balance DOUBLE PRECISION, val TEXT)
 WITH (autovacuum_enabled = off);
 
 CREATE TABLE cj_source1 (sid1 INT, scat INT, delta INT) WITH (autovacuum_enabled = off);
@@ -1312,7 +1356,8 @@ SELECT COUNT(*) FROM fs_target;
 
 DROP TABLE "fs_target";
 
-CREATE TABLE measurement (
+CREATE TABLE measurement
+(
   city_id INT NOT NULL,
   logdate DATE NOT NULL,
   peaktemp INT,
@@ -1320,21 +1365,18 @@ CREATE TABLE measurement (
 )
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE measurement_y2006m02 (
-  CHECK (logdate >= CAST('2006-02-01' AS DATE) AND
-  logdate < CAST('2006-03-01' AS DATE))
-)
+CREATE TABLE measurement_y2006m02
+(CHECK (logdate >= CAST('2006-02-01' AS DATE) AND logdate < CAST('2006-03-01' AS DATE)))
 INHERITS (measurement)
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE measurement_y2006m03 (
-  CHECK (logdate >= CAST('2006-03-01' AS DATE) AND
-  logdate < CAST('2006-04-01' AS DATE))
-)
+CREATE TABLE measurement_y2006m03
+(CHECK (logdate >= CAST('2006-03-01' AS DATE) AND logdate < CAST('2006-04-01' AS DATE)))
 INHERITS (measurement)
 WITH (autovacuum_enabled = off);
 
-CREATE TABLE measurement_y2007m01 (
+CREATE TABLE measurement_y2007m01
+(
   filler TEXT,
   peaktemp INT,
   logdate DATE NOT NULL,
@@ -1376,7 +1418,8 @@ END;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER insert_measurement_trigger
-BEFORE INSERT ON measurement
+BEFORE INSERT
+ON measurement
 FOR EACH ROW
 EXECUTE FUNCTION measurement_insert_trigger();
 

@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterDatabaseStmt;
 
 use super::node_list::emit_comma_separated_list;
@@ -17,7 +17,7 @@ pub(super) fn emit_alter_database_stmt(e: &mut EventEmitter, n: &AlterDatabaseSt
     }
 
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.options, super::emit_node);
     }
 

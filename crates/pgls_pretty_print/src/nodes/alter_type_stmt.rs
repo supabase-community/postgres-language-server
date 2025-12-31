@@ -2,7 +2,7 @@ use pgls_query::{NodeEnum, protobuf::AlterTypeStmt};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::{emit_comma_separated_list, emit_dot_separated_list},
 };
 
@@ -20,7 +20,7 @@ pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
 
     // ALTER TYPE ... SET (option = value, ...)
     if !n.options.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

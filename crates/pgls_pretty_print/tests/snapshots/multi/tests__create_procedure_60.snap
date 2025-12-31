@@ -1,0 +1,325 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/create_procedure.sql
+snapshot_kind: text
+---
+CALL nonexistent();
+
+CALL random();
+
+CREATE FUNCTION cp_testfunc1(a INT)
+RETURNS INT
+LANGUAGE "sql"
+AS ' SELECT a ';
+
+CREATE TABLE cp_test (a INT, b TEXT);
+
+CREATE PROCEDURE ptest1(x TEXT)
+LANGUAGE "sql"
+AS '
+INSERT INTO cp_test VALUES (1, x);
+';
+
+SELECT pg_get_functiondef(CAST('ptest1' AS REGPROC));
+
+SELECT ptest1('x');
+
+CALL ptest1('a');
+
+CALL ptest1('xy' || 'zzy');
+
+CALL ptest1(
+SUBSTRING(CAST(CAST(random()
+AS NUMERIC(20, 15))
+AS TEXT)
+FROM 1
+FOR 1)
+);
+
+SELECT * FROM cp_test ORDER BY b COLLATE "C";
+
+INSERT INTO cp_test VALUES (1, x);
+
+COMMIT;
+
+SELECT pg_get_functiondef(CAST('ptest1s' AS REGPROC));
+
+CALL ptest1s('b');
+
+SELECT * FROM cp_test ORDER BY b COLLATE "C";
+
+CREATE TABLE x (a INT);
+
+COMMIT;
+
+CREATE PROCEDURE ptest2()
+LANGUAGE "sql"
+AS '
+SELECT 5;
+';
+
+CALL ptest2();
+
+TRUNCATE cp_test;
+
+CREATE PROCEDURE ptest3(y TEXT)
+LANGUAGE "sql"
+AS '
+CALL ptest1(y);
+CALL ptest1($1);
+';
+
+CALL ptest3('b');
+
+SELECT * FROM cp_test;
+
+CREATE PROCEDURE ptest4a(INOUT a INT, INOUT b INT)
+LANGUAGE "sql"
+AS '
+SELECT 1, 2;
+';
+
+CALL ptest4a(NULL, NULL);
+
+CREATE PROCEDURE ptest4b(INOUT b INT, INOUT a INT)
+LANGUAGE "sql"
+AS '
+CALL ptest4a(a, b);  -- error, not supported
+';
+
+CREATE PROCEDURE ptest4c(INOUT comp int8_tbl)
+LANGUAGE "sql"
+AS '
+SELECT ROW(1, 2);
+';
+
+CALL ptest4c(NULL);
+
+DROP PROCEDURE ptest4a, ptest4c;
+
+CREATE OR REPLACE PROCEDURE
+ptest5(
+  a INT,
+  b TEXT,
+  c INT DEFAULT 100
+)
+LANGUAGE "sql"
+AS '
+INSERT INTO cp_test VALUES(a, b);
+INSERT INTO cp_test VALUES(c, b);
+';
+
+TRUNCATE cp_test;
+
+CALL ptest5(10, 'Hello', 20);
+
+CALL ptest5(10, 'Hello');
+
+CALL ptest5(10, "b" := 'Hello');
+
+CALL ptest5("b" := 'Hello', "a" := 10);
+
+SELECT * FROM cp_test;
+
+CREATE PROCEDURE ptest6(a INT, b ANYELEMENT)
+LANGUAGE "sql"
+AS '
+SELECT NULL::int;
+';
+
+CALL ptest6(1, 2);
+
+CREATE PROCEDURE
+ptest6a(
+  INOUT a ANYELEMENT,
+  OUT b ANYELEMENT
+)
+LANGUAGE "sql"
+AS '
+SELECT $1, $1;
+';
+
+CALL ptest6a(1, NULL);
+
+CALL ptest6a(1.1, NULL);
+
+CREATE PROCEDURE
+ptest6b(
+  a ANYELEMENT,
+  OUT b ANYELEMENT,
+  OUT c ANYARRAY
+)
+LANGUAGE "sql"
+AS '
+SELECT $1, array[$1];
+';
+
+CALL ptest6b(1, NULL, NULL);
+
+CALL ptest6b(1.1, NULL, NULL);
+
+CREATE PROCEDURE
+ptest6c(
+  INOUT a ANYELEMENT,
+  INOUT b ANYELEMENT
+)
+LANGUAGE "sql"
+AS '
+SELECT $1, 1;
+';
+
+CALL ptest6c(1, NULL);
+
+CALL ptest6c(1.1, NULL);
+
+CREATE PROCEDURE ptest7(a TEXT, b TEXT)
+LANGUAGE "sql"
+AS '
+SELECT a = b;
+';
+
+CALL ptest7(LEAST('a', 'b'), 'a');
+
+CREATE PROCEDURE
+ptest8(
+  x TEXT
+) BEGIN ATOMIC
+  
+END;
+
+SELECT pg_get_functiondef(CAST('ptest8' AS REGPROC));
+
+CALL ptest8('');
+
+CREATE PROCEDURE ptest9(OUT a INT)
+LANGUAGE "sql"
+AS '
+INSERT INTO cp_test VALUES (1, ''a'');
+SELECT 1;
+';
+
+CALL ptest9(NULL);
+
+CALL ptest9(1 / 0);
+
+CALL ptest9(1. / 0.);
+
+CREATE PROCEDURE ptest10(OUT a INT, IN b INT, IN c INT)
+LANGUAGE "sql"
+AS ' SELECT b - c ';
+
+CALL ptest10(NULL, 7, 4);
+
+CALL ptest10("a" := NULL, "b" := 8, "c" := 2);
+
+CALL ptest10(NULL, 7, "c" := 2);
+
+CALL ptest10(NULL, "c" := 4, "b" := 11);
+
+CALL ptest10("b" := 8, "c" := 2, "a" := 0);
+
+CREATE PROCEDURE ptest11(OUT a INT, VARIADIC b INT[])
+LANGUAGE "sql"
+AS ' SELECT b[1] + b[2] ';
+
+CALL ptest11(NULL, 11, 12, 13);
+
+CREATE PROCEDURE ptest10(IN a INT, IN b INT, IN c INT)
+LANGUAGE "sql"
+AS ' SELECT a + b - c ';
+
+DROP PROCEDURE ptest10;
+
+DROP PROCEDURE ptest10(INT, INT, INT);
+
+BEGIN;
+
+DROP PROCEDURE ptest10(INT, INT);
+
+DROP PROCEDURE ptest10(INT, INT, INT);
+
+ROLLBACK;
+
+BEGIN;
+
+DROP PROCEDURE ptest10(INT, INT, INT);
+
+DROP PROCEDURE ptest10(INT, INT, INT);
+
+ROLLBACK;
+
+CALL version();
+
+CALL SUM(1);
+
+CREATE PROCEDURE ptestx()
+LANGUAGE "sql"
+WINDOW
+AS ' INSERT INTO cp_test VALUES (1, ''a'') ';
+
+CREATE PROCEDURE ptestx()
+LANGUAGE "sql"
+STRICT
+AS ' INSERT INTO cp_test VALUES (1, ''a'') ';
+
+CREATE PROCEDURE ptestx(VARIADIC a INT[], OUT b INT)
+LANGUAGE "sql"
+AS ' SELECT a[1] ';
+
+CREATE PROCEDURE ptestx(a INT DEFAULT 42, OUT b INT)
+LANGUAGE "sql"
+AS ' SELECT a ';
+
+ALTER PROCEDURE ptest1(TEXT) STRICT;
+
+ALTER FUNCTION ptest1(TEXT) VOLATILE;
+
+ALTER PROCEDURE cp_testfunc1(INT) VOLATILE;
+
+ALTER PROCEDURE nonexistent() VOLATILE;
+
+DROP FUNCTION ptest1(TEXT);
+
+DROP PROCEDURE cp_testfunc1(INT);
+
+DROP PROCEDURE nonexistent();
+
+CREATE USER regress_cp_user1;
+
+GRANT INSERT ON TABLE cp_test TO regress_cp_user1;
+
+REVOKE EXECUTE ON PROCEDURE ptest1(TEXT) FROM PUBLIC;
+
+SET ROLE TO regress_cp_user1;
+
+CALL ptest1('a');
+
+RESET role;
+
+GRANT EXECUTE ON PROCEDURE ptest1(TEXT) TO regress_cp_user1;
+
+SET ROLE TO regress_cp_user1;
+
+CALL ptest1('a');
+
+RESET role;
+
+ALTER ROUTINE cp_testfunc1(INT) RENAME TO cp_testfunc1a;
+
+ALTER ROUTINE cp_testfunc1a RENAME TO cp_testfunc1;
+
+ALTER ROUTINE ptest1(TEXT) RENAME TO ptest1a;
+
+ALTER ROUTINE ptest1a RENAME TO ptest1;
+
+DROP ROUTINE cp_testfunc1(INT);
+
+DROP PROCEDURE ptest1;
+
+DROP PROCEDURE ptest1s;
+
+DROP PROCEDURE ptest2;
+
+DROP TABLE "cp_test";
+
+DROP ROLE regress_cp_user1;

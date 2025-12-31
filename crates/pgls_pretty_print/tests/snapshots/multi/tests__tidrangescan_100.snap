@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tidrangescan_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tidrangescan.sql
 snapshot_kind: text
 ---
 SET enable_seqscan = off;
@@ -84,7 +84,8 @@ FROM
   FROM
     tidrangescan AS t2
   WHERE
-    t2.ctid <= t.ctid) AS t2
+    t2.ctid <= t.ctid)
+  AS t2
 WHERE
   t.ctid < '(1,0)';
 
@@ -98,11 +99,15 @@ FROM
   FROM
     tidrangescan AS t2
   WHERE
-    t2.ctid <= t.ctid) AS t2
+    t2.ctid <= t.ctid)
+  AS t2
 WHERE
   t.ctid < '(1,0)';
 
-EXPLAIN (COSTS 'off') DECLARE "c" SCROLL CURSOR FOR SELECT
+EXPLAIN (COSTS 'off')
+DECLARE "c" SCROLL
+CURSOR
+FOR SELECT
   ctid
 FROM
   tidrangescan

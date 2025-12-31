@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/select_distinct_on_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/select_distinct_on.sql
 snapshot_kind: text
 ---
 SELECT DISTINCT ON (
@@ -82,7 +82,8 @@ SELECT DISTINCT ON (
   x,
   y
 FROM
-  (SELECT * FROM distinct_on_tbl ORDER BY x, z, y) AS s
+  (SELECT * FROM distinct_on_tbl ORDER BY x, z, y)
+  AS s
 ORDER BY y,
   x,
   z;
@@ -93,7 +94,8 @@ SELECT DISTINCT ON (
   x,
   y
 FROM
-  (SELECT * FROM distinct_on_tbl ORDER BY x, z, y) AS s
+  (SELECT * FROM distinct_on_tbl ORDER BY x, z, y)
+  AS s
 ORDER BY y,
   x,
   z;

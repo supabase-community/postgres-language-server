@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/polymorphism_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/polymorphism.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION polyf(x ANYELEMENT)
@@ -486,7 +486,10 @@ CREATE AGGREGATE myaggn01a (*) ( sfunc = stfnp, stype = INT[], finalfunc = ffnp,
 
 CREATE AGGREGATE myaggn01b (*) ( sfunc = stfnp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggn02a (*)
+CREATE AGGREGATE myaggn02a
+(
+  *
+)
 (
   sfunc = stfnp,
   stype = ANYARRAY,
@@ -672,7 +675,10 @@ CREATE AGGREGATE myaggn20a
   initcond = '{}'
 );
 
-CREATE AGGREGATE mysum2 (ANYELEMENT, ANYELEMENT)
+CREATE AGGREGATE mysum2
+(
+  ANYELEMENT, ANYELEMENT
+)
 (
   sfunc = sum3,
   stype = ANYELEMENT,
@@ -764,7 +770,10 @@ SELECT f1, sql_if(f1 > 0, bleat(f1), bleat(f1 + 1)) FROM int4_tbl;
 
 SELECT q2, sql_if(q2 > 0, q2, q2 + 1) FROM int8_tbl;
 
-CREATE AGGREGATE array_larger_accum (ANYARRAY)
+CREATE AGGREGATE array_larger_accum
+(
+  ANYARRAY
+)
 (
   sfunc = array_larger,
   stype = ANYARRAY,
@@ -776,14 +785,16 @@ SELECT
 FROM
   (VALUES
     (ARRAY[1, 2]),
-    (ARRAY[3, 4])) AS t (i);
+    (ARRAY[3, 4]))
+  AS t (i);
 
 SELECT
   array_larger_accum(i)
 FROM
   (VALUES
     (ARRAY[ROW(1, 2), ROW(3, 4)]),
-    (ARRAY[ROW(5, 6), ROW(7, 8)])) AS t (i);
+    (ARRAY[ROW(5, 6), ROW(7, 8)]))
+  AS t (i);
 
 CREATE FUNCTION add_group(grp ANYARRAY, ad ANYELEMENT, size INT)
 RETURNS ANYARRAY
@@ -822,14 +833,20 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE AGGREGATE first_el_agg_f8 (DOUBLE PRECISION)
+CREATE AGGREGATE first_el_agg_f8
+(
+  DOUBLE PRECISION
+)
 (
   sfunc = array_append,
   stype = DOUBLE PRECISION[],
   finalfunc = first_el
 );
 
-CREATE AGGREGATE first_el_agg_any (ANYELEMENT)
+CREATE AGGREGATE first_el_agg_any
+(
+  ANYELEMENT
+)
 (
   sfunc = first_el_transfn,
   stype = ANYARRAY,
@@ -1378,7 +1395,8 @@ SELECT dfunc("a" := 1);
 
 SELECT dfunc("a" := 1);
 
-DO $$
+DO
+$$
   declare r integer;
   begin
     select dfunc(a=>-- comment
@@ -1527,7 +1545,8 @@ FROM
   anyctest(
   multirange(int4range(11, 12)),
   multirange(int4range(4, 7))
-  ) AS x;
+  )
+  AS x;
 
 SELECT
   x,
@@ -1536,7 +1555,8 @@ FROM
   anyctest(
   multirange(int4range(11, 12)),
   multirange(numrange(4, 7))
-  ) AS x;
+  )
+  AS x;
 
 DROP FUNCTION anyctest(anycompatiblemultirange, anycompatiblemultirange);
 

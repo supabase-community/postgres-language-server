@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/enum_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/enum.sql
 snapshot_kind: text
 ---
 CREATE TYPE rainbow AS ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'purple');
@@ -69,7 +69,8 @@ WHERE
   enumtypid = CAST('planets' AS REGTYPE)
 ORDER BY CAST(enumlabel AS planets);
 
-ALTER TYPE planets ADD VALUE 'plutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutopluto';
+ALTER TYPE planets
+ADD VALUE 'plutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutoplutopluto';
 
 ALTER TYPE planets ADD VALUE 'pluto' AFTER 'zeus';
 

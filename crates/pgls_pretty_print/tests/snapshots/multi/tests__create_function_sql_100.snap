@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_function_sql_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_function_sql.sql
 snapshot_kind: text
 ---
 CREATE USER regress_unpriv_user;
@@ -33,9 +33,12 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_A_1' AS REGPROC),
-  CAST('functest_A_2' AS REGPROC),
-  CAST('functest_A_3' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_A_1' AS REGPROC),
+    CAST('functest_A_2' AS REGPROC),
+    CAST('functest_A_3' AS REGPROC)
+  )
 ORDER BY proname;
 
 SELECT functest_a_1('abcd', '2020-01-01');
@@ -73,10 +76,13 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_B_1' AS REGPROC),
-  CAST('functest_B_2' AS REGPROC),
-  CAST('functest_B_3' AS REGPROC),
-  CAST('functest_B_4' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_B_1' AS REGPROC),
+    CAST('functest_B_2' AS REGPROC),
+    CAST('functest_B_3' AS REGPROC),
+    CAST('functest_B_4' AS REGPROC)
+  )
 ORDER BY proname;
 
 ALTER FUNCTION functest_b_2(INT) VOLATILE;
@@ -89,10 +95,13 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_B_1' AS REGPROC),
-  CAST('functest_B_2' AS REGPROC),
-  CAST('functest_B_3' AS REGPROC),
-  CAST('functest_B_4' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_B_1' AS REGPROC),
+    CAST('functest_B_2' AS REGPROC),
+    CAST('functest_B_3' AS REGPROC),
+    CAST('functest_B_4' AS REGPROC)
+  )
 ORDER BY proname;
 
 CREATE FUNCTION functest_c_1(INT)
@@ -118,9 +127,12 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_C_1' AS REGPROC),
-  CAST('functest_C_2' AS REGPROC),
-  CAST('functest_C_3' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_C_1' AS REGPROC),
+    CAST('functest_C_2' AS REGPROC),
+    CAST('functest_C_3' AS REGPROC)
+  )
 ORDER BY proname;
 
 ALTER FUNCTION functest_c_1(INT) IMMUTABLE;
@@ -135,9 +147,12 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_C_1' AS REGPROC),
-  CAST('functest_C_2' AS REGPROC),
-  CAST('functest_C_3' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_C_1' AS REGPROC),
+    CAST('functest_C_2' AS REGPROC),
+    CAST('functest_C_3' AS REGPROC)
+  )
 ORDER BY proname;
 
 CREATE FUNCTION functest_e_1(INT)
@@ -157,8 +172,11 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_E_1' AS REGPROC),
-  CAST('functest_E_2' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_E_1' AS REGPROC),
+    CAST('functest_E_2' AS REGPROC)
+  )
 ORDER BY proname;
 
 ALTER FUNCTION functest_e_1(INT) LEAKPROOF;
@@ -171,8 +189,11 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_E_1' AS REGPROC),
-  CAST('functest_E_2' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_E_1' AS REGPROC),
+    CAST('functest_E_2' AS REGPROC)
+  )
 ORDER BY proname;
 
 ALTER FUNCTION functest_e_2(INT) NOT LEAKPROOF;
@@ -183,8 +204,11 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_E_1' AS REGPROC),
-  CAST('functest_E_2' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_E_1' AS REGPROC),
+    CAST('functest_E_2' AS REGPROC)
+  )
 ORDER BY proname;
 
 ALTER FUNCTION functest_e_1(INT) OWNER TO regress_unpriv_user;
@@ -236,10 +260,13 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_F_1' AS REGPROC),
-  CAST('functest_F_2' AS REGPROC),
-  CAST('functest_F_3' AS REGPROC),
-  CAST('functest_F_4' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_F_1' AS REGPROC),
+    CAST('functest_F_2' AS REGPROC),
+    CAST('functest_F_3' AS REGPROC),
+    CAST('functest_F_4' AS REGPROC)
+  )
 ORDER BY proname;
 
 ALTER FUNCTION functest_f_1(INT) IMMUTABLE;
@@ -254,10 +281,13 @@ SELECT
 FROM
   pg_proc
 WHERE
-  oid IN (CAST('functest_F_1' AS REGPROC),
-  CAST('functest_F_2' AS REGPROC),
-  CAST('functest_F_3' AS REGPROC),
-  CAST('functest_F_4' AS REGPROC))
+  oid
+  IN (
+    CAST('functest_F_1' AS REGPROC),
+    CAST('functest_F_2' AS REGPROC),
+    CAST('functest_F_3' AS REGPROC),
+    CAST('functest_F_4' AS REGPROC)
+  )
 ORDER BY proname;
 
 SELECT pg_get_functiondef(CAST('functest_A_1' AS REGPROC));
@@ -380,7 +410,8 @@ SELECT
   parameter_default
 FROM
   information_schema.parameters
-  INNER JOIN information_schema.routines
+  INNER JOIN
+    information_schema.routines
   USING (
     "specific_schema",
     "specific_name")
@@ -424,9 +455,11 @@ SELECT
   r1.routine_name
 FROM
   information_schema.routine_routine_usage AS rru
-  INNER JOIN information_schema.routines AS r0
+  INNER JOIN
+    information_schema.routines AS r0
   ON r0.specific_name = rru.specific_name
-  INNER JOIN information_schema.routines AS r1
+  INNER JOIN
+    information_schema.routines AS r1
   ON r1.specific_name = rru.routine_name
 WHERE
   r0.routine_schema = 'temp_func_test' AND
@@ -618,7 +651,8 @@ SELECT
 FROM
   (VALUES
     (1, 2, 3),
-    (4, 5, 6)) AS v (q1, q2, q3);
+    (4, 5, 6))
+  AS v (q1, q2, q3);
 
 CREATE FUNCTION part_hashint4_error(value INT, seed BIGINT)
 RETURNS BIGINT
@@ -633,7 +667,8 @@ CREATE OPERATOR CLASS part_test_int4_ops_bad
   USING hash
   AS FUNCTION 2 part_hashint4_error(INT, BIGINT);
 
-CREATE TABLE pt (i INT)
+CREATE TABLE pt
+(i INT)
 PARTITION BY HASH(i part_test_int4_ops_bad);
 
 CREATE TABLE p1 PARTITION OF pt FOR VALUES WITH (MODULUS 4, REMAINDER 0);

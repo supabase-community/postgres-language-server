@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/text_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/text.sql
 snapshot_kind: text
 ---
 SELECT CAST('this is a text string' AS TEXT) = CAST('this is a text string' AS TEXT) AS "true";

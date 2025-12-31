@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/md5_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/md5.sql
 snapshot_kind: text
 ---
 SELECT md5('') = 'd41d8cd98f00b204e9800998ecf8427e' AS "TRUE";

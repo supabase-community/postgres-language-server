@@ -1,13 +1,14 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/random_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/random.sql
 snapshot_kind: text
 ---
 SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT random() AS r FROM generate_series(1, 1000)) AS ss
+  (SELECT random() AS r FROM generate_series(1, 1000))
+  AS ss
 GROUP BY r
 HAVING
   COUNT(*) > 1;
@@ -18,7 +19,8 @@ SELECT
   COUNT(*) FILTER (WHERE r < 0.01) > 0 AS has_small,
   COUNT(*) FILTER (WHERE r > 0.99) > 0 AS has_large
 FROM
-  (SELECT random() AS r FROM generate_series(1, 2000)) AS ss;
+  (SELECT random() AS r FROM generate_series(1, 2000))
+  AS ss;
 
 CREATE FUNCTION ks_test_uniform_random()
 RETURNS BOOLEAN
@@ -50,7 +52,8 @@ FROM
   (SELECT
     random_normal() AS r
   FROM
-    generate_series(1, 1000)) AS ss
+    generate_series(1, 1000))
+  AS ss
 GROUP BY r
 HAVING
   COUNT(*) > 1;
@@ -62,7 +65,8 @@ FROM
   (SELECT
     random_normal(10, 0) AS r
   FROM
-    generate_series(1, 100)) AS ss
+    generate_series(1, 100))
+  AS ss
 GROUP BY r;
 
 SELECT
@@ -72,7 +76,8 @@ FROM
   (SELECT
     random_normal(-10, 0) AS r
   FROM
-    generate_series(1, 100)) AS ss
+    generate_series(1, 100))
+  AS ss
 GROUP BY r;
 
 CREATE FUNCTION ks_test_normal_random()
@@ -130,7 +135,8 @@ FROM
   (SELECT
     random(-2147483648, 2147483647) AS r
   FROM
-    generate_series(1, 1000)) AS ss
+    generate_series(1, 1000))
+  AS ss
 GROUP BY r
 HAVING
   COUNT(*) > 2;
@@ -146,7 +152,8 @@ FROM
     )
     AS r
   FROM
-    generate_series(1, 1000)) AS ss
+    generate_series(1, 1000))
+  AS ss
 GROUP BY r
 HAVING
   COUNT(*) > 1;
@@ -158,7 +165,8 @@ FROM
   (SELECT
     random_normal(0, 1 - 1e-15) AS r
   FROM
-    generate_series(1, 1000)) AS ss
+    generate_series(1, 1000))
+  AS ss
 GROUP BY r
 HAVING
   COUNT(*) > 1;
@@ -172,7 +180,8 @@ FROM
   (SELECT
     random(-2147483648, 2147483647) AS r
   FROM
-    generate_series(1, 2000)) AS ss;
+    generate_series(1, 2000))
+  AS ss;
 
 SELECT
   COUNT(
@@ -189,7 +198,8 @@ FROM
   (SELECT
     random(-1500000000, 1500000000) AS r
   FROM
-    generate_series(1, 2000)) AS ss;
+    generate_series(1, 2000))
+  AS ss;
 
 SELECT
   COUNT(*) FILTER (WHERE r < -9038904596117680292) >
@@ -203,7 +213,8 @@ FROM
     random(-9223372036854775808, 9223372036854775807)
     AS r
   FROM
-    generate_series(1, 2000)) AS ss;
+    generate_series(1, 2000))
+  AS ss;
 
 SELECT
   COUNT(
@@ -220,7 +231,8 @@ FROM
   (SELECT
     random(-1500000000000000, 1500000000000000) AS r
   FROM
-    generate_series(1, 2000)) AS ss;
+    generate_series(1, 2000))
+  AS ss;
 
 SELECT
   COUNT(*) FILTER (WHERE r < -1.5 OR r > 1.5)
@@ -231,7 +243,8 @@ FROM
   (SELECT
     random(-1.500000000000000, 1.500000000000000) AS r
   FROM
-    generate_series(1, 2000)) AS ss;
+    generate_series(1, 2000))
+  AS ss;
 
 SELECT
   MIN(r),

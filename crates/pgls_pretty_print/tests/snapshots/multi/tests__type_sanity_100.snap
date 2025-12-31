@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/type_sanity_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/type_sanity.sql
 snapshot_kind: text
 ---
 SELECT
@@ -13,7 +13,10 @@ WHERE
   t1.typlen <= 0 AND
   t1.typlen <> -1 AND
   t1.typlen <> -2 OR
-  t1.typtype NOT IN ('b', 'c', 'd', 'e', 'm', 'p', 'r') OR
+  t1.typtype
+  NOT IN (
+    'b', 'c', 'd', 'e', 'm', 'p', 'r'
+  ) OR
   NOT t1.typisdefined OR
   t1.typalign NOT IN ('c', 's', 'i', 'd') OR
   t1.typstorage NOT IN ('p', 'x', 'e', 'm');
@@ -56,7 +59,8 @@ FROM
 WHERE
   t1.typtype NOT IN ('p') AND
   t1.typname NOT LIKE '\_%' AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_type AS t2
@@ -73,7 +77,8 @@ SELECT
   t2.typsubscript
 FROM
   pg_type AS t1
-  LEFT OUTER JOIN pg_type AS t2
+  LEFT OUTER JOIN
+    pg_type AS t2
   ON t1.typarray = t2.oid
 WHERE
   t1.typarray <> 0 AND
@@ -88,7 +93,8 @@ FROM
   pg_type AS t1
 WHERE
   t1.typtype = 'r' AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_range AS r
@@ -103,9 +109,11 @@ SELECT
   t2.typalign
 FROM
   pg_type AS t1
-  LEFT OUTER JOIN pg_range AS r
+  LEFT OUTER JOIN
+    pg_range AS r
   ON rngtypid = t1.oid
-  LEFT OUTER JOIN pg_type AS t2
+  LEFT OUTER JOIN
+    pg_type AS t2
   ON rngsubtype = t2.oid
 WHERE
   t1.typtype = 'r' AND
@@ -240,7 +248,8 @@ SELECT
   t2.typname
 FROM
   pg_type AS t1
-  LEFT OUTER JOIN pg_type AS t2
+  LEFT OUTER JOIN
+    pg_type AS t2
   ON t1.typbasetype = t2.oid
 WHERE
   t1.typtype = 'd' AND
@@ -391,7 +400,8 @@ SELECT
   t2.typname
 FROM
   pg_type AS t1
-  LEFT OUTER JOIN pg_type AS t2
+  LEFT OUTER JOIN
+    pg_type AS t2
   ON t1.typbasetype = t2.oid
 WHERE
   t1.typtype = 'd' AND
@@ -556,7 +566,8 @@ SELECT
   t.typanalyze
 FROM
   pg_type AS d
-  INNER JOIN pg_type AS t
+  INNER JOIN
+    pg_type AS t
   ON d.typbasetype = t.oid
 WHERE
   d.typanalyze <> t.typanalyze;
@@ -567,7 +578,8 @@ SELECT
   t.typanalyze
 FROM
   pg_type AS t
-  LEFT OUTER JOIN pg_range AS r
+  LEFT OUTER JOIN
+    pg_range AS r
   ON t.oid = r.rngtypid
 WHERE
   t.typbasetype = 0 AND
@@ -593,7 +605,10 @@ SELECT
 FROM
   pg_class AS c1
 WHERE
-  relkind NOT IN ('r', 'i', 'S', 't', 'v', 'm', 'c', 'f', 'p', 'I') OR
+  relkind
+  NOT IN (
+    'r', 'i', 'S', 't', 'v', 'm', 'c', 'f', 'p', 'I'
+  ) OR
   relpersistence NOT IN ('p', 'u', 't') OR
   relreplident NOT IN ('d', 'n', 'f', 'i');
 
@@ -622,7 +637,8 @@ SELECT
   pa.amtype
 FROM
   pg_class AS pc
-  INNER JOIN pg_am AS pa
+  INNER JOIN
+    pg_am AS pa
   ON pc.relam = pa.oid
 WHERE
   pc.relkind IN ('i', 'I') AND pa.amtype <> 'i';
@@ -634,7 +650,8 @@ SELECT
   pa.amtype
 FROM
   pg_class AS pc
-  INNER JOIN pg_am AS pa
+  INNER JOIN
+    pg_am AS pa
   ON pc.relam = pa.oid
 WHERE
   pc.relkind IN ('r', 't', 'm') AND pa.amtype <> 't';
@@ -706,7 +723,8 @@ WHERE
   is_catalog_text_unique_index_oid(indexrelid) <>
   (indisunique AND
   indexrelid < 16384 AND
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     pg_attribute
@@ -731,7 +749,8 @@ SELECT
   t.typcollation
 FROM
   pg_range AS r
-  INNER JOIN pg_type AS t
+  INNER JOIN
+    pg_type AS t
   ON t.oid = r.rngsubtype
 WHERE
   (rngcollation = 0) <> (typcollation = 0);
@@ -743,14 +762,16 @@ SELECT
   o.opcname
 FROM
   pg_range AS r
-  INNER JOIN pg_opclass AS o
+  INNER JOIN
+    pg_opclass AS o
   ON o.oid = r.rngsubopc
 WHERE
   o.opcmethod <> 403 OR
   o.opcintype <> r.rngsubtype AND
   NOT (o.opcintype =
   CAST('pg_catalog.anyarray' AS REGTYPE) AND
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     pg_catalog.pg_type
@@ -766,7 +787,8 @@ SELECT
   p.proname
 FROM
   pg_range AS r
-  INNER JOIN pg_proc AS p
+  INNER JOIN
+    pg_proc AS p
   ON p.oid = r.rngcanonical
 WHERE
   pronargs <> 1 OR
@@ -779,7 +801,8 @@ SELECT
   p.proname
 FROM
   pg_range AS r
-  INNER JOIN pg_proc AS p
+  INNER JOIN
+    pg_proc AS p
   ON p.oid = r.rngsubdiff
 WHERE
   pronargs <> 2 OR
@@ -912,13 +935,15 @@ WHERE
   'pg_brin_minmax_multi_summary',
   'xml']
   AS REGTYPE[])) AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_type AS u
   WHERE
     u.typarray = t.oid) AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_attribute AS a

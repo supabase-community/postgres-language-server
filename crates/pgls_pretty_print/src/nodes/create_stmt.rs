@@ -171,7 +171,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
         // Wrap in group for compact formatting of small tables
         let has_content = !n.table_elts.is_empty() || !n.constraints.is_empty();
 
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
@@ -248,7 +248,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
     // Add ON COMMIT clause if specified
     // OncommitNoop = 1 should not emit anything
     if n.oncommit > 1 {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
         e.token(TokenKind::COMMIT_KW);
@@ -276,7 +276,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
 
     // Add tablespace if specified
     if !n.tablespacename.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TABLESPACE_KW);
         e.space();
         e.token(TokenKind::IDENT(n.tablespacename.clone()));

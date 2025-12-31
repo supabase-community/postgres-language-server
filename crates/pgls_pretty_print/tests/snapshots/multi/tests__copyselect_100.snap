@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/copyselect_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/copyselect.sql
 snapshot_kind: text
 ---
 CREATE TABLE test1 (id serial, t TEXT);
@@ -50,7 +50,8 @@ FROM
   (SELECT t FROM test1 WHERE id = 1
   UNION
   SELECT * FROM v_test1
-  ORDER BY 1) AS t1)
+  ORDER BY 1)
+  AS t1)
 TO STDOUT;
 
 COPY (SELECT t FROM test1 WHERE id = 1) TO STDOUT WITH (FORMAT 'csv', HEADER, FORCE_QUOTE (t));

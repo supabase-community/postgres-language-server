@@ -2,7 +2,7 @@ use pgls_query::protobuf::{CoercionForm, RowExpr};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::node_list::emit_comma_separated_list;
@@ -25,7 +25,7 @@ pub(super) fn emit_row_expr(e: &mut EventEmitter, n: &RowExpr) {
     e.token(TokenKind::R_PAREN);
 
     if !n.colnames.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::AS_KW);
         e.space();
         e.token(TokenKind::L_PAREN);

@@ -2,7 +2,7 @@ use pgls_query::protobuf::PrepareStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 
@@ -19,7 +19,7 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
 
     // Argument types
     if !n.argtypes.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.argtypes, super::emit_node);
         e.token(TokenKind::R_PAREN);
@@ -27,7 +27,7 @@ pub(super) fn emit_prepare_stmt(e: &mut EventEmitter, n: &PrepareStmt) {
 
     // AS query
     if let Some(ref query) = n.query {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::AS_KW);
         e.space();
         super::emit_node(query, e);

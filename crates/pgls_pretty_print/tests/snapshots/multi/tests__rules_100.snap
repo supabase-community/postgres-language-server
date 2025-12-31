@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/rules_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/rules.sql
 snapshot_kind: text
 ---
 CREATE TABLE rtest_t1 (a INT, b INT);
@@ -82,7 +82,8 @@ DO
 
 CREATE TABLE rtest_emp (ename CHAR(20), salary NUMERIC);
 
-CREATE TABLE rtest_emplog (
+CREATE TABLE rtest_emplog
+(
   ename CHAR(20),
   who NAME,
   action CHAR(10),

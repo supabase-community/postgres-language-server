@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/update_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/update.sql
 snapshot_kind: text
 ---
 CREATE TABLE update_test (a INT DEFAULT 10, b INT, c TEXT);
@@ -113,7 +113,9 @@ VALUES
 WITH aaa AS (SELECT 1 AS a, 'Foo' AS b)
 INSERT INTO upsert_test
 VALUES (1, 'Bar')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT b, a FROM aaa)
 RETURNING *;
@@ -122,7 +124,9 @@ INSERT INTO upsert_test
 VALUES
   (1, 'Baz'),
   (3, 'Zaz')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT
   b || ', Correlated',
@@ -137,7 +141,9 @@ INSERT INTO upsert_test
 VALUES
   (1, 'Bat'),
   (3, 'Zot')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT
   b || ', Excluded',
@@ -150,7 +156,9 @@ RETURNING *;
 
 INSERT INTO upsert_test
 VALUES (2, 'Beeble')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT
   b || ', Excluded',
@@ -166,7 +174,9 @@ xmax = 0 AS xmax_correct;
 
 INSERT INTO upsert_test
 VALUES (2, 'Brox')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT
   b || ', Excluded',
@@ -185,7 +195,8 @@ DROP TABLE "update_test";
 
 DROP TABLE "upsert_test";
 
-CREATE TABLE upsert_test (a INT PRIMARY KEY, b TEXT)
+CREATE TABLE upsert_test
+(a INT PRIMARY KEY, b TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE upsert_test_1 PARTITION OF upsert_test FOR VALUES IN (1);
@@ -204,7 +215,9 @@ VALUES
 WITH aaa AS (SELECT 1 AS a, 'Foo' AS b)
 INSERT INTO upsert_test
 VALUES (1, 'Bar')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT b, a FROM aaa)
 RETURNING *;
@@ -214,7 +227,9 @@ INSERT INTO upsert_test
 VALUES
   (1, 'Bar'),
   (2, 'Baz')
-ON CONFLICT (a) DO
+ON CONFLICT
+(a)
+DO
 UPDATE
 SET (b, a) = (SELECT
   upsert_test.b || cteb,
@@ -225,7 +240,8 @@ RETURNING *;
 
 DROP TABLE "upsert_test";
 
-CREATE TABLE range_parted (a TEXT, b BIGINT, c NUMERIC, d INT, e VARCHAR)
+CREATE TABLE range_parted
+(a TEXT, b BIGINT, c NUMERIC, d INT, e VARCHAR)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE part_b_20_b_30 (e VARCHAR, c NUMERIC, a TEXT, b BIGINT, d INT);
@@ -235,7 +251,8 @@ ALTER TABLE range_parted
   part_b_20_b_30
   FOR VALUES FROM ('b', 20) TO ('b', 30);
 
-CREATE TABLE part_b_10_b_20 (e VARCHAR, c NUMERIC, a TEXT, b BIGINT, d INT)
+CREATE TABLE part_b_10_b_20
+(e VARCHAR, c NUMERIC, a TEXT, b BIGINT, d INT)
 PARTITION BY RANGE(c);
 
 CREATE TABLE part_b_1_b_10 PARTITION OF range_parted FOR VALUES FROM ('b', 1) TO ('b', 10);
@@ -251,7 +268,8 @@ CREATE TABLE part_a_1_a_10 PARTITION OF range_parted FOR VALUES FROM ('a', 1) TO
 
 UPDATE part_b_10_b_20 SET b = b - 6;
 
-CREATE TABLE part_c_100_200 (e VARCHAR, c NUMERIC, a TEXT, b BIGINT, d INT)
+CREATE TABLE part_c_100_200
+(e VARCHAR, c NUMERIC, a TEXT, b BIGINT, d INT)
 PARTITION BY RANGE((abs(d)));
 
 ALTER TABLE part_c_100_200
@@ -312,7 +330,8 @@ AS SELECT
 FROM
   range_parted
 WHERE
-  (SELECT c > c1 FROM mintab) WITH CASCADED CHECK OPTION;
+  (SELECT c > c1 FROM mintab)
+WITH CASCADED CHECK OPTION;
 
 UPDATE upview SET c = 199 WHERE b = 4;
 
@@ -340,7 +359,8 @@ AS '
 ';
 
 CREATE TRIGGER trans_updatetrig
-AFTER UPDATE ON range_parted
+AFTER UPDATE
+ON range_parted
 REFERENCING OLD TABLE AS old_table
 NEW TABLE AS new_table
 FOR EACH STATEMENT
@@ -352,13 +372,15 @@ WHERE
   a = 'b' AND b > 10 AND c >= 96;
 
 CREATE TRIGGER trans_deletetrig
-AFTER DELETE ON range_parted
+AFTER DELETE
+ON range_parted
 REFERENCING OLD TABLE AS old_table
 FOR EACH STATEMENT
 EXECUTE FUNCTION trans_updatetrigfunc();
 
 CREATE TRIGGER trans_inserttrig
-AFTER INSERT ON range_parted
+AFTER INSERT
+ON range_parted
 REFERENCING NEW TABLE AS new_table
 FOR EACH STATEMENT
 EXECUTE FUNCTION trans_updatetrigfunc();
@@ -379,17 +401,20 @@ END '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER trig_c1_100
-BEFORE INSERT OR UPDATE ON part_c_1_100
+BEFORE INSERT OR UPDATE
+ON part_c_1_100
 FOR EACH ROW
 EXECUTE FUNCTION func_parted_mod_b();
 
 CREATE TRIGGER trig_d1_15
-BEFORE INSERT OR UPDATE ON part_d_1_15
+BEFORE INSERT OR UPDATE
+ON part_d_1_15
 FOR EACH ROW
 EXECUTE FUNCTION func_parted_mod_b();
 
 CREATE TRIGGER trig_d15_20
-BEFORE INSERT OR UPDATE ON part_d_15_20
+BEFORE INSERT OR UPDATE
+ON part_d_15_20
 FOR EACH ROW
 EXECUTE FUNCTION func_parted_mod_b();
 
@@ -445,7 +470,8 @@ END '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER trig_d_1_15
-BEFORE INSERT ON part_d_1_15
+BEFORE INSERT
+ON part_d_1_15
 FOR EACH ROW
 EXECUTE FUNCTION func_d_1_15();
 
@@ -528,62 +554,74 @@ AS '
 ';
 
 CREATE TRIGGER parent_delete_trig
-AFTER DELETE ON range_parted
+AFTER DELETE
+ON range_parted
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER parent_update_trig
-AFTER UPDATE ON range_parted
+AFTER UPDATE
+ON range_parted
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER parent_insert_trig
-AFTER INSERT ON range_parted
+AFTER INSERT
+ON range_parted
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER c1_delete_trig
-AFTER DELETE ON part_c_1_100
+AFTER DELETE
+ON part_c_1_100
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER c1_update_trig
-AFTER UPDATE ON part_c_1_100
+AFTER UPDATE
+ON part_c_1_100
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER c1_insert_trig
-AFTER INSERT ON part_c_1_100
+AFTER INSERT
+ON part_c_1_100
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER d1_delete_trig
-AFTER DELETE ON part_d_1_15
+AFTER DELETE
+ON part_d_1_15
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER d1_update_trig
-AFTER UPDATE ON part_d_1_15
+AFTER UPDATE
+ON part_d_1_15
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER d1_insert_trig
-AFTER INSERT ON part_d_1_15
+AFTER INSERT
+ON part_d_1_15
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER d15_delete_trig
-AFTER DELETE ON part_d_15_20
+AFTER DELETE
+ON part_d_15_20
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER d15_update_trig
-AFTER UPDATE ON part_d_15_20
+AFTER UPDATE
+ON part_d_15_20
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
 CREATE TRIGGER d15_insert_trig
-AFTER INSERT ON part_d_15_20
+AFTER INSERT
+ON part_d_15_20
 FOR EACH STATEMENT
 EXECUTE FUNCTION trigfunc();
 
@@ -633,7 +671,8 @@ UPDATE range_parted SET a = 'b' WHERE a = 'bd';
 
 DROP TABLE "range_parted";
 
-CREATE TABLE list_parted (a TEXT, b INT)
+CREATE TABLE list_parted
+(a TEXT, b INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE list_part1 PARTITION OF list_parted FOR VALUES IN ('a', 'b');
@@ -650,7 +689,8 @@ UPDATE list_default SET a = 'x' WHERE a = 'd';
 
 DROP TABLE "list_parted";
 
-CREATE TABLE utrtest (a INT, b TEXT)
+CREATE TABLE utrtest
+(a INT, b TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE utr1 (a INT CHECK (a IN (1)), q TEXT, b TEXT);
@@ -688,7 +728,8 @@ UPDATE utrtest
 SET b = b || b
 FROM (VALUES
   (1),
-  (2)) AS s (x)
+  (2))
+AS s (x)
 WHERE
   a = s.x
 RETURNING *,
@@ -700,7 +741,8 @@ UPDATE utrtest
 SET a = 3 - a
 FROM (VALUES
   (1),
-  (2)) AS s (x)
+  (2))
+AS s (x)
 WHERE
   a = s.x
 RETURNING *,
@@ -712,7 +754,8 @@ UPDATE utrtest
 SET a = 3 - a
 FROM (VALUES
   (1),
-  (2)) AS s (x)
+  (2))
+AS s (x)
 WHERE
   a = s.x
 RETURNING *,
@@ -726,7 +769,8 @@ AS xmax_ok;
 
 DROP TABLE "utrtest";
 
-CREATE TABLE list_parted (a NUMERIC, b INT, c BIGINT)
+CREATE TABLE list_parted
+(a NUMERIC, b INT, c BIGINT)
 PARTITION BY LIST(a);
 
 CREATE TABLE sub_parted PARTITION OF list_parted FOR VALUES IN (1) PARTITION BY LIST(b);
@@ -775,7 +819,8 @@ END '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER parted_mod_b
-BEFORE UPDATE ON sub_part1
+BEFORE UPDATE
+ON sub_part1
 FOR EACH ROW
 EXECUTE FUNCTION func_parted_mod_b();
 
@@ -797,7 +842,8 @@ END '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER trig_skip_delete
-BEFORE DELETE ON sub_part2
+BEFORE DELETE
+ON sub_part2
 FOR EACH ROW
 EXECUTE FUNCTION func_parted_mod_b();
 
@@ -847,7 +893,8 @@ CREATE OPERATOR CLASS custom_opclass
   AS OPERATOR 1 =,
   FUNCTION 2 dummy_hashint4(INT, BIGINT);
 
-CREATE TABLE hash_parted (a INT, b INT)
+CREATE TABLE hash_parted
+(a INT, b INT)
 PARTITION BY HASH(a custom_opclass,
 b custom_opclass);
 

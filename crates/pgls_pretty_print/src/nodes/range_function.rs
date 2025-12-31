@@ -1,7 +1,7 @@
 use pgls_query::protobuf::RangeFunction;
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
 
@@ -64,7 +64,7 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
     }
 
     if n.ordinality {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::ORDINALITY_KW);
@@ -76,27 +76,40 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
     if let Some(ref alias) = n.alias {
         if !n.coldeflist.is_empty() {
             // Has both alias and coldeflist - emit alias name first, then coldeflist
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::AS_KW);
             e.space();
             super::emit_identifier_maybe_quoted(e, &alias.aliasname);
-            e.space();
+            // Allow line break before column definition list for narrow widths
+            e.line(LineType::SoftOrSpace);
+            e.group_start(GroupKind::List);
             e.token(TokenKind::L_PAREN);
+            e.line(LineType::Soft);
+            e.indent_start();
             emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+            e.indent_end();
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
+            e.group_end();
         } else {
             // Just alias with potential colnames - use emit_alias
-            e.space();
+            e.line(LineType::SoftOrSpace);
             super::emit_alias(e, alias);
         }
     } else if !n.coldeflist.is_empty() {
         // No alias but has coldeflist - emit with AS
         e.space();
         e.token(TokenKind::AS_KW);
-        e.space();
+        e.line(LineType::SoftOrSpace);
+        e.group_start(GroupKind::List);
         e.token(TokenKind::L_PAREN);
+        e.line(LineType::Soft);
+        e.indent_start();
         emit_comma_separated_list(e, &n.coldeflist, super::emit_node);
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
+        e.group_end();
     }
 
     e.group_end();

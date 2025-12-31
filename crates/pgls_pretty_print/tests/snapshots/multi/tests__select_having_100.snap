@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/select_having_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/select_having.sql
 snapshot_kind: text
 ---
 CREATE TABLE test_having (a INT, b INT, c CHAR(8), d CHAR(1));

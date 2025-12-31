@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/txid_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/txid.sql
 snapshot_kind: text
 ---
 SELECT CAST('12:13:' AS TXID_SNAPSHOT);

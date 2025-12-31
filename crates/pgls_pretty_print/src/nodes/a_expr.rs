@@ -250,7 +250,7 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
         super::emit_node(lexpr, e);
-        e.space();
+        e.line(LineType::SoftOrSpace);
     }
 
     let is_not = extract_simple_operator(&n.name)
@@ -272,7 +272,11 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
             Some(NodeEnum::SubLink(_)) => super::emit_node(rexpr, e),
             _ => {
                 e.token(TokenKind::L_PAREN);
+                e.indent_start();
+                e.line(LineType::Soft);
                 super::emit_node(rexpr, e);
+                e.indent_end();
+                e.line(LineType::Soft);
                 e.token(TokenKind::R_PAREN);
             }
         }
@@ -378,7 +382,7 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
         super::emit_node(lexpr, e);
-        e.space();
+        e.line(LineType::SoftOrSpace);
     }
 
     e.token(TokenKind::BETWEEN_KW);
@@ -391,7 +395,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
                 super::emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
                 super::emit_node(&list.items[1], e);
@@ -406,7 +410,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
         super::emit_node(lexpr, e);
-        e.space();
+        e.line(LineType::SoftOrSpace);
     }
 
     e.token(TokenKind::NOT_KW);
@@ -421,7 +425,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
                 super::emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
                 super::emit_node(&list.items[1], e);
@@ -436,7 +440,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
         super::emit_node(lexpr, e);
-        e.space();
+        e.line(LineType::SoftOrSpace);
     }
 
     e.token(TokenKind::BETWEEN_KW);
@@ -451,7 +455,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
                 super::emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
                 super::emit_node(&list.items[1], e);
@@ -466,7 +470,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
 fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
         super::emit_node(lexpr, e);
-        e.space();
+        e.line(LineType::SoftOrSpace);
     }
 
     e.token(TokenKind::NOT_KW);
@@ -483,7 +487,7 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
                 super::emit_node(&list.items[0], e);
             }
             if list.items.len() >= 2 {
-                e.space();
+                e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
                 super::emit_node(&list.items[1], e);
@@ -544,9 +548,20 @@ fn operator_needs_space(op: &str) -> bool {
 
 fn operator_prefers_line_break(name: &[Node]) -> bool {
     match extract_simple_operator(name) {
+        // Comparison operators
         Some("=") | Some("<>") | Some("!=") | Some("<") | Some(">") | Some("<=") | Some(">=")
-        | Some("||") | Some("AND") | Some("and") | Some("OR") | Some("or") => true,
-        _ => false,
+        // Logical operators
+        | Some("||") | Some("AND") | Some("and") | Some("OR") | Some("or")
+        // Arithmetic operators - allow breaking around these for narrow widths
+        | Some("+") | Some("-") | Some("*") | Some("/") | Some("%") | Some("^")
+        // Bitwise operators
+        | Some("&") | Some("|") | Some("#") | Some("~") | Some("<<") | Some(">>")
+        // Other common operators
+        | Some("@") | Some("@@") | Some("->") | Some("->>") | Some("#>") | Some("#>>")
+        | Some("?") | Some("?|") | Some("?&") | Some("@>") | Some("<@") | Some("&&") => true,
+        // For any other operator, still allow line breaks - they're likely user-defined
+        // and we want consistent formatting behavior
+        _ => true,
     }
 }
 

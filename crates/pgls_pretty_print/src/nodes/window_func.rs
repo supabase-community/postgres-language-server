@@ -2,7 +2,7 @@ use pgls_query::protobuf::WindowFunc;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
     nodes::node_list::emit_comma_separated_list,
 };
 
@@ -31,7 +31,7 @@ pub(super) fn emit_window_func(e: &mut EventEmitter, n: &WindowFunc) {
     e.token(TokenKind::R_PAREN);
 
     if let Some(ref filter) = n.aggfilter {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FILTER_KW);
         e.space();
         e.token(TokenKind::L_PAREN);
@@ -40,7 +40,7 @@ pub(super) fn emit_window_func(e: &mut EventEmitter, n: &WindowFunc) {
         e.token(TokenKind::R_PAREN);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::OVER_KW);
     e.space();
     e.token(TokenKind::L_PAREN);

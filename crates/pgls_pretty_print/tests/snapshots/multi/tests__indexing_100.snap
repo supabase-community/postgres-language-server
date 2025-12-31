@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/indexing_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/indexing.sql
 snapshot_kind: text
 ---
-CREATE TABLE idxpart (a INT, b INT, c TEXT)
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX "idxpart_idx"
@@ -50,9 +51,11 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_class
-  LEFT OUTER JOIN pg_index AS ix
+  LEFT OUTER JOIN
+    pg_index AS ix
   ON indexrelid = oid
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON ix.indexrelid = inhrelid
 WHERE
   relname LIKE 'idxpart%'
@@ -60,7 +63,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT, c TEXT)
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (10);
@@ -74,7 +78,8 @@ USING btree
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (col1 INT)
+CREATE TABLE idxpart
+(col1 INT)
 PARTITION BY RANGE(col1);
 
 CREATE INDEX
@@ -90,7 +95,8 @@ SELECT col2 FROM idxpart_two AS fk LEFT OUTER JOIN idxpart AS pk ON col1 = col2;
 
 DROP TABLE "idxpart", "idxpart_two";
 
-CREATE TABLE idxpart (a INT, b TEXT, c INT)
+CREATE TABLE idxpart
+(a INT, b TEXT, c INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (minvalue) TO (maxvalue);
@@ -111,7 +117,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT, c TEXT)
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX "idxparti"
@@ -172,7 +179,8 @@ ALTER TABLE idxpart_c
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (10, 10);
@@ -200,9 +208,11 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_class
-  LEFT OUTER JOIN pg_index AS ix
+  LEFT OUTER JOIN
+    pg_index AS ix
   ON indexrelid = oid
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON ix.indexrelid = inhrelid
 WHERE
   relname LIKE 'idxpart%'
@@ -210,7 +220,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX
@@ -243,7 +254,8 @@ SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY rel
 
 DROP TABLE "idxpart";
 
-CREATE TEMPORARY TABLE idxpart_temp (a INT)
+CREATE TEMPORARY TABLE idxpart_temp
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX
@@ -263,7 +275,8 @@ SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart_temp%' ORDER B
 
 DROP TABLE "idxpart_temp";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (10, 10);
@@ -367,7 +380,8 @@ FROM
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%';
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (a INT, b INT);
@@ -416,7 +430,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100);
@@ -454,7 +469,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -470,7 +486,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -493,7 +510,8 @@ ALTER INDEX idxpart2_a_idx
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT, c TEXT, d BOOLEAN)
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT, d BOOLEAN)
 PARTITION BY RANGE(a);
 
 CREATE INDEX "idxparti"
@@ -519,9 +537,11 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_class
-  LEFT OUTER JOIN pg_index AS ix
+  LEFT OUTER JOIN
+    pg_index AS ix
   ON indexrelid = oid
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON ix.indexrelid = inhrelid
 WHERE
   relname LIKE 'idxpart%'
@@ -537,9 +557,11 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_class
-  LEFT OUTER JOIN pg_index AS ix
+  LEFT OUTER JOIN
+    pg_index AS ix
   ON indexrelid = oid
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON ix.indexrelid = inhrelid
 WHERE
   relname LIKE 'idxpart%'
@@ -560,9 +582,11 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_class
-  LEFT OUTER JOIN pg_index AS ix
+  LEFT OUTER JOIN
+    pg_index AS ix
   ON indexrelid = oid
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON ix.indexrelid = inhrelid
 WHERE
   relname LIKE 'idxpart%'
@@ -583,9 +607,11 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_class
-  LEFT OUTER JOIN pg_index AS ix
+  LEFT OUTER JOIN
+    pg_index AS ix
   ON indexrelid = oid
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON ix.indexrelid = inhrelid
 WHERE
   relname LIKE 'idxpart%'
@@ -593,7 +619,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (1) TO (1000) PARTITION BY RANGE(a);
@@ -658,7 +685,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -715,7 +743,8 @@ DROP TABLE "idxpart", "idxpart1", "idxpart2", "idxpart3";
 
 SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY relname;
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -768,7 +797,8 @@ DROP TABLE "idxpart", "idxpart1", "idxpart2", "idxpart3";
 
 SELECT relname, relkind FROM pg_class WHERE relname LIKE 'idxpart%' ORDER BY relname;
 
-CREATE TABLE idxpart (a INT, b INT, c INT)
+CREATE TABLE idxpart
+(a INT, b INT, c INT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX
@@ -791,7 +821,8 @@ ALTER TABLE idxpart2
 
 DROP TABLE "idxpart", "idxpart2";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -835,7 +866,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a TEXT)
+CREATE TABLE idxpart
+(a TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -888,7 +920,8 @@ SELECT
   pg_get_indexdef AS childdef
 FROM
   pg_class
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON inhrelid = oid,
   LATERAL pg_get_indexdef(pg_class.oid)
 WHERE
@@ -897,7 +930,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a TEXT)
+CREATE TABLE idxpart
+(a TEXT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -936,7 +970,8 @@ SELECT
   pg_get_indexdef AS childdef
 FROM
   pg_class
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON inhrelid = oid,
   LATERAL pg_get_indexdef(pg_class.oid)
 WHERE
@@ -958,7 +993,8 @@ ALTER INDEX idxpart_a_idx
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (col1 INT, a INT, col2 INT, b INT)
+CREATE TABLE idxpart
+(col1 INT, a INT, col2 INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (b INT, col1 INT, col2 INT, col3 INT, a INT);
@@ -1061,7 +1097,8 @@ SELECT
   pg_get_indexdef AS childdef
 FROM
   pg_class
-  LEFT OUTER JOIN pg_inherits
+  LEFT OUTER JOIN
+    pg_inherits
   ON inhrelid = oid,
   LATERAL pg_get_indexdef(pg_class.oid)
 WHERE
@@ -1070,7 +1107,8 @@ ORDER BY relname;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT, c TEXT)
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX "idxparti"
@@ -1120,7 +1158,8 @@ SELECT
   pg_get_indexdef(indexrelid)
 FROM
   pg_class AS c
-  INNER JOIN pg_index AS i
+  INNER JOIN
+    pg_index AS i
   ON c.oid = i.indexrelid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1128,7 +1167,8 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (col1 INT, col2 INT, a INT, b INT)
+CREATE TABLE idxpart
+(col1 INT, col2 INT, a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (col2 INT, b INT, col1 INT, a INT);
@@ -1181,7 +1221,8 @@ SELECT
   pg_get_indexdef(indexrelid)
 FROM
   pg_class AS c
-  INNER JOIN pg_index AS i
+  INNER JOIN
+    pg_index AS i
   ON c.oid = i.indexrelid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1189,7 +1230,8 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (col1 INT, a INT, col3 INT, b INT)
+CREATE TABLE idxpart
+(col1 INT, a INT, col3 INT, b INT)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1241,7 +1283,8 @@ SELECT
   pg_get_indexdef(indexrelid)
 FROM
   pg_class AS c
-  INNER JOIN pg_index AS i
+  INNER JOIN
+    pg_index AS i
   ON c.oid = i.indexrelid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1267,7 +1310,8 @@ USING btree
   col_keep
 );
 
-CREATE TABLE idxpart (col_keep INT)
+CREATE TABLE idxpart
+(col_keep INT)
 PARTITION BY RANGE(col_keep);
 
 CREATE INDEX
@@ -1295,7 +1339,8 @@ ORDER BY CAST(attrelid AS REGCLASS),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (drop_1 INT, drop_2 INT, col_keep INT, drop_3 INT)
+CREATE TABLE idxpart
+(drop_1 INT, drop_2 INT, col_keep INT, drop_3 INT)
 PARTITION BY RANGE(col_keep);
 
 ALTER TABLE idxpart
@@ -1341,88 +1386,96 @@ ORDER BY CAST(attrelid AS REGCLASS),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT PRIMARY KEY, b INT)
+CREATE TABLE idxpart
+(a INT PRIMARY KEY, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE failpart PARTITION OF idxpart ( b PRIMARY KEY ) FOR VALUES FROM (0) TO (100);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1pk PARTITION OF idxpart ( a PRIMARY KEY ) FOR VALUES FROM (0) TO (100);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT UNIQUE, b INT)
+CREATE TABLE idxpart
+(a INT UNIQUE, b INT)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE idxpart (a INT, b INT UNIQUE)
+CREATE TABLE idxpart
+(a INT, b INT UNIQUE)
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE idxpart (a INT PRIMARY KEY, b INT)
+CREATE TABLE idxpart
+(a INT PRIMARY KEY, b INT)
 PARTITION BY RANGE(b, a);
 
-CREATE TABLE idxpart (a INT, b INT PRIMARY KEY)
+CREATE TABLE idxpart
+(a INT, b INT PRIMARY KEY)
 PARTITION BY RANGE(b, a);
 
-CREATE TABLE idxpart (a INT, b INT, c TEXT, PRIMARY KEY (a, b, c))
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT, PRIMARY KEY (a, b, c))
 PARTITION BY RANGE(b, c, a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, EXCLUDE USING gist (a WITH =))
+CREATE TABLE idxpart
+(a INT4RANGE, EXCLUDE USING gist (a WITH =))
 PARTITION BY RANGE(a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =))
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =))
 PARTITION BY RANGE(a, b);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =))
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =))
 PARTITION BY RANGE(a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =))
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =))
 PARTITION BY RANGE(a, b);
 
-CREATE TABLE idxpart (a INT4RANGE, EXCLUDE USING gist (a WITH -|-))
+CREATE TABLE idxpart
+(a INT4RANGE, EXCLUDE USING gist (a WITH -|-))
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH &&))
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH &&))
 PARTITION BY RANGE(a);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
-  c INT4RANGE,
-  EXCLUDE USING gist (b WITH =, c WITH &&)
-)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, c INT4RANGE, EXCLUDE USING gist (b WITH =, c WITH &&))
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart (
-  a INT4RANGE,
-  b INT4RANGE,
-  c INT4RANGE,
-  EXCLUDE USING gist (a WITH =, b WITH =, c WITH &&)
-)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, c INT4RANGE, EXCLUDE USING gist (a WITH =, b WITH =, c WITH &&))
 PARTITION BY RANGE(a, b);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT PRIMARY KEY, b INT)
+CREATE TABLE idxpart
+(a INT PRIMARY KEY, b INT)
 PARTITION BY RANGE((b + a));
 
-CREATE TABLE idxpart (a INT UNIQUE, b INT)
+CREATE TABLE idxpart
+(a INT UNIQUE, b INT)
 PARTITION BY RANGE((b + a));
 
-CREATE TABLE idxpart (a INT, b INT, c TEXT)
+CREATE TABLE idxpart
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1435,7 +1488,8 @@ CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0, 0) TO (1000, 1000
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1446,7 +1500,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1454,7 +1509,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1462,7 +1518,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1470,7 +1527,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1478,7 +1536,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1486,7 +1545,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1494,7 +1554,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE, c INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, c INT4RANGE)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart
@@ -1502,7 +1563,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT4RANGE, b INT4RANGE, c INT4RANGE)
+CREATE TABLE idxpart
+(a INT4RANGE, b INT4RANGE, c INT4RANGE)
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1510,7 +1572,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart
+(a INT, b INT, PRIMARY KEY (a, b))
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (1, 1) TO (10, 10);
@@ -1545,17 +1608,20 @@ ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT, PRIMARY KEY (a))
+CREATE TABLE idxpart
+(a INT, b INT, PRIMARY KEY (a))
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart2 PARTITION OF idxpart FOR VALUES FROM (0) TO (1000) PARTITION BY RANGE(b);
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT UNIQUE, b INT)
+CREATE TABLE idxpart
+(a INT UNIQUE, b INT)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (a INT NOT NULL, b INT, UNIQUE (a, b))
+CREATE TABLE idxpart1
+(a INT NOT NULL, b INT, UNIQUE (a, b))
 PARTITION BY RANGE(a, b);
 
 ALTER TABLE idxpart
@@ -1564,7 +1630,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart", "idxpart1";
 
-CREATE TABLE idxpart (a INT, b INT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart
+(a INT, b INT, PRIMARY KEY (a, b))
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart2 PARTITION OF idxpart FOR VALUES FROM (0) TO (1000) PARTITION BY RANGE(b);
@@ -1586,7 +1653,8 @@ ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (i INT)
+CREATE TABLE idxpart
+(i INT)
 PARTITION BY HASH(i);
 
 CREATE TABLE idxpart0 PARTITION OF idxpart ( i ) FOR VALUES WITH (MODULUS 2, REMAINDER 0);
@@ -1611,9 +1679,11 @@ SELECT
   convalidated
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
-  LEFT OUTER JOIN pg_constraint AS con
+  LEFT OUTER JOIN
+    pg_constraint AS con
   ON idx.indexrelid = con.conindid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1644,9 +1714,11 @@ SELECT
   convalidated
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
-  LEFT OUTER JOIN pg_constraint AS con
+  LEFT OUTER JOIN
+    pg_constraint AS con
   ON idx.indexrelid = con.conindid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1654,7 +1726,8 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (c1 INT PRIMARY KEY, c2 INT, c3 VARCHAR(10))
+CREATE TABLE idxpart
+(c1 INT PRIMARY KEY, c2 INT, c3 VARCHAR(10))
 PARTITION BY RANGE(c1);
 
 CREATE TABLE idxpart1 (LIKE idxpart);
@@ -1668,10 +1741,12 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart", "idxpart1";
 
-CREATE TABLE idxpart (a INT, b INT, PRIMARY KEY (a))
+CREATE TABLE idxpart
+(a INT, b INT, PRIMARY KEY (a))
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1 (a INT NOT NULL, b INT)
+CREATE TABLE idxpart1
+(a INT NOT NULL, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart11 (a INT NOT NULL, b INT PRIMARY KEY);
@@ -1686,7 +1761,8 @@ ALTER TABLE idxpart
 
 DROP TABLE "idxpart", "idxpart1", "idxpart11";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart0 (LIKE idxpart);
@@ -1713,9 +1789,11 @@ SELECT
   convalidated
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
-  LEFT OUTER JOIN pg_constraint AS con
+  LEFT OUTER JOIN
+    pg_constraint AS con
   ON idx.indexrelid = con.conindid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1737,9 +1815,11 @@ SELECT
   convalidated
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
-  LEFT OUTER JOIN pg_constraint AS con
+  LEFT OUTER JOIN
+    pg_constraint AS con
   ON idx.indexrelid = con.conindid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1747,7 +1827,8 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart0 (LIKE idxpart);
@@ -1774,7 +1855,8 @@ ALTER INDEX idxpart_pkey
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (a INT NOT NULL, b INT);
@@ -1805,9 +1887,11 @@ SELECT
   convalidated
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
-  LEFT OUTER JOIN pg_constraint AS con
+  LEFT OUTER JOIN
+    pg_constraint AS con
   ON idx.indexrelid = con.conindid
 WHERE
   CAST(CAST(indrelid AS REGCLASS) AS TEXT) LIKE 'idxpart%'
@@ -1815,7 +1899,8 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b INT)
+CREATE TABLE idxpart
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 (a INT NOT NULL, b INT);
@@ -1840,7 +1925,8 @@ ALTER INDEX idxpart_pkey
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b TEXT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart
+(a INT, b TEXT, PRIMARY KEY (a, b))
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100000);
@@ -1873,7 +1959,8 @@ INSERT INTO idxpart SELECT 2 ^ g, format('two to power of %s', g) FROM generate_
 
 INSERT INTO idxpart VALUES (16, 'sixteen');
 
-INSERT INTO idxpart (b, a)
+INSERT INTO idxpart
+(b, a)
 VALUES
   ('one', 142857),
   ('two', 285714);
@@ -1888,7 +1975,8 @@ SELECT CAST(tableoid AS REGCLASS), * FROM idxpart ORDER BY a;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT, b TEXT, c INT[])
+CREATE TABLE idxpart
+(a INT, b TEXT, c INT[])
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100000);
@@ -1932,7 +2020,8 @@ RESET enable_seqscan;
 
 DROP TABLE "idxpart";
 
-CREATE TABLE idxpart (a INT)
+CREATE TABLE idxpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart1 PARTITION OF idxpart FOR VALUES FROM (0) TO (100);
@@ -1968,12 +2057,14 @@ USING btree
   a
 );
 
-CREATE TABLE idxpart_another (a INT, b INT, PRIMARY KEY (a, b))
+CREATE TABLE idxpart_another
+(a INT, b INT, PRIMARY KEY (a, b))
 PARTITION BY RANGE(a);
 
 CREATE TABLE idxpart_another_1 PARTITION OF idxpart_another FOR VALUES FROM (0) TO (100);
 
-CREATE TABLE idxpart3 (c INT, b INT, a INT)
+CREATE TABLE idxpart3
+(c INT, b INT, a INT)
 PARTITION BY RANGE(a);
 
 ALTER TABLE idxpart3
@@ -1992,7 +2083,8 @@ CREATE SCHEMA "regress_indexing";
 
 SET search_path TO regress_indexing;
 
-CREATE TABLE pk (a INT PRIMARY KEY)
+CREATE TABLE pk
+(a INT PRIMARY KEY)
 PARTITION BY RANGE(a);
 
 CREATE TABLE pk1 PARTITION OF pk FOR VALUES FROM (0) TO (1000);
@@ -2017,7 +2109,8 @@ ALTER TABLE pk
   ATTACH PARTITION
   pk4 FOR VALUES FROM (3000) TO (4000);
 
-CREATE TABLE pk5 (LIKE pk)
+CREATE TABLE pk5
+(LIKE pk)
 PARTITION BY RANGE(a);
 
 CREATE TABLE pk51 PARTITION OF pk5 FOR VALUES FROM (4000) TO (4500);
@@ -2030,7 +2123,8 @@ ALTER TABLE pk
 
 RESET search_path;
 
-CREATE TABLE covidxpart (a INT, b INT)
+CREATE TABLE covidxpart
+(a INT, b INT)
 PARTITION BY LIST(a);
 
 CREATE UNIQUE INDEX
@@ -2095,7 +2189,8 @@ USING btree
 )
 INCLUDE (a);
 
-CREATE TABLE parted_pk_detach_test (a INT PRIMARY KEY)
+CREATE TABLE parted_pk_detach_test
+(a INT PRIMARY KEY)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_pk_detach_test1 PARTITION OF parted_pk_detach_test FOR VALUES IN (1);
@@ -2112,7 +2207,8 @@ ALTER TABLE parted_pk_detach_test1
 
 DROP TABLE "parted_pk_detach_test", "parted_pk_detach_test1";
 
-CREATE TABLE parted_uniq_detach_test (a INT UNIQUE)
+CREATE TABLE parted_uniq_detach_test
+(a INT UNIQUE)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_uniq_detach_test1 PARTITION OF parted_uniq_detach_test FOR VALUES IN (1);
@@ -2129,7 +2225,8 @@ ALTER TABLE parted_uniq_detach_test1
 
 DROP TABLE "parted_uniq_detach_test", "parted_uniq_detach_test1";
 
-CREATE TABLE parted_index_col_drop (a INT, b INT, c INT)
+CREATE TABLE parted_index_col_drop
+(a INT, b INT, c INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_index_col_drop1
@@ -2171,7 +2268,8 @@ ALTER TABLE parted_index_col_drop
 
 DROP TABLE "parted_index_col_drop";
 
-CREATE TABLE parted_inval_tab (a INT)
+CREATE TABLE parted_inval_tab
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX "parted_inval_idx"
@@ -2181,7 +2279,8 @@ USING btree
   a
 );
 
-CREATE TABLE parted_inval_tab_1 (a INT)
+CREATE TABLE parted_inval_tab_1
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_inval_tab_1_1 PARTITION OF parted_inval_tab_1 FOR VALUES FROM (0) TO (10);
@@ -2206,7 +2305,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'parted_inval%'
@@ -2214,7 +2314,8 @@ ORDER BY CAST(CAST(indexrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
 DROP TABLE "parted_inval_tab";
 
-CREATE TABLE parted_isvalid_tab (a INT, b INT)
+CREATE TABLE parted_isvalid_tab
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_isvalid_tab_1
@@ -2254,7 +2355,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'parted_isvalid%'
@@ -2264,7 +2366,8 @@ DROP TABLE "parted_isvalid_tab";
 
 BEGIN;
 
-CREATE TABLE parted_replica_tab (id INT NOT NULL)
+CREATE TABLE parted_replica_tab
+(id INT NOT NULL)
 PARTITION BY RANGE(id);
 
 CREATE TABLE parted_replica_tab_1
@@ -2306,7 +2409,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'parted_replica%'
@@ -2324,7 +2428,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'parted_replica%'
@@ -2347,7 +2452,8 @@ SELECT
   CAST(inhparent AS REGCLASS)
 FROM
   pg_index AS idx
-  LEFT OUTER JOIN pg_inherits AS inh
+  LEFT OUTER JOIN
+    pg_inherits AS inh
   ON idx.indexrelid = inh.inhrelid
 WHERE
   CAST(CAST(indexrelid AS REGCLASS) AS TEXT) LIKE 'parted_replica%'

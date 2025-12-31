@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/timestamp_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/timestamp.sql
 snapshot_kind: text
 ---
 CREATE TABLE timestamp_tbl (d1 TIMESTAMP(2));
@@ -260,8 +260,10 @@ FROM
     ('minute', '1 m'),
     ('second', '1 s'),
     ('millisecond', '1 ms'),
-    ('microsecond', '1 us')) AS intervals (str, interval),
-  (VALUES (CAST('2020-02-29 15:44:17.71393' AS TIMESTAMP))) AS ts (ts);
+    ('microsecond', '1 us'))
+  AS intervals (str, interval),
+  (VALUES (CAST('2020-02-29 15:44:17.71393' AS TIMESTAMP)))
+  AS ts (ts);
 
 SELECT
   str,
@@ -281,8 +283,10 @@ FROM
     ('minute', '1 m'),
     ('second', '1 s'),
     ('millisecond', '1 ms'),
-    ('microsecond', '1 us')) AS intervals (str, interval),
-  (VALUES (CAST('0055-6-10 15:44:17.71393 BC' AS TIMESTAMP))) AS ts (ts);
+    ('microsecond', '1 us'))
+  AS intervals (str, interval),
+  (VALUES (CAST('0055-6-10 15:44:17.71393 BC' AS TIMESTAMP)))
+  AS ts (ts);
 
 SELECT
   str,
@@ -302,8 +306,10 @@ FROM
     ('minute', '1 m'),
     ('second', '1 s'),
     ('millisecond', '1 ms'),
-    ('microsecond', '1 us')) AS intervals (str, interval),
-  (VALUES (CAST('2020-02-29 15:44:17.71393' AS TIMESTAMP))) AS ts (ts);
+    ('microsecond', '1 us'))
+  AS intervals (str, interval),
+  (VALUES (CAST('2020-02-29 15:44:17.71393' AS TIMESTAMP)))
+  AS ts (ts);
 
 SELECT
   str,
@@ -323,8 +329,10 @@ FROM
     ('minute', '1 m'),
     ('second', '1 s'),
     ('millisecond', '1 ms'),
-    ('microsecond', '1 us')) AS intervals (str, interval),
-  (VALUES (CAST('0055-6-10 15:44:17.71393 BC' AS TIMESTAMP))) AS ts (ts);
+    ('microsecond', '1 us'))
+  AS intervals (str, interval),
+  (VALUES (CAST('0055-6-10 15:44:17.71393 BC' AS TIMESTAMP)))
+  AS ts (ts);
 
 SELECT
   interval,
@@ -339,9 +347,12 @@ FROM
     ('15 minutes'),
     ('10 seconds'),
     ('100 milliseconds'),
-    ('250 microseconds')) AS intervals (interval),
-  (VALUES (CAST('2020-02-11 15:44:17.71393' AS TIMESTAMP))) AS ts (ts),
-  (VALUES (CAST('2001-01-01' AS TIMESTAMP))) AS origin (origin);
+    ('250 microseconds'))
+  AS intervals (interval),
+  (VALUES (CAST('2020-02-11 15:44:17.71393' AS TIMESTAMP)))
+  AS ts (ts),
+  (VALUES (CAST('2001-01-01' AS TIMESTAMP)))
+  AS origin (origin);
 
 SELECT
   date_bin(
@@ -411,7 +422,9 @@ SELECT
 FROM
   timestamp_tbl
 WHERE
-  d1 BETWEEN CAST('1902-01-01' AS TIMESTAMP) AND CAST('2038-01-01' AS TIMESTAMP);
+  d1
+  BETWEEN CAST('1902-01-01' AS TIMESTAMP)
+  AND CAST('2038-01-01' AS TIMESTAMP);
 
 SELECT
   d1 AS timestamp,
@@ -469,11 +482,13 @@ SELECT EXTRACT('epoch' FROM CAST('294270-01-01 00:00:00' AS TIMESTAMP));
 SELECT EXTRACT('epoch' FROM CAST('5000-01-01 00:00:00' AS TIMESTAMP));
 
 SELECT
-  CAST('294276-12-31 23:59:59' AS TIMESTAMP) - CAST('1999-12-23 19:59:04.224193' AS TIMESTAMP)
+  CAST('294276-12-31 23:59:59' AS TIMESTAMP) -
+  CAST('1999-12-23 19:59:04.224193' AS TIMESTAMP)
   AS ok;
 
 SELECT
-  CAST('294276-12-31 23:59:59' AS TIMESTAMP) - CAST('1999-12-23 19:59:04.224192' AS TIMESTAMP)
+  CAST('294276-12-31 23:59:59' AS TIMESTAMP) -
+  CAST('1999-12-23 19:59:04.224192' AS TIMESTAMP)
   AS overflows;
 
 SELECT to_char(d1, 'DAY Day day DY Dy dy MONTH Month month RM MON Mon mon') FROM timestamp_tbl;
@@ -520,7 +535,8 @@ FROM
     (CAST('2018-11-02 12:34:56' AS TIMESTAMP)),
     ('2018-11-02 12:34:56.78'),
     ('2018-11-02 12:34:56.78901'),
-    ('2018-11-02 12:34:56.78901234')) AS d (d);
+    ('2018-11-02 12:34:56.78901234'))
+  AS d (d);
 
 SELECT
   i,

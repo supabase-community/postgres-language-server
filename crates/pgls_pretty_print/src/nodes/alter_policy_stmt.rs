@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterPolicyStmt;
 
 use super::node_list::emit_comma_separated_list;
@@ -19,7 +19,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
 
     // Table name
     if let Some(ref table) = n.table {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::ON_KW);
         e.space();
         super::emit_range_var(e, table);
@@ -27,7 +27,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
 
     // Optional: TO roles
     if !n.roles.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::TO_KW);
         e.space();
         emit_comma_separated_list(e, &n.roles, super::emit_node);
@@ -35,7 +35,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
 
     // Optional: USING clause
     if let Some(ref qual) = n.qual {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("USING".to_string()));
         e.space();
         e.token(TokenKind::L_PAREN);
@@ -45,7 +45,7 @@ pub(super) fn emit_alter_policy_stmt(e: &mut EventEmitter, n: &AlterPolicyStmt) 
 
     // Optional: WITH CHECK clause
     if let Some(ref with_check) = n.with_check {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
         e.token(TokenKind::IDENT("CHECK".to_string()));

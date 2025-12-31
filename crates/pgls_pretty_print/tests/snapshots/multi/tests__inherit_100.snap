@@ -1,17 +1,20 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/inherit_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/inherit.sql
 snapshot_kind: text
 ---
 CREATE TABLE a (aa TEXT);
 
-CREATE TABLE b (bb TEXT)
+CREATE TABLE b
+(bb TEXT)
 INHERITS (a);
 
-CREATE TABLE c (cc TEXT)
+CREATE TABLE c
+(cc TEXT)
 INHERITS (a);
 
-CREATE TABLE d (dd TEXT)
+CREATE TABLE d
+(dd TEXT)
 INHERITS (b,
 c,
 a);
@@ -162,19 +165,22 @@ SELECT relname, c.* FROM ONLY c, pg_class WHERE c.tableoid = pg_class.oid;
 
 SELECT relname, d.* FROM ONLY d, pg_class WHERE d.tableoid = pg_class.oid;
 
-CREATE TEMPORARY TABLE z (b TEXT, PRIMARY KEY (aa, b))
+CREATE TEMPORARY TABLE z
+(b TEXT, PRIMARY KEY (aa, b))
 INHERITS (a);
 
 INSERT INTO z VALUES (NULL, 'text');
 
-CREATE TEMPORARY TABLE z2 (b TEXT, UNIQUE (aa, b))
+CREATE TEMPORARY TABLE z2
+(b TEXT, UNIQUE (aa, b))
 INHERITS (a);
 
 INSERT INTO z2 VALUES (NULL, 'text');
 
 CREATE TABLE some_tab (f1 INT, f2 INT, f3 INT, CHECK (f1 < 10) NO INHERIT);
 
-CREATE TABLE some_tab_child ()
+CREATE TABLE some_tab_child
+()
 INHERITS (some_tab);
 
 INSERT INTO some_tab_child SELECT i, i + 1, 0 FROM generate_series(1, 1000) AS i;
@@ -193,7 +199,8 @@ AS 'begin raise notice ''updating some_tab''; return NULL; end;'
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER some_tab_stmt_trig
-BEFORE UPDATE ON some_tab
+BEFORE UPDATE
+ON some_tab
 FOR EACH STATEMENT
 EXECUTE FUNCTION some_tab_stmt_trig_func();
 
@@ -207,7 +214,8 @@ DROP FUNCTION some_tab_stmt_trig_func();
 
 CREATE TABLE some_tab (a INT, b INT);
 
-CREATE TABLE some_tab_child ()
+CREATE TABLE some_tab_child
+()
 INHERITS (some_tab);
 
 INSERT INTO some_tab_child VALUES (1, 2);
@@ -226,12 +234,14 @@ DROP TABLE "some_tab" CASCADE;
 
 CREATE TEMPORARY TABLE foo (f1 INT, f2 INT);
 
-CREATE TEMPORARY TABLE foo2 (f3 INT)
+CREATE TEMPORARY TABLE foo2
+(f3 INT)
 INHERITS (foo);
 
 CREATE TEMPORARY TABLE bar (f1 INT, f2 INT);
 
-CREATE TEMPORARY TABLE bar2 (f3 INT)
+CREATE TEMPORARY TABLE bar2
+(f3 INT)
 INHERITS (bar);
 
 INSERT INTO foo VALUES (1, 1);
@@ -266,7 +276,8 @@ UPDATE bar
 SET f2 = f2 + 100
 FROM (SELECT f1 FROM foo
 UNION ALL
-SELECT f1 + 3 FROM foo) AS ss
+SELECT f1 + 3 FROM foo)
+AS ss
 WHERE
   bar.f1 = ss.f1;
 
@@ -276,12 +287,14 @@ CREATE TABLE some_tab (a INT);
 
 INSERT INTO some_tab VALUES (0);
 
-CREATE TABLE some_tab_child ()
+CREATE TABLE some_tab_child
+()
 INHERITS (some_tab);
 
 INSERT INTO some_tab_child VALUES (1);
 
-CREATE TABLE parted_tab (a INT, b CHAR(1))
+CREATE TABLE parted_tab
+(a INT, b CHAR(1))
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_tab_part1 PARTITION OF parted_tab FOR VALUES IN (1);
@@ -300,7 +313,8 @@ UPDATE parted_tab
 SET b = 'b'
 FROM (SELECT a FROM some_tab
 UNION ALL
-SELECT a + 1 FROM some_tab) AS ss (a)
+SELECT a + 1 FROM some_tab)
+AS ss (a)
 WHERE
   parted_tab.a = ss.a;
 
@@ -325,7 +339,8 @@ UPDATE parted_tab
 SET b = 'b'
 FROM (SELECT 0 FROM parted_tab
 UNION ALL
-SELECT 1 FROM parted_tab) AS ss (a)
+SELECT 1 FROM parted_tab)
+AS ss (a)
 WHERE
   parted_tab.a = ss.a;
 
@@ -342,7 +357,8 @@ UPDATE parted_tab SET a = 2 WHERE FALSE;
 
 DROP TABLE "parted_tab";
 
-CREATE TABLE mlparted_tab (a INT, b CHAR(1), c TEXT)
+CREATE TABLE mlparted_tab
+(a INT, b CHAR(1), c TEXT)
 PARTITION BY LIST(a);
 
 CREATE TABLE mlparted_tab_part1 PARTITION OF mlparted_tab FOR VALUES IN (1);
@@ -366,7 +382,8 @@ UPDATE mlparted_tab AS mlp
 SET c = 'xxx'
 FROM (SELECT a FROM some_tab
 UNION ALL
-SELECT a + 1 FROM some_tab) AS ss (a)
+SELECT a + 1 FROM some_tab)
+AS ss (a)
 WHERE
   mlp.a = ss.a AND mlp.b = 'b' OR mlp.a = 3;
 
@@ -387,17 +404,20 @@ CREATE TABLE firstparent (tomorrow DATE DEFAULT (CAST(NOW() AS DATE) + 1));
 
 CREATE TABLE secondparent (tomorrow DATE DEFAULT (CAST(NOW() AS DATE) + 1));
 
-CREATE TABLE jointchild ()
+CREATE TABLE jointchild
+()
 INHERITS (firstparent,
 secondparent);
 
 CREATE TABLE thirdparent (tomorrow DATE DEFAULT (CAST(NOW() AS DATE) - 1));
 
-CREATE TABLE otherchild ()
+CREATE TABLE otherchild
+()
 INHERITS (firstparent,
 thirdparent);
 
-CREATE TABLE otherchild (tomorrow DATE DEFAULT NOW())
+CREATE TABLE otherchild
+(tomorrow DATE DEFAULT NOW())
 INHERITS (firstparent,
 thirdparent);
 
@@ -414,7 +434,8 @@ CREATE TEMPORARY TABLE parent1 (f1 INT, f2 INT);
 
 CREATE TEMPORARY TABLE parent2 (f1 INT, f3 BIGINT);
 
-CREATE TEMPORARY TABLE childtab (f4 INT)
+CREATE TEMPORARY TABLE childtab
+(f4 INT)
 INHERITS (parent1,
 parent2);
 
@@ -441,27 +462,32 @@ SELECT
   pgc.connoinherit
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname = 'p1'
 ORDER BY 1,
   2;
 
-CREATE TABLE c1 ()
+CREATE TABLE c1
+()
 INHERITS (p1);
 
-CREATE TABLE c2 (CONSTRAINT "p2chk" CHECK (ff1 > 10) NO INHERIT)
+CREATE TABLE c2
+(CONSTRAINT "p2chk" CHECK (ff1 > 10) NO INHERIT)
 INHERITS (p1);
 
 DROP TABLE "p1" CASCADE;
 
 CREATE TABLE base (i INT);
 
-CREATE TABLE derived ()
+CREATE TABLE derived
+()
 INHERITS (base);
 
-CREATE TABLE more_derived (LIKE derived, b INT)
+CREATE TABLE more_derived
+(LIKE derived, b INT)
 INHERITS (derived);
 
 INSERT INTO derived (i) VALUES (0);
@@ -489,7 +515,8 @@ RETURNS TEXT
 AS 'select $1.f1'
 LANGUAGE "sql";
 
-CREATE TABLE c1 (f3 INT)
+CREATE TABLE c1
+(f3 INT)
 INHERITS (p1,
 p2);
 
@@ -510,7 +537,8 @@ CREATE TABLE ac (aa TEXT);
 ALTER TABLE ac
   ADD CONSTRAINT "ac_check" CHECK (aa IS NOT NULL);
 
-CREATE TABLE bc (bb TEXT)
+CREATE TABLE bc
+(bb TEXT)
 INHERITS (ac);
 
 SELECT
@@ -522,7 +550,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -548,7 +577,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -567,7 +597,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -593,7 +624,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -615,7 +647,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -634,7 +667,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -653,7 +687,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -666,10 +701,8 @@ DROP TABLE "ac";
 
 CREATE TABLE ac (a INT CONSTRAINT "check_a" CHECK (a <> 0));
 
-CREATE TABLE bc (
-  a INT CONSTRAINT "check_a" CHECK (a <> 0),
-  b INT CONSTRAINT "check_b" CHECK (b <> 0)
-)
+CREATE TABLE bc
+(a INT CONSTRAINT "check_a" CHECK (a <> 0), b INT CONSTRAINT "check_b" CHECK (b <> 0))
 INHERITS (ac);
 
 SELECT
@@ -681,7 +714,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc')
@@ -696,7 +730,8 @@ CREATE TABLE ac (a INT CONSTRAINT "check_a" CHECK (a <> 0));
 
 CREATE TABLE bc (b INT CONSTRAINT "check_b" CHECK (b <> 0));
 
-CREATE TABLE cc (c INT CONSTRAINT "check_c" CHECK (c <> 0))
+CREATE TABLE cc
+(c INT CONSTRAINT "check_c" CHECK (c <> 0))
 INHERITS (ac,
 bc);
 
@@ -709,7 +744,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc', 'cc')
@@ -728,7 +764,8 @@ SELECT
   pg_get_expr(pgc.conbin, pc.oid) AS consrc
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON pgc.conrelid = pc.oid
 WHERE
   pc.relname IN ('ac', 'bc', 'cc')
@@ -745,7 +782,8 @@ CREATE TABLE p1 (f1 INT);
 
 CREATE TABLE p2 (f2 INT);
 
-CREATE TABLE c1 (f3 INT)
+CREATE TABLE c1
+(f3 INT)
 INHERITS (p1,
 p2);
 
@@ -766,11 +804,13 @@ ALTER TABLE p2
 
 INSERT INTO c1 VALUES (1, -1, 2);
 
-CREATE TABLE c2 (f3 INT)
+CREATE TABLE c2
+(f3 INT)
 INHERITS (p1,
 p2);
 
-CREATE TABLE c3 (f4 INT)
+CREATE TABLE c3
+(f4 INT)
 INHERITS (c1,
 c2);
 
@@ -780,13 +820,15 @@ DROP TABLE "p2" CASCADE;
 
 CREATE TABLE pp1 (f1 INT);
 
-CREATE TABLE cc1 (f2 TEXT, f3 INT)
+CREATE TABLE cc1
+(f2 TEXT, f3 INT)
 INHERITS (pp1);
 
 ALTER TABLE pp1
   ADD COLUMN a1 INT CHECK (a1 > 0);
 
-CREATE TABLE cc2 (f4 DOUBLE PRECISION)
+CREATE TABLE cc2
+(f4 DOUBLE PRECISION)
 INHERITS (pp1,
 cc1);
 
@@ -799,7 +841,8 @@ CREATE TABLE inht1 (a INT, b INT);
 
 CREATE TABLE inhs1 (b INT, c INT);
 
-CREATE TABLE inhts (d INT)
+CREATE TABLE inhts
+(d INT)
 INHERITS (inht1,
 inhs1);
 
@@ -815,13 +858,16 @@ DROP TABLE "inhts";
 
 CREATE TABLE inhta ();
 
-CREATE TABLE inhtb ()
+CREATE TABLE inhtb
+()
 INHERITS (inhta);
 
-CREATE TABLE inhtc ()
+CREATE TABLE inhtc
+()
 INHERITS (inhtb);
 
-CREATE TABLE inhtd ()
+CREATE TABLE inhtd
+()
 INHERITS (inhta,
 inhtb,
 inhtc);
@@ -832,19 +878,23 @@ ALTER TABLE inhta
 
 DROP TABLE "inhta", "inhtb", "inhtc", "inhtd";
 
-CREATE TABLE inht2 (x INT)
+CREATE TABLE inht2
+(x INT)
 INHERITS (inht1);
 
-CREATE TABLE inht3 (y INT)
+CREATE TABLE inht3
+(y INT)
 INHERITS (inht1);
 
-CREATE TABLE inht4 (z INT)
+CREATE TABLE inht4
+(z INT)
 INHERITS (inht2,
 inht3);
 
 ALTER TABLE inht1 RENAME COLUMN aa TO aaa;
 
-CREATE TABLE inhts (d INT)
+CREATE TABLE inhts
+(d INT)
 INHERITS (inht2,
 inhs1);
 
@@ -852,7 +902,9 @@ ALTER TABLE inht1 RENAME COLUMN aaa TO aaaa;
 
 ALTER TABLE inht1 RENAME COLUMN b TO bb;
 
-WITH RECURSIVE r AS (
+WITH RECURSIVE
+r
+AS (
   SELECT CAST('inht1' AS REGCLASS) AS inhrelid
   UNION ALL
   SELECT
@@ -876,8 +928,10 @@ FROM
     pg_inherits
   WHERE
     inhparent IN (SELECT inhrelid FROM r)
-  GROUP BY inhrelid) AS e
-  INNER JOIN pg_attribute AS a
+  GROUP BY inhrelid)
+  AS e
+  INNER JOIN
+    pg_attribute AS a
   ON e.inhrelid = a.attrelid
 WHERE
   NOT attislocal
@@ -888,7 +942,8 @@ DROP TABLE "inht1", "inhs1" CASCADE;
 
 CREATE TABLE test_constraints (id INT, val1 VARCHAR, val2 INT, UNIQUE (val1, val2));
 
-CREATE TABLE test_constraints_inh ()
+CREATE TABLE test_constraints_inh
+()
 INHERITS (test_constraints);
 
 ALTER TABLE ONLY test_constraints
@@ -900,7 +955,8 @@ DROP TABLE "test_constraints";
 
 CREATE TABLE test_ex_constraints (c circle, EXCLUDE USING gist (c WITH &&));
 
-CREATE TABLE test_ex_constraints_inh ()
+CREATE TABLE test_ex_constraints_inh
+()
 INHERITS (test_ex_constraints);
 
 ALTER TABLE test_ex_constraints
@@ -914,7 +970,8 @@ CREATE TABLE test_primary_constraints (id INT PRIMARY KEY);
 
 CREATE TABLE test_foreign_constraints (id1 INT REFERENCES test_primary_constraints (id));
 
-CREATE TABLE test_foreign_constraints_inh ()
+CREATE TABLE test_foreign_constraints_inh
+()
 INHERITS (test_foreign_constraints);
 
 ALTER TABLE test_foreign_constraints
@@ -942,7 +999,8 @@ VALUES
   (22, 2),
   (33, 3);
 
-CREATE TABLE inh_fk_2_child ()
+CREATE TABLE inh_fk_2_child
+()
 INHERITS (inh_fk_2);
 
 INSERT INTO inh_fk_2_child
@@ -960,7 +1018,8 @@ DROP TABLE "inh_fk_1", "inh_fk_2", "inh_fk_2_child";
 
 CREATE TABLE p1 (f1 INT);
 
-CREATE TABLE p1_c1 ()
+CREATE TABLE p1_c1
+()
 INHERITS (p1);
 
 ALTER TABLE p1
@@ -975,10 +1034,12 @@ ALTER TABLE p1_c1
 ALTER TABLE p1
   ADD CONSTRAINT "inh_check_constraint2" CHECK (f1 < 10);
 
-CREATE TABLE p1_c2 (f1 INT CONSTRAINT "inh_check_constraint4" CHECK (f1 < 10))
+CREATE TABLE p1_c2
+(f1 INT CONSTRAINT "inh_check_constraint4" CHECK (f1 < 10))
 INHERITS (p1);
 
-CREATE TABLE p1_c3 ()
+CREATE TABLE p1_c3
+()
 INHERITS (p1,
 p1_c1);
 
@@ -1011,7 +1072,8 @@ DROP TABLE "p1", "p1_c1";
 
 CREATE TABLE p1 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0));
 
-CREATE TABLE p1_c1 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0))
+CREATE TABLE p1_c1
+(f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0))
 INHERITS (p1);
 
 ALTER TABLE p1_c1
@@ -1026,11 +1088,13 @@ CREATE TABLE p1 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0));
 
 CREATE TABLE p2 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0));
 
-CREATE TABLE p1p2_c1 (f1 INT)
+CREATE TABLE p1p2_c1
+(f1 INT)
 INHERITS (p1,
 p2);
 
-CREATE TABLE p1p2_c2 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0))
+CREATE TABLE p1p2_c2
+(f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0))
 INHERITS (p1,
 p2);
 
@@ -1044,13 +1108,16 @@ DROP TABLE "p1", "p2" CASCADE;
 
 CREATE TABLE p1 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0));
 
-CREATE TABLE p1_c1 ()
+CREATE TABLE p1_c1
+()
 INHERITS (p1);
 
-CREATE TABLE p1_c2 ()
+CREATE TABLE p1_c2
+()
 INHERITS (p1);
 
-CREATE TABLE p1_c1c2 ()
+CREATE TABLE p1_c1c2
+()
 INHERITS (p1_c1,
 p1_c2);
 
@@ -1061,13 +1128,16 @@ DROP TABLE "p1" CASCADE;
 
 CREATE TABLE p1 (f1 INT CONSTRAINT "f1_pos" CHECK (f1 > 0));
 
-CREATE TABLE p1_c1 ()
+CREATE TABLE p1_c1
+()
 INHERITS (p1);
 
-CREATE TABLE p1_c2 (CONSTRAINT "f1_pos" CHECK (f1 > 0))
+CREATE TABLE p1_c2
+(CONSTRAINT "f1_pos" CHECK (f1 > 0))
 INHERITS (p1);
 
-CREATE TABLE p1_c1c2 ()
+CREATE TABLE p1_c1c2
+()
 INHERITS (p1_c1,
 p1_c2,
 p1);
@@ -1088,7 +1158,8 @@ DROP TABLE "p1" CASCADE;
 
 CREATE TABLE invalid_check_con (f1 INT);
 
-CREATE TABLE invalid_check_con_child ()
+CREATE TABLE invalid_check_con_child
+()
 INHERITS (invalid_check_con);
 
 ALTER TABLE invalid_check_con_child
@@ -1129,12 +1200,14 @@ ORDER BY 1,
 
 CREATE TEMPORARY TABLE patest0 (id, x) AS SELECT x, x FROM generate_series(0, 1000) AS x;
 
-CREATE TEMPORARY TABLE patest1 ()
+CREATE TEMPORARY TABLE patest1
+()
 INHERITS (patest0);
 
 INSERT INTO patest1 SELECT x, x FROM generate_series(0, 1000) AS x;
 
-CREATE TEMPORARY TABLE patest2 ()
+CREATE TEMPORARY TABLE patest2
+()
 INHERITS (patest0);
 
 INSERT INTO patest2 SELECT x, x FROM generate_series(0, 1000) AS x;
@@ -1180,13 +1253,16 @@ DROP TABLE "patest0" CASCADE;
 
 CREATE TABLE matest0 (id serial PRIMARY KEY, name TEXT);
 
-CREATE TABLE matest1 (id INT PRIMARY KEY)
+CREATE TABLE matest1
+(id INT PRIMARY KEY)
 INHERITS (matest0);
 
-CREATE TABLE matest2 (id INT PRIMARY KEY)
+CREATE TABLE matest2
+(id INT PRIMARY KEY)
 INHERITS (matest0);
 
-CREATE TABLE matest3 (id INT PRIMARY KEY)
+CREATE TABLE matest3
+(id INT PRIMARY KEY)
 INHERITS (matest0);
 
 CREATE INDEX "matest0i"
@@ -1255,7 +1331,8 @@ SELECT
 FROM
   (SELECT id FROM matest3 AS t1
   UNION ALL
-  SELECT id * 2 FROM matest3 AS t2) AS ss
+  SELECT id * 2 FROM matest3 AS t2)
+  AS ss
 ORDER BY c;
 
 SELECT
@@ -1263,14 +1340,16 @@ SELECT
 FROM
   (SELECT id FROM matest3 AS t1
   UNION ALL
-  SELECT id * 2 FROM matest3 AS t2) AS ss
+  SELECT id * 2 FROM matest3 AS t2)
+  AS ss
 ORDER BY c;
 
 DROP TABLE "matest0" CASCADE;
 
 CREATE TABLE matest0 (a INT, b INT, c INT, d INT);
 
-CREATE TABLE matest1 ()
+CREATE TABLE matest1
+()
 INHERITS (matest0);
 
 CREATE INDEX "matest0i"
@@ -1307,7 +1386,8 @@ DROP TABLE "matest0" CASCADE;
 
 CREATE TABLE matest0 (a INT PRIMARY KEY);
 
-CREATE TABLE matest1 ()
+CREATE TABLE matest1
+()
 INHERITS (matest0);
 
 INSERT INTO matest0 SELECT generate_series(1, 400);
@@ -1356,14 +1436,16 @@ SELECT
 FROM
   (SELECT unique1 AS x FROM tenk1 AS a
   UNION ALL
-  SELECT unique2 AS x FROM tenk1 AS b) AS s;
+  SELECT unique2 AS x FROM tenk1 AS b)
+  AS s;
 
 SELECT
   MIN(y)
 FROM
   (SELECT unique1 AS x, unique1 AS y FROM tenk1 AS a
   UNION ALL
-  SELECT unique2 AS x, unique2 AS y FROM tenk1 AS b) AS s;
+  SELECT unique2 AS x, unique2 AS y FROM tenk1 AS b)
+  AS s;
 
 SELECT
   x,
@@ -1375,7 +1457,8 @@ FROM
   FROM
     tenk1 AS a
   UNION ALL
-  SELECT unique2 AS x, unique2 AS y FROM tenk1 AS b) AS s
+  SELECT unique2 AS x, unique2 AS y FROM tenk1 AS b)
+  AS s
 ORDER BY x,
   y;
 
@@ -1393,7 +1476,8 @@ SELECT
       d + g.i
     FROM
       generate_series(0, 30, 5) AS d
-    ORDER BY 1)) AS f (i)
+    ORDER BY 1))
+    AS f (i)
   ORDER BY f.i
   LIMIT 10)
 FROM
@@ -1413,7 +1497,8 @@ SELECT
       d + g.i
     FROM
       generate_series(0, 30, 5) AS d
-    ORDER BY 1)) AS f (i)
+    ORDER BY 1))
+    AS f (i)
   ORDER BY f.i
   LIMIT 10)
 FROM
@@ -1444,7 +1529,8 @@ SELECT * FROM inhpar;
 
 DROP TABLE "inhpar" CASCADE;
 
-CREATE TABLE inhpar (f1 INT PRIMARY KEY, f2 NAME)
+CREATE TABLE inhpar
+(f1 INT PRIMARY KEY, f2 NAME)
 PARTITION BY RANGE(f1);
 
 CREATE TABLE inhcld1 (f2 NAME, f1 INT PRIMARY KEY);
@@ -1471,7 +1557,9 @@ INSERT INTO inhpar AS i
 VALUES
   (3),
   (7)
-ON CONFLICT (f1) DO
+ON CONFLICT
+(f1)
+DO
 UPDATE
 SET (f1, f2) = (SELECT i.f1, i.f2 || '+');
 
@@ -1481,7 +1569,8 @@ DROP TABLE "inhpar" CASCADE;
 
 CREATE TABLE cnullparent (f1 INT);
 
-CREATE TABLE cnullchild (CHECK (f1 = 1 OR f1 = NULL))
+CREATE TABLE cnullchild
+(CHECK (f1 = 1 OR f1 = NULL))
 INHERITS (cnullparent);
 
 INSERT INTO cnullchild VALUES (1);
@@ -1498,14 +1587,17 @@ DROP TABLE "cnullparent" CASCADE;
 
 CREATE TABLE pp1 (f1 INT);
 
-CREATE TABLE cc1 (f2 TEXT, f3 INT)
+CREATE TABLE cc1
+(f2 TEXT, f3 INT)
 INHERITS (pp1);
 
-CREATE TABLE cc2 (f4 DOUBLE PRECISION)
+CREATE TABLE cc2
+(f4 DOUBLE PRECISION)
 INHERITS (pp1,
 cc1);
 
-CREATE TABLE cc3 ()
+CREATE TABLE cc3
+()
 INHERITS (pp1,
 cc1,
 cc2);
@@ -1558,10 +1650,12 @@ DROP TABLE "inh_parent", "inh_child";
 
 CREATE TABLE inh_pp1 (f1 INT);
 
-CREATE TABLE inh_cc1 (f2 TEXT, f3 INT)
+CREATE TABLE inh_cc1
+(f2 TEXT, f3 INT)
 INHERITS (inh_pp1);
 
-CREATE TABLE inh_cc2 (f4 DOUBLE PRECISION)
+CREATE TABLE inh_cc2
+(f4 DOUBLE PRECISION)
 INHERITS (inh_pp1,
 inh_cc1);
 
@@ -1578,10 +1672,12 @@ DROP TABLE "inh_pp1", "inh_cc1", "inh_cc2";
 
 CREATE TABLE inh_pp1 (f1 INT NOT NULL);
 
-CREATE TABLE inh_cc1 (f2 TEXT, f3 INT)
+CREATE TABLE inh_cc1
+(f2 TEXT, f3 INT)
 INHERITS (inh_pp1);
 
-CREATE TABLE inh_cc2 (f4 DOUBLE PRECISION)
+CREATE TABLE inh_cc2
+(f4 DOUBLE PRECISION)
 INHERITS (inh_pp1,
 inh_cc1);
 
@@ -1592,10 +1688,12 @@ DROP TABLE "inh_pp1", "inh_cc1", "inh_cc2";
 
 CREATE TABLE inh_parent ();
 
-CREATE TABLE inh_child (i INT)
+CREATE TABLE inh_child
+(i INT)
 INHERITS (inh_parent);
 
-CREATE TABLE inh_grandchild ()
+CREATE TABLE inh_grandchild
+()
 INHERITS (inh_parent,
 inh_child);
 
@@ -1608,7 +1706,8 @@ CREATE TABLE inh_parent1 (a INT CONSTRAINT "nn" NOT NULL);
 
 CREATE TABLE inh_parent2 (b INT CONSTRAINT "nn" NOT NULL);
 
-CREATE TABLE inh_child1 ()
+CREATE TABLE inh_child1
+()
 INHERITS (inh_parent1,
 inh_parent2);
 
@@ -1621,7 +1720,8 @@ CREATE TABLE inh_parent1 (a INT, b INT, c INT, PRIMARY KEY (a, b));
 
 CREATE TABLE inh_parent2 (d INT, e INT, b INT, PRIMARY KEY (d, b));
 
-CREATE TABLE inh_child ()
+CREATE TABLE inh_child
+()
 INHERITS (inh_parent1,
 inh_parent2);
 
@@ -1637,7 +1737,10 @@ FROM
   pg_constraint
 WHERE
   contype IN ('n', 'p') AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_child', 'inh_parent1', 'inh_parent2')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_child', 'inh_parent1', 'inh_parent2'
+  )
 ORDER BY 1,
   2;
 
@@ -1645,10 +1748,12 @@ DROP TABLE "inh_parent1", "inh_parent2", "inh_child";
 
 CREATE TABLE inh_nn_parent (a INT);
 
-CREATE TABLE inh_nn_child ()
+CREATE TABLE inh_nn_child
+()
 INHERITS (inh_nn_parent);
 
-CREATE TABLE inh_nn_child2 ()
+CREATE TABLE inh_nn_child2
+()
 INHERITS (inh_nn_parent);
 
 SELECT
@@ -1675,7 +1780,8 @@ ORDER BY 2,
 
 DROP TABLE "inh_nn_parent", "inh_nn_child", "inh_nn_child2";
 
-CREATE TABLE inh_nn_child ()
+CREATE TABLE inh_nn_child
+()
 INHERITS (inh_nn_parent);
 
 ALTER TABLE inh_nn_parent
@@ -1685,7 +1791,8 @@ DROP TABLE "inh_nn_parent" CASCADE;
 
 CREATE TABLE inh_nn_lvl1 (a INT);
 
-CREATE TABLE inh_nn_lvl2 ()
+CREATE TABLE inh_nn_lvl2
+()
 INHERITS (inh_nn_lvl1);
 
 ALTER TABLE inh_nn_lvl1
@@ -1728,13 +1835,17 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  conrelid IN (CAST('inh_parent' AS REGCLASS),
-  CAST('inh_child1' AS REGCLASS),
-  CAST('inh_child2' AS REGCLASS))
+  conrelid
+  IN (
+    CAST('inh_parent' AS REGCLASS),
+    CAST('inh_child1' AS REGCLASS),
+    CAST('inh_child2' AS REGCLASS)
+  )
 ORDER BY 2,
   1;
 
-CREATE TABLE inh_child3 ()
+CREATE TABLE inh_child3
+()
 INHERITS (inh_child1);
 
 ALTER TABLE inh_child1
@@ -1750,10 +1861,13 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_parent',
-  'inh_child1',
-  'inh_child2',
-  'inh_child3')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_parent',
+    'inh_child1',
+    'inh_child2',
+    'inh_child3'
+  )
 ORDER BY 2,
   1;
 
@@ -1777,7 +1891,8 @@ DROP TABLE "inh_parent", "inh_child";
 
 CREATE TABLE inh_parent (a INT PRIMARY KEY);
 
-CREATE TABLE inh_child (a INT PRIMARY KEY)
+CREATE TABLE inh_child
+(a INT PRIMARY KEY)
 INHERITS (inh_parent);
 
 ALTER TABLE inh_parent
@@ -1792,7 +1907,8 @@ ALTER TABLE inh_parent
   (a)
   REFERENCES inh_parent (a);
 
-CREATE TABLE inh_child2 ()
+CREATE TABLE inh_child2
+()
 INHERITS (inh_parent);
 
 CREATE TABLE inh_child3 (LIKE inh_parent);
@@ -1809,10 +1925,13 @@ SELECT
 FROM
   pg_constraint
 WHERE
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_parent',
-  'inh_child',
-  'inh_child2',
-  'inh_child3')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_parent',
+    'inh_child',
+    'inh_child2',
+    'inh_child3'
+  )
 ORDER BY 2,
   1;
 
@@ -1820,13 +1939,16 @@ DROP TABLE "inh_parent", "inh_child", "inh_child2", "inh_child3";
 
 CREATE TABLE inh_parent (f1 INT NOT NULL);
 
-CREATE TABLE inh_child1 ()
+CREATE TABLE inh_child1
+()
 INHERITS (inh_parent);
 
-CREATE TABLE inh_child2 ()
+CREATE TABLE inh_child2
+()
 INHERITS (inh_parent);
 
-CREATE TABLE inh_child3 ()
+CREATE TABLE inh_child3
+()
 INHERITS (inh_child1,
 inh_child2);
 
@@ -1840,10 +1962,13 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  conrelid IN (CAST('inh_parent' AS REGCLASS),
-  CAST('inh_child1' AS REGCLASS),
-  CAST('inh_child2' AS REGCLASS),
-  CAST('inh_child3' AS REGCLASS))
+  conrelid
+  IN (
+    CAST('inh_parent' AS REGCLASS),
+    CAST('inh_child1' AS REGCLASS),
+    CAST('inh_child2' AS REGCLASS),
+    CAST('inh_child3' AS REGCLASS)
+  )
 ORDER BY 2,
   CAST(CAST(conrelid AS REGCLASS) AS TEXT);
 
@@ -1853,7 +1978,8 @@ CREATE TABLE inh_parent_1 (f1 INT);
 
 CREATE TABLE inh_parent_2 (f2 TEXT);
 
-CREATE TABLE inh_child (f1 INT NOT NULL, f2 TEXT NOT NULL)
+CREATE TABLE inh_child
+(f1 INT NOT NULL, f2 TEXT NOT NULL)
 INHERITS (inh_parent_1,
 inh_parent_2);
 
@@ -1867,9 +1993,12 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  conrelid IN (CAST('inh_parent_1' AS REGCLASS),
-  CAST('inh_parent_2' AS REGCLASS),
-  CAST('inh_child' AS REGCLASS))
+  conrelid
+  IN (
+    CAST('inh_parent_1' AS REGCLASS),
+    CAST('inh_parent_2' AS REGCLASS),
+    CAST('inh_child' AS REGCLASS)
+  )
 ORDER BY 2,
   CAST(CAST(conrelid AS REGCLASS) AS TEXT);
 
@@ -1885,7 +2014,8 @@ CREATE TABLE inh_p3 (f2 INT);
 
 CREATE TABLE inh_p4 (f1 INT NOT NULL, f3 TEXT NOT NULL);
 
-CREATE TABLE inh_multiparent ()
+CREATE TABLE inh_multiparent
+()
 INHERITS (inh_p1,
 inh_p2,
 inh_p3,
@@ -1907,15 +2037,19 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(conrelid AS REGCLASS) IN ('inh_p1',
-  'inh_p2',
-  'inh_p3',
-  'inh_p4',
-  'inh_multiparent')
+  CAST(conrelid AS REGCLASS)
+  IN (
+    'inh_p1',
+    'inh_p2',
+    'inh_p3',
+    'inh_p4',
+    'inh_multiparent'
+  )
 ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
   conname;
 
-CREATE TABLE inh_multiparent2 (a INT NOT NULL, f1 INT)
+CREATE TABLE inh_multiparent2
+(a INT NOT NULL, f1 INT)
 INHERITS (inh_p3,
 inh_multiparent);
 
@@ -1935,7 +2069,10 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(conrelid AS REGCLASS) IN ('inh_p3', 'inh_multiparent', 'inh_multiparent2')
+  CAST(conrelid AS REGCLASS)
+  IN (
+    'inh_p3', 'inh_multiparent', 'inh_multiparent2'
+  )
 ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
   conname;
 
@@ -1946,7 +2083,8 @@ CREATE TABLE inh_nn2 (f2 TEXT, f3 INT, f1 INT);
 ALTER TABLE inh_nn2
   INHERIT inh_nn1;
 
-CREATE TABLE inh_nn3 (f4 DOUBLE PRECISION)
+CREATE TABLE inh_nn3
+(f4 DOUBLE PRECISION)
 INHERITS (inh_nn2);
 
 CREATE TABLE inh_nn4 (f5 INT, f4 DOUBLE PRECISION, f2 TEXT, f3 INT, f1 INT);
@@ -1967,7 +2105,10 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
 ORDER BY 2,
   1;
 
@@ -1982,7 +2123,10 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
 ORDER BY 2,
   1;
 
@@ -1999,23 +2143,29 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
 ORDER BY 2,
   1;
 
 DROP TABLE "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
 
-CREATE TABLE inh_nn2 (f2 TEXT, f3 INT)
+CREATE TABLE inh_nn2
+(f2 TEXT, f3 INT)
 INHERITS (inh_nn1);
 
 INSERT INTO inh_nn2 VALUES (NULL, 'sample', 1);
 
 DELETE FROM inh_nn2;
 
-CREATE TABLE inh_nn3 ()
+CREATE TABLE inh_nn3
+()
 INHERITS (inh_nn2);
 
-CREATE TABLE inh_nn4 ()
+CREATE TABLE inh_nn4
+()
 INHERITS (inh_nn1,
 inh_nn2);
 
@@ -2029,13 +2179,17 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_nn1', 'inh_nn2', 'inh_nn3', 'inh_nn4'
+  )
 ORDER BY 2,
   1;
 
 DROP TABLE "inh_nn1", "inh_nn2", "inh_nn3", "inh_nn4";
 
-CREATE TABLE inh_nn2 (f2 TEXT, f3 INT)
+CREATE TABLE inh_nn2
+(f2 TEXT, f3 INT)
 INHERITS (inh_nn1);
 
 SELECT
@@ -2049,7 +2203,10 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_nn1', 'inh_nn2', 'inh_nn3')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_nn1', 'inh_nn2', 'inh_nn3'
+  )
 ORDER BY 2,
   1;
 
@@ -2064,7 +2221,10 @@ FROM
   pg_constraint
 WHERE
   contype = 'n' AND
-  CAST(CAST(conrelid AS REGCLASS) AS TEXT) IN ('inh_nn1', 'inh_nn2', 'inh_nn3')
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT)
+  IN (
+    'inh_nn1', 'inh_nn2', 'inh_nn3'
+  )
 ORDER BY 2,
   1;
 
@@ -2072,7 +2232,8 @@ DROP TABLE "inh_nn1", "inh_nn2", "inh_nn3";
 
 CREATE TABLE inh_nn1 (f1 INT CHECK (f1 > 5) PRIMARY KEY REFERENCES inh_nn1, f2 INT NOT NULL);
 
-CREATE TABLE inh_nn2 ()
+CREATE TABLE inh_nn2
+()
 INHERITS (inh_nn1);
 
 DROP TABLE "inh_nn1", "inh_nn2";
@@ -2091,7 +2252,8 @@ CREATE TABLE inh_parent (a INT NOT NULL);
 
 SET SESSION AUTHORIZATION regress_bob;
 
-CREATE TABLE inh_child ()
+CREATE TABLE inh_child
+()
 INHERITS (inh_parent);
 
 SET SESSION AUTHORIZATION regress_alice;
@@ -2116,13 +2278,16 @@ CREATE TABLE inh_perm_parent (a1 INT);
 
 CREATE TEMPORARY TABLE inh_temp_parent (a1 INT);
 
-CREATE TEMPORARY TABLE inh_temp_child ()
+CREATE TEMPORARY TABLE inh_temp_child
+()
 INHERITS (inh_perm_parent);
 
-CREATE TABLE inh_perm_child ()
+CREATE TABLE inh_perm_child
+()
 INHERITS (inh_temp_parent);
 
-CREATE TEMPORARY TABLE inh_temp_child_2 ()
+CREATE TEMPORARY TABLE inh_temp_child_2
+()
 INHERITS (inh_temp_parent);
 
 INSERT INTO inh_perm_parent VALUES (1);
@@ -2141,7 +2306,8 @@ DROP TABLE "inh_perm_parent" CASCADE;
 
 DROP TABLE "inh_temp_parent" CASCADE;
 
-CREATE TABLE list_parted (a VARCHAR)
+CREATE TABLE list_parted
+(a VARCHAR)
 PARTITION BY LIST(a);
 
 CREATE TABLE part_ab_cd PARTITION OF list_parted FOR VALUES IN ('ab', 'cd');
@@ -2162,7 +2328,8 @@ SELECT * FROM list_parted WHERE a = 'ab' OR a IN (NULL, 'cd');
 
 SELECT * FROM list_parted WHERE a = 'ab';
 
-CREATE TABLE range_list_parted (a INT, b CHAR(2))
+CREATE TABLE range_list_parted
+(a INT, b CHAR(2))
 PARTITION BY RANGE(a);
 
 CREATE TABLE part_1_10
@@ -2223,7 +2390,8 @@ DROP TABLE "list_parted";
 
 DROP TABLE "range_list_parted";
 
-CREATE TABLE mcrparted (a INT, b INT, c INT)
+CREATE TABLE mcrparted
+(a INT, b INT, c INT)
 PARTITION BY RANGE(a, (abs(b)), c);
 
 CREATE TABLE mcrparted_def PARTITION OF mcrparted DEFAULT;
@@ -2266,7 +2434,8 @@ SELECT * FROM mcrparted WHERE a = 20 AND abs(b) = 10 AND c > 10;
 
 SELECT * FROM mcrparted WHERE a = 20 AND c > 20;
 
-CREATE TABLE parted_minmax (a INT, b VARCHAR(16))
+CREATE TABLE parted_minmax
+(a INT, b VARCHAR(16))
 PARTITION BY RANGE(a);
 
 CREATE TABLE parted_minmax1 PARTITION OF parted_minmax FOR VALUES FROM (1) TO (10);
@@ -2331,7 +2500,8 @@ SET enable_bitmapscan = off;
 
 SET enable_sort = off;
 
-CREATE TABLE mclparted (a INT)
+CREATE TABLE mclparted
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE mclparted1 PARTITION OF mclparted FOR VALUES IN (1);
@@ -2429,7 +2599,8 @@ RESET enable_bitmapscan;
 
 DROP TABLE "mcrparted";
 
-CREATE TABLE bool_lp (b BOOLEAN)
+CREATE TABLE bool_lp
+(b BOOLEAN)
 PARTITION BY LIST(b);
 
 CREATE TABLE bool_lp_true PARTITION OF bool_lp FOR VALUES IN (TRUE);
@@ -2447,7 +2618,8 @@ SELECT * FROM bool_lp ORDER BY b;
 
 DROP TABLE "bool_lp";
 
-CREATE TABLE bool_rp (b BOOLEAN, a INT)
+CREATE TABLE bool_rp
+(b BOOLEAN, a INT)
 PARTITION BY RANGE(b, a);
 
 CREATE TABLE bool_rp_false_1k PARTITION OF bool_rp FOR VALUES FROM (FALSE, 0) TO (FALSE, 1000);
@@ -2476,7 +2648,8 @@ SELECT * FROM bool_rp WHERE b = FALSE ORDER BY a;
 
 DROP TABLE "bool_rp";
 
-CREATE TABLE range_parted (a INT, b INT, c INT)
+CREATE TABLE range_parted
+(a INT, b INT, c INT)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE range_parted1 PARTITION OF range_parted FOR VALUES FROM (0, 0) TO (10, 10);
@@ -2498,10 +2671,12 @@ SELECT * FROM range_parted ORDER BY a DESC, b DESC, c DESC;
 
 DROP TABLE "range_parted";
 
-CREATE TABLE permtest_parent (a INT, b TEXT, c TEXT)
+CREATE TABLE permtest_parent
+(a INT, b TEXT, c TEXT)
 PARTITION BY LIST(a);
 
-CREATE TABLE permtest_child (b TEXT, c TEXT, a INT)
+CREATE TABLE permtest_child
+(b TEXT, c TEXT, a INT)
 PARTITION BY LIST(b);
 
 CREATE TABLE permtest_grandchild (c TEXT, b TEXT, a INT);
@@ -2543,14 +2718,16 @@ SELECT
   *
 FROM
   permtest_parent AS p1
-  INNER JOIN permtest_parent AS p2
+  INNER JOIN
+    permtest_parent AS p2
   ON p1.a = p2.a AND p1.c ~ 'a1$';
 
 SELECT
   *
 FROM
   permtest_parent AS p1
-  INNER JOIN permtest_parent AS p2
+  INNER JOIN
+    permtest_parent AS p2
   ON p1.a = p2.a AND left(p1.c, 3) ~ 'a1$';
 
 RESET session_authorization;
@@ -2566,7 +2743,8 @@ SELECT
   p1.c
 FROM
   permtest_parent AS p1
-  INNER JOIN permtest_parent AS p2
+  INNER JOIN
+    permtest_parent AS p2
   ON p1.a = p2.a AND p1.c ~ 'a1$';
 
 SELECT
@@ -2574,7 +2752,8 @@ SELECT
   p1.c
 FROM
   permtest_parent AS p1
-  INNER JOIN permtest_parent AS p2
+  INNER JOIN
+    permtest_parent AS p2
   ON p1.a = p2.a AND left(p1.c, 3) ~ 'a1$';
 
 RESET session_authorization;
@@ -2585,7 +2764,8 @@ DROP ROLE regress_no_child_access;
 
 DROP TABLE "permtest_parent";
 
-CREATE TABLE errtst_parent (
+CREATE TABLE errtst_parent
+(
   partid INT NOT NULL,
   shdata INT NOT NULL,
   data INT NOT NULL DEFAULT 0,
@@ -2593,13 +2773,15 @@ CREATE TABLE errtst_parent (
 )
 PARTITION BY RANGE(partid);
 
-CREATE TABLE errtst_child_fastdef (
+CREATE TABLE errtst_child_fastdef
+(
   partid INT NOT NULL,
   shdata INT NOT NULL,
   CONSTRAINT "shdata_small" CHECK (shdata < 3)
 );
 
-CREATE TABLE errtst_child_plaindef (
+CREATE TABLE errtst_child_plaindef
+(
   partid INT NOT NULL,
   shdata INT NOT NULL,
   data INT NOT NULL DEFAULT 0,
@@ -2607,7 +2789,8 @@ CREATE TABLE errtst_child_plaindef (
   CHECK (data < 10)
 );
 
-CREATE TABLE errtst_child_reorder (
+CREATE TABLE errtst_child_reorder
+(
   data INT NOT NULL DEFAULT 0,
   shdata INT NOT NULL,
   partid INT NOT NULL,
@@ -2709,7 +2892,8 @@ UPDATE errtst_parent SET partid = 30, data = data + 10 WHERE partid = 20;
 
 DROP TABLE "errtst_parent";
 
-CREATE TABLE tuplesest_parted (a INT, b INT, c DOUBLE PRECISION)
+CREATE TABLE tuplesest_parted
+(a INT, b INT, c DOUBLE PRECISION)
 PARTITION BY RANGE(a);
 
 CREATE TABLE tuplesest_parted1 PARTITION OF tuplesest_parted FOR VALUES FROM (0) TO (100);
@@ -2730,13 +2914,15 @@ SELECT
   *
 FROM
   tuplesest_tab
-  INNER JOIN (SELECT
-    b
-  FROM
-    tuplesest_parted
-  WHERE
-    c < 100
-  GROUP BY b) AS sub
+  INNER JOIN
+    (SELECT
+      b
+    FROM
+      tuplesest_parted
+    WHERE
+      c < 100
+    GROUP BY b)
+    AS sub
   ON tuplesest_tab.a = sub.b;
 
 DROP TABLE "tuplesest_parted";

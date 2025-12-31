@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/index_including_gist_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/index_including_gist.sql
 snapshot_kind: text
 ---
 CREATE TABLE tbl_gist (c1 INT, c2 INT, c3 INT, c4 box);
@@ -28,7 +28,8 @@ SELECT
   pg_get_indexdef(i.indexrelid)
 FROM
   pg_index AS i
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON i.indexrelid = c.oid
 WHERE
   i.indrelid = CAST('tbl_gist' AS REGCLASS)
@@ -69,7 +70,8 @@ SELECT
   pg_get_indexdef(i.indexrelid)
 FROM
   pg_index AS i
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON i.indexrelid = c.oid
 WHERE
   i.indrelid = CAST('tbl_gist' AS REGCLASS)
@@ -199,7 +201,8 @@ ALTER TABLE tbl_gist
 
 DROP TABLE "tbl_gist";
 
-CREATE TABLE tbl_gist (
+CREATE TABLE tbl_gist
+(
   c1 INT,
   c2 INT,
   c3 INT,

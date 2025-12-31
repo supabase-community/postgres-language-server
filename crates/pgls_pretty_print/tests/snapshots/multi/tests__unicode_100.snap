@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/unicode_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/unicode.sql
 snapshot_kind: text
 ---
 SELECT getdatabaseencoding() <> 'UTF8' AS skip_test;
@@ -46,7 +46,8 @@ FROM
     (2, 'äbc'),
     (3, 'äⓑc'),
     (4, 'äⓑc'),
-    (5, '')) AS vals (num, val)
+    (5, ''))
+  AS vals (num, val)
 ORDER BY num;
 
 SELECT is_normalized('abc', 'def');

@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/brin_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/brin.sql
 snapshot_kind: text
 ---
-CREATE TABLE brintest (
+CREATE TABLE brintest
+(
   byteacol BYTEA,
   charcol CHAR,
   namecol NAME,
@@ -59,19 +60,25 @@ SELECT
   CAST('10.2.3/24' AS CIDR) + tenthous,
   CAST(substr(stringu1, 1, 1) AS CHAR),
   CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
+  CAST('01:20:30' AS TIME) +
+  thousand * CAST('18.5 second' AS INTERVAL),
+  CAST('1942-07-23 03:05:09' AS TIMESTAMP) +
+  tenthous * CAST('36.38 hours' AS INTERVAL),
   CAST('1972-10-10 03:00'
-  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
+  AS TIMESTAMP WITH TIME ZONE) +
+  thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
   justify_hours(
   tenthous * CAST('12 minutes' AS INTERVAL)
   )
   ),
-  CAST('01:30:20+02' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
+  CAST('01:30:20+02' AS TIME WITH TIME ZONE) +
+  hundred * CAST('15 seconds' AS INTERVAL),
   CAST(thousand AS BIT(10)),
   CAST(CAST(tenthous AS BIT(16)) AS BIT VARYING),
-  CAST(tenthous AS NUMERIC(36, 30)) * fivethous * even / (hundred + 1),
+  CAST(tenthous AS NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
   CAST(format(
   '%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous, 'FM0000'),
@@ -96,10 +103,13 @@ FROM
 ORDER BY unique2
 LIMIT 100;
 
-INSERT INTO brintest (inetcol, cidrcol, int4rangecol)
+INSERT INTO brintest
+(inetcol, cidrcol, int4rangecol)
 SELECT
-  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) + tenthous,
-  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) + tenthous,
+  CAST('fe80::6e40:8ff:fea9:8c46' AS INET) +
+  tenthous,
+  CAST('fe80::6e40:8ff:fea9:8c46' AS CIDR) +
+  tenthous,
   CAST('empty' AS INT4RANGE)
 FROM
   tenk1
@@ -144,7 +154,8 @@ USING brin
 )
 WITH (pages_per_range = 1);
 
-CREATE TABLE brinopers (
+CREATE TABLE brinopers
+(
   colname NAME,
   typ TEXT,
   op TEXT[],
@@ -469,7 +480,8 @@ VALUES
     '{100, 100, 100, 99, 96, 100, 100, 99, 96, 1, 99, 1}'
   );
 
-DO $$
+DO
+$$
 DECLARE
 	r record;
 	r2 record;
@@ -578,19 +590,25 @@ SELECT
   CAST('10.2.3/24' AS CIDR) + tenthous,
   CAST(substr(stringu1, 1, 1) AS CHAR),
   CAST('1995-08-15' AS DATE) + tenthous,
-  CAST('01:20:30' AS TIME) + thousand * CAST('18.5 second' AS INTERVAL),
-  CAST('1942-07-23 03:05:09' AS TIMESTAMP) + tenthous * CAST('36.38 hours' AS INTERVAL),
+  CAST('01:20:30' AS TIME) +
+  thousand * CAST('18.5 second' AS INTERVAL),
+  CAST('1942-07-23 03:05:09' AS TIMESTAMP) +
+  tenthous * CAST('36.38 hours' AS INTERVAL),
   CAST('1972-10-10 03:00'
-  AS TIMESTAMP WITH TIME ZONE) + thousand * CAST('1 hour' AS INTERVAL),
+  AS TIMESTAMP WITH TIME ZONE) +
+  thousand * CAST('1 hour' AS INTERVAL),
   justify_days(
   justify_hours(
   tenthous * CAST('12 minutes' AS INTERVAL)
   )
   ),
-  CAST('01:30:20' AS TIME WITH TIME ZONE) + hundred * CAST('15 seconds' AS INTERVAL),
+  CAST('01:30:20' AS TIME WITH TIME ZONE) +
+  hundred * CAST('15 seconds' AS INTERVAL),
   CAST(thousand AS BIT(10)),
   CAST(CAST(tenthous AS BIT(16)) AS BIT VARYING),
-  CAST(tenthous AS NUMERIC(36, 30)) * fivethous * even / (hundred + 1),
+  CAST(tenthous AS NUMERIC(36, 30)) * fivethous *
+  even /
+  (hundred + 1),
   CAST(format(
   '%s%s-%s-%s-%s-%s%s%s',
   to_char(tenthous, 'FM0000'),
@@ -648,7 +666,8 @@ USING brin
 )
 WITH (pages_per_range = 2);
 
-DO $$
+DO
+$$
 DECLARE curtid tid;
 BEGIN
   LOOP
@@ -719,7 +738,9 @@ SELECT * FROM brin_test WHERE b = 1;
 
 CREATE TABLE brintest_3 (a TEXT, b TEXT, c TEXT, d TEXT);
 
-WITH rand_value AS (
+WITH
+rand_value
+AS (
   SELECT
     string_agg(fipshash(CAST(i AS TEXT)), '') AS val
   FROM
@@ -749,7 +770,9 @@ DROP INDEX "brin_test_temp_idx";
 
 VACUUM brintest_3;
 
-WITH rand_value AS (
+WITH
+rand_value
+AS (
   SELECT
     string_agg(fipshash(CAST(-i AS TEXT)), '') AS val
   FROM

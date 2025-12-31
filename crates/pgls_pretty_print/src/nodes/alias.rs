@@ -1,7 +1,7 @@
 use pgls_query::protobuf::Alias;
 
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 
 use super::node_list::emit_comma_separated_list;
 
@@ -19,7 +19,7 @@ pub(super) fn emit_alias(e: &mut EventEmitter, n: &Alias) {
 
     // Add column aliases if present
     if !n.colnames.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.colnames, |node, e| {
             // Column names in alias are String nodes

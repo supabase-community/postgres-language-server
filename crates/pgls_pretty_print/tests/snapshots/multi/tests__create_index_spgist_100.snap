@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_index_spgist_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_index_spgist.sql
 snapshot_kind: text
 ---
 CREATE TABLE quad_point_tbl AS SELECT point(unique1, unique2) AS p FROM tenk1;
@@ -190,7 +190,8 @@ SELECT
   *
 FROM
   quad_point_tbl_ord_seq1 AS seq
-  FULL OUTER JOIN quad_point_tbl_ord_idx1 AS idx
+  FULL OUTER JOIN
+    quad_point_tbl_ord_idx1 AS idx
   ON seq.n = idx.n
 WHERE
   seq.dist IS DISTINCT FROM idx.dist;
@@ -219,7 +220,8 @@ SELECT
   *
 FROM
   quad_point_tbl_ord_seq2 AS seq
-  FULL OUTER JOIN quad_point_tbl_ord_idx2 AS idx
+  FULL OUTER JOIN
+    quad_point_tbl_ord_idx2 AS idx
   ON seq.n = idx.n
 WHERE
   seq.dist IS DISTINCT FROM idx.dist;
@@ -248,7 +250,8 @@ SELECT
   *
 FROM
   quad_point_tbl_ord_seq3 AS seq
-  FULL OUTER JOIN quad_point_tbl_ord_idx3 AS idx
+  FULL OUTER JOIN
+    quad_point_tbl_ord_idx3 AS idx
   ON seq.n = idx.n
 WHERE
   seq.dist IS DISTINCT FROM idx.dist;
@@ -296,7 +299,8 @@ SELECT
   *
 FROM
   quad_point_tbl_ord_seq1 AS seq
-  FULL OUTER JOIN kd_point_tbl_ord_idx1 AS idx
+  FULL OUTER JOIN
+    kd_point_tbl_ord_idx1 AS idx
   ON seq.n = idx.n
 WHERE
   seq.dist IS DISTINCT FROM idx.dist;
@@ -325,7 +329,8 @@ SELECT
   *
 FROM
   quad_point_tbl_ord_seq2 AS seq
-  FULL OUTER JOIN kd_point_tbl_ord_idx2 AS idx
+  FULL OUTER JOIN
+    kd_point_tbl_ord_idx2 AS idx
   ON seq.n = idx.n
 WHERE
   seq.dist IS DISTINCT FROM idx.dist;
@@ -354,7 +359,8 @@ SELECT
   *
 FROM
   quad_point_tbl_ord_seq3 AS seq
-  FULL OUTER JOIN kd_point_tbl_ord_idx3 AS idx
+  FULL OUTER JOIN
+    kd_point_tbl_ord_idx3 AS idx
   ON seq.n = idx.n
 WHERE
   seq.dist IS DISTINCT FROM idx.dist;
@@ -387,7 +393,8 @@ FROM
   (VALUES
     (CAST('1,2' AS point)),
     (NULL),
-    ('1234,5678')) AS pts (pt);
+    ('1234,5678'))
+  AS pts (pt);
 
 SELECT COUNT(*) FROM radix_text_tbl WHERE t = 'P0123456789abcdef';
 

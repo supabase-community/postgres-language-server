@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/index_including_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/index_including.sql
 snapshot_kind: text
 ---
 CREATE TABLE tbl_include_reg (c1 INT, c2 INT, c3 INT, c4 box);
@@ -31,7 +31,8 @@ SELECT
   pg_get_indexdef(i.indexrelid)
 FROM
   pg_index AS i
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON i.indexrelid = c.oid
 WHERE
   i.indrelid = CAST('tbl_include_reg' AS REGCLASS)
@@ -68,7 +69,8 @@ SELECT
   pg_get_indexdef(i.indexrelid)
 FROM
   pg_index AS i
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON i.indexrelid = c.oid
 WHERE
   i.indrelid =
@@ -103,7 +105,8 @@ SELECT
   pg_get_indexdef(i.indexrelid)
 FROM
   pg_index AS i
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON i.indexrelid = c.oid
 WHERE
   i.indrelid = CAST('tbl_include_pk' AS REGCLASS)
@@ -130,7 +133,8 @@ SELECT
   pg_get_indexdef(i.indexrelid)
 FROM
   pg_index AS i
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON i.indexrelid = c.oid
 WHERE
   i.indrelid = CAST('tbl_include_box' AS REGCLASS)
@@ -143,7 +147,8 @@ INSERT INTO tbl_include_box_pk SELECT 1, 2, 3 * x, box('4,4,4,4') FROM generate_
 ALTER TABLE tbl_include_box_pk
   ADD PRIMARY KEY (c1, c2) INCLUDE ("c3", "c4");
 
-CREATE TABLE tbl (
+CREATE TABLE tbl
+(
   c1 INT,
   c2 INT,
   c3 INT,
@@ -180,7 +185,8 @@ INSERT INTO tbl SELECT 1, 2, 3 * x, box('4,4,4,4') FROM generate_series(1, 10) A
 
 DROP TABLE "tbl";
 
-CREATE TABLE tbl (
+CREATE TABLE tbl
+(
   c1 INT,
   c2 INT,
   c3 INT,
@@ -295,7 +301,8 @@ INSERT INTO tbl SELECT x, 2 * x, NULL, NULL FROM generate_series(1, 10) AS x;
 
 DROP TABLE "tbl";
 
-CREATE TABLE tbl (
+CREATE TABLE tbl
+(
   c1 INT,
   c2 INT,
   c3 INT,

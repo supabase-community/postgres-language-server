@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/numeric_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/numeric.sql
 snapshot_kind: text
 ---
 CREATE TABLE num_data (id INT, val NUMERIC(210, 10));
@@ -1273,7 +1273,9 @@ FROM
 WHERE
   t1.id1 = t2.id AND t1.result <> t2.expected;
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1293,7 +1295,9 @@ FROM
   v AS v1 (x1),
   v AS v2 (x2);
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1339,7 +1343,9 @@ SELECT div(CAST('nan' AS NUMERIC), '0');
 
 SELECT div(CAST('0' AS NUMERIC), '0');
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1361,7 +1367,9 @@ SELECT
 FROM
   v;
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1381,7 +1389,9 @@ SELECT
 FROM
   v;
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1403,7 +1413,9 @@ FROM
   v
 ORDER BY x;
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1421,7 +1433,9 @@ SELECT sqrt(CAST('-1' AS NUMERIC));
 
 SELECT sqrt(CAST('-inf' AS NUMERIC));
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('1' AS NUMERIC)),
     ('4.2'),
@@ -1442,7 +1456,9 @@ SELECT ln(CAST('-1' AS NUMERIC));
 
 SELECT ln(CAST('-inf' AS NUMERIC));
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('2' AS NUMERIC)),
     ('4.2'),
@@ -1471,7 +1487,9 @@ SELECT log(CAST('inf' AS NUMERIC), '-inf');
 
 SELECT log(CAST('-inf' AS NUMERIC), 'inf');
 
-WITH v (x) AS (
+WITH
+v (x)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('1'),
@@ -1849,7 +1867,8 @@ SELECT
 FROM
   (SELECT
     CAST(1.797e+308 AS DOUBLE PRECISION) AS big,
-    CAST(5e-324 AS DOUBLE PRECISION) AS tiny) AS v,
+    CAST(5e-324 AS DOUBLE PRECISION) AS tiny)
+  AS v,
   LATERAL (VALUES
     (CAST(10.5 AS DOUBLE PRECISION), -big, big, 1),
     (CAST(10.5 AS DOUBLE PRECISION), -big, big, 2),
@@ -1862,7 +1881,8 @@ FROM
     (0, 0, tiny, 4),
     (tiny, 0, tiny, 4),
     (0, 0, 1, 2147483647),
-    (1, 1, 0, 2147483647)) AS sample (oper, low, high, cnt);
+    (1, 1, 0, 2147483647))
+  AS sample (oper, low, high, cnt);
 
 SELECT width_bucket(CAST(1 AS DOUBLE PRECISION), 0, 1, 2147483647);
 
@@ -1934,7 +1954,9 @@ SELECT to_char(val, '9.999EEEE') FROM num_data;
 
 SELECT to_char(val, 'FMRN') FROM num_data;
 
-WITH v (val) AS (
+WITH
+v (val)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('-4.2'),
@@ -1956,7 +1978,9 @@ SELECT
 FROM
   v;
 
-WITH v (exp) AS (
+WITH
+v (exp)
+AS (
   VALUES
     (-16379),
     (-16378),
@@ -1991,7 +2015,9 @@ SELECT
 FROM
   v;
 
-WITH v (val) AS (
+WITH
+v (val)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('-4.2'),
@@ -2014,7 +2040,9 @@ SELECT
 FROM
   v;
 
-WITH v (val) AS (
+WITH
+v (val)
+AS (
   VALUES
     (CAST('0' AS NUMERIC)),
     ('-4.2'),

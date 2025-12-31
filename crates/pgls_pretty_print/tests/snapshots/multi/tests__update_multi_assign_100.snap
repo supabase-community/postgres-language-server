@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/update_multi_assign_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/update_multi_assign.sql
 snapshot_kind: text
 ---
 CREATE TABLE ledger (id INT PRIMARY KEY, balance NUMERIC, updated_at TIMESTAMP WITH TIME ZONE);
@@ -13,9 +13,12 @@ FROM adjustments
 WHERE
   ledger.id = adjustments.id;
 
-INSERT INTO ledger AS l (id, balance, updated_at)
+INSERT INTO ledger AS l
+(id, balance, updated_at)
 VALUES (1, 10, NOW())
-ON CONFLICT (id) DO
+ON CONFLICT
+(id)
+DO
 UPDATE
 SET (balance, updated_at) = (
   excluded.balance + l.balance,

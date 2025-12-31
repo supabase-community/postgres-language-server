@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/foreign_data_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/foreign_data.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION test_fdw_handler()
@@ -10,7 +10,8 @@ LANGUAGE "c";
 
 SET client_min_messages = warning;
 
-DROP ROLE IF EXISTS regress_foreign_data_user,
+DROP ROLE IF EXISTS
+regress_foreign_data_user,
 regress_test_role,
 regress_test_role2,
 regress_test_role_super,
@@ -435,7 +436,8 @@ quote '"',
 CREATE TABLE ref_table (id INT PRIMARY KEY);
 
 CREATE FOREIGN TABLE ft1 (
-  c1 INT OPTIONS ("param 1" 'val1')
+  c1 INT
+  OPTIONS ("param 1" 'val1')
   REFERENCES ref_table (id),
   c2 TEXT OPTIONS (param2 'val2', param3 'val3'),
   c3 DATE
@@ -456,10 +458,13 @@ quote '"',
 
 CREATE FOREIGN TABLE ft1 (
   c1 INT OPTIONS ("param 1" 'val1') NOT NULL,
-  c2 TEXT OPTIONS (param2 'val2', param3 'val3')
+  c2 TEXT
+  OPTIONS (param2 'val2', param3 'val3')
   CHECK (c2 <> ''),
   c3 DATE,
-  CHECK (c3 BETWEEN CAST('1994-01-01' AS DATE) AND CAST('1994-01-31' AS DATE))
+  CHECK (c3
+  BETWEEN CAST('1994-01-01' AS DATE)
+  AND CAST('1994-01-31' AS DATE))
 ) SERVER s0 OPTIONS (delimiter ',',
 quote '"',
 "be quoted" 'value');
@@ -479,7 +484,8 @@ SELECT * FROM ft1;
 
 SELECT * FROM ft1;
 
-CREATE TABLE lt1 (a INT)
+CREATE TABLE lt1
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE FOREIGN TABLE ft_part1 PARTITION OF lt1 FOR VALUES FROM (0) TO (1000) SERVER s0;
@@ -503,7 +509,8 @@ ALTER TABLE lt1
 
 DROP TABLE "lt1";
 
-CREATE TABLE lt1 (a INT)
+CREATE TABLE lt1
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX
@@ -545,7 +552,8 @@ DROP TABLE "lt1";
 
 DROP FOREIGN TABLE "ft_part2";
 
-CREATE TABLE lt1 (a INT)
+CREATE TABLE lt1
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE INDEX
@@ -1122,33 +1130,39 @@ AS '
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER trigtest_before_stmt
-BEFORE INSERT OR DELETE OR UPDATE ON foreign_schema.foreign_table_1
+BEFORE INSERT OR DELETE OR UPDATE
+ON foreign_schema.foreign_table_1
 FOR EACH STATEMENT
 EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_after_stmt
-AFTER INSERT OR DELETE OR UPDATE ON foreign_schema.foreign_table_1
+AFTER INSERT OR DELETE OR UPDATE
+ON foreign_schema.foreign_table_1
 FOR EACH STATEMENT
 EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_after_stmt_tt
-AFTER INSERT OR DELETE OR UPDATE ON foreign_schema.foreign_table_1
+AFTER INSERT OR DELETE OR UPDATE
+ON foreign_schema.foreign_table_1
 REFERENCING NEW TABLE AS new_table
 FOR EACH STATEMENT
 EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_before_row
-BEFORE INSERT OR DELETE OR UPDATE ON foreign_schema.foreign_table_1
+BEFORE INSERT OR DELETE OR UPDATE
+ON foreign_schema.foreign_table_1
 FOR EACH ROW
 EXECUTE FUNCTION dummy_trigger();
 
 CREATE TRIGGER trigtest_after_row
-AFTER INSERT OR DELETE OR UPDATE ON foreign_schema.foreign_table_1
+AFTER INSERT OR DELETE OR UPDATE
+ON foreign_schema.foreign_table_1
 FOR EACH ROW
 EXECUTE FUNCTION dummy_trigger();
 
 CREATE CONSTRAINT TRIGGER trigtest_constraint
-AFTER INSERT OR DELETE OR UPDATE ON foreign_schema.foreign_table_1
+AFTER INSERT OR DELETE OR UPDATE
+ON foreign_schema.foreign_table_1
 FOR EACH ROW
 EXECUTE FUNCTION dummy_trigger();
 
@@ -1189,7 +1203,8 @@ quote '"',
 ALTER FOREIGN TABLE ft2
   INHERIT fd_pt1;
 
-CREATE TABLE ct3 ()
+CREATE TABLE ct3
+()
 INHERITS (ft2);
 
 CREATE FOREIGN TABLE ft3 PARTITION OF ft2 DEFAULT SERVER s0;
@@ -1272,7 +1287,8 @@ SELECT
   connoinherit
 FROM
   pg_class AS pc
-  INNER JOIN pg_constraint AS pgc
+  INNER JOIN
+    pg_constraint AS pgc
   ON conrelid = pc.oid
 WHERE
   pc.relname = 'fd_pt1'
@@ -1350,7 +1366,8 @@ DROP OWNED BY regress_test_role2;
 
 DROP OWNED BY regress_test_role2 CASCADE;
 
-CREATE TABLE fd_pt2 (c1 INT NOT NULL, c2 TEXT, c3 DATE)
+CREATE TABLE fd_pt2
+(c1 INT NOT NULL, c2 TEXT, c3 DATE)
 PARTITION BY LIST(c1);
 
 CREATE FOREIGN TABLE fd_pt2_1
@@ -1440,7 +1457,8 @@ DROP FOREIGN TABLE "fd_pt2_1";
 
 DROP TABLE "fd_pt2";
 
-CREATE TEMPORARY TABLE temp_parted (a INT)
+CREATE TEMPORARY TABLE temp_parted
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE FOREIGN TABLE foreign_part PARTITION OF temp_parted DEFAULT SERVER s0;

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/advisory_lock_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/advisory_lock.sql
 snapshot_kind: text
 ---
 SELECT oid AS datoid FROM pg_database WHERE datname = current_database();

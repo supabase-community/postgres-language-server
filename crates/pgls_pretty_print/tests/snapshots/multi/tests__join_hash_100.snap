@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/join_hash_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/join_hash.sql
 snapshot_kind: text
 ---
 BEGIN;
@@ -462,13 +462,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -476,13 +479,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -525,13 +531,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -539,13 +548,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -588,13 +600,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -602,13 +617,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -651,13 +669,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -665,13 +686,16 @@ SELECT
   COUNT(*)
 FROM
   join_foo
-  LEFT OUTER JOIN (SELECT
-    b1.id,
-    b1.t
-  FROM
-    join_bar AS b1
-    INNER JOIN join_bar AS b2
-    USING ("id")) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      b1.id,
+      b1.t
+    FROM
+      join_bar AS b1
+      INNER JOIN
+        join_bar AS b2
+      USING ("id"))
+    AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
 
@@ -766,14 +790,18 @@ SELECT
   length(MAX(s.t))
 FROM
   wide
-  LEFT OUTER JOIN (SELECT id, COALESCE(t, '') || '' AS t FROM wide) AS s
+  LEFT OUTER JOIN
+    (SELECT id, COALESCE(t, '') || '' AS t FROM wide)
+    AS s
   USING ("id");
 
 SELECT
   length(MAX(s.t))
 FROM
   wide
-  LEFT OUTER JOIN (SELECT id, COALESCE(t, '') || '' AS t FROM wide) AS s
+  LEFT OUTER JOIN
+    (SELECT id, COALESCE(t, '') || '' AS t FROM wide)
+    AS s
   USING ("id");
 
 SELECT
@@ -812,7 +840,8 @@ SELECT
   *
 FROM
   hjtest_matchbits_t1 AS t1
-  FULL OUTER JOIN hjtest_matchbits_t2 AS t2
+  FULL OUTER JOIN
+    hjtest_matchbits_t2 AS t2
   ON t1.id = t2.id
 ORDER BY t1.id;
 
@@ -930,10 +959,12 @@ FROM
     i4.f1
   FROM
     tenk1 AS t1
-    INNER JOIN int4_tbl AS i4
+    INNER JOIN
+      int4_tbl AS i4
     ON t1.fivethous = i4.f1 + i8.q2
   ORDER BY 1,
-    2) AS ss;
+    2)
+  AS ss;
 
 SELECT
   i8.q2,
@@ -945,9 +976,11 @@ FROM
     i4.f1
   FROM
     tenk1 AS t1
-    INNER JOIN int4_tbl AS i4
+    INNER JOIN
+      int4_tbl AS i4
     ON t1.fivethous = i4.f1 + i8.q2
   ORDER BY 1,
-    2) AS ss;
+    2)
+  AS ss;
 
 ROLLBACK;

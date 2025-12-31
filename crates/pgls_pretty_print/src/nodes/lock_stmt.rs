@@ -2,7 +2,7 @@ use pgls_query::protobuf::LockStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::emit_node;
@@ -28,7 +28,7 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
     // 7: ExclusiveLock -> EXCLUSIVE
     // 8: AccessExclusiveLock -> ACCESS EXCLUSIVE
     if n.mode > 0 {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IN_KW);
         e.space();
         let mode_str = match n.mode {
@@ -48,7 +48,7 @@ pub(super) fn emit_lock_stmt(e: &mut EventEmitter, n: &LockStmt) {
     }
 
     if n.nowait {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::IDENT("NOWAIT".to_string()));
     }
 

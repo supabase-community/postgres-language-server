@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/box_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/box.sql
 snapshot_kind: text
 ---
 CREATE TABLE box_tbl (f1 box);
@@ -275,7 +275,8 @@ SELECT
   *
 FROM
   quad_box_tbl_ord_seq1 AS seq
-  FULL OUTER JOIN quad_box_tbl_ord_idx1 AS idx
+  FULL OUTER JOIN
+    quad_box_tbl_ord_idx1 AS idx
   ON seq.n = idx.n AND
     seq.id = idx.id AND
     (seq.dist = idx.dist OR
@@ -317,7 +318,8 @@ SELECT
   *
 FROM
   quad_box_tbl_ord_seq2 AS seq
-  FULL OUTER JOIN quad_box_tbl_ord_idx2 AS idx
+  FULL OUTER JOIN
+    quad_box_tbl_ord_idx2 AS idx
   ON seq.n = idx.n AND
     seq.id = idx.id AND
     (seq.dist = idx.dist OR

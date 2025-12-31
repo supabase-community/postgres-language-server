@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/multirangetypes_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/multirangetypes.sql
 snapshot_kind: text
 ---
 SELECT CAST('' AS textmultirange);
@@ -644,7 +644,8 @@ SELECT nummultirange(numrange(1, 2)) << nummultirange(numrange(3, 4));
 SELECT nummultirange(numrange(1, 2)) << nummultirange(numrange(3, 4), numrange(7, 8));
 
 SELECT
-  nummultirange(numrange(1, 2), numrange(4, 5)) << nummultirange(numrange(3, 4), numrange(7, 8));
+  nummultirange(numrange(1, 2), numrange(4, 5)) <<
+  nummultirange(numrange(3, 4), numrange(7, 8));
 
 SELECT nummultirange() >> CAST('empty' AS NUMRANGE);
 
@@ -681,7 +682,8 @@ SELECT nummultirange(numrange(3, 4)) >> nummultirange(numrange(1, 2));
 SELECT nummultirange(numrange(3, 4), numrange(7, 8)) >> nummultirange(numrange(1, 2));
 
 SELECT
-  nummultirange(numrange(3, 4), numrange(7, 8)) >> nummultirange(numrange(1, 2), numrange(4, 5));
+  nummultirange(numrange(3, 4), numrange(7, 8)) >>
+  nummultirange(numrange(1, 2), numrange(4, 5));
 
 SELECT nummultirange() + nummultirange();
 
@@ -746,7 +748,8 @@ SELECT nummultirange(numrange(1, 3), numrange(4, 5)) - nummultirange(numrange(2,
 SELECT nummultirange(numrange(1, 2), numrange(4, 5)) - nummultirange(numrange(8, 9));
 
 SELECT
-  nummultirange(numrange(1, 2), numrange(4, 5)) - nummultirange(numrange(-2, 0), numrange(8, 9));
+  nummultirange(numrange(1, 2), numrange(4, 5)) -
+  nummultirange(numrange(-2, 0), numrange(8, 9));
 
 SELECT nummultirange() * nummultirange();
 
@@ -906,7 +909,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr @> int4multirange(
+  mr @>
+  int4multirange(
   int4range(10, 20),
   int4range(30, 40)
   );
@@ -916,7 +920,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr && CAST('{(10,20),(30,40),(50,60)}'
+  mr &&
+  CAST('{(10,20),(30,40),(50,60)}'
   AS int4multirange);
 
 SELECT
@@ -924,7 +929,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr <@ CAST('{(10,30),(40,60),(70,90)}'
+  mr <@
+  CAST('{(10,30),(40,60),(70,90)}'
   AS int4multirange);
 
 SELECT
@@ -932,7 +938,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr << int4multirange(
+  mr <<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -942,7 +949,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr >> int4multirange(
+  mr >>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -952,7 +960,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr &< int4multirange(
+  mr &<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -962,7 +971,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr &> int4multirange(
+  mr &>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -972,7 +982,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr -|- int4multirange(
+  mr -|-
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -1058,7 +1069,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr @> int4multirange(
+  mr @>
+  int4multirange(
   int4range(10, 20),
   int4range(30, 40)
   );
@@ -1068,7 +1080,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr && CAST('{(10,20),(30,40),(50,60)}'
+  mr &&
+  CAST('{(10,20),(30,40),(50,60)}'
   AS int4multirange);
 
 SELECT
@@ -1076,7 +1089,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr <@ CAST('{(10,30),(40,60),(70,90)}'
+  mr <@
+  CAST('{(10,30),(40,60),(70,90)}'
   AS int4multirange);
 
 SELECT
@@ -1084,7 +1098,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr << int4multirange(
+  mr <<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -1094,7 +1109,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr >> int4multirange(
+  mr >>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -1104,7 +1120,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr &< int4multirange(
+  mr &<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -1114,7 +1131,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr &> int4multirange(
+  mr &>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -1124,7 +1142,8 @@ SELECT
 FROM
   test_multirange_gist
 WHERE
-  mr -|- int4multirange(
+  mr -|-
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -1160,7 +1179,8 @@ FROM
     (CAST('[b,b]' AS textrange)),
     (CAST('[c,f]' AS textrange)),
     (CAST('[g,h)' AS textrange)),
-    (CAST('[h,j)' AS textrange))) AS t (r);
+    (CAST('[h,j)' AS textrange)))
+  AS t (r);
 
 SELECT range_agg(nmr) FROM nummultirange_test;
 
@@ -1175,7 +1195,8 @@ SELECT
 FROM
   (VALUES
     (CAST('{}' AS nummultirange)),
-    (CAST('{}' AS nummultirange))) AS t (nmr);
+    (CAST('{}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT range_agg(nmr) FROM (VALUES (CAST('{[1,2]}' AS nummultirange))) AS t (nmr);
 
@@ -1188,14 +1209,16 @@ SELECT
 FROM
   (VALUES
     (CAST('{[1,2]}' AS nummultirange)),
-    (CAST('{[5,6]}' AS nummultirange))) AS t (nmr);
+    (CAST('{[5,6]}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT
   range_agg(nmr)
 FROM
   (VALUES
     (CAST('{[1,2]}' AS nummultirange)),
-    (CAST('{[2,3]}' AS nummultirange))) AS t (nmr);
+    (CAST('{[2,3]}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT range_intersect_agg(nmr) FROM nummultirange_test;
 
@@ -1208,21 +1231,24 @@ SELECT
 FROM
   (VALUES
     (CAST('{[1,3]}' AS nummultirange)),
-    (CAST('{[6,12]}' AS nummultirange))) AS t (nmr);
+    (CAST('{[6,12]}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT
   range_intersect_agg(nmr)
 FROM
   (VALUES
     (CAST('{[1,6]}' AS nummultirange)),
-    (CAST('{[3,12]}' AS nummultirange))) AS t (nmr);
+    (CAST('{[3,12]}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT
   range_intersect_agg(nmr)
 FROM
   (VALUES
     (CAST('{[1,6], [10,12]}' AS nummultirange)),
-    (CAST('{[4,14]}' AS nummultirange))) AS t (nmr);
+    (CAST('{[4,14]}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT range_intersect_agg(nmr) FROM (VALUES (CAST('{}' AS nummultirange))) AS t (nmr);
 
@@ -1231,7 +1257,8 @@ SELECT range_intersect_agg(nmr) FROM (VALUES (CAST('{[1,2]}' AS nummultirange)))
 SELECT
   range_intersect_agg(nmr)
 FROM
-  (VALUES (CAST('{[1,6], [10,12]}' AS nummultirange))) AS t (nmr);
+  (VALUES (CAST('{[1,6], [10,12]}' AS nummultirange)))
+  AS t (nmr);
 
 SELECT range_intersect_agg(nmr) FROM nummultirange_test WHERE nmr @> 4.0;
 
@@ -1531,7 +1558,8 @@ FROM
       two_ints_multirange(
       two_ints_range(ROW(5, 6), ROW(7, 8))
       )
-    )) AS v (t);
+    ))
+  AS v (t);
 
 DROP TYPE two_ints CASCADE;
 

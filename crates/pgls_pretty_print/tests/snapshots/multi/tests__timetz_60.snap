@@ -1,0 +1,220 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/timetz.sql
+snapshot_kind: text
+---
+CREATE TABLE timetz_tbl (f1 TIME(2) WITH TIME ZONE);
+
+INSERT INTO timetz_tbl VALUES ('00:01 PDT');
+
+INSERT INTO timetz_tbl VALUES ('01:00 PDT');
+
+INSERT INTO timetz_tbl VALUES ('02:03 PDT');
+
+INSERT INTO timetz_tbl VALUES ('07:07 PST');
+
+INSERT INTO timetz_tbl VALUES ('08:08 EDT');
+
+INSERT INTO timetz_tbl VALUES ('11:59 PDT');
+
+INSERT INTO timetz_tbl VALUES ('12:00 PDT');
+
+INSERT INTO timetz_tbl VALUES ('12:01 PDT');
+
+INSERT INTO timetz_tbl VALUES ('23:59 PDT');
+
+INSERT INTO timetz_tbl VALUES ('11:59:59.99 PM PDT');
+
+INSERT INTO timetz_tbl
+VALUES (
+  '2003-03-07 15:36:39 America/New_York'
+);
+
+INSERT INTO timetz_tbl
+VALUES (
+  '2003-07-07 15:36:39 America/New_York'
+);
+
+INSERT INTO timetz_tbl VALUES ('15:36:39 America/New_York');
+
+INSERT INTO timetz_tbl VALUES ('15:36:39 m2');
+
+INSERT INTO timetz_tbl VALUES ('15:36:39 MSK m2');
+
+SELECT f1 AS "Time TZ" FROM timetz_tbl;
+
+SELECT
+  f1 AS "Three"
+FROM
+  timetz_tbl
+WHERE
+  f1 < '05:06:07-07';
+
+SELECT
+  f1 AS "Seven"
+FROM
+  timetz_tbl
+WHERE
+  f1 > '05:06:07-07';
+
+SELECT f1 AS "None" FROM timetz_tbl WHERE f1 < '00:00-07';
+
+SELECT f1 AS "Ten" FROM timetz_tbl WHERE f1 >= '00:00-07';
+
+SELECT CAST('23:59:59.999999 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('23:59:59.9999999 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('23:59:60 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('24:00:00 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('24:00:00.01 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('23:59:60.01 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('24:01:00 PDT' AS TIME WITH TIME ZONE);
+
+SELECT CAST('25:00:00 PDT' AS TIME WITH TIME ZONE);
+
+SELECT pg_input_is_valid('12:00:00 PDT', 'timetz');
+
+SELECT pg_input_is_valid('25:00:00 PDT', 'timetz');
+
+SELECT
+  pg_input_is_valid(
+  '15:36:39 America/New_York',
+  'timetz'
+  );
+
+SELECT * FROM pg_input_error_info('25:00:00 PDT', 'timetz');
+
+SELECT
+  *
+FROM
+  pg_input_error_info(
+  '15:36:39 America/New_York',
+  'timetz'
+  );
+
+SELECT
+  f1 +
+  CAST('00:01'
+  AS TIME WITH TIME ZONE)
+  AS "Illegal"
+FROM
+  timetz_tbl;
+
+SELECT
+  EXTRACT('microsecond' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('millisecond' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('second' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('minute' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('hour' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('day' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('fortnight' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('timezone' FROM CAST('2020-05-26 13:30:25.575401-04:30'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('timezone_hour' FROM CAST('2020-05-26 13:30:25.575401-04:30'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('timezone_minute' FROM CAST('2020-05-26 13:30:25.575401-04:30'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  EXTRACT('epoch' FROM CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE));
+
+SELECT
+  date_part(
+  'microsecond',
+  CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE)
+  );
+
+SELECT
+  date_part(
+  'millisecond',
+  CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE)
+  );
+
+SELECT
+  date_part(
+  'second',
+  CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE)
+  );
+
+SELECT
+  date_part(
+  'epoch',
+  CAST('2020-05-26 13:30:25.575401-04'
+  AS TIME WITH TIME ZONE)
+  );
+
+BEGIN;
+
+SET LOCAL TIME ZONE UTC;
+
+CREATE VIEW timetz_local_view
+AS SELECT
+  f1 AS dat,
+  timezone(f1) AS dat_func,
+  timezone(f1) AS dat_at_local,
+  timezone(
+  current_setting('TimeZone'),
+  f1
+  )
+  AS dat_at_tz,
+  timezone(
+  CAST('00:00' AS INTERVAL),
+  f1
+  )
+  AS dat_at_int
+FROM
+  timetz_tbl
+ORDER BY f1;
+
+SELECT pg_get_viewdef('timetz_local_view', TRUE);
+
+SELECT * FROM timetz_local_view;
+
+SELECT
+  f1 AS dat,
+  timezone('UTC+10', f1)
+  AS dat_at_tz,
+  timezone(
+  CAST('-10:00' AS INTERVAL),
+  f1
+  )
+  AS dat_at_int
+FROM
+  timetz_tbl
+ORDER BY f1;
+
+ROLLBACK;

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/mvcc_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/mvcc.sql
 snapshot_kind: text
 ---
 BEGIN;
@@ -24,7 +24,8 @@ INSERT INTO clean_aborted_self (key, data) VALUES (-1, 'just to allocate metapag
 
 SELECT pg_relation_size('clean_aborted_self_key') AS clean_aborted_self_key_before;
 
-DO $$
+DO
+$$
 BEGIN
     -- iterate often enough to see index growth even on larger-than-default page sizes
     FOR i IN 1..100 LOOP

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/circle_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/circle.sql
 snapshot_kind: text
 ---
 SET extra_float_digits = -1;

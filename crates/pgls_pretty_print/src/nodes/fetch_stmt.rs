@@ -2,7 +2,7 @@ use pgls_query::protobuf::FetchStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
@@ -84,7 +84,7 @@ pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
 
     // Emit FROM cursor_name
     if !n.portalname.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);
         e.space();
         e.token(TokenKind::IDENT(n.portalname.clone()));

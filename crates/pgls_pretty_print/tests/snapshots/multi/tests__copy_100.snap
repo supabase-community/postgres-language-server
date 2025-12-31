@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/copy_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/copy.sql
 snapshot_kind: text
 ---
 CREATE TEMPORARY TABLE copytest (style TEXT, test TEXT, filler INT);
@@ -72,7 +72,8 @@ COPY copytest5 FROM STDOUT WITH (FORMAT 'csv', HEADER 5);
 
 SELECT COUNT(*) FROM copytest5;
 
-CREATE TABLE parted_copytest (a INT, b INT, c TEXT)
+CREATE TABLE parted_copytest
+(a INT, b INT, c TEXT)
 PARTITION BY LIST(b);
 
 CREATE TABLE parted_copytest_a1 (c TEXT, b INT, a INT);
@@ -128,7 +129,8 @@ end;
 ';
 
 CREATE TRIGGER part_ins_trig
-BEFORE INSERT ON parted_copytest_a2
+BEFORE INSERT
+ON parted_copytest_a2
 FOR EACH ROW
 EXECUTE FUNCTION part_ins_func();
 
@@ -194,7 +196,8 @@ end;
 LANGUAGE "plpgsql";
 
 CREATE TRIGGER check_after_tab_progress_reporting
-AFTER INSERT ON tab_progress_reporting
+AFTER INSERT
+ON tab_progress_reporting
 FOR EACH STATEMENT
 EXECUTE FUNCTION notice_after_tab_progress_reporting();
 
@@ -237,7 +240,8 @@ SELECT * FROM header_copytest ORDER BY a;
 
 DROP TABLE "header_copytest";
 
-CREATE TEMPORARY TABLE oversized_column_default (
+CREATE TEMPORARY TABLE oversized_column_default
+(
   col1 VARCHAR(5) DEFAULT 'more than 5 chars',
   col2 VARCHAR(5)
 );
@@ -250,11 +254,8 @@ COPY oversized_column_default FROM STDOUT WITH (DEFAULT '');
 
 DROP TABLE "oversized_column_default";
 
-CREATE TABLE parted_si (
-  id INT NOT NULL,
-  data TEXT NOT NULL,
-  rand DOUBLE PRECISION NOT NULL DEFAULT random()
-)
+CREATE TABLE parted_si
+(id INT NOT NULL, data TEXT NOT NULL, rand DOUBLE PRECISION NOT NULL DEFAULT random())
 PARTITION BY LIST((id % 2));
 
 CREATE TABLE parted_si_p_even PARTITION OF parted_si FOR VALUES IN (0);

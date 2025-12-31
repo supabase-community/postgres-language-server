@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/rangetypes_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/rangetypes.sql
 snapshot_kind: text
 ---
 SELECT CAST('' AS textrange);
@@ -402,7 +402,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir @> int4multirange(
+  ir @>
+  int4multirange(
   int4range(10, 20),
   int4range(30, 40)
   );
@@ -412,7 +413,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir && CAST('{(10,20),(30,40),(50,60)}'
+  ir &&
+  CAST('{(10,20),(30,40),(50,60)}'
   AS int4multirange);
 
 SELECT
@@ -420,7 +422,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir <@ CAST('{(10,30),(40,60),(70,90)}'
+  ir <@
+  CAST('{(10,30),(40,60),(70,90)}'
   AS int4multirange);
 
 SELECT
@@ -428,7 +431,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir << int4multirange(
+  ir <<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -438,7 +442,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir >> int4multirange(
+  ir >>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -448,7 +453,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir &< int4multirange(
+  ir &<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -458,7 +464,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir &> int4multirange(
+  ir &>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -468,7 +475,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir -|- int4multirange(
+  ir -|-
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -508,7 +516,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir @> int4multirange(
+  ir @>
+  int4multirange(
   int4range(10, 20),
   int4range(30, 40)
   );
@@ -518,7 +527,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir && CAST('{(10,20),(30,40),(50,60)}'
+  ir &&
+  CAST('{(10,20),(30,40),(50,60)}'
   AS int4multirange);
 
 SELECT
@@ -526,7 +536,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir <@ CAST('{(10,30),(40,60),(70,90)}'
+  ir <@
+  CAST('{(10,30),(40,60),(70,90)}'
   AS int4multirange);
 
 SELECT
@@ -534,7 +545,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir << int4multirange(
+  ir <<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -544,7 +556,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir >> int4multirange(
+  ir >>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -554,7 +567,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir &< int4multirange(
+  ir &<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -564,7 +578,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir &> int4multirange(
+  ir &>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -574,7 +589,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir -|- int4multirange(
+  ir -|-
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -617,7 +633,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir @> int4multirange(
+  ir @>
+  int4multirange(
   int4range(10, 20),
   int4range(30, 40)
   );
@@ -627,7 +644,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir && CAST('{(10,20),(30,40),(50,60)}'
+  ir &&
+  CAST('{(10,20),(30,40),(50,60)}'
   AS int4multirange);
 
 SELECT
@@ -635,7 +653,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir <@ CAST('{(10,30),(40,60),(70,90)}'
+  ir <@
+  CAST('{(10,30),(40,60),(70,90)}'
   AS int4multirange);
 
 SELECT
@@ -643,7 +662,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir << int4multirange(
+  ir <<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -653,7 +673,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir >> int4multirange(
+  ir >>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -663,7 +684,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir &< int4multirange(
+  ir &<
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -673,7 +695,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir &> int4multirange(
+  ir &>
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -683,7 +706,8 @@ SELECT
 FROM
   test_range_gist
 WHERE
-  ir -|- int4multirange(
+  ir -|-
+  int4multirange(
   int4range(100, 200),
   int4range(400, 500)
   );
@@ -846,7 +870,8 @@ RESET enable_seqscan;
 
 DROP TABLE "test_range_elem";
 
-CREATE TABLE test_range_excl (
+CREATE TABLE test_range_excl
+(
   room INT4RANGE,
   speaker INT4RANGE,
   during TSRANGE,
@@ -1032,7 +1057,8 @@ SELECT
 FROM
   (VALUES
     (two_ints_range(ROW(1, 2), ROW(3, 4))),
-    (two_ints_range(ROW(5, 6), ROW(7, 8)))) AS v (t);
+    (two_ints_range(ROW(5, 6), ROW(7, 8))))
+  AS v (t);
 
 ALTER TYPE two_ints
   ADD ATTRIBUTE c two_ints_range;

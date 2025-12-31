@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/subselect_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/subselect.sql
 snapshot_kind: text
 ---
 SELECT 1 AS one WHERE 1 IN (SELECT 1);
@@ -58,7 +58,8 @@ SELECT
 FROM
   subselect_tbl
 WHERE
-  f1 IN (SELECT
+  f1 IN
+  (SELECT
     f2
   FROM
     subselect_tbl
@@ -71,7 +72,8 @@ SELECT
 FROM
   subselect_tbl
 WHERE
-  NOT (f1, f2) IN (SELECT
+  NOT (f1, f2) IN
+  (SELECT
     f2,
     CAST(f3 AS INT)
   FROM
@@ -85,7 +87,8 @@ SELECT
 FROM
   subselect_tbl AS upper
 WHERE
-  f1 IN (SELECT f2 FROM subselect_tbl WHERE f1 = upper.f1);
+  f1 IN
+  (SELECT f2 FROM subselect_tbl WHERE f1 = upper.f1);
 
 SELECT
   f1 AS "Correlated Field",
@@ -93,7 +96,8 @@ SELECT
 FROM
   subselect_tbl AS upper
 WHERE
-  f1 IN (SELECT
+  f1 IN
+  (SELECT
     f2
   FROM
     subselect_tbl
@@ -106,7 +110,8 @@ SELECT
 FROM
   subselect_tbl AS upper
 WHERE
-  f3 IN (SELECT
+  f3 IN
+  (SELECT
     upper.f1 + f2
   FROM
     subselect_tbl
@@ -118,7 +123,8 @@ SELECT
 FROM
   subselect_tbl
 WHERE
-  (f1, f2) IN (SELECT
+  (f1, f2) IN
+  (SELECT
     f2,
     CAST(f3 AS INT)
   FROM
@@ -175,7 +181,8 @@ SELECT
 FROM
   subselect_tbl AS ss
 WHERE
-  NOT f1 IN (SELECT
+  NOT f1 IN
+  (SELECT
     f1 + 1
   FROM
     int4_tbl
@@ -201,7 +208,8 @@ SELECT
 FROM
   int4_tbl AS o
 WHERE
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     int4_tbl AS i
@@ -219,7 +227,8 @@ FROM
   FROM
     tenk1 AS a
   WHERE
-    unique1 IN (SELECT hundred FROM tenk1 AS b)) AS ss;
+    unique1 IN (SELECT hundred FROM tenk1 AS b))
+  AS ss;
 
 SELECT
   COUNT(DISTINCT ss.ten)
@@ -229,7 +238,8 @@ FROM
   FROM
     tenk1 AS a
   WHERE
-    unique1 IN (SELECT hundred FROM tenk1 AS b)) AS ss;
+    unique1 IN (SELECT hundred FROM tenk1 AS b))
+  AS ss;
 
 SELECT
   COUNT(*)
@@ -239,7 +249,9 @@ FROM
   FROM
     tenk1 AS a
   WHERE
-    unique1 IN (SELECT DISTINCT hundred FROM tenk1 AS b)) AS ss;
+    unique1 IN
+    (SELECT DISTINCT hundred FROM tenk1 AS b))
+  AS ss;
 
 SELECT
   COUNT(DISTINCT ss.ten)
@@ -249,7 +261,9 @@ FROM
   FROM
     tenk1 AS a
   WHERE
-    unique1 IN (SELECT DISTINCT hundred FROM tenk1 AS b)) AS ss;
+    unique1 IN
+    (SELECT DISTINCT hundred FROM tenk1 AS b))
+  AS ss;
 
 CREATE TEMPORARY TABLE foo (id INT);
 
@@ -272,12 +286,14 @@ SELECT
 FROM
   foo
 WHERE
-  id IN (SELECT
+  id IN
+  (SELECT
     id2
   FROM
     (SELECT id1, id2 FROM bar
     UNION
-    SELECT id1, id2 FROM bar) AS s);
+    SELECT id1, id2 FROM bar)
+    AS s);
 
 SELECT * FROM foo WHERE id IN (SELECT id2 FROM (SELECT DISTINCT ON ( id2) id1, id2 FROM bar) AS s);
 
@@ -288,10 +304,12 @@ SELECT
 FROM
   foo
 WHERE
-  id IN (SELECT
+  id IN
+  (SELECT
     id2
   FROM
-    (SELECT id2 FROM bar UNION SELECT id2 FROM bar) AS s);
+    (SELECT id2 FROM bar UNION SELECT id2 FROM bar)
+    AS s);
 
 CREATE TABLE orderstest (approver_ref INT, po_ref INT, ordercanceled BOOLEAN);
 
@@ -331,7 +349,8 @@ AS SELECT
     WHEN ord.ordercanceled THEN 'Canceled'
     ELSE (SELECT
       CASE
-      WHEN ord.po_ref = 1 THEN (SELECT
+      WHEN ord.po_ref = 1
+      THEN (SELECT
         CASE
         WHEN ord.approver_ref = 1 THEN '---'
         ELSE 'Approved'
@@ -343,7 +362,8 @@ AS SELECT
   CASE
   WHEN ord.ordercanceled THEN 'Canceled'
   ELSE CASE
-  WHEN ord.po_ref = 1 THEN CASE
+  WHEN ord.po_ref = 1
+  THEN CASE
   WHEN ord.approver_ref = 1 THEN '---'
   ELSE 'Approved'
   END
@@ -373,7 +393,8 @@ DO INSTEAD
 
 INSERT INTO parts (partnum, cost) VALUES (1, 1234.56);
 
-INSERT INTO shipped_view (ordnum, partnum, value)
+INSERT INTO shipped_view
+(ordnum, partnum, value)
 VALUES (
   0, 1, (SELECT cost FROM parts WHERE partnum = '1')
 );
@@ -392,7 +413,8 @@ DO INSTEAD
 UPDATE shipped_view
 SET value = 11
 FROM int4_tbl AS a
-INNER JOIN int4_tbl AS b
+INNER JOIN
+  int4_tbl AS b
 ON a.f1 =
   (SELECT f1 FROM int4_tbl AS c WHERE c.f1 = b.f1)
 WHERE
@@ -409,7 +431,8 @@ FROM
     (SELECT SUM(f1) FROM int4_tbl AS b WHERE f1 >= a.f1)
     AS ss1
   FROM
-    int4_tbl AS a) AS ss;
+    int4_tbl AS a)
+  AS ss;
 
 SELECT
   *
@@ -419,12 +442,14 @@ FROM
   FROM
     tenk1 AS a
   WHERE
-    EXISTS (SELECT
+    EXISTS
+    (SELECT
       1
     FROM
       tenk1 AS b
     WHERE
-      b.thousand = a.unique2)) AS ss;
+      b.thousand = a.unique2))
+  AS ss;
 
 SELECT
   *
@@ -434,7 +459,9 @@ FROM
   FROM
     tenk1 AS a
   WHERE
-    NOT EXISTS (SELECT 1 FROM tenk1 AS b WHERE b.unique2 = 10000)) AS ss;
+    NOT EXISTS
+    (SELECT 1 FROM tenk1 AS b WHERE b.unique2 = 10000))
+  AS ss;
 
 CREATE TEMPORARY TABLE numeric_table (num_col NUMERIC);
 
@@ -477,7 +504,8 @@ FROM
   semijoin_unique_tbl AS t1,
   semijoin_unique_tbl AS t2
 WHERE
-  (t1.a, t2.a) IN (SELECT a, b FROM semijoin_unique_tbl AS t3)
+  (t1.a, t2.a) IN
+  (SELECT a, b FROM semijoin_unique_tbl AS t3)
 ORDER BY t1.a,
   t2.a;
 
@@ -487,7 +515,8 @@ FROM
   semijoin_unique_tbl AS t1,
   semijoin_unique_tbl AS t2
 WHERE
-  (t1.a, t2.a) IN (SELECT a + 1, b + 1 FROM semijoin_unique_tbl AS t3)
+  (t1.a, t2.a) IN
+  (SELECT a + 1, b + 1 FROM semijoin_unique_tbl AS t3)
 ORDER BY t1.a,
   t2.a;
 
@@ -507,7 +536,8 @@ FROM
   semijoin_unique_tbl AS t1,
   semijoin_unique_tbl AS t2
 WHERE
-  (t1.a, t2.a) IN (SELECT a, b FROM semijoin_unique_tbl AS t3)
+  (t1.a, t2.a) IN
+  (SELECT a, b FROM semijoin_unique_tbl AS t3)
 ORDER BY t1.a,
   t2.a;
 
@@ -523,7 +553,8 @@ RESET parallel_setup_cost;
 
 DROP TABLE "semijoin_unique_tbl";
 
-CREATE TABLE unique_tbl_p (a INT, b INT)
+CREATE TABLE unique_tbl_p
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE unique_tbl_p1 PARTITION OF unique_tbl_p FOR VALUES FROM (0) TO (5);
@@ -565,7 +596,8 @@ FROM
   unique_tbl_p AS t1,
   unique_tbl_p AS t2
 WHERE
-  (t1.a, t2.a) IN (SELECT a, a FROM unique_tbl_p AS t3)
+  (t1.a, t2.a) IN
+  (SELECT a, a FROM unique_tbl_p AS t3)
 ORDER BY t1.a,
   t2.a;
 
@@ -617,7 +649,8 @@ FROM
     f2,
     (SELECT f2 FROM t1 AS x WHERE x.f1 = up.f1) AS fs
   FROM
-    t1 AS up) AS ss
+    t1 AS up)
+  AS ss
 GROUP BY f1,
   f2,
   fs;
@@ -649,15 +682,18 @@ BEGIN;
 
 DELETE FROM road
 WHERE
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     int4_tbl
-    INNER JOIN (SELECT
-      f1,
-      ARRAY(SELECT q1 FROM int8_tbl) AS arr
-    FROM
-      text_tbl) AS ss
+    INNER JOIN
+      (SELECT
+        f1,
+        ARRAY(SELECT q1 FROM int8_tbl) AS arr
+      FROM
+        text_tbl)
+      AS ss
     ON TRUE
   WHERE
     road.name = ss.f1);
@@ -672,8 +708,10 @@ FROM
     AS sq1,
     42 AS dummy
   FROM
-    int8_tbl) AS sq0
-  INNER JOIN int4_tbl AS i4
+    int8_tbl)
+  AS sq0
+  INNER JOIN
+    int4_tbl AS i4
   ON dummy = i4.f1;
 
 CREATE TEMPORARY TABLE upsert (key INT PRIMARY KEY, val TEXT);
@@ -682,7 +720,9 @@ INSERT INTO upsert VALUES (1, 'val') ON CONFLICT (key) DO UPDATE SET val = 'not 
 
 INSERT INTO upsert
 VALUES (1, 'val')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET val = 'seen with subselect ' ||
 CAST((SELECT f1 FROM int4_tbl WHERE f1 <> 0 LIMIT 1)
@@ -690,14 +730,18 @@ AS TEXT);
 
 SELECT * FROM upsert;
 
-WITH aa AS (
+WITH
+aa
+AS (
   SELECT 'int4_tbl' AS u FROM int4_tbl LIMIT 1
 )
 INSERT INTO upsert
 VALUES
   (1, 'x'),
   (999, 'y')
-ON CONFLICT (key) DO
+ON CONFLICT
+(key)
+DO
 UPDATE
 SET val = (SELECT u FROM aa)
 RETURNING *;
@@ -786,7 +830,8 @@ SELECT
 FROM
   tenk1 AS t
 WHERE
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     tenk1 AS k
@@ -799,7 +844,8 @@ SELECT
 FROM
   tenk1 AS t
 WHERE
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     tenk1 AS k
@@ -812,7 +858,8 @@ SELECT
 FROM
   tenk1 AS t
 WHERE
-  (EXISTS (SELECT
+  (EXISTS
+  (SELECT
     1
   FROM
     tenk1 AS k
@@ -826,7 +873,8 @@ SELECT
 FROM
   tenk1 AS t
 WHERE
-  (EXISTS (SELECT
+  (EXISTS
+  (SELECT
     1
   FROM
     tenk1 AS k
@@ -835,7 +883,8 @@ WHERE
   ten < 0) AND
   thousand = 1;
 
-CREATE TEMPORARY TABLE exists_tbl (c1 INT, c2 INT, c3 INT)
+CREATE TEMPORARY TABLE exists_tbl
+(c1 INT, c2 INT, c3 INT)
 PARTITION BY LIST(c1);
 
 CREATE TEMPORARY TABLE exists_tbl_null PARTITION OF exists_tbl FOR VALUES IN (NULL);
@@ -851,7 +900,8 @@ SELECT
 FROM
   exists_tbl AS t1
 WHERE
-  EXISTS (SELECT 1 FROM exists_tbl AS t2 WHERE t1.c1 = t2.c2) OR
+  EXISTS
+  (SELECT 1 FROM exists_tbl AS t2 WHERE t1.c1 = t2.c2) OR
   c3 < 0;
 
 SELECT
@@ -859,7 +909,8 @@ SELECT
 FROM
   exists_tbl AS t1
 WHERE
-  EXISTS (SELECT 1 FROM exists_tbl AS t2 WHERE t1.c1 = t2.c2) OR
+  EXISTS
+  (SELECT 1 FROM exists_tbl AS t2 WHERE t1.c1 = t2.c2) OR
   c3 < 0;
 
 SELECT
@@ -869,13 +920,15 @@ FROM
   tenk1 AS b
 WHERE
   a.thousand = b.thousand AND
-  EXISTS (SELECT
+  EXISTS
+  (SELECT
     1
   FROM
     tenk1 AS c
   WHERE
     b.hundred = c.hundred AND
-    NOT EXISTS (SELECT
+    NOT EXISTS
+    (SELECT
       1
     FROM
       tenk1 AS d
@@ -891,7 +944,9 @@ FROM
   FROM
     (VALUES
       (1),
-      (2)) AS v (y)) AS ss;
+      (2))
+    AS v (y))
+  AS ss;
 
 SELECT
   x,
@@ -902,7 +957,9 @@ FROM
   FROM
     (VALUES
       (1),
-      (2)) AS v (y)) AS ss;
+      (2))
+    AS v (y))
+  AS ss;
 
 SELECT
   x,
@@ -913,7 +970,9 @@ FROM
   FROM
     (VALUES
       (1),
-      (2)) AS v (y)) AS ss;
+      (2))
+    AS v (y))
+  AS ss;
 
 SELECT
   x,
@@ -924,20 +983,25 @@ FROM
   FROM
     (VALUES
       (1),
-      (2)) AS v (y)) AS ss;
+      (2))
+    AS v (y))
+  AS ss;
 
 SELECT
   SUM(CAST(ss.tst AS INT))
 FROM
   onek AS o
-  INNER JOIN LATERAL (SELECT
-    i.ten IN (SELECT f1 FROM int4_tbl WHERE f1 <= o.hundred)
-    AS tst,
-    random() AS r
-  FROM
-    onek AS i
-  WHERE
-    i.unique1 = o.unique1) AS ss
+  INNER JOIN
+    LATERAL (SELECT
+      i.ten IN
+      (SELECT f1 FROM int4_tbl WHERE f1 <= o.hundred)
+      AS tst,
+      random() AS r
+    FROM
+      onek AS i
+    WHERE
+      i.unique1 = o.unique1)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 0;
@@ -946,14 +1010,17 @@ SELECT
   SUM(CAST(ss.tst AS INT))
 FROM
   onek AS o
-  INNER JOIN LATERAL (SELECT
-    i.ten IN (SELECT f1 FROM int4_tbl WHERE f1 <= o.hundred)
-    AS tst,
-    random() AS r
-  FROM
-    onek AS i
-  WHERE
-    i.unique1 = o.unique1) AS ss
+  INNER JOIN
+    LATERAL (SELECT
+      i.ten IN
+      (SELECT f1 FROM int4_tbl WHERE f1 <= o.hundred)
+      AS tst,
+      random() AS r
+    FROM
+      onek AS i
+    WHERE
+      i.unique1 = o.unique1)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 0;
@@ -966,19 +1033,21 @@ SELECT
   COUNT(*)
 FROM
   onek AS o
-  INNER JOIN LATERAL (SELECT
-    *
-  FROM
-    onek AS i1
-  WHERE
-    i1.unique1 = o.unique1
-  EXCEPT
-  SELECT
-    *
-  FROM
-    onek AS i2
-  WHERE
-    i2.unique1 = o.unique2) AS ss
+  INNER JOIN
+    LATERAL (SELECT
+      *
+    FROM
+      onek AS i1
+    WHERE
+      i1.unique1 = o.unique1
+    EXCEPT
+    SELECT
+      *
+    FROM
+      onek AS i2
+    WHERE
+      i2.unique1 = o.unique2)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 1;
@@ -987,19 +1056,21 @@ SELECT
   COUNT(*)
 FROM
   onek AS o
-  INNER JOIN LATERAL (SELECT
-    *
-  FROM
-    onek AS i1
-  WHERE
-    i1.unique1 = o.unique1
-  EXCEPT
-  SELECT
-    *
-  FROM
-    onek AS i2
-  WHERE
-    i2.unique1 = o.unique2) AS ss
+  INNER JOIN
+    LATERAL (SELECT
+      *
+    FROM
+      onek AS i1
+    WHERE
+      i1.unique1 = o.unique1
+    EXCEPT
+    SELECT
+      *
+    FROM
+      onek AS i2
+    WHERE
+      i2.unique1 = o.unique2)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 1;
@@ -1014,19 +1085,21 @@ SELECT
   COUNT(*)
 FROM
   onek AS o
-  INNER JOIN LATERAL (SELECT
-    *
-  FROM
-    onek AS i1
-  WHERE
-    i1.unique1 = o.unique1
-  EXCEPT
-  SELECT
-    *
-  FROM
-    onek AS i2
-  WHERE
-    i2.unique1 = o.unique2) AS ss
+  INNER JOIN
+    LATERAL (SELECT
+      *
+    FROM
+      onek AS i1
+    WHERE
+      i1.unique1 = o.unique1
+    EXCEPT
+    SELECT
+      *
+    FROM
+      onek AS i2
+    WHERE
+      i2.unique1 = o.unique2)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 1;
@@ -1035,19 +1108,21 @@ SELECT
   COUNT(*)
 FROM
   onek AS o
-  INNER JOIN LATERAL (SELECT
-    *
-  FROM
-    onek AS i1
-  WHERE
-    i1.unique1 = o.unique1
-  EXCEPT
-  SELECT
-    *
-  FROM
-    onek AS i2
-  WHERE
-    i2.unique1 = o.unique2) AS ss
+  INNER JOIN
+    LATERAL (SELECT
+      *
+    FROM
+      onek AS i1
+    WHERE
+      i1.unique1 = o.unique1
+    EXCEPT
+    SELECT
+      *
+    FROM
+      onek AS i2
+    WHERE
+      i2.unique1 = o.unique2)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 1;
@@ -1059,15 +1134,19 @@ SELECT
   SUM(ss.a)
 FROM
   onek AS o
-  INNER JOIN LATERAL (WITH RECURSIVE x (a) AS (
-    SELECT o.four AS a
-    UNION
-    SELECT a + 1 FROM x WHERE a < 10
-  )
-  SELECT
-    *
-  FROM
-    x) AS ss
+  INNER JOIN
+    LATERAL (WITH RECURSIVE
+    x (a)
+    AS (
+      SELECT o.four AS a
+      UNION
+      SELECT a + 1 FROM x WHERE a < 10
+    )
+    SELECT
+      *
+    FROM
+      x)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 1;
@@ -1077,15 +1156,19 @@ SELECT
   SUM(ss.a)
 FROM
   onek AS o
-  INNER JOIN LATERAL (WITH RECURSIVE x (a) AS (
-    SELECT o.four AS a
-    UNION
-    SELECT a + 1 FROM x WHERE a < 10
-  )
-  SELECT
-    *
-  FROM
-    x) AS ss
+  INNER JOIN
+    LATERAL (WITH RECURSIVE
+    x (a)
+    AS (
+      SELECT o.four AS a
+      UNION
+      SELECT a + 1 FROM x WHERE a < 10
+    )
+    SELECT
+      *
+    FROM
+      x)
+    AS ss
   ON TRUE
 WHERE
   o.ten = 1;
@@ -1111,7 +1194,8 @@ FROM
   generate_series(1, 10) AS s (i),
   LATERAL (VALUES
     ((SELECT s.i + 1)),
-    (s.i + 101)) AS val (x)
+    (s.i + 101))
+  AS val (x)
 WHERE
   s.i < 10 AND (SELECT val.x) < 110;
 
@@ -1120,28 +1204,34 @@ SELECT
 FROM
   (VALUES
     (
-      NOT 3 IN (SELECT
+      NOT 3 IN
+      (SELECT
         *
       FROM
         (VALUES
           (1),
-          (2)) AS ss1)
+          (2))
+        AS ss1)
     ),
-    (FALSE)) AS ss;
+    (FALSE))
+  AS ss;
 
 SELECT
   *
 FROM
   (VALUES
     (
-      NOT 3 IN (SELECT
+      NOT 3 IN
+      (SELECT
         *
       FROM
         (VALUES
           (1),
-          (2)) AS ss1)
+          (2))
+        AS ss1)
     ),
-    (FALSE)) AS ss;
+    (FALSE))
+  AS ss;
 
 SELECT
   *
@@ -1149,9 +1239,11 @@ FROM
   int4_tbl
 WHERE
   CASE
-  WHEN f1 IN (SELECT unique1 FROM tenk1 AS a) THEN f1
+  WHEN f1 IN (SELECT unique1 FROM tenk1 AS a)
+  THEN f1
   ELSE NULL
-  END IN (SELECT ten FROM tenk1 AS b);
+  END IN
+  (SELECT ten FROM tenk1 AS b);
 
 SELECT
   *
@@ -1159,16 +1251,19 @@ FROM
   int4_tbl
 WHERE
   CASE
-  WHEN f1 IN (SELECT unique1 FROM tenk1 AS a) THEN f1
+  WHEN f1 IN (SELECT unique1 FROM tenk1 AS a)
+  THEN f1
   ELSE NULL
-  END IN (SELECT ten FROM tenk1 AS b);
+  END IN
+  (SELECT ten FROM tenk1 AS b);
 
 SELECT
   *
 FROM
   int4_tbl AS o
 WHERE
-  (f1, f1) IN (SELECT
+  (f1, f1) IN
+  (SELECT
     f1,
     generate_series(1, 50) / 10 AS g
   FROM
@@ -1180,7 +1275,8 @@ SELECT
 FROM
   int4_tbl AS o
 WHERE
-  (f1, f1) IN (SELECT
+  (f1, f1) IN
+  (SELECT
     f1,
     generate_series(1, 50) / 10 AS g
   FROM
@@ -1193,7 +1289,8 @@ SELECT
   FROM
     (SELECT 1, 2, 3 WHERE f1 > 0
     UNION ALL
-    SELECT 4, 5, 6.0 WHERE f1 <= 0) AS q)
+    SELECT 4, 5, 6.0 WHERE f1 <= 0)
+    AS q)
 FROM
   int4_tbl;
 
@@ -1207,7 +1304,8 @@ FROM
   FROM
     (SELECT random() ORDER BY 1) AS t1
   UNION ALL
-  SELECT TRUE AS b, 2 AS id) AS t2
+  SELECT TRUE AS b, 2 AS id)
+  AS t2
 WHERE
   b AND f1 >= 0;
 
@@ -1221,7 +1319,8 @@ FROM
   FROM
     (SELECT random() ORDER BY 1) AS t1
   UNION ALL
-  SELECT TRUE AS b, 2 AS id) AS t2
+  SELECT TRUE AS b, 2 AS id)
+  AS t2
 WHERE
   b AND f1 >= 0;
 
@@ -1296,12 +1395,15 @@ DROP TABLE "sq_limit";
 
 BEGIN;
 
-DECLARE "c1" SCROLL CURSOR FOR SELECT
+DECLARE "c1" SCROLL
+CURSOR
+FOR SELECT
   *
 FROM
   generate_series(1, 4) AS i
 WHERE
-  i <> ALL (VALUES
+  i <> ALL
+  (VALUES
     (2),
     (3));;
 
@@ -1321,20 +1423,24 @@ SELECT
   *
 FROM
   json_tab AS t1
-  LEFT OUTER JOIN (SELECT
-    JSON_ARRAY(1, a ABSENT ON NULL)
-  FROM
-    json_tab AS t2) AS s
+  LEFT OUTER JOIN
+    (SELECT
+      JSON_ARRAY(1, a ABSENT ON NULL)
+    FROM
+      json_tab AS t2)
+    AS s
   ON FALSE;
 
 SELECT
   *
 FROM
   json_tab AS t1
-  LEFT OUTER JOIN (SELECT
-    JSON_ARRAY(1, a ABSENT ON NULL)
-  FROM
-    json_tab AS t2) AS s
+  LEFT OUTER JOIN
+    (SELECT
+      JSON_ARRAY(1, a ABSENT ON NULL)
+    FROM
+      json_tab AS t2)
+    AS s
   ON FALSE;
 
 ROLLBACK;
@@ -1348,8 +1454,10 @@ FROM
     AS tname,
     *
   FROM
-    (SELECT * FROM pg_class AS c) AS ss1) AS ss2
-  RIGHT OUTER JOIN pg_attribute AS a
+    (SELECT * FROM pg_class AS c) AS ss1)
+  AS ss2
+  RIGHT OUTER JOIN
+    pg_attribute AS a
   ON a.attrelid = ss2.oid
 WHERE
   tname = 'tenk1' AND attnum = 1;
@@ -1363,8 +1471,10 @@ FROM
     AS tname,
     *
   FROM
-    (SELECT * FROM pg_class AS c) AS ss1) AS ss2
-  RIGHT OUTER JOIN pg_attribute AS a
+    (SELECT * FROM pg_class AS c) AS ss1)
+  AS ss2
+  RIGHT OUTER JOIN
+    pg_attribute AS a
   ON a.attrelid = ss2.oid
 WHERE
   tname = 'tenk1' AND attnum = 1;
@@ -1374,11 +1484,13 @@ SELECT
   SUM(x)
 FROM
   tenk1 AS t1
-  LEFT OUTER JOIN LATERAL (SELECT
-    t1.ten + t2.ten AS x,
-    t2.fivethous
-  FROM
-    tenk1 AS t2) AS ss
+  LEFT OUTER JOIN
+    LATERAL (SELECT
+      t1.ten + t2.ten AS x,
+      t2.fivethous
+    FROM
+      tenk1 AS t2)
+    AS ss
   ON t1.unique1 = ss.fivethous
 GROUP BY t1.ten
 ORDER BY t1.ten;
@@ -1388,11 +1500,13 @@ SELECT
   SUM(x)
 FROM
   tenk1 AS t1
-  LEFT OUTER JOIN LATERAL (SELECT
-    t1.ten + t2.ten AS x,
-    t2.fivethous
-  FROM
-    tenk1 AS t2) AS ss
+  LEFT OUTER JOIN
+    LATERAL (SELECT
+      t1.ten + t2.ten AS x,
+      t2.fivethous
+    FROM
+      tenk1 AS t2)
+    AS ss
   ON t1.unique1 = ss.fivethous
 GROUP BY t1.ten
 ORDER BY t1.ten;
@@ -1402,9 +1516,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN LATERAL (SELECT t2.q1 + t3.q1 AS x, * FROM int8_tbl AS t3) AS t3
-  ON t2.q2 = t3.q2
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      LATERAL (SELECT t2.q1 + t3.q1 AS x, * FROM int8_tbl AS t3)
+      AS t3
+    ON t2.q2 = t3.q2
   ON t1.q2 = t2.q2
 ORDER BY 1,
   2;
@@ -1414,9 +1531,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN LATERAL (SELECT t2.q1 + t3.q1 AS x, * FROM int8_tbl AS t3) AS t3
-  ON t2.q2 = t3.q2
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      LATERAL (SELECT t2.q1 + t3.q1 AS x, * FROM int8_tbl AS t3)
+      AS t3
+    ON t2.q2 = t3.q2
   ON t1.q2 = t2.q2
 ORDER BY 1,
   2;
@@ -1426,9 +1546,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  INNER JOIN LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3) AS t3
-  ON t2.q2 = t3.q2
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    INNER JOIN
+      LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3)
+      AS t3
+    ON t2.q2 = t3.q2
   ON t1.q2 = t2.q2
 ORDER BY 1,
   2;
@@ -1438,9 +1561,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  INNER JOIN LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3) AS t3
-  ON t2.q2 = t3.q2
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    INNER JOIN
+      LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3)
+      AS t3
+    ON t2.q2 = t3.q2
   ON t1.q2 = t2.q2
 ORDER BY 1,
   2;
@@ -1450,9 +1576,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3) AS t3
-  ON t2.q2 = t3.q2
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3)
+      AS t3
+    ON t2.q2 = t3.q2
   ON t1.q2 = t2.q2
 ORDER BY 1,
   2;
@@ -1462,9 +1591,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3) AS t3
-  ON t2.q2 = t3.q2
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      LATERAL (SELECT t2.q1 + 1 AS x, * FROM int8_tbl AS t3)
+      AS t3
+    ON t2.q2 = t3.q2
   ON t1.q2 = t2.q2
 ORDER BY 1,
   2;
@@ -1474,9 +1606,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  INNER JOIN LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3) AS ss
-  ON t2.q2 = ss.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    INNER JOIN
+      LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3)
+      AS ss
+    ON t2.q2 = ss.q1
   ON t1.q1 = t2.q1
 ORDER BY 1,
   2;
@@ -1486,9 +1621,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  INNER JOIN LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3) AS ss
-  ON t2.q2 = ss.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    INNER JOIN
+      LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3)
+      AS ss
+    ON t2.q2 = ss.q1
   ON t1.q1 = t2.q1
 ORDER BY 1,
   2;
@@ -1498,9 +1636,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3) AS ss
-  ON t2.q2 = ss.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3)
+      AS ss
+    ON t2.q2 = ss.q1
   ON t1.q1 = t2.q1
 ORDER BY 1,
   2;
@@ -1510,9 +1651,12 @@ SELECT
   x
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3) AS ss
-  ON t2.q2 = ss.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      LATERAL (SELECT t2.q2 AS x, * FROM int8_tbl AS t3)
+      AS ss
+    ON t2.q2 = ss.q1
   ON t1.q1 = t2.q1
 ORDER BY 1,
   2;
@@ -1521,15 +1665,20 @@ SELECT
   ss2.*
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN (SELECT
-    COALESCE(q1, q1) AS x,
-    *
-  FROM
-    int8_tbl AS t3) AS ss1
-  ON t2.q1 = ss1.q2
-  INNER JOIN LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4) AS ss2
-  ON t2.q2 = ss2.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      (SELECT
+        COALESCE(q1, q1) AS x,
+        *
+      FROM
+        int8_tbl AS t3)
+      AS ss1
+    ON t2.q1 = ss1.q2
+    INNER JOIN
+      LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4)
+      AS ss2
+    ON t2.q2 = ss2.q1
   ON t1.q2 = ss2.q1
 ORDER BY 1,
   2,
@@ -1539,15 +1688,20 @@ SELECT
   ss2.*
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN (SELECT
-    COALESCE(q1, q1) AS x,
-    *
-  FROM
-    int8_tbl AS t3) AS ss1
-  ON t2.q1 = ss1.q2
-  INNER JOIN LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4) AS ss2
-  ON t2.q2 = ss2.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      (SELECT
+        COALESCE(q1, q1) AS x,
+        *
+      FROM
+        int8_tbl AS t3)
+      AS ss1
+    ON t2.q1 = ss1.q2
+    INNER JOIN
+      LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4)
+      AS ss2
+    ON t2.q2 = ss2.q1
   ON t1.q2 = ss2.q1
 ORDER BY 1,
   2,
@@ -1557,15 +1711,20 @@ SELECT
   ss2.*
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN (SELECT
-    COALESCE(q1, q1) AS x,
-    *
-  FROM
-    int8_tbl AS t3) AS ss1
-  ON t2.q1 = ss1.q2
-  LEFT OUTER JOIN LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4) AS ss2
-  ON t2.q2 = ss2.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      (SELECT
+        COALESCE(q1, q1) AS x,
+        *
+      FROM
+        int8_tbl AS t3)
+      AS ss1
+    ON t2.q1 = ss1.q2
+    LEFT OUTER JOIN
+      LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4)
+      AS ss2
+    ON t2.q2 = ss2.q1
   ON t1.q2 = ss2.q1
 ORDER BY 1,
   2,
@@ -1575,15 +1734,20 @@ SELECT
   ss2.*
 FROM
   int8_tbl AS t1
-  LEFT OUTER JOIN int8_tbl AS t2
-  LEFT OUTER JOIN (SELECT
-    COALESCE(q1, q1) AS x,
-    *
-  FROM
-    int8_tbl AS t3) AS ss1
-  ON t2.q1 = ss1.q2
-  LEFT OUTER JOIN LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4) AS ss2
-  ON t2.q2 = ss2.q1
+  LEFT OUTER JOIN
+    int8_tbl AS t2
+    LEFT OUTER JOIN
+      (SELECT
+        COALESCE(q1, q1) AS x,
+        *
+      FROM
+        int8_tbl AS t3)
+      AS ss1
+    ON t2.q1 = ss1.q2
+    LEFT OUTER JOIN
+      LATERAL (SELECT ss1.x AS y, * FROM int8_tbl AS t4)
+      AS ss2
+    ON t2.q2 = ss2.q1
   ON t1.q2 = ss2.q1
 ORDER BY 1,
   2,

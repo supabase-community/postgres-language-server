@@ -101,7 +101,7 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
 
     // Alias (emit_alias includes the AS keyword)
     if let Some(ref alias) = n.alias {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::emit_alias(e, alias);
     }
 

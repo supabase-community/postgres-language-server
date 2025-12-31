@@ -1,11 +1,12 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/cluster_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/cluster.sql
 snapshot_kind: text
 ---
 CREATE TABLE clstr_tst_s (rf_a serial PRIMARY KEY, b INT);
 
-CREATE TABLE clstr_tst (
+CREATE TABLE clstr_tst
+(
   a serial PRIMARY KEY,
   b INT,
   c TEXT,
@@ -58,7 +59,8 @@ INSERT INTO clstr_tst_s (b) SELECT b FROM clstr_tst_s;
 
 INSERT INTO clstr_tst_s (b) SELECT b FROM clstr_tst_s;
 
-CREATE TABLE clstr_tst_inh ()
+CREATE TABLE clstr_tst_inh
+()
 INHERITS (clstr_tst);
 
 INSERT INTO clstr_tst (b, c) VALUES (11, 'once');
@@ -146,7 +148,8 @@ SELECT conname FROM pg_constraint WHERE conrelid = CAST('clstr_tst' AS REGCLASS)
 SELECT
   relname,
   relkind,
-  EXISTS (SELECT 1 FROM pg_class WHERE oid = c.reltoastrelid)
+  EXISTS
+  (SELECT 1 FROM pg_class WHERE oid = c.reltoastrelid)
   AS hastoast
 FROM
   pg_class AS c
@@ -329,7 +332,8 @@ CLUSTER clustertest USING clustertest_pkey;
 
 CLUSTER clustertest;
 
-CREATE TABLE clstrpart (a INT)
+CREATE TABLE clstrpart
+(a INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE clstrpart1 PARTITION OF clstrpart FOR VALUES FROM (1) TO (10) PARTITION BY RANGE(a);
@@ -370,8 +374,10 @@ AS
     relfilenode,
     relkind
   FROM
-    pg_partition_tree(CAST('clstrpart' AS REGCLASS)) AS tree
-    INNER JOIN pg_class AS c
+    pg_partition_tree(CAST('clstrpart' AS REGCLASS))
+    AS tree
+    INNER JOIN
+      pg_class AS c
     ON c.oid = tree.relid;
 
 CLUSTER clstrpart USING clstrpart_idx;
@@ -384,8 +390,10 @@ AS
     relfilenode,
     relkind
   FROM
-    pg_partition_tree(CAST('clstrpart' AS REGCLASS)) AS tree
-    INNER JOIN pg_class AS c
+    pg_partition_tree(CAST('clstrpart' AS REGCLASS))
+    AS tree
+    INNER JOIN
+      pg_class AS c
     ON c.oid = tree.relid;
 
 SELECT
@@ -395,7 +403,8 @@ SELECT
   old.relfilenode = new.relfilenode
 FROM
   old_cluster_info AS old
-  INNER JOIN new_cluster_info AS new
+  INNER JOIN
+    new_cluster_info AS new
   USING ("relname")
 ORDER BY relname COLLATE "C";
 
@@ -409,7 +418,8 @@ ALTER TABLE clstrpart
 
 DROP TABLE "clstrpart";
 
-CREATE TABLE ptnowner (i INT UNIQUE)
+CREATE TABLE ptnowner
+(i INT UNIQUE)
 PARTITION BY LIST(i);
 
 CREATE INDEX "ptnowner_i_idx"
@@ -445,7 +455,8 @@ AS
     relfilenode
   FROM
     pg_partition_tree('ptnowner') AS tree
-    INNER JOIN pg_class AS c
+    INNER JOIN
+      pg_class AS c
     ON c.oid = tree.relid;
 
 SET SESSION AUTHORIZATION regress_ptnowner;
@@ -459,7 +470,8 @@ SELECT
   a.relfilenode = b.relfilenode
 FROM
   pg_class AS a
-  INNER JOIN ptnowner_oldnodes AS b
+  INNER JOIN
+    ptnowner_oldnodes AS b
   USING ("oid")
 ORDER BY a.relname COLLATE "C";
 
@@ -495,7 +507,8 @@ FROM
     tenthous,
     LAG(tenthous) OVER () AS ltenthous
   FROM
-    clstr_4) AS ss
+    clstr_4)
+  AS ss
 WHERE
   ROW(hundred, thousand, tenthous) <=
   ROW(lhundred, lthousand, ltenthous);
@@ -506,7 +519,8 @@ RESET maintenance_work_mem;
 
 CREATE TABLE clstr_expression (id serial PRIMARY KEY, a INT, b TEXT COLLATE "C");
 
-INSERT INTO clstr_expression (a, b)
+INSERT INTO clstr_expression
+(a, b)
 SELECT
   g.i % 42,
   'prefix' || g.i

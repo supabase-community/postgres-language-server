@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/stats_ext_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/stats_ext.sql
 snapshot_kind: text
 ---
 CREATE FUNCTION check_estimated_rows(TEXT)
@@ -191,7 +191,8 @@ SELECT
   stxdinherit
 FROM
   pg_statistic_ext AS s
-  LEFT OUTER JOIN pg_statistic_ext_data AS d
+  LEFT OUTER JOIN
+    pg_statistic_ext_data AS d
   ON d.stxoid = s.oid
 WHERE
   s.stxname = 'ab1_a_b_stats';
@@ -210,7 +211,8 @@ ALTER STATISTICS IF EXISTS ab1_a_b_stats SET STATISTICS 0;
 
 CREATE TABLE ab1 (a INT, b INT);
 
-CREATE TABLE ab1c ()
+CREATE TABLE ab1c
+()
 INHERITS (ab1);
 
 INSERT INTO ab1 VALUES (1, 1);
@@ -223,10 +225,12 @@ DROP TABLE "ab1" CASCADE;
 
 CREATE TABLE stxdinh (a INT, b INT);
 
-CREATE TABLE stxdinh1 ()
+CREATE TABLE stxdinh1
+()
 INHERITS (stxdinh);
 
-CREATE TABLE stxdinh2 ()
+CREATE TABLE stxdinh2
+()
 INHERITS (stxdinh);
 
 INSERT INTO stxdinh SELECT mod(a, 50), mod(a, 100) FROM generate_series(0, 1999) AS a;
@@ -255,7 +259,8 @@ SELECT * FROM check_estimated_rows('SELECT a, b FROM ONLY stxdinh WHERE a = 0 AN
 
 DROP TABLE "stxdinh", "stxdinh1", "stxdinh2";
 
-CREATE TABLE stxdinp (i INT, a INT, b INT)
+CREATE TABLE stxdinp
+(i INT, a INT, b INT)
 PARTITION BY RANGE(i);
 
 CREATE TABLE stxdinp1 PARTITION OF stxdinp FOR VALUES FROM (1) TO (100);
@@ -296,8 +301,10 @@ INSERT INTO ab1
 SELECT
   x / 10,
   x / 3,
-  CAST('2020-10-01' AS TIMESTAMP) + x * CAST('1 day' AS INTERVAL),
-  CAST('2020-10-01' AS TIMESTAMP WITH TIME ZONE) + x * CAST('1 day' AS INTERVAL)
+  CAST('2020-10-01' AS TIMESTAMP) +
+  x * CAST('1 day' AS INTERVAL),
+  CAST('2020-10-01' AS TIMESTAMP WITH TIME ZONE) +
+  x * CAST('1 day' AS INTERVAL)
 FROM
   generate_series(1, 100) AS x;
 
@@ -339,7 +346,8 @@ CREATE SERVER extstats_dummy_srv FOREIGN DATA WRAPPER extstats_dummy_fdw;
 
 CREATE FOREIGN TABLE tststats.f ( a INT, b INT, c TEXT ) SERVER extstats_dummy_srv;
 
-CREATE TABLE tststats.pt (a INT, b INT, c TEXT)
+CREATE TABLE tststats.pt
+(a INT, b INT, c TEXT)
 PARTITION BY RANGE(a, b);
 
 CREATE TABLE tststats.pt1 PARTITION OF tststats.pt FOR VALUES FROM (-10, -10) TO (10, 10);
@@ -362,7 +370,8 @@ CREATE STATISTICS tststats.s8 ON "a", "b" FROM tststats.pt;
 
 CREATE STATISTICS tststats.s9 ON "a", "b" FROM tststats.pt1;
 
-DO $$
+DO
+$$
 DECLARE
 	relname text := reltoastrelid::regclass FROM pg_class WHERE oid = 'tststats.t'::regclass;
 BEGIN
@@ -376,7 +385,8 @@ DROP SCHEMA tststats CASCADE;
 
 DROP FOREIGN DATA WRAPPER extstats_dummy_fdw CASCADE;
 
-CREATE TABLE ndistinct (
+CREATE TABLE ndistinct
+(
   filler1 TEXT,
   filler2 NUMERIC,
   a INT,
@@ -387,7 +397,8 @@ CREATE TABLE ndistinct (
 )
 WITH (autovacuum_enabled = off);
 
-INSERT INTO ndistinct (a, b, c, filler1)
+INSERT INTO ndistinct
+(a, b, c, filler1)
 SELECT
   i / 100,
   i / 100,
@@ -452,7 +463,8 @@ SELECT * FROM check_estimated_rows('SELECT COUNT(*) FROM ndistinct GROUP BY b, c
 
 TRUNCATE ndistinct;
 
-INSERT INTO ndistinct (a, b, c, filler1)
+INSERT INTO ndistinct
+(a, b, c, filler1)
 SELECT
   mod(i, 13),
   mod(i, 17),
@@ -579,7 +591,8 @@ DROP STATISTICS "s10";
 
 TRUNCATE ndistinct;
 
-INSERT INTO ndistinct (a, b, c, d)
+INSERT INTO ndistinct
+(a, b, c, d)
 SELECT
   mod(i, 3),
   mod(i, 9),
@@ -712,7 +725,8 @@ DROP STATISTICS "s11";
 
 DROP STATISTICS "s12";
 
-CREATE TABLE functional_dependencies (
+CREATE TABLE functional_dependencies
+(
   filler1 TEXT,
   filler2 NUMERIC,
   a INT,
@@ -740,7 +754,8 @@ USING btree
   c
 );
 
-INSERT INTO functional_dependencies (a, b, c, filler1)
+INSERT INTO functional_dependencies
+(a, b, c, filler1)
 SELECT
   mod(i, 5),
   mod(i, 7),
@@ -787,7 +802,8 @@ TRUNCATE functional_dependencies;
 
 DROP STATISTICS "func_deps_stat";
 
-INSERT INTO functional_dependencies (a, b, c, filler1)
+INSERT INTO functional_dependencies
+(a, b, c, filler1)
 SELECT
   i,
   i,
@@ -839,7 +855,8 @@ TRUNCATE functional_dependencies;
 
 DROP STATISTICS "func_deps_stat";
 
-INSERT INTO functional_dependencies (a, b, c, filler1)
+INSERT INTO functional_dependencies
+(a, b, c, filler1)
 SELECT
   mod(i, 100),
   mod(i, 50),
@@ -1588,10 +1605,12 @@ FROM
   'SELECT * FROM functional_dependencies WHERE (a * 2) IN (2, 4, 102, 104) AND upper(b) = ALL (ARRAY[''1'', ''2''])'
   );
 
-CREATE TABLE functional_dependencies_multi (a INT, b INT, c INT, d INT)
+CREATE TABLE functional_dependencies_multi
+(a INT, b INT, c INT, d INT)
 WITH (autovacuum_enabled = off);
 
-INSERT INTO functional_dependencies_multi (a, b, c, d)
+INSERT INTO functional_dependencies_multi
+(a, b, c, d)
 SELECT
   mod(i, 7),
   mod(i, 7),
@@ -1688,7 +1707,8 @@ FROM
 
 DROP TABLE "functional_dependencies_multi";
 
-CREATE TABLE mcv_lists (
+CREATE TABLE mcv_lists
+(
   filler1 TEXT,
   filler2 NUMERIC,
   a INT,
@@ -1700,7 +1720,8 @@ CREATE TABLE mcv_lists (
 )
 WITH (autovacuum_enabled = off);
 
-INSERT INTO mcv_lists (a, b, c, filler1)
+INSERT INTO mcv_lists
+(a, b, c, filler1)
 SELECT
   mod(i, 37),
   mod(i, 41),
@@ -1772,7 +1793,8 @@ TRUNCATE mcv_lists;
 
 DROP STATISTICS "mcv_lists_stats";
 
-INSERT INTO mcv_lists (a, b, c, ia, filler1)
+INSERT INTO mcv_lists
+(a, b, c, ia, filler1)
 SELECT
   mod(i, 100),
   mod(i, 50),
@@ -2303,7 +2325,8 @@ TRUNCATE mcv_lists;
 
 DROP STATISTICS "mcv_lists_stats";
 
-INSERT INTO mcv_lists (a, b, c, filler1)
+INSERT INTO mcv_lists
+(a, b, c, filler1)
 SELECT
   CASE
   WHEN mod(i, 100) = 1 THEN NULL
@@ -2396,7 +2419,8 @@ TRUNCATE mcv_lists;
 
 DROP STATISTICS "mcv_lists_stats";
 
-INSERT INTO mcv_lists (a, b, c, d)
+INSERT INTO mcv_lists
+(a, b, c, d)
 SELECT
   NULL,
   CASE WHEN mod(i, 2) = 0 THEN NULL ELSE 'x' END,
@@ -2444,7 +2468,8 @@ FROM
 
 CREATE TABLE mcv_lists_uuid (a UUID, b UUID, c UUID) WITH (autovacuum_enabled = off);
 
-INSERT INTO mcv_lists_uuid (a, b, c)
+INSERT INTO mcv_lists_uuid
+(a, b, c)
 SELECT
   CAST(fipshash(CAST(mod(i, 100) AS TEXT)) AS UUID),
   CAST(fipshash(CAST(mod(i, 50) AS TEXT)) AS UUID),
@@ -2490,7 +2515,8 @@ DROP TABLE "mcv_lists_uuid";
 
 CREATE TABLE mcv_lists_arrays (a TEXT[], b NUMERIC[], c INT[]) WITH (autovacuum_enabled = off);
 
-INSERT INTO mcv_lists_arrays (a, b, c)
+INSERT INTO mcv_lists_arrays
+(a, b, c)
 SELECT
   ARRAY[fipshash(CAST(i / 100 AS TEXT)),
   fipshash(CAST(i / 100 - 1 AS TEXT)),
@@ -2508,7 +2534,8 @@ ANALYZE mcv_lists_arrays;
 
 CREATE TABLE mcv_lists_bool (a BOOLEAN, b BOOLEAN, c BOOLEAN) WITH (autovacuum_enabled = off);
 
-INSERT INTO mcv_lists_bool (a, b, c)
+INSERT INTO mcv_lists_bool
+(a, b, c)
 SELECT
   mod(i, 2) = 0,
   mod(i, 4) = 0,
@@ -2540,7 +2567,8 @@ SELECT * FROM check_estimated_rows('SELECT * FROM mcv_lists_bool WHERE NOT a AND
 
 CREATE TABLE mcv_lists_partial (a INT, b INT, c INT);
 
-INSERT INTO mcv_lists_partial (a, b, c)
+INSERT INTO mcv_lists_partial
+(a, b, c)
 SELECT
   mod(i, 10),
   mod(i, 10),
@@ -2664,7 +2692,8 @@ DROP TABLE "mcv_lists_partial";
 
 CREATE TABLE mcv_lists_multi (a INT, b INT, c INT, d INT) WITH (autovacuum_enabled = off);
 
-INSERT INTO mcv_lists_multi (a, b, c, d)
+INSERT INTO mcv_lists_multi
+(a, b, c, d)
 SELECT
   mod(i, 5),
   mod(i, 5),
@@ -3083,7 +3112,8 @@ RESET session_authorization;
 
 CREATE TABLE stats_ext_tbl (id INT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY, col TEXT);
 
-INSERT INTO stats_ext_tbl (col)
+INSERT INTO stats_ext_tbl
+(col)
 VALUES
   ('secret'),
   ('secret'),

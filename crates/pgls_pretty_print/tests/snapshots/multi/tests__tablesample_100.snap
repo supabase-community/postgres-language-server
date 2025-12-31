@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/tablesample_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/tablesample.sql
 snapshot_kind: text
 ---
 CREATE TABLE test_tablesample (id INT, name TEXT) WITH (fillfactor = 10);
@@ -44,7 +44,9 @@ FROM
 
 BEGIN;
 
-DECLARE "tablesample_cur" SCROLL CURSOR FOR SELECT
+DECLARE "tablesample_cur" SCROLL
+CURSOR
+FOR SELECT
   id
 FROM
   test_tablesample
@@ -102,22 +104,26 @@ SELECT
 FROM
   (VALUES
     (0),
-    (100)) AS v (pct),
+    (100))
+  AS v (pct),
   LATERAL (SELECT
     COUNT(*)
   FROM
-    tenk1 TABLESAMPLE bernoulli (pct)) AS ss;
+    tenk1 TABLESAMPLE bernoulli (pct))
+  AS ss;
 
 SELECT
   *
 FROM
   (VALUES
     (0),
-    (100)) AS v (pct),
+    (100))
+  AS v (pct),
   LATERAL (SELECT
     COUNT(*)
   FROM
-    tenk1 TABLESAMPLE system (pct)) AS ss;
+    tenk1 TABLESAMPLE system (pct))
+  AS ss;
 
 SELECT
   pct,
@@ -125,8 +131,10 @@ SELECT
 FROM
   (VALUES
     (0),
-    (100)) AS v (pct),
-  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct)) AS ss
+    (100))
+  AS v (pct),
+  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct))
+  AS ss
 GROUP BY pct;
 
 SELECT
@@ -135,8 +143,10 @@ SELECT
 FROM
   (VALUES
     (0),
-    (100)) AS v (pct),
-  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct)) AS ss
+    (100))
+  AS v (pct),
+  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct))
+  AS ss
 GROUP BY pct;
 
 SELECT
@@ -145,8 +155,10 @@ SELECT
 FROM
   (VALUES
     (0),
-    (100)) AS v (pct),
-  LATERAL (SELECT * FROM tenk1 TABLESAMPLE system (pct)) AS ss
+    (100))
+  AS v (pct),
+  LATERAL (SELECT * FROM tenk1 TABLESAMPLE system (pct))
+  AS ss
 GROUP BY pct;
 
 SELECT id FROM test_tablesample TABLESAMPLE foobar (1);
@@ -167,7 +179,8 @@ SELECT id FROM test_tablesample_v1 TABLESAMPLE bernoulli (1);
 
 INSERT INTO test_tablesample_v1 VALUES (1);
 
-WITH query_select AS (SELECT * FROM test_tablesample)
+WITH
+query_select AS (SELECT * FROM test_tablesample)
 SELECT
   *
 FROM
@@ -175,7 +188,8 @@ FROM
   TABLESAMPLE bernoulli (5.5)
   REPEATABLE (1);
 
-CREATE TABLE parted_sample (a INT)
+CREATE TABLE parted_sample
+(a INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE parted_sample_1 PARTITION OF parted_sample FOR VALUES IN (1);

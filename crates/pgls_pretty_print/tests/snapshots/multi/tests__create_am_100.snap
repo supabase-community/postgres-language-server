@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/create_am_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/create_am.sql
 snapshot_kind: text
 ---
 CREATE ACCESS METHOD gist2 TYPE INDEX HANDLER gisthandler;
@@ -123,7 +123,8 @@ CREATE MATERIALIZED VIEW tableam_tblmv_heap2 USING heap2 AS SELECT * FROM tablea
 
 SELECT f1 FROM tableam_tblmv_heap2 ORDER BY f1;
 
-CREATE TABLE tableam_parted_heap2 (a TEXT, b INT)
+CREATE TABLE tableam_parted_heap2
+(a TEXT, b INT)
 PARTITION BY LIST(a) USING heap2;
 
 SELECT
@@ -137,7 +138,8 @@ WHERE
 
 DROP TABLE "tableam_parted_heap2";
 
-CREATE TABLE tableam_parted_heap2 (a TEXT, b INT)
+CREATE TABLE tableam_parted_heap2
+(a TEXT, b INT)
 PARTITION BY LIST(a);
 
 SET default_table_access_method = heap;
@@ -162,7 +164,8 @@ SELECT
   pc.relkind,
   pa.amname,
   (CASE
-  WHEN relkind = 't' THEN (SELECT
+  WHEN relkind = 't'
+  THEN (SELECT
     'toast for ' || CAST(relname AS REGCLASS)
   FROM
     pg_class AS pcm
@@ -340,7 +343,8 @@ DROP MATERIALIZED VIEW "heapmv";
 
 DROP TABLE "heaptable";
 
-CREATE TABLE am_partitioned (x INT, y INT)
+CREATE TABLE am_partitioned
+(x INT, y INT)
 PARTITION BY HASH(x) USING heap2;
 
 SELECT
@@ -367,7 +371,8 @@ BEGIN;
 
 SET LOCAL default_table_access_method = heap;
 
-CREATE TABLE am_partitioned (x INT, y INT)
+CREATE TABLE am_partitioned
+(x INT, y INT)
 PARTITION BY HASH(x);
 
 SELECT relam FROM pg_class WHERE relname = 'am_partitioned';
@@ -551,7 +556,8 @@ SELECT INTO tableam_tblselectinto_heapx FROM tableam_tbl_heapx;
 
 CREATE MATERIALIZED VIEW tableam_tblmv_heapx USING heap2 AS SELECT * FROM tableam_tbl_heapx;
 
-CREATE TABLE tableam_parted_heapx (a TEXT, b INT)
+CREATE TABLE tableam_parted_heapx
+(a TEXT, b INT)
 PARTITION BY LIST(a);
 
 CREATE TABLE tableam_parted_1_heapx PARTITION OF tableam_parted_heapx FOR VALUES IN ('a', 'b');
@@ -575,7 +581,8 @@ SELECT
   pc.relkind,
   pa.amname,
   (CASE
-  WHEN relkind = 't' THEN (SELECT
+  WHEN relkind = 't'
+  THEN (SELECT
     'toast for ' || CAST(relname AS REGCLASS)
   FROM
     pg_class AS pcm
@@ -586,7 +593,8 @@ SELECT
   AS relname
 FROM
   pg_class AS pc
-  LEFT OUTER JOIN pg_am AS pa
+  LEFT OUTER JOIN
+    pg_am AS pa
   ON pa.oid = pc.relam
 WHERE
   pc.relname LIKE 'tableam_%_heapx'

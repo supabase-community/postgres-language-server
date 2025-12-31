@@ -2,7 +2,7 @@ use pgls_query::protobuf::ExecuteStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 use super::emit_node;
@@ -23,7 +23,7 @@ fn emit_execute_stmt_impl(e: &mut EventEmitter, n: &ExecuteStmt, with_semicolon:
     e.token(TokenKind::IDENT(n.name.clone()));
 
     if !n.params.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         super::node_list::emit_comma_separated_list(e, &n.params, emit_node);
         e.token(TokenKind::R_PAREN);

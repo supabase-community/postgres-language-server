@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::JsonAggConstructor;
 
@@ -36,7 +36,7 @@ pub(super) fn emit_json_agg_tail(
 
     if let Some(ref filter) = constructor.agg_filter {
         if has_content {
-            e.space();
+            e.line(LineType::SoftOrSpace);
         }
         e.token(TokenKind::FILTER_KW);
         e.space();
@@ -49,7 +49,7 @@ pub(super) fn emit_json_agg_tail(
 
     if let Some(ref over) = constructor.over {
         if has_content {
-            e.space();
+            e.line(LineType::SoftOrSpace);
         }
         e.token(TokenKind::OVER_KW);
         e.space();

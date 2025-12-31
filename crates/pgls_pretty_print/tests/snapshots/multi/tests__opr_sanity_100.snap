@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/opr_sanity_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/opr_sanity.sql
 snapshot_kind: text
 ---
 SELECT
@@ -278,10 +278,13 @@ SELECT
 FROM
   pg_proc AS p1
 WHERE
-  p1.prorettype IN (CAST('anyelement' AS REGTYPE),
-  CAST('anyarray' AS REGTYPE),
-  CAST('anynonarray' AS REGTYPE),
-  CAST('anyenum' AS REGTYPE)) AND
+  p1.prorettype
+  IN (
+    CAST('anyelement' AS REGTYPE),
+    CAST('anyarray' AS REGTYPE),
+    CAST('anynonarray' AS REGTYPE),
+    CAST('anyenum' AS REGTYPE)
+  ) AND
   NOT (CAST('anyelement' AS REGTYPE) = ANY (p1.proargtypes) OR
   CAST('anyarray' AS REGTYPE) = ANY (p1.proargtypes) OR
   CAST('anynonarray' AS REGTYPE) = ANY (p1.proargtypes) OR
@@ -296,8 +299,11 @@ SELECT
 FROM
   pg_proc AS p1
 WHERE
-  p1.prorettype IN (CAST('anyrange' AS REGTYPE),
-  CAST('anymultirange' AS REGTYPE)) AND
+  p1.prorettype
+  IN (
+    CAST('anyrange' AS REGTYPE),
+    CAST('anymultirange' AS REGTYPE)
+  ) AND
   NOT (CAST('anyrange' AS REGTYPE) = ANY (p1.proargtypes) OR
   CAST('anymultirange' AS REGTYPE) = ANY (p1.proargtypes))
 ORDER BY 2;
@@ -308,9 +314,12 @@ SELECT
 FROM
   pg_proc AS p1
 WHERE
-  p1.prorettype IN (CAST('anycompatible' AS REGTYPE),
-  CAST('anycompatiblearray' AS REGTYPE),
-  CAST('anycompatiblenonarray' AS REGTYPE)) AND
+  p1.prorettype
+  IN (
+    CAST('anycompatible' AS REGTYPE),
+    CAST('anycompatiblearray' AS REGTYPE),
+    CAST('anycompatiblenonarray' AS REGTYPE)
+  ) AND
   NOT (CAST('anycompatible' AS REGTYPE) = ANY (p1.proargtypes) OR
   CAST('anycompatiblearray' AS REGTYPE) = ANY (p1.proargtypes) OR
   CAST('anycompatiblenonarray' AS REGTYPE) = ANY (p1.proargtypes) OR
@@ -335,8 +344,10 @@ FROM
   pg_proc AS p1
 WHERE
   CAST('cstring' AS REGTYPE) = ANY (p1.proargtypes) AND
-  NOT EXISTS (SELECT 1 FROM pg_type WHERE typinput = p1.oid) AND
-  NOT EXISTS (SELECT 1 FROM pg_conversion WHERE conproc = p1.oid) AND
+  NOT EXISTS
+  (SELECT 1 FROM pg_type WHERE typinput = p1.oid) AND
+  NOT EXISTS
+  (SELECT 1 FROM pg_conversion WHERE conproc = p1.oid) AND
   p1.oid <>
   CAST('shell_in(cstring)' AS REGPROCEDURE)
 ORDER BY 1;
@@ -348,8 +359,10 @@ FROM
   pg_proc AS p1
 WHERE
   p1.prorettype = CAST('cstring' AS REGTYPE) AND
-  NOT EXISTS (SELECT 1 FROM pg_type WHERE typoutput = p1.oid) AND
-  NOT EXISTS (SELECT 1 FROM pg_type WHERE typmodout = p1.oid) AND
+  NOT EXISTS
+  (SELECT 1 FROM pg_type WHERE typoutput = p1.oid) AND
+  NOT EXISTS
+  (SELECT 1 FROM pg_type WHERE typmodout = p1.oid) AND
   p1.oid <> CAST('shell_out(void)' AS REGPROCEDURE)
 ORDER BY 1;
 
@@ -433,7 +446,8 @@ WHERE
     generate_series(
     1,
     array_length(proallargtypes, 1)
-    ) AS g (i)
+    )
+    AS g (i)
   WHERE
     proargmodes IS NULL OR
     proargmodes[i] IN ('i', 'b', 'v'));
@@ -447,9 +461,12 @@ FROM
 WHERE
   provariadic <> 0 AND
   CASE proargtypes[array_length(proargtypes, 1) - 1]
-  WHEN CAST('"any"' AS REGTYPE) THEN CAST('"any"' AS REGTYPE)
-  WHEN CAST('anyarray' AS REGTYPE) THEN CAST('anyelement' AS REGTYPE)
-  WHEN CAST('anycompatiblearray' AS REGTYPE) THEN CAST('anycompatible' AS REGTYPE)
+  WHEN CAST('"any"' AS REGTYPE)
+  THEN CAST('"any"' AS REGTYPE)
+  WHEN CAST('anyarray' AS REGTYPE)
+  THEN CAST('anyelement' AS REGTYPE)
+  WHEN CAST('anycompatiblearray' AS REGTYPE)
+  THEN CAST('anycompatible' AS REGTYPE)
   ELSE (SELECT
     t.oid
   FROM
@@ -490,7 +507,8 @@ SELECT
   p1.proname
 FROM
   pg_proc AS p1
-  LEFT OUTER JOIN pg_description AS d
+  LEFT OUTER JOIN
+    pg_description AS d
   ON p1.tableoid = d.classoid AND
     p1.oid = d.objoid AND
     d.objsubid = 0
@@ -501,7 +519,8 @@ SELECT
   CAST(p1.oid AS REGPROCEDURE)
 FROM
   pg_proc AS p1
-  INNER JOIN pg_namespace AS pn
+  INNER JOIN
+    pg_namespace AS pn
   ON pronamespace = pn.oid
 WHERE
   nspname = 'pg_catalog' AND proleakproof
@@ -511,7 +530,8 @@ SELECT
   CAST(p1.oid AS REGPROCEDURE)
 FROM
   pg_proc AS p1
-  INNER JOIN pg_namespace AS pn
+  INNER JOIN
+    pg_namespace AS pn
   ON pronamespace = pn.oid
 WHERE
   nspname = 'pg_catalog' AND
@@ -525,19 +545,22 @@ SELECT
 FROM
   pg_catalog.pg_proc
 WHERE
-  proname IN ('lo_open',
-  'lo_close',
-  'lo_creat',
-  'lo_create',
-  'lo_unlink',
-  'lo_lseek',
-  'lo_lseek64',
-  'lo_tell',
-  'lo_tell64',
-  'lo_truncate',
-  'lo_truncate64',
-  'loread',
-  'lowrite') AND
+  proname
+  IN (
+    'lo_open',
+    'lo_close',
+    'lo_creat',
+    'lo_create',
+    'lo_unlink',
+    'lo_lseek',
+    'lo_lseek64',
+    'lo_tell',
+    'lo_tell64',
+    'lo_truncate',
+    'lo_truncate64',
+    'loread',
+    'lowrite'
+  ) AND
   pronamespace =
   (SELECT
     oid
@@ -614,7 +637,8 @@ FROM
   pg_cast AS c
 WHERE
   c.castmethod = 'b' AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_cast AS k
@@ -789,7 +813,8 @@ FROM
   pg_operator AS o1
 WHERE
   o1.oprcanmerge AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_amop
@@ -820,7 +845,8 @@ FROM
   pg_operator AS o1
 WHERE
   o1.oprcanhash AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_amop
@@ -933,14 +959,17 @@ SELECT
   o1.oprname
 FROM
   pg_operator AS o1
-  LEFT OUTER JOIN pg_description AS d
+  LEFT OUTER JOIN
+    pg_description AS d
   ON o1.tableoid = d.classoid AND
     o1.oid = d.objoid AND
     d.objsubid = 0
 WHERE
   d.classoid IS NULL AND o1.oid <= 9999;
 
-WITH funcdescs AS (
+WITH
+funcdescs
+AS (
   SELECT
     p.oid AS p_oid,
     proname,
@@ -951,13 +980,16 @@ WITH funcdescs AS (
     od.description AS oprdesc
   FROM
     pg_proc AS p
-    INNER JOIN pg_operator AS o
+    INNER JOIN
+      pg_operator AS o
     ON oprcode = p.oid
-    LEFT OUTER JOIN pg_description AS pd
+    LEFT OUTER JOIN
+      pg_description AS pd
     ON pd.objoid = p.oid AND
       pd.classoid = p.tableoid AND
       pd.objsubid = 0
-    LEFT OUTER JOIN pg_description AS od
+    LEFT OUTER JOIN
+      pg_description AS od
     ON od.objoid = o.oid AND
       od.classoid = o.tableoid AND
       od.objsubid = 0
@@ -973,7 +1005,9 @@ WHERE
   oprdesc NOT LIKE 'deprecated%' AND
   prodesc IS DISTINCT FROM oprdesc;
 
-WITH funcdescs AS (
+WITH
+funcdescs
+AS (
   SELECT
     p.oid AS p_oid,
     proname,
@@ -984,13 +1018,16 @@ WITH funcdescs AS (
     od.description AS oprdesc
   FROM
     pg_proc AS p
-    INNER JOIN pg_operator AS o
+    INNER JOIN
+      pg_operator AS o
     ON oprcode = p.oid
-    LEFT OUTER JOIN pg_description AS pd
+    LEFT OUTER JOIN
+      pg_description AS pd
     ON pd.objoid = p.oid AND
       pd.classoid = p.tableoid AND
       pd.objsubid = 0
-    LEFT OUTER JOIN pg_description AS od
+    LEFT OUTER JOIN
+      pg_description AS od
     ON od.objoid = o.oid AND
       od.classoid = o.tableoid AND
       od.objsubid = 0
@@ -1105,7 +1142,8 @@ FROM
   pg_proc AS p
 WHERE
   p.prokind = 'a' AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_aggregate AS a
@@ -1187,7 +1225,8 @@ WHERE
   pfn.proargtypes[0]
   ) OR
   CASE
-  WHEN a.aggfinalextra THEN pfn.pronargs <> p.pronargs + 1
+  WHEN a.aggfinalextra
+  THEN pfn.pronargs <> p.pronargs + 1
   ELSE pfn.pronargs <> a.aggnumdirectargs + 1
   END OR
   pfn.pronargs > 1 AND
@@ -1356,7 +1395,8 @@ WHERE
   pfn.proargtypes[0]
   ) OR
   CASE
-  WHEN a.aggmfinalextra THEN pfn.pronargs <> p.pronargs + 1
+  WHEN a.aggmfinalextra
+  THEN pfn.pronargs <> p.pronargs + 1
   ELSE pfn.pronargs <> a.aggnumdirectargs + 1
   END OR
   pfn.pronargs > 1 AND
@@ -1534,7 +1574,8 @@ FROM
 WHERE
   a.aggfnoid = p.oid AND
   a.aggsortop = o.oid AND
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_amop
@@ -1585,7 +1626,8 @@ SELECT
   proname
 FROM
   pg_proc AS p
-  INNER JOIN pg_aggregate AS a
+  INNER JOIN
+    pg_aggregate AS a
   ON a.aggfnoid = p.oid
 WHERE
   prokind = 'a' AND
@@ -1600,7 +1642,8 @@ SELECT
 FROM
   pg_opfamily AS f
 WHERE
-  NOT EXISTS (SELECT 1 FROM pg_opclass WHERE opcfamily = f.oid);
+  NOT EXISTS
+  (SELECT 1 FROM pg_opclass WHERE opcfamily = f.oid);
 
 SELECT
   c1.oid
@@ -1711,7 +1754,8 @@ SELECT DISTINCT
   oprname
 FROM
   pg_amop AS a1
-  LEFT OUTER JOIN pg_operator AS o1
+  LEFT OUTER JOIN
+    pg_operator AS o1
   ON amopopr = o1.oid
 ORDER BY 1,
   2,
@@ -1736,7 +1780,8 @@ SELECT
 FROM
   pg_opclass AS c1
 WHERE
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_amop AS a1
@@ -1751,7 +1796,8 @@ SELECT
 FROM
   pg_amop AS a1
 WHERE
-  NOT EXISTS (SELECT
+  NOT EXISTS
+  (SELECT
     1
   FROM
     pg_opclass AS c1
@@ -1832,11 +1878,14 @@ SELECT
   CAST(opc.opcintype AS REGTYPE) AS opcintype
 FROM
   pg_am AS am
-  INNER JOIN pg_opclass AS opc
+  INNER JOIN
+    pg_opclass AS opc
   ON opc.opcmethod = am.oid
-  INNER JOIN pg_opfamily AS opf
+  INNER JOIN
+    pg_opfamily AS opf
   ON opc.opcfamily = opf.oid
-  LEFT OUTER JOIN pg_amproc AS amp
+  LEFT OUTER JOIN
+    pg_amproc AS amp
   ON amp.amprocfamily = opf.oid AND
     amp.amproclefttype = opc.opcintype AND
     amp.amprocnum = 4
@@ -1887,7 +1936,8 @@ FROM
     unnest(indclass) AS iclass,
     unnest(indcollation) AS icoll
   FROM
-    pg_index) AS ss,
+    pg_index)
+  AS ss,
   pg_attribute AS a,
   pg_opclass AS opc
 WHERE
@@ -1913,7 +1963,8 @@ FROM
   FROM
     pg_index
   WHERE
-    indrelid < 16384) AS ss,
+    indrelid < 16384)
+  AS ss,
   pg_attribute AS a,
   pg_opclass AS opc
 WHERE
@@ -1952,7 +2003,8 @@ FROM
   FROM
     pg_index
   WHERE
-    indrelid < 16384) AS ss
+    indrelid < 16384)
+  AS ss
 WHERE
   icoll <> 0 AND
   icoll <>

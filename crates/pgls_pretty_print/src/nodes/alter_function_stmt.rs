@@ -1,5 +1,5 @@
 use crate::TokenKind;
-use crate::emitter::{EventEmitter, GroupKind};
+use crate::emitter::{EventEmitter, GroupKind, LineType};
 use pgls_query::protobuf::AlterFunctionStmt;
 
 use super::node_list::emit_comma_separated_list;
@@ -20,7 +20,7 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
             e.token(TokenKind::IDENT("FUNCTION".to_string()));
         }
     }
-    e.space();
+    e.line(LineType::SoftOrSpace);
 
     // Function name with arguments
     if let Some(ref func) = n.func {
@@ -29,7 +29,7 @@ pub(super) fn emit_alter_function_stmt(e: &mut EventEmitter, n: &AlterFunctionSt
 
     // Emit actions (function options like IMMUTABLE, SECURITY DEFINER, etc.)
     if !n.actions.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_comma_separated_list(e, &n.actions, |node, e| {
             let def_elem = assert_node_variant!(DefElem, node);
             super::create_function_stmt::format_function_option(e, def_elem);

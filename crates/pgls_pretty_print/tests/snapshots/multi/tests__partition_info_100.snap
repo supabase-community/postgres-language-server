@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/partition_info_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/partition_info.sql
 snapshot_kind: text
 ---
 SELECT * FROM pg_partition_tree(NULL);
@@ -15,7 +15,8 @@ SELECT pg_partition_root(NULL);
 
 SELECT pg_partition_root(0);
 
-CREATE TABLE ptif_test (a INT, b INT)
+CREATE TABLE ptif_test
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE ptif_test0
@@ -134,7 +135,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test0') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT
@@ -144,7 +146,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test01') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT
@@ -154,7 +157,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test3') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT * FROM pg_partition_ancestors('ptif_test01');
@@ -169,8 +173,10 @@ SELECT
 FROM
   pg_partition_tree(
   pg_partition_root('ptif_test01')
-  ) AS p
-  INNER JOIN pg_class AS c
+  )
+  AS p
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT relid, parentrelid, level, isleaf FROM pg_partition_tree('ptif_test_index');
@@ -182,7 +188,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test0_index') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT
@@ -192,7 +199,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test01_index') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT
@@ -202,7 +210,8 @@ SELECT
   isleaf
 FROM
   pg_partition_tree('ptif_test3_index') AS p
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT
@@ -213,8 +222,10 @@ SELECT
 FROM
   pg_partition_tree(
   pg_partition_root('ptif_test01_index')
-  ) AS p
-  INNER JOIN pg_class AS c
+  )
+  AS p
+  INNER JOIN
+    pg_class AS c
   ON p.relid = c.oid;
 
 SELECT * FROM pg_partition_ancestors('ptif_test01_index');
@@ -240,7 +251,8 @@ CREATE MATERIALIZED VIEW ptif_test_matview AS SELECT 1;
 
 CREATE TABLE ptif_li_parent ();
 
-CREATE TABLE ptif_li_child ()
+CREATE TABLE ptif_li_child
+()
 INHERITS (ptif_li_parent);
 
 SELECT * FROM pg_partition_tree('ptif_test_view');

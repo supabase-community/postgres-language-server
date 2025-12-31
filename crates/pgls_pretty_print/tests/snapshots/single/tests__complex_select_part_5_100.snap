@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_5_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_5.sql
 snapshot_kind: text
 ---
 SELECT
@@ -23,7 +23,8 @@ SELECT
   path || tab.resorigtbl
 FROM
   recursion AS view
-  INNER JOIN results AS tab
+  INNER JOIN
+    results AS tab
   ON view.resorigtbl = tab.view_id AND
     view.resorigcol = tab.view_column
 WHERE

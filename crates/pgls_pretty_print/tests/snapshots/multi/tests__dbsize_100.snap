@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/dbsize_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/dbsize.sql
 snapshot_kind: text
 ---
 SELECT
@@ -14,7 +14,8 @@ FROM
     (CAST(1000000 AS BIGINT)),
     (CAST(1000000000 AS BIGINT)),
     (CAST(1000000000000 AS BIGINT)),
-    (CAST(1000000000000000 AS BIGINT))) AS x (size);
+    (CAST(1000000000000000 AS BIGINT)))
+  AS x (size);
 
 SELECT
   size,
@@ -33,7 +34,8 @@ FROM
     (CAST(1000000.5 AS NUMERIC)),
     (CAST(1000000000.5 AS NUMERIC)),
     (CAST(1000000000000.5 AS NUMERIC)),
-    (CAST(1000000000000000.5 AS NUMERIC))) AS x (size);
+    (CAST(1000000000000000.5 AS NUMERIC)))
+  AS x (size);
 
 SELECT
   size,
@@ -50,7 +52,8 @@ FROM
     (CAST(10994579406847 AS BIGINT)),
     (CAST(10994579406848 AS BIGINT)),
     (CAST(11258449312612351 AS BIGINT)),
-    (CAST(11258449312612352 AS BIGINT))) AS x (size);
+    (CAST(11258449312612352 AS BIGINT)))
+  AS x (size);
 
 SELECT
   size,
@@ -69,7 +72,8 @@ FROM
     (CAST(11258449312612351 AS NUMERIC)),
     (CAST(11258449312612352 AS NUMERIC)),
     (CAST(11528652096115048447 AS NUMERIC)),
-    (CAST(11528652096115048448 AS NUMERIC))) AS x (size);
+    (CAST(11528652096115048448 AS NUMERIC)))
+  AS x (size);
 
 SELECT
   pg_size_pretty(
@@ -94,7 +98,8 @@ FROM
     ('1TB'),
     ('3000 TB'),
     ('1e6 MB'),
-    ('99 PB')) AS x (size);
+    ('99 PB'))
+  AS x (size);
 
 SELECT
   size,
@@ -110,7 +115,8 @@ FROM
     ('1tb'),
     ('3000 tb'),
     ('1e6 mb'),
-    ('99 pb')) AS x (size);
+    ('99 pb'))
+  AS x (size);
 
 SELECT
   size,
@@ -126,7 +132,8 @@ FROM
     ('-1tb'),
     ('-3000 TB'),
     ('-10e-1 MB'),
-    ('-99 PB')) AS x (size);
+    ('-99 PB'))
+  AS x (size);
 
 SELECT
   size,
@@ -140,7 +147,8 @@ FROM
     ('-.1'),
     ('-.1kb'),
     ('-.1 kb'),
-    ('-.0 gb')) AS x (size);
+    ('-.0 gb'))
+  AS x (size);
 
 SELECT pg_size_bytes('1 AB');
 

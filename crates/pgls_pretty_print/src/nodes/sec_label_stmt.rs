@@ -1,6 +1,6 @@
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::{
     NodeEnum,
@@ -25,7 +25,7 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     }
 
     // Emit ON object_type object
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::ON_KW);
     e.space();
 
@@ -75,7 +75,7 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
     }
 
     // Emit IS 'label'
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::IS_KW);
     e.space();
     emit_single_quoted_str(e, &n.label);

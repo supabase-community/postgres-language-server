@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/select_parallel_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/select_parallel.sql
 snapshot_kind: text
 ---
 SELECT pg_stat_force_next_flush();
@@ -95,7 +95,8 @@ STABLE;
 
 SELECT sp_test_func() ORDER BY 1;
 
-CREATE TABLE part_pa_test (a INT, b INT)
+CREATE TABLE part_pa_test
+(a INT, b INT)
 PARTITION BY RANGE(a);
 
 CREATE TABLE part_pa_test_p1 PARTITION OF part_pa_test FOR VALUES FROM (minvalue) TO (0);
@@ -162,7 +163,8 @@ SELECT
 FROM
   tenk1
 WHERE
-  NOT (two, four) IN (SELECT
+  NOT (two, four) IN
+  (SELECT
     hundred,
     thousand
   FROM
@@ -175,7 +177,8 @@ SELECT
 FROM
   tenk1
 WHERE
-  NOT (two, four) IN (SELECT
+  NOT (two, four) IN
+  (SELECT
     hundred,
     thousand
   FROM
@@ -256,11 +259,14 @@ FROM
   FROM
     tenk1
   WHERE
-    hundred > 10) AS ss
-  RIGHT OUTER JOIN (VALUES
-    (1),
-    (2),
-    (3)) AS v (x)
+    hundred > 10)
+  AS ss
+  RIGHT OUTER JOIN
+    (VALUES
+      (1),
+      (2),
+      (3))
+    AS v (x)
   ON TRUE;
 
 SELECT
@@ -271,31 +277,40 @@ FROM
   FROM
     tenk1
   WHERE
-    hundred > 10) AS ss
-  RIGHT OUTER JOIN (VALUES
-    (1),
-    (2),
-    (3)) AS v (x)
+    hundred > 10)
+  AS ss
+  RIGHT OUTER JOIN
+    (VALUES
+      (1),
+      (2),
+      (3))
+    AS v (x)
   ON TRUE;
 
 SELECT
   *
 FROM
-  (SELECT COUNT(*) FROM tenk1 WHERE thousand > 99) AS ss
-  RIGHT OUTER JOIN (VALUES
-    (1),
-    (2),
-    (3)) AS v (x)
+  (SELECT COUNT(*) FROM tenk1 WHERE thousand > 99)
+  AS ss
+  RIGHT OUTER JOIN
+    (VALUES
+      (1),
+      (2),
+      (3))
+    AS v (x)
   ON TRUE;
 
 SELECT
   *
 FROM
-  (SELECT COUNT(*) FROM tenk1 WHERE thousand > 99) AS ss
-  RIGHT OUTER JOIN (VALUES
-    (1),
-    (2),
-    (3)) AS v (x)
+  (SELECT COUNT(*) FROM tenk1 WHERE thousand > 99)
+  AS ss
+  RIGHT OUTER JOIN
+    (VALUES
+      (1),
+      (2),
+      (3))
+    AS v (x)
   ON TRUE;
 
 RESET enable_seqscan;
@@ -314,12 +329,14 @@ SELECT
   COUNT(*)
 FROM
   tenk1
-  LEFT OUTER JOIN (SELECT
-    tenk2.unique1
-  FROM
-    tenk2
-  ORDER BY 1
-  LIMIT 1000) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      tenk2.unique1
+    FROM
+      tenk2
+    ORDER BY 1
+    LIMIT 1000)
+    AS ss
   ON tenk1.unique1 < ss.unique1 + 1
 WHERE
   tenk1.unique1 < 2;
@@ -328,12 +345,14 @@ SELECT
   COUNT(*)
 FROM
   tenk1
-  LEFT OUTER JOIN (SELECT
-    tenk2.unique1
-  FROM
-    tenk2
-  ORDER BY 1
-  LIMIT 1000) AS ss
+  LEFT OUTER JOIN
+    (SELECT
+      tenk2.unique1
+    FROM
+      tenk2
+    ORDER BY 1
+    LIMIT 1000)
+    AS ss
   ON tenk1.unique1 < ss.unique1 + 1
 WHERE
   tenk1.unique1 < 2;
@@ -459,12 +478,14 @@ SELECT
   *
 FROM
   tenk1 AS t1
-  LEFT OUTER JOIN LATERAL (SELECT
-    t1.unique1 AS x,
-    *
-  FROM
-    tenk2 AS t2
-  ORDER BY 1) AS t2
+  LEFT OUTER JOIN
+    LATERAL (SELECT
+      t1.unique1 AS x,
+      *
+    FROM
+      tenk2 AS t2
+    ORDER BY 1)
+    AS t2
   ON TRUE
 WHERE
   t1.two > t2.two;
@@ -515,11 +536,14 @@ FROM
   FROM
     tenk1
   GROUP BY string4
-  ORDER BY string4) AS ss
-  RIGHT OUTER JOIN (VALUES
-    (1),
-    (2),
-    (3)) AS v (x)
+  ORDER BY string4)
+  AS ss
+  RIGHT OUTER JOIN
+    (VALUES
+      (1),
+      (2),
+      (3))
+    AS v (x)
   ON TRUE;
 
 SELECT
@@ -531,11 +555,14 @@ FROM
   FROM
     tenk1
   GROUP BY string4
-  ORDER BY string4) AS ss
-  RIGHT OUTER JOIN (VALUES
-    (1),
-    (2),
-    (3)) AS v (x)
+  ORDER BY string4)
+  AS ss
+  RIGHT OUTER JOIN
+    (VALUES
+      (1),
+      (2),
+      (3))
+    AS v (x)
   ON TRUE;
 
 RESET enable_material;
@@ -646,7 +673,8 @@ SELECT
 FROM
   tenk1 AS a
 WHERE
-  (unique1, two) IN (SELECT
+  (unique1, two) IN
+  (SELECT
     unique1,
     ROW_NUMBER() OVER ()
   FROM
@@ -657,7 +685,8 @@ SELECT
 FROM
   tenk1 AS a
 WHERE
-  two IN (SELECT
+  two IN
+  (SELECT
     two
   FROM
     tenk1 AS b

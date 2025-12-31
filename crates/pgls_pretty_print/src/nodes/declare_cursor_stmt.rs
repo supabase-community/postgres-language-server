@@ -2,7 +2,7 @@ use pgls_query::protobuf::DeclareCursorStmt;
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 // Cursor option flags from PostgreSQL's parsenodes.h
@@ -49,7 +49,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
         e.token(TokenKind::IDENT("SCROLL".to_string()));
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     e.token(TokenKind::CURSOR_KW);
 
     // WITH HOLD / WITHOUT HOLD
@@ -62,7 +62,7 @@ pub(super) fn emit_declare_cursor_stmt(e: &mut EventEmitter, n: &DeclareCursorSt
 
     // FOR query
     if let Some(ref query) = n.query {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FOR_KW);
         e.space();
         super::emit_node(query, e);

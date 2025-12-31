@@ -1,9 +1,10 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/hash_part_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/hash_part.sql
 snapshot_kind: text
 ---
-CREATE TABLE mchash (a INT, b TEXT, c JSONB)
+CREATE TABLE mchash
+(a INT, b TEXT, c JSONB)
 PARTITION BY HASH(a part_test_int4_ops,
 b part_test_text_ops);
 
@@ -58,7 +59,8 @@ SELECT
   VARIADIC CAST(ARRAY[1, 2] AS INT[])
   );
 
-CREATE TABLE mcinthash (a INT, b INT, c JSONB)
+CREATE TABLE mcinthash
+(a INT, b INT, c JSONB)
 PARTITION BY HASH(a part_test_int4_ops,
 b part_test_int4_ops);
 
@@ -76,7 +78,8 @@ SELECT
 
 SELECT satisfies_hash_partition(CAST('mcinthash' AS REGCLASS), 4, 0, VARIADIC ARRAY[NOW(), NOW()]);
 
-CREATE TABLE text_hashp (a TEXT)
+CREATE TABLE text_hashp
+(a TEXT)
 PARTITION BY HASH(a);
 
 CREATE TABLE text_hashp0 PARTITION OF text_hashp FOR VALUES WITH (MODULUS 2, REMAINDER 0);

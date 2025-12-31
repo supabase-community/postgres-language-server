@@ -144,15 +144,19 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
         }
     }
 
-    // TODO: Args (for operators/functions) - need parentheses
+    // Args (for operators/aggregates) - need parentheses with break opportunities
     if !n.args.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
+        e.indent_start();
+        e.line(LineType::Soft);
         if kind == ObjectType::ObjectAggregate {
             emit_aggregate_args(e, &n.args);
         } else {
             emit_comma_separated_list(e, &n.args, super::emit_node);
         }
+        e.indent_end();
+        e.line(LineType::Soft);
         e.token(TokenKind::R_PAREN);
     }
 

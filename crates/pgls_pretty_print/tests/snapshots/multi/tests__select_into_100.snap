@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/select_into_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/select_into.sql
 snapshot_kind: text
 ---
 SELECT * INTO sitmp1 FROM onek WHERE onek.unique1 < 2;
@@ -106,7 +106,8 @@ SELECT make_table();
 
 SELECT * FROM created_table;
 
-DO $$
+DO
+$$
 BEGIN
 	EXECUTE 'EXPLAIN ANALYZE SELECT * INTO TABLE easi FROM int8_tbl';
 	EXECUTE 'EXPLAIN ANALYZE CREATE TABLE easi2 AS SELECT * FROM int8_tbl WITH NO DATA';

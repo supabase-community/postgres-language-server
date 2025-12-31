@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/collate.linux.utf8_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/collate.linux.utf8.sql
 snapshot_kind: text
 ---
 SELECT
@@ -313,13 +313,16 @@ SELECT x || y FROM collate_test10;
 
 SELECT x, y FROM collate_test10 ORDER BY x || y;
 
-WITH RECURSIVE foo (x) AS (
+WITH RECURSIVE
+foo (x)
+AS (
   SELECT
     x
   FROM
     (VALUES
       ('a' COLLATE "en_US"),
-      ('b')) AS t (x)
+      ('b'))
+    AS t (x)
   UNION ALL
   SELECT
     (x || 'c') COLLATE "de_DE"
@@ -484,7 +487,8 @@ CREATE ROLE regress_test_role;
 
 CREATE SCHEMA "test_schema";
 
-DO $$
+DO
+$$
 BEGIN
   EXECUTE 'CREATE COLLATION test0 (locale = ' ||
           quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) || ');';
@@ -497,7 +501,8 @@ CREATE COLLATION IF NOT EXISTS test0 FROM "C";
 
 CREATE COLLATION IF NOT EXISTS test0 ( locale = 'foo');
 
-DO $$
+DO
+$$
 BEGIN
   EXECUTE 'CREATE COLLATION test1 (lc_collate = ' ||
           quote_literal((SELECT datcollate FROM pg_database WHERE datname = current_database())) ||
@@ -536,7 +541,8 @@ SELECT
   obj_description(pg_collation.oid, 'pg_collation')
 FROM
   pg_collation
-  INNER JOIN pg_namespace
+  INNER JOIN
+    pg_namespace
   ON collnamespace = pg_namespace.oid
 WHERE
   collname LIKE 'test%'

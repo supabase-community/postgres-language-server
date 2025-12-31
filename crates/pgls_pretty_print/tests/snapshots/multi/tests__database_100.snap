@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/database_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/database.sql
 snapshot_kind: text
 ---
 CREATE DATABASE "regression_tbd" WITH encoding = 'utf8'

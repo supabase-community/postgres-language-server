@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/json_encoding_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/json_encoding.sql
 snapshot_kind: text
 ---
 SELECT getdatabaseencoding() NOT IN ('UTF8', 'SQL_ASCII') AS skip_test;
@@ -62,7 +62,8 @@ SELECT octet_length(CAST(CAST('"\uaBcD"' AS JSONB) AS TEXT));
 SELECT
   octet_length(
   CAST(CAST('{ "a":  "\ud83d\ude04\ud83d\udc36" }'
-  AS JSONB) -> 'a'
+  AS JSONB) ->
+  'a'
   AS TEXT)
   )
   AS correct_in_utf8;

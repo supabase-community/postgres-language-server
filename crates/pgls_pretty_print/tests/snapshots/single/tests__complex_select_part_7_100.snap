@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_7_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_7.sql
 snapshot_kind: text
 ---
 SELECT
@@ -21,16 +21,20 @@ SELECT
   AS column_dependencies
 FROM
   repeated_references AS rep
-  INNER JOIN pks_fks
+  INNER JOIN
+    pks_fks
   USING (
     "resorigtbl",
     "resorigcol")
-  INNER JOIN pg_class AS tbl
+  INNER JOIN
+    pg_class AS tbl
   ON tbl.oid = rep.resorigtbl
-  INNER JOIN pg_attribute AS col
+  INNER JOIN
+    pg_attribute AS col
   ON col.attrelid = tbl.oid AND
     col.attnum = rep.resorigcol
-  INNER JOIN pg_namespace AS sch
+  INNER JOIN
+    pg_namespace AS sch
   ON sch.oid = tbl.relnamespace
 GROUP BY sch.nspname,
   tbl.relname,

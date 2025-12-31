@@ -1,9 +1,11 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/single/complex_select_0_100.sql
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_0.sql
 snapshot_kind: text
 ---
-WITH RECURSIVE pks_fks AS (
+WITH RECURSIVE
+pks_fks
+AS (
   SELECT
     CAST(contype AS TEXT) AS contype,
     conname,
@@ -13,7 +15,10 @@ WITH RECURSIVE pks_fks AS (
     ord
   FROM
     pg_constraint
-    LEFT OUTER JOIN LATERAL unnest(conkey) WITH ORDINALITY AS _ (col, ord)
+    LEFT OUTER JOIN
+      LATERAL unnest(conkey)
+      WITH ORDINALITY
+      AS _ (col, ord)
     ON TRUE
   WHERE
     contype IN ('p', 'f')
@@ -27,12 +32,16 @@ WITH RECURSIVE pks_fks AS (
     ord
   FROM
     pg_constraint
-    LEFT OUTER JOIN LATERAL unnest(confkey) WITH ORDINALITY AS _ (col, ord)
+    LEFT OUTER JOIN
+      LATERAL unnest(confkey)
+      WITH ORDINALITY
+      AS _ (col, ord)
     ON TRUE
   WHERE
     contype = 'f'
 ),
-views AS (
+views
+AS (
   SELECT
     c.oid AS view_id,
     n.nspname AS view_schema,
@@ -40,14 +49,17 @@ views AS (
     r.ev_action AS view_definition
   FROM
     pg_class AS c
-    INNER JOIN pg_namespace AS n
+    INNER JOIN
+      pg_namespace AS n
     ON n.oid = c.relnamespace
-    INNER JOIN pg_rewrite AS r
+    INNER JOIN
+      pg_rewrite AS r
     ON r.ev_class = c.oid
   WHERE
     c.relkind IN ('v', 'm')
 ),
-transform_json AS (
+transform_json
+AS (
   SELECT
     view_id,
     view_schema,
@@ -131,7 +143,8 @@ transform_json AS (
   FROM
     views
 ),
-target_entries AS (
+target_entries
+AS (
   SELECT
     view_id,
     view_schema,
@@ -143,7 +156,8 @@ target_entries AS (
   FROM
     transform_json
 ),
-results AS (
+results
+AS (
   SELECT
     view_id,
     view_schema,
@@ -161,7 +175,8 @@ view_column,
 resorigtbl,
 resorigcol,
 is_cycle,
-path) AS (
+path)
+AS (
   SELECT
     r.*,
     FALSE,
@@ -182,13 +197,15 @@ path) AS (
     path || tab.resorigtbl
   FROM
     recursion AS view
-    INNER JOIN results AS tab
+    INNER JOIN
+      results AS tab
     ON view.resorigtbl = tab.view_id AND
       view.resorigcol = tab.view_column
   WHERE
     NOT is_cycle
 ),
-repeated_references AS (
+repeated_references
+AS (
   SELECT
     view_id,
     view_schema,
@@ -198,7 +215,8 @@ repeated_references AS (
     array_agg(attname) AS view_columns
   FROM
     recursion
-    INNER JOIN pg_attribute AS vcol
+    INNER JOIN
+      pg_attribute AS vcol
     ON vcol.attrelid = view_id AND
       vcol.attnum = view_column
   GROUP BY view_id,
@@ -225,16 +243,20 @@ SELECT
   AS column_dependencies
 FROM
   repeated_references AS rep
-  INNER JOIN pks_fks
+  INNER JOIN
+    pks_fks
   USING (
     "resorigtbl",
     "resorigcol")
-  INNER JOIN pg_class AS tbl
+  INNER JOIN
+    pg_class AS tbl
   ON tbl.oid = rep.resorigtbl
-  INNER JOIN pg_attribute AS col
+  INNER JOIN
+    pg_attribute AS col
   ON col.attrelid = tbl.oid AND
     col.attnum = rep.resorigcol
-  INNER JOIN pg_namespace AS sch
+  INNER JOIN
+    pg_namespace AS sch
   ON sch.oid = tbl.relnamespace
 GROUP BY sch.nspname,
   tbl.relname,

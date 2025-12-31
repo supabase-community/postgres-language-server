@@ -43,7 +43,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
 
     // Column aliases
     if !n.aliases.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::L_PAREN);
         emit_comma_separated_list(e, &n.aliases, |alias_node, emitter| {
             let alias = assert_node_variant!(String, alias_node);
@@ -79,7 +79,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
     // WITH CHECK OPTION
     match n.with_check_option() {
         ViewCheckOption::LocalCheckOption => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
             e.token(TokenKind::LOCAL_KW);
@@ -89,7 +89,7 @@ pub(super) fn emit_view_stmt(e: &mut EventEmitter, n: &ViewStmt) {
             e.token(TokenKind::OPTION_KW);
         }
         ViewCheckOption::CascadedCheckOption => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
             e.token(TokenKind::CASCADED_KW);

@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/dependency_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/dependency.sql
 snapshot_kind: text
 ---
 CREATE USER regress_dep_user;
@@ -125,7 +125,8 @@ SELECT
   typowner = relowner
 FROM
   pg_type
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON typrelid = c.oid
 WHERE
   typname = 'deptest_t';
@@ -138,7 +139,8 @@ SELECT
   typowner = relowner
 FROM
   pg_type
-  INNER JOIN pg_class AS c
+  INNER JOIN
+    pg_class AS c
   ON typrelid = c.oid
 WHERE
   typname = 'deptest_t';

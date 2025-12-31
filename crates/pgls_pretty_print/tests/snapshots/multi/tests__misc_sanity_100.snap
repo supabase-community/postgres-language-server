@@ -1,6 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
-input_file: crates/pgls_pretty_print/tests/data/multi/misc_sanity_100.sql
+input_file: crates/pgls_pretty_print/tests/data/multi/misc_sanity.sql
 snapshot_kind: text
 ---
 SELECT
@@ -31,7 +31,8 @@ SELECT
   CAST(atttypid AS REGTYPE)
 FROM
   pg_class AS c
-  INNER JOIN pg_attribute AS a
+  INNER JOIN
+    pg_attribute AS a
   ON c.oid = attrelid
 WHERE
   c.oid < 16384 AND
@@ -48,14 +49,16 @@ FROM
 WHERE
   relnamespace = CAST('pg_catalog' AS regnamespace) AND
   relkind = 'r' AND
-  NOT pg_class.oid IN (SELECT indrelid FROM pg_index WHERE indisprimary)
+  NOT pg_class.oid IN
+  (SELECT indrelid FROM pg_index WHERE indisprimary)
 ORDER BY 1;
 
 SELECT
   relname
 FROM
   pg_class AS c
-  INNER JOIN pg_index AS i
+  INNER JOIN
+    pg_index AS i
   ON c.oid = i.indexrelid
 WHERE
   relnamespace = CAST('pg_catalog' AS regnamespace) AND

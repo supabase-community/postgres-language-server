@@ -1,7 +1,7 @@
 use super::node_list::emit_comma_separated_list;
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 use pgls_query::protobuf::ConstraintsSetStmt;
 
@@ -19,7 +19,7 @@ pub(super) fn emit_constraints_set_stmt(e: &mut EventEmitter, n: &ConstraintsSet
         emit_comma_separated_list(e, &n.constraints, super::emit_node);
     }
 
-    e.space();
+    e.line(LineType::SoftOrSpace);
     if n.deferred {
         e.token(TokenKind::IDENT("DEFERRED".to_string()));
     } else {

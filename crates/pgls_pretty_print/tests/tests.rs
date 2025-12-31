@@ -8,6 +8,9 @@ use pgls_pretty_print::{
     renderer::{IndentStyle, RenderConfig, Renderer},
 };
 
+/// Line widths to test - each test file is run at both widths
+const LINE_WIDTHS: [usize; 2] = [60, 100];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum StringState {
     None,
@@ -27,97 +30,16 @@ fn test_single(fixture: Fixture<&str>) {
 
     let absolute_fixture_path = Utf8Path::new(fixture.path());
     let input_file = absolute_fixture_path;
-    let test_name = absolute_fixture_path
+    let base_test_name = absolute_fixture_path
         .file_name()
         .and_then(|x| x.strip_suffix(".sql"))
         .unwrap();
 
-    // extract line length from filename (e.g., "simple_select_80" -> 80)
-    let max_line_length = test_name
-        .split('_')
-        .next_back()
-        .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(100);
+    // Run test at each configured line width
+    for &max_line_length in &LINE_WIDTHS {
+        let test_name = format!("{base_test_name}_{max_line_length}");
 
-    let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
-    let mut ast = parsed.into_root().expect("No root node found");
-
-    println!("Parsed AST: {ast:#?}");
-
-    let mut emitter = EventEmitter::new();
-    emit_node_enum(&ast, &mut emitter);
-
-    let mut output = String::new();
-    let config = RenderConfig {
-        max_line_length,
-        indent_size: 2,
-        indent_style: IndentStyle::Spaces,
-    };
-    let mut renderer = Renderer::new(&mut output, config);
-    renderer.render(emitter.events).expect("Failed to render");
-
-    println!("Formatted content:\n{output}");
-
-    assert_line_lengths(&output, max_line_length);
-
-    let parsed_output = pgls_query::parse(&output).expect("Failed to parse SQL");
-    let mut parsed_ast = parsed_output.into_root().expect("No root node found");
-
-    clear_location(&mut parsed_ast);
-    clear_location(&mut ast);
-    normalize_a_indirection(&mut parsed_ast);
-    normalize_a_indirection(&mut ast);
-    normalize_object_with_args(&mut parsed_ast);
-    normalize_object_with_args(&mut ast);
-    normalize_join_expr(&mut parsed_ast);
-    normalize_join_expr(&mut ast);
-    normalize_foreign_table_partbound(&mut ast);
-
-    assert_eq!(ast, parsed_ast);
-
-    with_settings!({
-      omit_expression => true,
-      input_file => input_file,
-      snapshot_path => "snapshots/single",
-    }, {
-      assert_snapshot!(test_name, output);
-    });
-}
-
-#[dir_test(
-    dir: "$CARGO_MANIFEST_DIR/tests/data/multi/",
-    glob: "*.sql",
-)]
-fn test_multi(fixture: Fixture<&str>) {
-    let content = fixture.content();
-
-    let absolute_fixture_path = Utf8Path::new(fixture.path());
-    let input_file = absolute_fixture_path;
-    let test_name = absolute_fixture_path
-        .file_name()
-        .and_then(|x| x.strip_suffix(".sql"))
-        .unwrap();
-
-    // extract line length from filename (e.g., "advisory_lock_60" -> 60)
-    let max_line_length = test_name
-        .split('_')
-        .next_back()
-        .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(100);
-
-    // Split the content into statements
-    let split_result = pgls_statement_splitter::split(content);
-    let mut formatted_statements = Vec::new();
-
-    for range in &split_result.ranges {
-        let statement = &content[usize::from(range.start())..usize::from(range.end())];
-        let trimmed = statement.trim();
-
-        if trimmed.is_empty() {
-            continue;
-        }
-
-        let parsed = pgls_query::parse(trimmed).expect("Failed to parse SQL");
+        let parsed = pgls_query::parse(content).expect("Failed to parse SQL");
         let mut ast = parsed.into_root().expect("No root node found");
 
         println!("Parsed AST: {ast:#?}");
@@ -134,16 +56,11 @@ fn test_multi(fixture: Fixture<&str>) {
         let mut renderer = Renderer::new(&mut output, config);
         renderer.render(emitter.events).expect("Failed to render");
 
-        // Verify line length
+        println!("Formatted content (width={max_line_length}):\n{output}");
+
         assert_line_lengths(&output, max_line_length);
 
-        // Verify AST equality
-        let parsed_output = pgls_query::parse(&output).unwrap_or_else(|e| {
-            eprintln!("Failed to parse formatted SQL. Error: {e:?}");
-            eprintln!("Statement index: {}", range.start());
-            eprintln!("Formatted SQL:\n{output}");
-            panic!("Failed to parse formatted SQL: {e:?}");
-        });
+        let parsed_output = pgls_query::parse(&output).expect("Failed to parse SQL");
         let mut parsed_ast = parsed_output.into_root().expect("No root node found");
 
         clear_location(&mut parsed_ast);
@@ -155,28 +72,110 @@ fn test_multi(fixture: Fixture<&str>) {
         normalize_join_expr(&mut parsed_ast);
         normalize_join_expr(&mut ast);
         normalize_foreign_table_partbound(&mut ast);
-        normalize_merge_support_func(&mut ast);
-        normalize_merge_support_func(&mut parsed_ast);
-        normalize_sql_value_function(&mut ast);
-        normalize_sql_value_function(&mut parsed_ast);
 
         assert_eq!(ast, parsed_ast);
 
-        formatted_statements.push(output);
+        with_settings!({
+            omit_expression => true,
+            input_file => input_file,
+            snapshot_path => "snapshots/single",
+        }, {
+            assert_snapshot!(test_name, output);
+        });
     }
+}
 
-    // Join all formatted statements with double newline
-    let final_output = formatted_statements.join("\n\n");
+#[dir_test(
+    dir: "$CARGO_MANIFEST_DIR/tests/data/multi/",
+    glob: "*.sql",
+)]
+fn test_multi(fixture: Fixture<&str>) {
+    let content = fixture.content();
 
-    println!("Formatted multi-statement content:\n{final_output}");
+    let absolute_fixture_path = Utf8Path::new(fixture.path());
+    let input_file = absolute_fixture_path;
+    let base_test_name = absolute_fixture_path
+        .file_name()
+        .and_then(|x| x.strip_suffix(".sql"))
+        .unwrap();
 
-    with_settings!({
-        omit_expression => true,
-        input_file => input_file,
-        snapshot_path => "snapshots/multi",
-    }, {
-        assert_snapshot!(test_name, final_output);
-    });
+    // Run test at each configured line width
+    for &max_line_length in &LINE_WIDTHS {
+        let test_name = format!("{base_test_name}_{max_line_length}");
+
+        // Split the content into statements
+        let split_result = pgls_statement_splitter::split(content);
+        let mut formatted_statements = Vec::new();
+
+        for range in &split_result.ranges {
+            let statement = &content[usize::from(range.start())..usize::from(range.end())];
+            let trimmed = statement.trim();
+
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            let parsed = pgls_query::parse(trimmed).expect("Failed to parse SQL");
+            let mut ast = parsed.into_root().expect("No root node found");
+
+            println!("Parsed AST: {ast:#?}");
+
+            let mut emitter = EventEmitter::new();
+            emit_node_enum(&ast, &mut emitter);
+
+            let mut output = String::new();
+            let config = RenderConfig {
+                max_line_length,
+                indent_size: 2,
+                indent_style: IndentStyle::Spaces,
+            };
+            let mut renderer = Renderer::new(&mut output, config);
+            renderer.render(emitter.events).expect("Failed to render");
+
+            // Verify line length
+            assert_line_lengths(&output, max_line_length);
+
+            // Verify AST equality
+            let parsed_output = pgls_query::parse(&output).unwrap_or_else(|e| {
+                eprintln!("Failed to parse formatted SQL. Error: {e:?}");
+                eprintln!("Statement index: {}", range.start());
+                eprintln!("Formatted SQL:\n{output}");
+                panic!("Failed to parse formatted SQL: {e:?}");
+            });
+            let mut parsed_ast = parsed_output.into_root().expect("No root node found");
+
+            clear_location(&mut parsed_ast);
+            clear_location(&mut ast);
+            normalize_a_indirection(&mut parsed_ast);
+            normalize_a_indirection(&mut ast);
+            normalize_object_with_args(&mut parsed_ast);
+            normalize_object_with_args(&mut ast);
+            normalize_join_expr(&mut parsed_ast);
+            normalize_join_expr(&mut ast);
+            normalize_foreign_table_partbound(&mut ast);
+            normalize_merge_support_func(&mut ast);
+            normalize_merge_support_func(&mut parsed_ast);
+            normalize_sql_value_function(&mut ast);
+            normalize_sql_value_function(&mut parsed_ast);
+
+            assert_eq!(ast, parsed_ast);
+
+            formatted_statements.push(output);
+        }
+
+        // Join all formatted statements with double newline
+        let final_output = formatted_statements.join("\n\n");
+
+        println!("Formatted multi-statement content (width={max_line_length}):\n{final_output}");
+
+        with_settings!({
+            omit_expression => true,
+            input_file => input_file,
+            snapshot_path => "snapshots/multi",
+        }, {
+            assert_snapshot!(test_name, final_output);
+        });
+    }
 }
 
 fn assert_line_lengths(sql: &str, max_line_length: usize) {

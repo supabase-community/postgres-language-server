@@ -2,7 +2,7 @@ use pgls_query::protobuf::{IndexElem, SortByDir, SortByNulls};
 
 use crate::{
     TokenKind,
-    emitter::{EventEmitter, GroupKind},
+    emitter::{EventEmitter, GroupKind, LineType},
 };
 
 pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
@@ -20,7 +20,7 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
 
     // Optional collation
     if !n.collation.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::COLLATE_KW);
         e.space();
         super::node_list::emit_dot_separated_list(e, &n.collation);
@@ -28,7 +28,7 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
 
     // Optional opclass
     if !n.opclass.is_empty() {
-        e.space();
+        e.line(LineType::SoftOrSpace);
         super::node_list::emit_dot_separated_list(e, &n.opclass);
 
         // Optional opclass options (e.g., tsvector_ops(siglen = 1000))
@@ -65,13 +65,13 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
     // NULLS FIRST/LAST
     match n.nulls_ordering() {
         SortByNulls::SortbyNullsFirst => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::NULLS_KW);
             e.space();
             e.token(TokenKind::FIRST_KW);
         }
         SortByNulls::SortbyNullsLast => {
-            e.space();
+            e.line(LineType::SoftOrSpace);
             e.token(TokenKind::NULLS_KW);
             e.space();
             e.token(TokenKind::LAST_KW);
