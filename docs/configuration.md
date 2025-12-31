@@ -19,9 +19,9 @@ A configuration file is usually placed in your project’s root folder. It is or
   },
   "typecheck": {
     "enabled": true
-  }
+  },
   "plpgsqlCheck": {
-    "enabled" : true
+    "enabled": true
   }
 }
 ```

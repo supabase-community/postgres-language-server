@@ -32,7 +32,7 @@ You can always disable the integration if you do not want the language server to
 
 ```json
 {
-  "plpqsqlCheck": {
+  "plpgsqlCheck": {
     "enabled": false
   }
 }

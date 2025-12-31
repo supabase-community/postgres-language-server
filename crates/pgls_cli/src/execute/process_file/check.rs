@@ -31,7 +31,7 @@ pub(crate) fn check_with_guard<'ctx>(
 
             let pull_diagnostics_result = workspace_file
                 .guard()
-                .pull_diagnostics(
+                .pull_file_diagnostics(
                     RuleCategoriesBuilder::default().all().build(),
                     max_diagnostics,
                     only,
@@ -54,7 +54,7 @@ pub(crate) fn check_with_guard<'ctx>(
                         .into_iter()
                         .map(Error::from)
                         .collect(),
-                    skipped_diagnostics: pull_diagnostics_result.skipped_diagnostics as u32,
+                    skipped_diagnostics: pull_diagnostics_result.skipped_diagnostics,
                 });
             }
 

@@ -6,7 +6,7 @@ use std::{
 };
 
 use biome_deserialize::Merge;
-use pgls_analyse::AnalyserRules;
+use pgls_analyser::LinterRules;
 use pgls_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
     VERSION, diagnostics::CantLoadExtendFile, push_to_analyser_rules,
@@ -216,8 +216,8 @@ pub fn create_config(
 }
 
 /// Returns the rules applied to a specific [Path], given the [Settings]
-pub fn to_analyser_rules(settings: &Settings) -> AnalyserRules {
-    let mut analyser_rules = AnalyserRules::default();
+pub fn to_analyser_rules(settings: &Settings) -> LinterRules {
+    let mut analyser_rules = LinterRules::default();
     if let Some(rules) = settings.linter.rules.as_ref() {
         push_to_analyser_rules(rules, pgls_analyser::METADATA.deref(), &mut analyser_rules);
     }

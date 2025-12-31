@@ -1,4 +1,4 @@
-use pgls_analyse::{GroupCategory, RegistryVisitor, Rule, RuleCategory, RuleFilter, RuleGroup};
+use pgls_analyse::{GroupCategory, RegistryVisitor, RuleCategory, RuleFilter, RuleGroup, RuleMeta};
 use pgls_configuration::RuleSelector;
 use rustc_hash::FxHashSet;
 
@@ -91,7 +91,7 @@ impl<'a, 'b> LintVisitor<'a, 'b> {
 
     fn push_rule<R>(&mut self)
     where
-        R: Rule<Options: Default> + 'static,
+        R: RuleMeta + 'static,
     {
         // Do not report unused suppression comment diagnostics if a single rule is run.
         for selector in self.only {
@@ -132,7 +132,7 @@ impl RegistryVisitor for LintVisitor<'_, '_> {
 
     fn record_rule<R>(&mut self)
     where
-        R: Rule<Options: Default> + 'static,
+        R: RuleMeta + 'static,
     {
         self.push_rule::<R>()
     }
@@ -141,7 +141,7 @@ impl RegistryVisitor for LintVisitor<'_, '_> {
 #[cfg(test)]
 mod tests {
     use pgls_analyse::RuleFilter;
-    use pgls_configuration::{RuleConfiguration, Rules, analyser::Safety};
+    use pgls_configuration::{RuleConfiguration, Rules, linter::Safety};
 
     use crate::{
         settings::{LinterSettings, Settings},

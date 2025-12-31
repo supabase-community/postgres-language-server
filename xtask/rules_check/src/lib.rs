@@ -4,10 +4,10 @@ use std::{fmt::Write, slice};
 
 use anyhow::bail;
 use pgls_analyse::{
-    AnalyserOptions, AnalysisFilter, GroupCategory, RegistryVisitor, Rule, RuleCategory,
-    RuleFilter, RuleGroup, RuleMetadata,
+    AnalysisFilter, GroupCategory, RegistryVisitor, RuleCategory, RuleFilter, RuleGroup, RuleMeta,
+    RuleMetadata,
 };
-use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig};
+use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, LinterOptions};
 use pgls_console::{markup, Console};
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, PrintDiagnostic};
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
@@ -23,7 +23,7 @@ pub fn check_rules() -> anyhow::Result<()> {
     impl LintRulesVisitor {
         fn push_rule<R>(&mut self)
         where
-            R: Rule<Options: Default> + 'static,
+            R: RuleMeta + 'static,
         {
             self.groups
                 .entry(<R::Group as RuleGroup>::NAME)
@@ -41,7 +41,7 @@ pub fn check_rules() -> anyhow::Result<()> {
 
         fn record_rule<R>(&mut self)
         where
-            R: Rule<Options: Default> + 'static,
+            R: RuleMeta + 'static,
         {
             self.push_rule::<R>()
         }
@@ -120,7 +120,7 @@ fn assert_lint(
         ..AnalysisFilter::default()
     };
     let settings = Settings::default();
-    let options = AnalyserOptions::default();
+    let options = LinterOptions::default();
     let analyser = Analyser::new(AnalyserConfig {
         options: &options,
         filter,

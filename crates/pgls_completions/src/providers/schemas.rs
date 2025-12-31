@@ -59,7 +59,8 @@ mod tests {
         assert_complete_results(
             format!("select * from {}", QueryWithCursorPosition::cursor_marker()).as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("public".to_string(), CompletionItemKind::Schema),
+                // users table still preferred over schemas
+                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("auth".to_string(), CompletionItemKind::Schema),
                 CompletionAssertion::LabelAndKind(
                     "internal".to_string(),
@@ -69,8 +70,7 @@ mod tests {
                     "private".to_string(),
                     CompletionItemKind::Schema,
                 ),
-                // users table still preferred over system schemas
-                CompletionAssertion::LabelAndKind("users".to_string(), CompletionItemKind::Table),
+                // system schemas have lowest preference
                 CompletionAssertion::LabelAndKind(
                     "information_schema".to_string(),
                     CompletionItemKind::Schema,
@@ -110,8 +110,8 @@ mod tests {
             )
             .as_str(),
             vec![
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
                 CompletionAssertion::LabelAndKind("ultimate".into(), CompletionItemKind::Schema),
+                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
             ],
             Some(setup),
             &pool,

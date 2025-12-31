@@ -27,7 +27,7 @@ export type ProjectKey = string;
 export interface GetFileContentParams {
 	path: PgLSPath;
 }
-export interface PullDiagnosticsParams {
+export interface PullFileDiagnosticsParams {
 	categories: RuleCategories;
 	max_diagnostics: number;
 	only: RuleCode[];
@@ -39,7 +39,6 @@ export type RuleCode = string;
 export type RuleCategory = "Lint" | "Action" | "Transformation";
 export interface PullDiagnosticsResult {
 	diagnostics: Diagnostic[];
-	errors: number;
 	skipped_diagnostics: number;
 }
 /**
@@ -96,6 +95,27 @@ export type Category =
 	| "lint/safety/requireConcurrentIndexDeletion"
 	| "lint/safety/runningStatementWhileHoldingAccessExclusive"
 	| "lint/safety/transactionNesting"
+	| "splinter/performance/authRlsInitplan"
+	| "splinter/performance/duplicateIndex"
+	| "splinter/performance/multiplePermissivePolicies"
+	| "splinter/performance/noPrimaryKey"
+	| "splinter/performance/tableBloat"
+	| "splinter/performance/unindexedForeignKeys"
+	| "splinter/performance/unusedIndex"
+	| "splinter/security/authUsersExposed"
+	| "splinter/security/extensionInPublic"
+	| "splinter/security/extensionVersionsOutdated"
+	| "splinter/security/fkeyToAuthUnique"
+	| "splinter/security/foreignTableInApi"
+	| "splinter/security/functionSearchPathMutable"
+	| "splinter/security/insecureQueueExposedInApi"
+	| "splinter/security/materializedViewInApi"
+	| "splinter/security/policyExistsRlsDisabled"
+	| "splinter/security/rlsDisabledInPublic"
+	| "splinter/security/rlsEnabledNoPolicy"
+	| "splinter/security/rlsReferencesUserMetadata"
+	| "splinter/security/securityDefinerView"
+	| "splinter/security/unsupportedRegTypes"
 	| "stdin"
 	| "check"
 	| "configuration"
@@ -112,7 +132,10 @@ export type Category =
 	| "dummy"
 	| "lint"
 	| "lint/performance"
-	| "lint/safety";
+	| "lint/safety"
+	| "splinter"
+	| "splinter/performance"
+	| "splinter/security";
 export interface Location {
 	path?: Resource_for_String;
 	sourceCode?: string;
@@ -140,7 +163,11 @@ export type Advice =
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = "argv" | "memory" | { file: string };
+export type Resource_for_String =
+	| "database"
+	| "argv"
+	| "memory"
+	| { file: string };
 export type TextRange = [TextSize, TextSize];
 export interface MarkupNodeBuf {
 	content: string;
@@ -354,11 +381,11 @@ export interface PartialLinterConfiguration {
 	 */
 	enabled?: boolean;
 	/**
-	 * A list of Unix shell style patterns. The formatter will ignore files/folders that will match these patterns.
+	 * A list of Unix shell style patterns. The linter will ignore files/folders that will match these patterns.
 	 */
 	ignore?: StringSet;
 	/**
-	 * A list of Unix shell style patterns. The formatter will include files/folders that will match these patterns.
+	 * A list of Unix shell style patterns. The linter will include files/folders that will match these patterns.
 	 */
 	include?: StringSet;
 	/**
@@ -619,8 +646,8 @@ export interface Workspace {
 		params: RegisterProjectFolderParams,
 	): Promise<ProjectKey>;
 	getFileContent(params: GetFileContentParams): Promise<string>;
-	pullDiagnostics(
-		params: PullDiagnosticsParams,
+	pullFileDiagnostics(
+		params: PullFileDiagnosticsParams,
 	): Promise<PullDiagnosticsResult>;
 	getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
 	updateSettings(params: UpdateSettingsParams): Promise<void>;
@@ -632,31 +659,31 @@ export interface Workspace {
 export function createWorkspace(transport: Transport): Workspace {
 	return {
 		isPathIgnored(params) {
-			return transport.request("pgt/is_path_ignored", params);
+			return transport.request("pgls/is_path_ignored", params);
 		},
 		registerProjectFolder(params) {
-			return transport.request("pgt/register_project_folder", params);
+			return transport.request("pgls/register_project_folder", params);
 		},
 		getFileContent(params) {
-			return transport.request("pgt/get_file_content", params);
+			return transport.request("pgls/get_file_content", params);
 		},
-		pullDiagnostics(params) {
-			return transport.request("pgt/pull_diagnostics", params);
+		pullFileDiagnostics(params) {
+			return transport.request("pgls/pull_file_diagnostics", params);
 		},
 		getCompletions(params) {
-			return transport.request("pgt/get_completions", params);
+			return transport.request("pgls/get_completions", params);
 		},
 		updateSettings(params) {
-			return transport.request("pgt/update_settings", params);
+			return transport.request("pgls/update_settings", params);
 		},
 		openFile(params) {
-			return transport.request("pgt/open_file", params);
+			return transport.request("pgls/open_file", params);
 		},
 		changeFile(params) {
-			return transport.request("pgt/change_file", params);
+			return transport.request("pgls/change_file", params);
 		},
 		closeFile(params) {
-			return transport.request("pgt/close_file", params);
+			return transport.request("pgls/close_file", params);
 		},
 		destroy() {
 			transport.destroy();

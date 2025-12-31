@@ -8,12 +8,15 @@ const binPath = join(__dirname, "../bin/postgres-language-server");
 const testSqlPath = join(__dirname, "test.sql");
 
 describe("postgres-language-server bin", () => {
-
   it("should check a SQL file successfully", async () => {
     const result = await new Promise((resolve) => {
-      const proc = spawn("node", [binPath, "check", testSqlPath], {
-        env: { ...process.env },
-      });
+      const proc = spawn(
+        "node",
+        [binPath, "check", "--disable-db", testSqlPath],
+        {
+          env: { ...process.env },
+        }
+      );
 
       let stdout = "";
       let stderr = "";

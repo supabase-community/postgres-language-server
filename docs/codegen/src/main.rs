@@ -8,6 +8,8 @@ use docs_codegen::rules_docs::generate_rules_docs;
 use docs_codegen::rules_index::generate_rules_index;
 use docs_codegen::rules_sources::generate_rule_sources;
 use docs_codegen::schema::generate_schema;
+use docs_codegen::splinter_docs::generate_splinter_docs;
+use docs_codegen::version::replace_version;
 
 fn docs_root() -> PathBuf {
     let dir =
@@ -22,9 +24,11 @@ fn main() -> anyhow::Result<()> {
     generate_env_variables(&docs_root)?;
     generate_cli_doc(&docs_root)?;
     generate_rules_docs(&docs_root)?;
+    generate_splinter_docs(&docs_root)?;
     generate_rules_index(&docs_root)?;
     generate_rule_sources(&docs_root)?;
     generate_schema(&docs_root)?;
+    replace_version(&docs_root)?;
 
     Ok(())
 }

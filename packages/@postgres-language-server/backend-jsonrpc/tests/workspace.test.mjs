@@ -27,7 +27,7 @@ describe("Workspace API", () => {
 			version: 0,
 		});
 
-		const { diagnostics } = await workspace.pullDiagnostics({
+		const { diagnostics } = await workspace.pullFileDiagnostics({
 			only: [],
 			skip: [],
 			max_diagnostics: 100,

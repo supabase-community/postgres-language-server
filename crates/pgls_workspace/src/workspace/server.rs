@@ -15,8 +15,9 @@ use document::{
 };
 use futures::{StreamExt, stream};
 use pg_query::convert_to_positional_params;
-use pgls_analyse::{AnalyserOptions, AnalysisFilter};
-use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams};
+use pgls_analyse::AnalysisFilter;
+use pgls_analyser::{Analyser, AnalyserConfig, AnalyserParams, LinterOptions};
+
 use pgls_diagnostics::{
     Diagnostic, DiagnosticExt, Error, Severity, serde::Diagnostic as SDiagnostic,
 };
@@ -36,7 +37,7 @@ use crate::{
             CommandActionCategory, ExecuteStatementParams, ExecuteStatementResult,
         },
         completions::{CompletionsResult, GetCompletionsParams, get_statement_for_completions},
-        diagnostics::{PullDiagnosticsParams, PullDiagnosticsResult},
+        diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
         on_hover::{OnHoverParams, OnHoverResult},
     },
     settings::{WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
@@ -358,7 +359,7 @@ impl Workspace for WorkspaceServer {
             None => Some("Statement execution not allowed against database.".into()),
         };
 
-        let actions = parser
+        let mut actions: Vec<CodeAction> = parser
             .iter_with_filter(
                 DefaultMapper,
                 CursorPositionFilter::new(params.cursor_position),
@@ -378,6 +379,20 @@ impl Workspace for WorkspaceServer {
                 }
             })
             .collect();
+
+        let invalidate_disabled_reason = if self.get_current_connection().is_some() {
+            None
+        } else {
+            Some("No database connection available.".into())
+        };
+
+        actions.push(CodeAction {
+            title: "Invalidate Schema Cache".into(),
+            kind: CodeActionKind::Command(CommandAction {
+                category: CommandActionCategory::InvalidateSchemaCache,
+            }),
+            disabled_reason: invalidate_disabled_reason,
+        });
 
         Ok(CodeActionsResult { actions })
     }
@@ -424,10 +439,23 @@ impl Workspace for WorkspaceServer {
         })
     }
 
+    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
+        if all {
+            self.schema_cache.clear_all();
+        } else {
+            // Only clear current connection if one exists
+            if let Some(pool) = self.get_current_connection() {
+                self.schema_cache.clear(&pool);
+            }
+            // If no connection, nothing to clear - just return Ok
+        }
+        Ok(())
+    }
+
     #[ignored_path(path=&params.path)]
-    fn pull_diagnostics(
+    fn pull_file_diagnostics(
         &self,
-        params: PullDiagnosticsParams,
+        params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         let settings = self.workspaces();
 
@@ -438,7 +466,6 @@ impl Workspace for WorkspaceServer {
                 // we might want to return an error here in the future
                 return Ok(PullDiagnosticsResult {
                     diagnostics: Vec::new(),
-                    errors: 0,
                     skipped_diagnostics: 0,
                 });
             }
@@ -575,7 +602,7 @@ impl Workspace for WorkspaceServer {
             .with_linter_rules(&params.only, &params.skip)
             .finish();
 
-        let options = AnalyserOptions {
+        let options = LinterOptions {
             rules: to_analyser_rules(settings),
         };
 
@@ -670,17 +697,18 @@ impl Workspace for WorkspaceServer {
         diagnostics.retain(|d| !suppressions.is_suppressed(d));
         diagnostics.extend(suppression_errors.into_iter().map(SDiagnostic::new));
 
-        let errors = diagnostics
-            .iter()
-            .filter(|d| d.severity() == Severity::Error || d.severity() == Severity::Fatal)
-            .count();
-
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
         Ok(PullDiagnosticsResult {
             diagnostics,
-            errors,
             skipped_diagnostics: 0,
         })
+    }
+
+    fn pull_db_diagnostics(
+        &self,
+        _params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
+    ) -> Result<PullDiagnosticsResult, WorkspaceError> {
+        Ok(PullDiagnosticsResult::default())
     }
 
     #[ignored_path(path=&params.path)]
@@ -719,7 +747,7 @@ impl Workspace for WorkspaceServer {
                     text: id.content().to_string(),
                 });
 
-                Ok(CompletionsResult { items })
+                Ok(CompletionsResult::with_offset(items, range.start()))
             }
         }
     }

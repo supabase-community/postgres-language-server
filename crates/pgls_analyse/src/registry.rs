@@ -1,11 +1,8 @@
 use std::{borrow, collections::BTreeSet};
 
 use crate::{
-    AnalyserOptions,
-    analysed_file_context::AnalysedFileContext,
-    context::RuleContext,
-    filter::{AnalysisFilter, GroupKey, RuleKey},
-    rule::{GroupCategory, Rule, RuleDiagnostic, RuleGroup},
+    filter::{GroupKey, RuleKey},
+    metadata::{GroupCategory, RuleGroup, RuleMeta},
 };
 
 pub trait RegistryVisitor {
@@ -22,7 +19,7 @@ pub trait RegistryVisitor {
     /// Record the rule `R` to this visitor
     fn record_rule<R>(&mut self)
     where
-        R: Rule + 'static;
+        R: RuleMeta + 'static;
 }
 
 /// Key struct for a rule in the metadata map, sorted alphabetically
@@ -85,115 +82,8 @@ impl MetadataRegistry {
 impl RegistryVisitor for MetadataRegistry {
     fn record_rule<R>(&mut self)
     where
-        R: Rule + 'static,
+        R: RuleMeta + 'static,
     {
         self.insert_rule(<R::Group as RuleGroup>::NAME, R::METADATA.name);
-    }
-}
-
-pub struct RuleRegistryBuilder<'a> {
-    filter: &'a AnalysisFilter<'a>,
-    // Rule Registry
-    registry: RuleRegistry,
-}
-
-impl RegistryVisitor for RuleRegistryBuilder<'_> {
-    fn record_category<C: GroupCategory>(&mut self) {
-        if self.filter.match_category::<C>() {
-            C::record_groups(self);
-        }
-    }
-
-    fn record_group<G: RuleGroup>(&mut self) {
-        if self.filter.match_group::<G>() {
-            G::record_rules(self);
-        }
-    }
-
-    /// Add the rule `R` to the list of rules stored in this registry instance
-    fn record_rule<R>(&mut self)
-    where
-        R: Rule<Options: Default> + 'static,
-    {
-        if !self.filter.match_rule::<R>() {
-            return;
-        }
-
-        let rule = RegistryRule::new::<R>();
-
-        self.registry.rules.push(rule);
-    }
-}
-
-/// The rule registry holds type-erased instances of all active analysis rules
-pub struct RuleRegistry {
-    pub rules: Vec<RegistryRule>,
-}
-
-impl IntoIterator for RuleRegistry {
-    type Item = RegistryRule;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.rules.into_iter()
-    }
-}
-
-/// Internal representation of a single rule in the registry
-#[derive(Copy, Clone)]
-pub struct RegistryRule {
-    pub run: RuleExecutor,
-}
-
-impl RuleRegistry {
-    pub fn builder<'a>(filter: &'a AnalysisFilter<'a>) -> RuleRegistryBuilder<'a> {
-        RuleRegistryBuilder {
-            filter,
-            registry: RuleRegistry {
-                rules: Default::default(),
-            },
-        }
-    }
-}
-
-pub struct RegistryRuleParams<'a> {
-    pub root: &'a pgls_query::NodeEnum,
-    pub options: &'a AnalyserOptions,
-    pub analysed_file_context: &'a AnalysedFileContext<'a>,
-    pub schema_cache: Option<&'a pgls_schema_cache::SchemaCache>,
-}
-
-/// Executor for rule as a generic function pointer
-type RuleExecutor = fn(&RegistryRuleParams) -> Vec<RuleDiagnostic>;
-
-impl RegistryRule {
-    fn new<R>() -> Self
-    where
-        R: Rule<Options: Default> + 'static,
-    {
-        /// Generic implementation of RuleExecutor for any rule type R
-        fn run<R>(params: &RegistryRuleParams) -> Vec<RuleDiagnostic>
-        where
-            R: Rule<Options: Default> + 'static,
-        {
-            let options = params.options.rule_options::<R>().unwrap_or_default();
-
-            let ctx = RuleContext::new(
-                params.root,
-                &options,
-                params.schema_cache,
-                params.analysed_file_context,
-            );
-
-            R::run(&ctx)
-        }
-
-        Self { run: run::<R> }
-    }
-}
-
-impl RuleRegistryBuilder<'_> {
-    pub fn build(self) -> RuleRegistry {
-        self.registry
     }
 }

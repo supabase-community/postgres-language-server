@@ -53,6 +53,21 @@ pub fn get_actions(
                             .map(|reason| CodeActionDisabled { reason }),
                         ..Default::default()
                     }),
+                    CommandActionCategory::InvalidateSchemaCache => Some(CodeAction {
+                        title: title.clone(),
+                        kind: Some(lsp_types::CodeActionKind::EMPTY),
+                        command: Some({
+                            Command {
+                                title: title.clone(),
+                                command: command_id,
+                                arguments: None,
+                            }
+                        }),
+                        disabled: action
+                            .disabled_reason
+                            .map(|reason| CodeActionDisabled { reason }),
+                        ..Default::default()
+                    }),
                 }
             }
 
@@ -68,7 +83,8 @@ pub fn get_actions(
 
 pub fn command_id(command: &CommandActionCategory) -> String {
     match command {
-        CommandActionCategory::ExecuteStatement(_) => "pgt.executeStatement".into(),
+        CommandActionCategory::ExecuteStatement(_) => "pgls.executeStatement".into(),
+        CommandActionCategory::InvalidateSchemaCache => "pgls.invalidateSchemaCache".into(),
     }
 }
 
@@ -80,7 +96,7 @@ pub async fn execute_command(
     let command = params.command;
 
     match command.as_str() {
-        "pgt.executeStatement" => {
+        "pgls.executeStatement" => {
             let statement_id = serde_json::from_value::<pgls_workspace::workspace::StatementId>(
                 params.arguments[0].clone(),
             )?;
@@ -105,7 +121,16 @@ pub async fn execute_command(
 
             Ok(None)
         }
+        "pgls.invalidateSchemaCache" => {
+            session.workspace.invalidate_schema_cache(true)?;
 
+            session
+                .client
+                .show_message(MessageType::INFO, "Schema cache invalidated")
+                .await;
+
+            Ok(None)
+        }
         any => Err(anyhow!(format!("Unknown command: {}", any))),
     }
 }

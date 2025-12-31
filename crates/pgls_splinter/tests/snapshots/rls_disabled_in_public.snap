@@ -1,0 +1,6 @@
+---
+source: crates/pgls_splinter/tests/diagnostics.rs
+expression: content
+snapshot_kind: text
+---
+No Diagnostics

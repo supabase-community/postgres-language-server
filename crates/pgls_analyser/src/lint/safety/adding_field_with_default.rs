@@ -1,4 +1,5 @@
-use pgls_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -38,10 +39,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for AddingFieldWithDefault {
+impl LinterRule for AddingFieldWithDefault {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         // Check PostgreSQL version - in 11+, non-volatile defaults are safe
@@ -74,7 +75,7 @@ impl Rule for AddingFieldWithDefault {
 
                             if has_generated {
                                 diagnostics.push(
-                                    RuleDiagnostic::new(
+                                    LinterDiagnostic::new(
                                         rule_category!(),
                                         None,
                                         markup! {
@@ -101,7 +102,7 @@ impl Rule for AddingFieldWithDefault {
 
                                     if !is_safe_default {
                                         diagnostics.push(
-                                            RuleDiagnostic::new(
+                                            LinterDiagnostic::new(
                                                 rule_category!(),
                                                 None,
                                                 markup! {
@@ -115,7 +116,7 @@ impl Rule for AddingFieldWithDefault {
                                 } else {
                                     // Pre PG 11, all defaults cause rewrites
                                     diagnostics.push(
-                                        RuleDiagnostic::new(
+                                        LinterDiagnostic::new(
                                             rule_category!(),
                                             None,
                                             markup! {

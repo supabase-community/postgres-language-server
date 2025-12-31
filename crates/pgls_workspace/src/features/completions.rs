@@ -21,6 +21,18 @@ pub struct CompletionsResult {
     pub(crate) items: Vec<CompletionItem>,
 }
 
+impl CompletionsResult {
+    pub fn with_offset(mut items: Vec<CompletionItem>, offset: TextSize) -> Self {
+        for item in &mut items {
+            if let Some(text_edit) = &mut item.completion_text {
+                text_edit.range += offset;
+            }
+        }
+
+        Self { items }
+    }
+}
+
 impl IntoIterator for CompletionsResult {
     type Item = CompletionItem;
     type IntoIter = <Vec<CompletionItem> as IntoIterator>::IntoIter;

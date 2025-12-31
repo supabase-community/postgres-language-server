@@ -113,12 +113,19 @@ jobs:
             sleep 1
           done
 
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v5
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+            ~/.cargo/bin/sqlx
+            ~/.cargo/bin/cargo-sqlx
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+
+      - name: Setup tree-sitter
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Setup sqlx-cli
-        run: cargo install sqlx-cli
+        run: command -v sqlx ||cargo install sqlx-cli
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -160,6 +167,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
       - name: Install toolchain
@@ -172,9 +180,14 @@ jobs:
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v5
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+
+      - name: Setup Postgres
+        run: command -v tree-sitter || cargo install tree-sitter-cli
 
       - name: Run tests
         run: cargo test --workspace
@@ -204,23 +217,28 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v5
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+      - name: setup tree-sitter
+        run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Build main binary
         run: cargo build -p pgls_cli --release
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Install JS dependencies
         run: bun install
+
       - name: Build backend-jsonrpc
-        working-directory: packages/@postgrestools/backend-jsonrpc
+        working-directory: packages/@postgres-language-server/backend-jsonrpc
         run: bun run build
       - name: Run backend-jsonrpc test
-        working-directory: packages/@postgrestools/backend-jsonrpc
+        working-directory: packages/@postgres-language-server/backend-jsonrpc
         run: bun run test
       - name: Run cli test
-        working-directory: packages/@postgrestools/postgrestools
+        working-directory: packages/@postgres-language-server/cli
         run: bun run test
 
   codegen:
@@ -248,9 +266,13 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: tree-sitter/setup-action@v2
+      - uses: actions/cache@v5
         with:
-          install-lib: false
+          path: |
+            ~/.cargo/bin/tree-sitter
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('rust-toolchain.toml') }}
+      - name: setup tree-sitter
+        run: command -v tree-sitter || cargo install tree-sitter-cli
       - name: Ensure RustFMT on nightly toolchain
         run: rustup component add rustfmt --toolchain nightly
       - name: echo toolchain
@@ -259,6 +281,10 @@ jobs:
         run: cargo run -p xtask_codegen -- analyser
       - name: Run the configuration codegen
         run: cargo run -p xtask_codegen -- configuration
+      - name: Run the bindings codegen
+        run: cargo run -p xtask_codegen -- bindings
+      - name: Run the splinter codegen
+        run: cargo run -p xtask_codegen -- splinter
       - name: Run the docs codegen
         run: cargo run -p docs_codegen
       - name: Check for git diff -- run "just ready" if you see an error

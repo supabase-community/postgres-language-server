@@ -28,6 +28,7 @@ gen-lint:
   cargo run -p xtask_codegen -- analyser
   cargo run -p xtask_codegen -- configuration
   cargo run -p xtask_codegen -- bindings
+  cargo run -p xtask_codegen -- splinter
   cargo run -p rules_check
   cargo run -p docs_codegen
   just format
@@ -107,6 +108,7 @@ serve-docs:
 # to lint the queries.
 ready:
   git diff --exit-code --quiet
+  cargo run -p xtask_codegen -- splinter
   cargo run -p xtask_codegen -- configuration
   cargo run -p docs_codegen
   cargo run -p xtask_codegen -- bindings
@@ -149,12 +151,12 @@ quick-modify:
     git commit -m "progress"
     git push
 
-# Make sure to set your PGT_LOG_PATH in your shell profile.
-# You can use the PGT_LOG_LEVEL to set your log level.
+# Make sure to set your PGLS_LOG_PATH in your shell profile.
+# You can use the PGLS_LOG_LEVEL to set your log level.
 # We recommend to install `bunyan` (npm i -g bunyan) and pipe the output through there for color-coding:
 # just show-logs | bunyan
 show-logs:
-    tail -f $(ls $PGT_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
+    tail -f $(ls $PGLS_LOG_PATH/server.log.* | sort -t- -k2,2 -k3,3 -k4,4 | tail -n 1)
 
 # Run a codex agent with the given agentic prompt file.
 # Commented out by default to avoid accidental usage that may incur costs.

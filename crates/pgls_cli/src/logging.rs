@@ -92,12 +92,12 @@ impl Display for LoggingLevel {
 
 /// Tracing filter enabling:
 /// - All spans and events at level info or higher
-/// - All spans and events at level debug in crates whose name starts with `pgt`
+/// - All spans and events at level debug in crates whose name starts with `pgls`
 struct LoggingFilter {
     level: LoggingLevel,
 }
 
-/// Tracing filter used for spans emitted by `pgt*` crates
+/// Tracing filter used for spans emitted by `pgls*` crates
 const SELF_FILTER: LevelFilter = if cfg!(debug_assertions) {
     LevelFilter::TRACE
 } else {
@@ -106,7 +106,7 @@ const SELF_FILTER: LevelFilter = if cfg!(debug_assertions) {
 
 impl LoggingFilter {
     fn is_enabled(&self, meta: &Metadata<'_>) -> bool {
-        let filter = if meta.target().starts_with("pgt") {
+        let filter = if meta.target().starts_with("pgls") {
             if let Some(level) = self.level.to_filter_level() {
                 level
             } else {

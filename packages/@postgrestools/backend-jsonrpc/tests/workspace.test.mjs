@@ -10,7 +10,7 @@ describe("Workspace API", () => {
 		const command = resolve(
 			fileURLToPath(import.meta.url),
 			"../../../../..",
-			`target/release/postgrestools${extension}`,
+			`target/release/postgres-language-server${extension}`,
 		);
 
 		const workspace = await createWorkspaceWithBinary(command);
@@ -27,7 +27,7 @@ describe("Workspace API", () => {
 			version: 0,
 		});
 
-		const { diagnostics } = await workspace.pullDiagnostics({
+		const { diagnostics } = await workspace.pullFileDiagnostics({
 			only: [],
 			skip: [],
 			max_diagnostics: 100,

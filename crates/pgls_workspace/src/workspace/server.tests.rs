@@ -83,7 +83,7 @@ async fn test_diagnostics(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -141,7 +141,7 @@ async fn test_syntax_error(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -181,18 +181,18 @@ async fn correctly_ignores_files() {
       seect 1;
     "#;
 
-    let diagnostics_result = workspace.pull_diagnostics(crate::workspace::PullDiagnosticsParams {
-        path: path.clone(),
-        categories: RuleCategories::all(),
-        max_diagnostics: 100,
-        only: vec![],
-        skip: vec![],
-    });
+    let diagnostics_result =
+        workspace.pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        });
 
     assert!(
-        diagnostics_result.is_ok_and(|res| res.diagnostics.is_empty()
-            && res.errors == 0
-            && res.skipped_diagnostics == 0)
+        diagnostics_result
+            .is_ok_and(|res| res.diagnostics.is_empty() && res.skipped_diagnostics == 0)
     );
 
     let close_file_result =
@@ -257,7 +257,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -322,7 +322,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -376,7 +376,7 @@ async fn test_positional_params(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -437,7 +437,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -469,7 +469,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
     });
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -529,7 +529,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -562,7 +562,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
     });
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -609,7 +609,7 @@ FOR NO KEY UPDATE;
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -670,7 +670,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let diagnostics = workspace
-        .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
             path: path.clone(),
             categories: RuleCategories::all(),
             max_diagnostics: 100,
@@ -730,7 +730,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
             .expect("Unable to open test file");
 
         let diagnostics_glob = workspace
-            .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
                 path: path_glob.clone(),
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -776,7 +776,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
             .expect("Unable to open test file");
 
         let diagnostics_glob = workspace
-            .pull_diagnostics(crate::workspace::PullDiagnosticsParams {
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
                 path: path_glob.clone(),
                 categories: RuleCategories::all(),
                 max_diagnostics: 100,
@@ -792,4 +792,80 @@ async fn test_search_path_configuration(test_db: PgPool) {
             "Glob pattern should put private schema in search path"
         );
     }
+}
+
+#[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+async fn test_multi_line_completions(test_db: PgPool) {
+    let setup = r#"
+        create schema auth;
+
+        create table auth.users (
+            id serial primary key,
+            email text not null
+        );
+    "#;
+
+    test_db.execute(setup).await.expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let workspace = get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+
+    let content = r#"
+select * from auth.users;
+
+select * from auth.|;
+
+select * from auth.users;
+    "#
+    .trim();
+
+    let position = content
+        .find('|')
+        .map(|idx| pgls_text_size::TextSize::new(idx as u32))
+        .expect("Unable to find cursor position in test content");
+
+    let sanitized_content = content.replace('|', "");
+
+    workspace
+        .open_file(OpenFileParams {
+            path: path.clone(),
+            content: sanitized_content,
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let completions = workspace
+        .get_completions(crate::workspace::GetCompletionsParams {
+            path: path.clone(),
+            position,
+        })
+        .expect("Unable to request completions");
+
+    assert_eq!(
+        completions.items.len(),
+        1,
+        "Expected one completion response"
+    );
+
+    assert_eq!(
+        completions.items[0].completion_text.as_ref().unwrap().range,
+        TextRange::new(position, position),
+        "Expected no syntax diagnostic"
+    );
 }

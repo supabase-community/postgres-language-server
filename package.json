@@ -11,7 +11,9 @@
   },
   "workspaces": [
     "packages/@postgrestools/postgrestools",
-    "packages/@postgrestools/backend-jsonrpc"
+    "packages/@postgrestools/backend-jsonrpc",
+    "packages/@postgres-language-server/cli",
+    "packages/@postgres-language-server/backend-jsonrpc"
   ],
   "keywords": [],
   "author": "Supabase Community",

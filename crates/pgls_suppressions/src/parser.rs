@@ -56,7 +56,7 @@ impl<'a> SuppressionsParser<'a> {
     }
 
     /// Will parse the suppressions at the start of the file.
-    /// As soon as anything is encountered that's not a `pgt-ignore-all`
+    /// As soon as anything is encountered that's not a `pgt-ignore-all` or `pgls-ignore-all`
     /// suppression or an empty line, this will stop.
     fn parse_file_suppressions(&mut self) {
         while let Some((_, preview)) = self.lines.peek() {
@@ -65,7 +65,10 @@ impl<'a> SuppressionsParser<'a> {
                 continue;
             }
 
-            if !preview.trim().starts_with("-- pgt-ignore-all") {
+            let trimmed = preview.trim();
+            if !trimmed.starts_with("-- pgt-ignore-all")
+                && !trimmed.starts_with("-- pgls-ignore-all")
+            {
                 return;
             }
 
@@ -82,7 +85,8 @@ impl<'a> SuppressionsParser<'a> {
 
     fn parse_suppressions(&mut self) {
         for (idx, line) in self.lines.by_ref() {
-            if !line.trim().starts_with("-- pgt-ignore") {
+            let trimmed = line.trim();
+            if !trimmed.starts_with("-- pgt-ignore") && !trimmed.starts_with("-- pgls-ignore") {
                 continue;
             }
 
@@ -348,6 +352,104 @@ drop table posts;
         assert_eq!(
             suppressions.diagnostics[1].message.to_string(),
             String::from("This start suppression does not have a matching end.")
+        );
+    }
+
+    #[test]
+    fn test_parse_pgls_prefix_line_suppressions() {
+        let doc = r#"
+SELECT 1;
+-- pgls-ignore lint/safety/banDropColumn
+SELECT 2;
+"#;
+        let suppressions = SuppressionsParser::parse(doc);
+
+        // Should have a line suppression on line 2 (0-based index)
+        let suppression = suppressions
+            .line_suppressions
+            .get(&2)
+            .expect("no suppression found");
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(
+            suppression.rule_specifier,
+            RuleSpecifier::Rule(
+                "lint".to_string(),
+                "safety".to_string(),
+                "banDropColumn".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn test_parse_pgls_prefix_file_suppressions() {
+        let doc = r#"
+-- pgls-ignore-all lint
+-- pgls-ignore-all typecheck
+
+SELECT 1;
+-- pgls-ignore-all lint/safety
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.diagnostics.len(), 1);
+        assert_eq!(suppressions.file_suppressions.len(), 2);
+
+        assert_eq!(
+            suppressions.file_suppressions[0].rule_specifier,
+            RuleSpecifier::Category("lint".to_string())
+        );
+        assert_eq!(
+            suppressions.file_suppressions[1].rule_specifier,
+            RuleSpecifier::Category("typecheck".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_pgls_prefix_range_suppressions() {
+        let doc = r#"
+-- pgls-ignore-start lint/safety/banDropTable
+drop table users;
+drop table auth;
+drop table posts;
+-- pgls-ignore-end lint/safety/banDropTable
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.range_suppressions.len(), 1);
+        assert_eq!(
+            suppressions.range_suppressions[0]
+                .start_suppression
+                .rule_specifier,
+            RuleSpecifier::Rule(
+                "lint".to_string(),
+                "safety".to_string(),
+                "banDropTable".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn test_parse_mixed_prefix_suppressions() {
+        let doc = r#"
+-- pgt-ignore-all lint
+
+SELECT 1;
+-- pgls-ignore lint/safety/banDropColumn
+SELECT 2;
+-- pgt-ignore typecheck
+"#;
+
+        let suppressions = SuppressionsParser::parse(doc);
+
+        assert_eq!(suppressions.file_suppressions.len(), 1);
+        assert_eq!(suppressions.line_suppressions.len(), 2);
+
+        assert_eq!(
+            suppressions.file_suppressions[0].rule_specifier,
+            RuleSpecifier::Category("lint".to_string())
         );
     }
 }

@@ -1,4 +1,5 @@
-use pgls_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -40,10 +41,10 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for BanCharField {
+impl LinterRule for BanCharField {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::CreateStmt(stmt) = &ctx.stmt() {
@@ -77,7 +78,9 @@ impl Rule for BanCharField {
     }
 }
 
-fn check_column_for_char_type(col_def: &pgls_query::protobuf::ColumnDef) -> Option<RuleDiagnostic> {
+fn check_column_for_char_type(
+    col_def: &pgls_query::protobuf::ColumnDef,
+) -> Option<LinterDiagnostic> {
     if let Some(type_name) = &col_def.type_name {
         for name_node in &type_name.names {
             if let Some(pgls_query::NodeEnum::String(name)) = &name_node.node {
@@ -86,7 +89,7 @@ fn check_column_for_char_type(col_def: &pgls_query::protobuf::ColumnDef) -> Opti
                 let type_str = name.sval.to_lowercase();
                 if type_str == "bpchar" || type_str == "char" || type_str == "character" {
                     return Some(
-                        RuleDiagnostic::new(
+                        LinterDiagnostic::new(
                             rule_category!(),
                             None,
                             markup! {

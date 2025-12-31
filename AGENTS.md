@@ -144,6 +144,12 @@ cargo insta review
 
 ## Development Notes
 
+### Code Quality Guidelines
+**IMPORTANT**: Always run `cargo clippy --all-targets --all-features` and fix all warnings after making code changes. Clippy warnings must be resolved before committing code to maintain code quality standards.
+
+### Git Commit and PR Guidelines
+**IMPORTANT**: NEVER add "Claude" or any AI assistant name to commit messages or pull request descriptions. Commits and PRs should appear as authored by the human developer only.
+
 ### Code Generation
 Many parser structures are generated from PostgreSQL's protobuf definitions using procedural macros in `pgls_query_macros`. Run `just gen-lint` after modifying analyzer rules or configurations.
 

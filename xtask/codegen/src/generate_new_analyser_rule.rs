@@ -41,12 +41,10 @@ fn generate_rule_template(
     };
 
     format!(
-        r#"use pgls_analyse::{{
-    AnalysedFileContext, context::RuleContext, {macro_name}, Rule, RuleDiagnostic,
-}};
+        r#"use crate::{{LinterRule, LinterRuleContext, LinterDiagnostic}};
+use pgls_analyse::{{RuleSource, {macro_name}}};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_schema_cache::SchemaCache;
 
 {macro_name}! {{
     /// Succinct description of the rule.
@@ -77,10 +75,10 @@ use pgls_schema_cache::SchemaCache;
     }}
 }}
 
-impl Rule for {rule_name_upper_camel} {{
+impl LinterRule for {rule_name_upper_camel} {{
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {{
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {{
         Vec::new()
     }}
 }}
@@ -129,7 +127,7 @@ pub fn generate_new_analyser_rule(
         // We sort rules to reduce conflicts between contributions made in parallel.
         let rule_line = match category {
             Category::Lint => format!(
-                r#"    "lint/{group}/{rule_name_camel}": "{PGLS_WEBSITE}/latest/rules/{kebab_case_rule}","#
+                r#"    "lint/{group}/{rule_name_camel}": "{PGLS_WEBSITE}/latest/reference/rules/{kebab_case_rule}/","#
             ),
         };
         let lint_start = match category {

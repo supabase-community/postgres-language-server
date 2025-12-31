@@ -12,6 +12,7 @@ Install: [instructions](https://pg-language-server.com/#installation)
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=Supabase.postgrestools)
 - [Neovim](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#postgres_lsp)
 - [Zed](https://github.com/LoamStudios/zed-postgres-language-server)
+- [Sublime Text](https://lsp.sublimetext.io/language_servers/#postgresql)
 
 ## Overview
 LSP Demo             |  CLI Demo

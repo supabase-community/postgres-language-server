@@ -42,6 +42,8 @@ impl<'a> CompletionBuilder<'a> {
             item.score.calc_score(self.ctx);
         }
 
+        items.retain(|i| !i.score.should_skip());
+
         items.sort_by(|a, b| {
             b.score
                 .get_score()

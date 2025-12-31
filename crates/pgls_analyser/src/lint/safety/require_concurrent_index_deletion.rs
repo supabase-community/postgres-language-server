@@ -1,4 +1,5 @@
-use pgls_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -32,17 +33,17 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for RequireConcurrentIndexDeletion {
+impl LinterRule for RequireConcurrentIndexDeletion {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::DropStmt(stmt) = &ctx.stmt() {
             if !stmt.concurrent
                 && stmt.remove_type() == pgls_query::protobuf::ObjectType::ObjectIndex
             {
-                diagnostics.push(RuleDiagnostic::new(
+                diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {

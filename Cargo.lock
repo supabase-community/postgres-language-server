@@ -749,7 +749,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a68f1f47cdf0ec8ee4b941b2eee2a80cb796db73118c0dd09ac63fbe405be22"
 dependencies = [
  "memchr",
- "regex-automata 0.4.9",
+ "regex-automata 0.4.13",
  "serde",
 ]
 
@@ -1249,6 +1249,7 @@ dependencies = [
  "pgls_env",
  "pgls_query",
  "pgls_query_ext",
+ "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_workspace",
  "pulldown-cmark",
@@ -1694,7 +1695,7 @@ dependencies = [
  "aho-corasick",
  "bstr",
  "log",
- "regex-automata 0.4.9",
+ "regex-automata 0.4.13",
  "regex-syntax 0.8.5",
 ]
 
@@ -1998,7 +1999,7 @@ dependencies = [
  "globset",
  "log",
  "memchr",
- "regex-automata 0.4.9",
+ "regex-automata 0.4.13",
  "same-file",
  "walkdir",
  "winapi-util",
@@ -2694,6 +2695,7 @@ dependencies = [
  "pgls_statement_splitter",
  "pgls_test_macros",
  "pgls_text_size",
+ "rustc-hash 2.1.0",
  "serde",
  "termcolor",
 ]
@@ -2744,11 +2746,13 @@ dependencies = [
  "async-std",
  "criterion",
  "fuzzy-matcher",
+ "insta",
  "pgls_schema_cache",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
  "pgls_treesitter_grammar",
+ "regex",
  "schemars",
  "serde",
  "serde_json",
@@ -2756,6 +2760,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tree-sitter",
+ "unindent",
 ]
 
 [[package]]
@@ -3040,6 +3045,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_splinter"
+version = "0.0.0"
+dependencies = [
+ "insta",
+ "pgls_analyse",
+ "pgls_console",
+ "pgls_diagnostics",
+ "pgls_schema_cache",
+ "pgls_test_utils",
+ "serde",
+ "serde_json",
+ "sqlx",
+]
+
+[[package]]
 name = "pgls_statement_splitter"
 version = "0.0.0"
 dependencies = [
@@ -3130,6 +3150,8 @@ name = "pgls_treesitter_grammar"
 version = "0.0.0"
 dependencies = [
  "cc",
+ "insta",
+ "pgls_test_utils",
  "tree-sitter",
  "tree-sitter-language",
 ]
@@ -3684,13 +3706,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.11.1"
+version = "1.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b544ef1b4eac5dc2db33ea63606ae9ffcfac26c1416a2806ae0bf5f56b201191"
+checksum = "843bc0191f75f3e22651ae5f1e72939ab2f72a4bc30fa80a066bd66edefc24d4"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata 0.4.9",
+ "regex-automata 0.4.13",
  "regex-syntax 0.8.5",
 ]
 
@@ -3705,9 +3727,9 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.9"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "809e8dc61f6de73b46c85f4c96486310fe304c434cfa43669d7b40f711150908"
+checksum = "5276caf25ac86c8d810222b3dbb938e512c55c6831a10f3e6ed1c93b84041f1c"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -5076,6 +5098,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 
 [[package]]
+name = "unindent"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7264e107f553ccae879d21fbea1d6724ac785e8c3bfc762137959b5802826ef3"
+
+[[package]]
 name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5641,6 +5669,7 @@ dependencies = [
  "pgls_analyser",
  "pgls_diagnostics",
  "pgls_env",
+ "pgls_splinter",
  "pgls_workspace",
  "proc-macro2",
  "pulldown-cmark",

@@ -1,4 +1,5 @@
-use pgls_analyse::{Rule, RuleDiagnostic, RuleSource, context::RuleContext, declare_lint_rule};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
+use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 
@@ -15,15 +16,15 @@ declare_lint_rule! {
     }
 }
 
-impl Rule for BanDropDatabase {
+impl LinterRule for BanDropDatabase {
     type Options = ();
 
-    fn run(ctx: &RuleContext<Self>) -> Vec<RuleDiagnostic> {
+    fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
         if let pgls_query::NodeEnum::DropdbStmt(_) = &ctx.stmt() {
             diagnostics.push(
-                RuleDiagnostic::new(
+                LinterDiagnostic::new(
                     rule_category!(),
                     None,
                     markup! {
