@@ -17517,7 +17517,7 @@
       }
     },
     "order_target": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
           "type": "FIELD",
@@ -17528,8 +17528,12 @@
           }
         },
         {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
             {
               "type": "SEQ",
               "members": [
@@ -17584,30 +17588,8 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "keyword_nulls"
-                        },
-                        {
-                          "type": "FIELD",
-                          "name": "end",
-                          "content": {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SYMBOL",
-                                "name": "keyword_first"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "keyword_last"
-                              }
-                            ]
-                          }
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "order_target_nulls"
                     },
                     {
                       "type": "BLANK"
@@ -17615,11 +17597,34 @@
                   ]
                 }
               ]
-            },
-            {
-              "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "order_target_nulls": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_nulls"
+        },
+        {
+          "type": "FIELD",
+          "name": "end",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "keyword_first"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "keyword_last"
+              }
+            ]
+          }
         }
       ]
     },
