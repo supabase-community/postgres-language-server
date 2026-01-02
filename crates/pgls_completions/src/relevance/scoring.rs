@@ -33,6 +33,7 @@ impl CompletionScore<'_> {
     }
 
     pub fn calc_score(&mut self, ctx: &TreesitterContext) {
+        self.check_is_keyword();
         self.check_is_user_defined();
         self.check_matches_schema(ctx);
         self.check_matches_query_input(ctx);
@@ -42,6 +43,12 @@ impl CompletionScore<'_> {
         self.check_relations_in_stmt(ctx);
         self.check_columns_in_stmt(ctx);
         self.check_is_not_wellknown_migration(ctx);
+    }
+
+    fn check_is_keyword(&mut self) {
+        if matches!(self.data, CompletionRelevanceData::Keyword(_)) {
+            self.score -= 10;
+        }
     }
 
     fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {

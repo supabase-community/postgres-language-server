@@ -568,8 +568,12 @@ mod tests {
 
         pool.execute(setup).await.unwrap();
 
-        assert_no_complete_results(
+        assert_complete_results(
             format!("select * {}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![CompletionAssertion::LabelAndKind(
+                "from".into(),
+                crate::CompletionItemKind::Keyword,
+            )],
             None,
             &pool,
         )
