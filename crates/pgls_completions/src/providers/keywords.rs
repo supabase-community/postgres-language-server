@@ -364,6 +364,14 @@ pub fn complete_keywords<'a>(
     builder: &mut CompletionBuilder<'a>,
     use_upper_case: bool,
 ) {
+    // no keyword completions if we start with a quote
+    if ctx
+        .get_node_under_cursor_content()
+        .is_some_and(|n| n.starts_with('"'))
+    {
+        return;
+    }
+
     let keywords_to_try = ALL_KEYWORDS.iter().filter(|kw| {
         ctx.tree.root_node().has_error() || ctx.possible_keywords_at_position.contains(&kw.name)
     });

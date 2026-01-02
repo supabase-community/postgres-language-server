@@ -417,20 +417,18 @@ mod tests {
             QueryWithCursorPosition::cursor_marker()
         );
 
-        assert_complete_results(query.as_str(), vec![], Some(setup), &pool).await;
-
-        // TestCompletionsSuite::new(&pool, Some(setup))
-        //     .with_case(
-        //         TestCompletionsCase::new()
-        //             .inside_static_statement("select * from auth.users u <sql>")
-        //             .type_sql("join"),
-        //     )
-        //     .snapshot("suggests_tables_in_join")
-        //     .await;
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(
+                TestCompletionsCase::new()
+                    .inside_static_statement("select * from auth.users u <sql>")
+                    .type_sql("join"),
+            )
+            .snapshot("suggests_tables_in_join")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
-    async fn suggests_tables_in_alter_and_drop_statements(pool: PgPool) {
+    async fn suggests_tables_in_drop_statements(pool: PgPool) {
         let setup = r#"
             create schema auth;
 
@@ -449,63 +447,36 @@ mod tests {
             );
         "#;
 
-        pool.execute(setup).await.unwrap();
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql("drop table if exists auth.posts"))
+            .snapshot("suggests_tables_in_drop_statements")
+            .await;
+    }
 
-        assert_complete_results(
-            format!("alter table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+    #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
+    async fn suggests_tables_in_alter_statements(pool: PgPool) {
+        let setup = r#"
+            create schema auth;
 
-        assert_complete_results(
-            format!(
-                "alter table if exists {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            create table auth.users (
+                uid serial primary key,
+                name text not null,
+                email text unique not null
+            );
 
-        assert_complete_results(
-            format!("drop table {}", QueryWithCursorPosition::cursor_marker()).as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table),
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+            create table auth.posts (
+                pid serial primary key,
+                user_id int not null references auth.users(uid),
+                title text not null,
+                content text,
+                created_at timestamp default now()
+            );
+        "#;
 
-        assert_complete_results(
-            format!(
-                "drop table if exists {}",
-                QueryWithCursorPosition::cursor_marker()
-            )
-            .as_str(),
-            vec![
-                CompletionAssertion::LabelAndKind("auth".into(), CompletionItemKind::Schema),
-                CompletionAssertion::LabelAndKind("posts".into(), CompletionItemKind::Table), // self-join
-                CompletionAssertion::LabelAndKind("users".into(), CompletionItemKind::Table),
-            ],
-            None,
-            &pool,
-        )
-        .await;
+        TestCompletionsSuite::new(&pool, Some(setup))
+            .with_case(TestCompletionsCase::new().type_sql("alter table if exists auth.posts"))
+            .snapshot("suggests_tables_in_alter_statements")
+            .await;
     }
 
     #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]
