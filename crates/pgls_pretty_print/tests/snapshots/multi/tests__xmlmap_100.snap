@@ -10,11 +10,7 @@ CREATE TABLE testxmlschema.test1 (
   b TEXT
 );
 
-INSERT INTO testxmlschema.test1
-VALUES
-  (1, 'one'),
-  (2, 'two'),
-  (-1, NULL);
+INSERT INTO testxmlschema.test1 VALUES (1, 'one'), (2, 'two'), (-1, NULL);
 
 CREATE DOMAIN testxmldomain AS VARCHAR;
 
@@ -42,24 +38,25 @@ ALTER TABLE testxmlschema.test2
   DROP COLUMN aaa;
 
 INSERT INTO testxmlschema.test2
-VALUES (
-  55,
-  'abc',
-  'def',
-  98.6,
-  2,
-  999,
-  0,
-  '21:07',
-  '21:11 +05',
-  '2009-06-08 21:07:30',
-  '2009-06-08 21:07:30 -07',
-  '2009-06-08',
-  NULL,
-  'ABC',
-  TRUE,
-  'XYZ'
-);
+VALUES
+  (
+    55,
+    'abc',
+    'def',
+    98.6,
+    2,
+    999,
+    0,
+    '21:07',
+    '21:11 +05',
+    '2009-06-08 21:07:30',
+    '2009-06-08 21:07:30 -07',
+    '2009-06-08',
+    NULL,
+    'ABC',
+    TRUE,
+    'XYZ'
+  );
 
 SELECT table_to_xml('testxmlschema.test1', FALSE, FALSE, '');
 

@@ -60,11 +60,11 @@ SELECT CASE WHEN i >= 3 THEN i + i ELSE i END AS "Simplest Math" FROM case_tbl;
 SELECT
   i AS "Value",
   CASE
-  WHEN i < 0 THEN 'small'
-  WHEN i = 0 THEN 'zero'
-  WHEN i = 1 THEN 'one'
-  WHEN i = 2 THEN 'two'
-  ELSE 'big'
+    WHEN i < 0 THEN 'small'
+    WHEN i = 0 THEN 'zero'
+    WHEN i = 1 THEN 'one'
+    WHEN i = 2 THEN 'two'
+    ELSE 'big'
   END
   AS "Category"
 FROM
@@ -72,11 +72,11 @@ FROM
 
 SELECT
   CASE
-  WHEN i < 0 OR i < 0 THEN 'small'
-  WHEN i = 0 OR i = 0 THEN 'zero'
-  WHEN i = 1 OR i = 1 THEN 'one'
-  WHEN i = 2 OR i = 2 THEN 'two'
-  ELSE 'big'
+    WHEN i < 0 OR i < 0 THEN 'small'
+    WHEN i = 0 OR i = 0 THEN 'zero'
+    WHEN i = 1 OR i = 1 THEN 'one'
+    WHEN i = 2 OR i = 2 THEN 'two'
+    ELSE 'big'
   END
   AS "Category"
 FROM
@@ -131,13 +131,13 @@ VOLATILE;
 
 SELECT
   CASE CASE vol('bar')
-  WHEN 'foo' THEN 'it was foo!'
-  WHEN vol(NULL) THEN 'null input'
-  WHEN 'bar' THEN 'it was bar!'
+    WHEN 'foo' THEN 'it was foo!'
+    WHEN vol(NULL) THEN 'null input'
+    WHEN 'bar' THEN 'it was bar!'
   END
-  WHEN 'it was foo!' THEN 'foo recognized'
-  WHEN 'it was bar!' THEN 'bar recognized'
-  ELSE 'unrecognized'
+    WHEN 'it was foo!' THEN 'foo recognized'
+    WHEN 'it was bar!' THEN 'bar recognized'
+    ELSE 'unrecognized'
   END;
 
 CREATE DOMAIN foodomain AS TEXT;
@@ -182,10 +182,10 @@ CREATE OPERATOR = (PROCEDURE = ad_eq, LEFTARG = arrdomain, RIGHTARG = arrdomain)
 
 SELECT
   CASE make_ad(1, 2)
-  WHEN CAST(ARRAY[2, 4] AS arrdomain) THEN 'wrong'
-  WHEN CAST(ARRAY[2, 5] AS arrdomain)
-  THEN 'still wrong'
-  WHEN CAST(ARRAY[1, 2] AS arrdomain) THEN 'right'
+    WHEN CAST(ARRAY[2, 4] AS arrdomain) THEN 'wrong'
+    WHEN CAST(ARRAY[2, 5] AS arrdomain)
+    THEN 'still wrong'
+    WHEN CAST(ARRAY[1, 2] AS arrdomain) THEN 'right'
   END;
 
 SELECT NULLIF(make_ad(1, 2), CAST(ARRAY[2, 3] AS arrdomain));
@@ -198,11 +198,11 @@ CREATE TYPE casetestenum AS ENUM ('e', 'f', 'g');
 
 SELECT
   CASE CAST('foo' AS TEXT)
-  WHEN 'foo'
-  THEN ARRAY['a', 'b', 'c', 'd'] ||
-  CAST(enum_range(CAST(NULL AS casetestenum))
-  AS TEXT[])
-  ELSE ARRAY['x', 'y']
+    WHEN 'foo'
+    THEN ARRAY['a', 'b', 'c', 'd'] ||
+    CAST(enum_range(CAST(NULL AS casetestenum))
+    AS TEXT[])
+    ELSE ARRAY['x', 'y']
   END;
 
 ROLLBACK;

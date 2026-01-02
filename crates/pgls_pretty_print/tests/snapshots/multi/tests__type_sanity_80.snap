@@ -63,15 +63,17 @@ WHERE
   t1.typtype NOT IN ('p') AND
   t1.typname NOT LIKE '\_%' AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_type AS t2
-  WHERE
-    t2.typname =
-    CAST('_' || t1.typname AS NAME) AND
-    t2.typelem = t1.oid AND
-    t1.typarray = t2.oid)
+  (
+    SELECT
+      1
+    FROM
+      pg_type AS t2
+    WHERE
+      t2.typname =
+      CAST('_' || t1.typname AS NAME) AND
+      t2.typelem = t1.oid AND
+      t1.typarray = t2.oid
+  )
 ORDER BY t1.oid;
 
 SELECT
@@ -99,12 +101,14 @@ FROM
 WHERE
   t1.typtype = 'r' AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_range AS r
-  WHERE
-    rngtypid = t1.oid);
+  (
+    SELECT
+      1
+    FROM
+      pg_range AS r
+    WHERE
+      rngtypid = t1.oid
+  );
 
 SELECT
   t1.oid,
@@ -124,9 +128,9 @@ WHERE
   t1.typtype = 'r' AND
   (t1.typalign <>
   CASE
-  WHEN t2.typalign = 'd'
-  THEN CAST('d' AS CHAR)
-  ELSE CAST('i' AS CHAR)
+    WHEN t2.typalign = 'd'
+    THEN CAST('d' AS CHAR)
+    ELSE CAST('i' AS CHAR)
   END OR
   t2.oid IS NULL);
 
@@ -536,9 +540,9 @@ WHERE
   t1.typarray = t2.oid AND
   t2.typalign <>
   CASE
-  WHEN t1.typalign = 'd'
-  THEN CAST('d' AS CHAR)
-  ELSE CAST('i' AS CHAR)
+    WHEN t1.typalign = 'd'
+    THEN CAST('d' AS CHAR)
+    ELSE CAST('i' AS CHAR)
   END;
 
 SELECT
@@ -745,12 +749,14 @@ FROM
   pg_class AS c1
 WHERE
   c1.relnatts <>
-  (SELECT
-    COUNT(*)
-  FROM
-    pg_attribute AS a1
-  WHERE
-    a1.attrelid = c1.oid AND a1.attnum > 0);
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      pg_attribute AS a1
+    WHERE
+      a1.attrelid = c1.oid AND a1.attnum > 0
+  );
 
 SELECT
   a1.attrelid,
@@ -785,13 +791,15 @@ WHERE
   (indisunique AND
   indexrelid < 16384 AND
   EXISTS
-  (SELECT
-    1
-  FROM
-    pg_attribute
-  WHERE
-    attrelid = indexrelid AND
-    atttypid = CAST('text' AS REGTYPE)));
+  (
+    SELECT
+      1
+    FROM
+      pg_attribute
+    WHERE
+      attrelid = indexrelid AND
+      atttypid = CAST('text' AS REGTYPE)
+  ));
 
 SELECT
   r.rngtypid,
@@ -832,16 +840,18 @@ WHERE
   NOT (o.opcintype =
   CAST('pg_catalog.anyarray' AS REGTYPE) AND
   EXISTS
-  (SELECT
-    1
-  FROM
-    pg_catalog.pg_type
-  WHERE
-    oid = r.rngsubtype AND
-    typelem <> 0 AND
-    typsubscript =
-    CAST('array_subscript_handler'
-    AS REGPROC)));
+  (
+    SELECT
+      1
+    FROM
+      pg_catalog.pg_type
+    WHERE
+      oid = r.rngsubtype AND
+      typelem <> 0 AND
+      typsubscript =
+      CAST('array_subscript_handler'
+      AS REGPROC)
+  ));
 
 SELECT
   r.rngtypid,
@@ -1011,19 +1021,23 @@ WHERE
   'xml']
   AS REGTYPE[])) AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_type AS u
-  WHERE
-    u.typarray = t.oid) AND
+  (
+    SELECT
+      1
+    FROM
+      pg_type AS u
+    WHERE
+      u.typarray = t.oid
+  ) AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_attribute AS a
-  WHERE
-    a.atttypid = t.oid AND
-    a.attnum > 0 AND
-    a.attrelid =
-    CAST('tab_core_types' AS REGCLASS));
+  (
+    SELECT
+      1
+    FROM
+      pg_attribute AS a
+    WHERE
+      a.atttypid = t.oid AND
+      a.attnum > 0 AND
+      a.attrelid =
+      CAST('tab_core_types' AS REGCLASS)
+  );

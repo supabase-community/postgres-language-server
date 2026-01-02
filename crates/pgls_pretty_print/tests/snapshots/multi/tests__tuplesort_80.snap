@@ -342,9 +342,11 @@ SELECT
   left(a, 10),
   b
 FROM
-  (VALUES
-    (repeat('a', 512 * 1024), 1),
-    (repeat('b', 512 * 1024), 2))
+  (
+    VALUES
+      (repeat('a', 512 * 1024), 1),
+      (repeat('b', 512 * 1024), 2)
+  )
   AS v (a, b)
 ORDER BY v.a DESC;
 
@@ -489,9 +491,11 @@ SELECT
     CAST(id AS TEXT)
   )
 FROM
-  (SELECT * FROM abbrev_abort_uuids
-  UNION ALL
-  SELECT NULL, NULL, NULL, NULL, NULL)
+  (
+    SELECT * FROM abbrev_abort_uuids
+    UNION ALL
+    SELECT NULL, NULL, NULL, NULL, NULL
+  )
   AS s;
 
 BEGIN;
@@ -535,9 +539,11 @@ SELECT
     CAST(id AS TEXT)
   )
 FROM
-  (SELECT * FROM abbrev_abort_uuids
-  UNION ALL
-  SELECT NULL, NULL, NULL, NULL, NULL)
+  (
+    SELECT * FROM abbrev_abort_uuids
+    UNION ALL
+    SELECT NULL, NULL, NULL, NULL, NULL
+  )
   AS s;
 
 ROLLBACK;

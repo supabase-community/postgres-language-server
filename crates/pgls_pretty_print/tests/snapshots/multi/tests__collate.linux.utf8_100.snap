@@ -5,13 +5,15 @@ snapshot_kind: text
 ---
 SELECT
   getdatabaseencoding() <> 'UTF8' OR
-  (SELECT
-    COUNT(*)
-  FROM
-    pg_collation
-  WHERE
-    collname IN ('de_DE', 'en_US', 'sv_SE', 'tr_TR') AND
-    collencoding = pg_char_to_encoding('UTF8')) <>
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      pg_collation
+    WHERE
+      collname IN ('de_DE', 'en_US', 'sv_SE', 'tr_TR') AND
+      collencoding = pg_char_to_encoding('UTF8')
+  ) <>
   4 OR
   version() !~ 'linux-gnu'
   AS skip_test;
@@ -54,12 +56,7 @@ CREATE TABLE collate_test3 (
   b TEXT COLLATE "C"
 );
 
-INSERT INTO collate_test1
-VALUES
-  (1, 'abc'),
-  (2, 'Ã¤bc'),
-  (3, 'bbc'),
-  (4, 'ABC');
+INSERT INTO collate_test1 VALUES (1, 'abc'), (2, 'Ã¤bc'), (3, 'bbc'), (4, 'ABC');
 
 INSERT INTO collate_test2 SELECT * FROM collate_test1;
 
@@ -127,10 +124,7 @@ CREATE TABLE collate_test10 (
   y TEXT COLLATE "tr_TR"
 );
 
-INSERT INTO collate_test10
-VALUES
-  (1, 'hij', 'hij'),
-  (2, 'HIJ', 'HIJ');
+INSERT INTO collate_test10 VALUES (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
 
 SELECT a, lower(x), lower(y), upper(x), upper(y), initcap(x), initcap(y) FROM collate_test10;
 
@@ -350,10 +344,7 @@ AS (
   SELECT
     x
   FROM
-    (VALUES
-      ('a' COLLATE "en_US"),
-      ('b'))
-    AS t (x)
+    (VALUES ('a' COLLATE "en_US"), ('b')) AS t (x)
   UNION ALL
   SELECT
     (x || 'c') COLLATE "de_DE"
@@ -500,7 +491,7 @@ CREATE COLLATION test0 FROM "C";
 
 CREATE COLLATION IF NOT EXISTS test0 FROM "C";
 
-CREATE COLLATION IF NOT EXISTS test0 ( locale = 'foo');
+CREATE COLLATION IF NOT EXISTS test0 (locale = 'foo');
 
 DO
 $$
@@ -512,9 +503,9 @@ BEGIN
 END
 $$;
 
-CREATE COLLATION test3 ( lc_collate = 'en_US.utf8');
+CREATE COLLATION test3 (lc_collate = 'en_US.utf8');
 
-CREATE COLLATION testx ( locale = 'nonsense');
+CREATE COLLATION testx (locale = 'nonsense');
 
 CREATE COLLATION test4 FROM "nonsense";
 
@@ -608,9 +599,9 @@ DROP TYPE textrange_en_us;
 
 SELECT * FROM collate_test2 ORDER BY b COLLATE "ucs_basic";
 
-CREATE COLLATION ctest_det ( locale = 'en_US.utf8', deterministic = 'true');
+CREATE COLLATION ctest_det (locale = 'en_US.utf8', deterministic = 'true');
 
-CREATE COLLATION ctest_nondet ( locale = 'en_US.utf8', deterministic = 'false');
+CREATE COLLATION ctest_nondet (locale = 'en_US.utf8', deterministic = 'false');
 
 SET client_min_messages = warning;
 

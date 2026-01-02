@@ -203,12 +203,14 @@ SELECT
 FROM
   t
   LEFT OUTER JOIN
-    (SELECT
-      *
-    FROM
-      (SELECT * FROM t ORDER BY a) AS v
-    ORDER BY a,
-      b)
+    (
+      SELECT
+        *
+      FROM
+        (SELECT * FROM t ORDER BY a) AS v
+      ORDER BY a,
+        b
+    )
     AS s
   ON s.a = t.a
 WHERE
@@ -219,12 +221,14 @@ SELECT
 FROM
   t
   LEFT OUTER JOIN
-    (SELECT
-      *
-    FROM
-      (SELECT * FROM t ORDER BY a) AS v
-    ORDER BY a,
-      b)
+    (
+      SELECT
+        *
+      FROM
+        (SELECT * FROM t ORDER BY a) AS v
+      ORDER BY a,
+        b
+    )
     AS s
   ON s.a = t.a
 WHERE
@@ -362,7 +366,9 @@ SELECT DISTINCT
   stringu1
 FROM
   tenk1,
-  LATERAL (SELECT tenk1.unique1 FROM generate_series(1, 1000))
+  LATERAL (
+    SELECT tenk1.unique1 FROM generate_series(1, 1000)
+  )
   AS sub;
 
 SELECT
@@ -370,7 +376,9 @@ SELECT
   stringu1
 FROM
   tenk1,
-  LATERAL (SELECT tenk1.unique1 FROM generate_series(1, 1000))
+  LATERAL (
+    SELECT tenk1.unique1 FROM generate_series(1, 1000)
+  )
   AS sub
 ORDER BY 1,
   2;
@@ -380,7 +388,9 @@ SELECT DISTINCT
   md5(stringu1)
 FROM
   tenk1,
-  LATERAL (SELECT tenk1.unique1 FROM generate_series(1, 1000))
+  LATERAL (
+    SELECT tenk1.unique1 FROM generate_series(1, 1000)
+  )
   AS sub;
 
 SELECT
@@ -388,7 +398,9 @@ SELECT
   md5(stringu1)
 FROM
   tenk1,
-  LATERAL (SELECT tenk1.unique1 FROM generate_series(1, 1000))
+  LATERAL (
+    SELECT tenk1.unique1 FROM generate_series(1, 1000)
+  )
   AS sub
 ORDER BY 1,
   2;
@@ -407,24 +419,28 @@ ORDER BY COUNT(*);
 
 SELECT DISTINCT
   unique1,
-  (SELECT
-    t.unique1
-  FROM
-    tenk1
-  WHERE
-    tenk1.unique1 = t.unique1)
+  (
+    SELECT
+      t.unique1
+    FROM
+      tenk1
+    WHERE
+      tenk1.unique1 = t.unique1
+  )
 FROM
   tenk1 AS t,
   generate_series(1, 1000);
 
 SELECT
   unique1,
-  (SELECT
-    t.unique1
-  FROM
-    tenk1
-  WHERE
-    tenk1.unique1 = t.unique1)
+  (
+    SELECT
+      t.unique1
+    FROM
+      tenk1
+    WHERE
+      tenk1.unique1 = t.unique1
+  )
 FROM
   tenk1 AS t,
   generate_series(1, 1000)
@@ -436,7 +452,9 @@ SELECT DISTINCT
   stringu1 || CAST(random() AS TEXT)
 FROM
   tenk1,
-  LATERAL (SELECT tenk1.unique1 FROM generate_series(1, 1000))
+  LATERAL (
+    SELECT tenk1.unique1 FROM generate_series(1, 1000)
+  )
   AS sub;
 
 SELECT
@@ -444,7 +462,9 @@ SELECT
   stringu1 || CAST(random() AS TEXT)
 FROM
   tenk1,
-  LATERAL (SELECT tenk1.unique1 FROM generate_series(1, 1000))
+  LATERAL (
+    SELECT tenk1.unique1 FROM generate_series(1, 1000)
+  )
   AS sub
 ORDER BY 1,
   2;

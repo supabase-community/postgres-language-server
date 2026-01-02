@@ -899,12 +899,14 @@ RESET role;
 SELECT
   has_foreign_data_wrapper_privilege(
     'regress_test_role',
-    (SELECT
-      oid
-    FROM
-      pg_foreign_data_wrapper
-    WHERE
-      fdwname = 'foo'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_foreign_data_wrapper
+      WHERE
+        fdwname = 'foo'
+    ),
     'USAGE'
   );
 
@@ -912,40 +914,48 @@ SELECT has_foreign_data_wrapper_privilege('regress_test_role', 'foo', 'USAGE');
 
 SELECT
   has_foreign_data_wrapper_privilege(
-    (SELECT
-      oid
-    FROM
-      pg_roles
-    WHERE
-      rolname = 'regress_test_role'),
-    (SELECT
-      oid
-    FROM
-      pg_foreign_data_wrapper
-    WHERE
-      fdwname = 'foo'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_roles
+      WHERE
+        rolname = 'regress_test_role'
+    ),
+    (
+      SELECT
+        oid
+      FROM
+        pg_foreign_data_wrapper
+      WHERE
+        fdwname = 'foo'
+    ),
     'USAGE'
   );
 
 SELECT
   has_foreign_data_wrapper_privilege(
-    (SELECT
-      oid
-    FROM
-      pg_foreign_data_wrapper
-    WHERE
-      fdwname = 'foo'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_foreign_data_wrapper
+      WHERE
+        fdwname = 'foo'
+    ),
     'USAGE'
   );
 
 SELECT
   has_foreign_data_wrapper_privilege(
-    (SELECT
-      oid
-    FROM
-      pg_roles
-    WHERE
-      rolname = 'regress_test_role'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_roles
+      WHERE
+        rolname = 'regress_test_role'
+    ),
     'foo',
     'USAGE'
   );
@@ -959,12 +969,14 @@ SELECT has_foreign_data_wrapper_privilege('regress_test_role', 'foo', 'USAGE');
 SELECT
   has_server_privilege(
     'regress_test_role',
-    (SELECT
-      oid
-    FROM
-      pg_foreign_server
-    WHERE
-      srvname = 's8'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_foreign_server
+      WHERE
+        srvname = 's8'
+    ),
     'USAGE'
   );
 
@@ -972,40 +984,48 @@ SELECT has_server_privilege('regress_test_role', 's8', 'USAGE');
 
 SELECT
   has_server_privilege(
-    (SELECT
-      oid
-    FROM
-      pg_roles
-    WHERE
-      rolname = 'regress_test_role'),
-    (SELECT
-      oid
-    FROM
-      pg_foreign_server
-    WHERE
-      srvname = 's8'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_roles
+      WHERE
+        rolname = 'regress_test_role'
+    ),
+    (
+      SELECT
+        oid
+      FROM
+        pg_foreign_server
+      WHERE
+        srvname = 's8'
+    ),
     'USAGE'
   );
 
 SELECT
   has_server_privilege(
-    (SELECT
-      oid
-    FROM
-      pg_foreign_server
-    WHERE
-      srvname = 's8'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_foreign_server
+      WHERE
+        srvname = 's8'
+    ),
     'USAGE'
   );
 
 SELECT
   has_server_privilege(
-    (SELECT
-      oid
-    FROM
-      pg_roles
-    WHERE
-      rolname = 'regress_test_role'),
+    (
+      SELECT
+        oid
+      FROM
+        pg_roles
+      WHERE
+        rolname = 'regress_test_role'
+    ),
     's8',
     'USAGE'
   );
@@ -1355,11 +1375,12 @@ ALTER TABLE fd_pt1
   DROP CONSTRAINT fd_pt1chk2 CASCADE;
 
 INSERT INTO fd_pt1
-VALUES (
-  1,
-  CAST('fd_pt1' AS TEXT),
-  CAST('1994-01-01' AS DATE)
-);
+VALUES
+  (
+    1,
+    CAST('fd_pt1' AS TEXT),
+    CAST('1994-01-01' AS DATE)
+  );
 
 ALTER TABLE fd_pt1
   ADD CONSTRAINT "fd_pt1chk3" CHECK (c2 <> '') NOT VALID;

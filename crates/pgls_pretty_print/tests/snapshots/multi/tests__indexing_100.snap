@@ -1155,14 +1155,14 @@ CREATE TABLE idxpart (
 )
 PARTITION BY RANGE(a);
 
-CREATE TABLE failpart PARTITION OF idxpart ( b PRIMARY KEY ) FOR VALUES FROM (0) TO (100);
+CREATE TABLE failpart PARTITION OF idxpart (b PRIMARY KEY) FOR VALUES FROM (0) TO (100);
 
 DROP TABLE "idxpart";
 
 CREATE TABLE idxpart (a INT)
 PARTITION BY RANGE(a);
 
-CREATE TABLE idxpart1pk PARTITION OF idxpart ( a PRIMARY KEY ) FOR VALUES FROM (0) TO (100);
+CREATE TABLE idxpart1pk PARTITION OF idxpart (a PRIMARY KEY) FOR VALUES FROM (0) TO (100);
 
 DROP TABLE "idxpart";
 
@@ -1500,9 +1500,9 @@ DROP TABLE "idxpart";
 CREATE TABLE idxpart (i INT)
 PARTITION BY HASH(i);
 
-CREATE TABLE idxpart0 PARTITION OF idxpart ( i ) FOR VALUES WITH (MODULUS 2, REMAINDER 0);
+CREATE TABLE idxpart0 PARTITION OF idxpart (i) FOR VALUES WITH (MODULUS 2, REMAINDER 0);
 
-CREATE TABLE idxpart1 PARTITION OF idxpart ( i ) FOR VALUES WITH (MODULUS 2, REMAINDER 1);
+CREATE TABLE idxpart1 PARTITION OF idxpart (i) FOR VALUES WITH (MODULUS 2, REMAINDER 1);
 
 ALTER TABLE idxpart0
   ADD PRIMARY KEY (i);
@@ -1802,20 +1802,13 @@ ALTER TABLE idxpart
   ATTACH PARTITION
   idxpart2 FOR VALUES FROM (100000) TO (1000000);
 
-INSERT INTO idxpart
-VALUES
-  (0, 'zero'),
-  (42, 'life'),
-  (2 ^ 16, 'sixteen');
+INSERT INTO idxpart VALUES (0, 'zero'), (42, 'life'), (2 ^ 16, 'sixteen');
 
 INSERT INTO idxpart SELECT 2 ^ g, format('two to power of %s', g) FROM generate_series(15, 17) AS g;
 
 INSERT INTO idxpart VALUES (16, 'sixteen');
 
-INSERT INTO idxpart (b, a)
-VALUES
-  ('one', 142857),
-  ('two', 285714);
+INSERT INTO idxpart (b, a) VALUES ('one', 142857), ('two', 285714);
 
 INSERT INTO idxpart SELECT a * 2, b || b FROM idxpart WHERE a BETWEEN 2 ^ 16 AND 2 ^ 19;
 

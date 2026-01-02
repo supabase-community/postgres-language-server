@@ -82,12 +82,14 @@ SELECT
   t2.c
 FROM
   tidrangescan AS t,
-  LATERAL (SELECT
-    COUNT(*) AS c
-  FROM
-    tidrangescan AS t2
-  WHERE
-    t2.ctid <= t.ctid)
+  LATERAL (
+    SELECT
+      COUNT(*) AS c
+    FROM
+      tidrangescan AS t2
+    WHERE
+      t2.ctid <= t.ctid
+  )
   AS t2
 WHERE
   t.ctid < '(1,0)';
@@ -97,12 +99,14 @@ SELECT
   t2.c
 FROM
   tidrangescan AS t,
-  LATERAL (SELECT
-    COUNT(*) AS c
-  FROM
-    tidrangescan AS t2
-  WHERE
-    t2.ctid <= t.ctid)
+  LATERAL (
+    SELECT
+      COUNT(*) AS c
+    FROM
+      tidrangescan AS t2
+    WHERE
+      t2.ctid <= t.ctid
+  )
   AS t2
 WHERE
   t.ctid < '(1,0)';

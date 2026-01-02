@@ -50,7 +50,9 @@ WHERE
   relnamespace = CAST('pg_catalog' AS regnamespace) AND
   relkind = 'r' AND
   NOT pg_class.oid IN
-  (SELECT indrelid FROM pg_index WHERE indisprimary)
+  (
+    SELECT indrelid FROM pg_index WHERE indisprimary
+  )
 ORDER BY 1;
 
 SELECT

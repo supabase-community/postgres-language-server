@@ -1063,14 +1063,18 @@ SELECT
   )
   AS minus
 FROM
-  (VALUES
-    (CAST('-infinity' AS DATE)),
-    (CAST('1995-08-06' AS DATE)),
-    (CAST('infinity' AS DATE)))
+  (
+    VALUES
+      (CAST('-infinity' AS DATE)),
+      (CAST('1995-08-06' AS DATE)),
+      (CAST('infinity' AS DATE))
+  )
   AS t1 (d),
-  (VALUES
-    (CAST('-infinity' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST('-infinity' AS INTERVAL)),
+      (CAST('infinity' AS INTERVAL))
+  )
   AS t2 (i);
 
 SELECT
@@ -1093,15 +1097,19 @@ SELECT
   )
   AS minus
 FROM
-  (VALUES
-    (CAST('-infinity' AS INTERVAL)),
-    (CAST('2 months' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST('-infinity' AS INTERVAL)),
+      (CAST('2 months' AS INTERVAL)),
+      (CAST('infinity' AS INTERVAL))
+  )
   AS t1 (i1),
-  (VALUES
-    (CAST('-infinity' AS INTERVAL)),
-    (CAST('10 days' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST('-infinity' AS INTERVAL)),
+      (CAST('10 days' AS INTERVAL)),
+      (CAST('infinity' AS INTERVAL))
+  )
   AS t2 (i2);
 
 SELECT
@@ -1146,16 +1154,20 @@ SELECT
   )
   AS minus
 FROM
-  (VALUES
-    (CAST('-infinity' AS TIMESTAMP)),
-    (
-      CAST('1995-08-06 12:30:15' AS TIMESTAMP)
-    ),
-    (CAST('infinity' AS TIMESTAMP)))
+  (
+    VALUES
+      (CAST('-infinity' AS TIMESTAMP)),
+      (
+        CAST('1995-08-06 12:30:15' AS TIMESTAMP)
+      ),
+      (CAST('infinity' AS TIMESTAMP))
+  )
   AS t1 (t),
-  (VALUES
-    (CAST('-infinity' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST('-infinity' AS INTERVAL)),
+      (CAST('infinity' AS INTERVAL))
+  )
   AS t2 (i);
 
 SELECT
@@ -1178,23 +1190,27 @@ SELECT
   )
   AS minus
 FROM
-  (VALUES
-    (
-      CAST('-infinity'
-      AS TIMESTAMP WITH TIME ZONE)
-    ),
-    (
-      CAST('1995-08-06 12:30:15 GMT'
-      AS TIMESTAMP WITH TIME ZONE)
-    ),
-    (
-      CAST('infinity'
-      AS TIMESTAMP WITH TIME ZONE)
-    ))
+  (
+    VALUES
+      (
+        CAST('-infinity'
+        AS TIMESTAMP WITH TIME ZONE)
+      ),
+      (
+        CAST('1995-08-06 12:30:15 GMT'
+        AS TIMESTAMP WITH TIME ZONE)
+      ),
+      (
+        CAST('infinity'
+        AS TIMESTAMP WITH TIME ZONE)
+      )
+  )
   AS t1 (t),
-  (VALUES
-    (CAST('-infinity' AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST('-infinity' AS INTERVAL)),
+      (CAST('infinity' AS INTERVAL))
+  )
   AS t2 (i);
 
 SELECT CAST('11:27:42' AS TIME) + CAST('infinity' AS INTERVAL);

@@ -182,15 +182,17 @@ SELECT to_jsonb(CAST('-Infinity' AS TIMESTAMP WITH TIME ZONE));
 SELECT
   jsonb_agg(q)
 FROM
-  (SELECT
-    'a' || x AS b,
-    y AS c,
-    ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
-    ROW(y.*, ARRAY[4, 5, 6])]
-    AS z
-  FROM
-    generate_series(1, 2) AS x,
-    generate_series(4, 5) AS y)
+  (
+    SELECT
+      'a' || x AS b,
+      y AS c,
+      ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
+      ROW(y.*, ARRAY[4, 5, 6])]
+      AS z
+    FROM
+      generate_series(1, 2) AS x,
+      generate_series(4, 5) AS y
+  )
   AS q;
 
 SELECT jsonb_agg(q ORDER BY x, y) FROM rows AS q;
@@ -601,17 +603,21 @@ SELECT
       'e',
       CAST(ARRAY[9, 8, 7] AS INT[]),
       'f',
-      (SELECT
-        row_to_json(r)
-      FROM
-        (SELECT
-          relkind,
-          CAST(oid AS REGCLASS) AS name
+      (
+        SELECT
+          row_to_json(r)
         FROM
-          pg_class
-        WHERE
-          relname = 'pg_class')
-        AS r)
+          (
+            SELECT
+              relkind,
+              CAST(oid AS REGCLASS) AS name
+            FROM
+              pg_class
+            WHERE
+              relname = 'pg_class'
+          )
+          AS r
+      )
     )
   );
 
@@ -1390,10 +1396,7 @@ SELECT
     '[{"f1":"42"},{"f2":"43"}]'
   )
 FROM
-  (VALUES
-    (1),
-    (2))
-  AS v (i);
+  (VALUES (1), (2)) AS v (i);
 
 SELECT * FROM jsonb_populate_recordset(CAST(NULL AS RECORD), '[{"x": 776}]') AS (x INT, y INT);
 
@@ -1723,14 +1726,18 @@ SET enable_hashagg = off;
 SELECT
   COUNT(*)
 FROM
-  (SELECT
-    j
-  FROM
-    (SELECT * FROM testjsonb
-    UNION ALL
-    SELECT * FROM testjsonb)
-    AS js
-  GROUP BY j)
+  (
+    SELECT
+      j
+    FROM
+      (
+        SELECT * FROM testjsonb
+        UNION ALL
+        SELECT * FROM testjsonb
+      )
+      AS js
+    GROUP BY j
+  )
   AS js2;
 
 SET enable_hashagg = 'on';
@@ -1740,23 +1747,21 @@ SET enable_sort = off;
 SELECT
   COUNT(*)
 FROM
-  (SELECT
-    j
-  FROM
-    (SELECT * FROM testjsonb
-    UNION ALL
-    SELECT * FROM testjsonb)
-    AS js
-  GROUP BY j)
+  (
+    SELECT
+      j
+    FROM
+      (
+        SELECT * FROM testjsonb
+        UNION ALL
+        SELECT * FROM testjsonb
+      )
+      AS js
+    GROUP BY j
+  )
   AS js2;
 
-SELECT DISTINCT
-  *
-FROM
-  (VALUES
-    (CAST('{}' AS JSONB) || CAST('' AS TEXT)),
-    ('{}'))
-  AS v (j);
+SELECT DISTINCT * FROM (VALUES (CAST('{}' AS JSONB) || CAST('' AS TEXT)), ('{}')) AS v (j);
 
 SET enable_sort = 'on';
 
@@ -2508,10 +2513,7 @@ CREATE TEMPORARY TABLE test_jsonb_subscript (
   test_json JSONB
 );
 
-INSERT INTO test_jsonb_subscript
-VALUES
-  (1, '{}'),
-  (2, '{"key": "value"}');
+INSERT INTO test_jsonb_subscript VALUES (1, '{}'), (2, '{"key": "value"}');
 
 UPDATE test_jsonb_subscript SET test_json['a'] = '1' WHERE id = 1;
 

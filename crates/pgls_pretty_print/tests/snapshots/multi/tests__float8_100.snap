@@ -275,29 +275,31 @@ SELECT
   erf(x),
   erfc(x)
 FROM
-  (VALUES
-    (CAST('-infinity' AS DOUBLE PRECISION)),
-    (-28),
-    (-6),
-    (-3.4),
-    (-2.1),
-    (-1.1),
-    (-0.45),
-    (-1.2e-9),
-    (-2.3e-13),
-    (-1.2e-17),
-    (0),
-    (1.2e-17),
-    (2.3e-13),
-    (1.2e-9),
-    (0.45),
-    (1.1),
-    (2.1),
-    (3.4),
-    (6),
-    (28),
-    (CAST('infinity' AS DOUBLE PRECISION)),
-    (CAST('nan' AS DOUBLE PRECISION)))
+  (
+    VALUES
+      (CAST('-infinity' AS DOUBLE PRECISION)),
+      (-28),
+      (-6),
+      (-3.4),
+      (-2.1),
+      (-1.1),
+      (-0.45),
+      (-1.2e-9),
+      (-2.3e-13),
+      (-1.2e-17),
+      (0),
+      (1.2e-17),
+      (2.3e-13),
+      (1.2e-9),
+      (0.45),
+      (1.1),
+      (2.1),
+      (3.4),
+      (6),
+      (28),
+      (CAST('infinity' AS DOUBLE PRECISION)),
+      (CAST('nan' AS DOUBLE PRECISION))
+  )
   AS t (x);
 
 RESET extra_float_digits;
@@ -309,15 +311,17 @@ SELECT
   gamma(x),
   lgamma(x)
 FROM
-  (VALUES
-    (0.5),
-    (1),
-    (2),
-    (3),
-    (4),
-    (5),
-    (CAST('infinity' AS DOUBLE PRECISION)),
-    (CAST('nan' AS DOUBLE PRECISION)))
+  (
+    VALUES
+      (0.5),
+      (1),
+      (2),
+      (3),
+      (4),
+      (5),
+      (CAST('infinity' AS DOUBLE PRECISION)),
+      (CAST('nan' AS DOUBLE PRECISION))
+  )
   AS t (x);
 
 SELECT gamma(CAST('-infinity' AS DOUBLE PRECISION));
@@ -385,16 +389,18 @@ SELECT
   sind(x),
   sind(x) IN (-1, -0.5, 0, 0.5, 1) AS sind_exact
 FROM
-  (VALUES
-    (0),
-    (30),
-    (90),
-    (150),
-    (180),
-    (210),
-    (270),
-    (330),
-    (360))
+  (
+    VALUES
+      (0),
+      (30),
+      (90),
+      (150),
+      (180),
+      (210),
+      (270),
+      (330),
+      (360)
+  )
   AS t (x);
 
 SELECT
@@ -402,16 +408,18 @@ SELECT
   cosd(x),
   cosd(x) IN (-1, -0.5, 0, 0.5, 1) AS cosd_exact
 FROM
-  (VALUES
-    (0),
-    (60),
-    (90),
-    (120),
-    (180),
-    (240),
-    (270),
-    (300),
-    (360))
+  (
+    VALUES
+      (0),
+      (60),
+      (90),
+      (120),
+      (180),
+      (240),
+      (270),
+      (300),
+      (360)
+  )
   AS t (x);
 
 SELECT
@@ -437,16 +445,18 @@ SELECT
   )
   AS cotd_exact
 FROM
-  (VALUES
-    (0),
-    (45),
-    (90),
-    (135),
-    (180),
-    (225),
-    (270),
-    (315),
-    (360))
+  (
+    VALUES
+      (0),
+      (45),
+      (90),
+      (135),
+      (180),
+      (225),
+      (270),
+      (315),
+      (360)
+  )
   AS t (x);
 
 SELECT
@@ -456,25 +466,21 @@ SELECT
   acosd(x),
   acosd(x) IN (0, 60, 90, 120, 180) AS acosd_exact
 FROM
-  (VALUES
-    (-1),
-    (-0.5),
-    (0),
-    (0.5),
-    (1))
-  AS t (x);
+  (VALUES (-1), (-0.5), (0), (0.5), (1)) AS t (x);
 
 SELECT
   x,
   atand(x),
   atand(x) IN (-90, -45, 0, 45, 90) AS atand_exact
 FROM
-  (VALUES
-    (CAST('-Infinity' AS DOUBLE PRECISION)),
-    (-1),
-    (0),
-    (1),
-    (CAST('Infinity' AS DOUBLE PRECISION)))
+  (
+    VALUES
+      (CAST('-Infinity' AS DOUBLE PRECISION)),
+      (-1),
+      (0),
+      (1),
+      (CAST('Infinity' AS DOUBLE PRECISION))
+  )
   AS t (x);
 
 SELECT
@@ -483,11 +489,13 @@ SELECT
   atan2d(y, x),
   atan2d(y, x) IN (-90, 0, 90, 180) AS atan2d_exact
 FROM
-  (SELECT
-    10 * cosd(a),
-    10 * sind(a)
-  FROM
-    generate_series(0, 360, 90) AS t (a))
+  (
+    SELECT
+      10 * cosd(a),
+      10 * sind(a)
+    FROM
+      generate_series(0, 360, 90) AS t (a)
+  )
   AS t (x, y);
 
 CREATE TYPE xfloat8;
@@ -506,9 +514,9 @@ STRICT
 LANGUAGE "internal"
 AS 'int8out';
 
-CREATE TYPE xfloat8 ( input = xfloat8in, output = xfloat8out, like = no_such_type);
+CREATE TYPE xfloat8 (input = xfloat8in, output = xfloat8out, like = no_such_type);
 
-CREATE TYPE xfloat8 ( input = xfloat8in, output = xfloat8out, like = DOUBLE PRECISION);
+CREATE TYPE xfloat8 (input = xfloat8in, output = xfloat8out, like = DOUBLE PRECISION);
 
 CREATE CAST (xfloat8 AS DOUBLE PRECISION) WITHOUT FUNCTION;
 
@@ -545,13 +553,15 @@ SELECT
   float8send(flt) AS ibits,
   flt
 FROM
-  (SELECT
-    CAST(CAST(CAST(bits AS BIGINT) AS xfloat8)
-    AS DOUBLE PRECISION)
-    AS flt
-  FROM
-    testdata
-  OFFSET 0)
+  (
+    SELECT
+      CAST(CAST(CAST(bits AS BIGINT) AS xfloat8)
+      AS DOUBLE PRECISION)
+      AS flt
+    FROM
+      testdata
+    OFFSET 0
+  )
   AS s;
 
 WITH
@@ -783,13 +793,15 @@ SELECT
   float8send(flt)
   AS correct
 FROM
-  (SELECT
-    CAST(CAST(CAST(bits AS BIGINT) AS xfloat8)
-    AS DOUBLE PRECISION)
-    AS flt
-  FROM
-    testdata
-  OFFSET 0)
+  (
+    SELECT
+      CAST(CAST(CAST(bits AS BIGINT) AS xfloat8)
+      AS DOUBLE PRECISION)
+      AS flt
+    FROM
+      testdata
+    OFFSET 0
+  )
   AS s;
 
 DROP TYPE xfloat8 CASCADE;

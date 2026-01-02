@@ -138,25 +138,13 @@ INSERT INTO gtest1 VALUES (2, DEFAULT);
 
 INSERT INTO gtest1 VALUES (3, 33);
 
-INSERT INTO gtest1
-VALUES
-  (3, 33),
-  (4, 44);
+INSERT INTO gtest1 VALUES (3, 33), (4, 44);
 
-INSERT INTO gtest1
-VALUES
-  (3, DEFAULT),
-  (4, 44);
+INSERT INTO gtest1 VALUES (3, DEFAULT), (4, 44);
 
-INSERT INTO gtest1
-VALUES
-  (3, 33),
-  (4, DEFAULT);
+INSERT INTO gtest1 VALUES (3, 33), (4, DEFAULT);
 
-INSERT INTO gtest1
-VALUES
-  (3, DEFAULT),
-  (4, DEFAULT);
+INSERT INTO gtest1 VALUES (3, DEFAULT), (4, DEFAULT);
 
 SELECT * FROM gtest1 ORDER BY a;
 
@@ -187,11 +175,7 @@ CREATE TABLE gtestx (
   y INT
 );
 
-INSERT INTO gtestx
-VALUES
-  (11, 1),
-  (22, 2),
-  (33, 3);
+INSERT INTO gtestx VALUES (11, 1), (22, 2), (33, 3);
 
 SELECT * FROM gtestx, gtest1 WHERE gtestx.y = gtest1.a;
 
@@ -241,35 +225,20 @@ INSERT INTO gtest1v VALUES (4, 8);
 
 INSERT INTO gtest1v VALUES (5, DEFAULT);
 
-INSERT INTO gtest1v
-VALUES
-  (6, 66),
-  (7, 77);
+INSERT INTO gtest1v VALUES (6, 66), (7, 77);
 
-INSERT INTO gtest1v
-VALUES
-  (6, DEFAULT),
-  (7, 77);
+INSERT INTO gtest1v VALUES (6, DEFAULT), (7, 77);
 
-INSERT INTO gtest1v
-VALUES
-  (6, 66),
-  (7, DEFAULT);
+INSERT INTO gtest1v VALUES (6, 66), (7, DEFAULT);
 
-INSERT INTO gtest1v
-VALUES
-  (6, DEFAULT),
-  (7, DEFAULT);
+INSERT INTO gtest1v VALUES (6, DEFAULT), (7, DEFAULT);
 
 ALTER VIEW gtest1v
   ALTER COLUMN b SET DEFAULT 100;
 
 INSERT INTO gtest1v VALUES (8, DEFAULT);
 
-INSERT INTO gtest1v
-VALUES
-  (8, DEFAULT),
-  (9, DEFAULT);
+INSERT INTO gtest1v VALUES (8, DEFAULT), (9, DEFAULT);
 
 SELECT * FROM gtest1v;
 
@@ -416,12 +385,7 @@ CREATE TABLE gtest3 (
   b INT GENERATED ALWAYS AS (a * 3) STORED
 );
 
-INSERT INTO gtest3 (a)
-VALUES
-  (1),
-  (2),
-  (3),
-  (NULL);
+INSERT INTO gtest3 (a) VALUES (1), (2), (3), (NULL);
 
 SELECT * FROM gtest3 ORDER BY a;
 
@@ -435,12 +399,7 @@ CREATE TABLE gtest3a (
   GENERATED ALWAYS AS (a || '+' || a) STORED
 );
 
-INSERT INTO gtest3a (a)
-VALUES
-  ('a'),
-  ('b'),
-  ('c'),
-  (NULL);
+INSERT INTO gtest3a (a) VALUES ('a'), ('b'), ('c'), (NULL);
 
 SELECT * FROM gtest3a ORDER BY a;
 
@@ -450,10 +409,7 @@ SELECT * FROM gtest3a ORDER BY a;
 
 TRUNCATE gtest1;
 
-INSERT INTO gtest1 (a)
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest1 (a) VALUES (1), (2);
 
 COPY gtest1 TO STDOUT;
 
@@ -463,10 +419,7 @@ SELECT * FROM gtest1 ORDER BY a;
 
 TRUNCATE gtest3;
 
-INSERT INTO gtest3 (a)
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest3 (a) VALUES (1), (2);
 
 COPY gtest3 TO STDOUT;
 
@@ -504,10 +457,7 @@ CREATE TABLE gtest4 (
   GENERATED ALWAYS AS ((a * 2, a * 3)) STORED
 );
 
-INSERT INTO gtest4
-VALUES
-  (1),
-  (6);
+INSERT INTO gtest4 VALUES (1), (6);
 
 SELECT * FROM gtest4;
 
@@ -522,10 +472,7 @@ CREATE TABLE gtest_tableoid (
   CAST('gtest_tableoid' AS REGCLASS)) STORED
 );
 
-INSERT INTO gtest_tableoid
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest_tableoid VALUES (1), (2);
 
 ALTER TABLE gtest_tableoid
   ADD COLUMN c REGCLASS
@@ -563,10 +510,7 @@ CREATE TABLE gtest11 (
   c INT GENERATED ALWAYS AS (b * 2) STORED
 );
 
-INSERT INTO gtest11
-VALUES
-  (1, 10),
-  (2, 20);
+INSERT INTO gtest11 VALUES (1, 10), (2, 20);
 
 GRANT SELECT (a, c) ON TABLE gtest11 TO regress_user11;
 
@@ -585,10 +529,7 @@ CREATE TABLE gtest12 (
   GENERATED ALWAYS AS (gf1(b)) STORED
 );
 
-INSERT INTO gtest12
-VALUES
-  (1, 10),
-  (2, 20);
+INSERT INTO gtest12 VALUES (1, 10), (2, 20);
 
 GRANT SELECT (a, c), INSERT ON TABLE gtest12 TO regress_user11;
 
@@ -600,10 +541,7 @@ SELECT a, c FROM gtest11;
 
 SELECT gf1(10);
 
-INSERT INTO gtest12
-VALUES
-  (3, 30),
-  (4, 40);
+INSERT INTO gtest12 VALUES (3, 30), (4, 40);
 
 SELECT a, c FROM gtest12;
 
@@ -755,11 +693,7 @@ USING btree
 WHERE
   b > 0;
 
-INSERT INTO gtest22c
-VALUES
-  (1),
-  (2),
-  (3);
+INSERT INTO gtest22c VALUES (1), (2), (3);
 
 SET enable_seqscan = off;
 
@@ -804,11 +738,7 @@ CREATE TABLE gtest23a (
   y INT
 );
 
-INSERT INTO gtest23a
-VALUES
-  (1, 11),
-  (2, 22),
-  (3, 33);
+INSERT INTO gtest23a VALUES (1, 11), (2, 22), (3, 33);
 
 CREATE TABLE gtest23x (
   a INT PRIMARY KEY,
@@ -855,11 +785,7 @@ CREATE TABLE gtest23p (
   PRIMARY KEY (y)
 );
 
-INSERT INTO gtest23p
-VALUES
-  (1),
-  (2),
-  (3);
+INSERT INTO gtest23p VALUES (1), (2), (3);
 
 CREATE TABLE gtest23q (
   a INT PRIMARY KEY,
@@ -1087,10 +1013,7 @@ PARTITION BY RANGE((f3 * 3));
 
 CREATE TABLE gtest25 (a INT PRIMARY KEY);
 
-INSERT INTO gtest25
-VALUES
-  (3),
-  (4);
+INSERT INTO gtest25 VALUES (3), (4);
 
 ALTER TABLE gtest25
   ADD COLUMN b INT GENERATED ALWAYS AS (a * 2) STORED,
@@ -1126,10 +1049,7 @@ CREATE TABLE gtest27 (
   GENERATED ALWAYS AS ((a + b) * 2) STORED
 );
 
-INSERT INTO gtest27 (a, b)
-VALUES
-  (3, 7),
-  (4, 11);
+INSERT INTO gtest27 (a, b) VALUES (3, 7), (4, 11);
 
 ALTER TABLE gtest27
   ALTER COLUMN a TYPE TEXT;
@@ -1163,10 +1083,7 @@ CREATE TABLE gtest29 (
   b INT GENERATED ALWAYS AS (a * 2) STORED
 );
 
-INSERT INTO gtest29 (a)
-VALUES
-  (3),
-  (4);
+INSERT INTO gtest29 (a) VALUES (3), (4);
 
 SELECT * FROM gtest29;
 
@@ -1350,11 +1267,7 @@ CREATE TRIGGER gtest4
   WHEN (new.b < 0)
   EXECUTE FUNCTION gtest_trigger_func();
 
-INSERT INTO gtest26 (a)
-VALUES
-  (-2),
-  (0),
-  (3);
+INSERT INTO gtest26 (a) VALUES (-2), (0), (3);
 
 SELECT * FROM gtest26 ORDER BY a;
 

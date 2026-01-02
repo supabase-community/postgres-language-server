@@ -55,28 +55,32 @@ SELECT * FROM update_test;
 UPDATE update_test SET (c, b) = ('car', a + b), b = a + 1 WHERE a = 10;
 
 UPDATE update_test
-SET (b, a) = (SELECT
-  a,
-  b
-FROM
-  update_test
-WHERE
-  b = 41 AND c = 'car')
+SET (b, a) = (
+  SELECT
+    a,
+    b
+  FROM
+    update_test
+  WHERE
+    b = 41 AND c = 'car'
+)
 WHERE
   a = 100 AND b = 20;
 
 SELECT * FROM update_test;
 
 UPDATE update_test AS o
-SET (b, a) = (SELECT
-  a + 1,
-  b
-FROM
-  update_test AS i
-WHERE
-  i.a = o.a AND
-  i.b = o.b AND
-  i.c IS NOT DISTINCT FROM o.c);
+SET (b, a) = (
+  SELECT
+    a + 1,
+    b
+  FROM
+    update_test AS i
+  WHERE
+    i.a = o.a AND
+    i.b = o.b AND
+    i.c IS NOT DISTINCT FROM o.c
+);
 
 SELECT * FROM update_test;
 
@@ -101,21 +105,22 @@ UPDATE update_test SET c = repeat('x', 10000) WHERE c = 'car';
 SELECT a, b, char_length(c) FROM update_test;
 
 UPDATE update_test AS t
-SET (a, b) = (SELECT b, a FROM update_test AS s WHERE s.a = t.a)
+SET (a, b) = (
+  SELECT b, a FROM update_test AS s WHERE s.a = t.a
+)
 WHERE
   CURRENT_USER = SESSION_USER;
 
 UPDATE update_test AS t
-SET (a, b) = (SELECT b, a FROM update_test AS s WHERE s.a = t.a)
+SET (a, b) = (
+  SELECT b, a FROM update_test AS s WHERE s.a = t.a
+)
 WHERE
   CURRENT_USER = SESSION_USER;
 
 SELECT a, b, char_length(c) FROM update_test;
 
-INSERT INTO upsert_test
-VALUES
-  (1, 'Boo'),
-  (3, 'Zoo');
+INSERT INTO upsert_test VALUES (1, 'Boo'), (3, 'Zoo');
 
 WITH aaa AS (SELECT 1 AS a, 'Foo' AS b)
 INSERT INTO upsert_test
@@ -128,37 +133,37 @@ SET (b, a) = (SELECT b, a FROM aaa)
 RETURNING *;
 
 INSERT INTO upsert_test
-VALUES
-  (1, 'Baz'),
-  (3, 'Zaz')
+VALUES (1, 'Baz'), (3, 'Zaz')
 ON CONFLICT
 (a)
 DO
 UPDATE
-SET (b, a) = (SELECT
-  b || ', Correlated',
-  a
-FROM
-  upsert_test AS i
-WHERE
-  i.a = upsert_test.a)
+SET (b, a) = (
+  SELECT
+    b || ', Correlated',
+    a
+  FROM
+    upsert_test AS i
+  WHERE
+    i.a = upsert_test.a
+)
 RETURNING *;
 
 INSERT INTO upsert_test
-VALUES
-  (1, 'Bat'),
-  (3, 'Zot')
+VALUES (1, 'Bat'), (3, 'Zot')
 ON CONFLICT
 (a)
 DO
 UPDATE
-SET (b, a) = (SELECT
-  b || ', Excluded',
-  a
-FROM
-  upsert_test AS i
-WHERE
-  i.a = excluded.a)
+SET (b, a) = (
+  SELECT
+    b || ', Excluded',
+    a
+  FROM
+    upsert_test AS i
+  WHERE
+    i.a = excluded.a
+)
 RETURNING *;
 
 INSERT INTO upsert_test
@@ -167,13 +172,15 @@ ON CONFLICT
 (a)
 DO
 UPDATE
-SET (b, a) = (SELECT
-  b || ', Excluded',
-  a
-FROM
-  upsert_test AS i
-WHERE
-  i.a = excluded.a)
+SET (b, a) = (
+  SELECT
+    b || ', Excluded',
+    a
+  FROM
+    upsert_test AS i
+  WHERE
+    i.a = excluded.a
+)
 RETURNING CAST(tableoid AS REGCLASS),
 xmin = CAST(pg_current_xact_id() AS XID)
 AS xmin_correct,
@@ -185,13 +192,15 @@ ON CONFLICT
 (a)
 DO
 UPDATE
-SET (b, a) = (SELECT
-  b || ', Excluded',
-  a
-FROM
-  upsert_test AS i
-WHERE
-  i.a = excluded.a)
+SET (b, a) = (
+  SELECT
+    b || ', Excluded',
+    a
+  FROM
+    upsert_test AS i
+  WHERE
+    i.a = excluded.a
+)
 RETURNING CAST(tableoid AS REGCLASS),
 xmin = CAST(pg_current_xact_id() AS XID)
 AS xmin_correct,
@@ -219,10 +228,7 @@ ALTER TABLE upsert_test
   ATTACH PARTITION
   upsert_test_2 FOR VALUES IN (2);
 
-INSERT INTO upsert_test
-VALUES
-  (1, 'Boo'),
-  (2, 'Zoo');
+INSERT INTO upsert_test VALUES (1, 'Boo'), (2, 'Zoo');
 
 WITH aaa AS (SELECT 1 AS a, 'Foo' AS b)
 INSERT INTO upsert_test
@@ -236,18 +242,18 @@ RETURNING *;
 
 WITH aaa AS (SELECT 1 AS ctea, ' Foo' AS cteb)
 INSERT INTO upsert_test
-VALUES
-  (1, 'Bar'),
-  (2, 'Baz')
+VALUES (1, 'Bar'), (2, 'Baz')
 ON CONFLICT
 (a)
 DO
 UPDATE
-SET (b, a) = (SELECT
-  upsert_test.b || cteb,
-  upsert_test.a
-FROM
-  aaa)
+SET (b, a) = (
+  SELECT
+    upsert_test.b || cteb,
+    upsert_test.a
+  FROM
+    aaa
+)
 RETURNING *;
 
 DROP TABLE "upsert_test";
@@ -772,10 +778,7 @@ INSERT INTO utrtest VALUES (2, 'bar') RETURNING *, CAST(tableoid AS REGCLASS);
 
 UPDATE utrtest
 SET b = b || b
-FROM (VALUES
-  (1),
-  (2))
-AS s (x)
+FROM (VALUES (1), (2)) AS s (x)
 WHERE
   a = s.x
 RETURNING *,
@@ -785,10 +788,7 @@ AS xmin_ok;
 
 UPDATE utrtest
 SET a = 3 - a
-FROM (VALUES
-  (1),
-  (2))
-AS s (x)
+FROM (VALUES (1), (2)) AS s (x)
 WHERE
   a = s.x
 RETURNING *,
@@ -798,10 +798,7 @@ AS xmin_ok;
 
 UPDATE utrtest
 SET a = 3 - a
-FROM (VALUES
-  (1),
-  (2))
-AS s (x)
+FROM (VALUES (1), (2)) AS s (x)
 WHERE
   a = s.x
 RETURNING *,
@@ -922,17 +919,7 @@ DROP FUNCTION func_parted_mod_b();
 
 CREATE TABLE non_parted (id INT);
 
-INSERT INTO non_parted
-VALUES
-  (1),
-  (1),
-  (1),
-  (2),
-  (2),
-  (2),
-  (3),
-  (3),
-  (3);
+INSERT INTO non_parted VALUES (1), (1), (1), (2), (2), (2), (3), (3), (3);
 
 UPDATE list_parted AS t1 SET a = 2 FROM non_parted AS t2 WHERE t1.a = t2.id AND a = 1;
 

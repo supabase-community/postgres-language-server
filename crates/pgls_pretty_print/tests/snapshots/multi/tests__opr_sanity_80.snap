@@ -20,8 +20,8 @@ WHERE
   CAST(0 AS OID) = ANY (p1.proargtypes) OR
   procost <= 0 OR
   CASE
-  WHEN proretset THEN prorows <= 0
-  ELSE prorows <> 0
+    WHEN proretset THEN prorows <= 0
+    ELSE prorows <> 0
   END OR
   prokind NOT IN ('f', 'a', 'w', 'p') OR
   provolatile NOT IN ('i', 's', 'v') OR
@@ -355,19 +355,23 @@ FROM
 WHERE
   CAST('cstring' AS REGTYPE) = ANY (p1.proargtypes) AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_type
-  WHERE
-    typinput = p1.oid) AND
+  (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typinput = p1.oid
+  ) AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_conversion
-  WHERE
-    conproc = p1.oid) AND
+  (
+    SELECT
+      1
+    FROM
+      pg_conversion
+    WHERE
+      conproc = p1.oid
+  ) AND
   p1.oid <>
   CAST('shell_in(cstring)'
   AS REGPROCEDURE)
@@ -382,19 +386,23 @@ WHERE
   p1.prorettype =
   CAST('cstring' AS REGTYPE) AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_type
-  WHERE
-    typoutput = p1.oid) AND
+  (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typoutput = p1.oid
+  ) AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_type
-  WHERE
-    typmodout = p1.oid) AND
+  (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typmodout = p1.oid
+  ) AND
   p1.oid <>
   CAST('shell_out(void)' AS REGPROCEDURE)
 ORDER BY 1;
@@ -473,17 +481,19 @@ FROM
 WHERE
   proallargtypes IS NOT NULL AND
   ARRAY(SELECT unnest(proargtypes)) <>
-  ARRAY(SELECT
-    proallargtypes[i]
-  FROM
-    generate_series(
-      1,
-      array_length(proallargtypes, 1)
-    )
-    AS g (i)
-  WHERE
-    proargmodes IS NULL OR
-    proargmodes[i] IN ('i', 'b', 'v'));
+  ARRAY(
+    SELECT
+      proallargtypes[i]
+    FROM
+      generate_series(
+        1,
+        array_length(proallargtypes, 1)
+      )
+      AS g (i)
+    WHERE
+      proargmodes IS NULL OR
+      proargmodes[i] IN ('i', 'b', 'v')
+  );
 
 SELECT
   CAST(oid AS REGPROCEDURE),
@@ -494,19 +504,21 @@ FROM
 WHERE
   provariadic <> 0 AND
   CASE proargtypes[array_length(proargtypes, 1) - 1]
-  WHEN CAST('"any"' AS REGTYPE)
-  THEN CAST('"any"' AS REGTYPE)
-  WHEN CAST('anyarray' AS REGTYPE)
-  THEN CAST('anyelement' AS REGTYPE)
-  WHEN CAST('anycompatiblearray' AS REGTYPE)
-  THEN CAST('anycompatible' AS REGTYPE)
-  ELSE (SELECT
-    t.oid
-  FROM
-    pg_type AS t
-  WHERE
-    t.typarray =
-    proargtypes[array_length(proargtypes, 1) - 1])
+    WHEN CAST('"any"' AS REGTYPE)
+    THEN CAST('"any"' AS REGTYPE)
+    WHEN CAST('anyarray' AS REGTYPE)
+    THEN CAST('anyelement' AS REGTYPE)
+    WHEN CAST('anycompatiblearray' AS REGTYPE)
+    THEN CAST('anycompatible' AS REGTYPE)
+    ELSE (
+      SELECT
+        t.oid
+      FROM
+        pg_type AS t
+      WHERE
+        t.typarray =
+        proargtypes[array_length(proargtypes, 1) - 1]
+    )
   END <>
   provariadic;
 
@@ -597,12 +609,14 @@ WHERE
     'lowrite'
   ) AND
   pronamespace =
-  (SELECT
-    oid
-  FROM
-    pg_catalog.pg_namespace
-  WHERE
-    nspname = 'pg_catalog')
+  (
+    SELECT
+      oid
+    FROM
+      pg_catalog.pg_namespace
+    WHERE
+      nspname = 'pg_catalog'
+  )
 ORDER BY 1;
 
 SELECT
@@ -690,14 +704,16 @@ FROM
 WHERE
   c.castmethod = 'b' AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_cast AS k
-  WHERE
-    k.castmethod = 'b' AND
-    k.castsource = c.casttarget AND
-    k.casttarget = c.castsource);
+  (
+    SELECT
+      1
+    FROM
+      pg_cast AS k
+    WHERE
+      k.castmethod = 'b' AND
+      k.castsource = c.casttarget AND
+      k.casttarget = c.castsource
+  );
 
 SELECT
   c.oid,
@@ -874,20 +890,24 @@ FROM
 WHERE
   o1.oprcanmerge AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_amop
-  WHERE
-    amopmethod =
-    (SELECT
-      oid
+  (
+    SELECT
+      1
     FROM
-      pg_am
+      pg_amop
     WHERE
-      amname = 'btree') AND
-    amopopr = o1.oid AND
-    amopstrategy = 3);
+      amopmethod =
+      (
+        SELECT
+          oid
+        FROM
+          pg_am
+        WHERE
+          amname = 'btree'
+      ) AND
+      amopopr = o1.oid AND
+      amopstrategy = 3
+  );
 
 SELECT
   o1.oid,
@@ -899,12 +919,14 @@ FROM
 WHERE
   amopopr = o1.oid AND
   amopmethod =
-  (SELECT
-    oid
-  FROM
-    pg_am
-  WHERE
-    amname = 'btree') AND
+  (
+    SELECT
+      oid
+    FROM
+      pg_am
+    WHERE
+      amname = 'btree'
+  ) AND
   amopstrategy = 3 AND
   NOT o1.oprcanmerge;
 
@@ -916,20 +938,24 @@ FROM
 WHERE
   o1.oprcanhash AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_amop
-  WHERE
-    amopmethod =
-    (SELECT
-      oid
+  (
+    SELECT
+      1
     FROM
-      pg_am
+      pg_amop
     WHERE
-      amname = 'hash') AND
-    amopopr = o1.oid AND
-    amopstrategy = 1);
+      amopmethod =
+      (
+        SELECT
+          oid
+        FROM
+          pg_am
+        WHERE
+          amname = 'hash'
+      ) AND
+      amopopr = o1.oid AND
+      amopstrategy = 1
+  );
 
 SELECT
   o1.oid,
@@ -941,12 +967,14 @@ FROM
 WHERE
   amopopr = o1.oid AND
   amopmethod =
-  (SELECT
-    oid
-  FROM
-    pg_am
-  WHERE
-    amname = 'hash') AND
+  (
+    SELECT
+      oid
+    FROM
+      pg_am
+    WHERE
+      amname = 'hash'
+  ) AND
   NOT o1.oprcanhash;
 
 SELECT
@@ -1205,12 +1233,14 @@ WHERE
   po.oid = o.oprcode AND
   o.oid = ao.amopopr AND
   ao.amopmethod =
-  (SELECT
-    oid
-  FROM
-    pg_am
-  WHERE
-    amname = 'btree') AND
+  (
+    SELECT
+      oid
+    FROM
+      pg_am
+    WHERE
+      amname = 'btree'
+  ) AND
   ao.amopfamily = ap.amprocfamily AND
   ao.amoplefttype = ap.amproclefttype AND
   ao.amoprighttype = ap.amprocrighttype AND
@@ -1256,12 +1286,14 @@ FROM
 WHERE
   p.prokind = 'a' AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_aggregate AS a
-  WHERE
-    a.aggfnoid = p.oid);
+  (
+    SELECT
+      1
+    FROM
+      pg_aggregate AS a
+    WHERE
+      a.aggfnoid = p.oid
+  );
 
 SELECT
   CAST(a.aggfnoid AS OID),
@@ -1289,10 +1321,10 @@ WHERE
   (ptr.proretset OR
   NOT ptr.pronargs =
   CASE
-  WHEN a.aggkind = 'n' THEN p.pronargs + 1
-  ELSE GREATEST(p.pronargs - a.aggnumdirectargs,
-  1) +
-  1
+    WHEN a.aggkind = 'n' THEN p.pronargs + 1
+    ELSE GREATEST(p.pronargs - a.aggnumdirectargs,
+    1) +
+    1
   END OR
   NOT binary_coercible(
     ptr.prorettype,
@@ -1346,9 +1378,9 @@ WHERE
     pfn.proargtypes[0]
   ) OR
   CASE
-  WHEN a.aggfinalextra
-  THEN pfn.pronargs <> p.pronargs + 1
-  ELSE pfn.pronargs <> a.aggnumdirectargs + 1
+    WHEN a.aggfinalextra
+    THEN pfn.pronargs <> p.pronargs + 1
+    ELSE pfn.pronargs <> a.aggnumdirectargs + 1
   END OR
   pfn.pronargs > 1 AND
   NOT binary_coercible(
@@ -1435,10 +1467,10 @@ WHERE
   (ptr.proretset OR
   NOT ptr.pronargs =
   CASE
-  WHEN a.aggkind = 'n' THEN p.pronargs + 1
-  ELSE GREATEST(p.pronargs - a.aggnumdirectargs,
-  1) +
-  1
+    WHEN a.aggkind = 'n' THEN p.pronargs + 1
+    ELSE GREATEST(p.pronargs - a.aggnumdirectargs,
+    1) +
+    1
   END OR
   NOT binary_coercible(
     ptr.prorettype,
@@ -1480,10 +1512,10 @@ WHERE
   (ptr.proretset OR
   NOT ptr.pronargs =
   CASE
-  WHEN a.aggkind = 'n' THEN p.pronargs + 1
-  ELSE GREATEST(p.pronargs - a.aggnumdirectargs,
-  1) +
-  1
+    WHEN a.aggkind = 'n' THEN p.pronargs + 1
+    ELSE GREATEST(p.pronargs - a.aggnumdirectargs,
+    1) +
+    1
   END OR
   NOT binary_coercible(
     ptr.prorettype,
@@ -1532,9 +1564,9 @@ WHERE
     pfn.proargtypes[0]
   ) OR
   CASE
-  WHEN a.aggmfinalextra
-  THEN pfn.pronargs <> p.pronargs + 1
-  ELSE pfn.pronargs <> a.aggnumdirectargs + 1
+    WHEN a.aggmfinalextra
+    THEN pfn.pronargs <> p.pronargs + 1
+    ELSE pfn.pronargs <> a.aggnumdirectargs + 1
   END OR
   pfn.pronargs > 1 AND
   NOT binary_coercible(
@@ -1722,21 +1754,25 @@ WHERE
   a.aggfnoid = p.oid AND
   a.aggsortop = o.oid AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_amop
-  WHERE
-    amopmethod =
-    (SELECT
-      oid
+  (
+    SELECT
+      1
     FROM
-      pg_am
+      pg_amop
     WHERE
-      amname = 'btree') AND
-    amopopr = o.oid AND
-    amoplefttype = o.oprleft AND
-    amoprighttype = o.oprright);
+      amopmethod =
+      (
+        SELECT
+          oid
+        FROM
+          pg_am
+        WHERE
+          amname = 'btree'
+      ) AND
+      amopopr = o.oid AND
+      amoplefttype = o.oprleft AND
+      amoprighttype = o.oprright
+  );
 
 SELECT DISTINCT
   proname,
@@ -1752,12 +1788,14 @@ WHERE
   a.aggsortop = o.oid AND
   amopopr = o.oid AND
   amopmethod =
-  (SELECT
-    oid
-  FROM
-    pg_am
-  WHERE
-    amname = 'btree')
+  (
+    SELECT
+      oid
+    FROM
+      pg_am
+    WHERE
+      amname = 'btree'
+  )
 ORDER BY 1,
   2;
 
@@ -1807,12 +1845,14 @@ FROM
   pg_opfamily AS f
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_opclass
-  WHERE
-    opcfamily = f.oid);
+  (
+    SELECT
+      1
+    FROM
+      pg_opclass
+    WHERE
+      opcfamily = f.oid
+  );
 
 SELECT
   c1.oid
@@ -1954,16 +1994,18 @@ FROM
   pg_opclass AS c1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_amop AS a1
-  WHERE
-    a1.amopfamily = c1.opcfamily AND
-    binary_coercible(
-      c1.opcintype,
-      a1.amoplefttype
-    ));
+  (
+    SELECT
+      1
+    FROM
+      pg_amop AS a1
+    WHERE
+      a1.amopfamily = c1.opcfamily AND
+      binary_coercible(
+        c1.opcintype,
+        a1.amoplefttype
+      )
+  );
 
 SELECT
   a1.amopfamily,
@@ -1973,16 +2015,18 @@ FROM
   pg_amop AS a1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_opclass AS c1
-  WHERE
-    c1.opcfamily = a1.amopfamily AND
-    binary_coercible(
-      c1.opcintype,
-      a1.amoplefttype
-    ));
+  (
+    SELECT
+      1
+    FROM
+      pg_opclass AS c1
+    WHERE
+      c1.opcfamily = a1.amopfamily AND
+      binary_coercible(
+        c1.opcintype,
+        a1.amoplefttype
+      )
+  );
 
 SELECT
   a1.amopfamily,
@@ -2111,14 +2155,16 @@ SELECT
   CAST(atttypid AS REGTYPE),
   opcname
 FROM
-  (SELECT
-    indexrelid,
-    indrelid,
-    unnest(indkey) AS ikey,
-    unnest(indclass) AS iclass,
-    unnest(indcollation) AS icoll
-  FROM
-    pg_index)
+  (
+    SELECT
+      indexrelid,
+      indrelid,
+      unnest(indkey) AS ikey,
+      unnest(indclass) AS iclass,
+      unnest(indcollation) AS icoll
+    FROM
+      pg_index
+  )
   AS ss,
   pg_attribute AS a,
   pg_opclass AS opc
@@ -2136,16 +2182,18 @@ SELECT
   CAST(atttypid AS REGTYPE),
   opcname
 FROM
-  (SELECT
-    indexrelid,
-    indrelid,
-    unnest(indkey) AS ikey,
-    unnest(indclass) AS iclass,
-    unnest(indcollation) AS icoll
-  FROM
-    pg_index
-  WHERE
-    indrelid < 16384)
+  (
+    SELECT
+      indexrelid,
+      indrelid,
+      unnest(indkey) AS ikey,
+      unnest(indclass) AS iclass,
+      unnest(indcollation) AS icoll
+    FROM
+      pg_index
+    WHERE
+      indrelid < 16384
+  )
   AS ss,
   pg_attribute AS a,
   pg_opclass AS opc
@@ -2170,12 +2218,14 @@ WHERE
   c.relkind <> 'v' AND
   attcollation <> 0 AND
   attcollation <>
-  (SELECT
-    oid
-  FROM
-    pg_collation
-  WHERE
-    collname = 'C');
+  (
+    SELECT
+      oid
+    FROM
+      pg_collation
+    WHERE
+      collname = 'C'
+  );
 
 SELECT
   CAST(indexrelid AS REGCLASS),
@@ -2183,22 +2233,26 @@ SELECT
   iclass,
   icoll
 FROM
-  (SELECT
-    indexrelid,
-    indrelid,
-    unnest(indclass) AS iclass,
-    unnest(indcollation) AS icoll
-  FROM
-    pg_index
-  WHERE
-    indrelid < 16384)
+  (
+    SELECT
+      indexrelid,
+      indrelid,
+      unnest(indclass) AS iclass,
+      unnest(indcollation) AS icoll
+    FROM
+      pg_index
+    WHERE
+      indrelid < 16384
+  )
   AS ss
 WHERE
   icoll <> 0 AND
   icoll <>
-  (SELECT
-    oid
-  FROM
-    pg_collation
-  WHERE
-    collname = 'C');
+  (
+    SELECT
+      oid
+    FROM
+      pg_collation
+    WHERE
+      collname = 'C'
+  );

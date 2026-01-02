@@ -57,10 +57,12 @@ TO STDOUT;
 COPY (SELECT
   *
 FROM
-  (SELECT t FROM test1 WHERE id = 1
-  UNION
-  SELECT * FROM v_test1
-  ORDER BY 1)
+  (
+    SELECT t FROM test1 WHERE id = 1
+    UNION
+    SELECT * FROM v_test1
+    ORDER BY 1
+  )
   AS t1)
 TO STDOUT;
 

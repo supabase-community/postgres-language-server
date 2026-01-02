@@ -654,9 +654,11 @@ SELECT * FROM atestv0;
 SELECT
   *
 FROM
-  ((SELECT a.q1 AS x FROM int8_tbl AS a OFFSET 0)
-  UNION ALL
-  (SELECT b.q2 AS x FROM int8_tbl AS b OFFSET 0))
+  (
+    (SELECT a.q1 AS x FROM int8_tbl AS a OFFSET 0)
+    UNION ALL
+    (SELECT b.q2 AS x FROM int8_tbl AS b OFFSET 0)
+  )
   AS ss
 WHERE
   FALSE;
@@ -666,21 +668,23 @@ SET constraint_exclusion = 'on';
 SELECT
   *
 FROM
-  (SELECT
-    a.q1 AS x,
-    random()
-  FROM
-    int8_tbl AS a
-  WHERE
-    q1 > 0
-  UNION ALL
-  SELECT
-    b.q2 AS x,
-    random()
-  FROM
-    int8_tbl AS b
-  WHERE
-    q2 > 0)
+  (
+    SELECT
+      a.q1 AS x,
+      random()
+    FROM
+      int8_tbl AS a
+    WHERE
+      q1 > 0
+    UNION ALL
+    SELECT
+      b.q2 AS x,
+      random()
+    FROM
+      int8_tbl AS b
+    WHERE
+      q2 > 0
+  )
   AS ss
 WHERE
   x < 0;
@@ -920,16 +924,9 @@ CREATE TABLE msource (
   b TEXT
 );
 
-INSERT INTO mtarget
-VALUES
-  (1, 'init1'),
-  (2, 'init2');
+INSERT INTO mtarget VALUES (1, 'init1'), (2, 'init2');
 
-INSERT INTO msource
-VALUES
-  (1, 'source1'),
-  (2, 'source2'),
-  (3, 'source3');
+INSERT INTO msource VALUES (1, 'source1'), (2, 'source2'), (3, 'source3');
 
 GRANT SELECT (a) ON TABLE msource TO regress_priv_user4;
 
@@ -1050,9 +1047,10 @@ GRANT UPDATE (a, b, c) ON TABLE errtst TO regress_priv_user2;
 GRANT INSERT (a, b, c) ON TABLE errtst TO regress_priv_user2;
 
 INSERT INTO errtst_part_1 (a, b, c, secret1, secret2)
-VALUES (
-  'aaa', 'bbb', 'ccc', 'the body', 'is in the attic'
-);
+VALUES
+  (
+    'aaa', 'bbb', 'ccc', 'the body', 'is in the attic'
+  );
 
 SET SESSION AUTHORIZATION regress_priv_user2;
 
@@ -1221,7 +1219,7 @@ RETURNS INT
 AS 'select 3 * $1;'
 LANGUAGE "sql";
 
-CREATE AGGREGATE priv_testagg1 (INT) ( sfunc = int4pl, stype = INT);
+CREATE AGGREGATE priv_testagg1 (INT) (sfunc = int4pl, stype = INT);
 
 CREATE PROCEDURE priv_testproc1(INT)
 AS 'select $1;'
@@ -1272,14 +1270,7 @@ RETURNS INT
 AS 'select 2 * $1;'
 LANGUAGE "sql";
 
-SELECT
-  priv_testagg1(x)
-FROM
-  (VALUES
-    (1),
-    (2),
-    (3))
-  AS _ (x);
+SELECT priv_testagg1(x) FROM (VALUES (1), (2), (3)) AS _ (x);
 
 CALL priv_testproc1(6);
 
@@ -1287,14 +1278,7 @@ SET SESSION AUTHORIZATION regress_priv_user3;
 
 SELECT priv_testfunc1(5);
 
-SELECT
-  priv_testagg1(x)
-FROM
-  (VALUES
-    (1),
-    (2),
-    (3))
-  AS _ (x);
+SELECT priv_testagg1(x) FROM (VALUES (1), (2), (3)) AS _ (x);
 
 CALL priv_testproc1(6);
 
@@ -1306,14 +1290,7 @@ SET SESSION AUTHORIZATION regress_priv_user4;
 
 SELECT priv_testfunc1(5);
 
-SELECT
-  priv_testagg1(x)
-FROM
-  (VALUES
-    (1),
-    (2),
-    (3))
-  AS _ (x);
+SELECT priv_testagg1(x) FROM (VALUES (1), (2), (3)) AS _ (x);
 
 CALL priv_testproc1(6);
 
@@ -1361,7 +1338,7 @@ GRANT USAGE ON TYPE priv_testdomain1 TO regress_priv_user2;
 
 SET SESSION AUTHORIZATION regress_priv_user1;
 
-CREATE AGGREGATE priv_testagg1a (priv_testdomain1) ( sfunc = int4_sum, stype = BIGINT);
+CREATE AGGREGATE priv_testagg1a (priv_testdomain1) (sfunc = int4_sum, stype = BIGINT);
 
 CREATE DOMAIN priv_testdomain2a AS priv_testdomain1;
 
@@ -1429,7 +1406,7 @@ REVOKE ALL ON TYPE priv_testtype1 FROM PUBLIC;
 
 SET SESSION AUTHORIZATION regress_priv_user2;
 
-CREATE AGGREGATE priv_testagg1b (priv_testdomain1) ( sfunc = int4_sum, stype = BIGINT);
+CREATE AGGREGATE priv_testagg1b (priv_testdomain1) (sfunc = int4_sum, stype = BIGINT);
 
 CREATE DOMAIN priv_testdomain2b AS priv_testdomain1;
 
@@ -1550,23 +1527,27 @@ SELECT has_table_privilege(CURRENT_USER, 'pg_authid', 'insert');
 SELECT
   has_table_privilege(t2.oid, 'pg_authid', 'update')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
   has_table_privilege(t2.oid, 'pg_authid', 'delete')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
@@ -1576,48 +1557,58 @@ SELECT
     'references'
   )
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_authid')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_authid'
+  )
   AS t1;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'select')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_authid')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_authid'
+  )
   AS t1,
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'insert')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_authid')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_authid'
+  )
   AS t1,
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT has_table_privilege('pg_authid', 'update');
@@ -1629,23 +1620,27 @@ SELECT has_table_privilege('pg_authid', 'truncate');
 SELECT
   has_table_privilege(t1.oid, 'select')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_authid')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_authid'
+  )
   AS t1;
 
 SELECT
   has_table_privilege(t1.oid, 'trigger')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_authid')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_authid'
+  )
   AS t1;
 
 SET SESSION AUTHORIZATION regress_priv_user3;
@@ -1657,23 +1652,27 @@ SELECT has_table_privilege(CURRENT_USER, 'pg_class', 'insert');
 SELECT
   has_table_privilege(t2.oid, 'pg_class', 'update')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
   has_table_privilege(t2.oid, 'pg_class', 'delete')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
@@ -1683,48 +1682,58 @@ SELECT
     'references'
   )
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_class')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_class'
+  )
   AS t1;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'select')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_class')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_class'
+  )
   AS t1,
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'insert')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_class')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_class'
+  )
   AS t1,
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT has_table_privilege('pg_class', 'update');
@@ -1736,23 +1745,27 @@ SELECT has_table_privilege('pg_class', 'truncate');
 SELECT
   has_table_privilege(t1.oid, 'select')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_class')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_class'
+  )
   AS t1;
 
 SELECT
   has_table_privilege(t1.oid, 'trigger')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname = 'pg_class')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname = 'pg_class'
+  )
   AS t1;
 
 SELECT has_table_privilege(CURRENT_USER, 'atest1', 'select');
@@ -1762,23 +1775,27 @@ SELECT has_table_privilege(CURRENT_USER, 'atest1', 'insert');
 SELECT
   has_table_privilege(t2.oid, 'atest1', 'update')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
   has_table_privilege(t2.oid, 'atest1', 'delete')
 FROM
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
@@ -1788,33 +1805,43 @@ SELECT
     'references'
   )
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  (
+    SELECT oid FROM pg_class WHERE relname = 'atest1'
+  )
   AS t1;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'select')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  (
+    SELECT oid FROM pg_class WHERE relname = 'atest1'
+  )
   AS t1,
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT
   has_table_privilege(t2.oid, t1.oid, 'insert')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  (
+    SELECT oid FROM pg_class WHERE relname = 'atest1'
+  )
   AS t1,
-  (SELECT
-    oid
-  FROM
-    pg_roles
-  WHERE
-    rolname = CURRENT_USER)
+  (
+    SELECT
+      oid
+    FROM
+      pg_roles
+    WHERE
+      rolname = CURRENT_USER
+  )
   AS t2;
 
 SELECT has_table_privilege('atest1', 'update');
@@ -1826,13 +1853,17 @@ SELECT has_table_privilege('atest1', 'truncate');
 SELECT
   has_table_privilege(t1.oid, 'select')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  (
+    SELECT oid FROM pg_class WHERE relname = 'atest1'
+  )
   AS t1;
 
 SELECT
   has_table_privilege(t1.oid, 'trigger')
 FROM
-  (SELECT oid FROM pg_class WHERE relname = 'atest1')
+  (
+    SELECT oid FROM pg_class WHERE relname = 'atest1'
+  )
   AS t1;
 
 SELECT has_column_privilege('pg_authid', NULL, 'select');
@@ -1924,11 +1955,7 @@ CREATE TABLE sro_tab (a INT);
 ALTER TABLE sro_tab
   OWNER TO regress_sro_user;
 
-INSERT INTO sro_tab
-VALUES
-  (1),
-  (2),
-  (3);
+INSERT INTO sro_tab VALUES (1), (2), (3);
 
 CREATE INDEX "sro_idx"
 ON sro_tab
@@ -1983,11 +2010,7 @@ CREATE TABLE sro_part PARTITION OF sro_ptab FOR VALUES FROM (1) TO (10);
 ALTER TABLE sro_part
   OWNER TO regress_sro_user;
 
-INSERT INTO sro_ptab
-VALUES
-  (1),
-  (2),
-  (3);
+INSERT INTO sro_ptab VALUES (1), (2), (3);
 
 CREATE INDEX "sro_pidx"
 ON sro_ptab
@@ -2342,8 +2365,8 @@ FROM
   pg_stat_activity
 WHERE
   CASE
-  WHEN COALESCE(usesysid, 10) = 10
-  THEN terminate_nothrow(pid)
+    WHEN COALESCE(usesysid, 10) = 10
+    THEN terminate_nothrow(pid)
   END;
 
 ROLLBACK;
@@ -2640,7 +2663,7 @@ RETURNS INT
 AS 'select 1'
 LANGUAGE "sql";
 
-CREATE AGGREGATE testns.agg1 (INT) ( sfunc = int4pl, stype = INT);
+CREATE AGGREGATE testns.agg1 (INT) (sfunc = int4pl, stype = INT);
 
 CREATE PROCEDURE testns.bar()
 AS 'select 1'
@@ -2663,7 +2686,7 @@ LANGUAGE "sql";
 
 DROP AGGREGATE testns.agg1(INT);
 
-CREATE AGGREGATE testns.agg1 (INT) ( sfunc = int4pl, stype = INT);
+CREATE AGGREGATE testns.agg1 (INT) (sfunc = int4pl, stype = INT);
 
 DROP PROCEDURE testns.bar();
 
@@ -2756,7 +2779,7 @@ RETURNS INT
 AS 'select 3 * $1;'
 LANGUAGE "sql";
 
-CREATE AGGREGATE testns.priv_testagg (INT) ( sfunc = int4pl, stype = INT);
+CREATE AGGREGATE testns.priv_testagg (INT) (sfunc = int4pl, stype = INT);
 
 CREATE PROCEDURE testns.priv_testproc(INT)
 AS 'select 3'
@@ -3139,8 +3162,8 @@ GRANT REGRESS_GROUP TO regress_group_member;
 SELECT
   CAST(CAST(member AS regrole) AS TEXT),
   CASE
-  WHEN grantor = 10 THEN 'BOOTSTRAP SUPERUSER'
-  ELSE CAST(CAST(grantor AS regrole) AS TEXT)
+    WHEN grantor = 10 THEN 'BOOTSTRAP SUPERUSER'
+    ELSE CAST(CAST(grantor AS regrole) AS TEXT)
   END
 FROM
   pg_auth_members
@@ -3158,8 +3181,8 @@ GRANT REGRESS_GROUP TO regress_group_member;
 SELECT
   CAST(CAST(member AS regrole) AS TEXT),
   CASE
-  WHEN grantor = 10 THEN 'BOOTSTRAP SUPERUSER'
-  ELSE CAST(CAST(grantor AS regrole) AS TEXT)
+    WHEN grantor = 10 THEN 'BOOTSTRAP SUPERUSER'
+    ELSE CAST(CAST(grantor AS regrole) AS TEXT)
   END
 FROM
   pg_auth_members

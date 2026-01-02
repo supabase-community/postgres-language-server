@@ -123,38 +123,41 @@ CREATE RULE rtest_emp_ins
 AS ON INSERT TO rtest_emp
 DO
   INSERT INTO rtest_emplog
-  VALUES (
-    new.ename,
-    CURRENT_USER,
-    'hired',
-    new.salary,
-    '0.00'
-  );;
+  VALUES
+    (
+      new.ename,
+      CURRENT_USER,
+      'hired',
+      new.salary,
+      '0.00'
+    );;
 
 CREATE RULE rtest_emp_upd
 AS ON UPDATE TO rtest_emp WHERE
   new.salary <> old.salary
 DO
   INSERT INTO rtest_emplog
-  VALUES (
-    new.ename,
-    CURRENT_USER,
-    'honored',
-    new.salary,
-    old.salary
-  );;
+  VALUES
+    (
+      new.ename,
+      CURRENT_USER,
+      'honored',
+      new.salary,
+      old.salary
+    );;
 
 CREATE RULE rtest_emp_del
 AS ON DELETE TO rtest_emp
 DO
   INSERT INTO rtest_emplog
-  VALUES (
-    old.ename,
-    CURRENT_USER,
-    'fired',
-    '0.00',
-    old.salary
-  );;
+  VALUES
+    (
+      old.ename,
+      CURRENT_USER,
+      'fired',
+      '0.00',
+      old.salary
+    );;
 
 CREATE TABLE rtest_t4 (
   a INT,
@@ -224,42 +227,46 @@ CREATE RULE rtest_order_r3
 AS ON INSERT TO rtest_order1
 DO INSTEAD
   INSERT INTO rtest_order2
-  VALUES (
-    new.a,
-    nextval('rtest_seq'),
-    'rule 3 - this should run 3rd'
-  );;
+  VALUES
+    (
+      new.a,
+      nextval('rtest_seq'),
+      'rule 3 - this should run 3rd'
+    );;
 
 CREATE RULE rtest_order_r4
 AS ON INSERT TO rtest_order1 WHERE
   a < 100
 DO INSTEAD
   INSERT INTO rtest_order2
-  VALUES (
-    new.a,
-    nextval('rtest_seq'),
-    'rule 4 - this should run 4th'
-  );;
+  VALUES
+    (
+      new.a,
+      nextval('rtest_seq'),
+      'rule 4 - this should run 4th'
+    );;
 
 CREATE RULE rtest_order_r2
 AS ON INSERT TO rtest_order1
 DO
   INSERT INTO rtest_order2
-  VALUES (
-    new.a,
-    nextval('rtest_seq'),
-    'rule 2 - this should run 2nd'
-  );;
+  VALUES
+    (
+      new.a,
+      nextval('rtest_seq'),
+      'rule 2 - this should run 2nd'
+    );;
 
 CREATE RULE rtest_order_r1
 AS ON INSERT TO rtest_order1
 DO INSTEAD
   INSERT INTO rtest_order2
-  VALUES (
-    new.a,
-    nextval('rtest_seq'),
-    'rule 1 - this should run 1st'
-  );;
+  VALUES
+    (
+      new.a,
+      nextval('rtest_seq'),
+      'rule 1 - this should run 1st'
+    );;
 
 CREATE TABLE rtest_nothn1 (
   a INT,

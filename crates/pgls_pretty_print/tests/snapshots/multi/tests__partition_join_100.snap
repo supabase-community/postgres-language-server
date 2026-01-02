@@ -203,10 +203,14 @@ SELECT
   t2.b,
   t2.c
 FROM
-  (SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0)
+  (
+    SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0
+  )
   AS t1
   FULL OUTER JOIN
-    (SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0)
+    (
+      SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0
+    )
     AS t2
   ON t1.a = t2.b
 WHERE
@@ -220,10 +224,14 @@ SELECT
   t2.b,
   t2.c
 FROM
-  (SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0)
+  (
+    SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0
+  )
   AS t1
   FULL OUTER JOIN
-    (SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0)
+    (
+      SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0
+    )
     AS t2
   ON t1.a = t2.b
 WHERE
@@ -329,7 +337,9 @@ FROM
   prt1 AS t1
 WHERE
   t1.a IN
-  (SELECT t2.b FROM prt2 AS t2 WHERE t2.a = 0) AND
+  (
+    SELECT t2.b FROM prt2 AS t2 WHERE t2.a = 0
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -339,7 +349,9 @@ FROM
   prt1 AS t1
 WHERE
   t1.a IN
-  (SELECT t2.b FROM prt2 AS t2 WHERE t2.a = 0) AND
+  (
+    SELECT t2.b FROM prt2 AS t2 WHERE t2.a = 0
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -352,7 +364,9 @@ FROM
   prt1 AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2 AS t2 WHERE t1.a = t2.b);
+  (
+    SELECT 1 FROM prt2 AS t2 WHERE t1.a = t2.b
+  );
 
 SELECT
   SUM(t1.a),
@@ -363,19 +377,23 @@ FROM
   prt1 AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2 AS t2 WHERE t1.a = t2.b);
+  (
+    SELECT 1 FROM prt2 AS t2 WHERE t1.a = t2.b
+  );
 
 SELECT
   *
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t2.a AS t2a,
-      t3.a AS t3a,
-      LEAST(t1.a, t2.a, t3.b)
-    FROM
-      prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b)
+    LATERAL (
+      SELECT
+        t2.a AS t2a,
+        t3.a AS t3a,
+        LEAST(t1.a, t2.a, t3.b)
+      FROM
+        prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b
+    )
     AS ss
   ON t1.a = ss.t2a
 WHERE
@@ -387,12 +405,14 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t2.a AS t2a,
-      t3.a AS t3a,
-      LEAST(t1.a, t2.a, t3.b)
-    FROM
-      prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b)
+    LATERAL (
+      SELECT
+        t2.a AS t2a,
+        t3.a AS t3a,
+        LEAST(t1.a, t2.a, t3.b)
+      FROM
+        prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b
+    )
     AS ss
   ON t1.a = ss.t2a
 WHERE
@@ -406,14 +426,16 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t2.a AS t2a,
-      t3.a AS t3a,
-      t2.b AS t2b,
-      t2.c AS t2c,
-      LEAST(t1.a, t2.a, t3.b)
-    FROM
-      prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b)
+    LATERAL (
+      SELECT
+        t2.a AS t2a,
+        t3.a AS t3a,
+        t2.b AS t2b,
+        t2.c AS t2c,
+        LEAST(t1.a, t2.a, t3.b)
+      FROM
+        prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b
+    )
     AS ss
   ON t1.c = ss.t2c
 WHERE
@@ -427,14 +449,16 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t2.a AS t2a,
-      t3.a AS t3a,
-      t2.b AS t2b,
-      t2.c AS t2c,
-      LEAST(t1.a, t2.a, t3.a)
-    FROM
-      prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b)
+    LATERAL (
+      SELECT
+        t2.a AS t2a,
+        t3.a AS t3a,
+        t2.b AS t2b,
+        t2.c AS t2c,
+        LEAST(t1.a, t2.a, t3.a)
+      FROM
+        prt1 AS t2 INNER JOIN prt2 AS t3 ON t2.a = t3.b
+    )
     AS ss
   ON t1.c = ss.t2c
 WHERE
@@ -446,12 +470,14 @@ SELECT
 FROM
   prt1 AS t1
   INNER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      prt1 AS t2
-      TABLESAMPLE system (t1.a)
-      REPEATABLE (t1.b))
+    LATERAL (
+      SELECT
+        *
+      FROM
+        prt1 AS t2
+        TABLESAMPLE system (t1.a)
+        REPEATABLE (t1.b)
+    )
     AS s
   ON t1.a = s.a;
 
@@ -460,7 +486,9 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT t1.b AS t1b, t2.* FROM prt2 AS t2)
+    LATERAL (
+      SELECT t1.b AS t1b, t2.* FROM prt2 AS t2
+    )
     AS s
   ON t1.a = s.b
 WHERE
@@ -471,7 +499,9 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT t1.b AS t1b, t2.* FROM prt2 AS t2)
+    LATERAL (
+      SELECT t1.b AS t1b, t2.* FROM prt2 AS t2
+    )
     AS s
   ON t1.a = s.b
 WHERE
@@ -482,7 +512,9 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT t1.b AS t1b, t2.* FROM prt2 AS t2)
+    LATERAL (
+      SELECT t1.b AS t1b, t2.* FROM prt2 AS t2
+    )
     AS s
   ON t1.a = s.b
 WHERE
@@ -493,7 +525,9 @@ SELECT
 FROM
   prt1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT t1.b AS t1b, t2.* FROM prt2 AS t2)
+    LATERAL (
+      SELECT t1.b AS t1b, t2.* FROM prt2 AS t2
+    )
     AS s
   ON t1.a = s.b
 WHERE
@@ -820,14 +854,20 @@ SELECT
   t3.a + t3.b,
   t3.phv
 FROM
-  (SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0)
+  (
+    SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0
+  )
   AS t1
   FULL OUTER JOIN
-    (SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0)
+    (
+      SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0
+    )
     AS t2
   ON t1.a = t2.b
   FULL OUTER JOIN
-    (SELECT 50 AS phv, * FROM prt1_e WHERE prt1_e.c = 0)
+    (
+      SELECT 50 AS phv, * FROM prt1_e WHERE prt1_e.c = 0
+    )
     AS t3
   ON t1.a = (t3.a + t3.b) / 2
 WHERE
@@ -846,14 +886,20 @@ SELECT
   t3.a + t3.b,
   t3.phv
 FROM
-  (SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0)
+  (
+    SELECT 50 AS phv, * FROM prt1 WHERE prt1.b = 0
+  )
   AS t1
   FULL OUTER JOIN
-    (SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0)
+    (
+      SELECT 75 AS phv, * FROM prt2 WHERE prt2.a = 0
+    )
     AS t2
   ON t1.a = t2.b
   FULL OUTER JOIN
-    (SELECT 50 AS phv, * FROM prt1_e WHERE prt1_e.c = 0)
+    (
+      SELECT 50 AS phv, * FROM prt1_e WHERE prt1_e.c = 0
+    )
     AS t3
   ON t1.a = (t3.a + t3.b) / 2
 WHERE
@@ -870,50 +916,15 @@ FROM
   prt1 AS t1
 WHERE
   t1.a IN
-  (SELECT
-    t1.b
-  FROM
-    prt2 AS t1,
-    prt1_e AS t2
-  WHERE
-    t1.a = 0 AND t1.b = (t2.a + t2.b) / 2) AND
-  t1.b = 0
-ORDER BY t1.a;
-
-SELECT
-  t1.*
-FROM
-  prt1 AS t1
-WHERE
-  t1.a IN
-  (SELECT
-    t1.b
-  FROM
-    prt2 AS t1,
-    prt1_e AS t2
-  WHERE
-    t1.a = 0 AND t1.b = (t2.a + t2.b) / 2) AND
-  t1.b = 0
-ORDER BY t1.a;
-
-SELECT
-  t1.*
-FROM
-  prt1 AS t1
-WHERE
-  t1.a IN
-  (SELECT
-    t1.b
-  FROM
-    prt2 AS t1
-  WHERE
-    t1.b IN
-    (SELECT
-      (t1.a + t1.b) / 2
+  (
+    SELECT
+      t1.b
     FROM
-      prt1_e AS t1
+      prt2 AS t1,
+      prt1_e AS t2
     WHERE
-      t1.c = 0)) AND
+      t1.a = 0 AND t1.b = (t2.a + t2.b) / 2
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -923,18 +934,65 @@ FROM
   prt1 AS t1
 WHERE
   t1.a IN
-  (SELECT
-    t1.b
-  FROM
-    prt2 AS t1
-  WHERE
-    t1.b IN
-    (SELECT
-      (t1.a + t1.b) / 2
+  (
+    SELECT
+      t1.b
     FROM
-      prt1_e AS t1
+      prt2 AS t1,
+      prt1_e AS t2
     WHERE
-      t1.c = 0)) AND
+      t1.a = 0 AND t1.b = (t2.a + t2.b) / 2
+  ) AND
+  t1.b = 0
+ORDER BY t1.a;
+
+SELECT
+  t1.*
+FROM
+  prt1 AS t1
+WHERE
+  t1.a IN
+  (
+    SELECT
+      t1.b
+    FROM
+      prt2 AS t1
+    WHERE
+      t1.b IN
+      (
+        SELECT
+          (t1.a + t1.b) / 2
+        FROM
+          prt1_e AS t1
+        WHERE
+          t1.c = 0
+      )
+  ) AND
+  t1.b = 0
+ORDER BY t1.a;
+
+SELECT
+  t1.*
+FROM
+  prt1 AS t1
+WHERE
+  t1.a IN
+  (
+    SELECT
+      t1.b
+    FROM
+      prt2 AS t1
+    WHERE
+      t1.b IN
+      (
+        SELECT
+          (t1.a + t1.b) / 2
+        FROM
+          prt1_e AS t1
+        WHERE
+          t1.c = 0
+      )
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -948,18 +1006,22 @@ FROM
   prt1 AS t1
 WHERE
   t1.a IN
-  (SELECT
-    t1.b
-  FROM
-    prt2 AS t1
-  WHERE
-    t1.b IN
-    (SELECT
-      (t1.a + t1.b) / 2
+  (
+    SELECT
+      t1.b
     FROM
-      prt1_e AS t1
+      prt2 AS t1
     WHERE
-      t1.c = 0)) AND
+      t1.b IN
+      (
+        SELECT
+          (t1.a + t1.b) / 2
+        FROM
+          prt1_e AS t1
+        WHERE
+          t1.c = 0
+      )
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -969,18 +1031,22 @@ FROM
   prt1 AS t1
 WHERE
   t1.a IN
-  (SELECT
-    t1.b
-  FROM
-    prt2 AS t1
-  WHERE
-    t1.b IN
-    (SELECT
-      (t1.a + t1.b) / 2
+  (
+    SELECT
+      t1.b
     FROM
-      prt1_e AS t1
+      prt2 AS t1
     WHERE
-      t1.c = 0)) AND
+      t1.b IN
+      (
+        SELECT
+          (t1.a + t1.b) / 2
+        FROM
+          prt1_e AS t1
+        WHERE
+          t1.c = 0
+      )
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -1656,17 +1722,19 @@ SELECT
 FROM
   prt1_l AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t2.a AS t2a,
-      t2.c AS t2c,
-      t2.b AS t2b,
-      t3.b AS t3b,
-      LEAST(t1.a, t2.a, t3.b)
-    FROM
-      prt1_l AS t2
-      INNER JOIN
-        prt2_l AS t3
-      ON t2.a = t3.b AND t2.c = t3.c)
+    LATERAL (
+      SELECT
+        t2.a AS t2a,
+        t2.c AS t2c,
+        t2.b AS t2b,
+        t3.b AS t3b,
+        LEAST(t1.a, t2.a, t3.b)
+      FROM
+        prt1_l AS t2
+        INNER JOIN
+          prt2_l AS t3
+        ON t2.a = t3.b AND t2.c = t3.c
+    )
     AS ss
   ON t1.a = ss.t2a AND t1.c = ss.t2c
 WHERE
@@ -1678,17 +1746,19 @@ SELECT
 FROM
   prt1_l AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t2.a AS t2a,
-      t2.c AS t2c,
-      t2.b AS t2b,
-      t3.b AS t3b,
-      LEAST(t1.a, t2.a, t3.b)
-    FROM
-      prt1_l AS t2
-      INNER JOIN
-        prt2_l AS t3
-      ON t2.a = t3.b AND t2.c = t3.c)
+    LATERAL (
+      SELECT
+        t2.a AS t2a,
+        t2.c AS t2c,
+        t2.b AS t2b,
+        t3.b AS t3b,
+        LEAST(t1.a, t2.a, t3.b)
+      FROM
+        prt1_l AS t2
+        INNER JOIN
+          prt2_l AS t3
+        ON t2.a = t3.b AND t2.c = t3.c
+    )
     AS ss
   ON t1.a = ss.t2a AND t1.c = ss.t2c
 WHERE
@@ -1700,12 +1770,14 @@ SELECT
 FROM
   prt1_l AS t1
   INNER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      prt1_l AS t2
-      TABLESAMPLE system (t1.a)
-      REPEATABLE (t1.b))
+    LATERAL (
+      SELECT
+        *
+      FROM
+        prt1_l AS t2
+        TABLESAMPLE system (t1.a)
+        REPEATABLE (t1.b)
+    )
     AS s
   ON t1.a = s.a AND t1.b = s.b AND t1.c = s.c;
 
@@ -1714,7 +1786,9 @@ SELECT
 FROM
   prt1_l AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT t1.b AS t1b, t2.* FROM prt2_l AS t2)
+    LATERAL (
+      SELECT t1.b AS t1b, t2.* FROM prt2_l AS t2
+    )
     AS s
   ON t1.a = s.b AND t1.b = s.a AND t1.c = s.c
 WHERE
@@ -1725,7 +1799,9 @@ SELECT
 FROM
   prt1_l AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT t1.b AS t1b, t2.* FROM prt2_l AS t2)
+    LATERAL (
+      SELECT t1.b AS t1b, t2.* FROM prt2_l AS t2
+    )
     AS s
   ON t1.a = s.b AND t1.b = s.a AND t1.c = s.c
 WHERE
@@ -1745,14 +1821,18 @@ FROM
 DELETE FROM prt1_l
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    int4_tbl,
-    LATERAL (SELECT int4_tbl.f1 FROM int8_tbl LIMIT 2)
-    AS ss
-  WHERE
-    prt1_l.c IS NULL);
+  (
+    SELECT
+      1
+    FROM
+      int4_tbl,
+      LATERAL (
+        SELECT int4_tbl.f1 FROM int8_tbl LIMIT 2
+      )
+      AS ss
+    WHERE
+      prt1_l.c IS NULL
+  );
 
 CREATE TABLE prt1_n (
   a INT,
@@ -1923,14 +2003,16 @@ FROM
   prtx1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    prtx2
-  WHERE
-    prtx2.a = prtx1.a AND
-    prtx2.b = prtx1.b AND
-    prtx2.c = 123) AND
+  (
+    SELECT
+      1
+    FROM
+      prtx2
+    WHERE
+      prtx2.a = prtx1.a AND
+      prtx2.b = prtx1.b AND
+      prtx2.c = 123
+  ) AND
   a < 20 AND
   c = 120;
 
@@ -1940,14 +2022,16 @@ FROM
   prtx1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    prtx2
-  WHERE
-    prtx2.a = prtx1.a AND
-    prtx2.b = prtx1.b AND
-    prtx2.c = 123) AND
+  (
+    SELECT
+      1
+    FROM
+      prtx2
+    WHERE
+      prtx2.a = prtx1.a AND
+      prtx2.b = prtx1.b AND
+      prtx2.c = 123
+  ) AND
   a < 20 AND
   c = 120;
 
@@ -1957,13 +2041,15 @@ FROM
   prtx1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    prtx2
-  WHERE
-    prtx2.a = prtx1.a AND
-    (prtx2.b = prtx1.b + 1 OR prtx2.c = 99)) AND
+  (
+    SELECT
+      1
+    FROM
+      prtx2
+    WHERE
+      prtx2.a = prtx1.a AND
+      (prtx2.b = prtx1.b + 1 OR prtx2.c = 99)
+  ) AND
   a < 20 AND
   c = 91;
 
@@ -1973,13 +2059,15 @@ FROM
   prtx1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    prtx2
-  WHERE
-    prtx2.a = prtx1.a AND
-    (prtx2.b = prtx1.b + 1 OR prtx2.c = 99)) AND
+  (
+    SELECT
+      1
+    FROM
+      prtx2
+    WHERE
+      prtx2.a = prtx1.a AND
+      (prtx2.b = prtx1.b + 1 OR prtx2.c = 99)
+  ) AND
   a < 20 AND
   c = 91;
 
@@ -2061,7 +2149,9 @@ FROM
   prt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2071,7 +2161,9 @@ FROM
   prt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2111,7 +2203,9 @@ FROM
   prt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2121,7 +2215,9 @@ FROM
   prt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2131,22 +2227,26 @@ SELECT
   t2.b,
   t2.c
 FROM
-  (SELECT
-    175 AS phv,
-    *
-  FROM
-    prt1_adv
-  WHERE
-    prt1_adv.b = 0)
-  AS t1
-  FULL OUTER JOIN
-    (SELECT
-      425 AS phv,
+  (
+    SELECT
+      175 AS phv,
       *
     FROM
-      prt2_adv
+      prt1_adv
     WHERE
-      prt2_adv.a = 0)
+      prt1_adv.b = 0
+  )
+  AS t1
+  FULL OUTER JOIN
+    (
+      SELECT
+        425 AS phv,
+        *
+      FROM
+        prt2_adv
+      WHERE
+        prt2_adv.a = 0
+    )
     AS t2
   ON t1.a = t2.b
 WHERE
@@ -2160,22 +2260,26 @@ SELECT
   t2.b,
   t2.c
 FROM
-  (SELECT
-    175 AS phv,
-    *
-  FROM
-    prt1_adv
-  WHERE
-    prt1_adv.b = 0)
-  AS t1
-  FULL OUTER JOIN
-    (SELECT
-      425 AS phv,
+  (
+    SELECT
+      175 AS phv,
       *
     FROM
-      prt2_adv
+      prt1_adv
     WHERE
-      prt2_adv.a = 0)
+      prt1_adv.b = 0
+  )
+  AS t1
+  FULL OUTER JOIN
+    (
+      SELECT
+        425 AS phv,
+        *
+      FROM
+        prt2_adv
+      WHERE
+        prt2_adv.a = 0
+    )
     AS t2
   ON t1.a = t2.b
 WHERE
@@ -2225,7 +2329,9 @@ FROM
   prt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2235,7 +2341,9 @@ FROM
   prt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2290,7 +2398,9 @@ FROM
   prt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2300,7 +2410,9 @@ FROM
   prt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2310,7 +2422,9 @@ FROM
   prt2_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt1_adv AS t2 WHERE t1.b = t2.a) AND
+  (
+    SELECT 1 FROM prt1_adv AS t2 WHERE t1.b = t2.a
+  ) AND
   t1.a = 0
 ORDER BY t1.b;
 
@@ -2320,22 +2434,26 @@ SELECT
   t2.b,
   t2.c
 FROM
-  (SELECT
-    175 AS phv,
-    *
-  FROM
-    prt1_adv
-  WHERE
-    prt1_adv.b = 0)
-  AS t1
-  FULL OUTER JOIN
-    (SELECT
-      425 AS phv,
+  (
+    SELECT
+      175 AS phv,
       *
     FROM
-      prt2_adv
+      prt1_adv
     WHERE
-      prt2_adv.a = 0)
+      prt1_adv.b = 0
+  )
+  AS t1
+  FULL OUTER JOIN
+    (
+      SELECT
+        425 AS phv,
+        *
+      FROM
+        prt2_adv
+      WHERE
+        prt2_adv.a = 0
+    )
     AS t2
   ON t1.a = t2.b
 WHERE
@@ -2420,7 +2538,9 @@ FROM
   prt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2445,7 +2565,9 @@ FROM
   prt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b) AND
+  (
+    SELECT 1 FROM prt2_adv AS t2 WHERE t1.a = t2.b
+  ) AND
   t1.b = 0
 ORDER BY t1.a;
 
@@ -2455,22 +2577,26 @@ SELECT
   t2.b,
   t2.c
 FROM
-  (SELECT
-    175 AS phv,
-    *
-  FROM
-    prt1_adv
-  WHERE
-    prt1_adv.b = 0)
-  AS t1
-  FULL OUTER JOIN
-    (SELECT
-      425 AS phv,
+  (
+    SELECT
+      175 AS phv,
       *
     FROM
-      prt2_adv
+      prt1_adv
     WHERE
-      prt2_adv.a = 0)
+      prt1_adv.b = 0
+  )
+  AS t1
+  FULL OUTER JOIN
+    (
+      SELECT
+        425 AS phv,
+        *
+      FROM
+        prt2_adv
+      WHERE
+        prt2_adv.a = 0
+    )
     AS t2
   ON t1.a = t2.b
 WHERE
@@ -2847,12 +2973,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -2862,12 +2990,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -2905,12 +3035,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -2920,12 +3052,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -2999,12 +3133,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3014,12 +3150,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3071,12 +3209,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3086,12 +3226,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3101,12 +3243,14 @@ FROM
   plt2_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt1_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt1_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3167,12 +3311,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3196,12 +3342,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3302,12 +3450,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3317,12 +3467,14 @@ FROM
   plt1_adv AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3360,12 +3512,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 
@@ -3375,12 +3529,14 @@ FROM
   plt1_adv AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    plt2_adv AS t2
-  WHERE
-    t1.a = t2.a AND t1.c = t2.c) AND
+  (
+    SELECT
+      1
+    FROM
+      plt2_adv AS t2
+    WHERE
+      t1.a = t2.a AND t1.c = t2.c
+  ) AND
   t1.b < 10
 ORDER BY t1.a;
 

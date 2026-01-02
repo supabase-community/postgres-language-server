@@ -51,7 +51,7 @@ pub(super) fn emit_json_table(e: &mut EventEmitter, n: &JsonTable) {
         e.space();
         e.token(TokenKind::L_PAREN);
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         emit_comma_separated_list(e, &n.columns, |node, e| {
             if let Some(NodeEnum::JsonTableColumn(col)) = node.node.as_ref() {
                 emit_json_table_column(e, col);
@@ -116,7 +116,7 @@ pub(super) fn emit_json_table_column(e: &mut EventEmitter, col: &JsonTableColumn
             e.space();
             e.token(TokenKind::L_PAREN);
             e.indent_start();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
             emit_comma_separated_list(e, &col.columns, |node, e| {
                 if let Some(NodeEnum::JsonTableColumn(nested)) = node.node.as_ref() {
                     emit_json_table_column(e, nested);

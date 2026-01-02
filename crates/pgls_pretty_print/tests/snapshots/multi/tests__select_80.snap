@@ -104,9 +104,9 @@ SELECT
   *
 FROM
   onek,
-  (VALUES
-    (147, 'RFAAAA'),
-    (931, 'VJAAAA'))
+  (
+    VALUES (147, 'RFAAAA'), (931, 'VJAAAA')
+  )
   AS v (i, j)
 WHERE
   onek.unique1 = v.i AND
@@ -116,21 +116,28 @@ SELECT
   *
 FROM
   onek,
-  (VALUES (
-    (SELECT
-      i
-    FROM
-      (VALUES
-        (10000),
-        (2),
-        (389),
-        (1000),
-        (2000),
-        ((SELECT 10029)))
-      AS foo (i)
-    ORDER BY i ASC
-    LIMIT 1)
-  ))
+  (
+    VALUES
+      (
+        (
+          SELECT
+            i
+          FROM
+            (
+              VALUES
+                (10000),
+                (2),
+                (389),
+                (1000),
+                (2000),
+                ((SELECT 10029))
+            )
+            AS foo (i)
+          ORDER BY i ASC
+          LIMIT 1
+        )
+      )
+  )
   AS bar (i)
 WHERE
   onek.unique1 = bar.i;
@@ -141,22 +148,18 @@ FROM
   onek
 WHERE
   (unique1, ten) IN
-  (VALUES
-    (1, 1),
-    (20, 0),
-    (99, 9),
-    (17, 99))
+  (
+    VALUES
+      (1, 1),
+      (20, 0),
+      (99, 9),
+      (17, 99)
+  )
 ORDER BY unique1;
 
-VALUES
-  (1, 2),
-  (3, 4 + 4),
-  (7, 77.7);
+VALUES (1, 2), (3, 4 + 4), (7, 77.7);
 
-VALUES
-  (1, 2),
-  (3, 4 + 4),
-  (7, 77.7)
+VALUES (1, 2), (3, 4 + 4), (7, 77.7)
 UNION ALL
 SELECT 2 + 2, 57
 UNION ALL
@@ -170,15 +173,7 @@ SELECT * FROM nocols AS n, LATERAL (VALUES (n.*)) AS v;
 
 CREATE TEMPORARY TABLE foo (f1 INT);
 
-INSERT INTO foo
-VALUES
-  (42),
-  (3),
-  (10),
-  (7),
-  (NULL),
-  (NULL),
-  (1);
+INSERT INTO foo VALUES (42), (3), (10), (7), (NULL), (NULL), (1);
 
 SELECT * FROM foo ORDER BY f1;
 
@@ -310,28 +305,9 @@ SELECT sillysrf(-1) ORDER BY 1;
 
 DROP FUNCTION sillysrf(INT);
 
-SELECT
-  *
-FROM
-  (VALUES
-    (2),
-    (NULL),
-    (1))
-  AS v (k)
-WHERE
-  k = k
-ORDER BY k;
+SELECT * FROM (VALUES (2), (NULL), (1)) AS v (k) WHERE k = k ORDER BY k;
 
-SELECT
-  *
-FROM
-  (VALUES
-    (2),
-    (NULL),
-    (1))
-  AS v (k)
-WHERE
-  k = k;
+SELECT * FROM (VALUES (2), (NULL), (1)) AS v (k) WHERE k = k;
 
 CREATE TABLE list_parted_tbl (
   a INT,

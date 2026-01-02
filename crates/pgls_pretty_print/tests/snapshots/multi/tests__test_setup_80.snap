@@ -13,12 +13,7 @@ CREATE TABLESPACE regress_tblspace LOCATION '';
 
 CREATE TABLE char_tbl (f1 CHAR(4));
 
-INSERT INTO char_tbl (f1)
-VALUES
-  ('a'),
-  ('ab'),
-  ('abcd'),
-  ('abcd    ');
+INSERT INTO char_tbl (f1) VALUES ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 VACUUM char_tbl;
 
@@ -92,21 +87,13 @@ VALUES
 
 CREATE TABLE text_tbl (f1 TEXT);
 
-INSERT INTO text_tbl
-VALUES
-  ('doh!'),
-  ('hi de ho neighbor');
+INSERT INTO text_tbl VALUES ('doh!'), ('hi de ho neighbor');
 
 VACUUM text_tbl;
 
 CREATE TABLE varchar_tbl (f1 VARCHAR(4));
 
-INSERT INTO varchar_tbl (f1)
-VALUES
-  ('a'),
-  ('ab'),
-  ('abcd'),
-  ('abcd    ');
+INSERT INTO varchar_tbl (f1) VALUES ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 VACUUM varchar_tbl;
 
@@ -231,8 +218,7 @@ VACUUM (ANALYZE) shighway;
 
 CREATE TYPE stoplight AS ENUM ('red', 'yellow', 'green');
 
-CREATE TYPE float8range AS RANGE
-(
+CREATE TYPE float8range AS RANGE (
   subtype = DOUBLE PRECISION,
   subtype_diff = float8mi
 );

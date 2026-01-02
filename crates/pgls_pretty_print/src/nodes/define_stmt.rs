@@ -52,10 +52,10 @@ fn emit_collation_definition(e: &mut EventEmitter, definition: &[Node]) {
         }
     } else {
         // Parenthesized options syntax - emit all options in single parentheses
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::L_PAREN);
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         let mut first = true;
         for def_node in definition {
             if let Some(pgls_query::NodeEnum::DefElem(_)) = &def_node.node {
@@ -144,9 +144,9 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
         }
     }
 
-    // Args (for operators/aggregates) - need parentheses with break opportunities
+    // Args (for operators/aggregates) - keep paren on same line as name
     if !n.args.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::L_PAREN);
         e.indent_start();
         e.line(LineType::Soft);
@@ -176,10 +176,10 @@ pub(super) fn emit_define_stmt(e: &mut EventEmitter, n: &DefineStmt) {
     } else if kind == ObjectType::ObjectCollation && !n.definition.is_empty() {
         emit_collation_definition(e, &n.definition);
     } else if !n.definition.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::L_PAREN);
         e.indent_start();
-        e.line(LineType::SoftOrSpace);
+        e.line(LineType::Soft);
         emit_comma_separated_list(e, &n.definition, super::emit_node);
         e.indent_end();
         e.line(LineType::Soft);

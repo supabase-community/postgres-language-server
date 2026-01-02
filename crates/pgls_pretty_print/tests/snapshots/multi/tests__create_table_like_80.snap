@@ -171,11 +171,11 @@ ALTER TABLE test_like_6
 CREATE TABLE test_like_6c (LIKE test_like_6 INCLUDING ALL);
 
 DROP TABLE
-"test_like_4",
-"test_like_4a",
-"test_like_4b",
-"test_like_4c",
-"test_like_4d";
+  "test_like_4",
+  "test_like_4a",
+  "test_like_4b",
+  "test_like_4c",
+  "test_like_4d";
 
 DROP TABLE "test_like_5", "test_like_5x", "test_like_5c";
 
@@ -419,18 +419,18 @@ CREATE TABLE ctlt1 (LIKE ctlt1 INCLUDING ALL);
 ROLLBACK;
 
 DROP TABLE
-"ctlt1",
-"ctlt2",
-"ctlt3",
-"ctlt4",
-"ctlt12_storage",
-"ctlt12_comments",
-"ctlt1_inh",
-"ctlt13_inh",
-"ctlt13_like",
-"ctlt_all",
-"ctla",
-"ctlb" CASCADE;
+  "ctlt1",
+  "ctlt2",
+  "ctlt3",
+  "ctlt4",
+  "ctlt12_storage",
+  "ctlt12_comments",
+  "ctlt1_inh",
+  "ctlt13_inh",
+  "ctlt13_like",
+  "ctlt_all",
+  "ctla",
+  "ctlb" CASCADE;
 
 COMMENT ON CONSTRAINT noinh_con_copy_b_not_null
 ON noinh_con_copy IS 'not null b';

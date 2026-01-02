@@ -242,14 +242,16 @@ SELECT
   ten,
   four
 FROM
-  (SELECT
-    *
-  FROM
-    tenk1
-  WHERE
-    unique2 < 10
-  ORDER BY four,
-    ten)
+  (
+    SELECT
+      *
+    FROM
+      tenk1
+    WHERE
+      unique2 < 10
+    ORDER BY four,
+      ten
+  )
   AS s
 ORDER BY four,
   ten;
@@ -259,14 +261,16 @@ SELECT
   ten,
   four
 FROM
-  (SELECT
-    *
-  FROM
-    tenk1
-  WHERE
-    unique2 < 10
-  ORDER BY four,
-    ten)
+  (
+    SELECT
+      *
+    FROM
+      tenk1
+    WHERE
+      unique2 < 10
+    ORDER BY four,
+      ten
+  )
   AS s;
 
 SELECT
@@ -307,16 +311,18 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    COUNT(*) OVER (PARTITION BY four ORDER BY ten) +
-    SUM(hundred) OVER (PARTITION BY two ORDER BY ten)
-    AS total,
-    COUNT(*) OVER (PARTITION BY four ORDER BY ten)
-    AS fourcount,
-    SUM(hundred) OVER (PARTITION BY two ORDER BY ten)
-    AS twosum
-  FROM
-    tenk1)
+  (
+    SELECT
+      COUNT(*) OVER (PARTITION BY four ORDER BY ten) +
+      SUM(hundred) OVER (PARTITION BY two ORDER BY ten)
+      AS total,
+      COUNT(*) OVER (PARTITION BY four ORDER BY ten)
+      AS fourcount,
+      SUM(hundred) OVER (PARTITION BY two ORDER BY ten)
+      AS twosum
+    FROM
+      tenk1
+  )
   AS sub
 WHERE
   total <> fourcount + twosum;
@@ -395,21 +401,23 @@ SELECT
   MIN(bonus) OVER (ORDER BY empno),
   MAX(depadj) OVER ()
 FROM
-  (SELECT
-    *,
-    CASE
-    WHEN enroll_date < '2008-01-01'
-    THEN 2008 - EXTRACT('year' FROM enroll_date)
-    END *
-    500
-    AS bonus,
-    CASE
-    WHEN AVG(salary) OVER (PARTITION BY depname) < salary
-    THEN 200
-    END
-    AS depadj
-  FROM
-    empsalary)
+  (
+    SELECT
+      *,
+      CASE
+        WHEN enroll_date < '2008-01-01'
+        THEN 2008 - EXTRACT('year' FROM enroll_date)
+      END *
+      500
+      AS bonus,
+      CASE
+        WHEN AVG(salary) OVER (PARTITION BY depname) < salary
+        THEN 200
+      END
+      AS depadj
+    FROM
+      empsalary
+  )
   AS s;
 
 SELECT SUM(COUNT(f1)) OVER () FROM int4_tbl WHERE f1 = 42;
@@ -428,7 +436,9 @@ SELECT
   FIRST_VALUE(MAX(x)) OVER (),
   y
 FROM
-  (SELECT unique1 AS x, ten + four AS y FROM tenk1)
+  (
+    SELECT unique1 AS x, ten + four AS y FROM tenk1
+  )
   AS ss
 GROUP BY y;
 
@@ -437,10 +447,12 @@ SELECT
   LAG(x, 1) OVER (ORDER BY x),
   LEAD(x, 3) OVER (ORDER BY x)
 FROM
-  (SELECT
-    CAST(x AS NUMERIC) AS x
-  FROM
-    generate_series(1, 10) AS x);
+  (
+    SELECT
+      CAST(x AS NUMERIC) AS x
+    FROM
+      generate_series(1, 10) AS x
+  );
 
 SELECT
   four,
@@ -982,7 +994,9 @@ SELECT
   OVER (
     ORDER BY unique1
     ROWS 
-    (SELECT unique1 FROM tenk1 ORDER BY unique1 LIMIT 1) +
+    (
+      SELECT unique1 FROM tenk1 ORDER BY unique1 LIMIT 1
+    ) +
     1 PRECEDING
   ),
   unique1
@@ -1677,11 +1691,13 @@ SELECT
   FIRST_VALUE(y) OVER w,
   LAST_VALUE(y) OVER w
 FROM
-  (SELECT x, x AS y FROM generate_series(1, 5) AS x
-  UNION ALL
-  SELECT NULL, 42
-  UNION ALL
-  SELECT NULL, 43)
+  (
+    SELECT x, x AS y FROM generate_series(1, 5) AS x
+    UNION ALL
+    SELECT NULL, 42
+    UNION ALL
+    SELECT NULL, 43
+  )
   AS ss
 WINDOW
   w AS (
@@ -1698,11 +1714,13 @@ SELECT
   FIRST_VALUE(y) OVER w,
   LAST_VALUE(y) OVER w
 FROM
-  (SELECT x, x AS y FROM generate_series(1, 5) AS x
-  UNION ALL
-  SELECT NULL, 42
-  UNION ALL
-  SELECT NULL, 43)
+  (
+    SELECT x, x AS y FROM generate_series(1, 5) AS x
+    UNION ALL
+    SELECT NULL, 42
+    UNION ALL
+    SELECT NULL, 43
+  )
   AS ss
 WINDOW
   w AS (
@@ -1719,11 +1737,13 @@ SELECT
   FIRST_VALUE(y) OVER w,
   LAST_VALUE(y) OVER w
 FROM
-  (SELECT x, x AS y FROM generate_series(1, 5) AS x
-  UNION ALL
-  SELECT NULL, 42
-  UNION ALL
-  SELECT NULL, 43)
+  (
+    SELECT x, x AS y FROM generate_series(1, 5) AS x
+    UNION ALL
+    SELECT NULL, 42
+    UNION ALL
+    SELECT NULL, 43
+  )
   AS ss
 WINDOW
   w AS (
@@ -1740,11 +1760,13 @@ SELECT
   FIRST_VALUE(y) OVER w,
   LAST_VALUE(y) OVER w
 FROM
-  (SELECT x, x AS y FROM generate_series(1, 5) AS x
-  UNION ALL
-  SELECT NULL, 42
-  UNION ALL
-  SELECT NULL, 43)
+  (
+    SELECT x, x AS y FROM generate_series(1, 5) AS x
+    UNION ALL
+    SELECT NULL, 42
+    UNION ALL
+    SELECT NULL, 43
+  )
   AS ss
 WINDOW
   w AS (
@@ -1830,10 +1852,10 @@ SELECT * FROM unbounded_syntax_test2a(2);
 SELECT * FROM unbounded_syntax_test2b(2);
 
 DROP FUNCTION
-unbounded_syntax_test1a,
-unbounded_syntax_test1b,
-unbounded_syntax_test2a,
-unbounded_syntax_test2b;
+  unbounded_syntax_test1a,
+  unbounded_syntax_test1b,
+  unbounded_syntax_test2a,
+  unbounded_syntax_test2b;
 
 CREATE FUNCTION unbounded(x INT)
 RETURNS INT
@@ -3680,7 +3702,9 @@ WINDOW
 SELECT
   COUNT(*) OVER (PARTITION BY four)
 FROM
-  (SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk2)
+  (
+    SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk2
+  )
   AS s
 LIMIT 0;
 
@@ -3689,11 +3713,7 @@ CREATE TEMPORARY TABLE t1 (
   f2 BIGINT
 );
 
-INSERT INTO t1
-VALUES
-  (1, 1),
-  (1, 2),
-  (2, 2);
+INSERT INTO t1 VALUES (1, 1), (1, 2), (2, 2);
 
 SELECT
   f1,
@@ -4057,20 +4077,22 @@ FROM
 SELECT
   *
 FROM
-  (SELECT
-    depname,
-    SUM(salary) OVER (PARTITION BY depname)
-    AS depsalary,
-    MIN(
-      salary
-    )
-    OVER (
-      PARTITION BY depname || 'A',
-      depname
-    )
-    AS depminsalary
-  FROM
-    empsalary)
+  (
+    SELECT
+      depname,
+      SUM(salary) OVER (PARTITION BY depname)
+      AS depsalary,
+      MIN(
+        salary
+      )
+      OVER (
+        PARTITION BY depname || 'A',
+        depname
+      )
+      AS depminsalary
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   depname = 'sales';
@@ -4078,14 +4100,16 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    depname,
-    SUM(salary) OVER (PARTITION BY enroll_date)
-    AS enroll_salary,
-    MIN(salary) OVER (PARTITION BY depname)
-    AS depminsalary
-  FROM
-    empsalary)
+  (
+    SELECT
+      depname,
+      SUM(salary) OVER (PARTITION BY enroll_date)
+      AS enroll_salary,
+      MIN(salary) OVER (PARTITION BY depname)
+      AS depminsalary
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   depname = 'sales';
@@ -4093,11 +4117,13 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    ROW_NUMBER() OVER (ORDER BY empno) AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      ROW_NUMBER() OVER (ORDER BY empno) AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   rn < 3;
@@ -4105,11 +4131,13 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    ROW_NUMBER() OVER (ORDER BY empno) AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      ROW_NUMBER() OVER (ORDER BY empno) AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   rn < 3;
@@ -4117,11 +4145,13 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    ROW_NUMBER() OVER (ORDER BY empno) AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      ROW_NUMBER() OVER (ORDER BY empno) AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   3 > rn;
@@ -4129,11 +4159,13 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    ROW_NUMBER() OVER (ORDER BY empno) AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      ROW_NUMBER() OVER (ORDER BY empno) AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   2 >= rn;
@@ -4141,12 +4173,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    RANK() OVER (ORDER BY salary DESC) AS r
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      RANK() OVER (ORDER BY salary DESC) AS r
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   r <= 3;
@@ -4154,12 +4188,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    RANK() OVER (ORDER BY salary DESC) AS r
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      RANK() OVER (ORDER BY salary DESC) AS r
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   r <= 3;
@@ -4167,12 +4203,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    DENSE_RANK() OVER (ORDER BY salary DESC) AS dr
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      DENSE_RANK() OVER (ORDER BY salary DESC) AS dr
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   dr = 1;
@@ -4180,12 +4218,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    DENSE_RANK() OVER (ORDER BY salary DESC) AS dr
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      DENSE_RANK() OVER (ORDER BY salary DESC) AS dr
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   dr = 1;
@@ -4193,12 +4233,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(*) OVER (ORDER BY salary DESC) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(*) OVER (ORDER BY salary DESC) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4206,12 +4248,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(*) OVER (ORDER BY salary DESC) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(*) OVER (ORDER BY salary DESC) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4219,12 +4263,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(empno) OVER (ORDER BY salary DESC) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(empno) OVER (ORDER BY salary DESC) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4232,12 +4278,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(empno) OVER (ORDER BY salary DESC) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(empno) OVER (ORDER BY salary DESC) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4245,22 +4293,24 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(
-      *
-    )
-    OVER (
-      ORDER BY salary DESC
-      ROWS BETWEEN
-      CURRENT ROW
-      AND
-      UNBOUNDED FOLLOWING
-    )
-    AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(
+        *
+      )
+      OVER (
+        ORDER BY salary DESC
+        ROWS BETWEEN
+        CURRENT ROW
+        AND
+        UNBOUNDED FOLLOWING
+      )
+      AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c >= 3;
@@ -4270,13 +4320,15 @@ SELECT * FROM (SELECT empno, salary, COUNT(*) OVER () AS c FROM empsalary) AS em
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(*) OVER (ORDER BY salary DESC) AS c,
-    DENSE_RANK() OVER (ORDER BY salary DESC) AS dr
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(*) OVER (ORDER BY salary DESC) AS c,
+      DENSE_RANK() OVER (ORDER BY salary DESC) AS dr
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   dr = 1;
@@ -4284,17 +4336,19 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    depname,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY empno
-    )
-    AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      depname,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY empno
+      )
+      AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   rn < 3;
@@ -4302,17 +4356,19 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    depname,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY empno
-    )
-    AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      depname,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY empno
+      )
+      AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   rn < 3;
@@ -4321,17 +4377,19 @@ SELECT
   empno,
   depname
 FROM
-  (SELECT
-    empno,
-    depname,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY empno
-    )
-    AS rn
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      depname,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY empno
+      )
+      AS rn
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   rn < 3;
@@ -4339,20 +4397,22 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    depname,
-    salary,
-    COUNT(
-      empno
-    )
-    OVER (
-      PARTITION BY depname
-      ORDER BY salary DESC
-    )
-    AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      depname,
+      salary,
+      COUNT(
+        empno
+      )
+      OVER (
+        PARTITION BY depname
+        ORDER BY salary DESC
+      )
+      AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4360,20 +4420,22 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    depname,
-    salary,
-    COUNT(
-      empno
-    )
-    OVER (
-      PARTITION BY depname
-      ORDER BY salary DESC
-    )
-    AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      depname,
+      salary,
+      COUNT(
+        empno
+      )
+      OVER (
+        PARTITION BY depname
+        ORDER BY salary DESC
+      )
+      AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4381,13 +4443,15 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    depname,
-    salary,
-    COUNT(empno) OVER () AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      depname,
+      salary,
+      COUNT(empno) OVER () AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c = 1;
@@ -4395,13 +4459,15 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    ROW_NUMBER() OVER (PARTITION BY salary) AS rn,
-    LEAD(depname) OVER (PARTITION BY salary) ||
-    ' Department'
-    AS n_dep
-  FROM
-    empsalary)
+  (
+    SELECT
+      ROW_NUMBER() OVER (PARTITION BY salary) AS rn,
+      LEAD(depname) OVER (PARTITION BY salary) ||
+      ' Department'
+      AS n_dep
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   rn < 1;
@@ -4409,16 +4475,18 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    *,
-    COUNT(salary) OVER (PARTITION BY depname || '')
-    AS c1,
-    ROW_NUMBER() OVER (PARTITION BY depname) AS rn,
-    COUNT(*) OVER (PARTITION BY depname) AS c2,
-    COUNT(*) OVER (PARTITION BY '' || depname) AS c3,
-    NTILE(2) OVER (PARTITION BY depname) AS nt
-  FROM
-    empsalary)
+  (
+    SELECT
+      *,
+      COUNT(salary) OVER (PARTITION BY depname || '')
+      AS c1,
+      ROW_NUMBER() OVER (PARTITION BY depname) AS rn,
+      COUNT(*) OVER (PARTITION BY depname) AS c2,
+      COUNT(*) OVER (PARTITION BY '' || depname) AS c3,
+      NTILE(2) OVER (PARTITION BY depname) AS nt
+    FROM
+      empsalary
+  )
   AS e
 WHERE
   rn <= 1 AND c1 <= 3 AND nt < 2;
@@ -4426,16 +4494,18 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    *,
-    COUNT(salary) OVER (PARTITION BY depname || '')
-    AS c1,
-    ROW_NUMBER() OVER (PARTITION BY depname) AS rn,
-    COUNT(*) OVER (PARTITION BY depname) AS c2,
-    COUNT(*) OVER (PARTITION BY '' || depname) AS c3,
-    NTILE(2) OVER (PARTITION BY depname) AS nt
-  FROM
-    empsalary)
+  (
+    SELECT
+      *,
+      COUNT(salary) OVER (PARTITION BY depname || '')
+      AS c1,
+      ROW_NUMBER() OVER (PARTITION BY depname) AS rn,
+      COUNT(*) OVER (PARTITION BY depname) AS c2,
+      COUNT(*) OVER (PARTITION BY '' || depname) AS c3,
+      NTILE(2) OVER (PARTITION BY depname) AS nt
+    FROM
+      empsalary
+  )
   AS e
 WHERE
   rn <= 1 AND c1 <= 3 AND nt < 2;
@@ -4443,16 +4513,18 @@ WHERE
 SELECT
   1
 FROM
-  (SELECT
-    NTILE(e2.salary) OVER (PARTITION BY e1.depname)
-    AS c
-  FROM
-    empsalary AS e1
-    LEFT OUTER JOIN
-      empsalary AS e2
-    ON TRUE
-  WHERE
-    e1.empno = e2.empno)
+  (
+    SELECT
+      NTILE(e2.salary) OVER (PARTITION BY e1.depname)
+      AS c
+    FROM
+      empsalary AS e1
+      LEFT OUTER JOIN
+        empsalary AS e2
+      ON TRUE
+    WHERE
+      e1.empno = e2.empno
+  )
   AS s
 WHERE
   s.c = 1;
@@ -4460,10 +4532,12 @@ WHERE
 SELECT
   1
 FROM
-  (SELECT
-    NTILE(s1.x) OVER () AS c
-  FROM
-    (SELECT (SELECT 1) AS x) AS s1)
+  (
+    SELECT
+      NTILE(s1.x) OVER () AS c
+    FROM
+      (SELECT (SELECT 1) AS x) AS s1
+  )
   AS s
 WHERE
   s.c = 1;
@@ -4471,22 +4545,24 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(
-      *
-    )
-    OVER (
-      ORDER BY salary DESC
-      ROWS BETWEEN
-      CURRENT ROW
-      AND
-      UNBOUNDED FOLLOWING
-    )
-    AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(
+        *
+      )
+      OVER (
+        ORDER BY salary DESC
+        ROWS BETWEEN
+        CURRENT ROW
+        AND
+        UNBOUNDED FOLLOWING
+      )
+      AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c <= 3;
@@ -4494,12 +4570,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(*) OVER (ORDER BY salary) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(*) OVER (ORDER BY salary) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   3 <= c;
@@ -4507,12 +4585,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT(random()) OVER (ORDER BY empno DESC) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT(random()) OVER (ORDER BY empno DESC) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c = 1;
@@ -4520,12 +4600,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    empno,
-    salary,
-    COUNT((SELECT 1)) OVER (ORDER BY empno DESC) AS c
-  FROM
-    empsalary)
+  (
+    SELECT
+      empno,
+      salary,
+      COUNT((SELECT 1)) OVER (ORDER BY empno DESC) AS c
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   c = 1;
@@ -4533,27 +4615,29 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    depname,
-    SUM(
-      salary
-    )
-    OVER (
-      PARTITION BY depname
-      ORDER BY empno
-    )
-    AS depsalary,
-    MIN(
-      salary
-    )
-    OVER (
-      PARTITION BY depname,
-      empno
-      ORDER BY enroll_date
-    )
-    AS depminsalary
-  FROM
-    empsalary)
+  (
+    SELECT
+      depname,
+      SUM(
+        salary
+      )
+      OVER (
+        PARTITION BY depname
+        ORDER BY empno
+      )
+      AS depsalary,
+      MIN(
+        salary
+      )
+      OVER (
+        PARTITION BY depname,
+        empno
+        ORDER BY enroll_date
+      )
+      AS depminsalary
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   depname = 'sales';
@@ -4686,25 +4770,27 @@ FROM
 SELECT
   *
 FROM
-  (SELECT
-    depname,
-    empno,
-    salary,
-    enroll_date,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY enroll_date
-    )
-    AS first_emp,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY enroll_date DESC
-    )
-    AS last_emp
-  FROM
-    empsalary)
+  (
+    SELECT
+      depname,
+      empno,
+      salary,
+      enroll_date,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY enroll_date
+      )
+      AS first_emp,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY enroll_date DESC
+      )
+      AS last_emp
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   first_emp = 1 OR last_emp = 1;
@@ -4712,25 +4798,27 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    depname,
-    empno,
-    salary,
-    enroll_date,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY enroll_date
-    )
-    AS first_emp,
-    ROW_NUMBER()
-    OVER (
-      PARTITION BY depname
-      ORDER BY enroll_date DESC
-    )
-    AS last_emp
-  FROM
-    empsalary)
+  (
+    SELECT
+      depname,
+      empno,
+      salary,
+      enroll_date,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY enroll_date
+      )
+      AS first_emp,
+      ROW_NUMBER()
+      OVER (
+        PARTITION BY depname
+        ORDER BY enroll_date DESC
+      )
+      AS last_emp
+    FROM
+      empsalary
+  )
   AS emp
 WHERE
   first_emp = 1 OR last_emp = 1;
@@ -4756,14 +4844,16 @@ SELECT
   ten,
   four
 FROM
-  (SELECT
-    *
-  FROM
-    tenk1
-  WHERE
-    unique2 < 10
-  ORDER BY four,
-    ten)
+  (
+    SELECT
+      *
+    FROM
+      tenk1
+    WHERE
+      unique2 < 10
+    ORDER BY four,
+      ten
+  )
   AS s;
 
 SELECT
@@ -4771,14 +4861,16 @@ SELECT
   ten,
   four
 FROM
-  (SELECT
-    *
-  FROM
-    tenk1
-  WHERE
-    unique2 < 10
-  ORDER BY four,
-    ten)
+  (
+    SELECT
+      *
+    FROM
+      tenk1
+    WHERE
+      unique2 < 10
+    ORDER BY four,
+      ten
+  )
   AS s;
 
 CREATE FUNCTION logging_sfunc_nonstrict(TEXT, ANYELEMENT)
@@ -4799,11 +4891,9 @@ AS ' SELECT $1 || ''-'' || quote_nullable($2) '
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE AGGREGATE logging_agg_nonstrict
-(
+CREATE AGGREGATE logging_agg_nonstrict (
   ANYELEMENT
-)
-(
+) (
   stype = TEXT,
   sfunc = logging_sfunc_nonstrict,
   mstype = TEXT,
@@ -4811,11 +4901,9 @@ CREATE AGGREGATE logging_agg_nonstrict
   minvfunc = logging_minvfunc_nonstrict
 );
 
-CREATE AGGREGATE logging_agg_nonstrict_initcond
-(
+CREATE AGGREGATE logging_agg_nonstrict_initcond (
   ANYELEMENT
-)
-(
+) (
   stype = TEXT,
   sfunc = logging_sfunc_nonstrict,
   mstype = TEXT,
@@ -4846,11 +4934,9 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE AGGREGATE logging_agg_strict
-(
+CREATE AGGREGATE logging_agg_strict (
   TEXT
-)
-(
+) (
   stype = TEXT,
   sfunc = logging_sfunc_strict,
   mstype = TEXT,
@@ -4858,11 +4944,9 @@ CREATE AGGREGATE logging_agg_strict
   minvfunc = logging_minvfunc_strict
 );
 
-CREATE AGGREGATE logging_agg_strict_initcond
-(
+CREATE AGGREGATE logging_agg_strict_initcond (
   ANYELEMENT
-)
-(
+) (
   stype = TEXT,
   sfunc = logging_sfunc_strict,
   mstype = TEXT,
@@ -4884,16 +4968,18 @@ SELECT
   logging_agg_strict_initcond(v) OVER wnd
   AS strict_init
 FROM
-  (VALUES
-    (1, 1, NULL),
-    (1, 2, 'a'),
-    (1, 3, 'b'),
-    (1, 4, NULL),
-    (1, 5, NULL),
-    (1, 6, 'c'),
-    (2, 1, NULL),
-    (2, 2, 'x'),
-    (3, 1, 'z'))
+  (
+    VALUES
+      (1, 1, NULL),
+      (1, 2, 'a'),
+      (1, 3, 'b'),
+      (1, 4, NULL),
+      (1, 5, NULL),
+      (1, 6, 'c'),
+      (2, 1, NULL),
+      (2, 2, 'x'),
+      (3, 1, 'z')
+  )
   AS t (p, i, v)
 WINDOW
   wnd AS (
@@ -4910,8 +4996,8 @@ ORDER BY p,
 SELECT
   CAST(p AS TEXT) || ',' || CAST(i AS TEXT) || ':' ||
   CASE
-  WHEN f THEN COALESCE(CAST(v AS TEXT), 'NULL')
-  ELSE '-'
+    WHEN f THEN COALESCE(CAST(v AS TEXT), 'NULL')
+    ELSE '-'
   END
   AS row,
   logging_agg_nonstrict(v) FILTER (WHERE f) OVER wnd
@@ -4938,16 +5024,18 @@ SELECT
   OVER wnd
   AS strict_init_filt
 FROM
-  (VALUES
-    (1, 1, TRUE, NULL),
-    (1, 2, FALSE, 'a'),
-    (1, 3, TRUE, 'b'),
-    (1, 4, FALSE, NULL),
-    (1, 5, FALSE, NULL),
-    (1, 6, FALSE, 'c'),
-    (2, 1, FALSE, NULL),
-    (2, 2, TRUE, 'x'),
-    (3, 1, TRUE, 'z'))
+  (
+    VALUES
+      (1, 1, TRUE, NULL),
+      (1, 2, FALSE, 'a'),
+      (1, 3, TRUE, 'b'),
+      (1, 4, FALSE, NULL),
+      (1, 5, FALSE, NULL),
+      (1, 6, FALSE, 'c'),
+      (2, 1, FALSE, NULL),
+      (2, 2, TRUE, 'x'),
+      (3, 1, TRUE, 'z')
+  )
   AS t (p, i, f, v)
 WINDOW
   wnd AS (
@@ -4974,11 +5062,7 @@ SELECT
   OVER wnd
   AS noinverse
 FROM
-  (VALUES
-    (1, 'a'),
-    (2, 'b'),
-    (3, 'c'))
-  AS t (i, v)
+  (VALUES (1, 'a'), (2, 'b'), (3, 'c')) AS t (i, v)
 WINDOW
   wnd AS (
     ORDER BY i
@@ -5008,11 +5092,7 @@ SELECT
   OVER wnd
   AS noinverse
 FROM
-  (VALUES
-    (1, 'a'),
-    (2, 'b'),
-    (3, 'c'))
-  AS t (i, v)
+  (VALUES (1, 'a'), (2, 'b'), (3, 'c')) AS t (i, v)
 WINDOW
   wnd AS (
     ORDER BY i
@@ -5026,11 +5106,7 @@ ORDER BY i;
 SELECT
   logging_agg_strict(CAST(v AS TEXT)) OVER wnd
 FROM
-  (VALUES
-    (1, 'a'),
-    (2, 'b'),
-    (3, 'c'))
-  AS t (i, v)
+  (VALUES (1, 'a'), (2, 'b'), (3, 'c')) AS t (i, v)
 WINDOW
   wnd AS (
     ORDER BY i
@@ -5047,11 +5123,9 @@ AS ' SELECT CASE WHEN random() < 0.2 THEN NULL ELSE $1 - $2 END '
 LANGUAGE "sql"
 STRICT;
 
-CREATE AGGREGATE sum_int_randomrestart
-(
+CREATE AGGREGATE sum_int_randomrestart (
   INT
-)
-(
+) (
   stype = INT,
   sfunc = int4pl,
   mstype = INT,
@@ -5125,11 +5199,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5145,11 +5217,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5165,11 +5235,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5185,11 +5253,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1.5),
-    (2, 2.5),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1.5), (2, 2.5), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5205,11 +5271,13 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, '1 sec'),
-    (2, '2 sec'),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES
+      (1, '1 sec'),
+      (2, '2 sec'),
+      (3, NULL),
+      (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5259,21 +5327,23 @@ SELECT
   )
   AS prev_curr_sum
 FROM
-  (VALUES
-    (CAST(NULL AS INTERVAL)),
-    (CAST('infinity' AS INTERVAL)),
-    (
-      '-2147483648 days -2147483648 months -9223372036854775807 usecs'
-    ),
-    (CAST('-infinity' AS INTERVAL)),
-    (
-      '2147483647 days 2147483647 months 9223372036854775806 usecs'
-    ),
-    (CAST('infinity' AS INTERVAL)),
-    (CAST('6 days' AS INTERVAL)),
-    (CAST('7 days' AS INTERVAL)),
-    (CAST(NULL AS INTERVAL)),
-    (CAST('-infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST(NULL AS INTERVAL)),
+      (CAST('infinity' AS INTERVAL)),
+      (
+        '-2147483648 days -2147483648 months -9223372036854775807 usecs'
+      ),
+      (CAST('-infinity' AS INTERVAL)),
+      (
+        '2147483647 days 2147483647 months 9223372036854775806 usecs'
+      ),
+      (CAST('infinity' AS INTERVAL)),
+      (CAST('6 days' AS INTERVAL)),
+      (CAST('7 days' AS INTERVAL)),
+      (CAST(NULL AS INTERVAL)),
+      (CAST('-infinity' AS INTERVAL))
+  )
   AS v (x);
 
 SELECT
@@ -5289,15 +5359,17 @@ SELECT
     2 FOLLOWING
   )
 FROM
-  (VALUES
-    (CAST(NULL AS INTERVAL)),
-    (CAST('3 days' AS INTERVAL)),
-    (
-      CAST('infinity' AS TIMESTAMP WITH TIME ZONE) -
-      NOW()
-    ),
-    (CAST('6 days' AS INTERVAL)),
-    (CAST('-infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST(NULL AS INTERVAL)),
+      (CAST('3 days' AS INTERVAL)),
+      (
+        CAST('infinity' AS TIMESTAMP WITH TIME ZONE) -
+        NOW()
+      ),
+      (CAST('6 days' AS INTERVAL)),
+      (CAST('-infinity' AS INTERVAL))
+  )
   AS v (x);
 
 SELECT
@@ -5313,15 +5385,17 @@ SELECT
     2 FOLLOWING
   )
 FROM
-  (VALUES
-    (CAST(NULL AS INTERVAL)),
-    (CAST('3 days' AS INTERVAL)),
-    (
-      CAST('infinity' AS TIMESTAMP WITH TIME ZONE) -
-      NOW()
-    ),
-    (CAST('6 days' AS INTERVAL)),
-    (CAST('-infinity' AS INTERVAL)))
+  (
+    VALUES
+      (CAST(NULL AS INTERVAL)),
+      (CAST('3 days' AS INTERVAL)),
+      (
+        CAST('infinity' AS TIMESTAMP WITH TIME ZONE) -
+        NOW()
+      ),
+      (CAST('6 days' AS INTERVAL)),
+      (CAST('-infinity' AS INTERVAL))
+  )
   AS v (x);
 
 SELECT
@@ -5337,11 +5411,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5357,11 +5429,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5377,11 +5447,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5397,11 +5465,13 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, '1.10'),
-    (2, '2.20'),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES
+      (1, '1.10'),
+      (2, '2.20'),
+      (3, NULL),
+      (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5417,11 +5487,13 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, '1 sec'),
-    (2, '2 sec'),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES
+      (1, '1 sec'),
+      (2, '2 sec'),
+      (3, NULL),
+      (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5437,11 +5509,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1.1),
-    (2, 2.2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1.1), (2, 2.2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5456,11 +5526,7 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1.01),
-    (2, 2),
-    (3, 3))
-  AS v (i, n);
+  (VALUES (1, 1.01), (2, 2), (3, 3)) AS v (i, n);
 
 SELECT
   i,
@@ -5475,11 +5541,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5495,11 +5559,9 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -5514,12 +5576,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5534,12 +5598,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5554,12 +5620,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5574,12 +5642,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5594,12 +5664,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5614,12 +5686,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5634,12 +5708,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5654,12 +5730,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5674,12 +5752,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5694,12 +5774,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5714,12 +5796,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5734,12 +5818,14 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5754,13 +5840,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5775,13 +5863,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5796,13 +5886,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5817,13 +5909,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5838,13 +5932,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5859,13 +5955,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5880,13 +5978,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5901,13 +6001,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, NULL),
-    (2, 600),
-    (3, 470),
-    (4, 170),
-    (5, 430),
-    (6, 300))
+  (
+    VALUES
+      (1, NULL),
+      (2, 600),
+      (3, 470),
+      (4, 170),
+      (5, 430),
+      (6, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5922,13 +6024,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (0, NULL),
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (0, NULL),
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5943,13 +6047,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (0, NULL),
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (0, NULL),
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5964,13 +6070,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (0, NULL),
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (0, NULL),
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -5985,13 +6093,15 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (0, NULL),
-    (1, 600),
-    (2, 470),
-    (3, 170),
-    (4, 430),
-    (5, 300))
+  (
+    VALUES
+      (0, NULL),
+      (1, 600),
+      (2, 470),
+      (3, 170),
+      (4, 430),
+      (5, 300)
+  )
   AS r (i, n);
 
 SELECT
@@ -6007,11 +6117,9 @@ SELECT
     CURRENT ROW
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -6027,11 +6135,9 @@ SELECT
     1 FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, NULL),
-    (4, NULL))
+  (
+    VALUES (1, 1), (2, 2), (3, NULL), (4, NULL)
+  )
   AS t (i, v);
 
 SELECT
@@ -6047,11 +6153,9 @@ SELECT
     1 FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2),
-    (3, 3),
-    (4, 4))
+  (
+    VALUES (1, 1), (2, 2), (3, 3), (4, 4)
+  )
   AS t (i, v);
 
 SELECT
@@ -6068,12 +6172,14 @@ SELECT
     CURRENT ROW
   )
 FROM
-  (VALUES
-    (1, CAST(1 AS NUMERIC)),
-    (2, 2),
-    (3, 'NaN'),
-    (4, 3),
-    (5, 4))
+  (
+    VALUES
+      (1, CAST(1 AS NUMERIC)),
+      (2, 2),
+      (3, 'NaN'),
+      (4, 3),
+      (5, 4)
+  )
   AS t (a, b);
 
 SELECT
@@ -6091,10 +6197,7 @@ SELECT
     '999999999999999999999D9'
   )
 FROM
-  (VALUES
-    (1, 1e20),
-    (2, 1))
-  AS n (i, n);
+  (VALUES (1, 1e20), (2, 1)) AS n (i, n);
 
 SELECT
   i,
@@ -6102,12 +6205,14 @@ SELECT
   bool_and(b) OVER w,
   bool_or(b) OVER w
 FROM
-  (VALUES
-    (1, TRUE),
-    (2, TRUE),
-    (3, FALSE),
-    (4, FALSE),
-    (5, TRUE))
+  (
+    VALUES
+      (1, TRUE),
+      (2, TRUE),
+      (3, FALSE),
+      (4, FALSE),
+      (5, TRUE)
+  )
   AS v (i, b)
 WINDOW
   w AS (

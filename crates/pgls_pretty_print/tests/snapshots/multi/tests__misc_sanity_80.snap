@@ -54,12 +54,14 @@ WHERE
   CAST('pg_catalog' AS regnamespace) AND
   relkind = 'r' AND
   NOT pg_class.oid IN
-  (SELECT
-    indrelid
-  FROM
-    pg_index
-  WHERE
-    indisprimary)
+  (
+    SELECT
+      indrelid
+    FROM
+      pg_index
+    WHERE
+      indisprimary
+  )
 ORDER BY 1;
 
 SELECT
@@ -75,5 +77,7 @@ WHERE
   relkind = 'i' AND
   i.indisunique AND
   NOT c.oid IN
-  (SELECT conindid FROM pg_constraint)
+  (
+    SELECT conindid FROM pg_constraint
+  )
 ORDER BY 1;

@@ -5,11 +5,7 @@ snapshot_kind: text
 ---
 CREATE TABLE tidscan (id INT);
 
-INSERT INTO tidscan
-VALUES
-  (1),
-  (2),
-  (3);
+INSERT INTO tidscan VALUES (1), (2), (3);
 
 SELECT ctid, * FROM tidscan;
 

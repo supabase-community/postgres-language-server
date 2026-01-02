@@ -1862,23 +1862,27 @@ SELECT
   cnt,
   width_bucket(oper, low, high, cnt)
 FROM
-  (SELECT
-    CAST(1.797e+308 AS DOUBLE PRECISION) AS big,
-    CAST(5e-324 AS DOUBLE PRECISION) AS tiny)
+  (
+    SELECT
+      CAST(1.797e+308 AS DOUBLE PRECISION) AS big,
+      CAST(5e-324 AS DOUBLE PRECISION) AS tiny
+  )
   AS v,
-  LATERAL (VALUES
-    (CAST(10.5 AS DOUBLE PRECISION), -big, big, 1),
-    (CAST(10.5 AS DOUBLE PRECISION), -big, big, 2),
-    (CAST(10.5 AS DOUBLE PRECISION), -big, big, 3),
-    (big / 4, -big / 2, big / 2, 10),
-    (CAST(10.5 AS DOUBLE PRECISION), big, -big, 1),
-    (CAST(10.5 AS DOUBLE PRECISION), big, -big, 2),
-    (CAST(10.5 AS DOUBLE PRECISION), big, -big, 3),
-    (big / 4, big / 2, -big / 2, 10),
-    (0, 0, tiny, 4),
-    (tiny, 0, tiny, 4),
-    (0, 0, 1, 2147483647),
-    (1, 1, 0, 2147483647))
+  LATERAL (
+    VALUES
+      (CAST(10.5 AS DOUBLE PRECISION), -big, big, 1),
+      (CAST(10.5 AS DOUBLE PRECISION), -big, big, 2),
+      (CAST(10.5 AS DOUBLE PRECISION), -big, big, 3),
+      (big / 4, -big / 2, big / 2, 10),
+      (CAST(10.5 AS DOUBLE PRECISION), big, -big, 1),
+      (CAST(10.5 AS DOUBLE PRECISION), big, -big, 2),
+      (CAST(10.5 AS DOUBLE PRECISION), big, -big, 3),
+      (big / 4, big / 2, -big / 2, 10),
+      (0, 0, tiny, 4),
+      (tiny, 0, tiny, 4),
+      (0, 0, 1, 2147483647),
+      (1, 1, 0, 2147483647)
+  )
   AS sample (oper, low, high, cnt);
 
 SELECT width_bucket(CAST(1 AS DOUBLE PRECISION), 0, 1, 2147483647);

@@ -197,7 +197,7 @@ STRICT
 LANGUAGE "internal"
 AS 'int4out';
 
-CREATE TYPE xfloat4 ( input = xfloat4in, output = xfloat4out, like = REAL);
+CREATE TYPE xfloat4 (input = xfloat4in, output = xfloat4out, like = REAL);
 
 CREATE CAST (xfloat4 AS REAL) WITHOUT FUNCTION;
 
@@ -237,13 +237,15 @@ SELECT
   float4send(flt) AS ibits,
   flt
 FROM
-  (SELECT
-    CAST(CAST(CAST(bits AS INT) AS xfloat4)
-    AS REAL)
-    AS flt
-  FROM
-    testdata
-  OFFSET 0)
+  (
+    SELECT
+      CAST(CAST(CAST(bits AS INT) AS xfloat4)
+      AS REAL)
+      AS flt
+    FROM
+      testdata
+    OFFSET 0
+  )
   AS s;
 
 WITH
@@ -526,13 +528,15 @@ SELECT
   float4send(flt)
   AS correct
 FROM
-  (SELECT
-    CAST(CAST(CAST(bits AS INT) AS xfloat4)
-    AS REAL)
-    AS flt
-  FROM
-    testdata
-  OFFSET 0)
+  (
+    SELECT
+      CAST(CAST(CAST(bits AS INT) AS xfloat4)
+      AS REAL)
+      AS flt
+    FROM
+      testdata
+    OFFSET 0
+  )
   AS s;
 
 DROP TYPE xfloat4 CASCADE;

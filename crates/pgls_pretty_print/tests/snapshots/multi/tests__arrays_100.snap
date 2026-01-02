@@ -24,14 +24,15 @@ COPY array_op_test FROM 'filename';
 ANALYZE array_op_test;
 
 INSERT INTO arrtest (a[1:5], b[1:1][1:2][1:2], c, d, f, g)
-VALUES (
-  '{1,2,3,4,5}',
-  '{{{0,0},{1,2}}}',
-  '{}',
-  '{}',
-  '{}',
-  '{}'
-);
+VALUES
+  (
+    '{1,2,3,4,5}',
+    '{{{0,0},{1,2}}}',
+    '{}',
+    '{}',
+    '{}',
+    '{}'
+  );
 
 UPDATE arrtest SET e[0] = '1.1';
 
@@ -40,15 +41,16 @@ UPDATE arrtest SET e[1] = '2.2';
 INSERT INTO arrtest (f) VALUES ('{"too long"}');
 
 INSERT INTO arrtest (a, b[1:2][1:2], c, d, e, f, g)
-VALUES (
-  '{11,12,23}',
-  '{{3,4},{4,5}}',
-  '{"foobar"}',
-  '{{"elt1", "elt2"}}',
-  '{"3.4", "6.7"}',
-  '{"abc","abcde"}',
-  '{"abc","abcde"}'
-);
+VALUES
+  (
+    '{11,12,23}',
+    '{{3,4},{4,5}}',
+    '{"foobar"}',
+    '{{"elt1", "elt2"}}',
+    '{"3.4", "6.7"}',
+    '{"abc","abcde"}',
+    '{"abc","abcde"}'
+  );
 
 INSERT INTO arrtest (a, b[1:2], c, d[1:2]) VALUES ('{}', '{3,4}', '{foo,bar}', '{bar,foo}');
 
@@ -285,19 +287,20 @@ CREATE TEMPORARY TABLE arrtest2 (
 );
 
 INSERT INTO arrtest2
-VALUES (
-  ARRAY[ARRAY[ARRAY[113, 142], ARRAY[1, 147]]],
-  CAST(ARRAY[1.1, 1.2, 1.3] AS DOUBLE PRECISION[]),
-  ARRAY[1.1, 1.2, 1.3],
-  ARRAY[ARRAY[ARRAY['aaa', 'aab'],
-  ARRAY['aba', 'abb'],
-  ARRAY['aca', 'acb']],
-  ARRAY[ARRAY['baa', 'bab'],
-  ARRAY['bba', 'bbb'],
-  ARRAY['bca', 'bcb']]],
-  CAST(ARRAY['19620326', '19931223', '19970117']
-  AS TIMESTAMP[])
-);
+VALUES
+  (
+    ARRAY[ARRAY[ARRAY[113, 142], ARRAY[1, 147]]],
+    CAST(ARRAY[1.1, 1.2, 1.3] AS DOUBLE PRECISION[]),
+    ARRAY[1.1, 1.2, 1.3],
+    ARRAY[ARRAY[ARRAY['aaa', 'aab'],
+    ARRAY['aba', 'abb'],
+    ARRAY['aca', 'acb']],
+    ARRAY[ARRAY['baa', 'bab'],
+    ARRAY['bba', 'bbb'],
+    ARRAY['bca', 'bcb']]],
+    CAST(ARRAY['19620326', '19931223', '19970117']
+    AS TIMESTAMP[])
+  );
 
 CREATE TEMPORARY TABLE arrtest_f (
   f0 INT,
@@ -351,14 +354,16 @@ SELECT
   t.f[1][3][1] AS "131",
   t.f[2][2][1] AS "221"
 FROM
-  (SELECT
-    ARRAY[ARRAY[ARRAY[111, 112],
-    ARRAY[121, 122],
-    ARRAY[131, 132]],
-    ARRAY[ARRAY[211, 212],
-    ARRAY[221, 122],
-    ARRAY[231, 232]]]
-    AS f)
+  (
+    SELECT
+      ARRAY[ARRAY[ARRAY[111, 112],
+      ARRAY[121, 122],
+      ARRAY[131, 132]],
+      ARRAY[ARRAY[211, 212],
+      ARRAY[221, 122],
+      ARRAY[231, 232]]]
+      AS f
+  )
   AS t;
 
 SELECT ARRAY[ARRAY[ARRAY[ARRAY[ARRAY[ARRAY['hello'], ARRAY['world']]]]]];
@@ -412,11 +417,13 @@ SELECT array_positions(ARRAY[1, 2, 3, NULL, 5, 6, 1, 2, 3, NULL, 5, 6], NULL);
 SELECT
   array_length(
     array_positions(
-      ARRAY(SELECT
-        CAST('AAAAAAAAAAAAAAAAAAAAAAAAA' AS TEXT) ||
-        i % 10
-      FROM
-        generate_series(1, 100) AS g (i)),
+      ARRAY(
+        SELECT
+          CAST('AAAAAAAAAAAAAAAAAAAAAAAAA' AS TEXT) ||
+          i % 10
+        FROM
+          generate_series(1, 100) AS g (i)
+      ),
       'AAAAAAAAAAAAAAAAAAAAAAAAA5'
     ),
     1
@@ -446,9 +453,9 @@ SELECT
   array_position(ids, (1, 1)),
   array_positions(ids, (1, 1))
 FROM
-  (VALUES
-    (ARRAY[(0, 0), (1, 1)]),
-    (ARRAY[(1, 1)]))
+  (
+    VALUES (ARRAY[(0, 0), (1, 1)]), (ARRAY[(1, 1)])
+  )
   AS f (ids);
 
 SELECT a FROM arrtest WHERE b = ARRAY[ARRAY[ARRAY[113, 142], ARRAY[1, 147]]];
@@ -471,21 +478,9 @@ SELECT 0 || ARRAY[1, 2] || 3 AS "{0,1,2,3}";
 
 SELECT ARRAY[1.1] || ARRAY[2, 3, 4];
 
-SELECT
-  array_agg(x) || array_agg(x)
-FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(3, 4)))
-  AS v (x);
+SELECT array_agg(x) || array_agg(x) FROM (VALUES (ROW(1, 2)), (ROW(3, 4))) AS v (x);
 
-SELECT
-  ROW(1, 2) || array_agg(x)
-FROM
-  (VALUES
-    (ROW(3, 4)),
-    (ROW(5, 6)))
-  AS v (x);
+SELECT ROW(1, 2) || array_agg(x) FROM (VALUES (ROW(3, 4)), (ROW(5, 6))) AS v (x);
 
 SELECT * FROM array_op_test WHERE i @> '{32}' ORDER BY seqno;
 
@@ -815,38 +810,42 @@ INSERT INTO arraggtest (f1, f2, f3) VALUES ('{1,2,3}', '{{grey,red},{grey,blue}}
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
 INSERT INTO arraggtest (f1, f2, f3)
-VALUES (
-  '{3,3,2,4,5,6}',
-  '{{white,yellow},{pink,orange}}',
-  '{2.1,3.3,1.8,1.7,1.6}'
-);
+VALUES
+  (
+    '{3,3,2,4,5,6}',
+    '{{white,yellow},{pink,orange}}',
+    '{2.1,3.3,1.8,1.7,1.6}'
+  );
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
 INSERT INTO arraggtest (f1, f2, f3)
-VALUES (
-  '{2}',
-  '{{black,red},{green,orange}}',
-  '{1.6,2.2,2.6,0.4}'
-);
+VALUES
+  (
+    '{2}',
+    '{{black,red},{green,orange}}',
+    '{1.6,2.2,2.6,0.4}'
+  );
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
 INSERT INTO arraggtest (f1, f2, f3)
-VALUES (
-  '{4,2,6,7,8,1}',
-  '{{red},{black},{purple},{blue},{blue}}',
-  NULL
-);
+VALUES
+  (
+    '{4,2,6,7,8,1}',
+    '{{red},{black},{purple},{blue},{blue}}',
+    NULL
+  );
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
 INSERT INTO arraggtest (f1, f2, f3)
-VALUES (
-  '{}',
-  '{{pink,white,blue,red,grey,orange}}',
-  '{2.1,1.87,1.4,2.2}'
-);
+VALUES
+  (
+    '{}',
+    '{{pink,white,blue,red,grey,orange}}',
+    '{2.1,1.87,1.4,2.2}'
+  );
 
 SELECT MAX(f1), MIN(f1), MAX(f2), MIN(f2), MAX(f3), MIN(f3) FROM arraggtest;
 
@@ -858,11 +857,12 @@ CREATE TABLE comptable (
 );
 
 INSERT INTO comptable
-VALUES (
-  ROW(1, 'foo'),
-  ARRAY[CAST(ROW(2, 'bar') AS comptype),
-  CAST(ROW(3, 'baz') AS comptype)]
-);
+VALUES
+  (
+    ROW(1, 'foo'),
+    ARRAY[CAST(ROW(2, 'bar') AS comptype),
+    CAST(ROW(3, 'baz') AS comptype)]
+  );
 
 CREATE TYPE _comptype AS ENUM ('fooey');
 
@@ -1032,13 +1032,15 @@ SELECT cardinality(CAST('{{{1,9},{5,6}},{{2,3},{3,4}}}' AS INT[]));
 SELECT
   array_agg(unique1)
 FROM
-  (SELECT
-    unique1
-  FROM
-    tenk1
-  WHERE
-    unique1 < 15
-  ORDER BY unique1)
+  (
+    SELECT
+      unique1
+    FROM
+      tenk1
+    WHERE
+      unique1 < 15
+    ORDER BY unique1
+  )
   AS ss;
 
 SELECT array_agg(ten) FROM (SELECT ten FROM tenk1 WHERE unique1 < 15 ORDER BY unique1) AS ss;
@@ -1046,41 +1048,41 @@ SELECT array_agg(ten) FROM (SELECT ten FROM tenk1 WHERE unique1 < 15 ORDER BY un
 SELECT
   array_agg(NULLIF(ten, 4))
 FROM
-  (SELECT
-    ten
-  FROM
-    tenk1
-  WHERE
-    unique1 < 15
-  ORDER BY unique1)
+  (
+    SELECT
+      ten
+    FROM
+      tenk1
+    WHERE
+      unique1 < 15
+    ORDER BY unique1
+  )
   AS ss;
 
 SELECT array_agg(unique1) FROM tenk1 WHERE unique1 < -15;
 
-SELECT
-  array_agg(ar)
-FROM
-  (VALUES
-    (CAST('{1,2}' AS INT[])),
-    (CAST('{3,4}' AS INT[])))
-  AS v (ar);
+SELECT array_agg(ar) FROM (VALUES (CAST('{1,2}' AS INT[])), (CAST('{3,4}' AS INT[]))) AS v (ar);
 
 SELECT
   array_agg(DISTINCT ar ORDER BY ar DESC)
 FROM
-  (SELECT
-    ARRAY[i / 2]
-  FROM
-    generate_series(1, 10) AS a (i))
+  (
+    SELECT
+      ARRAY[i / 2]
+    FROM
+      generate_series(1, 10) AS a (i)
+  )
   AS b (ar);
 
 SELECT
   array_agg(ar)
 FROM
-  (SELECT
-    array_agg(ARRAY[i, i + 1, i - 1])
-  FROM
-    generate_series(1, 2) AS a (i))
+  (
+    SELECT
+      array_agg(ARRAY[i, i + 1, i - 1])
+    FROM
+      generate_series(1, 2) AS a (i)
+  )
   AS b (ar);
 
 SELECT array_agg(ARRAY[i + 1.2, i + 1.3, i + 1.4]) FROM generate_series(1, 3) AS g (i);
@@ -1093,13 +1095,7 @@ SELECT array_agg(CAST('{}' AS INT[])) FROM generate_series(1, 2);
 
 SELECT array_agg(CAST(NULL AS INT[])) FROM generate_series(1, 2);
 
-SELECT
-  array_agg(ar)
-FROM
-  (VALUES
-    (CAST('{1,2}' AS INT[])),
-    (CAST('{3}' AS INT[])))
-  AS v (ar);
+SELECT array_agg(ar) FROM (VALUES (CAST('{1,2}' AS INT[])), (CAST('{3}' AS INT[]))) AS v (ar);
 
 SELECT unnest(ARRAY[1, 2, 3]);
 
@@ -1250,26 +1246,28 @@ SELECT
   )
   AS wb_f3
 FROM
-  (VALUES
-    (-5.2),
-    (-0.0000000001),
-    (0.000000000001),
-    (1),
-    (1.99999999999999),
-    (2),
-    (2.00000000000001),
-    (3),
-    (4),
-    (4.5),
-    (5),
-    (5.5),
-    (6),
-    (7),
-    (8),
-    (9),
-    (9.99999999999999),
-    (10),
-    (10.0000000000001))
+  (
+    VALUES
+      (-5.2),
+      (-0.0000000001),
+      (0.000000000001),
+      (1),
+      (1.99999999999999),
+      (2),
+      (2.00000000000001),
+      (3),
+      (4),
+      (4.5),
+      (5),
+      (5.5),
+      (6),
+      (7),
+      (8),
+      (9),
+      (9.99999999999999),
+      (10),
+      (10.0000000000001)
+  )
   AS v (op);
 
 SELECT
@@ -1281,11 +1279,13 @@ SELECT
   )
   AS wb
 FROM
-  (VALUES
-    (-CAST(5.2 AS DOUBLE PRECISION)),
-    (CAST(4 AS DOUBLE PRECISION)),
-    (CAST(77 AS DOUBLE PRECISION)),
-    (CAST('NaN' AS DOUBLE PRECISION)))
+  (
+    VALUES
+      (-CAST(5.2 AS DOUBLE PRECISION)),
+      (CAST(4 AS DOUBLE PRECISION)),
+      (CAST(77 AS DOUBLE PRECISION)),
+      (CAST('NaN' AS DOUBLE PRECISION))
+  )
   AS v (op);
 
 SELECT op, width_bucket(op, ARRAY[1, 3, 5, 10]) AS wb_1 FROM generate_series(0, 11) AS op;
@@ -1311,12 +1311,14 @@ SELECT
   arr,
   trim_array(arr, 2)
 FROM
-  (VALUES
-    (CAST('{1,2,3,4,5,6}' AS BIGINT[])),
-    ('{1,2}'),
-    ('[10:16]={1,2,3,4,5,6,7}'),
-    ('[-15:-10]={1,2,3,4,5,6}'),
-    ('{{1,10},{2,20},{3,30},{4,40}}'))
+  (
+    VALUES
+      (CAST('{1,2,3,4,5,6}' AS BIGINT[])),
+      ('{1,2}'),
+      ('[10:16]={1,2,3,4,5,6,7}'),
+      ('[-15:-10]={1,2,3,4,5,6}'),
+      ('{{1,10},{2,20},{3,30},{4,40}}')
+  )
   AS v (arr);
 
 SELECT trim_array(ARRAY[1, 2, 3], -1);
@@ -1382,9 +1384,11 @@ SELECT array_sort(CAST('{foo,bar,null,CCC,Abc,bbc}' AS TEXT[]) COLLATE "C");
 
 SELECT
   array_sort(
-    ARRAY(SELECT CAST('1 4' AS int2vector)
-    UNION ALL
-    SELECT CAST('1 2' AS int2vector))
+    ARRAY(
+      SELECT CAST('1 4' AS int2vector)
+      UNION ALL
+      SELECT CAST('1 2' AS int2vector)
+    )
   );
 
 SELECT array_sort(CAST('{1.1,3.3,5.5,2.2,null,4.4,6.6}' AS DOUBLE PRECISION[]), TRUE);
@@ -1420,17 +1424,23 @@ SELECT array_sort(a) FROM (VALUES (CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}' A
 SELECT
   array_sort(a[-1:0])
 FROM
-  (VALUES (
-    CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-    AS INT[])
-  ))
+  (
+    VALUES
+      (
+        CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
+        AS INT[])
+      )
+  )
   AS v (a);
 
 SELECT
   array_sort(a[-1:0][20:20])
 FROM
-  (VALUES (
-    CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
-    AS INT[])
-  ))
+  (
+    VALUES
+      (
+        CAST('[-2:0][20:21]={{1,2},{10,20},{1,-4}}'
+        AS INT[])
+      )
+  )
   AS v (a);

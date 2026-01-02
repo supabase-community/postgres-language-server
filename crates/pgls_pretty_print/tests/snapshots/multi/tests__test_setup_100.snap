@@ -13,12 +13,7 @@ CREATE TABLESPACE regress_tblspace LOCATION '';
 
 CREATE TABLE char_tbl (f1 CHAR(4));
 
-INSERT INTO char_tbl (f1)
-VALUES
-  ('a'),
-  ('ab'),
-  ('abcd'),
-  ('abcd    ');
+INSERT INTO char_tbl (f1) VALUES ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 VACUUM char_tbl;
 
@@ -36,13 +31,7 @@ VACUUM float8_tbl;
 
 CREATE TABLE int2_tbl (f1 SMALLINT);
 
-INSERT INTO int2_tbl (f1)
-VALUES
-  ('0   '),
-  ('  1234 '),
-  ('    -1234'),
-  ('32767'),
-  ('-32767');
+INSERT INTO int2_tbl (f1) VALUES ('0   '), ('  1234 '), ('    -1234'), ('32767'), ('-32767');
 
 VACUUM int2_tbl;
 
@@ -90,21 +79,13 @@ VALUES
 
 CREATE TABLE text_tbl (f1 TEXT);
 
-INSERT INTO text_tbl
-VALUES
-  ('doh!'),
-  ('hi de ho neighbor');
+INSERT INTO text_tbl VALUES ('doh!'), ('hi de ho neighbor');
 
 VACUUM text_tbl;
 
 CREATE TABLE varchar_tbl (f1 VARCHAR(4));
 
-INSERT INTO varchar_tbl (f1)
-VALUES
-  ('a'),
-  ('ab'),
-  ('abcd'),
-  ('abcd    ');
+INSERT INTO varchar_tbl (f1) VALUES ('a'), ('ab'), ('abcd'), ('abcd    ');
 
 VACUUM varchar_tbl;
 

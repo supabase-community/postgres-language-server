@@ -242,7 +242,7 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'hashint4';
 
-CREATE TYPE myint ( input = myintin, output = myintout, like = INT);
+CREATE TYPE myint (input = myintin, output = myintout, like = INT);
 
 CREATE CAST (INT AS myint) WITHOUT FUNCTION;
 
@@ -298,10 +298,7 @@ CREATE OPERATOR CLASS myint_ops DEFAULT
 
 CREATE TABLE inttest (a myint);
 
-INSERT INTO inttest
-VALUES
-  (CAST(1 AS myint)),
-  (NULL);
+INSERT INTO inttest VALUES (CAST(1 AS myint)), (NULL);
 
 SELECT
   *

@@ -110,15 +110,19 @@ PARTITION OF part_pa_test
 FOR VALUES FROM (0) TO (maxvalue);
 
 SELECT
-  (SELECT
-    MAX(
-      (SELECT
-        pa1.b
-      FROM
-        part_pa_test AS pa1
-      WHERE
-        pa1.a = pa2.a)
-    ))
+  (
+    SELECT
+      MAX(
+        (
+          SELECT
+            pa1.b
+          FROM
+            part_pa_test AS pa1
+          WHERE
+            pa1.a = pa2.a
+        )
+      )
+  )
 FROM
   part_pa_test AS pa2;
 
@@ -187,13 +191,15 @@ FROM
   tenk1
 WHERE
   NOT (two, four) IN
-  (SELECT
-    hundred,
-    thousand
-  FROM
-    tenk2
-  WHERE
-    thousand > 100);
+  (
+    SELECT
+      hundred,
+      thousand
+    FROM
+      tenk2
+    WHERE
+      thousand > 100
+  );
 
 SELECT
   COUNT(*)
@@ -201,13 +207,15 @@ FROM
   tenk1
 WHERE
   NOT (two, four) IN
-  (SELECT
-    hundred,
-    thousand
-  FROM
-    tenk2
-  WHERE
-    thousand > 100);
+  (
+    SELECT
+      hundred,
+      thousand
+    FROM
+      tenk2
+    WHERE
+      thousand > 100
+  );
 
 SELECT
   *
@@ -215,7 +223,9 @@ FROM
   tenk1
 WHERE
   NOT CAST(unique1 + random() AS INT) IN
-  (SELECT ten FROM tenk2);
+  (
+    SELECT ten FROM tenk2
+  );
 
 ALTER TABLE tenk2
   RESET (parallel_workers);
@@ -269,10 +279,12 @@ SELECT
 FROM
   tenk1
 WHERE
-  hundred = ANY (CAST((SELECT
-    array_agg(i)
-  FROM
-    generate_series(1, 100, 15) AS i)
+  hundred = ANY (CAST((
+    SELECT
+      array_agg(i)
+    FROM
+      generate_series(1, 100, 15) AS i
+  )
   AS INT[]));
 
 SELECT
@@ -280,10 +292,12 @@ SELECT
 FROM
   tenk1
 WHERE
-  hundred = ANY (CAST((SELECT
-    array_agg(i)
-  FROM
-    generate_series(1, 100, 15) AS i)
+  hundred = ANY (CAST((
+    SELECT
+      array_agg(i)
+    FROM
+      generate_series(1, 100, 15) AS i
+  )
   AS INT[]));
 
 SELECT COUNT(*) FROM tenk1 WHERE thousand > 95;
@@ -295,73 +309,65 @@ SET enable_material = 'false';
 SELECT
   *
 FROM
-  (SELECT
-    COUNT(unique1)
-  FROM
-    tenk1
-  WHERE
-    hundred > 10)
+  (
+    SELECT
+      COUNT(unique1)
+    FROM
+      tenk1
+    WHERE
+      hundred > 10
+  )
   AS ss
   RIGHT OUTER JOIN
-    (VALUES
-      (1),
-      (2),
-      (3))
-    AS v (x)
+    (VALUES (1), (2), (3)) AS v (x)
   ON TRUE;
 
 SELECT
   *
 FROM
-  (SELECT
-    COUNT(unique1)
-  FROM
-    tenk1
-  WHERE
-    hundred > 10)
+  (
+    SELECT
+      COUNT(unique1)
+    FROM
+      tenk1
+    WHERE
+      hundred > 10
+  )
   AS ss
   RIGHT OUTER JOIN
-    (VALUES
-      (1),
-      (2),
-      (3))
-    AS v (x)
+    (VALUES (1), (2), (3)) AS v (x)
   ON TRUE;
 
 SELECT
   *
 FROM
-  (SELECT
-    COUNT(*)
-  FROM
-    tenk1
-  WHERE
-    thousand > 99)
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      tenk1
+    WHERE
+      thousand > 99
+  )
   AS ss
   RIGHT OUTER JOIN
-    (VALUES
-      (1),
-      (2),
-      (3))
-    AS v (x)
+    (VALUES (1), (2), (3)) AS v (x)
   ON TRUE;
 
 SELECT
   *
 FROM
-  (SELECT
-    COUNT(*)
-  FROM
-    tenk1
-  WHERE
-    thousand > 99)
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      tenk1
+    WHERE
+      thousand > 99
+  )
   AS ss
   RIGHT OUTER JOIN
-    (VALUES
-      (1),
-      (2),
-      (3))
-    AS v (x)
+    (VALUES (1), (2), (3)) AS v (x)
   ON TRUE;
 
 RESET enable_seqscan;
@@ -381,12 +387,14 @@ SELECT
 FROM
   tenk1
   LEFT OUTER JOIN
-    (SELECT
-      tenk2.unique1
-    FROM
-      tenk2
-    ORDER BY 1
-    LIMIT 1000)
+    (
+      SELECT
+        tenk2.unique1
+      FROM
+        tenk2
+      ORDER BY 1
+      LIMIT 1000
+    )
     AS ss
   ON tenk1.unique1 < ss.unique1 + 1
 WHERE
@@ -397,12 +405,14 @@ SELECT
 FROM
   tenk1
   LEFT OUTER JOIN
-    (SELECT
-      tenk2.unique1
-    FROM
-      tenk2
-    ORDER BY 1
-    LIMIT 1000)
+    (
+      SELECT
+        tenk2.unique1
+      FROM
+        tenk2
+      ORDER BY 1
+      LIMIT 1000
+    )
     AS ss
   ON tenk1.unique1 < ss.unique1 + 1
 WHERE
@@ -547,12 +557,14 @@ SELECT
 FROM
   tenk1 AS t1
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      t1.unique1 AS x,
-      *
-    FROM
-      tenk2 AS t2
-    ORDER BY 1)
+    LATERAL (
+      SELECT
+        t1.unique1 AS x,
+        *
+      FROM
+        tenk2 AS t2
+      ORDER BY 1
+    )
     AS t2
   ON TRUE
 WHERE
@@ -598,39 +610,35 @@ SET enable_material = 'false';
 SELECT
   *
 FROM
-  (SELECT
-    string4,
-    COUNT(unique2)
-  FROM
-    tenk1
-  GROUP BY string4
-  ORDER BY string4)
+  (
+    SELECT
+      string4,
+      COUNT(unique2)
+    FROM
+      tenk1
+    GROUP BY string4
+    ORDER BY string4
+  )
   AS ss
   RIGHT OUTER JOIN
-    (VALUES
-      (1),
-      (2),
-      (3))
-    AS v (x)
+    (VALUES (1), (2), (3)) AS v (x)
   ON TRUE;
 
 SELECT
   *
 FROM
-  (SELECT
-    string4,
-    COUNT(unique2)
-  FROM
-    tenk1
-  GROUP BY string4
-  ORDER BY string4)
+  (
+    SELECT
+      string4,
+      COUNT(unique2)
+    FROM
+      tenk1
+    GROUP BY string4
+    ORDER BY string4
+  )
   AS ss
   RIGHT OUTER JOIN
-    (VALUES
-      (1),
-      (2),
-      (3))
-    AS v (x)
+    (VALUES (1), (2), (3)) AS v (x)
   ON TRUE;
 
 RESET enable_material;
@@ -758,11 +766,13 @@ FROM
   tenk1 AS a
 WHERE
   (unique1, two) IN
-  (SELECT
-    unique1,
-    ROW_NUMBER() OVER ()
-  FROM
-    tenk1 AS b);
+  (
+    SELECT
+      unique1,
+      ROW_NUMBER() OVER ()
+    FROM
+      tenk1 AS b
+  );
 
 SELECT
   *
@@ -770,13 +780,15 @@ FROM
   tenk1 AS a
 WHERE
   two IN
-  (SELECT
-    two
-  FROM
-    tenk1 AS b
-  WHERE
-    stringu1 LIKE '%AAAA'
-  LIMIT 3);
+  (
+    SELECT
+      two
+    FROM
+      tenk1 AS b
+    WHERE
+      stringu1 LIKE '%AAAA'
+    LIMIT 3
+  );
 
 SAVEPOINT settings;
 
@@ -826,13 +838,15 @@ FROM
   tenk1
 WHERE
   fivethous =
-  (SELECT
-    unique1
-  FROM
-    tenk1
-  WHERE
-    fivethous = 1
-  LIMIT 1)
+  (
+    SELECT
+      unique1
+    FROM
+      tenk1
+    WHERE
+      fivethous = 1
+    LIMIT 1
+  )
 UNION ALL
 SELECT
   unique1
@@ -840,13 +854,15 @@ FROM
   tenk1
 WHERE
   fivethous =
-  (SELECT
-    unique2
-  FROM
-    tenk1
-  WHERE
-    fivethous = 1
-  LIMIT 1)
+  (
+    SELECT
+      unique2
+    FROM
+      tenk1
+    WHERE
+      fivethous = 1
+    LIMIT 1
+  )
 ORDER BY 1;
 
 SELECT * FROM information_schema.foreign_data_wrapper_options ORDER BY 1, 2, 3;
@@ -904,12 +920,14 @@ SELECT
 FROM
   tenk1_vw_sec
 WHERE
-  (SELECT
-    SUM(f1)
-  FROM
-    int4_tbl
-  WHERE
-    f1 < unique1) <
+  (
+    SELECT
+      SUM(f1)
+    FROM
+      int4_tbl
+    WHERE
+      f1 < unique1
+  ) <
   100;
 
 ROLLBACK;

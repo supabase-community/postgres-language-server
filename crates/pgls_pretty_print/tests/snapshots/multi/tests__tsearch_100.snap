@@ -26,11 +26,13 @@ SELECT mapcfg, maptokentype, mapseqno FROM pg_ts_config_map WHERE mapcfg = 0 OR 
 SELECT
   *
 FROM
-  (SELECT
-    oid AS cfgid,
-    (ts_token_type(cfgparser)).tokid AS tokid
-  FROM
-    pg_ts_config)
+  (
+    SELECT
+      oid AS cfgid,
+      (ts_token_type(cfgparser)).tokid AS tokid
+    FROM
+      pg_ts_config
+  )
   AS tt
   RIGHT OUTER JOIN
     pg_ts_config_map AS m

@@ -11,11 +11,13 @@ SELECT
   CAST(hashint2extended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(0 AS SMALLINT)),
-    (CAST(1 AS SMALLINT)),
-    (CAST(17 AS SMALLINT)),
-    (CAST(42 AS SMALLINT)))
+  (
+    VALUES
+      (CAST(0 AS SMALLINT)),
+      (CAST(1 AS SMALLINT)),
+      (CAST(17 AS SMALLINT)),
+      (CAST(42 AS SMALLINT))
+  )
   AS x (v)
 WHERE
   CAST(hashint2(v) AS BIT(32)) <>
@@ -31,13 +33,15 @@ SELECT
   CAST(hashint4extended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (0),
-    (1),
-    (17),
-    (42),
-    (550273),
-    (207112489))
+  (
+    VALUES
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
   AS x (v)
 WHERE
   CAST(hashint4(v) AS BIT(32)) <>
@@ -53,13 +57,15 @@ SELECT
   CAST(hashint8extended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (0),
-    (1),
-    (17),
-    (42),
-    (550273),
-    (207112489))
+  (
+    VALUES
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
   AS x (v)
 WHERE
   CAST(hashint8(v) AS BIT(32)) <>
@@ -78,13 +84,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (0),
-    (1),
-    (17),
-    (42),
-    (550273),
-    (207112489))
+  (
+    VALUES
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
   AS x (v)
 WHERE
   CAST(hashfloat4(v) AS BIT(32)) <>
@@ -105,13 +113,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (0),
-    (1),
-    (17),
-    (42),
-    (550273),
-    (207112489))
+  (
+    VALUES
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
   AS x (v)
 WHERE
   CAST(hashfloat8(v) AS BIT(32)) <>
@@ -129,13 +139,15 @@ SELECT
   CAST(hashoidextended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (0),
-    (1),
-    (17),
-    (42),
-    (550273),
-    (207112489))
+  (
+    VALUES
+      (0),
+      (1),
+      (17),
+      (42),
+      (550273),
+      (207112489)
+  )
   AS x (v)
 WHERE
   CAST(hashoid(v) AS BIT(32)) <>
@@ -151,13 +163,15 @@ SELECT
   CAST(hashcharextended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS CHAR)),
-    ('1'),
-    ('x'),
-    ('X'),
-    ('p'),
-    ('N'))
+  (
+    VALUES
+      (CAST(NULL AS CHAR)),
+      ('1'),
+      ('x'),
+      ('X'),
+      ('p'),
+      ('N')
+  )
   AS x (v)
 WHERE
   CAST(hashchar(v) AS BIT(32)) <>
@@ -173,13 +187,15 @@ SELECT
   CAST(hashnameextended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (NULL),
-    ('PostgreSQL'),
-    ('eIpUEtqmY89'),
-    ('AXKEJBTK'),
-    ('muop28x03'),
-    ('yi3nm0d73'))
+  (
+    VALUES
+      (NULL),
+      ('PostgreSQL'),
+      ('eIpUEtqmY89'),
+      ('AXKEJBTK'),
+      ('muop28x03'),
+      ('yi3nm0d73')
+  )
   AS x (v)
 WHERE
   CAST(hashname(v) AS BIT(32)) <>
@@ -195,13 +211,15 @@ SELECT
   CAST(hashtextextended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (NULL),
-    ('PostgreSQL'),
-    ('eIpUEtqmY89'),
-    ('AXKEJBTK'),
-    ('muop28x03'),
-    ('yi3nm0d73'))
+  (
+    VALUES
+      (NULL),
+      ('PostgreSQL'),
+      ('eIpUEtqmY89'),
+      ('AXKEJBTK'),
+      ('muop28x03'),
+      ('yi3nm0d73')
+  )
   AS x (v)
 WHERE
   CAST(hashtext(v) AS BIT(32)) <>
@@ -220,15 +238,17 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS oidvector)),
-    ('0 1 2 3 4'),
-    ('17 18 19 20'),
-    ('42 43 42 45'),
-    ('550273 550273 570274'),
-    (
-      '207112489 207112499 21512 2155 372325 1363252'
-    ))
+  (
+    VALUES
+      (CAST(NULL AS oidvector)),
+      ('0 1 2 3 4'),
+      ('17 18 19 20'),
+      ('42 43 42 45'),
+      ('550273 550273 570274'),
+      (
+        '207112489 207112499 21512 2155 372325 1363252'
+      )
+  )
   AS x (v)
 WHERE
   CAST(hashoidvector(v) AS BIT(32)) <>
@@ -249,11 +269,13 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (SELECT DISTINCT
-    relacl[1]
-  FROM
-    pg_class
-  LIMIT 10)
+  (
+    SELECT DISTINCT
+      relacl[1]
+    FROM
+      pg_class
+    LIMIT 10
+  )
   AS x (v)
 WHERE
   CAST(hash_aclitem(v) AS BIT(32)) <>
@@ -274,13 +296,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS MACADDR)),
-    ('08:00:2b:01:02:04'),
-    ('08:00:2b:01:02:04'),
-    ('e2:7f:51:3e:70:49'),
-    ('d6:a9:4a:78:1c:d5'),
-    ('ea:29:b1:5e:1f:a5'))
+  (
+    VALUES
+      (CAST(NULL AS MACADDR)),
+      ('08:00:2b:01:02:04'),
+      ('08:00:2b:01:02:04'),
+      ('e2:7f:51:3e:70:49'),
+      ('d6:a9:4a:78:1c:d5'),
+      ('ea:29:b1:5e:1f:a5')
+  )
   AS x (v)
 WHERE
   CAST(hashmacaddr(v) AS BIT(32)) <>
@@ -298,13 +322,15 @@ SELECT
   CAST(hashinetextended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS INET)),
-    ('192.168.100.128/25'),
-    ('192.168.100.0/8'),
-    ('172.168.10.126/16'),
-    ('172.18.103.126/24'),
-    ('192.188.13.16/32'))
+  (
+    VALUES
+      (CAST(NULL AS INET)),
+      ('192.168.100.128/25'),
+      ('192.168.100.0/8'),
+      ('172.168.10.126/16'),
+      ('172.18.103.126/24'),
+      ('192.188.13.16/32')
+  )
   AS x (v)
 WHERE
   CAST(hashinet(v) AS BIT(32)) <>
@@ -323,13 +349,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (0),
-    (1.149484958),
-    (17.149484958),
-    (42.149484958),
-    (149484958.550273),
-    (2071124898672))
+  (
+    VALUES
+      (0),
+      (1.149484958),
+      (17.149484958),
+      (42.149484958),
+      (149484958.550273),
+      (2071124898672)
+  )
   AS x (v)
 WHERE
   CAST(hash_numeric(v) AS BIT(32)) <>
@@ -350,13 +378,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS MACADDR8)),
-    ('08:00:2b:01:02:04:36:49'),
-    ('08:00:2b:01:02:04:f0:e8'),
-    ('e2:7f:51:3e:70:49:16:29'),
-    ('d6:a9:4a:78:1c:d5:47:32'),
-    ('ea:29:b1:5e:1f:a5'))
+  (
+    VALUES
+      (CAST(NULL AS MACADDR8)),
+      ('08:00:2b:01:02:04:36:49'),
+      ('08:00:2b:01:02:04:f0:e8'),
+      ('e2:7f:51:3e:70:49:16:29'),
+      ('d6:a9:4a:78:1c:d5:47:32'),
+      ('ea:29:b1:5e:1f:a5')
+  )
   AS x (v)
 WHERE
   CAST(hashmacaddr8(v) AS BIT(32)) <>
@@ -377,13 +407,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST('{0}' AS INT[])),
-    ('{0,1,2,3,4}'),
-    ('{17,18,19,20}'),
-    ('{42,34,65,98}'),
-    ('{550273,590027, 870273}'),
-    ('{207112489, 807112489}'))
+  (
+    VALUES
+      (CAST('{0}' AS INT[])),
+      ('{0,1,2,3,4}'),
+      ('{17,18,19,20}'),
+      ('{42,34,65,98}'),
+      ('{550273,590027, 870273}'),
+      ('{207112489, 807112489}')
+  )
   AS x (v)
 WHERE
   CAST(hash_array(v) AS BIT(32)) <>
@@ -398,7 +430,9 @@ SELECT
   CAST(hash_array(v) AS BIT(32))
   AS standard
 FROM
-  (VALUES (CAST('{101}' AS BIT VARYING[])))
+  (
+    VALUES (CAST('{101}' AS BIT VARYING[]))
+  )
   AS x (v);
 
 SELECT
@@ -407,7 +441,9 @@ SELECT
   AS BIT(32))
   AS extended0
 FROM
-  (VALUES (CAST('{101}' AS BIT VARYING[])))
+  (
+    VALUES (CAST('{101}' AS BIT VARYING[]))
+  )
   AS x (v);
 
 SELECT
@@ -421,13 +457,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (NULL),
-    ('PostgreSQL'),
-    ('eIpUEtqmY89'),
-    ('AXKEJBTK'),
-    ('muop28x03'),
-    ('yi3nm0d73'))
+  (
+    VALUES
+      (NULL),
+      ('PostgreSQL'),
+      ('eIpUEtqmY89'),
+      ('AXKEJBTK'),
+      ('muop28x03'),
+      ('yi3nm0d73')
+  )
   AS x (v)
 WHERE
   CAST(hashbpchar(v) AS BIT(32)) <>
@@ -448,13 +486,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS TIME)),
-    ('11:09:59'),
-    ('1:09:59'),
-    ('11:59:59'),
-    ('7:9:59'),
-    ('5:15:59'))
+  (
+    VALUES
+      (CAST(NULL AS TIME)),
+      ('11:09:59'),
+      ('1:09:59'),
+      ('11:59:59'),
+      ('7:9:59'),
+      ('5:15:59')
+  )
   AS x (v)
 WHERE
   CAST(time_hash(v) AS BIT(32)) <>
@@ -475,13 +515,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS TIME WITH TIME ZONE)),
-    ('00:11:52.518762-07'),
-    ('00:11:52.51762-08'),
-    ('00:11:52.62-01'),
-    ('00:11:52.62+01'),
-    ('11:59:59+04'))
+  (
+    VALUES
+      (CAST(NULL AS TIME WITH TIME ZONE)),
+      ('00:11:52.518762-07'),
+      ('00:11:52.51762-08'),
+      ('00:11:52.62-01'),
+      ('00:11:52.62+01'),
+      ('11:59:59+04')
+  )
   AS x (v)
 WHERE
   CAST(timetz_hash(v) AS BIT(32)) <>
@@ -502,15 +544,17 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS INTERVAL)),
-    ('5 month 7 day 46 minutes'),
-    ('1 year 7 day 46 minutes'),
-    ('1 year 7 month 20 day 46 minutes'),
-    ('5 month'),
-    (
-      '17 year 11 month 7 day 9 hours 46 minutes 5 seconds'
-    ))
+  (
+    VALUES
+      (CAST(NULL AS INTERVAL)),
+      ('5 month 7 day 46 minutes'),
+      ('1 year 7 day 46 minutes'),
+      ('1 year 7 month 20 day 46 minutes'),
+      ('5 month'),
+      (
+        '17 year 11 month 7 day 9 hours 46 minutes 5 seconds'
+      )
+  )
   AS x (v)
 WHERE
   CAST(interval_hash(v) AS BIT(32)) <>
@@ -531,13 +575,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS TIMESTAMP)),
-    ('2017-08-22 00:09:59.518762'),
-    ('2015-08-20 00:11:52.51762-08'),
-    ('2017-05-22 00:11:52.62-01'),
-    ('2013-08-22 00:11:52.62+01'),
-    ('2013-08-22 11:59:59+04'))
+  (
+    VALUES
+      (CAST(NULL AS TIMESTAMP)),
+      ('2017-08-22 00:09:59.518762'),
+      ('2015-08-20 00:11:52.51762-08'),
+      ('2017-05-22 00:11:52.62-01'),
+      ('2013-08-22 00:11:52.62+01'),
+      ('2013-08-22 11:59:59+04')
+  )
   AS x (v)
 WHERE
   CAST(timestamp_hash(v) AS BIT(32)) <>
@@ -558,13 +604,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS UUID)),
-    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
-    ('5a9ba4ac-8d6f-11e7-bb31-be2e44b06b34'),
-    ('99c6705c-d939-461c-a3c9-1690ad64ed7b'),
-    ('7deed3ca-8d6f-11e7-bb31-be2e44b06b34'),
-    ('9ad46d4f-6f2a-4edd-aadb-745993928e1e'))
+  (
+    VALUES
+      (CAST(NULL AS UUID)),
+      ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
+      ('5a9ba4ac-8d6f-11e7-bb31-be2e44b06b34'),
+      ('99c6705c-d939-461c-a3c9-1690ad64ed7b'),
+      ('7deed3ca-8d6f-11e7-bb31-be2e44b06b34'),
+      ('9ad46d4f-6f2a-4edd-aadb-745993928e1e')
+  )
   AS x (v)
 WHERE
   CAST(uuid_hash(v) AS BIT(32)) <>
@@ -585,13 +633,15 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS PG_LSN)),
-    ('16/B374D84'),
-    ('30/B374D84'),
-    ('255/B374D84'),
-    ('25/B379D90'),
-    ('900/F37FD90'))
+  (
+    VALUES
+      (CAST(NULL AS PG_LSN)),
+      ('16/B374D84'),
+      ('30/B374D84'),
+      ('255/B374D84'),
+      ('25/B379D90'),
+      ('900/F37FD90')
+  )
   AS x (v)
 WHERE
   CAST(pg_lsn_hash(v) AS BIT(32)) <>
@@ -611,10 +661,12 @@ SELECT
   CAST(hashenumextended(v, 1) AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST('sad' AS mood)),
-    ('ok'),
-    ('happy'))
+  (
+    VALUES
+      (CAST('sad' AS mood)),
+      ('ok'),
+      ('happy')
+  )
   AS x (v)
 WHERE
   CAST(hashenum(v) AS BIT(32)) <>
@@ -635,15 +687,17 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST(NULL AS JSONB)),
-    (
-      '{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
-    ),
-    (
-      '{"foo": [true, "bar"], "tags": {"e": 1, "f": null}}'
-    ),
-    ('{"g": {"h": "value"}}'))
+  (
+    VALUES
+      (CAST(NULL AS JSONB)),
+      (
+        '{"a": "aaa bbb ddd ccc", "b": ["eee fff ggg"], "c": {"d": "hhh iii"}}'
+      ),
+      (
+        '{"foo": [true, "bar"], "tags": {"e": 1, "f": null}}'
+      ),
+      ('{"g": {"h": "value"}}')
+  )
   AS x (v)
 WHERE
   CAST(jsonb_hash(v) AS BIT(32)) <>
@@ -664,12 +718,14 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (int4range(10, 20)),
-    (int4range(23, 43)),
-    (int4range(5675, 550273)),
-    (int4range(550274, 1550274)),
-    (int4range(1550275, 208112489)))
+  (
+    VALUES
+      (int4range(10, 20)),
+      (int4range(23, 43)),
+      (int4range(5675, 550273)),
+      (int4range(550274, 1550274)),
+      (int4range(1550275, 208112489))
+  )
   AS x (v)
 WHERE
   CAST(hash_range(v) AS BIT(32)) <>
@@ -690,21 +746,23 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES
-    (CAST('{[10,20)}' AS int4multirange)),
-    (CAST('{[23, 43]}' AS int4multirange)),
-    (
-      CAST('{[5675, 550273)}'
-      AS int4multirange)
-    ),
-    (
-      CAST('{[550274, 1550274)}'
-      AS int4multirange)
-    ),
-    (
-      CAST('{[1550275, 208112489)}'
-      AS int4multirange)
-    ))
+  (
+    VALUES
+      (CAST('{[10,20)}' AS int4multirange)),
+      (CAST('{[23, 43]}' AS int4multirange)),
+      (
+        CAST('{[5675, 550273)}'
+        AS int4multirange)
+      ),
+      (
+        CAST('{[550274, 1550274)}'
+        AS int4multirange)
+      ),
+      (
+        CAST('{[1550275, 208112489)}'
+        AS int4multirange)
+      )
+  )
   AS x (v)
 WHERE
   CAST(hash_multirange(v) AS BIT(32)) <>
@@ -727,11 +785,14 @@ SELECT
   AS BIT(32))
   AS extended1
 FROM
-  (VALUES (
-    CAST(ROW(1, 'aaa') AS hash_test_t1),
-    ROW(2, 'bbb'),
-    ROW(-1, 'ccc')
-  ))
+  (
+    VALUES
+      (
+        CAST(ROW(1, 'aaa') AS hash_test_t1),
+        ROW(2, 'bbb'),
+        ROW(-1, 'ccc')
+      )
+  )
   AS x (v)
 WHERE
   CAST(hash_record(v) AS BIT(32)) <>
@@ -750,10 +811,13 @@ SELECT
   CAST(hash_record(v) AS BIT(32))
   AS standard
 FROM
-  (VALUES (
-    CAST(ROW(CAST('10' AS BIT VARYING), 'aaa')
-    AS hash_test_t2)
-  ))
+  (
+    VALUES
+      (
+        CAST(ROW(CAST('10' AS BIT VARYING), 'aaa')
+        AS hash_test_t2)
+      )
+  )
   AS x (v);
 
 SELECT
@@ -762,10 +826,13 @@ SELECT
   AS BIT(32))
   AS extended0
 FROM
-  (VALUES (
-    CAST(ROW(CAST('11' AS BIT VARYING), 'aaa')
-    AS hash_test_t2)
-  ))
+  (
+    VALUES
+      (
+        CAST(ROW(CAST('11' AS BIT VARYING), 'aaa')
+        AS hash_test_t2)
+      )
+  )
   AS x (v);
 
 DROP TYPE hash_test_t2;

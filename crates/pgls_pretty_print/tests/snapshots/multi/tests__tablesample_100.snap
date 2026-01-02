@@ -106,38 +106,35 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    (0),
-    (100))
-  AS v (pct),
-  LATERAL (SELECT
-    COUNT(*)
-  FROM
-    tenk1 TABLESAMPLE bernoulli (pct))
+  (VALUES (0), (100)) AS v (pct),
+  LATERAL (
+    SELECT
+      COUNT(*)
+    FROM
+      tenk1 TABLESAMPLE bernoulli (pct)
+  )
   AS ss;
 
 SELECT
   *
 FROM
-  (VALUES
-    (0),
-    (100))
-  AS v (pct),
-  LATERAL (SELECT
-    COUNT(*)
-  FROM
-    tenk1 TABLESAMPLE system (pct))
+  (VALUES (0), (100)) AS v (pct),
+  LATERAL (
+    SELECT
+      COUNT(*)
+    FROM
+      tenk1 TABLESAMPLE system (pct)
+  )
   AS ss;
 
 SELECT
   pct,
   COUNT(unique1)
 FROM
-  (VALUES
-    (0),
-    (100))
-  AS v (pct),
-  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct))
+  (VALUES (0), (100)) AS v (pct),
+  LATERAL (
+    SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct)
+  )
   AS ss
 GROUP BY pct;
 
@@ -145,11 +142,10 @@ SELECT
   pct,
   COUNT(unique1)
 FROM
-  (VALUES
-    (0),
-    (100))
-  AS v (pct),
-  LATERAL (SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct))
+  (VALUES (0), (100)) AS v (pct),
+  LATERAL (
+    SELECT * FROM tenk1 TABLESAMPLE bernoulli (pct)
+  )
   AS ss
 GROUP BY pct;
 
@@ -157,11 +153,10 @@ SELECT
   pct,
   COUNT(unique1)
 FROM
-  (VALUES
-    (0),
-    (100))
-  AS v (pct),
-  LATERAL (SELECT * FROM tenk1 TABLESAMPLE system (pct))
+  (VALUES (0), (100)) AS v (pct),
+  LATERAL (
+    SELECT * FROM tenk1 TABLESAMPLE system (pct)
+  )
   AS ss
 GROUP BY pct;
 

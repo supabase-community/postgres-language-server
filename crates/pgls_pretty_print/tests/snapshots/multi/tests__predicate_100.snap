@@ -84,15 +84,17 @@ FROM
   LEFT OUTER JOIN
     pred_tab AS t2
   ON EXISTS
-    (SELECT
-      1
-    FROM
-      pred_tab AS t3,
-      pred_tab AS t4,
-      pred_tab AS t5,
-      pred_tab AS t6
-    WHERE
-      t1.a = t3.a AND t6.a IS NOT NULL);
+    (
+      SELECT
+        1
+      FROM
+        pred_tab AS t3,
+        pred_tab AS t4,
+        pred_tab AS t5,
+        pred_tab AS t6
+      WHERE
+        t1.a = t3.a AND t6.a IS NOT NULL
+    );
 
 SELECT
   *
@@ -101,15 +103,17 @@ FROM
   LEFT OUTER JOIN
     pred_tab AS t2
   ON EXISTS
-    (SELECT
-      1
-    FROM
-      pred_tab AS t3,
-      pred_tab AS t4,
-      pred_tab AS t5,
-      pred_tab AS t6
-    WHERE
-      t1.a = t3.a AND t6.a IS NULL);
+    (
+      SELECT
+        1
+      FROM
+        pred_tab AS t3,
+        pred_tab AS t4,
+        pred_tab AS t5,
+        pred_tab AS t6
+      WHERE
+        t1.a = t3.a AND t6.a IS NULL
+    );
 
 DROP TABLE "pred_tab";
 

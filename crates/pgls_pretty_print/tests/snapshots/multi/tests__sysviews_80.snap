@@ -26,9 +26,11 @@ FOR SELECT
   left(a, 10),
   b
 FROM
-  (VALUES
-    (repeat('a', 512 * 1024), 1),
-    (repeat('b', 512), 2))
+  (
+    VALUES
+      (repeat('a', 512 * 1024), 1),
+      (repeat('b', 512), 2)
+  )
   AS v (a, b)
 ORDER BY v.a DESC;;
 

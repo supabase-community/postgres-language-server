@@ -24,10 +24,7 @@ SELECT * FROM pg_input_error_info('(0,-1)', 'tid');
 
 CREATE TABLE tid_tab (a INT);
 
-INSERT INTO tid_tab
-VALUES
-  (1),
-  (2);
+INSERT INTO tid_tab VALUES (1), (2);
 
 SELECT MIN(ctid) FROM tid_tab;
 

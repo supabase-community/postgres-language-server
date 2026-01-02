@@ -297,54 +297,39 @@ SELECT
   ABSENT ON NULL RETURNING TEXT) FORMAT JSON
   ABSENT ON NULL);
 
+SELECT JSON_ARRAY(SELECT i FROM (VALUES (1), (2), (NULL), (4)) AS foo (i));
+
 SELECT
   JSON_ARRAY(SELECT
     i
   FROM
-    (VALUES
-      (1),
-      (2),
-      (NULL),
-      (4))
+    (
+      VALUES
+        (CAST(NULL AS INT[])),
+        ('{1,2}'),
+        (NULL),
+        (NULL),
+        ('{3,4}'),
+        (NULL)
+    )
     AS foo (i));
 
 SELECT
   JSON_ARRAY(SELECT
     i
   FROM
-    (VALUES
-      (CAST(NULL AS INT[])),
-      ('{1,2}'),
-      (NULL),
-      (NULL),
-      ('{3,4}'),
-      (NULL))
-    AS foo (i));
-
-SELECT
-  JSON_ARRAY(SELECT
-    i
-  FROM
-    (VALUES
-      (CAST(NULL AS INT[])),
-      ('{1,2}'),
-      (NULL),
-      (NULL),
-      ('{3,4}'),
-      (NULL))
+    (
+      VALUES
+        (CAST(NULL AS INT[])),
+        ('{1,2}'),
+        (NULL),
+        (NULL),
+        ('{3,4}'),
+        (NULL)
+    )
     AS foo (i) RETURNING JSONB);
 
-SELECT
-  JSON_ARRAY(SELECT
-    i
-  FROM
-    (VALUES
-      (3),
-      (1),
-      (NULL),
-      (2))
-    AS foo (i)
-  ORDER BY i);
+SELECT JSON_ARRAY(SELECT i FROM (VALUES (3), (1), (NULL), (2)) AS foo (i) ORDER BY i);
 
 SELECT JSON_ARRAY(WITH x AS (SELECT 1) VALUES (TRUE));
 
@@ -419,16 +404,18 @@ SELECT
     bar > 2)
   AS row_filtered_agg_returning_jsonb
 FROM
-  (VALUES
-    (NULL),
-    (3),
-    (1),
-    (NULL),
-    (NULL),
-    (5),
-    (2),
-    (4),
-    (NULL))
+  (
+    VALUES
+      (NULL),
+      (3),
+      (1),
+      (NULL),
+      (NULL),
+      (5),
+      (2),
+      (4),
+      (NULL)
+  )
   AS foo (bar);
 
 SELECT
@@ -441,18 +428,20 @@ SELECT
     PARTITION BY foo.bar % 2
   )
 FROM
-  (VALUES
-    (NULL),
-    (3),
-    (1),
-    (NULL),
-    (NULL),
-    (5),
-    (2),
-    (4),
-    (NULL),
-    (5),
-    (4))
+  (
+    VALUES
+      (NULL),
+      (3),
+      (1),
+      (NULL),
+      (NULL),
+      (5),
+      (2),
+      (4),
+      (NULL),
+      (5),
+      (4)
+  )
   AS foo (bar);
 
 SELECT
@@ -489,11 +478,9 @@ SELECT
   ABSENT ON NULL
   RETURNING JSONB)
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, NULL),
-    (3, 3))
+  (
+    VALUES (1, 1), (1, NULL), (2, NULL), (3, 3)
+  )
   AS foo (k, v);
 
 SELECT
@@ -501,34 +488,28 @@ SELECT
   NULL ON NULL
   WITH UNIQUE KEYS)
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS foo (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
   ABSENT ON NULL
   WITH UNIQUE KEYS)
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS foo (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
   ABSENT ON NULL
   WITH UNIQUE KEYS)
 FROM
-  (VALUES
-    (1, 1),
-    (0, NULL),
-    (3, NULL),
-    (2, 2),
-    (4, NULL))
+  (
+    VALUES
+      (1, 1),
+      (0, NULL),
+      (3, NULL),
+      (2, 2),
+      (4, NULL)
+  )
   AS foo (k, v);
 
 SELECT
@@ -537,11 +518,7 @@ SELECT
   WITH UNIQUE KEYS
   RETURNING JSONB)
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS foo (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -549,11 +526,7 @@ SELECT
   WITH UNIQUE KEYS
   RETURNING JSONB)
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS foo (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS foo (k, v);
 
 SELECT
   JSON_OBJECTAGG(k : v
@@ -561,13 +534,15 @@ SELECT
   WITH UNIQUE KEYS
   RETURNING JSONB)
 FROM
-  (VALUES
-    (1, 1),
-    (0, NULL),
-    (4, NULL),
-    (5, NULL),
-    (6, NULL),
-    (2, 2))
+  (
+    VALUES
+      (1, 1),
+      (0, NULL),
+      (4, NULL),
+      (5, NULL),
+      (6, NULL),
+      (2, 2)
+  )
   AS foo (k, v);
 
 SELECT
@@ -595,10 +570,7 @@ SELECT
     ORDER BY k
   )
 FROM
-  (VALUES
-    (1, 1),
-    (2, 2))
-  AS a (k, v);
+  (VALUES (1, 1), (2, 2)) AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -609,11 +581,7 @@ SELECT
     ORDER BY k
   )
 FROM
-  (VALUES
-    (1, 1),
-    (1, 2),
-    (2, 2))
-  AS a (k, v);
+  (VALUES (1, 1), (1, 2), (2, 2)) AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -624,11 +592,7 @@ SELECT
     ORDER BY k
   )
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS a (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -638,11 +602,7 @@ SELECT
     ORDER BY k
   )
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS a (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS a (k, v);
 
 SELECT
   to_json(a) AS a,
@@ -656,11 +616,7 @@ SELECT
     UNBOUNDED FOLLOWING
   )
 FROM
-  (VALUES
-    (1, 1),
-    (1, NULL),
-    (2, 2))
-  AS a (k, v);
+  (VALUES (1, 1), (1, NULL), (2, 2)) AS a (k, v);
 
 SELECT JSON_ARRAY('1' FORMAT JSON, 2 ABSENT ON NULL RETURNING JSON);
 
@@ -737,28 +693,14 @@ FROM
 
 DROP VIEW "json_arrayagg_view";
 
-SELECT
-  JSON_ARRAY(SELECT
-    i
-  FROM
-    (VALUES
-      (1),
-      (2),
-      (NULL),
-      (4))
-    AS foo (i) RETURNING JSONB);
+SELECT JSON_ARRAY(SELECT i FROM (VALUES (1), (2), (NULL), (4)) AS foo (i) RETURNING JSONB);
 
 CREATE VIEW json_array_subquery_view
 AS SELECT
   JSON_ARRAY(SELECT
     i
   FROM
-    (VALUES
-      (1),
-      (2),
-      (NULL),
-      (4))
-    AS foo (i) RETURNING JSONB);
+    (VALUES (1), (2), (NULL), (4)) AS foo (i) RETURNING JSONB);
 
 DROP VIEW "json_array_subquery_view";
 

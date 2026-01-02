@@ -835,39 +835,44 @@ CREATE TABLE test_range_excl (
 );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(123, 123, '[]'),
-  int4range(1, 1, '[]'),
-  '[2010-01-02 10:00, 2010-01-02 11:00)'
-);
+VALUES
+  (
+    int4range(123, 123, '[]'),
+    int4range(1, 1, '[]'),
+    '[2010-01-02 10:00, 2010-01-02 11:00)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(123, 123, '[]'),
-  int4range(2, 2, '[]'),
-  '[2010-01-02 11:00, 2010-01-02 12:00)'
-);
+VALUES
+  (
+    int4range(123, 123, '[]'),
+    int4range(2, 2, '[]'),
+    '[2010-01-02 11:00, 2010-01-02 12:00)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(123, 123, '[]'),
-  int4range(3, 3, '[]'),
-  '[2010-01-02 10:10, 2010-01-02 11:00)'
-);
+VALUES
+  (
+    int4range(123, 123, '[]'),
+    int4range(3, 3, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:00)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(124, 124, '[]'),
-  int4range(3, 3, '[]'),
-  '[2010-01-02 10:10, 2010-01-02 11:10)'
-);
+VALUES
+  (
+    int4range(124, 124, '[]'),
+    int4range(3, 3, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:10)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(125, 125, '[]'),
-  int4range(1, 1, '[]'),
-  '[2010-01-02 10:10, 2010-01-02 11:00)'
-);
+VALUES
+  (
+    int4range(125, 125, '[]'),
+    int4range(1, 1, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:00)'
+  );
 
 SELECT int8range(CAST(10000000000 AS BIGINT), CAST(20000000000 AS BIGINT), '(]');
 
@@ -1015,9 +1020,11 @@ SELECT
   *,
   row_to_json(upper(t)) AS u
 FROM
-  (VALUES
-    (two_ints_range(ROW(1, 2), ROW(3, 4))),
-    (two_ints_range(ROW(5, 6), ROW(7, 8))))
+  (
+    VALUES
+      (two_ints_range(ROW(1, 2), ROW(3, 4))),
+      (two_ints_range(ROW(5, 6), ROW(7, 8)))
+  )
   AS v (t);
 
 ALTER TYPE two_ints
@@ -1113,12 +1120,7 @@ CREATE TYPE textrange_supp AS RANGE (subtype = TEXT, subtype_opclass = text_patt
 
 CREATE TEMPORARY TABLE text_support_test (t TEXT COLLATE "C");
 
-INSERT INTO text_support_test
-VALUES
-  ('a'),
-  ('c'),
-  ('d'),
-  ('ch');
+INSERT INTO text_support_test VALUES ('a'), ('c'), ('d'), ('ch');
 
 SELECT * FROM text_support_test WHERE t <@ textrange_supp('a', 'd');
 

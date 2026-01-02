@@ -420,10 +420,14 @@ SELECT
   b.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x < 20)
+  (
+    SELECT * FROM pagg_tab1 WHERE x < 20
+  )
   AS a
   LEFT OUTER JOIN
-    (SELECT * FROM pagg_tab2 WHERE y > 10)
+    (
+      SELECT * FROM pagg_tab2 WHERE y > 10
+    )
     AS b
   ON a.x = b.y
 WHERE
@@ -438,10 +442,14 @@ SELECT
   b.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x < 20)
+  (
+    SELECT * FROM pagg_tab1 WHERE x < 20
+  )
   AS a
   LEFT OUTER JOIN
-    (SELECT * FROM pagg_tab2 WHERE y > 10)
+    (
+      SELECT * FROM pagg_tab2 WHERE y > 10
+    )
     AS b
   ON a.x = b.y
 WHERE
@@ -456,10 +464,14 @@ SELECT
   b.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x < 20)
+  (
+    SELECT * FROM pagg_tab1 WHERE x < 20
+  )
   AS a
   FULL OUTER JOIN
-    (SELECT * FROM pagg_tab2 WHERE y > 10)
+    (
+      SELECT * FROM pagg_tab2 WHERE y > 10
+    )
     AS b
   ON a.x = b.y
 WHERE
@@ -474,10 +486,14 @@ SELECT
   b.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x < 20)
+  (
+    SELECT * FROM pagg_tab1 WHERE x < 20
+  )
   AS a
   FULL OUTER JOIN
-    (SELECT * FROM pagg_tab2 WHERE y > 10)
+    (
+      SELECT * FROM pagg_tab2 WHERE y > 10
+    )
     AS b
   ON a.x = b.y
 WHERE
@@ -492,12 +508,14 @@ SELECT
   a.y,
   COUNT(*)
 FROM
-  (SELECT
-    *
-  FROM
-    pagg_tab1
-  WHERE
-    x = 1 AND x = 2)
+  (
+    SELECT
+      *
+    FROM
+      pagg_tab1
+    WHERE
+      x = 1 AND x = 2
+  )
   AS a
   LEFT OUTER JOIN
     pagg_tab2 AS b
@@ -512,12 +530,14 @@ SELECT
   a.y,
   COUNT(*)
 FROM
-  (SELECT
-    *
-  FROM
-    pagg_tab1
-  WHERE
-    x = 1 AND x = 2)
+  (
+    SELECT
+      *
+    FROM
+      pagg_tab1
+    WHERE
+      x = 1 AND x = 2
+  )
   AS a
   LEFT OUTER JOIN
     pagg_tab2 AS b

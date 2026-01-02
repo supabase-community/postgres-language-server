@@ -55,12 +55,14 @@ FROM
   pg_class
 WHERE
   relnamespace =
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname = 'test_ns_schema_1');
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'test_ns_schema_1'
+  );
 
 INSERT INTO test_ns_schema_1.abc DEFAULT VALUES;
 
@@ -80,12 +82,14 @@ FROM
   pg_class
 WHERE
   relnamespace =
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname = 'test_ns_schema_1');
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'test_ns_schema_1'
+  );
 
 CREATE SCHEMA "test_ns_schema_renamed";
 
@@ -106,12 +110,14 @@ FROM
   pg_class
 WHERE
   relnamespace =
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname = 'test_ns_schema_renamed');
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'test_ns_schema_renamed'
+  );
 
 CREATE SCHEMA "test_maint_search_path";
 
@@ -130,10 +136,7 @@ AS '
 
 CREATE TABLE test_maint (i INT);
 
-INSERT INTO test_maint
-VALUES
-  (1),
-  (2);
+INSERT INTO test_maint VALUES (1), (2);
 
 CREATE MATERIALIZED VIEW test_maint_mv AS SELECT fn(i) FROM test_maint;
 

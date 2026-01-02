@@ -283,13 +283,15 @@ SELECT
   JSON_QUERY(js, '$' WITH UNCONDITIONAL WRAPPER)
   AS "with"
 FROM
-  (VALUES
-    (CAST('null' AS JSONB)),
-    ('12.3'),
-    ('true'),
-    ('"aaa"'),
-    ('[1, null, "2"]'),
-    ('{"a": 1, "b": [2]}'))
+  (
+    VALUES
+      (CAST('null' AS JSONB)),
+      ('12.3'),
+      ('true'),
+      ('"aaa"'),
+      ('[1, null, "2"]'),
+      ('{"a": 1, "b": [2]}')
+  )
   AS foo (js);
 
 SELECT
@@ -306,16 +308,18 @@ SELECT
   WITH UNCONDITIONAL WRAPPER)
   AS "with"
 FROM
-  (VALUES
-    (CAST('1' AS JSONB)),
-    ('[]'),
-    ('[null]'),
-    ('[12.3]'),
-    ('[true]'),
-    ('["aaa"]'),
-    ('[[1, 2, 3]]'),
-    ('[{"a": 1, "b": [2]}]'),
-    ('[1, "2", null, [3]]'))
+  (
+    VALUES
+      (CAST('1' AS JSONB)),
+      ('[]'),
+      ('[null]'),
+      ('[12.3]'),
+      ('[true]'),
+      ('["aaa"]'),
+      ('[[1, 2, 3]]'),
+      ('[{"a": 1, "b": [2]}]'),
+      ('[1, "2", null, [3]]')
+  )
   AS foo (js);
 
 SELECT JSON_QUERY(CAST('"aaa"' AS JSONB), '$'  RETURNING TEXT);

@@ -19,7 +19,7 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'int8out';
 
-CREATE TYPE int8alias1 ( input = int8alias1in, output = int8alias1out, like = BIGINT);
+CREATE TYPE int8alias1 (input = int8alias1in, output = int8alias1out, like = BIGINT);
 
 CREATE TYPE int8alias2;
 
@@ -37,7 +37,7 @@ IMMUTABLE
 LANGUAGE "internal"
 AS 'int8out';
 
-CREATE TYPE int8alias2 ( input = int8alias2in, output = int8alias2out, like = BIGINT);
+CREATE TYPE int8alias2 (input = int8alias2in, output = int8alias2out, like = BIGINT);
 
 CREATE CAST (BIGINT AS int8alias1) WITHOUT FUNCTION;
 
@@ -185,15 +185,19 @@ SELECT
   *
 FROM
   ec1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss1
 WHERE
   ss1.x = ec1.f1 AND ec1.ff = CAST(42 AS BIGINT);
@@ -202,15 +206,19 @@ SELECT
   *
 FROM
   ec1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss1
 WHERE
   ss1.x = ec1.f1 AND
@@ -221,25 +229,33 @@ SELECT
   *
 FROM
   ec1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss2
 WHERE
   ss1.x = ec1.f1 AND
@@ -254,25 +270,33 @@ SELECT
   *
 FROM
   ec1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss2
 WHERE
   ss1.x = ec1.f1 AND
@@ -289,15 +313,19 @@ SELECT
   *
 FROM
   ec1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss1
 WHERE
   ss1.x = ec1.f1 AND ec1.ff = CAST(42 AS BIGINT);
@@ -310,15 +338,19 @@ SELECT
   *
 FROM
   ec1,
-  (SELECT
-    ff + 1 AS x
-  FROM
-    (SELECT ff + 2 AS ff FROM ec1
+  (
+    SELECT
+      ff + 1 AS x
+    FROM
+      (
+        SELECT ff + 2 AS ff FROM ec1
+        UNION ALL
+        SELECT ff + 3 AS ff FROM ec1
+      )
+      AS ss0
     UNION ALL
-    SELECT ff + 3 AS ff FROM ec1)
-    AS ss0
-  UNION ALL
-  SELECT ff + 4 AS x FROM ec1)
+    SELECT ff + 4 AS x FROM ec1
+  )
   AS ss1
 WHERE
   ss1.x = ec1.f1 AND ec1.ff = CAST(42 AS BIGINT);

@@ -304,20 +304,19 @@ RETURNS INT[]
 AS 'select $1'
 LANGUAGE "sql";
 
-CREATE AGGREGATE myaggp01a (*) ( sfunc = stfnp, stype = INT[], finalfunc = ffp, initcond = '{}');
+CREATE AGGREGATE myaggp01a (*) (sfunc = stfnp, stype = INT[], finalfunc = ffp, initcond = '{}');
 
-CREATE AGGREGATE myaggp02a (*) ( sfunc = stfnp, stype = ANYARRAY, finalfunc = ffp, initcond = '{}');
+CREATE AGGREGATE myaggp02a (*) (sfunc = stfnp, stype = ANYARRAY, finalfunc = ffp, initcond = '{}');
 
-CREATE AGGREGATE myaggp03a (*) ( sfunc = stfp, stype = INT[], finalfunc = ffp, initcond = '{}');
+CREATE AGGREGATE myaggp03a (*) (sfunc = stfp, stype = INT[], finalfunc = ffp, initcond = '{}');
 
-CREATE AGGREGATE myaggp03b (*) ( sfunc = stfp, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggp03b (*) (sfunc = stfp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggp04a (*) ( sfunc = stfp, stype = ANYARRAY, finalfunc = ffp, initcond = '{}');
+CREATE AGGREGATE myaggp04a (*) (sfunc = stfp, stype = ANYARRAY, finalfunc = ffp, initcond = '{}');
 
-CREATE AGGREGATE myaggp04b (*) ( sfunc = stfp, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggp04b (*) (sfunc = stfp, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggp05a
-(
+CREATE AGGREGATE myaggp05a (
   basetype = INT,
   sfunc = tfnp,
   stype = INT[],
@@ -325,8 +324,7 @@ CREATE AGGREGATE myaggp05a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp06a
-(
+CREATE AGGREGATE myaggp06a (
   basetype = INT,
   sfunc = tf2p,
   stype = INT[],
@@ -334,8 +332,7 @@ CREATE AGGREGATE myaggp06a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp07a
-(
+CREATE AGGREGATE myaggp07a (
   basetype = ANYELEMENT,
   sfunc = tfnp,
   stype = INT[],
@@ -343,8 +340,7 @@ CREATE AGGREGATE myaggp07a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp08a
-(
+CREATE AGGREGATE myaggp08a (
   basetype = ANYELEMENT,
   sfunc = tf2p,
   stype = INT[],
@@ -352,8 +348,7 @@ CREATE AGGREGATE myaggp08a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp09a
-(
+CREATE AGGREGATE myaggp09a (
   basetype = INT,
   sfunc = tf1p,
   stype = INT[],
@@ -361,10 +356,9 @@ CREATE AGGREGATE myaggp09a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp09b ( basetype = INT, sfunc = tf1p, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggp09b (basetype = INT, sfunc = tf1p, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggp10a
-(
+CREATE AGGREGATE myaggp10a (
   basetype = INT,
   sfunc = tfp,
   stype = INT[],
@@ -372,10 +366,9 @@ CREATE AGGREGATE myaggp10a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp10b ( basetype = INT, sfunc = tfp, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggp10b (basetype = INT, sfunc = tfp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggp11a
-(
+CREATE AGGREGATE myaggp11a (
   basetype = ANYELEMENT,
   sfunc = tf1p,
   stype = INT[],
@@ -383,10 +376,9 @@ CREATE AGGREGATE myaggp11a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp11b ( basetype = ANYELEMENT, sfunc = tf1p, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggp11b (basetype = ANYELEMENT, sfunc = tf1p, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggp12a
-(
+CREATE AGGREGATE myaggp12a (
   basetype = ANYELEMENT,
   sfunc = tfp,
   stype = INT[],
@@ -394,10 +386,9 @@ CREATE AGGREGATE myaggp12a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp12b ( basetype = ANYELEMENT, sfunc = tfp, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggp12b (basetype = ANYELEMENT, sfunc = tfp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggp13a
-(
+CREATE AGGREGATE myaggp13a (
   basetype = INT,
   sfunc = tfnp,
   stype = ANYARRAY,
@@ -405,8 +396,7 @@ CREATE AGGREGATE myaggp13a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp14a
-(
+CREATE AGGREGATE myaggp14a (
   basetype = INT,
   sfunc = tf2p,
   stype = ANYARRAY,
@@ -414,8 +404,7 @@ CREATE AGGREGATE myaggp14a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp15a
-(
+CREATE AGGREGATE myaggp15a (
   basetype = ANYELEMENT,
   sfunc = tfnp,
   stype = ANYARRAY,
@@ -423,8 +412,7 @@ CREATE AGGREGATE myaggp15a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp16a
-(
+CREATE AGGREGATE myaggp16a (
   basetype = ANYELEMENT,
   sfunc = tf2p,
   stype = ANYARRAY,
@@ -432,8 +420,7 @@ CREATE AGGREGATE myaggp16a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp17a
-(
+CREATE AGGREGATE myaggp17a (
   basetype = INT,
   sfunc = tf1p,
   stype = ANYARRAY,
@@ -441,10 +428,9 @@ CREATE AGGREGATE myaggp17a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp17b ( basetype = INT, sfunc = tf1p, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggp17b (basetype = INT, sfunc = tf1p, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggp18a
-(
+CREATE AGGREGATE myaggp18a (
   basetype = INT,
   sfunc = tfp,
   stype = ANYARRAY,
@@ -452,10 +438,9 @@ CREATE AGGREGATE myaggp18a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp18b ( basetype = INT, sfunc = tfp, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggp18b (basetype = INT, sfunc = tfp, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggp19a
-(
+CREATE AGGREGATE myaggp19a (
   basetype = ANYELEMENT,
   sfunc = tf1p,
   stype = ANYARRAY,
@@ -463,16 +448,9 @@ CREATE AGGREGATE myaggp19a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp19b
-(
-  basetype = ANYELEMENT,
-  sfunc = tf1p,
-  stype = ANYARRAY,
-  initcond = '{}'
-);
+CREATE AGGREGATE myaggp19b (basetype = ANYELEMENT, sfunc = tf1p, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggp20a
-(
+CREATE AGGREGATE myaggp20a (
   basetype = ANYELEMENT,
   sfunc = tfp,
   stype = ANYARRAY,
@@ -480,31 +458,21 @@ CREATE AGGREGATE myaggp20a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggp20b ( basetype = ANYELEMENT, sfunc = tfp, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggp20b (basetype = ANYELEMENT, sfunc = tfp, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggn01a (*) ( sfunc = stfnp, stype = INT[], finalfunc = ffnp, initcond = '{}');
+CREATE AGGREGATE myaggn01a (*) (sfunc = stfnp, stype = INT[], finalfunc = ffnp, initcond = '{}');
 
-CREATE AGGREGATE myaggn01b (*) ( sfunc = stfnp, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggn01b (*) (sfunc = stfnp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggn02a
-(
-  *
-)
-(
-  sfunc = stfnp,
-  stype = ANYARRAY,
-  finalfunc = ffnp,
-  initcond = '{}'
-);
+CREATE AGGREGATE myaggn02a (*) (sfunc = stfnp, stype = ANYARRAY, finalfunc = ffnp, initcond = '{}');
 
-CREATE AGGREGATE myaggn02b (*) ( sfunc = stfnp, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggn02b (*) (sfunc = stfnp, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggn03a (*) ( sfunc = stfp, stype = INT[], finalfunc = ffnp, initcond = '{}');
+CREATE AGGREGATE myaggn03a (*) (sfunc = stfp, stype = INT[], finalfunc = ffnp, initcond = '{}');
 
-CREATE AGGREGATE myaggn04a (*) ( sfunc = stfp, stype = ANYARRAY, finalfunc = ffnp, initcond = '{}');
+CREATE AGGREGATE myaggn04a (*) (sfunc = stfp, stype = ANYARRAY, finalfunc = ffnp, initcond = '{}');
 
-CREATE AGGREGATE myaggn05a
-(
+CREATE AGGREGATE myaggn05a (
   basetype = INT,
   sfunc = tfnp,
   stype = INT[],
@@ -512,10 +480,9 @@ CREATE AGGREGATE myaggn05a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn05b ( basetype = INT, sfunc = tfnp, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggn05b (basetype = INT, sfunc = tfnp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggn06a
-(
+CREATE AGGREGATE myaggn06a (
   basetype = INT,
   sfunc = tf2p,
   stype = INT[],
@@ -523,10 +490,9 @@ CREATE AGGREGATE myaggn06a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn06b ( basetype = INT, sfunc = tf2p, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggn06b (basetype = INT, sfunc = tf2p, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggn07a
-(
+CREATE AGGREGATE myaggn07a (
   basetype = ANYELEMENT,
   sfunc = tfnp,
   stype = INT[],
@@ -534,10 +500,9 @@ CREATE AGGREGATE myaggn07a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn07b ( basetype = ANYELEMENT, sfunc = tfnp, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggn07b (basetype = ANYELEMENT, sfunc = tfnp, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggn08a
-(
+CREATE AGGREGATE myaggn08a (
   basetype = ANYELEMENT,
   sfunc = tf2p,
   stype = INT[],
@@ -545,10 +510,9 @@ CREATE AGGREGATE myaggn08a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn08b ( basetype = ANYELEMENT, sfunc = tf2p, stype = INT[], initcond = '{}');
+CREATE AGGREGATE myaggn08b (basetype = ANYELEMENT, sfunc = tf2p, stype = INT[], initcond = '{}');
 
-CREATE AGGREGATE myaggn09a
-(
+CREATE AGGREGATE myaggn09a (
   basetype = INT,
   sfunc = tf1p,
   stype = INT[],
@@ -556,8 +520,7 @@ CREATE AGGREGATE myaggn09a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn10a
-(
+CREATE AGGREGATE myaggn10a (
   basetype = INT,
   sfunc = tfp,
   stype = INT[],
@@ -565,8 +528,7 @@ CREATE AGGREGATE myaggn10a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn11a
-(
+CREATE AGGREGATE myaggn11a (
   basetype = ANYELEMENT,
   sfunc = tf1p,
   stype = INT[],
@@ -574,8 +536,7 @@ CREATE AGGREGATE myaggn11a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn12a
-(
+CREATE AGGREGATE myaggn12a (
   basetype = ANYELEMENT,
   sfunc = tfp,
   stype = INT[],
@@ -583,8 +544,7 @@ CREATE AGGREGATE myaggn12a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn13a
-(
+CREATE AGGREGATE myaggn13a (
   basetype = INT,
   sfunc = tfnp,
   stype = ANYARRAY,
@@ -592,10 +552,9 @@ CREATE AGGREGATE myaggn13a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn13b ( basetype = INT, sfunc = tfnp, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggn13b (basetype = INT, sfunc = tfnp, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggn14a
-(
+CREATE AGGREGATE myaggn14a (
   basetype = INT,
   sfunc = tf2p,
   stype = ANYARRAY,
@@ -603,10 +562,9 @@ CREATE AGGREGATE myaggn14a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn14b ( basetype = INT, sfunc = tf2p, stype = ANYARRAY, initcond = '{}');
+CREATE AGGREGATE myaggn14b (basetype = INT, sfunc = tf2p, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggn15a
-(
+CREATE AGGREGATE myaggn15a (
   basetype = ANYELEMENT,
   sfunc = tfnp,
   stype = ANYARRAY,
@@ -614,16 +572,9 @@ CREATE AGGREGATE myaggn15a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn15b
-(
-  basetype = ANYELEMENT,
-  sfunc = tfnp,
-  stype = ANYARRAY,
-  initcond = '{}'
-);
+CREATE AGGREGATE myaggn15b (basetype = ANYELEMENT, sfunc = tfnp, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggn16a
-(
+CREATE AGGREGATE myaggn16a (
   basetype = ANYELEMENT,
   sfunc = tf2p,
   stype = ANYARRAY,
@@ -631,16 +582,9 @@ CREATE AGGREGATE myaggn16a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn16b
-(
-  basetype = ANYELEMENT,
-  sfunc = tf2p,
-  stype = ANYARRAY,
-  initcond = '{}'
-);
+CREATE AGGREGATE myaggn16b (basetype = ANYELEMENT, sfunc = tf2p, stype = ANYARRAY, initcond = '{}');
 
-CREATE AGGREGATE myaggn17a
-(
+CREATE AGGREGATE myaggn17a (
   basetype = INT,
   sfunc = tf1p,
   stype = ANYARRAY,
@@ -648,8 +592,7 @@ CREATE AGGREGATE myaggn17a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn18a
-(
+CREATE AGGREGATE myaggn18a (
   basetype = INT,
   sfunc = tfp,
   stype = ANYARRAY,
@@ -657,8 +600,7 @@ CREATE AGGREGATE myaggn18a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn19a
-(
+CREATE AGGREGATE myaggn19a (
   basetype = ANYELEMENT,
   sfunc = tf1p,
   stype = ANYARRAY,
@@ -666,8 +608,7 @@ CREATE AGGREGATE myaggn19a
   initcond = '{}'
 );
 
-CREATE AGGREGATE myaggn20a
-(
+CREATE AGGREGATE myaggn20a (
   basetype = ANYELEMENT,
   sfunc = tfp,
   stype = ANYARRAY,
@@ -675,15 +616,7 @@ CREATE AGGREGATE myaggn20a
   initcond = '{}'
 );
 
-CREATE AGGREGATE mysum2
-(
-  ANYELEMENT, ANYELEMENT
-)
-(
-  sfunc = sum3,
-  stype = ANYELEMENT,
-  initcond = '0'
-);
+CREATE AGGREGATE mysum2 (ANYELEMENT, ANYELEMENT) (sfunc = sum3, stype = ANYELEMENT, initcond = '0');
 
 CREATE TEMPORARY TABLE t (
   f1 INT,
@@ -774,30 +707,24 @@ SELECT f1, sql_if(f1 > 0, bleat(f1), bleat(f1 + 1)) FROM int4_tbl;
 
 SELECT q2, sql_if(q2 > 0, q2, q2 + 1) FROM int8_tbl;
 
-CREATE AGGREGATE array_larger_accum
-(
+CREATE AGGREGATE array_larger_accum (
   ANYARRAY
-)
-(
+) (
   sfunc = array_larger,
   stype = ANYARRAY,
   initcond = '{}'
 );
 
-SELECT
-  array_larger_accum(i)
-FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[3, 4]))
-  AS t (i);
+SELECT array_larger_accum(i) FROM (VALUES (ARRAY[1, 2]), (ARRAY[3, 4])) AS t (i);
 
 SELECT
   array_larger_accum(i)
 FROM
-  (VALUES
-    (ARRAY[ROW(1, 2), ROW(3, 4)]),
-    (ARRAY[ROW(5, 6), ROW(7, 8)]))
+  (
+    VALUES
+      (ARRAY[ROW(1, 2), ROW(3, 4)]),
+      (ARRAY[ROW(5, 6), ROW(7, 8)])
+  )
   AS t (i);
 
 CREATE FUNCTION add_group(grp ANYARRAY, ad ANYELEMENT, size INT)
@@ -816,13 +743,13 @@ end;
 LANGUAGE "plpgsql"
 IMMUTABLE;
 
-CREATE AGGREGATE build_group (ANYELEMENT, INT) ( sfunc = add_group, stype = ANYARRAY);
+CREATE AGGREGATE build_group (ANYELEMENT, INT) (sfunc = add_group, stype = ANYARRAY);
 
 SELECT build_group(q1, 3) FROM int8_tbl;
 
-CREATE AGGREGATE build_group (BIGINT, INT) ( sfunc = add_group, stype = SMALLINT[]);
+CREATE AGGREGATE build_group (BIGINT, INT) (sfunc = add_group, stype = SMALLINT[]);
 
-CREATE AGGREGATE build_group (BIGINT, INT) ( sfunc = add_group, stype = BIGINT[]);
+CREATE AGGREGATE build_group (BIGINT, INT) (sfunc = add_group, stype = BIGINT[]);
 
 CREATE FUNCTION first_el_transfn(ANYARRAY, ANYELEMENT)
 RETURNS ANYARRAY
@@ -837,21 +764,17 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE AGGREGATE first_el_agg_f8
-(
+CREATE AGGREGATE first_el_agg_f8 (
   DOUBLE PRECISION
-)
-(
+) (
   sfunc = array_append,
   stype = DOUBLE PRECISION[],
   finalfunc = first_el
 );
 
-CREATE AGGREGATE first_el_agg_any
-(
+CREATE AGGREGATE first_el_agg_any (
   ANYELEMENT
-)
-(
+) (
   sfunc = first_el_transfn,
   stype = ANYARRAY,
   finalfunc = first_el

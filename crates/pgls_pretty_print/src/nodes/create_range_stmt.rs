@@ -21,7 +21,7 @@ pub(super) fn emit_create_range_stmt(e: &mut EventEmitter, n: &CreateRangeStmt) 
     e.token(TokenKind::IDENT("RANGE".to_string()));
 
     if !n.params.is_empty() {
-        e.line(LineType::SoftOrSpace);
+        e.space();
         e.token(TokenKind::L_PAREN);
         e.line(LineType::Soft);
         e.indent_start();

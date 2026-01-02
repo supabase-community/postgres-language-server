@@ -248,11 +248,7 @@ INSERT INTO foo AS bar DEFAULT VALUES RETURNING bar.f3;
 
 TRUNCATE foo;
 
-INSERT INTO foo
-VALUES
-  (1, 'xxx', 10, 20),
-  (2, 'more', 42, 141),
-  (3, 'zoo2', 57, 99);
+INSERT INTO foo VALUES (1, 'xxx', 10, 20), (2, 'more', 42, 141), (3, 'zoo2', 57, 99);
 
 INSERT INTO foo
 VALUES (4)
@@ -332,28 +328,36 @@ new.*,
 
 INSERT INTO foo
 VALUES (5, 'subquery test')
-RETURNING (SELECT
-  MAX(old.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+RETURNING (
+  SELECT
+    MAX(old.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS old_max,
-(SELECT
-  MAX(new.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(new.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS new_max;
 
 INSERT INTO foo
 VALUES (5, 'subquery test')
-RETURNING (SELECT
-  MAX(old.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+RETURNING (
+  SELECT
+    MAX(old.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS old_max,
-(SELECT
-  MAX(new.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(new.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS new_max;
 
 UPDATE foo
@@ -361,15 +365,19 @@ SET f4 = 100
 WHERE
   f1 = 5
 RETURNING (SELECT old.f4 = new.f4),
-(SELECT
-  MAX(old.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(old.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS old_max,
-(SELECT
-  MAX(new.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(new.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS new_max;
 
 UPDATE foo
@@ -377,43 +385,55 @@ SET f4 = 100
 WHERE
   f1 = 5
 RETURNING (SELECT old.f4 = new.f4),
-(SELECT
-  MAX(old.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(old.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS old_max,
-(SELECT
-  MAX(new.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(new.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS new_max;
 
 DELETE FROM foo
 WHERE
   f1 = 5
-RETURNING (SELECT
-  MAX(old.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+RETURNING (
+  SELECT
+    MAX(old.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS old_max,
-(SELECT
-  MAX(new.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(new.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS new_max;
 
 DELETE FROM foo
 WHERE
   f1 = 5
-RETURNING (SELECT
-  MAX(old.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+RETURNING (
+  SELECT
+    MAX(old.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS old_max,
-(SELECT
-  MAX(new.f4 + x)
-FROM
-  generate_series(1, 10) AS x)
+(
+  SELECT
+    MAX(new.f4 + x)
+  FROM
+    generate_series(1, 10) AS x
+)
 AS new_max;
 
 CREATE RULE foo_del_rule

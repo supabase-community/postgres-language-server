@@ -151,17 +151,21 @@ SET enable_hashagg = 'on';
 SELECT
   x
 FROM
-  (VALUES
-    (CAST('11' AS BIT VARYING)),
-    (CAST('10' AS BIT VARYING)))
+  (
+    VALUES
+      (CAST('11' AS BIT VARYING)),
+      (CAST('10' AS BIT VARYING))
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (CAST('11' AS BIT VARYING)),
-    (CAST('10' AS BIT VARYING)))
+  (
+    VALUES
+      (CAST('11' AS BIT VARYING)),
+      (CAST('10' AS BIT VARYING))
+  )
   AS _ (x);
 
 SET enable_hashagg = off;
@@ -169,17 +173,21 @@ SET enable_hashagg = off;
 SELECT
   x
 FROM
-  (VALUES
-    (CAST('11' AS BIT VARYING)),
-    (CAST('10' AS BIT VARYING)))
+  (
+    VALUES
+      (CAST('11' AS BIT VARYING)),
+      (CAST('10' AS BIT VARYING))
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (CAST('11' AS BIT VARYING)),
-    (CAST('10' AS BIT VARYING)))
+  (
+    VALUES
+      (CAST('11' AS BIT VARYING)),
+      (CAST('10' AS BIT VARYING))
+  )
   AS _ (x);
 
 RESET enable_hashagg;
@@ -189,113 +197,85 @@ SET enable_hashagg = 'on';
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
+
+SELECT x FROM (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
+
+SELECT x FROM (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[CAST('10' AS BIT VARYING)]),
-    (ARRAY[CAST('11' AS BIT VARYING)]))
+  (
+    VALUES
+      (ARRAY[CAST('10' AS BIT VARYING)]),
+      (ARRAY[CAST('11' AS BIT VARYING)])
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[CAST('10' AS BIT VARYING)]),
-    (ARRAY[CAST('01' AS BIT VARYING)]))
+  (
+    VALUES
+      (ARRAY[CAST('10' AS BIT VARYING)]),
+      (ARRAY[CAST('01' AS BIT VARYING)])
+  )
   AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[CAST('10' AS BIT VARYING)]),
-    (ARRAY[CAST('11' AS BIT VARYING)]))
+  (
+    VALUES
+      (ARRAY[CAST('10' AS BIT VARYING)]),
+      (ARRAY[CAST('11' AS BIT VARYING)])
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[CAST('10' AS BIT VARYING)]),
-    (ARRAY[CAST('01' AS BIT VARYING)]))
+  (
+    VALUES
+      (ARRAY[CAST('10' AS BIT VARYING)]),
+      (ARRAY[CAST('01' AS BIT VARYING)])
+  )
   AS _ (x);
 
 SET enable_hashagg = off;
@@ -303,82 +283,46 @@ SET enable_hashagg = off;
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
+
+SELECT x FROM (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
+
+SELECT x FROM (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 3]))
-  AS _ (x)
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 3])) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ARRAY[1, 2]),
-    (ARRAY[1, 4]))
-  AS _ (x);
+  (VALUES (ARRAY[1, 2]), (ARRAY[1, 4])) AS _ (x);
 
 RESET enable_hashagg;
 
@@ -387,113 +331,85 @@ SET enable_hashagg = 'on';
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
+
+SELECT x FROM (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
+
+SELECT x FROM (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(CAST('10' AS BIT VARYING))),
-    (ROW(CAST('11' AS BIT VARYING))))
+  (
+    VALUES
+      (ROW(CAST('10' AS BIT VARYING))),
+      (ROW(CAST('11' AS BIT VARYING)))
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(CAST('10' AS BIT VARYING))),
-    (ROW(CAST('01' AS BIT VARYING))))
+  (
+    VALUES
+      (ROW(CAST('10' AS BIT VARYING))),
+      (ROW(CAST('01' AS BIT VARYING)))
+  )
   AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(CAST('10' AS BIT VARYING))),
-    (ROW(CAST('11' AS BIT VARYING))))
+  (
+    VALUES
+      (ROW(CAST('10' AS BIT VARYING))),
+      (ROW(CAST('11' AS BIT VARYING)))
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(CAST('10' AS BIT VARYING))),
-    (ROW(CAST('01' AS BIT VARYING))))
+  (
+    VALUES
+      (ROW(CAST('10' AS BIT VARYING))),
+      (ROW(CAST('01' AS BIT VARYING)))
+  )
   AS _ (x);
 
 CREATE TYPE ct1 AS (f1 BIT VARYING);
@@ -501,33 +417,41 @@ CREATE TYPE ct1 AS (f1 BIT VARYING);
 SELECT
   x
 FROM
-  (VALUES
-    (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
-    (CAST(ROW(CAST('11' AS BIT VARYING)) AS ct1)))
+  (
+    VALUES
+      (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
+      (CAST(ROW(CAST('11' AS BIT VARYING)) AS ct1))
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
-    (CAST(ROW(CAST('01' AS BIT VARYING)) AS ct1)))
+  (
+    VALUES
+      (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
+      (CAST(ROW(CAST('01' AS BIT VARYING)) AS ct1))
+  )
   AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
-    (CAST(ROW(CAST('11' AS BIT VARYING)) AS ct1)))
+  (
+    VALUES
+      (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
+      (CAST(ROW(CAST('11' AS BIT VARYING)) AS ct1))
+  )
   AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
-    (CAST(ROW(CAST('01' AS BIT VARYING)) AS ct1)))
+  (
+    VALUES
+      (CAST(ROW(CAST('10' AS BIT VARYING)) AS ct1)),
+      (CAST(ROW(CAST('01' AS BIT VARYING)) AS ct1))
+  )
   AS _ (x);
 
 DROP TYPE ct1;
@@ -537,82 +461,46 @@ SET enable_hashagg = off;
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 UNION
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
+
+SELECT x FROM (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
+
+SELECT x FROM (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
-
-SELECT
-  x
-FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 3)))
-  AS _ (x)
+  (VALUES (ROW(1, 2)), (ROW(1, 3))) AS _ (x)
 EXCEPT
 SELECT
   x
 FROM
-  (VALUES
-    (ROW(1, 2)),
-    (ROW(1, 4)))
-  AS _ (x);
+  (VALUES (ROW(1, 2)), (ROW(1, 4))) AS _ (x);
 
 SELECT CAST('123' AS XID) UNION SELECT CAST('123' AS XID);
 

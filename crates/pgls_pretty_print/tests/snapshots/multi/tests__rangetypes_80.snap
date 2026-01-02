@@ -918,39 +918,44 @@ CREATE TABLE test_range_excl (
 );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(123, 123, '[]'),
-  int4range(1, 1, '[]'),
-  '[2010-01-02 10:00, 2010-01-02 11:00)'
-);
+VALUES
+  (
+    int4range(123, 123, '[]'),
+    int4range(1, 1, '[]'),
+    '[2010-01-02 10:00, 2010-01-02 11:00)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(123, 123, '[]'),
-  int4range(2, 2, '[]'),
-  '[2010-01-02 11:00, 2010-01-02 12:00)'
-);
+VALUES
+  (
+    int4range(123, 123, '[]'),
+    int4range(2, 2, '[]'),
+    '[2010-01-02 11:00, 2010-01-02 12:00)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(123, 123, '[]'),
-  int4range(3, 3, '[]'),
-  '[2010-01-02 10:10, 2010-01-02 11:00)'
-);
+VALUES
+  (
+    int4range(123, 123, '[]'),
+    int4range(3, 3, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:00)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(124, 124, '[]'),
-  int4range(3, 3, '[]'),
-  '[2010-01-02 10:10, 2010-01-02 11:10)'
-);
+VALUES
+  (
+    int4range(124, 124, '[]'),
+    int4range(3, 3, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:10)'
+  );
 
 INSERT INTO test_range_excl
-VALUES (
-  int4range(125, 125, '[]'),
-  int4range(1, 1, '[]'),
-  '[2010-01-02 10:10, 2010-01-02 11:00)'
-);
+VALUES
+  (
+    int4range(125, 125, '[]'),
+    int4range(1, 1, '[]'),
+    '[2010-01-02 10:10, 2010-01-02 11:00)'
+  );
 
 SELECT
   int8range(
@@ -967,8 +972,7 @@ SELECT CAST('[2010-01-01 01:00:00 -08, 2010-01-01 02:00:00 -05)' AS TSTZRANGE);
 
 SET timezone TO DEFAULT;
 
-CREATE TYPE bogus_float8range AS RANGE
-(
+CREATE TYPE bogus_float8range AS RANGE (
   subtype = DOUBLE PRECISION,
   subtype_diff = float4mi
 );
@@ -1084,9 +1088,9 @@ SELECT
   );
 
 DROP FUNCTION
-anycompatiblearray_anycompatiblerange_func(
-  anycompatiblearray,
-  anycompatiblerange);
+  anycompatiblearray_anycompatiblerange_func(
+    anycompatiblearray,
+    anycompatiblerange);
 
 CREATE FUNCTION bogus_func(anycompatible)
 RETURNS anycompatiblerange
@@ -1124,9 +1128,11 @@ SELECT
   *,
   row_to_json(upper(t)) AS u
 FROM
-  (VALUES
-    (two_ints_range(ROW(1, 2), ROW(3, 4))),
-    (two_ints_range(ROW(5, 6), ROW(7, 8))))
+  (
+    VALUES
+      (two_ints_range(ROW(1, 2), ROW(3, 4))),
+      (two_ints_range(ROW(5, 6), ROW(7, 8)))
+  )
   AS v (t);
 
 ALTER TYPE two_ints
@@ -1220,20 +1226,14 @@ SELECT clock_timestamp() <@ tstzrange('2024-01-20 00:00', '2024-01-21 00:00');
 
 SELECT clock_timestamp() <@ tstzrange('2024-01-20 00:00', NULL);
 
-CREATE TYPE textrange_supp AS RANGE
-(
+CREATE TYPE textrange_supp AS RANGE (
   subtype = TEXT,
   subtype_opclass = text_pattern_ops
 );
 
 CREATE TEMPORARY TABLE text_support_test (t TEXT COLLATE "C");
 
-INSERT INTO text_support_test
-VALUES
-  ('a'),
-  ('c'),
-  ('d'),
-  ('ch');
+INSERT INTO text_support_test VALUES ('a'), ('c'), ('d'), ('ch');
 
 SELECT * FROM text_support_test WHERE t <@ textrange_supp('a', 'd');
 

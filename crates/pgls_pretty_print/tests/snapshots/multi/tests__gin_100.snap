@@ -129,19 +129,21 @@ SELECT
   AS "removed by recheck",
   res_index = res_heap AS match
 FROM
-  (VALUES
-    (' i @> ''{}'' '),
-    (' j @> ''{}'' '),
-    (' i @> ''{}'' and j @> ''{}'' '),
-    (' i @> ''{1}'' '),
-    (' i @> ''{1}'' and j @> ''{}'' '),
-    (' i @> ''{1}'' and i @> ''{}'' and j @> ''{}'' '),
-    (' j @> ''{10}'' '),
-    (' j @> ''{10}'' and i @> ''{}'' '),
-    (
-      ' j @> ''{10}'' and j @> ''{}'' and i @> ''{}'' '
-    ),
-    (' i @> ''{1}'' and j @> ''{10}'' '))
+  (
+    VALUES
+      (' i @> ''{}'' '),
+      (' j @> ''{}'' '),
+      (' i @> ''{}'' and j @> ''{}'' '),
+      (' i @> ''{1}'' '),
+      (' i @> ''{1}'' and j @> ''{}'' '),
+      (' i @> ''{1}'' and i @> ''{}'' and j @> ''{}'' '),
+      (' j @> ''{10}'' '),
+      (' j @> ''{10}'' and i @> ''{}'' '),
+      (
+        ' j @> ''{10}'' and j @> ''{}'' and i @> ''{}'' '
+      ),
+      (' i @> ''{1}'' and j @> ''{10}'' ')
+  )
   AS q (query),
   LATERAL explain_query_json(
     'select * from t_gin_test_tbl where ' || query
@@ -212,10 +214,6 @@ CREATE UNLOGGED TABLE t_gin_test_tbl (
 
 CREATE INDEX ON t_gin_test_tbl USING gin (i, j);
 
-INSERT INTO t_gin_test_tbl
-VALUES
-  (NULL, NULL),
-  ('{}', NULL),
-  ('{1}', '{2,3}');
+INSERT INTO t_gin_test_tbl VALUES (NULL, NULL), ('{}', NULL), ('{1}', '{2,3}');
 
 DROP TABLE "t_gin_test_tbl";

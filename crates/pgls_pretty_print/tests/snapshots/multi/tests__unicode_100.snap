@@ -41,12 +41,14 @@ SELECT
   is_normalized(val, 'NFKC') AS nfkc,
   is_normalized(val, 'NFKD') AS nfkd
 FROM
-  (VALUES
-    (1, 'äbc'),
-    (2, 'äbc'),
-    (3, 'äⓑc'),
-    (4, 'äⓑc'),
-    (5, ''))
+  (
+    VALUES
+      (1, 'äbc'),
+      (2, 'äbc'),
+      (3, 'äⓑc'),
+      (4, 'äⓑc'),
+      (5, '')
+  )
   AS vals (num, val)
 ORDER BY num;
 

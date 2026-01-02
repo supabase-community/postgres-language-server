@@ -7,10 +7,12 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random() AS r
-  FROM
-    generate_series(1, 1000))
+  (
+    SELECT
+      random() AS r
+    FROM
+      generate_series(1, 1000)
+  )
   AS ss
 GROUP BY r
 HAVING
@@ -24,10 +26,12 @@ SELECT
   COUNT(*) FILTER (WHERE r > 0.99) > 0
   AS has_large
 FROM
-  (SELECT
-    random() AS r
-  FROM
-    generate_series(1, 2000))
+  (
+    SELECT
+      random() AS r
+    FROM
+      generate_series(1, 2000)
+  )
   AS ss;
 
 CREATE FUNCTION ks_test_uniform_random()
@@ -61,10 +65,12 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random_normal() AS r
-  FROM
-    generate_series(1, 1000))
+  (
+    SELECT
+      random_normal() AS r
+    FROM
+      generate_series(1, 1000)
+  )
   AS ss
 GROUP BY r
 HAVING
@@ -74,10 +80,12 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random_normal(10, 0) AS r
-  FROM
-    generate_series(1, 100))
+  (
+    SELECT
+      random_normal(10, 0) AS r
+    FROM
+      generate_series(1, 100)
+  )
   AS ss
 GROUP BY r;
 
@@ -85,10 +93,12 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random_normal(-10, 0) AS r
-  FROM
-    generate_series(1, 100))
+  (
+    SELECT
+      random_normal(-10, 0) AS r
+    FROM
+      generate_series(1, 100)
+  )
   AS ss
 GROUP BY r;
 
@@ -144,10 +154,12 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random(-2147483648, 2147483647) AS r
-  FROM
-    generate_series(1, 1000))
+  (
+    SELECT
+      random(-2147483648, 2147483647) AS r
+    FROM
+      generate_series(1, 1000)
+  )
   AS ss
 GROUP BY r
 HAVING
@@ -157,14 +169,16 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random_normal(
-      -9223372036854775808,
-      9223372036854775807
-    )
-    AS r
-  FROM
-    generate_series(1, 1000))
+  (
+    SELECT
+      random_normal(
+        -9223372036854775808,
+        9223372036854775807
+      )
+      AS r
+    FROM
+      generate_series(1, 1000)
+  )
   AS ss
 GROUP BY r
 HAVING
@@ -174,10 +188,12 @@ SELECT
   r,
   COUNT(*)
 FROM
-  (SELECT
-    random_normal(0, 1 - 1e-15) AS r
-  FROM
-    generate_series(1, 1000))
+  (
+    SELECT
+      random_normal(0, 1 - 1e-15) AS r
+    FROM
+      generate_series(1, 1000)
+  )
   AS ss
 GROUP BY r
 HAVING
@@ -191,10 +207,12 @@ SELECT
   0
   AS has_large
 FROM
-  (SELECT
-    random(-2147483648, 2147483647) AS r
-  FROM
-    generate_series(1, 2000))
+  (
+    SELECT
+      random(-2147483648, 2147483647) AS r
+    FROM
+      generate_series(1, 2000)
+  )
   AS ss;
 
 SELECT
@@ -211,10 +229,12 @@ SELECT
   0
   AS has_large
 FROM
-  (SELECT
-    random(-1500000000, 1500000000) AS r
-  FROM
-    generate_series(1, 2000))
+  (
+    SELECT
+      random(-1500000000, 1500000000) AS r
+    FROM
+      generate_series(1, 2000)
+  )
   AS ss;
 
 SELECT
@@ -233,14 +253,16 @@ SELECT
   0
   AS has_large
 FROM
-  (SELECT
-    random(
-      -9223372036854775808,
-      9223372036854775807
-    )
-    AS r
-  FROM
-    generate_series(1, 2000))
+  (
+    SELECT
+      random(
+        -9223372036854775808,
+        9223372036854775807
+      )
+      AS r
+    FROM
+      generate_series(1, 2000)
+  )
   AS ss;
 
 SELECT
@@ -266,14 +288,16 @@ SELECT
   0
   AS has_large
 FROM
-  (SELECT
-    random(
-      -1500000000000000,
-      1500000000000000
-    )
-    AS r
-  FROM
-    generate_series(1, 2000))
+  (
+    SELECT
+      random(
+        -1500000000000000,
+        1500000000000000
+      )
+      AS r
+    FROM
+      generate_series(1, 2000)
+  )
   AS ss;
 
 SELECT
@@ -288,14 +312,16 @@ SELECT
   COUNT(*) FILTER (WHERE r > 1.47) > 0
   AS has_large
 FROM
-  (SELECT
-    random(
-      -1.500000000000000,
-      1.500000000000000
-    )
-    AS r
-  FROM
-    generate_series(1, 2000))
+  (
+    SELECT
+      random(
+        -1.500000000000000,
+        1.500000000000000
+      )
+      AS r
+    FROM
+      generate_series(1, 2000)
+  )
   AS ss;
 
 SELECT
@@ -303,30 +329,36 @@ SELECT
   MAX(r),
   COUNT(r)
 FROM
-  (SELECT DISTINCT
-    random(-50, 49) AS r
-  FROM
-    generate_series(1, 2500));
+  (
+    SELECT DISTINCT
+      random(-50, 49) AS r
+    FROM
+      generate_series(1, 2500)
+  );
 
 SELECT
   MIN(r),
   MAX(r),
   COUNT(r)
 FROM
-  (SELECT DISTINCT
-    random(123000000000, 123000000099) AS r
-  FROM
-    generate_series(1, 2500));
+  (
+    SELECT DISTINCT
+      random(123000000000, 123000000099) AS r
+    FROM
+      generate_series(1, 2500)
+  );
 
 SELECT
   MIN(r),
   MAX(r),
   COUNT(r)
 FROM
-  (SELECT DISTINCT
-    random(-0.5, 0.49) AS r
-  FROM
-    generate_series(1, 2500));
+  (
+    SELECT DISTINCT
+      random(-0.5, 0.49) AS r
+    FROM
+      generate_series(1, 2500)
+  );
 
 CREATE FUNCTION ks_test_uniform_random_int_in_range()
 RETURNS BOOLEAN

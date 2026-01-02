@@ -893,11 +893,11 @@ RESET client_min_messages;
 DROP TABLE "testpub_tbl5", "testpub_tbl6", "testpub_tbl7", "testpub_tbl8", "testpub_tbl8_1";
 
 DROP PUBLICATION
-testpub_table_ins,
-testpub_fortable,
-testpub_fortable_insert,
-testpub_col_list,
-testpub_tbl9;
+  testpub_table_ins,
+  testpub_fortable,
+  testpub_fortable_insert,
+  testpub_col_list,
+  testpub_tbl9;
 
 SET client_min_messages = ERROR;
 
@@ -1332,11 +1332,11 @@ ALTER PUBLICATION testpub1_forschema SET TABLES IN SCHEMA pub_test1, TABLES IN S
 ALTER PUBLICATION testpub2_forschema DROP TABLES IN SCHEMA pub_test1;
 
 DROP PUBLICATION
-testpub3_forschema,
-testpub4_forschema,
-testpub5_forschema,
-testpub6_forschema,
-testpub_fortable;
+  testpub3_forschema,
+  testpub4_forschema,
+  testpub5_forschema,
+  testpub6_forschema,
+  testpub_fortable;
 
 DROP SCHEMA "CURRENT_SCHEMA" CASCADE;
 

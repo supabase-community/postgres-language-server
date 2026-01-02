@@ -143,12 +143,12 @@ CALL p1();
 ALTER EVENT TRIGGER regress_event_trigger DISABLE;
 
 DROP TABLE
-"event_trigger_fire2",
-"event_trigger_fire3",
-"event_trigger_fire4",
-"event_trigger_fire5",
-"event_trigger_fire6",
-"event_trigger_fire7";
+  "event_trigger_fire2",
+  "event_trigger_fire3",
+  "event_trigger_fire4",
+  "event_trigger_fire5",
+  "event_trigger_fire6",
+  "event_trigger_fire7";
 
 DROP ROUTINE f1(), p1();
 
@@ -227,8 +227,7 @@ LANGUAGE "plpgsql"
 CALLED ON NULL INPUT
 AS ' BEGIN RETURN coalesce($1,0) + coalesce($2,0); END; ';
 
-CREATE AGGREGATE schema_two.newton
-(
+CREATE AGGREGATE schema_two.newton (
   basetype = INT,
   sfunc = schema_two.add,
   stype = INT

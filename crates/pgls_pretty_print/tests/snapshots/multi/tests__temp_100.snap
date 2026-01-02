@@ -202,10 +202,7 @@ PARTITION OF temp_parted_oncommit_test
 FOR VALUES IN (2)
 ON COMMIT DROP;
 
-INSERT INTO temp_parted_oncommit_test
-VALUES
-  (1),
-  (2);
+INSERT INTO temp_parted_oncommit_test VALUES (1), (2);
 
 COMMIT;
 
@@ -223,10 +220,7 @@ PARTITION OF temp_parted_oncommit_test
 FOR VALUES IN (2)
 ON COMMIT DROP;
 
-INSERT INTO temp_parted_oncommit_test
-VALUES
-  (1),
-  (2);
+INSERT INTO temp_parted_oncommit_test VALUES (1), (2);
 
 COMMIT;
 

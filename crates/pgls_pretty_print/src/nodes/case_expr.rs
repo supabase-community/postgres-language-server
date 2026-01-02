@@ -16,6 +16,9 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
         super::emit_node(arg, e);
     }
 
+    // Indent WHEN/ELSE clauses inside CASE
+    e.indent_start();
+
     // WHEN clauses
     for when_clause in &n.args {
         e.line(LineType::SoftOrSpace);
@@ -30,6 +33,7 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
         super::emit_node(defresult, e);
     }
 
+    e.indent_end();
     e.line(LineType::SoftOrSpace);
     e.token(TokenKind::END_KW);
 

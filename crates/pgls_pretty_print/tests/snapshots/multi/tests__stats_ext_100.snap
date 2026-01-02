@@ -80,7 +80,7 @@ CREATE STATISTICS tst ON "a" FROM ext_stats_test AS s TABLESAMPLE system (x);
 
 CREATE STATISTICS tst ON "a" FROM XMLTABLE( 'foo' PASSING 'bar' COLUMNS a TEXT);
 
-CREATE STATISTICS tst ON "a" FROM JSON_TABLE( CAST('123' AS JSONB), '$' COLUMNS ( item INT ) );
+CREATE STATISTICS tst ON "a" FROM JSON_TABLE( CAST('123' AS JSONB), '$' COLUMNS (item INT ) );
 
 CREATE FUNCTION tftest(INT)
 RETURNS TABLE (
@@ -2330,16 +2330,16 @@ DROP STATISTICS "mcv_lists_stats";
 INSERT INTO mcv_lists (a, b, c, filler1)
 SELECT
   CASE
-  WHEN mod(i, 100) = 1 THEN NULL
-  ELSE mod(i, 100)
+    WHEN mod(i, 100) = 1 THEN NULL
+    ELSE mod(i, 100)
   END,
   CASE
-  WHEN mod(i, 50) = 1 THEN NULL
-  ELSE mod(i, 50)
+    WHEN mod(i, 50) = 1 THEN NULL
+    ELSE mod(i, 50)
   END,
   CASE
-  WHEN mod(i, 25) = 1 THEN NULL
-  ELSE mod(i, 25)
+    WHEN mod(i, 25) = 1 THEN NULL
+    ELSE mod(i, 25)
   END,
   i
 FROM
@@ -2917,10 +2917,7 @@ CREATE TABLE expr_stats_incompatible_test (
 
 CREATE STATISTICS expr_stat_comp_1 ON "c0", "c1" FROM expr_stats_incompatible_test;
 
-INSERT INTO expr_stats_incompatible_test
-VALUES
-  (1234, FALSE),
-  (5678, TRUE);
+INSERT INTO expr_stats_incompatible_test VALUES (1234, FALSE), (5678, TRUE);
 
 ANALYZE expr_stats_incompatible_test;
 
@@ -3169,11 +3166,7 @@ CREATE TABLE stats_ext_tbl (
   col TEXT
 );
 
-INSERT INTO stats_ext_tbl (col)
-VALUES
-  ('secret'),
-  ('secret'),
-  ('very secret');
+INSERT INTO stats_ext_tbl (col) VALUES ('secret'), ('secret'), ('very secret');
 
 CREATE STATISTICS s_col ON "id", "col" FROM stats_ext_tbl;
 

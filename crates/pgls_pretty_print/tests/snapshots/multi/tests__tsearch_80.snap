@@ -55,12 +55,14 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT
-    oid AS cfgid,
-    (ts_token_type(cfgparser)).tokid
-    AS tokid
-  FROM
-    pg_ts_config)
+  (
+    SELECT
+      oid AS cfgid,
+      (ts_token_type(cfgparser)).tokid
+      AS tokid
+    FROM
+      pg_ts_config
+  )
   AS tt
   RIGHT OUTER JOIN
     pg_ts_config_map AS m
@@ -1466,12 +1468,13 @@ CREATE TEMPORARY TABLE phrase_index_test (fts TSVECTOR);
 INSERT INTO phrase_index_test VALUES ('A fat cat has just eaten a rat.');
 
 INSERT INTO phrase_index_test
-VALUES (
-  to_tsvector(
-    'english',
-    'A fat cat has just eaten a rat.'
-  )
-);
+VALUES
+  (
+    to_tsvector(
+      'english',
+      'A fat cat has just eaten a rat.'
+    )
+  );
 
 CREATE INDEX "phrase_index_test_idx" ON phrase_index_test USING gin (fts);
 

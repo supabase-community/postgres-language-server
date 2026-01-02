@@ -76,9 +76,10 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
         e.token(TokenKind::EXISTS_KW);
     }
 
-    // Object names
+    // Object names - indent list when it breaks to multiple lines
     if !n.objects.is_empty() {
         e.line(LineType::SoftOrSpace);
+        e.indent_start();
         match object_type {
             ObjectType::ObjectCast => {
                 emit_comma_separated_list(e, &n.objects, emit_drop_cast_object);
@@ -111,6 +112,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
                 });
             }
         }
+        e.indent_end();
     }
 
     // CASCADE/RESTRICT

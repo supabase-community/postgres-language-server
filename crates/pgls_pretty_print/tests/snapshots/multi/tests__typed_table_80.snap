@@ -38,7 +38,7 @@ CREATE TABLE stuff (id INT);
 ALTER TABLE persons
   INHERIT stuff;
 
-CREATE TABLE personsx OF person_type ( myname WITH OPTIONS NOT NULL );
+CREATE TABLE personsx OF person_type (myname WITH OPTIONS NOT NULL );
 
 CREATE TABLE persons2 OF person_type
 (

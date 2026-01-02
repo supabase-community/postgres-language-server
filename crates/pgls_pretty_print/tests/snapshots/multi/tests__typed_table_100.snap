@@ -38,13 +38,13 @@ CREATE TABLE stuff (id INT);
 ALTER TABLE persons
   INHERIT stuff;
 
-CREATE TABLE personsx OF person_type ( myname WITH OPTIONS NOT NULL );
+CREATE TABLE personsx OF person_type (myname WITH OPTIONS NOT NULL );
 
-CREATE TABLE persons2 OF person_type ( id WITH OPTIONS PRIMARY KEY, UNIQUE (name) );
+CREATE TABLE persons2 OF person_type (id WITH OPTIONS PRIMARY KEY, UNIQUE (name) );
 
-CREATE TABLE persons3 OF person_type ( PRIMARY KEY (id), name WITH OPTIONS DEFAULT '' );
+CREATE TABLE persons3 OF person_type (PRIMARY KEY (id), name WITH OPTIONS DEFAULT '' );
 
-CREATE TABLE persons4 OF person_type ( name WITH OPTIONS NOT NULL, name WITH OPTIONS DEFAULT '' );
+CREATE TABLE persons4 OF person_type (name WITH OPTIONS NOT NULL, name WITH OPTIONS DEFAULT '' );
 
 DROP TYPE person_type;
 
@@ -73,6 +73,6 @@ AS ' SELECT length($1.name) ';
 
 SELECT id, namelen(persons) FROM persons;
 
-CREATE TABLE persons2 OF person_type ( id WITH OPTIONS PRIMARY KEY, UNIQUE (name) );
+CREATE TABLE persons2 OF person_type (id WITH OPTIONS PRIMARY KEY, UNIQUE (name) );
 
-CREATE TABLE persons3 OF person_type ( PRIMARY KEY (id), name WITH OPTIONS NOT NULL DEFAULT '' );
+CREATE TABLE persons3 OF person_type (PRIMARY KEY (id), name WITH OPTIONS NOT NULL DEFAULT '' );

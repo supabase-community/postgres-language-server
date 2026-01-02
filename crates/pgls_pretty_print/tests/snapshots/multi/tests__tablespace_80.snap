@@ -122,14 +122,16 @@ FROM
   pg_class
 WHERE
   oid =
-  (SELECT
-    i.indexrelid
-  FROM
-    pg_class AS c,
-    pg_index AS i
-  WHERE
-    i.indrelid = c.reltoastrelid AND
-    c.relname = 'regress_tblspace_test_tbl');
+  (
+    SELECT
+      i.indexrelid
+    FROM
+      pg_class AS c,
+      pg_index AS i
+    WHERE
+      i.indrelid = c.reltoastrelid AND
+      c.relname = 'regress_tblspace_test_tbl'
+  );
 
 REINDEX (TABLESPACE regress_tblspace) TABLE regress_tblspace_test_tbl;
 
@@ -202,14 +204,16 @@ FROM
   pg_class
 WHERE
   oid =
-  (SELECT
-    i.indexrelid
-  FROM
-    pg_class AS c,
-    pg_index AS i
-  WHERE
-    i.indrelid = c.reltoastrelid AND
-    c.relname = 'regress_tblspace_test_tbl');
+  (
+    SELECT
+      i.indexrelid
+    FROM
+      pg_class AS c,
+      pg_index AS i
+    WHERE
+      i.indrelid = c.reltoastrelid AND
+      c.relname = 'regress_tblspace_test_tbl'
+  );
 
 DROP TABLE "regress_tblspace_test_tbl";
 
@@ -316,15 +320,15 @@ REINDEX (TABLESPACE regress_tblspace, CONCURRENTLY) TABLE tbspace_reindex_part;
 SELECT
   b.relname,
   CASE
-  WHEN a.relfilenode = b.relfilenode
-  THEN 'relfilenode is unchanged'
-  ELSE 'relfilenode has changed'
+    WHEN a.relfilenode = b.relfilenode
+    THEN 'relfilenode is unchanged'
+    ELSE 'relfilenode has changed'
   END
   AS filenode,
   CASE
-  WHEN a.reltablespace = b.reltablespace
-  THEN 'reltablespace is unchanged'
-  ELSE 'reltablespace has changed'
+    WHEN a.reltablespace = b.reltablespace
+    THEN 'reltablespace is unchanged'
+    ELSE 'reltablespace has changed'
   END
   AS tbspace
 FROM
@@ -678,11 +682,7 @@ ALTER TABLE testschema.test_tab
 
 DROP TABLE "testschema"."test_tab";
 
-CREATE TABLE testschema.atable
-AS
-  VALUES
-    (1),
-    (2);
+CREATE TABLE testschema.atable AS VALUES (1), (2);
 
 CREATE UNIQUE INDEX "anindex" ON testschema.atable USING btree (column1);
 

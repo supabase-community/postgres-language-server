@@ -87,10 +87,7 @@ CREATE TABLE inserttest (
 
 INSERT INTO inserttest (f2[1], f2[2]) VALUES (1, 2);
 
-INSERT INTO inserttest (f2[1], f2[2])
-VALUES
-  (3, 4),
-  (5, 6);
+INSERT INTO inserttest (f2[1], f2[2]) VALUES (3, 4), (5, 6);
 
 INSERT INTO inserttest (f2[1], f2[2]) SELECT 7, 8;
 
@@ -98,10 +95,7 @@ INSERT INTO inserttest (f2[1], f2[2]) VALUES (1, DEFAULT);
 
 INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, ARRAY['foo']);
 
-INSERT INTO inserttest (f3."if1", f3."if2")
-VALUES
-  (1, '{foo}'),
-  (2, '{bar}');
+INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, '{foo}'), (2, '{bar}');
 
 INSERT INTO inserttest (f3."if1", f3."if2") SELECT 3, '{baz,quux}';
 
@@ -110,18 +104,14 @@ INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, DEFAULT);
 INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar');
 
 INSERT INTO inserttest (f3."if2"[1], f3."if2"[2])
-VALUES
-  ('foo', 'bar'),
-  ('baz', 'quux');
+VALUES ('foo', 'bar'), ('baz', 'quux');
 
 INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) SELECT 'bear', 'beer';
 
 INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) VALUES ('foo', 'bar');
 
 INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2])
-VALUES
-  ('foo', 'bar'),
-  ('baz', 'quux');
+VALUES ('foo', 'bar'), ('baz', 'quux');
 
 INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) SELECT 'bear', 'beer';
 
@@ -142,9 +132,7 @@ CREATE RULE irule2
 AS ON INSERT TO inserttest2
 DO
   INSERT INTO inserttest (f4[1]."if1", f4[1]."if2"[2])
-  VALUES
-    (1, 'fool'),
-    (new.f1, new.f2);;
+  VALUES (1, 'fool'), (new.f1, new.f2);;
 
 SELECT new.f1, new.f2;
 
@@ -169,10 +157,7 @@ CREATE TABLE inserttestb (
 
 INSERT INTO inserttesta (f2[1], f2[2]) VALUES (1, 2);
 
-INSERT INTO inserttesta (f2[1], f2[2])
-VALUES
-  (3, 4),
-  (5, 6);
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (3, 4), (5, 6);
 
 INSERT INTO inserttesta (f2[1], f2[2]) SELECT 7, 8;
 
@@ -180,19 +165,13 @@ INSERT INTO inserttesta (f2[1], f2[2]) VALUES (1, DEFAULT);
 
 INSERT INTO inserttesta (f2[1], f2[2]) VALUES (0, 2);
 
-INSERT INTO inserttesta (f2[1], f2[2])
-VALUES
-  (3, 4),
-  (0, 6);
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (3, 4), (0, 6);
 
 INSERT INTO inserttesta (f2[1], f2[2]) SELECT 0, 8;
 
 INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, ARRAY['foo']);
 
-INSERT INTO inserttestb (f3."if1", f3."if2")
-VALUES
-  (1, '{foo}'),
-  (2, '{bar}');
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, '{foo}'), (2, '{bar}');
 
 INSERT INTO inserttestb (f3."if1", f3."if2") SELECT 3, '{baz,quux}';
 
@@ -200,19 +179,14 @@ INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, DEFAULT);
 
 INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, ARRAY[NULL]);
 
-INSERT INTO inserttestb (f3."if1", f3."if2")
-VALUES
-  (1, '{null}'),
-  (2, '{bar}');
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, '{null}'), (2, '{bar}');
 
 INSERT INTO inserttestb (f3."if1", f3."if2") SELECT 3, '{null,quux}';
 
 INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar');
 
 INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2])
-VALUES
-  ('foo', 'bar'),
-  ('baz', 'quux');
+VALUES ('foo', 'bar'), ('baz', 'quux');
 
 INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) SELECT 'bear', 'beer';
 
@@ -250,9 +224,7 @@ CREATE RULE irule2
 AS ON INSERT TO inserttest2
 DO
   INSERT INTO inserttestb (f4[1]."if1", f4[1]."if2"[2])
-  VALUES
-    (1, 'fool'),
-    (new.f1, new.f2);;
+  VALUES (1, 'fool'), (new.f1, new.f2);;
 
 SELECT new.f1, new.f2;
 
@@ -496,10 +468,7 @@ FOR VALUES FROM (25) TO (30);
 
 TRUNCATE list_parted;
 
-INSERT INTO list_parted
-VALUES
-  ('aa'),
-  ('cc');
+INSERT INTO list_parted VALUES ('aa'), ('cc');
 
 INSERT INTO list_parted SELECT 'Ff', s.a FROM generate_series(1, 29) AS s (a);
 
@@ -539,10 +508,7 @@ FOR VALUES WITH (MODULUS 4, REMAINDER 3);
 
 INSERT INTO hash_parted VALUES (generate_series(1, 10));
 
-INSERT INTO hpart0
-VALUES
-  (12),
-  (16);
+INSERT INTO hpart0 VALUES (12), (16);
 
 INSERT INTO hpart0 VALUES (11);
 
@@ -1150,10 +1116,7 @@ ALTER TABLE donothingbrtrig_test
   ATTACH PARTITION
   donothingbrtrig_test2 FOR VALUES IN (2);
 
-INSERT INTO donothingbrtrig_test
-VALUES
-  (1, 'foo'),
-  (2, 'bar');
+INSERT INTO donothingbrtrig_test VALUES (1, 'foo'), (2, 'bar');
 
 COPY donothingbrtrig_test FROM STDOUT;
 

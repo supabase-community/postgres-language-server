@@ -250,13 +250,15 @@ FROM
   tenk1 AS b
 WHERE
   EXISTS
-  (SELECT
-    *
-  FROM
-    tenk1 AS c
-  WHERE
-    b.twothousand = c.twothousand AND
-    b.fivethous <> c.fivethous) AND
+  (
+    SELECT
+      *
+    FROM
+      tenk1 AS c
+    WHERE
+      b.twothousand = c.twothousand AND
+      b.fivethous <> c.fivethous
+  ) AND
   a.tenthous = b.tenthous AND
   a.tenthous < 5000;
 
@@ -324,112 +326,136 @@ FROM
 SELECT
   *
 FROM
-  (SELECT
-    name,
-    n AS s2_n,
-    2 AS s2_2
-  FROM
-    t2)
+  (
+    SELECT
+      name,
+      n AS s2_n,
+      2 AS s2_2
+    FROM
+      t2
+  )
   AS s2
   NATURAL JOIN
-    (SELECT
-      name,
-      n AS s3_n,
-      3 AS s3_2
-    FROM
-      t3)
+    (
+      SELECT
+        name,
+        n AS s3_n,
+        3 AS s3_2
+      FROM
+        t3
+    )
     AS s3;
 
 SELECT
   *
 FROM
-  (SELECT
-    name,
-    n AS s2_n,
-    2 AS s2_2
-  FROM
-    t2)
+  (
+    SELECT
+      name,
+      n AS s2_n,
+      2 AS s2_2
+    FROM
+      t2
+  )
   AS s2
   NATURAL LEFT JOIN
-    (SELECT
-      name,
-      n AS s3_n,
-      3 AS s3_2
-    FROM
-      t3)
+    (
+      SELECT
+        name,
+        n AS s3_n,
+        3 AS s3_2
+      FROM
+        t3
+    )
     AS s3;
 
 SELECT
   *
 FROM
-  (SELECT
-    name,
-    n AS s2_n,
-    2 AS s2_2
-  FROM
-    t2)
+  (
+    SELECT
+      name,
+      n AS s2_n,
+      2 AS s2_2
+    FROM
+      t2
+  )
   AS s2
   NATURAL FULL JOIN
-    (SELECT
-      name,
-      n AS s3_n,
-      3 AS s3_2
-    FROM
-      t3)
+    (
+      SELECT
+        name,
+        n AS s3_n,
+        3 AS s3_2
+      FROM
+        t3
+    )
     AS s3;
 
 SELECT
   *
 FROM
-  (SELECT
-    name,
-    n AS s1_n,
-    1 AS s1_1
-  FROM
-    t1)
+  (
+    SELECT
+      name,
+      n AS s1_n,
+      1 AS s1_1
+    FROM
+      t1
+  )
   AS s1
   NATURAL JOIN
-    (SELECT
-      name,
-      n AS s2_n,
-      2 AS s2_2
-    FROM
-      t2)
+    (
+      SELECT
+        name,
+        n AS s2_n,
+        2 AS s2_2
+      FROM
+        t2
+    )
     AS s2
   NATURAL JOIN
-    (SELECT
-      name,
-      n AS s3_n,
-      3 AS s3_2
-    FROM
-      t3)
+    (
+      SELECT
+        name,
+        n AS s3_n,
+        3 AS s3_2
+      FROM
+        t3
+    )
     AS s3;
 
 SELECT
   *
 FROM
-  (SELECT
-    name,
-    n AS s1_n,
-    1 AS s1_1
-  FROM
-    t1)
+  (
+    SELECT
+      name,
+      n AS s1_n,
+      1 AS s1_1
+    FROM
+      t1
+  )
   AS s1
   NATURAL FULL JOIN
-    (SELECT
-      name,
-      n AS s2_n,
-      2 AS s2_2
-    FROM
-      t2)
+    (
+      SELECT
+        name,
+        n AS s2_n,
+        2 AS s2_2
+      FROM
+        t2
+    )
     AS s2
   NATURAL FULL JOIN
-    (SELECT
-      name,
-      n AS s3_n,
-      3 AS s3_2
-    FROM
-      t3)
+    (
+      SELECT
+        name,
+        n AS s3_n,
+        3 AS s3_2
+      FROM
+        t3
+    )
     AS s3;
 
 SELECT
@@ -437,12 +463,14 @@ SELECT
 FROM
   (SELECT name, n AS s1_n FROM t1) AS s1
   NATURAL FULL JOIN
-    (SELECT
-      *
-    FROM
-      (SELECT name, n AS s2_n FROM t2) AS s2
-      NATURAL FULL JOIN
-        (SELECT name, n AS s3_n FROM t3) AS s3)
+    (
+      SELECT
+        *
+      FROM
+        (SELECT name, n AS s2_n FROM t2) AS s2
+        NATURAL FULL JOIN
+          (SELECT name, n AS s3_n FROM t3) AS s3
+    )
     AS ss2;
 
 SELECT
@@ -450,18 +478,22 @@ SELECT
 FROM
   (SELECT name, n AS s1_n FROM t1) AS s1
   NATURAL FULL JOIN
-    (SELECT
-      *
-    FROM
-      (SELECT
-        name,
-        n AS s2_n,
-        2 AS s2_2
+    (
+      SELECT
+        *
       FROM
-        t2)
-      AS s2
-      NATURAL FULL JOIN
-        (SELECT name, n AS s3_n FROM t3) AS s3)
+        (
+          SELECT
+            name,
+            n AS s2_n,
+            2 AS s2_2
+          FROM
+            t2
+        )
+        AS s2
+        NATURAL FULL JOIN
+          (SELECT name, n AS s3_n FROM t3) AS s3
+    )
     AS ss2;
 
 SELECT
@@ -576,15 +608,17 @@ FROM
   tenk1 AS a
 WHERE
   unique1 IN
-  (SELECT
-    unique1
-  FROM
-    tenk1 AS b
-    INNER JOIN
-      tenk1 AS c
-    USING ("unique1")
-  WHERE
-    b.unique2 = 42);
+  (
+    SELECT
+      unique1
+    FROM
+      tenk1 AS b
+      INNER JOIN
+        tenk1 AS c
+      USING ("unique1")
+    WHERE
+      b.unique2 = 42
+  );
 
 SELECT
   COUNT(*)
@@ -592,22 +626,26 @@ FROM
   tenk1 AS x
 WHERE
   x.unique1 IN
-  (SELECT
-    a.f1
-  FROM
-    int4_tbl AS a,
-    float8_tbl AS b
-  WHERE
-    a.f1 = b.f1) AND
+  (
+    SELECT
+      a.f1
+    FROM
+      int4_tbl AS a,
+      float8_tbl AS b
+    WHERE
+      a.f1 = b.f1
+  ) AND
   x.unique1 = 0 AND
   x.unique1 IN
-  (SELECT
-    aa.f1
-  FROM
-    int4_tbl AS aa,
-    float8_tbl AS bb
-  WHERE
-    aa.f1 = bb.f1);
+  (
+    SELECT
+      aa.f1
+    FROM
+      int4_tbl AS aa,
+      float8_tbl AS bb
+    WHERE
+      aa.f1 = bb.f1
+  );
 
 BEGIN;
 
@@ -621,22 +659,26 @@ FROM
   tenk1 AS x
 WHERE
   x.unique1 IN
-  (SELECT
-    a.f1
-  FROM
-    int4_tbl AS a,
-    float8_tbl AS b
-  WHERE
-    a.f1 = b.f1) AND
+  (
+    SELECT
+      a.f1
+    FROM
+      int4_tbl AS a,
+      float8_tbl AS b
+    WHERE
+      a.f1 = b.f1
+  ) AND
   x.unique1 = 0 AND
   x.unique1 IN
-  (SELECT
-    aa.f1
-  FROM
-    int4_tbl AS aa,
-    float8_tbl AS bb
-  WHERE
-    aa.f1 = bb.f1);
+  (
+    SELECT
+      aa.f1
+    FROM
+      int4_tbl AS aa,
+      float8_tbl AS bb
+    WHERE
+      aa.f1 = bb.f1
+  );
 
 ROLLBACK;
 
@@ -695,17 +737,19 @@ ORDER BY 1,
 SELECT
   COUNT(*)
 FROM
-  (SELECT
-    t3.tenthous AS x1,
-    COALESCE(t1.stringu1, t2.stringu1) AS x2
-  FROM
-    tenk1 AS t1
-    LEFT OUTER JOIN
-      tenk1 AS t2
-    ON t1.unique1 = t2.unique1
-    INNER JOIN
-      tenk1 AS t3
-    ON t1.unique2 = t3.unique2)
+  (
+    SELECT
+      t3.tenthous AS x1,
+      COALESCE(t1.stringu1, t2.stringu1) AS x2
+    FROM
+      tenk1 AS t1
+      LEFT OUTER JOIN
+        tenk1 AS t2
+      ON t1.unique1 = t2.unique1
+      INNER JOIN
+        tenk1 AS t3
+      ON t1.unique2 = t3.unique2
+  )
   AS ss,
   tenk1 AS t4,
   tenk1 AS t5
@@ -721,15 +765,19 @@ SELECT
   t.tenthous
 FROM
   tenk1 AS t,
-  (SELECT
-    SUM(f1) + 1 AS f1
-  FROM
-    int4_tbl AS i4a)
+  (
+    SELECT
+      SUM(f1) + 1 AS f1
+    FROM
+      int4_tbl AS i4a
+  )
   AS a,
-  (SELECT
-    SUM(f1) AS f1
-  FROM
-    int4_tbl AS i4b)
+  (
+    SELECT
+      SUM(f1) AS f1
+    FROM
+      int4_tbl AS i4b
+  )
   AS b
 WHERE
   b.f1 = t.thousand AND
@@ -743,15 +791,19 @@ SELECT
   t.tenthous
 FROM
   tenk1 AS t,
-  (SELECT
-    SUM(f1) + 1 AS f1
-  FROM
-    int4_tbl AS i4a)
+  (
+    SELECT
+      SUM(f1) + 1 AS f1
+    FROM
+      int4_tbl AS i4a
+  )
   AS a,
-  (SELECT
-    SUM(f1) AS f1
-  FROM
-    int4_tbl AS i4b)
+  (
+    SELECT
+      SUM(f1) AS f1
+    FROM
+      int4_tbl AS i4b
+  )
   AS b
 WHERE
   b.f1 = t.thousand AND
@@ -767,12 +819,14 @@ FROM
     tenk1 AS t2
   ON t1.two = t2.two AND
     t1.unique1 =
-    (SELECT
-      MIN(unique1)
-    FROM
-      tenk1
-    WHERE
-      t2.unique1 = unique1)
+    (
+      SELECT
+        MIN(unique1)
+      FROM
+        tenk1
+      WHERE
+        t2.unique1 = unique1
+    )
 WHERE
   t1.unique1 < 10 AND t2.unique1 < 10
 ORDER BY t1.unique1;
@@ -786,12 +840,14 @@ FROM
     tenk1 AS t2
   ON t1.two = t2.two AND
     t1.unique1 =
-    (SELECT
-      MIN(unique1)
-    FROM
-      tenk1
-    WHERE
-      t2.unique1 = unique1)
+    (
+      SELECT
+        MIN(unique1)
+      FROM
+        tenk1
+      WHERE
+        t2.unique1 = unique1
+    )
 WHERE
   t1.unique1 < 10 AND t2.unique1 < 10
 ORDER BY t1.unique1;
@@ -857,16 +913,18 @@ SELECT
 FROM
   int4_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      NOW()
-    FROM
-      int4_tbl AS t2
-      LEFT OUTER JOIN
-        int4_tbl AS t3
-      ON t2.f1 = t3.f1
-      LEFT OUTER JOIN
-        int4_tbl AS t4
-      ON t3.f1 = t4.f1)
+    (
+      SELECT
+        NOW()
+      FROM
+        int4_tbl AS t2
+        LEFT OUTER JOIN
+          int4_tbl AS t3
+        ON t2.f1 = t3.f1
+        LEFT OUTER JOIN
+          int4_tbl AS t4
+        ON t3.f1 = t4.f1
+    )
     AS s
   ON TRUE
   INNER JOIN
@@ -922,15 +980,17 @@ SELECT
 FROM
   int4_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      t2.f1
-    FROM
-      int4_tbl AS t2
-      LEFT OUTER JOIN
-        int4_tbl AS t3
-      ON t2.f1 > 0
-    WHERE
-      t3.f1 IS NULL)
+    (
+      SELECT
+        t2.f1
+      FROM
+        int4_tbl AS t2
+        LEFT OUTER JOIN
+          int4_tbl AS t3
+        ON t2.f1 > 0
+      WHERE
+        t3.f1 IS NULL
+    )
     AS s
     LEFT OUTER JOIN
       tenk1 AS t4
@@ -942,15 +1002,17 @@ SELECT
 FROM
   int4_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      t2.f1
-    FROM
-      int4_tbl AS t2
-      LEFT OUTER JOIN
-        int4_tbl AS t3
-      ON t2.f1 > 0
-    WHERE
-      t2.f1 <> COALESCE(t3.f1, -1))
+    (
+      SELECT
+        t2.f1
+      FROM
+        int4_tbl AS t2
+        LEFT OUTER JOIN
+          int4_tbl AS t3
+        ON t2.f1 > 0
+      WHERE
+        t2.f1 <> COALESCE(t3.f1, -1)
+    )
     AS s
     LEFT OUTER JOIN
       tenk1 AS t4
@@ -997,13 +1059,15 @@ FROM
     int8_tbl AS t2
   ON TRUE
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      int8_tbl AS t3
-    WHERE
-      t3.q1 = t2.q1
-    OFFSET 0)
+    LATERAL (
+      SELECT
+        *
+      FROM
+        int8_tbl AS t3
+      WHERE
+        t3.q1 = t2.q1
+      OFFSET 0
+    )
     AS s
   ON t2.q1 = 1;
 
@@ -1015,10 +1079,12 @@ FROM
     int8_tbl AS t2
   ON TRUE
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      generate_series(t2.q1, 100))
+    LATERAL (
+      SELECT
+        *
+      FROM
+        generate_series(t2.q1, 100)
+    )
     AS s
   ON t2.q1 = 1;
 
@@ -1030,7 +1096,9 @@ FROM
     int8_tbl AS t2
   ON TRUE
   LEFT OUTER JOIN
-    LATERAL (SELECT t2.q1 FROM int8_tbl AS t3)
+    LATERAL (
+      SELECT t2.q1 FROM int8_tbl AS t3
+    )
     AS s
   ON t2.q1 = 1;
 
@@ -1042,13 +1110,15 @@ FROM
     onek AS t2
   ON TRUE
   LEFT OUTER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      onek AS t3
-    WHERE
-      t3.two = t2.two
-    OFFSET 0)
+    LATERAL (
+      SELECT
+        *
+      FROM
+        onek AS t3
+      WHERE
+        t3.two = t2.two
+      OFFSET 0
+    )
     AS s
   ON t2.unique1 = 1;
 
@@ -1057,12 +1127,14 @@ SELECT
 FROM
   j1_tbl
   FULL OUTER JOIN
-    (SELECT
-      *
-    FROM
-      j2_tbl
-    ORDER BY j2_tbl.i DESC,
-      j2_tbl.k ASC)
+    (
+      SELECT
+        *
+      FROM
+        j2_tbl
+      ORDER BY j2_tbl.i DESC,
+        j2_tbl.k ASC
+    )
     AS j2_tbl
   ON j1_tbl.i = j2_tbl.i AND
     j1_tbl.i = j2_tbl.k;
@@ -1072,12 +1144,14 @@ SELECT
 FROM
   j1_tbl
   FULL OUTER JOIN
-    (SELECT
-      *
-    FROM
-      j2_tbl
-    ORDER BY j2_tbl.i DESC,
-      j2_tbl.k ASC)
+    (
+      SELECT
+        *
+      FROM
+        j2_tbl
+      ORDER BY j2_tbl.i DESC,
+        j2_tbl.k ASC
+    )
     AS j2_tbl
   ON j1_tbl.i = j2_tbl.i AND
     j1_tbl.i = j2_tbl.k;
@@ -1085,20 +1159,24 @@ FROM
 SELECT
   COUNT(*)
 FROM
-  (SELECT
-    *
-  FROM
-    tenk1 AS x
-  ORDER BY x.thousand,
-    x.twothousand,
-    x.fivethous)
-  AS x
-  LEFT OUTER JOIN
-    (SELECT
+  (
+    SELECT
       *
     FROM
-      tenk1 AS y
-    ORDER BY y.unique2)
+      tenk1 AS x
+    ORDER BY x.thousand,
+      x.twothousand,
+      x.fivethous
+  )
+  AS x
+  LEFT OUTER JOIN
+    (
+      SELECT
+        *
+      FROM
+        tenk1 AS y
+      ORDER BY y.unique2
+    )
     AS y
   ON x.thousand = y.unique2 AND
     x.twothousand = y.hundred AND
@@ -1107,20 +1185,24 @@ FROM
 SELECT
   COUNT(*)
 FROM
-  (SELECT
-    *
-  FROM
-    tenk1 AS x
-  ORDER BY x.thousand,
-    x.twothousand,
-    x.fivethous)
-  AS x
-  LEFT OUTER JOIN
-    (SELECT
+  (
+    SELECT
       *
     FROM
-      tenk1 AS y
-    ORDER BY y.unique2)
+      tenk1 AS x
+    ORDER BY x.thousand,
+      x.twothousand,
+      x.fivethous
+  )
+  AS x
+  LEFT OUTER JOIN
+    (
+      SELECT
+        *
+      FROM
+        tenk1 AS y
+      ORDER BY y.unique2
+    )
     AS y
   ON x.thousand = y.unique2 AND
     x.twothousand = y.hundred AND
@@ -1317,12 +1399,14 @@ FROM
   tbl_ra AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    tbl_ra AS t2
-  WHERE
-    t2.b = t1.a) AND
+  (
+    SELECT
+      1
+    FROM
+      tbl_ra AS t2
+    WHERE
+      t2.b = t1.a
+  ) AND
   t1.b < 2;
 
 SELECT
@@ -1331,12 +1415,14 @@ FROM
   tbl_ra AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    tbl_ra AS t2
-  WHERE
-    t2.b = t1.a) AND
+  (
+    SELECT
+      1
+    FROM
+      tbl_ra AS t2
+    WHERE
+      t2.b = t1.a
+  ) AND
   t1.b < 2;
 
 RESET enable_hashjoin;
@@ -1357,14 +1443,18 @@ SELECT
 FROM
   tbl_rs AS t1
   INNER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      tbl_rs AS t2
-    WHERE
-      t2.a IN
-      (SELECT t1.a + t3.a FROM tbl_rs AS t3) AND
-      t2.a < 5)
+    LATERAL (
+      SELECT
+        *
+      FROM
+        tbl_rs AS t2
+      WHERE
+        t2.a IN
+        (
+          SELECT t1.a + t3.a FROM tbl_rs AS t3
+        ) AND
+        t2.a < 5
+    )
   ON TRUE;
 
 SELECT
@@ -1372,14 +1462,18 @@ SELECT
 FROM
   tbl_rs AS t1
   INNER JOIN
-    LATERAL (SELECT
-      *
-    FROM
-      tbl_rs AS t2
-    WHERE
-      t2.a IN
-      (SELECT t1.a + t3.a FROM tbl_rs AS t3) AND
-      t2.a < 5)
+    LATERAL (
+      SELECT
+        *
+      FROM
+        tbl_rs AS t2
+      WHERE
+        t2.a IN
+        (
+          SELECT t1.a + t3.a FROM tbl_rs AS t3
+        ) AND
+        t2.a < 5
+    )
   ON TRUE;
 
 SET work_mem = '64kB';
@@ -1428,11 +1522,7 @@ ANALYZE tt3;
 
 CREATE TEMPORARY TABLE tt4 (f1 INT);
 
-INSERT INTO tt4
-VALUES
-  (0),
-  (1),
-  (9999);
+INSERT INTO tt4 VALUES (0), (1), (9999);
 
 ANALYZE tt4;
 
@@ -1443,15 +1533,17 @@ SELECT
 FROM
   tt4 AS a
   LEFT OUTER JOIN
-    (SELECT
-      b.f1
-    FROM
-      tt3 AS b
-      LEFT OUTER JOIN
-        tt3 AS c
-      ON b.f1 = c.f1
-    WHERE
-      COALESCE(c.f1, 0) = 0)
+    (
+      SELECT
+        b.f1
+      FROM
+        tt3 AS b
+        LEFT OUTER JOIN
+          tt3 AS c
+        ON b.f1 = c.f1
+      WHERE
+        COALESCE(c.f1, 0) = 0
+    )
     AS d
   ON a.f1 = d.f1
 WHERE
@@ -1463,15 +1555,17 @@ SELECT
 FROM
   tt4 AS a
   LEFT OUTER JOIN
-    (SELECT
-      b.f1
-    FROM
-      tt3 AS b
-      LEFT OUTER JOIN
-        tt3 AS c
-      ON b.f1 = c.f1
-    WHERE
-      COALESCE(c.f1, 0) = 0)
+    (
+      SELECT
+        b.f1
+      FROM
+        tt3 AS b
+        LEFT OUTER JOIN
+          tt3 AS c
+        ON b.f1 = c.f1
+      WHERE
+        COALESCE(c.f1, 0) = 0
+    )
     AS d
   ON a.f1 = d.f1
 WHERE
@@ -1488,7 +1582,9 @@ FROM
   tenk1 AS a
 WHERE
   NOT unique1 IN
-  (SELECT unique2 FROM tenk1 AS b);
+  (
+    SELECT unique2 FROM tenk1 AS b
+  );
 
 SELECT
   a.*
@@ -1496,12 +1592,14 @@ FROM
   tenk1 AS a
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    tenk1 AS b
-  WHERE
-    a.unique1 = b.unique2);
+  (
+    SELECT
+      1
+    FROM
+      tenk1 AS b
+    WHERE
+      a.unique1 = b.unique2
+  );
 
 SELECT
   a.*
@@ -1509,12 +1607,14 @@ FROM
   tenk1 AS a
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    tenk1 AS b
-  WHERE
-    a.unique1 = b.unique2);
+  (
+    SELECT
+      1
+    FROM
+      tenk1 AS b
+    WHERE
+      a.unique1 = b.unique2
+  );
 
 SELECT
   a.*
@@ -1534,11 +1634,13 @@ FROM
   tenk1
 WHERE
   (hundred, thousand) IN
-  (SELECT
-    twothousand,
-    twothousand
-  FROM
-    onek);
+  (
+    SELECT
+      twothousand,
+      twothousand
+    FROM
+      onek
+  );
 
 RESET enable_memoize;
 
@@ -1548,13 +1650,15 @@ FROM
   tenk1 AS a
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    tenk1 AS b
-  WHERE
-    a.unique1 = b.unique2
-  GROUP BY b.unique1);
+  (
+    SELECT
+      1
+    FROM
+      tenk1 AS b
+    WHERE
+      a.unique1 = b.unique2
+    GROUP BY b.unique1
+  );
 
 CREATE TEMPORARY TABLE tt4x (
   c1 INT,
@@ -1568,25 +1672,29 @@ FROM
   tt4x AS t1
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    tt4x AS t2
-    LEFT OUTER JOIN
-      tt4x AS t3
-    ON t2.c3 = t3.c1
-    LEFT OUTER JOIN
-      (SELECT
-        t5.c1 AS c1
-      FROM
-        tt4x AS t4
-        LEFT OUTER JOIN
-          tt4x AS t5
-        ON t4.c2 = t5.c1)
-      AS a1
-    ON t3.c2 = a1.c1
-  WHERE
-    t1.c1 = t2.c2);
+  (
+    SELECT
+      1
+    FROM
+      tt4x AS t2
+      LEFT OUTER JOIN
+        tt4x AS t3
+      ON t2.c3 = t3.c1
+      LEFT OUTER JOIN
+        (
+          SELECT
+            t5.c1 AS c1
+          FROM
+            tt4x AS t4
+            LEFT OUTER JOIN
+              tt4x AS t5
+            ON t4.c2 = t5.c1
+        )
+        AS a1
+      ON t3.c2 = a1.c1
+    WHERE
+      t1.c1 = t2.c2
+  );
 
 CREATE TEMPORARY TABLE tt5 (
   f1 INT,
@@ -1638,7 +1746,9 @@ SELECT
 FROM
   yy
   LEFT OUTER JOIN
-    (SELECT * FROM yy WHERE pkyy = 101)
+    (
+      SELECT * FROM yy WHERE pkyy = 101
+    )
     AS yya
   ON yy.pkyy = yya.pkyy
   LEFT OUTER JOIN
@@ -1711,12 +1821,14 @@ FROM
     tenk1 AS b
   ON a.unique2 = b.unique1 AND
     EXISTS
-    (SELECT
-      1
-    FROM
-      tenk1 AS c
-    WHERE
-      c.thousand = b.unique2 AND $1);;
+    (
+      SELECT
+        1
+      FROM
+        tenk1 AS c
+      WHERE
+        c.thousand = b.unique2 AND $1
+    );;
 
 EXECUTE foo (TRUE);
 
@@ -1798,12 +1910,14 @@ SELECT
 FROM
   int8_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      q1,
-      CASE WHEN q2 = 1 THEN 1 ELSE q2 END
-      AS q2
-    FROM
-      int8_tbl)
+    (
+      SELECT
+        q1,
+        CASE WHEN q2 = 1 THEN 1 ELSE q2 END
+        AS q2
+      FROM
+        int8_tbl
+    )
     AS t2
   ON t1.q2 = t2.q1
 GROUP BY t1.q2
@@ -1850,21 +1964,25 @@ SELECT
 FROM
   c
   LEFT OUTER JOIN
-    (SELECT
-      a.code,
-      COALESCE(b_grp.cnt, 0) AS b_cnt,
-      -1 AS const
-    FROM
-      a
-      LEFT OUTER JOIN
-        (SELECT
-          COUNT(1) AS cnt,
-          b.a
-        FROM
-          b
-        GROUP BY b.a)
-        AS b_grp
-      ON a.code = b_grp.a)
+    (
+      SELECT
+        a.code,
+        COALESCE(b_grp.cnt, 0) AS b_cnt,
+        -1 AS const
+      FROM
+        a
+        LEFT OUTER JOIN
+          (
+            SELECT
+              COUNT(1) AS cnt,
+              b.a
+            FROM
+              b
+            GROUP BY b.a
+          )
+          AS b_grp
+        ON a.code = b_grp.a
+    )
     AS ss
   ON c.a = ss.code
 ORDER BY c.name;
@@ -1876,23 +1994,27 @@ SELECT
 FROM
   (SELECT 1 AS key1) AS sub1
   LEFT OUTER JOIN
-    (SELECT
-      sub3.key3,
-      sub4.value2,
-      COALESCE(sub4.value2, 66) AS value3
-    FROM
-      (SELECT 1 AS key3) AS sub3
-      LEFT OUTER JOIN
-        (SELECT
-          sub5.key5,
-          COALESCE(sub6.value1, 1) AS value2
-        FROM
-          (SELECT 1 AS key5) AS sub5
-          LEFT OUTER JOIN
-            (SELECT 2 AS key6, 42 AS value1) AS sub6
-          ON sub5.key5 = sub6.key6)
-        AS sub4
-      ON sub4.key5 = sub3.key3)
+    (
+      SELECT
+        sub3.key3,
+        sub4.value2,
+        COALESCE(sub4.value2, 66) AS value3
+      FROM
+        (SELECT 1 AS key3) AS sub3
+        LEFT OUTER JOIN
+          (
+            SELECT
+              sub5.key5,
+              COALESCE(sub6.value1, 1) AS value2
+            FROM
+              (SELECT 1 AS key5) AS sub5
+              LEFT OUTER JOIN
+                (SELECT 2 AS key6, 42 AS value1) AS sub6
+              ON sub5.key5 = sub6.key6
+          )
+          AS sub4
+        ON sub4.key5 = sub3.key3
+    )
     AS sub2
   ON sub1.key1 = sub2.key3;
 
@@ -1901,23 +2023,27 @@ SELECT
 FROM
   (SELECT 1 AS key1) AS sub1
   LEFT OUTER JOIN
-    (SELECT
-      sub3.key3,
-      value2,
-      COALESCE(value2, 66) AS value3
-    FROM
-      (SELECT 1 AS key3) AS sub3
-      LEFT OUTER JOIN
-        (SELECT
-          sub5.key5,
-          COALESCE(sub6.value1, 1) AS value2
-        FROM
-          (SELECT 1 AS key5) AS sub5
-          LEFT OUTER JOIN
-            (SELECT 2 AS key6, 42 AS value1) AS sub6
-          ON sub5.key5 = sub6.key6)
-        AS sub4
-      ON sub4.key5 = sub3.key3)
+    (
+      SELECT
+        sub3.key3,
+        value2,
+        COALESCE(value2, 66) AS value3
+      FROM
+        (SELECT 1 AS key3) AS sub3
+        LEFT OUTER JOIN
+          (
+            SELECT
+              sub5.key5,
+              COALESCE(sub6.value1, 1) AS value2
+            FROM
+              (SELECT 1 AS key5) AS sub5
+              LEFT OUTER JOIN
+                (SELECT 2 AS key6, 42 AS value1) AS sub6
+              ON sub5.key5 = sub6.key6
+          )
+          AS sub4
+        ON sub4.key5 = sub3.key3
+    )
     AS sub2
   ON sub1.key1 = sub2.key3;
 
@@ -1925,16 +2051,20 @@ SELECT
   qq,
   unique1
 FROM
-  (SELECT
-    COALESCE(q1, 0) AS qq
-  FROM
-    int8_tbl AS a)
+  (
+    SELECT
+      COALESCE(q1, 0) AS qq
+    FROM
+      int8_tbl AS a
+  )
   AS ss1
   FULL OUTER JOIN
-    (SELECT
-      COALESCE(q2, -1) AS qq
-    FROM
-      int8_tbl AS b)
+    (
+      SELECT
+        COALESCE(q2, -1) AS qq
+      FROM
+        int8_tbl AS b
+    )
     AS ss2
   USING ("qq")
   INNER JOIN
@@ -1945,16 +2075,20 @@ SELECT
   qq,
   unique1
 FROM
-  (SELECT
-    COALESCE(q1, 0) AS qq
-  FROM
-    int8_tbl AS a)
+  (
+    SELECT
+      COALESCE(q1, 0) AS qq
+    FROM
+      int8_tbl AS a
+  )
   AS ss1
   FULL OUTER JOIN
-    (SELECT
-      COALESCE(q2, -1) AS qq
-    FROM
-      int8_tbl AS b)
+    (
+      SELECT
+        COALESCE(q2, -1) AS qq
+      FROM
+        int8_tbl AS b
+    )
     AS ss2
   USING ("qq")
   INNER JOIN
@@ -2005,19 +2139,23 @@ SELECT
 FROM
   nt3 AS nt3
   LEFT OUTER JOIN
-    (SELECT
-      nt2.*,
-      nt2.b1 AND ss1.a3 AS b3
-    FROM
-      nt2 AS nt2
-      LEFT OUTER JOIN
-        (SELECT
-          nt1.*,
-          nt1.id IS NOT NULL AS a3
-        FROM
-          nt1)
-        AS ss1
-      ON ss1.id = nt2.nt1_id)
+    (
+      SELECT
+        nt2.*,
+        nt2.b1 AND ss1.a3 AS b3
+      FROM
+        nt2 AS nt2
+        LEFT OUTER JOIN
+          (
+            SELECT
+              nt1.*,
+              nt1.id IS NOT NULL AS a3
+            FROM
+              nt1
+          )
+          AS ss1
+        ON ss1.id = nt2.nt1_id
+    )
     AS ss2
   ON ss2.id = nt3.nt2_id
 WHERE
@@ -2028,19 +2166,23 @@ SELECT
 FROM
   nt3 AS nt3
   LEFT OUTER JOIN
-    (SELECT
-      nt2.*,
-      nt2.b1 AND ss1.a3 AS b3
-    FROM
-      nt2 AS nt2
-      LEFT OUTER JOIN
-        (SELECT
-          nt1.*,
-          nt1.id IS NOT NULL AS a3
-        FROM
-          nt1)
-        AS ss1
-      ON ss1.id = nt2.nt1_id)
+    (
+      SELECT
+        nt2.*,
+        nt2.b1 AND ss1.a3 AS b3
+      FROM
+        nt2 AS nt2
+        LEFT OUTER JOIN
+          (
+            SELECT
+              nt1.*,
+              nt1.id IS NOT NULL AS a3
+            FROM
+              nt1
+          )
+          AS ss1
+        ON ss1.id = nt2.nt1_id
+    )
     AS ss2
   ON ss2.id = nt3.nt2_id
 WHERE
@@ -2051,22 +2193,26 @@ SELECT
 FROM
   int8_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      q1 AS x,
-      42 AS y
-    FROM
-      int8_tbl AS t2)
+    (
+      SELECT
+        q1 AS x,
+        42 AS y
+      FROM
+        int8_tbl AS t2
+    )
     AS ss
   ON t1.q2 = ss.x
 WHERE
   1 =
-  (SELECT
-    1
-  FROM
-    int8_tbl AS t3
-  WHERE
-    ss.y IS NOT NULL
-  LIMIT 1)
+  (
+    SELECT
+      1
+    FROM
+      int8_tbl AS t3
+    WHERE
+      ss.y IS NOT NULL
+    LIMIT 1
+  )
 ORDER BY 1,
   2;
 
@@ -2075,22 +2221,26 @@ SELECT
 FROM
   int8_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      q1 AS x,
-      42 AS y
-    FROM
-      int8_tbl AS t2)
+    (
+      SELECT
+        q1 AS x,
+        42 AS y
+      FROM
+        int8_tbl AS t2
+    )
     AS ss
   ON t1.q2 = ss.x
 WHERE
   1 =
-  (SELECT
-    1
-  FROM
-    int8_tbl AS t3
-  WHERE
-    ss.y IS NOT NULL
-  LIMIT 1)
+  (
+    SELECT
+      1
+    FROM
+      int8_tbl AS t3
+    WHERE
+      ss.y IS NOT NULL
+    LIMIT 1
+  )
 ORDER BY 1,
   2;
 
@@ -2098,21 +2248,25 @@ SELECT
   *
 FROM
   int4_tbl AS i41,
-  LATERAL (SELECT
-    1 AS x
-  FROM
-    (SELECT
-      i41.f1 AS lat,
-      i42.f1 AS loc
+  LATERAL (
+    SELECT
+      1 AS x
     FROM
-      int8_tbl AS i81,
-      int4_tbl AS i42)
-    AS ss1
-    RIGHT OUTER JOIN
-      int4_tbl AS i43
-    ON i43.f1 > 1
-  WHERE
-    ss1.loc = ss1.lat)
+      (
+        SELECT
+          i41.f1 AS lat,
+          i42.f1 AS loc
+        FROM
+          int8_tbl AS i81,
+          int4_tbl AS i42
+      )
+      AS ss1
+      RIGHT OUTER JOIN
+        int4_tbl AS i43
+      ON i43.f1 > 1
+    WHERE
+      ss1.loc = ss1.lat
+  )
   AS ss2
 WHERE
   i41.f1 > 0;
@@ -2121,21 +2275,25 @@ SELECT
   *
 FROM
   int4_tbl AS i41,
-  LATERAL (SELECT
-    1 AS x
-  FROM
-    (SELECT
-      i41.f1 AS lat,
-      i42.f1 AS loc
+  LATERAL (
+    SELECT
+      1 AS x
     FROM
-      int8_tbl AS i81,
-      int4_tbl AS i42)
-    AS ss1
-    RIGHT OUTER JOIN
-      int4_tbl AS i43
-    ON i43.f1 > 1
-  WHERE
-    ss1.loc = ss1.lat)
+      (
+        SELECT
+          i41.f1 AS lat,
+          i42.f1 AS loc
+        FROM
+          int8_tbl AS i81,
+          int4_tbl AS i42
+      )
+      AS ss1
+      RIGHT OUTER JOIN
+        int4_tbl AS i43
+      ON i43.f1 > 1
+    WHERE
+      ss1.loc = ss1.lat
+  )
   AS ss2
 WHERE
   i41.f1 > 0;
@@ -2198,15 +2356,17 @@ FROM
   INNER JOIN
     int4_tbl AS i1
     LEFT OUTER JOIN
-      (SELECT
-        v1.x2,
-        v2.y1,
-        11 AS d1
-      FROM
-        (SELECT 1, 0 FROM onerow) AS v1 (x1, x2)
-        LEFT OUTER JOIN
-          (SELECT 3, 1 FROM onerow) AS v2 (y1, y2)
-        ON v1.x1 = v2.y2)
+      (
+        SELECT
+          v1.x2,
+          v2.y1,
+          11 AS d1
+        FROM
+          (SELECT 1, 0 FROM onerow) AS v1 (x1, x2)
+          LEFT OUTER JOIN
+            (SELECT 3, 1 FROM onerow) AS v2 (y1, y2)
+          ON v1.x1 = v2.y2
+      )
       AS subq1
     ON i1.f1 = subq1.x2
   ON t1.unique2 = subq1.d1
@@ -2227,15 +2387,17 @@ FROM
   INNER JOIN
     int4_tbl AS i1
     LEFT OUTER JOIN
-      (SELECT
-        v1.x2,
-        v2.y1,
-        11 AS d1
-      FROM
-        (SELECT 1, 0 FROM onerow) AS v1 (x1, x2)
-        LEFT OUTER JOIN
-          (SELECT 3, 1 FROM onerow) AS v2 (y1, y2)
-        ON v1.x1 = v2.y2)
+      (
+        SELECT
+          v1.x2,
+          v2.y1,
+          11 AS d1
+        FROM
+          (SELECT 1, 0 FROM onerow) AS v1 (x1, x2)
+          LEFT OUTER JOIN
+            (SELECT 3, 1 FROM onerow) AS v2 (y1, y2)
+          ON v1.x1 = v2.y2
+      )
       AS subq1
     ON i1.f1 = subq1.x2
   ON t1.unique2 = subq1.d1
@@ -2258,16 +2420,20 @@ FROM
     LEFT OUTER JOIN
       int4_tbl AS i4
       INNER JOIN
-        (SELECT
-          CAST(64
-          AS information_schema.cardinal_number)
-          AS d1
-        FROM
-          tenk1 AS t3,
-          LATERAL (SELECT abs(t3.unique1) + random())
-          AS ss0 (x)
-        WHERE
-          t3.fivethous < 0)
+        (
+          SELECT
+            CAST(64
+            AS information_schema.cardinal_number)
+            AS d1
+          FROM
+            tenk1 AS t3,
+            LATERAL (
+              SELECT abs(t3.unique1) + random()
+            )
+            AS ss0 (x)
+          WHERE
+            t3.fivethous < 0
+        )
         AS ss1
       ON i4.f1 = ss1.d1
     ON i8.q1 = i4.f1
@@ -2287,16 +2453,20 @@ FROM
     LEFT OUTER JOIN
       int4_tbl AS i4
       INNER JOIN
-        (SELECT
-          CAST(64
-          AS information_schema.cardinal_number)
-          AS d1
-        FROM
-          tenk1 AS t3,
-          LATERAL (SELECT abs(t3.unique1) + random())
-          AS ss0 (x)
-        WHERE
-          t3.fivethous < 0)
+        (
+          SELECT
+            CAST(64
+            AS information_schema.cardinal_number)
+            AS d1
+          FROM
+            tenk1 AS t3,
+            LATERAL (
+              SELECT abs(t3.unique1) + random()
+            )
+            AS ss0 (x)
+          WHERE
+            t3.fivethous < 0
+        )
         AS ss1
       ON i4.f1 = ss1.d1
     ON i8.q1 = i4.f1
@@ -2314,15 +2484,17 @@ FROM
   INNER JOIN
     int4_tbl AS i1
     LEFT OUTER JOIN
-      (SELECT
-        v1.x2,
-        v2.y1,
-        11 AS d1
-      FROM
-        (VALUES (1, 0)) AS v1 (x1, x2)
-        LEFT OUTER JOIN
-          (VALUES (3, 1)) AS v2 (y1, y2)
-        ON v1.x1 = v2.y2)
+      (
+        SELECT
+          v1.x2,
+          v2.y1,
+          11 AS d1
+        FROM
+          (VALUES (1, 0)) AS v1 (x1, x2)
+          LEFT OUTER JOIN
+            (VALUES (3, 1)) AS v2 (y1, y2)
+          ON v1.x1 = v2.y2
+      )
       AS subq1
     ON i1.f1 = subq1.x2
   ON t1.unique2 = subq1.d1
@@ -2343,15 +2515,17 @@ FROM
   INNER JOIN
     int4_tbl AS i1
     LEFT OUTER JOIN
-      (SELECT
-        v1.x2,
-        v2.y1,
-        11 AS d1
-      FROM
-        (VALUES (1, 0)) AS v1 (x1, x2)
-        LEFT OUTER JOIN
-          (VALUES (3, 1)) AS v2 (y1, y2)
-        ON v1.x1 = v2.y2)
+      (
+        SELECT
+          v1.x2,
+          v2.y1,
+          11 AS d1
+        FROM
+          (VALUES (1, 0)) AS v1 (x1, x2)
+          LEFT OUTER JOIN
+            (VALUES (3, 1)) AS v2 (y1, y2)
+          ON v1.x1 = v2.y2
+      )
       AS subq1
     ON i1.f1 = subq1.x2
   ON t1.unique2 = subq1.d1
@@ -2369,7 +2543,9 @@ FROM
   LEFT OUTER JOIN
     (SELECT 2 AS y) AS ss2
   ON TRUE,
-  LATERAL (SELECT ss2.y AS z LIMIT 1)
+  LATERAL (
+    SELECT ss2.y AS z LIMIT 1
+  )
   AS ss3;
 
 SELECT
@@ -2379,7 +2555,9 @@ FROM
   LEFT OUTER JOIN
     (SELECT 2 AS y) AS ss2
   ON TRUE,
-  LATERAL (SELECT ss2.y AS z LIMIT 1)
+  LATERAL (
+    SELECT ss2.y AS z LIMIT 1
+  )
   AS ss3;
 
 BEGIN;
@@ -2391,16 +2569,22 @@ SELECT
 FROM
   int8_tbl AS t1
   LEFT OUTER JOIN
-    (SELECT
-      COALESCE(t2.q1 + x, 0)
-    FROM
-      int8_tbl AS t2,
-      LATERAL (SELECT
-        t3.q1 AS x
+    (
+      SELECT
+        COALESCE(t2.q1 + x, 0)
       FROM
-        int8_tbl AS t3,
-        LATERAL (SELECT t2.q1, t3.q1 OFFSET 0)
-        AS s))
+        int8_tbl AS t2,
+        LATERAL (
+          SELECT
+            t3.q1 AS x
+          FROM
+            int8_tbl AS t3,
+            LATERAL (
+              SELECT t2.q1, t3.q1 OFFSET 0
+            )
+            AS s
+        )
+    )
   ON TRUE;
 
 ROLLBACK;
@@ -2414,7 +2598,9 @@ SELECT
 FROM
   t AS t1
   LEFT OUTER JOIN
-    (SELECT 1 AS x, * FROM t AS t2 (i2))
+    (
+      SELECT 1 AS x, * FROM t AS t2 (i2)
+    )
     AS t2ss
   ON t1.i = t2ss.i2
   LEFT OUTER JOIN
@@ -2427,23 +2613,27 @@ FROM
 SELECT
   *
 FROM
-  (SELECT
-    k
-  FROM
-    (SELECT
-      i,
-      COALESCE(i, j) AS k
+  (
+    SELECT
+      k
     FROM
-      (SELECT i FROM t UNION ALL SELECT 0)
+      (
+        SELECT
+          i,
+          COALESCE(i, j) AS k
+        FROM
+          (SELECT i FROM t UNION ALL SELECT 0)
+          INNER JOIN
+            (SELECT 1 AS j LIMIT 1)
+          ON i = j
+      )
+      RIGHT OUTER JOIN
+        (SELECT 2 AS x)
+      ON TRUE
       INNER JOIN
-        (SELECT 1 AS j LIMIT 1)
-      ON i = j)
-    RIGHT OUTER JOIN
-      (SELECT 2 AS x)
-    ON TRUE
-    INNER JOIN
-      (SELECT 3 AS y)
-    ON i IS NOT NULL),
+        (SELECT 3 AS y)
+      ON i IS NOT NULL
+  ),
   LATERAL (SELECT k AS kl LIMIT 1);
 
 ROLLBACK;
@@ -2453,20 +2643,26 @@ SELECT
 FROM
   int8_tbl AS i8
   INNER JOIN
-    (SELECT
-      (SELECT TRUE) AS x
-    FROM
-      int4_tbl AS i4,
-      LATERAL (SELECT i4.f1 AS y LIMIT 1)
-      AS ss1
-    WHERE
-      i4.f1 = 0)
+    (
+      SELECT
+        (SELECT TRUE) AS x
+      FROM
+        int4_tbl AS i4,
+        LATERAL (
+          SELECT i4.f1 AS y LIMIT 1
+        )
+        AS ss1
+      WHERE
+        i4.f1 = 0
+    )
     AS ss2
   ON TRUE
   RIGHT OUTER JOIN
     (SELECT FALSE AS z) AS ss3
   ON TRUE,
-  LATERAL (SELECT i8.q2 AS q2l WHERE x LIMIT 1)
+  LATERAL (
+    SELECT i8.q2 AS q2l WHERE x LIMIT 1
+  )
   AS ss4
 WHERE
   i8.q2 = 123;
@@ -2476,19 +2672,23 @@ SELECT
 FROM
   int8_tbl AS i8
   INNER JOIN
-    (SELECT
-      (SELECT TRUE) AS x
-    FROM
-      int4_tbl AS i4,
-      LATERAL (SELECT 1 AS y LIMIT 1) AS ss1
-    WHERE
-      i4.f1 = 0)
+    (
+      SELECT
+        (SELECT TRUE) AS x
+      FROM
+        int4_tbl AS i4,
+        LATERAL (SELECT 1 AS y LIMIT 1) AS ss1
+      WHERE
+        i4.f1 = 0
+    )
     AS ss2
   ON TRUE
   RIGHT OUTER JOIN
     (SELECT FALSE AS z) AS ss3
   ON TRUE,
-  LATERAL (SELECT i8.q2 AS q2l WHERE x LIMIT 1)
+  LATERAL (
+    SELECT i8.q2 AS q2l WHERE x LIMIT 1
+  )
   AS ss4
 WHERE
   i8.q2 = 123;
@@ -2500,7 +2700,9 @@ FROM
   LEFT OUTER JOIN
     (SELECT TRUE AS a) AS t2
   ON TRUE,
-  LATERAL (SELECT TRUE AS b UNION ALL SELECT a AS b)
+  LATERAL (
+    SELECT TRUE AS b UNION ALL SELECT a AS b
+  )
   AS t3
 WHERE
   b;
@@ -2512,7 +2714,9 @@ FROM
   LEFT OUTER JOIN
     (SELECT TRUE AS a) AS t2
   ON TRUE,
-  LATERAL (SELECT TRUE AS b UNION ALL SELECT a AS b)
+  LATERAL (
+    SELECT TRUE AS b UNION ALL SELECT a AS b
+  )
   AS t3
 WHERE
   b;

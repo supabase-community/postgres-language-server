@@ -342,10 +342,7 @@ FROM
 WHERE
   table_name = 'rw_view1';
 
-INSERT INTO rw_view1
-VALUES
-  (9, DEFAULT),
-  (10, DEFAULT);
+INSERT INTO rw_view1 VALUES (9, DEFAULT), (10, DEFAULT);
 
 SELECT a, b FROM base_tbl_hist;
 
@@ -1475,11 +1472,7 @@ CREATE TABLE base_tbl (
   b INT
 );
 
-INSERT INTO base_tbl
-VALUES
-  (1, 2),
-  (4, 5),
-  (3, -3);
+INSERT INTO base_tbl VALUES (1, 2), (4, 5), (3, -3);
 
 CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl ORDER BY a + b;
@@ -1503,10 +1496,7 @@ CREATE TABLE base_tbl (
   arr INT[]
 );
 
-INSERT INTO base_tbl
-VALUES
-  (1, ARRAY[2]),
-  (3, ARRAY[4]);
+INSERT INTO base_tbl VALUES (1, ARRAY[2]), (3, ARRAY[4]);
 
 CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl;
@@ -1678,15 +1668,9 @@ SELECT * FROM ONLY rw_view1 ORDER BY a;
 
 SELECT * FROM rw_view2 ORDER BY a;
 
-INSERT INTO rw_view1
-VALUES
-  (-100),
-  (100);
+INSERT INTO rw_view1 VALUES (-100), (100);
 
-INSERT INTO rw_view2
-VALUES
-  (-200),
-  (200);
+INSERT INTO rw_view2 VALUES (-200), (200);
 
 UPDATE rw_view1 SET a = a * 10 WHERE a IN (-1, 1);
 
@@ -1717,15 +1701,9 @@ CREATE TABLE other_tbl_parent (id INT);
 CREATE TABLE other_tbl_child ()
 INHERITS (other_tbl_parent);
 
-INSERT INTO other_tbl_parent
-VALUES
-  (7),
-  (200);
+INSERT INTO other_tbl_parent VALUES (7), (200);
 
-INSERT INTO other_tbl_child
-VALUES
-  (8),
-  (100);
+INSERT INTO other_tbl_child VALUES (8), (100);
 
 UPDATE rw_view1 SET a = a + 1000 FROM other_tbl_parent WHERE a = id;
 
@@ -1744,11 +1722,7 @@ CREATE TABLE base_tbl (
   b INT DEFAULT 10
 );
 
-INSERT INTO base_tbl
-VALUES
-  (1, 2),
-  (2, 3),
-  (1, -1);
+INSERT INTO base_tbl VALUES (1, 2), (2, 3), (1, -1);
 
 CREATE VIEW rw_view1
 AS SELECT * FROM base_tbl WHERE a < b
@@ -1901,7 +1875,9 @@ FROM
   base_tbl AS b
 WHERE
   EXISTS
-  (SELECT 1 FROM ref_tbl AS r WHERE r.a = b.a)
+  (
+    SELECT 1 FROM ref_tbl AS r WHERE r.a = b.a
+  )
 WITH CASCADED CHECK OPTION;
 
 INSERT INTO rw_view1 VALUES (5);
@@ -2061,11 +2037,7 @@ CREATE TABLE base_tbl (
   visibility TEXT
 );
 
-INSERT INTO base_tbl
-VALUES
-  ('Tom', 'public'),
-  ('Dick', 'private'),
-  ('Harry', 'public');
+INSERT INTO base_tbl VALUES ('Tom', 'public'), ('Dick', 'private'), ('Harry', 'public');
 
 CREATE VIEW rw_view1
 AS SELECT
@@ -2185,15 +2157,14 @@ CREATE TABLE base_tbl (
   deleted BOOLEAN
 );
 
-INSERT INTO base_tbl
-VALUES
-  (1, 'Row 1', FALSE),
-  (2, 'Row 2', TRUE);
+INSERT INTO base_tbl VALUES (1, 'Row 1', FALSE), (2, 'Row 2', TRUE);
 
 CREATE RULE base_tbl_ins_rule
 AS ON INSERT TO base_tbl WHERE
   EXISTS
-  (SELECT 1 FROM base_tbl AS t WHERE t.id = new.id)
+  (
+    SELECT 1 FROM base_tbl AS t WHERE t.id = new.id
+  )
 DO INSTEAD
   UPDATE base_tbl
   SET data = new.data,
@@ -2431,10 +2402,7 @@ INSERT INTO t1 VALUES (1, 'one', 10);
 
 CREATE TABLE t2 (cc INT);
 
-INSERT INTO t2
-VALUES
-  (10),
-  (20);
+INSERT INTO t2 VALUES (10), (20);
 
 CREATE VIEW v1
   WITH (security_barrier = 'true')
@@ -2644,10 +2612,7 @@ CREATE TABLE sometable (
   b TEXT
 );
 
-INSERT INTO sometable
-VALUES
-  (1, 'a'),
-  (2, 'b');
+INSERT INTO sometable VALUES (1, 'a'), (2, 'b');
 
 CREATE VIEW wcowrtest_v2
 AS SELECT
@@ -2656,7 +2621,9 @@ FROM
   wcowrtest AS r
 WHERE
   r IN
-  (SELECT s FROM sometable AS s WHERE r.a = s.a)
+  (
+    SELECT s FROM sometable AS s WHERE r.a = s.a
+  )
 WITH CASCADED CHECK OPTION;
 
 INSERT INTO wcowrtest_v2 VALUES (2, 'no such row in sometable');
@@ -2934,10 +2901,7 @@ ALTER VIEW base_tab_def_view
 
 INSERT INTO base_tab_def VALUES (1);
 
-INSERT INTO base_tab_def
-VALUES
-  (2),
-  (3);
+INSERT INTO base_tab_def VALUES (2), (3);
 
 INSERT INTO base_tab_def VALUES (4, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -2948,10 +2912,7 @@ VALUES
 
 INSERT INTO base_tab_def_view VALUES (11);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (12),
-  (13);
+INSERT INTO base_tab_def_view VALUES (12), (13);
 
 INSERT INTO base_tab_def_view VALUES (14, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -2960,10 +2921,7 @@ VALUES
   (15, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
   (16, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (17),
-  (DEFAULT);
+INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a;
 
@@ -2987,10 +2945,7 @@ TRUNCATE base_tab_def;
 
 INSERT INTO base_tab_def VALUES (1);
 
-INSERT INTO base_tab_def
-VALUES
-  (2),
-  (3);
+INSERT INTO base_tab_def VALUES (2), (3);
 
 INSERT INTO base_tab_def VALUES (4, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -3001,10 +2956,7 @@ VALUES
 
 INSERT INTO base_tab_def_view VALUES (11);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (12),
-  (13);
+INSERT INTO base_tab_def_view VALUES (12), (13);
 
 INSERT INTO base_tab_def_view VALUES (14, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -3013,10 +2965,7 @@ VALUES
   (15, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
   (16, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (17),
-  (DEFAULT);
+INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a;
 
@@ -3034,10 +2983,7 @@ TRUNCATE base_tab_def;
 
 INSERT INTO base_tab_def VALUES (1);
 
-INSERT INTO base_tab_def
-VALUES
-  (2),
-  (3);
+INSERT INTO base_tab_def VALUES (2), (3);
 
 INSERT INTO base_tab_def VALUES (4, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -3048,10 +2994,7 @@ VALUES
 
 INSERT INTO base_tab_def_view VALUES (11);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (12),
-  (13);
+INSERT INTO base_tab_def_view VALUES (12), (13);
 
 INSERT INTO base_tab_def_view VALUES (14, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -3060,10 +3003,7 @@ VALUES
   (15, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
   (16, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (17),
-  (DEFAULT);
+INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a;
 
@@ -3079,10 +3019,7 @@ TRUNCATE base_tab_def;
 
 INSERT INTO base_tab_def VALUES (1);
 
-INSERT INTO base_tab_def
-VALUES
-  (2),
-  (3);
+INSERT INTO base_tab_def VALUES (2), (3);
 
 INSERT INTO base_tab_def VALUES (4, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -3093,10 +3030,7 @@ VALUES
 
 INSERT INTO base_tab_def_view VALUES (11);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (12),
-  (13);
+INSERT INTO base_tab_def_view VALUES (12), (13);
 
 INSERT INTO base_tab_def_view VALUES (14, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
@@ -3105,10 +3039,7 @@ VALUES
   (15, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
   (16, DEFAULT, DEFAULT, DEFAULT, DEFAULT);
 
-INSERT INTO base_tab_def_view
-VALUES
-  (17),
-  (DEFAULT);
+INSERT INTO base_tab_def_view VALUES (17), (DEFAULT);
 
 SELECT * FROM base_tab_def ORDER BY a, c NULLS LAST;
 

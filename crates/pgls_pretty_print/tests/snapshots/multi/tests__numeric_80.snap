@@ -941,36 +941,40 @@ INSERT INTO num_exp_power_10_ln VALUES (0, 'NaN');
 INSERT INTO num_exp_power_10_ln VALUES (1, 'NaN');
 
 INSERT INTO num_exp_power_10_ln
-VALUES (
-  2,
-  '224790267919917955.13261618583642653184'
-);
+VALUES
+  (
+    2,
+    '224790267919917955.13261618583642653184'
+  );
 
 INSERT INTO num_exp_power_10_ln VALUES (3, '28.90266599445155957393');
 
 INSERT INTO num_exp_power_10_ln
-VALUES (
-  4,
-  '7405685069594999.07733999469386277636'
-);
+VALUES
+  (
+    4,
+    '7405685069594999.07733999469386277636'
+  );
 
 INSERT INTO num_exp_power_10_ln VALUES (5, '5068226527.32127265408584640098');
 
 INSERT INTO num_exp_power_10_ln VALUES (6, '281839893606.99372343357047819067');
 
 INSERT INTO num_exp_power_10_ln
-VALUES (
-  7,
-  '1716699575118597095.42330819910640247627'
-);
+VALUES
+  (
+    7,
+    '1716699575118597095.42330819910640247627'
+  );
 
 INSERT INTO num_exp_power_10_ln VALUES (8, '167361463828.07491320069016125952');
 
 INSERT INTO num_exp_power_10_ln
-VALUES (
-  9,
-  '107511333880052007.04141124673540337457'
-);
+VALUES
+  (
+    9,
+    '107511333880052007.04141124673540337457'
+  );
 
 COMMIT;
 
@@ -1970,54 +1974,58 @@ SELECT
   cnt,
   width_bucket(oper, low, high, cnt)
 FROM
-  (SELECT
-    CAST(1.797e+308 AS DOUBLE PRECISION)
-    AS big,
-    CAST(5e-324 AS DOUBLE PRECISION) AS tiny)
+  (
+    SELECT
+      CAST(1.797e+308 AS DOUBLE PRECISION)
+      AS big,
+      CAST(5e-324 AS DOUBLE PRECISION) AS tiny
+  )
   AS v,
-  LATERAL (VALUES
-    (
-      CAST(10.5 AS DOUBLE PRECISION),
-      -big,
-      big,
-      1
-    ),
-    (
-      CAST(10.5 AS DOUBLE PRECISION),
-      -big,
-      big,
-      2
-    ),
-    (
-      CAST(10.5 AS DOUBLE PRECISION),
-      -big,
-      big,
-      3
-    ),
-    (big / 4, -big / 2, big / 2, 10),
-    (
-      CAST(10.5 AS DOUBLE PRECISION),
-      big,
-      -big,
-      1
-    ),
-    (
-      CAST(10.5 AS DOUBLE PRECISION),
-      big,
-      -big,
-      2
-    ),
-    (
-      CAST(10.5 AS DOUBLE PRECISION),
-      big,
-      -big,
-      3
-    ),
-    (big / 4, big / 2, -big / 2, 10),
-    (0, 0, tiny, 4),
-    (tiny, 0, tiny, 4),
-    (0, 0, 1, 2147483647),
-    (1, 1, 0, 2147483647))
+  LATERAL (
+    VALUES
+      (
+        CAST(10.5 AS DOUBLE PRECISION),
+        -big,
+        big,
+        1
+      ),
+      (
+        CAST(10.5 AS DOUBLE PRECISION),
+        -big,
+        big,
+        2
+      ),
+      (
+        CAST(10.5 AS DOUBLE PRECISION),
+        -big,
+        big,
+        3
+      ),
+      (big / 4, -big / 2, big / 2, 10),
+      (
+        CAST(10.5 AS DOUBLE PRECISION),
+        big,
+        -big,
+        1
+      ),
+      (
+        CAST(10.5 AS DOUBLE PRECISION),
+        big,
+        -big,
+        2
+      ),
+      (
+        CAST(10.5 AS DOUBLE PRECISION),
+        big,
+        -big,
+        3
+      ),
+      (big / 4, big / 2, -big / 2, 10),
+      (0, 0, tiny, 4),
+      (tiny, 0, tiny, 4),
+      (0, 0, 1, 2147483647),
+      (1, 1, 0, 2147483647)
+  )
   AS sample (oper, low, high, cnt);
 
 SELECT width_bucket(CAST(1 AS DOUBLE PRECISION), 0, 1, 2147483647);

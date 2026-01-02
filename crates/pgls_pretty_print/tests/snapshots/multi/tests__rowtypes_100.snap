@@ -139,7 +139,9 @@ FROM
   tenk1
 WHERE
   (unique1, unique2) < ANY
-  (SELECT ten, ten FROM tenk1 WHERE hundred < 3) AND
+  (
+    SELECT ten, ten FROM tenk1 WHERE hundred < 3
+  ) AND
   unique1 <= 20
 ORDER BY 1;
 
@@ -467,11 +469,7 @@ AS '
 '
 LANGUAGE "sql";
 
-INSERT INTO price
-VALUES
-  (1, FALSE, 42),
-  (10, FALSE, 100),
-  (11, TRUE, 17.99);
+INSERT INTO price VALUES (1, FALSE, 42), (10, FALSE, 100), (11, TRUE, 17.99);
 
 UPDATE price
 SET active = TRUE,
@@ -587,53 +585,61 @@ SELECT row_to_json(ss) FROM (SELECT q1 AS a, q2 AS b FROM int8_tbl OFFSET 0) AS 
 SELECT
   row_to_json(q)
 FROM
-  (SELECT
-    thousand,
-    tenthous
-  FROM
-    tenk1
-  WHERE
-    thousand = 42 AND tenthous < 2000
-  OFFSET 0)
+  (
+    SELECT
+      thousand,
+      tenthous
+    FROM
+      tenk1
+    WHERE
+      thousand = 42 AND tenthous < 2000
+    OFFSET 0
+  )
   AS q;
 
 SELECT
   row_to_json(q)
 FROM
-  (SELECT
-    thousand,
-    tenthous
-  FROM
-    tenk1
-  WHERE
-    thousand = 42 AND tenthous < 2000
-  OFFSET 0)
+  (
+    SELECT
+      thousand,
+      tenthous
+    FROM
+      tenk1
+    WHERE
+      thousand = 42 AND tenthous < 2000
+    OFFSET 0
+  )
   AS q;
 
 SELECT
   row_to_json(q)
 FROM
-  (SELECT
-    thousand AS x,
-    tenthous AS y
-  FROM
-    tenk1
-  WHERE
-    thousand = 42 AND tenthous < 2000
-  OFFSET 0)
+  (
+    SELECT
+      thousand AS x,
+      tenthous AS y
+    FROM
+      tenk1
+    WHERE
+      thousand = 42 AND tenthous < 2000
+    OFFSET 0
+  )
   AS q;
 
 SELECT
   row_to_json(q)
 FROM
-  (SELECT
-    thousand AS x,
-    tenthous AS y
-  FROM
-    tenk1
-  WHERE
-    thousand = 42 AND tenthous < 2000
-  OFFSET 0)
+  (
+    SELECT
+      thousand AS x,
+      tenthous AS y
+    FROM
+      tenk1
+    WHERE
+      thousand = 42 AND tenthous < 2000
+    OFFSET 0
+  )
   AS q (a, b);
 
 CREATE TEMPORARY TABLE tt1 AS SELECT * FROM int8_tbl LIMIT 2;
@@ -657,13 +663,15 @@ SELECT
   r IS NULL AS isnull,
   r IS NOT NULL AS isnotnull
 FROM
-  (VALUES
-    (1, ROW(1, 2)),
-    (1, ROW(NULL, NULL)),
-    (1, NULL),
-    (NULL, ROW(1, 2)),
-    (NULL, ROW(NULL, NULL)),
-    (NULL, NULL))
+  (
+    VALUES
+      (1, ROW(1, 2)),
+      (1, ROW(NULL, NULL)),
+      (1, NULL),
+      (NULL, ROW(1, 2)),
+      (NULL, ROW(NULL, NULL)),
+      (NULL, NULL)
+  )
   AS r (a, b);
 
 SELECT
@@ -671,13 +679,15 @@ SELECT
   r IS NULL AS isnull,
   r IS NOT NULL AS isnotnull
 FROM
-  (VALUES
-    (1, ROW(1, 2)),
-    (1, ROW(NULL, NULL)),
-    (1, NULL),
-    (NULL, ROW(1, 2)),
-    (NULL, ROW(NULL, NULL)),
-    (NULL, NULL))
+  (
+    VALUES
+      (1, ROW(1, 2)),
+      (1, ROW(NULL, NULL)),
+      (1, NULL),
+      (NULL, ROW(1, 2)),
+      (NULL, ROW(NULL, NULL)),
+      (NULL, NULL)
+  )
   AS r (a, b);
 
 WITH
@@ -726,12 +736,14 @@ SELECT
 FROM
   cte2 AS t
 WHERE
-  (SELECT
-    *
-  FROM
-    (SELECT c AS c1) AS s
-  WHERE
-    (SELECT c1.f1 > 0)) IS NOT NULL;
+  (
+    SELECT
+      *
+    FROM
+      (SELECT c AS c1) AS s
+    WHERE
+      (SELECT c1.f1 > 0)
+  ) IS NOT NULL;
 
 WITH
 cte (c) AS MATERIALIZED (SELECT ROW(1, 2)),
@@ -741,24 +753,28 @@ SELECT
 FROM
   cte2 AS t
 WHERE
-  (SELECT
-    *
-  FROM
-    (SELECT c AS c1) AS s
-  WHERE
-    (SELECT c1.f1 > 0)) IS NOT NULL;
+  (
+    SELECT
+      *
+    FROM
+      (SELECT c AS c1) AS s
+    WHERE
+      (SELECT c1.f1 > 0)
+  ) IS NOT NULL;
 
 SELECT
   1 AS one
 FROM
   cte2 AS t
 WHERE
-  (SELECT
-    *
-  FROM
-    (SELECT c AS c1) AS s
-  WHERE
-    (SELECT c1.f1 > 0)) IS NOT NULL;
+  (
+    SELECT
+      *
+    FROM
+      (SELECT c AS c1) AS s
+    WHERE
+      (SELECT c1.f1 > 0)
+  ) IS NOT NULL;
 
 SELECT pg_get_viewdef('composite_v', TRUE);
 
@@ -770,9 +786,11 @@ SELECT
   ss.a.x,
   ss.a.n
 FROM
-  (SELECT
-    information_schema._pg_expandarray(ARRAY[1, 2])
-    AS a)
+  (
+    SELECT
+      information_schema._pg_expandarray(ARRAY[1, 2])
+      AS a
+  )
   AS ss
 WHERE
   FALSE;

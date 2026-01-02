@@ -1949,11 +1949,7 @@ ALTER TABLE idxpart
   idxpart2
   FOR VALUES FROM (100000) TO (1000000);
 
-INSERT INTO idxpart
-VALUES
-  (0, 'zero'),
-  (42, 'life'),
-  (2 ^ 16, 'sixteen');
+INSERT INTO idxpart VALUES (0, 'zero'), (42, 'life'), (2 ^ 16, 'sixteen');
 
 INSERT INTO idxpart
 SELECT
@@ -1964,10 +1960,7 @@ FROM
 
 INSERT INTO idxpart VALUES (16, 'sixteen');
 
-INSERT INTO idxpart (b, a)
-VALUES
-  ('one', 142857),
-  ('two', 285714);
+INSERT INTO idxpart (b, a) VALUES ('one', 142857), ('two', 285714);
 
 INSERT INTO idxpart
 SELECT

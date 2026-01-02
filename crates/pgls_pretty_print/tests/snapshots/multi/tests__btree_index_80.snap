@@ -417,12 +417,7 @@ USING btree
 )
 WITH (deduplicate_items = 'on');
 
-INSERT INTO btree_bpchar
-VALUES
-  ('foo'),
-  ('fool'),
-  ('bar'),
-  ('quux');
+INSERT INTO btree_bpchar VALUES ('foo'), ('fool'), ('bar'), ('quux');
 
 SELECT * FROM btree_bpchar WHERE f1 LIKE 'foo';
 

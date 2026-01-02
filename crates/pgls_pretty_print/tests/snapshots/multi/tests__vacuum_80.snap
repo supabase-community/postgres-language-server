@@ -100,10 +100,7 @@ AS 'SELECT $1 FROM public.do_analyze()';
 
 CREATE INDEX ON vaccluster USING btree ((wrap_do_analyze(i)));
 
-INSERT INTO vaccluster
-VALUES
-  (1),
-  (2);
+INSERT INTO vaccluster VALUES (1), (2);
 
 ANALYZE vaccluster;
 
@@ -165,10 +162,7 @@ PARTITION BY LIST(i);
 
 CREATE TABLE past_part PARTITION OF past_parted FOR VALUES IN (1);
 
-INSERT INTO past_parted
-VALUES
-  (1),
-  (1);
+INSERT INTO past_parted VALUES (1), (1);
 
 ANALYZE past_parted;
 
@@ -296,10 +290,11 @@ ALTER TABLE no_index_cleanup
   ALTER COLUMN t SET STORAGE external;
 
 INSERT INTO no_index_cleanup (i, t)
-VALUES (
-  generate_series(1, 30),
-  repeat('1234567890', 269)
-);
+VALUES
+  (
+    generate_series(1, 30),
+    repeat('1234567890', 269)
+  );
 
 VACUUM (INDEX_CLEANUP "true", FULL "true") no_index_cleanup;
 
@@ -323,10 +318,11 @@ ALTER TABLE no_index_cleanup
 VACUUM no_index_cleanup;
 
 INSERT INTO no_index_cleanup (i, t)
-VALUES (
-  generate_series(31, 60),
-  repeat('1234567890', 269)
-);
+VALUES
+  (
+    generate_series(31, 60),
+    repeat('1234567890', 269)
+  );
 
 DELETE FROM no_index_cleanup WHERE i < 45;
 
@@ -357,10 +353,7 @@ WITH (
   autovacuum_enabled = 'false'
 );
 
-INSERT INTO vac_truncate_test
-VALUES
-  (1, NULL),
-  (NULL, NULL);
+INSERT INTO vac_truncate_test VALUES (1, NULL), (NULL, NULL);
 
 VACUUM (TRUNCATE "false", DISABLE_PAGE_SKIPPING) vac_truncate_test;
 
@@ -377,10 +370,7 @@ VACUUM (TRUNCATE "false", FULL "true") vac_truncate_test;
 ALTER TABLE vac_truncate_test
   RESET (vacuum_truncate);
 
-INSERT INTO vac_truncate_test
-VALUES
-  (1, NULL),
-  (NULL, NULL);
+INSERT INTO vac_truncate_test VALUES (1, NULL), (NULL, NULL);
 
 VACUUM (DISABLE_PAGE_SKIPPING) vac_truncate_test;
 
@@ -536,11 +526,7 @@ CREATE TABLE only_inh_parent (
 CREATE TABLE only_inh_child ()
 INHERITS (only_inh_parent);
 
-INSERT INTO only_inh_child (a, b)
-VALUES
-  (1, 'aaa'),
-  (2, 'bbb'),
-  (3, 'ccc');
+INSERT INTO only_inh_child (a, b) VALUES (1, 'aaa'), (2, 'bbb'), (3, 'ccc');
 
 SELECT
   relname,
@@ -649,8 +635,8 @@ ALTER TABLE vac_option_tab
 CREATE VIEW vac_option_tab_counts
 AS SELECT
   CASE
-  WHEN c.relname IS NULL THEN 'main'
-  ELSE 'toast'
+    WHEN c.relname IS NULL THEN 'main'
+    ELSE 'toast'
   END
   AS rel,
   s.vacuum_count

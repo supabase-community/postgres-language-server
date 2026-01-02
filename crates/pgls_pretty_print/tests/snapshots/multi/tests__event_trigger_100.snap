@@ -141,12 +141,12 @@ CALL p1();
 ALTER EVENT TRIGGER regress_event_trigger DISABLE;
 
 DROP TABLE
-"event_trigger_fire2",
-"event_trigger_fire3",
-"event_trigger_fire4",
-"event_trigger_fire5",
-"event_trigger_fire6",
-"event_trigger_fire7";
+  "event_trigger_fire2",
+  "event_trigger_fire3",
+  "event_trigger_fire4",
+  "event_trigger_fire5",
+  "event_trigger_fire6",
+  "event_trigger_fire7";
 
 DROP ROUTINE f1(), p1();
 
@@ -221,7 +221,7 @@ LANGUAGE "plpgsql"
 CALLED ON NULL INPUT
 AS ' BEGIN RETURN coalesce($1,0) + coalesce($2,0); END; ';
 
-CREATE AGGREGATE schema_two.newton ( basetype = INT, sfunc = schema_two.add, stype = INT);
+CREATE AGGREGATE schema_two.newton (basetype = INT, sfunc = schema_two.add, stype = INT);
 
 RESET session_authorization;
 
@@ -382,7 +382,7 @@ CREATE TABLE id (col_d INT NOT NULL GENERATED ALWAYS AS IDENTITY);
 CREATE TABLE evttrig.parted (id INT PRIMARY KEY)
 PARTITION BY RANGE(id);
 
-CREATE TABLE evttrig.part_1_10 PARTITION OF evttrig.parted ( id ) FOR VALUES FROM (1) TO (10);
+CREATE TABLE evttrig.part_1_10 PARTITION OF evttrig.parted (id) FOR VALUES FROM (1) TO (10);
 
 CREATE TABLE evttrig.part_10_20
 PARTITION OF evttrig.parted
@@ -392,9 +392,9 @@ PARTITION OF evttrig.parted
 FOR VALUES FROM (10) TO (20)
 PARTITION BY RANGE(id);
 
-CREATE TABLE evttrig.part_10_15 PARTITION OF evttrig.part_10_20 ( id ) FOR VALUES FROM (10) TO (15);
+CREATE TABLE evttrig.part_10_15 PARTITION OF evttrig.part_10_20 (id) FOR VALUES FROM (10) TO (15);
 
-CREATE TABLE evttrig.part_15_20 PARTITION OF evttrig.part_10_20 ( id ) FOR VALUES FROM (15) TO (20);
+CREATE TABLE evttrig.part_15_20 PARTITION OF evttrig.part_10_20 (id) FOR VALUES FROM (15) TO (20);
 
 ALTER TABLE evttrig.two
   DROP COLUMN col_c;

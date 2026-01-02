@@ -65,19 +65,23 @@ CREATE INDEX "spgist_box_idx" ON spgist_box_tbl USING spgist (b);
 SELECT
   COUNT(*)
 FROM
-  (VALUES
-    (point(5, 5)),
-    (point(8, 8)),
-    (point(12, 12)))
+  (
+    VALUES
+      (point(5, 5)),
+      (point(8, 8)),
+      (point(12, 12))
+  )
   AS v (p)
 WHERE
   EXISTS
-  (SELECT
-    *
-  FROM
-    spgist_box_tbl AS b
-  WHERE
-    b.b && box(v.p, v.p));
+  (
+    SELECT
+      *
+    FROM
+      spgist_box_tbl AS b
+    WHERE
+      b.b && box(v.p, v.p)
+  );
 
 CREATE TABLE spgist_text_tbl (
   id INT,
@@ -134,12 +138,7 @@ CREATE TABLE spgist_domain_tbl (f1 spgist_text);
 
 CREATE INDEX "spgist_domain_idx" ON spgist_domain_tbl USING spgist (f1);
 
-INSERT INTO spgist_domain_tbl
-VALUES
-  ('fee'),
-  ('fi'),
-  ('fo'),
-  ('fum');
+INSERT INTO spgist_domain_tbl VALUES ('fee'), ('fi'), ('fo'), ('fum');
 
 SELECT * FROM spgist_domain_tbl WHERE f1 = 'fo';
 

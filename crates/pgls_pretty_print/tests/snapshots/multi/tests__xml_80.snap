@@ -484,32 +484,36 @@ SELECT
 SELECT xpath_exists('count(/nosuchtag)', CAST('<root/>' AS XML));
 
 INSERT INTO xmltest
-VALUES (
-  4,
-  CAST('<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
-  AS XML)
-);
+VALUES
+  (
+    4,
+    CAST('<menu><beers><name>Budvar</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+    AS XML)
+  );
 
 INSERT INTO xmltest
-VALUES (
-  5,
-  CAST('<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
-  AS XML)
-);
+VALUES
+  (
+    5,
+    CAST('<menu><beers><name>Molson</name><cost>free</cost><name>Carling</name><cost>lots</cost></beers></menu>'
+    AS XML)
+  );
 
 INSERT INTO xmltest
-VALUES (
-  6,
-  CAST('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
-  AS XML)
-);
+VALUES
+  (
+    6,
+    CAST('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Budvar</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+    AS XML)
+  );
 
 INSERT INTO xmltest
-VALUES (
-  7,
-  CAST('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
-  AS XML)
-);
+VALUES
+  (
+    7,
+    CAST('<myns:menu xmlns:myns="http://myns.com"><myns:beers><myns:name>Molson</myns:name><myns:cost>free</myns:cost><myns:name>Carling</myns:name><myns:cost>lots</myns:cost></myns:beers></myns:menu>'
+    AS XML)
+  );
 
 SELECT COUNT(id) FROM xmltest WHERE xmlexists('/menu/beer' PASSING data);
 
@@ -646,8 +650,9 @@ SELECT
 CREATE TABLE xmldata (data XML);
 
 INSERT INTO xmldata
-VALUES (
-  '<ROWS>
+VALUES
+  (
+    '<ROWS>
 <ROW id="1">
   <COUNTRY_ID>AU</COUNTRY_ID>
   <COUNTRY_NAME>Australia</COUNTRY_NAME>
@@ -679,7 +684,7 @@ VALUES (
   <REGION_ID>3</REGION_ID><SIZE unit="km">791</SIZE>
 </ROW>
 </ROWS>'
-);
+  );
 
 SELECT
   xmltable.*
@@ -1017,8 +1022,9 @@ WHERE
   "COUNTRY_NAME" = 'Japan';
 
 INSERT INTO xmldata
-VALUES (
-  '<ROWS>
+VALUES
+  (
+    '<ROWS>
 <ROW id="10">
   <COUNTRY_ID>CZ</COUNTRY_ID>
   <COUNTRY_NAME>Czech Republic</COUNTRY_NAME>
@@ -1035,11 +1041,12 @@ VALUES (
   <REGION_ID>2</REGION_ID>
 </ROW>
 </ROWS>'
-);
+  );
 
 INSERT INTO xmldata
-VALUES (
-  '<ROWS>
+VALUES
+  (
+    '<ROWS>
 <ROW id="20">
   <COUNTRY_ID>EG</COUNTRY_ID>
   <COUNTRY_NAME>Egypt</COUNTRY_NAME>
@@ -1051,7 +1058,7 @@ VALUES (
   <REGION_ID>1</REGION_ID>
 </ROW>
 </ROWS>'
-);
+  );
 
 SELECT
   xmltable.*
@@ -1144,11 +1151,11 @@ AS (
     array_to_string(proargnames, ',')
     AS proargnames,
     CASE
-    WHEN proargtypes <> ''
-    THEN array_to_string(
-      CAST(proargtypes AS OID[]),
-      ','
-    )
+      WHEN proargtypes <> ''
+      THEN array_to_string(
+        CAST(proargtypes AS OID[]),
+        ','
+      )
     END
     AS proargtypes
   FROM
@@ -1203,11 +1210,11 @@ AS (
     array_to_string(proargnames, ',')
     AS proargnames,
     CASE
-    WHEN proargtypes <> ''
-    THEN array_to_string(
-      CAST(proargtypes AS OID[]),
-      ','
-    )
+      WHEN proargtypes <> ''
+      THEN array_to_string(
+        CAST(proargtypes AS OID[]),
+        ','
+      )
     END
     AS proargtypes
   FROM

@@ -131,6 +131,9 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
 }
 
 fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
+    // Add indentation inside subquery parentheses
+    e.line(LineType::Soft);
+    e.indent_start();
     // Check if this is a SelectStmt and emit without semicolon
     if let Some(pgls_query::NodeEnum::SelectStmt(select_stmt)) = node.node.as_ref() {
         super::emit_select_stmt_no_semicolon(e, select_stmt);
@@ -138,6 +141,8 @@ fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
         // For other node types (e.g., VALUES), emit normally
         super::emit_node(node, e);
     }
+    e.indent_end();
+    e.line(LineType::Soft);
 }
 
 fn emit_operator_from_list(e: &mut EventEmitter, oper_name: &[pgls_query::protobuf::Node]) {

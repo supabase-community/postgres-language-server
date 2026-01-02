@@ -132,10 +132,10 @@ WHERE
 DROP TABLE "testpub_tbl2";
 
 DROP PUBLICATION
-testpub_foralltables,
-testpub_fortable,
-testpub_forschema,
-testpub_for_tbl_schema;
+  testpub_foralltables,
+  testpub_fortable,
+  testpub_forschema,
+  testpub_for_tbl_schema;
 
 CREATE TABLE testpub_tbl3 (a INT);
 
@@ -981,18 +981,18 @@ TABLE public.testpub_tbl7 (a);
 RESET client_min_messages;
 
 DROP TABLE
-"testpub_tbl5",
-"testpub_tbl6",
-"testpub_tbl7",
-"testpub_tbl8",
-"testpub_tbl8_1";
+  "testpub_tbl5",
+  "testpub_tbl6",
+  "testpub_tbl7",
+  "testpub_tbl8",
+  "testpub_tbl8_1";
 
 DROP PUBLICATION
-testpub_table_ins,
-testpub_fortable,
-testpub_fortable_insert,
-testpub_col_list,
-testpub_tbl9;
+  testpub_table_ins,
+  testpub_fortable,
+  testpub_fortable_insert,
+  testpub_col_list,
+  testpub_tbl9;
 
 SET client_min_messages = ERROR;
 
@@ -1452,11 +1452,11 @@ TABLES IN SCHEMA pub_test1;
 ALTER PUBLICATION testpub2_forschema DROP TABLES IN SCHEMA pub_test1;
 
 DROP PUBLICATION
-testpub3_forschema,
-testpub4_forschema,
-testpub5_forschema,
-testpub6_forschema,
-testpub_fortable;
+  testpub3_forschema,
+  testpub4_forschema,
+  testpub5_forschema,
+  testpub6_forschema,
+  testpub_fortable;
 
 DROP SCHEMA "CURRENT_SCHEMA" CASCADE;
 

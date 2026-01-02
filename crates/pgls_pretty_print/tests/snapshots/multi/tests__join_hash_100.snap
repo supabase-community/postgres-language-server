@@ -466,14 +466,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -483,14 +485,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -535,14 +539,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -552,14 +558,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -604,14 +612,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -621,14 +631,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -673,14 +685,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -690,14 +704,16 @@ SELECT
 FROM
   join_foo
   LEFT OUTER JOIN
-    (SELECT
-      b1.id,
-      b1.t
-    FROM
-      join_bar AS b1
-      INNER JOIN
-        join_bar AS b2
-      USING ("id"))
+    (
+      SELECT
+        b1.id,
+        b1.t
+      FROM
+        join_bar AS b1
+        INNER JOIN
+          join_bar AS b2
+        USING ("id")
+    )
     AS ss
   ON join_foo.id < ss.id + 1 AND
     join_foo.id > ss.id - 1;
@@ -794,7 +810,9 @@ SELECT
 FROM
   wide
   LEFT OUTER JOIN
-    (SELECT id, COALESCE(t, '') || '' AS t FROM wide)
+    (
+      SELECT id, COALESCE(t, '') || '' AS t FROM wide
+    )
     AS s
   USING ("id");
 
@@ -803,7 +821,9 @@ SELECT
 FROM
   wide
   LEFT OUTER JOIN
-    (SELECT id, COALESCE(t, '') || '' AS t FROM wide)
+    (
+      SELECT id, COALESCE(t, '') || '' AS t FROM wide
+    )
     AS s
   USING ("id");
 
@@ -967,16 +987,18 @@ SELECT
   ss.*
 FROM
   int8_tbl AS i8,
-  LATERAL (SELECT
-    t1.fivethous,
-    i4.f1
-  FROM
-    tenk1 AS t1
-    INNER JOIN
-      int4_tbl AS i4
-    ON t1.fivethous = i4.f1 + i8.q2
-  ORDER BY 1,
-    2)
+  LATERAL (
+    SELECT
+      t1.fivethous,
+      i4.f1
+    FROM
+      tenk1 AS t1
+      INNER JOIN
+        int4_tbl AS i4
+      ON t1.fivethous = i4.f1 + i8.q2
+    ORDER BY 1,
+      2
+  )
   AS ss;
 
 SELECT
@@ -984,16 +1006,18 @@ SELECT
   ss.*
 FROM
   int8_tbl AS i8,
-  LATERAL (SELECT
-    t1.fivethous,
-    i4.f1
-  FROM
-    tenk1 AS t1
-    INNER JOIN
-      int4_tbl AS i4
-    ON t1.fivethous = i4.f1 + i8.q2
-  ORDER BY 1,
-    2)
+  LATERAL (
+    SELECT
+      t1.fivethous,
+      i4.f1
+    FROM
+      tenk1 AS t1
+      INNER JOIN
+        int4_tbl AS i4
+      ON t1.fivethous = i4.f1 + i8.q2
+    ORDER BY 1,
+      2
+  )
   AS ss;
 
 ROLLBACK;

@@ -289,24 +289,28 @@ LIMIT 10;
 
 SELECT
   point(x, x),
-  (SELECT
-    f1
-  FROM
-    gpolygon_tbl
-  ORDER BY f1 <-> point(x, x)
-  LIMIT 1)
+  (
+    SELECT
+      f1
+    FROM
+      gpolygon_tbl
+    ORDER BY f1 <-> point(x, x)
+    LIMIT 1
+  )
   AS c
 FROM
   generate_series(0, 10, 1) AS x;
 
 SELECT
   point(x, x),
-  (SELECT
-    f1
-  FROM
-    gpolygon_tbl
-  ORDER BY f1 <-> point(x, x)
-  LIMIT 1)
+  (
+    SELECT
+      f1
+    FROM
+      gpolygon_tbl
+    ORDER BY f1 <-> point(x, x)
+    LIMIT 1
+  )
   AS c
 FROM
   generate_series(0, 10, 1) AS x;
@@ -681,10 +685,7 @@ CREATE TEMPORARY TABLE concur_temp (
 )
 ON COMMIT PRESERVE ROWS;
 
-INSERT INTO concur_temp
-VALUES
-  (1, 'foo'),
-  (2, 'bar');
+INSERT INTO concur_temp VALUES (1, 'foo'), (2, 'bar');
 
 CREATE INDEX CONCURRENTLY "concur_temp_ind" ON concur_temp USING btree (f1);
 
@@ -700,19 +701,13 @@ CREATE TEMPORARY TABLE concur_temp (
 )
 ON COMMIT DROP;
 
-INSERT INTO concur_temp
-VALUES
-  (1, 'foo'),
-  (2, 'bar');
+INSERT INTO concur_temp VALUES (1, 'foo'), (2, 'bar');
 
 CREATE INDEX CONCURRENTLY "concur_temp_ind" ON concur_temp USING btree (f1);
 
 COMMIT;
 
-INSERT INTO concur_temp
-VALUES
-  (1, 'foo'),
-  (2, 'bar');
+INSERT INTO concur_temp VALUES (1, 'foo'), (2, 'bar');
 
 CREATE INDEX CONCURRENTLY "concur_temp_ind" ON concur_temp USING btree (f1);
 
@@ -750,11 +745,7 @@ CREATE TABLE cwi_test (
   c CHAR(1)
 );
 
-INSERT INTO cwi_test
-VALUES
-  (1, 2),
-  (3, 4),
-  (5, 6);
+INSERT INTO cwi_test VALUES (1, 2), (3, 4), (5, 6);
 
 CREATE UNIQUE INDEX "cwi_uniq_idx" ON cwi_test USING btree (a, b);
 
@@ -1097,13 +1088,15 @@ FROM
 WHERE
   t1.thousand = 42 OR
   t1.thousand =
-  (SELECT
-    t2.tenthous
-  FROM
-    tenk1 AS t2
-  WHERE
-    t2.thousand = t1.tenthous + 1
-  LIMIT 1);
+  (
+    SELECT
+      t2.tenthous
+    FROM
+      tenk1 AS t2
+    WHERE
+      t2.thousand = t1.tenthous + 1
+    LIMIT 1
+  );
 
 SELECT
   COUNT(*)
@@ -1112,13 +1105,15 @@ FROM
 WHERE
   t1.thousand = 42 OR
   t1.thousand =
-  (SELECT
-    t2.tenthous
-  FROM
-    tenk1 AS t2
-  WHERE
-    t2.thousand = t1.tenthous + 1
-  LIMIT 1);
+  (
+    SELECT
+      t2.tenthous
+    FROM
+      tenk1 AS t2
+    WHERE
+      t2.thousand = t1.tenthous + 1
+    LIMIT 1
+  );
 
 SELECT COUNT(*) FROM tenk1 WHERE hundred = 42 AND (thousand = 42 OR thousand = 99);
 
@@ -1931,11 +1926,7 @@ DROP TABLE "concur_reindex_tab", "concur_reindex_tab2", "concur_reindex_tab3";
 
 CREATE TABLE concur_reindex_tab4 (c1 INT);
 
-INSERT INTO concur_reindex_tab4
-VALUES
-  (1),
-  (1),
-  (2);
+INSERT INTO concur_reindex_tab4 VALUES (1), (1), (2);
 
 CREATE UNIQUE INDEX CONCURRENTLY "concur_reindex_ind5" ON concur_reindex_tab4 USING btree (c1);
 
@@ -2070,10 +2061,7 @@ CREATE TEMPORARY TABLE concur_temp_tab_1 (
 )
 ON COMMIT PRESERVE ROWS;
 
-INSERT INTO concur_temp_tab_1
-VALUES
-  (1, 'foo'),
-  (2, 'bar');
+INSERT INTO concur_temp_tab_1 VALUES (1, 'foo'), (2, 'bar');
 
 CREATE INDEX "concur_temp_ind_1" ON concur_temp_tab_1 USING btree (c2);
 
@@ -2101,10 +2089,7 @@ CREATE TEMPORARY TABLE concur_temp_tab_3 (
 )
 ON COMMIT PRESERVE ROWS;
 
-INSERT INTO concur_temp_tab_3
-VALUES
-  (1, 'foo'),
-  (2, 'bar');
+INSERT INTO concur_temp_tab_3 VALUES (1, 'foo'), (2, 'bar');
 
 CREATE INDEX "concur_temp_ind_3" ON concur_temp_tab_3 USING btree (c2);
 
@@ -2134,9 +2119,9 @@ SELECT
   b.relname,
   b.relkind,
   CASE
-  WHEN a.relfilenode = b.relfilenode
-  THEN 'relfilenode is unchanged'
-  ELSE 'relfilenode has changed'
+    WHEN a.relfilenode = b.relfilenode
+    THEN 'relfilenode is unchanged'
+    ELSE 'relfilenode has changed'
   END
 FROM
   reindex_temp_before AS b
@@ -2241,12 +2226,14 @@ AS
     pg_class
   WHERE
     relnamespace =
-    (SELECT
-      oid
-    FROM
-      pg_namespace
-    WHERE
-      nspname = 'schema_to_reindex');
+    (
+      SELECT
+        oid
+      FROM
+        pg_namespace
+      WHERE
+        nspname = 'schema_to_reindex'
+    );
 
 INSERT INTO reindex_before
 SELECT
@@ -2259,12 +2246,14 @@ FROM
   pg_class
 WHERE
   oid IN
-  (SELECT
-    reltoastrelid
-  FROM
-    reindex_before
-  WHERE
-    reltoastrelid > 0);
+  (
+    SELECT
+      reltoastrelid
+    FROM
+      reindex_before
+    WHERE
+      reltoastrelid > 0
+  );
 
 INSERT INTO reindex_before
 SELECT
@@ -2277,18 +2266,22 @@ FROM
   pg_class
 WHERE
   oid IN
-  (SELECT
-    indexrelid
-  FROM
-    pg_index
-  WHERE
-    indrelid IN
-    (SELECT
-      reltoastrelid
+  (
+    SELECT
+      indexrelid
     FROM
-      reindex_before
+      pg_index
     WHERE
-      reltoastrelid > 0));
+      indrelid IN
+      (
+        SELECT
+          reltoastrelid
+        FROM
+          reindex_before
+        WHERE
+          reltoastrelid > 0
+      )
+  );
 
 REINDEX SCHEMA schema_to_reindex;
 
@@ -2303,20 +2296,22 @@ AS
     pg_class
   WHERE
     relnamespace =
-    (SELECT
-      oid
-    FROM
-      pg_namespace
-    WHERE
-      nspname = 'schema_to_reindex');
+    (
+      SELECT
+        oid
+      FROM
+        pg_namespace
+      WHERE
+        nspname = 'schema_to_reindex'
+    );
 
 SELECT
   b.relname,
   b.relkind,
   CASE
-  WHEN a.relfilenode = b.relfilenode
-  THEN 'relfilenode is unchanged'
-  ELSE 'relfilenode has changed'
+    WHEN a.relfilenode = b.relfilenode
+    THEN 'relfilenode is unchanged'
+    ELSE 'relfilenode has changed'
   END
 FROM
   reindex_before AS b

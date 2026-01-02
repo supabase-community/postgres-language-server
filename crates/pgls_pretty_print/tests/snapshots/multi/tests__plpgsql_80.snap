@@ -1533,12 +1533,13 @@ DELETE FROM hslot;
 INSERT INTO iface VALUES ('IF', 'notthere', 'eth0', '');
 
 INSERT INTO iface
-VALUES (
-  'IF',
-  'orion',
-  'ethernet_interface_name_too_long',
-  ''
-);
+VALUES
+  (
+    'IF',
+    'orion',
+    'ethernet_interface_name_too_long',
+    ''
+  );
 
 CREATE FUNCTION recursion_test(INT, INT)
 RETURNS TEXT
@@ -2609,10 +2610,7 @@ CREATE TEMPORARY TABLE foo (
   f2 INT
 );
 
-INSERT INTO foo
-VALUES
-  (1, 2),
-  (3, 4);
+INSERT INTO foo VALUES (1, 2), (3, 4);
 
 CREATE OR REPLACE FUNCTION stricttest()
 RETURNS VOID
@@ -3485,10 +3483,7 @@ CREATE TABLE tabwithcols (
   d INT
 );
 
-INSERT INTO tabwithcols
-VALUES
-  (10, 20, 30, 40),
-  (50, 60, 70, 80);
+INSERT INTO tabwithcols VALUES (10, 20, 30, 40), (50, 60, 70, 80);
 
 CREATE OR REPLACE FUNCTION returnqueryf()
 RETURNS SETOF tabwithcols
@@ -4792,7 +4787,9 @@ SELECT
   i,
   a
 FROM
-  (SELECT returns_rw_array(1) AS a OFFSET 0)
+  (
+    SELECT returns_rw_array(1) AS a OFFSET 0
+  )
   AS ss,
   LATERAL consumes_rw_array(a) AS i;
 
@@ -4800,7 +4797,9 @@ SELECT
   i,
   a
 FROM
-  (SELECT returns_rw_array(1) AS a OFFSET 0)
+  (
+    SELECT returns_rw_array(1) AS a OFFSET 0
+  )
   AS ss,
   LATERAL consumes_rw_array(a) AS i;
 
@@ -4812,18 +4811,22 @@ SELECT
   consumes_rw_array(a),
   a
 FROM
-  (VALUES
-    (returns_rw_array(1)),
-    (returns_rw_array(2)))
+  (
+    VALUES
+      (returns_rw_array(1)),
+      (returns_rw_array(2))
+  )
   AS v (a);
 
 SELECT
   consumes_rw_array(a),
   a
 FROM
-  (VALUES
-    (returns_rw_array(1)),
-    (returns_rw_array(2)))
+  (
+    VALUES
+      (returns_rw_array(1)),
+      (returns_rw_array(2))
+  )
   AS v (a);
 
 DO
@@ -5115,15 +5118,9 @@ CREATE TRIGGER transition_table_base_ins_trig
   FOR EACH STATEMENT
   EXECUTE FUNCTION transition_table_base_ins_func();
 
-INSERT INTO transition_table_base
-VALUES
-  (1, 'One'),
-  (2, 'Two');
+INSERT INTO transition_table_base VALUES (1, 'One'), (2, 'Two');
 
-INSERT INTO transition_table_base
-VALUES
-  (3, 'Three'),
-  (4, 'Four');
+INSERT INTO transition_table_base VALUES (3, 'Three'), (4, 'Four');
 
 CREATE OR REPLACE FUNCTION transition_table_base_upd_func()
 RETURNS trigger
@@ -5318,7 +5315,7 @@ CREATE TRIGGER transition_table_level2_bad_usage_trigger
 DELETE FROM transition_table_level2 WHERE level2_no BETWEEN 301 AND 305;
 
 DROP TRIGGER
-"transition_table_level2_bad_usage_trigger" ON "transition_table_level2";
+  "transition_table_level2_bad_usage_trigger" ON "transition_table_level2";
 
 DELETE FROM transition_table_level1 WHERE level1_no = 25;
 
@@ -5378,10 +5375,7 @@ CREATE TRIGGER alter_table_under_transition_tables_upd_trigger
   EXECUTE FUNCTION alter_table_under_transition_tables_upd_func();
 
 INSERT INTO alter_table_under_transition_tables
-VALUES
-  (1, '1'),
-  (2, '2'),
-  (3, '3');
+VALUES (1, '1'), (2, '2'), (3, '3');
 
 UPDATE alter_table_under_transition_tables SET name = name || name;
 

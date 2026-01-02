@@ -328,11 +328,7 @@ CREATE TABLE boolpart_t PARTITION OF boolpart FOR VALUES IN ('true');
 
 CREATE TABLE boolpart_f PARTITION OF boolpart FOR VALUES IN ('false');
 
-INSERT INTO boolpart
-VALUES
-  (TRUE),
-  (FALSE),
-  (NULL);
+INSERT INTO boolpart VALUES (TRUE), (FALSE), (NULL);
 
 SELECT * FROM boolpart WHERE a IN (TRUE, FALSE);
 
@@ -403,11 +399,7 @@ CREATE TABLE iboolpart_f PARTITION OF iboolpart FOR VALUES IN ('true');
 
 CREATE TABLE iboolpart_t PARTITION OF iboolpart FOR VALUES IN ('false');
 
-INSERT INTO iboolpart
-VALUES
-  (TRUE),
-  (FALSE),
-  (NULL);
+INSERT INTO iboolpart VALUES (TRUE), (FALSE), (NULL);
 
 SELECT * FROM iboolpart WHERE a IN (TRUE, FALSE);
 
@@ -564,13 +556,7 @@ ALTER TABLE part
   ATTACH PARTITION
   part_rev FOR VALUES IN (3);
 
-INSERT INTO part
-VALUES
-  (-1, -1),
-  (1, 1),
-  (2, NULL),
-  (NULL, -2),
-  (NULL, NULL);
+INSERT INTO part VALUES (-1, -1), (1, 1), (2, NULL), (NULL, -2), (NULL, NULL);
 
 SELECT CAST(tableoid AS REGCLASS) AS part, a, b FROM part WHERE a IS NULL ORDER BY 1, 2, 3;
 
@@ -580,12 +566,14 @@ SELECT
   *
 FROM
   mc2p AS t1,
-  LATERAL (SELECT
-    COUNT(*)
-  FROM
-    mc3p AS t2
-  WHERE
-    t2.a = t1.b AND abs(t2.b) = 1 AND t2.c = 1)
+  LATERAL (
+    SELECT
+      COUNT(*)
+    FROM
+      mc3p AS t2
+    WHERE
+      t2.a = t1.b AND abs(t2.b) = 1 AND t2.c = 1
+  )
   AS s
 WHERE
   t1.a = 1;
@@ -594,12 +582,14 @@ SELECT
   *
 FROM
   mc2p AS t1,
-  LATERAL (SELECT
-    COUNT(*)
-  FROM
-    mc3p AS t2
-  WHERE
-    t2.c = t1.b AND abs(t2.b) = 1 AND t2.a = 1)
+  LATERAL (
+    SELECT
+      COUNT(*)
+    FROM
+      mc3p AS t2
+    WHERE
+      t2.c = t1.b AND abs(t2.b) = 1 AND t2.a = 1
+  )
   AS s
 WHERE
   t1.a = 1;
@@ -608,12 +598,14 @@ SELECT
   *
 FROM
   mc2p AS t1,
-  LATERAL (SELECT
-    COUNT(*)
-  FROM
-    mc3p AS t2
-  WHERE
-    t2.a = 1 AND abs(t2.b) = 1 AND t2.c = 1)
+  LATERAL (
+    SELECT
+      COUNT(*)
+    FROM
+      mc3p AS t2
+    WHERE
+      t2.a = 1 AND abs(t2.b) = 1 AND t2.c = 1
+  )
   AS s
 WHERE
   t1.a = 1;
@@ -701,19 +693,19 @@ FOR VALUES FROM (16384) TO (maxvalue);
 SELECT * FROM rparted_by_int2 WHERE a > 100_000_000_000_000;
 
 DROP TABLE
-"lp",
-"coll_pruning",
-"rlp",
-"mc3p",
-"mc2p",
-"boolpart",
-"iboolpart",
-"boolrangep",
-"rp",
-"coll_pruning_multi",
-"like_op_noprune",
-"lparted_by_int2",
-"rparted_by_int2";
+  "lp",
+  "coll_pruning",
+  "rlp",
+  "mc3p",
+  "mc2p",
+  "boolpart",
+  "iboolpart",
+  "boolrangep",
+  "rp",
+  "coll_pruning_multi",
+  "like_op_noprune",
+  "lparted_by_int2",
+  "rparted_by_int2";
 
 CREATE TABLE asptab (id INT PRIMARY KEY)
 PARTITION BY RANGE(id);
@@ -725,17 +717,21 @@ CREATE TABLE asptab1 PARTITION OF asptab FOR VALUES FROM (1) TO (2);
 SELECT
   *
 FROM
-  (SELECT
-    EXISTS
-    (SELECT
-      1
+  (
+    SELECT
+      EXISTS
+      (
+        SELECT
+          1
+        FROM
+          int4_tbl AS tinner
+        WHERE
+          f1 = touter.f1
+      )
+      AS b
     FROM
-      int4_tbl AS tinner
-    WHERE
-      f1 = touter.f1)
-    AS b
-  FROM
-    int4_tbl AS touter)
+      int4_tbl AS touter
+  )
   AS ss,
   asptab
 WHERE
@@ -974,10 +970,7 @@ CREATE TABLE lprt_a (a INT NOT NULL);
 
 INSERT INTO lprt_a SELECT 0 FROM generate_series(1, 100);
 
-INSERT INTO lprt_a
-VALUES
-  (1),
-  (1);
+INSERT INTO lprt_a VALUES (1), (1);
 
 ANALYZE lprt_a;
 
@@ -1015,10 +1008,7 @@ SELECT
     'select avg(ab.a) from ab inner join lprt_a a on ab.a = a.a + 0 where a.a in(0, 0, 1)'
   );
 
-INSERT INTO lprt_a
-VALUES
-  (3),
-  (3);
+INSERT INTO lprt_a VALUES (3), (3);
 
 SELECT
   explain_parallel_append(
@@ -1058,11 +1048,13 @@ SELECT * FROM (SELECT * FROM ab WHERE a = 1 UNION ALL SELECT * FROM ab) AS ab WH
 SELECT
   *
 FROM
-  (SELECT * FROM ab WHERE a = 1
-  UNION ALL
-  VALUES (10, 5)
-  UNION ALL
-  SELECT * FROM ab)
+  (
+    SELECT * FROM ab WHERE a = 1
+    UNION ALL
+    VALUES (10, 5)
+    UNION ALL
+    SELECT * FROM ab
+  )
   AS ab
 WHERE
   b = (SELECT 1);
@@ -1082,11 +1074,13 @@ PREPARE ab_q6
 AS SELECT
   *
 FROM
-  (SELECT CAST(tableoid AS REGCLASS), a, b FROM ab
-  UNION ALL
-  SELECT CAST(tableoid AS REGCLASS), x, y FROM xy_1
-  UNION ALL
-  SELECT CAST(tableoid AS REGCLASS), a, b FROM ab)
+  (
+    SELECT CAST(tableoid AS REGCLASS), a, b FROM ab
+    UNION ALL
+    SELECT CAST(tableoid AS REGCLASS), x, y FROM xy_1
+    UNION ALL
+    SELECT CAST(tableoid AS REGCLASS), a, b FROM ab
+  )
   AS ab
 WHERE
   a = $1 AND b = (SELECT -10);;
@@ -1120,12 +1114,7 @@ SELECT * FROM ab;
 
 TRUNCATE ab;
 
-INSERT INTO ab
-VALUES
-  (1, 1),
-  (1, 2),
-  (1, 3),
-  (2, 1);
+INSERT INTO ab VALUES (1, 1), (1, 2), (1, 3), (2, 1);
 
 SELECT explain_analyze('
 update ab_a1 set b = 3 from ab_a2 where ab_a2.b = (select 1);');
@@ -1136,10 +1125,7 @@ DROP TABLE "ab", "lprt_a";
 
 CREATE TABLE tbl1 (col1 INT);
 
-INSERT INTO tbl1
-VALUES
-  (501),
-  (505);
+INSERT INTO tbl1 VALUES (501), (505);
 
 CREATE TABLE tprt (col1 INT)
 PARTITION BY RANGE(col1);
@@ -1168,15 +1154,7 @@ CREATE INDEX "tprt5_idx" ON tprt_5 USING btree (col1);
 
 CREATE INDEX "tprt6_idx" ON tprt_6 USING btree (col1);
 
-INSERT INTO tprt
-VALUES
-  (10),
-  (20),
-  (501),
-  (502),
-  (505),
-  (1001),
-  (4500);
+INSERT INTO tprt VALUES (10), (20), (501), (502), (505), (1001), (4500);
 
 SET enable_hashjoin = off;
 
@@ -1202,11 +1180,7 @@ FROM
 ORDER BY tbl1.col1,
   tprt.col1;
 
-INSERT INTO tbl1
-VALUES
-  (1001),
-  (1010),
-  (1011);
+INSERT INTO tbl1 VALUES (1001), (1010), (1011);
 
 SELECT * FROM tbl1 INNER JOIN tprt ON tbl1.col1 > tprt.col1;
 
@@ -1424,11 +1398,7 @@ minvalue) TO (3,
 maxvalue,
 maxvalue);
 
-INSERT INTO mc3p
-VALUES
-  (0, 1, 1),
-  (1, 1, 1),
-  (2, 1, 1);
+INSERT INTO mc3p VALUES (0, 1, 1), (1, 1, 1), (2, 1, 1);
 
 SELECT * FROM mc3p WHERE a < 3 AND abs(b) = 1;
 
@@ -1448,10 +1418,7 @@ DROP TABLE "mc3p";
 
 CREATE TABLE boolvalues (value BOOLEAN NOT NULL);
 
-INSERT INTO boolvalues
-VALUES
-  ('t'),
-  ('f');
+INSERT INTO boolvalues VALUES ('t'), ('f');
 
 CREATE TABLE boolp (a BOOLEAN)
 PARTITION BY LIST(a);
@@ -1547,11 +1514,7 @@ CREATE TABLE pph_arrpart1 PARTITION OF pph_arrpart FOR VALUES WITH (MODULUS 2, R
 
 CREATE TABLE pph_arrpart2 PARTITION OF pph_arrpart FOR VALUES WITH (MODULUS 2, REMAINDER 1);
 
-INSERT INTO pph_arrpart
-VALUES
-  ('{1}'),
-  ('{1, 2}'),
-  ('{4, 5}');
+INSERT INTO pph_arrpart VALUES ('{1}'), ('{1, 2}'), ('{4, 5}');
 
 SELECT CAST(tableoid AS REGCLASS), * FROM pph_arrpart ORDER BY 1;
 
@@ -1729,9 +1692,11 @@ INSERT INTO q22 VALUES (2, 2, 3);
 SELECT
   *
 FROM
-  (SELECT * FROM p UNION ALL SELECT * FROM q1
-  UNION ALL
-  SELECT 1, 1, 1)
+  (
+    SELECT * FROM p UNION ALL SELECT * FROM q1
+    UNION ALL
+    SELECT 1, 1, 1
+  )
   AS s (a, b, c)
 WHERE
   s.a = 1 AND s.b = 1 AND s.c = (SELECT 1);
@@ -1739,9 +1704,11 @@ WHERE
 SELECT
   *
 FROM
-  (SELECT * FROM p UNION ALL SELECT * FROM q1
-  UNION ALL
-  SELECT 1, 1, 1)
+  (
+    SELECT * FROM p UNION ALL SELECT * FROM q1
+    UNION ALL
+    SELECT 1, 1, 1
+  )
   AS s (a, b, c)
 WHERE
   s.a = 1 AND s.b = 1 AND s.c = (SELECT 1);
@@ -1752,9 +1719,11 @@ INT)
 AS SELECT
   *
 FROM
-  (SELECT * FROM p UNION ALL SELECT * FROM q1
-  UNION ALL
-  SELECT 1, 1, 1)
+  (
+    SELECT * FROM p UNION ALL SELECT * FROM q1
+    UNION ALL
+    SELECT 1, 1, 1
+  )
   AS s (a, b, c)
 WHERE
   s.a = $1 AND s.b = $2 AND s.c = (SELECT 1);;
@@ -1947,17 +1916,15 @@ SELECT
   string_agg(
     c.colname ||
     CASE
-    WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
-    ELSE ' = ' || CAST(colpos + 1 AS TEXT)
+      WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
+      ELSE ' = ' || CAST(colpos + 1 AS TEXT)
     END,
     ' and ' ORDER BY c.colpos
   )
 FROM
-  (VALUES
-    ('a', 0),
-    ('b', 1),
-    ('c', 2),
-    ('d', 3))
+  (
+    VALUES ('a', 0), ('b', 1), ('c', 2), ('d', 3)
+  )
   AS c (colname, colpos),
   generate_series(0, 15) AS g (s)
 GROUP BY g.s
@@ -1968,17 +1935,15 @@ SELECT
   string_agg(
     c.colname ||
     CASE
-    WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
-    ELSE ' = ' || CAST(colpos + 1 AS TEXT)
+      WHEN g.s & (1 << c.colpos) = 0 THEN ' is null'
+      ELSE ' = ' || CAST(colpos + 1 AS TEXT)
     END,
     ' and ' ORDER BY c.colpos
   )
 FROM
-  (VALUES
-    ('a', 0),
-    ('b', 1),
-    ('c', 2),
-    ('d', 3))
+  (
+    VALUES ('a', 0), ('b', 1), ('c', 2), ('d', 3)
+  )
   AS c (colname, colpos),
   generate_series(0, 15) AS g (s)
 GROUP BY g.s

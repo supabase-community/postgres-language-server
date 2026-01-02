@@ -11,11 +11,7 @@ SELECT
 FROM
   generate_series(1, 1000);
 
-INSERT INTO quad_point_tbl
-VALUES
-  (NULL),
-  (NULL),
-  (NULL);
+INSERT INTO quad_point_tbl VALUES (NULL), (NULL), (NULL);
 
 CREATE INDEX "sp_quad_ind" ON quad_point_tbl USING spgist (p);
 
@@ -502,18 +498,22 @@ SELECT p, dist FROM quad_point_tbl_ord_seq1 ORDER BY p <-> '0,0' LIMIT 10;
 RESET extra_float_digits;
 
 SELECT
-  (SELECT
-    p
-  FROM
-    kd_point_tbl
-  ORDER BY p <-> pt,
-    p <-> '0,0'
-  LIMIT 1)
+  (
+    SELECT
+      p
+    FROM
+      kd_point_tbl
+    ORDER BY p <-> pt,
+      p <-> '0,0'
+    LIMIT 1
+  )
 FROM
-  (VALUES
-    (CAST('1,2' AS point)),
-    (NULL),
-    ('1234,5678'))
+  (
+    VALUES
+      (CAST('1,2' AS point)),
+      (NULL),
+      ('1234,5678')
+  )
   AS pts (pt);
 
 SELECT COUNT(*) FROM radix_text_tbl WHERE t = 'P0123456789abcdef';

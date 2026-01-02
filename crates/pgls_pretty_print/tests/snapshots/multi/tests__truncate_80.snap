@@ -224,10 +224,7 @@ end;
 '
 LANGUAGE "plpgsql";
 
-INSERT INTO trunc_trigger_test
-VALUES
-  (1, 'foo', 'bar'),
-  (2, 'baz', 'quux');
+INSERT INTO trunc_trigger_test VALUES (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
 CREATE TRIGGER t
   BEFORE TRUNCATE
@@ -249,10 +246,7 @@ DROP TRIGGER "t" ON "trunc_trigger_test";
 
 TRUNCATE trunc_trigger_log;
 
-INSERT INTO trunc_trigger_test
-VALUES
-  (1, 'foo', 'bar'),
-  (2, 'baz', 'quux');
+INSERT INTO trunc_trigger_test VALUES (1, 'foo', 'bar'), (2, 'baz', 'quux');
 
 CREATE TRIGGER tt
   AFTER TRUNCATE
@@ -458,14 +452,7 @@ CREATE TABLE trunc_a2d PARTITION OF trunc_a2 DEFAULT;
 
 CREATE TABLE trunc_a3 PARTITION OF trunc_a FOR VALUES FROM (20) TO (30);
 
-INSERT INTO trunc_a
-VALUES
-  (0),
-  (5),
-  (10),
-  (15),
-  (20),
-  (25);
+INSERT INTO trunc_a VALUES (0), (5), (10), (15), (20), (25);
 
 CREATE TABLE ref_b (
   b INT PRIMARY KEY,
@@ -473,12 +460,7 @@ CREATE TABLE ref_b (
   REFERENCES trunc_a (a) ON DELETE CASCADE
 );
 
-INSERT INTO ref_b
-VALUES
-  (10, 0),
-  (50, 5),
-  (100, 10),
-  (150, 15);
+INSERT INTO ref_b VALUES (10, 0), (50, 5), (100, 10), (150, 15);
 
 TRUNCATE trunc_a1 CASCADE;
 
@@ -497,12 +479,7 @@ CREATE TABLE ref_c1 PARTITION OF ref_c FOR VALUES FROM (100) TO (200);
 
 CREATE TABLE ref_c2 PARTITION OF ref_c FOR VALUES FROM (200) TO (300);
 
-INSERT INTO ref_c
-VALUES
-  (100, 10),
-  (150, 15),
-  (200, 20),
-  (250, 25);
+INSERT INTO ref_c VALUES (100, 10), (150, 15), (200, 20), (250, 25);
 
 TRUNCATE trunc_a21 CASCADE;
 

@@ -5,13 +5,15 @@ snapshot_kind: text
 ---
 SELECT
   getdatabaseencoding() <> 'UTF8' OR
-  (SELECT
-    COUNT(*)
-  FROM
-    pg_collation
-  WHERE
-    collprovider = 'i' AND
-    collname <> 'unicode') =
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      pg_collation
+    WHERE
+      collprovider = 'i' AND
+      collname <> 'unicode'
+  ) =
   0
   AS skip_test;
 
@@ -126,10 +128,7 @@ CREATE TABLE collate_test10 (
   y TEXT COLLATE "tr-x-icu"
 );
 
-INSERT INTO collate_test10
-VALUES
-  (1, 'hij', 'hij'),
-  (2, 'HIJ', 'HIJ');
+INSERT INTO collate_test10 VALUES (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
 
 SELECT
   a,
@@ -420,9 +419,9 @@ AS (
   SELECT
     x
   FROM
-    (VALUES
-      ('a' COLLATE "en-x-icu"),
-      ('b'))
+    (
+      VALUES ('a' COLLATE "en-x-icu"), ('b')
+    )
     AS t (x)
   UNION ALL
   SELECT
@@ -522,10 +521,12 @@ SELECT
   *
 FROM
   unnest(
-    (SELECT
-      array_agg(b ORDER BY b)
-    FROM
-      collate_test1)
+    (
+      SELECT
+        array_agg(b ORDER BY b)
+      FROM
+        collate_test1
+    )
   )
 ORDER BY 1;
 
@@ -533,10 +534,12 @@ SELECT
   *
 FROM
   unnest(
-    (SELECT
-      array_agg(b ORDER BY b)
-    FROM
-      collate_test2)
+    (
+      SELECT
+        array_agg(b ORDER BY b)
+      FROM
+        collate_test2
+    )
   )
 ORDER BY 1;
 
@@ -544,10 +547,12 @@ SELECT
   *
 FROM
   unnest(
-    (SELECT
-      array_agg(b ORDER BY b)
-    FROM
-      collate_test3)
+    (
+      SELECT
+        array_agg(b ORDER BY b)
+      FROM
+        collate_test3
+    )
   )
 ORDER BY 1;
 
@@ -640,29 +645,27 @@ RESET icu_validation_level;
 
 RESET client_min_messages;
 
-CREATE COLLATION test3 ( provider = icu, lc_collate = 'en_US.utf8');
+CREATE COLLATION test3 (provider = icu, lc_collate = 'en_US.utf8');
 
 SET icu_validation_level = error;
 
-CREATE COLLATION testx ( provider = icu, locale = 'nonsense-nowhere');
+CREATE COLLATION testx (provider = icu, locale = 'nonsense-nowhere');
 
-CREATE COLLATION testx
-(
+CREATE COLLATION testx (
   provider = icu,
   locale = '@colStrength=primary;nonsense=yes'
 );
 
 RESET icu_validation_level;
 
-CREATE COLLATION testx
-(
+CREATE COLLATION testx (
   provider = icu,
   locale = '@colStrength=primary;nonsense=yes'
 );
 
 DROP COLLATION "testx";
 
-CREATE COLLATION testx ( provider = icu, locale = 'nonsense-nowhere');
+CREATE COLLATION testx (provider = icu, locale = 'nonsense-nowhere');
 
 DROP COLLATION "testx";
 
@@ -772,8 +775,7 @@ SELECT * FROM collate_test2 ORDER BY b COLLATE "unicode";
 
 SET client_min_messages = warning;
 
-CREATE COLLATION testcoll_ignore_accents
-(
+CREATE COLLATION testcoll_ignore_accents (
   provider = icu,
   locale = '@colStrength=primary;colCaseLevel=yes'
 );
@@ -787,8 +789,7 @@ SELECT
 
 SET client_min_messages = warning;
 
-CREATE COLLATION testcoll_backwards
-(
+CREATE COLLATION testcoll_backwards (
   provider = icu,
   locale = '@colBackwards=yes'
 );
@@ -801,14 +802,12 @@ SELECT
   'cotÃ©' >
   'cÃ´te' COLLATE "testcoll_backwards";
 
-CREATE COLLATION testcoll_lower_first
-(
+CREATE COLLATION testcoll_lower_first (
   provider = icu,
   locale = '@colCaseFirst=lower'
 );
 
-CREATE COLLATION testcoll_upper_first
-(
+CREATE COLLATION testcoll_upper_first (
   provider = icu,
   locale = '@colCaseFirst=upper'
 );
@@ -819,8 +818,7 @@ SELECT
   'aaa' >
   'AAA' COLLATE "testcoll_upper_first";
 
-CREATE COLLATION testcoll_shifted
-(
+CREATE COLLATION testcoll_shifted (
   provider = icu,
   locale = '@colAlternate=shifted'
 );
@@ -832,7 +830,7 @@ SELECT
 
 SET client_min_messages = warning;
 
-CREATE COLLATION testcoll_numeric ( provider = icu, locale = '@colNumeric=yes');
+CREATE COLLATION testcoll_numeric (provider = icu, locale = '@colNumeric=yes');
 
 RESET client_min_messages;
 
@@ -841,14 +839,9 @@ SELECT
   'A-21' <
   'A-123' COLLATE "testcoll_numeric";
 
-CREATE COLLATION testcoll_error1
-(
-  provider = icu,
-  locale = '@colNumeric=lower'
-);
+CREATE COLLATION testcoll_error1 (provider = icu, locale = '@colNumeric=lower');
 
-CREATE COLLATION testcoll_de_phonebook
-(
+CREATE COLLATION testcoll_de_phonebook (
   provider = icu,
   locale = 'de@collation=phonebook'
 );
@@ -859,8 +852,7 @@ SELECT
   'Goldmann' >
   'GÃ¶tz' COLLATE "testcoll_de_phonebook";
 
-CREATE COLLATION testcoll_rules1
-(
+CREATE COLLATION testcoll_rules1 (
   provider = icu,
   locale = '',
   rules = '&a < g'
@@ -883,22 +875,19 @@ SELECT * FROM test7 ORDER BY a COLLATE "testcoll_rules1";
 
 DROP TABLE "test7";
 
-CREATE COLLATION testcoll_rulesx
-(
+CREATE COLLATION testcoll_rulesx (
   provider = icu,
   locale = '',
   rules = '!!wrong!!'
 );
 
-CREATE COLLATION ctest_det
-(
+CREATE COLLATION ctest_det (
   provider = icu,
   locale = '',
   deterministic = 'true'
 );
 
-CREATE COLLATION ctest_nondet
-(
+CREATE COLLATION ctest_nondet (
   provider = icu,
   locale = '',
   deterministic = 'false'
@@ -966,10 +955,9 @@ SELECT * FROM test6a WHERE b = ARRAY['Ã¤bc'] COLLATE "ctest_det";
 
 SELECT * FROM test6a WHERE b = ARRAY['Ã¤bc'] COLLATE "ctest_nondet";
 
-CREATE COLLATION case_sensitive ( provider = icu, locale = '');
+CREATE COLLATION case_sensitive (provider = icu, locale = '');
 
-CREATE COLLATION case_insensitive
-(
+CREATE COLLATION case_insensitive (
   provider = icu,
   locale = '@colStrength=secondary',
   deterministic = 'false'
@@ -989,8 +977,7 @@ SELECT array_sort(CAST('{a,B}' AS TEXT[]) COLLATE "case_insensitive");
 
 SELECT array_sort(CAST('{a,B}' AS TEXT[]) COLLATE "C");
 
-CREATE COLLATION lt_insensitive
-(
+CREATE COLLATION lt_insensitive (
   provider = icu,
   locale = 'en-u-ks-level1',
   deterministic = 'false'
@@ -998,7 +985,7 @@ CREATE COLLATION lt_insensitive
 
 SELECT 'aBcD' COLLATE "lt_insensitive" = 'AbCd' COLLATE "lt_insensitive";
 
-CREATE COLLATION lt_upperfirst ( provider = icu, locale = 'und-u-kf-upper');
+CREATE COLLATION lt_upperfirst (provider = icu, locale = 'und-u-kf-upper');
 
 SELECT 'Z' COLLATE "lt_upperfirst" < 'z' COLLATE "lt_upperfirst";
 
@@ -1008,23 +995,11 @@ CREATE TABLE test2cs (x TEXT COLLATE "case_sensitive");
 
 CREATE TABLE test3cs (x TEXT COLLATE "case_sensitive");
 
-INSERT INTO test1cs
-VALUES
-  ('abc'),
-  ('def'),
-  ('ghi');
+INSERT INTO test1cs VALUES ('abc'), ('def'), ('ghi');
 
-INSERT INTO test2cs
-VALUES
-  ('ABC'),
-  ('ghi');
+INSERT INTO test2cs VALUES ('ABC'), ('ghi');
 
-INSERT INTO test3cs
-VALUES
-  ('abc'),
-  ('ABC'),
-  ('def'),
-  ('ghi');
+INSERT INTO test3cs VALUES ('abc'), ('ABC'), ('def'), ('ghi');
 
 SELECT x FROM test3cs WHERE x = 'abc';
 
@@ -1086,23 +1061,11 @@ CREATE TABLE test3ci (x TEXT COLLATE "case_insensitive");
 
 CREATE INDEX ON test3ci USING btree (x text_pattern_ops);
 
-INSERT INTO test1ci
-VALUES
-  ('abc'),
-  ('def'),
-  ('ghi');
+INSERT INTO test1ci VALUES ('abc'), ('def'), ('ghi');
 
-INSERT INTO test2ci
-VALUES
-  ('ABC'),
-  ('ghi');
+INSERT INTO test2ci VALUES ('ABC'), ('ghi');
 
-INSERT INTO test3ci
-VALUES
-  ('abc'),
-  ('ABC'),
-  ('def'),
-  ('ghi');
+INSERT INTO test3ci VALUES ('abc'), ('ABC'), ('def'), ('ghi');
 
 SELECT x FROM test3ci WHERE x = 'abc';
 
@@ -1160,23 +1123,11 @@ CREATE TABLE test3bpci (x CHAR(3) COLLATE "case_insensitive");
 
 CREATE INDEX ON test3bpci USING btree (x bpchar_pattern_ops);
 
-INSERT INTO test1bpci
-VALUES
-  ('abc'),
-  ('def'),
-  ('ghi');
+INSERT INTO test1bpci VALUES ('abc'), ('def'), ('ghi');
 
-INSERT INTO test2bpci
-VALUES
-  ('ABC'),
-  ('ghi');
+INSERT INTO test2bpci VALUES ('ABC'), ('ghi');
 
-INSERT INTO test3bpci
-VALUES
-  ('abc'),
-  ('ABC'),
-  ('def'),
-  ('ghi');
+INSERT INTO test3bpci VALUES ('abc'), ('ABC'), ('def'), ('ghi');
 
 SELECT x FROM test3bpci WHERE x = 'abc';
 
@@ -1322,8 +1273,7 @@ SELECT * FROM outer_text WHERE NOT (f1, f2) IN (SELECT * FROM inner_text);
 
 SET client_min_messages = warning;
 
-CREATE COLLATION ignore_accents
-(
+CREATE COLLATION ignore_accents (
   provider = icu,
   locale = '@colStrength=primary;colCaseLevel=yes',
   deterministic = 'false'
@@ -1434,10 +1384,7 @@ CREATE TABLE test12fk (
 
 INSERT INTO test12pk VALUES ('abc');
 
-INSERT INTO test12fk
-VALUES
-  (1, 'abc'),
-  (2, 'ABC');
+INSERT INTO test12fk VALUES (1, 'abc'), (2, 'ABC');
 
 UPDATE test12pk SET x = 'ABC' WHERE x = 'abc';
 
@@ -1459,10 +1406,7 @@ CREATE TABLE test12fk (
 
 INSERT INTO test12pk VALUES ('abc');
 
-INSERT INTO test12fk
-VALUES
-  (1, 'abc'),
-  (2, 'ABC');
+INSERT INTO test12fk VALUES (1, 'abc'), (2, 'ABC');
 
 UPDATE test12pk SET x = 'ABC' WHERE x = 'abc';
 
@@ -1484,10 +1428,7 @@ CREATE TABLE test12fk (
 
 INSERT INTO test12pk VALUES ('abc');
 
-INSERT INTO test12fk
-VALUES
-  (1, 'abc'),
-  (2, 'ABC');
+INSERT INTO test12fk VALUES (1, 'abc'), (2, 'ABC');
 
 UPDATE test12pk SET x = 'ABC' WHERE x = 'abc';
 
@@ -1985,11 +1926,7 @@ RESET max_parallel_workers_per_gather;
 
 RESET enable_incremental_sort;
 
-INSERT INTO t5 (a, b)
-VALUES
-  (1, 'D1'),
-  (2, 'D2'),
-  (3, 'd1');
+INSERT INTO t5 (a, b) VALUES (1, 'D1'), (2, 'D2'), (3, 'd1');
 
 SELECT * FROM t5 ORDER BY c ASC, a ASC;
 

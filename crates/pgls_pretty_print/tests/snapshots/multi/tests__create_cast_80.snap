@@ -19,8 +19,7 @@ LANGUAGE "internal"
 STRICT
 IMMUTABLE;
 
-CREATE TYPE casttesttype
-(
+CREATE TYPE casttesttype (
   internallength = variable,
   input = casttesttype_in,
   output = casttesttype_out,
@@ -95,12 +94,14 @@ FROM
 WHERE
   classid = CAST('pg_cast' AS REGCLASS) AND
   objid =
-  (SELECT
-    oid
-  FROM
-    pg_cast
-  WHERE
-    castsource = CAST('int4' AS REGTYPE) AND
-    casttarget =
-    CAST('casttesttype' AS REGTYPE))
+  (
+    SELECT
+      oid
+    FROM
+      pg_cast
+    WHERE
+      castsource = CAST('int4' AS REGTYPE) AND
+      casttarget =
+      CAST('casttesttype' AS REGTYPE)
+  )
 ORDER BY refclassid;

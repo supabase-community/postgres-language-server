@@ -152,44 +152,52 @@ ORDER BY point(0.101, 0.101) <-> p;
 SELECT
   p
 FROM
-  (VALUES
-    (box(point(0, 0), point(0.5, 0.5))),
-    (
-      box(point(0.5, 0.5), point(0.75, 0.75))
-    ),
-    (box(point(0.8, 0.8), point(1.0, 1.0))))
+  (
+    VALUES
+      (box(point(0, 0), point(0.5, 0.5))),
+      (
+        box(point(0.5, 0.5), point(0.75, 0.75))
+      ),
+      (box(point(0.8, 0.8), point(1.0, 1.0)))
+  )
   AS v (bb)
   INNER JOIN
-    LATERAL (SELECT
-      p
-    FROM
-      gist_tbl
-    WHERE
-      p <@ bb
-    ORDER BY p <-> bb[0]
-    LIMIT 2)
+    LATERAL (
+      SELECT
+        p
+      FROM
+        gist_tbl
+      WHERE
+        p <@ bb
+      ORDER BY p <-> bb[0]
+      LIMIT 2
+    )
     AS ss
   ON TRUE;
 
 SELECT
   p
 FROM
-  (VALUES
-    (box(point(0, 0), point(0.5, 0.5))),
-    (
-      box(point(0.5, 0.5), point(0.75, 0.75))
-    ),
-    (box(point(0.8, 0.8), point(1.0, 1.0))))
+  (
+    VALUES
+      (box(point(0, 0), point(0.5, 0.5))),
+      (
+        box(point(0.5, 0.5), point(0.75, 0.75))
+      ),
+      (box(point(0.8, 0.8), point(1.0, 1.0)))
+  )
   AS v (bb)
   INNER JOIN
-    LATERAL (SELECT
-      p
-    FROM
-      gist_tbl
-    WHERE
-      p <@ bb
-    ORDER BY p <-> bb[0]
-    LIMIT 2)
+    LATERAL (
+      SELECT
+        p
+      FROM
+        gist_tbl
+      WHERE
+        p <@ bb
+      ORDER BY p <-> bb[0]
+      LIMIT 2
+    )
     AS ss
   ON TRUE;
 

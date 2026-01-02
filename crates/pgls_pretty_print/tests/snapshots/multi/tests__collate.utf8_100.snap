@@ -7,7 +7,7 @@ SELECT getdatabaseencoding() <> 'UTF8' AS skip_test;
 
 SET client_encoding TO utf8;
 
-CREATE COLLATION regress_builtin_c ( provider = builtin, locale = 'C');
+CREATE COLLATION regress_builtin_c (provider = builtin, locale = 'C');
 
 SELECT lower('Á' COLLATE "regress_builtin_c") = 'Á';
 
@@ -17,13 +17,13 @@ SELECT 'Áá' !~ '[[:alpha:]]' COLLATE "regress_builtin_c";
 
 DROP COLLATION "regress_builtin_c";
 
-CREATE COLLATION regress_pg_c_utf8 ( provider = builtin, locale = 'C_UTF8');
+CREATE COLLATION regress_pg_c_utf8 (provider = builtin, locale = 'C_UTF8');
 
-CREATE COLLATION regress_pg_c_utf8 ( provider = builtin, locale = 'C.UTF8');
+CREATE COLLATION regress_pg_c_utf8 (provider = builtin, locale = 'C.UTF8');
 
 DROP COLLATION "regress_pg_c_utf8";
 
-CREATE COLLATION regress_pg_c_utf8 ( provider = builtin, locale = 'C.UTF-8');
+CREATE COLLATION regress_pg_c_utf8 (provider = builtin, locale = 'C.UTF-8');
 
 CREATE TABLE test_pg_c_utf8 (t TEXT COLLATE "pg_c_utf8");
 
@@ -87,9 +87,9 @@ SELECT
     'AbCd 123 #$% Ä±iIÄ° áº Ã ÇÇÇ Î£ÏÏ' COLLATE "pg_c_utf8"
   );
 
-CREATE COLLATION regress_pg_unicode_fast ( provider = builtin, locale = 'unicode');
+CREATE COLLATION regress_pg_unicode_fast (provider = builtin, locale = 'unicode');
 
-CREATE COLLATION regress_pg_unicode_fast ( provider = builtin, locale = 'PG_UNICODE_FAST');
+CREATE COLLATION regress_pg_unicode_fast (provider = builtin, locale = 'PG_UNICODE_FAST');
 
 CREATE TABLE test_pg_unicode_fast (t TEXT COLLATE "pg_unicode_fast");
 

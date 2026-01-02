@@ -38,24 +38,15 @@ ORDER BY string4 USING <,
   ten USING >,
   two USING <;
 
-SELECT DISTINCT ON ( 1) floor(random()) AS r, f1 FROM int4_tbl ORDER BY 1, 2;
+SELECT DISTINCT ON (1) floor(random()) AS r, f1 FROM int4_tbl ORDER BY 1, 2;
 
-SELECT DISTINCT ON ( four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1;
+SELECT DISTINCT ON (four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1;
 
-SELECT DISTINCT ON ( four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1;
+SELECT DISTINCT ON (four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1;
 
-SELECT DISTINCT ON ( four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1, 2;
+SELECT DISTINCT ON (four) four, two FROM tenk1 WHERE four = 0 ORDER BY 1, 2;
 
-SELECT DISTINCT ON (
-  four)
-  four,
-  hundred
-FROM
-  tenk1
-WHERE
-  four = 0
-ORDER BY 1,
-  2;
+SELECT DISTINCT ON (four) four, hundred FROM tenk1 WHERE four = 0 ORDER BY 1, 2;
 
 CREATE TABLE distinct_on_tbl (
   x INT,
@@ -77,9 +68,9 @@ ANALYZE distinct_on_tbl;
 
 SET enable_hashagg = off;
 
-SELECT DISTINCT ON ( y, x) x, y FROM distinct_on_tbl;
+SELECT DISTINCT ON (y, x) x, y FROM distinct_on_tbl;
 
-SELECT DISTINCT ON ( y, x) x, y FROM distinct_on_tbl;
+SELECT DISTINCT ON (y, x) x, y FROM distinct_on_tbl;
 
 SELECT DISTINCT ON (
   y,
@@ -87,7 +78,9 @@ SELECT DISTINCT ON (
   x,
   y
 FROM
-  (SELECT * FROM distinct_on_tbl ORDER BY x)
+  (
+    SELECT * FROM distinct_on_tbl ORDER BY x
+  )
   AS s;
 
 SELECT DISTINCT ON (
@@ -96,12 +89,14 @@ SELECT DISTINCT ON (
   x,
   y
 FROM
-  (SELECT * FROM distinct_on_tbl ORDER BY x)
+  (
+    SELECT * FROM distinct_on_tbl ORDER BY x
+  )
   AS s;
 
-SELECT DISTINCT ON ( y, x) x, y FROM distinct_on_tbl ORDER BY y;
+SELECT DISTINCT ON (y, x) x, y FROM distinct_on_tbl ORDER BY y;
 
-SELECT DISTINCT ON ( y, x) x, y FROM distinct_on_tbl ORDER BY y;
+SELECT DISTINCT ON (y, x) x, y FROM distinct_on_tbl ORDER BY y;
 
 SELECT DISTINCT ON (
   y,
@@ -109,13 +104,15 @@ SELECT DISTINCT ON (
   x,
   y
 FROM
-  (SELECT
-    *
-  FROM
-    distinct_on_tbl
-  ORDER BY x,
-    z,
-    y)
+  (
+    SELECT
+      *
+    FROM
+      distinct_on_tbl
+    ORDER BY x,
+      z,
+      y
+  )
   AS s
 ORDER BY y,
   x,
@@ -127,13 +124,15 @@ SELECT DISTINCT ON (
   x,
   y
 FROM
-  (SELECT
-    *
-  FROM
-    distinct_on_tbl
-  ORDER BY x,
-    z,
-    y)
+  (
+    SELECT
+      *
+    FROM
+      distinct_on_tbl
+    ORDER BY x,
+      z,
+      y
+  )
   AS s
 ORDER BY y,
   x,

@@ -511,18 +511,23 @@ SELECT
   )
   AS equal
 FROM
-  (VALUES
-    ('day', '1 d'),
-    ('hour', '1 h'),
-    ('minute', '1 m'),
-    ('second', '1 s'),
-    ('millisecond', '1 ms'),
-    ('microsecond', '1 us'))
+  (
+    VALUES
+      ('day', '1 d'),
+      ('hour', '1 h'),
+      ('minute', '1 m'),
+      ('second', '1 s'),
+      ('millisecond', '1 ms'),
+      ('microsecond', '1 us')
+  )
   AS intervals (str, interval),
-  (VALUES (
-    CAST('2020-02-29 15:44:17.71393+00'
-    AS TIMESTAMP WITH TIME ZONE)
-  ))
+  (
+    VALUES
+      (
+        CAST('2020-02-29 15:44:17.71393+00'
+        AS TIMESTAMP WITH TIME ZONE)
+      )
+  )
   AS ts (ts);
 
 SELECT
@@ -535,24 +540,32 @@ SELECT
     origin
   )
 FROM
-  (VALUES
-    ('15 days'),
-    ('2 hours'),
-    ('1 hour 30 minutes'),
-    ('15 minutes'),
-    ('10 seconds'),
-    ('100 milliseconds'),
-    ('250 microseconds'))
+  (
+    VALUES
+      ('15 days'),
+      ('2 hours'),
+      ('1 hour 30 minutes'),
+      ('15 minutes'),
+      ('10 seconds'),
+      ('100 milliseconds'),
+      ('250 microseconds')
+  )
   AS intervals (interval),
-  (VALUES (
-    CAST('2020-02-11 15:44:17.71393'
-    AS TIMESTAMP WITH TIME ZONE)
-  ))
+  (
+    VALUES
+      (
+        CAST('2020-02-11 15:44:17.71393'
+        AS TIMESTAMP WITH TIME ZONE)
+      )
+  )
   AS ts (ts),
-  (VALUES (
-    CAST('2001-01-01'
-    AS TIMESTAMP WITH TIME ZONE)
-  ))
+  (
+    VALUES
+      (
+        CAST('2001-01-01'
+        AS TIMESTAMP WITH TIME ZONE)
+      )
+  )
   AS origin (origin);
 
 SELECT
@@ -812,14 +825,16 @@ SELECT
     'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US'
   )
 FROM
-  (VALUES
-    (
-      CAST('2018-11-02 12:34:56'
-      AS TIMESTAMP WITH TIME ZONE)
-    ),
-    ('2018-11-02 12:34:56.78'),
-    ('2018-11-02 12:34:56.78901'),
-    ('2018-11-02 12:34:56.78901234'))
+  (
+    VALUES
+      (
+        CAST('2018-11-02 12:34:56'
+        AS TIMESTAMP WITH TIME ZONE)
+      ),
+      ('2018-11-02 12:34:56.78'),
+      ('2018-11-02 12:34:56.78901'),
+      ('2018-11-02 12:34:56.78901234')
+  )
   AS d (d);
 
 SET TIME ZONE '00:00';
@@ -1477,23 +1492,25 @@ BEGIN;
 
 SET LOCAL TIME ZONE 'Europe/Paris';
 
-VALUES (
-  timezone(
-    CAST('1978-07-07 19:38 America/New_York'
-    AS TIMESTAMP WITH TIME ZONE)
-  )
-);
+VALUES
+  (
+    timezone(
+      CAST('1978-07-07 19:38 America/New_York'
+      AS TIMESTAMP WITH TIME ZONE)
+    )
+  );
 
 VALUES (timezone(CAST('1978-07-07 19:38' AS TIMESTAMP)));
 
 SET LOCAL TIME ZONE 'Australia/Sydney';
 
-VALUES (
-  timezone(
-    CAST('1978-07-07 19:38 America/New_York'
-    AS TIMESTAMP WITH TIME ZONE)
-  )
-);
+VALUES
+  (
+    timezone(
+      CAST('1978-07-07 19:38 America/New_York'
+      AS TIMESTAMP WITH TIME ZONE)
+    )
+  );
 
 VALUES (timezone(CAST('1978-07-07 19:38' AS TIMESTAMP)));
 

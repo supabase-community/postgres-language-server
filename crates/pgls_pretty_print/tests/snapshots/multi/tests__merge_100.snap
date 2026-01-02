@@ -581,17 +581,9 @@ CREATE TABLE sq_source (
 )
 WITH (autovacuum_enabled = off);
 
-INSERT INTO sq_target (tid, balance)
-VALUES
-  (1, 100),
-  (2, 200),
-  (3, 300);
+INSERT INTO sq_target (tid, balance) VALUES (1, 100), (2, 200), (3, 300);
 
-INSERT INTO sq_source (sid, delta)
-VALUES
-  (1, 10),
-  (2, 20),
-  (4, 40);
+INSERT INTO sq_source (sid, delta) VALUES (1, 10), (2, 20), (4, 40);
 
 BEGIN;
 
@@ -649,11 +641,7 @@ CREATE TABLE merge_actions (
   abbrev TEXT
 );
 
-INSERT INTO merge_actions
-VALUES
-  ('INSERT', 'ins'),
-  ('UPDATE', 'upd'),
-  ('DELETE', 'del');
+INSERT INTO merge_actions VALUES ('INSERT', 'ins'), ('UPDATE', 'upd'), ('DELETE', 'del');
 
 ROLLBACK;
 
@@ -688,10 +676,10 @@ AS (
     new AS new_data,
     t.*,
     CASE "mergesupport#25"
-    WHEN 'INSERT' THEN 'Inserted ' || t
-    WHEN 'UPDATE'
-    THEN 'Added ' || delta || ' to balance'
-    WHEN 'DELETE' THEN 'Removed ' || t
+      WHEN 'INSERT' THEN 'Inserted ' || t
+      WHEN 'UPDATE'
+      THEN 'Added ' || delta || ' to balance'
+      WHEN 'DELETE' THEN 'Removed ' || t
     END
     AS description
 ),
@@ -767,17 +755,18 @@ AS '
 SELECT
   m.*
 FROM
-  (VALUES
-    (1, 0, 0),
-    (3, 0, 20),
-    (4, 100, 10))
+  (
+    VALUES (1, 0, 0), (3, 0, 20), (4, 100, 10)
+  )
   AS v (sid, balance, delta),
-  LATERAL (SELECT
-    action,
-    tid,
-    new_balance
-  FROM
-    merge_into_sq_target(sid, balance, delta))
+  LATERAL (
+    SELECT
+      action,
+      tid,
+      new_balance
+    FROM
+      merge_into_sq_target(sid, balance, delta)
+  )
   AS m;
 
 ROLLBACK;
@@ -838,17 +827,18 @@ END;
 SELECT
   m.*
 FROM
-  (VALUES
-    (1, 0, 0),
-    (3, 0, 20),
-    (4, 100, 10))
+  (
+    VALUES (1, 0, 0), (3, 0, 20), (4, 100, 10)
+  )
   AS v (sid, balance, delta),
-  LATERAL (SELECT
-    r_action,
-    r_tid,
-    r_balance
-  FROM
-    merge_into_sq_target(sid, balance, delta))
+  LATERAL (
+    SELECT
+      r_action,
+      r_tid,
+      r_balance
+    FROM
+      merge_into_sq_target(sid, balance, delta)
+  )
   AS m;
 
 ROLLBACK;
@@ -1359,10 +1349,7 @@ CREATE TABLE pa_targetp PARTITION OF pa_target DEFAULT;
 
 CREATE TABLE pa_source (sid INT);
 
-INSERT INTO pa_source
-VALUES
-  (1),
-  (2);
+INSERT INTO pa_source VALUES (1), (2);
 
 SELECT * FROM pa_target;
 
@@ -1600,10 +1587,7 @@ CREATE TABLE bug18634t (
   c TEXT
 );
 
-INSERT INTO bug18634t
-VALUES
-  (1, 10, 'tgt1'),
-  (2, 20, 'tgt2');
+INSERT INTO bug18634t VALUES (1, 10, 'tgt1'), (2, 20, 'tgt2');
 
 CREATE VIEW bug18634v
 AS SELECT

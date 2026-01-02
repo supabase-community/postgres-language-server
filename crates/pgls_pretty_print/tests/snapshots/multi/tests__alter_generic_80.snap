@@ -44,16 +44,14 @@ RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1 - 1';
 
-CREATE AGGREGATE alt_agg1
-(
+CREATE AGGREGATE alt_agg1 (
   sfunc1 = int4pl,
   basetype = INT,
   stype1 = INT,
   initcond = 0
 );
 
-CREATE AGGREGATE alt_agg2
-(
+CREATE AGGREGATE alt_agg2 (
   sfunc1 = int4mi,
   basetype = INT,
   stype1 = INT,
@@ -100,16 +98,14 @@ RETURNS INT
 LANGUAGE "sql"
 AS 'SELECT $1 - 2';
 
-CREATE AGGREGATE alt_agg1
-(
+CREATE AGGREGATE alt_agg1 (
   sfunc1 = int4pl,
   basetype = INT,
   stype1 = INT,
   initcond = 100
 );
 
-CREATE AGGREGATE alt_agg2
-(
+CREATE AGGREGATE alt_agg2 (
   sfunc1 = int4mi,
   basetype = INT,
   stype1 = INT,
@@ -761,9 +757,9 @@ ORDER BY nspname,
 
 SET SESSION AUTHORIZATION regress_alter_generic_user1;
 
-CREATE TEXT SEARCH DICTIONARY alt_ts_dict1 ( template = simple);
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict1 (template = simple);
 
-CREATE TEXT SEARCH DICTIONARY alt_ts_dict2 ( template = simple);
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict2 (template = simple);
 
 ALTER TEXT SEARCH DICTIONARY alt_ts_dict1 RENAME TO alt_ts_dict2;
 
@@ -777,9 +773,9 @@ ALTER TEXT SEARCH DICTIONARY alt_ts_dict2 SET SCHEMA alt_nsp2;
 
 SET SESSION AUTHORIZATION regress_alter_generic_user2;
 
-CREATE TEXT SEARCH DICTIONARY alt_ts_dict1 ( template = simple);
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict1 (template = simple);
 
-CREATE TEXT SEARCH DICTIONARY alt_ts_dict2 ( template = simple);
+CREATE TEXT SEARCH DICTIONARY alt_ts_dict2 (template = simple);
 
 ALTER TEXT SEARCH DICTIONARY alt_ts_dict3 RENAME TO alt_ts_dict4;
 
@@ -812,9 +808,9 @@ ORDER BY nspname,
 
 SET SESSION AUTHORIZATION regress_alter_generic_user1;
 
-CREATE TEXT SEARCH CONFIGURATION alt_ts_conf1 ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf1 (copy = english);
 
-CREATE TEXT SEARCH CONFIGURATION alt_ts_conf2 ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf2 (copy = english);
 
 ALTER TEXT SEARCH CONFIGURATION alt_ts_conf1 RENAME TO alt_ts_conf2;
 
@@ -830,9 +826,9 @@ ALTER TEXT SEARCH CONFIGURATION alt_ts_conf2 SET SCHEMA alt_nsp2;
 
 SET SESSION AUTHORIZATION regress_alter_generic_user2;
 
-CREATE TEXT SEARCH CONFIGURATION alt_ts_conf1 ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf1 (copy = english);
 
-CREATE TEXT SEARCH CONFIGURATION alt_ts_conf2 ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION alt_ts_conf2 (copy = english);
 
 ALTER TEXT SEARCH CONFIGURATION alt_ts_conf3 RENAME TO alt_ts_conf4;
 
@@ -865,9 +861,9 @@ WHERE
 ORDER BY nspname,
   cfgname;
 
-CREATE TEXT SEARCH TEMPLATE alt_ts_temp1 ( lexize = dsimple_lexize);
+CREATE TEXT SEARCH TEMPLATE alt_ts_temp1 (lexize = dsimple_lexize);
 
-CREATE TEXT SEARCH TEMPLATE alt_ts_temp2 ( lexize = dsimple_lexize);
+CREATE TEXT SEARCH TEMPLATE alt_ts_temp2 (lexize = dsimple_lexize);
 
 ALTER TEXT SEARCH TEMPLATE alt_ts_temp1 RENAME TO alt_ts_temp2;
 
@@ -875,11 +871,11 @@ ALTER TEXT SEARCH TEMPLATE alt_ts_temp1 RENAME TO alt_ts_temp3;
 
 ALTER TEXT SEARCH TEMPLATE alt_ts_temp2 SET SCHEMA alt_nsp2;
 
-CREATE TEXT SEARCH TEMPLATE alt_ts_temp2 ( lexize = dsimple_lexize);
+CREATE TEXT SEARCH TEMPLATE alt_ts_temp2 (lexize = dsimple_lexize);
 
 ALTER TEXT SEARCH TEMPLATE alt_ts_temp2 SET SCHEMA alt_nsp2;
 
-CREATE TEXT SEARCH TEMPLATE tstemp_case ( "Init" = init_function);
+CREATE TEXT SEARCH TEMPLATE tstemp_case ("Init" = init_function);
 
 SELECT
   nspname,
@@ -893,16 +889,14 @@ WHERE
 ORDER BY nspname,
   tmplname;
 
-CREATE TEXT SEARCH PARSER alt_ts_prs1
-(
+CREATE TEXT SEARCH PARSER alt_ts_prs1 (
   start = prsd_start,
   gettoken = prsd_nexttoken,
   "end" = prsd_end,
   lextypes = prsd_lextype
 );
 
-CREATE TEXT SEARCH PARSER alt_ts_prs2
-(
+CREATE TEXT SEARCH PARSER alt_ts_prs2 (
   start = prsd_start,
   gettoken = prsd_nexttoken,
   "end" = prsd_end,
@@ -915,8 +909,7 @@ ALTER TEXT SEARCH PARSER alt_ts_prs1 RENAME TO alt_ts_prs3;
 
 ALTER TEXT SEARCH PARSER alt_ts_prs2 SET SCHEMA alt_nsp2;
 
-CREATE TEXT SEARCH PARSER alt_ts_prs2
-(
+CREATE TEXT SEARCH PARSER alt_ts_prs2 (
   start = prsd_start,
   gettoken = prsd_nexttoken,
   "end" = prsd_end,
@@ -925,7 +918,7 @@ CREATE TEXT SEARCH PARSER alt_ts_prs2
 
 ALTER TEXT SEARCH PARSER alt_ts_prs2 SET SCHEMA alt_nsp2;
 
-CREATE TEXT SEARCH PARSER tspars_case ( "Start" = start_function);
+CREATE TEXT SEARCH PARSER tspars_case ("Start" = start_function);
 
 SELECT
   nspname,

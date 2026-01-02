@@ -154,8 +154,8 @@ ALTER TYPE insenum ADD VALUE 'i30' BEFORE 'L2';
 SELECT
   enumlabel,
   CASE
-  WHEN enumsortorder > 20 THEN NULL
-  ELSE enumsortorder
+    WHEN enumsortorder > 20 THEN NULL
+    ELSE enumsortorder
   END
   AS so
 FROM
@@ -166,12 +166,7 @@ ORDER BY enumsortorder;
 
 CREATE TABLE enumtest (col rainbow);
 
-INSERT INTO enumtest
-VALUES
-  ('red'),
-  ('orange'),
-  ('yellow'),
-  ('green');
+INSERT INTO enumtest VALUES ('red'), ('orange'), ('yellow'), ('green');
 
 SELECT * FROM enumtest;
 
@@ -425,9 +420,11 @@ FROM
   pg_enum
 WHERE
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_type
-  WHERE
-    pg_type.oid = enumtypid);
+  (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      pg_type.oid = enumtypid
+  );

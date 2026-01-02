@@ -21,12 +21,14 @@ FROM
 WHERE
   oprcom <> 0 AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_catalog.pg_operator AS pk
-  WHERE
-    pk.oid = fk.oprcom);
+  (
+    SELECT
+      1
+    FROM
+      pg_catalog.pg_operator AS pk
+    WHERE
+      pk.oid = fk.oprcom
+  );
 
 SELECT
   ctid,
@@ -36,12 +38,14 @@ FROM
 WHERE
   oprnegate <> 0 AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_catalog.pg_operator AS pk
-  WHERE
-    pk.oid = fk.oprnegate);
+  (
+    SELECT
+      1
+    FROM
+      pg_catalog.pg_operator AS pk
+    WHERE
+      pk.oid = fk.oprnegate
+  );
 
 DROP OPERATOR === (BIGINT, BIGINT);
 
@@ -63,12 +67,14 @@ FROM
 WHERE
   oprcom <> 0 AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_catalog.pg_operator AS pk
-  WHERE
-    pk.oid = fk.oprcom);
+  (
+    SELECT
+      1
+    FROM
+      pg_catalog.pg_operator AS pk
+    WHERE
+      pk.oid = fk.oprcom
+  );
 
 SELECT
   ctid,
@@ -78,11 +84,13 @@ FROM
 WHERE
   oprnegate <> 0 AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_catalog.pg_operator AS pk
-  WHERE
-    pk.oid = fk.oprnegate);
+  (
+    SELECT
+      1
+    FROM
+      pg_catalog.pg_operator AS pk
+    WHERE
+      pk.oid = fk.oprnegate
+  );
 
 DROP OPERATOR <| (BIGINT, BIGINT);

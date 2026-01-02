@@ -8,14 +8,16 @@ WITH q1 (x, y) AS (SELECT 1, 2) SELECT * FROM q1, q1 AS q2;
 SELECT
   COUNT(*)
 FROM
-  (WITH
-  q1 (x)
-  AS (
-    SELECT random() FROM generate_series(1, 5)
+  (
+    WITH
+    q1 (x)
+    AS (
+      SELECT random() FROM generate_series(1, 5)
+    )
+    SELECT * FROM q1
+    UNION
+    SELECT * FROM q1
   )
-  SELECT * FROM q1
-  UNION
-  SELECT * FROM q1)
   AS ss;
 
 WITH RECURSIVE
@@ -391,39 +393,45 @@ ORDER BY name;
 SELECT
   COUNT(*)
 FROM
-  (WITH RECURSIVE
-  t (n)
-  AS (
-    SELECT 1
-    UNION ALL
-    SELECT n + 1 FROM t WHERE n < 500
-  )
-  SELECT
-    *
-  FROM
-    t)
-  AS t
-WHERE
-  n <
-  (SELECT
-    COUNT(*)
-  FROM
-    (WITH RECURSIVE
+  (
+    WITH RECURSIVE
     t (n)
     AS (
       SELECT 1
       UNION ALL
-      SELECT n + 1 FROM t WHERE n < 100
+      SELECT n + 1 FROM t WHERE n < 500
     )
     SELECT
       *
     FROM
       t
+  )
+  AS t
+WHERE
+  n <
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      (
+        WITH RECURSIVE
+        t (n)
+        AS (
+          SELECT 1
+          UNION ALL
+          SELECT n + 1 FROM t WHERE n < 100
+        )
+        SELECT
+          *
+        FROM
+          t
+        WHERE
+          n < 50000
+      )
+      AS t
     WHERE
-      n < 50000)
-    AS t
-  WHERE
-    n < 100);
+      n < 100
+  );
 
 WITH
 q1 (x,
@@ -586,9 +594,6 @@ FROM
 
 CREATE TEMPORARY TABLE duplicates (a INT NOT NULL);
 
-INSERT INTO duplicates
-VALUES
-  (1),
-  (1);
+INSERT INTO duplicates VALUES (1), (1);
 
 WITH RECURSIVE cte (a) AS (SELECT a FROM duplicates UNION SELECT a FROM cte) SELECT a FROM cte;

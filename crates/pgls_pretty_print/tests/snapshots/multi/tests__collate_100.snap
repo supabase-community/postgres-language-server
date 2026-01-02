@@ -24,12 +24,7 @@ CREATE TABLE collate_test2 (
   b TEXT COLLATE "POSIX"
 );
 
-INSERT INTO collate_test1
-VALUES
-  (1, 'abc'),
-  (2, 'Abc'),
-  (3, 'bbc'),
-  (4, 'ABD');
+INSERT INTO collate_test1 VALUES (1, 'abc'), (2, 'Abc'), (3, 'bbc'), (4, 'ABD');
 
 INSERT INTO collate_test2 SELECT * FROM collate_test1;
 
@@ -83,10 +78,7 @@ CREATE TABLE collate_test10 (
   y TEXT COLLATE "POSIX"
 );
 
-INSERT INTO collate_test10
-VALUES
-  (1, 'hij', 'hij'),
-  (2, 'HIJ', 'HIJ');
+INSERT INTO collate_test10 VALUES (1, 'hij', 'hij'), (2, 'HIJ', 'HIJ');
 
 SELECT a, lower(x), lower(y), upper(x), upper(y), initcap(x), initcap(y) FROM collate_test10;
 
@@ -208,10 +200,7 @@ AS (
   SELECT
     x
   FROM
-    (VALUES
-      ('a' COLLATE "C"),
-      ('b'))
-    AS t (x)
+    (VALUES ('a' COLLATE "C"), ('b')) AS t (x)
   UNION ALL
   SELECT
     (x || 'c') COLLATE "POSIX"
@@ -225,15 +214,7 @@ SELECT
 FROM
   foo;
 
-SELECT
-  a,
-  b,
-  a < b AS lt
-FROM
-  (VALUES
-    ('a', 'B'),
-    ('A', 'b' COLLATE "C"))
-  AS v (a, b);
+SELECT a, b, a < b AS lt FROM (VALUES ('a', 'B'), ('A', 'b' COLLATE "C")) AS v (a, b);
 
 SELECT * FROM collate_test10 WHERE NOT (x, y) IN (SELECT y, x FROM collate_test10);
 
@@ -243,7 +224,9 @@ FROM
   collate_test10
 WHERE
   NOT (x COLLATE "POSIX", y COLLATE "C") IN
-  (SELECT y, x FROM collate_test10);
+  (
+    SELECT y, x FROM collate_test10
+  );
 
 SELECT
   *
@@ -251,11 +234,13 @@ FROM
   collate_test10
 WHERE
   NOT (x, y) IN
-  (SELECT
-    y COLLATE "C",
-    x COLLATE "POSIX"
-  FROM
-    collate_test10);
+  (
+    SELECT
+      y COLLATE "C",
+      x COLLATE "POSIX"
+    FROM
+      collate_test10
+  );
 
 SELECT a, CAST(b AS VARCHAR) FROM collate_test1 ORDER BY 2;
 
@@ -310,27 +295,17 @@ SET enable_nestloop = 0;
 
 CREATE TABLE collate_test20 (f1 TEXT COLLATE "C" PRIMARY KEY);
 
-INSERT INTO collate_test20
-VALUES
-  ('foo'),
-  ('bar');
+INSERT INTO collate_test20 VALUES ('foo'), ('bar');
 
 CREATE TABLE collate_test21 (f2 TEXT COLLATE "POSIX" REFERENCES collate_test20);
 
-INSERT INTO collate_test21
-VALUES
-  ('foo'),
-  ('bar');
+INSERT INTO collate_test21 VALUES ('foo'), ('bar');
 
 INSERT INTO collate_test21 VALUES ('baz');
 
 CREATE TABLE collate_test22 (f2 TEXT COLLATE "POSIX");
 
-INSERT INTO collate_test22
-VALUES
-  ('foo'),
-  ('bar'),
-  ('baz');
+INSERT INTO collate_test22 VALUES ('foo'), ('bar'), ('baz');
 
 ALTER TABLE collate_test22
   ADD FOREIGN KEY (f2) REFERENCES collate_test20;
@@ -350,19 +325,19 @@ SELECT * FROM collate_test10 ORDER BY x, y;
 
 SELECT * FROM collate_test10 ORDER BY x DESC, y COLLATE "C" ASC NULLS FIRST;
 
-CREATE COLLATION builtin_c ( provider = builtin, locale = "C");
+CREATE COLLATION builtin_c (provider = builtin, locale = "C");
 
 SELECT b FROM collate_test1 ORDER BY b COLLATE "builtin_c";
 
-CREATE COLLATION builtin2 ( provider = builtin);
+CREATE COLLATION builtin2 (provider = builtin);
 
-CREATE COLLATION builtin2 ( provider = builtin, locale = "en_US");
+CREATE COLLATION builtin2 (provider = builtin, locale = "en_US");
 
-CREATE COLLATION builtin2 ( provider = builtin, lc_ctype = "C", lc_collate = "C");
+CREATE COLLATION builtin2 (provider = builtin, lc_ctype = "C", lc_collate = "C");
 
 CREATE COLLATION mycoll1 FROM "C";
 
-CREATE COLLATION mycoll2 ( lc_collate = "POSIX", lc_ctype = "POSIX");
+CREATE COLLATION mycoll2 (lc_collate = "POSIX", lc_ctype = "POSIX");
 
 CREATE COLLATION mycoll3 FROM "default";
 
@@ -372,7 +347,7 @@ CREATE TABLE collate_test23 (f1 TEXT COLLATE "mycoll2");
 
 DROP COLLATION "mycoll2";
 
-CREATE COLLATION case_coll ( "Lc_Collate" = "POSIX", "Lc_Ctype" = "POSIX");
+CREATE COLLATION case_coll ("Lc_Collate" = "POSIX", "Lc_Ctype" = "POSIX");
 
 CREATE TEMPORARY TABLE vctable (f1 VARCHAR(25));
 
@@ -392,30 +367,29 @@ AS SELECT
 FROM
   (SELECT CAST('4' COLLATE "C" AS INT) AS c1) AS ss;
 
-CREATE COLLATION coll_dup_chk ( lc_collate = "POSIX", lc_collate = "NONSENSE", lc_ctype = "POSIX");
+CREATE COLLATION coll_dup_chk (lc_collate = "POSIX", lc_collate = "NONSENSE", lc_ctype = "POSIX");
 
-CREATE COLLATION coll_dup_chk ( lc_ctype = "POSIX", lc_ctype = "NONSENSE", lc_collate = "POSIX");
+CREATE COLLATION coll_dup_chk (lc_ctype = "POSIX", lc_ctype = "NONSENSE", lc_collate = "POSIX");
 
-CREATE COLLATION coll_dup_chk
-(
+CREATE COLLATION coll_dup_chk (
   provider = icu,
   provider = nonsense,
   lc_collate = "POSIX",
   lc_ctype = "POSIX"
 );
 
-CREATE COLLATION case_sensitive ( locale = '', locale = "NONSENSE");
+CREATE COLLATION case_sensitive (locale = '', locale = "NONSENSE");
 
-CREATE COLLATION coll_dup_chk ( deterministic = 'true', deterministic = nonsense, locale = '');
+CREATE COLLATION coll_dup_chk (deterministic = 'true', deterministic = nonsense, locale = '');
 
-CREATE COLLATION coll_dup_chk ( version = '1', version = "NONSENSE", locale = '');
+CREATE COLLATION coll_dup_chk (version = '1', version = "NONSENSE", locale = '');
 
-CREATE COLLATION coll_dup_chk ( lc_collate = "POSIX", lc_ctype = "POSIX", locale = '');
+CREATE COLLATION coll_dup_chk (lc_collate = "POSIX", lc_ctype = "POSIX", locale = '');
 
-CREATE COLLATION coll_dup_chk ( lc_collate = "POSIX", locale = '');
+CREATE COLLATION coll_dup_chk (lc_collate = "POSIX", locale = '');
 
-CREATE COLLATION coll_dup_chk ( lc_ctype = "POSIX", locale = '');
+CREATE COLLATION coll_dup_chk (lc_ctype = "POSIX", locale = '');
 
-CREATE COLLATION coll_dup_chk ( "from" = "C", version = "1");
+CREATE COLLATION coll_dup_chk ("from" = "C", version = "1");
 
 DROP SCHEMA collate_tests CASCADE;

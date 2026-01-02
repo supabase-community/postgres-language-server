@@ -11,11 +11,7 @@ SELECT
   FILTER (WHERE
     score > 0)
 FROM
-  (VALUES
-    (1),
-    (2),
-    (3))
-  AS scores (score);
+  (VALUES (1), (2), (3)) AS scores (score);
 
 SELECT
   percentile_cont(
@@ -25,7 +21,9 @@ SELECT
   FILTER (WHERE
     duration IS NOT NULL)
 FROM
-  (VALUES
-    (CAST('1 hour' AS INTERVAL)),
-    (CAST('2 hours' AS INTERVAL)))
+  (
+    VALUES
+      (CAST('1 hour' AS INTERVAL)),
+      (CAST('2 hours' AS INTERVAL))
+  )
   AS durations (duration);

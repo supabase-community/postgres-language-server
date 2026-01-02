@@ -19,32 +19,36 @@ CREATE TABLE indtoasttest (
 );
 
 INSERT INTO indtoasttest (descr, f1, f2)
-VALUES (
-  'two-compressed',
-  repeat('1234567890', 1000),
-  repeat('1234567890', 1000)
-);
+VALUES
+  (
+    'two-compressed',
+    repeat('1234567890', 1000),
+    repeat('1234567890', 1000)
+  );
 
 INSERT INTO indtoasttest (descr, f1, f2)
-VALUES (
-  'two-toasted',
-  repeat('1234567890', 30000),
-  repeat('1234567890', 50000)
-);
+VALUES
+  (
+    'two-toasted',
+    repeat('1234567890', 30000),
+    repeat('1234567890', 50000)
+  );
 
 INSERT INTO indtoasttest (descr, f1, f2)
-VALUES (
-  'one-compressed,one-null',
-  NULL,
-  repeat('1234567890', 1000)
-);
+VALUES
+  (
+    'one-compressed,one-null',
+    NULL,
+    repeat('1234567890', 1000)
+  );
 
 INSERT INTO indtoasttest (descr, f1, f2)
-VALUES (
-  'one-toasted,one-null',
-  NULL,
-  repeat('1234567890', 50000)
-);
+VALUES
+  (
+    'one-toasted,one-null',
+    NULL,
+    repeat('1234567890', 50000)
+  );
 
 SELECT
   descr,
@@ -131,11 +135,12 @@ FROM 1
 FOR 200);
 
 INSERT INTO indtoasttest (descr, f1, f2)
-VALUES (
-  'one-toasted,one-null, via indirect',
-  repeat('1234567890', 30000),
-  NULL
-);
+VALUES
+  (
+    'one-toasted,one-null, via indirect',
+    repeat('1234567890', 30000),
+    NULL
+  );
 
 SELECT SUBSTRING(CAST(indtoasttest AS TEXT) FROM 1 FOR 200) FROM indtoasttest;
 

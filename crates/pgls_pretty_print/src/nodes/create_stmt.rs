@@ -90,7 +90,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::L_PAREN);
             e.indent_start();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
 
             let mut first = true;
             for item in &n.table_elts {
@@ -111,7 +111,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             }
 
             e.indent_end();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
         }
 
@@ -141,7 +141,7 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::L_PAREN);
             e.indent_start();
-            e.line(LineType::SoftOrSpace);
+            e.line(LineType::Soft);
 
             let mut first = true;
             for item in &n.table_elts {

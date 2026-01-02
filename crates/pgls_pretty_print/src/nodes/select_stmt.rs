@@ -150,43 +150,31 @@ fn emit_select_stmt_impl(e: &mut EventEmitter, n: &SelectStmt, with_semicolon: b
 
     // Check if this is a VALUES clause (used in INSERT statements)
     if !n.values_lists.is_empty() {
-        let is_multi_row = n.values_lists.len() > 1;
-
         e.token(TokenKind::VALUES_KW);
 
-        if is_multi_row {
-            // Multi-row VALUES: each row on its own line
-            e.indent_start();
-            for (i, row) in n.values_lists.iter().enumerate() {
-                if i > 0 {
-                    e.token(TokenKind::COMMA);
-                }
-                e.line(LineType::Hard);
-                // Wrap each row tuple in a group so it can break independently
-                e.group_start(GroupKind::List);
-                e.token(TokenKind::L_PAREN);
-                e.line(LineType::Soft);
-                e.indent_start();
-                super::emit_node(row, e);
-                e.indent_end();
-                e.line(LineType::Soft);
-                e.token(TokenKind::R_PAREN);
-                e.group_end();
+        // VALUES should be compact when short: VALUES (1), (2), (3)
+        // Only break to multiple lines when needed
+        e.line(LineType::SoftOrSpace);
+        e.indent_start();
+
+        for (i, row) in n.values_lists.iter().enumerate() {
+            if i > 0 {
+                e.token(TokenKind::COMMA);
+                e.line(LineType::SoftOrSpace);
             }
-            e.indent_end();
-        } else {
-            // Single-row VALUES: wrap in group for independent breaking
-            e.space();
+            // Wrap each row tuple in a group so it can break independently
             e.group_start(GroupKind::List);
             e.token(TokenKind::L_PAREN);
             e.line(LineType::Soft);
             e.indent_start();
-            super::emit_node(&n.values_lists[0], e);
+            super::emit_node(row, e);
             e.indent_end();
             e.line(LineType::Soft);
             e.token(TokenKind::R_PAREN);
             e.group_end();
         }
+
+        e.indent_end();
 
         if with_semicolon {
             e.token(TokenKind::SEMICOLON);
@@ -365,7 +353,7 @@ fn emit_distinct_clause(e: &mut EventEmitter, clause: &[Node]) {
     e.space();
     e.token(TokenKind::L_PAREN);
     e.indent_start();
-    e.line(LineType::SoftOrSpace);
+    e.line(LineType::Soft);
 
     for (idx, node) in distinct_exprs.iter().enumerate() {
         if idx > 0 {

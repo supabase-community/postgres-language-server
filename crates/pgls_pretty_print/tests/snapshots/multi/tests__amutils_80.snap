@@ -249,15 +249,19 @@ SELECT
     prop
   )
 FROM
-  (VALUES (CAST('fooindex' AS REGCLASS)))
+  (
+    VALUES (CAST('fooindex' AS REGCLASS))
+  )
   AS v1 (o),
-  (VALUES
-    (1, 'orderable'),
-    (2, 'asc'),
-    (3, 'desc'),
-    (4, 'nulls_first'),
-    (5, 'nulls_last'),
-    (6, 'bogus'))
+  (
+    VALUES
+      (1, 'orderable'),
+      (2, 'asc'),
+      (3, 'desc'),
+      (4, 'nulls_first'),
+      (5, 'nulls_last'),
+      (6, 'bogus')
+  )
   AS v2 (idx, prop),
   generate_series(1, 4) AS col
 ORDER BY col,
@@ -274,17 +278,21 @@ SELECT
     prop
   )
 FROM
-  (VALUES (CAST('foocover' AS REGCLASS)))
+  (
+    VALUES (CAST('foocover' AS REGCLASS))
+  )
   AS v1 (o),
-  (VALUES
-    (1, 'orderable'),
-    (2, 'asc'),
-    (3, 'desc'),
-    (4, 'nulls_first'),
-    (5, 'nulls_last'),
-    (6, 'distance_orderable'),
-    (7, 'returnable'),
-    (8, 'bogus'))
+  (
+    VALUES
+      (1, 'orderable'),
+      (2, 'asc'),
+      (3, 'desc'),
+      (4, 'nulls_first'),
+      (5, 'nulls_last'),
+      (6, 'distance_orderable'),
+      (7, 'returnable'),
+      (8, 'bogus')
+  )
   AS v2 (idx, prop),
   generate_series(1, 3) AS col
 ORDER BY col,

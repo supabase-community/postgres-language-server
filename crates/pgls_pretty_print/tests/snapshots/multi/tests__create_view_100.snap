@@ -315,12 +315,14 @@ FROM
 WHERE
   relname LIKE 'v_' AND
   relnamespace =
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname = 'temp_view_test')
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'temp_view_test'
+  )
 ORDER BY relname;
 
 SELECT
@@ -330,12 +332,14 @@ FROM
 WHERE
   relname LIKE 'v%' AND
   relnamespace IN
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname LIKE 'pg_temp%')
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname LIKE 'pg_temp%'
+  )
 ORDER BY relname;
 
 CREATE SCHEMA "testviewschm2";
@@ -406,12 +410,14 @@ FROM
 WHERE
   relname LIKE 'nontemp%' AND
   relnamespace =
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname = 'testviewschm2')
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'testviewschm2'
+  )
 ORDER BY relname;
 
 SELECT
@@ -421,12 +427,14 @@ FROM
 WHERE
   relname LIKE 'temporal%' AND
   relnamespace IN
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname LIKE 'pg_temp%')
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname LIKE 'pg_temp%'
+  )
 ORDER BY relname;
 
 CREATE TABLE tbl1 (
@@ -464,10 +472,12 @@ WHERE
   BETWEEN (SELECT d FROM tbl2 WHERE c = 1)
   AND (SELECT e FROM tbl3 WHERE f = 2) AND
   EXISTS
-  (SELECT
-    g
-  FROM
-    tbl4 LEFT OUTER JOIN tbl3 ON tbl4.h = tbl3.f);
+  (
+    SELECT
+      g
+    FROM
+      tbl4 LEFT OUTER JOIN tbl3 ON tbl4.h = tbl3.f
+  );
 
 SELECT
   COUNT(*)
@@ -476,12 +486,14 @@ FROM
 WHERE
   relname = 'pubview' AND
   relnamespace IN
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname = 'testviewschm2');
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname = 'testviewschm2'
+  );
 
 CREATE VIEW mytempview
 AS SELECT
@@ -493,15 +505,19 @@ WHERE
   BETWEEN (SELECT d FROM tbl2 WHERE c = 1)
   AND (SELECT e FROM tbl3 WHERE f = 2) AND
   EXISTS
-  (SELECT
-    g
-  FROM
-    tbl4 LEFT OUTER JOIN tbl3 ON tbl4.h = tbl3.f) AND
+  (
+    SELECT
+      g
+    FROM
+      tbl4 LEFT OUTER JOIN tbl3 ON tbl4.h = tbl3.f
+  ) AND
   NOT EXISTS
-  (SELECT
-    g
-  FROM
-    tbl4 LEFT OUTER JOIN tmptbl ON tbl4.h = tmptbl.j);
+  (
+    SELECT
+      g
+    FROM
+      tbl4 LEFT OUTER JOIN tmptbl ON tbl4.h = tmptbl.j
+  );
 
 SELECT
   COUNT(*)
@@ -510,12 +526,14 @@ FROM
 WHERE
   relname LIKE 'mytempview' AND
   relnamespace IN
-  (SELECT
-    oid
-  FROM
-    pg_namespace
-  WHERE
-    nspname LIKE 'pg_temp%');
+  (
+    SELECT
+      oid
+    FROM
+      pg_namespace
+    WHERE
+      nspname LIKE 'pg_temp%'
+  );
 
 CREATE VIEW mysecview1
 AS SELECT * FROM tbl1 WHERE a = 0;
@@ -635,19 +653,21 @@ CREATE VIEW tt1
 AS SELECT
   *
 FROM
-  (VALUES
-    (
-      CAST('abc' AS VARCHAR(3)),
-      '0123456789',
-      42,
-      CAST('abcd' AS VARCHAR(4))
-    ),
-    (
-      '0123456789',
-      CAST('abc' AS VARCHAR(3)),
-      42.12,
-      CAST('abc' AS VARCHAR(4))
-    ))
+  (
+    VALUES
+      (
+        CAST('abc' AS VARCHAR(3)),
+        '0123456789',
+        42,
+        CAST('abcd' AS VARCHAR(4))
+      ),
+      (
+        '0123456789',
+        CAST('abc' AS VARCHAR(3)),
+        42.12,
+        CAST('abc' AS VARCHAR(4))
+      )
+  )
   AS vv (a, b, c, d);
 
 SELECT * FROM tt1;
@@ -697,7 +717,9 @@ FROM
   tt1
 WHERE
   EXISTS
-  (SELECT 1 FROM tx1 AS a2 WHERE tt1.f1 = a2.x1);
+  (
+    SELECT 1 FROM tx1 AS a2 WHERE tt1.f1 = a2.x1
+  );
 
 CREATE VIEW aliased_view_4
 AS SELECT
@@ -706,12 +728,14 @@ FROM
   temp_view_test.tt1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    tt1
-  WHERE
-    temp_view_test.tt1.y1 = tt1.f1);
+  (
+    SELECT
+      1
+    FROM
+      tt1
+    WHERE
+      temp_view_test.tt1.y1 = tt1.f1
+  );
 
 ALTER TABLE tx1 RENAME TO a1;
 
@@ -740,10 +764,12 @@ CREATE VIEW view_of_joins
 AS SELECT
   *
 FROM
-  (SELECT
-    *
-  FROM
-    (tbl1 INNER JOIN tbl2 ON TRUE) AS "same")
+  (
+    SELECT
+      *
+    FROM
+      (tbl1 INNER JOIN tbl2 ON TRUE) AS "same"
+  )
   AS ss,
   (tbl3 INNER JOIN tbl4 ON TRUE) AS "same";
 
@@ -979,7 +1005,9 @@ CREATE VIEW vv3
 AS SELECT
   *
 FROM
-  (VALUES (1, 2, 3, 4, 5, 6))
+  (
+    VALUES (1, 2, 3, 4, 5, 6)
+  )
   AS v (a, b, c, x, e, f)
 UNION ALL
 SELECT
@@ -997,7 +1025,9 @@ CREATE VIEW vv4
 AS SELECT
   *
 FROM
-  (VALUES (1, 2, 3, 4, 5, 6, 7))
+  (
+    VALUES (1, 2, 3, 4, 5, 6, 7)
+  )
   AS v (a, b, c, x, e, f, g)
 UNION ALL
 SELECT
@@ -1050,7 +1080,9 @@ CREATE VIEW vv2a
 AS SELECT
   *
 FROM
-  (VALUES (NOW(), 2, 3, NOW(), 5))
+  (
+    VALUES (NOW(), 2, 3, NOW(), 5)
+  )
   AS v (a, b, c, d, e)
 UNION ALL
 SELECT
@@ -1162,13 +1194,15 @@ BEGIN;
 DELETE FROM pg_depend
 WHERE
   objid =
-  (SELECT
-    oid
-  FROM
-    pg_rewrite
-  WHERE
-    ev_class = CAST('tt14v' AS REGCLASS) AND
-    rulename = '_RETURN') AND
+  (
+    SELECT
+      oid
+    FROM
+      pg_rewrite
+    WHERE
+      ev_class = CAST('tt14v' AS REGCLASS) AND
+      rulename = '_RETURN'
+  ) AND
   refobjsubid = 3
 RETURNING pg_describe_object(classid, objid, objsubid)
 AS obj,
@@ -1201,13 +1235,15 @@ BEGIN;
 DELETE FROM pg_depend
 WHERE
   objid =
-  (SELECT
-    oid
-  FROM
-    pg_rewrite
-  WHERE
-    ev_class = CAST('tt14v' AS REGCLASS) AND
-    rulename = '_RETURN') AND
+  (
+    SELECT
+      oid
+    FROM
+      pg_rewrite
+    WHERE
+      ev_class = CAST('tt14v' AS REGCLASS) AND
+      rulename = '_RETURN'
+  ) AND
   refobjsubid = 4
 RETURNING pg_describe_object(classid, objid, objsubid)
 AS obj,
@@ -1323,14 +1359,18 @@ SELECT CAST('foo' AS TEXT) = ANY (CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[]));
 SELECT CAST('foo' AS TEXT) = ANY (SELECT CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[]));
 
 SELECT
-  CAST('foo' AS TEXT) = ANY (CAST((SELECT CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[]))
+  CAST('foo' AS TEXT) = ANY (CAST((
+    SELECT CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[])
+  )
   AS TEXT[]));
 
 CREATE VIEW tt19v
 AS SELECT
   CAST('foo' AS TEXT) = ANY (CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[]))
   AS c1,
-  CAST('foo' AS TEXT) = ANY (CAST((SELECT CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[]))
+  CAST('foo' AS TEXT) = ANY (CAST((
+    SELECT CAST(ARRAY['abc', 'def', 'foo'] AS TEXT[])
+  )
   AS TEXT[]))
   AS c2;
 
@@ -1467,14 +1507,13 @@ SELECT
 FROM
   cte
   INNER JOIN
-    (SELECT
-      rr
-    FROM
-      (VALUES
-        (1, 7),
-        (3, 8))
-      AS rr
-    LIMIT 2)
+    (
+      SELECT
+        rr
+      FROM
+        (VALUES (1, 7), (3, 8)) AS rr
+      LIMIT 2
+    )
     AS ss
   ON r.column1 = rr.column1;
 
@@ -1486,18 +1525,7 @@ SELECT pg_get_viewdef('tt25v', TRUE);
 
 SELECT * FROM tt24v;
 
-SELECT
-  r.column2
-FROM
-  (SELECT
-    r
-  FROM
-    (VALUES
-      (1, 2),
-      (3, 4))
-    AS r
-  LIMIT 1)
-  AS ss;
+SELECT r.column2 FROM (SELECT r FROM (VALUES (1, 2), (3, 4)) AS r LIMIT 1) AS ss;
 
 CREATE VIEW tt26v
 AS SELECT
@@ -1510,16 +1538,8 @@ AS SELECT
   x + (y # z) AS c7,
   x > y AND (y > z OR x > z) AS c8,
   x > y OR y > z AND NOT x > z AS c9,
-  (x, y) <> ALL
-  (VALUES
-    (1, 2),
-    (3, 4))
-  AS c10,
-  (x, y) <= ANY
-  (VALUES
-    (1, 2),
-    (3, 4))
-  AS c11
+  (x, y) <> ALL (VALUES (1, 2), (3, 4)) AS c10,
+  (x, y) <= ANY (VALUES (1, 2), (3, 4)) AS c11
 FROM
   (VALUES (1, 2, 3)) AS v (x, y, z);
 

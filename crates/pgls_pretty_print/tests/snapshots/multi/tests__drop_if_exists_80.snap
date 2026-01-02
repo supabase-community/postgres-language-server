@@ -117,8 +117,7 @@ DROP TEXT SEARCH DICTIONARY "test_tsdict_exists";
 
 DROP TEXT SEARCH DICTIONARY IF EXISTS "test_tsdict_exists";
 
-CREATE TEXT SEARCH DICTIONARY test_tsdict_exists
-(
+CREATE TEXT SEARCH DICTIONARY test_tsdict_exists (
   template = ispell,
   dictfile = ispell_sample,
   afffile = ispell_sample
@@ -134,7 +133,7 @@ DROP TEXT SEARCH CONFIGURATION "test_tsconfig_exists";
 
 DROP TEXT SEARCH CONFIGURATION IF EXISTS "test_tsconfig_exists";
 
-CREATE TEXT SEARCH CONFIGURATION test_tsconfig_exists ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION test_tsconfig_exists (copy = english);
 
 DROP TEXT SEARCH CONFIGURATION "test_tsconfig_exists";
 
@@ -185,7 +184,7 @@ DROP TRIGGER IF EXISTS "test_trigger_exists" ON "no_such_table";
 DROP TRIGGER "test_trigger_exists" ON "no_such_schema"."no_such_table";
 
 DROP TRIGGER IF EXISTS
-"test_trigger_exists" ON "no_such_schema"."no_such_table";
+  "test_trigger_exists" ON "no_such_schema"."no_such_table";
 
 CREATE TRIGGER test_trigger_exists
   BEFORE UPDATE
@@ -211,7 +210,8 @@ CREATE RULE test_rule_exists
 AS ON INSERT TO test_exists
 DO INSTEAD
   INSERT INTO test_exists
-  VALUES (new.a, new.b || CAST(new.a AS TEXT));;
+  VALUES
+    (new.a, new.b || CAST(new.a AS TEXT));;
 
 DROP RULE "test_rule_exists" ON "test_exists";
 
@@ -284,9 +284,9 @@ DROP OPERATOR IF EXISTS no_such_schema.+ (INT, INT);
 DROP OPERATOR IF EXISTS + (no_such_type, no_such_type);
 
 DROP OPERATOR IF EXISTS
-+ (
-  no_such_schema.no_such_type,
-  no_such_schema.no_such_type);
+  + (
+    no_such_schema.no_such_type,
+    no_such_schema.no_such_type);
 
 DROP OPERATOR IF EXISTS # (NONE, no_such_schema.no_such_type);
 

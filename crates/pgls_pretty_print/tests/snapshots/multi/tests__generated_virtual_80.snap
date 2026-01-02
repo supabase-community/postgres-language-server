@@ -43,25 +43,13 @@ INSERT INTO gtest1 VALUES (2, DEFAULT);
 
 INSERT INTO gtest1 VALUES (3, 33);
 
-INSERT INTO gtest1
-VALUES
-  (3, 33),
-  (4, 44);
+INSERT INTO gtest1 VALUES (3, 33), (4, 44);
 
-INSERT INTO gtest1
-VALUES
-  (3, DEFAULT),
-  (4, 44);
+INSERT INTO gtest1 VALUES (3, DEFAULT), (4, 44);
 
-INSERT INTO gtest1
-VALUES
-  (3, 33),
-  (4, DEFAULT);
+INSERT INTO gtest1 VALUES (3, 33), (4, DEFAULT);
 
-INSERT INTO gtest1
-VALUES
-  (3, DEFAULT),
-  (4, DEFAULT);
+INSERT INTO gtest1 VALUES (3, DEFAULT), (4, DEFAULT);
 
 SELECT * FROM gtest1 ORDER BY a;
 
@@ -92,11 +80,7 @@ CREATE TABLE gtestx (
   y INT
 );
 
-INSERT INTO gtestx
-VALUES
-  (11, 1),
-  (22, 2),
-  (33, 3);
+INSERT INTO gtestx VALUES (11, 1), (22, 2), (33, 3);
 
 SELECT * FROM gtestx, gtest1 WHERE gtestx.y = gtest1.a;
 
@@ -131,35 +115,20 @@ INSERT INTO gtest1v VALUES (4, 8);
 
 INSERT INTO gtest1v VALUES (5, DEFAULT);
 
-INSERT INTO gtest1v
-VALUES
-  (6, 66),
-  (7, 77);
+INSERT INTO gtest1v VALUES (6, 66), (7, 77);
 
-INSERT INTO gtest1v
-VALUES
-  (6, DEFAULT),
-  (7, 77);
+INSERT INTO gtest1v VALUES (6, DEFAULT), (7, 77);
 
-INSERT INTO gtest1v
-VALUES
-  (6, 66),
-  (7, DEFAULT);
+INSERT INTO gtest1v VALUES (6, 66), (7, DEFAULT);
 
-INSERT INTO gtest1v
-VALUES
-  (6, DEFAULT),
-  (7, DEFAULT);
+INSERT INTO gtest1v VALUES (6, DEFAULT), (7, DEFAULT);
 
 ALTER VIEW gtest1v
   ALTER COLUMN b SET DEFAULT 100;
 
 INSERT INTO gtest1v VALUES (8, DEFAULT);
 
-INSERT INTO gtest1v
-VALUES
-  (8, DEFAULT),
-  (9, DEFAULT);
+INSERT INTO gtest1v VALUES (8, DEFAULT), (9, DEFAULT);
 
 SELECT * FROM gtest1v;
 
@@ -267,12 +236,7 @@ SELECT * FROM gtestc;
 
 DROP TABLE "gtestp" CASCADE;
 
-INSERT INTO gtest3 (a)
-VALUES
-  (1),
-  (2),
-  (3),
-  (NULL);
+INSERT INTO gtest3 (a) VALUES (1), (2), (3), (NULL);
 
 SELECT * FROM gtest3 ORDER BY a;
 
@@ -280,12 +244,7 @@ UPDATE gtest3 SET a = 22 WHERE a = 2;
 
 SELECT * FROM gtest3 ORDER BY a;
 
-INSERT INTO gtest3a (a)
-VALUES
-  ('a'),
-  ('b'),
-  ('c'),
-  (NULL);
+INSERT INTO gtest3a (a) VALUES ('a'), ('b'), ('c'), (NULL);
 
 SELECT * FROM gtest3a ORDER BY a;
 
@@ -295,10 +254,7 @@ SELECT * FROM gtest3a ORDER BY a;
 
 TRUNCATE gtest1;
 
-INSERT INTO gtest1 (a)
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest1 (a) VALUES (1), (2);
 
 COPY gtest1 TO STDOUT;
 
@@ -308,10 +264,7 @@ SELECT * FROM gtest1 ORDER BY a;
 
 TRUNCATE gtest3;
 
-INSERT INTO gtest3 (a)
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest3 (a) VALUES (1), (2);
 
 COPY gtest3 TO STDOUT;
 
@@ -335,10 +288,7 @@ CREATE TYPE double_int AS (a INT, b INT);
 
 DROP TYPE double_int;
 
-INSERT INTO gtest_tableoid
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest_tableoid VALUES (1), (2);
 
 SELECT * FROM gtest_tableoid;
 
@@ -355,10 +305,7 @@ INSERT INTO gtest10a (a) VALUES (1);
 
 CREATE USER regress_user11;
 
-INSERT INTO gtest11
-VALUES
-  (1, 10),
-  (2, 20);
+INSERT INTO gtest11 VALUES (1, 10), (2, 20);
 
 GRANT SELECT (a, c) ON TABLE gtest11 TO regress_user11;
 
@@ -455,10 +402,7 @@ ALTER TABLE gtest21b
 
 INSERT INTO gtest21b (a) VALUES (1);
 
-INSERT INTO gtest21b (a)
-VALUES
-  (2),
-  (0);
+INSERT INTO gtest21b (a) VALUES (2), (0);
 
 INSERT INTO gtest21b (a) VALUES (NULL);
 
@@ -649,10 +593,7 @@ SELECT CAST(tableoid AS REGCLASS), * FROM gtest_parent ORDER BY 1, 2, 3;
 
 CREATE TABLE gtest25 (a INT PRIMARY KEY);
 
-INSERT INTO gtest25
-VALUES
-  (3),
-  (4);
+INSERT INTO gtest25 VALUES (3), (4);
 
 SELECT * FROM gtest25 ORDER BY a;
 
@@ -661,10 +602,7 @@ ALTER TABLE gtest25
 
 SELECT * FROM gtest25 ORDER BY a;
 
-INSERT INTO gtest27 (a, b)
-VALUES
-  (3, 7),
-  (4, 11);
+INSERT INTO gtest27 (a, b) VALUES (3, 7), (4, 11);
 
 ALTER TABLE gtest27
   ALTER COLUMN a TYPE TEXT;
@@ -690,10 +628,7 @@ ALTER TABLE gtest27
 
 SELECT * FROM gtest27;
 
-INSERT INTO gtest29 (a)
-VALUES
-  (3),
-  (4);
+INSERT INTO gtest29 (a) VALUES (3), (4);
 
 SELECT * FROM gtest29;
 
@@ -844,11 +779,7 @@ CREATE TRIGGER gtest4
   WHEN (new.b < 0)
   EXECUTE FUNCTION gtest_trigger_func();
 
-INSERT INTO gtest26 (a)
-VALUES
-  (-2),
-  (0),
-  (3);
+INSERT INTO gtest26 (a) VALUES (-2), (0), (3);
 
 SELECT * FROM gtest26 ORDER BY a;
 
@@ -939,10 +870,7 @@ FROM
 WHERE
   attgenerated NOT IN ('', 's', 'v');
 
-INSERT INTO gtest32
-VALUES
-  (1),
-  (2);
+INSERT INTO gtest32 VALUES (1), (2);
 
 ANALYZE gtest32;
 
@@ -1025,12 +953,14 @@ FROM
   gtest32 AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    gtest32 AS t2
-  WHERE
-    t1.a > t2.a AND t2.b = 2);
+  (
+    SELECT
+      1
+    FROM
+      gtest32 AS t2
+    WHERE
+      t1.a > t2.a AND t2.b = 2
+  );
 
 SELECT
   1
@@ -1038,12 +968,14 @@ FROM
   gtest32 AS t1
 WHERE
   EXISTS
-  (SELECT
-    1
-  FROM
-    gtest32 AS t2
-  WHERE
-    t1.a > t2.a AND t2.b = 2);
+  (
+    SELECT
+      1
+    FROM
+      gtest32 AS t2
+    WHERE
+      t1.a > t2.a AND t2.b = 2
+  );
 
 DROP TABLE "gtest32";
 

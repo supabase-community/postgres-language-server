@@ -289,7 +289,9 @@ FROM
   articles
 WHERE
   title IN
-  (SELECT title FROM articles GROUP BY id);
+  (
+    SELECT title FROM articles GROUP BY id
+  );
 
 ALTER TABLE articles
   DROP CONSTRAINT articles_pkey;

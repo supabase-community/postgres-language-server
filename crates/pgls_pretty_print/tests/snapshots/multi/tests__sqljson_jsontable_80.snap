@@ -101,7 +101,7 @@ FROM
 
 DROP TYPE comp;
 
-SELECT * FROM JSON_TABLE( CAST(NULL AS JSONB), '$' COLUMNS ( foo INT ) ) AS bar;
+SELECT * FROM JSON_TABLE( CAST(NULL AS JSONB), '$' COLUMNS (foo INT ) ) AS bar;
 
 SELECT
   *
@@ -446,10 +446,7 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    ('1'),
-    ('"err"'))
-  AS vals (js),
+  (VALUES ('1'), ('"err"')) AS vals (js),
   JSON_TABLE(
     CAST(vals.js AS JSONB),
     '$'
@@ -461,10 +458,7 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    ('1'),
-    ('"err"'))
-  AS vals (js)
+  (VALUES ('1'), ('"err"')) AS vals (js)
   LEFT OUTER JOIN
     JSON_TABLE(
       CAST(vals.js AS JSONB),
@@ -478,10 +472,7 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    ('1'),
-    ('"err"'))
-  AS vals (js)
+  (VALUES ('1'), ('"err"')) AS vals (js)
   LEFT OUTER JOIN
     JSON_TABLE(
       CAST(vals.js AS JSONB),
@@ -879,7 +870,7 @@ FROM
     '$' AS a
     COLUMNS (
       b INT,
-      NESTED PATH '$' AS a COLUMNS ( c INT )
+      NESTED PATH '$' AS a COLUMNS (c INT )
     )
   ) AS jt;
 
@@ -891,7 +882,7 @@ FROM
     '$' AS a
     COLUMNS (
       b INT,
-      NESTED PATH '$' AS n_a COLUMNS ( c INT )
+      NESTED PATH '$' AS n_a COLUMNS (c INT )
     )
   ) AS jt;
 
@@ -903,7 +894,7 @@ FROM
     '$'
     COLUMNS (
       b INT,
-      NESTED PATH '$' AS b COLUMNS ( c INT )
+      NESTED PATH '$' AS b COLUMNS (c INT )
     )
   ) AS jt;
 
@@ -914,10 +905,10 @@ FROM
     CAST('[]' AS JSONB),
     '$'
     COLUMNS (
-      NESTED PATH '$' AS a COLUMNS ( b INT ),
+      NESTED PATH '$' AS a COLUMNS (b INT ),
       NESTED PATH '$'
       COLUMNS (
-        NESTED PATH '$' AS a COLUMNS ( c INT )
+        NESTED PATH '$' AS a COLUMNS (c INT )
       )
     )
   ) AS jt;
@@ -925,14 +916,15 @@ FROM
 CREATE TEMPORARY TABLE jsonb_table_test (js JSONB);
 
 INSERT INTO jsonb_table_test
-VALUES (
-  '[
+VALUES
+  (
+    '[
 		{"a":  1,  "b": [], "c": []},
 		{"a":  2,  "b": [1, 2, 3], "c": [10, null, 20]},
 		{"a":  3,  "b": [1, 2], "c": []},
 		{"x": "4", "b": [1, 2], "c": 123}
 	 ]'
-);
+  );
 
 SELECT
   jt.*

@@ -3,8 +3,7 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_aggregate.sql
 snapshot_kind: text
 ---
-CREATE AGGREGATE newavg
-(
+CREATE AGGREGATE newavg (
   sfunc = int4_avg_accum,
   basetype = INT,
   stype = _int8,
@@ -18,38 +17,32 @@ COMMENT ON AGGREGATE newavg(INT) IS 'an agg comment';
 
 COMMENT ON AGGREGATE newavg(INT) IS NULL;
 
-CREATE AGGREGATE newsum
-(
+CREATE AGGREGATE newsum (
   sfunc1 = int4pl,
   basetype = INT,
   stype1 = INT,
   initcond1 = '0'
 );
 
-CREATE AGGREGATE newcnt
-(
+CREATE AGGREGATE newcnt (
   *
-)
-(
+) (
   sfunc = int8inc,
   stype = BIGINT,
   initcond = '0',
   parallel = safe
 );
 
-CREATE AGGREGATE oldcnt
-(
+CREATE AGGREGATE oldcnt (
   sfunc = int8inc,
   basetype = 'ANY',
   stype = BIGINT,
   initcond = '0'
 );
 
-CREATE AGGREGATE newcnt
-(
+CREATE AGGREGATE newcnt (
   "any"
-)
-(
+) (
   sfunc = int8inc_any,
   stype = BIGINT,
   initcond = '0'
@@ -68,11 +61,9 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE AGGREGATE sum2
-(
+CREATE AGGREGATE sum2 (
   BIGINT, BIGINT
-)
-(
+) (
   sfunc = sum3,
   stype = BIGINT,
   initcond = '0'
@@ -93,21 +84,17 @@ AS 'select array_append($1,ROW($2,$3,$4)::aggtype)'
 LANGUAGE "sql"
 IMMUTABLE;
 
-CREATE AGGREGATE aggfstr
-(
+CREATE AGGREGATE aggfstr (
   INT, INT, TEXT
-)
-(
+) (
   sfunc = aggf_trans,
   stype = aggtype[],
   initcond = '{}'
 );
 
-CREATE AGGREGATE aggfns
-(
+CREATE AGGREGATE aggfns (
   INT, INT, TEXT
-)
-(
+) (
   sfunc = aggfns_trans,
   stype = aggtype[],
   sspace = 10000,
@@ -119,7 +106,7 @@ RETURNS BIGINT
 LANGUAGE "sql"
 AS 'select least($1, $2)';
 
-CREATE AGGREGATE least_agg (INT) ( stype = BIGINT, sfunc = least_accum);
+CREATE AGGREGATE least_agg (INT) (stype = BIGINT, sfunc = least_accum);
 
 DROP FUNCTION least_accum(BIGINT, BIGINT);
 
@@ -128,9 +115,9 @@ RETURNS anycompatible
 LANGUAGE "sql"
 AS 'select least($1, $2)';
 
-CREATE AGGREGATE least_agg (INT) ( stype = BIGINT, sfunc = least_accum);
+CREATE AGGREGATE least_agg (INT) (stype = BIGINT, sfunc = least_accum);
 
-CREATE AGGREGATE least_agg (BIGINT) ( stype = BIGINT, sfunc = least_accum);
+CREATE AGGREGATE least_agg (BIGINT) (stype = BIGINT, sfunc = least_accum);
 
 DROP FUNCTION least_accum(anycompatible, anycompatible) CASCADE;
 
@@ -139,11 +126,9 @@ RETURNS ANYELEMENT
 LANGUAGE "sql"
 AS 'select least($1, min($2[i])) from generate_subscripts($2,1) g(i)';
 
-CREATE AGGREGATE least_agg
-(
+CREATE AGGREGATE least_agg (
   VARIADIC items ANYARRAY
-)
-(
+) (
   stype = ANYELEMENT,
   sfunc = least_accum
 );
@@ -153,20 +138,16 @@ RETURNS anycompatible
 LANGUAGE "sql"
 AS 'select least($1, min($2[i])) from generate_subscripts($2,1) g(i)';
 
-CREATE AGGREGATE cleast_agg
-(
+CREATE AGGREGATE cleast_agg (
   VARIADIC items anycompatiblearray
-)
-(
+) (
   stype = anycompatible,
   sfunc = cleast_accum
 );
 
-CREATE AGGREGATE my_percentile_disc
-(
+CREATE AGGREGATE my_percentile_disc (
   DOUBLE PRECISION, ANYELEMENT
-)
-(
+) (
   stype = internal,
   sfunc = ordered_set_transition,
   finalfunc = percentile_disc_final,
@@ -174,11 +155,9 @@ CREATE AGGREGATE my_percentile_disc
   finalfunc_modify = read_write
 );
 
-CREATE AGGREGATE my_rank
-(
+CREATE AGGREGATE my_rank (
   VARIADIC "any"
-)
-(
+) (
   stype = internal,
   sfunc = ordered_set_transition_multi,
   finalfunc = rank_final,
@@ -193,11 +172,9 @@ RENAME TO test_percentile_disc;
 
 ALTER AGGREGATE my_rank("any") RENAME TO test_rank;
 
-CREATE AGGREGATE sumdouble
-(
+CREATE AGGREGATE sumdouble (
   DOUBLE PRECISION
-)
-(
+) (
   stype = DOUBLE PRECISION,
   sfunc = float8pl,
   mstype = DOUBLE PRECISION,
@@ -205,43 +182,35 @@ CREATE AGGREGATE sumdouble
   minvfunc = float8mi
 );
 
-CREATE AGGREGATE myavg
-(
+CREATE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   serialfunc = numeric_avg_serialize
 );
 
-CREATE AGGREGATE myavg
-(
+CREATE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   serialfunc = numeric_avg_deserialize,
   deserialfunc = numeric_avg_deserialize
 );
 
-CREATE AGGREGATE myavg
-(
+CREATE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   serialfunc = numeric_avg_serialize,
   deserialfunc = numeric_avg_serialize
 );
 
-CREATE AGGREGATE myavg
-(
+CREATE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   serialfunc = numeric_avg_serialize,
@@ -249,11 +218,9 @@ CREATE AGGREGATE myavg
   combinefunc = int4larger
 );
 
-CREATE AGGREGATE myavg
-(
+CREATE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   finalfunc = numeric_avg,
@@ -278,21 +245,17 @@ WHERE
 
 DROP AGGREGATE myavg(NUMERIC);
 
-CREATE AGGREGATE myavg
-(
+CREATE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   finalfunc = numeric_avg
 );
 
-CREATE OR REPLACE AGGREGATE myavg
-(
+CREATE OR REPLACE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = internal,
   sfunc = numeric_avg_accum,
   finalfunc = numeric_avg,
@@ -315,11 +278,9 @@ FROM
 WHERE
   aggfnoid = CAST('myavg' AS REGPROC);
 
-CREATE OR REPLACE AGGREGATE myavg
-(
+CREATE OR REPLACE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = NUMERIC,
   sfunc = numeric_add
 );
@@ -337,21 +298,17 @@ FROM
 WHERE
   aggfnoid = CAST('myavg' AS REGPROC);
 
-CREATE OR REPLACE AGGREGATE myavg
-(
+CREATE OR REPLACE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = NUMERIC,
   sfunc = numeric_add,
   finalfunc = numeric_out
 );
 
-CREATE OR REPLACE AGGREGATE myavg
-(
+CREATE OR REPLACE AGGREGATE myavg (
   NUMERIC
-)
-(
+) (
   stype = NUMERIC,
   sfunc = numeric_add
 );
@@ -363,11 +320,9 @@ LANGUAGE "sql"
 STRICT
 IMMUTABLE;
 
-CREATE OR REPLACE AGGREGATE sum3
-(
+CREATE OR REPLACE AGGREGATE sum3 (
   BIGINT, BIGINT, BIGINT
-)
-(
+) (
   stype = BIGINT,
   sfunc = sum4
 );
@@ -376,18 +331,16 @@ DROP FUNCTION sum4(BIGINT, BIGINT, BIGINT, BIGINT);
 
 DROP AGGREGATE myavg(NUMERIC);
 
-CREATE AGGREGATE mysum (INT) ( stype = INT, sfunc = int4pl, parallel = pear);
+CREATE AGGREGATE mysum (INT) (stype = INT, sfunc = int4pl, parallel = pear);
 
 CREATE FUNCTION float8mi_n(DOUBLE PRECISION, DOUBLE PRECISION)
 RETURNS DOUBLE PRECISION
 AS ' SELECT $1 - $2; '
 LANGUAGE "sql";
 
-CREATE AGGREGATE invalidsumdouble
-(
+CREATE AGGREGATE invalidsumdouble (
   DOUBLE PRECISION
-)
-(
+) (
   stype = DOUBLE PRECISION,
   sfunc = float8pl,
   mstype = DOUBLE PRECISION,
@@ -400,11 +353,9 @@ RETURNS INT
 AS ' SELECT CAST($1 - $2 AS INT); '
 LANGUAGE "sql";
 
-CREATE AGGREGATE wrongreturntype
-(
+CREATE AGGREGATE wrongreturntype (
   DOUBLE PRECISION
-)
-(
+) (
   stype = DOUBLE PRECISION,
   sfunc = float8pl,
   mstype = DOUBLE PRECISION,
@@ -412,8 +363,7 @@ CREATE AGGREGATE wrongreturntype
   minvfunc = float8mi_int
 );
 
-CREATE AGGREGATE case_agg
-(
+CREATE AGGREGATE case_agg (
   "Sfunc1" = int4pl,
   "Basetype" = INT,
   "Stype1" = INT,
@@ -421,11 +371,9 @@ CREATE AGGREGATE case_agg
   "Parallel" = safe
 );
 
-CREATE AGGREGATE case_agg
-(
+CREATE AGGREGATE case_agg (
   DOUBLE PRECISION
-)
-(
+) (
   "Stype" = internal,
   "Sfunc" = ordered_set_transition,
   "Finalfunc" = percentile_disc_final,

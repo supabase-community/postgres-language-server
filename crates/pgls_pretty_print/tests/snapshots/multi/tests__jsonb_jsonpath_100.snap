@@ -344,15 +344,19 @@ SELECT
   )
   AS "x && y"
 FROM
-  (VALUES
-    (CAST('true' AS JSONB)),
-    ('false'),
-    ('"null"'))
+  (
+    VALUES
+      (CAST('true' AS JSONB)),
+      ('false'),
+      ('"null"')
+  )
   AS x (x),
-  (VALUES
-    (CAST('true' AS JSONB)),
-    ('false'),
-    ('"null"'))
+  (
+    VALUES
+      (CAST('true' AS JSONB)),
+      ('false'),
+      ('"null"')
+  )
   AS y (y);
 
 SELECT
@@ -367,15 +371,19 @@ SELECT
   )
   AS "x || y"
 FROM
-  (VALUES
-    (CAST('true' AS JSONB)),
-    ('false'),
-    ('"null"'))
+  (
+    VALUES
+      (CAST('true' AS JSONB)),
+      ('false'),
+      ('"null"')
+  )
   AS x (x),
-  (VALUES
-    (CAST('true' AS JSONB)),
-    ('false'),
-    ('"null"'))
+  (
+    VALUES
+      (CAST('true' AS JSONB)),
+      ('false'),
+      ('"null"')
+  )
   AS y (y);
 
 SELECT CAST('{"a": 1, "b":1}' AS JSONB) @? '$ ? (@.a == @.b)';

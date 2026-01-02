@@ -128,7 +128,9 @@ SELECT
   relname,
   relkind,
   EXISTS
-  (SELECT 1 FROM pg_class WHERE oid = c.reltoastrelid)
+  (
+    SELECT 1 FROM pg_class WHERE oid = c.reltoastrelid
+  )
   AS hastoast
 FROM
   pg_class AS c
@@ -293,10 +295,7 @@ CREATE TEMPORARY TABLE clstr_temp (
   col2 TEXT
 );
 
-INSERT INTO clstr_temp
-VALUES
-  (2, 'two'),
-  (1, 'one');
+INSERT INTO clstr_temp VALUES (2, 'two'), (1, 'one');
 
 CLUSTER clstr_temp USING clstr_temp_pkey;
 
@@ -457,15 +456,17 @@ CLUSTER clstr_4 USING cluster_sort;
 SELECT
   *
 FROM
-  (SELECT
-    hundred,
-    LAG(hundred) OVER () AS lhundred,
-    thousand,
-    LAG(thousand) OVER () AS lthousand,
-    tenthous,
-    LAG(tenthous) OVER () AS ltenthous
-  FROM
-    clstr_4)
+  (
+    SELECT
+      hundred,
+      LAG(hundred) OVER () AS lhundred,
+      thousand,
+      LAG(thousand) OVER () AS lthousand,
+      tenthous,
+      LAG(tenthous) OVER () AS ltenthous
+    FROM
+      clstr_4
+  )
   AS ss
 WHERE
   ROW(hundred, thousand, tenthous) <=

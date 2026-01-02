@@ -3,17 +3,17 @@ source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/sqljson_jsontable.sql
 snapshot_kind: text
 ---
-SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS ( js2 INT PATH '$' ) DEFAULT 1 ON ERROR );
+SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS (js2 INT PATH '$' ) DEFAULT 1 ON ERROR );
 
-SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS ( js2 INT PATH '$' ) NULL ON ERROR );
+SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS (js2 INT PATH '$' ) NULL ON ERROR );
 
-SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS ( js2 INT PATH '$' ) EMPTY ARRAY ON ERROR );
+SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS (js2 INT PATH '$' ) EMPTY ARRAY ON ERROR );
 
-SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS ( js2 INT PATH '$' ) ERROR ON ERROR );
+SELECT * FROM JSON_TABLE( '[]', 'strict $.a' COLUMNS (js2 INT PATH '$' ) ERROR ON ERROR );
 
-SELECT * FROM JSON_TABLE( CAST('"1.23"' AS JSONB), '$.a' AS js2 COLUMNS ( js2 INT PATH '$' ) );
+SELECT * FROM JSON_TABLE( CAST('"1.23"' AS JSONB), '$.a' AS js2 COLUMNS (js2 INT PATH '$' ) );
 
-SELECT * FROM JSON_TABLE( CAST(NULL AS JSONB), '$' COLUMNS ( v1 TIMESTAMP ) ) AS f (v1, v2);
+SELECT * FROM JSON_TABLE( CAST(NULL AS JSONB), '$' COLUMNS (v1 TIMESTAMP ) ) AS f (v1, v2);
 
 SELECT
   *
@@ -43,11 +43,11 @@ FROM
 
 DROP TYPE comp;
 
-SELECT * FROM JSON_TABLE( CAST(NULL AS JSONB), '$' COLUMNS ( foo INT ) ) AS bar;
+SELECT * FROM JSON_TABLE( CAST(NULL AS JSONB), '$' COLUMNS (foo INT ) ) AS bar;
 
-SELECT * FROM JSON_TABLE( CAST('"1.23"' AS JSONB), 'strict $.a' COLUMNS ( js2 INT PATH '$' ) );
+SELECT * FROM JSON_TABLE( CAST('"1.23"' AS JSONB), 'strict $.a' COLUMNS (js2 INT PATH '$' ) );
 
-SELECT * FROM JSON_TABLE( CAST('123' AS JSONB), '$' COLUMNS ( item INT PATH '$', foo INT ) ) AS bar;
+SELECT * FROM JSON_TABLE( CAST('123' AS JSONB), '$' COLUMNS (item INT PATH '$', foo INT ) ) AS bar;
 
 CREATE DOMAIN jsonb_test_domain AS TEXT CHECK (value <> 'foo');
 
@@ -366,10 +366,7 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    ('1'),
-    ('"err"'))
-  AS vals (js),
+  (VALUES ('1'), ('"err"')) AS vals (js),
   JSON_TABLE(
     CAST(vals.js AS JSONB),
     '$'
@@ -381,10 +378,7 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    ('1'),
-    ('"err"'))
-  AS vals (js)
+  (VALUES ('1'), ('"err"')) AS vals (js)
   LEFT OUTER JOIN
     JSON_TABLE(
       CAST(vals.js AS JSONB),
@@ -398,10 +392,7 @@ FROM
 SELECT
   *
 FROM
-  (VALUES
-    ('1'),
-    ('"err"'))
-  AS vals (js)
+  (VALUES ('1'), ('"err"')) AS vals (js)
   LEFT OUTER JOIN
     JSON_TABLE(
       CAST(vals.js AS JSONB),
@@ -502,13 +493,13 @@ FROM
     )
   );
 
-SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS ( a int2 EXISTS PATH '$.a' ) );
+SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS (a int2 EXISTS PATH '$.a' ) );
 
-SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS ( a int8 EXISTS PATH '$.a' ) );
+SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS (a int8 EXISTS PATH '$.a' ) );
 
-SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS ( a float4 EXISTS PATH '$.a' ) );
+SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS (a float4 EXISTS PATH '$.a' ) );
 
-SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS ( a CHAR(3) EXISTS PATH '$.a' ) );
+SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS (a CHAR(3) EXISTS PATH '$.a' ) );
 
 SELECT
   *
@@ -532,9 +523,9 @@ FROM
     )
   );
 
-SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS ( a JSON EXISTS PATH '$.a' ) );
+SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS (a JSON EXISTS PATH '$.a' ) );
 
-SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS ( a jsonb EXISTS PATH '$.a' ) );
+SELECT * FROM JSON_TABLE( CAST('"a"' AS JSONB), '$' COLUMNS (a jsonb EXISTS PATH '$.a' ) );
 
 CREATE DOMAIN dint4 AS INT;
 
@@ -602,27 +593,9 @@ FROM
 
 DROP DOMAIN dint4, dint4_0;
 
-SELECT
-  *
-FROM
-  JSON_TABLE(
-    CAST('"world"' AS JSONB),
-    '$'
-    COLUMNS (
-      item text PATH '$' KEEP QUOTES
-    )
-  );
+SELECT * FROM JSON_TABLE( CAST('"world"' AS JSONB), '$' COLUMNS (item text PATH '$' KEEP QUOTES ) );
 
-SELECT
-  *
-FROM
-  JSON_TABLE(
-    CAST('"world"' AS JSONB),
-    '$'
-    COLUMNS (
-      item text PATH '$' OMIT QUOTES
-    )
-  );
+SELECT * FROM JSON_TABLE( CAST('"world"' AS JSONB), '$' COLUMNS (item text PATH '$' OMIT QUOTES ) );
 
 SELECT
   *
@@ -745,7 +718,7 @@ FROM
     '$' AS a
     COLUMNS (
       b INT,
-      NESTED PATH '$' AS a COLUMNS ( c INT )
+      NESTED PATH '$' AS a COLUMNS (c INT )
     )
   ) AS jt;
 
@@ -757,7 +730,7 @@ FROM
     '$' AS a
     COLUMNS (
       b INT,
-      NESTED PATH '$' AS n_a COLUMNS ( c INT )
+      NESTED PATH '$' AS n_a COLUMNS (c INT )
     )
   ) AS jt;
 
@@ -769,7 +742,7 @@ FROM
     '$'
     COLUMNS (
       b INT,
-      NESTED PATH '$' AS b COLUMNS ( c INT )
+      NESTED PATH '$' AS b COLUMNS (c INT )
     )
   ) AS jt;
 
@@ -780,10 +753,10 @@ FROM
     CAST('[]' AS JSONB),
     '$'
     COLUMNS (
-      NESTED PATH '$' AS a COLUMNS ( b INT ),
+      NESTED PATH '$' AS a COLUMNS (b INT ),
       NESTED PATH '$'
       COLUMNS (
-        NESTED PATH '$' AS a COLUMNS ( c INT )
+        NESTED PATH '$' AS a COLUMNS (c INT )
       )
     )
   ) AS jt;
@@ -791,14 +764,15 @@ FROM
 CREATE TEMPORARY TABLE jsonb_table_test (js JSONB);
 
 INSERT INTO jsonb_table_test
-VALUES (
-  '[
+VALUES
+  (
+    '[
 		{"a":  1,  "b": [], "c": []},
 		{"a":  2,  "b": [1, 2, 3], "c": [10, null, 20]},
 		{"a":  3,  "b": [1, 2], "c": []},
 		{"x": "4", "b": [1, 2], "c": 123}
 	 ]'
-);
+  );
 
 SELECT
   jt.*
@@ -856,13 +830,13 @@ FROM
       NESTED PATH '$[1]' AS p1
       COLUMNS (
         a1 INT,
-        NESTED PATH '$[*]' AS "p1 1" COLUMNS ( a11 text ),
+        NESTED PATH '$[*]' AS "p1 1" COLUMNS (a11 text ),
         b1 text
       ),
       NESTED PATH '$[2]' AS p2
       COLUMNS (
-        NESTED PATH '$[*]' AS "p2:1" COLUMNS ( a21 text ),
-        NESTED PATH '$[*]' AS p22 COLUMNS ( a22 text )
+        NESTED PATH '$[*]' AS "p2:1" COLUMNS (a21 text ),
+        NESTED PATH '$[*]' AS p22 COLUMNS (a22 text )
       )
     )
   );
@@ -988,7 +962,7 @@ FROM
       xx1 INT PATH '$.c',
       NESTED PATH '$.a.za[1]'
       COLUMNS (
-        NESTED PATH '$.z21[*]' COLUMNS ( b INT PATH '$' )
+        NESTED PATH '$.z21[*]' COLUMNS (b INT PATH '$' )
       ),
       NESTED PATH '$.a.za[1] ? (@.z21[*] >= ($"x"-1))'
       COLUMNS (
@@ -1094,13 +1068,13 @@ DROP VIEW "jsonb_table_view7";
 
 DROP TABLE "s";
 
-SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS ( a INT ) NULL ON ERROR );
+SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS (a INT ) NULL ON ERROR );
 
-SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS ( a INT TRUE ON EMPTY ) );
+SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS (a INT TRUE ON EMPTY ) );
 
-SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS ( a INT OMIT QUOTES TRUE ON ERROR ) );
+SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS (a INT OMIT QUOTES TRUE ON ERROR ) );
 
-SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS ( a INT EXISTS EMPTY OBJECT ON ERROR ) );
+SELECT * FROM JSON_TABLE( CAST('1' AS JSONB), '$' COLUMNS (a INT EXISTS EMPTY OBJECT ON ERROR ) );
 
 CREATE VIEW json_table_view8
 AS SELECT

@@ -243,10 +243,7 @@ WHERE
 ORDER BY trigger_name COLLATE "C",
   2;
 
-INSERT INTO main_table (a)
-VALUES
-  (123),
-  (456);
+INSERT INTO main_table (a) VALUES (123), (456);
 
 DELETE FROM main_table WHERE a IN (123, 456);
 
@@ -732,10 +729,7 @@ CREATE TABLE min_updates_test (
   f3 INT
 );
 
-INSERT INTO min_updates_test
-VALUES
-  ('a', 1, 2),
-  ('b', '2', NULL);
+INSERT INTO min_updates_test VALUES ('a', 1, 2), ('b', '2', NULL);
 
 CREATE TRIGGER z_min_update
   BEFORE UPDATE
@@ -1150,13 +1144,14 @@ CREATE RULE european_city_insert_rule
 AS ON INSERT TO european_city_view
 DO INSTEAD
   INSERT INTO city_view
-  VALUES (
-    new.city_id,
-    new.city_name,
-    new.population,
-    new.country_name,
-    new.continent
-  )
+  VALUES
+    (
+      new.city_id,
+      new.city_name,
+      new.population,
+      new.country_name,
+      new.continent
+    )
   RETURNING *;;
 
 CREATE RULE european_city_update_rule
@@ -2015,9 +2010,7 @@ WITH
 ins (a)
 AS (
   INSERT INTO parted2_stmt_trig
-  VALUES
-    (1),
-    (2)
+  VALUES (1), (2)
   RETURNING a
 )
 INSERT INTO parted_stmt_trig
@@ -2067,10 +2060,7 @@ CREATE TRIGGER bbb AFTER INSERT ON parted_trig FOR EACH ROW EXECUTE FUNCTION tri
 
 CREATE TRIGGER qqq AFTER INSERT ON parted_trig_1_1 FOR EACH ROW EXECUTE FUNCTION trigger_notice();
 
-INSERT INTO parted_trig
-VALUES
-  (50),
-  (1500);
+INSERT INTO parted_trig VALUES (50), (1500);
 
 DROP TABLE "parted_trig";
 
@@ -2162,11 +2152,7 @@ ALTER TABLE parted_trig
   ATTACH PARTITION
   parted_trig3 FOR VALUES IN (3);
 
-INSERT INTO parted_trig
-VALUES
-  (1),
-  (2),
-  (3);
+INSERT INTO parted_trig VALUES (1), (2), (3);
 
 DROP TABLE "parted_trig";
 
@@ -2247,10 +2233,7 @@ CREATE TRIGGER parted_trig_odd
   WHEN (bark(new.b) AND new.a % 2 = 1)
   EXECUTE FUNCTION trigger_notice_ab();
 
-INSERT INTO parted_irreg
-VALUES
-  (1, 'aardvark'),
-  (2, 'aanimals');
+INSERT INTO parted_irreg VALUES (1, 'aardvark'), (2, 'aanimals');
 
 INSERT INTO parted1_irreg VALUES ('aardwolf', 2);
 
@@ -2443,10 +2426,7 @@ SET CONSTRAINTS parted_trig DEFERRED;
 
 INSERT INTO parted_constr VALUES (1, 'aardvark');
 
-INSERT INTO parted1_constr
-VALUES
-  (2, 'aardwolf'),
-  (3, 'aasvogel');
+INSERT INTO parted1_constr VALUES (2, 'aardwolf'), (3, 'aasvogel');
 
 COMMIT;
 
@@ -2630,12 +2610,7 @@ ALTER TABLE parted_trigger
   ATTACH PARTITION
   parted_trigger_3 FOR VALUES FROM (2000) TO (3000);
 
-INSERT INTO parted_trigger
-VALUES
-  (0, 'a'),
-  (1000, 'c'),
-  (2000, 'e'),
-  (2001, 'eeee');
+INSERT INTO parted_trigger VALUES (0, 'a'), (1000, 'c'), (2000, 'e'), (2001, 'eeee');
 
 UPDATE parted_trigger SET a = a + 2;
 
@@ -2914,12 +2889,14 @@ FROM
   pg_trigger
 WHERE
   CAST(tgrelid AS REGCLASS) IN
-  (SELECT
-    oid
-  FROM
-    pg_class
-  WHERE
-    relname LIKE 'trgfire%')
+  (
+    SELECT
+      oid
+    FROM
+      pg_class
+    WHERE
+      relname LIKE 'trgfire%'
+  )
 ORDER BY CAST(CAST(tgrelid AS REGCLASS) AS TEXT);
 
 ALTER TABLE trgfire
@@ -3185,11 +3162,7 @@ CREATE TRIGGER intercept_insert_child3
   FOR EACH ROW
   EXECUTE FUNCTION intercept_insert();
 
-INSERT INTO parent
-VALUES
-  ('AAA', 42),
-  ('BBB', 42),
-  ('CCC', 66);
+INSERT INTO parent VALUES ('AAA', 42), ('BBB', 42), ('CCC', 66);
 
 COPY parent (a, b) FROM STDOUT;
 
@@ -3285,10 +3258,7 @@ CREATE TRIGGER trans_tab_parent_delete_trig
   FOR EACH STATEMENT
   EXECUTE FUNCTION dump_delete();
 
-INSERT INTO trans_tab_parent
-VALUES
-  ('AAA1'),
-  ('BBB1');
+INSERT INTO trans_tab_parent VALUES ('AAA1'), ('BBB1');
 
 UPDATE trans_tab_parent SET a = 'BBB2' WHERE a = 'AAA1';
 
@@ -3558,9 +3528,7 @@ CREATE TRIGGER my_table_update_trig
   EXECUTE FUNCTION dump_update();
 
 INSERT INTO my_table
-VALUES
-  (1, 'AAA'),
-  (2, 'BBB')
+VALUES (1, 'AAA'), (2, 'BBB')
 ON CONFLICT
 (a)
 DO
@@ -3580,9 +3548,7 @@ UPDATE
 SET b = my_table.b || ':' || excluded.b;
 
 INSERT INTO my_table
-VALUES
-  (3, 'CCC'),
-  (4, 'DDD')
+VALUES (3, 'CCC'), (4, 'DDD')
 ON CONFLICT
 (a)
 DO
@@ -3619,9 +3585,7 @@ CREATE TRIGGER iocdu_tt_parted_update_trig
   EXECUTE FUNCTION dump_update();
 
 INSERT INTO iocdu_tt_parted
-VALUES
-  (1, 'AAA'),
-  (2, 'BBB')
+VALUES (1, 'AAA'), (2, 'BBB')
 ON CONFLICT
 (a)
 DO
@@ -3641,9 +3605,7 @@ UPDATE
 SET b = iocdu_tt_parted.b || ':' || excluded.b;
 
 INSERT INTO iocdu_tt_parted
-VALUES
-  (3, 'CCC'),
-  (4, 'DDD')
+VALUES (3, 'CCC'), (4, 'DDD')
 ON CONFLICT
 (a)
 DO
@@ -3734,11 +3696,7 @@ CREATE TRIGGER trig_table_delete_trig
   FOR EACH STATEMENT
   EXECUTE FUNCTION dump_delete();
 
-INSERT INTO refd_table
-VALUES
-  (1, 'one'),
-  (2, 'two'),
-  (3, 'three');
+INSERT INTO refd_table VALUES (1, 'one'), (2, 'two'), (3, 'three');
 
 INSERT INTO trig_table
 VALUES
@@ -3798,22 +3756,13 @@ CREATE TRIGGER self_ref_s_trig
   FOR EACH STATEMENT
   EXECUTE FUNCTION dump_delete();
 
-INSERT INTO self_ref
-VALUES
-  (1, NULL),
-  (2, 1),
-  (3, 2);
+INSERT INTO self_ref VALUES (1, NULL), (2, 1), (3, 2);
 
 DELETE FROM self_ref WHERE a = 1;
 
 DROP TRIGGER "self_ref_r_trig" ON "self_ref";
 
-INSERT INTO self_ref
-VALUES
-  (1, NULL),
-  (2, 1),
-  (3, 2),
-  (4, 3);
+INSERT INTO self_ref VALUES (1, NULL), (2, 1), (3, 2), (4, 3);
 
 DELETE FROM self_ref WHERE a = 1;
 
@@ -4144,18 +4093,22 @@ ALTER TRIGGER a ON grandparent RENAME TO b;
 SELECT
   CAST(tgrelid AS REGCLASS),
   tgname,
-  (SELECT
-    tgname
-  FROM
-    pg_trigger AS tr
-  WHERE
-    tr.oid = pg_trigger.tgparentid)
+  (
+    SELECT
+      tgname
+    FROM
+      pg_trigger AS tr
+    WHERE
+      tr.oid = pg_trigger.tgparentid
+  )
   AS parent_tgname
 FROM
   pg_trigger
 WHERE
   tgrelid IN
-  (SELECT relid FROM pg_partition_tree('grandparent'))
+  (
+    SELECT relid FROM pg_partition_tree('grandparent')
+  )
 ORDER BY tgname,
   CAST(CAST(tgrelid AS REGCLASS) AS TEXT) COLLATE "C";
 
@@ -4174,18 +4127,22 @@ ALTER TRIGGER p ON grandparent RENAME TO q;
 SELECT
   CAST(tgrelid AS REGCLASS),
   tgname,
-  (SELECT
-    tgname
-  FROM
-    pg_trigger AS tr
-  WHERE
-    tr.oid = pg_trigger.tgparentid)
+  (
+    SELECT
+      tgname
+    FROM
+      pg_trigger AS tr
+    WHERE
+      tr.oid = pg_trigger.tgparentid
+  )
   AS parent_tgname
 FROM
   pg_trigger
 WHERE
   tgrelid IN
-  (SELECT relid FROM pg_partition_tree('grandparent'))
+  (
+    SELECT relid FROM pg_partition_tree('grandparent')
+  )
 ORDER BY tgname,
   CAST(CAST(tgrelid AS REGCLASS) AS TEXT) COLLATE "C";
 

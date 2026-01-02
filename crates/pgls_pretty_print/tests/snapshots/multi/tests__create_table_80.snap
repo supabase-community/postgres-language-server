@@ -960,12 +960,12 @@ INSERT INTO partkey_t VALUES (100);
 INSERT INTO partkey_t VALUES (200);
 
 DROP TABLE
-"parted",
-"list_parted",
-"range_parted",
-"list_parted2",
-"range_parted2",
-"range_parted3";
+  "parted",
+  "list_parted",
+  "range_parted",
+  "list_parted2",
+  "range_parted2",
+  "range_parted3";
 
 DROP TABLE "partkey_t", "hash_parted", "hash_parted2";
 

@@ -31,8 +31,7 @@ LANGUAGE "c"
 STRICT
 IMMUTABLE;
 
-CREATE TYPE widget
-(
+CREATE TYPE widget (
   internallength = 24,
   input = widget_in,
   output = widget_out,
@@ -41,8 +40,7 @@ CREATE TYPE widget
   alignment = double
 );
 
-CREATE TYPE city_budget
-(
+CREATE TYPE city_budget (
   internallength = 16,
   input = int44in,
   output = int44out,
@@ -93,8 +91,7 @@ LANGUAGE "internal"
 STRICT
 IMMUTABLE;
 
-CREATE TYPE int42
-(
+CREATE TYPE int42 (
   internallength = 4,
   input = int42_in,
   output = int42_out,
@@ -103,8 +100,7 @@ CREATE TYPE int42
   passedbyvalue
 );
 
-CREATE TYPE text_w_default
-(
+CREATE TYPE text_w_default (
   internallength = variable,
   input = text_w_default_in,
   output = text_w_default_out,
@@ -123,8 +119,7 @@ SELECT * FROM default_test;
 
 CREATE TYPE bogus_type;
 
-CREATE TYPE bogus_type
-(
+CREATE TYPE bogus_type (
   "Internallength" = 4,
   "Input" = int42_in,
   "Output" = int42_out,
@@ -133,11 +128,11 @@ CREATE TYPE bogus_type
   "Passedbyvalue"
 );
 
-CREATE TYPE bogus_type ( input = array_in, output = array_out, element = INT, internallength = 32);
+CREATE TYPE bogus_type (input = array_in, output = array_out, element = INT, internallength = 32);
 
 DROP TYPE bogus_type;
 
-CREATE TYPE bogus_type ( input = array_in, output = array_out, element = INT, internallength = 32);
+CREATE TYPE bogus_type (input = array_in, output = array_out, element = INT, internallength = 32);
 
 CREATE TYPE default_test_row AS (f1 text_w_default, f2 int42);
 
@@ -184,7 +179,7 @@ LANGUAGE "internal"
 IMMUTABLE
 STRICT;
 
-CREATE TYPE base_type ( input = base_fn_in, output = base_fn_out);
+CREATE TYPE base_type (input = base_fn_in, output = base_fn_out);
 
 DROP FUNCTION base_fn_in(cstring);
 
@@ -206,10 +201,7 @@ WHERE
   attrelid = CAST('mytab' AS REGCLASS) AND
   attnum > 0;
 
-INSERT INTO mytab
-VALUES
-  ('(1,2,3)'),
-  ('(-44,5.5,12)');
+INSERT INTO mytab VALUES ('(1,2,3)'), ('(-44,5.5,12)');
 
 SELECT * FROM mytab;
 
@@ -304,13 +296,7 @@ AS 'varcharrecv';
 
 ALTER TYPE myvarchar SET (storage = extended);
 
-CREATE TYPE myvarchar
-(
-  input = myvarcharin,
-  output = myvarcharout,
-  alignment = INT,
-  storage = main
-);
+CREATE TYPE myvarchar (input = myvarcharin, output = myvarcharout, alignment = INT, storage = main);
 
 CREATE DOMAIN myvarchardom AS myvarchar;
 

@@ -148,14 +148,17 @@ CREATE TABLE cmdata2 (
 CREATE UNIQUE INDEX "idx1" ON cmdata2 USING btree ((f1 || f2));
 
 INSERT INTO cmdata2
-VALUES (
-  (SELECT
-    CAST(array_agg(fipshash(CAST(g AS TEXT)))
-    AS TEXT)
-  FROM
-    generate_series(1, 50) AS g),
-  version()
-);
+VALUES
+  (
+    (
+      SELECT
+        CAST(array_agg(fipshash(CAST(g AS TEXT)))
+        AS TEXT)
+      FROM
+        generate_series(1, 50) AS g
+    ),
+    version()
+  );
 
 SELECT length(f1) FROM cmdata_pglz;
 

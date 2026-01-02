@@ -419,7 +419,9 @@ SELECT
   a.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2)
+  (
+    SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2
+  )
   AS a
   LEFT OUTER JOIN
     pagg_tab2 AS b
@@ -434,7 +436,9 @@ SELECT
   a.y,
   COUNT(*)
 FROM
-  (SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2)
+  (
+    SELECT * FROM pagg_tab1 WHERE x = 1 AND x = 2
+  )
   AS a
   LEFT OUTER JOIN
     pagg_tab2 AS b

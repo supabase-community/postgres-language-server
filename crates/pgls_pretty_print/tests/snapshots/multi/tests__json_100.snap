@@ -25,11 +25,13 @@ SELECT CAST('"' || repeat('.', 12) || 'abc\n"' AS JSON);
 SELECT
   CAST(row_to_json(j) AS JSONB)
 FROM
-  (SELECT
-    left('abcdefghijklmnopqrstuv"	wxyz012345678', a)
-    AS a
-  FROM
-    generate_series(0, 37) AS a)
+  (
+    SELECT
+      left('abcdefghijklmnopqrstuv"	wxyz012345678', a)
+      AS a
+    FROM
+      generate_series(0, 37) AS a
+  )
   AS j;
 
 SELECT CAST('1' AS JSON);
@@ -146,35 +148,41 @@ SELECT array_to_json(ARRAY(SELECT 1 AS a));
 SELECT
   array_to_json(array_agg(q), FALSE)
 FROM
-  (SELECT
-    x AS b,
-    x * 2 AS c
-  FROM
-    generate_series(1, 3) AS x)
+  (
+    SELECT
+      x AS b,
+      x * 2 AS c
+    FROM
+      generate_series(1, 3) AS x
+  )
   AS q;
 
 SELECT
   array_to_json(array_agg(q), TRUE)
 FROM
-  (SELECT
-    x AS b,
-    x * 2 AS c
-  FROM
-    generate_series(1, 3) AS x)
+  (
+    SELECT
+      x AS b,
+      x * 2 AS c
+    FROM
+      generate_series(1, 3) AS x
+  )
   AS q;
 
 SELECT
   array_to_json(array_agg(q), FALSE)
 FROM
-  (SELECT
-    'a' || x AS b,
-    y AS c,
-    ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
-    ROW(y.*, ARRAY[4, 5, 6])]
-    AS z
-  FROM
-    generate_series(1, 2) AS x,
-    generate_series(4, 5) AS y)
+  (
+    SELECT
+      'a' || x AS b,
+      y AS c,
+      ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
+      ROW(y.*, ARRAY[4, 5, 6])]
+      AS z
+    FROM
+      generate_series(1, 2) AS x,
+      generate_series(4, 5) AS y
+  )
   AS q;
 
 SELECT array_to_json(array_agg(x), FALSE) FROM generate_series(5, 10) AS x;
@@ -186,29 +194,33 @@ SELECT row_to_json(ROW(1, 'foo'));
 SELECT
   row_to_json(q)
 FROM
-  (SELECT
-    'a' || x AS b,
-    y AS c,
-    ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
-    ROW(y.*, ARRAY[4, 5, 6])]
-    AS z
-  FROM
-    generate_series(1, 2) AS x,
-    generate_series(4, 5) AS y)
+  (
+    SELECT
+      'a' || x AS b,
+      y AS c,
+      ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
+      ROW(y.*, ARRAY[4, 5, 6])]
+      AS z
+    FROM
+      generate_series(1, 2) AS x,
+      generate_series(4, 5) AS y
+  )
   AS q;
 
 SELECT
   row_to_json(q, TRUE)
 FROM
-  (SELECT
-    'a' || x AS b,
-    y AS c,
-    ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
-    ROW(y.*, ARRAY[4, 5, 6])]
-    AS z
-  FROM
-    generate_series(1, 2) AS x,
-    generate_series(4, 5) AS y)
+  (
+    SELECT
+      'a' || x AS b,
+      y AS c,
+      ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
+      ROW(y.*, ARRAY[4, 5, 6])]
+      AS z
+    FROM
+      generate_series(1, 2) AS x,
+      generate_series(4, 5) AS y
+  )
   AS q;
 
 CREATE TEMPORARY TABLE rows AS SELECT x, 'txt' || x AS y FROM generate_series(1, 3) AS x;
@@ -262,15 +274,17 @@ SELECT to_json(CAST('-Infinity' AS TIMESTAMP WITH TIME ZONE));
 SELECT
   json_agg(q)
 FROM
-  (SELECT
-    'a' || x AS b,
-    y AS c,
-    ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
-    ROW(y.*, ARRAY[4, 5, 6])]
-    AS z
-  FROM
-    generate_series(1, 2) AS x,
-    generate_series(4, 5) AS y)
+  (
+    SELECT
+      'a' || x AS b,
+      y AS c,
+      ARRAY[ROW(x.*, ARRAY[1, 2, 3]),
+      ROW(y.*, ARRAY[4, 5, 6])]
+      AS z
+    FROM
+      generate_series(1, 2) AS x,
+      generate_series(4, 5) AS y
+  )
   AS q;
 
 SELECT json_agg(q ORDER BY x, y) FROM rows AS q;
@@ -288,10 +302,12 @@ SELECT row_to_json(q) FROM (SELECT CAST('-Infinity' AS DOUBLE PRECISION) AS floa
 SELECT
   row_to_json(q)
 FROM
-  (SELECT
-    CAST('{"a":1,"b": [2,3,4,"d","e","f"],"c":{"p":1,"q":2}}'
-    AS JSON)
-    AS jsonfield)
+  (
+    SELECT
+      CAST('{"a":1,"b": [2,3,4,"d","e","f"],"c":{"p":1,"q":2}}'
+      AS JSON)
+      AS jsonfield
+  )
   AS q;
 
 CREATE TEMPORARY TABLE test_json (
@@ -350,14 +366,18 @@ SELECT json_object_keys(test_json) FROM test_json WHERE json_type = 'object';
 SELECT
   COUNT(*)
 FROM
-  (SELECT
-    json_object_keys(json_object(array_agg(g)))
-  FROM
-    (SELECT
-      unnest(ARRAY['f' || n, CAST(n AS TEXT)]) AS g
+  (
+    SELECT
+      json_object_keys(json_object(array_agg(g)))
     FROM
-      generate_series(1, 300) AS n)
-    AS x)
+      (
+        SELECT
+          unnest(ARRAY['f' || n, CAST(n AS TEXT)]) AS g
+        FROM
+          generate_series(1, 300) AS n
+      )
+      AS x
+  )
   AS y;
 
 SELECT test_json -> 'field3' IS NULL AS expect_false FROM test_json WHERE json_type = 'object';
@@ -1050,10 +1070,7 @@ SELECT
     '[{"f1":"42"},{"f2":"43"}]'
   )
 FROM
-  (VALUES
-    (1),
-    (2))
-  AS v (i);
+  (VALUES (1), (2)) AS v (i);
 
 SELECT * FROM json_populate_recordset(CAST(NULL AS RECORD), '[{"x": 776}]') AS (x INT, y INT);
 
@@ -1146,18 +1163,20 @@ SELECT
   value,
   json_typeof(value)
 FROM
-  (VALUES
-    (CAST('123.4' AS JSON)),
-    (CAST('-1' AS JSON)),
-    (CAST('"foo"' AS JSON)),
-    (CAST('true' AS JSON)),
-    (CAST('false' AS JSON)),
-    (CAST('null' AS JSON)),
-    (CAST('[1, 2, 3]' AS JSON)),
-    (CAST('[]' AS JSON)),
-    (CAST('{"x":"foo", "y":123}' AS JSON)),
-    (CAST('{}' AS JSON)),
-    (CAST(NULL AS JSON)))
+  (
+    VALUES
+      (CAST('123.4' AS JSON)),
+      (CAST('-1' AS JSON)),
+      (CAST('"foo"' AS JSON)),
+      (CAST('true' AS JSON)),
+      (CAST('false' AS JSON)),
+      (CAST('null' AS JSON)),
+      (CAST('[1, 2, 3]' AS JSON)),
+      (CAST('[]' AS JSON)),
+      (CAST('{"x":"foo", "y":123}' AS JSON)),
+      (CAST('{}' AS JSON)),
+      (CAST(NULL AS JSON))
+  )
   AS data (value);
 
 SELECT
@@ -1213,17 +1232,21 @@ SELECT
       'e',
       CAST(ARRAY[9, 8, 7] AS INT[]),
       'f',
-      (SELECT
-        row_to_json(r)
-      FROM
-        (SELECT
-          relkind,
-          CAST(oid AS REGCLASS) AS name
+      (
+        SELECT
+          row_to_json(r)
         FROM
-          pg_class
-        WHERE
-          relname = 'pg_class')
-        AS r)
+          (
+            SELECT
+              relkind,
+              CAST(oid AS REGCLASS) AS name
+            FROM
+              pg_class
+            WHERE
+              relname = 'pg_class'
+          )
+          AS r
+      )
     )
   );
 

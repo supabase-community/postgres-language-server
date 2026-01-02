@@ -155,18 +155,20 @@ AS (
     ts AS ts,
     LAG(ts) OVER (ORDER BY y) AS prev_ts
   FROM
-    (SELECT
-      y,
-      uuid_extract_timestamp(
-        uuidv7(CAST(y || ' years' AS INTERVAL))
-      )
-      AS ts
-    FROM
-      generate_series(
-        1970 - CAST(EXTRACT('year' FROM NOW()) AS INT),
-        10888 - CAST(EXTRACT('year' FROM NOW()) AS INT)
-      )
-      AS y)
+    (
+      SELECT
+        y,
+        uuid_extract_timestamp(
+          uuidv7(CAST(y || ' years' AS INTERVAL))
+        )
+        AS ts
+      FROM
+        generate_series(
+          1970 - CAST(EXTRACT('year' FROM NOW()) AS INT),
+          10888 - CAST(EXTRACT('year' FROM NOW()) AS INT)
+        )
+        AS y
+    )
 )
 SELECT
   y,

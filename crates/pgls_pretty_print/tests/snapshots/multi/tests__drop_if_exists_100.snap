@@ -115,8 +115,7 @@ DROP TEXT SEARCH DICTIONARY "test_tsdict_exists";
 
 DROP TEXT SEARCH DICTIONARY IF EXISTS "test_tsdict_exists";
 
-CREATE TEXT SEARCH DICTIONARY test_tsdict_exists
-(
+CREATE TEXT SEARCH DICTIONARY test_tsdict_exists (
   template = ispell,
   dictfile = ispell_sample,
   afffile = ispell_sample
@@ -132,7 +131,7 @@ DROP TEXT SEARCH CONFIGURATION "test_tsconfig_exists";
 
 DROP TEXT SEARCH CONFIGURATION IF EXISTS "test_tsconfig_exists";
 
-CREATE TEXT SEARCH CONFIGURATION test_tsconfig_exists ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION test_tsconfig_exists (copy = english);
 
 DROP TEXT SEARCH CONFIGURATION "test_tsconfig_exists";
 

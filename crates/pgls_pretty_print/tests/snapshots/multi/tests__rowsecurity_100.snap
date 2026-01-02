@@ -143,12 +143,14 @@ AS PERMISSIVE
 FOR ALL
 TO PUBLIC
 USING (dlevel <=
-(SELECT
-  seclv
-FROM
-  uaccount
-WHERE
-  pguser = CURRENT_USER));
+(
+  SELECT
+    seclv
+  FROM
+    uaccount
+  WHERE
+    pguser = CURRENT_USER
+));
 
 CREATE POLICY p2r
 ON document
@@ -236,11 +238,11 @@ AS PERMISSIVE
 FOR ALL
 TO PUBLIC
 USING (CASE
-WHEN CURRENT_USER = 'regress_rls_bob'
-THEN cid IN (11, 33)
-WHEN CURRENT_USER = 'regress_rls_carol'
-THEN cid IN (22, 44)
-ELSE FALSE
+  WHEN CURRENT_USER = 'regress_rls_bob'
+  THEN cid IN (11, 33)
+  WHEN CURRENT_USER = 'regress_rls_carol'
+  THEN cid IN (22, 44)
+  ELSE FALSE
 END);
 
 ALTER TABLE category
@@ -474,12 +476,14 @@ AS PERMISSIVE
 FOR ALL
 TO PUBLIC
 USING (dlevel <=
-(SELECT
-  seclv
-FROM
-  uaccount
-WHERE
-  pguser = CURRENT_USER));
+(
+  SELECT
+    seclv
+  FROM
+    uaccount
+  WHERE
+    pguser = CURRENT_USER
+));
 
 CREATE POLICY pp1r ON part_document AS RESTRICTIVE FOR ALL TO regress_rls_dave USING (cid < 55);
 
@@ -519,13 +523,14 @@ INSERT INTO part_document VALUES (100, 99, 1, 'regress_rls_dave', 'testing pp1r'
 INSERT INTO part_document VALUES (100, 55, 1, 'regress_rls_dave', 'testing RLS with partitions');
 
 INSERT INTO part_document_satire
-VALUES (
-  100,
-  55,
-  1,
-  'regress_rls_dave',
-  'testing RLS with partitions'
-);
+VALUES
+  (
+    100,
+    55,
+    1,
+    'regress_rls_dave',
+    'testing RLS with partitions'
+  );
 
 SELECT * FROM part_document WHERE f_leak(dtitle) ORDER BY did;
 
@@ -541,13 +546,14 @@ CREATE POLICY pp3 ON part_document_satire AS RESTRICTIVE FOR ALL TO PUBLIC USING
 SET SESSION AUTHORIZATION regress_rls_dave;
 
 INSERT INTO part_document_satire
-VALUES (
-  101,
-  55,
-  1,
-  'regress_rls_dave',
-  'testing RLS with partitions'
-);
+VALUES
+  (
+    101,
+    55,
+    1,
+    'regress_rls_dave',
+    'testing RLS with partitions'
+  );
 
 SELECT * FROM part_document_satire WHERE f_leak(dtitle) ORDER BY did;
 
@@ -620,12 +626,14 @@ ON part_document
 AS RESTRICTIVE
 FOR ALL
 TO PUBLIC
-USING ((SELECT
-  dlevel <= seclv
-FROM
-  uaccount
-WHERE
-  pguser = CURRENT_USER));
+USING ((
+  SELECT
+    dlevel <= seclv
+  FROM
+    uaccount
+  WHERE
+    pguser = CURRENT_USER
+));
 
 SET SESSION AUTHORIZATION regress_rls_carol;
 
@@ -1038,13 +1046,14 @@ SET SESSION AUTHORIZATION regress_rls_bob;
 SELECT * FROM document WHERE did = 2;
 
 INSERT INTO document
-VALUES (
-  2,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_carol',
-  'my first novel'
-)
+VALUES
+  (
+    2,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_carol',
+    'my first novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1055,13 +1064,14 @@ dauthor = excluded.dauthor;
 INSERT INTO document VALUES (33, 22, 1, 'regress_rls_bob', 'okay science fiction');
 
 INSERT INTO document
-VALUES (
-  33,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'Some novel, replaces sci-fi'
-)
+VALUES
+  (
+    33,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'Some novel, replaces sci-fi'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1069,13 +1079,14 @@ UPDATE
 SET dtitle = excluded.dtitle;
 
 INSERT INTO document
-VALUES (
-  2,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'my first novel'
-)
+VALUES
+  (
+    2,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'my first novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1084,13 +1095,14 @@ SET dtitle = excluded.dtitle
 RETURNING *;
 
 INSERT INTO document
-VALUES (
-  78,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'some technology novel'
-)
+VALUES
+  (
+    78,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'some technology novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1100,13 +1112,14 @@ cid = 33
 RETURNING *;
 
 INSERT INTO document
-VALUES (
-  78,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'some technology novel'
-)
+VALUES
+  (
+    78,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'some technology novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1116,13 +1129,14 @@ cid = 33
 RETURNING *;
 
 INSERT INTO document
-VALUES (
-  78,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'some technology novel'
-)
+VALUES
+  (
+    78,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'some technology novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1132,18 +1146,21 @@ cid = 33
 RETURNING *;
 
 INSERT INTO document
-VALUES (
-  79,
-  (SELECT
-    cid
-  FROM
-    category
-  WHERE
-    cname = 'technology'),
-  1,
-  'regress_rls_bob',
-  'technology book, can only insert'
-)
+VALUES
+  (
+    79,
+    (
+      SELECT
+        cid
+      FROM
+        category
+      WHERE
+        cname = 'technology'
+    ),
+    1,
+    'regress_rls_bob',
+    'technology book, can only insert'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1152,18 +1169,21 @@ SET dtitle = excluded.dtitle
 RETURNING *;
 
 INSERT INTO document
-VALUES (
-  79,
-  (SELECT
-    cid
-  FROM
-    category
-  WHERE
-    cname = 'technology'),
-  1,
-  'regress_rls_bob',
-  'technology book, can only insert'
-)
+VALUES
+  (
+    79,
+    (
+      SELECT
+        cid
+      FROM
+        category
+      WHERE
+        cname = 'technology'
+    ),
+    1,
+    'regress_rls_bob',
+    'technology book, can only insert'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1190,18 +1210,21 @@ USING (cid =
 SET SESSION AUTHORIZATION regress_rls_bob;
 
 INSERT INTO document
-VALUES (
-  79,
-  (SELECT
-    cid
-  FROM
-    category
-  WHERE
-    cname = 'technology'),
-  1,
-  'regress_rls_bob',
-  'technology book, can only insert'
-)
+VALUES
+  (
+    79,
+    (
+      SELECT
+        cid
+      FROM
+        category
+      WHERE
+        cname = 'technology'
+    ),
+    1,
+    'regress_rls_bob',
+    'technology book, can only insert'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1210,18 +1233,21 @@ SET dtitle = excluded.dtitle
 RETURNING *;
 
 INSERT INTO document
-VALUES (
-  2,
-  (SELECT
-    cid
-  FROM
-    category
-  WHERE
-    cname = 'technology'),
-  1,
-  'regress_rls_bob',
-  'my first novel'
-)
+VALUES
+  (
+    2,
+    (
+      SELECT
+        cid
+      FROM
+        category
+      WHERE
+        cname = 'technology'
+    ),
+    1,
+    'regress_rls_bob',
+    'my first novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1246,13 +1272,14 @@ WITH CHECK (dauthor = CURRENT_USER);
 SET SESSION AUTHORIZATION regress_rls_bob;
 
 INSERT INTO document
-VALUES (
-  80,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_carol',
-  'my first novel'
-)
+VALUES
+  (
+    80,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_carol',
+    'my first novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1261,13 +1288,14 @@ SET dtitle = excluded.dtitle,
 cid = 33;
 
 INSERT INTO document
-VALUES (
-  4,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'my first novel'
-)
+VALUES
+  (
+    4,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'my first novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1275,13 +1303,14 @@ UPDATE
 SET dtitle = excluded.dtitle;
 
 INSERT INTO document
-VALUES (
-  1,
-  (SELECT cid FROM category WHERE cname = 'novel'),
-  1,
-  'regress_rls_bob',
-  'my first novel'
-)
+VALUES
+  (
+    1,
+    (SELECT cid FROM category WHERE cname = 'novel'),
+    1,
+    'regress_rls_bob',
+    'my first novel'
+  )
 ON CONFLICT
 (did)
 DO
@@ -1372,12 +1401,7 @@ regress_rls_group2,
 regress_rls_bob,
 regress_rls_carol;
 
-INSERT INTO z1
-VALUES
-  (1, 'aba'),
-  (2, 'bbb'),
-  (3, 'ccc'),
-  (4, 'dad');
+INSERT INTO z1 VALUES (1, 'aba'), (2, 'bbb'), (3, 'ccc'), (4, 'dad');
 
 CREATE POLICY p1 ON z1 AS PERMISSIVE FOR ALL TO regress_rls_group1 USING (a % 2 = 0);
 

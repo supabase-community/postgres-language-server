@@ -19,14 +19,13 @@ CREATE FOREIGN DATA WRAPPER addr_fdw;
 
 CREATE SERVER addr_fserv FOREIGN DATA WRAPPER addr_fdw;
 
-CREATE TEXT SEARCH DICTIONARY addr_ts_dict ( template = simple);
+CREATE TEXT SEARCH DICTIONARY addr_ts_dict (template = simple);
 
-CREATE TEXT SEARCH CONFIGURATION addr_ts_conf ( copy = english);
+CREATE TEXT SEARCH CONFIGURATION addr_ts_conf (copy = english);
 
-CREATE TEXT SEARCH TEMPLATE addr_ts_temp ( lexize = dsimple_lexize);
+CREATE TEXT SEARCH TEMPLATE addr_ts_temp (lexize = dsimple_lexize);
 
-CREATE TEXT SEARCH PARSER addr_ts_prs
-(
+CREATE TEXT SEARCH PARSER addr_ts_prs (
   start = prsd_start,
   gettoken = prsd_nexttoken,
   "end" = prsd_end,
@@ -54,7 +53,7 @@ CREATE TYPE addr_nsp.genenum AS ENUM ('one', 'two');
 
 CREATE FOREIGN TABLE addr_nsp.genftable ( a INT ) SERVER addr_fserv;
 
-CREATE AGGREGATE addr_nsp.genaggr (INT) ( sfunc = int4pl, stype = INT);
+CREATE AGGREGATE addr_nsp.genaggr (INT) (sfunc = int4pl, stype = INT);
 
 CREATE DOMAIN addr_nsp.gendomain AS INT CONSTRAINT "domconstr" CHECK (value > 0);
 

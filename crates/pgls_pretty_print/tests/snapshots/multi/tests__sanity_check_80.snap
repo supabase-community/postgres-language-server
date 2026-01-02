@@ -21,16 +21,18 @@ WHERE
   c.oid < 16384 AND
   nspname ~ '^pg_' IS NOT FALSE AND
   NOT EXISTS
-  (SELECT
-    1
-  FROM
-    pg_index AS i
-  WHERE
-    indrelid = c.oid AND
-    indkey[0] = a.attnum AND
-    indnatts = 1 AND
-    indisunique AND
-    indimmediate);
+  (
+    SELECT
+      1
+    FROM
+      pg_index AS i
+    WHERE
+      indrelid = c.oid AND
+      indkey[0] = a.attnum AND
+      indnatts = 1 AND
+      indisunique AND
+      indimmediate
+  );
 
 SELECT
   relname,
