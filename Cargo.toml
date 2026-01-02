@@ -77,6 +77,7 @@ pgls_lexer                  = { path = "./crates/pgls_lexer", version = "0.0.0" 
 pgls_lexer_codegen          = { path = "./crates/pgls_lexer_codegen", version = "0.0.0" }
 pgls_lsp                    = { path = "./crates/pgls_lsp", version = "0.0.0" }
 pgls_markup                 = { path = "./crates/pgls_markup", version = "0.0.0" }
+pgls_matcher                = { path = "./crates/pgls_matcher", version = "0.0.0" }
 pgls_plpgsql_check          = { path = "./crates/pgls_plpgsql_check", version = "0.0.0" }
 pgls_query                  = { path = "./crates/pgls_query", version = "0.0.0" }
 pgls_query_ext              = { path = "./crates/pgls_query_ext", version = "0.0.0" }

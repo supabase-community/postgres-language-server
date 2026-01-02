@@ -1,0 +1,16 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "Unix shell style pattern matching for Postgres Language Server"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_matcher"
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+pgls_console     = { workspace = true }
+pgls_diagnostics = { workspace = true }
+rustc-hash       = { workspace = true }

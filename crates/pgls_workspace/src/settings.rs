@@ -25,9 +25,9 @@ use sqlx::postgres::PgConnectOptions;
 
 use crate::{
     WorkspaceError,
-    matcher::Matcher,
     workspace::{ProjectKey, WorkspaceData},
 };
+use pgls_matcher::Matcher;
 
 #[derive(Debug, Default)]
 /// The information tracked for each project
