@@ -2737,22 +2737,24 @@ module.exports = grammar({
       ),
 
     order_target: ($) =>
-      seq(
+      choice(
         field("end", $._expression),
-        optional(
+        seq(
+          $._expression,
           seq(
             choice(
               field("end", $.direction),
               seq($.keyword_using, field("end", choice("<", ">", "<=", ">=")))
             ),
-            optional(
-              seq(
-                $.keyword_nulls,
-                field("end", choice($.keyword_first, $.keyword_last))
-              )
-            )
+            optional($.order_target_nulls)
           )
         )
+      ),
+
+    order_target_nulls: ($) =>
+      seq(
+        $.keyword_nulls,
+        field("end", choice($.keyword_first, $.keyword_last))
       ),
 
     limit: ($) =>
