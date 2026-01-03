@@ -56,3 +56,12 @@ users - private.users (Table)
 --------------
 
 select * from private.users |
+
+Results:
+cross - .cross (Keyword)
+full - .full (Keyword)
+group - .group (Keyword)
+inner - .inner (Keyword)
+join - .join (Keyword)
+
+--------------

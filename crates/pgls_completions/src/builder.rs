@@ -32,10 +32,12 @@ impl<'a> CompletionBuilder<'a> {
     }
 
     pub fn finish(self) -> Vec<CompletionItem> {
+        let mut shared_tree = self.ctx.tree.clone();
+
         let mut items: Vec<PossibleCompletionItem> = self
             .items
             .into_iter()
-            .filter(|i| i.filter.is_relevant(self.ctx).is_some())
+            .filter(|i| i.filter.is_relevant(self.ctx, &mut shared_tree).is_some())
             .collect();
 
         for item in items.iter_mut() {

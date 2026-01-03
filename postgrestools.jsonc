@@ -17,7 +17,7 @@
   // YOU CAN COMMENT ME OUT :)
   "db": {
     "host": "127.0.0.1",
-    "port": 5432,
+    "port": 54322,
     "username": "postgres",
     "password": "postgres",
     "database": "postgres",

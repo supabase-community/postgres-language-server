@@ -555,7 +555,9 @@ impl TestCompletionsCase {
                 write!(writer, " - ").unwrap();
 
                 match item.kind {
-                    CompletionItemKind::Schema | CompletionItemKind::Role => {}
+                    CompletionItemKind::Schema
+                    | CompletionItemKind::Role
+                    | CompletionItemKind::Keyword => {}
                     _ => {
                         write!(writer, "{}.", item.description).unwrap();
                     }

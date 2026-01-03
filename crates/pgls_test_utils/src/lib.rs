@@ -45,7 +45,17 @@ impl Display for QueryWithCursorPosition {
     }
 }
 
-pub fn print_ts_tree(node: &tree_sitter::Node, source: &str, level: usize, result: &mut String) {
+pub fn print_ts_tree(node: &tree_sitter::Node, source: &str, result: &mut String) {
+    print_ts_tree_recur(node, source, 0, result, None);
+}
+
+fn print_ts_tree_recur(
+    node: &tree_sitter::Node,
+    source: &str,
+    level: usize,
+    result: &mut String,
+    field_name: Option<&str>,
+) {
     let indent = "  ".repeat(level);
 
     let node_text = node
@@ -57,19 +67,24 @@ pub fn print_ts_tree(node: &tree_sitter::Node, source: &str, level: usize, resul
 
     result.push_str(
         format!(
-            "{}{} [{}..{}] '{}'\n",
+            "{}{} [{}..{}] '{}'{}\n",
             indent,
             node.kind(),
             node.start_position().column,
             node.end_position().column,
-            node_text
+            node_text,
+            field_name
+                .map(|n| format!(" (@{})", n))
+                .unwrap_or("".into())
         )
         .as_str(),
     );
 
     let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        print_ts_tree(&child, source, level + 1, result);
+    for (idx, child) in node.children(&mut cursor).enumerate() {
+        let idx_u32: u32 = idx.try_into().unwrap();
+        let field_name = node.field_name_for_child(idx_u32);
+        print_ts_tree_recur(&child, source, level + 1, result, field_name);
     }
 }
 

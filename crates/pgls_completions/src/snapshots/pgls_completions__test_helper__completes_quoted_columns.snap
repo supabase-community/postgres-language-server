@@ -21,10 +21,10 @@ select |
 
 Results:
 email - private.users.email (Column)
+false - Keyword.false (Keyword)
 id - private.users.id (Column)
 name - private.users.name (Column)
-quoted_column - private.users.quoted_column (Column)
-pg_catalog.RI_FKey_cascade_del() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+null - Keyword.null (Keyword)
 
 --------------
 
@@ -32,10 +32,10 @@ select "|
 
 Results:
 email" - private.users.email (Column)
+false - Keyword.false (Keyword)
 id" - private.users.id (Column)
 name" - private.users.name (Column)
-quoted_column" - private.users.quoted_column (Column)
-abbrev" - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+null - Keyword.null (Keyword)
 
 --------------
 
@@ -43,10 +43,10 @@ select "|"
 
 Results:
 email - private.users.email (Column)
+false - Keyword.false (Keyword)
 id - private.users.id (Column)
 name - private.users.name (Column)
-quoted_column - private.users.quoted_column (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+null - Keyword.null (Keyword)
 
 --------------
 
@@ -54,10 +54,10 @@ select "e|"
 
 Results:
 email - private.users.email (Column)
+false - Keyword.false (Keyword)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
-encoding - pg_catalog.pg_database.encoding (Column)
+true - Keyword.true (Keyword)
 
 --------------
 
