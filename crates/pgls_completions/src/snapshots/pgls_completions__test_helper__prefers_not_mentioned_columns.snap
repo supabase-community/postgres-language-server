@@ -69,10 +69,10 @@ select o.id, a| from public.one o join public.two on o.id = t.id;
 
 Results:
 o.a - public.one.a (Column)
+array - .array (Keyword)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
 action_order - information_schema.triggers.action_order (Column)
-action_orientation - information_schema.triggers.action_orientation (Column)
 
 --------------
 
@@ -114,10 +114,10 @@ select o.id, a, b, c| from public.one o join public.two on o.id = t.id;
 
 Results:
 c - public.two.c (Column)
+cast - .cast (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -158,10 +158,10 @@ select o.id, a, b, c, d, e| from public.one o join public.two on o.id = t.id;
 
 Results:
 e - public.two.e (Column)
+exists - .exists (Keyword)
 elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
 encoding - pg_catalog.pg_database.encoding (Column)
 encrypted - pg_catalog.pg_stat_gssapi.encrypted (Column)
-enforced - information_schema.table_constraints.enforced (Column)
 
 --------------
 
@@ -200,10 +200,10 @@ select i| from public.one o join public.two on o.id = t.id;
 
 Results:
 id - public.two.id (Column)
+interval - .interval (Keyword)
 ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
 identity_cycle - information_schema.columns.identity_cycle (Column)
 identity_generation - information_schema.columns.identity_generation (Column)
-identity_increment - information_schema.columns.identity_increment (Column)
 
 --------------
 
@@ -222,10 +222,10 @@ select id, a| from public.one o join public.two on o.id = t.id;
 
 Results:
 o.a - public.one.a (Column)
+array - .array (Keyword)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
 action_order - information_schema.triggers.action_order (Column)
-action_orientation - information_schema.triggers.action_orientation (Column)
 
 --------------
 
@@ -266,10 +266,10 @@ select id, a, b, c| from public.one o join public.two on o.id = t.id;
 
 Results:
 c - public.two.c (Column)
+cast - .cast (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
 castcontext - pg_catalog.pg_cast.castcontext (Column)
-castfunc - pg_catalog.pg_cast.castfunc (Column)
 
 --------------
 
@@ -310,10 +310,10 @@ select id, a, b, c, d, e| from public.one o join public.two on o.id = t.id;
 
 Results:
 e - public.two.e (Column)
+exists - .exists (Keyword)
 elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
 encoding - pg_catalog.pg_database.encoding (Column)
 encrypted - pg_catalog.pg_stat_gssapi.encrypted (Column)
-enforced - information_schema.table_constraints.enforced (Column)
 
 --------------
 

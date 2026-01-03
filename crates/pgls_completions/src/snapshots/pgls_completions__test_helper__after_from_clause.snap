@@ -1,6 +1,5 @@
 ---
 source: crates/pgls_completions/src/test_helper.rs
-assertion_line: 643
 expression: final_snapshot
 ---
 ***Setup***
@@ -37,9 +36,9 @@ select email from users where |
 Results:
 email - public.users.email (Column)
 id - public.users.id (Column)
-array - .array (Keyword)
-cast - .cast (Keyword)
-exists - .exists (Keyword)
+group - .group (Keyword)
+limit - .limit (Keyword)
+order - .order (Keyword)
 
 --------------
 
@@ -69,9 +68,9 @@ select email from users where id = |
 Results:
 email - public.users.email (Column)
 id - public.users.id (Column)
-array - .array (Keyword)
-cast - .cast (Keyword)
-exists - .exists (Keyword)
+abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+action_condition - information_schema.triggers.action_condition (Column)
+action_order - information_schema.triggers.action_order (Column)
 
 --------------
 

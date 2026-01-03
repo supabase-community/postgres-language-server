@@ -25,6 +25,15 @@ create table private.audio_books (
 --------------
 
 s|
+
+Results:
+select - .select (Keyword)
+set - .set (Keyword)
+insert - .insert (Keyword)
+reset - .reset (Keyword)
+
+--------------
+
 select |
 **Should suggest all columns with n first**
 
@@ -32,8 +41,8 @@ Results:
 id - public.audio_books.id (Column)
 name - public.users.name (Column)
 narrator - public.audio_books.narrator (Column)
+from - .from (Keyword)
 id - private.audio_books.id (Column)
-narrator_id - private.audio_books.narrator_id (Column)
 
 --------------
 
@@ -44,9 +53,14 @@ Results:
 name - public.users.name (Column)
 narrator - public.audio_books.narrator (Column)
 narrator_id - private.audio_books.narrator_id (Column)
+null - .null (Keyword)
 name - Schema: pg_catalog.name (Function)
-nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
 
 --------------
 
 select narrator_id |
+
+Results:
+from - .from (Keyword)
+
+--------------

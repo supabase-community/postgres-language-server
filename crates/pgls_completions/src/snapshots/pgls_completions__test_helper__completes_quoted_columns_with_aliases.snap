@@ -30,8 +30,8 @@ Results:
 name - public.names.name (Column)
 uid - public.names.uid (Column)
 email - private.users.email (Column)
+false - Keyword.false (Keyword)
 id - private.users.id (Column)
-name - private.users.name (Column)
 
 --------------
 
@@ -41,8 +41,8 @@ Results:
 name" - public.names.name (Column)
 uid" - public.names.uid (Column)
 email" - private.users.email (Column)
+false - Keyword.false (Keyword)
 id" - private.users.id (Column)
-name" - private.users.name (Column)
 
 --------------
 
@@ -52,8 +52,8 @@ Results:
 name - public.names.name (Column)
 uid - public.names.uid (Column)
 email - private.users.email (Column)
+false - Keyword.false (Keyword)
 id - private.users.id (Column)
-name - private.users.name (Column)
 
 --------------
 
@@ -111,8 +111,26 @@ users - private.users (Table)
 --------------
 
 select "pr"."email" from private.users |
+
+Results:
+join - Keyword.join (Keyword)
+
+--------------
+
 select "pr"."email" from private.users "|
+
+Results:
+join - Keyword.join (Keyword)
+
+--------------
+
 select "pr"."email" from private.users "|"
+
+Results:
+join - Keyword.join (Keyword)
+
+--------------
+
 select "pr"."email" from private.users "p|"
 select "pr"."email" from private.users "pr" |
 
