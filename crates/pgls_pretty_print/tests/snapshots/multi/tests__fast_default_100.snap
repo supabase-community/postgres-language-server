@@ -1,0 +1,876 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/fast_default.sql
+snapshot_kind: text
+---
+SET search_path TO fast_default;
+
+CREATE SCHEMA "fast_default";
+
+CREATE TABLE m (id OID);
+
+INSERT INTO m VALUES (CAST(NULL AS OID));
+
+CREATE FUNCTION set(tabname NAME)
+RETURNS VOID
+AS '
+BEGIN
+  UPDATE m
+  SET id = (SELECT c.relfilenode
+            FROM pg_class AS c, pg_namespace AS s
+            WHERE c.relname = tabname
+                AND c.relnamespace = s.oid
+                AND s.nspname = ''fast_default'');
+END;
+'
+LANGUAGE "plpgsql";
+
+CREATE FUNCTION comp()
+RETURNS TEXT
+AS '
+BEGIN
+  RETURN (SELECT CASE
+               WHEN m.id = c.relfilenode THEN ''Unchanged''
+               ELSE ''Rewritten''
+               END
+           FROM m, pg_class AS c, pg_namespace AS s
+           WHERE c.relname = ''t''
+               AND c.relnamespace = s.oid
+               AND s.nspname = ''fast_default'');
+END;
+'
+LANGUAGE "plpgsql";
+
+CREATE FUNCTION log_rewrite()
+RETURNS event_trigger
+LANGUAGE "plpgsql"
+AS '
+
+declare
+   this_schema text;
+begin
+    select into this_schema relnamespace::regnamespace::text
+    from pg_class
+    where oid = pg_event_trigger_table_rewrite_oid();
+    if this_schema = ''fast_default''
+    then
+        RAISE NOTICE ''rewriting table % for reason %'',
+          pg_event_trigger_table_rewrite_oid()::regclass,
+          pg_event_trigger_table_rewrite_reason();
+    end if;
+end;
+';
+
+CREATE TABLE has_volatile AS SELECT * FROM generate_series(1, 10) AS id;
+
+CREATE EVENT TRIGGER "has_volatile_rewrite" ON table_rewrite EXECUTE FUNCTION log_rewrite();
+
+ALTER TABLE has_volatile
+  ADD COLUMN col1 INT;
+
+ALTER TABLE has_volatile
+  ADD COLUMN col2 INT DEFAULT 1;
+
+ALTER TABLE has_volatile
+  ADD COLUMN col3 TIMESTAMP WITH TIME ZONE
+    DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE has_volatile
+  ADD COLUMN col4 INT DEFAULT CAST(random() * 10000 AS INT);
+
+ALTER TABLE has_volatile
+  ALTER COLUMN col5 TYPE DOUBLE PRECISION;
+
+ALTER TABLE has_volatile
+  ALTER COLUMN col5 TYPE NUMERIC;
+
+ALTER TABLE has_volatile
+  ALTER COLUMN col5 TYPE NUMERIC;
+
+ALTER TABLE has_volatile
+  ADD COLUMN col7 INT GENERATED ALWAYS AS (55) STORED;
+
+CREATE TABLE t (
+  pk INT NOT NULL PRIMARY KEY,
+  c_int INT DEFAULT 1
+);
+
+SELECT set('t');
+
+INSERT INTO t VALUES (1), (2);
+
+ALTER TABLE t
+  ADD COLUMN c_bpchar CHAR(5) DEFAULT 'hello',
+  ALTER COLUMN c_int SET DEFAULT 2;
+
+INSERT INTO t VALUES (3), (4);
+
+ALTER TABLE t
+  ADD COLUMN c_text TEXT DEFAULT 'world',
+  ALTER COLUMN c_bpchar SET DEFAULT 'dog';
+
+INSERT INTO t VALUES (5), (6);
+
+ALTER TABLE t
+  ADD COLUMN c_date DATE DEFAULT '2016-06-02',
+  ALTER COLUMN c_text SET DEFAULT 'cat';
+
+INSERT INTO t VALUES (7), (8);
+
+ALTER TABLE t
+  ADD COLUMN c_timestamp TIMESTAMP
+    DEFAULT '2016-09-01 12:00:00',
+  ADD COLUMN c_timestamp_null TIMESTAMP,
+  ALTER COLUMN c_date SET DEFAULT '2010-01-01';
+
+INSERT INTO t VALUES (9), (10);
+
+ALTER TABLE t
+  ADD COLUMN c_array TEXT[]
+    DEFAULT '{"This", "is", "the", "real", "world"}',
+  ALTER COLUMN c_timestamp SET DEFAULT '1970-12-31 11:12:13',
+  ALTER COLUMN c_timestamp_null SET DEFAULT '2016-09-29 12:00:00';
+
+INSERT INTO t VALUES (11), (12);
+
+ALTER TABLE t
+  ADD COLUMN c_small SMALLINT DEFAULT -5,
+  ADD COLUMN c_small_null SMALLINT,
+  ALTER COLUMN c_array SET DEFAULT '{"This", "is", "no", "fantasy"}';
+
+INSERT INTO t VALUES (13), (14);
+
+ALTER TABLE t
+  ADD COLUMN c_big BIGINT DEFAULT 180000000000018,
+  ALTER COLUMN c_small SET DEFAULT 9,
+  ALTER COLUMN c_small_null SET DEFAULT 13;
+
+INSERT INTO t VALUES (15), (16);
+
+ALTER TABLE t
+  ADD COLUMN c_num NUMERIC DEFAULT 1.00000000001,
+  ALTER COLUMN c_big SET DEFAULT -9999999999999999;
+
+INSERT INTO t VALUES (17), (18);
+
+ALTER TABLE t
+  ADD COLUMN c_time TIME DEFAULT '12:00:00',
+  ALTER COLUMN c_num SET DEFAULT 2.000000000000002;
+
+INSERT INTO t VALUES (19), (20);
+
+ALTER TABLE t
+  ADD COLUMN c_interval INTERVAL DEFAULT '1 day',
+  ALTER COLUMN c_time SET DEFAULT '23:59:59';
+
+INSERT INTO t VALUES (21), (22);
+
+ALTER TABLE t
+  ADD COLUMN c_hugetext TEXT DEFAULT repeat('abcdefg', 1000),
+  ALTER COLUMN c_interval SET DEFAULT '3 hours';
+
+INSERT INTO t VALUES (23), (24);
+
+ALTER TABLE t
+  ALTER COLUMN c_interval DROP DEFAULT,
+  ALTER COLUMN c_hugetext SET DEFAULT repeat('poiuyt', 1000);
+
+INSERT INTO t VALUES (25), (26);
+
+ALTER TABLE t
+  ALTER COLUMN c_bpchar DROP DEFAULT,
+  ALTER COLUMN c_date DROP DEFAULT,
+  ALTER COLUMN c_text DROP DEFAULT,
+  ALTER COLUMN c_timestamp DROP DEFAULT,
+  ALTER COLUMN c_array DROP DEFAULT,
+  ALTER COLUMN c_small DROP DEFAULT,
+  ALTER COLUMN c_big DROP DEFAULT,
+  ALTER COLUMN c_num DROP DEFAULT,
+  ALTER COLUMN c_time DROP DEFAULT,
+  ALTER COLUMN c_hugetext DROP DEFAULT;
+
+INSERT INTO t VALUES (27), (28);
+
+SELECT
+  pk,
+  c_int,
+  c_bpchar,
+  c_text,
+  c_date,
+  c_timestamp,
+  c_timestamp_null,
+  c_array,
+  c_small,
+  c_small_null,
+  c_big,
+  c_num,
+  c_time,
+  c_interval,
+  c_hugetext = repeat('abcdefg', 1000)
+  AS c_hugetext_origdef,
+  c_hugetext = repeat('poiuyt', 1000)
+  AS c_hugetext_newdef
+FROM
+  t
+ORDER BY pk;
+
+SELECT comp();
+
+DROP TABLE "t";
+
+CREATE OR REPLACE FUNCTION foo(a INT)
+RETURNS TEXT
+AS '
+DECLARE res TEXT := '''';
+        i INT;
+BEGIN
+  i := 0;
+  WHILE (i < a) LOOP
+    res := res || chr(ascii(''a'') + i);
+    i := i + 1;
+  END LOOP;
+  RETURN res;
+END; '
+LANGUAGE "plpgsql"
+STABLE;
+
+CREATE TABLE t (
+  pk INT NOT NULL PRIMARY KEY,
+  c_int INT DEFAULT length(foo(6))
+);
+
+SELECT set('t');
+
+INSERT INTO t VALUES (1), (2);
+
+ALTER TABLE t
+  ADD COLUMN c_bpchar CHAR(5) DEFAULT foo(4),
+  ALTER COLUMN c_int SET DEFAULT length(foo(8));
+
+INSERT INTO t VALUES (3), (4);
+
+ALTER TABLE t
+  ADD COLUMN c_text TEXT DEFAULT foo(6),
+  ALTER COLUMN c_bpchar SET DEFAULT foo(3);
+
+INSERT INTO t VALUES (5), (6);
+
+ALTER TABLE t
+  ADD COLUMN c_date DATE
+    DEFAULT (CAST('2016-06-02' AS DATE) + length(foo(10))),
+  ALTER COLUMN c_text SET DEFAULT foo(12);
+
+INSERT INTO t VALUES (7), (8);
+
+ALTER TABLE t
+  ADD COLUMN c_timestamp TIMESTAMP
+    DEFAULT (CAST('2016-09-01' AS DATE) + length(foo(10))),
+  ALTER COLUMN c_date SET DEFAULT CAST('2010-01-01' AS DATE) - length(foo(4));
+
+INSERT INTO t VALUES (9), (10);
+
+ALTER TABLE t
+  ADD COLUMN c_array TEXT[]
+    DEFAULT CAST('{"This", "is", "' || foo(4) ||
+    '","the", "real", "world"}'
+    AS TEXT[]),
+  ALTER COLUMN c_timestamp SET DEFAULT CAST('1970-12-31' AS DATE) + length(foo(30));
+
+INSERT INTO t VALUES (11), (12);
+
+ALTER TABLE t
+  ALTER COLUMN c_int DROP DEFAULT,
+  ALTER COLUMN c_array SET DEFAULT CAST('{"This", "is", "' || foo(1) || '", "fantasy"}'
+  AS TEXT[]);
+
+INSERT INTO t VALUES (13), (14);
+
+ALTER TABLE t
+  ALTER COLUMN c_bpchar DROP DEFAULT,
+  ALTER COLUMN c_date DROP DEFAULT,
+  ALTER COLUMN c_text DROP DEFAULT,
+  ALTER COLUMN c_timestamp DROP DEFAULT,
+  ALTER COLUMN c_array DROP DEFAULT;
+
+INSERT INTO t VALUES (15), (16);
+
+SELECT * FROM t;
+
+SELECT comp();
+
+DROP TABLE "t";
+
+CREATE DOMAIN domain1 AS INT DEFAULT 11;
+
+CREATE DOMAIN domain2 AS INT DEFAULT random("min" := 10, "max" := 100);
+
+CREATE DOMAIN domain3 AS TEXT DEFAULT foo(4);
+
+CREATE DOMAIN domain4 AS TEXT[]
+  DEFAULT CAST('{"This", "is", "' || foo(4) ||
+  '","the", "real", "world"}'
+  AS TEXT[]);
+
+CREATE TABLE t2 (a domain1);
+
+INSERT INTO t2 VALUES (1), (2);
+
+ALTER TABLE t2
+  ADD COLUMN b domain1 DEFAULT 3;
+
+SELECT
+  attnum,
+  attname,
+  atthasmissing,
+  atthasdef,
+  attmissingval
+FROM
+  pg_attribute
+WHERE
+  attnum > 0 AND attrelid = CAST('t2' AS REGCLASS)
+ORDER BY attnum;
+
+ALTER TABLE t2
+  ADD COLUMN c domain3 DEFAULT left(CAST(random() AS TEXT), 3);
+
+ALTER TABLE t2
+  ADD COLUMN d domain4;
+
+SELECT
+  attnum,
+  attname,
+  atthasmissing,
+  atthasdef,
+  attmissingval
+FROM
+  pg_attribute
+WHERE
+  attnum > 0 AND attrelid = CAST('t2' AS REGCLASS)
+ORDER BY attnum;
+
+ALTER TABLE t2
+  ADD COLUMN e domain2;
+
+SELECT
+  attnum,
+  attname,
+  atthasmissing,
+  atthasdef,
+  attmissingval
+FROM
+  pg_attribute
+WHERE
+  attnum > 0 AND attrelid = CAST('t2' AS REGCLASS)
+ORDER BY attnum;
+
+SELECT a, b, length(c) = 3 AS c_ok, d, e >= 10 AS e_ok FROM t2;
+
+DROP TABLE "t2";
+
+DROP DOMAIN domain1;
+
+DROP DOMAIN domain2;
+
+DROP DOMAIN domain3;
+
+DROP DOMAIN domain4;
+
+DROP FUNCTION foo(INT);
+
+CREATE TABLE t (pk INT NOT NULL PRIMARY KEY);
+
+INSERT INTO t VALUES (1);
+
+SELECT set('t');
+
+ALTER TABLE t
+  ADD COLUMN c1 TIMESTAMP DEFAULT NOW();
+
+SELECT comp();
+
+ALTER TABLE t
+  ADD COLUMN c2 TIMESTAMP DEFAULT clock_timestamp();
+
+SELECT comp();
+
+CREATE FUNCTION foolme(TIMESTAMP WITH TIME ZONE DEFAULT clock_timestamp())
+RETURNS TIMESTAMP WITH TIME ZONE
+IMMUTABLE
+AS 'select $1'
+LANGUAGE "sql";
+
+ALTER TABLE t
+  ADD COLUMN c3 TIMESTAMP WITH TIME ZONE DEFAULT foolme();
+
+SELECT
+  attname,
+  atthasmissing,
+  attmissingval
+FROM
+  pg_attribute
+WHERE
+  attrelid = CAST('t' AS REGCLASS) AND attnum > 0
+ORDER BY attnum;
+
+DROP TABLE "t";
+
+DROP FUNCTION foolme(TIMESTAMP WITH TIME ZONE);
+
+CREATE TABLE t (pk INT NOT NULL PRIMARY KEY);
+
+SELECT set('t');
+
+INSERT INTO t SELECT * FROM generate_series(1, 10) AS a;
+
+ALTER TABLE t
+  ADD COLUMN c_bigint BIGINT NOT NULL DEFAULT -1;
+
+INSERT INTO t SELECT b, b - 10 FROM generate_series(11, 20) AS a (b);
+
+ALTER TABLE t
+  ADD COLUMN c_text TEXT DEFAULT 'hello';
+
+INSERT INTO t SELECT b, b - 10, CAST(b + 10 AS TEXT) FROM generate_series(21, 30) AS a (b);
+
+SELECT c_bigint, c_text FROM t WHERE c_bigint = -1 LIMIT 1;
+
+SELECT c_bigint, c_text FROM t WHERE c_bigint = -1 LIMIT 1;
+
+SELECT c_bigint, c_text FROM t WHERE c_text = 'hello' LIMIT 1;
+
+SELECT c_bigint, c_text FROM t WHERE c_text = 'hello' LIMIT 1;
+
+SELECT COALESCE(c_bigint, pk), COALESCE(c_text, CAST(pk AS TEXT)) FROM t ORDER BY pk LIMIT 10;
+
+SELECT SUM(c_bigint), MAX(c_text COLLATE "C"), MIN(c_text COLLATE "C") FROM t;
+
+SELECT * FROM t ORDER BY c_bigint, c_text, pk LIMIT 10;
+
+SELECT * FROM t ORDER BY c_bigint, c_text, pk LIMIT 10;
+
+SELECT * FROM t WHERE c_bigint > -1 ORDER BY c_bigint, c_text, pk LIMIT 10;
+
+SELECT * FROM t WHERE c_bigint > -1 ORDER BY c_bigint, c_text, pk LIMIT 10;
+
+DELETE FROM t WHERE pk BETWEEN 10 AND 20 RETURNING *;
+
+DELETE FROM t WHERE pk BETWEEN 10 AND 20 RETURNING *;
+
+UPDATE t SET c_text = '"' || c_text || '"' WHERE pk < 10;
+
+SELECT * FROM t WHERE c_text LIKE '"%"' ORDER BY pk;
+
+SELECT comp();
+
+DROP TABLE "t";
+
+CREATE TABLE t (pk INT NOT NULL PRIMARY KEY);
+
+SELECT set('t');
+
+INSERT INTO t VALUES (1), (2);
+
+ALTER TABLE t
+  ADD COLUMN c_int INT NOT NULL DEFAULT -1;
+
+INSERT INTO t VALUES (3), (4);
+
+ALTER TABLE t
+  ADD COLUMN c_text TEXT DEFAULT 'Hello';
+
+INSERT INTO t VALUES (5), (6);
+
+ALTER TABLE t
+  ALTER COLUMN c_text SET DEFAULT 'world',
+  ALTER COLUMN c_int SET DEFAULT 1;
+
+INSERT INTO t VALUES (7), (8);
+
+SELECT * FROM t ORDER BY pk;
+
+CREATE INDEX "i" ON t USING btree (c_int, c_text);
+
+SELECT c_text FROM t WHERE c_int = -1;
+
+SELECT comp();
+
+CREATE TABLE t1 AS SELECT CAST(1 AS INT) AS a, CAST(2 AS INT) AS b FROM generate_series(1, 20) AS q;
+
+ALTER TABLE t1
+  ADD COLUMN c TEXT;
+
+SELECT
+  a,
+  stddev(
+    CAST((SELECT SUM(1) FROM generate_series(1, 20) AS x)
+    AS REAL)
+  )
+  OVER (
+    PARTITION BY a,
+    b,
+    c
+    ORDER BY b
+  )
+  AS z
+FROM
+  t1;
+
+DROP TABLE "t";
+
+CREATE FUNCTION test_trigger()
+RETURNS trigger
+LANGUAGE "plpgsql"
+AS '
+
+begin
+    raise notice ''old tuple: %'', to_json(OLD)::text;
+    if TG_OP = ''DELETE''
+    then
+       return OLD;
+    else
+       return NEW;
+    end if;
+end;
+
+';
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, 3);
+
+ALTER TABLE t
+  ADD COLUMN x INT NOT NULL DEFAULT 4;
+
+ALTER TABLE t
+  ADD COLUMN y INT NOT NULL DEFAULT 5;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, 3);
+
+ALTER TABLE t
+  ADD COLUMN x INT NOT NULL DEFAULT 4;
+
+ALTER TABLE t
+  ADD COLUMN y INT;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, 3);
+
+ALTER TABLE t
+  ADD COLUMN x INT;
+
+ALTER TABLE t
+  ADD COLUMN y INT NOT NULL DEFAULT 5;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, 3);
+
+ALTER TABLE t
+  ADD COLUMN x INT;
+
+ALTER TABLE t
+  ADD COLUMN y INT;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, NULL);
+
+ALTER TABLE t
+  ADD COLUMN x INT NOT NULL DEFAULT 4;
+
+ALTER TABLE t
+  ADD COLUMN y INT NOT NULL DEFAULT 5;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, NULL);
+
+ALTER TABLE t
+  ADD COLUMN x INT NOT NULL DEFAULT 4;
+
+ALTER TABLE t
+  ADD COLUMN y INT;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, NULL);
+
+ALTER TABLE t
+  ADD COLUMN x INT;
+
+ALTER TABLE t
+  ADD COLUMN y INT NOT NULL DEFAULT 5;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE t (
+  id serial PRIMARY KEY,
+  a INT,
+  b INT,
+  c INT
+);
+
+INSERT INTO t (a, b, c) VALUES (1, 2, NULL);
+
+ALTER TABLE t
+  ADD COLUMN x INT;
+
+ALTER TABLE t
+  ADD COLUMN y INT;
+
+CREATE TRIGGER a BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION test_trigger();
+
+SELECT * FROM t;
+
+UPDATE t SET y = 2;
+
+SELECT * FROM t;
+
+DROP TABLE "t";
+
+CREATE TABLE leader (
+  a INT PRIMARY KEY,
+  b INT
+);
+
+CREATE TABLE follower (
+  a INT REFERENCES leader ON DELETE CASCADE,
+  b INT
+);
+
+INSERT INTO leader VALUES (1, 1), (2, 2);
+
+ALTER TABLE leader
+  ADD COLUMN c INT;
+
+ALTER TABLE leader
+  DROP COLUMN c;
+
+DELETE FROM leader;
+
+CREATE TABLE vtype (a INT);
+
+INSERT INTO vtype VALUES (1);
+
+ALTER TABLE vtype
+  ADD COLUMN b DOUBLE PRECISION DEFAULT 0.2;
+
+ALTER TABLE vtype
+  ADD COLUMN c BOOLEAN DEFAULT TRUE;
+
+SELECT * FROM vtype;
+
+ALTER TABLE vtype
+  ALTER COLUMN b TYPE TEXT USING CAST(b AS TEXT),
+  ALTER COLUMN c TYPE TEXT USING CAST(c AS TEXT);
+
+SELECT * FROM vtype;
+
+CREATE TABLE vtype2 (a INT);
+
+INSERT INTO vtype2 VALUES (1);
+
+ALTER TABLE vtype2
+  ADD COLUMN b VARCHAR(10) DEFAULT 'xxx';
+
+ALTER TABLE vtype2
+  ALTER COLUMN b SET DEFAULT 'yyy';
+
+INSERT INTO vtype2 VALUES (2);
+
+ALTER TABLE vtype2
+  ALTER COLUMN b TYPE VARCHAR(20) USING CAST(b AS VARCHAR(20));
+
+SELECT * FROM vtype2;
+
+BEGIN;
+
+CREATE TABLE t ();
+
+INSERT INTO t DEFAULT VALUES;
+
+ALTER TABLE t
+  ADD COLUMN a INT DEFAULT 1;
+
+CREATE INDEX ON t USING btree (a);
+
+UPDATE t SET a = NULL;
+
+SET LOCAL enable_seqscan = 'true';
+
+SELECT * FROM t WHERE a IS NULL;
+
+SET LOCAL enable_seqscan = 'false';
+
+SELECT * FROM t WHERE a IS NULL;
+
+ROLLBACK;
+
+CREATE FOREIGN DATA WRAPPER dummy;
+
+CREATE SERVER s0 FOREIGN DATA WRAPPER dummy;
+
+CREATE FOREIGN TABLE ft1 ( c1 INT NOT NULL ) SERVER s0;
+
+ALTER FOREIGN TABLE ft1
+  ADD COLUMN c8 INT DEFAULT 0;
+
+ALTER FOREIGN TABLE ft1
+  ALTER COLUMN c8 TYPE CHAR(10);
+
+SELECT
+  COUNT(*)
+FROM
+  pg_attribute
+WHERE
+  attrelid = CAST('ft1' AS REGCLASS) AND
+  (attmissingval IS NOT NULL OR atthasmissing);
+
+DROP FOREIGN TABLE "ft1";
+
+DROP SERVER s0;
+
+DROP FOREIGN DATA WRAPPER dummy;
+
+DROP TABLE "vtype";
+
+DROP TABLE "vtype2";
+
+DROP TABLE "follower";
+
+DROP TABLE "leader";
+
+DROP FUNCTION test_trigger();
+
+DROP TABLE "t1";
+
+DROP FUNCTION set(NAME);
+
+DROP FUNCTION comp();
+
+DROP TABLE "m";
+
+DROP TABLE "has_volatile";
+
+DROP EVENT TRIGGER has_volatile_rewrite;
+
+DROP FUNCTION log_rewrite;
+
+DROP SCHEMA fast_default;
+
+SET search_path TO public;
+
+CREATE TABLE has_fast_default (f1 INT);
+
+INSERT INTO has_fast_default VALUES (1);
+
+ALTER TABLE has_fast_default
+  ADD COLUMN f2 INT DEFAULT 42;
+
+SELECT * FROM has_fast_default;

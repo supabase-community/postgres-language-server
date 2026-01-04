@@ -1,0 +1,87 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/complex_select_part_2.sql
+snapshot_kind: text
+---
+SELECT
+  view_id,
+  view_schema,
+  view_name,
+  CAST(replace(
+    replace(
+      replace(
+        replace(
+          replace(
+            replace(
+              replace(
+                regexp_replace(
+                  replace(
+                    replace(
+                      replace(
+                        replace(
+                          replace(
+                            replace(
+                              replace(
+                                replace(
+                                  replace(
+                                    replace(
+                                      replace(CAST(view_definition AS TEXT), '<>', '()'),
+                                      ',',
+                                      ''
+                                    ),
+                                    '\\{',
+                                    ''
+                                  ),
+                                  '\\}',
+                                  ''
+                                ),
+                                ' :targetList ',
+                                ',"targetList":'
+                              ),
+                              ' :resno ',
+                              ',"resno":'
+                            ),
+                            ' :resorigtbl ',
+                            ',"resorigtbl":'
+                          ),
+                          ' :resorigcol ',
+                          ',"resorigcol":'
+                        ),
+                        '{',
+                        '{ :'
+                      ),
+                      '((',
+                      '{(('
+                    ),
+                    '({',
+                    '{({'
+                  ),
+                  ' :[^}{,]+',
+                  ',"":',
+                  'g'
+                ),
+                ',"":}',
+                '}'
+              ),
+              ',"":,',
+              ','
+            ),
+            '{(',
+            '('
+          ),
+          '{,',
+          '{'
+        ),
+        '(',
+        '['
+      ),
+      ')',
+      ']'
+    ),
+    ' ',
+    ','
+  )
+  AS JSON)
+  AS view_definition
+FROM
+  views;

@@ -1,0 +1,165 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/limit.sql
+snapshot_kind: text
+---
+SELECT
+  CAST('' AS TEXT) AS two,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+WHERE
+  unique1 > 50
+ORDER BY unique1
+LIMIT 2;
+
+SELECT
+  CAST('' AS TEXT) AS five,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+WHERE
+  unique1 > 60
+ORDER BY unique1
+LIMIT 5;
+
+SELECT
+  CAST('' AS TEXT) AS two,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+WHERE
+  unique1 > 60 AND unique1 < 63
+ORDER BY unique1
+LIMIT 5;
+
+SELECT
+  CAST('' AS TEXT) AS three,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+WHERE
+  unique1 > 100
+ORDER BY unique1
+LIMIT 3
+OFFSET 20;
+
+SELECT
+  CAST('' AS TEXT) AS zero,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+WHERE
+  unique1 < 50
+ORDER BY unique1 DESC
+LIMIT 8
+OFFSET 99;
+
+SELECT
+  CAST('' AS TEXT) AS eleven,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+WHERE
+  unique1 < 50
+ORDER BY unique1 DESC
+LIMIT 20
+OFFSET 39;
+
+SELECT CAST('' AS TEXT) AS ten, unique1, unique2, stringu1 FROM onek ORDER BY unique1 OFFSET 990;
+
+SELECT
+  CAST('' AS TEXT) AS five,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+ORDER BY unique1
+LIMIT 5
+OFFSET 990;
+
+SELECT
+  CAST('' AS TEXT) AS five,
+  unique1,
+  unique2,
+  stringu1
+FROM
+  onek
+ORDER BY unique1
+LIMIT 5
+OFFSET 900;
+
+SELECT * FROM int8_tbl LIMIT CASE WHEN random() < 0.5 THEN CAST(NULL AS BIGINT) END;
+
+SELECT * FROM int8_tbl OFFSET CASE WHEN random() < 0.5 THEN CAST(NULL AS BIGINT) END;
+
+BEGIN;
+
+DECLARE "c1" CURSOR FOR SELECT * FROM int8_tbl LIMIT 10;;
+
+FETCH FORWARD ALL FROM c1;
+
+FETCH NEXT FROM c1;
+
+FETCH PRIOR FROM c1;
+
+FETCH BACKWARD ALL FROM c1;
+
+FETCH PRIOR FROM c1;
+
+FETCH FORWARD ALL FROM c1;
+
+DECLARE "c2" CURSOR FOR SELECT * FROM int8_tbl LIMIT 3;;
+
+FETCH FORWARD ALL FROM c2;
+
+FETCH NEXT FROM c2;
+
+FETCH PRIOR FROM c2;
+
+FETCH BACKWARD ALL FROM c2;
+
+FETCH PRIOR FROM c2;
+
+FETCH FORWARD ALL FROM c2;
+
+DECLARE "c3" CURSOR FOR SELECT * FROM int8_tbl OFFSET 3;;
+
+FETCH FORWARD ALL FROM c3;
+
+FETCH NEXT FROM c3;
+
+FETCH PRIOR FROM c3;
+
+FETCH BACKWARD ALL FROM c3;
+
+FETCH PRIOR FROM c3;
+
+FETCH FORWARD ALL FROM c3;
+
+DECLARE "c4" CURSOR FOR SELECT * FROM int8_tbl OFFSET 10;;
+
+FETCH FORWARD ALL FROM c4;
+
+FETCH NEXT FROM c4;
+
+FETCH PRIOR FROM c4;
+
+FETCH BACKWARD ALL FROM c4;
+
+FETCH PRIOR FROM c4;
+
+FETCH FORWARD ALL FROM c4;

@@ -1,0 +1,4330 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/foreign_key.sql
+snapshot_kind: text
+---
+CREATE TABLE pktable (
+  ptest1 INT PRIMARY KEY,
+  ptest2 TEXT
+);
+
+INSERT INTO fktable VALUES (1, 2);
+
+INSERT INTO fktable VALUES (2, 3);
+
+SELECT * FROM fktable;
+
+INSERT INTO pktable VALUES (1, 'Test1');
+
+INSERT INTO pktable VALUES (2, 'Test2');
+
+INSERT INTO fktable VALUES (3, 4);
+
+INSERT INTO pktable VALUES (3, 'Test3');
+
+INSERT INTO pktable VALUES (4, 'Test4');
+
+INSERT INTO pktable VALUES (5, 'Test5');
+
+INSERT INTO fktable VALUES (3, 4);
+
+INSERT INTO fktable VALUES (NULL, 1);
+
+INSERT INTO fktable VALUES (100, 2);
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 1;
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest1 = 1 WHERE ptest1 = 2;
+
+SELECT * FROM fktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 TEXT,
+  PRIMARY KEY (ptest1, ptest2)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INT,
+  ftest3 INT,
+  CONSTRAINT "constrname"
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable
+  MATCH FULL
+  ON DELETE SET NULL
+  ON UPDATE SET NULL
+);
+
+COMMENT ON CONSTRAINT constrname_wrong ON fktable IS 'fk constraint comment';
+
+COMMENT ON CONSTRAINT constrname ON fktable IS 'fk constraint comment';
+
+COMMENT ON CONSTRAINT constrname ON fktable IS NULL;
+
+INSERT INTO pktable VALUES (1, 2, 'Test1');
+
+INSERT INTO pktable VALUES (1, 3, 'Test1-2');
+
+INSERT INTO pktable VALUES (2, 4, 'Test2');
+
+INSERT INTO pktable VALUES (3, 6, 'Test3');
+
+INSERT INTO pktable VALUES (4, 8, 'Test4');
+
+INSERT INTO pktable VALUES (5, 10, 'Test5');
+
+INSERT INTO fktable VALUES (1, 2, 4);
+
+INSERT INTO fktable VALUES (1, 3, 5);
+
+INSERT INTO fktable VALUES (2, 4, 8);
+
+INSERT INTO fktable VALUES (3, 6, 12);
+
+INSERT INTO fktable VALUES (NULL, NULL, 0);
+
+INSERT INTO fktable VALUES (100, 2, 4);
+
+INSERT INTO fktable VALUES (2, 2, 4);
+
+INSERT INTO fktable VALUES (NULL, 2, 4);
+
+INSERT INTO fktable VALUES (1, NULL, 4);
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 1 AND ptest2 = 2;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 5 AND ptest2 = 10;
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest1 = 1 WHERE ptest1 = 2;
+
+SELECT * FROM fktable;
+
+UPDATE fktable SET ftest1 = NULL WHERE ftest1 = 1;
+
+UPDATE fktable SET ftest1 = 1 WHERE ftest1 = 1;
+
+ALTER TABLE pktable
+  ALTER COLUMN ptest1 TYPE BIGINT;
+
+ALTER TABLE fktable
+  ALTER COLUMN ftest1 TYPE BIGINT;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DROP TABLE "pktable" CASCADE;
+
+DROP TABLE "fktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 TEXT,
+  PRIMARY KEY (ptest1, ptest2)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT DEFAULT -1,
+  ftest2 INT DEFAULT -2,
+  ftest3 INT,
+  CONSTRAINT "constrname2"
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable
+  MATCH FULL
+  ON DELETE SET DEFAULT
+  ON UPDATE SET DEFAULT
+);
+
+INSERT INTO pktable VALUES (-1, -2, 'The Default!');
+
+INSERT INTO pktable VALUES (1, 2, 'Test1');
+
+INSERT INTO pktable VALUES (1, 3, 'Test1-2');
+
+INSERT INTO pktable VALUES (2, 4, 'Test2');
+
+INSERT INTO pktable VALUES (3, 6, 'Test3');
+
+INSERT INTO pktable VALUES (4, 8, 'Test4');
+
+INSERT INTO pktable VALUES (5, 10, 'Test5');
+
+INSERT INTO fktable VALUES (1, 2, 4);
+
+INSERT INTO fktable VALUES (1, 3, 5);
+
+INSERT INTO fktable VALUES (2, 4, 8);
+
+INSERT INTO fktable VALUES (3, 6, 12);
+
+INSERT INTO fktable VALUES (NULL, NULL, 0);
+
+INSERT INTO fktable VALUES (100, 2, 4);
+
+INSERT INTO fktable VALUES (2, 2, 4);
+
+INSERT INTO fktable VALUES (NULL, 2, 4);
+
+INSERT INTO fktable VALUES (1, NULL, 4);
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 1 AND ptest2 = 2;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 5 AND ptest2 = 10;
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest1 = 1 WHERE ptest1 = 2;
+
+SELECT * FROM fktable;
+
+DROP TABLE "pktable";
+
+DROP TABLE "pktable" CASCADE;
+
+DROP TABLE "fktable";
+
+CREATE TABLE pktable (
+  ptest1 INT PRIMARY KEY,
+  ptest2 TEXT
+);
+
+CREATE TABLE fktable (
+  ftest1 INT REFERENCES pktable MATCH FULL,
+  ftest2 INT
+);
+
+INSERT INTO pktable VALUES (1, 'Test1');
+
+INSERT INTO pktable VALUES (2, 'Test2');
+
+INSERT INTO pktable VALUES (3, 'Test3');
+
+INSERT INTO pktable VALUES (4, 'Test4');
+
+INSERT INTO pktable VALUES (5, 'Test5');
+
+INSERT INTO fktable VALUES (1, 2);
+
+INSERT INTO fktable VALUES (2, 3);
+
+INSERT INTO fktable VALUES (3, 4);
+
+INSERT INTO fktable VALUES (NULL, 1);
+
+INSERT INTO fktable VALUES (100, 2);
+
+SELECT * FROM fktable;
+
+SELECT * FROM pktable;
+
+DELETE FROM pktable WHERE ptest1 = 1;
+
+DELETE FROM pktable WHERE ptest1 = 5;
+
+SELECT * FROM pktable;
+
+UPDATE pktable SET ptest1 = 0 WHERE ptest1 = 2;
+
+UPDATE pktable SET ptest1 = 0 WHERE ptest1 = 4;
+
+SELECT * FROM pktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  PRIMARY KEY (ptest1, ptest2)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INT
+);
+
+INSERT INTO pktable VALUES (1, 2);
+
+INSERT INTO fktable VALUES (1, NULL);
+
+ALTER TABLE fktable
+  ADD FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable
+  MATCH FULL;
+
+ALTER TABLE fktable
+  ALTER CONSTRAINT "fk_con" DEFERRABLE INITIALLY DEFERRED;
+
+SELECT
+  condeferrable,
+  condeferred,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conname = 'fk_con';
+
+SELECT
+  condeferrable,
+  condeferred,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conname = 'fk_con';
+
+SELECT
+  condeferrable,
+  condeferred,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conname = 'fk_con';
+
+SELECT
+  condeferrable,
+  condeferred,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conname = 'fk_con';
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 INT,
+  ptest4 TEXT,
+  PRIMARY KEY (ptest1, ptest2, ptest3)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INT,
+  ftest3 INT,
+  ftest4 INT,
+  CONSTRAINT "constrname3"
+  FOREIGN KEY
+  (ftest1,
+  ftest2,
+  ftest3)
+  REFERENCES pktable
+);
+
+INSERT INTO pktable VALUES (1, 2, 3, 'test1');
+
+INSERT INTO pktable VALUES (1, 3, 3, 'test2');
+
+INSERT INTO pktable VALUES (2, 3, 4, 'test3');
+
+INSERT INTO pktable VALUES (2, 4, 5, 'test4');
+
+INSERT INTO fktable VALUES (1, 2, 3, 1);
+
+INSERT INTO fktable VALUES (NULL, 2, 3, 2);
+
+INSERT INTO fktable VALUES (2, NULL, 3, 3);
+
+INSERT INTO fktable VALUES (NULL, 2, 7, 4);
+
+INSERT INTO fktable VALUES (NULL, 3, 4, 5);
+
+INSERT INTO fktable VALUES (1, 2, 7, 6);
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest2 = 5 WHERE ptest2 = 2;
+
+UPDATE pktable SET ptest1 = 1 WHERE ptest2 = 3;
+
+DELETE FROM pktable WHERE ptest1 = 1 AND ptest2 = 2 AND ptest3 = 3;
+
+DELETE FROM pktable WHERE ptest1 = 2;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 INT,
+  ptest4 TEXT,
+  UNIQUE (ptest1, ptest2, ptest3)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INT,
+  ftest3 INT,
+  ftest4 INT,
+  CONSTRAINT "constrname3"
+  FOREIGN KEY
+  (ftest1,
+  ftest2,
+  ftest3)
+  REFERENCES pktable (ptest1,
+  ptest2,
+  ptest3)
+);
+
+INSERT INTO pktable VALUES (1, 2, 3, 'test1');
+
+INSERT INTO pktable VALUES (1, 3, NULL, 'test2');
+
+INSERT INTO pktable VALUES (2, NULL, 4, 'test3');
+
+INSERT INTO fktable VALUES (1, 2, 3, 1);
+
+DELETE FROM pktable WHERE ptest1 = 2;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 INT,
+  ptest4 TEXT,
+  PRIMARY KEY (ptest1, ptest2, ptest3)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INT,
+  ftest3 INT,
+  ftest4 INT,
+  CONSTRAINT "constrname3"
+  FOREIGN KEY
+  (ftest1,
+  ftest2,
+  ftest3)
+  REFERENCES pktable
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+);
+
+INSERT INTO pktable VALUES (1, 2, 3, 'test1');
+
+INSERT INTO pktable VALUES (1, 3, 3, 'test2');
+
+INSERT INTO pktable VALUES (2, 3, 4, 'test3');
+
+INSERT INTO pktable VALUES (2, 4, 5, 'test4');
+
+INSERT INTO fktable VALUES (1, 2, 3, 1);
+
+INSERT INTO fktable VALUES (NULL, 2, 3, 2);
+
+INSERT INTO fktable VALUES (2, NULL, 3, 3);
+
+INSERT INTO fktable VALUES (NULL, 2, 7, 4);
+
+INSERT INTO fktable VALUES (NULL, 3, 4, 5);
+
+INSERT INTO fktable VALUES (1, 2, 7, 6);
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest2 = 5 WHERE ptest2 = 2;
+
+UPDATE pktable SET ptest1 = 1 WHERE ptest2 = 3;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 1 AND ptest2 = 5 AND ptest3 = 3;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 2;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 INT,
+  ptest4 TEXT,
+  PRIMARY KEY (ptest1, ptest2, ptest3)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT DEFAULT 0,
+  ftest2 INT,
+  ftest3 INT,
+  ftest4 INT,
+  CONSTRAINT "constrname3"
+  FOREIGN KEY
+  (ftest1,
+  ftest2,
+  ftest3)
+  REFERENCES pktable
+  ON DELETE SET DEFAULT
+  ON UPDATE SET NULL
+);
+
+INSERT INTO pktable VALUES (1, 2, 3, 'test1');
+
+INSERT INTO pktable VALUES (1, 3, 3, 'test2');
+
+INSERT INTO pktable VALUES (2, 3, 4, 'test3');
+
+INSERT INTO pktable VALUES (2, 4, 5, 'test4');
+
+INSERT INTO fktable VALUES (1, 2, 3, 1);
+
+INSERT INTO fktable VALUES (2, 3, 4, 1);
+
+INSERT INTO fktable VALUES (NULL, 2, 3, 2);
+
+INSERT INTO fktable VALUES (2, NULL, 3, 3);
+
+INSERT INTO fktable VALUES (NULL, 2, 7, 4);
+
+INSERT INTO fktable VALUES (NULL, 3, 4, 5);
+
+INSERT INTO fktable VALUES (1, 2, 7, 6);
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest2 = 5 WHERE ptest2 = 2;
+
+UPDATE pktable SET ptest2 = 2 WHERE ptest2 = 3 AND ptest1 = 1;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 2 AND ptest2 = 3 AND ptest3 = 4;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest2 = 5;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  ptest3 INT,
+  ptest4 TEXT,
+  PRIMARY KEY (ptest1, ptest2, ptest3)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT DEFAULT 0,
+  ftest2 INT DEFAULT -1,
+  ftest3 INT DEFAULT -2,
+  ftest4 INT,
+  CONSTRAINT "constrname3"
+  FOREIGN KEY
+  (ftest1,
+  ftest2,
+  ftest3)
+  REFERENCES pktable
+  ON DELETE SET NULL
+  ON UPDATE SET DEFAULT
+);
+
+INSERT INTO pktable VALUES (1, 2, 3, 'test1');
+
+INSERT INTO pktable VALUES (1, 3, 3, 'test2');
+
+INSERT INTO pktable VALUES (2, 3, 4, 'test3');
+
+INSERT INTO pktable VALUES (2, 4, 5, 'test4');
+
+INSERT INTO pktable VALUES (2, -1, 5, 'test5');
+
+INSERT INTO fktable VALUES (1, 2, 3, 1);
+
+INSERT INTO fktable VALUES (2, 3, 4, 1);
+
+INSERT INTO fktable VALUES (2, 4, 5, 1);
+
+INSERT INTO fktable VALUES (NULL, 2, 3, 2);
+
+INSERT INTO fktable VALUES (2, NULL, 3, 3);
+
+INSERT INTO fktable VALUES (NULL, 2, 7, 4);
+
+INSERT INTO fktable VALUES (NULL, 3, 4, 5);
+
+INSERT INTO fktable VALUES (1, 2, 7, 6);
+
+SELECT * FROM fktable;
+
+UPDATE pktable SET ptest2 = 5 WHERE ptest2 = 2;
+
+UPDATE pktable SET ptest1 = 0, ptest2 = -1, ptest3 = -2 WHERE ptest2 = 2;
+
+UPDATE pktable SET ptest2 = 10 WHERE ptest2 = 4;
+
+UPDATE pktable SET ptest2 = 2 WHERE ptest2 = 3 AND ptest1 = 1;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest1 = 2 AND ptest2 = 3 AND ptest3 = 4;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DELETE FROM pktable WHERE ptest2 = -1 AND ptest3 = 5;
+
+SELECT * FROM pktable;
+
+SELECT * FROM fktable;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  tid INT,
+  id INT,
+  PRIMARY KEY (tid, id)
+);
+
+CREATE TABLE fktable (
+  tid INT,
+  id INT,
+  foo INT,
+  FOREIGN KEY
+  (tid,
+  id)
+  REFERENCES pktable
+  ON DELETE SET NULL (bar)
+);
+
+CREATE TABLE fktable (
+  tid INT,
+  id INT,
+  foo INT,
+  FOREIGN KEY
+  (tid,
+  id)
+  REFERENCES pktable
+  ON DELETE SET NULL (foo)
+);
+
+CREATE TABLE fktable (
+  tid INT,
+  id INT,
+  fk_id_del_set_null INT,
+  fk_id_del_set_default INT DEFAULT 0,
+  FOREIGN KEY
+  (tid,
+  fk_id_del_set_null)
+  REFERENCES pktable
+  ON DELETE SET NULL (fk_id_del_set_null),
+  FOREIGN KEY
+  (tid,
+  fk_id_del_set_default)
+  REFERENCES pktable
+  ON DELETE SET DEFAULT (fk_id_del_set_default,
+  fk_id_del_set_default)
+);
+
+SELECT
+  pg_get_constraintdef(oid)
+FROM
+  pg_constraint
+WHERE
+  conrelid =
+  CAST(CAST('fktable' AS REGCLASS) AS OID)
+ORDER BY oid;
+
+INSERT INTO pktable VALUES (1, 0), (1, 1), (1, 2);
+
+INSERT INTO fktable VALUES (1, 1, 1, NULL), (1, 2, NULL, 2);
+
+DELETE FROM pktable WHERE id = 1 OR id = 2;
+
+SELECT * FROM fktable ORDER BY id;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT PRIMARY KEY,
+  someoid OID
+);
+
+CREATE TABLE fktable_fail1 (
+  ftest1 INT,
+  CONSTRAINT "fkfail1"
+  FOREIGN KEY
+  (ftest2)
+  REFERENCES pktable
+);
+
+CREATE TABLE fktable_fail2 (
+  ftest1 INT,
+  CONSTRAINT "fkfail1"
+  FOREIGN KEY
+  (ftest1)
+  REFERENCES pktable (ptest2)
+);
+
+CREATE TABLE fktable_fail3 (
+  ftest1 INT,
+  CONSTRAINT "fkfail1"
+  FOREIGN KEY
+  (tableoid)
+  REFERENCES pktable (someoid)
+);
+
+CREATE TABLE fktable_fail4 (
+  ftest1 OID,
+  CONSTRAINT "fkfail1"
+  FOREIGN KEY
+  (ftest1)
+  REFERENCES pktable (tableoid)
+);
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  UNIQUE (ptest1, ptest2)
+);
+
+CREATE TABLE fktable_fail1 (ftest1 INT REFERENCES pktable (ptest1));
+
+DROP TABLE "fktable_fail1";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (ptest1 INT PRIMARY KEY);
+
+INSERT INTO pktable VALUES (42);
+
+CREATE TABLE fktable (ftest1 INET REFERENCES pktable);
+
+CREATE TABLE fktable (ftest1 INET REFERENCES pktable (ptest1));
+
+CREATE TABLE fktable (ftest1 BIGINT REFERENCES pktable);
+
+INSERT INTO fktable VALUES (42);
+
+INSERT INTO fktable VALUES (43);
+
+UPDATE fktable SET ftest1 = ftest1;
+
+UPDATE fktable SET ftest1 = ftest1 + 1;
+
+DROP TABLE "fktable";
+
+CREATE TABLE fktable (ftest1 NUMERIC REFERENCES pktable);
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (ptest1 NUMERIC PRIMARY KEY);
+
+INSERT INTO pktable VALUES (42);
+
+CREATE TABLE fktable (ftest1 INT REFERENCES pktable);
+
+INSERT INTO fktable VALUES (42);
+
+INSERT INTO fktable VALUES (43);
+
+UPDATE fktable SET ftest1 = ftest1;
+
+UPDATE fktable SET ftest1 = ftest1 + 1;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  PRIMARY KEY (ptest1, ptest2)
+);
+
+CREATE TABLE fktable (
+  ftest1 CIDR,
+  ftest2 TIMESTAMP,
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable
+);
+
+CREATE TABLE fktable (
+  ftest1 CIDR,
+  ftest2 TIMESTAMP,
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable (ptest1,
+  ptest2)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest2,
+  ftest1)
+  REFERENCES pktable
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest2,
+  ftest1)
+  REFERENCES pktable (ptest1,
+  ptest2)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable (ptest2,
+  ptest1)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest2,
+  ftest1)
+  REFERENCES pktable (ptest2,
+  ptest1)
+);
+
+DROP TABLE "fktable";
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable (ptest1,
+  ptest2)
+);
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  ptest3 INT,
+  ptest4 INET,
+  PRIMARY KEY (ptest1, ptest2),
+  FOREIGN KEY
+  (ptest3,
+  ptest4)
+  REFERENCES pktable (ptest1,
+  ptest2)
+);
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  ptest3 INT,
+  ptest4 INET,
+  PRIMARY KEY (ptest1, ptest2),
+  FOREIGN KEY
+  (ptest3,
+  ptest4)
+  REFERENCES pktable
+);
+
+DROP TABLE "pktable";
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  ptest3 INT,
+  ptest4 INET,
+  PRIMARY KEY (ptest1, ptest2),
+  FOREIGN KEY
+  (ptest3,
+  ptest4)
+  REFERENCES pktable (ptest2,
+  ptest1)
+);
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  ptest3 INT,
+  ptest4 INET,
+  PRIMARY KEY (ptest1, ptest2),
+  FOREIGN KEY
+  (ptest4,
+  ptest3)
+  REFERENCES pktable (ptest1,
+  ptest2)
+);
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INET,
+  ptest3 INT,
+  ptest4 INET,
+  PRIMARY KEY (ptest1, ptest2),
+  FOREIGN KEY
+  (ptest4,
+  ptest3)
+  REFERENCES pktable
+);
+
+CREATE TABLE pktable_base (base1 INT NOT NULL);
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  PRIMARY KEY (base1),
+  UNIQUE (base1, ptest1)
+)
+INHERITS (pktable_base);
+
+CREATE TABLE fktable (ftest1 INT REFERENCES pktable (base1));
+
+INSERT INTO pktable (base1) VALUES (1);
+
+INSERT INTO pktable (base1) VALUES (2);
+
+INSERT INTO fktable (ftest1) VALUES (3);
+
+INSERT INTO pktable (base1) VALUES (3);
+
+INSERT INTO fktable (ftest1) VALUES (3);
+
+DELETE FROM pktable WHERE base1 > 2;
+
+UPDATE pktable SET base1 = base1 * 4;
+
+UPDATE pktable SET base1 = base1 * 4 WHERE base1 < 3;
+
+DELETE FROM pktable WHERE base1 > 3;
+
+DROP TABLE "fktable";
+
+DELETE FROM pktable;
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INT,
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable (base1,
+  ptest1)
+);
+
+INSERT INTO pktable (base1, ptest1) VALUES (1, 1);
+
+INSERT INTO pktable (base1, ptest1) VALUES (2, 2);
+
+INSERT INTO fktable (ftest1, ftest2) VALUES (3, 1);
+
+INSERT INTO pktable (base1, ptest1) VALUES (3, 1);
+
+INSERT INTO fktable (ftest1, ftest2) VALUES (3, 1);
+
+DELETE FROM pktable WHERE base1 > 2;
+
+UPDATE pktable SET base1 = base1 * 4;
+
+UPDATE pktable SET base1 = base1 * 4 WHERE base1 < 3;
+
+DELETE FROM pktable WHERE base1 > 3;
+
+DROP TABLE "fktable";
+
+DROP TABLE "pktable";
+
+DROP TABLE "pktable_base";
+
+CREATE TABLE pktable_base (
+  base1 INT NOT NULL,
+  base2 INT
+);
+
+CREATE TABLE pktable (
+  ptest1 INT,
+  ptest2 INT,
+  PRIMARY KEY (base1, ptest1),
+  FOREIGN KEY
+  (base2,
+  ptest2)
+  REFERENCES pktable (base1,
+  ptest1)
+)
+INHERITS (pktable_base);
+
+INSERT INTO pktable (base1, ptest1, base2, ptest2) VALUES (1, 1, 1, 1);
+
+INSERT INTO pktable (base1, ptest1, base2, ptest2) VALUES (2, 1, 1, 1);
+
+INSERT INTO pktable (base1, ptest1, base2, ptest2) VALUES (2, 2, 2, 1);
+
+INSERT INTO pktable (base1, ptest1, base2, ptest2) VALUES (1, 3, 2, 2);
+
+INSERT INTO pktable (base1, ptest1, base2, ptest2) VALUES (2, 3, 3, 2);
+
+DELETE FROM pktable WHERE base1 = 2;
+
+UPDATE pktable SET base1 = 3 WHERE base1 = 1;
+
+DELETE FROM pktable WHERE base2 = 2;
+
+DELETE FROM pktable WHERE base1 = 2;
+
+DROP TABLE "pktable";
+
+DROP TABLE "pktable_base";
+
+CREATE TABLE pktable_base (base1 INT NOT NULL);
+
+CREATE TABLE pktable (
+  ptest1 INET,
+  PRIMARY KEY (base1, ptest1)
+)
+INHERITS (pktable_base);
+
+CREATE TABLE fktable (
+  ftest1 CIDR,
+  ftest2 INT[],
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable
+);
+
+CREATE TABLE fktable (
+  ftest1 CIDR,
+  ftest2 INT[],
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable (base1,
+  ptest1)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest2,
+  ftest1)
+  REFERENCES pktable
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest2,
+  ftest1)
+  REFERENCES pktable (base1,
+  ptest1)
+);
+
+CREATE TABLE fktable (
+  ftest1 INT,
+  ftest2 INET,
+  FOREIGN KEY
+  (ftest1,
+  ftest2)
+  REFERENCES pktable (ptest1,
+  base1)
+);
+
+DROP TABLE "pktable";
+
+DROP TABLE "pktable_base";
+
+CREATE TABLE pktable_base (
+  base1 INT NOT NULL,
+  base2 INT
+);
+
+CREATE TABLE pktable (
+  ptest1 INET,
+  ptest2 INET[],
+  PRIMARY KEY (base1, ptest1),
+  FOREIGN KEY
+  (base2,
+  ptest2)
+  REFERENCES pktable (base1,
+  ptest1)
+)
+INHERITS (pktable_base);
+
+CREATE TABLE pktable (
+  ptest1 INET,
+  ptest2 INET,
+  PRIMARY KEY (base1, ptest1),
+  FOREIGN KEY
+  (base2,
+  ptest2)
+  REFERENCES pktable (ptest1,
+  base1)
+)
+INHERITS (pktable_base);
+
+CREATE TABLE pktable (
+  ptest1 INET,
+  ptest2 INET,
+  PRIMARY KEY (base1, ptest1),
+  FOREIGN KEY
+  (ptest2,
+  base2)
+  REFERENCES pktable (base1,
+  ptest1)
+)
+INHERITS (pktable_base);
+
+CREATE TABLE pktable (
+  ptest1 INET,
+  ptest2 INET,
+  PRIMARY KEY (base1, ptest1),
+  FOREIGN KEY
+  (ptest2,
+  base2)
+  REFERENCES pktable (base1,
+  ptest1)
+)
+INHERITS (pktable_base);
+
+DROP TABLE "pktable";
+
+DROP TABLE "pktable_base";
+
+CREATE TABLE pktable (
+  id INT PRIMARY KEY,
+  other INT
+);
+
+CREATE TABLE fktable (
+  id INT PRIMARY KEY,
+  fk INT REFERENCES pktable DEFERRABLE
+);
+
+INSERT INTO fktable VALUES (5, 10);
+
+BEGIN;
+
+SET CONSTRAINTS ALL DEFERRED;
+
+INSERT INTO fktable VALUES (10, 15);
+
+INSERT INTO pktable VALUES (15, 0);
+
+COMMIT;
+
+DROP TABLE "fktable", "pktable";
+
+CREATE TABLE pktable (
+  id INT PRIMARY KEY,
+  other INT
+);
+
+CREATE TABLE fktable (
+  id INT PRIMARY KEY,
+  fk INT
+  REFERENCES pktable
+  DEFERRABLE
+  INITIALLY DEFERRED
+);
+
+BEGIN;
+
+INSERT INTO fktable VALUES (100, 200);
+
+INSERT INTO pktable VALUES (200, 500);
+
+COMMIT;
+
+BEGIN;
+
+SET CONSTRAINTS ALL IMMEDIATE;
+
+INSERT INTO fktable VALUES (500, 1000);
+
+COMMIT;
+
+DROP TABLE "fktable", "pktable";
+
+CREATE TABLE pktable (
+  id INT PRIMARY KEY,
+  other INT
+);
+
+CREATE TABLE fktable (
+  id INT PRIMARY KEY,
+  fk INT REFERENCES pktable DEFERRABLE
+);
+
+BEGIN;
+
+SET CONSTRAINTS ALL DEFERRED;
+
+INSERT INTO fktable VALUES (1000, 2000);
+
+SET CONSTRAINTS ALL IMMEDIATE;
+
+INSERT INTO pktable VALUES (2000, 3);
+
+COMMIT;
+
+DROP TABLE "fktable", "pktable";
+
+CREATE TABLE pktable (
+  id INT PRIMARY KEY,
+  other INT
+);
+
+CREATE TABLE fktable (
+  id INT PRIMARY KEY,
+  fk INT
+  REFERENCES pktable
+  DEFERRABLE
+  INITIALLY DEFERRED
+);
+
+BEGIN;
+
+INSERT INTO fktable VALUES (100, 200);
+
+COMMIT;
+
+DROP TABLE "pktable", "fktable";
+
+CREATE TEMPORARY TABLE pktable (
+  id1 INT PRIMARY KEY,
+  id2 VARCHAR(4) UNIQUE,
+  id3 REAL UNIQUE,
+  UNIQUE (id1, id2, id3)
+);
+
+CREATE TEMPORARY TABLE fktable (
+  x1 INT REFERENCES pktable (id1),
+  x2 VARCHAR(4) REFERENCES pktable (id2),
+  x3 REAL REFERENCES pktable (id3),
+  x4 TEXT,
+  x5 SMALLINT
+);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_2_3"
+  FOREIGN KEY
+  (x2)
+  REFERENCES pktable (id3);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_2_1"
+  FOREIGN KEY
+  (x2)
+  REFERENCES pktable (id1);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_3_1"
+  FOREIGN KEY
+  (x3)
+  REFERENCES pktable (id1);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_1_2"
+  FOREIGN KEY
+  (x1)
+  REFERENCES pktable (id2);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_1_3"
+  FOREIGN KEY
+  (x1)
+  REFERENCES pktable (id3);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_4_2"
+  FOREIGN KEY
+  (x4)
+  REFERENCES pktable (id2);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_5_1"
+  FOREIGN KEY
+  (x5)
+  REFERENCES pktable (id1);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_123_123"
+  FOREIGN KEY
+  (x1,
+  x2,
+  x3)
+  REFERENCES pktable (id1,
+  id2,
+  id3);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_213_213"
+  FOREIGN KEY
+  (x2,
+  x1,
+  x3)
+  REFERENCES pktable (id2,
+  id1,
+  id3);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_253_213"
+  FOREIGN KEY
+  (x2,
+  x5,
+  x3)
+  REFERENCES pktable (id2,
+  id1,
+  id3);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_123_231"
+  FOREIGN KEY
+  (x1,
+  x2,
+  x3)
+  REFERENCES pktable (id2,
+  id3,
+  id1);
+
+ALTER TABLE fktable
+  ADD CONSTRAINT "fk_241_132"
+  FOREIGN KEY
+  (x2,
+  x4,
+  x1)
+  REFERENCES pktable (id1,
+  id3,
+  id2);
+
+DROP TABLE "pktable", "fktable";
+
+CREATE TEMPORARY TABLE pktable (
+  id INT PRIMARY KEY,
+  other INT
+);
+
+CREATE TEMPORARY TABLE fktable (
+  id INT PRIMARY KEY,
+  fk INT
+  REFERENCES pktable
+  DEFERRABLE
+  INITIALLY DEFERRED
+);
+
+INSERT INTO pktable VALUES (5, 10);
+
+BEGIN;
+
+INSERT INTO fktable VALUES (0, 20);
+
+UPDATE fktable SET id = id + 1;
+
+COMMIT;
+
+BEGIN;
+
+INSERT INTO fktable VALUES (0, 20);
+
+SAVEPOINT savept1;
+
+UPDATE fktable SET id = id + 1;
+
+COMMIT;
+
+BEGIN;
+
+SAVEPOINT savept1;
+
+INSERT INTO fktable VALUES (0, 20);
+
+RELEASE SAVEPOINT savept1;
+
+UPDATE fktable SET id = id + 1;
+
+COMMIT;
+
+BEGIN;
+
+INSERT INTO fktable VALUES (0, 20);
+
+SAVEPOINT savept1;
+
+UPDATE fktable SET id = id + 1;
+
+ROLLBACK TO SAVEPOINT savept1;
+
+COMMIT;
+
+INSERT INTO fktable VALUES (1, 5);
+
+ALTER TABLE fktable
+  ALTER CONSTRAINT "fktable_fk_fkey" DEFERRABLE INITIALLY IMMEDIATE;
+
+BEGIN;
+
+UPDATE pktable SET id = 10 WHERE id = 5;
+
+COMMIT;
+
+BEGIN;
+
+INSERT INTO fktable VALUES (0, 20);
+
+COMMIT;
+
+BEGIN;
+
+UPDATE pktable SET id = 10 WHERE id = 5;
+
+INSERT INTO fktable VALUES (0, 20);
+
+ROLLBACK;
+
+ALTER TABLE fktable
+  ALTER CONSTRAINT "fktable_fk_fkey" NOT DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE TEMPORARY TABLE users (
+  id INT PRIMARY KEY,
+  name VARCHAR NOT NULL
+);
+
+INSERT INTO users VALUES (1, 'Jozko');
+
+INSERT INTO users VALUES (2, 'Ferko');
+
+INSERT INTO users VALUES (3, 'Samko');
+
+CREATE TEMPORARY TABLE tasks (
+  id INT PRIMARY KEY,
+  owner INT
+  REFERENCES users
+  ON DELETE SET NULL
+  ON UPDATE CASCADE,
+  worker INT
+  REFERENCES users
+  ON DELETE SET NULL
+  ON UPDATE CASCADE,
+  checked_by INT
+  REFERENCES users
+  ON DELETE SET NULL
+  ON UPDATE CASCADE
+);
+
+INSERT INTO tasks VALUES (1, 1, NULL, NULL);
+
+INSERT INTO tasks VALUES (2, 2, 2, NULL);
+
+INSERT INTO tasks VALUES (3, 3, 3, 3);
+
+SELECT * FROM tasks;
+
+UPDATE users SET id = 4 WHERE id = 3;
+
+SELECT * FROM tasks;
+
+DELETE FROM users WHERE id = 4;
+
+SELECT * FROM tasks;
+
+BEGIN;
+
+UPDATE tasks SET id = id WHERE id = 2;
+
+SELECT * FROM tasks;
+
+DELETE FROM users WHERE id = 2;
+
+SELECT * FROM tasks;
+
+COMMIT;
+
+CREATE TEMPORARY TABLE selfref (
+  a INT PRIMARY KEY,
+  b INT,
+  FOREIGN KEY
+  (b)
+  REFERENCES selfref (a)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+);
+
+INSERT INTO selfref (a, b) VALUES (0, 0), (1, 1);
+
+BEGIN;
+
+UPDATE selfref SET a = 123 WHERE a = 0;
+
+SELECT a, b FROM selfref;
+
+UPDATE selfref SET a = 456 WHERE a = 123;
+
+SELECT a, b FROM selfref;
+
+COMMIT;
+
+CREATE TEMPORARY TABLE defp (f1 INT PRIMARY KEY);
+
+CREATE TEMPORARY TABLE defc (
+  f1 INT
+  DEFAULT 0
+  REFERENCES defp ON DELETE SET DEFAULT
+);
+
+INSERT INTO defp VALUES (0), (1), (2);
+
+INSERT INTO defc VALUES (2);
+
+SELECT * FROM defc;
+
+DELETE FROM defp WHERE f1 = 2;
+
+SELECT * FROM defc;
+
+DELETE FROM defp WHERE f1 = 0;
+
+ALTER TABLE defc
+  ALTER COLUMN f1 SET DEFAULT 1;
+
+DELETE FROM defp WHERE f1 = 0;
+
+SELECT * FROM defc;
+
+DELETE FROM defp WHERE f1 = 1;
+
+CREATE TEMPORARY TABLE pp (f1 INT PRIMARY KEY);
+
+CREATE TEMPORARY TABLE cc (f1 INT REFERENCES pp);
+
+INSERT INTO pp VALUES (12);
+
+INSERT INTO pp VALUES (11);
+
+UPDATE pp SET f1 = f1 + 1;
+
+INSERT INTO cc VALUES (13);
+
+UPDATE pp SET f1 = f1 + 1;
+
+UPDATE pp SET f1 = f1 + 1;
+
+DELETE FROM pp WHERE f1 = 13;
+
+DROP TABLE "pp", "cc";
+
+CREATE TEMPORARY TABLE pp (f1 INT PRIMARY KEY);
+
+CREATE TEMPORARY TABLE cc (
+  f1 INT
+  REFERENCES pp
+  ON DELETE RESTRICT
+  ON UPDATE RESTRICT
+);
+
+INSERT INTO pp VALUES (12);
+
+INSERT INTO pp VALUES (11);
+
+UPDATE pp SET f1 = f1 + 1;
+
+INSERT INTO cc VALUES (13);
+
+UPDATE pp SET f1 = f1 + 1;
+
+DELETE FROM pp WHERE f1 = 13;
+
+DROP TABLE "pp", "cc";
+
+CREATE TEMPORARY TABLE t1 (
+  a INT PRIMARY KEY,
+  b TEXT
+);
+
+CREATE TEMPORARY TABLE t2 (
+  a INT PRIMARY KEY,
+  b INT REFERENCES t1
+);
+
+CREATE RULE r1
+AS ON DELETE TO t1
+DO
+  DELETE FROM t2 WHERE t2.b = old.a;;
+
+DELETE FROM t1 WHERE a = 1;
+
+DELETE FROM t1 WHERE a = 1;
+
+CREATE TABLE pktable2 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  e INT,
+  PRIMARY KEY (d, e)
+);
+
+CREATE TABLE fktable2 (
+  d INT,
+  e INT,
+  FOREIGN KEY (d, e) REFERENCES pktable2
+);
+
+INSERT INTO pktable2 VALUES (1, 2, 3, 4, 5);
+
+INSERT INTO fktable2 VALUES (4, 5);
+
+DELETE FROM pktable2;
+
+UPDATE pktable2 SET d = 5;
+
+DROP TABLE "pktable2", "fktable2";
+
+CREATE TABLE pktable1 (a INT PRIMARY KEY);
+
+CREATE TABLE pktable2 (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+);
+
+CREATE TABLE fktable2 (
+  a INT,
+  b INT,
+  very_very_long_column_name_to_exceed_63_characters INT,
+  FOREIGN KEY
+  (very_very_long_column_name_to_exceed_63_characters)
+  REFERENCES pktable1,
+  FOREIGN KEY
+  (a,
+  very_very_long_column_name_to_exceed_63_characters)
+  REFERENCES pktable2,
+  FOREIGN KEY
+  (a,
+  very_very_long_column_name_to_exceed_63_characters)
+  REFERENCES pktable2
+);
+
+SELECT
+  conname
+FROM
+  pg_constraint
+WHERE
+  conrelid = CAST('fktable2' AS REGCLASS)
+ORDER BY conname;
+
+DROP TABLE "pktable1", "pktable2", "fktable2";
+
+CREATE TABLE pktable2 (f1 INT PRIMARY KEY);
+
+CREATE TABLE fktable2 (
+  f1 INT
+  REFERENCES pktable2
+  DEFERRABLE
+  INITIALLY DEFERRED
+);
+
+INSERT INTO pktable2 VALUES (1);
+
+BEGIN;
+
+INSERT INTO fktable2 VALUES (1);
+
+SAVEPOINT x;
+
+DELETE FROM fktable2;
+
+ROLLBACK TO SAVEPOINT x;
+
+COMMIT;
+
+BEGIN;
+
+INSERT INTO fktable2 VALUES (2);
+
+SAVEPOINT x;
+
+DELETE FROM fktable2;
+
+ROLLBACK TO SAVEPOINT x;
+
+COMMIT;
+
+BEGIN;
+
+INSERT INTO fktable2 VALUES (2);
+
+ALTER TABLE fktable2
+  DROP CONSTRAINT fktable2_f1_fkey;
+
+COMMIT;
+
+BEGIN;
+
+DELETE FROM pktable2 WHERE f1 = 1;
+
+ALTER TABLE fktable2
+  DROP CONSTRAINT fktable2_f1_fkey;
+
+COMMIT;
+
+DROP TABLE "pktable2", "fktable2";
+
+CREATE TABLE pktable2 (
+  a DOUBLE PRECISION,
+  b DOUBLE PRECISION,
+  PRIMARY KEY (a, b)
+);
+
+CREATE TABLE fktable2 (
+  x DOUBLE PRECISION,
+  y DOUBLE PRECISION,
+  FOREIGN KEY
+  (x,
+  y)
+  REFERENCES pktable2 (a,
+  b)
+  ON UPDATE CASCADE
+);
+
+INSERT INTO pktable2 VALUES ('-0', '-0');
+
+INSERT INTO fktable2 VALUES ('-0', '-0');
+
+SELECT * FROM pktable2;
+
+SELECT * FROM fktable2;
+
+UPDATE pktable2 SET a = '0' WHERE a = '-0';
+
+SELECT * FROM pktable2;
+
+SELECT * FROM fktable2;
+
+DROP TABLE "pktable2", "fktable2";
+
+CREATE TABLE fk_notpartitioned_pk (
+  fdrop1 INT,
+  a INT,
+  fdrop2 INT,
+  b INT,
+  PRIMARY KEY (a, b)
+);
+
+ALTER TABLE fk_notpartitioned_pk
+  DROP COLUMN fdrop1,
+  DROP COLUMN fdrop2;
+
+CREATE TABLE fk_partitioned_fk (
+  b INT,
+  fdrop1 INT,
+  a INT
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE fk_partitioned_fk
+  DROP COLUMN fdrop1;
+
+CREATE TABLE fk_partitioned_fk_1 (
+  fdrop1 INT,
+  fdrop2 INT,
+  a INT,
+  fdrop3 INT,
+  b INT
+);
+
+ALTER TABLE fk_partitioned_fk_1
+  DROP COLUMN fdrop1,
+  DROP COLUMN fdrop2,
+  DROP COLUMN fdrop3;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_1
+  FOR VALUES FROM (0, 0) TO (1000, 1000);
+
+CREATE TABLE fk_partitioned_fk_2 (
+  b INT,
+  fdrop1 INT,
+  fdrop2 INT,
+  a INT
+);
+
+ALTER TABLE fk_partitioned_fk_2
+  DROP COLUMN fdrop1,
+  DROP COLUMN fdrop2;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES FROM (1000,
+  1000) TO (2000,
+  2000);
+
+CREATE TABLE fk_partitioned_fk_3 (
+  fdrop1 INT,
+  fdrop2 INT,
+  fdrop3 INT,
+  fdrop4 INT,
+  b INT,
+  a INT
+)
+PARTITION BY HASH(a);
+
+ALTER TABLE fk_partitioned_fk_3
+  DROP COLUMN fdrop1,
+  DROP COLUMN fdrop2,
+  DROP COLUMN fdrop3,
+  DROP COLUMN fdrop4;
+
+CREATE TABLE fk_partitioned_fk_3_0
+PARTITION OF fk_partitioned_fk_3
+FOR VALUES WITH (MODULUS 5, REMAINDER 0);
+
+CREATE TABLE fk_partitioned_fk_3_1
+PARTITION OF fk_partitioned_fk_3
+FOR VALUES WITH (MODULUS 5, REMAINDER 1);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_3
+  FOR VALUES FROM (2000,
+  2000) TO (3000,
+  3000);
+
+ALTER TABLE ONLY fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk;
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (500, 501);
+
+INSERT INTO fk_partitioned_fk_1 (a, b) VALUES (500, 501);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (1500, 1501);
+
+INSERT INTO fk_partitioned_fk_2 (a, b) VALUES (1500, 1501);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (2500, 2502);
+
+INSERT INTO fk_partitioned_fk_3 (a, b) VALUES (2500, 2502);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (2501, 2503);
+
+INSERT INTO fk_partitioned_fk_3 (a, b) VALUES (2501, 2503);
+
+INSERT INTO fk_notpartitioned_pk
+VALUES
+  (500, 501),
+  (1500, 1501),
+  (2500, 2502),
+  (2501, 2503);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (500, 501);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (1500, 1501);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (2500, 2502);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (2501, 2503);
+
+UPDATE fk_partitioned_fk SET a = a + 1 WHERE a = 2501;
+
+INSERT INTO fk_notpartitioned_pk (a, b) VALUES (2502, 2503);
+
+UPDATE fk_partitioned_fk SET a = a + 1 WHERE a = 2501;
+
+UPDATE fk_notpartitioned_pk SET b = 502 WHERE a = 500;
+
+UPDATE fk_notpartitioned_pk SET b = 1502 WHERE a = 1500;
+
+UPDATE fk_notpartitioned_pk SET b = 2504 WHERE a = 2500;
+
+SELECT
+  conname,
+  CAST(tgrelid AS REGCLASS) AS tgrel,
+  regexp_replace(tgname, '[0-9]+', 'N')
+  AS tgname,
+  tgtype
+FROM
+  pg_trigger AS t
+  INNER JOIN
+    pg_constraint AS c
+  ON t.tgconstraint = c.oid
+WHERE
+  tgrelid IN
+  (
+    SELECT
+      relid
+    FROM
+      pg_partition_tree(
+        CAST('fk_partitioned_fk' AS REGCLASS)
+      )
+    UNION ALL
+    SELECT
+      CAST('fk_notpartitioned_pk' AS REGCLASS)
+  )
+ORDER BY tgrelid,
+  tgtype;
+
+SELECT
+  conname,
+  CAST(tgrelid AS REGCLASS) AS tgrel,
+  regexp_replace(tgname, '[0-9]+', 'N')
+  AS tgname,
+  tgtype
+FROM
+  pg_trigger AS t
+  INNER JOIN
+    pg_constraint AS c
+  ON t.tgconstraint = c.oid
+WHERE
+  tgrelid IN
+  (
+    SELECT
+      relid
+    FROM
+      pg_partition_tree(
+        CAST('fk_partitioned_fk' AS REGCLASS)
+      )
+    UNION ALL
+    SELECT
+      CAST('fk_notpartitioned_pk' AS REGCLASS)
+  )
+ORDER BY tgrelid,
+  tgtype;
+
+SELECT
+  conname,
+  CAST(tgrelid AS REGCLASS) AS tgrel,
+  regexp_replace(tgname, '[0-9]+', 'N')
+  AS tgname,
+  tgtype
+FROM
+  pg_trigger AS t
+  INNER JOIN
+    pg_constraint AS c
+  ON t.tgconstraint = c.oid
+WHERE
+  tgrelid IN
+  (
+    SELECT
+      relid
+    FROM
+      pg_partition_tree(
+        CAST('fk_partitioned_fk' AS REGCLASS)
+      )
+    UNION ALL
+    SELECT
+      CAST('fk_notpartitioned_pk' AS REGCLASS)
+  )
+ORDER BY tgrelid,
+  tgtype;
+
+ALTER TABLE fk_partitioned_fk
+  DROP CONSTRAINT fk_partitioned_fk_a_b_fkey;
+
+DROP TABLE "fk_notpartitioned_pk", "fk_partitioned_fk";
+
+CREATE TABLE fk_notpartitioned_pk (
+  a INT,
+  PRIMARY KEY (a),
+  CHECK (a > 0)
+);
+
+CREATE TABLE fk_partitioned_fk (
+  a INT
+  REFERENCES fk_notpartitioned_pk (a)
+  PRIMARY KEY
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk_partitioned_fk_1
+PARTITION OF fk_partitioned_fk
+FOR VALUES FROM (minvalue) TO (maxvalue);
+
+INSERT INTO fk_notpartitioned_pk VALUES (1);
+
+INSERT INTO fk_partitioned_fk VALUES (1);
+
+ALTER TABLE fk_notpartitioned_pk
+  ALTER COLUMN a TYPE BIGINT;
+
+DELETE FROM fk_notpartitioned_pk WHERE a = 1;
+
+DROP TABLE "fk_notpartitioned_pk", "fk_partitioned_fk";
+
+CREATE TABLE fk_notpartitioned_pk (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+);
+
+CREATE TABLE fk_partitioned_fk (
+  b INT,
+  a INT
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  NOT VALID;
+
+CREATE TABLE fk_partitioned_fk_1 (
+  a INT,
+  b INT
+);
+
+ALTER TABLE fk_partitioned_fk_1
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_1
+  FOR VALUES FROM (0, 0) TO (1000, 1000);
+
+SELECT
+  conname,
+  convalidated,
+  CAST(conrelid AS REGCLASS)
+FROM
+  pg_constraint
+WHERE
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT) LIKE 'fk_partitioned_fk%'
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+ALTER TABLE fk_partitioned_fk
+  VALIDATE CONSTRAINT fk_partitioned_fk_a_b_fkey;
+
+SELECT
+  conname,
+  convalidated,
+  CAST(conrelid AS REGCLASS)
+FROM
+  pg_constraint
+WHERE
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT) LIKE 'fk_partitioned_fk%'
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+CREATE TABLE fk_partitioned_fk_2 (
+  a INT,
+  b INT
+);
+
+INSERT INTO fk_partitioned_fk_2 VALUES (1000, 1000);
+
+ALTER TABLE fk_partitioned_fk_2
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  NOT VALID;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES FROM (1000,
+  1000) TO (2000,
+  2000);
+
+TRUNCATE fk_partitioned_fk_2;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES FROM (1000,
+  1000) TO (2000,
+  2000);
+
+SELECT
+  conname,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conrelid =
+  CAST('fk_partitioned_fk_2' AS REGCLASS)
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+CREATE TABLE fk_partitioned_fk_3 (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+ALTER TABLE fk_partitioned_fk_3
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  NOT VALID;
+
+CREATE TABLE fk_partitioned_fk_3_1 (
+  a INT,
+  b INT
+);
+
+ALTER TABLE fk_partitioned_fk_3_1
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk;
+
+ALTER TABLE fk_partitioned_fk_3
+  ATTACH PARTITION
+  fk_partitioned_fk_3_1
+  FOR VALUES FROM (2000,
+  2000) TO (3000,
+  3000);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_3
+  FOR VALUES FROM (2000,
+  2000) TO (3000,
+  3000);
+
+SELECT
+  conname,
+  convalidated,
+  CAST(conrelid AS REGCLASS)
+FROM
+  pg_constraint
+WHERE
+  CAST(CAST(conrelid AS REGCLASS) AS TEXT) LIKE 'fk_partitioned_fk%'
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+DROP TABLE "fk_partitioned_fk", "fk_notpartitioned_pk";
+
+CREATE TABLE fk_partitioned_pk (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE fk_partitioned_pk_1
+PARTITION OF fk_partitioned_pk
+FOR VALUES FROM (0, 0) TO (1000, 1000);
+
+CREATE TABLE fk_partitioned_pk_2
+PARTITION OF fk_partitioned_pk
+FOR VALUES FROM (1000,
+1000) TO (2000,
+2000);
+
+CREATE TABLE fk_notpartitioned_fk (
+  b INT,
+  a INT
+);
+
+INSERT INTO fk_partitioned_pk VALUES (100, 100), (1000, 1000);
+
+INSERT INTO fk_notpartitioned_fk VALUES (100, 100), (1000, 1000);
+
+ALTER TABLE fk_notpartitioned_fk
+  ADD CONSTRAINT "fk_notpartitioned_fk_a_b_fkey"
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_partitioned_pk
+  NOT VALID;
+
+SELECT
+  conname,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conrelid =
+  CAST('fk_notpartitioned_fk' AS REGCLASS)
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+ALTER TABLE fk_notpartitioned_fk
+  VALIDATE CONSTRAINT fk_notpartitioned_fk_a_b_fkey;
+
+SELECT
+  conname,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conrelid =
+  CAST('fk_notpartitioned_fk' AS REGCLASS)
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+ALTER TABLE fk_partitioned_pk
+  ADD CONSTRAINT "selffk"
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_partitioned_pk
+  NOT VALID;
+
+CREATE TABLE fk_partitioned_pk_3
+PARTITION OF fk_partitioned_pk
+FOR VALUES FROM (2000,
+2000) TO (3000,
+3000)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk_partitioned_pk_3_1
+PARTITION OF fk_partitioned_pk_3
+FOR VALUES FROM (2000) TO (2100);
+
+SELECT
+  conname,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conrelid =
+  CAST('fk_partitioned_pk' AS REGCLASS) AND
+  contype = 'f'
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+ALTER TABLE fk_partitioned_pk_2
+  VALIDATE CONSTRAINT selffk;
+
+ALTER TABLE fk_partitioned_pk
+  VALIDATE CONSTRAINT selffk;
+
+SELECT
+  conname,
+  conenforced,
+  convalidated
+FROM
+  pg_constraint
+WHERE
+  conrelid =
+  CAST('fk_partitioned_pk' AS REGCLASS) AND
+  contype = 'f'
+ORDER BY CAST(CAST(oid AS REGCLASS) AS TEXT);
+
+DROP TABLE "fk_notpartitioned_fk", "fk_partitioned_pk";
+
+CREATE TABLE fk_notpartitioned_pk (
+  a INT,
+  b INT,
+  PRIMARY KEY (a, b)
+);
+
+CREATE TABLE fk_partitioned_fk (
+  a INT DEFAULT 2501,
+  b INT DEFAULT 142857
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_partitioned_fk_1
+PARTITION OF fk_partitioned_fk
+FOR VALUES IN (NULL, 500, 501, 502);
+
+ALTER TABLE fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  ON DELETE SET NULL
+  ON UPDATE SET NULL;
+
+CREATE TABLE fk_partitioned_fk_2
+PARTITION OF fk_partitioned_fk
+FOR VALUES IN (1500, 1502);
+
+CREATE TABLE fk_partitioned_fk_3 (
+  a INT,
+  b INT
+);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_3
+  FOR VALUES IN (2500, 2501, 2502, 2503);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (2502, 2503);
+
+INSERT INTO fk_partitioned_fk_3 (a, b) VALUES (2502, 2503);
+
+INSERT INTO fk_partitioned_fk_3 (a, b) VALUES (2502, NULL);
+
+INSERT INTO fk_notpartitioned_pk VALUES (2502, 2503);
+
+INSERT INTO fk_partitioned_fk_3 (a, b) VALUES (2502, 2503);
+
+INSERT INTO fk_partitioned_fk (a, b) VALUES (NULL, NULL);
+
+INSERT INTO fk_notpartitioned_pk VALUES (1, 2);
+
+CREATE TABLE fk_partitioned_fk_full (
+  x INT,
+  y INT
+)
+PARTITION BY RANGE(x);
+
+CREATE TABLE fk_partitioned_fk_full_1
+PARTITION OF fk_partitioned_fk_full
+DEFAULT;
+
+INSERT INTO fk_partitioned_fk_full VALUES (1, NULL);
+
+ALTER TABLE fk_partitioned_fk_full
+  ADD FOREIGN KEY
+  (x,
+  y)
+  REFERENCES fk_notpartitioned_pk
+  MATCH FULL;
+
+TRUNCATE fk_partitioned_fk_full;
+
+ALTER TABLE fk_partitioned_fk_full
+  ADD FOREIGN KEY
+  (x,
+  y)
+  REFERENCES fk_notpartitioned_pk
+  MATCH FULL;
+
+INSERT INTO fk_partitioned_fk_full VALUES (1, NULL);
+
+DROP TABLE "fk_partitioned_fk_full";
+
+SELECT
+  CAST(tableoid AS REGCLASS),
+  a,
+  b
+FROM
+  fk_partitioned_fk
+WHERE
+  b IS NULL
+ORDER BY a;
+
+UPDATE fk_notpartitioned_pk SET a = a + 1 WHERE a = 2502;
+
+SELECT
+  CAST(tableoid AS REGCLASS),
+  a,
+  b
+FROM
+  fk_partitioned_fk
+WHERE
+  b IS NULL
+ORDER BY a;
+
+INSERT INTO fk_partitioned_fk VALUES (2503, 2503);
+
+SELECT COUNT(*) FROM fk_partitioned_fk WHERE a IS NULL;
+
+DELETE FROM fk_notpartitioned_pk;
+
+SELECT COUNT(*) FROM fk_partitioned_fk WHERE a IS NULL;
+
+ALTER TABLE fk_partitioned_fk
+  DROP CONSTRAINT fk_partitioned_fk_a_b_fkey;
+
+ALTER TABLE fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  ON DELETE SET DEFAULT
+  ON UPDATE SET DEFAULT;
+
+INSERT INTO fk_notpartitioned_pk VALUES (2502, 2503);
+
+INSERT INTO fk_partitioned_fk_3 (a, b) VALUES (2502, 2503);
+
+UPDATE fk_notpartitioned_pk SET a = 1500 WHERE a = 2502;
+
+INSERT INTO fk_notpartitioned_pk VALUES (2501, 142857);
+
+UPDATE fk_notpartitioned_pk SET a = 1500 WHERE a = 2502;
+
+SELECT * FROM fk_partitioned_fk WHERE b = 142857;
+
+ALTER TABLE fk_partitioned_fk
+  DROP CONSTRAINT fk_partitioned_fk_a_b_fkey;
+
+ALTER TABLE fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  ON DELETE SET NULL (a);
+
+BEGIN;
+
+DELETE FROM fk_notpartitioned_pk WHERE b = 142857;
+
+SELECT
+  *
+FROM
+  fk_partitioned_fk
+WHERE
+  a IS NOT NULL OR b IS NOT NULL
+ORDER BY a NULLS LAST;
+
+ROLLBACK;
+
+ALTER TABLE fk_partitioned_fk
+  DROP CONSTRAINT fk_partitioned_fk_a_b_fkey;
+
+ALTER TABLE fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  ON DELETE SET DEFAULT (a);
+
+BEGIN;
+
+DELETE FROM fk_partitioned_fk;
+
+DELETE FROM fk_notpartitioned_pk;
+
+INSERT INTO fk_notpartitioned_pk VALUES (500, 100000), (2501, 100000);
+
+INSERT INTO fk_partitioned_fk VALUES (500, 100000);
+
+DELETE FROM fk_notpartitioned_pk WHERE a = 500;
+
+SELECT * FROM fk_partitioned_fk ORDER BY a;
+
+ROLLBACK;
+
+ALTER TABLE fk_partitioned_fk
+  DROP CONSTRAINT fk_partitioned_fk_a_b_fkey;
+
+ALTER TABLE fk_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  ON DELETE CASCADE
+  ON UPDATE CASCADE;
+
+UPDATE fk_notpartitioned_pk SET a = 2502 WHERE a = 2501;
+
+SELECT * FROM fk_partitioned_fk WHERE b = 142857;
+
+SELECT * FROM fk_partitioned_fk WHERE b = 142857;
+
+DELETE FROM fk_notpartitioned_pk WHERE b = 142857;
+
+SELECT * FROM fk_partitioned_fk WHERE a = 142857;
+
+DROP TABLE "fk_partitioned_fk_2";
+
+CREATE TABLE fk_partitioned_fk_2
+PARTITION OF fk_partitioned_fk
+FOR VALUES IN (1500, 1502);
+
+ALTER TABLE fk_partitioned_fk
+  DETACH PARTITION
+  fk_partitioned_fk_2;
+
+BEGIN;
+
+DROP TABLE "fk_partitioned_fk";
+
+ROLLBACK;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES IN (1500, 1502);
+
+DROP TABLE "fk_partitioned_fk_2";
+
+CREATE TABLE fk_partitioned_fk_2 (
+  b INT,
+  c TEXT,
+  a INT,
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+);
+
+ALTER TABLE fk_partitioned_fk_2
+  DROP COLUMN c;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES IN (1500, 1502);
+
+DROP TABLE "fk_partitioned_fk_2";
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES IN (1500, 1502);
+
+BEGIN;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES IN (1500, 1502);
+
+ROLLBACK;
+
+BEGIN;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2
+  FOR VALUES IN (1500, 1502);
+
+ROLLBACK;
+
+DROP TABLE "fk_partitioned_fk_2";
+
+CREATE TABLE fk_partitioned_fk_4 (
+  a INT,
+  b INT,
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk (a,
+  b)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+)
+PARTITION BY RANGE(b, a);
+
+CREATE TABLE fk_partitioned_fk_4_1
+PARTITION OF fk_partitioned_fk_4
+FOR VALUES FROM (1, 1) TO (100, 100);
+
+CREATE TABLE fk_partitioned_fk_4_2 (
+  a INT,
+  b INT,
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk (a,
+  b)
+  ON UPDATE SET NULL
+);
+
+ALTER TABLE fk_partitioned_fk_4
+  ATTACH PARTITION
+  fk_partitioned_fk_4_2
+  FOR VALUES FROM (100,
+  100) TO (1000,
+  1000);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_4
+  FOR VALUES IN (3500, 3502);
+
+ALTER TABLE fk_partitioned_fk
+  DETACH PARTITION
+  fk_partitioned_fk_4;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_4
+  FOR VALUES IN (3500, 3502);
+
+CREATE TABLE fk_partitioned_fk_5 (
+  a INT,
+  b INT,
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk (a,
+  b)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+  DEFERRABLE INITIALLY IMMEDIATE,
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk (a,
+  b)
+  MATCH FULL
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk_partitioned_fk_5_1 (
+  a INT,
+  b INT,
+  FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk
+);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_5 FOR VALUES IN (4500);
+
+ALTER TABLE fk_partitioned_fk_5
+  ATTACH PARTITION
+  fk_partitioned_fk_5_1
+  FOR VALUES FROM (0) TO (10);
+
+ALTER TABLE fk_partitioned_fk
+  DETACH PARTITION
+  fk_partitioned_fk_5;
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_5 FOR VALUES IN (4500);
+
+ALTER TABLE fk_partitioned_fk_5
+  DETACH PARTITION
+  fk_partitioned_fk_5_1;
+
+ALTER TABLE fk_partitioned_fk_5
+  ATTACH PARTITION
+  fk_partitioned_fk_5_1
+  FOR VALUES FROM (0) TO (10);
+
+CREATE TABLE fk_partitioned_fk_2 (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(b);
+
+CREATE TABLE fk_partitioned_fk_2_1
+PARTITION OF fk_partitioned_fk_2
+FOR VALUES FROM (0) TO (1000);
+
+CREATE TABLE fk_partitioned_fk_2_2
+PARTITION OF fk_partitioned_fk_2
+FOR VALUES FROM (1000) TO (2000);
+
+INSERT INTO fk_partitioned_fk_2 VALUES (1600, 601), (1600, 1601);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2 FOR VALUES IN (1600);
+
+INSERT INTO fk_notpartitioned_pk VALUES (1600, 601), (1600, 1601);
+
+ALTER TABLE fk_partitioned_fk
+  ATTACH PARTITION
+  fk_partitioned_fk_2 FOR VALUES IN (1600);
+
+CREATE TABLE fk_partitioned_pk_6 (a INT PRIMARY KEY);
+
+CREATE TABLE fk_partitioned_fk_6 (a INT REFERENCES fk_partitioned_pk_6)
+PARTITION BY LIST(a);
+
+ALTER TABLE fk_partitioned_fk_6
+  ATTACH PARTITION
+  fk_partitioned_pk_6 FOR VALUES IN (1);
+
+DROP TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
+
+CREATE TABLE fk_partitioned_pk_6 (a INT PRIMARY KEY);
+
+CREATE TABLE fk_partitioned_fk_6 (
+  a INT,
+  FOREIGN KEY
+  (a)
+  REFERENCES fk_partitioned_pk_6,
+  FOREIGN KEY
+  (a)
+  REFERENCES fk_partitioned_pk_6
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_partitioned_fk_6_1
+PARTITION OF fk_partitioned_fk_6
+FOR VALUES IN (1);
+
+ALTER TABLE fk_partitioned_fk_6
+  DETACH PARTITION
+  fk_partitioned_fk_6_1;
+
+ALTER TABLE fk_partitioned_fk_6
+  ATTACH PARTITION
+  fk_partitioned_fk_6_1 FOR VALUES IN (1);
+
+DROP TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
+
+CREATE TABLE fk_partitioned_pk_6 (a INT PRIMARY KEY)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_partitioned_pk_61
+PARTITION OF fk_partitioned_pk_6
+FOR VALUES IN (1);
+
+CREATE TABLE fk_partitioned_fk_6 (a INT REFERENCES fk_partitioned_pk_61)
+PARTITION BY LIST(a);
+
+ALTER TABLE fk_partitioned_fk_6
+  ATTACH PARTITION
+  fk_partitioned_pk_6 FOR VALUES IN (1);
+
+DROP TABLE "fk_partitioned_pk_6", "fk_partitioned_fk_6";
+
+CREATE ROLE regress_other_partitioned_fk_owner;
+
+GRANT REFERENCES
+ON TABLE fk_notpartitioned_pk
+TO regress_other_partitioned_fk_owner;
+
+SET ROLE TO regress_other_partitioned_fk_owner;
+
+CREATE TABLE other_partitioned_fk (
+  a INT,
+  b INT
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE other_partitioned_fk_1
+PARTITION OF other_partitioned_fk
+FOR VALUES IN (2048);
+
+INSERT INTO other_partitioned_fk
+SELECT
+  2048,
+  x
+FROM
+  generate_series(1, 10) AS x;
+
+ALTER TABLE other_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk (a,
+  b);
+
+RESET role;
+
+INSERT INTO fk_notpartitioned_pk (a, b)
+SELECT
+  2048,
+  x
+FROM
+  generate_series(1, 10) AS x;
+
+SET ROLE TO regress_other_partitioned_fk_owner;
+
+ALTER TABLE other_partitioned_fk
+  ADD FOREIGN KEY
+  (a,
+  b)
+  REFERENCES fk_notpartitioned_pk (a,
+  b);
+
+DROP TABLE "other_partitioned_fk";
+
+RESET role;
+
+REVOKE ALL
+ON TABLE fk_notpartitioned_pk
+FROM regress_other_partitioned_fk_owner;
+
+DROP ROLE regress_other_partitioned_fk_owner;
+
+CREATE TABLE parted_self_fk (
+  id BIGINT NOT NULL PRIMARY KEY,
+  id_abc BIGINT,
+  FOREIGN KEY
+  (id_abc)
+  REFERENCES parted_self_fk (id)
+)
+PARTITION BY RANGE(id);
+
+CREATE TABLE part1_self_fk (
+  id BIGINT NOT NULL PRIMARY KEY,
+  id_abc BIGINT
+);
+
+ALTER TABLE parted_self_fk
+  ATTACH PARTITION
+  part1_self_fk
+  FOR VALUES FROM (0) TO (10);
+
+CREATE TABLE part2_self_fk
+PARTITION OF parted_self_fk
+FOR VALUES FROM (10) TO (20);
+
+CREATE TABLE part3_self_fk (
+  id BIGINT NOT NULL PRIMARY KEY,
+  id_abc BIGINT
+)
+PARTITION BY RANGE(id);
+
+CREATE TABLE part32_self_fk
+PARTITION OF part3_self_fk
+FOR VALUES FROM (20) TO (30);
+
+ALTER TABLE parted_self_fk
+  ATTACH PARTITION
+  part3_self_fk
+  FOR VALUES FROM (20) TO (40);
+
+CREATE TABLE part33_self_fk (
+  id BIGINT NOT NULL PRIMARY KEY,
+  id_abc BIGINT
+);
+
+ALTER TABLE part3_self_fk
+  ATTACH PARTITION
+  part33_self_fk
+  FOR VALUES FROM (30) TO (40);
+
+INSERT INTO parted_self_fk VALUES (1, NULL), (2, NULL), (3, NULL);
+
+INSERT INTO parted_self_fk
+VALUES (10, 1), (11, 2), (12, 3)
+RETURNING CAST(tableoid AS REGCLASS);
+
+INSERT INTO parted_self_fk VALUES (4, 5);
+
+DELETE FROM parted_self_fk WHERE id = 1 RETURNING *;
+
+SELECT
+  cr.relname,
+  co.conname,
+  co.convalidated,
+  p.conname AS conparent,
+  p.convalidated,
+  cf.relname AS foreignrel
+FROM
+  pg_constraint AS co
+  INNER JOIN
+    pg_class AS cr
+  ON cr.oid = co.conrelid
+  LEFT OUTER JOIN
+    pg_class AS cf
+  ON cf.oid = co.confrelid
+  LEFT OUTER JOIN
+    pg_constraint AS p
+  ON p.oid = co.conparentid
+WHERE
+  co.contype = 'f' AND
+  cr.oid IN
+  (
+    SELECT
+      relid
+    FROM
+      pg_partition_tree('parted_self_fk')
+  )
+ORDER BY cr.relname,
+  co.conname,
+  p.conname;
+
+ALTER TABLE parted_self_fk
+  DETACH PARTITION
+  part2_self_fk;
+
+INSERT INTO part2_self_fk VALUES (16, 9);
+
+DELETE FROM parted_self_fk WHERE id = 2 RETURNING *;
+
+ALTER TABLE parted_self_fk
+  ATTACH PARTITION
+  part2_self_fk
+  FOR VALUES FROM (10) TO (20);
+
+INSERT INTO parted_self_fk VALUES (16, 9);
+
+DELETE FROM parted_self_fk WHERE id = 3 RETURNING *;
+
+ALTER TABLE parted_self_fk
+  DETACH PARTITION
+  part2_self_fk;
+
+ALTER TABLE parted_self_fk
+  ATTACH PARTITION
+  part2_self_fk
+  FOR VALUES FROM (10) TO (20);
+
+ALTER TABLE parted_self_fk
+  DETACH PARTITION
+  part3_self_fk;
+
+ALTER TABLE parted_self_fk
+  ATTACH PARTITION
+  part3_self_fk
+  FOR VALUES FROM (30) TO (40);
+
+ALTER TABLE part3_self_fk
+  DETACH PARTITION
+  part33_self_fk;
+
+ALTER TABLE part3_self_fk
+  ATTACH PARTITION
+  part33_self_fk
+  FOR VALUES FROM (30) TO (40);
+
+SELECT
+  cr.relname,
+  co.conname,
+  co.convalidated,
+  p.conname AS conparent,
+  p.convalidated,
+  cf.relname AS foreignrel
+FROM
+  pg_constraint AS co
+  INNER JOIN
+    pg_class AS cr
+  ON cr.oid = co.conrelid
+  LEFT OUTER JOIN
+    pg_class AS cf
+  ON cf.oid = co.confrelid
+  LEFT OUTER JOIN
+    pg_constraint AS p
+  ON p.oid = co.conparentid
+WHERE
+  co.contype = 'f' AND
+  cr.oid IN
+  (
+    SELECT
+      relid
+    FROM
+      pg_partition_tree('parted_self_fk')
+  )
+ORDER BY cr.relname,
+  co.conname,
+  p.conname;
+
+CREATE SCHEMA "fkpart0";
+
+CREATE TABLE pkey (a INT PRIMARY KEY);
+
+CREATE TABLE fk_part (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1
+PARTITION OF fk_part
+(
+  FOREIGN KEY (a) REFERENCES fkpart0.pkey
+)
+FOR VALUES IN (1);
+
+CREATE TABLE fk_part_23
+PARTITION OF fk_part
+(
+  FOREIGN KEY (a) REFERENCES fkpart0.pkey
+)
+FOR VALUES IN (2, 3)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_23_2 PARTITION OF fk_part_23 FOR VALUES IN (2);
+
+ALTER TABLE fkpart0.fk_part
+  ADD FOREIGN KEY (a) REFERENCES fkpart0.pkey;
+
+ALTER TABLE fkpart0.fk_part_1
+  DROP CONSTRAINT fk_part_1_a_fkey;
+
+ALTER TABLE fkpart0.fk_part_23
+  DROP CONSTRAINT fk_part_23_a_fkey;
+
+ALTER TABLE fkpart0.fk_part_23_2
+  DROP CONSTRAINT fk_part_23_a_fkey;
+
+CREATE TABLE fkpart0.fk_part_4 PARTITION OF fkpart0.fk_part FOR VALUES IN (4);
+
+ALTER TABLE fkpart0.fk_part_4
+  DROP CONSTRAINT fk_part_a_fkey;
+
+CREATE TABLE fkpart0.fk_part_56
+PARTITION OF fkpart0.fk_part
+FOR VALUES IN (5, 6)
+PARTITION BY LIST(a);
+
+CREATE TABLE fkpart0.fk_part_56_5
+PARTITION OF fkpart0.fk_part_56
+FOR VALUES IN (5);
+
+ALTER TABLE fkpart0.fk_part_56
+  DROP CONSTRAINT fk_part_a_fkey;
+
+ALTER TABLE fkpart0.fk_part_56_5
+  DROP CONSTRAINT fk_part_a_fkey;
+
+CREATE SCHEMA "fkpart1";
+
+CREATE TABLE pkey (a INT PRIMARY KEY);
+
+CREATE TABLE fk_part (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1
+PARTITION OF fk_part
+FOR VALUES IN (1)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1_1 PARTITION OF fk_part_1 FOR VALUES IN (1);
+
+ALTER TABLE fkpart1.fk_part
+  ADD FOREIGN KEY (a) REFERENCES fkpart1.pkey;
+
+INSERT INTO fkpart1.fk_part VALUES (1);
+
+INSERT INTO fkpart1.pkey VALUES (1);
+
+INSERT INTO fkpart1.fk_part VALUES (1);
+
+DELETE FROM fkpart1.pkey WHERE a = 1;
+
+ALTER TABLE fkpart1.fk_part
+  DETACH PARTITION
+  fkpart1.fk_part_1;
+
+CREATE TABLE fkpart1.fk_part_1_2
+PARTITION OF fkpart1.fk_part_1
+FOR VALUES IN (2);
+
+INSERT INTO fkpart1.fk_part_1 VALUES (2);
+
+DELETE FROM fkpart1.pkey WHERE a = 1;
+
+CREATE SCHEMA "fkpart2";
+
+CREATE TABLE pkey (a INT PRIMARY KEY);
+
+CREATE TABLE fk_part (
+  a INT,
+  CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES fkpart2.pkey
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1
+PARTITION OF fkpart2.fk_part
+FOR VALUES IN (1)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1_1 (
+  a INT,
+  CONSTRAINT "my_fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES fkpart2.pkey
+);
+
+ALTER TABLE fkpart2.fk_part_1
+  ATTACH PARTITION
+  fkpart2.fk_part_1_1 FOR VALUES IN (1);
+
+ALTER TABLE fkpart2.fk_part_1
+  DROP CONSTRAINT fkey;
+
+ALTER TABLE fkpart2.fk_part_1_1
+  DROP CONSTRAINT my_fkey;
+
+ALTER TABLE fkpart2.fk_part
+  DETACH PARTITION
+  fkpart2.fk_part_1;
+
+ALTER TABLE fkpart2.fk_part_1
+  DROP CONSTRAINT fkey;
+
+ALTER TABLE fkpart2.fk_part_1_1
+  DROP CONSTRAINT my_fkey;
+
+CREATE SCHEMA "fkpart3";
+
+CREATE TABLE pkey (a INT PRIMARY KEY);
+
+CREATE TABLE fk_part (
+  a INT,
+  CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES fkpart3.pkey
+  DEFERRABLE INITIALLY IMMEDIATE
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1
+PARTITION OF fkpart3.fk_part
+FOR VALUES IN (1)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_part_1_1 PARTITION OF fkpart3.fk_part_1 FOR VALUES IN (1);
+
+CREATE TABLE fk_part_2 PARTITION OF fkpart3.fk_part FOR VALUES IN (2);
+
+BEGIN;
+
+SET CONSTRAINTS fkpart3.fkey DEFERRED;
+
+INSERT INTO fkpart3.fk_part VALUES (1);
+
+INSERT INTO fkpart3.pkey VALUES (1);
+
+COMMIT;
+
+BEGIN;
+
+SET CONSTRAINTS fkpart3.fkey DEFERRED;
+
+DELETE FROM fkpart3.pkey;
+
+DELETE FROM fkpart3.fk_part;
+
+COMMIT;
+
+DROP SCHEMA fkpart0, fkpart1, fkpart2, fkpart3 CASCADE;
+
+CREATE SCHEMA "fkpart3";
+
+SET search_path TO fkpart3;
+
+CREATE TABLE pk (a INT PRIMARY KEY)
+PARTITION BY RANGE(a);
+
+CREATE TABLE pk1 PARTITION OF pk FOR VALUES FROM (0) TO (1000);
+
+CREATE TABLE pk2 (
+  b INT,
+  a INT
+);
+
+ALTER TABLE pk2
+  DROP COLUMN b;
+
+ALTER TABLE pk2
+  ALTER COLUMN a SET NOT NULL;
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk2 FOR VALUES FROM (1000) TO (2000);
+
+CREATE TABLE fk (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk1 PARTITION OF fk FOR VALUES FROM (0) TO (750);
+
+ALTER TABLE fk
+  ADD FOREIGN KEY (a) REFERENCES pk;
+
+CREATE TABLE fk2 (
+  b INT,
+  a INT
+);
+
+ALTER TABLE fk2
+  DROP COLUMN b;
+
+ALTER TABLE fk
+  ATTACH PARTITION
+  fk2 FOR VALUES FROM (750) TO (3500);
+
+CREATE TABLE pk3 PARTITION OF pk FOR VALUES FROM (2000) TO (3000);
+
+CREATE TABLE pk4 (LIKE pk);
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk4 FOR VALUES FROM (3000) TO (4000);
+
+CREATE TABLE pk5 (
+  c INT,
+  b INT,
+  a INT NOT NULL
+)
+PARTITION BY RANGE(a);
+
+ALTER TABLE pk5
+  DROP COLUMN b,
+  DROP COLUMN c;
+
+CREATE TABLE pk51 PARTITION OF pk5 FOR VALUES FROM (4000) TO (4500);
+
+CREATE TABLE pk52 PARTITION OF pk5 FOR VALUES FROM (4500) TO (5000);
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk5 FOR VALUES FROM (4000) TO (5000);
+
+CREATE TABLE fk3 PARTITION OF fk FOR VALUES FROM (3500) TO (5000);
+
+INSERT INTO fk VALUES (1);
+
+INSERT INTO fk VALUES (1000);
+
+INSERT INTO fk VALUES (2000);
+
+INSERT INTO fk VALUES (3000);
+
+INSERT INTO fk VALUES (4000);
+
+INSERT INTO fk VALUES (4500);
+
+INSERT INTO pk VALUES (1), (1000), (2000), (3000), (4000), (4500);
+
+INSERT INTO fk VALUES (1), (1000), (2000), (3000), (4000), (4500);
+
+DELETE FROM pk WHERE a = 1;
+
+DELETE FROM pk WHERE a = 1000;
+
+DELETE FROM pk WHERE a = 2000;
+
+DELETE FROM pk WHERE a = 3000;
+
+DELETE FROM pk WHERE a = 4000;
+
+DELETE FROM pk WHERE a = 4500;
+
+UPDATE pk SET a = 2 WHERE a = 1;
+
+UPDATE pk SET a = 1002 WHERE a = 1000;
+
+UPDATE pk SET a = 2002 WHERE a = 2000;
+
+UPDATE pk SET a = 3002 WHERE a = 3000;
+
+UPDATE pk SET a = 4002 WHERE a = 4000;
+
+UPDATE pk SET a = 4502 WHERE a = 4500;
+
+DELETE FROM fk;
+
+UPDATE pk SET a = 2 WHERE a = 1;
+
+DELETE FROM pk WHERE a = 2;
+
+UPDATE pk SET a = 1002 WHERE a = 1000;
+
+DELETE FROM pk WHERE a = 1002;
+
+UPDATE pk SET a = 2002 WHERE a = 2000;
+
+DELETE FROM pk WHERE a = 2002;
+
+UPDATE pk SET a = 3002 WHERE a = 3000;
+
+DELETE FROM pk WHERE a = 3002;
+
+UPDATE pk SET a = 4002 WHERE a = 4000;
+
+DELETE FROM pk WHERE a = 4002;
+
+UPDATE pk SET a = 4502 WHERE a = 4500;
+
+DELETE FROM pk WHERE a = 4502;
+
+CREATE TABLE ffk (
+  a INT,
+  b INT REFERENCES pk
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE ffk1 PARTITION OF ffk FOR VALUES IN (1);
+
+ALTER TABLE ffk1
+  ADD FOREIGN KEY (a) REFERENCES pk;
+
+ALTER TABLE ffk
+  DETACH PARTITION
+  ffk1;
+
+DROP TABLE "ffk", "ffk1";
+
+CREATE SCHEMA "fkpart4";
+
+SET search_path TO fkpart4;
+
+CREATE TABLE droppk (a INT PRIMARY KEY)
+PARTITION BY RANGE(a);
+
+CREATE TABLE droppk1 PARTITION OF droppk FOR VALUES FROM (0) TO (1000);
+
+CREATE TABLE droppk_d PARTITION OF droppk DEFAULT;
+
+CREATE TABLE droppk2
+PARTITION OF droppk
+FOR VALUES FROM (1000) TO (2000)
+PARTITION BY RANGE(a);
+
+CREATE TABLE droppk21 PARTITION OF droppk2 FOR VALUES FROM (1000) TO (1400);
+
+CREATE TABLE droppk2_d PARTITION OF droppk2 DEFAULT;
+
+INSERT INTO droppk VALUES (1), (1000), (1500), (2000);
+
+CREATE TABLE dropfk (a INT REFERENCES droppk);
+
+INSERT INTO dropfk VALUES (1), (1000), (1500), (2000);
+
+ALTER TABLE droppk
+  DETACH PARTITION
+  droppk_d;
+
+ALTER TABLE droppk2
+  DETACH PARTITION
+  droppk2_d;
+
+ALTER TABLE droppk
+  DETACH PARTITION
+  droppk1;
+
+ALTER TABLE droppk
+  DETACH PARTITION
+  droppk2;
+
+ALTER TABLE droppk2
+  DETACH PARTITION
+  droppk21;
+
+DROP TABLE "droppk_d";
+
+DROP TABLE "droppk2_d";
+
+DROP TABLE "droppk1";
+
+DROP TABLE "droppk2";
+
+DROP TABLE "droppk21";
+
+DELETE FROM dropfk;
+
+DROP TABLE "droppk_d";
+
+DROP TABLE "droppk2_d";
+
+DROP TABLE "droppk1";
+
+ALTER TABLE droppk2
+  DETACH PARTITION
+  droppk21;
+
+DROP TABLE "droppk2";
+
+CREATE SCHEMA "fkpart5";
+
+SET search_path TO fkpart5;
+
+CREATE TABLE pk (a INT PRIMARY KEY)
+PARTITION BY LIST(a);
+
+CREATE TABLE pk1 PARTITION OF pk FOR VALUES IN (1) PARTITION BY LIST(a);
+
+CREATE TABLE pk11 PARTITION OF pk1 FOR VALUES IN (1);
+
+CREATE TABLE fk (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk1 PARTITION OF fk FOR VALUES IN (1) PARTITION BY LIST(a);
+
+CREATE TABLE fk11 PARTITION OF fk1 FOR VALUES IN (1);
+
+ALTER TABLE fk
+  ADD FOREIGN KEY (a) REFERENCES pk;
+
+CREATE TABLE pk2 PARTITION OF pk FOR VALUES IN (2);
+
+CREATE TABLE pk3 (a INT NOT NULL)
+PARTITION BY LIST(a);
+
+CREATE TABLE pk31 PARTITION OF pk3 FOR VALUES IN (31);
+
+CREATE TABLE pk32 (
+  b INT,
+  a INT NOT NULL
+);
+
+ALTER TABLE pk32
+  DROP COLUMN b;
+
+ALTER TABLE pk3
+  ATTACH PARTITION
+  pk32 FOR VALUES IN (32);
+
+ALTER TABLE pk
+  ATTACH PARTITION
+  pk3 FOR VALUES IN (31, 32);
+
+CREATE TABLE fk2 PARTITION OF fk FOR VALUES IN (2);
+
+CREATE TABLE fk3 (
+  b INT,
+  a INT
+);
+
+ALTER TABLE fk3
+  DROP COLUMN b;
+
+ALTER TABLE fk
+  ATTACH PARTITION
+  fk3 FOR VALUES IN (3);
+
+SELECT
+  pg_describe_object(
+    CAST('pg_constraint' AS REGCLASS),
+    oid,
+    0
+  ),
+  CAST(confrelid AS REGCLASS),
+  CASE
+    WHEN conparentid <> 0
+    THEN pg_describe_object(
+      CAST('pg_constraint' AS REGCLASS),
+      conparentid,
+      0
+    )
+    ELSE 'TOP'
+  END
+FROM
+  pg_catalog.pg_constraint
+WHERE
+  conrelid IN
+  (
+    SELECT
+      relid
+    FROM
+      pg_partition_tree('fk')
+  )
+ORDER BY CAST(CAST(conrelid AS REGCLASS) AS TEXT),
+  conname;
+
+CREATE TABLE fk4 (LIKE fk);
+
+INSERT INTO fk4 VALUES (50);
+
+ALTER TABLE fk
+  ATTACH PARTITION
+  fk4 FOR VALUES IN (50);
+
+CREATE SCHEMA "fkpart9";
+
+SET search_path TO fkpart9;
+
+CREATE TABLE pk (a INT PRIMARY KEY)
+PARTITION BY LIST(a);
+
+CREATE TABLE pk1 PARTITION OF pk FOR VALUES IN (1, 2) PARTITION BY LIST(a);
+
+CREATE TABLE pk11 PARTITION OF pk1 FOR VALUES IN (1);
+
+CREATE TABLE pk3 PARTITION OF pk FOR VALUES IN (3);
+
+CREATE TABLE fk (a INT REFERENCES pk DEFERRABLE INITIALLY IMMEDIATE);
+
+INSERT INTO fk VALUES (1);
+
+BEGIN;
+
+SET CONSTRAINTS fk_a_fkey DEFERRED;
+
+INSERT INTO fk VALUES (1);
+
+COMMIT;
+
+BEGIN;
+
+SET CONSTRAINTS fk_a_fkey DEFERRED;
+
+INSERT INTO fk VALUES (1);
+
+INSERT INTO pk VALUES (1);
+
+COMMIT;
+
+BEGIN;
+
+SET CONSTRAINTS fk_a_fkey DEFERRED;
+
+DELETE FROM pk WHERE a = 1;
+
+DELETE FROM fk WHERE a = 1;
+
+COMMIT;
+
+CREATE TABLE pt (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  PRIMARY KEY (f1, f2)
+);
+
+CREATE TABLE ref (
+  f1 INT,
+  f2 INT,
+  f3 INT
+)
+PARTITION BY LIST(f1);
+
+CREATE TABLE ref1 PARTITION OF ref FOR VALUES IN (1);
+
+CREATE TABLE ref2 PARTITION OF ref FOR VALUES IN (2);
+
+ALTER TABLE ref
+  ADD FOREIGN KEY (f1, f2) REFERENCES pt;
+
+ALTER TABLE ref
+  ALTER CONSTRAINT "ref_f1_f2_fkey" DEFERRABLE INITIALLY DEFERRED;
+
+INSERT INTO pt VALUES (1, 2, 3);
+
+INSERT INTO ref VALUES (1, 2, 3);
+
+BEGIN;
+
+DELETE FROM pt;
+
+DELETE FROM ref;
+
+ROLLBACK;
+
+DROP TABLE "pt", "ref";
+
+CREATE TABLE pt (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  PRIMARY KEY (f1, f2)
+);
+
+CREATE TABLE ref (
+  f1 INT,
+  f2 INT,
+  f3 INT
+)
+PARTITION BY LIST(f1);
+
+CREATE TABLE ref1_2 PARTITION OF ref FOR VALUES IN (1, 2) PARTITION BY LIST(f2);
+
+CREATE TABLE ref1 PARTITION OF ref1_2 FOR VALUES IN (1);
+
+CREATE TABLE ref2 PARTITION OF ref1_2 FOR VALUES IN (2) PARTITION BY LIST(f2);
+
+CREATE TABLE ref22 PARTITION OF ref2 FOR VALUES IN (2);
+
+ALTER TABLE ref
+  ADD FOREIGN KEY (f1, f2) REFERENCES pt;
+
+INSERT INTO pt VALUES (1, 2, 3);
+
+INSERT INTO ref VALUES (1, 2, 3);
+
+ALTER TABLE ref22
+  ALTER CONSTRAINT "ref_f1_f2_fkey" DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE ref
+  ALTER CONSTRAINT "ref_f1_f2_fkey" DEFERRABLE INITIALLY DEFERRED;
+
+BEGIN;
+
+DELETE FROM pt;
+
+DELETE FROM ref;
+
+ROLLBACK;
+
+DROP TABLE "pt", "ref";
+
+CREATE TABLE pt (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  PRIMARY KEY (f1, f2)
+)
+PARTITION BY LIST(f1);
+
+CREATE TABLE pt1 PARTITION OF pt FOR VALUES IN (1);
+
+CREATE TABLE pt2 PARTITION OF pt FOR VALUES IN (2);
+
+CREATE TABLE ref (
+  f1 INT,
+  f2 INT,
+  f3 INT
+);
+
+ALTER TABLE ref
+  ADD FOREIGN KEY (f1, f2) REFERENCES pt;
+
+ALTER TABLE ref
+  ALTER CONSTRAINT "ref_f1_f2_fkey" DEFERRABLE INITIALLY DEFERRED;
+
+INSERT INTO pt VALUES (1, 2, 3);
+
+INSERT INTO ref VALUES (1, 2, 3);
+
+BEGIN;
+
+DELETE FROM pt;
+
+DELETE FROM ref;
+
+ROLLBACK;
+
+DROP TABLE "pt", "ref";
+
+CREATE TABLE pt (
+  f1 INT,
+  f2 INT,
+  f3 INT,
+  PRIMARY KEY (f1, f2)
+)
+PARTITION BY LIST(f1);
+
+CREATE TABLE pt1_2 PARTITION OF pt FOR VALUES IN (1, 2) PARTITION BY LIST(f1);
+
+CREATE TABLE pt1 PARTITION OF pt1_2 FOR VALUES IN (1);
+
+CREATE TABLE pt2 PARTITION OF pt1_2 FOR VALUES IN (2);
+
+CREATE TABLE ref (
+  f1 INT,
+  f2 INT,
+  f3 INT
+);
+
+ALTER TABLE ref
+  ADD FOREIGN KEY (f1, f2) REFERENCES pt;
+
+ALTER TABLE ref
+  ALTER CONSTRAINT "ref_f1_f2_fkey_1" DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ref
+  ALTER CONSTRAINT "ref_f1_f2_fkey" DEFERRABLE INITIALLY DEFERRED;
+
+INSERT INTO pt VALUES (1, 2, 3);
+
+INSERT INTO ref VALUES (1, 2, 3);
+
+BEGIN;
+
+DELETE FROM pt;
+
+DELETE FROM ref;
+
+ROLLBACK;
+
+DROP TABLE "pt", "ref";
+
+DROP SCHEMA fkpart9 CASCADE;
+
+CREATE SCHEMA "fkpart6";
+
+SET search_path TO fkpart6;
+
+CREATE TABLE pk (a INT PRIMARY KEY)
+PARTITION BY RANGE(a);
+
+CREATE TABLE pk1
+PARTITION OF pk
+FOR VALUES FROM (1) TO (100)
+PARTITION BY RANGE(a);
+
+CREATE TABLE pk11 PARTITION OF pk1 FOR VALUES FROM (1) TO (50);
+
+CREATE TABLE pk12 PARTITION OF pk1 FOR VALUES FROM (50) TO (100);
+
+CREATE TABLE fk (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk1
+PARTITION OF fk
+FOR VALUES FROM (1) TO (100)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk11 PARTITION OF fk1 FOR VALUES FROM (1) TO (10);
+
+CREATE TABLE fk12 PARTITION OF fk1 FOR VALUES FROM (10) TO (100);
+
+ALTER TABLE fk
+  ADD FOREIGN KEY
+  (a)
+  REFERENCES pk
+  ON DELETE CASCADE
+  ON UPDATE CASCADE;
+
+CREATE TABLE fk_d PARTITION OF fk DEFAULT;
+
+INSERT INTO pk VALUES (1);
+
+INSERT INTO fk VALUES (1);
+
+UPDATE pk SET a = 20;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fk;
+
+DELETE FROM pk WHERE a = 20;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fk;
+
+DROP TABLE "fk";
+
+TRUNCATE pk;
+
+INSERT INTO pk VALUES (20), (50);
+
+CREATE TABLE fk (a INT)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk1
+PARTITION OF fk
+FOR VALUES FROM (1) TO (100)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk11 PARTITION OF fk1 FOR VALUES FROM (1) TO (10);
+
+CREATE TABLE fk12 PARTITION OF fk1 FOR VALUES FROM (10) TO (100);
+
+ALTER TABLE fk
+  ADD FOREIGN KEY
+  (a)
+  REFERENCES pk
+  ON DELETE SET NULL
+  ON UPDATE SET NULL;
+
+CREATE TABLE fk_d PARTITION OF fk DEFAULT;
+
+INSERT INTO fk VALUES (20), (50);
+
+UPDATE pk SET a = 21 WHERE a = 20;
+
+DELETE FROM pk WHERE a = 50;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fk;
+
+DROP TABLE "fk";
+
+TRUNCATE pk;
+
+INSERT INTO pk VALUES (20), (30), (50);
+
+CREATE TABLE fk (
+  id INT,
+  a INT DEFAULT 50
+)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk1
+PARTITION OF fk
+FOR VALUES FROM (1) TO (100)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk11 PARTITION OF fk1 FOR VALUES FROM (1) TO (10);
+
+CREATE TABLE fk12 PARTITION OF fk1 FOR VALUES FROM (10) TO (100);
+
+ALTER TABLE fk
+  ADD FOREIGN KEY
+  (a)
+  REFERENCES pk
+  ON DELETE SET DEFAULT
+  ON UPDATE SET DEFAULT;
+
+CREATE TABLE fk_d PARTITION OF fk DEFAULT;
+
+INSERT INTO fk VALUES (1, 20), (2, 30);
+
+DELETE FROM pk WHERE a = 20 RETURNING *;
+
+UPDATE pk SET a = 90 WHERE a = 30 RETURNING *;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fk;
+
+DROP TABLE "fk";
+
+TRUNCATE pk;
+
+INSERT INTO pk VALUES (20), (30);
+
+CREATE TABLE fk (a INT DEFAULT 50)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk1
+PARTITION OF fk
+FOR VALUES FROM (1) TO (100)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk11 PARTITION OF fk1 FOR VALUES FROM (1) TO (10);
+
+CREATE TABLE fk12 PARTITION OF fk1 FOR VALUES FROM (10) TO (100);
+
+ALTER TABLE fk
+  ADD FOREIGN KEY
+  (a)
+  REFERENCES pk
+  ON DELETE RESTRICT
+  ON UPDATE RESTRICT;
+
+CREATE TABLE fk_d PARTITION OF fk DEFAULT;
+
+INSERT INTO fk VALUES (20), (30);
+
+DELETE FROM pk WHERE a = 20;
+
+UPDATE pk SET a = 90 WHERE a = 30;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fk;
+
+DROP TABLE "fk";
+
+CREATE SCHEMA "fkpart7";
+
+CREATE TABLE pkpart (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE pkpart1 PARTITION OF pkpart FOR VALUES IN (1);
+
+ALTER TABLE fkpart7.pkpart1
+  ADD PRIMARY KEY (a);
+
+ALTER TABLE fkpart7.pkpart
+  ADD PRIMARY KEY (a);
+
+CREATE TABLE fkpart7.fk (a INT REFERENCES fkpart7.pkpart);
+
+DROP SCHEMA fkpart7 CASCADE;
+
+CREATE SCHEMA "fkpart8";
+
+CREATE TABLE tbl1 (f1 INT PRIMARY KEY);
+
+CREATE TABLE tbl2 (f1 INT REFERENCES tbl1 DEFERRABLE INITIALLY DEFERRED)
+PARTITION BY RANGE(f1);
+
+CREATE TABLE tbl2_p1 PARTITION OF tbl2 FOR VALUES FROM (minvalue) TO (maxvalue);
+
+INSERT INTO fkpart8.tbl1 VALUES (1);
+
+BEGIN;
+
+INSERT INTO fkpart8.tbl2 VALUES (1);
+
+ALTER TABLE fkpart8.tbl2
+  DROP CONSTRAINT tbl2_f1_fkey;
+
+COMMIT;
+
+DROP SCHEMA fkpart8 CASCADE;
+
+CREATE SCHEMA "fkpart9";
+
+CREATE TABLE pk (a INT PRIMARY KEY)
+PARTITION BY RANGE(a);
+
+CREATE TABLE fk (fk_a INT REFERENCES pk (a) ON DELETE CASCADE);
+
+CREATE TABLE pk1
+PARTITION OF pk
+FOR VALUES FROM (30) TO (50)
+PARTITION BY RANGE(a);
+
+CREATE TABLE pk11 PARTITION OF pk1 FOR VALUES FROM (30) TO (40);
+
+INSERT INTO fkpart9.pk VALUES (35);
+
+INSERT INTO fkpart9.fk VALUES (35);
+
+DELETE FROM fkpart9.pk WHERE a = 35;
+
+SELECT * FROM fkpart9.pk;
+
+SELECT * FROM fkpart9.fk;
+
+DROP SCHEMA fkpart9 CASCADE;
+
+CREATE SCHEMA "fkpart10";
+
+CREATE TABLE tbl1 (f1 INT PRIMARY KEY)
+PARTITION BY RANGE(f1);
+
+CREATE TABLE tbl1_p1 PARTITION OF tbl1 FOR VALUES FROM (minvalue) TO (1);
+
+CREATE TABLE tbl1_p2 PARTITION OF tbl1 FOR VALUES FROM (1) TO (maxvalue);
+
+CREATE TABLE tbl2 (f1 INT REFERENCES tbl1 DEFERRABLE INITIALLY DEFERRED);
+
+CREATE TABLE tbl3 (f1 INT PRIMARY KEY)
+PARTITION BY RANGE(f1);
+
+CREATE TABLE tbl3_p1 PARTITION OF tbl3 FOR VALUES FROM (minvalue) TO (1);
+
+CREATE TABLE tbl3_p2 PARTITION OF tbl3 FOR VALUES FROM (1) TO (maxvalue);
+
+CREATE TABLE tbl4 (f1 INT REFERENCES tbl3 DEFERRABLE INITIALLY DEFERRED);
+
+INSERT INTO fkpart10.tbl1 VALUES (0), (1);
+
+INSERT INTO fkpart10.tbl2 VALUES (0), (1);
+
+INSERT INTO fkpart10.tbl3 VALUES (-2), (-1), (0);
+
+INSERT INTO fkpart10.tbl4 VALUES (-2), (-1);
+
+BEGIN;
+
+DELETE FROM fkpart10.tbl1 WHERE f1 = 0;
+
+UPDATE fkpart10.tbl1 SET f1 = 2 WHERE f1 = 1;
+
+INSERT INTO fkpart10.tbl1 VALUES (0), (1);
+
+COMMIT;
+
+BEGIN;
+
+UPDATE fkpart10.tbl1 SET f1 = 3 WHERE f1 = 0;
+
+UPDATE fkpart10.tbl3 SET f1 = f1 * -1;
+
+INSERT INTO fkpart10.tbl1 VALUES (4);
+
+COMMIT;
+
+BEGIN;
+
+UPDATE fkpart10.tbl3 SET f1 = f1 * -1;
+
+UPDATE fkpart10.tbl3 SET f1 = f1 + 3;
+
+UPDATE fkpart10.tbl1 SET f1 = 3 WHERE f1 = 0;
+
+INSERT INTO fkpart10.tbl1 VALUES (0);
+
+COMMIT;
+
+BEGIN;
+
+UPDATE fkpart10.tbl3 SET f1 = f1 * -1;
+
+UPDATE fkpart10.tbl1 SET f1 = 3 WHERE f1 = 0;
+
+INSERT INTO fkpart10.tbl1 VALUES (0);
+
+INSERT INTO fkpart10.tbl3 VALUES (-2), (-1);
+
+COMMIT;
+
+CREATE TABLE fkpart10.tbl5 (f1 INT REFERENCES fkpart10.tbl3);
+
+INSERT INTO fkpart10.tbl5 VALUES (-2), (-1);
+
+BEGIN;
+
+UPDATE fkpart10.tbl3 SET f1 = f1 * -3;
+
+COMMIT;
+
+DELETE FROM fkpart10.tbl5;
+
+INSERT INTO fkpart10.tbl5 VALUES (0);
+
+BEGIN;
+
+UPDATE fkpart10.tbl3 SET f1 = f1 * -3;
+
+COMMIT;
+
+DROP SCHEMA fkpart10 CASCADE;
+
+CREATE SCHEMA "fkpart11";
+
+CREATE TABLE pk (
+  a INT PRIMARY KEY,
+  b TEXT
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk (
+  a INT,
+  CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES pk (a)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+);
+
+CREATE TABLE fk_parted (
+  a INT PRIMARY KEY,
+  CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES pk (a)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE fk_another (
+  a INT,
+  CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES fk_parted (a)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE
+);
+
+CREATE TABLE pk1 PARTITION OF pk FOR VALUES IN (1, 2) PARTITION BY LIST(a);
+
+CREATE TABLE pk2 PARTITION OF pk FOR VALUES IN (3);
+
+CREATE TABLE pk3 PARTITION OF pk FOR VALUES IN (4);
+
+CREATE TABLE fk1 PARTITION OF fk_parted FOR VALUES IN (1, 2);
+
+CREATE TABLE fk2 PARTITION OF fk_parted FOR VALUES IN (3);
+
+CREATE TABLE fk3 PARTITION OF fk_parted FOR VALUES IN (4);
+
+CREATE TABLE fkpart11.pk11 (
+  b TEXT,
+  a INT NOT NULL
+);
+
+ALTER TABLE fkpart11.pk1
+  ATTACH PARTITION
+  fkpart11.pk11 FOR VALUES IN (1);
+
+CREATE TABLE fkpart11.pk12 (
+  b TEXT,
+  c INT,
+  a INT NOT NULL
+);
+
+ALTER TABLE fkpart11.pk12
+  DROP COLUMN c;
+
+ALTER TABLE fkpart11.pk1
+  ATTACH PARTITION
+  fkpart11.pk12 FOR VALUES IN (2);
+
+INSERT INTO fkpart11.pk VALUES (1, 'xxx'), (3, 'yyy');
+
+INSERT INTO fkpart11.fk VALUES (1), (3);
+
+INSERT INTO fkpart11.fk_parted VALUES (1), (3);
+
+INSERT INTO fkpart11.fk_another VALUES (1), (3);
+
+UPDATE fkpart11.pk SET a = a + 1 RETURNING CAST(tableoid AS REGCLASS), *;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk_parted;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk_another;
+
+ALTER TABLE fkpart11.fk
+  DROP CONSTRAINT fkey;
+
+DELETE FROM fkpart11.fk WHERE a = 4;
+
+ALTER TABLE fkpart11.fk
+  ADD CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES fkpart11.pk1 (a)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE;
+
+UPDATE fkpart11.pk SET a = a - 1;
+
+UPDATE fkpart11.pk1 SET a = a - 1;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.pk;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk_parted;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk_another;
+
+ALTER TABLE fkpart11.fk
+  DROP CONSTRAINT fkey;
+
+ALTER TABLE fkpart11.fk
+  ADD CONSTRAINT "fkey"
+  FOREIGN KEY
+  (a)
+  REFERENCES fkpart11.pk11 (a)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE;
+
+UPDATE fkpart11.pk SET a = a + 1 WHERE a = 1;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM fkpart11.fk;
+
+DROP TABLE "fkpart11"."fk";
+
+CREATE FUNCTION fkpart11.print_row()
+RETURNS trigger
+LANGUAGE "plpgsql"
+AS '
+  BEGIN
+    RAISE NOTICE ''TABLE: %, OP: %, OLD: %, NEW: %'', TG_RELNAME, TG_OP, OLD, NEW;
+    RETURN NULL;
+  END;
+';
+
+CREATE TRIGGER trig_upd_pk
+  AFTER UPDATE
+  ON fkpart11.pk
+  FOR EACH ROW
+  EXECUTE FUNCTION fkpart11.print_row();
+
+CREATE TRIGGER trig_del_pk
+  AFTER DELETE
+  ON fkpart11.pk
+  FOR EACH ROW
+  EXECUTE FUNCTION fkpart11.print_row();
+
+CREATE TRIGGER trig_ins_pk
+  AFTER INSERT
+  ON fkpart11.pk
+  FOR EACH ROW
+  EXECUTE FUNCTION fkpart11.print_row();
+
+CREATE CONSTRAINT TRIGGER trig_upd_fk_parted
+  AFTER UPDATE
+  ON fkpart11.fk_parted
+  DEFERRABLE
+  INITIALLY DEFERRED
+  FOR EACH ROW
+  EXECUTE FUNCTION fkpart11.print_row();
+
+CREATE CONSTRAINT TRIGGER trig_del_fk_parted
+  AFTER DELETE
+  ON fkpart11.fk_parted
+  DEFERRABLE
+  INITIALLY DEFERRED
+  FOR EACH ROW
+  EXECUTE FUNCTION fkpart11.print_row();
+
+CREATE CONSTRAINT TRIGGER trig_ins_fk_parted
+  AFTER INSERT
+  ON fkpart11.fk_parted
+  DEFERRABLE
+  INITIALLY DEFERRED
+  FOR EACH ROW
+  EXECUTE FUNCTION fkpart11.print_row();
+
+UPDATE fkpart11.pk SET a = 3 WHERE a = 4;
+
+UPDATE fkpart11.pk SET a = 1 WHERE a = 2;
+
+DROP SCHEMA fkpart11 CASCADE;
+
+CREATE SCHEMA "fkpart12";
+
+CREATE TABLE fk_p (
+  id INT,
+  jd INT,
+  PRIMARY KEY (id, jd)
+)
+PARTITION BY LIST(id);
+
+CREATE TABLE fk_p_1 PARTITION OF fk_p FOR VALUES IN (1) PARTITION BY LIST(jd);
+
+CREATE TABLE fk_p_1_1 PARTITION OF fk_p_1 FOR VALUES IN (1);
+
+CREATE TABLE fk_p_1_2 (
+  x INT,
+  y INT,
+  jd INT NOT NULL,
+  id INT NOT NULL
+);
+
+CREATE TABLE fk_p_2 PARTITION OF fk_p FOR VALUES IN (2) PARTITION BY LIST(jd);
+
+CREATE TABLE fk_p_2_1 PARTITION OF fk_p_2 FOR VALUES IN (1);
+
+CREATE TABLE fk_p_2_2 PARTITION OF fk_p_2 FOR VALUES IN (2);
+
+CREATE TABLE fk_r_1 (
+  p_jd INT NOT NULL,
+  x INT,
+  id INT PRIMARY KEY,
+  p_id INT NOT NULL
+);
+
+CREATE TABLE fk_r_2 (
+  id INT PRIMARY KEY,
+  p_id INT NOT NULL,
+  p_jd INT NOT NULL
+)
+PARTITION BY LIST(id);
+
+CREATE TABLE fk_r_2_1 PARTITION OF fk_r_2 FOR VALUES IN (2, 1);
+
+CREATE TABLE fk_r (
+  id INT PRIMARY KEY,
+  p_id INT NOT NULL,
+  p_jd INT NOT NULL,
+  FOREIGN KEY
+  (p_id,
+  p_jd)
+  REFERENCES fk_p (id,
+  jd)
+)
+PARTITION BY LIST(id);
+
+SET search_path TO fkpart12;
+
+ALTER TABLE fk_p_1_2
+  DROP COLUMN x,
+  DROP COLUMN y;
+
+ALTER TABLE fk_p_1
+  ATTACH PARTITION
+  fk_p_1_2 FOR VALUES IN (2);
+
+ALTER TABLE fk_r_1
+  DROP COLUMN x;
+
+INSERT INTO fk_p VALUES (1, 1);
+
+ALTER TABLE fk_r
+  ATTACH PARTITION
+  fk_r_1 FOR VALUES IN (1);
+
+ALTER TABLE fk_r
+  ATTACH PARTITION
+  fk_r_2 FOR VALUES IN (2);
+
+INSERT INTO fk_r VALUES (1, 1, 1);
+
+INSERT INTO fk_r VALUES (2, 2, 1);
+
+ALTER TABLE fk_r
+  DETACH PARTITION
+  fk_r_1;
+
+ALTER TABLE fk_r
+  DETACH PARTITION
+  fk_r_2;
+
+INSERT INTO fk_r_1 (id, p_id, p_jd) VALUES (2, 1, 2);
+
+DELETE FROM fk_p;
+
+ALTER TABLE fk_r
+  ATTACH PARTITION
+  fk_r_1 FOR VALUES IN (1);
+
+ALTER TABLE fk_r
+  ATTACH PARTITION
+  fk_r_2 FOR VALUES IN (2);
+
+DELETE FROM fk_p;
+
+ALTER TABLE fk_r_1
+  DROP CONSTRAINT fk_r_p_id_p_jd_fkey;
+
+ALTER TABLE fk_r
+  DROP CONSTRAINT fk_r_p_id_p_jd_fkey_1;
+
+ALTER TABLE fk_r_2
+  DROP CONSTRAINT fk_r_p_id_p_jd_fkey;
+
+SET client_min_messages = warning;
+
+DROP SCHEMA fkpart12 CASCADE;
+
+RESET client_min_messages;
+
+RESET search_path;

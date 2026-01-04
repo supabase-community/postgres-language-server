@@ -1,0 +1,343 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/expressions.sql
+snapshot_kind: text
+---
+SELECT CAST(date(NOW()) AS TEXT) = CAST(CURRENT_DATE AS TEXT);
+
+SELECT CAST(CAST(NOW() AS TIME WITH TIME ZONE) AS TEXT) = CAST(CURRENT_TIME AS TEXT);
+
+SELECT CAST(CAST(NOW() AS TIME(4) WITH TIME ZONE) AS TEXT) = CAST(CURRENT_TIME(4) AS TEXT);
+
+SELECT CAST(CAST(NOW() AS TIME) AS TEXT) = CAST(LOCALTIME AS TEXT);
+
+SELECT CAST(CAST(NOW() AS TIME(3)) AS TEXT) = CAST(LOCALTIME(3) AS TEXT);
+
+SELECT CURRENT_TIMESTAMP = NOW();
+
+SELECT length(CAST(CURRENT_TIMESTAMP AS TEXT)) >= length(CAST(CURRENT_TIMESTAMP(0) AS TEXT));
+
+SELECT CAST(CAST(NOW() AS TIMESTAMP) AS TEXT) = CAST(LOCALTIMESTAMP AS TEXT);
+
+SELECT CURRENT_TIME = CURRENT_TIME(7);
+
+SELECT CURRENT_TIMESTAMP = CURRENT_TIMESTAMP(7);
+
+SELECT LOCALTIME = LOCALTIME(7);
+
+SELECT LOCALTIMESTAMP = LOCALTIMESTAMP(7);
+
+SELECT CURRENT_CATALOG = current_database();
+
+SELECT CURRENT_SCHEMA;
+
+SET search_path TO notme;
+
+SELECT CURRENT_SCHEMA;
+
+SET search_path TO pg_catalog;
+
+SELECT CURRENT_SCHEMA;
+
+RESET search_path;
+
+BEGIN;
+
+CREATE TABLE numeric_tbl (
+  f1 NUMERIC(18, 3),
+  f2 NUMERIC
+);
+
+CREATE VIEW numeric_view
+AS SELECT
+  f1,
+  CAST(f1 AS NUMERIC(16, 4)) AS f1164,
+  CAST(f1 AS NUMERIC) AS f1n,
+  f2,
+  CAST(f2 AS NUMERIC(16, 4)) AS f2164,
+  CAST(f2 AS NUMERIC) AS f2n
+FROM
+  numeric_tbl;
+
+SELECT * FROM numeric_view;
+
+CREATE TABLE bpchar_tbl (
+  f1 CHAR(16) UNIQUE,
+  f2 CHAR
+);
+
+CREATE VIEW bpchar_view
+AS SELECT
+  f1,
+  CAST(f1 AS CHAR(14)) AS f114,
+  CAST(f1 AS CHAR) AS f1n,
+  f2,
+  CAST(f2 AS CHAR(14)) AS f214,
+  CAST(f2 AS CHAR) AS f2n
+FROM
+  bpchar_tbl;
+
+SELECT * FROM bpchar_view WHERE CAST(f1 AS CHAR) = 'foo';
+
+ROLLBACK;
+
+SELECT random() IN (1, 4, 8.0);
+
+SELECT CAST(random() AS INT) IN (1, 4, 8.0);
+
+SELECT CAST('(0,0)' AS point) IN (CAST('(0,0,0,0)' AS box), point(0, 0));
+
+BEGIN;
+
+CREATE FUNCTION return_int_input(INT)
+RETURNS INT
+AS '
+begin
+	return $1;
+end;
+'
+LANGUAGE "plpgsql"
+STABLE;
+
+CREATE FUNCTION return_text_input(TEXT)
+RETURNS TEXT
+AS '
+begin
+	return $1;
+end;
+'
+LANGUAGE "plpgsql"
+STABLE;
+
+SELECT return_int_input(1) IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
+
+SELECT return_int_input(1) IN (10, 9, 2, 8, 3, 7, 4, 6, 5, NULL);
+
+SELECT return_int_input(1) IN (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+SELECT return_int_input(1) IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1, NULL);
+
+SELECT return_int_input(CAST(NULL AS INT)) IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
+
+SELECT return_int_input(CAST(NULL AS INT)) IN (10, 9, 2, 8, 3, 7, 4, 6, 5, NULL);
+
+SELECT return_text_input('a') IN ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j');
+
+SELECT return_int_input(1) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
+
+SELECT return_int_input(1) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 0);
+
+SELECT return_int_input(1) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 2, NULL);
+
+SELECT return_int_input(1) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1, NULL);
+
+SELECT
+  return_int_input(1)
+  NOT IN (
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  );
+
+SELECT return_int_input(CAST(NULL AS INT)) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, 1);
+
+SELECT return_int_input(CAST(NULL AS INT)) NOT IN (10, 9, 2, 8, 3, 7, 4, 6, 5, NULL);
+
+SELECT return_text_input('a') NOT IN ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j');
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE TYPE myint;
+
+CREATE FUNCTION myintin(cstring)
+RETURNS myint
+STRICT
+IMMUTABLE
+LANGUAGE "internal"
+AS 'int4in';
+
+CREATE FUNCTION myintout(myint)
+RETURNS cstring
+STRICT
+IMMUTABLE
+LANGUAGE "internal"
+AS 'int4out';
+
+CREATE FUNCTION myinthash(myint)
+RETURNS INT
+STRICT
+IMMUTABLE
+LANGUAGE "internal"
+AS 'hashint4';
+
+CREATE TYPE myint (input = myintin, output = myintout, like = INT);
+
+CREATE CAST (INT AS myint) WITHOUT FUNCTION;
+
+CREATE CAST (myint AS INT) WITHOUT FUNCTION;
+
+CREATE FUNCTION myinteq(myint, myint)
+RETURNS BOOLEAN
+AS '
+begin
+  if $1 is null and $2 is null then
+    return true;
+  else
+    return $1::int = $2::int;
+  end if;
+end;
+'
+LANGUAGE "plpgsql"
+IMMUTABLE;
+
+CREATE FUNCTION myintne(myint, myint)
+RETURNS BOOLEAN
+AS '
+begin
+  return not myinteq($1, $2);
+end;
+'
+LANGUAGE "plpgsql"
+IMMUTABLE;
+
+CREATE OPERATOR = (LEFTARG = myint,
+RIGHTARG = myint,
+COMMUTATOR = =,
+NEGATOR = <>,
+PROCEDURE = myinteq,
+RESTRICT = eqsel,
+JOIN = eqjoinsel,
+MERGES);
+
+CREATE OPERATOR <> (LEFTARG = myint,
+RIGHTARG = myint,
+COMMUTATOR = <>,
+NEGATOR = =,
+PROCEDURE = myintne,
+RESTRICT = eqsel,
+JOIN = eqjoinsel,
+MERGES);
+
+CREATE OPERATOR CLASS myint_ops DEFAULT
+  FOR TYPE myint
+  USING hash
+  AS OPERATOR 1 = (myint, myint),
+  FUNCTION 1 myinthash(myint);
+
+CREATE TABLE inttest (a myint);
+
+INSERT INTO inttest VALUES (CAST(1 AS myint)), (NULL);
+
+SELECT
+  *
+FROM
+  inttest
+WHERE
+  a
+  IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    CAST(6 AS myint),
+    CAST(7 AS myint),
+    CAST(8 AS myint),
+    CAST(9 AS myint),
+    NULL
+  );
+
+SELECT
+  *
+FROM
+  inttest
+WHERE
+  a
+  NOT IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    CAST(6 AS myint),
+    CAST(7 AS myint),
+    CAST(8 AS myint),
+    CAST(9 AS myint),
+    NULL
+  );
+
+SELECT
+  *
+FROM
+  inttest
+WHERE
+  a
+  NOT IN (
+    CAST(0 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    CAST(6 AS myint),
+    CAST(7 AS myint),
+    CAST(8 AS myint),
+    CAST(9 AS myint),
+    NULL
+  );
+
+SELECT
+  *
+FROM
+  inttest
+WHERE
+  a
+  IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    NULL
+  );
+
+SELECT
+  *
+FROM
+  inttest
+WHERE
+  a
+  NOT IN (
+    CAST(1 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    NULL
+  );
+
+SELECT
+  *
+FROM
+  inttest
+WHERE
+  a
+  NOT IN (
+    CAST(0 AS myint),
+    CAST(2 AS myint),
+    CAST(3 AS myint),
+    CAST(4 AS myint),
+    CAST(5 AS myint),
+    NULL
+  );
+
+ROLLBACK;

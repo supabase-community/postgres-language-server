@@ -1,0 +1,22 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/json_table_features_0.sql
+snapshot_kind: text
+---
+CREATE VIEW jsonb_table_view2
+AS SELECT
+  *
+FROM
+  JSON_TABLE(
+    CAST('null' AS JSONB),
+    'lax $[*]'
+    PASSING 1 + 2 AS a,
+    CAST('"foo"' AS JSON) AS "b c"
+    COLUMNS (
+      int INT PATH '$',
+      text text PATH '$',
+      js JSON PATH '$',
+      jsb jsonb PATH '$'
+    )
+    NULL ON ERROR
+  );

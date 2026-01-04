@@ -1,0 +1,1 @@
+SELECT id, name FROM users UNION SELECT id, name FROM employees;

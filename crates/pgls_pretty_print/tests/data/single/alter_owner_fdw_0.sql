@@ -1,0 +1,1 @@
+ALTER FOREIGN DATA WRAPPER fdw_example OWNER TO postgres;

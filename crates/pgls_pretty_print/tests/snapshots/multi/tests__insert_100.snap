@@ -1,0 +1,1133 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/insert.sql
+snapshot_kind: text
+---
+CREATE TABLE inserttest (
+  col1 INT,
+  col2 INT NOT NULL,
+  col3 TEXT DEFAULT 'testing'
+);
+
+INSERT INTO inserttest (col1, col2, col3) VALUES (DEFAULT, DEFAULT, DEFAULT);
+
+INSERT INTO inserttest (col2, col3) VALUES (3, DEFAULT);
+
+INSERT INTO inserttest (col1, col2, col3) VALUES (DEFAULT, 5, DEFAULT);
+
+INSERT INTO inserttest VALUES (DEFAULT, 5, 'test');
+
+INSERT INTO inserttest VALUES (DEFAULT, 7);
+
+SELECT * FROM inserttest;
+
+INSERT INTO inserttest (col1, col2, col3) VALUES (DEFAULT, DEFAULT);
+
+INSERT INTO inserttest (col1, col2, col3) VALUES (1, 2);
+
+INSERT INTO inserttest (col1) VALUES (1, 2);
+
+INSERT INTO inserttest (col1) VALUES (DEFAULT, DEFAULT);
+
+SELECT * FROM inserttest;
+
+INSERT INTO inserttest
+VALUES
+  (10, 20, '40'),
+  (-1, 2, DEFAULT),
+  (
+    (SELECT 2),
+    (SELECT i FROM (VALUES (3)) AS foo (i)),
+    'values are fun!'
+  );
+
+SELECT * FROM inserttest;
+
+INSERT INTO inserttest VALUES (30, 50, repeat('x', 10000));
+
+SELECT col1, col2, char_length(col3) FROM inserttest;
+
+DROP TABLE "inserttest";
+
+CREATE TABLE large_tuple_test (
+  a INT,
+  b TEXT
+)
+WITH (fillfactor = 10);
+
+ALTER TABLE large_tuple_test
+  ALTER COLUMN b SET STORAGE plain;
+
+INSERT INTO large_tuple_test SELECT 1, NULL;
+
+INSERT INTO large_tuple_test SELECT 2, repeat('a', 1000);
+
+SELECT pg_size_pretty(pg_relation_size(CAST('large_tuple_test' AS REGCLASS), 'main'));
+
+INSERT INTO large_tuple_test SELECT 3, NULL;
+
+INSERT INTO large_tuple_test SELECT 4, repeat('a', 8126);
+
+DROP TABLE "large_tuple_test";
+
+CREATE TYPE insert_test_type AS (if1 INT, if2 TEXT[]);
+
+CREATE TABLE inserttest (
+  f1 INT,
+  f2 INT[],
+  f3 insert_test_type,
+  f4 insert_test_type[]
+);
+
+INSERT INTO inserttest (f2[1], f2[2]) VALUES (1, 2);
+
+INSERT INTO inserttest (f2[1], f2[2]) VALUES (3, 4), (5, 6);
+
+INSERT INTO inserttest (f2[1], f2[2]) SELECT 7, 8;
+
+INSERT INTO inserttest (f2[1], f2[2]) VALUES (1, DEFAULT);
+
+INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, ARRAY['foo']);
+
+INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, '{foo}'), (2, '{bar}');
+
+INSERT INTO inserttest (f3."if1", f3."if2") SELECT 3, '{baz,quux}';
+
+INSERT INTO inserttest (f3."if1", f3."if2") VALUES (1, DEFAULT);
+
+INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar');
+
+INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar'), ('baz', 'quux');
+
+INSERT INTO inserttest (f3."if2"[1], f3."if2"[2]) SELECT 'bear', 'beer';
+
+INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) VALUES ('foo', 'bar');
+
+INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) VALUES ('foo', 'bar'), ('baz', 'quux');
+
+INSERT INTO inserttest (f4[1]."if2"[1], f4[1]."if2"[2]) SELECT 'bear', 'beer';
+
+SELECT * FROM inserttest;
+
+CREATE TABLE inserttest2 (
+  f1 BIGINT,
+  f2 TEXT
+);
+
+CREATE RULE irule1
+AS ON INSERT TO inserttest2
+DO
+  INSERT INTO inserttest (f3."if2"[1], f3."if2"[2])
+  VALUES (new.f1, new.f2);;
+
+CREATE RULE irule2
+AS ON INSERT TO inserttest2
+DO
+  INSERT INTO inserttest (f4[1]."if1", f4[1]."if2"[2])
+  VALUES (1, 'fool'), (new.f1, new.f2);;
+
+SELECT new.f1, new.f2;
+
+DROP TABLE "inserttest2";
+
+DROP TABLE "inserttest";
+
+CREATE DOMAIN insert_pos_ints AS INT[] CHECK (value[1] > 0);
+
+CREATE DOMAIN insert_test_domain AS insert_test_type CHECK (value.if2[1] IS NOT NULL);
+
+CREATE TABLE inserttesta (
+  f1 INT,
+  f2 insert_pos_ints
+);
+
+CREATE TABLE inserttestb (
+  f3 insert_test_domain,
+  f4 insert_test_domain[]
+);
+
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (1, 2);
+
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (3, 4), (5, 6);
+
+INSERT INTO inserttesta (f2[1], f2[2]) SELECT 7, 8;
+
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (1, DEFAULT);
+
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (0, 2);
+
+INSERT INTO inserttesta (f2[1], f2[2]) VALUES (3, 4), (0, 6);
+
+INSERT INTO inserttesta (f2[1], f2[2]) SELECT 0, 8;
+
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, ARRAY['foo']);
+
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, '{foo}'), (2, '{bar}');
+
+INSERT INTO inserttestb (f3."if1", f3."if2") SELECT 3, '{baz,quux}';
+
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, DEFAULT);
+
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, ARRAY[NULL]);
+
+INSERT INTO inserttestb (f3."if1", f3."if2") VALUES (1, '{null}'), (2, '{bar}');
+
+INSERT INTO inserttestb (f3."if1", f3."if2") SELECT 3, '{null,quux}';
+
+INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar');
+
+INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) VALUES ('foo', 'bar'), ('baz', 'quux');
+
+INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2]) SELECT 'bear', 'beer';
+
+INSERT INTO inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2]) VALUES (ROW(1, '{x}'), 'foo', 'bar');
+
+INSERT INTO inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
+VALUES
+  (ROW(1, '{x}'), 'foo', 'bar'),
+  (ROW(2, '{y}'), 'baz', 'quux');
+
+INSERT INTO inserttestb (f3, f4[1]."if2"[1], f4[1]."if2"[2])
+SELECT
+  CAST(ROW(1, '{x}') AS insert_test_domain),
+  'bear',
+  'beer';
+
+SELECT * FROM inserttesta;
+
+SELECT * FROM inserttestb;
+
+CREATE TABLE inserttest2 (
+  f1 BIGINT,
+  f2 TEXT
+);
+
+CREATE RULE irule1
+AS ON INSERT TO inserttest2
+DO
+  INSERT INTO inserttestb (f3."if2"[1], f3."if2"[2])
+  VALUES (new.f1, new.f2);;
+
+CREATE RULE irule2
+AS ON INSERT TO inserttest2
+DO
+  INSERT INTO inserttestb (f4[1]."if1", f4[1]."if2"[2])
+  VALUES (1, 'fool'), (new.f1, new.f2);;
+
+SELECT new.f1, new.f2;
+
+DROP TABLE "inserttest2";
+
+DROP TABLE "inserttesta";
+
+DROP TABLE "inserttestb";
+
+DROP DOMAIN insert_pos_ints;
+
+DROP DOMAIN insert_test_domain;
+
+CREATE DOMAIN insert_nnarray AS INT[] CHECK (value[1] IS NOT NULL AND value[2] IS NOT NULL);
+
+CREATE DOMAIN insert_test_domain AS insert_test_type
+  CHECK (value.if1 IS NOT NULL AND value.if2 IS NOT NULL);
+
+CREATE TABLE inserttesta (f1 insert_nnarray);
+
+INSERT INTO inserttesta (f1[1]) VALUES (1);
+
+INSERT INTO inserttesta (f1[1], f1[2]) VALUES (1, 2);
+
+CREATE TABLE inserttestb (f1 insert_test_domain);
+
+INSERT INTO inserttestb (f1."if1") VALUES (1);
+
+INSERT INTO inserttestb (f1."if1", f1."if2") VALUES (1, '{foo}');
+
+DROP TABLE "inserttesta";
+
+DROP TABLE "inserttestb";
+
+DROP DOMAIN insert_nnarray;
+
+DROP TYPE insert_test_type CASCADE;
+
+CREATE TABLE range_parted (
+  a TEXT,
+  b INT
+)
+PARTITION BY RANGE(a, (b + 0));
+
+INSERT INTO range_parted VALUES ('a', 11);
+
+CREATE TABLE part1 PARTITION OF range_parted FOR VALUES FROM ('a', 1) TO ('a', 10);
+
+CREATE TABLE part2 PARTITION OF range_parted FOR VALUES FROM ('a', 10) TO ('a', 20);
+
+CREATE TABLE part3 PARTITION OF range_parted FOR VALUES FROM ('b', 1) TO ('b', 10);
+
+CREATE TABLE part4 PARTITION OF range_parted FOR VALUES FROM ('b', 10) TO ('b', 20);
+
+INSERT INTO part1 VALUES ('a', 11);
+
+INSERT INTO part1 VALUES ('b', 1);
+
+INSERT INTO part1 VALUES ('a', 1);
+
+INSERT INTO part4 VALUES ('b', 21);
+
+INSERT INTO part4 VALUES ('a', 10);
+
+INSERT INTO part4 VALUES ('b', 10);
+
+INSERT INTO part1 VALUES (NULL);
+
+INSERT INTO part1 VALUES (1);
+
+CREATE TABLE list_parted (
+  a TEXT,
+  b INT
+)
+PARTITION BY LIST((lower(a)));
+
+CREATE TABLE part_aa_bb PARTITION OF list_parted FOR VALUES IN ('aa', 'bb');
+
+CREATE TABLE part_cc_dd PARTITION OF list_parted FOR VALUES IN ('cc', 'dd');
+
+CREATE TABLE part_null PARTITION OF list_parted FOR VALUES IN (NULL);
+
+INSERT INTO part_aa_bb VALUES ('cc', 1);
+
+INSERT INTO part_aa_bb VALUES ('AAa', 1);
+
+INSERT INTO part_aa_bb VALUES (NULL);
+
+INSERT INTO part_cc_dd VALUES ('cC', 1);
+
+INSERT INTO part_null VALUES (NULL, 0);
+
+CREATE TABLE part_ee_ff PARTITION OF list_parted FOR VALUES IN ('ee', 'ff') PARTITION BY RANGE(b);
+
+CREATE TABLE part_ee_ff1 PARTITION OF part_ee_ff FOR VALUES FROM (1) TO (10);
+
+CREATE TABLE part_ee_ff2 PARTITION OF part_ee_ff FOR VALUES FROM (10) TO (20);
+
+CREATE TABLE part_default PARTITION OF list_parted DEFAULT;
+
+INSERT INTO part_default VALUES ('aa', 2);
+
+INSERT INTO part_default VALUES (NULL, 2);
+
+INSERT INTO part_default VALUES ('Zz', 2);
+
+DROP TABLE "part_default";
+
+CREATE TABLE part_xx_yy PARTITION OF list_parted FOR VALUES IN ('xx', 'yy') PARTITION BY LIST(a);
+
+CREATE TABLE part_xx_yy_p1 PARTITION OF part_xx_yy FOR VALUES IN ('xx');
+
+CREATE TABLE part_xx_yy_defpart PARTITION OF part_xx_yy DEFAULT;
+
+CREATE TABLE part_default PARTITION OF list_parted DEFAULT PARTITION BY RANGE(b);
+
+CREATE TABLE part_default_p1 PARTITION OF part_default FOR VALUES FROM (20) TO (30);
+
+CREATE TABLE part_default_p2 PARTITION OF part_default FOR VALUES FROM (30) TO (40);
+
+INSERT INTO part_ee_ff1 VALUES ('EE', 11);
+
+INSERT INTO part_default_p2 VALUES ('gg', 43);
+
+INSERT INTO part_ee_ff1 VALUES ('cc', 1);
+
+INSERT INTO part_default VALUES ('gg', 43);
+
+INSERT INTO part_ee_ff1 VALUES ('ff', 1);
+
+INSERT INTO part_ee_ff2 VALUES ('ff', 11);
+
+INSERT INTO part_default_p1 VALUES ('cd', 25);
+
+INSERT INTO part_default_p2 VALUES ('de', 35);
+
+INSERT INTO list_parted VALUES ('ab', 21);
+
+INSERT INTO list_parted VALUES ('xx', 1);
+
+INSERT INTO list_parted VALUES ('yy', 2);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM list_parted;
+
+INSERT INTO range_parted VALUES ('a', 0);
+
+INSERT INTO range_parted VALUES ('a', 1);
+
+INSERT INTO range_parted VALUES ('a', 10);
+
+INSERT INTO range_parted VALUES ('a', 20);
+
+INSERT INTO range_parted VALUES ('b', 1);
+
+INSERT INTO range_parted VALUES ('b', 10);
+
+INSERT INTO range_parted VALUES ('a');
+
+CREATE TABLE part_def PARTITION OF range_parted DEFAULT;
+
+INSERT INTO part_def VALUES ('b', 10);
+
+INSERT INTO part_def VALUES ('c', 10);
+
+INSERT INTO range_parted VALUES (NULL, NULL);
+
+INSERT INTO range_parted VALUES ('a', NULL);
+
+INSERT INTO range_parted VALUES (NULL, 19);
+
+INSERT INTO range_parted VALUES ('b', 20);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM range_parted;
+
+INSERT INTO list_parted VALUES (NULL, 1);
+
+INSERT INTO list_parted (a) VALUES ('aA');
+
+INSERT INTO list_parted VALUES ('EE', 0);
+
+INSERT INTO part_ee_ff VALUES ('EE', 0);
+
+INSERT INTO list_parted VALUES ('EE', 1);
+
+INSERT INTO part_ee_ff VALUES ('EE', 10);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM list_parted;
+
+CREATE TABLE part_gg PARTITION OF list_parted FOR VALUES IN ('gg') PARTITION BY RANGE(b);
+
+CREATE TABLE part_gg1 PARTITION OF part_gg FOR VALUES FROM (minvalue) TO (1);
+
+CREATE TABLE part_gg2 PARTITION OF part_gg FOR VALUES FROM (1) TO (10) PARTITION BY RANGE(b);
+
+CREATE TABLE part_gg2_1 PARTITION OF part_gg2 FOR VALUES FROM (1) TO (5);
+
+CREATE TABLE part_gg2_2 PARTITION OF part_gg2 FOR VALUES FROM (5) TO (10);
+
+CREATE TABLE part_ee_ff3 PARTITION OF part_ee_ff FOR VALUES FROM (20) TO (30) PARTITION BY RANGE(b);
+
+CREATE TABLE part_ee_ff3_1 PARTITION OF part_ee_ff3 FOR VALUES FROM (20) TO (25);
+
+CREATE TABLE part_ee_ff3_2 PARTITION OF part_ee_ff3 FOR VALUES FROM (25) TO (30);
+
+TRUNCATE list_parted;
+
+INSERT INTO list_parted VALUES ('aa'), ('cc');
+
+INSERT INTO list_parted SELECT 'Ff', s.a FROM generate_series(1, 29) AS s (a);
+
+INSERT INTO list_parted SELECT 'gg', s.a FROM generate_series(1, 9) AS s (a);
+
+INSERT INTO list_parted (b) VALUES (1);
+
+SELECT
+  CAST(CAST(tableoid AS REGCLASS) AS TEXT),
+  a,
+  MIN(b) AS min_b,
+  MAX(b) AS max_b
+FROM
+  list_parted
+GROUP BY 1,
+  2
+ORDER BY 1;
+
+CREATE TABLE hash_parted (a INT)
+PARTITION BY HASH(a part_test_int4_ops);
+
+CREATE TABLE hpart0 PARTITION OF hash_parted FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+
+CREATE TABLE hpart1 PARTITION OF hash_parted FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+
+CREATE TABLE hpart2 PARTITION OF hash_parted FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+
+CREATE TABLE hpart3 PARTITION OF hash_parted FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+
+INSERT INTO hash_parted VALUES (generate_series(1, 10));
+
+INSERT INTO hpart0 VALUES (12), (16);
+
+INSERT INTO hpart0 VALUES (11);
+
+INSERT INTO hpart3 VALUES (11);
+
+SELECT
+  CAST(tableoid AS REGCLASS) AS part,
+  a,
+  a % 4 AS "remainder = a % 4"
+FROM
+  hash_parted
+ORDER BY part;
+
+DROP TABLE "range_parted", "list_parted";
+
+DROP TABLE "hash_parted";
+
+CREATE TABLE list_parted (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE part_default PARTITION OF list_parted DEFAULT;
+
+INSERT INTO part_default VALUES (NULL);
+
+INSERT INTO part_default VALUES (1);
+
+INSERT INTO part_default VALUES (-1);
+
+SELECT CAST(tableoid AS REGCLASS), a FROM list_parted;
+
+DROP TABLE "list_parted";
+
+CREATE TABLE mlparted (
+  a INT,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE mlparted1 (
+  b INT NOT NULL,
+  a INT NOT NULL
+)
+PARTITION BY RANGE((b + 0));
+
+CREATE TABLE mlparted11 (LIKE mlparted1);
+
+ALTER TABLE mlparted11
+  DROP COLUMN a;
+
+ALTER TABLE mlparted11
+  ADD COLUMN a INT;
+
+ALTER TABLE mlparted11
+  DROP COLUMN a;
+
+ALTER TABLE mlparted11
+  ADD COLUMN a INT NOT NULL;
+
+SELECT
+  CAST(attrelid AS REGCLASS),
+  attname,
+  attnum
+FROM
+  pg_attribute
+WHERE
+  attname = 'a' AND
+  (attrelid = CAST('mlparted' AS REGCLASS) OR
+  attrelid = CAST('mlparted1' AS REGCLASS) OR
+  attrelid = CAST('mlparted11' AS REGCLASS))
+ORDER BY CAST(CAST(attrelid AS REGCLASS) AS TEXT);
+
+ALTER TABLE mlparted1
+  ATTACH PARTITION
+  mlparted11 FOR VALUES FROM (2) TO (5);
+
+ALTER TABLE mlparted
+  ATTACH PARTITION
+  mlparted1 FOR VALUES FROM (1, 2) TO (1, 10);
+
+INSERT INTO mlparted VALUES (1, 2);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM mlparted;
+
+INSERT INTO mlparted (a, b) VALUES (1, 5);
+
+TRUNCATE mlparted;
+
+ALTER TABLE mlparted
+  ADD CONSTRAINT "check_b" CHECK (b = 3);
+
+CREATE FUNCTION mlparted11_trig_fn()
+RETURNS trigger
+AS '
+begin
+  NEW.b := 4;
+  return NEW;
+end;
+'
+LANGUAGE "plpgsql";
+
+CREATE TRIGGER mlparted11_trig
+  BEFORE INSERT
+  ON mlparted11
+  FOR EACH ROW
+  EXECUTE FUNCTION mlparted11_trig_fn();
+
+INSERT INTO mlparted VALUES (1, 2);
+
+DROP TRIGGER "mlparted11_trig" ON "mlparted11";
+
+DROP FUNCTION mlparted11_trig_fn();
+
+INSERT INTO mlparted1 (a, b) VALUES (2, 3);
+
+CREATE TABLE lparted_nonullpart (
+  a INT,
+  b CHAR(1)
+)
+PARTITION BY LIST(b);
+
+CREATE TABLE lparted_nonullpart_a PARTITION OF lparted_nonullpart FOR VALUES IN ('a');
+
+INSERT INTO lparted_nonullpart VALUES (1);
+
+DROP TABLE "lparted_nonullpart";
+
+ALTER TABLE mlparted
+  DROP CONSTRAINT check_b;
+
+CREATE TABLE mlparted12 PARTITION OF mlparted1 FOR VALUES FROM (5) TO (10);
+
+CREATE TABLE mlparted2 (
+  b INT NOT NULL,
+  a INT NOT NULL
+);
+
+ALTER TABLE mlparted
+  ATTACH PARTITION
+  mlparted2 FOR VALUES FROM (1, 10) TO (1, 20);
+
+CREATE TABLE mlparted3 PARTITION OF mlparted FOR VALUES FROM (1, 20) TO (1, 30);
+
+CREATE TABLE mlparted4 (LIKE mlparted);
+
+ALTER TABLE mlparted4
+  DROP COLUMN a;
+
+ALTER TABLE mlparted4
+  ADD COLUMN a INT NOT NULL;
+
+ALTER TABLE mlparted
+  ATTACH PARTITION
+  mlparted4 FOR VALUES FROM (1, 30) TO (1, 40);
+
+WITH
+ins (a,
+b,
+c)
+AS (
+  INSERT INTO mlparted (b, a)
+  SELECT s.a, 1 FROM generate_series(2, 39) AS s (a)
+  RETURNING CAST(tableoid AS REGCLASS),
+  *
+)
+SELECT
+  a,
+  b,
+  MIN(c),
+  MAX(c)
+FROM
+  ins
+GROUP BY a,
+  b
+ORDER BY 1;
+
+ALTER TABLE mlparted
+  ADD COLUMN c TEXT;
+
+CREATE TABLE mlparted5 (
+  c TEXT,
+  a INT NOT NULL,
+  b INT NOT NULL
+)
+PARTITION BY LIST(c);
+
+CREATE TABLE mlparted5a (
+  a INT NOT NULL,
+  c TEXT,
+  b INT NOT NULL
+);
+
+ALTER TABLE mlparted5
+  ATTACH PARTITION
+  mlparted5a FOR VALUES IN ('a');
+
+ALTER TABLE mlparted
+  ATTACH PARTITION
+  mlparted5 FOR VALUES FROM (1, 40) TO (1, 50);
+
+ALTER TABLE mlparted
+  ADD CONSTRAINT "check_b" CHECK (a = 1 AND b < 45);
+
+INSERT INTO mlparted VALUES (1, 45, 'a');
+
+CREATE FUNCTION mlparted5abrtrig_func()
+RETURNS trigger
+AS ' begin new.c = ''b''; return new; end; '
+LANGUAGE "plpgsql";
+
+CREATE TRIGGER mlparted5abrtrig
+  BEFORE INSERT
+  ON mlparted5a
+  FOR EACH ROW
+  EXECUTE FUNCTION mlparted5abrtrig_func();
+
+INSERT INTO mlparted5 (a, b, c) VALUES (1, 40, 'a');
+
+DROP TABLE "mlparted5";
+
+ALTER TABLE mlparted
+  DROP CONSTRAINT check_b;
+
+CREATE TABLE mlparted_def PARTITION OF mlparted DEFAULT PARTITION BY RANGE(a);
+
+CREATE TABLE mlparted_def1 PARTITION OF mlparted_def FOR VALUES FROM (40) TO (50);
+
+CREATE TABLE mlparted_def2 PARTITION OF mlparted_def FOR VALUES FROM (50) TO (60);
+
+INSERT INTO mlparted VALUES (40, 100);
+
+INSERT INTO mlparted_def1 VALUES (42, 100);
+
+INSERT INTO mlparted_def2 VALUES (54, 50);
+
+INSERT INTO mlparted VALUES (70, 100);
+
+INSERT INTO mlparted_def1 VALUES (52, 50);
+
+INSERT INTO mlparted_def2 VALUES (34, 50);
+
+CREATE TABLE mlparted_defd PARTITION OF mlparted_def DEFAULT;
+
+INSERT INTO mlparted VALUES (70, 100);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM mlparted_def;
+
+ALTER TABLE mlparted
+  ADD COLUMN d INT,
+  ADD COLUMN e INT;
+
+ALTER TABLE mlparted
+  DROP COLUMN e;
+
+CREATE TABLE mlparted5
+PARTITION OF mlparted
+FOR VALUES FROM (1, 40) TO (1, 50)
+PARTITION BY RANGE(c);
+
+CREATE TABLE mlparted5_ab
+PARTITION OF mlparted5
+FOR VALUES FROM ('a') TO ('c')
+PARTITION BY LIST(c);
+
+CREATE TABLE mlparted5_cd
+PARTITION OF mlparted5
+FOR VALUES FROM ('c') TO ('e')
+PARTITION BY LIST(c);
+
+CREATE TABLE mlparted5_a PARTITION OF mlparted5_ab FOR VALUES IN ('a');
+
+CREATE TABLE mlparted5_b (
+  d INT,
+  b INT,
+  c TEXT,
+  a INT
+);
+
+ALTER TABLE mlparted5_ab
+  ATTACH PARTITION
+  mlparted5_b FOR VALUES IN ('b');
+
+TRUNCATE mlparted;
+
+INSERT INTO mlparted VALUES (1, 2, 'a', 1);
+
+INSERT INTO mlparted VALUES (1, 40, 'a', 1);
+
+INSERT INTO mlparted VALUES (1, 45, 'b', 1);
+
+INSERT INTO mlparted VALUES (1, 45, 'c', 1);
+
+INSERT INTO mlparted VALUES (1, 45, 'f', 1);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM mlparted ORDER BY a, b, c, d;
+
+ALTER TABLE mlparted
+  DROP COLUMN d;
+
+TRUNCATE mlparted;
+
+ALTER TABLE mlparted
+  ADD COLUMN e INT,
+  ADD COLUMN d INT;
+
+ALTER TABLE mlparted
+  DROP COLUMN e;
+
+INSERT INTO mlparted VALUES (1, 2, 'a', 1);
+
+INSERT INTO mlparted VALUES (1, 40, 'a', 1);
+
+INSERT INTO mlparted VALUES (1, 45, 'b', 1);
+
+INSERT INTO mlparted VALUES (1, 45, 'c', 1);
+
+INSERT INTO mlparted VALUES (1, 45, 'f', 1);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM mlparted ORDER BY a, b, c, d;
+
+ALTER TABLE mlparted
+  DROP COLUMN d;
+
+DROP TABLE "mlparted5";
+
+CREATE TABLE key_desc (
+  a INT,
+  b INT
+)
+PARTITION BY LIST((a + 0));
+
+CREATE TABLE key_desc_1 PARTITION OF key_desc FOR VALUES IN (1) PARTITION BY RANGE(b);
+
+CREATE USER regress_insert_other_user;
+
+GRANT SELECT (a) ON TABLE key_desc_1 TO regress_insert_other_user;
+
+GRANT INSERT ON TABLE key_desc TO regress_insert_other_user;
+
+SET ROLE TO regress_insert_other_user;
+
+INSERT INTO key_desc VALUES (1, 1);
+
+RESET role;
+
+GRANT SELECT (b) ON TABLE key_desc_1 TO regress_insert_other_user;
+
+SET ROLE TO regress_insert_other_user;
+
+INSERT INTO key_desc VALUES (1, 1);
+
+INSERT INTO key_desc VALUES (2, 1);
+
+RESET role;
+
+REVOKE ALL ON TABLE key_desc FROM regress_insert_other_user;
+
+REVOKE ALL ON TABLE key_desc_1 FROM regress_insert_other_user;
+
+DROP ROLE regress_insert_other_user;
+
+DROP TABLE "key_desc", "key_desc_1";
+
+CREATE TABLE mcrparted (
+  a INT,
+  b INT,
+  c INT
+)
+PARTITION BY RANGE(a, (abs(b)), c);
+
+CREATE TABLE mcrparted0
+PARTITION OF mcrparted
+FOR VALUES FROM (minvalue,
+0,
+0) TO (1,
+maxvalue,
+maxvalue);
+
+CREATE TABLE mcrparted2
+PARTITION OF mcrparted
+FOR VALUES FROM (10,
+6,
+minvalue) TO (10,
+maxvalue,
+minvalue);
+
+CREATE TABLE mcrparted4
+PARTITION OF mcrparted
+FOR VALUES FROM (21,
+minvalue,
+0) TO (30,
+20,
+minvalue);
+
+CREATE TABLE mcrparted0
+PARTITION OF mcrparted
+FOR VALUES FROM (minvalue,
+minvalue,
+minvalue) TO (1,
+maxvalue,
+maxvalue);
+
+CREATE TABLE mcrparted1 PARTITION OF mcrparted FOR VALUES FROM (2, 1, minvalue) TO (10, 5, 10);
+
+CREATE TABLE mcrparted2
+PARTITION OF mcrparted
+FOR VALUES FROM (10,
+6,
+minvalue) TO (10,
+maxvalue,
+maxvalue);
+
+CREATE TABLE mcrparted3 PARTITION OF mcrparted FOR VALUES FROM (11, 1, 1) TO (20, 10, 10);
+
+CREATE TABLE mcrparted4
+PARTITION OF mcrparted
+FOR VALUES FROM (21,
+minvalue,
+minvalue) TO (30,
+20,
+maxvalue);
+
+CREATE TABLE mcrparted5
+PARTITION OF mcrparted
+FOR VALUES FROM (30,
+21,
+20) TO (maxvalue,
+maxvalue,
+maxvalue);
+
+INSERT INTO mcrparted VALUES (NULL, NULL, NULL);
+
+INSERT INTO mcrparted VALUES (0, 1, 1);
+
+INSERT INTO mcrparted0 VALUES (0, 1, 1);
+
+INSERT INTO mcrparted VALUES (9, 1000, 1);
+
+INSERT INTO mcrparted1 VALUES (9, 1000, 1);
+
+INSERT INTO mcrparted VALUES (10, 5, -1);
+
+INSERT INTO mcrparted1 VALUES (10, 5, -1);
+
+INSERT INTO mcrparted VALUES (2, 1, 0);
+
+INSERT INTO mcrparted1 VALUES (2, 1, 0);
+
+INSERT INTO mcrparted VALUES (10, 6, 1000);
+
+INSERT INTO mcrparted2 VALUES (10, 6, 1000);
+
+INSERT INTO mcrparted VALUES (10, 1000, 1000);
+
+INSERT INTO mcrparted2 VALUES (10, 1000, 1000);
+
+INSERT INTO mcrparted VALUES (11, 1, -1);
+
+INSERT INTO mcrparted3 VALUES (11, 1, -1);
+
+INSERT INTO mcrparted VALUES (30, 21, 20);
+
+INSERT INTO mcrparted5 VALUES (30, 21, 20);
+
+INSERT INTO mcrparted4 VALUES (30, 21, 20);
+
+SELECT CAST(CAST(tableoid AS REGCLASS) AS TEXT), * FROM mcrparted ORDER BY 1;
+
+DROP TABLE "mcrparted";
+
+CREATE TABLE brtrigpartcon (
+  a INT,
+  b TEXT
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE brtrigpartcon1 PARTITION OF brtrigpartcon FOR VALUES IN (1);
+
+CREATE OR REPLACE FUNCTION brtrigpartcon1trigf()
+RETURNS trigger
+AS 'begin new.a := 2; return new; end'
+LANGUAGE "plpgsql";
+
+CREATE TRIGGER brtrigpartcon1trig
+  BEFORE INSERT
+  ON brtrigpartcon1
+  FOR EACH ROW
+  EXECUTE FUNCTION brtrigpartcon1trigf();
+
+INSERT INTO brtrigpartcon VALUES (1, 'hi there');
+
+INSERT INTO brtrigpartcon1 VALUES (1, 'hi there');
+
+CREATE TABLE inserttest3 (
+  f1 TEXT DEFAULT 'foo',
+  f2 TEXT DEFAULT 'bar',
+  f3 INT
+);
+
+CREATE ROLE regress_coldesc_role;
+
+GRANT INSERT ON TABLE inserttest3 TO regress_coldesc_role;
+
+GRANT INSERT ON TABLE brtrigpartcon TO regress_coldesc_role;
+
+REVOKE SELECT ON TABLE brtrigpartcon FROM regress_coldesc_role;
+
+SET ROLE TO regress_coldesc_role;
+
+WITH
+result
+AS (
+  INSERT INTO brtrigpartcon
+  VALUES (1, 'hi there')
+  RETURNING 1
+)
+INSERT INTO inserttest3 (f3)
+SELECT * FROM result;
+
+RESET role;
+
+REVOKE ALL ON TABLE inserttest3 FROM regress_coldesc_role;
+
+REVOKE ALL ON TABLE brtrigpartcon FROM regress_coldesc_role;
+
+DROP ROLE regress_coldesc_role;
+
+DROP TABLE "inserttest3";
+
+DROP TABLE "brtrigpartcon";
+
+DROP FUNCTION brtrigpartcon1trigf();
+
+CREATE TABLE donothingbrtrig_test (
+  a INT,
+  b TEXT
+)
+PARTITION BY LIST(a);
+
+CREATE TABLE donothingbrtrig_test1 (
+  b TEXT,
+  a INT
+);
+
+CREATE TABLE donothingbrtrig_test2 (
+  c TEXT,
+  b TEXT,
+  a INT
+);
+
+ALTER TABLE donothingbrtrig_test2
+  DROP COLUMN c;
+
+CREATE OR REPLACE FUNCTION donothingbrtrig_func()
+RETURNS trigger
+AS 'begin raise notice ''b: %'', new.b; return NULL; end'
+LANGUAGE "plpgsql";
+
+CREATE TRIGGER donothingbrtrig1
+  BEFORE INSERT
+  ON donothingbrtrig_test1
+  FOR EACH ROW
+  EXECUTE FUNCTION donothingbrtrig_func();
+
+CREATE TRIGGER donothingbrtrig2
+  BEFORE INSERT
+  ON donothingbrtrig_test2
+  FOR EACH ROW
+  EXECUTE FUNCTION donothingbrtrig_func();
+
+ALTER TABLE donothingbrtrig_test
+  ATTACH PARTITION
+  donothingbrtrig_test1 FOR VALUES IN (1);
+
+ALTER TABLE donothingbrtrig_test
+  ATTACH PARTITION
+  donothingbrtrig_test2 FOR VALUES IN (2);
+
+INSERT INTO donothingbrtrig_test VALUES (1, 'foo'), (2, 'bar');
+
+COPY donothingbrtrig_test FROM STDOUT;
+
+SELECT CAST(tableoid AS REGCLASS), * FROM donothingbrtrig_test;
+
+DROP TABLE "donothingbrtrig_test";
+
+DROP FUNCTION donothingbrtrig_func();
+
+CREATE TABLE mcrparted (
+  a TEXT,
+  b INT
+)
+PARTITION BY RANGE(a, b);
+
+CREATE TABLE mcrparted1_lt_b
+PARTITION OF mcrparted
+FOR VALUES FROM (minvalue,
+minvalue) TO ('b',
+minvalue);
+
+CREATE TABLE mcrparted2_b PARTITION OF mcrparted FOR VALUES FROM ('b', minvalue) TO ('c', minvalue);
+
+CREATE TABLE mcrparted3_c_to_common
+PARTITION OF mcrparted
+FOR VALUES FROM ('c',
+minvalue) TO ('common',
+minvalue);
+
+CREATE TABLE mcrparted4_common_lt_0
+PARTITION OF mcrparted
+FOR VALUES FROM ('common',
+minvalue) TO ('common',
+0);
+
+CREATE TABLE mcrparted5_common_0_to_10
+PARTITION OF mcrparted
+FOR VALUES FROM ('common', 0) TO ('common', 10);
+
+CREATE TABLE mcrparted6_common_ge_10
+PARTITION OF mcrparted
+FOR VALUES FROM ('common',
+10) TO ('common',
+maxvalue);
+
+CREATE TABLE mcrparted7_gt_common_lt_d
+PARTITION OF mcrparted
+FOR VALUES FROM ('common',
+maxvalue) TO ('d',
+minvalue);
+
+CREATE TABLE mcrparted8_ge_d
+PARTITION OF mcrparted
+FOR VALUES FROM ('d',
+minvalue) TO (maxvalue,
+maxvalue);
+
+INSERT INTO mcrparted
+VALUES
+  ('aaa', 0),
+  ('b', 0),
+  ('bz', 10),
+  ('c', -10),
+  ('comm', -10),
+  ('common', -10),
+  ('common', 0),
+  ('common', 10),
+  ('commons', 0),
+  ('d', -10),
+  ('e', 0);
+
+SELECT CAST(tableoid AS REGCLASS), * FROM mcrparted ORDER BY a, b;
+
+DROP TABLE "mcrparted";
+
+CREATE TABLE returningwrtest (a INT)
+PARTITION BY LIST(a);
+
+CREATE TABLE returningwrtest1 PARTITION OF returningwrtest FOR VALUES IN (1);
+
+INSERT INTO returningwrtest VALUES (1) RETURNING returningwrtest;
+
+ALTER TABLE returningwrtest
+  ADD COLUMN b TEXT;
+
+CREATE TABLE returningwrtest2 (
+  b TEXT,
+  c INT,
+  a INT
+);
+
+ALTER TABLE returningwrtest2
+  DROP COLUMN c;
+
+ALTER TABLE returningwrtest
+  ATTACH PARTITION
+  returningwrtest2 FOR VALUES IN (2);
+
+INSERT INTO returningwrtest VALUES (2, 'foo') RETURNING returningwrtest;
+
+DROP TABLE "returningwrtest";

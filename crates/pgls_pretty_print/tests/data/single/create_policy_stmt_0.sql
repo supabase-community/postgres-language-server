@@ -1,0 +1,1 @@
+CREATE POLICY mypolicy ON mytable FOR ALL TO PUBLIC;

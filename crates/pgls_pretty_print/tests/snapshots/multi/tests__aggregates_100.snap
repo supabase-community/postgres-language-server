@@ -1,0 +1,2536 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/aggregates.sql
+snapshot_kind: text
+---
+SET extra_float_digits = 0;
+
+CREATE TABLE aggtest (
+  a SMALLINT,
+  b REAL
+);
+
+COPY aggtest FROM 'filename';
+
+ANALYZE aggtest;
+
+SELECT AVG(four) AS avg_1 FROM onek;
+
+SELECT AVG(a) AS avg_32 FROM aggtest WHERE a < 100;
+
+SELECT any_value(v) FROM (VALUES (1), (2), (3)) AS v (v);
+
+SELECT any_value(v) FROM (VALUES (NULL)) AS v (v);
+
+SELECT any_value(v) FROM (VALUES (NULL), (1), (2)) AS v (v);
+
+SELECT any_value(v) FROM (VALUES (ARRAY['hello', 'world'])) AS v (v);
+
+SELECT CAST(AVG(b) AS NUMERIC(10, 3)) AS avg_107_943 FROM aggtest;
+
+SELECT AVG(gpa) AS avg_3_4 FROM ONLY student;
+
+SELECT SUM(four) AS sum_1500 FROM onek;
+
+SELECT SUM(a) AS sum_198 FROM aggtest;
+
+SELECT SUM(b) AS avg_431_773 FROM aggtest;
+
+SELECT SUM(gpa) AS avg_6_8 FROM ONLY student;
+
+SELECT MAX(four) AS max_3 FROM onek;
+
+SELECT MAX(a) AS max_100 FROM aggtest;
+
+SELECT MAX(aggtest.b) AS max_324_78 FROM aggtest;
+
+SELECT MAX(student.gpa) AS max_3_7 FROM student;
+
+SELECT stddev_pop(b) FROM aggtest;
+
+SELECT stddev_samp(b) FROM aggtest;
+
+SELECT var_pop(b) FROM aggtest;
+
+SELECT var_samp(b) FROM aggtest;
+
+SELECT stddev_pop(CAST(b AS NUMERIC)) FROM aggtest;
+
+SELECT stddev_samp(CAST(b AS NUMERIC)) FROM aggtest;
+
+SELECT var_pop(CAST(b AS NUMERIC)) FROM aggtest;
+
+SELECT var_samp(CAST(b AS NUMERIC)) FROM aggtest;
+
+SELECT var_pop(CAST(1.0 AS DOUBLE PRECISION)), var_samp(CAST(2.0 AS DOUBLE PRECISION));
+
+SELECT stddev_pop(CAST(3.0 AS DOUBLE PRECISION)), stddev_samp(CAST(4.0 AS DOUBLE PRECISION));
+
+SELECT var_pop(CAST('inf' AS DOUBLE PRECISION)), var_samp(CAST('inf' AS DOUBLE PRECISION));
+
+SELECT stddev_pop(CAST('inf' AS DOUBLE PRECISION)), stddev_samp(CAST('inf' AS DOUBLE PRECISION));
+
+SELECT var_pop(CAST('nan' AS DOUBLE PRECISION)), var_samp(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT stddev_pop(CAST('nan' AS DOUBLE PRECISION)), stddev_samp(CAST('nan' AS DOUBLE PRECISION));
+
+SELECT var_pop(CAST(1.0 AS REAL)), var_samp(CAST(2.0 AS REAL));
+
+SELECT stddev_pop(CAST(3.0 AS REAL)), stddev_samp(CAST(4.0 AS REAL));
+
+SELECT var_pop(CAST('inf' AS REAL)), var_samp(CAST('inf' AS REAL));
+
+SELECT stddev_pop(CAST('inf' AS REAL)), stddev_samp(CAST('inf' AS REAL));
+
+SELECT var_pop(CAST('nan' AS REAL)), var_samp(CAST('nan' AS REAL));
+
+SELECT stddev_pop(CAST('nan' AS REAL)), stddev_samp(CAST('nan' AS REAL));
+
+SELECT var_pop(CAST(1.0 AS NUMERIC)), var_samp(CAST(2.0 AS NUMERIC));
+
+SELECT stddev_pop(CAST(3.0 AS NUMERIC)), stddev_samp(CAST(4.0 AS NUMERIC));
+
+SELECT var_pop(CAST('inf' AS NUMERIC)), var_samp(CAST('inf' AS NUMERIC));
+
+SELECT stddev_pop(CAST('inf' AS NUMERIC)), stddev_samp(CAST('inf' AS NUMERIC));
+
+SELECT var_pop(CAST('nan' AS NUMERIC)), var_samp(CAST('nan' AS NUMERIC));
+
+SELECT stddev_pop(CAST('nan' AS NUMERIC)), stddev_samp(CAST('nan' AS NUMERIC));
+
+SELECT MAX(ROW(a, b)) FROM aggtest;
+
+SELECT MAX(ROW(b, a)) FROM aggtest;
+
+SELECT MIN(ROW(a, b)) FROM aggtest;
+
+SELECT MIN(ROW(b, a)) FROM aggtest;
+
+SELECT SUM(CAST(NULL AS INT)) FROM generate_series(1, 3);
+
+SELECT SUM(CAST(NULL AS BIGINT)) FROM generate_series(1, 3);
+
+SELECT SUM(CAST(NULL AS NUMERIC)) FROM generate_series(1, 3);
+
+SELECT SUM(CAST(NULL AS DOUBLE PRECISION)) FROM generate_series(1, 3);
+
+SELECT AVG(CAST(NULL AS INT)) FROM generate_series(1, 3);
+
+SELECT AVG(CAST(NULL AS BIGINT)) FROM generate_series(1, 3);
+
+SELECT AVG(CAST(NULL AS NUMERIC)) FROM generate_series(1, 3);
+
+SELECT AVG(CAST(NULL AS DOUBLE PRECISION)) FROM generate_series(1, 3);
+
+SELECT SUM(CAST('NaN' AS NUMERIC)) FROM generate_series(1, 3);
+
+SELECT AVG(CAST('NaN' AS NUMERIC)) FROM generate_series(1, 3);
+
+SELECT
+  SUM(CAST(x AS DOUBLE PRECISION)),
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (VALUES ('1'), ('infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS DOUBLE PRECISION)),
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (VALUES ('infinity'), ('1')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS DOUBLE PRECISION)),
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (VALUES ('infinity'), ('infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS DOUBLE PRECISION)),
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (VALUES ('-infinity'), ('infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS DOUBLE PRECISION)),
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (VALUES ('-infinity'), ('-infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS NUMERIC)),
+  AVG(CAST(x AS NUMERIC)),
+  var_pop(CAST(x AS NUMERIC))
+FROM
+  (VALUES ('1'), ('infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS NUMERIC)),
+  AVG(CAST(x AS NUMERIC)),
+  var_pop(CAST(x AS NUMERIC))
+FROM
+  (VALUES ('infinity'), ('1')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS NUMERIC)),
+  AVG(CAST(x AS NUMERIC)),
+  var_pop(CAST(x AS NUMERIC))
+FROM
+  (VALUES ('infinity'), ('infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS NUMERIC)),
+  AVG(CAST(x AS NUMERIC)),
+  var_pop(CAST(x AS NUMERIC))
+FROM
+  (VALUES ('-infinity'), ('infinity')) AS v (x);
+
+SELECT
+  SUM(CAST(x AS NUMERIC)),
+  AVG(CAST(x AS NUMERIC)),
+  var_pop(CAST(x AS NUMERIC))
+FROM
+  (VALUES ('-infinity'), ('-infinity')) AS v (x);
+
+SELECT
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (
+    VALUES
+      (100000003),
+      (100000004),
+      (100000006),
+      (100000007)
+  )
+  AS v (x);
+
+SELECT
+  AVG(CAST(x AS DOUBLE PRECISION)),
+  var_pop(CAST(x AS DOUBLE PRECISION))
+FROM
+  (VALUES (7000000000005), (7000000000007)) AS v (x);
+
+SELECT regr_count(b, a) FROM aggtest;
+
+SELECT regr_sxx(b, a) FROM aggtest;
+
+SELECT regr_syy(b, a) FROM aggtest;
+
+SELECT regr_sxy(b, a) FROM aggtest;
+
+SELECT regr_avgx(b, a), regr_avgy(b, a) FROM aggtest;
+
+SELECT regr_r2(b, a) FROM aggtest;
+
+SELECT regr_slope(b, a), regr_intercept(b, a) FROM aggtest;
+
+SELECT covar_pop(b, a), covar_samp(b, a) FROM aggtest;
+
+SELECT corr(b, a) FROM aggtest;
+
+SELECT
+  covar_pop(
+    CAST(1 AS DOUBLE PRECISION),
+    CAST(2 AS DOUBLE PRECISION)
+  ),
+  covar_samp(
+    CAST(3 AS DOUBLE PRECISION),
+    CAST(4 AS DOUBLE PRECISION)
+  );
+
+SELECT
+  covar_pop(
+    CAST(1 AS DOUBLE PRECISION),
+    CAST('inf' AS DOUBLE PRECISION)
+  ),
+  covar_samp(
+    CAST(3 AS DOUBLE PRECISION),
+    CAST('inf' AS DOUBLE PRECISION)
+  );
+
+SELECT
+  covar_pop(
+    CAST(1 AS DOUBLE PRECISION),
+    CAST('nan' AS DOUBLE PRECISION)
+  ),
+  covar_samp(
+    CAST(3 AS DOUBLE PRECISION),
+    CAST('nan' AS DOUBLE PRECISION)
+  );
+
+CREATE TABLE regr_test (
+  x DOUBLE PRECISION,
+  y DOUBLE PRECISION
+);
+
+INSERT INTO regr_test VALUES (10, 150), (20, 250), (30, 350), (80, 540), (100, 200);
+
+SELECT
+  COUNT(*),
+  SUM(x),
+  regr_sxx(y, x),
+  SUM(y),
+  regr_syy(y, x),
+  regr_sxy(y, x)
+FROM
+  regr_test
+WHERE
+  x IN (10, 20, 30, 80);
+
+SELECT COUNT(*), SUM(x), regr_sxx(y, x), SUM(y), regr_syy(y, x), regr_sxy(y, x) FROM regr_test;
+
+SELECT float8_accum(CAST('{4,140,2900}' AS DOUBLE PRECISION[]), 100);
+
+SELECT float8_regr_accum(CAST('{4,140,2900,1290,83075,15050}' AS DOUBLE PRECISION[]), 200, 100);
+
+SELECT
+  COUNT(*),
+  SUM(x),
+  regr_sxx(y, x),
+  SUM(y),
+  regr_syy(y, x),
+  regr_sxy(y, x)
+FROM
+  regr_test
+WHERE
+  x IN (10, 20, 30);
+
+SELECT
+  COUNT(*),
+  SUM(x),
+  regr_sxx(y, x),
+  SUM(y),
+  regr_syy(y, x),
+  regr_sxy(y, x)
+FROM
+  regr_test
+WHERE
+  x IN (80, 100);
+
+SELECT
+  float8_combine(
+    CAST('{3,60,200}' AS DOUBLE PRECISION[]),
+    CAST('{0,0,0}' AS DOUBLE PRECISION[])
+  );
+
+SELECT
+  float8_combine(
+    CAST('{0,0,0}' AS DOUBLE PRECISION[]),
+    CAST('{2,180,200}' AS DOUBLE PRECISION[])
+  );
+
+SELECT
+  float8_combine(
+    CAST('{3,60,200}' AS DOUBLE PRECISION[]),
+    CAST('{2,180,200}' AS DOUBLE PRECISION[])
+  );
+
+SELECT
+  float8_regr_combine(
+    CAST('{3,60,200,750,20000,2000}'
+    AS DOUBLE PRECISION[]),
+    CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[])
+  );
+
+SELECT
+  float8_regr_combine(
+    CAST('{0,0,0,0,0,0}' AS DOUBLE PRECISION[]),
+    CAST('{2,180,200,740,57800,-3400}'
+    AS DOUBLE PRECISION[])
+  );
+
+SELECT
+  float8_regr_combine(
+    CAST('{3,60,200,750,20000,2000}'
+    AS DOUBLE PRECISION[]),
+    CAST('{2,180,200,740,57800,-3400}'
+    AS DOUBLE PRECISION[])
+  );
+
+DROP TABLE "regr_test";
+
+SELECT COUNT(four) AS cnt_1000 FROM onek;
+
+SELECT COUNT(DISTINCT four) AS cnt_4 FROM onek;
+
+SELECT ten, COUNT(*), SUM(four) FROM onek GROUP BY ten ORDER BY ten;
+
+SELECT ten, COUNT(four), SUM(DISTINCT four) FROM onek GROUP BY ten ORDER BY ten;
+
+SELECT newavg(four) AS avg_1 FROM onek;
+
+SELECT newsum(four) AS sum_1500 FROM onek;
+
+SELECT newcnt(four) AS cnt_1000 FROM onek;
+
+SELECT newcnt(*) AS cnt_1000 FROM onek;
+
+SELECT oldcnt(*) AS cnt_1000 FROM onek;
+
+SELECT sum2(q1, q2) FROM int8_tbl;
+
+SELECT SUM(q1 + q2), SUM(q1) + SUM(q2) FROM int8_tbl;
+
+SELECT SUM(q1 - q2), SUM(q2 - q1), SUM(q1) - SUM(q2) FROM int8_tbl;
+
+SELECT SUM(q1 * 2000), SUM(-q1 * 2000), 2000 * SUM(q1) FROM int8_tbl;
+
+SELECT
+  ten,
+  SUM(DISTINCT four)
+FROM
+  onek AS a
+GROUP BY ten
+HAVING
+  EXISTS
+  (
+    SELECT
+      1
+    FROM
+      onek AS b
+    WHERE
+      SUM(DISTINCT a.four) = b.four
+  );
+
+SELECT
+  ten,
+  SUM(DISTINCT four)
+FROM
+  onek AS a
+GROUP BY ten
+HAVING
+  EXISTS
+  (
+    SELECT
+      1
+    FROM
+      onek AS b
+    WHERE
+      SUM(DISTINCT a.four + b.four) = b.four
+  );
+
+SELECT (SELECT MAX((SELECT i.unique2 FROM tenk1 AS i WHERE i.unique1 = o.unique1))) FROM tenk1 AS o;
+
+SELECT
+  s1,
+  s2,
+  sm
+FROM
+  generate_series(1, 3) AS s1,
+  LATERAL (
+    SELECT
+      s2,
+      SUM(s1 + s2) AS sm
+    FROM
+      generate_series(1, 3) AS s2
+    GROUP BY s2
+  )
+  AS ss
+ORDER BY 1,
+  2;
+
+SELECT
+  s1,
+  s2,
+  sm
+FROM
+  generate_series(1, 3) AS s1,
+  LATERAL (
+    SELECT
+      s2,
+      SUM(s1 + s2) AS sm
+    FROM
+      generate_series(1, 3) AS s2
+    GROUP BY s2
+  )
+  AS ss
+ORDER BY 1,
+  2;
+
+SELECT
+  ARRAY(
+    SELECT
+      SUM(x + y) AS s
+    FROM
+      generate_series(1, 3) AS y
+    GROUP BY y
+    ORDER BY s
+  )
+FROM
+  generate_series(1, 3) AS x;
+
+SELECT
+  ARRAY(
+    SELECT
+      SUM(x + y) AS s
+    FROM
+      generate_series(1, 3) AS y
+    GROUP BY y
+    ORDER BY s
+  )
+FROM
+  generate_series(1, 3) AS x;
+
+CREATE TEMPORARY TABLE bitwise_test (
+  i2 SMALLINT,
+  i4 INT,
+  i8 BIGINT,
+  i INT,
+  x SMALLINT,
+  y BIT(4)
+);
+
+SELECT bit_and(i2) AS "?", bit_or(i4) AS "?", bit_xor(i8) AS "?" FROM bitwise_test;
+
+SELECT
+  bit_and(i2) AS "1",
+  bit_and(i4) AS "1",
+  bit_and(i8) AS "1",
+  bit_and(i) AS "?",
+  bit_and(x) AS "0",
+  bit_and(y) AS "0100",
+  bit_or(i2) AS "7",
+  bit_or(i4) AS "7",
+  bit_or(i8) AS "7",
+  bit_or(i) AS "?",
+  bit_or(x) AS "7",
+  bit_or(y) AS "1101",
+  bit_xor(i2) AS "5",
+  bit_xor(i4) AS "5",
+  bit_xor(i8) AS "5",
+  bit_xor(i) AS "?",
+  bit_xor(x) AS "7",
+  bit_xor(y) AS "1101"
+FROM
+  bitwise_test;
+
+SELECT
+  booland_statefunc(NULL, NULL) IS NULL AS t,
+  booland_statefunc(TRUE, NULL) IS NULL AS t,
+  booland_statefunc(FALSE, NULL) IS NULL AS t,
+  booland_statefunc(NULL, TRUE) IS NULL AS t,
+  booland_statefunc(NULL, FALSE) IS NULL AS t,
+  booland_statefunc(TRUE, TRUE) AS t,
+  NOT booland_statefunc(TRUE, FALSE) AS t,
+  NOT booland_statefunc(FALSE, TRUE) AS t,
+  NOT booland_statefunc(FALSE, FALSE) AS t;
+
+SELECT
+  boolor_statefunc(NULL, NULL) IS NULL AS t,
+  boolor_statefunc(TRUE, NULL) IS NULL AS t,
+  boolor_statefunc(FALSE, NULL) IS NULL AS t,
+  boolor_statefunc(NULL, TRUE) IS NULL AS t,
+  boolor_statefunc(NULL, FALSE) IS NULL AS t,
+  boolor_statefunc(TRUE, TRUE) AS t,
+  boolor_statefunc(TRUE, FALSE) AS t,
+  boolor_statefunc(FALSE, TRUE) AS t,
+  NOT boolor_statefunc(FALSE, FALSE) AS t;
+
+CREATE TEMPORARY TABLE bool_test (
+  b1 BOOLEAN,
+  b2 BOOLEAN,
+  b3 BOOLEAN,
+  b4 BOOLEAN
+);
+
+SELECT bool_and(b1) AS n, bool_or(b3) AS n FROM bool_test;
+
+SELECT
+  bool_and(b1) AS f,
+  bool_and(b2) AS t,
+  bool_and(b3) AS f,
+  bool_and(b4) AS n,
+  bool_and(NOT b2) AS f,
+  bool_and(NOT b3) AS t
+FROM
+  bool_test;
+
+SELECT
+  every(b1) AS f,
+  every(b2) AS t,
+  every(b3) AS f,
+  every(b4) AS n,
+  every(NOT b2) AS f,
+  every(NOT b3) AS t
+FROM
+  bool_test;
+
+SELECT
+  bool_or(b1) AS t,
+  bool_or(b2) AS t,
+  bool_or(b3) AS f,
+  bool_or(b4) AS n,
+  bool_or(NOT b2) AS f,
+  bool_or(NOT b3) AS t
+FROM
+  bool_test;
+
+SELECT MIN(unique1) FROM tenk1;
+
+SELECT MIN(unique1) FROM tenk1;
+
+SELECT MAX(unique1) FROM tenk1;
+
+SELECT MAX(unique1) FROM tenk1;
+
+SELECT MAX(unique1) FROM tenk1 WHERE unique1 < 42;
+
+SELECT MAX(unique1) FROM tenk1 WHERE unique1 < 42;
+
+SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42;
+
+SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42;
+
+BEGIN;
+
+SET LOCAL max_parallel_workers_per_gather = 0;
+
+SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42000;
+
+SELECT MAX(unique1) FROM tenk1 WHERE unique1 > 42000;
+
+ROLLBACK;
+
+SELECT MAX(tenthous) FROM tenk1 WHERE thousand = 33;
+
+SELECT MAX(tenthous) FROM tenk1 WHERE thousand = 33;
+
+SELECT MIN(tenthous) FROM tenk1 WHERE thousand = 33;
+
+SELECT MIN(tenthous) FROM tenk1 WHERE thousand = 33;
+
+SELECT f1, (SELECT MIN(unique1) FROM tenk1 WHERE unique1 > f1) AS gt FROM int4_tbl;
+
+SELECT f1, (SELECT MIN(unique1) FROM tenk1 WHERE unique1 > f1) AS gt FROM int4_tbl;
+
+SELECT DISTINCT MAX(unique2) FROM tenk1;
+
+SELECT DISTINCT MAX(unique2) FROM tenk1;
+
+SELECT MAX(unique2) FROM tenk1 ORDER BY 1;
+
+SELECT MAX(unique2) FROM tenk1 ORDER BY 1;
+
+SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2);
+
+SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2);
+
+SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2) + 1;
+
+SELECT MAX(unique2) FROM tenk1 ORDER BY MAX(unique2) + 1;
+
+SELECT MAX(unique2), generate_series(1, 3) AS g FROM tenk1 ORDER BY g DESC;
+
+SELECT MAX(unique2), generate_series(1, 3) AS g FROM tenk1 ORDER BY g DESC;
+
+SELECT MAX(100) FROM tenk1;
+
+SELECT MAX(100) FROM tenk1;
+
+CREATE TABLE minmaxtest (f1 INT);
+
+CREATE TABLE minmaxtest1 ()
+INHERITS (minmaxtest);
+
+CREATE TABLE minmaxtest2 ()
+INHERITS (minmaxtest);
+
+CREATE TABLE minmaxtest3 ()
+INHERITS (minmaxtest);
+
+CREATE INDEX "minmaxtesti" ON minmaxtest USING btree (f1);
+
+CREATE INDEX "minmaxtest1i" ON minmaxtest1 USING btree (f1);
+
+CREATE INDEX "minmaxtest2i" ON minmaxtest2 USING btree (f1 DESC);
+
+CREATE INDEX "minmaxtest3i"
+ON minmaxtest3
+USING btree
+(
+  f1
+)
+WHERE
+  f1 IS NOT NULL;
+
+INSERT INTO minmaxtest VALUES (11), (12);
+
+INSERT INTO minmaxtest1 VALUES (13), (14);
+
+INSERT INTO minmaxtest2 VALUES (15), (16);
+
+INSERT INTO minmaxtest3 VALUES (17), (18);
+
+SELECT MIN(f1), MAX(f1) FROM minmaxtest;
+
+SELECT MIN(f1), MAX(f1) FROM minmaxtest;
+
+SELECT DISTINCT MIN(f1), MAX(f1) FROM minmaxtest;
+
+SELECT DISTINCT MIN(f1), MAX(f1) FROM minmaxtest;
+
+DROP TABLE "minmaxtest" CASCADE;
+
+BEGIN;
+
+SET LOCAL enable_sort = off;
+
+SELECT f1, (SELECT DISTINCT MIN(t1.f1) FROM int4_tbl AS t1 WHERE t1.f1 = t0.f1) FROM int4_tbl AS t0;
+
+SELECT f1, (SELECT DISTINCT MIN(t1.f1) FROM int4_tbl AS t1 WHERE t1.f1 = t0.f1) FROM int4_tbl AS t0;
+
+ROLLBACK;
+
+SELECT MAX(MIN(unique1)) FROM tenk1;
+
+SELECT (SELECT MAX(MIN(unique1)) FROM int8_tbl) FROM tenk1;
+
+SELECT
+  AVG(
+    (
+      SELECT
+        AVG(
+          a1.col1 ORDER BY (SELECT AVG(a2.col2) FROM tenk1 AS a3)
+        )
+      FROM
+        tenk1 AS a1 (col1)
+    )
+  )
+FROM
+  tenk1 AS a2 (col2);
+
+CREATE TEMPORARY TABLE t1 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  PRIMARY KEY (a, b)
+);
+
+CREATE TEMPORARY TABLE t2 (
+  x INT,
+  y INT,
+  z INT,
+  PRIMARY KEY (x, y)
+);
+
+CREATE TEMPORARY TABLE t3 (
+  a INT,
+  b INT,
+  c INT,
+  PRIMARY KEY (a, b) DEFERRABLE
+);
+
+SELECT * FROM t1 GROUP BY a, b, c, d;
+
+SELECT a, c FROM t1 GROUP BY a, c, d;
+
+SELECT
+  *
+FROM
+  t1 INNER JOIN t2 ON t1.a = t2.x AND t1.b = t2.y
+GROUP BY t1.a,
+  t1.b,
+  t1.c,
+  t1.d,
+  t2.x,
+  t2.y,
+  t2.z;
+
+SELECT
+  t1.*,
+  t2.x,
+  t2.z
+FROM
+  t1 INNER JOIN t2 ON t1.a = t2.x AND t1.b = t2.y
+GROUP BY t1.a,
+  t1.b,
+  t1.c,
+  t1.d,
+  t2.x,
+  t2.z;
+
+SELECT * FROM t3 GROUP BY a, b, c;
+
+CREATE TEMPORARY TABLE t1c ()
+INHERITS (t1);
+
+SELECT * FROM t1 GROUP BY a, b, c, d;
+
+SELECT * FROM ONLY t1 GROUP BY a, b, c, d;
+
+CREATE TEMPORARY TABLE p_t1 (
+  a INT,
+  b INT,
+  c INT,
+  d INT,
+  PRIMARY KEY (a, b)
+)
+PARTITION BY LIST(a);
+
+CREATE TEMPORARY TABLE p_t1_1 PARTITION OF p_t1 FOR VALUES IN (1);
+
+CREATE TEMPORARY TABLE p_t1_2 PARTITION OF p_t1 FOR VALUES IN (2);
+
+SELECT * FROM p_t1 GROUP BY a, b, c, d;
+
+CREATE UNIQUE INDEX "t2_z_uidx" ON t2 USING btree (z);
+
+SELECT y, z FROM t2 GROUP BY y, z;
+
+ALTER TABLE t2
+  ALTER COLUMN z SET NOT NULL;
+
+SELECT y, z FROM t2 GROUP BY y, z;
+
+SELECT x, y, z FROM t2 GROUP BY x, y, z;
+
+SELECT x, y, z FROM t2 GROUP BY z, x, y;
+
+DROP INDEX "t2_z_uidx";
+
+CREATE INDEX "t2_z_uidx"
+ON t2
+USING btree
+(
+  z
+)
+WHERE
+  z > 0;
+
+SELECT y, z FROM t2 GROUP BY y, z;
+
+DROP INDEX "t2_z_uidx";
+
+ALTER TABLE t2
+  ALTER COLUMN z DROP NOT NULL;
+
+CREATE UNIQUE INDEX "t2_z_uidx" ON t2 USING btree (z) NULLS NOT DISTINCT;
+
+SELECT y, z FROM t2 GROUP BY y, z;
+
+DROP TABLE "t1" CASCADE;
+
+DROP TABLE "t2";
+
+DROP TABLE "t3";
+
+DROP TABLE "p_t1";
+
+CREATE TEMPORARY TABLE t1 (
+  f1 INT,
+  f2 INT
+);
+
+CREATE TEMPORARY TABLE t2 (
+  f1 BIGINT,
+  f2 OID
+);
+
+SELECT f1 FROM t1 LEFT OUTER JOIN t2 USING ("f1") GROUP BY f1;
+
+SELECT f1 FROM t1 LEFT OUTER JOIN t2 USING ("f1") GROUP BY t1.f1;
+
+SELECT t1.f1 FROM t1 LEFT OUTER JOIN t2 USING ("f1") GROUP BY t1.f1;
+
+SELECT t1.f1 FROM t1 LEFT OUTER JOIN t2 USING ("f1") GROUP BY f1;
+
+SELECT
+  f1,
+  COUNT(*)
+FROM
+  t1 AS x (x0, x1)
+  LEFT OUTER JOIN
+    t1 LEFT OUTER JOIN t2 USING ("f1")
+  ON x0 = 0
+GROUP BY f1;
+
+SELECT
+  f2,
+  COUNT(*)
+FROM
+  t1 AS x (x0, x1)
+  LEFT OUTER JOIN
+    t1 LEFT OUTER JOIN t2 USING ("f2")
+  ON x0 = 0
+GROUP BY f2;
+
+DROP TABLE "t1", "t2";
+
+SELECT SUM(two ORDER BY two), MAX(four ORDER BY four), MIN(four ORDER BY four) FROM tenk1;
+
+SELECT
+  SUM(two ORDER BY two),
+  MAX(four ORDER BY four),
+  MIN(four ORDER BY four),
+  MAX(two ORDER BY two)
+FROM
+  tenk1;
+
+SELECT
+  MAX(four ORDER BY four),
+  SUM(two ORDER BY two),
+  MIN(four ORDER BY four),
+  MAX(two ORDER BY two)
+FROM
+  tenk1;
+
+SELECT
+  MAX(four ORDER BY four),
+  SUM(two ORDER BY two),
+  MIN(four ORDER BY four),
+  MAX(two ORDER BY two),
+  SUM(ten ORDER BY ten),
+  MIN(ten ORDER BY ten),
+  MAX(ten ORDER BY ten)
+FROM
+  tenk1;
+
+SELECT
+  SUM(unique1 ORDER BY ten, two),
+  SUM(unique1 ORDER BY four),
+  SUM(unique1 ORDER BY two, four)
+FROM
+  tenk1
+GROUP BY ten;
+
+SELECT
+  SUM(unique1 ORDER BY two),
+  SUM(unique1 ORDER BY four),
+  SUM(unique1 ORDER BY four, two),
+  SUM(unique1 ORDER BY two, random()),
+  SUM(unique1 ORDER BY two, random(), random() + 1)
+FROM
+  tenk1
+GROUP BY ten;
+
+SELECT array_agg(DISTINCT val) FROM (SELECT NULL AS val FROM generate_series(1, 2));
+
+SET enable_presorted_aggregate = off;
+
+SELECT SUM(two ORDER BY two) FROM tenk1;
+
+RESET enable_presorted_aggregate;
+
+SELECT SUM(two ORDER BY two) FILTER (WHERE two > 1) FROM tenk1;
+
+SELECT string_agg(DISTINCT f1, ',') FILTER (WHERE length(f1) > 1) FROM varchar_tbl;
+
+SELECT
+  string_agg(
+    DISTINCT CAST(f1 AS VARCHAR(2)),
+    ','
+  )
+  FILTER (WHERE
+    length(f1) > 1)
+FROM
+  varchar_tbl;
+
+SELECT array_agg(a ORDER BY b) FROM (VALUES (1, 4), (2, 3), (3, 1), (4, 2)) AS v (a, b);
+
+SELECT array_agg(a ORDER BY a) FROM (VALUES (1, 4), (2, 3), (3, 1), (4, 2)) AS v (a, b);
+
+SELECT array_agg(a ORDER BY a DESC) FROM (VALUES (1, 4), (2, 3), (3, 1), (4, 2)) AS v (a, b);
+
+SELECT array_agg(b ORDER BY a DESC) FROM (VALUES (1, 4), (2, 3), (3, 1), (4, 2)) AS v (a, b);
+
+SELECT array_agg(DISTINCT a) FROM (VALUES (1), (2), (1), (3), (NULL), (2)) AS v (a);
+
+SELECT array_agg(DISTINCT a ORDER BY a) FROM (VALUES (1), (2), (1), (3), (NULL), (2)) AS v (a);
+
+SELECT array_agg(DISTINCT a ORDER BY a DESC) FROM (VALUES (1), (2), (1), (3), (NULL), (2)) AS v (a);
+
+SELECT
+  array_agg(DISTINCT a ORDER BY a DESC NULLS LAST)
+FROM
+  (VALUES (1), (2), (1), (3), (NULL), (2)) AS v (a);
+
+SELECT
+  aggfstr(a, b, c)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c);
+
+SELECT
+  aggfns(a, b, c)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c);
+
+SELECT
+  aggfstr(DISTINCT a, b, c)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 3) AS i;
+
+SELECT
+  aggfns(DISTINCT a, b, c)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 3) AS i;
+
+SELECT
+  aggfstr(DISTINCT a, b, c ORDER BY b)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 3) AS i;
+
+SELECT
+  aggfns(DISTINCT a, b, c ORDER BY b)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 3) AS i;
+
+SELECT
+  aggfns(DISTINCT a, a, c ORDER BY c USING ~<~, a)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  aggfns(DISTINCT a, a, c ORDER BY c USING ~<~)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  aggfns(DISTINCT a, a, c ORDER BY a)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  aggfns(
+    DISTINCT a,
+    b,
+    c ORDER BY a,
+      c USING ~<~,
+      b
+  )
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  string_agg(DISTINCT 'a', ','),
+  SUM(
+    (
+      SELECT
+        SUM(1)
+      FROM
+        (VALUES (1)) AS b (id)
+      WHERE
+        a.id = b.id
+    )
+  )
+FROM
+  unnest(ARRAY[1]) AS a (id);
+
+CREATE VIEW agg_view1
+AS SELECT
+  aggfns(a, b, c)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c);
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+CREATE OR REPLACE VIEW agg_view1
+AS SELECT
+  aggfns(DISTINCT a, b, c)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 3) AS i;
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+CREATE OR REPLACE VIEW agg_view1
+AS SELECT
+  aggfns(DISTINCT a, b, c ORDER BY b)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 3) AS i;
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+CREATE OR REPLACE VIEW agg_view1
+AS SELECT
+  aggfns(a, b, c ORDER BY b + 1)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c);
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+CREATE OR REPLACE VIEW agg_view1
+AS SELECT
+  aggfns(a, a, c ORDER BY b)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c);
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+CREATE OR REPLACE VIEW agg_view1
+AS SELECT
+  aggfns(a, b, c ORDER BY c USING ~<~)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c);
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+CREATE OR REPLACE VIEW agg_view1
+AS SELECT
+  aggfns(
+    DISTINCT a,
+    b,
+    c ORDER BY a,
+      c USING ~<~,
+      b
+  )
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT * FROM agg_view1;
+
+SELECT pg_get_viewdef(CAST('agg_view1' AS REGCLASS));
+
+DROP VIEW "agg_view1";
+
+SELECT
+  aggfns(DISTINCT a, b, c ORDER BY i)
+FROM
+  (VALUES (1, 1, 'foo')) AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  aggfns(DISTINCT a, b, c ORDER BY a, b + 1)
+FROM
+  (VALUES (1, 1, 'foo')) AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  aggfns(DISTINCT a, b, c ORDER BY a, b, i, c)
+FROM
+  (VALUES (1, 1, 'foo')) AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT
+  aggfns(DISTINCT a, a, c ORDER BY a, b)
+FROM
+  (VALUES (1, 1, 'foo')) AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT string_agg(a, ',') FROM (VALUES ('aaaa'), ('bbbb'), ('cccc')) AS g (a);
+
+SELECT string_agg(a, ',') FROM (VALUES ('aaaa'), (NULL), ('bbbb'), ('cccc')) AS g (a);
+
+SELECT string_agg(a, 'AB') FROM (VALUES (NULL), (NULL), ('bbbb'), ('cccc')) AS g (a);
+
+SELECT string_agg(a, ',') FROM (VALUES (NULL), (NULL)) AS g (a);
+
+SELECT string_agg(DISTINCT f1, ',' ORDER BY f1) FROM varchar_tbl;
+
+SELECT string_agg(DISTINCT CAST(f1 AS TEXT), ',' ORDER BY f1) FROM varchar_tbl;
+
+SELECT string_agg(DISTINCT f1, ',' ORDER BY CAST(f1 AS TEXT)) FROM varchar_tbl;
+
+SELECT string_agg(DISTINCT CAST(f1 AS TEXT), ',' ORDER BY CAST(f1 AS TEXT)) FROM varchar_tbl;
+
+CREATE TABLE bytea_test_table (v BYTEA);
+
+SELECT string_agg(v, '') FROM bytea_test_table;
+
+INSERT INTO bytea_test_table VALUES (decode('ff', 'hex'));
+
+SELECT string_agg(v, '') FROM bytea_test_table;
+
+INSERT INTO bytea_test_table VALUES (decode('aa', 'hex'));
+
+SELECT string_agg(v, '') FROM bytea_test_table;
+
+SELECT string_agg(v, NULL) FROM bytea_test_table;
+
+SELECT string_agg(v, decode('ee', 'hex')) FROM bytea_test_table;
+
+SELECT MIN(v) FROM bytea_test_table;
+
+SELECT MAX(v) FROM bytea_test_table;
+
+INSERT INTO bytea_test_table VALUES (decode('ffff', 'hex'));
+
+INSERT INTO bytea_test_table VALUES (decode('aaaa', 'hex'));
+
+SELECT MIN(v) FROM bytea_test_table;
+
+SELECT MAX(v) FROM bytea_test_table;
+
+DROP TABLE "bytea_test_table";
+
+CREATE TABLE pagg_test (
+  x INT,
+  y INT
+)
+WITH (autovacuum_enabled = off);
+
+INSERT INTO pagg_test
+SELECT
+  CASE x % 4 WHEN 1 THEN NULL ELSE x END,
+  x % 10
+FROM
+  generate_series(1, 5000) AS x;
+
+SET parallel_setup_cost = 0;
+
+SET parallel_tuple_cost = 0;
+
+SET parallel_leader_participation = 0;
+
+SET min_parallel_table_scan_size = 0;
+
+SET bytea_output = escape;
+
+SET max_parallel_workers_per_gather = 2;
+
+CREATE VIEW v_pagg_test
+AS SELECT
+  y,
+  MIN(t) AS tmin,
+  MAX(t) AS tmax,
+  COUNT(DISTINCT t) AS tndistinct,
+  MIN(b) AS bmin,
+  MAX(b) AS bmax,
+  COUNT(DISTINCT b) AS bndistinct,
+  MIN(a) AS amin,
+  MAX(a) AS amax,
+  COUNT(DISTINCT a) AS andistinct,
+  MIN(aa) AS aamin,
+  MAX(aa) AS aamax,
+  COUNT(DISTINCT aa) AS aandistinct
+FROM
+  (
+    SELECT
+      y,
+      CAST(unnest(regexp_split_to_array(a1.t, ','))
+      AS INT)
+      AS t,
+      unnest(
+        regexp_split_to_array(CAST(a1.b AS TEXT), ',')
+      )
+      AS b,
+      unnest(a1.a) AS a,
+      unnest(a1.aa) AS aa
+    FROM
+      (
+        SELECT
+          y,
+          string_agg(CAST(x AS TEXT), ',') AS t,
+          string_agg(CAST(CAST(x AS TEXT) AS BYTEA), ',')
+          AS b,
+          array_agg(x) AS a,
+          array_agg(ARRAY[x]) AS aa
+        FROM
+          pagg_test
+        GROUP BY y
+      )
+      AS a1
+  )
+  AS a2
+GROUP BY y;
+
+SELECT * FROM v_pagg_test ORDER BY y;
+
+SELECT * FROM v_pagg_test ORDER BY y;
+
+SET max_parallel_workers_per_gather = 0;
+
+SELECT * FROM v_pagg_test ORDER BY y;
+
+SET max_parallel_workers_per_gather = 2;
+
+SELECT array_dims(array_agg(s)) FROM (SELECT * FROM pagg_test) AS s;
+
+SELECT array_dims(array_agg(s)) FROM (SELECT * FROM pagg_test) AS s;
+
+RESET max_parallel_workers_per_gather;
+
+RESET bytea_output;
+
+RESET min_parallel_table_scan_size;
+
+RESET parallel_leader_participation;
+
+RESET parallel_tuple_cost;
+
+RESET parallel_setup_cost;
+
+DROP VIEW "v_pagg_test";
+
+DROP TABLE "pagg_test";
+
+SELECT MIN(unique1) FILTER (WHERE unique1 > 100) FROM tenk1;
+
+SELECT SUM(1 / ten) FILTER (WHERE ten > 0) FROM tenk1;
+
+SELECT
+  ten,
+  SUM(
+    DISTINCT four
+  )
+  FILTER (WHERE
+    CAST(four AS TEXT) ~ '123')
+FROM
+  onek AS a
+GROUP BY ten;
+
+SELECT
+  ten,
+  SUM(DISTINCT four) FILTER (WHERE four > 10)
+FROM
+  onek AS a
+GROUP BY ten
+HAVING
+  EXISTS
+  (
+    SELECT
+      1
+    FROM
+      onek AS b
+    WHERE
+      SUM(DISTINCT a.four) = b.four
+  );
+
+SELECT
+  MAX(
+    foo COLLATE "C"
+  )
+  FILTER (WHERE
+    bar COLLATE "POSIX" > '0')
+FROM
+  (VALUES ('a', 'b')) AS v (foo, bar);
+
+SELECT any_value(v) FILTER (WHERE v > 2) FROM (VALUES (1), (2), (3)) AS v (v);
+
+SELECT (SELECT COUNT(*) FROM (VALUES (1)) AS t0 (inner_c)) FROM (VALUES (2), (3)) AS t1 (outer_c);
+
+SELECT
+  (
+    SELECT
+      COUNT(*) FILTER (WHERE outer_c <> 0)
+    FROM
+      (VALUES (1)) AS t0 (inner_c)
+  )
+FROM
+  (VALUES (2), (3)) AS t1 (outer_c);
+
+SELECT
+  (
+    SELECT
+      COUNT(inner_c) FILTER (WHERE outer_c <> 0)
+    FROM
+      (VALUES (1)) AS t0 (inner_c)
+  )
+FROM
+  (VALUES (2), (3)) AS t1 (outer_c);
+
+SELECT
+  (
+    SELECT
+      MAX(
+        (
+          SELECT
+            i.unique2
+          FROM
+            tenk1 AS i
+          WHERE
+            i.unique1 = o.unique1
+        )
+      )
+      FILTER (WHERE
+        o.unique1 < 10)
+  )
+FROM
+  tenk1 AS o;
+
+SELECT
+  SUM(
+    unique1
+  )
+  FILTER (WHERE
+    unique1 IN
+    (
+      SELECT unique1 FROM onek WHERE unique1 < 100
+    ))
+FROM
+  tenk1;
+
+SELECT
+  aggfns(
+    DISTINCT a,
+    b,
+    c ORDER BY a,
+      c USING ~<~,
+      b
+  )
+  FILTER (WHERE
+    a > 1)
+FROM
+  (
+    VALUES
+      (1, 3, 'foo'),
+      (0, NULL, NULL),
+      (2, 2, 'bar'),
+      (3, 1, 'baz')
+  )
+  AS v (a, b, c),
+  generate_series(1, 2) AS i;
+
+SELECT MAX(0) FILTER (WHERE b1) FROM bool_test;
+
+SELECT (SELECT MAX(0) FILTER (WHERE b1)) FROM bool_test;
+
+SELECT MAX(unique1) FILTER (WHERE SUM(ten) > 0) FROM tenk1;
+
+SELECT (SELECT MAX(unique1) FILTER (WHERE SUM(ten) > 0) FROM int8_tbl) FROM tenk1;
+
+SELECT MAX(unique1) FILTER (WHERE bool_or(ten > 0)) FROM tenk1;
+
+SELECT (SELECT MAX(unique1) FILTER (WHERE bool_or(ten > 0)) FROM int8_tbl) FROM tenk1;
+
+SELECT
+  p,
+  percentile_cont(
+    p
+  )
+  WITHIN GROUP (ORDER BY CAST(x AS DOUBLE PRECISION))
+FROM
+  generate_series(1, 5) AS x,
+  (
+    VALUES
+      (CAST(0 AS DOUBLE PRECISION)),
+      (0.1),
+      (0.25),
+      (0.4),
+      (0.5),
+      (0.6),
+      (0.75),
+      (0.9),
+      (1)
+  )
+  AS v (p)
+GROUP BY p
+ORDER BY p;
+
+SELECT
+  p,
+  SUM()
+  WITHIN GROUP (ORDER BY CAST(x AS DOUBLE PRECISION))
+FROM
+  generate_series(1, 5) AS x,
+  (
+    VALUES
+      (CAST(0 AS DOUBLE PRECISION)),
+      (0.1),
+      (0.25),
+      (0.4),
+      (0.5),
+      (0.6),
+      (0.75),
+      (0.9),
+      (1)
+  )
+  AS v (p)
+GROUP BY p
+ORDER BY p;
+
+SELECT
+  p,
+  percentile_cont(p, p)
+FROM
+  generate_series(1, 5) AS x,
+  (
+    VALUES
+      (CAST(0 AS DOUBLE PRECISION)),
+      (0.1),
+      (0.25),
+      (0.4),
+      (0.5),
+      (0.6),
+      (0.75),
+      (0.9),
+      (1)
+  )
+  AS v (p)
+GROUP BY p
+ORDER BY p;
+
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY b) FROM aggtest;
+
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY b), SUM(b) FROM aggtest;
+
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY thousand) FROM tenk1;
+
+SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY thousand) FROM tenk1;
+
+SELECT RANK(3) WITHIN GROUP (ORDER BY x) FROM (VALUES (1), (1), (2), (2), (3), (3), (4)) AS v (x);
+
+SELECT
+  CUME_DIST(3) WITHIN GROUP (ORDER BY x)
+FROM
+  (
+    VALUES (1), (1), (2), (2), (3), (3), (4)
+  )
+  AS v (x);
+
+SELECT
+  PERCENT_RANK(3) WITHIN GROUP (ORDER BY x)
+FROM
+  (
+    VALUES (1), (1), (2), (2), (3), (3), (4), (5)
+  )
+  AS v (x);
+
+SELECT
+  DENSE_RANK(3) WITHIN GROUP (ORDER BY x)
+FROM
+  (
+    VALUES (1), (1), (2), (2), (3), (3), (4)
+  )
+  AS v (x);
+
+SELECT
+  percentile_disc(
+    ARRAY[0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]
+  )
+  WITHIN GROUP (ORDER BY thousand)
+FROM
+  tenk1;
+
+SELECT percentile_cont(ARRAY[0, 0.25, 0.5, 0.75, 1]) WITHIN GROUP (ORDER BY thousand) FROM tenk1;
+
+SELECT
+  percentile_disc(
+    ARRAY[ARRAY[NULL, 1, 0.5],
+    ARRAY[0.75, 0.25, NULL]]
+  )
+  WITHIN GROUP (ORDER BY thousand)
+FROM
+  tenk1;
+
+SELECT
+  percentile_cont(
+    ARRAY[0,
+    1,
+    0.25,
+    0.75,
+    0.5,
+    1,
+    0.3,
+    0.32,
+    0.35,
+    0.38,
+    0.4]
+  )
+  WITHIN GROUP (ORDER BY x)
+FROM
+  generate_series(1, 6) AS x;
+
+SELECT ten, mode() WITHIN GROUP (ORDER BY string4) FROM tenk1 GROUP BY ten;
+
+SELECT
+  percentile_disc(
+    ARRAY[0.25, 0.5, 0.75]
+  )
+  WITHIN GROUP (ORDER BY x)
+FROM
+  unnest(
+    CAST('{fred,jim,fred,jack,jill,fred,jill,jim,jim,sheila,jim,sheila}'
+    AS TEXT[])
+  )
+  AS u (x);
+
+SELECT
+  pg_collation_for(
+    percentile_disc(
+      1
+    )
+    WITHIN GROUP (ORDER BY x COLLATE "POSIX")
+  )
+FROM
+  (VALUES ('fred'), ('jim')) AS v (x);
+
+SELECT
+  test_rank(3) WITHIN GROUP (ORDER BY x)
+FROM
+  (
+    VALUES (1), (1), (2), (2), (3), (3), (4)
+  )
+  AS v (x);
+
+SELECT test_percentile_disc(0.5) WITHIN GROUP (ORDER BY thousand) FROM tenk1;
+
+SELECT RANK(x) WITHIN GROUP (ORDER BY x) FROM generate_series(1, 5) AS x;
+
+SELECT
+  ARRAY(
+    SELECT
+      percentile_disc(a) WITHIN GROUP (ORDER BY x)
+    FROM
+      (VALUES (0.3), (0.7)) AS v (a)
+    GROUP BY a
+  )
+FROM
+  generate_series(1, 5) AS g (x);
+
+SELECT RANK(SUM(x)) WITHIN GROUP (ORDER BY x) FROM generate_series(1, 5) AS x;
+
+SELECT RANK(3) WITHIN GROUP (ORDER BY x) FROM (VALUES ('fred'), ('jim')) AS v (x);
+
+SELECT RANK(3) WITHIN GROUP (ORDER BY stringu1, stringu2) FROM tenk1;
+
+SELECT RANK('fred') WITHIN GROUP (ORDER BY x) FROM generate_series(1, 5) AS x;
+
+SELECT
+  RANK(
+    CAST('adam' AS TEXT) COLLATE "C"
+  )
+  WITHIN GROUP (ORDER BY x COLLATE "POSIX")
+FROM
+  (VALUES ('fred'), ('jim')) AS v (x);
+
+SELECT
+  RANK(
+    CAST('adam' AS VARCHAR)
+  )
+  WITHIN GROUP (ORDER BY x)
+FROM
+  (VALUES ('fred'), ('jim')) AS v (x);
+
+SELECT RANK('3') WITHIN GROUP (ORDER BY x) FROM generate_series(1, 5) AS x;
+
+SELECT PERCENT_RANK(0) WITHIN GROUP (ORDER BY x) FROM generate_series(1, 0) AS x;
+
+CREATE VIEW aggordview1
+AS SELECT
+  ten,
+  percentile_disc(
+    0.5
+  )
+  WITHIN GROUP (ORDER BY thousand)
+  AS p50,
+  percentile_disc(
+    0.5
+  )
+  WITHIN GROUP (ORDER BY thousand)
+  FILTER (WHERE
+    hundred = 1)
+  AS px,
+  RANK(
+    5,
+    'AZZZZ',
+    50
+  )
+  WITHIN GROUP (ORDER BY hundred, string4 DESC, hundred)
+FROM
+  tenk1
+GROUP BY ten
+ORDER BY ten;
+
+SELECT pg_get_viewdef('aggordview1');
+
+SELECT * FROM aggordview1 ORDER BY ten;
+
+DROP VIEW "aggordview1";
+
+SELECT least_agg(q1, q2) FROM int8_tbl;
+
+SELECT least_agg(VARIADIC ARRAY[q1, q2]) FROM int8_tbl;
+
+SELECT cleast_agg(q1, q2) FROM int8_tbl;
+
+SELECT cleast_agg(4.5, f1) FROM int4_tbl;
+
+SELECT cleast_agg(VARIADIC ARRAY[4.5, f1]) FROM int4_tbl;
+
+SELECT pg_typeof(cleast_agg(VARIADIC ARRAY[4.5, f1])) FROM int4_tbl;
+
+BEGIN;
+
+CREATE TYPE avg_state AS (total BIGINT, count BIGINT);
+
+CREATE OR REPLACE FUNCTION avg_transfn(state avg_state, n INT)
+RETURNS avg_state
+AS '
+declare new_state avg_state;
+begin
+	raise notice ''avg_transfn called with %'', n;
+	if state is null then
+		if n is not null then
+			new_state.total := n;
+			new_state.count := 1;
+			return new_state;
+		end if;
+		return null;
+	elsif n is not null then
+		state.total := state.total + n;
+		state.count := state.count + 1;
+		return state;
+	end if;
+
+	return null;
+end
+'
+LANGUAGE "plpgsql";
+
+CREATE FUNCTION avg_finalfn(state avg_state)
+RETURNS INT
+AS '
+begin
+	if state is null then
+		return NULL;
+	else
+		return state.total / state.count;
+	end if;
+end
+'
+LANGUAGE "plpgsql";
+
+CREATE FUNCTION sum_finalfn(state avg_state)
+RETURNS INT
+AS '
+begin
+	if state is null then
+		return NULL;
+	else
+		return state.total;
+	end if;
+end
+'
+LANGUAGE "plpgsql";
+
+CREATE AGGREGATE my_avg (INT) (stype = avg_state, sfunc = avg_transfn, finalfunc = avg_finalfn);
+
+CREATE AGGREGATE my_sum (INT) (stype = avg_state, sfunc = avg_transfn, finalfunc = sum_finalfn);
+
+SELECT my_avg(one), my_avg(one) FROM (VALUES (1), (3)) AS t (one);
+
+SELECT my_avg(one), my_sum(one) FROM (VALUES (1), (3)) AS t (one);
+
+SELECT my_avg(DISTINCT one), my_sum(DISTINCT one) FROM (VALUES (1), (3), (1)) AS t (one);
+
+SELECT my_avg(DISTINCT one), my_sum(one) FROM (VALUES (1), (3)) AS t (one);
+
+SELECT my_avg(one) FILTER (WHERE one > 1), my_sum(one) FROM (VALUES (1), (3)) AS t (one);
+
+SELECT my_avg(one), my_sum(two) FROM (VALUES (1, 2), (3, 4)) AS t (one, two);
+
+SELECT
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY a),
+  percentile_disc(0.5) WITHIN GROUP (ORDER BY a)
+FROM
+  (
+    VALUES
+      (CAST(1 AS DOUBLE PRECISION)),
+      (3),
+      (5),
+      (7)
+  )
+  AS t (a);
+
+SELECT
+  percentile_cont(0.25) WITHIN GROUP (ORDER BY a),
+  percentile_disc(0.5) WITHIN GROUP (ORDER BY a)
+FROM
+  (
+    VALUES
+      (CAST(1 AS DOUBLE PRECISION)),
+      (3),
+      (5),
+      (7)
+  )
+  AS t (a);
+
+SELECT
+  RANK(4) WITHIN GROUP (ORDER BY a),
+  DENSE_RANK(4) WITHIN GROUP (ORDER BY a)
+FROM
+  (VALUES (1), (3), (5), (7)) AS t (a);
+
+CREATE AGGREGATE my_sum_init (
+  INT
+) (
+  stype = avg_state,
+  sfunc = avg_transfn,
+  finalfunc = sum_finalfn,
+  initcond = '(10,0)'
+);
+
+CREATE AGGREGATE my_avg_init (
+  INT
+) (
+  stype = avg_state,
+  sfunc = avg_transfn,
+  finalfunc = avg_finalfn,
+  initcond = '(10,0)'
+);
+
+CREATE AGGREGATE my_avg_init2 (
+  INT
+) (
+  stype = avg_state,
+  sfunc = avg_transfn,
+  finalfunc = avg_finalfn,
+  initcond = '(4,0)'
+);
+
+SELECT my_sum_init(one), my_avg_init(one) FROM (VALUES (1), (3)) AS t (one);
+
+SELECT my_sum_init(one), my_avg_init2(one) FROM (VALUES (1), (3)) AS t (one);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION sum_transfn(state INT, n INT)
+RETURNS INT
+AS '
+declare new_state int4;
+begin
+	raise notice ''sum_transfn called with %'', n;
+	if state is null then
+		if n is not null then
+			new_state := n;
+			return new_state;
+		end if;
+		return null;
+	elsif n is not null then
+		state := state + n;
+		return state;
+	end if;
+
+	return null;
+end
+'
+LANGUAGE "plpgsql";
+
+CREATE FUNCTION halfsum_finalfn(state INT)
+RETURNS INT
+AS '
+begin
+	if state is null then
+		return NULL;
+	else
+		return state / 2;
+	end if;
+end
+'
+LANGUAGE "plpgsql";
+
+CREATE AGGREGATE my_sum (INT) (stype = INT, sfunc = sum_transfn);
+
+CREATE AGGREGATE my_half_sum (INT) (stype = INT, sfunc = sum_transfn, finalfunc = halfsum_finalfn);
+
+SELECT my_sum(one), my_half_sum(one) FROM (VALUES (1), (2), (3), (4)) AS t (one);
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE FUNCTION balkifnull(BIGINT, INT)
+RETURNS BIGINT
+STRICT
+LANGUAGE "plpgsql"
+AS '
+BEGIN
+    IF $1 IS NULL THEN
+       RAISE ''erroneously called with NULL argument'';
+    END IF;
+    RETURN NULL;
+END';
+
+CREATE AGGREGATE balk (
+  INT
+) (
+  sfunc = balkifnull(int8, int4),
+  stype = BIGINT,
+  parallel = safe,
+  initcond = '0'
+);
+
+SELECT balk(hundred) FROM tenk1;
+
+ROLLBACK;
+
+CREATE TABLE btg
+AS
+  SELECT
+    i % 10 AS x,
+    i % 10 AS y,
+    'abc' || i % 10 AS z,
+    i AS w
+  FROM
+    generate_series(1, 100) AS i;
+
+CREATE INDEX "btg_x_y_idx" ON btg USING btree (x, y);
+
+ANALYZE btg;
+
+SET enable_hashagg = off;
+
+SET enable_seqscan = off;
+
+SELECT COUNT(*) FROM btg GROUP BY y, x;
+
+SELECT COUNT(*) FROM btg GROUP BY z, y, w, x;
+
+SELECT COUNT(*) FROM (SELECT * FROM btg ORDER BY x, y, w, z) AS q1 GROUP BY w, x, z, y;
+
+SET enable_hashjoin = off;
+
+SET enable_nestloop = off;
+
+SELECT
+  COUNT(*)
+FROM
+  btg AS t1
+  INNER JOIN
+    btg AS t2
+  ON t1.w = t2.w AND t1.x = t2.x AND t1.z = t2.z
+GROUP BY t1.w,
+  t1.z,
+  t1.x;
+
+RESET enable_nestloop;
+
+RESET enable_hashjoin;
+
+SELECT COUNT(*) FROM btg GROUP BY w, x, z, y ORDER BY y, x, z, w;
+
+SELECT COUNT(*) FROM btg GROUP BY w, x, y, z ORDER BY x * x, z;
+
+CREATE INDEX "btg_y_x_w_idx" ON btg USING btree (y, x, w);
+
+SELECT y, x, array_agg(DISTINCT w) FROM btg WHERE y < 0 GROUP BY x, y;
+
+CREATE TABLE group_agg_pk
+AS
+  SELECT
+    i % 10 AS x,
+    i % 2 AS y,
+    i % 2 AS z,
+    2 AS w,
+    i % 10 AS f
+  FROM
+    generate_series(1, 100) AS i;
+
+ANALYZE group_agg_pk;
+
+SET enable_nestloop = off;
+
+SET enable_hashjoin = off;
+
+SELECT
+  AVG(c1.f ORDER BY c1.x, c1.y)
+FROM
+  group_agg_pk AS c1
+  INNER JOIN
+    group_agg_pk AS c2
+  ON c1.x = c2.x
+GROUP BY c1.w,
+  c1.z;
+
+SELECT
+  AVG(c1.f ORDER BY c1.x, c1.y)
+FROM
+  group_agg_pk AS c1
+  INNER JOIN
+    group_agg_pk AS c2
+  ON c1.x = c2.x
+GROUP BY c1.w,
+  c1.z;
+
+SELECT
+  c1.y,
+  c1.x
+FROM
+  group_agg_pk AS c1
+  INNER JOIN
+    group_agg_pk AS c2
+  ON c1.x = c2.x
+GROUP BY c1.y,
+  c1.x,
+  c2.x;
+
+SELECT
+  c1.y,
+  c1.x
+FROM
+  group_agg_pk AS c1
+  INNER JOIN
+    group_agg_pk AS c2
+  ON c1.x = c2.x
+GROUP BY c1.y,
+  c2.x,
+  c1.x;
+
+RESET enable_nestloop;
+
+RESET enable_hashjoin;
+
+DROP TABLE "group_agg_pk";
+
+CREATE TABLE agg_sort_order (
+  c1 INT PRIMARY KEY,
+  c2 INT
+);
+
+CREATE UNIQUE INDEX "agg_sort_order_c2_idx" ON agg_sort_order USING btree (c2);
+
+INSERT INTO agg_sort_order SELECT i, i FROM generate_series(1, 100) AS i;
+
+ANALYZE agg_sort_order;
+
+SELECT array_agg(c1 ORDER BY c2), c2 FROM agg_sort_order WHERE c2 < 100 GROUP BY c1 ORDER BY 2;
+
+DROP TABLE "agg_sort_order" CASCADE;
+
+DROP TABLE "btg";
+
+RESET enable_hashagg;
+
+RESET enable_seqscan;
+
+BEGIN;
+
+CREATE FUNCTION balkifnull(BIGINT, BIGINT)
+RETURNS BIGINT
+PARALLEL SAFE
+STRICT
+LANGUAGE "plpgsql"
+AS '
+BEGIN
+    IF $1 IS NULL THEN
+       RAISE ''erroneously called with NULL argument'';
+    END IF;
+    RETURN NULL;
+END';
+
+CREATE AGGREGATE balk (
+  INT
+) (
+  sfunc = int4_sum(int8, int4),
+  stype = BIGINT,
+  combinefunc = balkifnull(int8, int8),
+  parallel = safe,
+  initcond = '0'
+);
+
+ALTER TABLE tenk1
+  SET (parallel_workers = 4);
+
+SET LOCAL parallel_setup_cost = 0;
+
+SET LOCAL max_parallel_workers_per_gather = 4;
+
+SELECT balk(hundred) FROM tenk1;
+
+SELECT balk(hundred) FROM tenk1;
+
+ROLLBACK;
+
+BEGIN;
+
+CREATE FUNCTION rwagg_sfunc(x ANYARRAY, y ANYARRAY)
+RETURNS ANYARRAY
+LANGUAGE "plpgsql"
+IMMUTABLE
+AS '
+BEGIN
+    RETURN array_fill(y[1], ARRAY[4]);
+END;
+';
+
+CREATE FUNCTION rwagg_finalfunc(x ANYARRAY)
+RETURNS ANYARRAY
+LANGUAGE "plpgsql"
+STRICT
+IMMUTABLE
+AS '
+DECLARE
+    res x%TYPE;
+BEGIN
+    -- assignment is essential for this test, it expands the array to R/W
+    res := array_fill(x[1], ARRAY[4]);
+    RETURN res;
+END;
+';
+
+CREATE AGGREGATE rwagg (
+  ANYARRAY
+) (
+  stype = ANYARRAY,
+  sfunc = rwagg_sfunc,
+  finalfunc = rwagg_finalfunc
+);
+
+CREATE FUNCTION eatarray(x REAL[])
+RETURNS REAL[]
+LANGUAGE "plpgsql"
+STRICT
+IMMUTABLE
+AS '
+BEGIN
+    x[1] := x[1] + 1;
+    RETURN x;
+END;
+';
+
+SELECT eatarray(rwagg(ARRAY[CAST(1.0 AS REAL)])), eatarray(rwagg(ARRAY[CAST(1.0 AS REAL)]));
+
+ROLLBACK;
+
+BEGIN;
+
+SET parallel_setup_cost = 0;
+
+SET parallel_tuple_cost = 0;
+
+SET min_parallel_table_scan_size = 0;
+
+SET max_parallel_workers_per_gather = 4;
+
+SET parallel_leader_participation = off;
+
+SET enable_indexonlyscan = off;
+
+SELECT
+  variance(CAST(unique1 AS INT)),
+  SUM(CAST(unique1 AS BIGINT)),
+  regr_count(
+    CAST(unique1 AS DOUBLE PRECISION),
+    CAST(unique1 AS DOUBLE PRECISION)
+  )
+FROM
+  (
+    SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+  )
+  AS u;
+
+SELECT
+  variance(CAST(unique1 AS INT)),
+  SUM(CAST(unique1 AS BIGINT)),
+  regr_count(
+    CAST(unique1 AS DOUBLE PRECISION),
+    CAST(unique1 AS DOUBLE PRECISION)
+  )
+FROM
+  (
+    SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+  )
+  AS u;
+
+SELECT
+  variance(CAST(unique1 AS BIGINT)),
+  AVG(CAST(unique1 AS NUMERIC))
+FROM
+  (
+    SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+  )
+  AS u;
+
+SELECT
+  variance(CAST(unique1 AS BIGINT)),
+  AVG(CAST(unique1 AS NUMERIC))
+FROM
+  (
+    SELECT * FROM tenk1 UNION ALL SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+    UNION ALL
+    SELECT * FROM tenk1
+  )
+  AS u;
+
+ROLLBACK;
+
+SELECT
+  DENSE_RANK(x) WITHIN GROUP (ORDER BY x)
+FROM
+  (VALUES (1), (1), (2), (2), (3), (3)) AS v (x)
+GROUP BY x
+ORDER BY 1;
+
+SELECT MIN(x ORDER BY y) FROM (VALUES (1, NULL)) AS d (x, y);
+
+SELECT MIN(x ORDER BY y) FROM (VALUES (1, 2)) AS d (x, y);
+
+SELECT
+  v || 'a',
+  CASE v || 'a' WHEN 'aa' THEN 1 ELSE 0 END,
+  COUNT(*)
+FROM
+  unnest(ARRAY['a', 'b']) AS u (v)
+GROUP BY v || 'a'
+ORDER BY 1;
+
+SELECT
+  v || 'a',
+  CASE WHEN v || 'a' = 'aa' THEN 1 ELSE 0 END,
+  COUNT(*)
+FROM
+  unnest(ARRAY['a', 'b']) AS u (v)
+GROUP BY v || 'a'
+ORDER BY 1;
+
+SET enable_sort = 'false';
+
+SET work_mem = '64kB';
+
+SELECT
+  unique1,
+  COUNT(*),
+  SUM(twothousand)
+FROM
+  tenk1
+GROUP BY unique1
+HAVING
+  SUM(fivethous) > 4975
+ORDER BY SUM(twothousand);
+
+SET work_mem = DEFAULT;
+
+SET enable_sort = DEFAULT;
+
+SET work_mem = '64kB';
+
+CREATE TABLE agg_data_2k AS SELECT g FROM generate_series(0, 1999) AS g;
+
+ANALYZE agg_data_2k;
+
+CREATE TABLE agg_data_20k AS SELECT g FROM generate_series(0, 19999) AS g;
+
+ANALYZE agg_data_20k;
+
+SET enable_hashagg = 'false';
+
+SET jit_above_cost = 0;
+
+SELECT
+  g % 10000 AS c1,
+  SUM(CAST(g AS NUMERIC)) AS c2,
+  COUNT(*) AS c3
+FROM
+  agg_data_20k
+GROUP BY g % 10000;
+
+CREATE TABLE agg_group_1
+AS
+  SELECT
+    g % 10000 AS c1,
+    SUM(CAST(g AS NUMERIC)) AS c2,
+    COUNT(*) AS c3
+  FROM
+    agg_data_20k
+  GROUP BY g % 10000;
+
+CREATE TABLE agg_group_2
+AS
+  SELECT
+    *
+  FROM
+    (VALUES (100), (300), (500)) AS r (a),
+    LATERAL (
+      SELECT
+        CAST(g / 2 AS NUMERIC) AS c1,
+        array_agg(CAST(g AS NUMERIC)) AS c2,
+        COUNT(*) AS c3
+      FROM
+        agg_data_2k
+      WHERE
+        g < r.a
+      GROUP BY g / 2
+    )
+    AS s;
+
+SET jit_above_cost = DEFAULT;
+
+CREATE TABLE agg_group_3
+AS
+  SELECT
+    CAST(g / 2 AS NUMERIC) AS c1,
+    SUM(CAST(7 AS INT)) AS c2,
+    COUNT(*) AS c3
+  FROM
+    agg_data_2k
+  GROUP BY g / 2;
+
+CREATE TABLE agg_group_4
+AS
+  SELECT
+    CAST(g / 2 AS NUMERIC) AS c1,
+    array_agg(CAST(g AS NUMERIC)) AS c2,
+    COUNT(*) AS c3
+  FROM
+    agg_data_2k
+  GROUP BY g / 2;
+
+SET enable_hashagg = 'true';
+
+SET enable_sort = 'false';
+
+SET jit_above_cost = 0;
+
+SELECT
+  g % 10000 AS c1,
+  SUM(CAST(g AS NUMERIC)) AS c2,
+  COUNT(*) AS c3
+FROM
+  agg_data_20k
+GROUP BY g % 10000;
+
+CREATE TABLE agg_hash_1
+AS
+  SELECT
+    g % 10000 AS c1,
+    SUM(CAST(g AS NUMERIC)) AS c2,
+    COUNT(*) AS c3
+  FROM
+    agg_data_20k
+  GROUP BY g % 10000;
+
+CREATE TABLE agg_hash_2
+AS
+  SELECT
+    *
+  FROM
+    (VALUES (100), (300), (500)) AS r (a),
+    LATERAL (
+      SELECT
+        CAST(g / 2 AS NUMERIC) AS c1,
+        array_agg(CAST(g AS NUMERIC)) AS c2,
+        COUNT(*) AS c3
+      FROM
+        agg_data_2k
+      WHERE
+        g < r.a
+      GROUP BY g / 2
+    )
+    AS s;
+
+SET jit_above_cost = DEFAULT;
+
+CREATE TABLE agg_hash_3
+AS
+  SELECT
+    CAST(g / 2 AS NUMERIC) AS c1,
+    SUM(CAST(7 AS INT)) AS c2,
+    COUNT(*) AS c3
+  FROM
+    agg_data_2k
+  GROUP BY g / 2;
+
+CREATE TABLE agg_hash_4
+AS
+  SELECT
+    CAST(g / 2 AS NUMERIC) AS c1,
+    array_agg(CAST(g AS NUMERIC)) AS c2,
+    COUNT(*) AS c3
+  FROM
+    agg_data_2k
+  GROUP BY g / 2;
+
+SET enable_sort = 'true';
+
+SET work_mem = DEFAULT;
+
+SELECT * FROM agg_hash_1
+EXCEPT
+SELECT * FROM agg_group_1
+UNION ALL
+(SELECT * FROM agg_group_1
+EXCEPT
+SELECT * FROM agg_hash_1);
+
+SELECT * FROM agg_hash_2
+EXCEPT
+SELECT * FROM agg_group_2
+UNION ALL
+(SELECT * FROM agg_group_2
+EXCEPT
+SELECT * FROM agg_hash_2);
+
+SELECT * FROM agg_hash_3
+EXCEPT
+SELECT * FROM agg_group_3
+UNION ALL
+(SELECT * FROM agg_group_3
+EXCEPT
+SELECT * FROM agg_hash_3);
+
+SELECT * FROM agg_hash_4
+EXCEPT
+SELECT * FROM agg_group_4
+UNION ALL
+(SELECT * FROM agg_group_4
+EXCEPT
+SELECT * FROM agg_hash_4);
+
+DROP TABLE "agg_group_1";
+
+DROP TABLE "agg_group_2";
+
+DROP TABLE "agg_group_3";
+
+DROP TABLE "agg_group_4";
+
+DROP TABLE "agg_hash_1";
+
+DROP TABLE "agg_hash_2";
+
+DROP TABLE "agg_hash_3";
+
+DROP TABLE "agg_hash_4";

@@ -1,0 +1,1 @@
+GRANT admin TO user1, user2;

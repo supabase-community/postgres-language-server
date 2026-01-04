@@ -11,5 +11,19 @@
       "Bash(just tree-print:*)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/pp-hook.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
   }
 }

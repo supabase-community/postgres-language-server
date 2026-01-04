@@ -1,0 +1,8 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/view_with_check_option_0.sql
+snapshot_kind: text
+---
+CREATE VIEW v
+AS SELECT * FROM t
+WITH CASCADED CHECK OPTION;

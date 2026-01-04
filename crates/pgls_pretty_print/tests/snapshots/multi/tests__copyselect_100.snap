@@ -1,0 +1,85 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/multi/copyselect.sql
+snapshot_kind: text
+---
+CREATE TABLE test1 (
+  id serial,
+  t TEXT
+);
+
+INSERT INTO test1 (t) VALUES ('a');
+
+INSERT INTO test1 (t) VALUES ('b');
+
+INSERT INTO test1 (t) VALUES ('c');
+
+INSERT INTO test1 (t) VALUES ('d');
+
+INSERT INTO test1 (t) VALUES ('e');
+
+CREATE TABLE test2 (
+  id serial,
+  t TEXT
+);
+
+INSERT INTO test2 (t) VALUES ('A');
+
+INSERT INTO test2 (t) VALUES ('B');
+
+INSERT INTO test2 (t) VALUES ('C');
+
+INSERT INTO test2 (t) VALUES ('D');
+
+INSERT INTO test2 (t) VALUES ('E');
+
+CREATE VIEW v_test1
+AS SELECT 'v_' || t FROM test1;
+
+COPY test1 TO STDOUT;
+
+COPY v_test1 TO STDOUT;
+
+COPY (SELECT t FROM test1 WHERE id = 1) TO STDOUT;
+
+COPY (SELECT t FROM test1 WHERE id = 3 FOR UPDATE) TO STDOUT;
+
+COPY (SELECT t INTO TEMPORARY TABLE test3 FROM test1 WHERE id = 3) TO STDOUT;
+
+COPY (SELECT * FROM test1 INNER JOIN test2 USING ("id")) TO STDOUT;
+
+COPY (SELECT t FROM test1 WHERE id = 1 UNION SELECT * FROM v_test1 ORDER BY 1) TO STDOUT;
+
+COPY (SELECT
+  *
+FROM
+  (
+    SELECT t FROM test1 WHERE id = 1
+    UNION
+    SELECT * FROM v_test1
+    ORDER BY 1
+  )
+  AS t1)
+TO STDOUT;
+
+COPY (SELECT t FROM test1 WHERE id = 1) TO STDOUT WITH (FORMAT 'csv', HEADER, FORCE_QUOTE (t));
+
+DROP TABLE "test2";
+
+DROP VIEW "v_test1";
+
+DROP TABLE "test1";
+
+SELECT 1 / 0;
+
+COPY (SELECT 1) TO STDOUT;
+
+SELECT 4;
+
+CREATE TABLE test3 (c INT);
+
+SELECT 1;
+
+SELECT * FROM test3;
+
+DROP TABLE "test3";
